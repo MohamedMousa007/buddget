@@ -9,7 +9,7 @@ import {
   useState,
 } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import type { Session, User } from '@supabase/supabase-js'
+import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js'
 import { SupabaseFinanceSync } from '@/components/auth/SupabaseFinanceSync'
 import { AnalyticsHeartbeat } from '@/components/auth/AnalyticsHeartbeat'
 
@@ -42,12 +42,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const supabase = createClient()
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, nextSession: Session | null) => {
       setSession(nextSession)
       setUser(nextSession?.user ?? null)
     })
 
-    void supabase.auth.getSession().then(({ data: { session: s } }) => {
+    void supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
+      const s = data.session
       setSession(s)
       setUser(s?.user ?? null)
       setLoading(false)

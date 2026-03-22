@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import type { User } from '@supabase/supabase-js'
 import { verifyAdminPin } from '@/lib/server/adminAuth'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
     }
 
     const users =
-      data.users?.map((u) => ({
+      data.users?.map((u: User) => ({
         id: u.id,
         email: u.email,
         created_at: u.created_at,

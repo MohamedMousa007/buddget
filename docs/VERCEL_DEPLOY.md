@@ -2,13 +2,21 @@
 
 ## Before you push
 
-1. **Build passes locally**
+1. **Keep `package-lock.json` in sync** whenever you change `package.json` (e.g. new dependencies):
    ```bash
-   cd buddget   # or stay here if your shell is already in this folder
+   cd buddget
+   npm install
+   # or, to refresh only the lockfile: npm install --package-lock-only
+   ```
+   CI uses `npm ci`, which fails if the lockfile is out of date.
+
+2. **Build passes locally**
+   ```bash
    npm ci
    npm run build
    ```
-2. **Secrets stay out of git** — `.env.local` is gitignored. Never commit API keys.
+
+3. **Secrets stay out of git** — `.env.local` is gitignored. Never commit API keys.
 
 ## 1. Push to GitHub
 

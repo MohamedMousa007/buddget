@@ -77,8 +77,8 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
           },
           { onConflict: 'user_id' }
         )
-        .then(({ error }) => {
-          if (error) console.error('[finance sync] upsert failed', error.message)
+        .then((res: { error: { message: string } | null }) => {
+          if (res.error) console.error('[finance sync] upsert failed', res.error.message)
         })
     }
 
