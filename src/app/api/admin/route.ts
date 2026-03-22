@@ -5,23 +5,7 @@ import {
   saveAiRuntimeConfig,
   hasPersistedRuntimeConfigFile,
 } from '@/lib/server/aiRuntimeConfig'
-
-function verifyPin(pin: unknown): NextResponse | null {
-  const adminPin = process.env.ADMIN_PIN?.trim()
-
-  if (!adminPin) {
-    return NextResponse.json(
-      { error: 'Admin PIN not configured on server' },
-      { status: 503 }
-    )
-  }
-
-  if (typeof pin !== 'string' || pin.trim() !== adminPin) {
-    return NextResponse.json({ error: 'Invalid PIN' }, { status: 401 })
-  }
-
-  return null
-}
+import { verifyAdminPin } from '@/lib/server/adminAuth'
 
 function buildAdminConfig() {
   const hasGeminiKey = !!process.env.GEMINI_API_KEY?.trim()
@@ -59,7 +43,7 @@ function buildAdminConfig() {
 export async function POST(req: Request) {
   try {
     const { pin } = await req.json()
-    const denied = verifyPin(pin)
+    const denied = verifyAdminPin(pin)
     if (denied) return denied
 
     return NextResponse.json({
@@ -79,7 +63,7 @@ export async function PATCH(req: Request) {
   try {
     const body = await req.json()
     const { pin, aiRuntime } = body ?? {}
-    const denied = verifyPin(pin)
+    const denied = verifyAdminPin(pin)
     if (denied) return denied
 
     if (!aiRuntime || typeof aiRuntime !== 'object') {

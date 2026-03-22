@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useAuth } from '@/components/auth/AuthProvider'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { formatCurrency, formatRelativeTime } from '@/lib/utils/formatters'
 import { calculateMonthlyIncome, effectiveCategoryBudget } from '@/lib/utils/calculations'
@@ -12,6 +14,7 @@ import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import Link from 'next/link'
 import {
+  LogOut,
   User,
   Globe,
   Target,
@@ -36,6 +39,8 @@ import type { Currency, ExpenseCategory } from '@/lib/store/types'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 
 export default function SettingsPage() {
+  const router = useRouter()
+  const { user, signOut } = useAuth()
   const store = useFinanceStore()
   const { setActiveModal } = useSettingsStore()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -47,6 +52,12 @@ export default function SettingsPage() {
   useEffect(() => {
     checkAIStatus().then(setAiStatus)
   }, [])
+
+  useEffect(() => {
+    if (user?.email) {
+      useFinanceStore.getState().updateProfile({ email: user.email })
+    }
+  }, [user?.email])
 
   useEffect(() => {
     if (!importBanner) return
@@ -137,6 +148,33 @@ export default function SettingsPage() {
           </div>
         ) : null}
 
+        {/* Account (Supabase) */}
+        {user ? (
+          <section className="glass-card rounded-2xl p-5 space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Shield className="w-5 h-5 text-[var(--color-brand-red)]" />
+              <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
+                Account
+              </h2>
+            </div>
+            <p className="text-xs text-[var(--color-brand-text-muted)]">
+              Signed in as <span className="text-white font-mono-numbers">{user.email}</span>. Your budget syncs to this
+              account.
+            </p>
+            <button
+              type="button"
+              onClick={async () => {
+                await signOut()
+                router.replace('/login')
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--color-brand-border)] text-sm text-white hover:bg-[var(--color-brand-elevated)] transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              Sign out
+            </button>
+          </section>
+        ) : null}
+
         {/* Profile */}
         <section className="glass-card rounded-2xl p-5 space-y-4">
           <div className="flex items-center gap-2 mb-2">
@@ -153,11 +191,16 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <Label className="text-xs text-[var(--color-brand-text-secondary)]">Email (for future login)</Label>
+              <Label className="text-xs text-[var(--color-brand-text-secondary)]">
+                Email {user ? '(from account)' : ''}
+              </Label>
               <Input
                 value={store.profile.email || ''}
-                onChange={(e) => store.updateProfile({ email: e.target.value })}
-                className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
+                onChange={(e) => {
+                  if (!user) store.updateProfile({ email: e.target.value })
+                }}
+                readOnly={!!user}
+                className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white read-only:opacity-80"
                 placeholder="your@email.com"
               />
             </div>
