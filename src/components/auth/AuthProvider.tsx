@@ -35,8 +35,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!configured) {
-      setLoading(false)
-      return
+      const id = globalThis.setTimeout(() => setLoading(false), 0)
+      return () => globalThis.clearTimeout(id)
     }
 
     const supabase = createClient()
