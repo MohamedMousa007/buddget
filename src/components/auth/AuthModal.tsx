@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { AlertCircle, Loader2, Lock, Mail } from 'lucide-react'
+import { AlertCircle, Loader2, Lock, Mail, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { mapAuthError, isValidEmailFormat } from '@/components/auth/authErrors'
 import { useAuth } from '@/components/auth/auth-context'
@@ -107,7 +107,7 @@ type Step = 'form' | 'verify' | 'forgot'
 export function AuthModal() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { pendingNext, setPendingNext } = useAuth()
+  const { pendingNext, setPendingNext, closeAuthModal } = useAuth()
   const supabase = useMemo(() => createClient(), [])
 
   const nextFromUrl = searchParams.get('next')
@@ -278,20 +278,49 @@ export function AuthModal() {
 
   const contentKey = `${step}-${formMode}`
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeAuthModal()
+    }
+    window.addEventListener('keydown', onKey)
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prevOverflow
+    }
+  }, [closeAuthModal])
+
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-xl"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="auth-modal-title"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      role="presentation"
     >
+      <button
+        type="button"
+        className="absolute inset-0 cursor-default bg-black/25 backdrop-blur-md transition-colors hover:bg-black/35"
+        aria-label="Close sign in"
+        onClick={() => closeAuthModal()}
+      />
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, y: 12, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.2, ease: 'easeOut' }}
-        className="w-full border p-6 sm:p-8 shadow-2xl"
+        className="relative z-10 w-full border p-6 sm:p-8 shadow-2xl"
         style={cardStyle}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="auth-modal-title"
+        onClick={(e) => e.stopPropagation()}
       >
+        <button
+          type="button"
+          onClick={() => closeAuthModal()}
+          className="absolute right-3 top-3 rounded-lg p-2 text-[#5A5A72] transition-colors hover:bg-white/5 hover:text-white"
+          aria-label="Close"
+        >
+          <X className="h-5 w-5" />
+        </button>
         <div className="text-center mb-6">
           <h1 id="auth-modal-title" className="text-2xl font-extrabold tracking-tight" style={{ fontFamily: 'var(--font-heading), var(--font-sans)' }}>
             <span className="text-white">Bud</span>

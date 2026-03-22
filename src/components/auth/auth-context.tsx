@@ -11,6 +11,7 @@ export type AuthContextValue = {
   pendingNext: string
   setPendingNext: (path: string) => void
   openAuthModal: (next?: string) => void
+  closeAuthModal: () => void
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined)
