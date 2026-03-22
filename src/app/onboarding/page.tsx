@@ -1,6 +1,6 @@
 'use client'
 
-import { startTransition, useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronRight, Sparkles } from 'lucide-react'
@@ -132,11 +132,9 @@ export default function OnboardingPage() {
   const steps = config.steps
   const step = steps[index]
 
-  useEffect(() => {
-    startTransition(() => {
-      setTextValue('')
-      setSelected(null)
-    })
+  useLayoutEffect(() => {
+    setTextValue('')
+    setSelected(null)
   }, [index, step?.id])
 
   const advance = useCallback(async () => {
