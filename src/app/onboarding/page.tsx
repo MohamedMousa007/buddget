@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronRight, Sparkles } from 'lucide-react'
@@ -89,6 +89,72 @@ function StepBody({
   )
 }
 
+type StepContinuePayload = { textValue: string; selected: string | null }
+
+/**
+ * Owns text/select state per step. `key={step.id}` on the parent remounts this
+ * when the step changes — no useEffect reset needed (eslint react-hooks/set-state-in-effect).
+ */
+function OnboardingStepPanel({
+  step,
+  loadError,
+  isLastStep,
+  finishing,
+  onContinue,
+}: {
+  step: SurveyStep
+  loadError: string | null
+  isLastStep: boolean
+  finishing: boolean
+  onContinue: (payload: StepContinuePayload) => void | Promise<void>
+}) {
+  const [textValue, setTextValue] = useState('')
+  const [selected, setSelected] = useState<string | null>(null)
+
+  const canContinue = useMemo(() => {
+    if (step.type === 'static') return true
+    if (step.type === 'text') return textValue.trim().length > 0
+    return !!selected
+  }, [step.type, textValue, selected])
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 24 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -24 }}
+      transition={{ duration: 0.2 }}
+      className="glass-card rounded-2xl p-6 w-full max-w-lg flex flex-col gap-6 self-center"
+    >
+      <div>
+        <h2 className="text-xl font-bold text-white font-heading mb-2">{step.title}</h2>
+        {loadError ? (
+          <p className="text-[11px] text-amber-200/90 mb-2">
+            Could not load remote survey ({loadError}). Using default steps.
+          </p>
+        ) : null}
+      </div>
+
+      <StepBody
+        step={step}
+        textValue={textValue}
+        setTextValue={setTextValue}
+        selected={selected}
+        setSelected={setSelected}
+      />
+
+      <button
+        type="button"
+        disabled={!canContinue || finishing}
+        onClick={() => void onContinue({ textValue, selected })}
+        className="w-full py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+      >
+        {finishing ? 'Finishing…' : isLastStep ? 'Finish' : 'Continue'}
+        {!finishing ? <ChevronRight className="w-4 h-4" /> : null}
+      </button>
+    </motion.div>
+  )
+}
+
 export default function OnboardingPage() {
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
@@ -97,8 +163,6 @@ export default function OnboardingPage() {
 
   const [config, setConfig] = useState<SurveyConfig>(DEFAULT_SURVEY_CONFIG)
   const [index, setIndex] = useState(0)
-  const [textValue, setTextValue] = useState('')
-  const [selected, setSelected] = useState<string | null>(null)
   const [finishing, setFinishing] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
 
@@ -132,62 +196,51 @@ export default function OnboardingPage() {
   const steps = config.steps
   const step = steps[index]
 
-  useLayoutEffect(() => {
-    setTextValue('')
-    setSelected(null)
-  }, [index, step?.id])
+  const handleStepContinue = useCallback(
+    async ({ textValue, selected }: StepContinuePayload) => {
+      if (!step) return
 
-  const advance = useCallback(async () => {
-    if (!step) return
+      if (step.type === 'text') {
+        applyMapsTo(step.mapsTo, textValue.trim() || 'Friend', updateProfile, updateSettings)
+      }
+      if (step.type === 'single_select') {
+        if (!selected) return
+        applyMapsTo(step.mapsTo, selected, updateProfile, updateSettings)
+      }
 
-    if (step.type === 'text') {
-      applyMapsTo(step.mapsTo, textValue.trim() || 'Friend', updateProfile, updateSettings)
-    }
-    if (step.type === 'single_select') {
-      if (!selected) return
-      applyMapsTo(step.mapsTo, selected, updateProfile, updateSettings)
-    }
+      if (index >= steps.length - 1) {
+        setFinishing(true)
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (!user) {
+          setFinishing(false)
+          router.replace('/login')
+          return
+        }
 
-    if (index >= steps.length - 1) {
-      setFinishing(true)
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) {
-        setFinishing(false)
-        router.replace('/login')
+        await supabase
+          .from('user_profiles')
+          .update({
+            onboarding_completed: true,
+            display_name: useFinanceStore.getState().profile.name,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', user.id)
+
+        await supabase.auth.updateUser({
+          data: { onboarding_completed: true },
+        })
+
+        router.refresh()
+        router.replace('/')
         return
       }
 
-      // 1) Persist flag in Postgres (profiles)
-      await supabase
-        .from('user_profiles')
-        .update({
-          onboarding_completed: true,
-          display_name: useFinanceStore.getState().profile.name,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', user.id)
-
-      // 2) Mirror into JWT user_metadata so middleware can read onboarding_completed
-      await supabase.auth.updateUser({
-        data: { onboarding_completed: true },
-      })
-
-      router.refresh()
-      router.replace('/')
-      return
-    }
-
-    setIndex((i) => i + 1)
-  }, [index, router, selected, step, steps.length, supabase, textValue, updateProfile, updateSettings])
-
-  const canContinue = useMemo(() => {
-    if (!step) return false
-    if (step.type === 'static') return true
-    if (step.type === 'text') return textValue.trim().length > 0
-    return !!selected
-  }, [step, textValue, selected])
+      setIndex((i) => i + 1)
+    },
+    [index, router, step, steps.length, supabase, updateProfile, updateSettings]
+  )
 
   if (!step) {
     return (
@@ -215,41 +268,14 @@ export default function OnboardingPage() {
 
       <div className="flex-1 flex items-stretch justify-center p-4 pb-10">
         <AnimatePresence mode="wait">
-          <motion.div
-            key={step.id}
-            initial={{ opacity: 0, x: 24 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -24 }}
-            transition={{ duration: 0.2 }}
-            className="glass-card rounded-2xl p-6 w-full max-w-lg flex flex-col gap-6 self-center"
-          >
-            <div>
-              <h2 className="text-xl font-bold text-white font-heading mb-2">{step.title}</h2>
-              {loadError ? (
-                <p className="text-[11px] text-amber-200/90 mb-2">
-                  Could not load remote survey ({loadError}). Using default steps.
-                </p>
-              ) : null}
-            </div>
-
-            <StepBody
-              step={step}
-              textValue={textValue}
-              setTextValue={setTextValue}
-              selected={selected}
-              setSelected={setSelected}
-            />
-
-            <button
-              type="button"
-              disabled={!canContinue || finishing}
-              onClick={() => void advance()}
-              className="w-full py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {finishing ? 'Finishing…' : index >= steps.length - 1 ? 'Finish' : 'Continue'}
-              {!finishing ? <ChevronRight className="w-4 h-4" /> : null}
-            </button>
-          </motion.div>
+          <OnboardingStepPanel
+            key={step.id ?? `step-${index}`}
+            step={step}
+            loadError={loadError}
+            isLastStep={index >= steps.length - 1}
+            finishing={finishing}
+            onContinue={handleStepContinue}
+          />
         </AnimatePresence>
       </div>
     </div>

@@ -21,4 +21,10 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run test
-      - run: npm run build
+      # NEXT_PUBLIC_* required for `next build` (client modules / route evaluation).
+      # Repo → Settings → Secrets and variables → Actions → add both secrets.
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}

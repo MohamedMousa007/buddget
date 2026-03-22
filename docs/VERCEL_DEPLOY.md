@@ -18,6 +18,11 @@
 
 3. **Secrets stay out of git** — `.env.local` is gitignored. Never commit API keys.
 
+4. **GitHub Actions `npm run build`** needs the same public Supabase vars as the app (so Next can build). In the repo: **Settings → Secrets and variables → Actions → New repository secret**, add:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`  
+   (Same values as in Vercel / `.env.local`.) The workflow passes them into the build step automatically.
+
 ## 1. Push to GitHub
 
 If this folder is already a git repo:
