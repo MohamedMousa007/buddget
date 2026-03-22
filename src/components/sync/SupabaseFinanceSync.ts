@@ -19,6 +19,7 @@ function buildFinancePayload() {
     paymentMethods: state.paymentMethods,
     debts: state.debts,
     debtPayments: state.debtPayments,
+    recurringDebtPayments: state.recurringDebtPayments,
   }
 }
 

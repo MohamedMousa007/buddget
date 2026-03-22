@@ -3,6 +3,7 @@ import {
   calculateMonthlyIncome,
   calculateRecurringIncomeForCalendarMonth,
   sumRecurringIncomeOverDateRange,
+  incomeMonthlyMultiplier,
   goldPurityFactor,
   goldGramsToMoney,
   moneyToGoldGrams,
@@ -20,6 +21,15 @@ function src(partial: Partial<IncomeSource> & Pick<IncomeSource, 'id' | 'name' |
   }
 }
 
+describe('incomeMonthlyMultiplier', () => {
+  it('normalizes weekly and bi-weekly to monthly equivalent factors', () => {
+    expect(incomeMonthlyMultiplier('monthly')).toBe(1)
+    expect(incomeMonthlyMultiplier(undefined)).toBe(1)
+    expect(incomeMonthlyMultiplier('weekly')).toBeCloseTo(52 / 12, 10)
+    expect(incomeMonthlyMultiplier('biweekly')).toBeCloseTo(26 / 12, 10)
+  })
+})
+
 describe('calculateMonthlyIncome', () => {
   it('sums only recurring sources', () => {
     const sources: IncomeSource[] = [
@@ -27,6 +37,20 @@ describe('calculateMonthlyIncome', () => {
       src({ id: '2', name: 'B', amount: 500, currency: 'AED', isRecurring: false }),
     ]
     expect(calculateMonthlyIncome(sources, 'AED', {})).toBe(1000)
+  })
+
+  it('treats weekly amount as per-week before monthly conversion', () => {
+    const sources: IncomeSource[] = [
+      src({
+        id: '1',
+        name: 'W',
+        amount: 300,
+        currency: 'AED',
+        isRecurring: true,
+        recurringFrequency: 'weekly',
+      }),
+    ]
+    expect(calculateMonthlyIncome(sources, 'AED', {})).toBeCloseTo(300 * (52 / 12), 5)
   })
 })
 

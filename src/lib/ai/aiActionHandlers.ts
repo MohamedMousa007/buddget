@@ -284,15 +284,25 @@ export function executeActionItem(
     return
   }
   if (action === 'add_income') {
+    const isRecurring =
+      getField(d, 'isRecurring', 'is_recurring') === undefined
+        ? true
+        : Boolean(getField(d, 'isRecurring', 'is_recurring'))
+    const rawFreq = String(getField(d, 'recurringFrequency', 'recurring_frequency') || 'monthly')
+    const recurringFrequency =
+      rawFreq === 'weekly' || rawFreq === 'biweekly' ? rawFreq : 'monthly'
+    const domRaw = getField(d, 'dayOfMonth', 'day_of_month')
+    const dayOfMonth =
+      typeof domRaw === 'number' && Number.isFinite(domRaw)
+        ? Math.min(31, Math.max(1, Math.floor(domRaw)))
+        : 1
     ctx.addIncomeSource({
       name: String(getField(d, 'name') || 'Income'),
       amount: Number(getField(d, 'amount')) || 0,
       currency: String(getField(d, 'currency') || ctx.settings.baseCurrency) as Currency,
-      isRecurring:
-        getField(d, 'isRecurring', 'is_recurring') === undefined
-          ? true
-          : Boolean(getField(d, 'isRecurring', 'is_recurring')),
-      dayOfMonth: typeof d.dayOfMonth === 'number' ? d.dayOfMonth : 1,
+      isRecurring,
+      recurringFrequency: isRecurring ? recurringFrequency : undefined,
+      dayOfMonth: isRecurring && recurringFrequency === 'monthly' ? dayOfMonth : undefined,
       notes: getField(d, 'notes') as string | undefined,
     })
     return

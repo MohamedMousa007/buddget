@@ -287,7 +287,16 @@ export function AIChat() {
                       String(getField(d, 'currency') || store.settings.baseCurrency)
                     )}
                   </p>
-                  {d.isRecurring ? <p>🔄 Recurring</p> : null}
+                  {getField(d, 'isRecurring', 'is_recurring') === false ? null : (
+                    <p className="text-[var(--color-brand-text-muted)]">
+                      🔄{' '}
+                      {String(getField(d, 'recurringFrequency', 'recurring_frequency') || 'monthly')}
+                      {String(getField(d, 'recurringFrequency', 'recurring_frequency') || 'monthly') === 'monthly' &&
+                      getField(d, 'dayOfMonth', 'day_of_month') != null
+                        ? ` · day ${String(getField(d, 'dayOfMonth', 'day_of_month'))}`
+                        : null}
+                    </p>
+                  )}
                 </>
               )}
 

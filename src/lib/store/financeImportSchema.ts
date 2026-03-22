@@ -56,6 +56,7 @@ export const importDataSchema = z.object({
         amount: z.number(),
         currency: fiatCurrencySchema,
         isRecurring: z.boolean(),
+        recurringFrequency: z.enum(['monthly', 'biweekly', 'weekly']).optional(),
         dayOfMonth: z.number().int().min(1).max(31).optional(),
         notes: z.string().optional(),
         createdAt: z.string(),
@@ -165,6 +166,22 @@ export const importDataSchema = z.object({
         originalAmount: z.number().optional(),
         amountInPrimary: z.number().optional(),
         rateAtEntry: z.number().optional(),
+        notes: z.string().optional(),
+        createdAt: z.string(),
+      })
+    )
+    .optional(),
+  recurringDebtPayments: z
+    .array(
+      z.object({
+        id: z.string(),
+        debtId: z.string(),
+        amount: z.number(),
+        currency: currencySchema,
+        paymentMethodId: z.string(),
+        frequency: z.enum(['monthly', 'biweekly', 'weekly']),
+        nextDueDate: z.string(),
+        isActive: z.boolean(),
         notes: z.string().optional(),
         createdAt: z.string(),
       })

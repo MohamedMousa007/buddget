@@ -11,7 +11,13 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
-import type { Currency } from '@/lib/store/types'
+import type { Currency, IncomeRecurringFrequency } from '@/lib/store/types'
+
+const RECURRING_FREQ: { value: IncomeRecurringFrequency; label: string; amountHint: string }[] = [
+  { value: 'monthly', label: 'Monthly', amountHint: 'Amount is per month.' },
+  { value: 'biweekly', label: 'Bi-weekly', amountHint: 'Amount is per paycheck (26 per year).' },
+  { value: 'weekly', label: 'Weekly', amountHint: 'Amount is per week.' },
+]
 
 export function AddIncomeSheet() {
   const { addIncomeSource, settings } = useFinanceStore()
@@ -22,6 +28,7 @@ export function AddIncomeSheet() {
   const [amount, setAmount] = useState('')
   const [currency, setCurrency] = useState<Currency>(settings.baseCurrency)
   const [isRecurring, setIsRecurring] = useState(true)
+  const [recurringFrequency, setRecurringFrequency] = useState<IncomeRecurringFrequency>('monthly')
   const [dayOfMonth, setDayOfMonth] = useState('1')
   const [notes, setNotes] = useState('')
 
@@ -30,6 +37,7 @@ export function AddIncomeSheet() {
     setAmount('')
     setCurrency(settings.baseCurrency)
     setIsRecurring(true)
+    setRecurringFrequency('monthly')
     setDayOfMonth('1')
     setNotes('')
   }
@@ -42,7 +50,8 @@ export function AddIncomeSheet() {
       amount: parseFloat(amount),
       currency,
       isRecurring,
-      dayOfMonth: isRecurring ? parseInt(dayOfMonth) : undefined,
+      recurringFrequency: isRecurring ? recurringFrequency : undefined,
+      dayOfMonth: isRecurring && recurringFrequency === 'monthly' ? parseInt(dayOfMonth, 10) || 1 : undefined,
       notes: notes || undefined,
     })
 
@@ -109,22 +118,44 @@ export function AddIncomeSheet() {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs text-[var(--color-brand-text-secondary)]">Recurring monthly?</Label>
+                  <Label className="text-xs text-[var(--color-brand-text-secondary)]">Recurring income?</Label>
                   <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
                 </div>
 
                 {isRecurring && (
-                  <div>
-                    <Label className="text-xs text-[var(--color-brand-text-secondary)]">Day of Month</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      max="31"
-                      value={dayOfMonth}
-                      onChange={(e) => setDayOfMonth(e.target.value)}
-                      className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers w-24"
-                    />
-                  </div>
+                  <>
+                    <div>
+                      <Label className="text-xs text-[var(--color-brand-text-secondary)]">How often</Label>
+                      <select
+                        value={recurringFrequency}
+                        onChange={(e) => setRecurringFrequency(e.target.value as IncomeRecurringFrequency)}
+                        className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                      >
+                        {RECURRING_FREQ.map((f) => (
+                          <option key={f.value} value={f.value}>
+                            {f.label}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-1">
+                        {RECURRING_FREQ.find((f) => f.value === recurringFrequency)?.amountHint}
+                        {' '}Budgets use a monthly equivalent (e.g. weekly × 52÷12).
+                      </p>
+                    </div>
+                    {recurringFrequency === 'monthly' && (
+                      <div>
+                        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Day of month</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="31"
+                          value={dayOfMonth}
+                          onChange={(e) => setDayOfMonth(e.target.value)}
+                          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers w-24"
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <div>

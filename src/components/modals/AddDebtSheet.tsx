@@ -8,12 +8,9 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import {
   convertPaymentToDebtUnit,
-  goldGramsToMoney,
-  moneyToGoldGrams,
-  calculateDebtRemainingRaw,
+  computeDebtPaymentRecord,
   isDebtFullyPaid,
 } from '@/lib/utils/calculations'
-import { tryConvertCurrency } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -154,61 +151,21 @@ export function AddDebtSheet() {
 
     setPaymentRateError('')
 
-    if (isDebtFullyPaid(selectedDebt, debtPayments)) {
-      setPaymentRateError('This debt is already paid off. Edit the debt if the balance changed.')
+    const computed = computeDebtPaymentRecord(
+      selectedDebt,
+      amount,
+      paymentCurrency,
+      settings.baseCurrency,
+      exchangeRates,
+      goldPricePerGram,
+      debtPayments
+    )
+    if (!computed.ok) {
+      setPaymentRateError(computed.error)
       return
     }
 
-    let amountInBase: number
-    let amountInDebtUnit: number
-
-    if (paymentCurrency === 'XAU' && selectedDebt.isGold) {
-      amountInDebtUnit = amount
-      amountInBase = goldGramsToMoney(amount, goldPricePerGram, selectedDebt.goldKarat)
-    } else {
-      const inBase = tryConvertCurrency(
-        amount,
-        paymentCurrency,
-        settings.baseCurrency,
-        exchangeRates
-      )
-      if (inBase === null) {
-        setPaymentRateError(
-          `No exchange rate from ${paymentCurrency} to ${settings.baseCurrency}. Update rates in Settings.`
-        )
-        return
-      }
-      amountInBase = inBase
-
-      if (selectedDebt.isGold) {
-        amountInDebtUnit = moneyToGoldGrams(amountInBase, goldPricePerGram, selectedDebt.goldKarat)
-      } else {
-        const inDebtUnit = tryConvertCurrency(
-          amount,
-          paymentCurrency,
-          selectedDebt.currency,
-          exchangeRates
-        )
-        if (inDebtUnit === null) {
-          setPaymentRateError(
-            `No exchange rate from ${paymentCurrency} to debt currency ${selectedDebt.currency}.`
-          )
-          return
-        }
-        amountInDebtUnit = inDebtUnit
-      }
-    }
-
-    const rateAtEntry = amount > 0 ? amountInBase / amount : 1
-
-    const remainingRaw = calculateDebtRemainingRaw(selectedDebt, debtPayments)
-    if (amountInDebtUnit > remainingRaw + 1e-6) {
-      const unit = selectedDebt.isGold ? 'g' : selectedDebt.currency
-      setPaymentRateError(
-        `This payment is more than the remaining balance (${remainingRaw.toFixed(2)} ${unit}).`
-      )
-      return
-    }
+    const { amountInDebtUnit, amountInBase, rateAtEntry } = computed
 
     addDebtPayment({
       debtId: selectedDebtId,

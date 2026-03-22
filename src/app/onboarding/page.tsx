@@ -266,6 +266,8 @@ export default function OnboardingPage() {
           amount,
           currency: base,
           isRecurring: true,
+          recurringFrequency: 'monthly',
+          dayOfMonth: 1,
         })
         updateSettings({ noIncomeDeclared: false })
         setIndex((i) => i + 1)

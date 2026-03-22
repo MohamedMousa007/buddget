@@ -192,7 +192,8 @@ RESPONSE FORMAT for add_debt_payment:
 {"action":"add_debt_payment","data":{"debtName":"Mom's Debt","person":"Mom","amount":number,"currency":"EGP","date":"${today}","paymentMethod":"Bank Transfer"},"confidence":1,"clarificationNeeded":null,"message":"short friendly confirmation"}
 
 RESPONSE FORMAT for add_income:
-{"action":"add_income","data":{"name":"string","amount":number,"currency":"${baseCurrency}","isRecurring":true,"dayOfMonth":1},"confidence":1,"clarificationNeeded":null,"message":"short friendly confirmation"}
+{"action":"add_income","data":{"name":"string","amount":number,"currency":"${baseCurrency}","isRecurring":true,"recurringFrequency":"monthly"|"biweekly"|"weekly","dayOfMonth":1},"confidence":1,"clarificationNeeded":null,"message":"short friendly confirmation"}
+Note: dayOfMonth only when recurringFrequency is monthly; amount is per month, per paycheck, or per week matching recurringFrequency.
 
 RESPONSE FORMAT for add_payment_method:
 {"action":"add_payment_method","data":{"name":"ADCB Visa","type":"card_credit"},"confidence":1,"clarificationNeeded":null,"message":"short friendly confirmation"}
@@ -214,7 +215,7 @@ You may still use a single top-level "action" + "data" when there is only one op
 FIELD NAME RULES — use these EXACT field names:
 - description, amount, currency, category, paymentMethod, date, isRecurring
 - debtName, person (for debt payments)
-- name (for income sources)
+- name, recurringFrequency, dayOfMonth (for income sources)
 - type (for payment methods)
 - bucket, subtype (for savings holdings)
 - budgetedAmount, percentOfIncome (for budget updates)`

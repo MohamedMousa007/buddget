@@ -9,10 +9,40 @@ import { QuickAddFAB } from '@/components/modals/QuickAddFAB'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { useRequireAuthAction } from '@/lib/hooks/useRequireAuthAction'
 import { Pencil, Trash2 } from 'lucide-react'
+import type { IncomeSource } from '@/lib/store/types'
+import { incomeMonthlyMultiplier } from '@/lib/utils/calculations'
+
+function recurringSubtitle(source: IncomeSource): string {
+  if (!source.isRecurring) return 'One-time'
+  const f = source.recurringFrequency ?? 'monthly'
+  if (f === 'monthly') return `Recurring · monthly · day ${source.dayOfMonth ?? 1}`
+  if (f === 'biweekly') return 'Recurring · bi-weekly (per paycheck)'
+  return 'Recurring · weekly (per week)'
+}
+
+function amountLine(source: IncomeSource): string {
+  const amt = formatCurrency(source.amount, source.currency)
+  if (!source.isRecurring) return amt
+  const f = source.recurringFrequency ?? 'monthly'
+  if (f === 'monthly') return `${amt}/mo`
+  if (f === 'biweekly') return `${amt}/paycheck`
+  return `${amt}/wk`
+}
+
+function monthlyEquivNote(source: IncomeSource): string | null {
+  if (!source.isRecurring) return null
+  const m = incomeMonthlyMultiplier(source.recurringFrequency)
+  if (m === 1) return null
+  const eq = source.amount * m
+  return `≈ ${formatCurrency(eq, source.currency)}/mo for budgets (monthly equivalent)`
+}
 
 export default function IncomePage() {
   const { incomeSources, deleteIncomeSource } = useFinanceStore(
-    useShallow((s) => ({ incomeSources: s.incomeSources, deleteIncomeSource: s.deleteIncomeSource }))
+    useShallow((s) => ({
+      incomeSources: s.incomeSources,
+      deleteIncomeSource: s.deleteIncomeSource,
+    }))
   )
   const { setActiveModal, setEditingIncomeId } = useSettingsStore()
   const requireAuth = useRequireAuthAction()
@@ -40,7 +70,8 @@ export default function IncomePage() {
 
       <div className="px-4 py-6 lg:px-8 max-w-3xl mx-auto space-y-3">
         <p className="text-xs text-[var(--color-brand-text-muted)]">
-          Recurring income is used for budget totals (including % of income mode). Edit amounts when your salary changes.
+          Recurring income is converted to a monthly equivalent for budgets (including % of income). Weekly and bi-weekly
+          amounts are the pay per week or per paycheck.
         </p>
         {incomeSources.length === 0 ? (
           <div className="glass-card rounded-2xl p-2">
@@ -67,14 +98,15 @@ export default function IncomePage() {
             >
               <div>
                 <p className="text-sm font-medium text-white">{source.name}</p>
-                <p className="text-xs text-[var(--color-brand-text-muted)]">
-                  {source.isRecurring ? `Recurring · day ${source.dayOfMonth ?? 1}` : 'One-time'}
-                </p>
+                <p className="text-xs text-[var(--color-brand-text-muted)]">{recurringSubtitle(source)}</p>
+                {monthlyEquivNote(source) ? (
+                  <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-0.5">
+                    {monthlyEquivNote(source)}
+                  </p>
+                ) : null}
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-mono-numbers text-white">
-                  {formatCurrency(source.amount, source.currency)}/mo
-                </span>
+                <span className="text-sm font-mono-numbers text-white">{amountLine(source)}</span>
                 <button
                   type="button"
                   onClick={() => {

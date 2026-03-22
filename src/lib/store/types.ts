@@ -23,12 +23,17 @@ export interface PaymentMethod {
   isDefault: boolean
 }
 
+/** How often recurring income is received; amount is per that period (e.g. weekly = per week). */
+export type IncomeRecurringFrequency = 'monthly' | 'biweekly' | 'weekly'
+
 export interface IncomeSource {
   id: string
   name: string
   amount: number
   currency: Currency
   isRecurring: boolean
+  /** When recurring: monthly = per month, biweekly = per paycheck, weekly = per week. Defaults to monthly if omitted. */
+  recurringFrequency?: IncomeRecurringFrequency
   dayOfMonth?: number
   notes?: string
   createdAt: string
@@ -126,6 +131,23 @@ export interface DebtPayment {
   createdAt: string
 }
 
+export type DebtRecurringFrequency = 'monthly' | 'biweekly' | 'weekly'
+
+/** Template: when `nextDueDate` is on or before today, a payment + Debt expense are posted and the date advances. */
+export interface RecurringDebtPayment {
+  id: string
+  debtId: string
+  amount: number
+  currency: Currency
+  paymentMethodId: string
+  frequency: DebtRecurringFrequency
+  /** Next calendar due date (YYYY-MM-DD, local). */
+  nextDueDate: string
+  isActive: boolean
+  notes?: string
+  createdAt: string
+}
+
 export interface UserProfile {
   id: string
   name: string
@@ -167,6 +189,7 @@ export interface FinanceStore {
   paymentMethods: PaymentMethod[]
   debts: Debt[]
   debtPayments: DebtPayment[]
+  recurringDebtPayments: RecurringDebtPayment[]
   exchangeRates: Record<string, number>
   goldPricePerGram: number
   lastRatesFetch: string | null
@@ -186,6 +209,9 @@ export interface FinanceStore {
   addDebtPayment: (payment: Omit<DebtPayment, 'id' | 'createdAt'>) => void
   deleteDebt: (id: string) => void
   deleteDebtPayment: (id: string) => void
+  addRecurringDebtPayment: (r: Omit<RecurringDebtPayment, 'id' | 'createdAt'>) => void
+  updateRecurringDebtPayment: (id: string, updates: Partial<RecurringDebtPayment>) => void
+  deleteRecurringDebtPayment: (id: string) => void
   addRecurringExpense: (expense: Omit<RecurringExpense, 'id'>) => void
   updateRecurringExpense: (id: string, updates: Partial<RecurringExpense>) => void
   deleteRecurringExpense: (id: string) => void

@@ -8,8 +8,27 @@ import {
   subDays,
   eachMonthOfInterval,
 } from 'date-fns'
-import type { Expense, IncomeSource, BudgetCategory, Debt, DebtPayment, Currency, GoldKarat, AppSettings, SavingsHolding } from '@/lib/store/types'
-import { convertCurrency } from './currency'
+import type {
+  Expense,
+  IncomeSource,
+  IncomeRecurringFrequency,
+  BudgetCategory,
+  Debt,
+  DebtPayment,
+  Currency,
+  GoldKarat,
+  AppSettings,
+  SavingsHolding,
+} from '@/lib/store/types'
+import { convertCurrency, tryConvertCurrency } from './currency'
+
+/** Converts per-period recurring income to an equivalent monthly amount for budgets and KPIs. */
+export function incomeMonthlyMultiplier(freq: IncomeRecurringFrequency | undefined): number {
+  const f = freq ?? 'monthly'
+  if (f === 'weekly') return 52 / 12
+  if (f === 'biweekly') return 26 / 12
+  return 1
+}
 
 export function getMonthRange(monthStr: string, monthStartDay = 1): { start: Date; end: Date } {
   const date = parseISO(monthStr + '-01')
@@ -46,7 +65,8 @@ export function calculateMonthlyIncome(
 ): number {
   return sources.reduce((total, source) => {
     if (!source.isRecurring) return total
-    return total + convertCurrency(source.amount, source.currency, baseCurrency, rates)
+    const monthlyEq = source.amount * incomeMonthlyMultiplier(source.recurringFrequency)
+    return total + convertCurrency(monthlyEq, source.currency, baseCurrency, rates)
   }, 0)
 }
 
@@ -65,7 +85,8 @@ export function calculateRecurringIncomeForCalendarMonth(
   return sources.reduce((total, source) => {
     if (!source.isRecurring) return total
     if (parseISO(source.createdAt) > monthEnd) return total
-    return total + convertCurrency(source.amount, source.currency, baseCurrency, rates)
+    const monthlyEq = source.amount * incomeMonthlyMultiplier(source.recurringFrequency)
+    return total + convertCurrency(monthlyEq, source.currency, baseCurrency, rates)
   }, 0)
 }
 
@@ -231,6 +252,73 @@ const DEBT_PAID_EPS = 1e-6
 
 export function isDebtFullyPaid(debt: Debt, payments: DebtPayment[]): boolean {
   return calculateDebtRemainingRaw(debt, payments) <= DEBT_PAID_EPS
+}
+
+export type DebtPaymentComputeResult =
+  | { ok: true; amountInDebtUnit: number; amountInBase: number; rateAtEntry: number }
+  | { ok: false; error: string }
+
+/**
+ * Validates amount/rates and remaining balance for recording a debt payment (same rules as the debt payment sheet).
+ */
+export function computeDebtPaymentRecord(
+  debt: Debt,
+  amount: number,
+  paymentCurrency: string,
+  baseCurrency: Currency,
+  exchangeRates: Record<string, number>,
+  goldPricePerGram: number,
+  debtPayments: DebtPayment[]
+): DebtPaymentComputeResult {
+  if (Number.isNaN(amount) || amount <= 0) {
+    return { ok: false, error: 'Invalid payment amount.' }
+  }
+
+  if (isDebtFullyPaid(debt, debtPayments)) {
+    return { ok: false, error: 'This debt is already paid off.' }
+  }
+
+  let amountInBase: number
+  let amountInDebtUnit: number
+
+  if (paymentCurrency === 'XAU' && debt.isGold) {
+    amountInDebtUnit = amount
+    amountInBase = goldGramsToMoney(amount, goldPricePerGram, debt.goldKarat)
+  } else {
+    const inBase = tryConvertCurrency(amount, paymentCurrency, baseCurrency, exchangeRates)
+    if (inBase === null) {
+      return {
+        ok: false,
+        error: `No exchange rate from ${paymentCurrency} to ${baseCurrency}. Update rates in Settings.`,
+      }
+    }
+    amountInBase = inBase
+
+    if (debt.isGold) {
+      amountInDebtUnit = moneyToGoldGrams(amountInBase, goldPricePerGram, debt.goldKarat)
+    } else {
+      const inDebtUnit = tryConvertCurrency(amount, paymentCurrency, debt.currency, exchangeRates)
+      if (inDebtUnit === null) {
+        return {
+          ok: false,
+          error: `No exchange rate from ${paymentCurrency} to debt currency ${debt.currency}.`,
+        }
+      }
+      amountInDebtUnit = inDebtUnit
+    }
+  }
+
+  const rateAtEntry = amount > 0 ? amountInBase / amount : 1
+  const remainingRaw = calculateDebtRemainingRaw(debt, debtPayments)
+  if (amountInDebtUnit > remainingRaw + 1e-6) {
+    const unit = debt.isGold ? 'g' : debt.currency
+    return {
+      ok: false,
+      error: `This payment is more than the remaining balance (${remainingRaw.toFixed(2)} ${unit}).`,
+    }
+  }
+
+  return { ok: true, amountInDebtUnit, amountInBase, rateAtEntry }
 }
 
 /** Display / aggregates: never show negative remaining after full payoff. */

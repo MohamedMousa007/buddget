@@ -14,7 +14,7 @@ import {
 } from './defaultFinanceData'
 import type { FinanceStore } from './types'
 
-const PERSIST_VERSION = 3
+const PERSIST_VERSION = 4
 
 function generateId(): string {
   return `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
@@ -33,6 +33,7 @@ export const useFinanceStore = create<FinanceStore>()(
       paymentMethods: DEFAULT_PAYMENT_METHODS,
       debts: DEFAULT_DEBTS,
       debtPayments: [],
+      recurringDebtPayments: [],
       exchangeRates: { ...DEFAULT_MARKET_RATES },
       goldPricePerGram: DEFAULT_GOLD_PRICE_PER_GRAM,
       lastRatesFetch: null,
@@ -146,11 +147,32 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => ({
           debts: state.debts.filter((d) => d.id !== id),
           debtPayments: state.debtPayments.filter((p) => p.debtId !== id),
+          recurringDebtPayments: state.recurringDebtPayments.filter((r) => r.debtId !== id),
         })),
 
       deleteDebtPayment: (id) =>
         set((state) => ({
           debtPayments: state.debtPayments.filter((p) => p.id !== id),
+        })),
+
+      addRecurringDebtPayment: (r) =>
+        set((state) => ({
+          recurringDebtPayments: [
+            ...state.recurringDebtPayments,
+            { ...r, id: generateId(), createdAt: new Date().toISOString() },
+          ],
+        })),
+
+      updateRecurringDebtPayment: (id, updates) =>
+        set((state) => ({
+          recurringDebtPayments: state.recurringDebtPayments.map((x) =>
+            x.id === id ? { ...x, ...updates } : x
+          ),
+        })),
+
+      deleteRecurringDebtPayment: (id) =>
+        set((state) => ({
+          recurringDebtPayments: state.recurringDebtPayments.filter((x) => x.id !== id),
         })),
 
       addRecurringExpense: (expense) =>
@@ -280,6 +302,7 @@ export const useFinanceStore = create<FinanceStore>()(
           paymentMethods: state.paymentMethods,
           debts: state.debts,
           debtPayments: state.debtPayments,
+          recurringDebtPayments: state.recurringDebtPayments,
         }
         return JSON.stringify(data, null, 2)
       },
@@ -296,6 +319,7 @@ export const useFinanceStore = create<FinanceStore>()(
           paymentMethods: DEFAULT_PAYMENT_METHODS,
           debts: DEFAULT_DEBTS,
           debtPayments: [],
+          recurringDebtPayments: [],
           exchangeRates: { ...DEFAULT_MARKET_RATES },
           goldPricePerGram: DEFAULT_GOLD_PRICE_PER_GRAM,
           lastRatesFetch: null,
@@ -310,10 +334,25 @@ export const useFinanceStore = create<FinanceStore>()(
           persistedState && typeof persistedState === 'object'
             ? (persistedState as Record<string, unknown>)
             : {}
+        if (fromVersion >= 3) {
+          const prevSettings = (p.settings as Record<string, unknown> | undefined) || {}
+          return {
+            ...p,
+            recurringDebtPayments: Array.isArray(p.recurringDebtPayments)
+              ? p.recurringDebtPayments
+              : [],
+            settings: {
+              ...DEFAULT_SETTINGS,
+              ...prevSettings,
+              noIncomeDeclared: Boolean(prevSettings.noIncomeDeclared),
+            },
+          } as never
+        }
         if (fromVersion >= 2) {
           const prevSettings = (p.settings as Record<string, unknown> | undefined) || {}
           return {
             ...p,
+            recurringDebtPayments: [],
             settings: {
               ...DEFAULT_SETTINGS,
               ...prevSettings,
@@ -333,6 +372,7 @@ export const useFinanceStore = create<FinanceStore>()(
           paymentMethods: DEFAULT_PAYMENT_METHODS,
           debts: [],
           debtPayments: [],
+          recurringDebtPayments: [],
           exchangeRates: { ...DEFAULT_MARKET_RATES },
           goldPricePerGram: DEFAULT_GOLD_PRICE_PER_GRAM,
           lastRatesFetch: null,
@@ -345,6 +385,7 @@ export const useFinanceStore = create<FinanceStore>()(
           ...current,
           ...p,
           savingsHoldings: p.savingsHoldings ?? current.savingsHoldings,
+          recurringDebtPayments: p.recurringDebtPayments ?? current.recurringDebtPayments,
           settings: {
             ...current.settings,
             ...p.settings,
