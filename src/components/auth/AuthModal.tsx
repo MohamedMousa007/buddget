@@ -67,7 +67,7 @@ function OtpRow({
   const onPaste = (e: React.ClipboardEvent) => {
     e.preventDefault()
     const t = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
-    commit(t)
+    onChange(t)
     refs.current[Math.min(t.length, 5)]?.focus()
   }
 
