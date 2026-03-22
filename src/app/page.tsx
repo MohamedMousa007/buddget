@@ -1,65 +1,167 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useMonthlyStats } from '@/lib/hooks/useMonthlyStats'
+import { useRates } from '@/lib/hooks/useRates'
+import { useGoldPrice } from '@/lib/hooks/useGoldPrice'
+import { useShallow } from 'zustand/react/shallow'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { addMonths, subMonths } from 'date-fns'
+import { KPICard } from '@/components/dashboard/KPICard'
+import { BudgetRing } from '@/components/dashboard/BudgetRing'
+import { CategoryBar } from '@/components/dashboard/CategoryBar'
+import { RecentExpenses } from '@/components/dashboard/RecentExpenses'
+import { SavingsCard } from '@/components/dashboard/SavingsCard'
+import { DebtSnapshot } from '@/components/dashboard/DebtSnapshot'
+import { QuickAddFAB } from '@/components/modals/QuickAddFAB'
+import { BarChart3, Bell, User } from 'lucide-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { MonthYearPicker } from '@/components/ui/MonthYearPicker'
+import { PAGE_HEADER_SURFACE_CLASS } from '@/components/layout/PageHeader'
+
+export default function DashboardPage() {
+  useRates()
+  useGoldPrice()
+  const router = useRouter()
+
+  const { budgetCategories } = useFinanceStore(useShallow((s) => ({ budgetCategories: s.budgetCategories })))
+  const { monthFilter, setMonthFilter } = useSettingsStore()
+  const stats = useMonthlyStats()
+
+  const savingsBudget = budgetCategories.find((b) => b.category === 'Savings')?.budgetedAmount || 0
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="min-h-screen">
+      <header className={PAGE_HEADER_SURFACE_CLASS}>
+        <div className="flex items-center justify-between px-4 py-3 lg:px-8">
+          <div className="lg:hidden">
+            <span className="text-xl font-bold font-heading tracking-tight">
+              Bud<span className="text-[var(--color-brand-red)]">d</span>get
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Link
+              href="/reports"
+              className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-white hover:bg-[var(--color-brand-border)] transition-colors"
+              aria-label="Reports"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              <BarChart3 className="w-4 h-4" />
+              <span className="hidden md:inline">Reports</span>
+            </Link>
+            <button
+              onClick={() => setMonthFilter(subMonths(new Date(`${monthFilter}-01`), 1).toISOString().slice(0, 7))}
+              className="px-2.5 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-white hover:bg-[var(--color-brand-border)] transition-colors"
+              aria-label="Previous month"
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+              ←
+            </button>
+            <MonthYearPicker
+              monthFilter={monthFilter}
+              onChange={setMonthFilter}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-white"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            <button
+              onClick={() => setMonthFilter(addMonths(new Date(`${monthFilter}-01`), 1).toISOString().slice(0, 7))}
+              className="px-2.5 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-white hover:bg-[var(--color-brand-border)] transition-colors"
+              aria-label="Next month"
+            >
+              →
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button className="p-2 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors">
+              <Bell className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
+            </button>
+            <Link
+              href="/settings"
+              className="p-2 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors"
+            >
+              <User className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
+            </Link>
+          </div>
         </div>
-      </main>
+      </header>
+
+      <div className="px-4 py-6 lg:px-8 space-y-6 max-w-5xl mx-auto">
+        {/* KPI Strip */}
+        <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-1">
+          <KPICard
+            title="Income"
+            value={stats.totalIncome}
+            currency={stats.baseCurrency}
+            icon="💵"
+            trendLabel="This month"
+          />
+          <KPICard
+            title="Spent"
+            value={stats.totalSpent}
+            currency={stats.baseCurrency}
+            icon="💸"
+            trendLabel="This month"
+          />
+          <KPICard
+            title="Remaining"
+            value={stats.remaining}
+            currency={stats.baseCurrency}
+            icon="💰"
+            color={stats.remaining >= 0 ? 'green' : 'red'}
+            trendLabel="Budget left"
+          />
+          <KPICard
+            title="Savings"
+            value={stats.savingsTotal}
+            currency={stats.baseCurrency}
+            icon="🏦"
+            color="gold"
+            trendLabel="Holdings + this month"
+          />
+          <KPICard
+            title="Debt"
+            value={stats.debtRemainingTotal}
+            currency={stats.baseCurrency}
+            icon="📉"
+            color="red"
+            trendLabel="Total owed"
+            onClick={() => router.push('/debts')}
+          />
+        </div>
+
+        {/* Budget Ring + Category */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <BudgetRing
+            percent={stats.budgetUsedPercent}
+            remaining={stats.remaining}
+            currency={stats.baseCurrency}
+            daysLeft={stats.daysLeft}
+          />
+          <CategoryBar
+            budgetCategories={budgetCategories}
+            categorySpending={stats.categorySpending}
+            categoryBudgetCaps={stats.categoryBudgetCaps}
+            currency={stats.baseCurrency}
+          />
+        </div>
+
+        {/* Savings + Recent */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <SavingsCard
+            savingsTotal={stats.savingsTotal}
+            savingsHoldingsTotal={stats.savingsHoldingsTotal}
+            savingsFromExpenses={stats.savingsFromExpenses}
+            savingsBudget={savingsBudget}
+            currency={stats.baseCurrency}
+          />
+          <RecentExpenses expenses={stats.monthlyExpenses} />
+        </div>
+
+        {/* Debt Snapshot */}
+        <DebtSnapshot />
+      </div>
+
+      <QuickAddFAB />
     </div>
-  );
+  )
 }

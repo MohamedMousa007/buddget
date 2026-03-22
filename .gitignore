@@ -17,6 +17,14 @@
 /.next/
 /out/
 
+# next-pwa build output (regenerated each build)
+public/sw.js
+public/sw.js.map
+public/workbox-*.js
+public/workbox-*.js.map
+public/worker-*.js
+public/fallback-*.js
+
 # production
 /build
 
@@ -35,6 +43,9 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# Admin-managed AI runtime (local / persistent server only)
+/data/ai-runtime-config.json
 
 # typescript
 *.tsbuildinfo

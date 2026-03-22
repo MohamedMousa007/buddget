@@ -1,0 +1,199 @@
+export type Currency = 'AED' | 'USD' | 'EGP' | 'EUR' | 'GBP' | 'SAR' | 'XAU'
+
+export type ExpenseCategory =
+  | 'Rent'
+  | 'Transport'
+  | 'Food'
+  | 'Enjoyment'
+  | 'Savings'
+  | 'Debt'
+  | 'Remittance'
+  | 'Other'
+
+export type PaymentMethodType = 'cash' | 'bank_transfer' | 'card_debit' | 'card_credit' | 'nol' | 'other'
+
+export interface PaymentMethod {
+  id: string
+  name: string
+  type: PaymentMethodType
+  currency: Currency
+  color?: string
+  icon?: string
+  last4?: string
+  isDefault: boolean
+}
+
+export interface IncomeSource {
+  id: string
+  name: string
+  amount: number
+  currency: Currency
+  isRecurring: boolean
+  dayOfMonth?: number
+  notes?: string
+  createdAt: string
+}
+
+export interface Expense {
+  id: string
+  date: string
+  description: string
+  category: ExpenseCategory
+  amount: number
+  currency: Currency
+  amountInBaseCurrency: number
+  paymentMethodId: string
+  isRecurring: boolean
+  recurringId?: string
+  notes?: string
+  tags?: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface RecurringExpense {
+  id: string
+  description: string
+  category: ExpenseCategory
+  amount: number
+  currency: Currency
+  paymentMethodId: string
+  dayOfMonth: number
+  isActive: boolean
+  notes?: string
+}
+
+export interface BudgetCategory {
+  category: ExpenseCategory
+  budgetedAmount: number
+  currency: Currency
+  /** When using % of income mode, 0–100 */
+  percentOfIncome?: number | null
+  notes?: string
+}
+
+export type SavingsBucket = 'liquid' | 'investment'
+
+export type SavingsSubtype =
+  | 'bank'
+  | 'cash'
+  | 'gold'
+  | 'stocks'
+  | 'crypto'
+  | 'real_estate'
+  | 'other'
+
+export interface SavingsHolding {
+  id: string
+  name: string
+  bucket: SavingsBucket
+  subtype: SavingsSubtype
+  amount: number
+  currency: Currency
+  notes?: string
+  asOfDate?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type DebtCurrency = 'EGP' | 'XAU' | Currency
+
+export type GoldKarat = 24 | 22 | 21 | 18
+
+export interface Debt {
+  id: string
+  name: string
+  person: string
+  description?: string
+  startingBalance: number
+  currency: DebtCurrency
+  isGold: boolean
+  goldKarat?: GoldKarat
+  notes?: string
+  createdAt: string
+}
+
+export interface DebtPayment {
+  id: string
+  debtId: string
+  date: string
+  amountPaid: number
+  paymentCurrency?: string
+  originalAmount?: number
+  amountInPrimary?: number
+  rateAtEntry?: number
+  notes?: string
+  createdAt: string
+}
+
+export interface UserProfile {
+  id: string
+  name: string
+  email?: string
+  avatar?: string
+  baseCurrency: Currency
+  createdAt: string
+}
+
+export interface AppSettings {
+  baseCurrency: Currency
+  secondaryCurrency: Currency | null
+  showSecondaryCurrency: boolean
+  theme: 'dark' | 'light' | 'system'
+  language: 'en' | 'ar'
+  showCentsInDashboard: boolean
+  monthStartDay: number
+  /** Budget rows as fixed amounts in base currency vs % of monthly recurring income */
+  budgetEntryMode: 'amount' | 'percent_of_income'
+  /** AI chat / extraction (optional client preference; server may still gate by env) */
+  enableAI: boolean
+  geminiApiKey?: string
+  aiProvider: 'gemini'
+}
+
+export interface FinanceStore {
+  profile: UserProfile
+  settings: AppSettings
+  incomeSources: IncomeSource[]
+  expenses: Expense[]
+  recurringExpenses: RecurringExpense[]
+  budgetCategories: BudgetCategory[]
+  savingsHoldings: SavingsHolding[]
+  paymentMethods: PaymentMethod[]
+  debts: Debt[]
+  debtPayments: DebtPayment[]
+  exchangeRates: Record<string, number>
+  goldPricePerGram: number
+  lastRatesFetch: string | null
+
+  /** `amountInBaseCurrency` is computed in the store from rates + base currency. */
+  addExpense: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'amountInBaseCurrency'>) => void
+  updateExpense: (id: string, updates: Partial<Expense>) => void
+  deleteExpense: (id: string) => void
+  addIncomeSource: (source: Omit<IncomeSource, 'id' | 'createdAt'>) => void
+  updateIncomeSource: (id: string, updates: Partial<IncomeSource>) => void
+  deleteIncomeSource: (id: string) => void
+  addPaymentMethod: (method: Omit<PaymentMethod, 'id'>) => void
+  updatePaymentMethod: (id: string, updates: Partial<PaymentMethod>) => void
+  deletePaymentMethod: (id: string) => void
+  addDebt: (debt: Omit<Debt, 'id' | 'createdAt'>) => void
+  updateDebt: (id: string, updates: Partial<Debt>) => void
+  addDebtPayment: (payment: Omit<DebtPayment, 'id' | 'createdAt'>) => void
+  deleteDebt: (id: string) => void
+  deleteDebtPayment: (id: string) => void
+  addRecurringExpense: (expense: Omit<RecurringExpense, 'id'>) => void
+  updateRecurringExpense: (id: string, updates: Partial<RecurringExpense>) => void
+  deleteRecurringExpense: (id: string) => void
+  updateBudgetCategory: (category: ExpenseCategory, amount: number, percentOfIncome?: number | null) => void
+  addSavingsHolding: (h: Omit<SavingsHolding, 'id' | 'createdAt' | 'updatedAt'>) => void
+  updateSavingsHolding: (id: string, updates: Partial<SavingsHolding>) => void
+  deleteSavingsHolding: (id: string) => void
+  updateSettings: (updates: Partial<AppSettings>) => void
+  updateProfile: (updates: Partial<UserProfile>) => void
+  updateRates: (rates: Record<string, number>) => void
+  updateGoldPrice: (price: number) => void
+  /** @throws Error on invalid JSON or failed Zod validation (message is user-facing). */
+  importData: (data: string) => void
+  exportData: () => string
+  resetAllData: () => void
+}

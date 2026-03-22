@@ -1,0 +1,173 @@
+import { z } from 'zod'
+
+const currencySchema = z.enum(['AED', 'USD', 'EGP', 'EUR', 'GBP', 'SAR', 'XAU'])
+const fiatCurrencySchema = z.enum(['AED', 'USD', 'EGP', 'EUR', 'GBP', 'SAR'])
+const expenseCategorySchema = z.enum([
+  'Rent',
+  'Transport',
+  'Food',
+  'Enjoyment',
+  'Savings',
+  'Debt',
+  'Remittance',
+  'Other',
+])
+const paymentMethodTypeSchema = z.enum([
+  'cash',
+  'bank_transfer',
+  'card_debit',
+  'card_credit',
+  'nol',
+  'other',
+])
+
+/** Validates JSON passed to `importData` in the finance store. */
+export const importDataSchema = z.object({
+  profile: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      email: z.string().optional(),
+      avatar: z.string().optional(),
+      baseCurrency: currencySchema,
+      createdAt: z.string(),
+    })
+    .optional(),
+  settings: z
+    .object({
+      baseCurrency: fiatCurrencySchema,
+      secondaryCurrency: fiatCurrencySchema.nullable().optional(),
+      showSecondaryCurrency: z.boolean().optional(),
+      theme: z.enum(['dark', 'light', 'system']),
+      language: z.enum(['en', 'ar']),
+      showCentsInDashboard: z.boolean(),
+      monthStartDay: z.number().int().min(1).max(28),
+      budgetEntryMode: z.enum(['amount', 'percent_of_income']).optional(),
+      enableAI: z.boolean().optional(),
+      geminiApiKey: z.string().optional(),
+      aiProvider: z.enum(['gemini']).optional(),
+    })
+    .optional(),
+  incomeSources: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        amount: z.number(),
+        currency: fiatCurrencySchema,
+        isRecurring: z.boolean(),
+        dayOfMonth: z.number().int().min(1).max(31).optional(),
+        notes: z.string().optional(),
+        createdAt: z.string(),
+      })
+    )
+    .optional(),
+  expenses: z
+    .array(
+      z.object({
+        id: z.string(),
+        date: z.string(),
+        description: z.string(),
+        category: expenseCategorySchema,
+        amount: z.number(),
+        currency: fiatCurrencySchema,
+        amountInBaseCurrency: z.number(),
+        paymentMethodId: z.string(),
+        isRecurring: z.boolean(),
+        recurringId: z.string().optional(),
+        notes: z.string().optional(),
+        tags: z.array(z.string()).optional(),
+        createdAt: z.string(),
+        updatedAt: z.string(),
+      })
+    )
+    .optional(),
+  recurringExpenses: z
+    .array(
+      z.object({
+        id: z.string(),
+        description: z.string(),
+        category: expenseCategorySchema,
+        amount: z.number(),
+        currency: currencySchema.exclude(['XAU']),
+        paymentMethodId: z.string(),
+        dayOfMonth: z.number().int().min(1).max(31),
+        isActive: z.boolean(),
+        notes: z.string().optional(),
+      })
+    )
+    .optional(),
+  budgetCategories: z
+    .array(
+      z.object({
+        category: expenseCategorySchema,
+        budgetedAmount: z.number(),
+        currency: fiatCurrencySchema,
+        percentOfIncome: z.number().min(0).max(100).nullable().optional(),
+        notes: z.string().optional(),
+      })
+    )
+    .optional(),
+  savingsHoldings: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        bucket: z.enum(['liquid', 'investment']),
+        subtype: z.enum(['bank', 'cash', 'gold', 'stocks', 'crypto', 'real_estate', 'other']),
+        amount: z.number(),
+        currency: fiatCurrencySchema,
+        notes: z.string().optional(),
+        asOfDate: z.string().optional(),
+        createdAt: z.string(),
+        updatedAt: z.string(),
+      })
+    )
+    .optional(),
+  paymentMethods: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        type: paymentMethodTypeSchema,
+        currency: fiatCurrencySchema,
+        color: z.string().optional(),
+        icon: z.string().optional(),
+        last4: z.string().optional(),
+        isDefault: z.boolean(),
+      })
+    )
+    .optional(),
+  debts: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        person: z.string(),
+        startingBalance: z.number(),
+        currency: currencySchema,
+        isGold: z.boolean(),
+        goldKarat: z.union([z.literal(24), z.literal(22), z.literal(21), z.literal(18)]).optional(),
+        description: z.string().optional(),
+        notes: z.string().optional(),
+        createdAt: z.string(),
+      })
+    )
+    .optional(),
+  debtPayments: z
+    .array(
+      z.object({
+        id: z.string(),
+        debtId: z.string(),
+        date: z.string(),
+        amountPaid: z.number(),
+        paymentCurrency: z.string().optional(),
+        originalAmount: z.number().optional(),
+        amountInPrimary: z.number().optional(),
+        rateAtEntry: z.number().optional(),
+        notes: z.string().optional(),
+        createdAt: z.string(),
+      })
+    )
+    .optional(),
+})

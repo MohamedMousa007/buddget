@@ -1,0 +1,90 @@
+'use client'
+
+import Link from 'next/link'
+import { useShallow } from 'zustand/react/shallow'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import {
+  calculateDebtRemaining,
+  goldGramsToMoney,
+} from '@/lib/utils/calculations'
+import { convertCurrency } from '@/lib/utils/currency'
+import { MoneyDisplay } from '@/components/ui/MoneyDisplay'
+
+export function DebtSnapshot() {
+  const { debts, debtPayments, settings, exchangeRates, goldPricePerGram } = useFinanceStore(
+    useShallow((s) => ({
+      debts: s.debts,
+      debtPayments: s.debtPayments,
+      settings: s.settings,
+      exchangeRates: s.exchangeRates,
+      goldPricePerGram: s.goldPricePerGram,
+    }))
+  )
+  const base = settings.baseCurrency
+
+  if (debts.length === 0) return null
+
+  return (
+    <div className="space-y-3">
+      <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
+        Debt Snapshot
+      </h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {debts.map((debt) => {
+          const remainingRaw = calculateDebtRemaining(debt, debtPayments)
+          const remainingInBase = debt.isGold
+            ? goldGramsToMoney(remainingRaw, goldPricePerGram, debt.goldKarat)
+            : convertCurrency(remainingRaw, debt.currency, base, exchangeRates)
+
+          const paymentsCount = debtPayments.filter((p) => p.debtId === debt.id).length
+          const progressPercent = debt.startingBalance > 0
+            ? ((debt.startingBalance - remainingRaw) / debt.startingBalance) * 100
+            : 0
+
+          return (
+            <Link href="/debts" key={debt.id}>
+              <div className="glass-card rounded-2xl p-4 hover:bg-[var(--color-brand-elevated)] transition-colors cursor-pointer">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-base">{debt.isGold ? '🪙' : '💵'}</span>
+                  <h4 className="text-sm font-medium text-white">{debt.name}</h4>
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase ${
+                    debt.isGold
+                      ? 'bg-[var(--color-brand-gold)]/20 text-[var(--color-brand-gold)]'
+                      : 'bg-[var(--color-brand-green)]/20 text-[var(--color-brand-green)]'
+                  }`}>
+                    {debt.isGold ? `${debt.goldKarat || 24}K` : 'Cash'}
+                  </span>
+                </div>
+
+                <MoneyDisplay
+                  amount={remainingRaw}
+                  currency={debt.isGold ? 'XAU' : debt.currency}
+                  amountInPrimary={remainingInBase}
+                  variant="card"
+                  primaryClassName="text-lg font-bold text-white"
+                />
+
+                {debt.isGold && (
+                  <p className="text-xs text-[var(--color-brand-gold)] font-mono-numbers">
+                    {remainingRaw.toFixed(1)}g × {debt.goldKarat || 24}K
+                  </p>
+                )}
+
+                <div className="mt-2 h-1.5 bg-[var(--color-brand-border)] rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-[var(--color-brand-red)]"
+                    style={{ width: `${Math.min(progressPercent, 100)}%` }}
+                  />
+                </div>
+
+                <p className="text-xs text-[var(--color-brand-text-muted)] mt-2">
+                  {paymentsCount} payment{paymentsCount !== 1 ? 's' : ''} made
+                </p>
+              </div>
+            </Link>
+          )
+        })}
+      </div>
+    </div>
+  )
+}

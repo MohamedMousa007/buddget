@@ -1,0 +1,75 @@
+# Deploy Buddget to Vercel (exact steps)
+
+## Before you push
+
+1. **Build passes locally**
+   ```bash
+   cd buddget   # or stay here if your shell is already in this folder
+   npm ci
+   npm run build
+   ```
+2. **Secrets stay out of git** — `.env.local` is gitignored. Never commit API keys.
+
+## 1. Push to GitHub
+
+If this folder is already a git repo:
+
+```bash
+cd buddget
+git status
+git add -A
+git commit -m "chore: ship Buddget for Vercel"
+git branch -M main
+```
+
+**First time — add remote:**
+
+```bash
+git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO.git
+git push -u origin main
+```
+
+**Already have `origin`:**
+
+```bash
+git push origin main
+```
+
+> If your GitHub repo should contain the **parent** folder (e.g. `Budget Manager/`) with `buddget/` inside, initialize git at that parent level instead and set Vercel **Root Directory** to `buddget` (see below).
+
+## 2. Create the Vercel project
+
+1. Go to [vercel.com](https://vercel.com) → sign in with GitHub.
+2. **Add New…** → **Project** → import the repo that contains this app.
+3. **Root Directory**
+   - If the repo root **is** this Next app → leave **`.`** (default).
+   - If the app lives in a subfolder → set **Root Directory** to **`buddget`**.
+4. **Framework Preset:** Next.js (auto).
+5. **Build Command:** `npm run build` (default — uses `next build --webpack` from `package.json`).
+6. **Install Command:** `npm install` or `npm ci` (Vercel default is fine).
+7. Click **Deploy**.
+
+## 3. Environment variables (Vercel dashboard)
+
+**Project → Settings → Environment Variables** (add for *Production* at minimum):
+
+| Name | Notes |
+|------|--------|
+| `GEMINI_API_KEY` | Required for `/api/ai`. Get a key from [Google AI Studio](https://aistudio.google.com/apikey). |
+| `ADMIN_PIN` | PIN for `/admin` (choose a strong value). |
+| `NEXT_PUBLIC_APP_URL` | Your live URL, e.g. `https://your-app.vercel.app` |
+
+Redeploy after changing env vars (**Deployments → … → Redeploy**).
+
+## 4. Smoke checks after deploy
+
+Open your production URL:
+
+- `/` loads.
+- `/manifest.json` returns JSON.
+- `/icons/icon-192.png` returns **200** (not 404).
+- **Safari (iPhone):** Share → **Add to Home Screen** for PWA.
+
+## 5. Optional: custom domain
+
+**Project → Settings → Domains** → add your domain and follow DNS instructions.

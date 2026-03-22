@@ -1,0 +1,270 @@
+import {
+  startOfMonth,
+  endOfMonth,
+  parseISO,
+  isWithinInterval,
+  getDaysInMonth,
+  differenceInDays,
+  subDays,
+  eachMonthOfInterval,
+} from 'date-fns'
+import type { Expense, IncomeSource, BudgetCategory, Debt, DebtPayment, Currency, GoldKarat, AppSettings, SavingsHolding } from '@/lib/store/types'
+import { convertCurrency } from './currency'
+
+export function getMonthRange(monthStr: string, monthStartDay = 1): { start: Date; end: Date } {
+  const date = parseISO(monthStr + '-01')
+  if (monthStartDay <= 1) {
+    return {
+      start: startOfMonth(date),
+      end: endOfMonth(date),
+    }
+  }
+
+  const year = date.getFullYear()
+  const month = date.getMonth()
+  const start = new Date(year, month, monthStartDay)
+  const nextCycleStart = new Date(year, month + 1, monthStartDay)
+
+  return {
+    start,
+    end: subDays(nextCycleStart, 1),
+  }
+}
+
+export function filterExpensesByMonth(expenses: Expense[], monthStr: string, monthStartDay = 1): Expense[] {
+  const { start, end } = getMonthRange(monthStr, monthStartDay)
+  return expenses.filter((e) => {
+    const date = parseISO(e.date)
+    return isWithinInterval(date, { start, end })
+  })
+}
+
+export function calculateMonthlyIncome(
+  sources: IncomeSource[],
+  baseCurrency: Currency,
+  rates: Record<string, number>
+): number {
+  return sources.reduce((total, source) => {
+    if (!source.isRecurring) return total
+    return total + convertCurrency(source.amount, source.currency, baseCurrency, rates)
+  }, 0)
+}
+
+/**
+ * Recurring income that counts for a calendar month: sources that existed by the end of that month.
+ * (New income sources added mid-timeline do not inflate earlier months.)
+ */
+export function calculateRecurringIncomeForCalendarMonth(
+  sources: IncomeSource[],
+  baseCurrency: Currency,
+  rates: Record<string, number>,
+  /** Any date falling inside the target month */
+  monthDate: Date
+): number {
+  const monthEnd = endOfMonth(monthDate)
+  return sources.reduce((total, source) => {
+    if (!source.isRecurring) return total
+    if (parseISO(source.createdAt) > monthEnd) return total
+    return total + convertCurrency(source.amount, source.currency, baseCurrency, rates)
+  }, 0)
+}
+
+/**
+ * Sum of recurring monthly income for each calendar month that overlaps [rangeStart, rangeEnd].
+ * Full month amount is counted for any month with at least one day in range (no proration).
+ */
+export function sumRecurringIncomeOverDateRange(
+  sources: IncomeSource[],
+  baseCurrency: Currency,
+  rates: Record<string, number>,
+  rangeStart: Date,
+  rangeEnd: Date
+): number {
+  const from = startOfMonth(rangeStart)
+  const to = startOfMonth(rangeEnd)
+  let sum = 0
+  for (const monthStart of eachMonthOfInterval({ start: from, end: to })) {
+    const monthEnd = endOfMonth(monthStart)
+    const overlaps = monthEnd >= rangeStart && monthStart <= rangeEnd
+    if (!overlaps) continue
+    sum += calculateRecurringIncomeForCalendarMonth(sources, baseCurrency, rates, monthStart)
+  }
+  return sum
+}
+
+export function calculateTotalSpent(expenses: Expense[]): number {
+  return expenses.reduce((total, e) => total + e.amountInBaseCurrency, 0)
+}
+
+export function calculateCategorySpending(
+  expenses: Expense[]
+): Record<string, number> {
+  const spending: Record<string, number> = {}
+  for (const expense of expenses) {
+    spending[expense.category] = (spending[expense.category] || 0) + expense.amountInBaseCurrency
+  }
+  return spending
+}
+
+export function effectiveCategoryBudget(
+  b: BudgetCategory,
+  settings: AppSettings,
+  monthlyIncomeInBase: number
+): number {
+  const mode = settings.budgetEntryMode ?? 'amount'
+  if (mode === 'percent_of_income' && monthlyIncomeInBase > 0) {
+    const pct = b.percentOfIncome
+    if (pct != null && !Number.isNaN(pct)) {
+      return (pct / 100) * monthlyIncomeInBase
+    }
+  }
+  return b.budgetedAmount
+}
+
+export function calculateTotalBudget(
+  budgetCategories: BudgetCategory[],
+  settings: AppSettings,
+  monthlyIncomeInBase: number
+): number {
+  return budgetCategories.reduce(
+    (total, b) => total + effectiveCategoryBudget(b, settings, monthlyIncomeInBase),
+    0
+  )
+}
+
+export function totalSavingsHoldingsInBase(
+  holdings: Pick<SavingsHolding, 'amount' | 'currency'>[],
+  baseCurrency: Currency,
+  rates: Record<string, number>
+): number {
+  return holdings.reduce(
+    (sum, h) => sum + convertCurrency(h.amount, h.currency, baseCurrency, rates),
+    0
+  )
+}
+
+export function totalDebtRemainingInBase(
+  debts: Debt[],
+  debtPayments: DebtPayment[],
+  baseCurrency: Currency,
+  rates: Record<string, number>,
+  goldPricePerGram: number
+): number {
+  let total = 0
+  for (const debt of debts) {
+    const remaining = calculateDebtRemaining(debt, debtPayments)
+    total += calculateDebtRemainingInBaseCurrency(
+      remaining,
+      debt,
+      baseCurrency,
+      rates,
+      goldPricePerGram
+    )
+  }
+  return total
+}
+
+export function calculateBudgetUsedPercent(totalSpent: number, totalBudget: number): number {
+  if (totalBudget === 0) return 0
+  return (totalSpent / totalBudget) * 100
+}
+
+export function calculateDaysLeftInMonth(monthStr: string, monthStartDay = 1): number {
+  const { end } = getMonthRange(monthStr, monthStartDay)
+  const today = new Date()
+  const diff = differenceInDays(end, today)
+  return Math.max(0, diff + 1)
+}
+
+export function getDaysInSelectedMonth(monthStr: string): number {
+  const date = parseISO(monthStr + '-01')
+  return getDaysInMonth(date)
+}
+
+export function goldPurityFactor(karat: GoldKarat = 24): number {
+  return karat / 24
+}
+
+export function goldGramsToMoney(
+  grams: number,
+  pricePerGram24k: number,
+  karat: GoldKarat = 24
+): number {
+  return grams * pricePerGram24k * goldPurityFactor(karat)
+}
+
+export function moneyToGoldGrams(
+  amount: number,
+  pricePerGram24k: number,
+  karat: GoldKarat = 24
+): number {
+  const pricePerGramKarat = pricePerGram24k * goldPurityFactor(karat)
+  if (pricePerGramKarat <= 0) return 0
+  return amount / pricePerGramKarat
+}
+
+export function convertPaymentToDebtUnit(
+  paymentAmount: number,
+  paymentCurrency: string,
+  debt: Debt,
+  baseCurrency: Currency,
+  rates: Record<string, number>,
+  goldPricePerGram: number
+): number {
+  if (debt.isGold) {
+    const amountInBase = convertCurrency(paymentAmount, paymentCurrency, baseCurrency, rates)
+    return moneyToGoldGrams(amountInBase, goldPricePerGram, debt.goldKarat)
+  }
+  return convertCurrency(paymentAmount, paymentCurrency, debt.currency, rates)
+}
+
+export function calculateDebtRemaining(
+  debt: Debt,
+  payments: DebtPayment[]
+): number {
+  const totalPaid = payments
+    .filter((p) => p.debtId === debt.id)
+    .reduce((sum, p) => sum + p.amountPaid, 0)
+  return debt.startingBalance - totalPaid
+}
+
+export function calculateDebtRemainingInBaseCurrency(
+  remaining: number,
+  debt: Debt,
+  baseCurrency: Currency,
+  rates: Record<string, number>,
+  goldPricePerGram: number
+): number {
+  if (debt.isGold) {
+    return goldGramsToMoney(remaining, goldPricePerGram, debt.goldKarat)
+  }
+  return convertCurrency(remaining, debt.currency, baseCurrency, rates)
+}
+
+export function calculateSavingsTotal(
+  expenses: Expense[]
+): number {
+  return expenses
+    .filter((e) => e.category === 'Savings')
+    .reduce((total, e) => total + e.amountInBaseCurrency, 0)
+}
+
+export function getPaymentMethodBreakdown(
+  expenses: Expense[],
+  paymentMethods: { id: string; name: string }[]
+): { name: string; count: number; total: number }[] {
+  const breakdown: Record<string, { count: number; total: number }> = {}
+
+  for (const expense of expenses) {
+    const method = paymentMethods.find((m) => m.id === expense.paymentMethodId)
+    const name = method?.name || 'Unknown'
+    if (!breakdown[name]) breakdown[name] = { count: 0, total: 0 }
+    breakdown[name].count++
+    breakdown[name].total += expense.amountInBaseCurrency
+  }
+
+  return Object.entries(breakdown).map(([name, data]) => ({
+    name,
+    ...data,
+  }))
+}
