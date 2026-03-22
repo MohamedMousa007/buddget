@@ -30,9 +30,15 @@ function LoginInner() {
       return
     }
     setLoading(true)
+    const origin = typeof window !== 'undefined' ? window.location.origin : ''
+    const safeNext = next.startsWith('/') && !next.startsWith('//') ? next : '/'
     const { error: e } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { shouldCreateUser: true },
+      options: {
+        shouldCreateUser: true,
+        /** Magic link in the email must point here so the link works on production (also set Site URL + Redirect URLs in Supabase). */
+        emailRedirectTo: origin ? `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}` : undefined,
+      },
     })
     setLoading(false)
     if (e) {
@@ -40,7 +46,9 @@ function LoginInner() {
       return
     }
     setPhase('otp')
-    setMessage('Check your email for a 6-digit code.')
+    setMessage(
+      'Check your email: use the 6-digit code below, or tap “Confirm” / the link in the email (it must open in this browser).'
+    )
   }
 
   const verifyOtp = async () => {

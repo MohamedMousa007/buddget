@@ -77,7 +77,7 @@ git push origin main
 
 Redeploy after changing env vars (**Deployments → … → Redeploy**).
 
-**Supabase Auth (production):** In Supabase → **Authentication → URL configuration**, set **Site URL** to your Vercel URL and add that URL under **Redirect URLs** (e.g. `https://your-app.vercel.app/**`).
+**Supabase Auth (production):** In Supabase → **Authentication → URL configuration**, set **Site URL** to your Vercel URL (exact origin, no path). Under **Redirect URLs**, add `https://your-app.vercel.app/**` so email **magic links** to `/auth/callback` work. If the link opens but auth fails, the Site URL or redirect allowlist usually does not match the deployed origin. Email OTP codes still work without the link; see [`supabase/README.md`](../supabase/README.md) for template notes (`{{ .Token }}`).
 
 **Admin:** `/admin` requires a **signed-in Buddget user** (middleware) **and** the **ADMIN_PIN** in the app/API. Anonymous visitors cannot open the admin screen.
 

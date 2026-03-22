@@ -23,8 +23,9 @@ Personal finance app (Next.js): expenses, income, budgets, debts, savings, repor
 
 ## Docs
 
-- **Vercel + Git — step-by-step:** [`docs/VERCEL_DEPLOY.md`](docs/VERCEL_DEPLOY.md)  
-- **Verify checklist:** [`docs/CURSOR_VERIFY_AND_DEPLOY.md`](docs/CURSOR_VERIFY_AND_DEPLOY.md)  
+- **Index:** [`docs/README.md`](docs/README.md) — links to all project docs  
+- **Vercel deploy:** [`docs/VERCEL_DEPLOY.md`](docs/VERCEL_DEPLOY.md)  
+- **Development & checklist:** [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)  
 - **Next.js:** [nextjs.org/docs](https://nextjs.org/docs)
 
 ## Deploy (Vercel)

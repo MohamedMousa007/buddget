@@ -10,8 +10,8 @@ import {
 } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js'
-import { SupabaseFinanceSync } from '@/components/auth/SupabaseFinanceSync'
-import { AnalyticsHeartbeat } from '@/components/auth/AnalyticsHeartbeat'
+import { SupabaseFinanceSync } from '@/components/sync/SupabaseFinanceSync'
+import { AnalyticsHeartbeat } from '@/components/sync/AnalyticsHeartbeat'
 
 type AuthContextValue = {
   user: User | null

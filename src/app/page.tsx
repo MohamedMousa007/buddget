@@ -14,8 +14,9 @@ import { RecentExpenses } from '@/components/dashboard/RecentExpenses'
 import { SavingsCard } from '@/components/dashboard/SavingsCard'
 import { DebtSnapshot } from '@/components/dashboard/DebtSnapshot'
 import { QuickAddFAB } from '@/components/modals/QuickAddFAB'
-import { BarChart3, Bell, User } from 'lucide-react'
+import { BarChart3, Bell } from 'lucide-react'
 import Link from 'next/link'
+import { AuthNavButtons } from '@/components/layout/AuthNavButtons'
 import { useRouter } from 'next/navigation'
 import { MonthYearPicker } from '@/components/ui/MonthYearPicker'
 import { PAGE_HEADER_SURFACE_CLASS } from '@/components/layout/PageHeader'
@@ -71,16 +72,15 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button className="p-2 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            <button
+              type="button"
+              className="p-2 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors"
+              aria-label="Notifications"
+            >
               <Bell className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
             </button>
-            <Link
-              href="/settings"
-              className="p-2 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors"
-            >
-              <User className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
-            </Link>
+            <AuthNavButtons />
           </div>
         </div>
       </header>

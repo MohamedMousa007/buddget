@@ -78,10 +78,19 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!user) {
-    const url = request.nextUrl.clone()
-    url.pathname = LOGIN_PATH
-    url.searchParams.set('next', pathname + (request.nextUrl.search || ''))
-    return NextResponse.redirect(url)
+    if (isAdmin) {
+      const url = request.nextUrl.clone()
+      url.pathname = LOGIN_PATH
+      url.searchParams.set('next', pathname + (request.nextUrl.search || ''))
+      return NextResponse.redirect(url)
+    }
+    if (isOnboarding) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/'
+      url.search = ''
+      return NextResponse.redirect(url)
+    }
+    return supabaseResponse
   }
 
   // /admin requires a signed-in account (PIN still required inside the app / APIs)

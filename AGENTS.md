@@ -1,5 +1,9 @@
 <!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
+# Next.js in this repo
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+This project uses **Next.js 16** (App Router). APIs and conventions may differ from older training cutoffs. Before changing routing, `next.config`, or data fetching, read the installed docs under `node_modules/next/dist/docs/` or [nextjs.org/docs](https://nextjs.org/docs). Follow deprecation notices.
+
+**Project docs:** [`docs/README.md`](docs/README.md) — deploy, development checklist, Supabase.
+
+**Stack notes:** Production build must use `next build --webpack` (see `package.json`) because `next-pwa` hooks into webpack. Dev uses the same for consistency.
 <!-- END:nextjs-agent-rules -->

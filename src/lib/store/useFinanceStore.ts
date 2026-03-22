@@ -2,97 +2,22 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import { importDataSchema } from './financeImportSchema'
-import type {
-  FinanceStore,
-  PaymentMethod,
-  Debt,
-  BudgetCategory,
-  IncomeSource,
-  AppSettings,
-  UserProfile,
-} from './types'
+import {
+  DEFAULT_BUDGET,
+  DEFAULT_DEBTS,
+  DEFAULT_GOLD_PRICE_PER_GRAM,
+  DEFAULT_INCOME,
+  DEFAULT_MARKET_RATES,
+  DEFAULT_PAYMENT_METHODS,
+  DEFAULT_PROFILE,
+  DEFAULT_SETTINGS,
+} from './defaultFinanceData'
+import type { FinanceStore } from './types'
+
+const PERSIST_VERSION = 2
 
 function generateId(): string {
   return `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
-}
-
-const DEFAULT_PAYMENT_METHODS: PaymentMethod[] = [
-  { id: 'pm_1', name: 'Silver Nol', type: 'nol', currency: 'AED', color: '#C0C0C0', isDefault: false },
-  { id: 'pm_2', name: 'Gold Nol', type: 'nol', currency: 'AED', color: '#F5C842', isDefault: false },
-  { id: 'pm_3', name: 'Bank Transfer', type: 'bank_transfer', currency: 'AED', color: '#1DB954', isDefault: true },
-  { id: 'pm_4', name: 'Cash', type: 'cash', currency: 'AED', color: '#FFFFFF', isDefault: false },
-]
-
-const DEFAULT_DEBTS: Debt[] = [
-  {
-    id: 'debt_1',
-    name: "Mom's Debt",
-    person: 'Mom',
-    startingBalance: 250000,
-    currency: 'EGP',
-    isGold: false,
-    createdAt: '2024-01-01T00:00:00.000Z',
-  },
-  {
-    id: 'debt_2',
-    name: "Dad's Gold Debt",
-    person: 'Dad',
-    startingBalance: 50,
-    currency: 'XAU',
-    isGold: true,
-    goldKarat: 24,
-    createdAt: '2024-01-01T00:00:00.000Z',
-  },
-]
-
-const DEFAULT_BUDGET: BudgetCategory[] = [
-  { category: 'Rent', budgetedAmount: 3500, currency: 'AED' },
-  { category: 'Transport', budgetedAmount: 800, currency: 'AED' },
-  { category: 'Food', budgetedAmount: 1200, currency: 'AED' },
-  { category: 'Enjoyment', budgetedAmount: 600, currency: 'AED' },
-  { category: 'Savings', budgetedAmount: 1000, currency: 'AED' },
-  { category: 'Debt', budgetedAmount: 500, currency: 'AED' },
-]
-
-const DEFAULT_INCOME: IncomeSource[] = [
-  {
-    id: 'inc_1',
-    name: 'Bask Health',
-    amount: 2000,
-    currency: 'USD',
-    isRecurring: true,
-    dayOfMonth: 1,
-    createdAt: '2024-01-01T00:00:00.000Z',
-  },
-  {
-    id: 'inc_2',
-    name: 'Omnispay',
-    amount: 3000,
-    currency: 'AED',
-    isRecurring: true,
-    dayOfMonth: 1,
-    createdAt: '2024-01-01T00:00:00.000Z',
-  },
-]
-
-const DEFAULT_SETTINGS: AppSettings = {
-  baseCurrency: 'AED',
-  secondaryCurrency: 'EGP',
-  showSecondaryCurrency: true,
-  theme: 'dark',
-  language: 'en',
-  showCentsInDashboard: true,
-  monthStartDay: 1,
-  budgetEntryMode: 'amount',
-  enableAI: false,
-  aiProvider: 'gemini',
-}
-
-const DEFAULT_PROFILE: UserProfile = {
-  id: 'user_1',
-  name: 'Mohamed',
-  baseCurrency: 'AED',
-  createdAt: new Date().toISOString(),
 }
 
 export const useFinanceStore = create<FinanceStore>()(
@@ -108,8 +33,8 @@ export const useFinanceStore = create<FinanceStore>()(
       paymentMethods: DEFAULT_PAYMENT_METHODS,
       debts: DEFAULT_DEBTS,
       debtPayments: [],
-      exchangeRates: { USD_AED: 3.6725, EGP_AED: 0.0731, EUR_AED: 4.02, GBP_AED: 4.65, SAR_AED: 0.98 },
-      goldPricePerGram: 349.80,
+      exchangeRates: { ...DEFAULT_MARKET_RATES },
+      goldPricePerGram: DEFAULT_GOLD_PRICE_PER_GRAM,
       lastRatesFetch: null,
 
       addExpense: (expense) => {
@@ -368,13 +293,37 @@ export const useFinanceStore = create<FinanceStore>()(
           paymentMethods: DEFAULT_PAYMENT_METHODS,
           debts: DEFAULT_DEBTS,
           debtPayments: [],
-          exchangeRates: { USD_AED: 3.6725, EGP_AED: 0.0731, EUR_AED: 4.02, GBP_AED: 4.65, SAR_AED: 0.98 },
-          goldPricePerGram: 349.80,
+          exchangeRates: { ...DEFAULT_MARKET_RATES },
+          goldPricePerGram: DEFAULT_GOLD_PRICE_PER_GRAM,
           lastRatesFetch: null,
         }),
     }),
     {
       name: 'buddget-storage',
+      version: PERSIST_VERSION,
+      migrate: (persistedState, fromVersion) => {
+        if (fromVersion >= PERSIST_VERSION) return persistedState as never
+        const p =
+          persistedState && typeof persistedState === 'object'
+            ? (persistedState as Record<string, unknown>)
+            : {}
+        return {
+          ...p,
+          profile: DEFAULT_PROFILE,
+          settings: DEFAULT_SETTINGS,
+          incomeSources: [],
+          expenses: [],
+          recurringExpenses: [],
+          budgetCategories: DEFAULT_BUDGET,
+          savingsHoldings: [],
+          paymentMethods: DEFAULT_PAYMENT_METHODS,
+          debts: [],
+          debtPayments: [],
+          exchangeRates: { ...DEFAULT_MARKET_RATES },
+          goldPricePerGram: DEFAULT_GOLD_PRICE_PER_GRAM,
+          lastRatesFetch: null,
+        } as never
+      },
       storage: createJSONStorage(() => localStorage),
       merge: (persisted, current) => {
         const p = persisted as Partial<typeof current>
