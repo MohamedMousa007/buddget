@@ -7,15 +7,19 @@
    1. [`migrations/001_init_auth_finance_analytics.sql`](./migrations/001_init_auth_finance_analytics.sql)  
    2. If you previously ran an older `001` without analytics rate limiting, also run [`migrations/002_analytics_insert_rate_limit.sql`](./migrations/002_analytics_insert_rate_limit.sql) (safe to run even on a fresh DB).
 
-4. Under **Authentication → Providers**, enable **Email** and your passwordless method (OTP / magic link).
+4. Under **Authentication → Providers → Email**:
+   - Turn **Email** on.
+   - Enable **email + password** (users create a password in Buddget; there is no passwordless / magic-link login in the app).
+   - If you use **Confirm email**, new users enter the **6-digit code** on the login screen (`verifyOtp` with type `signup`). Disable or avoid relying on magic links for signup confirmation — see templates below.
 
 5. Under **Authentication → URL configuration**:
-   - **Site URL:** your real app origin (e.g. `https://your-app.vercel.app`). This must match where users open the app, or confirmation links will fail or open the wrong host.
-   - **Redirect URLs:** add both:
-     - `http://localhost:3000/**` (dev)
-     - `https://your-app.vercel.app/**` (production)  
-     The app sends magic links to **`/auth/callback`** with a `next` query (see `signInWithOtp` in `src/app/login/page.tsx`). Those URLs must be allowed here.
+   - **Site URL:** your real app origin (e.g. `https://your-app.vercel.app`).
+   - **Redirect URLs:** include `http://localhost:3000/**` and `https://your-app.vercel.app/**`.  
+   **`/auth/callback`** is still used for **password recovery** (Supabase sends a reset link by default) and any OAuth flows you add later.
 
-6. **Email templates (OTP + link):** Buddget uses `signInWithOtp`, so users get a **6-digit code** and often a **confirmation link** in the same email. In **Authentication → Email Templates**, ensure the template includes `{{ .Token }}` so the code is visible. If the link returns an error, double-check **Site URL**, **Redirect URLs**, and that you’re opening the link on the same environment (production vs localhost).
+6. **Email templates (OTP, not magic link for signup):**  
+   - Edit the **Confirm signup** (and related) templates so they emphasize **`{{ .Token }}`** and remove or hide magic-link CTAs if you do not want links.  
+   - Buddget does **not** call `signInWithOtp` for login — only **email + password** for sign-in, and **OTP** only when the user must confirm their email after **Create account**.  
+   - **Forgot password** uses Supabase’s recovery email, which typically still contains a **link** (Supabase limitation); that link should open your app and hit `/auth/callback` if you keep the default redirect.
 
 After that, sign-in, onboarding, cloud sync, analytics, and admin survey tools will work against your project.
