@@ -6,6 +6,7 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import {
   calculateDebtRemaining,
   goldGramsToMoney,
+  isDebtFullyPaid,
 } from '@/lib/utils/calculations'
 import { convertCurrency } from '@/lib/utils/currency'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -23,6 +24,7 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
   const { settings, exchangeRates, goldPricePerGram } = useFinanceStore()
   const base = settings.baseCurrency
 
+  const paidOff = isDebtFullyPaid(debt, payments)
   const remainingRaw = calculateDebtRemaining(debt, payments)
 
   const startingInBase = debt.isGold
@@ -51,6 +53,11 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
             }`}>
               {debt.isGold ? `Gold ${debt.goldKarat || 24}K` : 'Cash'}
             </span>
+            {paidOff ? (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 bg-[var(--color-brand-green)]/25 text-[var(--color-brand-green)]">
+                Paid off
+              </span>
+            ) : null}
           </div>
           <p className="text-xs text-[var(--color-brand-text-muted)]">
             Owed to {debt.person}
@@ -133,12 +140,19 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
         )}
       </div>
 
-      <button
-        onClick={onRecordPayment}
-        className="w-full mt-4 py-2.5 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-medium transition-colors"
-      >
-        + Record Payment
-      </button>
+      {paidOff ? (
+        <p className="w-full mt-4 py-2.5 rounded-xl border border-[var(--color-brand-border)] text-center text-sm text-[var(--color-brand-text-muted)]">
+          Fully paid — add payments only if you edit the debt balance
+        </p>
+      ) : (
+        <button
+          type="button"
+          onClick={onRecordPayment}
+          className="w-full mt-4 py-2.5 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-medium transition-colors"
+        >
+          + Record Payment
+        </button>
+      )}
     </div>
   )
 }

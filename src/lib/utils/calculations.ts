@@ -218,14 +218,24 @@ export function convertPaymentToDebtUnit(
   return convertCurrency(paymentAmount, paymentCurrency, debt.currency, rates)
 }
 
-export function calculateDebtRemaining(
-  debt: Debt,
-  payments: DebtPayment[]
-): number {
-  const totalPaid = payments
-    .filter((p) => p.debtId === debt.id)
-    .reduce((sum, p) => sum + p.amountPaid, 0)
-  return debt.startingBalance - totalPaid
+export function totalPaidTowardDebt(debtId: string, payments: DebtPayment[]): number {
+  return payments.filter((p) => p.debtId === debtId).reduce((sum, p) => sum + p.amountPaid, 0)
+}
+
+/** Unclamped balance (can be negative if overpaid). */
+export function calculateDebtRemainingRaw(debt: Debt, payments: DebtPayment[]): number {
+  return debt.startingBalance - totalPaidTowardDebt(debt.id, payments)
+}
+
+const DEBT_PAID_EPS = 1e-6
+
+export function isDebtFullyPaid(debt: Debt, payments: DebtPayment[]): boolean {
+  return calculateDebtRemainingRaw(debt, payments) <= DEBT_PAID_EPS
+}
+
+/** Display / aggregates: never show negative remaining after full payoff. */
+export function calculateDebtRemaining(debt: Debt, payments: DebtPayment[]): number {
+  return Math.max(0, calculateDebtRemainingRaw(debt, payments))
 }
 
 export function calculateDebtRemainingInBaseCurrency(

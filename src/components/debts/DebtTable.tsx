@@ -80,7 +80,7 @@ export function DebtTable({ debt, payments }: DebtTableProps) {
                   )}
                 </td>
                 <td className="py-2.5 px-3 text-sm font-mono-numbers text-white text-right">
-                  {formatCurrency(toBase(payment.remainingAfter), base)}
+                  {formatCurrency(toBase(Math.max(0, payment.remainingAfter)), base)}
                 </td>
                 <td className="py-2.5 px-3 text-sm text-[var(--color-brand-text-muted)] max-w-[200px] truncate">
                   {payment.notes || '–'}

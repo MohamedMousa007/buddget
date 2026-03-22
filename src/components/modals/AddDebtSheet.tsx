@@ -1,12 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useEscapeClose } from '@/lib/hooks/useEscapeClose'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { X } from 'lucide-react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { convertPaymentToDebtUnit, goldGramsToMoney, moneyToGoldGrams } from '@/lib/utils/calculations'
+import {
+  convertPaymentToDebtUnit,
+  goldGramsToMoney,
+  moneyToGoldGrams,
+  calculateDebtRemainingRaw,
+  isDebtFullyPaid,
+} from '@/lib/utils/calculations'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { Input } from '@/components/ui/input'
@@ -18,7 +24,17 @@ import type { DebtCurrency, GoldKarat } from '@/lib/store/types'
 
 export function AddDebtSheet() {
   const store = useFinanceStore()
-  const { addDebt, addDebtPayment, addExpense, debts, paymentMethods, settings, exchangeRates, goldPricePerGram } = store
+  const {
+    addDebt,
+    addDebtPayment,
+    addExpense,
+    debts,
+    debtPayments,
+    paymentMethods,
+    settings,
+    exchangeRates,
+    goldPricePerGram,
+  } = store
   const {
     activeModal,
     setActiveModal,
@@ -49,7 +65,13 @@ export function AddDebtSheet() {
   )
   const [paymentRateError, setPaymentRateError] = useState('')
 
+  const payableDebts = useMemo(
+    () => debts.filter((d) => !isDebtFullyPaid(d, debtPayments)),
+    [debts, debtPayments]
+  )
+
   const selectedDebt = debts.find((d) => d.id === selectedDebtId)
+  const selectedPayable = payableDebts.find((d) => d.id === selectedDebtId)
 
   const closeSheet = () => {
     resetDebtSheetIntent()
@@ -65,6 +87,18 @@ export function AddDebtSheet() {
     }
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [debts, selectedDebtId])
+
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- avoid selecting a paid-off debt for payments */
+    if (!isOpen) return
+    if (mode !== 'payment' && !debtSheetPaymentOnly) return
+    if (payableDebts.length === 0) return
+    const sel = debts.find((d) => d.id === selectedDebtId)
+    if (!sel || isDebtFullyPaid(sel, debtPayments)) {
+      setSelectedDebtId(payableDebts[0].id)
+    }
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [isOpen, mode, debtSheetPaymentOnly, debts, debtPayments, payableDebts, selectedDebtId])
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- sync tab/debt when opening from Record Payment */
@@ -120,6 +154,11 @@ export function AddDebtSheet() {
 
     setPaymentRateError('')
 
+    if (isDebtFullyPaid(selectedDebt, debtPayments)) {
+      setPaymentRateError('This debt is already paid off. Edit the debt if the balance changed.')
+      return
+    }
+
     let amountInBase: number
     let amountInDebtUnit: number
 
@@ -161,6 +200,15 @@ export function AddDebtSheet() {
     }
 
     const rateAtEntry = amount > 0 ? amountInBase / amount : 1
+
+    const remainingRaw = calculateDebtRemainingRaw(selectedDebt, debtPayments)
+    if (amountInDebtUnit > remainingRaw + 1e-6) {
+      const unit = selectedDebt.isGold ? 'g' : selectedDebt.currency
+      setPaymentRateError(
+        `This payment is more than the remaining balance (${remainingRaw.toFixed(2)} ${unit}).`
+      )
+      return
+    }
 
     addDebtPayment({
       debtId: selectedDebtId,
@@ -374,14 +422,20 @@ export function AddDebtSheet() {
                 </div>
               ) : (
                 <div className="space-y-4">
+                  {payableDebts.length === 0 ? (
+                    <p className="text-sm text-[var(--color-brand-text-muted)] py-2">
+                      All debts are paid off. You can add a new debt or edit an existing one if the balance changed.
+                    </p>
+                  ) : (
+                    <>
                   <div>
                     <Label className="text-xs text-[var(--color-brand-text-secondary)]">Select Debt</Label>
                     <select
-                      value={selectedDebtId}
+                      value={selectedPayable ? selectedDebtId : payableDebts[0]?.id ?? ''}
                       onChange={(e) => setSelectedDebtId(e.target.value)}
                       className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
                     >
-                      {debts.map((d) => (
+                      {payableDebts.map((d) => (
                         <option key={d.id} value={d.id}>
                           {d.name} {d.isGold ? `(${d.goldKarat}K Gold)` : `(${d.currency})`}
                         </option>
@@ -484,12 +538,14 @@ export function AddDebtSheet() {
                     <button
                       type="button"
                       onClick={handleAddPayment}
-                      disabled={!selectedDebtId || !paymentAmount}
+                      disabled={!selectedDebtId || !paymentAmount || payableDebts.length === 0}
                       className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50"
                     >
                       Record Payment →
                     </button>
                   </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>

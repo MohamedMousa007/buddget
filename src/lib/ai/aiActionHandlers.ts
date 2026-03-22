@@ -1,6 +1,11 @@
 import type { AIAction } from '@/lib/ai/gemini'
 import { tryConvertCurrency } from '@/lib/utils/currency'
-import { calculateMonthlyIncome, moneyToGoldGrams } from '@/lib/utils/calculations'
+import {
+  calculateMonthlyIncome,
+  moneyToGoldGrams,
+  calculateDebtRemainingRaw,
+  isDebtFullyPaid,
+} from '@/lib/utils/calculations'
 import { EXPENSE_CATEGORIES, PAYMENT_METHOD_TYPES } from '@/lib/constants/finance'
 import type {
   Currency,
@@ -9,6 +14,7 @@ import type {
   SavingsBucket,
   SavingsSubtype,
   Debt,
+  DebtPayment,
   IncomeSource,
   PaymentMethod,
   AppSettings,
@@ -65,6 +71,7 @@ export function buildAIActionHandlerContext(store: FinanceStore): AIActionHandle
   return {
     paymentMethods: store.paymentMethods,
     debts: store.debts,
+    debtPayments: store.debtPayments,
     incomeSources: store.incomeSources,
     settings: store.settings,
     exchangeRates: store.exchangeRates,
@@ -82,6 +89,7 @@ export function buildAIActionHandlerContext(store: FinanceStore): AIActionHandle
 export interface AIActionHandlerContext {
   paymentMethods: PaymentMethod[]
   debts: Debt[]
+  debtPayments: DebtPayment[]
   incomeSources: IncomeSource[]
   settings: AppSettings
   exchangeRates: Record<string, number>
@@ -138,6 +146,9 @@ export function validateActionItem(
         searchTerm.includes(x.name.toLowerCase())
     )
     if (!debt) return `No debt matched for "${personOrName}". Check Debts or spelling.`
+    if (isDebtFullyPaid(debt, ctx.debtPayments)) {
+      return `The debt "${debt.name}" is already paid off.`
+    }
     const rawCurrency = String(getField(d, 'currency') || ctx.settings.baseCurrency)
     const paymentCurrency = rawCurrency === 'XAU' ? ctx.settings.baseCurrency : rawCurrency
     const amountInBase = tryConvertCurrency(
@@ -149,7 +160,10 @@ export function validateActionItem(
     if (amountInBase === null) {
       return `Could not convert ${paymentCurrency} to ${ctx.settings.baseCurrency}. Add exchange rates in Settings.`
     }
-    if (!debt.isGold) {
+    let amountInDebtUnit: number
+    if (debt.isGold) {
+      amountInDebtUnit = moneyToGoldGrams(amountInBase, ctx.goldPricePerGram, debt.goldKarat)
+    } else {
       const inDebtUnit = tryConvertCurrency(
         originalAmount,
         paymentCurrency,
@@ -159,6 +173,11 @@ export function validateActionItem(
       if (inDebtUnit === null) {
         return `Could not convert ${paymentCurrency} to debt currency ${debt.currency}.`
       }
+      amountInDebtUnit = inDebtUnit
+    }
+    const remaining = calculateDebtRemainingRaw(debt, ctx.debtPayments)
+    if (amountInDebtUnit > remaining + 1e-6) {
+      return `That payment is more than the remaining balance.`
     }
     return null
   }
@@ -216,7 +235,8 @@ export function executeActionItem(
         x.person.toLowerCase().includes(searchTerm) ||
         searchTerm.includes(x.person.toLowerCase()) ||
         searchTerm.includes(x.name.toLowerCase())
-    )!
+    )
+    if (!debt) return
     const rawCurrency = String(getField(d, 'currency') || ctx.settings.baseCurrency)
     const paymentCurrency = rawCurrency === 'XAU' ? ctx.settings.baseCurrency : rawCurrency
     const dateStr = String(getField(d, 'date') || new Date().toISOString().slice(0, 10))
@@ -238,6 +258,9 @@ export function executeActionItem(
         ctx.exchangeRates
       )!
     }
+    if (isDebtFullyPaid(debt, ctx.debtPayments)) return
+    const remainingExec = calculateDebtRemainingRaw(debt, ctx.debtPayments)
+    if (amountInDebtUnit > remainingExec + 1e-6) return
     ctx.addDebtPayment({
       debtId: debt.id,
       date: dateStr,
