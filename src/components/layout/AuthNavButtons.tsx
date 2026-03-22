@@ -11,20 +11,18 @@ const btnClass =
   'inline-flex items-center justify-center px-2 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors border border-[var(--color-brand-border)] text-white hover:bg-[var(--color-brand-elevated)] sm:px-3'
 
 /**
- * Logged out: Log in + Sign up (both open the email flow) and Settings (local profile).
+ * Logged out: Log in + Sign up (open auth modal) and Settings.
  * Logged in: Settings shortcut (profile).
  */
 export function AuthNavButtons({ className }: { className?: string }) {
   const pathname = usePathname()
-  const { user, loading } = useAuth()
+  const { user, loading, openAuthModal } = useAuth()
 
   const configured = useMemo(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
     return !!(url && key)
   }, [])
-
-  const next = encodeURIComponent(pathname || '/')
 
   if (!configured) {
     return (
@@ -65,17 +63,24 @@ export function AuthNavButtons({ className }: { className?: string }) {
     )
   }
 
+  const nextPath = pathname || '/'
+
   return (
     <div className={cn('flex items-center gap-1.5 sm:gap-2', className)}>
-      <Link href={`/login?next=${next}`} className={btnClass}>
+      <button
+        type="button"
+        onClick={() => openAuthModal(nextPath)}
+        className={btnClass}
+      >
         Log in
-      </Link>
-      <Link
-        href={`/login?next=${next}`}
+      </button>
+      <button
+        type="button"
+        onClick={() => openAuthModal(nextPath)}
         className="inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white transition-colors sm:px-3"
       >
         Sign up
-      </Link>
+      </button>
       <Link
         href="/settings"
         className="p-2 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors"

@@ -215,7 +215,7 @@ export default function OnboardingPage() {
         } = await supabase.auth.getUser()
         if (!user) {
           setFinishing(false)
-          router.replace('/login')
+          router.replace('/')
           return
         }
 

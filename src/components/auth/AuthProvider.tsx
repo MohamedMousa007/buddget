@@ -1,36 +1,31 @@
 'use client'
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
+import { useCallback, useEffect, useMemo, useState, Suspense } from 'react'
+import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js'
+import type { AuthChangeEvent, Session } from '@supabase/supabase-js'
 import { SupabaseFinanceSync } from '@/components/sync/SupabaseFinanceSync'
 import { AnalyticsHeartbeat } from '@/components/sync/AnalyticsHeartbeat'
-
-type AuthContextValue = {
-  user: User | null
-  session: Session | null
-  loading: boolean
-  signOut: () => Promise<void>
-}
-
-const AuthContext = createContext<AuthContextValue | undefined>(undefined)
+import { AuthModal } from '@/components/auth/AuthModal'
+import { AuthContext, type AuthContextValue } from '@/components/auth/auth-context'
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  const pathname = usePathname()
+  const [user, setUser] = useState<AuthContextValue['user']>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [pendingNext, setPendingNext] = useState('/')
 
   const configured = useMemo(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
     return !!(url && key)
+  }, [])
+
+  const openAuthModal = useCallback((next?: string) => {
+    if (next && next.startsWith('/') && !next.startsWith('//')) {
+      setPendingNext(next)
+    }
   }, [])
 
   useEffect(() => {
@@ -70,10 +65,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(
     () =>
       configured
-        ? { user, session, loading, signOut }
-        : { user: null, session: null, loading: false, signOut: noopSignOut },
-    [configured, user, session, loading, signOut, noopSignOut]
+        ? {
+            user,
+            session,
+            loading,
+            signOut,
+            pendingNext,
+            setPendingNext,
+            openAuthModal,
+          }
+        : {
+            user: null,
+            session: null,
+            loading: false,
+            signOut: noopSignOut,
+            pendingNext: '/',
+            setPendingNext,
+            openAuthModal,
+          },
+    [configured, user, session, loading, signOut, noopSignOut, pendingNext, openAuthModal]
   )
+
+  const skipAuthModal = pathname.startsWith('/reset-password')
+  const showAuthModal = configured && !loading && !user && !skipAuthModal
 
   return (
     <AuthContext.Provider value={value}>
@@ -84,18 +98,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           <AnalyticsHeartbeat userId={user.id} />
         </>
       ) : null}
+      {showAuthModal ? (
+        <Suspense fallback={null}>
+          <AuthModal />
+        </Suspense>
+      ) : null}
     </AuthContext.Provider>
   )
 }
 
-export function useAuth() {
-  const ctx = useContext(AuthContext)
-  if (!ctx) {
-    throw new Error('useAuth must be used within AuthProvider')
-  }
-  return ctx
-}
-
-export function useOptionalAuth(): AuthContextValue | null {
-  return useContext(AuthContext) ?? null
-}
+export { useAuth, useOptionalAuth } from '@/components/auth/auth-context'

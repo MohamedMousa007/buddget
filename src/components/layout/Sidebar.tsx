@@ -34,10 +34,9 @@ const BOTTOM_ITEMS = [
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { user, loading } = useAuth()
+  const { user, loading, openAuthModal } = useAuth()
   const configured =
     !!(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim())
-  const loginNext = encodeURIComponent(pathname || '/')
   const { settings, updateSettings } = useFinanceStore(
     useShallow((s) => ({ settings: s.settings, updateSettings: s.updateSettings }))
   )
@@ -88,18 +87,20 @@ export function Sidebar() {
       <div className="px-3 pb-4 space-y-1 border-t border-[var(--color-brand-border)] pt-4">
         {configured && !loading && !user ? (
           <div className="flex flex-col gap-2 pb-3 mb-1 border-b border-[var(--color-brand-border)]">
-            <Link
-              href={`/login?next=${loginNext}`}
+            <button
+              type="button"
+              onClick={() => openAuthModal(pathname || '/')}
               className="flex items-center justify-center w-full px-3 py-2 rounded-xl text-sm font-semibold border border-[var(--color-brand-border)] text-white hover:bg-[var(--color-brand-elevated)] transition-colors"
             >
               Log in
-            </Link>
-            <Link
-              href={`/login?next=${loginNext}`}
+            </button>
+            <button
+              type="button"
+              onClick={() => openAuthModal(pathname || '/')}
               className="flex items-center justify-center w-full px-3 py-2 rounded-xl text-sm font-semibold bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white transition-colors"
             >
               Sign up
-            </Link>
+            </button>
           </div>
         ) : null}
         {BOTTOM_ITEMS.map((item) => {

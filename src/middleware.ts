@@ -2,7 +2,6 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import type { SupabaseCookieToSet } from '@/lib/supabase/cookieTypes'
 
-const LOGIN_PATH = '/login'
 const AUTH_CALLBACK = '/auth/callback'
 const ONBOARDING_PATH = '/onboarding'
 
@@ -61,26 +60,19 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse
   }
 
-  const isLogin = pathname === LOGIN_PATH || pathname.startsWith(`${LOGIN_PATH}/`)
   const isAuthCallback = pathname === AUTH_CALLBACK || pathname.startsWith(`${AUTH_CALLBACK}/`)
   const isOnboarding = pathname === ONBOARDING_PATH || pathname.startsWith(`${ONBOARDING_PATH}/`)
   const isAdmin = pathname.startsWith('/admin')
 
-  if (isLogin || isAuthCallback) {
-    if (user && isLogin) {
-      const done = user.user_metadata?.onboarding_completed === true
-      const url = request.nextUrl.clone()
-      url.pathname = done ? '/' : ONBOARDING_PATH
-      url.search = ''
-      return NextResponse.redirect(url)
-    }
+  if (isAuthCallback) {
     return supabaseResponse
   }
 
   if (!user) {
     if (isAdmin) {
       const url = request.nextUrl.clone()
-      url.pathname = LOGIN_PATH
+      url.pathname = '/'
+      url.search = ''
       url.searchParams.set('next', pathname + (request.nextUrl.search || ''))
       return NextResponse.redirect(url)
     }

@@ -40,7 +40,7 @@ import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 
 export default function SettingsPage() {
   const router = useRouter()
-  const { user, signOut } = useAuth()
+  const { user, signOut, openAuthModal } = useAuth()
   const supabaseConfigured = useMemo(
     () =>
       !!(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()),
@@ -166,18 +166,20 @@ export default function SettingsPage() {
               account and use it on other devices.
             </p>
             <div className="flex flex-wrap gap-2">
-              <Link
-                href="/login?next=/settings"
+              <button
+                type="button"
+                onClick={() => openAuthModal('/settings')}
                 className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
               >
                 Sign up
-              </Link>
-              <Link
-                href="/login?next=/settings"
+              </button>
+              <button
+                type="button"
+                onClick={() => openAuthModal('/settings')}
                 className="inline-flex items-center justify-center px-4 py-2 rounded-xl border border-[var(--color-brand-border)] text-sm text-white hover:bg-[var(--color-brand-elevated)] transition-colors"
               >
                 Log in
-              </Link>
+              </button>
             </div>
           </section>
         ) : null}

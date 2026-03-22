@@ -11,7 +11,7 @@ interface AppShellProps {
 
 function isBareAuthRoute(pathname: string | null) {
   if (!pathname) return false
-  if (pathname === '/login' || pathname.startsWith('/login/')) return true
+  if (pathname.startsWith('/reset-password')) return true
   if (pathname === '/onboarding' || pathname.startsWith('/onboarding/')) return true
   return false
 }
