@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { mapAuthError, isValidEmailFormat } from '@/components/auth/authErrors'
 import { useAuth } from '@/components/auth/auth-context'
 import { AUTH_REDIRECTS } from '@/lib/config'
+import { routeAfterAuth } from '@/lib/auth/postAuthRedirect'
 import { cn } from '@/lib/utils'
 
 const MIN_PASSWORD_LEN = 8
@@ -107,7 +108,7 @@ type Step = 'form' | 'verify' | 'forgot'
 export function AuthModal() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { pendingNext, setPendingNext, closeAuthModal } = useAuth()
+  const { pendingNext, setPendingNext, closeAuthModal, authModalMessage } = useAuth()
   const supabase = useMemo(() => createClient(), [])
 
   const nextFromUrl = searchParams.get('next')
@@ -170,8 +171,9 @@ export function AuthModal() {
       setError(mapAuthError(e, 'signin'))
       return
     }
+    const { data: userData } = await supabase.auth.getUser()
     router.refresh()
-    router.replace(safeNext)
+    router.replace(routeAfterAuth(userData.user, safeNext))
   }
 
   const signUp = async () => {
@@ -204,8 +206,9 @@ export function AuthModal() {
       return
     }
     if (data.session) {
+      const { data: userData } = await supabase.auth.getUser()
       router.refresh()
-      router.replace(safeNext)
+      router.replace(routeAfterAuth(userData.user, safeNext))
       return
     }
     if (data.user) {
@@ -235,8 +238,9 @@ export function AuthModal() {
       setError(mapAuthError(e, 'otp'))
       return
     }
+    const { data: userData } = await supabase.auth.getUser()
     router.refresh()
-    router.replace(safeNext)
+    router.replace(routeAfterAuth(userData.user, safeNext))
   }
 
   const resendCode = async () => {
@@ -328,6 +332,11 @@ export function AuthModal() {
             <span className="text-white">get</span>
           </h1>
           <p className="text-sm mt-1 text-[#5A5A72]">Your money, finally makes sense</p>
+          {authModalMessage ? (
+            <p className="mt-3 text-sm text-left rounded-lg border border-[#E50914]/35 bg-[#E50914]/10 text-[#fecaca] px-3 py-2 leading-snug">
+              {authModalMessage}
+            </p>
+          ) : null}
         </div>
 
         <AnimatePresence mode="wait">

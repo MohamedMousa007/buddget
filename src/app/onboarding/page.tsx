@@ -12,6 +12,8 @@ import {
   type SurveyConfig,
   type SurveyStep,
 } from '@/lib/onboarding/surveyConfig'
+import { budgetCategoriesFromPreset, isBudgetPresetId } from '@/lib/onboarding/budgetPresets'
+import { DEFAULT_BUDGET } from '@/lib/store/defaultFinanceData'
 import type { AppSettings, Currency, UserProfile } from '@/lib/store/types'
 import { Input } from '@/components/ui/input'
 import { PAGE_HEADER_SURFACE_CLASS } from '@/components/layout/PageHeader'
@@ -69,6 +71,18 @@ function StepBody({
       />
     )
   }
+  if (step.type === 'number') {
+    return (
+      <Input
+        type="text"
+        inputMode="decimal"
+        value={textValue}
+        placeholder={step.placeholder ?? ''}
+        onChange={(e) => setTextValue(e.target.value.replace(/[^\d.,]/g, ''))}
+        className="bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers"
+      />
+    )
+  }
   return (
     <div className="grid gap-2">
       {step.options.map((opt) => (
@@ -114,8 +128,14 @@ function OnboardingStepPanel({
   const canContinue = useMemo(() => {
     if (step.type === 'static') return true
     if (step.type === 'text') return textValue.trim().length > 0
+    if (step.type === 'number') {
+      const raw = textValue.replace(/,/g, '.').replace(/\.(?=.*\.)/g, '')
+      const n = parseFloat(raw)
+      const min = step.min ?? 0.01
+      return Number.isFinite(n) && n >= min && (step.max == null || n <= step.max)
+    }
     return !!selected
-  }, [step.type, textValue, selected])
+  }, [step, textValue, selected])
 
   return (
     <motion.div
@@ -160,6 +180,8 @@ export default function OnboardingPage() {
   const supabase = useMemo(() => createClient(), [])
   const updateProfile = useFinanceStore((s) => s.updateProfile)
   const updateSettings = useFinanceStore((s) => s.updateSettings)
+  const addIncomeSource = useFinanceStore((s) => s.addIncomeSource)
+  const setBudgetCategories = useFinanceStore((s) => s.setBudgetCategories)
 
   const [config, setConfig] = useState<SurveyConfig>(DEFAULT_SURVEY_CONFIG)
   const [index, setIndex] = useState(0)
@@ -200,6 +222,56 @@ export default function OnboardingPage() {
     async ({ textValue, selected }: StepContinuePayload) => {
       if (!step) return
 
+      if (step.type === 'single_select' && step.mapsTo === 'onboarding.incomeChoice') {
+        if (!selected) return
+        if (selected === 'no_income') {
+          const base = useFinanceStore.getState().settings.baseCurrency
+          setBudgetCategories(
+            DEFAULT_BUDGET.map((b) => ({
+              ...b,
+              currency: base,
+              percentOfIncome: null,
+            }))
+          )
+          updateSettings({ noIncomeDeclared: true, budgetEntryMode: 'amount' })
+          const doneIdx = steps.findIndex((s) => s.id === 'done')
+          setIndex(doneIdx >= 0 ? doneIdx : index + 1)
+          return
+        }
+        if (selected === 'has_income') {
+          updateSettings({ noIncomeDeclared: false })
+          setIndex((i) => i + 1)
+          return
+        }
+        return
+      }
+
+      if (step.type === 'single_select' && step.mapsTo === 'onboarding.budgetPreset') {
+        if (!selected || !isBudgetPresetId(selected)) return
+        const base = useFinanceStore.getState().settings.baseCurrency
+        setBudgetCategories(budgetCategoriesFromPreset(selected, base))
+        updateSettings({ budgetEntryMode: 'percent_of_income' })
+        setIndex((i) => i + 1)
+        return
+      }
+
+      if (step.type === 'number' && step.mapsTo === 'income.primaryMonthly') {
+        const raw = textValue.replace(/,/g, '.').replace(/\.(?=.*\.)/g, '')
+        const amount = parseFloat(raw)
+        const min = step.min ?? 0.01
+        if (!Number.isFinite(amount) || amount < min) return
+        const base = useFinanceStore.getState().settings.baseCurrency
+        addIncomeSource({
+          name: 'Primary income',
+          amount,
+          currency: base,
+          isRecurring: true,
+        })
+        updateSettings({ noIncomeDeclared: false })
+        setIndex((i) => i + 1)
+        return
+      }
+
       if (step.type === 'text') {
         applyMapsTo(step.mapsTo, textValue.trim() || 'Friend', updateProfile, updateSettings)
       }
@@ -239,7 +311,7 @@ export default function OnboardingPage() {
 
       setIndex((i) => i + 1)
     },
-    [index, router, step, steps.length, supabase, updateProfile, updateSettings]
+    [index, router, step, steps, supabase, updateProfile, updateSettings, addIncomeSource, setBudgetCategories]
   )
 
   if (!step) {

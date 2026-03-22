@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { usePathname } from 'next/navigation'
 import { X, Send, Bot, Check, Pencil } from 'lucide-react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore, type ExpensePrefill } from '@/lib/store/useSettingsStore'
@@ -20,6 +21,7 @@ import {
   looksLikeMultipleIntents,
   validateActionItem,
 } from '@/lib/ai/aiActionHandlers'
+import { useAuth } from '@/components/auth/AuthProvider'
 
 interface Message {
   id: string
@@ -36,7 +38,27 @@ export function AIChat() {
   const store = useFinanceStore()
   const { activeModal, setActiveModal, openAddExpenseWithPrefill, monthFilter } = useSettingsStore()
   const stats = useMonthlyStats()
+  const { user, openAuthModal } = useAuth()
+  const pathname = usePathname()
+  const supabaseConfigured = useMemo(
+    () =>
+      !!(
+        process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() &&
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+      ),
+    []
+  )
   const isOpen = activeModal === 'aiChat'
+
+  const guardMutations = () => {
+    if (!supabaseConfigured) return true
+    if (user) return true
+    openAuthModal(
+      pathname,
+      'Sign in or create an account to save changes from the assistant.'
+    )
+    return false
+  }
 
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -131,6 +153,7 @@ export function AIChat() {
   const handleConfirm = (messageId: string) => {
     const message = messages.find((m) => m.id === messageId)
     if (!message?.aiResponse) return
+    if (!guardMutations()) return
 
     const ctx = buildAIActionHandlerContext(store)
 
@@ -158,6 +181,7 @@ export function AIChat() {
 
   const handleEdit = (message: Message) => {
     if (!message.aiResponse) return
+    if (!guardMutations()) return
 
     const forEdit =
       message.aiResponse.actions.find((a) => a.action === 'add_expense') ||

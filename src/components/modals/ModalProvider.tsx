@@ -10,9 +10,11 @@ import { EditDebtSheet } from './EditDebtSheet'
 import { AIChat } from '@/components/ai/AIChat'
 import { AIChatBubble } from '@/components/ai/AIChatBubble'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { useRequireAuthAction } from '@/lib/hooks/useRequireAuthAction'
 
 export function ModalProvider() {
   const { setActiveModal } = useSettingsStore()
+  const requireAuth = useRequireAuthAction()
 
   return (
     <>
@@ -24,7 +26,14 @@ export function ModalProvider() {
       <EditExpenseSheet />
       <EditDebtSheet />
       <AIChat />
-      <AIChatBubble onClick={() => setActiveModal('aiChat')} />
+      <AIChatBubble
+        onClick={() =>
+          requireAuth(
+            () => setActiveModal('aiChat'),
+            'Sign in or create an account to use Buddget AI.'
+          )
+        }
+      />
     </>
   )
 }

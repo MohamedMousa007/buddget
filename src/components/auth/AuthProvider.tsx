@@ -39,6 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [pendingNext, setPendingNext] = useState('/')
   const [authModalOpen, setAuthModalOpen] = useState(false)
+  const [authModalMessage, setAuthModalMessage] = useState<string | null>(null)
 
   const configured = useMemo(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
@@ -103,6 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             signOut,
             pendingNext,
             setPendingNext,
+            authModalMessage,
             openAuthModal,
             closeAuthModal,
           }
@@ -113,10 +115,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             signOut: noopSignOut,
             pendingNext: '/',
             setPendingNext,
+            authModalMessage: null,
             openAuthModal,
             closeAuthModal,
           },
-    [configured, user, session, loading, signOut, noopSignOut, pendingNext, openAuthModal, closeAuthModal]
+    [
+      configured,
+      user,
+      session,
+      loading,
+      signOut,
+      noopSignOut,
+      pendingNext,
+      authModalMessage,
+      openAuthModal,
+      closeAuthModal,
+    ]
   )
 
   const skipAuthModal = pathname.startsWith('/reset-password')

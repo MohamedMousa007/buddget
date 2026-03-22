@@ -10,9 +10,11 @@ interface BudgetRingProps {
   remaining: number
   currency: string
   daysLeft: number
+  /** When set, explains why budget totals are empty (no income declared). */
+  incomeBlockedNote?: string | null
 }
 
-export function BudgetRing({ percent, remaining, currency, daysLeft }: BudgetRingProps) {
+export function BudgetRing({ percent, remaining, currency, daysLeft, incomeBlockedNote }: BudgetRingProps) {
   const { settings, exchangeRates } = useFinanceStore()
   const secondary = settings.showSecondaryCurrency ? settings.secondaryCurrency : null
 
@@ -48,6 +50,9 @@ export function BudgetRing({ percent, remaining, currency, daysLeft }: BudgetRin
 
   return (
     <div className="glass-card rounded-2xl p-6 flex flex-col items-center">
+      {incomeBlockedNote ? (
+        <p className="text-[11px] text-amber-200/90 text-center mb-3 px-1 leading-snug">{incomeBlockedNote}</p>
+      ) : null}
       <div className="relative w-[200px] h-[200px]">
         <svg
           className="transform -rotate-90"

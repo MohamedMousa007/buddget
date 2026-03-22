@@ -14,7 +14,7 @@ import {
 } from './defaultFinanceData'
 import type { FinanceStore } from './types'
 
-const PERSIST_VERSION = 2
+const PERSIST_VERSION = 3
 
 function generateId(): string {
   return `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
@@ -79,6 +79,7 @@ export const useFinanceStore = create<FinanceStore>()(
             ...state.incomeSources,
             { ...source, id: generateId(), createdAt: new Date().toISOString() },
           ],
+          settings: { ...state.settings, noIncomeDeclared: false },
         })),
 
       updateIncomeSource: (id, updates) =>
@@ -184,6 +185,8 @@ export const useFinanceStore = create<FinanceStore>()(
               : b
           ),
         })),
+
+      setBudgetCategories: (categories) => set({ budgetCategories: categories }),
 
       addSavingsHolding: (h) =>
         set((state) => ({
@@ -307,10 +310,21 @@ export const useFinanceStore = create<FinanceStore>()(
           persistedState && typeof persistedState === 'object'
             ? (persistedState as Record<string, unknown>)
             : {}
+        if (fromVersion >= 2) {
+          const prevSettings = (p.settings as Record<string, unknown> | undefined) || {}
+          return {
+            ...p,
+            settings: {
+              ...DEFAULT_SETTINGS,
+              ...prevSettings,
+              noIncomeDeclared: Boolean(prevSettings.noIncomeDeclared),
+            },
+          } as never
+        }
         return {
           ...p,
           profile: DEFAULT_PROFILE,
-          settings: DEFAULT_SETTINGS,
+          settings: { ...DEFAULT_SETTINGS, noIncomeDeclared: false },
           incomeSources: [],
           expenses: [],
           recurringExpenses: [],
@@ -337,6 +351,7 @@ export const useFinanceStore = create<FinanceStore>()(
             budgetEntryMode: p.settings?.budgetEntryMode ?? current.settings.budgetEntryMode,
             enableAI: p.settings?.enableAI ?? current.settings.enableAI,
             aiProvider: p.settings?.aiProvider ?? current.settings.aiProvider,
+            noIncomeDeclared: p.settings?.noIncomeDeclared ?? current.settings.noIncomeDeclared,
           },
         }
       },

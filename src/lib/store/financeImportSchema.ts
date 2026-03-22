@@ -45,6 +45,7 @@ export const importDataSchema = z.object({
       budgetEntryMode: z.enum(['amount', 'percent_of_income']).optional(),
       enableAI: z.boolean().optional(),
       aiProvider: z.enum(['gemini']).optional(),
+      noIncomeDeclared: z.boolean().optional(),
     })
     .optional(),
   incomeSources: z

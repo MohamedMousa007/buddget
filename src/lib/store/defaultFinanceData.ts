@@ -52,6 +52,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   budgetEntryMode: 'amount',
   enableAI: false,
   aiProvider: 'gemini',
+  noIncomeDeclared: false,
 }
 
 export const DEFAULT_PROFILE: UserProfile = {

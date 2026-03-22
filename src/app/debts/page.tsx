@@ -8,12 +8,25 @@ import { DebtCard } from '@/components/debts/DebtCard'
 import { DebtTable } from '@/components/debts/DebtTable'
 import { QuickAddFAB } from '@/components/modals/QuickAddFAB'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
+import { useRequireAuthAction } from '@/lib/hooks/useRequireAuthAction'
 
 export default function DebtsPage() {
   const { debts, debtPayments } = useFinanceStore(
     useShallow((s) => ({ debts: s.debts, debtPayments: s.debtPayments }))
   )
   const { openDebtSheetNew, openDebtSheetRecordPayment, setActiveModal, setEditingDebtId } = useSettingsStore()
+  const requireAuth = useRequireAuthAction()
+
+  const guardedNewDebt = () =>
+    requireAuth(
+      () => openDebtSheetNew(),
+      'Sign in or create an account to add debts or record payments.'
+    )
+  const guardedRecordPayment = (debtId: string) =>
+    requireAuth(
+      () => openDebtSheetRecordPayment(debtId),
+      'Sign in or create an account to record debt payments.'
+    )
 
   const handleEditDebt = (debtId: string) => {
     setEditingDebtId(debtId)
@@ -27,7 +40,7 @@ export default function DebtsPage() {
           <h1 className="text-xl font-bold text-white">Debts</h1>
           <button
             type="button"
-            onClick={() => openDebtSheetNew()}
+            onClick={() => guardedNewDebt()}
             className="px-4 py-2 rounded-lg bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-medium transition-colors"
           >
             + Add Debt
@@ -44,7 +57,7 @@ export default function DebtsPage() {
             action={
               <button
                 type="button"
-                onClick={() => openDebtSheetNew()}
+                onClick={() => guardedNewDebt()}
                 className="px-6 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
               >
                 + Add debt
@@ -61,7 +74,7 @@ export default function DebtsPage() {
                     key={debt.id}
                     debt={debt}
                     payments={payments}
-                    onRecordPayment={() => openDebtSheetRecordPayment(debt.id)}
+                    onRecordPayment={() => guardedRecordPayment(debt.id)}
                     onEdit={() => handleEditDebt(debt.id)}
                   />
                 )

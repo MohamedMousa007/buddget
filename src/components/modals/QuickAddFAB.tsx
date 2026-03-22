@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useEscapeClose } from '@/lib/hooks/useEscapeClose'
+import { useRequireAuthAction } from '@/lib/hooks/useRequireAuthAction'
 
 const OPTIONS = [
   { id: 'addExpense', label: 'Add Expense', icon: Receipt, emoji: '💸' },
@@ -16,7 +17,31 @@ const OPTIONS = [
 
 export function QuickAddFAB() {
   const { activeModal, setActiveModal, openDebtSheetNew } = useSettingsStore()
+  const requireAuth = useRequireAuthAction()
   const isOpen = activeModal === 'quickAdd'
+
+  const runOption = (optionId: string) => {
+    const msg =
+      'Sign in or create an account to add data and sync it securely across devices.'
+    if (optionId === 'addDebt') {
+      requireAuth(() => {
+        setActiveModal(null)
+        openDebtSheetNew()
+      }, msg)
+      return
+    }
+    if (optionId === 'aiChat') {
+      requireAuth(() => {
+        setActiveModal(null)
+        setActiveModal('aiChat')
+      }, 'Sign in or create an account to use Buddget AI.')
+      return
+    }
+    requireAuth(() => {
+      setActiveModal(null)
+      setActiveModal(optionId)
+    }, msg)
+  }
 
   useEscapeClose(isOpen, () => setActiveModal(null))
 
@@ -50,9 +75,7 @@ export function QuickAddFAB() {
               <button
                 key={option.id}
                 type="button"
-                onClick={() =>
-                  option.id === 'addDebt' ? openDebtSheetNew() : setActiveModal(option.id)
-                }
+                onClick={() => runOption(option.id)}
                 className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm text-white hover:bg-[var(--color-brand-elevated)] transition-colors"
               >
                 <span className="text-lg">{option.emoji}</span>

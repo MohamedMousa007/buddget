@@ -1,6 +1,6 @@
 'use client'
 
-import { useMonthlyStats } from '@/lib/hooks/useMonthlyStats'
+import { INCOME_BLOCKED_HINT, useMonthlyStats } from '@/lib/hooks/useMonthlyStats'
 import { useRates } from '@/lib/hooks/useRates'
 import { useGoldPrice } from '@/lib/hooks/useGoldPrice'
 import { useShallow } from 'zustand/react/shallow'
@@ -29,6 +29,7 @@ export default function DashboardPage() {
   const { budgetCategories } = useFinanceStore(useShallow((s) => ({ budgetCategories: s.budgetCategories })))
   const { monthFilter, setMonthFilter } = useSettingsStore()
   const stats = useMonthlyStats()
+  const incomeNote = stats.incomeBlocked ? INCOME_BLOCKED_HINT : undefined
 
   const savingsBudget = budgetCategories.find((b) => b.category === 'Savings')?.budgetedAmount || 0
 
@@ -94,6 +95,7 @@ export default function DashboardPage() {
             currency={stats.baseCurrency}
             icon="💵"
             trendLabel="This month"
+            footnote={incomeNote}
           />
           <KPICard
             title="Spent"
@@ -136,12 +138,14 @@ export default function DashboardPage() {
             remaining={stats.remaining}
             currency={stats.baseCurrency}
             daysLeft={stats.daysLeft}
+            incomeBlockedNote={stats.incomeBlocked ? INCOME_BLOCKED_HINT : null}
           />
           <CategoryBar
             budgetCategories={budgetCategories}
             categorySpending={stats.categorySpending}
             categoryBudgetCaps={stats.categoryBudgetCaps}
             currency={stats.baseCurrency}
+            incomeBlockedNote={stats.incomeBlocked ? INCOME_BLOCKED_HINT : null}
           />
         </div>
 

@@ -13,6 +13,8 @@ interface KPICardProps {
   currency: string
   trend?: number
   trendLabel?: string
+  /** Short note under the trend line (e.g. income not declared). */
+  footnote?: string
   color?: 'default' | 'green' | 'red' | 'gold'
   icon?: React.ReactNode
   onClick?: () => void
@@ -31,6 +33,7 @@ export function KPICard({
   currency,
   trend,
   trendLabel,
+  footnote,
   color = 'default',
   icon,
   onClick,
@@ -104,6 +107,9 @@ export function KPICard({
           {trendLabel}
         </p>
       )}
+      {footnote ? (
+        <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-2 leading-snug">{footnote}</p>
+      ) : null}
     </motion.div>
   )
 }

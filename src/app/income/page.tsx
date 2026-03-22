@@ -7,6 +7,7 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { QuickAddFAB } from '@/components/modals/QuickAddFAB'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
+import { useRequireAuthAction } from '@/lib/hooks/useRequireAuthAction'
 import { Pencil, Trash2 } from 'lucide-react'
 
 export default function IncomePage() {
@@ -14,6 +15,13 @@ export default function IncomePage() {
     useShallow((s) => ({ incomeSources: s.incomeSources, deleteIncomeSource: s.deleteIncomeSource }))
   )
   const { setActiveModal, setEditingIncomeId } = useSettingsStore()
+  const requireAuth = useRequireAuthAction()
+
+  const openAddIncome = () =>
+    requireAuth(
+      () => setActiveModal('addIncome'),
+      'Sign in or create an account to add income sources and sync your budget.'
+    )
 
   return (
     <div className="min-h-screen">
@@ -22,7 +30,7 @@ export default function IncomePage() {
           <h1 className="text-xl font-bold text-white">Income</h1>
           <button
             type="button"
-            onClick={() => setActiveModal('addIncome')}
+            onClick={openAddIncome}
             className="px-4 py-2 rounded-lg bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-medium transition-colors"
           >
             + Add income
@@ -43,7 +51,7 @@ export default function IncomePage() {
               action={
                 <button
                   type="button"
-                  onClick={() => setActiveModal('addIncome')}
+                  onClick={openAddIncome}
                   className="px-6 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
                 >
                   + Add income

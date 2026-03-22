@@ -10,6 +10,7 @@ interface CategoryBarProps {
   /** Effective cap per category (handles % of income mode) */
   categoryBudgetCaps: Record<string, number>
   currency: string
+  incomeBlockedNote?: string | null
 }
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -23,9 +24,18 @@ const CATEGORY_ICONS: Record<string, string> = {
   Other: '📦',
 }
 
-export function CategoryBar({ budgetCategories, categorySpending, categoryBudgetCaps, currency }: CategoryBarProps) {
+export function CategoryBar({
+  budgetCategories,
+  categorySpending,
+  categoryBudgetCaps,
+  currency,
+  incomeBlockedNote,
+}: CategoryBarProps) {
   return (
     <div className="glass-card rounded-2xl p-5 space-y-4">
+      {incomeBlockedNote ? (
+        <p className="text-[11px] text-amber-200/90 leading-snug">{incomeBlockedNote}</p>
+      ) : null}
       <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
         Category Breakdown
       </h3>

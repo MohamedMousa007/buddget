@@ -22,6 +22,15 @@ export const surveyStepSchema = z.discriminatedUnion('type', [
   }),
   z.object({
     id: z.string(),
+    type: z.literal('number'),
+    title: z.string(),
+    placeholder: z.string().optional(),
+    mapsTo: z.string(),
+    min: z.number().optional(),
+    max: z.number().optional(),
+  }),
+  z.object({
+    id: z.string(),
     type: z.literal('single_select'),
     title: z.string(),
     mapsTo: z.string(),
@@ -43,7 +52,7 @@ export const DEFAULT_SURVEY_CONFIG: SurveyConfig = {
       id: 'welcome',
       type: 'static',
       title: 'Welcome to Buddget',
-      body: 'A quick setup so your dashboard matches how you earn and spend.',
+      body: 'A short setup so your budget and dashboard match how you earn and spend.',
     },
     {
       id: 'display_name',
@@ -83,16 +92,58 @@ export const DEFAULT_SURVEY_CONFIG: SurveyConfig = {
       ],
     },
     {
-      id: 'income_quick',
-      type: 'static',
-      title: 'Income & budgets',
-      body: "You can add income sources and budget lines anytime from the app. Continue when you're ready.",
+      id: 'income_choice',
+      type: 'single_select',
+      title: 'Monthly income',
+      mapsTo: 'onboarding.incomeChoice',
+      options: [
+        {
+          value: 'has_income',
+          label: 'I have regular income — I’ll enter my typical monthly amount',
+        },
+        {
+          value: 'no_income',
+          label: 'No income at the moment (you can add income later in the app)',
+        },
+      ],
+    },
+    {
+      id: 'income_monthly',
+      type: 'number',
+      title: 'Typical monthly take-home',
+      placeholder: 'e.g. 5000',
+      mapsTo: 'income.primaryMonthly',
+      min: 0.01,
+    },
+    {
+      id: 'budget_preset',
+      type: 'single_select',
+      title: 'Budget plan (% of your income)',
+      mapsTo: 'onboarding.budgetPreset',
+      options: [
+        {
+          value: 'balanced',
+          label: 'Balanced — sensible split across needs, fun, savings, and debt',
+        },
+        {
+          value: 'savings_focus',
+          label: 'Savings-first — more for savings, tighter on enjoyment',
+        },
+        {
+          value: 'essentials',
+          label: 'Essentials-heavy — higher rent/food/transport, minimal extras',
+        },
+        {
+          value: 'debt_focus',
+          label: 'Debt paydown — prioritize paying off debt faster',
+        },
+      ],
     },
     {
       id: 'done',
       type: 'static',
       title: "You're set",
-      body: "We'll open your dashboard. You can import a backup from Settings anytime.",
+      body: 'We’ll open your dashboard. You can change income and budgets anytime from the app.',
     },
   ],
 }

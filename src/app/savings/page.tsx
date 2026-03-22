@@ -7,6 +7,7 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import { convertCurrency } from '@/lib/utils/currency'
 import { totalSavingsHoldingsInBase } from '@/lib/utils/calculations'
 import { QuickAddFAB } from '@/components/modals/QuickAddFAB'
+import { useRequireAuthAction } from '@/lib/hooks/useRequireAuthAction'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -94,19 +95,22 @@ export default function SavingsPage() {
 
   const liquid = savingsHoldings.filter((h) => h.bucket === 'liquid')
   const inv = savingsHoldings.filter((h) => h.bucket === 'investment')
+  const requireAuth = useRequireAuthAction()
 
   const handleAdd = () => {
     if (!name.trim() || !amount || parseFloat(amount) <= 0) return
-    addSavingsHolding({
-      name: name.trim(),
-      bucket,
-      subtype,
-      amount: parseFloat(amount),
-      currency,
-    })
-    setName('')
-    setAmount('')
-    setCurrency(settings.baseCurrency)
+    requireAuth(() => {
+      addSavingsHolding({
+        name: name.trim(),
+        bucket,
+        subtype,
+        amount: parseFloat(amount),
+        currency,
+      })
+      setName('')
+      setAmount('')
+      setCurrency(settings.baseCurrency)
+    }, 'Sign in or create an account to add savings holdings.')
   }
 
   return (

@@ -37,6 +37,7 @@ import {
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
 import type { Currency, ExpenseCategory } from '@/lib/store/types'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
+import { useRequireAuthAction } from '@/lib/hooks/useRequireAuthAction'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -48,6 +49,7 @@ export default function SettingsPage() {
   )
   const store = useFinanceStore()
   const { setActiveModal } = useSettingsStore()
+  const requireAuth = useRequireAuthAction()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [showResetConfirm, setShowResetConfirm] = useState(false)
@@ -481,7 +483,12 @@ export default function SettingsPage() {
               <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">Payment Methods</h2>
             </div>
             <button
-              onClick={() => setActiveModal('addPaymentMethod')}
+              onClick={() =>
+                requireAuth(
+                  () => setActiveModal('addPaymentMethod'),
+                  'Sign in or create an account to add payment methods.'
+                )
+              }
               className="text-xs text-[var(--color-brand-red)] hover:text-[var(--color-brand-red-hover)]"
             >
               + Add

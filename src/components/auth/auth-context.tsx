@@ -10,7 +10,9 @@ export type AuthContextValue = {
   signOut: () => Promise<void>
   pendingNext: string
   setPendingNext: (path: string) => void
-  openAuthModal: (next?: string) => void
+  /** Optional message shown above the sign-in form (e.g. “Sign in to add an expense”). */
+  authModalMessage: string | null
+  openAuthModal: (next?: string, message?: string | null) => void
   closeAuthModal: () => void
 }
 

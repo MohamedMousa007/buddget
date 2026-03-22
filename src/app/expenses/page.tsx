@@ -13,12 +13,14 @@ import { QuickAddFAB } from '@/components/modals/QuickAddFAB'
 import type { ExpenseCategory } from '@/lib/store/types'
 import { MonthYearPicker } from '@/components/ui/MonthYearPicker'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
+import { useRequireAuthAction } from '@/lib/hooks/useRequireAuthAction'
 
 export default function ExpensesPage() {
   const { expenses, settings } = useFinanceStore(
     useShallow((s) => ({ expenses: s.expenses, settings: s.settings }))
   )
   const { monthFilter, setMonthFilter, setActiveModal } = useSettingsStore()
+  const requireAuth = useRequireAuthAction()
 
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<ExpenseCategory | 'All'>('All')
@@ -117,7 +119,12 @@ export default function ExpensesPage() {
         expenses={filteredExpenses}
         totalAmount={totalAmount}
         currency={settings.baseCurrency}
-        onAddExpense={() => setActiveModal('addExpense')}
+        onAddExpense={() =>
+          requireAuth(
+            () => setActiveModal('addExpense'),
+            'Sign in or create an account to add expenses. Income is set up first so your budget stays accurate.'
+          )
+        }
       />
 
       <QuickAddFAB />

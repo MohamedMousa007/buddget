@@ -149,6 +149,11 @@ export interface AppSettings {
   enableAI: boolean
   /** Gemini is configured with server-side GEMINI_API_KEY only (never stored in the client). */
   aiProvider: 'gemini'
+  /**
+   * Set during onboarding when the user has no income yet. Income- and %-of-income budget
+   * KPIs stay at 0 until they add an income source (which clears this flag).
+   */
+  noIncomeDeclared: boolean
 }
 
 export interface FinanceStore {
@@ -185,6 +190,8 @@ export interface FinanceStore {
   updateRecurringExpense: (id: string, updates: Partial<RecurringExpense>) => void
   deleteRecurringExpense: (id: string) => void
   updateBudgetCategory: (category: ExpenseCategory, amount: number, percentOfIncome?: number | null) => void
+  /** Replace all budget rows (e.g. onboarding preset). */
+  setBudgetCategories: (categories: BudgetCategory[]) => void
   addSavingsHolding: (h: Omit<SavingsHolding, 'id' | 'createdAt' | 'updatedAt'>) => void
   updateSavingsHolding: (id: string, updates: Partial<SavingsHolding>) => void
   deleteSavingsHolding: (id: string) => void

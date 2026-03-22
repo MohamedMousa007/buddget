@@ -46,11 +46,14 @@ export function useMonthlyStats() {
 
   return useMemo(() => {
     const monthlyExpenses = filterExpensesByMonth(expenses, monthFilter, settings.monthStartDay)
-    const totalIncome = calculateMonthlyIncome(
+    const rawMonthlyIncome = calculateMonthlyIncome(
       incomeSources,
       settings.baseCurrency,
       exchangeRates
     )
+    const incomeBlocked =
+      settings.noIncomeDeclared === true && incomeSources.length === 0
+    const totalIncome = incomeBlocked ? 0 : rawMonthlyIncome
     const totalSpent = calculateTotalSpent(monthlyExpenses)
     const totalBudget = calculateTotalBudget(budgetCategories, settings, totalIncome)
     const remaining = totalBudget - totalSpent
@@ -100,6 +103,7 @@ export function useMonthlyStats() {
       categoryBudgetCaps,
       debtRemainingTotal,
       baseCurrency: settings.baseCurrency,
+      incomeBlocked,
     }
   }, [
     expenses,
@@ -114,3 +118,7 @@ export function useMonthlyStats() {
     monthFilter,
   ])
 }
+
+export const INCOME_BLOCKED_HINT =
+  'Add at least one income source under Income for these totals to update.'
+
