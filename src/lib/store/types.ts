@@ -147,7 +147,7 @@ export interface AppSettings {
   budgetEntryMode: 'amount' | 'percent_of_income'
   /** AI chat / extraction (optional client preference; server may still gate by env) */
   enableAI: boolean
-  geminiApiKey?: string
+  /** Gemini is configured with server-side GEMINI_API_KEY only (never stored in the client). */
   aiProvider: 'gemini'
 }
 

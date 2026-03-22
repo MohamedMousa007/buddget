@@ -94,9 +94,18 @@ create index if not exists app_analytics_events_user_id_created_at_idx
 
 alter table public.app_analytics_events enable row level security;
 
-create policy "analytics_insert_own"
+-- Cap insert spam: max 60 rows per user per rolling minute (tunable)
+create policy "analytics_insert_own_rate_limited"
   on public.app_analytics_events for insert
-  with check (auth.uid() = user_id);
+  with check (
+    auth.uid() = user_id
+    and (
+      select count(*)::int
+      from public.app_analytics_events e
+      where e.user_id = auth.uid()
+        and e.created_at > now() - interval '1 minute'
+    ) < 60
+  );
 
 -- No select for end users — admin reads via service role
 

@@ -159,6 +159,7 @@ export default function OnboardingPage() {
         return
       }
 
+      // 1) Persist flag in Postgres (profiles)
       await supabase
         .from('user_profiles')
         .update({
@@ -168,6 +169,7 @@ export default function OnboardingPage() {
         })
         .eq('user_id', user.id)
 
+      // 2) Mirror into JWT user_metadata so middleware can read onboarding_completed
       await supabase.auth.updateUser({
         data: { onboarding_completed: true },
       })

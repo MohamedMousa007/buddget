@@ -1,5 +1,26 @@
 import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAiRuntimeConfig } from '@/lib/server/aiRuntimeConfig'
+
+function supabaseAuthConfigured(): boolean {
+  return !!(
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+  )
+}
+
+/** When Supabase auth is enabled, AI routes require a logged-in user (quota / abuse protection). */
+async function requireUserOrUnauthorized(): Promise<NextResponse | null> {
+  if (!supabaseAuthConfigured()) return null
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  return null
+}
 
 const GEMINI_MODEL = 'gemini-2.5-flash'
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
@@ -29,6 +50,9 @@ function isRateLimited(key: string, max: number, windowMs: number): boolean {
 
 export async function POST(req: Request) {
   try {
+    const authDenied = await requireUserOrUnauthorized()
+    if (authDenied) return authDenied
+
     const runtime = getEffectiveAiRuntimeConfig()
 
     const apiKey = process.env.GEMINI_API_KEY?.trim()
@@ -91,6 +115,9 @@ export async function POST(req: Request) {
 }
 
 export async function GET() {
+  const authDenied = await requireUserOrUnauthorized()
+  if (authDenied) return authDenied
+
   const hasKey = !!process.env.GEMINI_API_KEY?.trim()
   const runtime = getEffectiveAiRuntimeConfig()
   return NextResponse.json({

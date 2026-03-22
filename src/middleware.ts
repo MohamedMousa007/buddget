@@ -77,15 +77,16 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse
   }
 
-  if (isAdmin) {
-    return supabaseResponse
-  }
-
   if (!user) {
     const url = request.nextUrl.clone()
     url.pathname = LOGIN_PATH
     url.searchParams.set('next', pathname + (request.nextUrl.search || ''))
     return NextResponse.redirect(url)
+  }
+
+  // /admin requires a signed-in account (PIN still required inside the app / APIs)
+  if (isAdmin) {
+    return supabaseResponse
   }
 
   const onboardingDone = user.user_metadata?.onboarding_completed === true

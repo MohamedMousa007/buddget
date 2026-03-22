@@ -55,8 +55,24 @@ const DEFAULT_BUDGET: BudgetCategory[] = [
 ]
 
 const DEFAULT_INCOME: IncomeSource[] = [
-  { id: 'inc_1', name: 'Bask Health', amount: 2000, currency: 'USD', isRecurring: true, dayOfMonth: 1, createdAt: new Date().toISOString() },
-  { id: 'inc_2', name: 'Omnispay', amount: 3000, currency: 'AED', isRecurring: true, dayOfMonth: 1, createdAt: new Date().toISOString() },
+  {
+    id: 'inc_1',
+    name: 'Bask Health',
+    amount: 2000,
+    currency: 'USD',
+    isRecurring: true,
+    dayOfMonth: 1,
+    createdAt: '2024-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'inc_2',
+    name: 'Omnispay',
+    amount: 3000,
+    currency: 'AED',
+    isRecurring: true,
+    dayOfMonth: 1,
+    createdAt: '2024-01-01T00:00:00.000Z',
+  },
 ]
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -69,7 +85,6 @@ const DEFAULT_SETTINGS: AppSettings = {
   monthStartDay: 1,
   budgetEntryMode: 'amount',
   enableAI: false,
-  geminiApiKey: undefined,
   aiProvider: 'gemini',
 }
 
@@ -372,7 +387,6 @@ export const useFinanceStore = create<FinanceStore>()(
             ...p.settings,
             budgetEntryMode: p.settings?.budgetEntryMode ?? current.settings.budgetEntryMode,
             enableAI: p.settings?.enableAI ?? current.settings.enableAI,
-            geminiApiKey: p.settings?.geminiApiKey ?? current.settings.geminiApiKey,
             aiProvider: p.settings?.aiProvider ?? current.settings.aiProvider,
           },
         }

@@ -44,7 +44,6 @@ export const importDataSchema = z.object({
       monthStartDay: z.number().int().min(1).max(28),
       budgetEntryMode: z.enum(['amount', 'percent_of_income']).optional(),
       enableAI: z.boolean().optional(),
-      geminiApiKey: z.string().optional(),
       aiProvider: z.enum(['gemini']).optional(),
     })
     .optional(),

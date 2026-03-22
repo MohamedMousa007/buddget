@@ -67,12 +67,14 @@ git push origin main
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase **anon public** key (same screen). |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase **service_role** key — **server only**, never `NEXT_PUBLIC_*`. Needed for admin user list & survey APIs. |
 | `GEMINI_API_KEY` | Required for `/api/ai`. Get a key from [Google AI Studio](https://aistudio.google.com/apikey). |
-| `ADMIN_PIN` | PIN for `/admin` (choose a strong value). |
+| `ADMIN_PIN` | Strong secret for `/admin` (never use a placeholder like `1234` in production). |
 | `NEXT_PUBLIC_APP_URL` | Your live URL, e.g. `https://your-app.vercel.app` (update after first deploy). |
 
 Redeploy after changing env vars (**Deployments → … → Redeploy**).
 
 **Supabase Auth (production):** In Supabase → **Authentication → URL configuration**, set **Site URL** to your Vercel URL and add that URL under **Redirect URLs** (e.g. `https://your-app.vercel.app/**`).
+
+**Admin:** `/admin` requires a **signed-in Buddget user** (middleware) **and** the **ADMIN_PIN** in the app/API. Anonymous visitors cannot open the admin screen.
 
 ## 4. Smoke checks after deploy
 

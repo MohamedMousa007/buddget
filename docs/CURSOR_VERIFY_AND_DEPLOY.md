@@ -13,7 +13,7 @@ Use this doc to **re-check** the original audit items and to **deploy** Buddget.
 | `importData` silent failures | Import bad JSON in Settings | `importData` **throws** user-facing `Error`s; Settings shows a **banner** (success / error). Zod issues summarized via `safeParse`. |
 | `amountInBaseCurrency` caller-owned | Grep `addExpense(` | Store computes with `tryConvertCurrency`; type is `Omit<..., 'amountInBaseCurrency'>`. |
 | `DEFAULT_DEBTS` `createdAt` | Read `useFinanceStore.ts` | Fixed ISO strings `2024-01-01T00:00:00.000Z`. |
-| Missing AI settings | Read `AppSettings` in `types.ts` | `enableAI`, `geminiApiKey?`, `aiProvider: 'gemini'` + defaults, Zod import schema, persist merge. |
+| Missing AI settings | Read `AppSettings` in `types.ts` | `enableAI`, `aiProvider: 'gemini'` + defaults, Zod import schema, persist merge. Gemini uses server `GEMINI_API_KEY` only. |
 
 ## 2. Cursor prompts (Compiler / Agent)
 
