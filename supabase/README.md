@@ -13,9 +13,9 @@
    - If you use **Confirm email**, new users enter the **6-digit code** in the **auth modal** (`verifyOtp` with type `signup`). Disable or avoid relying on magic links for signup confirmation — see templates below.
 
 5. Under **Authentication → URL configuration**:
-   - **Site URL:** your real app origin (e.g. `https://your-app.vercel.app`).
-   - **Redirect URLs:** include `http://localhost:3000/**` and `https://your-app.vercel.app/**`.  
-   **`/auth/callback`** is still used for **password recovery** (Supabase sends a reset link by default) and any OAuth flows you add later. Also add your exact **`/reset-password/confirm`** origin (e.g. `https://your-app.vercel.app/reset-password/confirm`) so **`resetPasswordForEmail`** links work.
+   - **Site URL:** your real app origin (production: `https://buddget.online`).
+   - **Redirect URLs:** include `http://localhost:3000/**` (dev) and `https://buddget.online/**` (production).  
+   **`/auth/callback`** is still used for **password recovery** (Supabase sends a reset link by default) and any OAuth flows you add later. Add **`https://buddget.online/auth/callback`** and **`https://buddget.online/auth/callback?next=/reset-password/confirm`** (or `/**`) so **`resetPasswordForEmail`** and PKCE exchange work.
 
 6. **Email templates (OTP, not magic link for signup):**  
    - Edit the **Confirm signup** (and related) templates so they emphasize **`{{ .Token }}`** and remove or hide magic-link CTAs if you do not want links.  

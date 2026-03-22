@@ -3,6 +3,7 @@
   "short_name": "Buddget",
   "description": "Your money, finally makes sense.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0A0A0F",
   "theme_color": "#E50914",

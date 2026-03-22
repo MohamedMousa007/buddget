@@ -73,11 +73,11 @@ git push origin main
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase **service_role** key — **server only**, never `NEXT_PUBLIC_*`. Needed for admin user list & survey APIs. |
 | `GEMINI_API_KEY` | Required for `/api/ai`. Get a key from [Google AI Studio](https://aistudio.google.com/apikey). |
 | `ADMIN_PIN` | Strong secret for `/admin` (never use a placeholder like `1234` in production). |
-| `NEXT_PUBLIC_APP_URL` | Your live URL, e.g. `https://your-app.vercel.app` (update after first deploy). |
+| `NEXT_PUBLIC_APP_URL` | Production: `https://buddget.online` (exact origin, no trailing slash). |
 
 Redeploy after changing env vars (**Deployments → … → Redeploy**).
 
-**Supabase Auth (production):** In Supabase → **Authentication → URL configuration**, set **Site URL** to your Vercel URL (exact origin, no path). Under **Redirect URLs**, add `https://your-app.vercel.app/**` so **password recovery** (and any link-based flows) can return to `/auth/callback`. Sign-in in the app is **email + password**; signup confirmation uses a **6-digit OTP** in the email when confirmations are enabled — see [`supabase/README.md`](../supabase/README.md).
+**Supabase Auth (production):** In Supabase → **Authentication → URL configuration**, set **Site URL** to `https://buddget.online` (exact origin, no path). Under **Redirect URLs**, add `https://buddget.online/**` (and dev `http://localhost:3000/**`) so **password recovery** can return to `/auth/callback`. Sign-in uses **email + password**; signup confirmation can use a **6-digit OTP** when enabled — see [`supabase/README.md`](../supabase/README.md).
 
 **Admin:** `/admin` requires a **signed-in Buddget user** (middleware) **and** the **ADMIN_PIN** in the app/API. Anonymous visitors cannot open the admin screen.
 

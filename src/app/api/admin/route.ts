@@ -6,6 +6,7 @@ import {
   hasPersistedRuntimeConfigFile,
 } from '@/lib/server/aiRuntimeConfig'
 import { verifyAdminPin } from '@/lib/server/adminAuth'
+import { APP_CONFIG } from '@/lib/config'
 
 function buildAdminConfig() {
   const hasGeminiKey = !!process.env.GEMINI_API_KEY?.trim()
@@ -36,7 +37,7 @@ function buildAdminConfig() {
       },
     },
     environment: process.env.NODE_ENV,
-    appUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+    appUrl: APP_CONFIG.url,
   }
 }
 

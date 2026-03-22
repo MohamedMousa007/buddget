@@ -61,10 +61,11 @@ export async function middleware(request: NextRequest) {
   }
 
   const isAuthCallback = pathname === AUTH_CALLBACK || pathname.startsWith(`${AUTH_CALLBACK}/`)
+  const isResetPassword = pathname.startsWith('/reset-password')
   const isOnboarding = pathname === ONBOARDING_PATH || pathname.startsWith(`${ONBOARDING_PATH}/`)
   const isAdmin = pathname.startsWith('/admin')
 
-  if (isAuthCallback) {
+  if (isAuthCallback || isResetPassword) {
     return supabaseResponse
   }
 

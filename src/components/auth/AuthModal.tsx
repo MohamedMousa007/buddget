@@ -7,6 +7,7 @@ import { AlertCircle, Loader2, Lock, Mail } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { mapAuthError, isValidEmailFormat } from '@/components/auth/authErrors'
 import { useAuth } from '@/components/auth/auth-context'
+import { AUTH_REDIRECTS } from '@/lib/config'
 import { cn } from '@/lib/utils'
 
 const MIN_PASSWORD_LEN = 8
@@ -258,10 +259,8 @@ export function AuthModal() {
     setError('')
     if (!validateEmailField()) return
     setLoading(true)
-    const origin = typeof window !== 'undefined' ? window.location.origin : ''
-    const redirectTo = origin ? `${origin}/reset-password/confirm` : undefined
     const { error: e } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo,
+      redirectTo: AUTH_REDIRECTS.passwordReset,
     })
     setLoading(false)
     if (e) {

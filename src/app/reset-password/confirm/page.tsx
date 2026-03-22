@@ -27,13 +27,23 @@ export default function ResetPasswordConfirmPage() {
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY' || session) setChecking(false)
     })
-    const t = window.setTimeout(() => setChecking(false), 8000)
+    const t = window.setTimeout(() => {
+      void (async () => {
+        if (cancelled) return
+        const { data } = await supabase.auth.getSession()
+        if (!data.session) {
+          router.replace('/?error=reset')
+          return
+        }
+        setChecking(false)
+      })()
+    }, 8000)
     return () => {
       cancelled = true
       subscription.unsubscribe()
       window.clearTimeout(t)
     }
-  }, [supabase])
+  }, [supabase, router])
 
   const submit = async () => {
     setError('')
