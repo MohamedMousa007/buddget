@@ -99,18 +99,18 @@ export const DEFAULT_SURVEY_CONFIG: SurveyConfig = {
       options: [
         {
           value: 'has_income',
-          label: 'I have regular income — I’ll enter my typical monthly amount',
+          label: 'I have regular income — I’ll enter it in the next step (during signup)',
         },
         {
           value: 'no_income',
-          label: 'No income at the moment (you can add income later in the app)',
+          label: 'No regular income at the moment',
         },
       ],
     },
     {
       id: 'income_monthly',
       type: 'number',
-      title: 'Typical monthly take-home',
+      title: 'Typical monthly take-home (signup)',
       placeholder: 'e.g. 5000',
       mapsTo: 'income.primaryMonthly',
       min: 0.01,
@@ -143,7 +143,7 @@ export const DEFAULT_SURVEY_CONFIG: SurveyConfig = {
       id: 'done',
       type: 'static',
       title: "You're set",
-      body: 'We’ll open your dashboard. You can change income and budgets anytime from the app.',
+      body: 'We’ll open your dashboard. Primary income was set during signup; adjust budgets anytime. You can import a backup from Settings.',
     },
   ],
 }

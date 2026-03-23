@@ -11,14 +11,14 @@ Personal finance app (Next.js): expenses, income, budgets, debts, savings, repor
 | `npm run start` | Run production server |
 | `npm run lint` | ESLint |
 | `npm run test` | Vitest |
-| `npm run generate-icons` | Regenerate `public/icons/icon-192.png` & `icon-512.png` (PWA / manifest) |
+| `npm run generate-icons` | No-op (icon set is maintained under `public/` — see below) |
 
 ## Stack
 
 - **Next.js 16** (App Router), React 19, TypeScript  
 - **Tailwind CSS v4** — tokens in `src/app/globals.css` + `tailwind.config.ts` (`@config`)  
 - **Zustand** + `localStorage` persistence  
-- **PWA** — `next-pwa` generates `public/sw.js` on production build (ignored in git). **Icons:** commit `public/icons/icon-192.png` & `icon-512.png`, or run `npm run generate-icons`.  
+- **PWA** — `next-pwa` generates `public/sw.js` on production build (ignored in git). **Icons:** commit `public/favicon.ico` and `public/icons/` (`icon-16.png`, `icon-32.png`, `apple-touch-icon.png`, `apple-touch-icon.svg`) — wired in `src/app/layout.tsx` and `public/manifest.json`.  
 - **Base UI** primitives under `src/components/ui/`
 
 ## Docs

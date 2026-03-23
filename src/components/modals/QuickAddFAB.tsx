@@ -63,26 +63,22 @@ export function QuickAddFAB() {
       <ModalShell
         open={isOpen}
         onBackdropClick={() => setActiveModal(null)}
-        panelClassName="lg:bottom-24 lg:right-8 lg:left-auto lg:top-auto lg:translate-x-0 lg:translate-y-0 lg:w-[360px] lg:max-h-[min(90vh,520px)]"
+        dragToClose
+        panelClassName="!bottom-[max(0.5rem,calc(4rem+env(safe-area-inset-bottom,0px)))] !left-2 !right-2 !max-h-[min(72vh,calc(100dvh-5.5rem))] lg:!bottom-24 lg:!right-8 lg:!left-auto lg:!top-auto lg:!translate-x-0 lg:!translate-y-0 lg:!w-[360px] lg:!max-h-[min(90vh,520px)] lg:!rounded-2xl"
       >
-        <div className="p-6">
-          <div className="w-10 h-1 bg-[var(--color-brand-border)] rounded-full mx-auto mb-4 lg:hidden" />
-          <h3 className="text-lg font-semibold text-white mb-4">
-            What would you like to add?
-          </h3>
-          <div className="space-y-1">
-            {OPTIONS.map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => runOption(option.id)}
-                className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm text-white hover:bg-[var(--color-brand-elevated)] transition-colors"
-              >
-                <span className="text-lg">{option.emoji}</span>
-                <span>{option.label}</span>
-              </button>
-            ))}
-          </div>
+        <h3 className="text-lg font-semibold text-white mb-4 pr-2">What would you like to add?</h3>
+        <div className="space-y-1">
+          {OPTIONS.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => runOption(option.id)}
+              className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm text-white hover:bg-[var(--color-brand-elevated)] transition-colors text-left"
+            >
+              <span className="text-lg shrink-0">{option.emoji}</span>
+              <span>{option.label}</span>
+            </button>
+          ))}
         </div>
       </ModalShell>
     </>

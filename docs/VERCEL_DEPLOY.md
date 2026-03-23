@@ -87,7 +87,7 @@ Open your production URL:
 
 - `/` loads.
 - `/manifest.json` returns JSON.
-- `/icons/icon-192.png` returns **200** (not 404).
+- `/favicon.ico` and `/icons/icon-32.png` return **200** (not 404).
 - **Safari (iPhone):** Share → **Add to Home Screen** for PWA.
 
 ## 5. Optional: custom domain
