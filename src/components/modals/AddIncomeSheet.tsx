@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useEscapeClose } from '@/lib/hooks/useEscapeClose'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { X } from 'lucide-react'
@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { FIAT_CURRENCIES } from '@/lib/constants/finance'
+import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
+import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import type { Currency, IncomeRecurringFrequency } from '@/lib/store/types'
 
 const RECURRING_FREQ: { value: IncomeRecurringFrequency; label: string; amountHint: string }[] = [
@@ -31,6 +32,16 @@ export function AddIncomeSheet() {
   const [recurringFrequency, setRecurringFrequency] = useState<IncomeRecurringFrequency>('monthly')
   const [dayOfMonth, setDayOfMonth] = useState('1')
   const [notes, setNotes] = useState('')
+  const prevIsOpen = useRef(false)
+
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- sync default currency when sheet opens */
+    if (isOpen && !prevIsOpen.current) {
+      setCurrency(settings.baseCurrency)
+    }
+    prevIsOpen.current = isOpen
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [isOpen, settings.baseCurrency])
 
   const resetForm = () => {
     setName('')
@@ -48,7 +59,7 @@ export function AddIncomeSheet() {
     addIncomeSource({
       name,
       amount: parseFloat(amount),
-      currency,
+      currency: clampFiatToAllowed(settings, currency),
       isRecurring,
       recurringFrequency: isRecurring ? recurringFrequency : undefined,
       dayOfMonth: isRecurring && recurringFrequency === 'monthly' ? parseInt(dayOfMonth, 10) || 1 : undefined,
@@ -105,15 +116,11 @@ export function AddIncomeSheet() {
                   </div>
                   <div>
                     <Label className="text-xs text-[var(--color-brand-text-secondary)]">Currency</Label>
-                    <select
+                    <FiatCurrencySelect
                       value={currency}
-                      onChange={(e) => setCurrency(e.target.value as Currency)}
+                      onChange={setCurrency}
                       className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
-                    >
-                      {FIAT_CURRENCIES.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
+                    />
                   </div>
                 </div>
 

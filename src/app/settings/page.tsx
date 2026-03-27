@@ -6,24 +6,19 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { formatCurrency, formatRelativeTime } from '@/lib/utils/formatters'
-import { calculateMonthlyIncome, effectiveCategoryBudget } from '@/lib/utils/calculations'
 import { checkAIStatus } from '@/lib/ai/gemini'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import Link from 'next/link'
 import {
   LogOut,
-  User,
   Globe,
-  Target,
   DollarSign,
   CreditCard,
   Bot,
   Database,
   Palette,
-  Pencil,
   Trash2,
   Download,
   Upload,
@@ -35,7 +30,7 @@ import {
   PiggyBank,
 } from 'lucide-react'
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
-import type { Currency, ExpenseCategory } from '@/lib/store/types'
+import type { Currency } from '@/lib/store/types'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { useRequireAuthAction } from '@/lib/hooks/useRequireAuthAction'
 
@@ -71,8 +66,6 @@ export default function SettingsPage() {
     const t = setTimeout(() => setImportBanner(null), 6000)
     return () => clearTimeout(t)
   }, [importBanner])
-  const [editingBudget, setEditingBudget] = useState<ExpenseCategory | null>(null)
-  const [budgetInput, setBudgetInput] = useState('')
 
   const handleExport = () => {
     const data = store.exportData()
@@ -107,37 +100,14 @@ export default function SettingsPage() {
     e.target.value = ''
   }
 
-  const monthlyIncome = calculateMonthlyIncome(
-    store.incomeSources,
-    store.settings.baseCurrency,
-    store.exchangeRates
-  )
-  const budgetMode = store.settings.budgetEntryMode ?? 'amount'
-
-  const handleBudgetSave = (category: ExpenseCategory) => {
-    const raw = parseFloat(budgetInput)
-    if (Number.isNaN(raw) || raw < 0) {
-      setEditingBudget(null)
-      setBudgetInput('')
-      return
-    }
-    if (budgetMode === 'percent_of_income') {
-      const pct = Math.min(100, Math.max(0, raw))
-      const derived =
-        monthlyIncome > 0 ? (pct / 100) * monthlyIncome : 0
-      store.updateBudgetCategory(category, derived, pct)
-    } else {
-      store.updateBudgetCategory(category, raw, null)
-    }
-    setEditingBudget(null)
-    setBudgetInput('')
-  }
-
   return (
     <div className="min-h-screen">
       <PageHeader>
         <PageHeaderContent>
           <h1 className="text-xl font-bold text-white">Settings</h1>
+          <p className="text-xs text-[var(--color-brand-text-muted)] mt-1">
+            App preferences, currencies, and data. Budget and profile are under Profile.
+          </p>
         </PageHeaderContent>
       </PageHeader>
 
@@ -213,38 +183,6 @@ export default function SettingsPage() {
           </section>
         ) : null}
 
-        {/* Profile */}
-        <section className="glass-card rounded-2xl p-5 space-y-4">
-          <div className="flex items-center gap-2 mb-2">
-            <User className="w-5 h-5 text-[var(--color-brand-red)]" />
-            <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">Profile</h2>
-          </div>
-          <div className="space-y-3">
-            <div>
-              <Label className="text-xs text-[var(--color-brand-text-secondary)]">Name</Label>
-              <Input
-                value={store.profile.name}
-                onChange={(e) => store.updateProfile({ name: e.target.value })}
-                className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
-              />
-            </div>
-            <div>
-              <Label className="text-xs text-[var(--color-brand-text-secondary)]">
-                Email {user ? '(from account)' : ''}
-              </Label>
-              <Input
-                value={store.profile.email || ''}
-                onChange={(e) => {
-                  if (!user) store.updateProfile({ email: e.target.value })
-                }}
-                readOnly={!!user}
-                className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white read-only:opacity-80"
-                placeholder="your@email.com"
-              />
-            </div>
-          </div>
-        </section>
-
         {/* Currencies */}
         <section className="glass-card rounded-2xl p-5 space-y-4">
           <div className="flex items-center gap-2 mb-2">
@@ -292,6 +230,22 @@ export default function SettingsPage() {
             </div>
           )}
 
+          <div className="flex items-center justify-between gap-4 pt-2">
+            <div className="min-w-0">
+              <Label className="text-sm text-white">Disable other currencies</Label>
+              <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-1 leading-relaxed">
+                Off by default: form amount pickers list every currency. Turn on to limit pickers to your primary
+                currency and—if you use dual display—your secondary when adding expenses, income, debts, savings, or
+                payment methods. Does not change the selectors above or the sidebar.
+              </p>
+            </div>
+            <Switch
+              checked={!store.settings.showAllCurrenciesInForms}
+              onCheckedChange={(val) => store.updateSettings({ showAllCurrenciesInForms: !val })}
+              className="shrink-0"
+            />
+          </div>
+
           <Separator className="bg-[var(--color-brand-border)]" />
 
           <div>
@@ -316,128 +270,6 @@ export default function SettingsPage() {
                 </span>
               </div>
             </div>
-          </div>
-        </section>
-
-        {/* Budget Setup */}
-        <section className="glass-card rounded-2xl p-5 space-y-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Target className="w-5 h-5 text-[var(--color-brand-red)]" />
-            <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">Budget Setup</h2>
-          </div>
-          <p className="text-[10px] text-[var(--color-brand-text-muted)]">
-            All budget numbers are in <strong className="text-white">{store.settings.baseCurrency}</strong> (primary currency).
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => store.updateSettings({ budgetEntryMode: 'amount' })}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
-                budgetMode === 'amount'
-                  ? 'bg-[var(--color-brand-red)] text-white'
-                  : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
-              }`}
-            >
-              Fixed amounts
-            </button>
-            <button
-              type="button"
-              onClick={() => store.updateSettings({ budgetEntryMode: 'percent_of_income' })}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
-                budgetMode === 'percent_of_income'
-                  ? 'bg-[var(--color-brand-red)] text-white'
-                  : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
-              }`}
-            >
-              % of monthly income
-            </button>
-          </div>
-          {budgetMode === 'percent_of_income' && (
-            <p className="text-[10px] text-[var(--color-brand-text-muted)]">
-              Recurring income total (→ {store.settings.baseCurrency}):{' '}
-              <span className="font-mono-numbers text-white">{formatCurrency(monthlyIncome, store.settings.baseCurrency)}</span>
-              /mo. Category % should add up to ~100 for a full allocation.
-            </p>
-          )}
-          <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">Month starts on</Label>
-            <select
-              value={store.settings.monthStartDay}
-              onChange={(e) => store.updateSettings({ monthStartDay: parseInt(e.target.value) })}
-              className="mt-1 w-24 h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
-            >
-              {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
-                <option key={d} value={d}>{d}{d === 1 ? 'st' : d === 2 ? 'nd' : d === 3 ? 'rd' : 'th'}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            {store.budgetCategories.map((budget) => (
-              <div key={budget.category} className="flex items-center justify-between py-2 border-b border-[var(--color-brand-border)] last:border-0">
-                <span className="text-sm text-white">{budget.category}</span>
-                {editingBudget === budget.category ? (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      value={budgetInput}
-                      onChange={(e) => setBudgetInput(e.target.value)}
-                      className="w-28 h-8 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers text-sm"
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleBudgetSave(budget.category)
-                        if (e.key === 'Escape') setEditingBudget(null)
-                      }}
-                    />
-                    <span className="text-[10px] text-[var(--color-brand-text-muted)]">
-                      {budgetMode === 'percent_of_income' ? '%' : store.settings.baseCurrency}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleBudgetSave(budget.category)}
-                      className="text-xs text-[var(--color-brand-green)]"
-                    >
-                      Save
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingBudget(budget.category)
-                      if (budgetMode === 'percent_of_income') {
-                        const eff = effectiveCategoryBudget(budget, store.settings, monthlyIncome)
-                        const pct =
-                          budget.percentOfIncome ??
-                          (monthlyIncome > 0 ? (eff / monthlyIncome) * 100 : 0)
-                        setBudgetInput(pct.toFixed(1))
-                      } else {
-                        setBudgetInput(budget.budgetedAmount.toString())
-                      }
-                    }}
-                    className="flex flex-col items-end gap-0.5 text-sm font-mono-numbers text-[var(--color-brand-text-secondary)] hover:text-white transition-colors"
-                  >
-                    <span className="flex items-center gap-2">
-                      {budgetMode === 'percent_of_income' ? (
-                        <>
-                          <span>{(budget.percentOfIncome ?? 0).toFixed(1)}%</span>
-                          <span className="text-[10px] text-[var(--color-brand-text-muted)]">
-                            ({formatCurrency(
-                              effectiveCategoryBudget(budget, store.settings, monthlyIncome),
-                              store.settings.baseCurrency,
-                              false
-                            )})
-                          </span>
-                        </>
-                      ) : (
-                        formatCurrency(budget.budgetedAmount, store.settings.baseCurrency, false)
-                      )}
-                      <Pencil className="w-3 h-3 opacity-50" />
-                    </span>
-                  </button>
-                )}
-              </div>
-            ))}
           </div>
         </section>
 

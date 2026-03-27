@@ -4,6 +4,8 @@ import { usePathname } from 'next/navigation'
 import { Sidebar } from './Sidebar'
 import { BottomNav } from './BottomNav'
 import { ModalProvider } from '@/components/modals/ModalProvider'
+import { OnboardingBanner } from '@/components/layout/OnboardingBanner'
+import { DesktopHeaderBar } from '@/components/layout/DesktopHeaderBar'
 
 interface AppShellProps {
   children: React.ReactNode
@@ -32,7 +34,9 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <div className="min-h-screen bg-[var(--color-brand-bg)]">
       <Sidebar />
-      <main className="lg:ml-[200px] pb-20 lg:pb-0 min-h-screen">
+      <DesktopHeaderBar />
+      <main className="lg:ml-[200px] lg:pt-[52px] pb-20 lg:pb-0 min-h-screen">
+        <OnboardingBanner />
         {children}
       </main>
       <BottomNav />

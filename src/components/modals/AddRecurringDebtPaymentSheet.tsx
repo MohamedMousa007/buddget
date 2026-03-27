@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useEscapeClose } from '@/lib/hooks/useEscapeClose'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { X } from 'lucide-react'
@@ -12,7 +12,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { FIAT_CURRENCIES } from '@/lib/constants/finance'
+import {
+  buildFiatCurrencyPickerOptions,
+  clampFiatToAllowed,
+} from '@/lib/utils/currencyPickerOptions'
 import type { Currency, DebtRecurringFrequency } from '@/lib/store/types'
 
 const FREQUENCIES: { value: DebtRecurringFrequency; label: string }[] = [
@@ -50,8 +53,18 @@ export function AddRecurringDebtPaymentSheet() {
   const [isActive, setIsActive] = useState(true)
   const [notes, setNotes] = useState('')
   const [error, setError] = useState('')
+  const prevIsOpen = useRef(false)
 
   const selectedDebt = debts.find((d) => d.id === selectedDebtId)
+
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- sync default currency when sheet opens */
+    if (isOpen && !prevIsOpen.current) {
+      setPaymentCurrency(settings.baseCurrency)
+    }
+    prevIsOpen.current = isOpen
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [isOpen, settings.baseCurrency])
 
   const resetForm = () => {
     setAmount('')
@@ -90,10 +103,15 @@ export function AddRecurringDebtPaymentSheet() {
     if (Number.isNaN(n) || n <= 0) return
 
     setError('')
+    const payCur =
+      paymentCurrency === 'XAU' && selectedDebt.isGold
+        ? 'XAU'
+        : clampFiatToAllowed(settings, paymentCurrency as Currency)
+
     const check = computeDebtPaymentRecord(
       selectedDebt,
       n,
-      paymentCurrency,
+      payCur,
       settings.baseCurrency,
       exchangeRates,
       goldPricePerGram,
@@ -107,7 +125,7 @@ export function AddRecurringDebtPaymentSheet() {
     addRecurringDebtPayment({
       debtId: selectedDebtId,
       amount: n,
-      currency: paymentCurrency as Currency,
+      currency: payCur as Currency,
       paymentMethodId: paymentMethodId || paymentMethods[0]?.id || '',
       frequency,
       nextDueDate,
@@ -209,9 +227,9 @@ export function AddRecurringDebtPaymentSheet() {
                   }}
                   className="w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
                 >
-                  {FIAT_CURRENCIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
+                  {buildFiatCurrencyPickerOptions(settings).map((o) => (
+                    <option key={o.value} value={o.value} disabled={o.disabled}>
+                      {o.value}
                     </option>
                   ))}
                   {selectedDebt?.isGold ? (

@@ -10,11 +10,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { DEBT_FIAT_CURRENCIES } from '@/lib/constants/finance'
+import { DebtFiatCurrencySelect } from '@/components/ui/DebtFiatCurrencySelect'
+import { clampDebtFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import type { DebtCurrency, GoldKarat } from '@/lib/store/types'
 
 export function EditDebtSheet() {
-  const { debts, updateDebt, deleteDebt } = useFinanceStore()
+  const { debts, updateDebt, deleteDebt, settings } = useFinanceStore()
   const { activeModal, setActiveModal, editingDebtId, setEditingDebtId } = useSettingsStore()
   const isOpen = activeModal === 'editDebt'
 
@@ -49,7 +50,7 @@ export function EditDebtSheet() {
       name,
       person,
       description: description || undefined,
-      currency: isGold ? 'XAU' : currency,
+      currency: isGold ? 'XAU' : clampDebtFiatToAllowed(settings, currency),
       isGold,
       goldKarat: isGold ? goldKarat : undefined,
       notes: notes || undefined,
@@ -125,6 +126,7 @@ export function EditDebtSheet() {
                     onCheckedChange={(val) => {
                       setIsGold(val)
                       if (val) setCurrency('XAU')
+                      else setCurrency(settings.baseCurrency as DebtCurrency)
                     }}
                   />
                 </div>
@@ -132,15 +134,11 @@ export function EditDebtSheet() {
                 {!isGold && (
                   <div>
                     <Label className="text-xs text-[var(--color-brand-text-secondary)]">Currency</Label>
-                    <select
+                    <DebtFiatCurrencySelect
                       value={currency}
-                      onChange={(e) => setCurrency(e.target.value as DebtCurrency)}
+                      onChange={setCurrency}
                       className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
-                    >
-                      {DEBT_FIAT_CURRENCIES.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
+                    />
                   </div>
                 )}
 

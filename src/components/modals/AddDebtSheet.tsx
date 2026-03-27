@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useEscapeClose } from '@/lib/hooks/useEscapeClose'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { X } from 'lucide-react'
@@ -16,8 +16,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { DEBT_FIAT_CURRENCIES, FIAT_CURRENCIES } from '@/lib/constants/finance'
-import type { DebtCurrency, GoldKarat } from '@/lib/store/types'
+import { DebtFiatCurrencySelect } from '@/components/ui/DebtFiatCurrencySelect'
+import {
+  buildFiatCurrencyPickerOptions,
+  clampDebtFiatToAllowed,
+  clampFiatToAllowed,
+} from '@/lib/utils/currencyPickerOptions'
+import type { Currency, DebtCurrency, GoldKarat } from '@/lib/store/types'
 
 export function AddDebtSheet() {
   const store = useFinanceStore()
@@ -47,7 +52,9 @@ export function AddDebtSheet() {
   const [person, setPerson] = useState('')
   const [description, setDescription] = useState('')
   const [startingBalance, setStartingBalance] = useState('')
-  const [currency, setCurrency] = useState<DebtCurrency>('EGP')
+  const [currency, setCurrency] = useState<DebtCurrency>(
+    () => useFinanceStore.getState().settings.baseCurrency as DebtCurrency
+  )
   const [isGold, setIsGold] = useState(false)
   const [goldKarat, setGoldKarat] = useState<GoldKarat>(24)
   const [notes, setNotes] = useState('')
@@ -61,6 +68,7 @@ export function AddDebtSheet() {
     () => paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || ''
   )
   const [paymentRateError, setPaymentRateError] = useState('')
+  const prevIsOpen = useRef(false)
 
   const payableDebts = useMemo(
     () => debts.filter((d) => !isDebtFullyPaid(d, debtPayments)),
@@ -98,6 +106,16 @@ export function AddDebtSheet() {
   }, [isOpen, mode, debtSheetPaymentOnly, debts, debtPayments, payableDebts, selectedDebtId])
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- sync default currency when sheet opens */
+    if (isOpen && !prevIsOpen.current) {
+      setPaymentCurrency(settings.baseCurrency)
+      if (!isGold) setCurrency(settings.baseCurrency as DebtCurrency)
+    }
+    prevIsOpen.current = isOpen
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [isOpen, settings.baseCurrency, isGold])
+
+  useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- sync tab/debt when opening from Record Payment */
     if (!isOpen) return
     if (debtSheetPaymentOnly && debtSheetPrefillDebtId) {
@@ -115,7 +133,7 @@ export function AddDebtSheet() {
     setPerson('')
     setDescription('')
     setStartingBalance('')
-    setCurrency('EGP')
+    setCurrency(settings.baseCurrency as DebtCurrency)
     setIsGold(false)
     setNotes('')
     setPaymentAmount('')
@@ -133,7 +151,7 @@ export function AddDebtSheet() {
       person,
       description: description || undefined,
       startingBalance: parseFloat(startingBalance),
-      currency: isGold ? 'XAU' : currency,
+      currency: isGold ? 'XAU' : clampDebtFiatToAllowed(settings, currency),
       isGold,
       goldKarat: isGold ? goldKarat : undefined,
       notes: notes || undefined,
@@ -151,10 +169,15 @@ export function AddDebtSheet() {
 
     setPaymentRateError('')
 
+    const payCur =
+      paymentCurrency === 'XAU' && selectedDebt.isGold
+        ? 'XAU'
+        : clampFiatToAllowed(settings, paymentCurrency as Currency)
+
     const computed = computeDebtPaymentRecord(
       selectedDebt,
       amount,
-      paymentCurrency,
+      payCur,
       settings.baseCurrency,
       exchangeRates,
       goldPricePerGram,
@@ -171,7 +194,7 @@ export function AddDebtSheet() {
       debtId: selectedDebtId,
       date: paymentDate,
       amountPaid: amountInDebtUnit,
-      paymentCurrency,
+      paymentCurrency: payCur,
       originalAmount: amount,
       amountInPrimary: amountInBase,
       rateAtEntry,
@@ -184,7 +207,7 @@ export function AddDebtSheet() {
       description: `Debt payment – ${selectedDebt.person}`,
       category: 'Debt',
       amount,
-      currency: paymentCurrency as import('@/lib/store/types').Currency,
+      currency: payCur as import('@/lib/store/types').Currency,
       paymentMethodId: pmId,
       isRecurring: false,
       notes: paymentNotes || undefined,
@@ -301,6 +324,7 @@ export function AddDebtSheet() {
                       onCheckedChange={(val) => {
                         setIsGold(val)
                         if (val) setCurrency('XAU')
+                        else setCurrency(settings.baseCurrency as DebtCurrency)
                       }}
                     />
                   </div>
@@ -322,15 +346,11 @@ export function AddDebtSheet() {
                     {!isGold && (
                       <div>
                         <Label className="text-xs text-[var(--color-brand-text-secondary)]">Currency</Label>
-                        <select
+                        <DebtFiatCurrencySelect
                           value={currency}
-                          onChange={(e) => setCurrency(e.target.value as DebtCurrency)}
+                          onChange={setCurrency}
                           className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
-                        >
-                          {DEBT_FIAT_CURRENCIES.map((c) => (
-                            <option key={c} value={c}>{c}</option>
-                          ))}
-                        </select>
+                        />
                       </div>
                     )}
                     {isGold && (
@@ -435,8 +455,10 @@ export function AddDebtSheet() {
                         }}
                         className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
                       >
-                        {FIAT_CURRENCIES.map((c) => (
-                          <option key={c} value={c}>{c}</option>
+                        {buildFiatCurrencyPickerOptions(settings).map((o) => (
+                          <option key={o.value} value={o.value} disabled={o.disabled}>
+                            {o.value}
+                          </option>
                         ))}
                         {selectedDebt?.isGold && (
                           <option value="XAU">Gold (grams)</option>

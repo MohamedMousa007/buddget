@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [pendingNext, setPendingNext] = useState('/')
   const [authModalOpen, setAuthModalOpen] = useState(false)
-  const [authModalMessage, setAuthModalMessage] = useState<string | null>(null)
+  const authModalMessage: string | null = null
 
   const configured = useMemo(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()

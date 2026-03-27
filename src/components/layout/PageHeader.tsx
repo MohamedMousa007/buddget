@@ -1,8 +1,17 @@
 import { cn } from '@/lib/utils'
 
-/** Sticky app bar surface used across most screens */
-export const PAGE_HEADER_SURFACE_CLASS =
-  'sticky top-0 z-30 bg-[var(--color-brand-bg)]/90 backdrop-blur-xl border-b border-[var(--color-brand-border)]'
+/** Shared visual surface (no position). */
+export const PAGE_HEADER_SURFACE_BASE =
+  'bg-[var(--color-brand-bg)]/90 backdrop-blur-xl border-b border-[var(--color-brand-border)]'
+
+/**
+ * Sticky app bar inside main + sidebar layout.
+ * `lg:top-[52px]` clears the fixed desktop bar (DesktopHeaderBar).
+ */
+export const PAGE_HEADER_SURFACE_CLASS = `sticky top-0 z-30 lg:top-[52px] ${PAGE_HEADER_SURFACE_BASE}`
+
+/** Full-width routes without DesktopHeaderBar (onboarding, login, etc.). */
+export const PAGE_HEADER_BARE_CLASS = `sticky top-0 z-30 ${PAGE_HEADER_SURFACE_BASE}`
 
 export function PageHeader({ children }: { children: React.ReactNode }) {
   return <header className={PAGE_HEADER_SURFACE_CLASS}>{children}</header>

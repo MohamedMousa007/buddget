@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useEscapeClose } from '@/lib/hooks/useEscapeClose'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { X } from 'lucide-react'
@@ -9,7 +9,9 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { FIAT_CURRENCIES, PAYMENT_METHOD_TYPE_OPTIONS } from '@/lib/constants/finance'
+import { PAYMENT_METHOD_TYPE_OPTIONS } from '@/lib/constants/finance'
+import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
+import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import type { Currency, PaymentMethodType } from '@/lib/store/types'
 
 const COLORS = ['#C0C0C0', '#F5C842', '#1DB954', '#E50914', '#3B82F6', '#A855F7', '#EC4899', '#FFFFFF']
@@ -24,6 +26,16 @@ export function AddPaymentMethodSheet() {
   const [currency, setCurrency] = useState<Currency>(settings.baseCurrency)
   const [color, setColor] = useState('#C0C0C0')
   const [isDefault, setIsDefault] = useState(false)
+  const prevIsOpen = useRef(false)
+
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- sync default currency when sheet opens */
+    if (isOpen && !prevIsOpen.current) {
+      setCurrency(settings.baseCurrency)
+    }
+    prevIsOpen.current = isOpen
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [isOpen, settings.baseCurrency])
 
   const resetForm = () => {
     setName('')
@@ -39,7 +51,7 @@ export function AddPaymentMethodSheet() {
     addPaymentMethod({
       name,
       type,
-      currency,
+      currency: clampFiatToAllowed(settings, currency),
       color,
       isDefault,
     })
@@ -101,15 +113,11 @@ export function AddPaymentMethodSheet() {
 
                 <div>
                   <Label className="text-xs text-[var(--color-brand-text-secondary)]">Currency</Label>
-                  <select
+                  <FiatCurrencySelect
                     value={currency}
-                    onChange={(e) => setCurrency(e.target.value as Currency)}
+                    onChange={setCurrency}
                     className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
-                  >
-                    {FIAT_CURRENCIES.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 <div>

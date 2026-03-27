@@ -11,7 +11,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { EXPENSE_CATEGORIES, FIAT_CURRENCIES } from '@/lib/constants/finance'
+import { EXPENSE_CATEGORIES } from '@/lib/constants/finance'
+import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
+import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import type { Expense, ExpenseCategory, Currency } from '@/lib/store/types'
 
 export function EditExpenseSheet() {
@@ -53,15 +55,16 @@ function EditExpenseForm({ expense, onClose }: { expense: Expense; onClose: () =
     if (!description || !amount || parseFloat(amount) <= 0) return
 
     const parsedAmount = parseFloat(amount)
+    const cur = clampFiatToAllowed(settings, currency)
     const amountInBase = tryConvertCurrency(
       parsedAmount,
-      currency,
+      cur,
       settings.baseCurrency,
       exchangeRates
     )
     if (amountInBase === null) {
       setSubmitError(
-        `No exchange rate from ${currency} to ${settings.baseCurrency}. Update rates in Settings or pick another currency.`
+        `No exchange rate from ${cur} to ${settings.baseCurrency}. Update rates in Settings or pick another currency.`
       )
       return
     }
@@ -72,7 +75,7 @@ function EditExpenseForm({ expense, onClose }: { expense: Expense; onClose: () =
       description,
       category,
       amount: parsedAmount,
-      currency,
+      currency: cur,
       amountInBaseCurrency: amountInBase,
       paymentMethodId,
       isRecurring,
@@ -132,18 +135,14 @@ function EditExpenseForm({ expense, onClose }: { expense: Expense; onClose: () =
           </div>
           <div>
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">Currency</Label>
-            <select
+            <FiatCurrencySelect
               value={currency}
-              onChange={(e) => {
-                setCurrency(e.target.value as Currency)
+              onChange={(c) => {
+                setCurrency(c)
                 setSubmitError('')
               }}
               className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
-            >
-              {FIAT_CURRENCIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
+            />
           </div>
         </div>
 

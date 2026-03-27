@@ -3,7 +3,18 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { LucideIcon } from 'lucide-react'
-import { LayoutDashboard, Receipt, Landmark, Plus, Menu, Wallet, PiggyBank, BarChart3 } from 'lucide-react'
+import {
+  LayoutDashboard,
+  Receipt,
+  Landmark,
+  Plus,
+  Menu,
+  Wallet,
+  PiggyBank,
+  BarChart3,
+  User,
+  Settings,
+} from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -27,6 +38,8 @@ const MORE_MENU: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/income', label: 'Income', icon: Wallet },
   { href: '/savings', label: 'Savings', icon: PiggyBank },
   { href: '/reports', label: 'Reports', icon: BarChart3 },
+  { href: '/profile', label: 'Profile', icon: User },
+  { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
 const MORE_HREFS = new Set(MORE_MENU.map((m) => m.href))

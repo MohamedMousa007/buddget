@@ -152,7 +152,13 @@ export interface UserProfile {
   id: string
   name: string
   email?: string
+  /** Data URL or external image URL */
   avatar?: string
+  /** Preset avatar id, e.g. `preset_piggy` — used when `avatar` is empty */
+  avatarPresetId?: string
+  country?: string
+  city?: string
+  phone?: string
   baseCurrency: Currency
   createdAt: string
 }
@@ -176,11 +182,49 @@ export interface AppSettings {
    * KPIs stay at 0 until they add an income source (which clears this flag).
    */
   noIncomeDeclared: boolean
+  /**
+   * When true, form amount dropdowns list every fiat. When false, only primary and—if enabled—secondary appear;
+   * other currencies are omitted (Settings labels this “Disable other currencies”). Does not affect primary/secondary
+   * selectors on this page or the sidebar. New installs default to true (switch off).
+   */
+  showAllCurrenciesInForms: boolean
+}
+
+/** Draft payment row from onboarding (applied to store on finish). */
+export interface OnboardingPaymentDraft {
+  preset: string
+  type: PaymentMethodType
+  nickname: string
+}
+
+export interface OnboardingAiPlan {
+  id: string
+  label: string
+  personaId: string
+  personaLabel: string
+  personaTagline: string
+  rationale: string
+  costOfLivingNote?: string
+  percents: Record<ExpenseCategory, number>
+  assumptions: string[]
+}
+
+export interface OnboardingState {
+  flowVersion: number
+  answers: Record<string, unknown>
+  currentStepIndex: number
+  planAccepted: boolean
+  selectedPlanIndex: number | null
+  aiPlans: OnboardingAiPlan[] | null
+  aiGeneratedAt: string | null
+  lastValidationNotes: string[] | null
 }
 
 export interface FinanceStore {
   profile: UserProfile
   settings: AppSettings
+  /** Expert onboarding progress, answers, and cached AI plans (synced in user_finance payload). */
+  onboardingState: OnboardingState
   incomeSources: IncomeSource[]
   expenses: Expense[]
   recurringExpenses: RecurringExpense[]
@@ -223,6 +267,7 @@ export interface FinanceStore {
   deleteSavingsHolding: (id: string) => void
   updateSettings: (updates: Partial<AppSettings>) => void
   updateProfile: (updates: Partial<UserProfile>) => void
+  setOnboardingState: (updates: Partial<OnboardingState> | ((prev: OnboardingState) => OnboardingState)) => void
   updateRates: (rates: Record<string, number>) => void
   updateGoldPrice: (price: number) => void
   /** @throws Error on invalid JSON or failed Zod validation (message is user-facing). */

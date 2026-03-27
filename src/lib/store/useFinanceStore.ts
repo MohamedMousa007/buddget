@@ -12,12 +12,25 @@ import {
   DEFAULT_PROFILE,
   DEFAULT_SETTINGS,
 } from './defaultFinanceData'
-import type { FinanceStore } from './types'
+import type { FinanceStore, OnboardingState } from './types'
+import { defaultOnboardingState } from '@/lib/onboarding/onboardingTypes'
 
-const PERSIST_VERSION = 4
+const PERSIST_VERSION = 5
 
 function generateId(): string {
   return `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+}
+
+function migrateShowAllCurrenciesInForms(prevSettings: Record<string, unknown>): boolean {
+  if (typeof prevSettings.showAllCurrenciesInForms === 'boolean') return prevSettings.showAllCurrenciesInForms
+  if (prevSettings.currencyDropdownScope === 'all') return true
+  if (
+    prevSettings.currencyDropdownScope === 'primary_only' ||
+    prevSettings.currencyDropdownScope === 'primary_and_secondary'
+  ) {
+    return false
+  }
+  return DEFAULT_SETTINGS.showAllCurrenciesInForms
 }
 
 export const useFinanceStore = create<FinanceStore>()(
@@ -25,6 +38,7 @@ export const useFinanceStore = create<FinanceStore>()(
     (set, get) => ({
       profile: DEFAULT_PROFILE,
       settings: DEFAULT_SETTINGS,
+      onboardingState: defaultOnboardingState(),
       incomeSources: DEFAULT_INCOME,
       expenses: [],
       recurringExpenses: [],
@@ -245,6 +259,15 @@ export const useFinanceStore = create<FinanceStore>()(
           profile: { ...state.profile, ...updates },
         })),
 
+      setOnboardingState: (updates) =>
+        set((state) => {
+          const next =
+            typeof updates === 'function'
+              ? updates(state.onboardingState)
+              : { ...state.onboardingState, ...updates }
+          return { onboardingState: next }
+        }),
+
       updateRates: (rates) =>
         set((state) => ({
           exchangeRates: { ...state.exchangeRates, ...rates },
@@ -286,6 +309,9 @@ export const useFinanceStore = create<FinanceStore>()(
           settings: data.settings
             ? { ...state.settings, ...data.settings }
             : state.settings,
+          onboardingState: data.onboardingState
+            ? { ...defaultOnboardingState(), ...data.onboardingState }
+            : state.onboardingState,
         }))
       },
 
@@ -294,6 +320,7 @@ export const useFinanceStore = create<FinanceStore>()(
         const data = {
           profile: state.profile,
           settings: state.settings,
+          onboardingState: state.onboardingState,
           incomeSources: state.incomeSources,
           expenses: state.expenses,
           recurringExpenses: state.recurringExpenses,
@@ -311,6 +338,7 @@ export const useFinanceStore = create<FinanceStore>()(
         set({
           profile: DEFAULT_PROFILE,
           settings: DEFAULT_SETTINGS,
+          onboardingState: defaultOnboardingState(),
           incomeSources: DEFAULT_INCOME,
           expenses: [],
           recurringExpenses: [],
@@ -338,6 +366,7 @@ export const useFinanceStore = create<FinanceStore>()(
           const prevSettings = (p.settings as Record<string, unknown> | undefined) || {}
           return {
             ...p,
+            onboardingState: (p.onboardingState as OnboardingState | undefined) ?? defaultOnboardingState(),
             recurringDebtPayments: Array.isArray(p.recurringDebtPayments)
               ? p.recurringDebtPayments
               : [],
@@ -345,6 +374,7 @@ export const useFinanceStore = create<FinanceStore>()(
               ...DEFAULT_SETTINGS,
               ...prevSettings,
               noIncomeDeclared: Boolean(prevSettings.noIncomeDeclared),
+              showAllCurrenciesInForms: migrateShowAllCurrenciesInForms(prevSettings),
             },
           } as never
         }
@@ -352,11 +382,13 @@ export const useFinanceStore = create<FinanceStore>()(
           const prevSettings = (p.settings as Record<string, unknown> | undefined) || {}
           return {
             ...p,
+            onboardingState: (p.onboardingState as OnboardingState | undefined) ?? defaultOnboardingState(),
             recurringDebtPayments: [],
             settings: {
               ...DEFAULT_SETTINGS,
               ...prevSettings,
               noIncomeDeclared: Boolean(prevSettings.noIncomeDeclared),
+              showAllCurrenciesInForms: migrateShowAllCurrenciesInForms(prevSettings),
             },
           } as never
         }
@@ -364,6 +396,7 @@ export const useFinanceStore = create<FinanceStore>()(
           ...p,
           profile: DEFAULT_PROFILE,
           settings: { ...DEFAULT_SETTINGS, noIncomeDeclared: false },
+          onboardingState: defaultOnboardingState(),
           incomeSources: [],
           expenses: [],
           recurringExpenses: [],
@@ -386,6 +419,9 @@ export const useFinanceStore = create<FinanceStore>()(
           ...p,
           savingsHoldings: p.savingsHoldings ?? current.savingsHoldings,
           recurringDebtPayments: p.recurringDebtPayments ?? current.recurringDebtPayments,
+          onboardingState: p.onboardingState
+            ? { ...current.onboardingState, ...p.onboardingState }
+            : current.onboardingState,
           settings: {
             ...current.settings,
             ...p.settings,
@@ -393,6 +429,21 @@ export const useFinanceStore = create<FinanceStore>()(
             enableAI: p.settings?.enableAI ?? current.settings.enableAI,
             aiProvider: p.settings?.aiProvider ?? current.settings.aiProvider,
             noIncomeDeclared: p.settings?.noIncomeDeclared ?? current.settings.noIncomeDeclared,
+            showAllCurrenciesInForms: (() => {
+              const ps = p.settings as
+                | (typeof p.settings & {
+                    currencyDropdownScope?: 'all' | 'primary_only' | 'primary_and_secondary'
+                  })
+                | undefined
+              if (typeof ps?.showAllCurrenciesInForms === 'boolean') return ps.showAllCurrenciesInForms
+              if (ps?.currencyDropdownScope === 'all') return true
+              if (
+                ps?.currencyDropdownScope === 'primary_only' ||
+                ps?.currencyDropdownScope === 'primary_and_secondary'
+              )
+                return false
+              return current.settings.showAllCurrenciesInForms
+            })(),
           },
         }
       },

@@ -11,6 +11,7 @@ function buildFinancePayload() {
   return {
     profile: state.profile,
     settings: state.settings,
+    onboardingState: state.onboardingState,
     incomeSources: state.incomeSources,
     expenses: state.expenses,
     recurringExpenses: state.recurringExpenses,

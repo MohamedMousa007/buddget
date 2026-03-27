@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { X } from 'lucide-react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { EXPENSE_CATEGORIES, FIAT_CURRENCIES } from '@/lib/constants/finance'
+import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
+import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import type { ExpenseCategory, Currency } from '@/lib/store/types'
 import { useEscapeClose } from '@/lib/hooks/useEscapeClose'
 
@@ -40,15 +42,17 @@ export function AddExpenseSheet() {
   const [isRecurring, setIsRecurring] = useState(false)
   const [notes, setNotes] = useState('')
   const [submitError, setSubmitError] = useState('')
+  const skipNextDefaultCurrencySync = useRef(false)
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- apply AI/sheet prefill when opening */
     if (isOpen && expensePrefill) {
+      skipNextDefaultCurrencySync.current = true
       if (expensePrefill.date) setDate(expensePrefill.date)
       if (expensePrefill.description) setDescription(expensePrefill.description)
       if (expensePrefill.amount) setAmount(expensePrefill.amount)
       if (expensePrefill.currency && FIAT_CURRENCIES.includes(expensePrefill.currency as Currency)) {
-        setCurrency(expensePrefill.currency as Currency)
+        setCurrency(clampFiatToAllowed(settings, expensePrefill.currency as Currency))
       }
       if (expensePrefill.category && EXPENSE_CATEGORIES.includes(expensePrefill.category as ExpenseCategory)) {
         setCategory(expensePrefill.category as ExpenseCategory)
@@ -61,7 +65,18 @@ export function AddExpenseSheet() {
       setExpensePrefill(null)
     }
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [isOpen, expensePrefill, setExpensePrefill, paymentMethods])
+  }, [isOpen, expensePrefill, setExpensePrefill, paymentMethods, settings])
+
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- default currency when opening without AI prefill */
+    if (!isOpen || expensePrefill) return
+    if (skipNextDefaultCurrencySync.current) {
+      skipNextDefaultCurrencySync.current = false
+      return
+    }
+    setCurrency(settings.baseCurrency)
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [isOpen, expensePrefill, settings.baseCurrency])
 
   const resetForm = () => {
     setDate(new Date().toISOString().slice(0, 10))
@@ -81,12 +96,14 @@ export function AddExpenseSheet() {
     const parsedAmount = parseFloat(amount)
     setSubmitError('')
 
+    const cur = clampFiatToAllowed(settings, currency)
+
     addExpense({
       date,
       description,
       category,
       amount: parsedAmount,
-      currency,
+      currency: cur,
       paymentMethodId,
       isRecurring,
       notes: notes || undefined,
@@ -157,18 +174,14 @@ export function AddExpenseSheet() {
                   </div>
                   <div>
                     <Label className="text-xs text-[var(--color-brand-text-secondary)]">Currency</Label>
-                    <select
+                    <FiatCurrencySelect
                       value={currency}
-                      onChange={(e) => {
-                        setCurrency(e.target.value as Currency)
+                      onChange={(c) => {
+                        setCurrency(c)
                         setSubmitError('')
                       }}
                       className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
-                    >
-                      {FIAT_CURRENCIES.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
+                    />
                   </div>
                 </div>
 

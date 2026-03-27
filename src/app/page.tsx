@@ -81,7 +81,9 @@ export default function DashboardPage() {
             >
               <Bell className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
             </button>
-            <AuthNavButtons />
+            <div className="lg:hidden">
+              <AuthNavButtons />
+            </div>
           </div>
         </div>
       </header>

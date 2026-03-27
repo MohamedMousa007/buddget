@@ -92,6 +92,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const onboardingDone = user.user_metadata?.onboarding_completed === true
+  const onboardingRedo = request.nextUrl.searchParams.get('redo') === '1'
 
   if (!onboardingDone && !isOnboarding) {
     const url = request.nextUrl.clone()
@@ -100,7 +101,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  if (onboardingDone && isOnboarding) {
+  if (onboardingDone && isOnboarding && !onboardingRedo) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     url.search = ''

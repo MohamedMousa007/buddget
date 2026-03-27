@@ -29,6 +29,10 @@ export const importDataSchema = z.object({
       name: z.string(),
       email: z.string().optional(),
       avatar: z.string().optional(),
+      avatarPresetId: z.string().optional(),
+      country: z.string().optional(),
+      city: z.string().optional(),
+      phone: z.string().optional(),
       baseCurrency: currencySchema,
       createdAt: z.string(),
     })
@@ -46,6 +50,7 @@ export const importDataSchema = z.object({
       enableAI: z.boolean().optional(),
       aiProvider: z.enum(['gemini']).optional(),
       noIncomeDeclared: z.boolean().optional(),
+      showAllCurrenciesInForms: z.boolean().optional(),
     })
     .optional(),
   incomeSources: z
@@ -186,5 +191,31 @@ export const importDataSchema = z.object({
         createdAt: z.string(),
       })
     )
+    .optional(),
+  onboardingState: z
+    .object({
+      flowVersion: z.number(),
+      answers: z.record(z.string(), z.unknown()),
+      currentStepIndex: z.number(),
+      planAccepted: z.boolean(),
+      selectedPlanIndex: z.number().nullable(),
+      aiPlans: z
+        .array(
+          z.object({
+            id: z.string(),
+            label: z.string(),
+            personaId: z.string(),
+            personaLabel: z.string(),
+            personaTagline: z.string(),
+            rationale: z.string(),
+            costOfLivingNote: z.string().optional(),
+            percents: z.record(z.string(), z.number()),
+            assumptions: z.array(z.string()),
+          })
+        )
+        .nullable(),
+      aiGeneratedAt: z.string().nullable(),
+      lastValidationNotes: z.array(z.string()).nullable(),
+    })
     .optional(),
 })
