@@ -51,6 +51,7 @@ export const importDataSchema = z.object({
       aiProvider: z.enum(['gemini']).optional(),
       noIncomeDeclared: z.boolean().optional(),
       showAllCurrenciesInForms: z.boolean().optional(),
+      dismissOnboardingBanner: z.boolean().optional(),
     })
     .optional(),
   incomeSources: z

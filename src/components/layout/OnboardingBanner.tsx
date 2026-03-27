@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { X } from 'lucide-react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { getOnboardingCompletionPercent, isExpertOnboardingComplete } from '@/lib/onboarding/onboardingProgress'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -9,13 +10,22 @@ import { useAuth } from '@/components/auth/AuthProvider'
 export function OnboardingBanner() {
   const pathname = usePathname()
   const { user, loading } = useAuth()
-  const onboardingState = useFinanceStore((s) => s.onboardingState)
+  const store = useFinanceStore()
+  const { settings, updateSettings, onboardingState } = store
 
   if (loading || !user) return null
+  if (settings.dismissOnboardingBanner) return null
   if (isExpertOnboardingComplete(onboardingState)) return null
   if (pathname?.startsWith('/onboarding') || pathname?.startsWith('/profile')) return null
 
-  const pct = getOnboardingCompletionPercent(onboardingState)
+  const pct = getOnboardingCompletionPercent(store)
+
+  const dismiss = () => {
+    updateSettings({ dismissOnboardingBanner: true })
+    window.alert(
+      'The onboarding reminder is hidden. You can always continue or finish setup from your Profile → Onboarding.'
+    )
+  }
 
   return (
     <div className="px-4 py-2.5 border-b border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/50">
@@ -32,12 +42,22 @@ export function OnboardingBanner() {
           </div>
           <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-1">{pct}%</p>
         </div>
-        <Link
-          href="/onboarding?redo=1"
-          className="shrink-0 text-center text-xs font-semibold px-3 py-2 rounded-xl bg-[var(--color-brand-red)] text-white hover:bg-[var(--color-brand-red-hover)] transition-colors"
-        >
-          Complete onboarding
-        </Link>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={dismiss}
+            className="p-2 rounded-xl border border-[var(--color-brand-border)] text-[var(--color-brand-text-muted)] hover:text-white hover:bg-[var(--color-brand-elevated)] transition-colors"
+            aria-label="Dismiss onboarding reminder"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          <Link
+            href="/onboarding?redo=1"
+            className="text-center text-xs font-semibold px-3 py-2 rounded-xl bg-[var(--color-brand-red)] text-white hover:bg-[var(--color-brand-red-hover)] transition-colors"
+          >
+            Complete onboarding
+          </Link>
+        </div>
       </div>
     </div>
   )

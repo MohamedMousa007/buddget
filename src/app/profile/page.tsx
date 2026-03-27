@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { User, Settings, ClipboardList } from 'lucide-react'
+import { User, Settings, ClipboardList, CheckCircle2, CircleDashed } from 'lucide-react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
@@ -11,7 +11,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { CARTOON_AVATAR_PRESETS, cartoonAvatarUrlForPreset } from '@/lib/onboarding/cartoonAvatars'
 import { Progress, ProgressIndicator, ProgressTrack } from '@/components/ui/progress'
-import { getOnboardingCompletionPercent, isExpertOnboardingComplete } from '@/lib/onboarding/onboardingProgress'
+import {
+  getOnboardingCompletionPercent,
+  getOnboardingStageRows,
+  isExpertOnboardingComplete,
+  onboardingProgressSnapshotFromStore,
+} from '@/lib/onboarding/onboardingProgress'
 import { cn } from '@/lib/utils'
 import { ProfileBudgetSection } from '@/components/profile/ProfileBudgetSection'
 
@@ -34,8 +39,9 @@ export default function ProfilePage() {
     }
   }, [user?.email])
 
-  const pct = getOnboardingCompletionPercent(store.onboardingState)
+  const pct = getOnboardingCompletionPercent(store)
   const expertDone = isExpertOnboardingComplete(store.onboardingState)
+  const onboardingStages = getOnboardingStageRows(onboardingProgressSnapshotFromStore(store))
 
   const activePreset = store.profile.avatarPresetId
 
@@ -214,8 +220,8 @@ export default function ProfilePage() {
           ) : (
             <>
               <p className="text-sm text-[var(--color-brand-text-muted)]">
-                Complete the questionnaire and choose a suggested budget plan. Progress only counts answers you’ve
-                saved in this flow.
+                Progress reflects survey answers and data you’ve already entered in the app (income, budgets, debts, and
+                payment methods).
               </p>
               <Progress value={pct} className="gap-1">
                 <ProgressTrack className="h-1.5 bg-[var(--color-brand-border)]">
@@ -223,6 +229,21 @@ export default function ProfilePage() {
                 </ProgressTrack>
               </Progress>
               <p className="text-[11px] text-[var(--color-brand-text-muted)]">{pct}% complete</p>
+              <ul className="space-y-2 pt-1">
+                {onboardingStages.map((row) => (
+                  <li key={row.id} className="flex items-start gap-2">
+                    {row.status === 'complete' ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" aria-hidden />
+                    ) : (
+                      <CircleDashed className="w-4 h-4 text-[var(--color-brand-text-muted)] shrink-0 mt-0.5" aria-hidden />
+                    )}
+                    <div>
+                      <p className="text-xs font-medium text-white">{row.label}</p>
+                      <p className="text-[10px] text-[var(--color-brand-text-muted)]">{row.description}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </>
           )}
           <button

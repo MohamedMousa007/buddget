@@ -54,6 +54,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   aiProvider: 'gemini',
   noIncomeDeclared: false,
   showAllCurrenciesInForms: true,
+  dismissOnboardingBanner: false,
 }
 
 export const DEFAULT_PROFILE: UserProfile = {

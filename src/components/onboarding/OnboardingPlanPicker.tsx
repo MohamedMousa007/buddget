@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Check, Target } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import type { ExpenseCategory, OnboardingAiPlan } from '@/lib/store/types'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { MoneyDisplay } from '@/components/ui/MoneyDisplay'
 import { normalizeCategoryPercents } from '@/lib/onboarding/planNormalization'
 import { calculateMonthlyIncome } from '@/lib/utils/calculations'
@@ -68,6 +69,16 @@ export function OnboardingPlanPicker({
     const clamped = Math.max(0, Math.min(100, n))
     const base = edited ?? { ...plan.percents }
     const next = { ...base, [c]: clamped }
+    setEdited(normalizeCategoryPercents(next as Record<string, number>))
+  }
+
+  const setAmt = (c: ExpenseCategory, v: string) => {
+    const n = parseFloat(v.replace(/,/g, '.'))
+    if (!Number.isFinite(n) || n < 0) return
+    if (monthlyTakeHome <= 0) return
+    const newPct = (n / monthlyTakeHome) * 100
+    const base = edited ?? { ...plan.percents }
+    const next = { ...base, [c]: newPct }
     setEdited(normalizeCategoryPercents(next as Record<string, number>))
   }
 
@@ -149,13 +160,16 @@ export function OnboardingPlanPicker({
                     <span className="text-[var(--color-brand-text-muted)] text-xs">%</span>
                   </div>
                 </div>
-                <div className="text-sm">
-                  <MoneyDisplay
-                    variant="card"
-                    amount={amt}
-                    currency={settings.baseCurrency}
-                    primaryClassName="text-white"
-                    secondaryClassName="text-[10px]"
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Label className="text-[10px] text-[var(--color-brand-text-muted)] shrink-0">Amount ({settings.baseCurrency})</Label>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    disabled={monthlyTakeHome <= 0}
+                    value={monthlyTakeHome > 0 ? String(Math.round(amt * 100) / 100) : ''}
+                    onChange={(e) => setAmt(c, e.target.value)}
+                    placeholder={monthlyTakeHome <= 0 ? 'Add income first' : '0'}
+                    className="flex-1 min-w-[6rem] h-8 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers text-xs px-2"
                   />
                 </div>
               </div>
@@ -163,7 +177,8 @@ export function OnboardingPlanPicker({
           })}
         </div>
         <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-2">
-          Percentages are normalized to ~100% when you accept.
+          Edit percentages or amounts (amounts use your monthly take-home). Values are normalized to ~100% when you
+          accept.
         </p>
       </div>
 

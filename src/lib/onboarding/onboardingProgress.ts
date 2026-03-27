@@ -1,7 +1,16 @@
 import type { OnboardingState } from '@/lib/store/types'
-import { ONBOARDING_FLOW_VERSION, defaultOnboardingState } from '@/lib/onboarding/onboardingTypes'
+import type { FinanceStore } from '@/lib/store/types'
+import {
+  getOnboardingCompletionPercentFromSnapshot,
+  getOnboardingStageRows,
+  isPlanStageComplete,
+  onboardingProgressSnapshotFromStore,
+  type OnboardingProgressSnapshot,
+} from '@/lib/onboarding/onboardingStages'
 
-/** Survey-only step ids used for progress (excludes plan picker). */
+export { getOnboardingStageRows, onboardingProgressSnapshotFromStore, type OnboardingProgressSnapshot }
+
+/** Survey-only step ids used for journey bar (excludes plan picker). */
 export const EXPERT_SURVEY_STEP_IDS: string[] = [
   'expert_welcome',
   'display_name',
@@ -29,42 +38,25 @@ export const EXPERT_SURVEY_STEP_IDS: string[] = [
   'pre_plan',
 ] as const
 
-/** Steps that collect user data (excludes static intro / pre-plan screens). */
-export const EXPERT_DATA_STEP_IDS = EXPERT_SURVEY_STEP_IDS.filter(
-  (id) => id !== 'expert_welcome' && id !== 'pre_plan'
-)
-
-function countAnsweredDataSteps(answers: Record<string, unknown>): number {
-  let c = 0
-  for (const id of EXPERT_DATA_STEP_IDS) {
-    const v = answers[id]
-    if (v === undefined || v === null) continue
-    if (typeof v === 'string' && !v.trim()) continue
-    if (Array.isArray(v) && v.length === 0) continue
-    c += 1
-  }
-  return c
-}
-
 export function isExpertOnboardingComplete(onboarding: OnboardingState | undefined): boolean {
-  if (!onboarding) return false
-  return onboarding.flowVersion >= ONBOARDING_FLOW_VERSION && onboarding.planAccepted === true
+  return isPlanStageComplete(onboarding)
 }
 
-const DATA_STEP_COUNT = EXPERT_DATA_STEP_IDS.length
+export type OnboardingProgressStoreSlice = Pick<
+  FinanceStore,
+  | 'profile'
+  | 'onboardingState'
+  | 'incomeSources'
+  | 'budgetCategories'
+  | 'debts'
+  | 'paymentMethods'
+  | 'exchangeRates'
+  | 'settings'
+>
 
-/**
- * 0–100 for UI: based only on saved onboarding answers (not inferred from other app data),
- * so a fresh user with no survey input shows 0%.
- * 100 only when expert flow + plan accepted.
- */
-export function getOnboardingCompletionPercent(onboardingState: OnboardingState | undefined): number {
-  const ob = onboardingState ?? defaultOnboardingState()
-  if (isExpertOnboardingComplete(ob)) return 100
-
-  const answered = countAnsweredDataSteps(ob.answers)
-  const pct = DATA_STEP_COUNT > 0 ? Math.round((answered / DATA_STEP_COUNT) * 100) : 0
-  return Math.min(99, pct)
+/** 0–100: blends survey answers with income, budgets, debts, and payment methods already in the app. */
+export function getOnboardingCompletionPercent(store: OnboardingProgressStoreSlice): number {
+  return getOnboardingCompletionPercentFromSnapshot(onboardingProgressSnapshotFromStore(store))
 }
 
 export function expertSurveyStepCount(): number {

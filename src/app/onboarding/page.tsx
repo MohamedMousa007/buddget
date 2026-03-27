@@ -306,65 +306,65 @@ export default function OnboardingPage() {
   const finishOnboarding = useCallback(
     async (plan: OnboardingAiPlan | null) => {
       setFinishing(true)
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) {
-        setFinishing(false)
-        router.replace('/')
-        return
-      }
-
-      const base = useFinanceStore.getState().settings.baseCurrency
-      const monthly = calculateMonthlyIncome(
-        useFinanceStore.getState().incomeSources,
-        base,
-        useFinanceStore.getState().exchangeRates
-      )
-
-      if (plan) {
-        const p = plan.percents
-        setBudgetCategories(
-          (['Rent', 'Transport', 'Food', 'Enjoyment', 'Savings', 'Debt', 'Remittance', 'Other'] as const).map(
-            (category) => ({
-              category,
-              budgetedAmount: monthly > 0 ? (p[category] / 100) * monthly : 0,
-              currency: base,
-              percentOfIncome: p[category],
-            })
-          )
+      try {
+        const base = useFinanceStore.getState().settings.baseCurrency
+        const monthly = calculateMonthlyIncome(
+          useFinanceStore.getState().incomeSources,
+          base,
+          useFinanceStore.getState().exchangeRates
         )
-        updateSettings({ budgetEntryMode: 'percent_of_income' })
-      }
 
-      const drafts = valueForPaymentStep(answers)
-      if (drafts.length > 0) {
-        applyPaymentDrafts(redo, drafts, base)
-      }
+        if (plan) {
+          const p = plan.percents
+          setBudgetCategories(
+            (['Rent', 'Transport', 'Food', 'Enjoyment', 'Savings', 'Debt', 'Remittance', 'Other'] as const).map(
+              (category) => ({
+                category,
+                budgetedAmount: monthly > 0 ? (p[category] / 100) * monthly : 0,
+                currency: base,
+                percentOfIncome: p[category],
+              })
+            )
+          )
+          updateSettings({ budgetEntryMode: 'percent_of_income', dismissOnboardingBanner: false })
+        } else {
+          updateSettings({ dismissOnboardingBanner: false })
+        }
 
-      setOnboardingState({
-        planAccepted: true,
-        selectedPlanIndex: plan ? 0 : null,
-        currentStepIndex: steps.length,
-      })
+        const drafts = valueForPaymentStep(answers)
+        if (drafts.length > 0) {
+          applyPaymentDrafts(redo, drafts, base)
+        }
 
-      if (!redo) {
-        await supabase
-          .from('user_profiles')
-          .update({
-            onboarding_completed: true,
-            display_name: useFinanceStore.getState().profile.name,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', user.id)
-
-        await supabase.auth.updateUser({
-          data: { onboarding_completed: true },
+        setOnboardingState({
+          planAccepted: true,
+          selectedPlanIndex: plan ? 0 : null,
+          currentStepIndex: steps.length,
         })
-      }
 
-      router.refresh()
-      router.replace('/')
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (user && !redo) {
+          await supabase
+            .from('user_profiles')
+            .update({
+              onboarding_completed: true,
+              display_name: useFinanceStore.getState().profile.name,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('user_id', user.id)
+
+          await supabase.auth.updateUser({
+            data: { onboarding_completed: true },
+          })
+        }
+
+        router.refresh()
+        router.replace('/')
+      } finally {
+        setFinishing(false)
+      }
     },
     [answers, redo, router, setBudgetCategories, setOnboardingState, steps.length, supabase, updateSettings]
   )
@@ -451,15 +451,27 @@ export default function OnboardingPage() {
                 </p>
               </div>
             </div>
-            {redo ? (
-              <button
-                type="button"
-                onClick={() => router.push('/profile')}
-                className="text-xs text-[var(--color-brand-text-secondary)] hover:text-white shrink-0"
-              >
-                Exit to profile
-              </button>
-            ) : null}
+            <div className="flex flex-col items-end gap-1.5 shrink-0">
+              {phase === 'survey' ? (
+                <button
+                  type="button"
+                  disabled={finishing || planLoading}
+                  onClick={() => void finishOnboarding(null)}
+                  className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:text-white hover:bg-[var(--color-brand-elevated)] disabled:opacity-40 transition-colors"
+                >
+                  Set up manually
+                </button>
+              ) : null}
+              {redo ? (
+                <button
+                  type="button"
+                  onClick={() => router.push('/profile')}
+                  className="text-xs text-[var(--color-brand-text-secondary)] hover:text-white"
+                >
+                  Exit to profile
+                </button>
+              ) : null}
+            </div>
           </div>
           {phase === 'survey' ? (
             <OnboardingJourneyProgress totalSteps={surveyTotal} currentIndex={index} phase="survey" />

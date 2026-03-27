@@ -188,6 +188,8 @@ export interface AppSettings {
    * selectors on this page or the sidebar. New installs default to true (switch off).
    */
   showAllCurrenciesInForms: boolean
+  /** When true, the dashboard onboarding banner stays hidden until reset (e.g. after completing onboarding). */
+  dismissOnboardingBanner: boolean
 }
 
 /** Draft payment row from onboarding (applied to store on finish). */
