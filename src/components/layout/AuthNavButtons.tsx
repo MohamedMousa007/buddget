@@ -3,7 +3,12 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useMemo } from 'react'
-import { User, Settings } from 'lucide-react'
+import { User, Settings, Bell } from 'lucide-react'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -12,6 +17,31 @@ import { cn } from '@/lib/utils'
 
 const btnClass =
   'inline-flex items-center justify-center px-2 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors border border-[var(--color-brand-border)] text-white hover:bg-[var(--color-brand-elevated)] sm:px-3'
+
+function HeaderNotificationsButton() {
+  return (
+    <Popover>
+      <PopoverTrigger
+        type="button"
+        className="p-2 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-red)]/50"
+        aria-label="Notifications"
+      >
+        <Bell className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
+      </PopoverTrigger>
+      <PopoverContent
+        align="end"
+        side="bottom"
+        sideOffset={8}
+        className="w-80 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] p-4 text-sm shadow-xl ring-white/10"
+      >
+        <p className="font-semibold text-white mb-1">Notifications</p>
+        <p className="text-xs text-[var(--color-brand-text-muted)] leading-relaxed">
+          No alerts right now. Budget reminders and spending insights will show up here in a future update.
+        </p>
+      </PopoverContent>
+    </Popover>
+  )
+}
 
 function ProfileAvatarLink({ className }: { className?: string }) {
   const profile = useFinanceStore(useShallow((s) => s.profile))
@@ -52,6 +82,7 @@ export function AuthNavButtons({ className }: { className?: string }) {
   if (!configured) {
     return (
       <div className={cn('flex items-center gap-1.5 sm:gap-2', className)}>
+        <HeaderNotificationsButton />
         <ProfileAvatarLink />
         <Link
           href="/settings"
@@ -77,6 +108,7 @@ export function AuthNavButtons({ className }: { className?: string }) {
 
   return (
     <div className={cn('flex items-center gap-1.5 sm:gap-2', className)}>
+      <HeaderNotificationsButton />
       {!user ? (
         <>
           <button type="button" onClick={() => openAuthModal(nextPath)} className={btnClass}>
