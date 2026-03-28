@@ -21,7 +21,7 @@
 4. **GitHub Actions `npm run build`** needs the same public Supabase vars as the app (so Next can build). In the repo: **Settings → Secrets and variables → Actions → New repository secret**, add:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`  
-   (Same values as in Vercel / `.env.local`.) The workflow passes them into the build step automatically.
+   (Same values as in Vercel / `.env.local`.) The workflow passes them into the build step automatically, along with `NEXT_PUBLIC_APP_URL` for production (`https://buddget.online`).
 
 ## 1. Push to GitHub
 
@@ -79,7 +79,7 @@ Redeploy after changing env vars (**Deployments → … → Redeploy**).
 
 **Supabase Auth (production):** In Supabase → **Authentication → URL configuration**, set **Site URL** to `https://buddget.online` (exact origin, no path). Under **Redirect URLs**, add `https://buddget.online/**` (and dev `http://localhost:3000/**`) so **password recovery** can return to `/auth/callback`. Sign-in uses **email + password**; signup confirmation can use a **6-digit OTP** when enabled — see [`supabase/README.md`](../supabase/README.md).
 
-**Admin:** `/admin` requires a **signed-in Buddget user** (middleware) **and** the **ADMIN_PIN** in the app/API. Anonymous visitors cannot open the admin screen.
+**Admin:** `/admin` shows a PIN gate in the app; entering the correct **ADMIN_PIN** unlocks the panel. Server APIs still validate the PIN / service role. Middleware does not redirect anonymous users away from `/admin`.
 
 ## 4. Smoke checks after deploy
 

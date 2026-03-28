@@ -6,7 +6,7 @@ import path from 'path'
 const withPWA = require('next-pwa')({
   dest: 'public',
   register: true,
-  /** false = new SW can stay in `waiting` until the user refreshes (see PwaUpdateNotifier + usePwaUpdateAvailable). */
+  /** false = new SW can stay in `waiting` until the user refreshes (see UpdateToast + usePwaUpdate). */
   skipWaiting: false,
   disable: process.env.NODE_ENV === 'development',
   buildExcludes: [/middleware-manifest\.json$/],

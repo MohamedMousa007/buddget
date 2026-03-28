@@ -5,7 +5,7 @@
 3. In the **SQL Editor**, run migrations in order:
 
    1. [`migrations/001_init_auth_finance_analytics.sql`](./migrations/001_init_auth_finance_analytics.sql)  
-   2. If you previously ran an older `001` without analytics rate limiting, also run [`migrations/002_analytics_insert_rate_limit.sql`](./migrations/002_analytics_insert_rate_limit.sql) (safe to run even on a fresh DB).
+   2. If you previously ran an older `001` without analytics rate limiting, also run [`migrations/003_analytics_insert_rate_limit.sql`](./migrations/003_analytics_insert_rate_limit.sql) (safe to run even on a fresh DB).
 
 4. Under **Authentication → Providers → Email**:
    - Turn **Email** on.

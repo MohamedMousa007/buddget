@@ -1,0 +1,13 @@
+import type { Metadata } from 'next'
+import type { ReactNode } from 'react'
+
+export const dynamic = 'force-dynamic'
+
+export const metadata: Metadata = {
+  title: 'Install Buddget | Add to Home Screen',
+  description: 'Install Buddget on iPhone, Android, or desktop as a progressive web app.',
+}
+
+export default function InstallLayout({ children }: { children: ReactNode }) {
+  return children
+}

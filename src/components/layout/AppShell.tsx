@@ -6,6 +6,7 @@ import { BottomNav } from './BottomNav'
 import { ModalProvider } from '@/components/modals/ModalProvider'
 import { OnboardingBanner } from '@/components/layout/OnboardingBanner'
 import { DesktopHeaderBar } from '@/components/layout/DesktopHeaderBar'
+import { InstallButton } from '@/components/pwa/InstallButton'
 
 interface AppShellProps {
   children: React.ReactNode
@@ -39,6 +40,7 @@ export function AppShell({ children }: AppShellProps) {
         <OnboardingBanner />
         {children}
       </main>
+      <InstallButton variant="banner" />
       <BottomNav />
       <ModalProvider />
     </div>

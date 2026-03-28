@@ -15,6 +15,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
 import type { Currency } from '@/lib/store/types'
+import { InstallButton } from '@/components/pwa/InstallButton'
 const NAV_ITEMS = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/expenses', label: 'Expenses', icon: Receipt },
@@ -31,7 +32,7 @@ export function Sidebar() {
   )
 
   return (
-    <aside className="hidden lg:flex flex-col w-[200px] h-screen bg-[var(--color-brand-card)] border-r border-[var(--color-brand-border)] fixed left-0 top-0 z-40">
+    <aside className="hidden lg:flex flex-col w-[200px] h-screen bg-[var(--color-brand-card)] border-r border-[var(--color-brand-border)] fixed left-0 top-0 z-40 overflow-hidden">
       <div className="p-6">
         <Link href="/" className="flex items-center gap-2">
           <span className="text-2xl font-bold font-heading tracking-tight">
@@ -52,7 +53,7 @@ export function Sidebar() {
         </select>
       </div>
 
-      <nav className="flex-1 px-3 space-y-1">
+      <nav className="flex-1 min-h-0 overflow-y-auto px-3 space-y-1">
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href
           return (
@@ -73,6 +74,9 @@ export function Sidebar() {
         })}
       </nav>
 
+      <div className="shrink-0 p-3 border-t border-[var(--color-brand-border)]">
+        <InstallButton variant="button" />
+      </div>
     </aside>
   )
 }

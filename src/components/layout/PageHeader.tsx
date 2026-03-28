@@ -10,7 +10,7 @@ export const PAGE_HEADER_SURFACE_BASE =
  */
 export const PAGE_HEADER_SURFACE_CLASS = `sticky top-0 z-30 lg:top-[52px] ${PAGE_HEADER_SURFACE_BASE}`
 
-/** Full-width routes without DesktopHeaderBar (onboarding, login, etc.). */
+/** Full-width routes without DesktopHeaderBar (onboarding, reset-password, etc.). */
 export const PAGE_HEADER_BARE_CLASS = `sticky top-0 z-30 ${PAGE_HEADER_SURFACE_BASE}`
 
 export function PageHeader({ children }: { children: React.ReactNode }) {

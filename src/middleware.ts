@@ -60,6 +60,18 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse
   }
 
+  const isPublicMarketing =
+    pathname === '/privacy' ||
+    pathname === '/terms' ||
+    pathname === '/install' ||
+    pathname === '/sitemap.xml' ||
+    pathname === '/robots.txt' ||
+    pathname.startsWith('/opengraph-image')
+
+  if (isPublicMarketing) {
+    return supabaseResponse
+  }
+
   const isAuthCallback = pathname === AUTH_CALLBACK || pathname.startsWith(`${AUTH_CALLBACK}/`)
   const isResetPassword = pathname.startsWith('/reset-password')
   const isOnboarding = pathname === ONBOARDING_PATH || pathname.startsWith(`${ONBOARDING_PATH}/`)
@@ -70,19 +82,6 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!user) {
-    if (isAdmin) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/'
-      url.search = ''
-      url.searchParams.set('next', pathname + (request.nextUrl.search || ''))
-      return NextResponse.redirect(url)
-    }
-    if (isOnboarding) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/'
-      url.search = ''
-      return NextResponse.redirect(url)
-    }
     return supabaseResponse
   }
 

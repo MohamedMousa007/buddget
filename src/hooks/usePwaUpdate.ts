@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 function getWorkbox() {
   if (typeof window === 'undefined') return undefined
@@ -8,12 +8,17 @@ function getWorkbox() {
 }
 
 /**
- * Detects a waiting Workbox service worker (new deployment) and exposes refresh via SKIP_WAITING + reload.
+ * Detects a waiting Workbox service worker and exposes apply via `SKIP_WAITING` + reload.
+ * Uses `workbox.messageSkipWaiting()` when present (posts to the waiting SW); otherwise
+ * `waiting.postMessage({ type: 'SKIP_WAITING' })`. Reloads on `controllerchange` or after a short timeout.
  * No-ops in development (next-pwa disabled) or without service workers.
  */
-export function usePwaUpdateAvailable() {
-  const [updateReady, setUpdateReady] = useState(false)
+export function usePwaUpdate() {
+  const [hasWaiting, setHasWaiting] = useState(false)
+  const [dismissed, setDismissed] = useState(false)
   const workboxRef = useRef<NonNullable<ReturnType<typeof getWorkbox>> | null>(null)
+
+  const updateAvailable = useMemo(() => hasWaiting && !dismissed, [hasWaiting, dismissed])
 
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') return
@@ -26,16 +31,17 @@ export function usePwaUpdateAvailable() {
 
     const markIfWaiting = (reg: ServiceWorkerRegistration | undefined) => {
       if (!reg?.waiting || !reg.active) return
-      setUpdateReady(true)
+      setHasWaiting(true)
     }
 
     const onUpdateFound = (reg: ServiceWorkerRegistration) => {
+      setDismissed(false)
       const installing = reg.installing
       if (!installing) return
       const onState = () => {
         if (cancelled) return
         if (installing.state === 'installed' && reg.waiting && reg.active) {
-          setUpdateReady(true)
+          setHasWaiting(true)
         }
       }
       installing.addEventListener('statechange', onState)
@@ -60,7 +66,7 @@ export function usePwaUpdateAvailable() {
     })
 
     const onWorkboxWaiting = () => {
-      if (!cancelled) setUpdateReady(true)
+      if (!cancelled) setHasWaiting(true)
     }
 
     const attachWorkbox = () => {
@@ -92,7 +98,11 @@ export function usePwaUpdateAvailable() {
     }
   }, [])
 
-  const refreshNow = useCallback(() => {
+  const dismiss = useCallback(() => {
+    setDismissed(true)
+  }, [])
+
+  const applyUpdate = useCallback(() => {
     const wb = workboxRef.current ?? getWorkbox()
     if (wb) {
       wb.messageSkipWaiting()
@@ -117,5 +127,5 @@ export function usePwaUpdateAvailable() {
     }, 4000)
   }, [])
 
-  return { updateReady, refreshNow }
+  return { updateAvailable, applyUpdate, dismiss }
 }

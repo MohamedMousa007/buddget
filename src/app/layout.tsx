@@ -4,7 +4,7 @@ import './globals.css'
 import { AppShell } from '@/components/layout/AppShell'
 import { AuthProvider } from '@/components/auth/AuthProvider'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { PwaUpdateNotifier } from '@/components/pwa/PwaUpdateNotifier'
+import { UpdateToast } from '@/components/ui/UpdateToast'
 
 const dmSans = DM_Sans({
   subsets: ['latin'],
@@ -25,8 +25,64 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Buddget',
-  description: 'Personal finance tracker with AI assistant.',
+  metadataBase: new URL('https://buddget.online'),
+  title: {
+    default: 'Buddget — Personal Finance Tracker & Budget Planner',
+    template: '%s | Buddget',
+  },
+  description:
+    'Track expenses, manage budgets, monitor debts and savings. Free personal finance tracker with AI assistant. Works on iPhone and Android. Supports AED, USD, EGP and 10+ currencies.',
+  keywords: [
+    'budget planner',
+    'expense tracker',
+    'personal finance app',
+    'money tracker',
+    'budget app UAE',
+    'AED budget tracker',
+    'multi currency budget',
+    'debt tracker',
+    'savings tracker',
+    'free budget app',
+    'expat finance UAE',
+    'gold debt tracker',
+    'budget planner Dubai',
+    'expense manager',
+  ],
+  authors: [{ name: 'Buddget', url: 'https://buddget.online' }],
+  creator: 'Buddget',
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://buddget.online',
+    siteName: 'Buddget',
+    title: 'Buddget — Personal Finance Tracker & Budget Planner',
+    description: 'Track expenses, manage budgets, monitor debts. Free with AI assistant.',
+    images: [
+      {
+        url: '/opengraph-image',
+        width: 1200,
+        height: 630,
+        alt: 'Buddget — Personal Finance Tracker',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Buddget — Personal Finance Tracker',
+    description: 'Track expenses, manage budgets, monitor debts. Free with AI assistant.',
+    images: ['/opengraph-image'],
+  },
+  alternates: { canonical: 'https://buddget.online' },
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -35,15 +91,12 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/icons/icon-16.png', sizes: '16x16', type: 'image/png' },
-      { url: '/icons/icon-32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icons/icon.svg', type: 'image/svg+xml' },
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
-    apple: [
-      { url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
-      { url: '/icons/apple-touch-icon.svg', type: 'image/svg+xml' },
-    ],
-    shortcut: [{ url: '/icons/icon-32.png' }],
+    apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180' }],
+    shortcut: '/favicon.ico',
   },
 }
 
@@ -61,7 +114,8 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <head>
-        <link rel="icon" href="/icons/icon-16.png" type="image/png" sizes="16x16" />
+        <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+        <link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192" />
         <link rel="icon" href="/icons/icon-32.png" type="image/png" sizes="32x32" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
@@ -77,7 +131,7 @@ export default function RootLayout({
         <TooltipProvider>
           <AuthProvider>
             <AppShell>{children}</AppShell>
-            <PwaUpdateNotifier />
+            <UpdateToast />
           </AuthProvider>
         </TooltipProvider>
       </body>

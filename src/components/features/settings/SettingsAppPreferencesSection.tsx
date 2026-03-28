@@ -3,6 +3,7 @@
 import { Palette } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { InstallButton } from '@/components/pwa/InstallButton'
 import type { FinanceStore } from '@/lib/store/types'
 
 export interface SettingsAppPreferencesSectionProps {
@@ -26,6 +27,11 @@ export function SettingsAppPreferencesSection({ store }: SettingsAppPreferencesS
           checked={store.settings.showCentsInDashboard}
           onCheckedChange={(val) => store.updateSettings({ showCentsInDashboard: val })}
         />
+      </div>
+
+      <div className="pt-2 border-t border-[var(--color-brand-border)]">
+        <p className="text-xs text-[var(--color-brand-text-muted)] mb-2">Progressive web app</p>
+        <InstallButton variant="menu-item" />
       </div>
     </section>
   )
