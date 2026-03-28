@@ -4,6 +4,7 @@ import './globals.css'
 import { AppShell } from '@/components/layout/AppShell'
 import { AuthProvider } from '@/components/auth/AuthProvider'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { PwaUpdateNotifier } from '@/components/pwa/PwaUpdateNotifier'
 
 const dmSans = DM_Sans({
   subsets: ['latin'],
@@ -76,6 +77,7 @@ export default function RootLayout({
         <TooltipProvider>
           <AuthProvider>
             <AppShell>{children}</AppShell>
+            <PwaUpdateNotifier />
           </AuthProvider>
         </TooltipProvider>
       </body>
