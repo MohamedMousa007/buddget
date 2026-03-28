@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import { Download, X, ChevronRight } from 'lucide-react'
 import { usePWAInstall } from '@/hooks/usePWAInstall'
@@ -14,6 +14,7 @@ import {
 import { cn } from '@/lib/utils'
 
 const BANNER_DISMISS_KEY = 'buddget-pwa-install-banner-dismissed-at'
+const BANNER_STORE_EVENT = 'buddget-pwa-banner-dismiss'
 const DISMISS_MS = 7 * 24 * 60 * 60 * 1000
 
 function isBannerDismissed(): boolean {
@@ -25,8 +26,24 @@ function isBannerDismissed(): boolean {
   return Date.now() - t < DISMISS_MS
 }
 
+function subscribeBannerDismissed(onStoreChange: () => void) {
+  if (typeof window === 'undefined') return () => {}
+  const onStorage = (e: StorageEvent) => {
+    if (e.key === BANNER_DISMISS_KEY || e.key === null) onStoreChange()
+  }
+  const onLocal = () => onStoreChange()
+  window.addEventListener('storage', onStorage)
+  window.addEventListener(BANNER_STORE_EVENT, onLocal)
+  return () => {
+    window.removeEventListener('storage', onStorage)
+    window.removeEventListener(BANNER_STORE_EVENT, onLocal)
+  }
+}
+
 function dismissBanner() {
+  if (typeof window === 'undefined') return
   localStorage.setItem(BANNER_DISMISS_KEY, String(Date.now()))
+  window.dispatchEvent(new Event(BANNER_STORE_EVENT))
 }
 
 export type InstallButtonVariant = 'button' | 'banner' | 'menu-item'
@@ -39,11 +56,11 @@ export interface InstallButtonProps {
 export function InstallButton({ variant, className }: InstallButtonProps) {
   const { platform, canInstall, isInstalled, triggerInstall } = usePWAInstall()
   const [iosOpen, setIosOpen] = useState(false)
-  const [bannerDismissed, setBannerDismissed] = useState(true)
-
-  useEffect(() => {
-    setBannerDismissed(isBannerDismissed())
-  }, [])
+  const bannerDismissed = useSyncExternalStore(
+    subscribeBannerDismissed,
+    () => isBannerDismissed(),
+    () => false
+  )
 
   const openFlow = useCallback(async () => {
     if (platform === 'ios') {
@@ -55,7 +72,6 @@ export function InstallButton({ variant, className }: InstallButtonProps) {
 
   const handleDismissBanner = () => {
     dismissBanner()
-    setBannerDismissed(true)
   }
 
   if (isInstalled) return null

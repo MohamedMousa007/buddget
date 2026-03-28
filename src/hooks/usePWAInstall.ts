@@ -9,43 +9,60 @@ interface BeforeInstallPromptEvent extends Event {
 
 export type InstallPlatform = 'android' | 'ios' | 'desktop' | 'installed' | 'unsupported'
 
+type PwaHintState = {
+  platform: InstallPlatform
+  canInstall: boolean
+  isInstalled: boolean
+}
+
+function readInitialPwaHints(): PwaHintState {
+  if (typeof window === 'undefined') {
+    return { platform: 'unsupported', canInstall: false, isInstalled: false }
+  }
+
+  if (window.matchMedia('(display-mode: standalone)').matches) {
+    return { platform: 'installed', canInstall: false, isInstalled: true }
+  }
+
+  const ua = navigator.userAgent
+  const isIOS = /iphone|ipad|ipod/i.test(ua)
+  const isAndroid = /android/i.test(ua)
+  const isSafari = /safari/i.test(ua) && !/chrome/i.test(ua)
+
+  if (isIOS && isSafari) {
+    return { platform: 'ios', canInstall: true, isInstalled: false }
+  }
+
+  let platform: InstallPlatform = 'unsupported'
+  if (isAndroid) platform = 'android'
+  else if (!isIOS) platform = 'desktop'
+
+  return { platform, canInstall: false, isInstalled: false }
+}
+
 export function usePWAInstall() {
-  const [platform, setPlatform] = useState<InstallPlatform>('unsupported')
-  const [canInstall, setCanInstall] = useState(false)
-  const [isInstalled, setIsInstalled] = useState(false)
+  const [{ platform, canInstall, isInstalled }, setState] = useState<PwaHintState>(() =>
+    readInitialPwaHints()
+  )
   const deferredPrompt = useRef<BeforeInstallPromptEvent | null>(null)
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
-
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstalled(true)
-      setPlatform('installed')
-      return
-    }
-
-    const ua = navigator.userAgent
-    const isIOS = /iphone|ipad|ipod/i.test(ua)
-    const isAndroid = /android/i.test(ua)
-    const isSafari = /safari/i.test(ua) && !/chrome/i.test(ua)
-
-    if (isIOS && isSafari) {
-      setPlatform('ios')
-      setCanInstall(true)
-      return
-    }
-    if (isAndroid) setPlatform('android')
-    else if (!isIOS) setPlatform('desktop')
+    /* eslint-disable react-hooks/set-state-in-effect -- re-apply PWA hints on client; SSR initial state has no real matchMedia/UA */
+    setState(readInitialPwaHints())
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     const handler = (e: Event) => {
       e.preventDefault()
       deferredPrompt.current = e as BeforeInstallPromptEvent
-      setCanInstall(true)
+      setState((s) => ({ ...s, canInstall: true }))
     }
     const onInstalled = () => {
-      setIsInstalled(true)
-      setPlatform('installed')
-      setCanInstall(false)
+      deferredPrompt.current = null
+      setState({
+        platform: 'installed',
+        canInstall: false,
+        isInstalled: true,
+      })
     }
     window.addEventListener('beforeinstallprompt', handler)
     window.addEventListener('appinstalled', onInstalled)
