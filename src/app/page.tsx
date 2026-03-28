@@ -16,7 +16,6 @@ import { DebtSnapshot } from '@/components/dashboard/DebtSnapshot'
 import { QuickAddFAB } from '@/components/modals/QuickAddFAB'
 import { BarChart3 } from 'lucide-react'
 import Link from 'next/link'
-import { AuthNavButtons } from '@/components/layout/AuthNavButtons'
 import { useRouter } from 'next/navigation'
 import { MonthYearPicker } from '@/components/ui/MonthYearPicker'
 import { PAGE_HEADER_SURFACE_CLASS } from '@/components/layout/PageHeader'
@@ -36,46 +35,34 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen">
       <header className={PAGE_HEADER_SURFACE_CLASS}>
-        <div className="flex items-center gap-2 px-4 py-3 lg:px-8">
-          <div className="shrink-0 lg:hidden">
-            <span className="text-xl font-bold font-heading tracking-tight">
-              Bud<span className="text-[var(--color-brand-red)]">d</span>get
-            </span>
-          </div>
-
-          <div className="flex flex-1 min-w-0 items-center justify-center sm:justify-start lg:justify-center gap-2 overflow-x-auto hide-scrollbar">
-            <Link
-              href="/reports"
-              className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-white hover:bg-[var(--color-brand-border)] transition-colors shrink-0"
-              aria-label="Reports"
-            >
-              <BarChart3 className="w-4 h-4" />
-              <span className="hidden md:inline">Reports</span>
-            </Link>
-            <button
-              onClick={() => setMonthFilter(subMonths(new Date(`${monthFilter}-01`), 1).toISOString().slice(0, 7))}
-              className="px-2.5 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-white hover:bg-[var(--color-brand-border)] transition-colors shrink-0"
-              aria-label="Previous month"
-            >
-              ←
-            </button>
-            <MonthYearPicker
-              monthFilter={monthFilter}
-              onChange={setMonthFilter}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-white shrink-0"
-            />
-            <button
-              onClick={() => setMonthFilter(addMonths(new Date(`${monthFilter}-01`), 1).toISOString().slice(0, 7))}
-              className="px-2.5 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-white hover:bg-[var(--color-brand-border)] transition-colors shrink-0"
-              aria-label="Next month"
-            >
-              →
-            </button>
-          </div>
-
-          <div className="shrink-0 lg:hidden">
-            <AuthNavButtons />
-          </div>
+        <div className="flex items-center justify-center gap-2 px-4 py-3 lg:px-8 overflow-x-auto hide-scrollbar">
+          <Link
+            href="/reports"
+            className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-white hover:bg-[var(--color-brand-border)] transition-colors shrink-0"
+            aria-label="Reports"
+          >
+            <BarChart3 className="w-4 h-4" />
+            <span className="hidden md:inline">Reports</span>
+          </Link>
+          <button
+            onClick={() => setMonthFilter(subMonths(new Date(`${monthFilter}-01`), 1).toISOString().slice(0, 7))}
+            className="px-2.5 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-white hover:bg-[var(--color-brand-border)] transition-colors shrink-0"
+            aria-label="Previous month"
+          >
+            ←
+          </button>
+          <MonthYearPicker
+            monthFilter={monthFilter}
+            onChange={setMonthFilter}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-white shrink-0"
+          />
+          <button
+            onClick={() => setMonthFilter(addMonths(new Date(`${monthFilter}-01`), 1).toISOString().slice(0, 7))}
+            className="px-2.5 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-white hover:bg-[var(--color-brand-border)] transition-colors shrink-0"
+            aria-label="Next month"
+          >
+            →
+          </button>
         </div>
       </header>
 

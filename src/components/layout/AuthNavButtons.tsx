@@ -5,10 +5,11 @@ import { usePathname } from 'next/navigation'
 import { useMemo } from 'react'
 import { User, Settings, Bell } from 'lucide-react'
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -20,26 +21,28 @@ const btnClass =
 
 function HeaderNotificationsButton() {
   return (
-    <Popover>
-      <PopoverTrigger
+    <DropdownMenu>
+      <DropdownMenuTrigger
         type="button"
-        className="p-2 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-red)]/50"
-        aria-label="Notifications"
+        className="inline-flex p-2 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-red)]/50"
+        aria-label="Open notifications"
       >
         <Bell className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
-      </PopoverTrigger>
-      <PopoverContent
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
         align="end"
         side="bottom"
         sideOffset={8}
-        className="w-80 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] p-4 text-sm shadow-xl ring-white/10"
+        className="w-[min(calc(100vw-2rem),20rem)] bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] p-0 shadow-xl ring-1 ring-white/10 z-[100]"
       >
-        <p className="font-semibold text-white mb-1">Notifications</p>
-        <p className="text-xs text-[var(--color-brand-text-muted)] leading-relaxed">
+        <div className="p-3 border-b border-[var(--color-brand-border)]">
+          <DropdownMenuLabel className="p-0 text-sm font-semibold text-white">Notifications</DropdownMenuLabel>
+        </div>
+        <p className="px-3 py-3 text-xs text-[var(--color-brand-text-muted)] leading-relaxed">
           No alerts right now. Budget reminders and spending insights will show up here in a future update.
         </p>
-      </PopoverContent>
-    </Popover>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
@@ -81,7 +84,7 @@ export function AuthNavButtons({ className }: { className?: string }) {
 
   if (!configured) {
     return (
-      <div className={cn('flex items-center gap-1.5 sm:gap-2', className)}>
+      <div className={cn('flex flex-nowrap items-center gap-1.5 sm:gap-2', className)}>
         <HeaderNotificationsButton />
         <ProfileAvatarLink />
         <Link
@@ -107,7 +110,7 @@ export function AuthNavButtons({ className }: { className?: string }) {
   const nextPath = pathname || '/'
 
   return (
-    <div className={cn('flex items-center gap-1.5 sm:gap-2', className)}>
+    <div className={cn('flex flex-nowrap items-center gap-1.5 sm:gap-2', className)}>
       <HeaderNotificationsButton />
       {!user ? (
         <>
