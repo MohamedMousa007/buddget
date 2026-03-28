@@ -6,7 +6,6 @@ import { useGoldPrice } from '@/hooks/useGoldPrice'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { addMonths, subMonths } from 'date-fns'
 import { KPICard } from '@/components/dashboard/KPICard'
 import { BudgetRing } from '@/components/dashboard/BudgetRing'
 import { CategoryBar } from '@/components/dashboard/CategoryBar'
@@ -17,7 +16,7 @@ import { QuickAddFAB } from '@/components/modals/QuickAddFAB'
 import { BarChart3 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { MonthYearPicker } from '@/components/ui/MonthYearPicker'
+import { MonthNavigationControl } from '@/components/layout/MonthNavigationControl'
 import { PAGE_HEADER_SURFACE_CLASS } from '@/components/layout/PageHeader'
 
 export default function DashboardPage() {
@@ -34,8 +33,8 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen">
-      <header className={PAGE_HEADER_SURFACE_CLASS}>
-        <div className="flex items-center justify-center gap-2 px-4 py-3 lg:px-8 overflow-x-auto hide-scrollbar">
+      <header className={`${PAGE_HEADER_SURFACE_CLASS} hidden lg:block`}>
+        <div className="flex items-center justify-center gap-1 px-4 py-3 lg:px-8 overflow-x-auto hide-scrollbar">
           <Link
             href="/reports"
             className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-white hover:bg-[var(--color-brand-border)] transition-colors shrink-0"
@@ -44,25 +43,7 @@ export default function DashboardPage() {
             <BarChart3 className="w-4 h-4" />
             <span className="hidden md:inline">Reports</span>
           </Link>
-          <button
-            onClick={() => setMonthFilter(subMonths(new Date(`${monthFilter}-01`), 1).toISOString().slice(0, 7))}
-            className="px-2.5 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-white hover:bg-[var(--color-brand-border)] transition-colors shrink-0"
-            aria-label="Previous month"
-          >
-            ←
-          </button>
-          <MonthYearPicker
-            monthFilter={monthFilter}
-            onChange={setMonthFilter}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-white shrink-0"
-          />
-          <button
-            onClick={() => setMonthFilter(addMonths(new Date(`${monthFilter}-01`), 1).toISOString().slice(0, 7))}
-            className="px-2.5 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-white hover:bg-[var(--color-brand-border)] transition-colors shrink-0"
-            aria-label="Next month"
-          >
-            →
-          </button>
+          <MonthNavigationControl monthFilter={monthFilter} onChange={setMonthFilter} />
         </div>
       </header>
 

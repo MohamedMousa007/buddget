@@ -2,47 +2,56 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useMemo } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { User, Settings, Bell } from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 import { cn } from '@/lib/utils'
+import { useNotifications } from '@/lib/notifications/useNotifications'
+import { NotificationPanel } from '@/components/notifications/NotificationPanel'
 
 const btnClass =
   'inline-flex items-center justify-center px-2 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors border border-[var(--color-brand-border)] text-white hover:bg-[var(--color-brand-elevated)] sm:px-3'
 
-function HeaderNotificationsButton() {
+function NotificationBellWithPanel() {
+  const { notifications, unreadCount, markAllRead } = useNotifications()
+  const [open, setOpen] = useState(false)
+  const bellRef = useRef<HTMLButtonElement>(null)
+
+  const toggle = () => {
+    setOpen((prev) => {
+      if (!prev) markAllRead()
+      return !prev
+    })
+  }
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
+    <div className="relative shrink-0">
+      <button
+        ref={bellRef}
         type="button"
-        className="inline-flex p-2 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-red)]/50"
+        onClick={toggle}
+        className="relative inline-flex p-2 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-red)]/50"
         aria-label="Open notifications"
+        aria-expanded={open}
       >
         <Bell className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        side="bottom"
-        sideOffset={8}
-        className="w-[min(calc(100vw-2rem),20rem)] bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] p-0 shadow-xl ring-1 ring-white/10 z-[100]"
-      >
-        <div className="p-3 border-b border-[var(--color-brand-border)]">
-          <DropdownMenuLabel className="p-0 text-sm font-semibold text-white">Notifications</DropdownMenuLabel>
-        </div>
-        <p className="px-3 py-3 text-xs text-[var(--color-brand-text-muted)] leading-relaxed">
-          No alerts right now. Budget reminders and spending insights will show up here in a future update.
-        </p>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        {unreadCount > 0 ? (
+          <span
+            className="absolute top-0 right-0 h-2 w-2 rounded-full bg-[#E50914]"
+            aria-hidden
+          />
+        ) : null}
+      </button>
+      <NotificationPanel
+        open={open}
+        onClose={() => setOpen(false)}
+        notifications={notifications}
+        anchorRef={bellRef}
+      />
+    </div>
   )
 }
 
@@ -69,10 +78,19 @@ function ProfileAvatarLink({ className }: { className?: string }) {
   )
 }
 
+type AuthNavLayout = 'desktop' | 'mobile'
+
 /**
- * Profile (photo when set) + Settings. Logged out: Log in / Sign up + same icons.
+ * Desktop (`layout="desktop"`): full auth + settings + notifications.
+ * Mobile toolbar (`layout="mobile"`): notifications + profile or compact sign-in only (no gear, no text buttons).
  */
-export function AuthNavButtons({ className }: { className?: string }) {
+export function AuthNavButtons({
+  className,
+  layout = 'desktop',
+}: {
+  className?: string
+  layout?: AuthNavLayout
+}) {
   const pathname = usePathname()
   const { user, loading, openAuthModal } = useAuth()
 
@@ -82,10 +100,20 @@ export function AuthNavButtons({ className }: { className?: string }) {
     return !!(url && key)
   }, [])
 
+  const nextPath = pathname || '/'
+
   if (!configured) {
+    if (layout === 'mobile') {
+      return (
+        <div className={cn('flex flex-nowrap items-center justify-end gap-1', className)}>
+          <NotificationBellWithPanel />
+          <ProfileAvatarLink />
+        </div>
+      )
+    }
     return (
       <div className={cn('flex flex-nowrap items-center gap-1.5 sm:gap-2', className)}>
-        <HeaderNotificationsButton />
+        <NotificationBellWithPanel />
         <ProfileAvatarLink />
         <Link
           href="/settings"
@@ -107,11 +135,29 @@ export function AuthNavButtons({ className }: { className?: string }) {
     )
   }
 
-  const nextPath = pathname || '/'
+  if (layout === 'mobile') {
+    return (
+      <div className={cn('flex flex-nowrap items-center justify-end gap-1', className)}>
+        <NotificationBellWithPanel />
+        {!user ? (
+          <button
+            type="button"
+            onClick={() => openAuthModal(nextPath)}
+            className="inline-flex p-2 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-red)]/50"
+            aria-label="Sign in"
+          >
+            <User className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
+          </button>
+        ) : (
+          <ProfileAvatarLink />
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className={cn('flex flex-nowrap items-center gap-1.5 sm:gap-2', className)}>
-      <HeaderNotificationsButton />
+      <NotificationBellWithPanel />
       {!user ? (
         <>
           <button type="button" onClick={() => openAuthModal(nextPath)} className={btnClass}>

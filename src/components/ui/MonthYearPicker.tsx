@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { Calendar } from 'lucide-react'
 import { formatMonth } from '@/lib/utils/formatters'
 import { cn } from '@/lib/utils'
 import {
@@ -39,11 +39,15 @@ export function MonthYearPicker({ monthFilter, onChange, className }: MonthYearP
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
-        className={cn(className, 'cursor-pointer border-0 bg-transparent')}
         type="button"
+        className={cn(
+          'inline-flex items-center gap-1 cursor-pointer transition-colors duration-150',
+          'text-white hover:text-[#A0A0B8]',
+          className
+        )}
       >
-        <span>{formatMonth(monthFilter)}</span>
-        <ChevronDown className="w-4 h-4 text-[var(--color-brand-text-muted)]" />
+        <Calendar className="h-3.5 w-3.5 shrink-0 text-[#A0A0B8]" aria-hidden />
+        <span className="text-sm font-medium underline underline-offset-2">{formatMonth(monthFilter)}</span>
       </PopoverTrigger>
       <PopoverContent
         className="w-auto min-w-[260px] bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] p-3"

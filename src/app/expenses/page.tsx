@@ -6,12 +6,11 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { filterExpensesByMonth } from '@/lib/utils/calculations'
 import { escapeCsvField } from '@/lib/utils/formatters'
-import { addMonths, subMonths } from 'date-fns'
 import { FilterBar } from '@/components/expenses/FilterBar'
 import { ExpenseTable } from '@/components/expenses/ExpenseTable'
 import { QuickAddFAB } from '@/components/modals/QuickAddFAB'
 import type { ExpenseCategory } from '@/lib/store/types'
-import { MonthYearPicker } from '@/components/ui/MonthYearPicker'
+import { MonthNavigationControl } from '@/components/layout/MonthNavigationControl'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 
@@ -81,27 +80,7 @@ export default function ExpensesPage() {
       <PageHeader>
         <PageHeaderContent className="flex items-center justify-between">
           <h1 className="text-xl font-bold text-white">Expenses</h1>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setMonthFilter(subMonths(new Date(`${monthFilter}-01`), 1).toISOString().slice(0, 7))}
-              className="px-2.5 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-white hover:bg-[var(--color-brand-border)] transition-colors"
-              aria-label="Previous month"
-            >
-              ←
-            </button>
-            <MonthYearPicker
-              monthFilter={monthFilter}
-              onChange={setMonthFilter}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-white"
-            />
-            <button
-              onClick={() => setMonthFilter(addMonths(new Date(`${monthFilter}-01`), 1).toISOString().slice(0, 7))}
-              className="px-2.5 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-white hover:bg-[var(--color-brand-border)] transition-colors"
-              aria-label="Next month"
-            >
-              →
-            </button>
-          </div>
+          <MonthNavigationControl monthFilter={monthFilter} onChange={setMonthFilter} />
         </PageHeaderContent>
       </PageHeader>
 
