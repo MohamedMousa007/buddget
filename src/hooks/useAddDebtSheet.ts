@@ -9,11 +9,7 @@ import {
   isDebtFullyPaid,
 } from '@/lib/utils/calculations'
 import { formatCurrency } from '@/lib/utils/formatters'
-import {
-  buildFiatCurrencyPickerOptions,
-  clampDebtFiatToAllowed,
-  clampFiatToAllowed,
-} from '@/lib/utils/currencyPickerOptions'
+import { clampDebtFiatToAllowed, clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import type { Currency, DebtCurrency, GoldKarat } from '@/lib/store/types'
 
 /**
@@ -78,12 +74,15 @@ export function useAddDebtSheet() {
   }, [resetDebtSheetIntent, setActiveModal])
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- sync selected debt when list loads or id is empty */
     if (debts.length > 0 && !selectedDebtId) {
       setSelectedDebtId(debts[0].id)
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [debts, selectedDebtId])
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- keep payment target on a payable debt while sheet open */
     if (!isOpen) return
     if (mode !== 'payment' && !debtSheetPaymentOnly) return
     if (payableDebts.length === 0) return
@@ -91,17 +90,21 @@ export function useAddDebtSheet() {
     if (!sel || isDebtFullyPaid(sel, debtPayments)) {
       setSelectedDebtId(payableDebts[0].id)
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [isOpen, mode, debtSheetPaymentOnly, debts, debtPayments, payableDebts, selectedDebtId])
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- reset currency when sheet opens */
     if (isOpen && !prevIsOpen.current) {
       setPaymentCurrency(settings.baseCurrency)
       if (!isGold) setCurrency(settings.baseCurrency as DebtCurrency)
     }
     prevIsOpen.current = isOpen
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [isOpen, settings.baseCurrency, isGold])
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- apply payment-only intent and defaults when sheet opens */
     if (!isOpen) return
     if (debtSheetPaymentOnly && debtSheetPrefillDebtId) {
       setMode('payment')
@@ -110,6 +113,7 @@ export function useAddDebtSheet() {
       setMode('new')
     }
     setPaymentMethodId(paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || '')
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [isOpen, debtSheetPaymentOnly, debtSheetPrefillDebtId, paymentMethods])
 
   const resetForm = useCallback(() => {

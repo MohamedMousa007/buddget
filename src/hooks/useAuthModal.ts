@@ -84,7 +84,7 @@ export function useAuthModal() {
     const { data: userData } = await supabase.auth.getUser()
     router.refresh()
     router.replace(routeAfterAuth(userData.user, safeNext))
-  }, [password, router, safeNext, supabase, validateEmailField])
+  }, [email, password, router, safeNext, supabase, validateEmailField])
 
   const signUp = useCallback(async () => {
     setError('')
@@ -128,7 +128,7 @@ export function useAuthModal() {
       return
     }
     setError('Could not create account. Try again.')
-  }, [confirmPassword, password, router, safeNext, startResendCooldown, supabase, validateEmailField])
+  }, [confirmPassword, email, password, router, safeNext, startResendCooldown, supabase, validateEmailField])
 
   const verifySignupOtp = useCallback(async () => {
     setError('')
@@ -184,7 +184,7 @@ export function useAuthModal() {
       return
     }
     setForgotSuccess(true)
-  }, [supabase, validateEmailField])
+  }, [email, supabase, validateEmailField])
 
   const switchToSignIn = useCallback(() => {
     setFormMode('signin')

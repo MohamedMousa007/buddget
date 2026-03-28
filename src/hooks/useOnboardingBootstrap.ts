@@ -12,6 +12,7 @@ export function useOnboardingBootstrap(redo: boolean) {
   const [answersReady, setAnswersReady] = useState(false)
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- hydrate onboarding UI from persisted store on mount / redo */
     const full = useFinanceStore.getState()
     const derived = deriveAnswersFromFinanceStore(full)
     const merged = mergeOnboardingAnswers(full.onboardingState.answers, derived)
@@ -22,6 +23,7 @@ export function useOnboardingBootstrap(redo: boolean) {
       setPhase('plans')
     }
     setAnswersReady(true)
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [redo])
 
   return { answers, setAnswers, index, setIndex, phase, setPhase, answersReady }

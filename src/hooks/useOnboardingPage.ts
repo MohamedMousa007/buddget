@@ -8,13 +8,6 @@ import {
   applyDebtFromOnboarding,
   applyIncomeFromOnboarding,
   applyMapsTo,
-  parseDebtEntriesAnswer,
-  parseIncomeEntriesAnswer,
-  valueForMultiStep,
-  valueForNumberStep,
-  valueForPaymentStep,
-  valueForSingleStep,
-  valueForTextStep,
 } from '@/lib/onboarding/onboardingPageHelpers'
 import type { StepContinuePayload } from '@/components/onboarding/OnboardingStepForm'
 import { useOnboardingSurveyConfig } from '@/hooks/useOnboardingSurveyConfig'

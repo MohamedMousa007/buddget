@@ -5,7 +5,6 @@ import { motion } from 'framer-motion'
 import type { SurveyStep } from '@/lib/onboarding/surveyConfig'
 import type { Currency, IncomeSource, OnboardingPaymentDraft } from '@/lib/store/types'
 import {
-  SubscriptionsOnboardingPanel,
   subscriptionLinesFromSaved,
   type SubscriptionsOnboardingPayload,
 } from '@/components/onboarding/SubscriptionsOnboardingPanel'
