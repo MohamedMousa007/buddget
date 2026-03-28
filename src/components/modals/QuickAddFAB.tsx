@@ -4,8 +4,8 @@ import { Plus, X, Receipt, DollarSign, CreditCard, FileText, Bot } from 'lucide-
 import { motion } from 'framer-motion'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { useEscapeClose } from '@/lib/hooks/useEscapeClose'
-import { useRequireAuthAction } from '@/lib/hooks/useRequireAuthAction'
+import { useEscapeClose } from '@/hooks/useEscapeClose'
+import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 
 const OPTIONS = [
   { id: 'addExpense', label: 'Add Expense', icon: Receipt, emoji: '💸' },

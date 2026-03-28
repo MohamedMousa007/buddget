@@ -1,8 +1,8 @@
 'use client'
 
-import { INCOME_BLOCKED_HINT, useMonthlyStats } from '@/lib/hooks/useMonthlyStats'
-import { useRates } from '@/lib/hooks/useRates'
-import { useGoldPrice } from '@/lib/hooks/useGoldPrice'
+import { INCOME_BLOCKED_HINT, useMonthlyStats } from '@/hooks/useMonthlyStats'
+import { useRates } from '@/hooks/useRates'
+import { useGoldPrice } from '@/hooks/useGoldPrice'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'

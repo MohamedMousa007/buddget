@@ -1,533 +1,85 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
-import { useEscapeClose } from '@/lib/hooks/useEscapeClose'
+import { useEscapeClose } from '@/hooks/useEscapeClose'
+import { useAddDebtSheet } from '@/hooks/useAddDebtSheet'
 import { ModalShell } from '@/components/modals/ModalShell'
-import { X } from 'lucide-react'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import {
-  convertPaymentToDebtUnit,
-  computeDebtPaymentRecord,
-  isDebtFullyPaid,
-} from '@/lib/utils/calculations'
-import { formatCurrency } from '@/lib/utils/formatters'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Switch } from '@/components/ui/switch'
-import { DebtFiatCurrencySelect } from '@/components/ui/DebtFiatCurrencySelect'
-import {
-  buildFiatCurrencyPickerOptions,
-  clampDebtFiatToAllowed,
-  clampFiatToAllowed,
-} from '@/lib/utils/currencyPickerOptions'
-import type { Currency, DebtCurrency, GoldKarat } from '@/lib/store/types'
+import { AddDebtSheetHeader } from '@/components/features/debts/AddDebtSheetHeader'
+import { AddDebtModeTabs } from '@/components/features/debts/AddDebtModeTabs'
+import { AddDebtNewForm } from '@/components/features/debts/AddDebtNewForm'
+import { AddDebtPaymentForm } from '@/components/features/debts/AddDebtPaymentForm'
 
+/**
+ * Bottom sheet: create debt or record payment. Logic in `useAddDebtSheet`.
+ */
 export function AddDebtSheet() {
-  const store = useFinanceStore()
-  const {
-    addDebt,
-    addDebtPayment,
-    addExpense,
-    debts,
-    debtPayments,
-    paymentMethods,
-    settings,
-    exchangeRates,
-    goldPricePerGram,
-  } = store
-  const {
-    activeModal,
-    setActiveModal,
-    debtSheetPaymentOnly,
-    debtSheetPrefillDebtId,
-    resetDebtSheetIntent,
-  } = useSettingsStore()
-  const isOpen = activeModal === 'addDebt'
+  const d = useAddDebtSheet()
+  useEscapeClose(d.isOpen, d.closeSheet)
 
-  const [mode, setMode] = useState<'new' | 'payment'>('new')
-
-  const [name, setName] = useState('')
-  const [person, setPerson] = useState('')
-  const [description, setDescription] = useState('')
-  const [startingBalance, setStartingBalance] = useState('')
-  const [currency, setCurrency] = useState<DebtCurrency>(
-    () => useFinanceStore.getState().settings.baseCurrency as DebtCurrency
-  )
-  const [isGold, setIsGold] = useState(false)
-  const [goldKarat, setGoldKarat] = useState<GoldKarat>(24)
-  const [notes, setNotes] = useState('')
-
-  const [selectedDebtId, setSelectedDebtId] = useState(debts[0]?.id || '')
-  const [paymentAmount, setPaymentAmount] = useState('')
-  const [paymentCurrency, setPaymentCurrency] = useState<string>(settings.baseCurrency)
-  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10))
-  const [paymentNotes, setPaymentNotes] = useState('')
-  const [paymentMethodId, setPaymentMethodId] = useState(
-    () => paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || ''
-  )
-  const [paymentRateError, setPaymentRateError] = useState('')
-  const prevIsOpen = useRef(false)
-
-  const payableDebts = useMemo(
-    () => debts.filter((d) => !isDebtFullyPaid(d, debtPayments)),
-    [debts, debtPayments]
-  )
-
-  const selectedDebt = debts.find((d) => d.id === selectedDebtId)
-  const selectedPayable = payableDebts.find((d) => d.id === selectedDebtId)
-
-  const closeSheet = () => {
-    resetDebtSheetIntent()
-    setActiveModal(null)
-  }
-
-  useEscapeClose(isOpen, closeSheet)
-
-  useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect -- default debt row when list loads */
-    if (debts.length > 0 && !selectedDebtId) {
-      setSelectedDebtId(debts[0].id)
-    }
-    /* eslint-enable react-hooks/set-state-in-effect */
-  }, [debts, selectedDebtId])
-
-  useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect -- avoid selecting a paid-off debt for payments */
-    if (!isOpen) return
-    if (mode !== 'payment' && !debtSheetPaymentOnly) return
-    if (payableDebts.length === 0) return
-    const sel = debts.find((d) => d.id === selectedDebtId)
-    if (!sel || isDebtFullyPaid(sel, debtPayments)) {
-      setSelectedDebtId(payableDebts[0].id)
-    }
-    /* eslint-enable react-hooks/set-state-in-effect */
-  }, [isOpen, mode, debtSheetPaymentOnly, debts, debtPayments, payableDebts, selectedDebtId])
-
-  useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect -- sync default currency when sheet opens */
-    if (isOpen && !prevIsOpen.current) {
-      setPaymentCurrency(settings.baseCurrency)
-      if (!isGold) setCurrency(settings.baseCurrency as DebtCurrency)
-    }
-    prevIsOpen.current = isOpen
-    /* eslint-enable react-hooks/set-state-in-effect */
-  }, [isOpen, settings.baseCurrency, isGold])
-
-  useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect -- sync tab/debt when opening from Record Payment */
-    if (!isOpen) return
-    if (debtSheetPaymentOnly && debtSheetPrefillDebtId) {
-      setMode('payment')
-      setSelectedDebtId(debtSheetPrefillDebtId)
-    } else if (!debtSheetPaymentOnly) {
-      setMode('new')
-    }
-    setPaymentMethodId(paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || '')
-    /* eslint-enable react-hooks/set-state-in-effect */
-  }, [isOpen, debtSheetPaymentOnly, debtSheetPrefillDebtId, paymentMethods])
-
-  const resetForm = () => {
-    setName('')
-    setPerson('')
-    setDescription('')
-    setStartingBalance('')
-    setCurrency(settings.baseCurrency as DebtCurrency)
-    setIsGold(false)
-    setNotes('')
-    setPaymentAmount('')
-    setPaymentCurrency(settings.baseCurrency)
-    setPaymentDate(new Date().toISOString().slice(0, 10))
-    setPaymentNotes('')
-    setPaymentRateError('')
-  }
-
-  const handleAddDebt = () => {
-    if (!name || !person || !startingBalance) return
-
-    addDebt({
-      name,
-      person,
-      description: description || undefined,
-      startingBalance: parseFloat(startingBalance),
-      currency: isGold ? 'XAU' : clampDebtFiatToAllowed(settings, currency),
-      isGold,
-      goldKarat: isGold ? goldKarat : undefined,
-      notes: notes || undefined,
-    })
-
-    resetForm()
-    closeSheet()
-  }
-
-  const handleAddPayment = () => {
-    if (!selectedDebtId || !paymentAmount || !selectedDebt) return
-
-    const amount = parseFloat(paymentAmount)
-    if (Number.isNaN(amount) || amount <= 0) return
-
-    setPaymentRateError('')
-
-    const payCur =
-      paymentCurrency === 'XAU' && selectedDebt.isGold
-        ? 'XAU'
-        : clampFiatToAllowed(settings, paymentCurrency as Currency)
-
-    const computed = computeDebtPaymentRecord(
-      selectedDebt,
-      amount,
-      payCur,
-      settings.baseCurrency,
-      exchangeRates,
-      goldPricePerGram,
-      debtPayments
-    )
-    if (!computed.ok) {
-      setPaymentRateError(computed.error)
-      return
-    }
-
-    const { amountInDebtUnit, amountInBase, rateAtEntry } = computed
-
-    addDebtPayment({
-      debtId: selectedDebtId,
-      date: paymentDate,
-      amountPaid: amountInDebtUnit,
-      paymentCurrency: payCur,
-      originalAmount: amount,
-      amountInPrimary: amountInBase,
-      rateAtEntry,
-      notes: paymentNotes || undefined,
-    })
-
-    const pmId = paymentMethodId || paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || ''
-    addExpense({
-      date: paymentDate,
-      description: `Debt payment – ${selectedDebt.person}`,
-      category: 'Debt',
-      amount,
-      currency: payCur as import('@/lib/store/types').Currency,
-      paymentMethodId: pmId,
-      isRecurring: false,
-      notes: paymentNotes || undefined,
-    })
-
-    resetForm()
-    closeSheet()
-  }
-
-  const paymentPreview = () => {
-    if (!paymentAmount || !selectedDebt) return null
-    const amount = parseFloat(paymentAmount)
-    if (isNaN(amount) || amount <= 0) return null
-
-    if (selectedDebt.isGold && paymentCurrency !== 'XAU') {
-      const gramsViaHelper = convertPaymentToDebtUnit(
-        amount,
-        paymentCurrency,
-        selectedDebt,
-        settings.baseCurrency,
-        exchangeRates,
-        goldPricePerGram
-      )
-      return `≈ ${gramsViaHelper.toFixed(2)}g of ${selectedDebt.goldKarat || 24}K gold`
-    }
-
-    if (!selectedDebt.isGold && paymentCurrency !== selectedDebt.currency) {
-      const converted = convertPaymentToDebtUnit(amount, paymentCurrency, selectedDebt, settings.baseCurrency, exchangeRates, goldPricePerGram)
-      return `≈ ${formatCurrency(converted, selectedDebt.currency)}`
-    }
-
-    return null
-  }
+  const title = d.debtSheetPaymentOnly
+    ? 'Record Payment'
+    : d.mode === 'new'
+      ? 'Add New Debt'
+      : 'Record Payment'
 
   return (
-    <ModalShell open={isOpen} onBackdropClick={closeSheet}>
-            <div className="p-6">
-              <div className="w-10 h-1 bg-[var(--color-brand-border)] rounded-full mx-auto mb-4 lg:hidden" />
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-white">
-                  {debtSheetPaymentOnly ? 'Record Payment' : mode === 'new' ? 'Add New Debt' : 'Record Payment'}
-                </h3>
-                <button
-                  onClick={closeSheet}
-                  className="p-1 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors"
-                >
-                  <X className="w-5 h-5 text-[var(--color-brand-text-muted)]" />
-                </button>
-              </div>
-
-              {!debtSheetPaymentOnly && (
-                <div className="flex gap-2 mb-6">
-                  <button
-                    type="button"
-                    onClick={() => setMode('new')}
-                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      mode === 'new'
-                        ? 'bg-[var(--color-brand-red)] text-white'
-                        : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
-                    }`}
-                  >
-                    New Debt
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMode('payment')}
-                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      mode === 'payment'
-                        ? 'bg-[var(--color-brand-red)] text-white'
-                        : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
-                    }`}
-                  >
-                    Record Payment
-                  </button>
-                </div>
-              )}
-
-              {mode === 'new' && !debtSheetPaymentOnly ? (
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-xs text-[var(--color-brand-text-secondary)]">Debt Name</Label>
-                    <Input
-                      placeholder="e.g. Mom's Debt"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="text-xs text-[var(--color-brand-text-secondary)]">Person</Label>
-                    <Input
-                      placeholder="Who do you owe?"
-                      value={person}
-                      onChange={(e) => setPerson(e.target.value)}
-                      className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="text-xs text-[var(--color-brand-text-secondary)]">Description (optional)</Label>
-                    <Input
-                      placeholder="e.g. Gold jewelry, Wedding loan..."
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs text-[var(--color-brand-text-secondary)]">Gold Debt?</Label>
-                    <Switch
-                      checked={isGold}
-                      onCheckedChange={(val) => {
-                        setIsGold(val)
-                        if (val) setCurrency('XAU')
-                        else setCurrency(settings.baseCurrency as DebtCurrency)
-                      }}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-xs text-[var(--color-brand-text-secondary)]">
-                        {isGold ? 'Amount (grams)' : 'Amount'}
-                      </Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        value={startingBalance}
-                        onChange={(e) => setStartingBalance(e.target.value)}
-                        className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers"
-                      />
-                    </div>
-                    {!isGold && (
-                      <div>
-                        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Currency</Label>
-                        <DebtFiatCurrencySelect
-                          value={currency}
-                          onChange={setCurrency}
-                          className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
-                        />
-                      </div>
-                    )}
-                    {isGold && (
-                      <div>
-                        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Karat</Label>
-                        <select
-                          value={goldKarat}
-                          onChange={(e) => setGoldKarat(parseInt(e.target.value) as GoldKarat)}
-                          className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
-                        >
-                          <option value="24">24K (99.9%)</option>
-                          <option value="22">22K (91.7%)</option>
-                          <option value="21">21K (87.5%)</option>
-                          <option value="18">18K (75%)</option>
-                        </select>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label className="text-xs text-[var(--color-brand-text-secondary)]">Notes (optional)</Label>
-                    <Textarea
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white min-h-[60px]"
-                    />
-                  </div>
-
-                  <div className="flex gap-3 pt-2">
-                    <button
-                      type="button"
-                      onClick={closeSheet}
-                      className="flex-1 py-3 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleAddDebt}
-                      disabled={!name || !person || !startingBalance}
-                      className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50"
-                    >
-                      Add Debt →
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {payableDebts.length === 0 ? (
-                    <p className="text-sm text-[var(--color-brand-text-muted)] py-2">
-                      All debts are paid off. You can add a new debt or edit an existing one if the balance changed.
-                    </p>
-                  ) : (
-                    <>
-                  <div>
-                    <Label className="text-xs text-[var(--color-brand-text-secondary)]">Select Debt</Label>
-                    <select
-                      value={selectedPayable ? selectedDebtId : payableDebts[0]?.id ?? ''}
-                      onChange={(e) => setSelectedDebtId(e.target.value)}
-                      className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
-                    >
-                      {payableDebts.map((d) => (
-                        <option key={d.id} value={d.id}>
-                          {d.name} {d.isGold ? `(${d.goldKarat}K Gold)` : `(${d.currency})`}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <Label className="text-xs text-[var(--color-brand-text-secondary)]">Date</Label>
-                    <Input
-                      type="date"
-                      value={paymentDate}
-                      onChange={(e) => setPaymentDate(e.target.value)}
-                      className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-xs text-[var(--color-brand-text-secondary)]">Amount Paid</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        value={paymentAmount}
-                        onChange={(e) => {
-                          setPaymentAmount(e.target.value)
-                          setPaymentRateError('')
-                        }}
-                        className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs text-[var(--color-brand-text-secondary)]">Payment Currency</Label>
-                      <select
-                        value={paymentCurrency}
-                        onChange={(e) => {
-                          setPaymentCurrency(e.target.value)
-                          setPaymentRateError('')
-                        }}
-                        className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
-                      >
-                        {buildFiatCurrencyPickerOptions(settings).map((o) => (
-                          <option key={o.value} value={o.value} disabled={o.disabled}>
-                            {o.value}
-                          </option>
-                        ))}
-                        {selectedDebt?.isGold && (
-                          <option value="XAU">Gold (grams)</option>
-                        )}
-                      </select>
-                    </div>
-                  </div>
-
-                  {paymentRateError ? (
-                    <p className="text-xs text-[var(--color-brand-red)] px-1">{paymentRateError}</p>
-                  ) : null}
-
-                  {paymentPreview() && (
-                    <p className="text-xs text-[var(--color-brand-gold)] px-1">
-                      {paymentPreview()}
-                    </p>
-                  )}
-
-                  <div>
-                    <Label className="text-xs text-[var(--color-brand-text-secondary)] mb-2 block">Paid via</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {paymentMethods.map((method) => (
-                        <button
-                          key={method.id}
-                          type="button"
-                          onClick={() => setPaymentMethodId(method.id)}
-                          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                            paymentMethodId === method.id
-                              ? 'bg-[var(--color-brand-red)] text-white'
-                              : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-border)]'
-                          }`}
-                        >
-                          {method.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-xs text-[var(--color-brand-text-secondary)]">Notes (optional)</Label>
-                    <Textarea
-                      value={paymentNotes}
-                      onChange={(e) => setPaymentNotes(e.target.value)}
-                      className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white min-h-[60px]"
-                    />
-                  </div>
-
-                  <div className="flex gap-3 pt-2">
-                    <button
-                      type="button"
-                      onClick={closeSheet}
-                      className="flex-1 py-3 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleAddPayment}
-                      disabled={!selectedDebtId || !paymentAmount || payableDebts.length === 0}
-                      className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50"
-                    >
-                      Record Payment →
-                    </button>
-                  </div>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
+    <ModalShell open={d.isOpen} onBackdropClick={d.closeSheet}>
+      <div className="p-6">
+        <AddDebtSheetHeader title={title} onClose={d.closeSheet} />
+        {!d.debtSheetPaymentOnly ? <AddDebtModeTabs mode={d.mode} onModeChange={d.setMode} /> : null}
+        {d.mode === 'new' && !d.debtSheetPaymentOnly ? (
+          <AddDebtNewForm
+            settings={d.settings}
+            name={d.name}
+            setName={d.setName}
+            person={d.person}
+            setPerson={d.setPerson}
+            description={d.description}
+            setDescription={d.setDescription}
+            isGold={d.isGold}
+            setIsGold={d.setIsGold}
+            startingBalance={d.startingBalance}
+            setStartingBalance={d.setStartingBalance}
+            currency={d.currency}
+            setCurrency={d.setCurrency}
+            goldKarat={d.goldKarat}
+            setGoldKarat={d.setGoldKarat}
+            notes={d.notes}
+            setNotes={d.setNotes}
+            onCancel={d.closeSheet}
+            onSubmit={d.handleAddDebt}
+          />
+        ) : (
+          <AddDebtPaymentForm
+            settings={d.settings}
+            payableDebts={d.payableDebts}
+            selectedDebtId={d.selectedDebtId}
+            setSelectedDebtId={d.setSelectedDebtId}
+            selectedDebt={d.selectedDebt}
+            selectedPayable={d.selectedPayable}
+            paymentDate={d.paymentDate}
+            setPaymentDate={d.setPaymentDate}
+            paymentAmount={d.paymentAmount}
+            setPaymentAmount={(v) => {
+              d.setPaymentAmount(v)
+              d.setPaymentRateError('')
+            }}
+            paymentCurrency={d.paymentCurrency}
+            setPaymentCurrency={(v) => {
+              d.setPaymentCurrency(v)
+              d.setPaymentRateError('')
+            }}
+            paymentRateError={d.paymentRateError}
+            paymentPreviewText={d.paymentPreview()}
+            paymentMethods={d.paymentMethods}
+            paymentMethodId={d.paymentMethodId}
+            setPaymentMethodId={d.setPaymentMethodId}
+            paymentNotes={d.paymentNotes}
+            setPaymentNotes={d.setPaymentNotes}
+            onCancel={d.closeSheet}
+            onSubmit={d.handleAddPayment}
+          />
+        )}
+      </div>
     </ModalShell>
   )
 }

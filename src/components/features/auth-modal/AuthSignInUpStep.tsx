@@ -1,0 +1,133 @@
+'use client'
+
+import { Loader2 } from 'lucide-react'
+import { AuthModeToggle } from '@/components/features/auth-modal/AuthModeToggle'
+import { AuthCredentialFields } from '@/components/features/auth-modal/AuthCredentialFields'
+import { AuthFormErrorAlert } from '@/components/features/auth-modal/AuthFormErrorAlert'
+import { AuthPrimaryButton } from '@/components/features/auth-modal/AuthPrimaryButton'
+import type { AuthFormMode } from '@/hooks/useAuthModal'
+
+export interface AuthSignInUpStepProps {
+  formMode: AuthFormMode
+  setFormMode: (m: AuthFormMode) => void
+  email: string
+  setEmail: (v: string) => void
+  password: string
+  setPassword: (v: string) => void
+  confirmPassword: string
+  setConfirmPassword: (v: string) => void
+  error: string
+  setError: (v: string) => void
+  loading: boolean
+  setStep: (s: 'form' | 'verify' | 'forgot') => void
+  setForgotSuccess: (v: boolean) => void
+  signIn: () => Promise<void>
+  signUp: () => Promise<void>
+  resendCode: () => Promise<void>
+  switchToSignIn: () => void
+}
+
+/**
+ * Combined sign-in / sign-up form with mode toggle and footer link.
+ */
+export function AuthSignInUpStep({
+  formMode,
+  setFormMode,
+  email,
+  setEmail,
+  password,
+  setPassword,
+  confirmPassword,
+  setConfirmPassword,
+  error,
+  setError,
+  loading,
+  setStep,
+  setForgotSuccess,
+  signIn,
+  signUp,
+  resendCode,
+  switchToSignIn,
+}: AuthSignInUpStepProps) {
+  const submit = () => void (formMode === 'signin' ? signIn() : signUp())
+
+  return (
+    <div className="space-y-4">
+      <AuthModeToggle
+        formMode={formMode}
+        onModeChange={setFormMode}
+        onClearError={() => setError('')}
+      />
+
+      <AuthCredentialFields
+        formMode={formMode}
+        email={email}
+        password={password}
+        confirmPassword={confirmPassword}
+        onEmailChange={setEmail}
+        onPasswordChange={setPassword}
+        onConfirmPasswordChange={setConfirmPassword}
+        onForgotClick={() => {
+          setStep('forgot')
+          setForgotSuccess(false)
+          setError('')
+        }}
+        onSubmitPrimary={submit}
+      />
+
+      <AuthFormErrorAlert
+        error={error}
+        onSignInInstead={() => {
+          switchToSignIn()
+          setError('')
+        }}
+        onResendCode={resendCode}
+      />
+
+      <AuthPrimaryButton disabled={loading} onClick={submit}>
+        {loading ? (
+          <>
+            <Loader2 className="w-5 h-5 animate-spin" />
+            <span>{formMode === 'signin' ? 'Signing in...' : 'Creating account...'}</span>
+          </>
+        ) : formMode === 'signin' ? (
+          'Sign in'
+        ) : (
+          'Create account'
+        )}
+      </AuthPrimaryButton>
+
+      <p className="text-center text-sm text-[#5A5A72]">
+        {formMode === 'signin' ? (
+          <>
+            Don&apos;t have an account?{' '}
+            <button
+              type="button"
+              className="text-[#E50914] font-medium hover:underline"
+              onClick={() => {
+                setFormMode('signup')
+                setError('')
+              }}
+            >
+              Sign up
+            </button>
+          </>
+        ) : (
+          <>
+            Already have an account?{' '}
+            <button
+              type="button"
+              className="text-[#E50914] font-medium hover:underline"
+              onClick={() => {
+                setFormMode('signin')
+                setError('')
+              }}
+            >
+              Sign in
+            </button>
+          </>
+        )}
+      </p>
+    </div>
+  )
+}

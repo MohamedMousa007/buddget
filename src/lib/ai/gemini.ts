@@ -1,5 +1,9 @@
 import { z } from 'zod'
 import type { Currency, PaymentMethod, Debt } from '@/lib/store/types'
+import {
+  generateWithFallback,
+  throwIfAiProxyNotOk,
+} from '@/lib/ai/generateWithFallback'
 
 export type AIAction =
   | 'add_expense'
@@ -109,39 +113,7 @@ export function parseModelJsonToAIResponse(text: string, rawFallbackMessage?: st
   return base
 }
 
-/** Buddget's own 429 message from /api/ai — do not label as Google quota. */
-function isBuddgetServerThrottleMessage(message: string): boolean {
-  return message.includes('This server allows') && message.includes('per device')
-}
-
-/**
- * Wrap Google Gemini quota / billing errors so users know it's not Buddget "throttle per device".
- */
-export function formatProxyAiErrorForUser(message: string, httpStatus: number): string {
-  if (isBuddgetServerThrottleMessage(message)) return message
-
-  const m = message.toLowerCase()
-  const looksLikeGoogleQuota =
-    m.includes('quota exceeded') ||
-    m.includes('exceeded your current quota') ||
-    m.includes('free_tier') ||
-    m.includes('resource_exhausted') ||
-    m.includes('generativelanguage.googleapis.com') ||
-    m.includes('rate-limits') ||
-    m.includes('check your plan and billing') ||
-    (httpStatus === 429 && !isBuddgetServerThrottleMessage(message))
-
-  if (looksLikeGoogleQuota) {
-    return (
-      "This is Google's Gemini API limit (free tier / billing on your API key), not Buddget's optional \"Throttle per device\" setting.\n\n" +
-      'Turning off throttling in Admin only removes this app\'s per-IP cap. Google still enforces its own RPM/quota.\n\n' +
-      `Details: ${message}\n\n` +
-      'What helps: wait a minute and retry; reduce how often you send messages; or enable billing / upgrade the key in Google AI Studio.'
-    )
-  }
-
-  return message
-}
+export { formatProxyAiErrorForUser } from '@/lib/ai/formatAiProxyError'
 
 export function buildSystemPrompt(
   baseCurrency: Currency,
@@ -249,23 +221,15 @@ export async function sendToGemini(
     },
   ]
 
-  const response = await fetch('/api/ai', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents,
-      generationConfig: {
-        temperature: 0.3,
-        maxOutputTokens: 1024,
-      },
-    }),
+  const response = await generateWithFallback({
+    contents,
+    generationConfig: {
+      temperature: 0.3,
+      maxOutputTokens: 1024,
+    },
   })
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => null)
-    const errorMsg = errorData?.error || `AI request failed (${response.status})`
-    throw new Error(formatProxyAiErrorForUser(errorMsg, response.status))
-  }
+  await throwIfAiProxyNotOk(response)
 
   const result = await response.json()
   const text = result.candidates?.[0]?.content?.parts?.[0]?.text

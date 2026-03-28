@@ -121,4 +121,3 @@ export function useMonthlyStats() {
 
 export const INCOME_BLOCKED_HINT =
   'Add at least one income source under Income for these totals to update.'
-

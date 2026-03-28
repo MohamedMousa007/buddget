@@ -13,7 +13,7 @@ import { QuickAddFAB } from '@/components/modals/QuickAddFAB'
 import type { ExpenseCategory } from '@/lib/store/types'
 import { MonthYearPicker } from '@/components/ui/MonthYearPicker'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
-import { useRequireAuthAction } from '@/lib/hooks/useRequireAuthAction'
+import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 
 export default function ExpensesPage() {
   const { expenses, settings } = useFinanceStore(

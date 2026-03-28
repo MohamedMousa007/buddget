@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useEscapeClose } from '@/lib/hooks/useEscapeClose'
+import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { ModalShell } from '@/components/modals/ModalShell'
-import { X } from 'lucide-react'
+import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { Input } from '@/components/ui/input'
@@ -80,16 +80,7 @@ export function AddIncomeSheet() {
   return (
     <ModalShell open={isOpen} onBackdropClick={handleClose}>
             <div className="p-6">
-              <div className="w-10 h-1 bg-[var(--color-brand-border)] rounded-full mx-auto mb-4 lg:hidden" />
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-white">Add Income Source</h3>
-                <button
-                  onClick={handleClose}
-                  className="p-1 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors"
-                >
-                  <X className="w-5 h-5 text-[var(--color-brand-text-muted)]" />
-                </button>
-              </div>
+              <ModalSheetHeader title="Add Income Source" onClose={handleClose} />
 
               <div className="space-y-4">
                 <div>

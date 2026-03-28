@@ -1,0 +1,27 @@
+# budget.ai Corporate-Grade Development Rules
+
+## 1. Architecture Philosophy
+
+- **Component-First:** Never create a UI element larger than 100 lines. If it's bigger, break it into sub-components.
+- **Logic Separation:** UI files should only contain "View" code. All "Logic" (API calls, math, state) must live in `/hooks` or `/services` (use `src/hooks` with `@/hooks/...` imports).
+- **Atomic Design:** Organize `/components` into `ui` (atoms), `layout` (wrappers), and `features` (business logic).
+
+## 2. Technical Stack Standards
+
+- **Styling:** Use Tailwind CSS exclusively. Prefer utility classes over CSS modules. Aim for a modern fintech look: glass surfaces (`backdrop-blur`, translucent borders), `rounded-xl`, consistent spacing, dark-mode-first tokens (`var(--color-brand-*)`).
+- **Types:** Use strict TypeScript. No `any`. Shared shapes live in `@/types` or `@/lib/store/types` as appropriate.
+- **AI Integration:** Always route Gemini calls through `/api/ai` using the `generateWithFallback` pattern (see `@/lib/ai/generateWithFallback.ts`) so transient 429s retry before surfacing errors — minimizes failed turns and aligns with server throttle behavior.
+
+## 3. "Vibe" & UI Requirements
+
+- **Design System:** High contrast, subtle shadows, smooth transitions. Loading and error states are mandatory for async UI.
+- **Error Handling:** Every async feature should expose a loading state and a graceful error state. Use the copy **"System is resting"** (or `SYSTEM_RESTING_MESSAGE` from `@/lib/ai/generateWithFallback`) when the app-side AI throttle/cooldown applies.
+
+## 4. Team Workflow (Relay Race)
+
+- **Modularity:** Write code assuming someone else will edit a different part of the same page. Keep files isolated.
+- **Comments:** Add JSDoc on exported components and hooks describing props / return value so teammates can compose them safely.
+
+## 5. Imports
+
+- Use absolute imports with the `@/` alias (e.g. `@/components/...`, `@/hooks/...`, `@/lib/...`, `@/types`).
