@@ -63,7 +63,7 @@ export function NotificationPanel({ open, onClose, notifications, anchorRef }: N
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1A1A24] text-[#1DB954]">
               <Check className="h-5 w-5" strokeWidth={2.5} />
             </div>
-            <p className="text-sm text-[#A0A0B8]">All caught up</p>
+            <p className="text-sm text-[#A0A0B8]">You're all caught up 🎉</p>
           </div>
         ) : (
           <ul className="divide-y divide-[#2A2A38]">

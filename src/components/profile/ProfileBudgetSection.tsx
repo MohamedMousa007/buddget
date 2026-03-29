@@ -46,7 +46,7 @@ export function ProfileBudgetSection() {
         <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">Budget</h2>
       </div>
       <p className="text-[10px] text-[var(--color-brand-text-muted)]">
-        All budget numbers are in <strong className="text-white">{store.settings.baseCurrency}</strong> (primary currency).
+        All budget amounts are shown in <strong className="text-white">{store.settings.baseCurrency}</strong>, your primary currency.
       </p>
       <div className="flex flex-wrap gap-2">
         <button
@@ -78,7 +78,7 @@ export function ProfileBudgetSection() {
           <span className="font-mono-numbers text-white">
             {formatCurrency(monthlyIncome, store.settings.baseCurrency)}
           </span>
-          /mo. Category % should add up to ~100 for a full allocation.
+          /mo. Your category percentages should add up to around 100% for a full allocation.
         </p>
       )}
       <div>

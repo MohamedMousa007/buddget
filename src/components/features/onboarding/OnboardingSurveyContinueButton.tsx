@@ -61,7 +61,7 @@ export function OnboardingSurveyContinueButton({
       }}
       className="w-full py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
     >
-      {planLoading ? 'Building plans…' : finishing ? 'Finishing…' : isLastSurveyStep ? 'Continue' : 'Continue'}
+      {planLoading ? 'Building your plans…' : finishing ? 'Wrapping up…' : isLastSurveyStep ? 'Generate my plans' : 'Continue'}
       {!finishing && !planLoading ? <ChevronRight className="w-4 h-4" /> : null}
     </button>
   )

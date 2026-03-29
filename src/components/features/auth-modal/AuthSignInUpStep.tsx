@@ -88,44 +88,38 @@ export function AuthSignInUpStep({
         {loading ? (
           <>
             <Loader2 className="w-5 h-5 animate-spin" />
-            <span>{formMode === 'signin' ? 'Signing in...' : 'Creating account...'}</span>
+            <span>{formMode === 'signin' ? 'Signing you in...' : 'Setting up your account...'}</span>
           </>
         ) : formMode === 'signin' ? (
-          'Sign in'
+          'Sign me in'
         ) : (
-          'Create account'
+          'Create my account'
         )}
       </AuthPrimaryButton>
 
       <p className="text-center text-sm text-[#5A5A72]">
         {formMode === 'signin' ? (
-          <>
-            Don&apos;t have an account?{' '}
-            <button
-              type="button"
-              className="text-[#E50914] font-medium hover:underline"
-              onClick={() => {
-                setFormMode('signup')
-                setError('')
-              }}
-            >
-              Sign up
-            </button>
-          </>
+          <button
+            type="button"
+            className="text-[#E50914] font-medium hover:underline"
+            onClick={() => {
+              setFormMode('signup')
+              setError('')
+            }}
+          >
+            New here? Create a free account →
+          </button>
         ) : (
-          <>
-            Already have an account?{' '}
-            <button
-              type="button"
-              className="text-[#E50914] font-medium hover:underline"
-              onClick={() => {
-                setFormMode('signin')
-                setError('')
-              }}
-            >
-              Sign in
-            </button>
-          </>
+          <button
+            type="button"
+            className="text-[#E50914] font-medium hover:underline"
+            onClick={() => {
+              setFormMode('signin')
+              setError('')
+            }}
+          >
+            Already have an account? Sign in →
+          </button>
         )}
       </p>
     </div>

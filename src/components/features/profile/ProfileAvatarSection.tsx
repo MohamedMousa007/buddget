@@ -20,7 +20,7 @@ export function ProfileAvatarSection({ fileRef, store, activePreset, onAvatarFil
     <section className="glass-card rounded-2xl p-5 space-y-4">
       <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">Photo</h2>
       <p className="text-[11px] text-[var(--color-brand-text-muted)]">
-        Cartoon avatars below, or upload a photo from your device (gallery or files).
+        Pick a cartoon avatar below, or upload your own photo from your device.
       </p>
       <input
         ref={fileRef}
@@ -34,7 +34,7 @@ export function ProfileAvatarSection({ fileRef, store, activePreset, onAvatarFil
         onClick={() => fileRef.current?.click()}
         className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-white hover:bg-[var(--color-brand-elevated)] transition-colors"
       >
-        Upload photo…
+        Upload a photo…
       </button>
       {store.profile.avatar?.startsWith('data:') ? (
         <button
@@ -42,7 +42,7 @@ export function ProfileAvatarSection({ fileRef, store, activePreset, onAvatarFil
           onClick={() => store.updateProfile({ avatar: undefined })}
           className="block text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-red)]"
         >
-          Remove uploaded photo
+          Remove photo
         </button>
       ) : null}
       <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 pt-2">

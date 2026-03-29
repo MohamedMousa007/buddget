@@ -19,7 +19,7 @@ export function ReportsExportBar({ onExportCsv, onCopySummary }: ReportsExportBa
         className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
       >
         <Download className="w-4 h-4" />
-        Export CSV
+        Download my data
       </button>
       <button
         type="button"
@@ -27,7 +27,7 @@ export function ReportsExportBar({ onExportCsv, onCopySummary }: ReportsExportBa
         className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
       >
         <Copy className="w-4 h-4" />
-        Copy Summary
+        Copy summary
       </button>
     </div>
   )

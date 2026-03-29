@@ -36,14 +36,14 @@ export function SavingsCard({
         <div className="flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-[var(--color-brand-green)]" />
           <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
-            Savings
+            Your Savings
           </h3>
         </div>
         <Link
           href="/savings"
           className="text-xs text-[var(--color-brand-red)] hover:text-[var(--color-brand-red-hover)]"
         >
-          Manage →
+          See your stash →
         </Link>
       </div>
 
@@ -59,10 +59,10 @@ export function SavingsCard({
               </p>
             )}
             <p className="text-xs text-[var(--color-brand-text-muted)]">
-              Holdings {formatCurrency(savingsHoldingsTotal, currency)} · This month (expenses) {formatCurrency(savingsFromExpenses, currency)}
+              Stashed away {formatCurrency(savingsHoldingsTotal, currency)} · Added this month {formatCurrency(savingsFromExpenses, currency)}
             </p>
             <p className="text-xs text-[var(--color-brand-text-muted)] mt-1">
-              Monthly goal {formatCurrency(savingsBudget, currency)}
+              Your monthly target {formatCurrency(savingsBudget, currency)}
             </p>
           </div>
           <span className="text-sm font-mono-numbers text-[var(--color-brand-text-secondary)]">

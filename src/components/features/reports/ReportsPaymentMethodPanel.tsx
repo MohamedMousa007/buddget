@@ -22,7 +22,7 @@ export function ReportsPaymentMethodPanel({ methods, baseCurrency }: ReportsPaym
   return (
     <div className="glass-card rounded-2xl p-5">
       <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-4">
-        Payment Method Breakdown
+        How You Pay
       </h3>
       <div className="space-y-2">
         {[...methods]
@@ -35,7 +35,7 @@ export function ReportsPaymentMethodPanel({ methods, baseCurrency }: ReportsPaym
               <span className="text-sm text-white">{method.name}</span>
               <div className="flex items-center gap-4">
                 <span className="text-xs text-[var(--color-brand-text-muted)]">
-                  {method.count} transaction{method.count !== 1 ? 's' : ''}
+                  {method.count} {method.count !== 1 ? 'uses' : 'use'}
                 </span>
                 <span className="text-sm font-mono-numbers text-white">
                   {formatCurrency(method.total, baseCurrency)}

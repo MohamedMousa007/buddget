@@ -82,7 +82,7 @@ export function DebtOnboardingPanel({
   return (
     <div className="space-y-4 text-left w-full max-w-lg">
       <p className="text-[11px] text-[var(--color-brand-text-muted)]">
-        Same details as Debts in the app. Add what you owe, or skip if you’ll do it later.
+        Add any debts you want to track — or skip this and come back later.
       </p>
 
       {entries.length > 0 ? (
@@ -103,18 +103,18 @@ export function DebtOnboardingPanel({
 
       <div className="space-y-4 rounded-xl border border-[var(--color-brand-border)] p-4 bg-[var(--color-brand-elevated)]/30">
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Debt name</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">What’s it called?</Label>
           <Input
-            placeholder="e.g. Credit card"
+            placeholder="e.g. Credit card, Car loan"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
           />
         </div>
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Person / lender</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Who do you owe?</Label>
           <Input
-            placeholder="Who do you owe?"
+            placeholder="e.g. Bank, a friend"
             value={person}
             onChange={(e) => setPerson(e.target.value)}
             className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
@@ -129,7 +129,7 @@ export function DebtOnboardingPanel({
           />
         </div>
         <div className="flex items-center justify-between">
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Gold debt?</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Is this a gold debt?</Label>
           <Switch
             checked={isGold}
             onCheckedChange={(v) => {
@@ -179,7 +179,7 @@ export function DebtOnboardingPanel({
           )}
         </div>
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Notes (optional)</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Any notes? (optional)</Label>
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}

@@ -16,10 +16,10 @@ export function AddDebtSheet() {
   useEscapeClose(d.isOpen, d.closeSheet)
 
   const title = d.debtSheetPaymentOnly
-    ? 'Record Payment'
+    ? 'Log a payment'
     : d.mode === 'new'
-      ? 'Add New Debt'
-      : 'Record Payment'
+      ? 'Start tracking a balance'
+      : 'Log a payment'
 
   return (
     <ModalShell open={d.isOpen} onBackdropClick={d.closeSheet}>

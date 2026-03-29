@@ -59,7 +59,7 @@ export function AddDebtPaymentForm({
   if (payableDebts.length === 0) {
     return (
       <p className="text-sm text-[var(--color-brand-text-muted)] py-2">
-        All debts are paid off. You can add a new debt or edit an existing one if the balance changed.
+        All balances are cleared. You can track a new balance or edit an existing one.
       </p>
     )
   }
@@ -67,7 +67,7 @@ export function AddDebtPaymentForm({
   return (
     <div className="space-y-4">
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Select Debt</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Select balance</Label>
         <select
           value={selectedPayable ? selectedDebtId : payableDebts[0]?.id ?? ''}
           onChange={(e) => setSelectedDebtId(e.target.value)}
@@ -143,7 +143,7 @@ export function AddDebtPaymentForm({
         </div>
       </div>
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Notes (optional)</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Any notes?</Label>
         <Textarea
           value={paymentNotes}
           onChange={(e) => setPaymentNotes(e.target.value)}
@@ -164,7 +164,7 @@ export function AddDebtPaymentForm({
           disabled={!selectedDebtId || !paymentAmount}
           className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50"
         >
-          Record Payment →
+          Log payment →
         </button>
       </div>
     </div>

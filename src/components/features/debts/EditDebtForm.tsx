@@ -27,11 +27,11 @@ export function EditDebtForm({
 
   return (
     <div className="p-6">
-      <ModalSheetHeader title="Edit Debt" onClose={onClose} />
+      <ModalSheetHeader title="Edit balance" onClose={onClose} />
 
       <div className="space-y-4">
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Debt Name</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Balance name</Label>
           <Input
             value={f.name}
             onChange={(e) => f.setName(e.target.value)}
@@ -40,7 +40,7 @@ export function EditDebtForm({
         </div>
 
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Person</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Who is this with?</Label>
           <Input
             value={f.person}
             onChange={(e) => f.setPerson(e.target.value)}
@@ -59,7 +59,7 @@ export function EditDebtForm({
         </div>
 
         <div className="flex items-center justify-between">
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Gold Debt?</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Tracked in gold grams?</Label>
           <Switch
             checked={f.isGold}
             onCheckedChange={(val) => {
@@ -72,7 +72,7 @@ export function EditDebtForm({
 
         {!f.isGold && (
           <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">Currency</Label>
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">In which currency?</Label>
             <DebtFiatCurrencySelect
               value={f.currency}
               onChange={f.setCurrency}
@@ -83,7 +83,7 @@ export function EditDebtForm({
 
         {f.isGold && (
           <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">Karat</Label>
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">Gold purity</Label>
             <select
               value={f.goldKarat}
               onChange={(e) => f.setGoldKarat(parseInt(e.target.value, 10) as GoldKarat)}
@@ -98,7 +98,7 @@ export function EditDebtForm({
         )}
 
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Notes (optional)</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Any notes?</Label>
           <Textarea
             value={f.notes}
             onChange={(e) => f.setNotes(e.target.value)}
@@ -107,8 +107,8 @@ export function EditDebtForm({
         </div>
 
         <p className="text-xs text-[var(--color-brand-text-muted)]">
-          Starting balance ({debt.isGold ? `${debt.startingBalance}g` : `${debt.currency} ${debt.startingBalance}`})
-          cannot be changed — delete and recreate the debt if needed.
+          Starting amount ({debt.isGold ? `${debt.startingBalance}g` : `${debt.currency} ${debt.startingBalance}`})
+          can't be changed — delete and recreate the balance if needed.
         </p>
 
         <div className="flex gap-3 pt-2">

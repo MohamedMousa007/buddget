@@ -35,7 +35,7 @@ export function ExpenseRow({ expense, isMobile = false }: ExpenseRowProps) {
     setActiveModal('editExpense')
   }
   const handleDelete = () => {
-    if (window.confirm('Delete this expense? This cannot be undone.')) {
+    if (window.confirm('Remove this transaction? This will be gone for good.')) {
       deleteExpense(expense.id)
     }
   }
@@ -116,14 +116,14 @@ export function ExpenseRow({ expense, isMobile = false }: ExpenseRowProps) {
       <button
         onClick={handleEdit}
         className="p-1.5 rounded-lg hover:bg-[var(--color-brand-border)] transition-colors"
-        aria-label="Edit expense"
+        aria-label="Edit purchase"
       >
         <Pencil className="w-4 h-4 text-[var(--color-brand-text-muted)]" />
       </button>
       <button
         onClick={handleDelete}
         className="p-1.5 rounded-lg hover:bg-red-900/30 transition-colors"
-        aria-label="Delete expense"
+        aria-label="Remove purchase"
       >
         <Trash2 className="w-4 h-4 text-[var(--color-brand-text-muted)]" />
       </button>

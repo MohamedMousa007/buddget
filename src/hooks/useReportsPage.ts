@@ -127,12 +127,12 @@ export function useReportsPage() {
 
   const handleCopySummary = useCallback(() => {
     const summary = `Period: ${format(startDate, 'd MMM')} – ${format(endDate, 'd MMM yyyy')}
-Recurring income (period total): ${formatCurrency(periodRecurringIncome, settings.baseCurrency)}
-Total Remittances: ${formatCurrency(remittances, settings.baseCurrency)}
-Total Expenses: ${formatCurrency(totalExpenses, settings.baseCurrency)}
-Net (recurring income − expenses): ${formatCurrency(periodRecurringIncome - totalExpenses, settings.baseCurrency)}
-${largestExpense ? `Largest Expense: ${largestExpense.description} (${formatCurrency(largestExpense.amountInBaseCurrency, settings.baseCurrency)})` : ''}
-${mostUsedMethod ? `Most Used Method: ${mostUsedMethod.name} (${mostUsedMethod.count} times)` : ''}`
+Total money in: ${formatCurrency(periodRecurringIncome, settings.baseCurrency)}
+Money sent home: ${formatCurrency(remittances, settings.baseCurrency)}
+Total money out: ${formatCurrency(totalExpenses, settings.baseCurrency)}
+Net saved: ${formatCurrency(periodRecurringIncome - totalExpenses, settings.baseCurrency)}
+${largestExpense ? `Biggest purchase: ${largestExpense.description} (${formatCurrency(largestExpense.amountInBaseCurrency, settings.baseCurrency)})` : ''}
+${mostUsedMethod ? `Go-to payment: ${mostUsedMethod.name} (${mostUsedMethod.count} times)` : ''}`
     void navigator.clipboard.writeText(summary)
   }, [
     endDate,

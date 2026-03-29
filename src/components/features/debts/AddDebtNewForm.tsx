@@ -56,18 +56,18 @@ export function AddDebtNewForm({
   return (
     <div className="space-y-4">
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Debt Name</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Balance name</Label>
         <Input
-          placeholder="e.g. Mom's Debt"
+          placeholder="e.g. Mom's balance"
           value={name}
           onChange={(e) => setName(e.target.value)}
           className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
         />
       </div>
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Person</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Who is this with?</Label>
         <Input
-          placeholder="Who do you owe?"
+          placeholder="e.g. Mom, Bank, Friend..."
           value={person}
           onChange={(e) => setPerson(e.target.value)}
           className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
@@ -83,7 +83,7 @@ export function AddDebtNewForm({
         />
       </div>
       <div className="flex items-center justify-between">
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Gold Debt?</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Tracked in gold grams?</Label>
         <Switch
           checked={isGold}
           onCheckedChange={(val) => {
@@ -96,7 +96,7 @@ export function AddDebtNewForm({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">
-            {isGold ? 'Amount (grams)' : 'Amount'}
+            {isGold ? 'Total amount (grams)' : 'What\u2019s the total amount?'}
           </Label>
           <Input
             type="number"
@@ -109,7 +109,7 @@ export function AddDebtNewForm({
         </div>
         {!isGold ? (
           <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">Currency</Label>
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">In which currency?</Label>
             <DebtFiatCurrencySelect
               value={currency}
               onChange={setCurrency}
@@ -118,7 +118,7 @@ export function AddDebtNewForm({
           </div>
         ) : (
           <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">Karat</Label>
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">Gold purity</Label>
             <select
               value={goldKarat}
               onChange={(e) => setGoldKarat(parseInt(e.target.value, 10) as GoldKarat)}
@@ -133,7 +133,7 @@ export function AddDebtNewForm({
         )}
       </div>
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Notes (optional)</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Any notes?</Label>
         <Textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
@@ -154,7 +154,7 @@ export function AddDebtNewForm({
           disabled={!name || !person || !startingBalance}
           className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50"
         >
-          Add Debt →
+          Start tracking →
         </button>
       </div>
     </div>

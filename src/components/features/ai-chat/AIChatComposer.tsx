@@ -18,7 +18,7 @@ export function AIChatComposer({ value, onChange, onSend, disabled }: AIChatComp
     <div className="p-4 border-t border-[var(--color-brand-border)]">
       <div className="flex gap-2">
         <Input
-          placeholder="Type a message..."
+          placeholder="Tell me about a transaction..."
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && onSend()}

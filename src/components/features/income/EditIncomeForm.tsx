@@ -17,11 +17,11 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
 
   return (
     <div className="p-6">
-      <ModalSheetHeader title="Edit Income" onClose={onClose} />
+      <ModalSheetHeader title="Edit Source" onClose={onClose} />
 
       <div className="space-y-4">
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Source Name</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Where does it come from?</Label>
           <Input
             value={f.name}
             onChange={(e) => f.setName(e.target.value)}
@@ -30,7 +30,7 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">Amount</Label>
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">How much?</Label>
             <Input
               type="number"
               step="0.01"
@@ -40,7 +40,7 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
             />
           </div>
           <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">Currency</Label>
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">In which currency?</Label>
             <FiatCurrencySelect
               value={f.currency}
               onChange={f.setCurrency}
@@ -113,7 +113,7 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
             disabled={!f.name || !f.amount}
             className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] text-white text-sm font-semibold disabled:opacity-50"
           >
-            Save
+            Save changes
           </button>
         </div>
       </div>

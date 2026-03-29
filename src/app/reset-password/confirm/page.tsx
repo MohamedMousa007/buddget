@@ -48,18 +48,18 @@ export default function ResetPasswordConfirmPage() {
   const submit = async () => {
     setError('')
     if (password.length < MIN) {
-      setError(`Password must be at least ${MIN} characters.`)
+      setError(`Password needs to be at least ${MIN} characters.`)
       return
     }
     if (password !== confirm) {
-      setError('Passwords do not match.')
+      setError('Those passwords don\'t match. Try again.')
       return
     }
     setLoading(true)
     const { error: e } = await supabase.auth.updateUser({ password })
     setLoading(false)
     if (e) {
-      setError(e.message)
+      setError('Oops, something went wrong. Let\'s try again.')
       return
     }
     router.replace('/')
@@ -80,7 +80,8 @@ export default function ResetPasswordConfirmPage() {
         className="w-full max-w-md border p-8 rounded-2xl space-y-4"
         style={{ background: '#111118', borderColor: '#2A2A38' }}
       >
-        <h1 className="text-xl font-bold text-white text-center">Set a new password</h1>
+        <h1 className="text-xl font-bold text-white text-center">Choose a new password</h1>
+        <p className="text-sm text-[#5A5A72] text-center">Make it something strong that you'll remember.</p>
         <div className="space-y-2">
           <label className="text-xs text-[#5A5A72]">New password</label>
           <div className="relative">
@@ -89,12 +90,13 @@ export default function ResetPasswordConfirmPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              placeholder="New password"
               className="w-full h-12 pl-10 pr-3 rounded-[10px] border border-[#2A2A38] bg-[#1A1A24] text-white outline-none focus:border-[#E50914]"
             />
           </div>
         </div>
         <div className="space-y-2">
-          <label className="text-xs text-[#5A5A72]">Confirm password</label>
+          <label className="text-xs text-[#5A5A72]">Confirm new password</label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A5A72]" />
             <input
@@ -102,6 +104,7 @@ export default function ResetPasswordConfirmPage() {
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && void submit()}
+              placeholder="Confirm new password"
               className="w-full h-12 pl-10 pr-3 rounded-[10px] border border-[#2A2A38] bg-[#1A1A24] text-white outline-none focus:border-[#E50914]"
             />
           </div>
@@ -114,7 +117,7 @@ export default function ResetPasswordConfirmPage() {
           className="w-full h-12 rounded-xl font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-50"
           style={{ background: '#E50914' }}
         >
-          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Update password'}
+          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Update my password'}
         </button>
       </div>
     </div>

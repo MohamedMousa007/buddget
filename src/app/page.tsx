@@ -30,43 +30,43 @@ export default function DashboardPage() {
         {/* KPI Strip */}
         <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-1">
           <KPICard
-            title="Income"
+            title="Money In"
             value={stats.totalIncome}
             currency={stats.baseCurrency}
             icon="💵"
-            trendLabel="This month"
+            trendLabel="flowing in this month"
             footnote={incomeNote}
           />
           <KPICard
-            title="Spent"
+            title="Money Out"
             value={stats.totalSpent}
             currency={stats.baseCurrency}
             icon="💸"
             trendLabel="This month"
           />
           <KPICard
-            title="Remaining"
+            title="Left to Spend"
             value={stats.remaining}
             currency={stats.baseCurrency}
             icon="💰"
             color={stats.remaining >= 0 ? 'green' : 'red'}
-            trendLabel="Budget left"
+            trendLabel="still in your pocket"
           />
           <KPICard
-            title="Savings"
+            title="Saved Up"
             value={stats.savingsTotal}
             currency={stats.baseCurrency}
             icon="🏦"
             color="gold"
-            trendLabel="Holdings + this month"
+            trendLabel="total you've built up"
           />
           <KPICard
-            title="Debt"
+            title="To Clear"
             value={stats.debtRemainingTotal}
             currency={stats.baseCurrency}
             icon="📉"
             color="red"
-            trendLabel="Total owed"
+            trendLabel="working on clearing"
             onClick={() => router.push('/debts')}
           />
         </div>

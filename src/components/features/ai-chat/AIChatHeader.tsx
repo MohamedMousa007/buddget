@@ -15,7 +15,7 @@ export function AIChatHeader({ onClose }: AIChatHeaderProps) {
       <div className="flex items-center gap-2">
         <Bot className="w-5 h-5 text-[var(--color-brand-red)]" aria-hidden />
         <h3 id="ai-chat-title" className="text-sm font-semibold text-white">
-          Buddget AI
+          Your AI Assistant
         </h3>
       </div>
       <button

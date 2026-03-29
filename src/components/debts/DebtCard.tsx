@@ -55,7 +55,7 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
             </span>
             {paidOff ? (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 bg-[var(--color-brand-green)]/25 text-[var(--color-brand-green)]">
-                Paid off
+                Cleared
               </span>
             ) : null}
           </div>
@@ -71,7 +71,7 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
         <button
           onClick={onEdit}
           className="p-1.5 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors shrink-0"
-          title="Edit debt"
+          title="Edit balance"
         >
           <Pencil className="w-3.5 h-3.5 text-[var(--color-brand-text-muted)]" />
         </button>
@@ -79,7 +79,7 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
 
       <div className="space-y-3">
         <div className="flex justify-between text-sm">
-          <span className="text-[var(--color-brand-text-secondary)]">Starting</span>
+          <span className="text-[var(--color-brand-text-secondary)]">Started at</span>
           <div className="text-right">
             <MoneyDisplay
               amount={debt.startingBalance}
@@ -97,7 +97,7 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
         </div>
 
         <div className="flex justify-between text-sm">
-          <span className="text-[var(--color-brand-text-secondary)]">Remaining</span>
+          <span className="text-[var(--color-brand-text-secondary)]">Still to go</span>
           <div className="text-right">
             <MoneyDisplay
               amount={remainingRaw}
@@ -125,10 +125,10 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
 
         <div className="flex justify-between items-center">
           <p className="text-xs text-[var(--color-brand-text-muted)] font-mono-numbers">
-            {payments.length} payment{payments.length !== 1 ? 's' : ''}
+            {payments.length} payment{payments.length !== 1 ? 's' : ''} so far
           </p>
           <span className="text-xs font-mono-numbers text-[var(--color-brand-text-secondary)]">
-            {paidPercent.toFixed(1)}% paid
+            {paidPercent.toFixed(1)}% cleared
           </span>
         </div>
 
@@ -142,7 +142,7 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
 
       {paidOff ? (
         <p className="w-full mt-4 py-2.5 rounded-xl border border-[var(--color-brand-border)] text-center text-sm text-[var(--color-brand-text-muted)]">
-          Fully paid — add payments only if you edit the debt balance
+          Cleared! Amazing work 🎉 — log more payments only if you update the balance
         </p>
       ) : (
         <button
@@ -150,7 +150,7 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
           onClick={onRecordPayment}
           className="w-full mt-4 py-2.5 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-medium transition-colors"
         >
-          + Record Payment
+          + Log a payment
         </button>
       )}
     </div>

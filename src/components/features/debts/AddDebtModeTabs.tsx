@@ -20,7 +20,7 @@ export function AddDebtModeTabs({ mode, onModeChange }: AddDebtModeTabsProps) {
             : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
         }`}
       >
-        New Debt
+        New balance
       </button>
       <button
         type="button"
@@ -31,7 +31,7 @@ export function AddDebtModeTabs({ mode, onModeChange }: AddDebtModeTabsProps) {
             : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
         }`}
       >
-        Record Payment
+        Log a payment
       </button>
     </div>
   )

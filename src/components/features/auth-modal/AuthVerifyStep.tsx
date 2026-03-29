@@ -31,7 +31,7 @@ export function AuthVerifyStep({
   return (
     <div className="space-y-5">
       <div className="text-center">
-        <h2 className="text-lg font-semibold text-white">Check your email</h2>
+        <h2 className="text-lg font-semibold text-white">Check your inbox 📬</h2>
         <p className="text-sm text-[#5A5A72] mt-1">
           We sent a 6-digit code to <span className="text-white">{email}</span>
         </p>
@@ -44,7 +44,7 @@ export function AuthVerifyStep({
             <span>Verifying…</span>
           </>
         ) : (
-          'Confirm & continue'
+          'Confirm & get started'
         )}
       </AuthPrimaryButton>
       <div className="flex flex-col items-center gap-2 text-sm">
@@ -54,7 +54,7 @@ export function AuthVerifyStep({
           onClick={() => void onResend()}
           className="text-[#E50914] disabled:opacity-50 disabled:cursor-not-allowed hover:underline"
         >
-          {resendCooldown > 0 ? `Resend code (${resendCooldown}s)` : 'Resend code'}
+          {resendCooldown > 0 ? `Send a new code (${resendCooldown}s)` : 'Send a new code'}
         </button>
         <button type="button" onClick={onUseDifferentEmail} className="text-[#5A5A72] hover:text-white">
           Use a different email

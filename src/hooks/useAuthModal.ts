@@ -54,11 +54,11 @@ export function useAuthModal() {
 
   const validateEmailField = useCallback(() => {
     if (!email.trim()) {
-      setError('Please enter a valid email address.')
+      setError('Please enter a real email address.')
       return false
     }
     if (!isValidEmailFormat(email)) {
-      setError('Please enter a valid email address.')
+      setError('Please enter a real email address.')
       return false
     }
     return true
@@ -68,7 +68,7 @@ export function useAuthModal() {
     setError('')
     if (!validateEmailField()) return
     if (!password) {
-      setError('Enter your email and password.')
+      setError('Enter your email and password to continue.')
       return
     }
     setLoading(true)
@@ -90,11 +90,11 @@ export function useAuthModal() {
     setError('')
     if (!validateEmailField()) return
     if (password.length < MIN_PASSWORD_LEN) {
-      setError('Password must be at least 8 characters.')
+      setError('Password needs to be at least 8 characters.')
       return
     }
     if (password !== confirmPassword) {
-      setError('Passwords do not match.')
+      setError('Those passwords don\'t match. Try again.')
       return
     }
     setLoading(true)
@@ -109,7 +109,7 @@ export function useAuthModal() {
     if (e) {
       const mapped = mapAuthError(e, 'signup')
       if (mapped === 'EMAIL_EXISTS') {
-        setError('An account with this email already exists. Sign in instead?')
+        setError('Looks like you already have an account. Sign in instead?')
         return
       }
       setError(mapped)
@@ -127,14 +127,14 @@ export function useAuthModal() {
       startResendCooldown()
       return
     }
-    setError('Could not create account. Try again.')
+    setError('Something didn\'t work. Give it another try.')
   }, [confirmPassword, email, password, router, safeNext, startResendCooldown, supabase, validateEmailField])
 
   const verifySignupOtp = useCallback(async () => {
     setError('')
     const token = otp.replace(/\D/g, '').slice(0, 6)
     if (token.length !== 6) {
-      setError('Enter the full 6-digit code.')
+      setError('Enter all 6 digits to continue.')
       return
     }
     setLoading(true)

@@ -63,7 +63,7 @@ export function RecurringDebtPaymentForm({
   if (payableDebts.length === 0) {
     return (
       <p className="text-sm text-[var(--color-brand-text-muted)]">
-        No debts with a remaining balance. Pay off or add a debt first.
+        No balances with an amount remaining. Clear or add a balance first.
       </p>
     )
   }
@@ -71,7 +71,7 @@ export function RecurringDebtPaymentForm({
   return (
     <div className="space-y-4">
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Debt</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Balance</Label>
         <select
           value={selectDebtValue}
           onChange={(e) => onDebtChange(e.target.value)}
@@ -165,7 +165,7 @@ export function RecurringDebtPaymentForm({
       </div>
 
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Notes (optional)</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Any notes?</Label>
         <Textarea
           value={notes}
           onChange={(e) => onNotesChange(e.target.value)}

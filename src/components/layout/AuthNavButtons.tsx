@@ -113,7 +113,7 @@ export function AuthNavButtons({
       {!user ? (
         <>
           <button type="button" onClick={() => openAuthModal(nextPath)} className={btnClass}>
-            Log in
+            Sign in
           </button>
           <button
             type="button"

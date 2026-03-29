@@ -13,7 +13,7 @@ export function AddExpenseSheet() {
   return (
     <ModalShell open={sheet.isOpen} onBackdropClick={sheet.handleClose}>
       <div className="p-6">
-        <ModalSheetHeader title="Add Expense" onClose={sheet.handleClose} />
+        <ModalSheetHeader title="Log a Purchase" onClose={sheet.handleClose} />
         <AddExpenseForm
           date={sheet.date}
           setDate={sheet.setDate}

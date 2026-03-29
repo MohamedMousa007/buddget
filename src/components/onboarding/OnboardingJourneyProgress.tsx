@@ -26,7 +26,7 @@ export function OnboardingJourneyProgress({
       aria-valuemin={0}
       aria-valuemax={n}
       aria-valuenow={phase === 'plans' ? n : safeIndex + 1}
-      aria-label="Onboarding progress"
+      aria-label="Your setup progress"
     >
       {Array.from({ length: n }, (_, i) => {
         const done = phase === 'plans' || i < safeIndex

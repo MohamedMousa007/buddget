@@ -14,11 +14,11 @@ export function CategoryPieChart({ data, currency }: CategoryPieChartProps) {
   return (
     <div className="glass-card rounded-2xl p-5">
       <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-4">
-        Spending by Category
+        Where It Goes
       </h3>
       {data.length === 0 ? (
         <p className="text-[var(--color-brand-text-muted)] text-sm text-center py-8">
-          No spending data for this period
+          No spending yet — your breakdown will appear here
         </p>
       ) : (
         <div className="h-[300px]">

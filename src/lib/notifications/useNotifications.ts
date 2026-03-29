@@ -64,11 +64,11 @@ export function useNotifications() {
         list.push({
           id: `budget_alert:${cat.category}:${monthFilter}`,
           type: 'budget_alert',
-          title: `${cat.category} budget`,
+          title: `Heads up on ${cat.category} 👀`,
           body:
             pct >= 100
-              ? `You've exceeded your ${cat.category} budget (${Math.round(pct)}% used).`
-              : `You've used over 80% of your ${cat.category} budget (${Math.round(pct)}%).`,
+              ? `You've used ${Math.round(pct)}% of your ${cat.category} budget. Time to ease up a little!`
+              : `You've used ${Math.round(pct)}% of your ${cat.category} budget. ${100 - Math.round(pct)}% still to go.`,
           severity: pct >= 100 ? 'critical' : 'warning',
           createdAt: now,
         })
@@ -81,8 +81,8 @@ export function useNotifications() {
         list.push({
           id: `debt_reminder:${debt.id}`,
           type: 'debt_reminder',
-          title: `Debt: ${debt.name}`,
-          body: `You still owe on this debt. Open Debts to record a payment.`,
+          title: `Friendly reminder 📋`,
+          body: `Your scheduled payment toward ${debt.name} is coming up this month.`,
           severity: 'info',
           createdAt: now,
         })
@@ -93,11 +93,13 @@ export function useNotifications() {
       list.push({
         id: `month_end:${monthFilter}`,
         type: 'month_end',
-        title: 'Month ending soon',
+        title: stats.daysLeft === 0
+          ? 'Last day to finish strong 💪'
+          : `${stats.daysLeft} day${stats.daysLeft === 1 ? '' : 's'} to finish strong 💪`,
         body:
           stats.daysLeft === 0
-            ? 'Today is the last day of your budget month.'
-            : `${stats.daysLeft} day${stats.daysLeft === 1 ? '' : 's'} left in your budget month.`,
+            ? 'Today wraps up your budget month. Finish on a high note!'
+            : `You've got ${stats.daysLeft} day${stats.daysLeft === 1 ? '' : 's'} left in your budget month. Keep it up!`,
         severity: stats.daysLeft === 0 ? 'warning' : 'info',
         createdAt: now,
       })
@@ -108,8 +110,8 @@ export function useNotifications() {
       list.push({
         id: `savings_nudge:${monthFilter}`,
         type: 'savings_nudge',
-        title: 'Savings',
-        body: "You haven't logged a savings transaction this month yet.",
+        title: "Haven't saved yet this month 🌱",
+        body: 'Even a small amount adds up. Log a saving today and keep the momentum going.',
         severity: 'info',
         createdAt: now,
       })

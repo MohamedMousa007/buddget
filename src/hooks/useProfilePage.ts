@@ -45,7 +45,7 @@ export function useProfilePage() {
       e.target.value = ''
       if (!file || !file.type.startsWith('image/')) return
       if (file.size > AVATAR_FILE_MAX_BYTES) {
-        window.alert('Please choose an image under 2 MB.')
+        window.alert('That image is a bit large — please pick one under 2 MB.')
         return
       }
       const reader = new FileReader()

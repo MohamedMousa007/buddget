@@ -8,11 +8,11 @@ import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 
 const OPTIONS = [
-  { id: 'addExpense', label: 'Add Expense', icon: Receipt, emoji: '💸' },
-  { id: 'addIncome', label: 'Add Income Source', icon: DollarSign, emoji: '💵' },
-  { id: 'addPaymentMethod', label: 'Add Payment Method', icon: CreditCard, emoji: '💳' },
-  { id: 'addDebt', label: 'Add / Pay a Debt', icon: FileText, emoji: '📋' },
-  { id: 'aiChat', label: 'Ask AI Assistant', icon: Bot, emoji: '🤖' },
+  { id: 'addExpense', label: 'Log a purchase', icon: Receipt, emoji: '💸' },
+  { id: 'addIncome', label: 'Add income source', icon: DollarSign, emoji: '💵' },
+  { id: 'addPaymentMethod', label: 'Add a payment method', icon: CreditCard, emoji: '💳' },
+  { id: 'addDebt', label: 'Track or pay a balance', icon: FileText, emoji: '📋' },
+  { id: 'aiChat', label: 'Ask your AI assistant', icon: Bot, emoji: '🤖' },
 ]
 
 export function QuickAddFAB() {
@@ -22,7 +22,7 @@ export function QuickAddFAB() {
 
   const runOption = (optionId: string) => {
     const msg =
-      'Sign in or create an account to add data and sync it securely across devices.'
+      'Sign in to start tracking your finances and syncing across devices 🔐'
     if (optionId === 'addDebt') {
       requireAuth(() => {
         setActiveModal(null)
@@ -34,7 +34,7 @@ export function QuickAddFAB() {
       requireAuth(() => {
         setActiveModal(null)
         setActiveModal('aiChat')
-      }, 'Sign in or create an account to use Buddget AI.')
+      }, 'Sign in to chat with your AI assistant 🤖')
       return
     }
     requireAuth(() => {
@@ -66,7 +66,7 @@ export function QuickAddFAB() {
         dragToClose
         panelClassName="!bottom-[max(0.5rem,calc(4rem+env(safe-area-inset-bottom,0px)))] !left-2 !right-2 !max-h-[min(72vh,calc(100dvh-5.5rem))] lg:!bottom-24 lg:!right-8 lg:!left-auto lg:!top-auto lg:!translate-x-0 lg:!translate-y-0 lg:!w-[360px] lg:!max-h-[min(90vh,520px)] lg:!rounded-2xl"
       >
-        <h3 className="text-lg font-semibold text-white mb-4 pr-2">What would you like to add?</h3>
+        <h3 className="text-lg font-semibold text-white mb-4 pr-2">What would you like to do?</h3>
         <div className="space-y-1">
           {OPTIONS.map((option) => (
             <button

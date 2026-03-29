@@ -17,11 +17,11 @@ export function ProfilePersonalDetailsSection({ store, user }: ProfilePersonalDe
   return (
     <section className="glass-card rounded-2xl p-5 space-y-4">
       <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
-        Personal details
+        Your details
       </h2>
       <div className="space-y-3">
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Name</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Your name</Label>
           <Input
             value={store.profile.name}
             onChange={(e) => store.updateProfile({ name: e.target.value })}
@@ -30,7 +30,7 @@ export function ProfilePersonalDetailsSection({ store, user }: ProfilePersonalDe
         </div>
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">
-            Email {user ? '(from account)' : ''}
+            Email address {user ? '(from account)' : ''}
           </Label>
           <Input
             value={store.profile.email || ''}
@@ -42,7 +42,7 @@ export function ProfilePersonalDetailsSection({ store, user }: ProfilePersonalDe
           />
         </div>
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Phone (optional)</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Phone number</Label>
           <Input
             value={store.profile.phone || ''}
             onChange={(e) => store.updateProfile({ phone: e.target.value })}

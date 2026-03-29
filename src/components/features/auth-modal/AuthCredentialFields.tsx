@@ -43,7 +43,7 @@ export function AuthCredentialFields({
             onChange={(e) => onEmailChange(e.target.value)}
             className={cn(inputClass, inputFocus, 'pl-10')}
             style={inputStyle}
-            placeholder="you@example.com"
+            placeholder="your@email.com"
           />
         </div>
       </div>
@@ -58,18 +58,18 @@ export function AuthCredentialFields({
             onKeyDown={(e) => e.key === 'Enter' && void onSubmitPrimary()}
             className={cn(inputClass, inputFocus, 'pl-10')}
             style={inputStyle}
-            placeholder="••••••••"
+            placeholder="Your password"
           />
         </div>
         {formMode === 'signin' ? (
           <button type="button" onClick={onForgotClick} className="mt-2 text-xs text-[#E50914] hover:underline">
-            Forgot password?
+            Forgot your password?
           </button>
         ) : null}
       </div>
       {formMode === 'signup' ? (
         <div>
-          <label className="text-xs text-[#5A5A72] mb-1 block">Confirm password</label>
+          <label className="text-xs text-[#5A5A72] mb-1 block">Confirm your password</label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A5A72]" />
             <input
@@ -79,7 +79,7 @@ export function AuthCredentialFields({
               onKeyDown={(e) => e.key === 'Enter' && void onSubmitPrimary()}
               className={cn(inputClass, inputFocus, 'pl-10')}
               style={inputStyle}
-              placeholder="••••••••"
+              placeholder="Confirm your password"
             />
           </div>
         </div>

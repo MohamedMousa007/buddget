@@ -37,7 +37,7 @@ export function RecentExpenses({ expenses }: RecentExpensesProps) {
   )
   const { setActiveModal, setEditingExpenseId } = useSettingsStore()
   const handleDelete = (expenseId: string) => {
-    if (window.confirm('Delete this expense? This cannot be undone.')) {
+    if (window.confirm('Remove this transaction? This will be gone for good.')) {
       deleteExpense(expenseId)
     }
   }
@@ -67,12 +67,12 @@ export function RecentExpenses({ expenses }: RecentExpensesProps) {
     return (
       <div className="glass-card rounded-2xl p-5">
         <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-2">
-          Recent expenses
+          Latest Transactions
         </h3>
         <EmptyState
           icon="💸"
-          title="Nothing this month yet"
-          description="Use the + button to log spending, or switch month in the header if you’re reviewing another period."
+          title="No expenses yet this month"
+          description="You're off to a great start! Add your first expense with the + button 🌟"
           className="py-10"
         />
       </div>
@@ -83,13 +83,13 @@ export function RecentExpenses({ expenses }: RecentExpensesProps) {
     <div className="glass-card rounded-2xl p-5">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
-          Recent Expenses
+          Latest Transactions
         </h3>
         <Link
           href="/expenses"
           className="text-xs text-[var(--color-brand-red)] hover:text-[var(--color-brand-red-hover)] transition-colors"
         >
-          View all →
+          See everything →
         </Link>
       </div>
 

@@ -52,7 +52,7 @@ export function useEditDebtForm(debt: Debt | undefined, isOpen: boolean) {
   const handleDelete = useCallback(
     (onAfter: () => void) => {
       if (!debt) return
-      if (window.confirm(`Delete "${debt.name}" and all its payments? This cannot be undone.`)) {
+      if (window.confirm(`Remove "${debt.name}" and all its payments? This can't be reversed.`)) {
         deleteDebt(debt.id)
         onAfter()
       }

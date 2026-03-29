@@ -30,7 +30,7 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
     e.target.value = ''
     if (!file || !file.type.startsWith('image/')) return
     if (file.size > AVATAR_FILE_MAX_BYTES) {
-      window.alert('Please choose an image under 5 MB.')
+      window.alert('That image is a bit large — pick one under 5 MB and try again.')
       return
     }
     const reader = new FileReader()
@@ -80,7 +80,7 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
           <X className="w-5 h-5" />
         </button>
 
-        <h2 className="text-lg font-semibold text-white mb-4">Change Profile Photo</h2>
+        <h2 className="text-lg font-semibold text-white mb-4">Update your photo</h2>
 
         <div className="flex gap-2 mb-5">
           {(['choose', 'upload', 'remove'] as const).map((t) => (
@@ -95,7 +95,7 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
                   : 'bg-[var(--color-brand-elevated)] text-[#A0A0B8] hover:text-white'
               )}
             >
-              {t === 'choose' ? 'Choose Avatar' : t === 'upload' ? 'Upload Photo' : 'Remove Photo'}
+              {t === 'choose' ? 'Pick an avatar' : t === 'upload' ? 'Upload a photo' : 'Remove photo'}
             </button>
           ))}
         </div>
@@ -178,7 +178,7 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
               </div>
             )}
             <p className="text-sm text-[#A0A0B8] text-center">
-              Remove your current photo and use the default avatar
+              Go back to initials
             </p>
           </div>
         )}
@@ -189,14 +189,14 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
             onClick={handleClose}
             className="px-4 py-2 rounded-xl border border-[#2A2A38] text-sm text-[#A0A0B8] hover:text-white hover:bg-[var(--color-brand-elevated)] transition-colors"
           >
-            Cancel
+            Never mind
           </button>
           <button
             type="button"
             onClick={handleSave}
             className="px-4 py-2 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
           >
-            Save
+            Use this photo
           </button>
         </div>
       </div>

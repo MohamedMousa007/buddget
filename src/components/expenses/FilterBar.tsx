@@ -37,7 +37,7 @@ export function FilterBar({
       >
         {EXPENSE_FILTER_CATEGORIES.map((c) => (
           <option key={c} value={c}>
-            {c === 'All' ? '📂 All Categories' : c}
+            {c === 'All' ? '📂 Every category' : c}
           </option>
         ))}
       </select>
@@ -47,7 +47,7 @@ export function FilterBar({
         onChange={(e) => onMethodChange(e.target.value)}
         className="h-9 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
       >
-        <option value="All">💳 All Methods</option>
+        <option value="All">💳 All payment methods</option>
         {paymentMethods.map((m) => (
           <option key={m.id} value={m.id}>{m.name}</option>
         ))}
@@ -56,7 +56,7 @@ export function FilterBar({
       <div className="relative flex-1 min-w-[150px]">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
         <Input
-          placeholder="Search..."
+          placeholder="Find a transaction..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           className="pl-9 h-9 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)] text-sm"
@@ -68,7 +68,7 @@ export function FilterBar({
         className="flex items-center gap-2 h-9 px-4 rounded-lg border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
       >
         <Download className="w-4 h-4" />
-        <span className="hidden sm:inline">Export CSV</span>
+        <span className="hidden sm:inline">Download my data</span>
       </button>
     </div>
   )

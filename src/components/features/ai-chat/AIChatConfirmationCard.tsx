@@ -38,8 +38,7 @@ export function AIChatConfirmationCard({
     <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
       {multiIntentHint ? (
         <p className="text-[11px] text-amber-200/90 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2 py-1.5">
-          Your message looks like several requests. If something is missing after you save, try one item per message or
-          confirm again after editing.
+          Looks like you mentioned a few things at once. If anything is missing after saving, try sending one item per message or adjust and confirm again.
         </p>
       ) : null}
       {toShow.map((item, idx) => {
@@ -61,7 +60,7 @@ export function AIChatConfirmationCard({
           className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--color-brand-green)] text-white text-xs font-medium"
         >
           <Check className="w-3 h-3" />
-          Confirm & Save
+          Looks good, add it ✓
         </button>
         <button
           type="button"
@@ -69,7 +68,7 @@ export function AIChatConfirmationCard({
           className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-white text-xs font-medium border border-white/10"
         >
           <Pencil className="w-3 h-3" />
-          Edit
+          Let me adjust
         </button>
       </div>
     </div>

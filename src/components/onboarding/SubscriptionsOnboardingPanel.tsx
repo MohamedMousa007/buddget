@@ -103,7 +103,7 @@ export function SubscriptionsOnboardingPanel({
   return (
     <div className="space-y-4 text-left w-full max-w-lg">
       <p className="text-[11px] text-[var(--color-brand-text-muted)]">
-        Toggle what you pay for, set a monthly amount and currency. Add your own line at the bottom.
+        Toggle the services you pay for and set a monthly amount. You can add your own at the bottom.
       </p>
 
       <div className="grid gap-3">
@@ -126,7 +126,7 @@ export function SubscriptionsOnboardingPanel({
               {line.enabled ? (
                 <div className="grid grid-cols-2 gap-2 pl-6">
                   <div>
-                    <Label className="text-[10px] text-[var(--color-brand-text-muted)]">Monthly / mo</Label>
+                    <Label className="text-[10px] text-[var(--color-brand-text-muted)]">Monthly cost</Label>
                     <Input
                       type="number"
                       step="0.01"
@@ -159,7 +159,7 @@ export function SubscriptionsOnboardingPanel({
           >
             <div className="flex items-center justify-between gap-2">
               <Input
-                placeholder="Service name"
+                placeholder="What do you subscribe to?"
                 value={line.label}
                 onChange={(e) => updatePreset(line.id, { label: e.target.value.trimStart() })}
                 className="flex-1 h-9 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white text-sm"
@@ -195,11 +195,11 @@ export function SubscriptionsOnboardingPanel({
         onClick={addCustom}
         className="text-xs text-[var(--color-brand-red)] hover:underline"
       >
-        + Add another service
+        + Add another subscription
       </button>
 
       <p className="text-[10px] text-[var(--color-brand-text-muted)]">
-        Rough enabled total (not converted): {enabledTotal.toFixed(2)} (sum of entered amounts)
+        Your estimated total so far: {enabledTotal.toFixed(2)} (sum of entered amounts)
       </p>
     </div>
   )
