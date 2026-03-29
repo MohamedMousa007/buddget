@@ -15,6 +15,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 import { cn } from '@/lib/utils'
+import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 
 interface ProfileDropdownProps {
   open: boolean
@@ -80,6 +81,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
   }
 
   const handleSignOut = async () => {
+    clearBudgetData()
     await signOut()
     onClose()
     router.push('/')

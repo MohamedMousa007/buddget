@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { checkAIStatus } from '@/lib/ai/gemini'
+import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 
 export interface SettingsImportBannerState {
   variant: 'success' | 'error'
@@ -80,6 +81,7 @@ export function useSettingsPage() {
   }
 
   const signOutAndHome = async () => {
+    clearBudgetData()
     await signOut()
     router.replace('/')
   }

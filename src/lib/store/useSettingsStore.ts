@@ -34,6 +34,7 @@ interface SettingsState {
   openDebtSheetNew: () => void
   openDebtSheetRecordPayment: (debtId: string) => void
   resetDebtSheetIntent: () => void
+  resetSettings: () => void
 }
 
 const currentMonth = new Date().toISOString().slice(0, 7)
@@ -73,6 +74,18 @@ export const useSettingsStore = create<SettingsState>()(
         }),
       resetDebtSheetIntent: () =>
         set({ debtSheetPaymentOnly: false, debtSheetPrefillDebtId: null }),
+      resetSettings: () =>
+        set({
+          sidebarOpen: false,
+          activeModal: null,
+          editingExpenseId: null,
+          editingDebtId: null,
+          editingIncomeId: null,
+          expensePrefill: null,
+          monthFilter: currentMonth,
+          debtSheetPaymentOnly: false,
+          debtSheetPrefillDebtId: null,
+        }),
     }),
     {
       name: 'buddget-ui-settings',

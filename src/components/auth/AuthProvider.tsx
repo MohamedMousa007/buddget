@@ -8,6 +8,7 @@ import { SupabaseFinanceSync } from '@/components/sync/SupabaseFinanceSync'
 import { AnalyticsHeartbeat } from '@/components/sync/AnalyticsHeartbeat'
 import { AuthModal } from '@/components/auth/AuthModal'
 import { AuthContext, type AuthContextValue, useAuth } from '@/components/auth/auth-context'
+import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 
 /** Opens the auth modal when `?next=` is present (e.g. middleware redirect from /admin). */
 function AuthNextQuerySync({ configured }: { configured: boolean }) {
@@ -68,6 +69,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, nextSession: Session | null) => {
+      if (_event === 'SIGNED_OUT') {
+        clearBudgetData()
+      }
       setSession(nextSession)
       setUser(nextSession?.user ?? null)
       if (nextSession?.user) setAuthModalOpen(false)
@@ -86,6 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     if (!configured) return
+    clearBudgetData()
     const supabase = createClient()
     await supabase.auth.signOut()
     setUser(null)

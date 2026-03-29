@@ -7,6 +7,14 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 import { AvatarPickerModal } from '@/components/profile/AvatarPickerModal'
+import { useShallow } from 'zustand/react/shallow'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { LogOut, Check, ArrowRight, Lock } from 'lucide-react'
+import { useMonthlyStats } from '@/hooks/useMonthlyStats'
+import { formatCurrency } from '@/lib/utils/formatters'
+import { createClient } from '@/lib/supabase/client'
+import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 
 interface FieldRowProps {
   label: string
@@ -44,6 +52,60 @@ export default function ProfilePage() {
   const avatarSrc = resolveProfileAvatarSrc(store.profile)
   const displayName = store.profile.name || 'User'
   const displayEmail = user?.email || store.profile.email || ''
+
+  const router = useRouter()
+  const { signOut } = useAuth()
+  const stats = useMonthlyStats()
+  const { budgetCategories, incomeSources, expenses, savingsHoldings, paymentMethods } = useFinanceStore(
+    useShallow((s) => ({
+      budgetCategories: s.budgetCategories,
+      incomeSources: s.incomeSources,
+      expenses: s.expenses,
+      savingsHoldings: s.savingsHoldings,
+      paymentMethods: s.paymentMethods,
+    }))
+  )
+
+  const [resetSent, setResetSent] = useState(false)
+
+  const setupSteps = [
+    { label: 'Added an income source', done: incomeSources.length > 0, href: '/income' },
+    { label: 'Set up budget categories', done: budgetCategories.some((b) => b.budgetedAmount > 0), href: '/settings' },
+    { label: 'Added a payment method', done: paymentMethods.length > 1, href: '/settings' },
+    { label: 'Logged first expense', done: expenses.length > 0, href: '/expenses' },
+    { label: 'Added a savings holding', done: savingsHoldings.length > 0, href: '/savings' },
+  ]
+  const completedCount = setupSteps.filter((s) => s.done).length
+
+  const setupMessage =
+    completedCount === 0
+      ? "Let\u2019s get your dashboard set up! It takes 2 minutes."
+      : completedCount <= 2
+        ? 'Great start! Keep going \uD83C\uDF31'
+        : completedCount <= 4
+          ? "Almost there \u2014 you\u2019re nearly fully set up \uD83D\uDCAA"
+          : "Your setup is complete \u2014 you\u2019re all set! \uD83C\uDF89"
+
+  const handlePasswordReset = async () => {
+    const email = user?.email
+    if (!email) return
+    try {
+      const supabase = createClient()
+      await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password/confirm`,
+      })
+      setResetSent(true)
+      setTimeout(() => setResetSent(false), 5000)
+    } catch {
+      // silently fail
+    }
+  }
+
+  const handleSignOut = async () => {
+    clearBudgetData()
+    await signOut()
+    router.push('/')
+  }
 
   const enterEditMode = () => {
     setForm({
@@ -87,7 +149,7 @@ export default function ProfilePage() {
         </PageHeaderContent>
       </PageHeader>
 
-      <div className="px-4 py-6 lg:px-8 max-w-3xl mx-auto">
+      <div className="px-4 py-6 lg:px-8 max-w-3xl mx-auto space-y-6">
         <div className="bg-[#111118] border border-[#2A2A38] rounded-2xl p-6">
           <div className="flex flex-col sm:flex-row gap-6">
             {/* Left column — avatar */}
@@ -206,6 +268,110 @@ export default function ProfilePage() {
             </div>
           )}
         </div>
+
+        {/* Section 2 — Budget Overview */}
+        <div className="bg-[#111118] border border-[#2A2A38] rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
+              Your Monthly Budget Plan
+            </h2>
+            <Link
+              href="/settings"
+              className="text-xs text-[var(--color-brand-red)] hover:underline"
+            >
+              Edit budget →
+            </Link>
+          </div>
+          <div className="space-y-3">
+            {budgetCategories.map((b) => {
+              const spent = stats.categorySpending[b.category] || 0
+              const cap = stats.categoryBudgetCaps?.[b.category] ?? b.budgetedAmount
+              const pct = cap > 0 ? Math.min((spent / cap) * 100, 100) : 0
+              return (
+                <div key={b.category} className="space-y-1">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-white">{b.category}</span>
+                    <span className="text-xs text-[var(--color-brand-text-muted)] font-mono-numbers">
+                      {formatCurrency(spent, stats.baseCurrency, false)} / {formatCurrency(cap, stats.baseCurrency, false)}
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-[var(--color-brand-border)] rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-[var(--color-brand-red)]"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Section 3 — Setup Progress */}
+        <div className="bg-[#111118] border border-[#2A2A38] rounded-2xl p-6">
+          <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-1">
+            Setup Progress
+          </h2>
+          <p className="text-xs text-[var(--color-brand-text-muted)] mb-4">{setupMessage}</p>
+          <div className="h-2 bg-[var(--color-brand-border)] rounded-full overflow-hidden mb-4">
+            <div
+              className="h-full rounded-full bg-[var(--color-brand-green)] transition-all"
+              style={{ width: `${(completedCount / 5) * 100}%` }}
+            />
+          </div>
+          <ul className="space-y-2">
+            {setupSteps.map((step) => (
+              <li key={step.label} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {step.done ? (
+                    <Check className="w-4 h-4 text-[var(--color-brand-green)]" />
+                  ) : (
+                    <div className="w-4 h-4 rounded-full border border-[#2A2A38]" />
+                  )}
+                  <span className={step.done ? 'text-sm text-white' : 'text-sm text-[var(--color-brand-text-muted)]'}>
+                    {step.label}
+                  </span>
+                </div>
+                {!step.done && (
+                  <Link href={step.href} className="text-xs text-[var(--color-brand-red)] hover:underline flex items-center gap-0.5">
+                    Do it <ArrowRight className="w-3 h-3" />
+                  </Link>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Section 4 — Account */}
+        {user && (
+          <div className="bg-[#111118] border border-[#2A2A38] rounded-2xl p-6">
+            <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-4">
+              Account
+            </h2>
+            <div className="space-y-3">
+              <FieldRow label="Email" value={user.email || ''} />
+              <FieldRow label="Member since" value={store.profile.createdAt ? new Date(store.profile.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : ''} />
+            </div>
+            <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-[#2A2A38]">
+              <button
+                type="button"
+                onClick={handlePasswordReset}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#2A2A38] text-sm text-[#A0A0B8] hover:text-white hover:bg-[var(--color-brand-elevated)] transition-colors"
+              >
+                <Lock className="w-4 h-4" />
+                {resetSent ? 'Reset link sent 📬' : 'Change password'}
+              </button>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#E50914]/30 text-sm text-[#E50914] hover:bg-[#E50914]/10 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign out
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <AvatarPickerModal

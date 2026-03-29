@@ -1,9 +1,9 @@
 'use client'
 
-import Link from 'next/link'
+
 import { usePathname } from 'next/navigation'
 import { useMemo, useRef, useState } from 'react'
-import { User, Settings } from 'lucide-react'
+import { User } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -48,7 +48,7 @@ function ProfileAvatarWithMenu({ className }: { className?: string }) {
 type AuthNavLayout = 'desktop' | 'mobile'
 
 /**
- * Desktop (`layout="desktop"`): auth buttons + profile avatar with dropdown + settings gear.
+ * Desktop (`layout="desktop"`): auth buttons + profile avatar with dropdown.
  * Mobile toolbar (`layout="mobile"`): profile avatar with dropdown only.
  */
 export function AuthNavButtons({
@@ -80,13 +80,6 @@ export function AuthNavButtons({
     return (
       <div className={cn('flex flex-nowrap items-center gap-1.5 sm:gap-2', className)}>
         <ProfileAvatarWithMenu />
-        <Link
-          href="/settings"
-          className="p-2 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors"
-          aria-label="Settings"
-        >
-          <Settings className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
-        </Link>
       </div>
     )
   }
@@ -125,13 +118,6 @@ export function AuthNavButtons({
         </>
       ) : null}
       <ProfileAvatarWithMenu />
-      <Link
-        href="/settings"
-        className="p-2 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors"
-        aria-label="Settings"
-      >
-        <Settings className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
-      </Link>
     </div>
   )
 }

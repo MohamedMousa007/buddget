@@ -28,7 +28,9 @@ export function DesktopHeaderBar() {
         </div>
 
         <div className="absolute left-1/2 -translate-x-1/2">
-          <MonthNavigationControl monthFilter={monthFilter} onChange={setMonthFilter} />
+          {pathname === '/' && (
+            <MonthNavigationControl monthFilter={monthFilter} onChange={setMonthFilter} />
+          )}
         </div>
 
         <div className="flex items-center shrink-0">
@@ -48,7 +50,9 @@ export function DesktopHeaderBar() {
         </div>
 
         <div className="flex flex-1 min-w-0 justify-center items-center">
-          <MonthNavigationControl monthFilter={monthFilter} onChange={setMonthFilter} compact />
+          {pathname === '/' && (
+            <MonthNavigationControl monthFilter={monthFilter} onChange={setMonthFilter} compact />
+          )}
         </div>
 
         <div className="flex flex-1 min-w-0 justify-end items-center">
