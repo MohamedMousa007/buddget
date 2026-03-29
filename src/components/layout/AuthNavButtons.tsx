@@ -11,6 +11,7 @@ import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 import { cn } from '@/lib/utils'
 import { useNotifications } from '@/lib/notifications/useNotifications'
 import { NotificationPanel } from '@/components/notifications/NotificationPanel'
+import { ProfileDropdown } from '@/components/layout/ProfileDropdown'
 
 const btnClass =
   'inline-flex items-center justify-center px-2 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors border border-[var(--color-brand-border)] text-white hover:bg-[var(--color-brand-elevated)] sm:px-3'
@@ -55,26 +56,34 @@ function NotificationBellWithPanel() {
   )
 }
 
-function ProfileAvatarLink({ className }: { className?: string }) {
+function ProfileAvatarWithMenu({ className }: { className?: string }) {
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
   const profile = useFinanceStore(useShallow((s) => s.profile))
   const src = resolveProfileAvatarSrc(profile)
 
   return (
-    <Link
-      href="/profile"
-      className={cn(
-        'rounded-full overflow-hidden border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] flex items-center justify-center shrink-0 w-9 h-9 hover:ring-2 hover:ring-[var(--color-brand-red)]/40 transition-all',
-        className
-      )}
-      aria-label="Profile"
-    >
-      {src ? (
-        // eslint-disable-next-line @next/next/no-img-element -- remote Dicebear + user data URLs
-        <img src={src} alt="" className="w-full h-full object-cover" width={36} height={36} />
-      ) : (
-        <User className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
-      )}
-    </Link>
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          'rounded-full overflow-hidden border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] flex items-center justify-center shrink-0 w-9 h-9 hover:ring-2 hover:ring-[var(--color-brand-red)]/40 transition-all cursor-pointer',
+          className
+        )}
+        aria-label="Profile menu"
+        aria-expanded={open}
+        aria-haspopup="true"
+      >
+        {src ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={src} alt="" className="w-full h-full object-cover" width={36} height={36} />
+        ) : (
+          <User className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
+        )}
+      </button>
+      <ProfileDropdown open={open} onClose={() => setOpen(false)} containerRef={containerRef} />
+    </div>
   )
 }
 
@@ -107,14 +116,14 @@ export function AuthNavButtons({
       return (
         <div className={cn('flex flex-nowrap items-center justify-end gap-1', className)}>
           <NotificationBellWithPanel />
-          <ProfileAvatarLink />
+          <ProfileAvatarWithMenu />
         </div>
       )
     }
     return (
       <div className={cn('flex flex-nowrap items-center gap-1.5 sm:gap-2', className)}>
         <NotificationBellWithPanel />
-        <ProfileAvatarLink />
+        <ProfileAvatarWithMenu />
         <Link
           href="/settings"
           className="p-2 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors"
@@ -139,18 +148,7 @@ export function AuthNavButtons({
     return (
       <div className={cn('flex flex-nowrap items-center justify-end gap-1', className)}>
         <NotificationBellWithPanel />
-        {!user ? (
-          <button
-            type="button"
-            onClick={() => openAuthModal(nextPath)}
-            className="inline-flex p-2 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-red)]/50"
-            aria-label="Sign in"
-          >
-            <User className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
-          </button>
-        ) : (
-          <ProfileAvatarLink />
-        )}
+        <ProfileAvatarWithMenu />
       </div>
     )
   }
@@ -172,7 +170,7 @@ export function AuthNavButtons({
           </button>
         </>
       ) : null}
-      <ProfileAvatarLink />
+      <ProfileAvatarWithMenu />
       <Link
         href="/settings"
         className="p-2 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors"

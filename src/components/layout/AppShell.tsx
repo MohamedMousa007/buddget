@@ -36,7 +36,7 @@ export function AppShell({ children }: AppShellProps) {
     <div className="min-h-screen bg-[var(--color-brand-bg)]">
       <Sidebar />
       <DesktopHeaderBar />
-      <main className="pt-[52px] lg:ml-[200px] pb-20 lg:pb-0 min-h-screen">
+      <main className="pt-14 lg:ml-[200px] pb-20 lg:pb-0 min-h-screen">
         <OnboardingBanner />
         {children}
       </main>

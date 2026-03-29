@@ -5,7 +5,6 @@ import { useRates } from '@/hooks/useRates'
 import { useGoldPrice } from '@/hooks/useGoldPrice'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { KPICard } from '@/components/dashboard/KPICard'
 import { BudgetRing } from '@/components/dashboard/BudgetRing'
 import { CategoryBar } from '@/components/dashboard/CategoryBar'
@@ -13,11 +12,7 @@ import { RecentExpenses } from '@/components/dashboard/RecentExpenses'
 import { SavingsCard } from '@/components/dashboard/SavingsCard'
 import { DebtSnapshot } from '@/components/dashboard/DebtSnapshot'
 import { QuickAddFAB } from '@/components/modals/QuickAddFAB'
-import { BarChart3 } from 'lucide-react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { MonthNavigationControl } from '@/components/layout/MonthNavigationControl'
-import { PAGE_HEADER_SURFACE_CLASS } from '@/components/layout/PageHeader'
 
 export default function DashboardPage() {
   useRates()
@@ -25,7 +20,6 @@ export default function DashboardPage() {
   const router = useRouter()
 
   const { budgetCategories } = useFinanceStore(useShallow((s) => ({ budgetCategories: s.budgetCategories })))
-  const { monthFilter, setMonthFilter } = useSettingsStore()
   const stats = useMonthlyStats()
   const incomeNote = stats.incomeBlocked ? INCOME_BLOCKED_HINT : undefined
 
@@ -33,20 +27,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen">
-      <header className={`${PAGE_HEADER_SURFACE_CLASS} hidden lg:block`}>
-        <div className="flex items-center justify-center gap-1 px-4 py-3 lg:px-8 overflow-x-auto hide-scrollbar">
-          <Link
-            href="/reports"
-            className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-white hover:bg-[var(--color-brand-border)] transition-colors shrink-0"
-            aria-label="Reports"
-          >
-            <BarChart3 className="w-4 h-4" />
-            <span className="hidden md:inline">Reports</span>
-          </Link>
-          <MonthNavigationControl monthFilter={monthFilter} onChange={setMonthFilter} />
-        </div>
-      </header>
-
       <div className="px-4 py-6 lg:px-8 space-y-6 max-w-5xl mx-auto">
         {/* KPI Strip */}
         <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-1">

@@ -1,20 +1,43 @@
 'use client'
 
 import Link from 'next/link'
-import { PAGE_HEADER_SURFACE_BASE } from '@/components/layout/PageHeader'
+import { usePathname } from 'next/navigation'
+import { BarChart3 } from 'lucide-react'
 import { AuthNavButtons } from '@/components/layout/AuthNavButtons'
 import { MonthNavigationControl } from '@/components/layout/MonthNavigationControl'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 
-/** Fixed top bar: mobile = logo + month nav + bell/profile; desktop = spacer + full auth row. */
 export function DesktopHeaderBar() {
   const { monthFilter, setMonthFilter } = useSettingsStore()
+  const pathname = usePathname()
 
   return (
-    <header
-      className={`flex flex-nowrap fixed top-0 left-0 right-0 lg:left-[200px] z-40 h-[52px] items-center gap-2 px-4 lg:px-6 border-b border-[var(--color-brand-border)] ${PAGE_HEADER_SURFACE_BASE}`}
-    >
-      <div className="flex lg:hidden w-full min-w-0 items-center">
+    <>
+      {/* ─── Desktop header (lg+) ─── */}
+      <header className="hidden lg:flex fixed top-0 left-[200px] right-0 z-40 h-14 items-center justify-between px-8 bg-[#111118]/90 border-b border-[#2A2A38] backdrop-blur-xl">
+        <div className="flex items-center shrink-0">
+          {pathname === '/' && (
+            <Link
+              href="/reports"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-white hover:bg-[var(--color-brand-border)] transition-colors"
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span>Reports</span>
+            </Link>
+          )}
+        </div>
+
+        <div className="absolute left-1/2 -translate-x-1/2">
+          <MonthNavigationControl monthFilter={monthFilter} onChange={setMonthFilter} />
+        </div>
+
+        <div className="flex items-center shrink-0">
+          <AuthNavButtons layout="desktop" />
+        </div>
+      </header>
+
+      {/* ─── Mobile header (<lg) ─── */}
+      <header className="flex lg:hidden fixed top-0 left-0 right-0 z-40 h-14 items-center px-4 bg-[#111118]/90 border-b border-[#2A2A38] backdrop-blur-xl">
         <div className="flex flex-1 min-w-0 justify-start items-center">
           <Link
             href="/"
@@ -23,18 +46,15 @@ export function DesktopHeaderBar() {
             Bud<span className="text-[var(--color-brand-red)]">d</span>get
           </Link>
         </div>
-        <div className="flex flex-1 min-w-0 justify-center items-center px-0.5">
-          <MonthNavigationControl monthFilter={monthFilter} onChange={setMonthFilter} />
+
+        <div className="flex flex-1 min-w-0 justify-center items-center">
+          <MonthNavigationControl monthFilter={monthFilter} onChange={setMonthFilter} compact />
         </div>
+
         <div className="flex flex-1 min-w-0 justify-end items-center">
           <AuthNavButtons layout="mobile" />
         </div>
-      </div>
-
-      <div className="hidden lg:flex flex-1 min-w-0 items-center justify-end">
-        <div className="flex-1 min-w-0" aria-hidden />
-        <AuthNavButtons layout="desktop" />
-      </div>
-    </header>
+      </header>
+    </>
   )
 }

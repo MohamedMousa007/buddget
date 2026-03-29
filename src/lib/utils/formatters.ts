@@ -46,6 +46,10 @@ export function formatMonth(dateStr: string): string {
   return format(parseISO(dateStr + '-01'), 'MMMM yyyy')
 }
 
+export function formatMonthShort(dateStr: string): string {
+  return format(parseISO(dateStr + '-01'), 'MMM yyyy')
+}
+
 export function formatPercent(value: number): string {
   return `${Math.round(value)}%`
 }

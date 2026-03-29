@@ -1,8 +1,8 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Calendar } from 'lucide-react'
-import { formatMonth } from '@/lib/utils/formatters'
+import { CalendarDays } from 'lucide-react'
+import { formatMonth, formatMonthShort } from '@/lib/utils/formatters'
 import { cn } from '@/lib/utils'
 import {
   Popover,
@@ -14,9 +14,11 @@ interface MonthYearPickerProps {
   monthFilter: string
   onChange: (yyyyMm: string) => void
   className?: string
+  /** When true, shows "Mar 2026" instead of "March 2026" */
+  compact?: boolean
 }
 
-export function MonthYearPicker({ monthFilter, onChange, className }: MonthYearPickerProps) {
+export function MonthYearPicker({ monthFilter, onChange, className, compact }: MonthYearPickerProps) {
   const [open, setOpen] = useState(false)
   const parsed = useMemo(() => {
     const [ys, ms] = monthFilter.split('-')
@@ -36,18 +38,21 @@ export function MonthYearPicker({ monthFilter, onChange, className }: MonthYearP
     setOpen(false)
   }
 
+  const label = compact ? formatMonthShort(monthFilter) : formatMonth(monthFilter)
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         type="button"
         className={cn(
-          'inline-flex items-center gap-1 cursor-pointer transition-colors duration-150',
-          'text-white hover:text-[#A0A0B8]',
+          'inline-flex items-center gap-1.5 cursor-pointer',
+          'text-white hover:text-[#A0A0B8] transition-colors duration-150',
+          'outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-red)]/50',
           className
         )}
       >
-        <Calendar className="h-3.5 w-3.5 shrink-0 text-[#A0A0B8]" aria-hidden />
-        <span className="text-sm font-medium underline underline-offset-2">{formatMonth(monthFilter)}</span>
+        <CalendarDays className="w-3.5 h-3.5 shrink-0 text-[#A0A0B8]" aria-hidden />
+        <span className="font-medium whitespace-nowrap">{label}</span>
       </PopoverTrigger>
       <PopoverContent
         className="w-auto min-w-[260px] bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] p-3"
@@ -73,12 +78,12 @@ export function MonthYearPicker({ monthFilter, onChange, className }: MonthYearP
           {[
             'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
             'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-          ].map((label, i) => {
+          ].map((lbl, i) => {
             const m = i + 1
             const active = parsed.month === m
             return (
               <button
-                key={label}
+                key={lbl}
                 type="button"
                 onClick={() => pick(m)}
                 className={cn(
@@ -88,7 +93,7 @@ export function MonthYearPicker({ monthFilter, onChange, className }: MonthYearP
                     : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-border)]'
                 )}
               >
-                {label}
+                {lbl}
               </button>
             )
           })}
