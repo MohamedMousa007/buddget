@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og'
 
-export const runtime = 'edge'
+/** Node.js runtime keeps the OG route under Vercel’s Edge 1 MB limit (ImageResponse + deps exceed Edge). */
+export const runtime = 'nodejs'
 export const alt = 'Buddget — Personal Finance Tracker'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
