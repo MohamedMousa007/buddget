@@ -14,7 +14,7 @@ const DEFAULT_BACKOFF_MS = 1800
 
 /** User-facing copy when the app-side throttle or cooldown applies. */
 export const SYSTEM_RESTING_MESSAGE =
-  'System is resting — too many requests in a short window. Wait a moment and try again.'
+  'Taking a quick breather — try again in a moment 😊'
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -49,7 +49,7 @@ export async function generateWithFallback(
 export async function throwIfAiProxyNotOk(response: Response): Promise<void> {
   if (response.ok) return
   const errorData = (await response.json().catch(() => null)) as { error?: string } | null
-  const raw = errorData?.error || `AI request failed (${response.status})`
+  const raw = errorData?.error || `Oops, something didn't go as planned (${response.status})`
   if (response.status === 429) {
     if (isBuddgetServerThrottleMessage(raw)) {
       throw new Error(SYSTEM_RESTING_MESSAGE)

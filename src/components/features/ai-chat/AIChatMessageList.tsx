@@ -52,7 +52,7 @@ export function AIChatMessageList({
 
             {message.confirmed ? (
               <p className="mt-2 text-xs text-[var(--color-brand-green)] flex items-center gap-1">
-                <Check className="w-3 h-3" aria-hidden /> Saved!
+                <Check className="w-3 h-3" aria-hidden /> All set! ✓
               </p>
             ) : null}
           </div>

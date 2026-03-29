@@ -21,11 +21,11 @@ export function SettingsCurrencySection({ store }: SettingsCurrencySectionProps)
       <div className="flex items-center gap-2 mb-2">
         <Globe className="w-5 h-5 text-[var(--color-brand-red)]" />
         <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
-          Currencies
+          Currencies & Rates
         </h2>
       </div>
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Primary Currency</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Your main currency</Label>
         <select
           value={store.settings.baseCurrency}
           onChange={(e) => store.updateSettings({ baseCurrency: e.target.value as Currency })}
@@ -38,15 +38,15 @@ export function SettingsCurrencySection({ store }: SettingsCurrencySectionProps)
           ))}
         </select>
         <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-1">
-          All summaries and totals display in this currency
+          All your summaries and totals are shown in this currency
         </p>
       </div>
 
       <div className="flex items-center justify-between">
         <div>
-          <Label className="text-sm text-white">Show secondary currency</Label>
+          <Label className="text-sm text-white">Show a secondary currency</Label>
           <p className="text-[10px] text-[var(--color-brand-text-muted)]">
-            Display equivalent in brackets beside primary amounts
+            See the equivalent amount in brackets next to your totals
           </p>
         </div>
         <Switch
@@ -57,7 +57,7 @@ export function SettingsCurrencySection({ store }: SettingsCurrencySectionProps)
 
       {store.settings.showSecondaryCurrency ? (
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Secondary Currency</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Your secondary currency</Label>
           <select
             value={store.settings.secondaryCurrency || ''}
             onChange={(e) => store.updateSettings({ secondaryCurrency: (e.target.value || null) as Currency | null })}
@@ -75,11 +75,11 @@ export function SettingsCurrencySection({ store }: SettingsCurrencySectionProps)
 
       <div className="flex items-center justify-between gap-4 pt-2">
         <div className="min-w-0">
-          <Label className="text-sm text-white">Disable other currencies</Label>
+          <Label className="text-sm text-white">Only show my currencies</Label>
           <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-1 leading-relaxed">
-            Off by default: form amount pickers list every currency. Turn on to limit pickers to your primary currency
-            and—if you use dual display—your secondary when adding expenses, income, debts, savings, or payment methods.
-            Does not change the selectors above or the sidebar.
+            Off by default — every currency appears in forms. Turn this on to keep things simple: only your main
+            currency (and secondary, if enabled) will show when adding expenses, income, debts, savings, or payment
+            methods. The selectors above and the sidebar stay the same.
           </p>
         </div>
         <Switch
@@ -93,10 +93,10 @@ export function SettingsCurrencySection({ store }: SettingsCurrencySectionProps)
 
       <div>
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs text-[var(--color-brand-text-secondary)]">Exchange Rates</p>
+          <p className="text-xs text-[var(--color-brand-text-secondary)]">Live Rates</p>
           <p className="text-xs text-[var(--color-brand-text-muted)] flex items-center gap-1">
             <RefreshCw className="w-3 h-3" />
-            {store.lastRatesFetch ? formatRelativeTime(store.lastRatesFetch) : 'Not fetched yet'}
+            {store.lastRatesFetch ? `Rates refreshed ${formatRelativeTime(store.lastRatesFetch)}` : 'Not refreshed yet'}
           </p>
         </div>
         <div className="space-y-1.5">

@@ -19,7 +19,7 @@ export function OnboardingSurveyStepHeader({ step, loadError }: OnboardingSurvey
       ) : null}
       {loadError ? (
         <p className="text-[11px] text-amber-200/90 mb-2">
-          Could not load remote survey ({loadError}). Using built-in expert flow.
+          We couldn&apos;t load the remote survey ({loadError}). No worries — using the built-in flow instead.
         </p>
       ) : null}
       {'helpText' in step && step.helpText ? (

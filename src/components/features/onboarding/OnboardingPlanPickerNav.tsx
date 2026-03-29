@@ -50,7 +50,7 @@ export function OnboardingPlanPickerNav({
         onClick={() => onAccept({ ...acceptPayload, percents: normalizeCategoryPercents(acceptPayload.percents) })}
         className="w-full py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
       >
-        {busy ? 'Saving…' : 'Use this plan'}
+        {busy ? 'Saving your setup…' : 'Take me to my dashboard'}
         <Check className="w-4 h-4" />
       </button>
     </>

@@ -18,7 +18,7 @@ export function SettingsPaymentMethodsSection({ store, onAddClick }: SettingsPay
         <div className="flex items-center gap-2">
           <CreditCard className="w-5 h-5 text-[var(--color-brand-red)]" />
           <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
-            Payment Methods
+            Your Payment Methods
           </h2>
         </div>
         <button
@@ -26,7 +26,7 @@ export function SettingsPaymentMethodsSection({ store, onAddClick }: SettingsPay
           onClick={onAddClick}
           className="text-xs text-[var(--color-brand-red)] hover:text-[var(--color-brand-red-hover)]"
         >
-          + Add
+          + Add a method
         </button>
       </div>
       <div className="space-y-2">
@@ -47,7 +47,7 @@ export function SettingsPaymentMethodsSection({ store, onAddClick }: SettingsPay
             <button
               type="button"
               onClick={() => {
-                if (window.confirm('Delete this payment method? Existing expenses will keep its old ID.')) {
+                if (window.confirm('Remove this payment method? Your existing expenses won\u2019t be affected.')) {
                   store.deletePaymentMethod(method.id)
                 }
               }}

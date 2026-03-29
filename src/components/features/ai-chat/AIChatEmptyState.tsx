@@ -7,9 +7,9 @@ export interface AIChatEmptyStateProps {
 }
 
 const SUGGESTIONS = [
-  'I spent 45 on lunch via nol silver',
-  'Paid mom 2000 EGP',
-  'How much have I spent this month?',
+  "Try: 'Spent 45 on lunch with Silver Nol'",
+  "Try: 'Paid 2000 EGP toward Mom\u2019s balance'",
+  "Try: 'How much have I spent on food this month?'",
 ]
 
 /**
@@ -20,7 +20,7 @@ export function AIChatEmptyState({ onPickSuggestion }: AIChatEmptyStateProps) {
     <div className="text-center py-8">
       <Bot className="w-10 h-10 text-[var(--color-brand-text-muted)] mx-auto mb-3" aria-hidden />
       <p className="text-sm text-[var(--color-brand-text-secondary)]">
-        Hi! I can help you add expenses, check your budget, or record debt payments.
+        Hi there! I&apos;m your money assistant 🤖{'\n'}Tell me what you spent, earned, or want to track and I&apos;ll take care of the rest.
       </p>
       <div className="mt-4 space-y-2">
         {SUGGESTIONS.map((suggestion) => (

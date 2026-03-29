@@ -34,8 +34,8 @@ export function BudgetRing({ percent, remaining, currency, daysLeft, incomeBlock
     percent > 100
       ? 'OVER BUDGET'
       : percent > 80
-        ? 'NEAR LIMIT'
-        : 'UNDER BUDGET'
+        ? 'CLOSE TO BUDGET'
+        : 'WITHIN BUDGET ✓'
 
   const statusColor =
     percent > 100
@@ -94,7 +94,7 @@ export function BudgetRing({ percent, remaining, currency, daysLeft, incomeBlock
 
       <div className="mt-4 text-center space-y-1">
         <p className="text-lg font-semibold font-mono-numbers text-white">
-          {formatCurrency(Math.abs(remaining), currency)} {remaining >= 0 ? 'remaining' : 'over'}
+          {formatCurrency(Math.abs(remaining), currency)} {remaining >= 0 ? 'remaining' : 'over budget'}
         </p>
         {secondaryRemaining != null && (
           <p className="text-xs text-[var(--color-brand-text-muted)] font-mono-numbers">
@@ -102,7 +102,7 @@ export function BudgetRing({ percent, remaining, currency, daysLeft, incomeBlock
           </p>
         )}
         <p className={`text-sm font-medium ${statusColor} flex items-center justify-center gap-1`}>
-          {percent <= 100 && '●'} {statusText} {percent <= 80 && '✓'}
+          {percent <= 100 && '●'} {statusText}
         </p>
         <p className="text-xs text-[var(--color-brand-text-muted)]">
           {daysLeft} days left in month

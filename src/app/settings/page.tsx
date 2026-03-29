@@ -26,9 +26,9 @@ export default function SettingsPage() {
     <div className="min-h-screen">
       <PageHeader>
         <PageHeaderContent>
-          <h1 className="text-xl font-bold text-white">Settings</h1>
+          <h1 className="text-xl font-bold text-white">Your Preferences</h1>
           <p className="text-xs text-[var(--color-brand-text-muted)] mt-1">
-            App preferences, currencies, and data. Budget and profile are under Profile.
+            Manage your currencies, payments, and data. Budget settings live in your Profile.
           </p>
         </PageHeaderContent>
       </PageHeader>
@@ -49,7 +49,7 @@ export default function SettingsPage() {
           onAddClick={() =>
             requireAuth(
               () => setActiveModal('addPaymentMethod'),
-              'Sign in or create an account to add payment methods.'
+              'Sign in to start adding your payment methods.'
             )
           }
         />
@@ -66,7 +66,7 @@ export default function SettingsPage() {
         <SettingsAppPreferencesSection store={store} />
 
         <p className="text-center text-xs text-[var(--color-brand-text-muted)] pb-8">
-          Buddget v1.0 — Your money, finally makes sense.
+          Buddget v1.0 — Your money, your way.
         </p>
       </div>
     </div>

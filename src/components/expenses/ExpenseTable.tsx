@@ -17,8 +17,8 @@ export function ExpenseTable({ expenses, totalAmount, currency, onAddExpense }: 
     return (
       <EmptyState
         icon="💸"
-        title="No expenses this month"
-        description="Add transactions to see them here, or change the month above if you expected older data."
+        title="Nothing logged yet this month."
+        description="Tap + to record your first purchase 👇"
         action={
           <button
             type="button"
@@ -40,9 +40,9 @@ export function ExpenseTable({ expenses, totalAmount, currency, onAddExpense }: 
           <thead>
             <tr className="border-b border-[var(--color-brand-border)]">
               <th className="py-3 px-4 text-left text-xs font-medium text-[var(--color-brand-text-muted)] uppercase tracking-wider">Date</th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-[var(--color-brand-text-muted)] uppercase tracking-wider">Description</th>
+              <th className="py-3 px-4 text-left text-xs font-medium text-[var(--color-brand-text-muted)] uppercase tracking-wider">What for</th>
               <th className="py-3 px-4 text-left text-xs font-medium text-[var(--color-brand-text-muted)] uppercase tracking-wider">Category</th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-[var(--color-brand-text-muted)] uppercase tracking-wider">Method</th>
+              <th className="py-3 px-4 text-left text-xs font-medium text-[var(--color-brand-text-muted)] uppercase tracking-wider">Paid with</th>
               <th className="py-3 px-4 text-right text-xs font-medium text-[var(--color-brand-text-muted)] uppercase tracking-wider">Amount</th>
               <th className="py-3 px-4 text-right text-xs font-medium text-[var(--color-brand-text-muted)] uppercase tracking-wider">Action</th>
             </tr>
@@ -68,7 +68,7 @@ export function ExpenseTable({ expenses, totalAmount, currency, onAddExpense }: 
           Showing {expenses.length} expense{expenses.length !== 1 ? 's' : ''}
         </p>
         <p className="text-sm font-semibold font-mono-numbers text-white">
-          Total: {formatCurrency(totalAmount, currency)}
+          Total spent: {formatCurrency(totalAmount, currency)}
         </p>
         <button
           onClick={onAddExpense}

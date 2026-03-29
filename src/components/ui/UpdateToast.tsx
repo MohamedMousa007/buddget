@@ -42,9 +42,9 @@ export function UpdateToast() {
                   <Sparkles className="h-4 w-4" aria-hidden />
                 </span>
                 <p className="text-sm leading-snug text-[var(--color-brand-text-secondary)]">
-                  <span className="font-medium text-white">A new version of budget.ai is ready.</span>
+                  <span className="font-medium text-white">A fresh update is waiting for you!</span>
                   <span className="mt-0.5 block text-xs text-[var(--color-brand-text-muted)]">
-                    Refresh to load the latest experience.
+                    Refresh to enjoy the latest improvements.
                   </span>
                 </p>
               </div>
@@ -54,7 +54,7 @@ export function UpdateToast() {
                   onClick={dismiss}
                   className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-[var(--color-brand-text-secondary)] transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50"
                 >
-                  Later
+                  Not now
                 </button>
                 <button
                   type="button"

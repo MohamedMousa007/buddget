@@ -80,11 +80,11 @@ export function AddIncomeSheet() {
   return (
     <ModalShell open={isOpen} onBackdropClick={handleClose}>
             <div className="p-6">
-              <ModalSheetHeader title="Add Income Source" onClose={handleClose} />
+              <ModalSheetHeader title="Add a Source" onClose={handleClose} />
 
               <div className="space-y-4">
                 <div>
-                  <Label className="text-xs text-[var(--color-brand-text-secondary)]">Source Name</Label>
+                  <Label className="text-xs text-[var(--color-brand-text-secondary)]">Where does it come from?</Label>
                   <Input
                     placeholder="e.g. Bask Health, Freelance"
                     value={name}
@@ -95,7 +95,7 @@ export function AddIncomeSheet() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs text-[var(--color-brand-text-secondary)]">Amount</Label>
+                    <Label className="text-xs text-[var(--color-brand-text-secondary)]">How much?</Label>
                     <Input
                       type="number"
                       step="0.01"
@@ -106,7 +106,7 @@ export function AddIncomeSheet() {
                     />
                   </div>
                   <div>
-                    <Label className="text-xs text-[var(--color-brand-text-secondary)]">Currency</Label>
+                    <Label className="text-xs text-[var(--color-brand-text-secondary)]">In which currency?</Label>
                     <FiatCurrencySelect
                       value={currency}
                       onChange={setCurrency}
@@ -178,7 +178,7 @@ export function AddIncomeSheet() {
                     disabled={!name || !amount}
                     className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Add Income →
+                    Add a Source →
                   </button>
                 </div>
               </div>

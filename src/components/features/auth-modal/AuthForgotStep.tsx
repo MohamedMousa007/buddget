@@ -27,13 +27,13 @@ export function AuthForgotStep({
 }: AuthForgotStepProps) {
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-white text-center">Reset password</h2>
+      <h2 className="text-lg font-semibold text-white text-center">No worries — happens to everyone 😄</h2>
       {forgotSuccess ? (
-        <p className="text-sm text-center text-[#5A5A72]">Reset link sent — check your email</p>
+        <p className="text-sm text-center text-[#5A5A72]">Reset link on its way! Check your inbox 📬</p>
       ) : (
         <>
           <div>
-            <label className="text-xs text-[#5A5A72] mb-1 block">Email</label>
+            <label className="text-xs text-[#5A5A72] mb-1 block">Your email</label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A5A72]" />
               <input
@@ -42,7 +42,7 @@ export function AuthForgotStep({
                 onChange={(e) => onEmailChange(e.target.value)}
                 className={cn(inputClass, inputFocus, 'pl-10')}
                 style={inputStyle}
-                placeholder="you@example.com"
+                placeholder="your@email.com"
               />
             </div>
           </div>

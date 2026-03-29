@@ -65,7 +65,7 @@ export function OnboardingPageView({
   if (!answersReady || !step) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 text-white">
-        <p className="text-sm text-[var(--color-brand-text-muted)]">Loading onboarding…</p>
+        <p className="text-sm text-[var(--color-brand-text-muted)]">Hang tight — we&apos;re getting things ready for you…</p>
       </div>
     )
   }
@@ -78,13 +78,13 @@ export function OnboardingPageView({
             <div className="flex items-start gap-2 min-w-0">
               <ClipboardList className="w-5 h-5 text-[var(--color-brand-red)] shrink-0 mt-0.5" aria-hidden />
               <div className="min-w-0">
-                <h1 className="text-lg font-bold text-white font-heading">Onboarding</h1>
+                <h1 className="text-lg font-bold text-white font-heading">Let&apos;s Set Up Your Budget</h1>
                 <p className="text-[11px] text-[var(--color-brand-text-muted)] leading-snug">
                   {phase === 'plans'
-                    ? 'Choose a starting plan — you can refine every number later.'
+                    ? 'Pick a plan that feels right — you can tweak every number later.'
                     : redo
-                      ? 'Update your answers anytime — we’ll refresh your suggestions from what you share.'
-                      : 'A short journey so your budget matches how you earn, spend, and save.'}
+                      ? "Update your answers anytime — we'll refresh your suggestions based on what you share."
+                      : 'A quick walkthrough so your budget fits the way you actually earn, spend, and save.'}
                 </p>
               </div>
             </div>
@@ -96,7 +96,7 @@ export function OnboardingPageView({
                   onClick={() => void finishOnboarding(null)}
                   className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:text-white hover:bg-[var(--color-brand-elevated)] disabled:opacity-40 transition-colors"
                 >
-                  Set up manually
+                  I&apos;ll set it up myself
                 </button>
               ) : null}
               {redo ? (
@@ -105,7 +105,7 @@ export function OnboardingPageView({
                   onClick={() => router.push('/profile')}
                   className="text-xs text-[var(--color-brand-text-secondary)] hover:text-white"
                 >
-                  Exit to profile
+                  Back to profile
                 </button>
               ) : null}
             </div>
@@ -159,7 +159,7 @@ export function OnboardingPageView({
               className="glass-card rounded-2xl p-6 max-w-md text-center space-y-4"
             >
               <p className="text-sm text-[var(--color-brand-text-secondary)]">
-                Plans could not be loaded. You can finish and set budgets on your Profile.
+                We couldn&apos;t load plans right now. No worries — you can set budgets anytime from your Profile.
               </p>
               <button
                 type="button"
@@ -167,7 +167,7 @@ export function OnboardingPageView({
                 disabled={finishing}
                 className="px-4 py-2 rounded-xl bg-[var(--color-brand-red)] text-white text-sm font-semibold disabled:opacity-50"
               >
-                {finishing ? 'Saving…' : 'Finish without AI plan'}
+                {finishing ? 'Saving your setup…' : 'Continue without a plan'}
               </button>
             </motion.div>
           )}

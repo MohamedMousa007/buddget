@@ -68,11 +68,11 @@ export function useSettingsPage() {
       if (!text) return
       try {
         store.importData(text)
-        setImportBanner({ variant: 'success', text: 'Data imported successfully.' })
+        setImportBanner({ variant: 'success', text: 'Your data is all set — import complete!' })
       } catch (err) {
         setImportBanner({
           variant: 'error',
-          text: err instanceof Error ? err.message : 'Import failed.',
+          text: err instanceof Error ? err.message : 'Something went wrong with the import. Give it another try.',
         })
       }
     }

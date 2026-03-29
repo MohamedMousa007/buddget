@@ -70,13 +70,13 @@ export function AddPaymentMethodSheet() {
   return (
     <ModalShell open={isOpen} onBackdropClick={handleClose}>
             <div className="p-6">
-              <ModalSheetHeader title="Add Payment Method" onClose={handleClose} />
+              <ModalSheetHeader title="Add a Payment Method" onClose={handleClose} />
 
               <div className="space-y-4">
                 <div>
                   <Label className="text-xs text-[var(--color-brand-text-secondary)]">Name</Label>
                   <Input
-                    placeholder="e.g. Silver Nol, ADCB Debit"
+                    placeholder="e.g. My Visa, Cash, ADCB Debit"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
@@ -128,7 +128,7 @@ export function AddPaymentMethodSheet() {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs text-[var(--color-brand-text-secondary)]">Set as default?</Label>
+                  <Label className="text-xs text-[var(--color-brand-text-secondary)]">Make this my default</Label>
                   <Switch checked={isDefault} onCheckedChange={setIsDefault} />
                 </div>
 
@@ -137,14 +137,14 @@ export function AddPaymentMethodSheet() {
                     onClick={handleClose}
                     className="flex-1 py-3 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
                   >
-                    Cancel
+                    Never mind
                   </button>
                   <button
                     onClick={handleSubmit}
                     disabled={!name}
                     className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50"
                   >
-                    Add Method →
+                    Save method →
                   </button>
                 </div>
               </div>

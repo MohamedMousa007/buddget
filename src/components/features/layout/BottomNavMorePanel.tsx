@@ -19,7 +19,7 @@ export function BottomNavMorePanel({
       style={{ bottom: 'max(1rem, calc(4rem + env(safe-area-inset-bottom, 0px)))' }}
     >
       <p className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
-        Navigate
+        Go to
       </p>
       <ul className="flex flex-col gap-0.5">
         {items.map((m) => {

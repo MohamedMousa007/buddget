@@ -20,7 +20,7 @@ export function OnboardingPlanPickerCategoryGrid({
 }) {
   return (
     <div>
-      <p className="text-xs font-medium text-white mb-3">Where your money goes</p>
+      <p className="text-xs font-medium text-white mb-3">How do you want to plan your spending?</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {ONBOARDING_PLAN_DISPLAY_CATEGORIES.map((c) => {
           const pct = percents[c] ?? 0
@@ -53,7 +53,7 @@ export function OnboardingPlanPickerCategoryGrid({
                   disabled={monthlyTakeHome <= 0}
                   value={monthlyTakeHome > 0 ? String(Math.round(amt * 100) / 100) : ''}
                   onChange={(e) => onAmtChange(c, e.target.value)}
-                  placeholder={monthlyTakeHome <= 0 ? 'Add income first' : '0'}
+                  placeholder={monthlyTakeHome <= 0 ? 'Add your income first' : '0'}
                   className="flex-1 min-w-[6rem] h-8 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers text-xs px-2"
                 />
               </div>
@@ -62,8 +62,7 @@ export function OnboardingPlanPickerCategoryGrid({
         })}
       </div>
       <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-2">
-        Edit percentages or amounts (amounts use your monthly take-home). Values are normalized to ~100% when you
-        accept.
+        Set a monthly limit for each category. Buddget will track how you&apos;re doing in real time.
       </p>
     </div>
   )

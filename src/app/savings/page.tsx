@@ -17,9 +17,9 @@ import type { Currency, SavingsBucket, SavingsHolding, SavingsSubtype } from '@/
 
 const SUBTYPES: { value: SavingsSubtype; label: string }[] = [
   { value: 'bank', label: 'Bank account' },
-  { value: 'cash', label: 'Cash' },
-  { value: 'gold', label: 'Gold / bullion' },
-  { value: 'stocks', label: 'Stocks / funds' },
+  { value: 'cash', label: 'Cash at home' },
+  { value: 'gold', label: 'Gold' },
+  { value: 'stocks', label: 'Stocks & shares' },
   { value: 'crypto', label: 'Crypto' },
   { value: 'real_estate', label: 'Real estate' },
   { value: 'other', label: 'Other' },
@@ -56,7 +56,7 @@ function SavingsHoldingRow({
         <button
           type="button"
           onClick={() => {
-            if (window.confirm('Remove this holding from your savings list?')) onDelete(id)
+            if (window.confirm('Remove this saving? This will be gone for good.')) onDelete(id)
           }}
           className="p-1.5 rounded-lg hover:bg-red-900/30"
           aria-label="Delete"
@@ -110,14 +110,14 @@ export default function SavingsPage() {
       setName('')
       setAmount('')
       setCurrency(settings.baseCurrency)
-    }, 'Sign in or create an account to add savings holdings.')
+    }, 'Sign in to start tracking your savings.')
   }
 
   return (
     <div className="min-h-screen pb-24">
       <PageHeader>
         <PageHeaderContent>
-          <h1 className="text-xl font-bold text-white">Savings</h1>
+          <h1 className="text-xl font-bold text-white">My Savings</h1>
           <p className="text-xs text-[var(--color-brand-text-muted)] mt-1">
             Total in {settings.baseCurrency}:{' '}
             <span className="font-mono-numbers text-[var(--color-brand-green)]">{formatCurrency(totalBase, settings.baseCurrency)}</span>
@@ -127,25 +127,25 @@ export default function SavingsPage() {
 
       <div className="px-4 py-6 lg:px-8 max-w-3xl mx-auto space-y-6">
         <section className="glass-card rounded-2xl p-5 space-y-4">
-          <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">Add holding</h2>
+          <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">Add a saving</h2>
           <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">Name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Emirates NBD savings" className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white" />
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">What&apos;s this saving called?</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Emirates NBD, Cash at home" className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs text-[var(--color-brand-text-secondary)]">Category</Label>
+              <Label className="text-xs text-[var(--color-brand-text-secondary)]">What kind?</Label>
               <select
                 value={bucket}
                 onChange={(e) => setBucket(e.target.value as SavingsBucket)}
                 className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
               >
-                <option value="liquid">Liquid savings</option>
-                <option value="investment">Investments</option>
+                <option value="liquid">Easy access</option>
+                <option value="investment">Growing assets</option>
               </select>
             </div>
             <div>
-              <Label className="text-xs text-[var(--color-brand-text-secondary)]">Type</Label>
+              <Label className="text-xs text-[var(--color-brand-text-secondary)]">What type?</Label>
               <select
                 value={subtype}
                 onChange={(e) => setSubtype(e.target.value as SavingsSubtype)}
@@ -159,7 +159,7 @@ export default function SavingsPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs text-[var(--color-brand-text-secondary)]">Amount</Label>
+              <Label className="text-xs text-[var(--color-brand-text-secondary)]">Current amount</Label>
               <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers" />
             </div>
             <div>
@@ -176,14 +176,14 @@ export default function SavingsPage() {
             onClick={handleAdd}
             className="w-full py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold"
           >
-            Add holding
+            Add this saving
           </button>
         </section>
 
         <section className="glass-card rounded-2xl p-5">
-          <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-3">Liquid savings</h2>
+          <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-3">Easy Access</h2>
           {liquid.length === 0 ? (
-            <p className="text-sm text-[var(--color-brand-text-muted)] py-4 text-center">No liquid holdings yet</p>
+            <p className="text-sm text-[var(--color-brand-text-muted)] py-4 text-center">Your easy-access savings will appear here 🌱</p>
           ) : (
             liquid.map((h) => (
               <SavingsHoldingRow
@@ -198,9 +198,9 @@ export default function SavingsPage() {
         </section>
 
         <section className="glass-card rounded-2xl p-5">
-          <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-3">Investments</h2>
+          <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-3">Growing Assets</h2>
           {inv.length === 0 ? (
-            <p className="text-sm text-[var(--color-brand-text-muted)] py-4 text-center">No investments tracked yet</p>
+            <p className="text-sm text-[var(--color-brand-text-muted)] py-4 text-center">Your growing assets will appear here 📈</p>
           ) : (
             inv.map((h) => (
               <SavingsHoldingRow

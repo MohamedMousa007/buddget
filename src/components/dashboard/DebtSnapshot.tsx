@@ -27,7 +27,7 @@ export function DebtSnapshot() {
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
-        Debt Snapshot
+        Balances You&apos;re Clearing
       </h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {debts.map((debt) => {
@@ -78,7 +78,7 @@ export function DebtSnapshot() {
                 </div>
 
                 <p className="text-xs text-[var(--color-brand-text-muted)] mt-2">
-                  {paymentsCount} payment{paymentsCount !== 1 ? 's' : ''} made
+                  {paymentsCount} payment{paymentsCount !== 1 ? 's' : ''} towards this
                 </p>
               </div>
             </Link>

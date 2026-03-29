@@ -13,10 +13,10 @@ export function AddRecurringDebtPaymentSheet() {
   return (
     <ModalShell open={sheet.isOpen} onBackdropClick={sheet.close}>
       <div className="p-6">
-        <ModalSheetHeader title="Recurring debt payment" onClose={sheet.close} />
+        <ModalSheetHeader title="Recurring balance payment" onClose={sheet.close} />
 
         <p className="text-xs text-[var(--color-brand-text-muted)] mb-4">
-          When the next due date arrives (or is in the past), Buddget records the payment and a Debt expense, then
+          When the next due date arrives (or is in the past), Buddget logs the payment and a balance expense, then
           advances the schedule. Same rules as a manual payment (rates, no overpay).
         </p>
 

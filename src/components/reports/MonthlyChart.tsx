@@ -11,14 +11,14 @@ export function MonthlyChart({ data, currency }: MonthlyChartProps) {
   return (
     <div className="glass-card rounded-2xl p-5">
       <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-1">
-        Recurring income vs expenses vs savings
+        Month by Month
       </h3>
       <p className="text-[10px] text-[var(--color-brand-text-muted)] mb-4">
-        Income bar = recurring sources active that month (converted to base). Expenses/savings from transactions in each month.
+        Your income, spending, and savings for each month at a glance.
       </p>
       {data.length === 0 ? (
         <p className="text-[var(--color-brand-text-muted)] text-sm text-center py-8">
-          No data available for this period
+          Nothing here yet — add some transactions to see your trends
         </p>
       ) : (
         <div className="h-[300px]">
@@ -47,9 +47,9 @@ export function MonthlyChart({ data, currency }: MonthlyChartProps) {
               <Legend
                 wrapperStyle={{ color: '#A0A0B8', fontSize: 12 }}
               />
-              <Bar dataKey="income" fill="#1DB954" radius={[4, 4, 0, 0]} name="Income" />
-              <Bar dataKey="expenses" fill="#E50914" radius={[4, 4, 0, 0]} name="Expenses" />
-              <Bar dataKey="savings" fill="#F5C842" radius={[4, 4, 0, 0]} name="Savings" />
+              <Bar dataKey="income" fill="#1DB954" radius={[4, 4, 0, 0]} name="Money in" />
+              <Bar dataKey="expenses" fill="#E50914" radius={[4, 4, 0, 0]} name="Money out" />
+              <Bar dataKey="savings" fill="#F5C842" radius={[4, 4, 0, 0]} name="Saved" />
             </BarChart>
           </ResponsiveContainer>
         </div>

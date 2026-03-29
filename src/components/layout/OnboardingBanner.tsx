@@ -23,7 +23,7 @@ export function OnboardingBanner() {
   const dismiss = () => {
     updateSettings({ dismissOnboardingBanner: true })
     window.alert(
-      'The onboarding reminder is hidden. You can always continue or finish setup from your Profile → Onboarding.'
+      "Got it! You can always finish setting up from your Profile → Onboarding whenever you're ready."
     )
   }
 
@@ -32,7 +32,7 @@ export function OnboardingBanner() {
       <div className="max-w-3xl mx-auto flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
         <div className="flex-1 min-w-0">
           <p className="text-[11px] text-[var(--color-brand-text-muted)] mb-1">
-            Finish onboarding for smarter budget suggestions
+            Complete your setup for smarter, personalized budget suggestions
           </p>
           <div className="h-1.5 rounded-full bg-[var(--color-brand-border)] overflow-hidden">
             <div
@@ -55,7 +55,7 @@ export function OnboardingBanner() {
             href="/onboarding?redo=1"
             className="text-center text-xs font-semibold px-3 py-2 rounded-xl bg-[var(--color-brand-red)] text-white hover:bg-[var(--color-brand-red-hover)] transition-colors"
           >
-            Complete onboarding
+            Let&apos;s finish setup
           </Link>
         </div>
       </div>

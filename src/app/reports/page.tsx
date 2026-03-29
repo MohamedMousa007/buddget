@@ -26,7 +26,7 @@ export default function ReportsPage() {
     <div className="min-h-screen">
       <PageHeader>
         <PageHeaderContent>
-          <h1 className="text-xl font-bold text-white">Reports</h1>
+          <h1 className="text-xl font-bold text-white">Your Financial Story</h1>
         </PageHeaderContent>
       </PageHeader>
 

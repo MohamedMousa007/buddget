@@ -58,7 +58,7 @@ export function AddExpenseForm({
   return (
     <div className="space-y-4">
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Date</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">When?</Label>
         <Input
           type="date"
           value={date}
@@ -68,9 +68,9 @@ export function AddExpenseForm({
       </div>
 
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Description</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">What was it for?</Label>
         <Input
-          placeholder="What did you spend on?"
+          placeholder="e.g. Lunch at work, Groceries, Metro top-up"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
@@ -79,7 +79,7 @@ export function AddExpenseForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Amount</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">How much?</Label>
           <Input
             type="number"
             step="0.01"
@@ -115,14 +115,14 @@ export function AddExpenseForm({
       />
 
       <div className="flex items-center justify-between">
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Recurring?</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Does this repeat?</Label>
         <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
       </div>
 
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Notes (optional)</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Anything to add?</Label>
         <Textarea
-          placeholder="Any extra details..."
+          placeholder="Optional note about this purchase"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)] min-h-[60px]"
@@ -135,7 +135,7 @@ export function AddExpenseForm({
           onClick={onCancel}
           className="flex-1 py-3 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
         >
-          Cancel
+          Never mind
         </button>
         <button
           type="button"
@@ -143,7 +143,7 @@ export function AddExpenseForm({
           disabled={!description || !amount}
           className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Add Expense →
+          Log it ✓
         </button>
       </div>
     </div>

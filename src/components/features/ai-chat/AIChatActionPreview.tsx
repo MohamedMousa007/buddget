@@ -32,14 +32,14 @@ export function AIChatActionPreview({ action, data: d, baseCurrency }: AIChatAct
   if (action === 'add_debt_payment') {
     return (
       <>
-        <p>🏦 Debt payment to {String(getField(d, 'person', 'debtName', 'name') || '?')}</p>
+        <p>🏦 Balance payment to {String(getField(d, 'person', 'debtName', 'name') || '?')}</p>
         <p>
           💰 {formatCurrency(Number(getField(d, 'amount')) || 0, String(getField(d, 'currency') || baseCurrency))}
         </p>
         {getField(d, 'paymentMethod', 'payment_method') ? (
           <p>💳 {String(getField(d, 'paymentMethod', 'payment_method'))}</p>
         ) : null}
-        <p className="text-[var(--color-brand-text-muted)]">Also recorded as Debt expense</p>
+        <p className="text-[var(--color-brand-text-muted)]">Also tracked as a balance expense</p>
       </>
     )
   }

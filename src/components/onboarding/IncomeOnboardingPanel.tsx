@@ -11,9 +11,9 @@ import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import type { Currency, IncomeRecurringFrequency, IncomeSource } from '@/lib/store/types'
 
 const RECURRING_FREQ: { value: IncomeRecurringFrequency; label: string; amountHint: string }[] = [
-  { value: 'monthly', label: 'Monthly', amountHint: 'Amount is per month.' },
-  { value: 'biweekly', label: 'Bi-weekly', amountHint: 'Amount is per paycheck (26 per year).' },
-  { value: 'weekly', label: 'Weekly', amountHint: 'Amount is per week.' },
+  { value: 'monthly', label: 'Monthly', amountHint: 'This is your monthly amount.' },
+  { value: 'biweekly', label: 'Bi-weekly', amountHint: "Per paycheck — that's 26 times a year." },
+  { value: 'weekly', label: 'Weekly', amountHint: 'This is your weekly amount.' },
 ]
 
 export type IncomeOnboardingPayload = {
@@ -70,7 +70,7 @@ export function IncomeOnboardingPanel({
   return (
     <div className="space-y-4 text-left w-full max-w-lg">
       <p className="text-[11px] text-[var(--color-brand-text-muted)]">
-        Same details as Income in the app. Add one or more sources, or skip if you’ll do it later.
+        Add your income sources below — or skip this and come back to it anytime.
       </p>
 
       {entries.length > 0 ? (
@@ -93,7 +93,7 @@ export function IncomeOnboardingPanel({
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">Source name</Label>
           <Input
-            placeholder="e.g. Salary, Freelance"
+            placeholder="e.g. Salary, Freelance, Side gig"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
@@ -121,13 +121,13 @@ export function IncomeOnboardingPanel({
           </div>
         </div>
         <div className="flex items-center justify-between">
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Recurring income?</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Is this recurring?</Label>
           <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
         </div>
         {isRecurring && (
           <>
             <div>
-              <Label className="text-xs text-[var(--color-brand-text-secondary)]">How often</Label>
+              <Label className="text-xs text-[var(--color-brand-text-secondary)]">How often do you get paid?</Label>
               <select
                 value={recurringFrequency}
                 onChange={(e) => setRecurringFrequency(e.target.value as IncomeRecurringFrequency)}
@@ -145,7 +145,7 @@ export function IncomeOnboardingPanel({
             </div>
             {recurringFrequency === 'monthly' && (
               <div>
-                <Label className="text-xs text-[var(--color-brand-text-secondary)]">Day of month</Label>
+                <Label className="text-xs text-[var(--color-brand-text-secondary)]">Which day of the month?</Label>
                 <Input
                   type="number"
                   min={1}
@@ -159,7 +159,7 @@ export function IncomeOnboardingPanel({
           </>
         )}
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Notes (optional)</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Any notes? (optional)</Label>
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -172,7 +172,7 @@ export function IncomeOnboardingPanel({
           disabled={!name.trim() || !amount || parseFloat(amount) <= 0}
           className="w-full py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-white hover:bg-[var(--color-brand-elevated)] disabled:opacity-40"
         >
-          Add this income
+          Add this income source
         </button>
       </div>
     </div>

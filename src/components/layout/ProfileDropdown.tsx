@@ -147,7 +147,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
 
       <button type="button" onClick={() => navigate('/profile')} className={itemClass} role="menuitem">
         <User className="w-4 h-4" />
-        View Profile
+        Your Profile
       </button>
       <button type="button" onClick={() => navigate('/settings#budget')} className={itemClass} role="menuitem">
         <SlidersHorizontal className="w-4 h-4" />
@@ -168,7 +168,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
             role="menuitem"
           >
             <LogOut className="w-4 h-4" />
-            Log out
+            Sign out
           </button>
         </>
       ) : null}

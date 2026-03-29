@@ -121,9 +121,9 @@ export function OnboardingSurveyStepInputs({
           )
         })}
         <p className="text-[10px] text-[var(--color-brand-text-muted)]">
-          Selected {multi.length}
-          {step.minSelections != null ? ` (min ${step.minSelections})` : ''}
-          {step.maxSelections != null ? ` · max ${step.maxSelections}` : ''}
+          {multi.length} selected
+          {step.minSelections != null ? ` (pick at least ${step.minSelections})` : ''}
+          {step.maxSelections != null ? ` · up to ${step.maxSelections}` : ''}
         </p>
       </div>
     )

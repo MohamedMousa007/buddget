@@ -4,10 +4,10 @@ export function mapAuthError(err: unknown, context: 'signin' | 'signup' | 'otp' 
   const m = raw.toLowerCase()
 
   if (m.includes('fetch') || m.includes('network') || m.includes('failed to fetch')) {
-    return 'Connection error. Please check your internet and try again.'
+    return 'Can\'t connect right now. Check your internet and try again.'
   }
   if (m.includes('rate limit') || m.includes('too many') || m.includes('over_email_send_rate_limit')) {
-    return 'Too many attempts. Please wait a few minutes and try again.'
+    return 'Slow down a little — try again in a moment.'
   }
 
   if (context === 'signup') {
@@ -18,18 +18,18 @@ export function mapAuthError(err: unknown, context: 'signin' | 'signup' | 'otp' 
 
   if (context === 'signin') {
     if (m.includes('invalid login credentials') || m.includes('invalid credentials')) {
-      return 'Incorrect password. Try again or reset your password.'
+      return 'That password doesn\'t look right. Try again or reset it.'
     }
     if (m.includes('email not confirmed')) {
-      return 'Please confirm your email first. Resend confirmation code?'
+      return 'Looks like your email isn\'t confirmed yet. Resend confirmation code?'
     }
   }
 
   if (context === 'otp' && m.includes('expired')) {
-    return 'This code has expired. Request a new code.'
+    return 'This code has expired. Request a new one.'
   }
 
-  return raw || 'Something went wrong. Please try again.'
+  return raw || 'Oops, something went wrong. Let\'s try again.'
 }
 
 export function isValidEmailFormat(email: string): boolean {

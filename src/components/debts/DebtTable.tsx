@@ -31,7 +31,7 @@ export function DebtTable({ debt, payments }: DebtTableProps) {
   if (paymentsWithBalance.length === 0) {
     return (
       <p className="text-sm text-[var(--color-brand-text-muted)] text-center py-4">
-        No payments recorded yet
+        No payments logged yet
       </p>
     )
   }
@@ -48,7 +48,7 @@ export function DebtTable({ debt, payments }: DebtTableProps) {
           <tr className="border-b border-[var(--color-brand-border)]">
             <th className="py-2 px-3 text-left text-xs font-medium text-[var(--color-brand-text-muted)] uppercase">Date</th>
             <th className="py-2 px-3 text-right text-xs font-medium text-[var(--color-brand-text-muted)] uppercase">Paid</th>
-            <th className="py-2 px-3 text-right text-xs font-medium text-[var(--color-brand-text-muted)] uppercase">Remaining</th>
+            <th className="py-2 px-3 text-right text-xs font-medium text-[var(--color-brand-text-muted)] uppercase">Still to go</th>
             <th className="py-2 px-3 text-left text-xs font-medium text-[var(--color-brand-text-muted)] uppercase">Notes</th>
             <th className="py-2 px-3 w-10"></th>
           </tr>
@@ -88,7 +88,7 @@ export function DebtTable({ debt, payments }: DebtTableProps) {
                 <td className="py-2.5 px-3">
                   <button
                     onClick={() => {
-                      if (window.confirm('Delete this payment record? This cannot be undone.')) {
+                      if (window.confirm('Delete this payment? This can\u2019t be undone.')) {
                         deleteDebtPayment(payment.id)
                       }
                     }}

@@ -46,7 +46,7 @@ export function useAIChat() {
     if (user) return true
     openAuthModal(
       pathname,
-      'Sign in or create an account to save changes from the assistant.'
+      'Sign in to save what your assistant finds 🔐'
     )
     return false
   }, [openAuthModal, pathname, supabaseConfigured, user])
@@ -126,7 +126,7 @@ export function useAIChat() {
           content:
             err instanceof Error && err.message.startsWith('This is Google')
               ? err.message
-              : `Sorry, I encountered an error. ${err instanceof Error ? err.message : 'Please try again.'}`,
+              : `Hmm, something didn't go as planned. ${err instanceof Error ? err.message : 'Give it another try in a moment 😊'}`,
         },
       ])
     } finally {

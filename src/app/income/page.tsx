@@ -49,42 +49,41 @@ export default function IncomePage() {
   const openAddIncome = () =>
     requireAuth(
       () => setActiveModal('addIncome'),
-      'Sign in or create an account to add income sources and sync your budget.'
+      'Sign in to add income sources and keep your budget on track.'
     )
 
   return (
     <div className="min-h-screen">
       <PageHeader>
         <PageHeaderContent className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-white">Income</h1>
+          <h1 className="text-xl font-bold text-white">Money Coming In</h1>
           <button
             type="button"
             onClick={openAddIncome}
             className="px-4 py-2 rounded-lg bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-medium transition-colors"
           >
-            + Add income
+            + Add a source
           </button>
         </PageHeaderContent>
       </PageHeader>
 
       <div className="px-4 py-6 lg:px-8 max-w-3xl mx-auto space-y-3">
         <p className="text-xs text-[var(--color-brand-text-muted)]">
-          Recurring income is converted to a monthly equivalent for budgets (including % of income). Weekly and bi-weekly
-          amounts are the pay per week or per paycheck.
+          Your recurring income is shown as a monthly total for your budget plan. Weekly and bi-weekly amounts reflect what you earn per paycheck.
         </p>
         {incomeSources.length === 0 ? (
           <div className="glass-card rounded-2xl p-2">
             <EmptyState
               icon="💵"
-              title="No income sources"
-              description="Recurring sources power your budget and “% of income” category caps. Add salary, rent you receive, or other regular inflows."
+              title="No income sources added yet"
+              description="Add your income sources and watch your budget come to life 🌱"
               action={
                 <button
                   type="button"
                   onClick={openAddIncome}
                   className="px-6 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
                 >
-                  + Add income
+                  + Add a source
                 </button>
               }
             />
@@ -120,7 +119,7 @@ export default function IncomePage() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (window.confirm('Delete this income source?')) deleteIncomeSource(source.id)
+                    if (window.confirm('Remove this income source? This will be gone for good.')) deleteIncomeSource(source.id)
                   }}
                   className="p-1.5 rounded-lg hover:bg-red-900/30 opacity-70 group-hover:opacity-100"
                   aria-label="Delete"

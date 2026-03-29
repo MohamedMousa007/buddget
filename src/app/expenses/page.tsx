@@ -78,7 +78,7 @@ export default function ExpensesPage() {
     <div className="min-h-screen">
       <PageHeader>
         <PageHeaderContent className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-white">Expenses</h1>
+          <h1 className="text-xl font-bold text-white">My Spending</h1>
           <MonthNavigationControl monthFilter={monthFilter} onChange={setMonthFilter} />
         </PageHeaderContent>
       </PageHeader>
@@ -100,7 +100,7 @@ export default function ExpensesPage() {
         onAddExpense={() =>
           requireAuth(
             () => setActiveModal('addExpense'),
-            'Sign in or create an account to add expenses. Income is set up first so your budget stays accurate.'
+            'Sign in to log your spending and keep your budget on track.'
           )
         }
       />

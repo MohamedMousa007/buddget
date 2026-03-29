@@ -44,7 +44,7 @@ export function OnboardingPlanPickerHero({
 
       <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/50 px-4 py-3 shrink-0 lg:min-w-[220px]">
         <p className="text-[10px] uppercase tracking-wider text-[var(--color-brand-text-muted)] mb-1">
-          Monthly take-home
+          Your monthly take-home
         </p>
         <MoneyDisplay
           variant="card"

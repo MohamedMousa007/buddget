@@ -35,14 +35,12 @@ export function ProfileOnboardingSection({
       </div>
       {expertDone ? (
         <p className="text-sm text-[var(--color-brand-text-muted)]">
-          You’ve finished onboarding. Run it again anytime to refresh answers and get new suggested budget plans — your
-          data will be prefilled.
+          You&apos;re all set! Run it again anytime to refresh your answers and get updated budget suggestions — your info will be prefilled.
         </p>
       ) : (
         <>
           <p className="text-sm text-[var(--color-brand-text-muted)]">
-            Progress reflects survey answers and data you’ve already entered in the app (income, budgets, debts, and
-            payment methods).
+            Your progress is based on your survey answers and anything you&apos;ve already added — income, budgets, balances, and payment methods.
           </p>
           <Progress value={pct} className="gap-1">
             <ProgressTrack className="h-1.5 bg-[var(--color-brand-border)]">
@@ -72,11 +70,11 @@ export function ProfileOnboardingSection({
         onClick={onRedoOnboarding}
         className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
       >
-        Complete onboarding
+        Continue onboarding
       </button>
       {supabaseConfigured && !user ? (
         <p className="text-[11px] text-[var(--color-brand-text-muted)]">
-          Sign up or log in first — your account is required to save onboarding and sync it.
+          Sign in first so your onboarding progress is saved and synced across devices.
         </p>
       ) : null}
     </section>

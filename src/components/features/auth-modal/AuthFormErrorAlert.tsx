@@ -37,7 +37,7 @@ export function AuthFormErrorAlert({ error, onSignInInstead, onResendCode }: Aut
               <>
                 {' '}
                 <button type="button" className="underline font-medium" onClick={() => void onResendCode()}>
-                  Resend code
+                  Send a new code
                 </button>
               </>
             ) : null}

@@ -19,15 +19,15 @@ export function SettingsAiAssistantSection({ store, aiStatus }: SettingsAiAssist
       <div className="flex items-center gap-2 mb-2">
         <Bot className="w-5 h-5 text-[var(--color-brand-red)]" />
         <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
-          AI Assistant
+          AI Money Assistant
         </h2>
       </div>
 
       <div className="flex items-center justify-between">
         <div>
-          <Label className="text-sm text-white">Enable AI in app</Label>
+          <Label className="text-sm text-white">Turn on AI assistant</Label>
           <p className="text-xs text-[var(--color-brand-text-muted)]">
-            Toggle client preference (server still needs API keys)
+            Your preference — the server still needs a Gemini API key to work
           </p>
         </div>
         <Switch checked={store.settings.enableAI} onCheckedChange={(val) => store.updateSettings({ enableAI: val })} />
@@ -35,19 +35,19 @@ export function SettingsAiAssistantSection({ store, aiStatus }: SettingsAiAssist
 
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-white">Status</p>
-          <p className="text-xs text-[var(--color-brand-text-muted)]">Google Gemini (Server-side)</p>
+          <p className="text-sm text-white">Connection</p>
+          <p className="text-xs text-[var(--color-brand-text-muted)]">Google Gemini · server-side</p>
         </div>
         <div className="flex items-center gap-2">
           {aiStatus.enabled ? (
             <>
               <CheckCircle2 className="w-4 h-4 text-[var(--color-brand-green)]" />
-              <span className="text-sm text-[var(--color-brand-green)] font-medium">Active</span>
+              <span className="text-sm text-[var(--color-brand-green)] font-medium">Ready</span>
             </>
           ) : (
             <>
               <XCircle className="w-4 h-4 text-[var(--color-brand-text-muted)]" />
-              <span className="text-sm text-[var(--color-brand-text-muted)] font-medium">Not configured</span>
+              <span className="text-sm text-[var(--color-brand-text-muted)] font-medium">Not set up yet</span>
             </>
           )}
         </div>
@@ -61,12 +61,12 @@ export function SettingsAiAssistantSection({ store, aiStatus }: SettingsAiAssist
       ) : null}
 
       <p className="text-xs text-[var(--color-brand-text-muted)]">
-        AI configuration is managed by the admin. Tap the chat bubble (bottom-right) to use the AI assistant.
+        Your admin manages the AI setup. Tap the chat bubble in the bottom-right corner to start chatting with your AI money assistant.
       </p>
       <p className="text-[11px] text-[var(--color-brand-text-muted)] border-t border-[var(--color-brand-border)] pt-3">
-        Free Gemini keys have a separate limit from Google (~20 requests/min). Admin &quot;Throttle per device&quot; only
-        adds an optional cap in this app — it does not remove Google&apos;s quota. If you hit quota errors, wait, send
-        fewer messages, or upgrade the key in Google AI Studio.
+        Your Gemini API key has its own Google quota (~20 requests/min). The admin &quot;Throttle per device&quot; setting
+        adds an extra cap inside Buddget — it doesn&apos;t change Google&apos;s limit. If you see quota errors, wait a moment,
+        send fewer messages, or get your free key at Google AI Studio.
       </p>
     </section>
   )

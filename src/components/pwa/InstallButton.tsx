@@ -88,9 +88,9 @@ export function InstallButton({ variant, className }: InstallButtonProps) {
         >
           <Download className="w-5 h-5 shrink-0 text-[var(--color-brand-red)]" aria-hidden />
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-white">Install Buddget</p>
+            <p className="text-xs font-semibold text-white">Get Buddget on your device</p>
             <p className="text-[10px] text-[var(--color-brand-text-muted)] leading-snug">
-              Add to your home screen for quick access.
+              Add it to your home screen for quick, easy access.
             </p>
           </div>
           <button
@@ -157,9 +157,9 @@ function IosInstallDialog({
         showCloseButton
       >
         <DialogHeader>
-          <DialogTitle className="text-white">Install on iPhone</DialogTitle>
+          <DialogTitle className="text-white">Add Buddget to your iPhone</DialogTitle>
           <DialogDescription className="text-[var(--color-brand-text-muted)]">
-            Follow these steps to add Buddget to your home screen.
+            Here&apos;s how to get Buddget on your home screen.
           </DialogDescription>
         </DialogHeader>
         <ol className="space-y-3 mt-2">

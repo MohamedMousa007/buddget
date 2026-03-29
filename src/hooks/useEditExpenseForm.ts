@@ -27,7 +27,7 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
     const amountInBase = tryConvertCurrency(parsedAmount, cur, settings.baseCurrency, exchangeRates)
     if (amountInBase === null) {
       setSubmitError(
-        `No exchange rate from ${cur} to ${settings.baseCurrency}. Update rates in Settings or pick another currency.`
+        `We don't have a rate for ${cur} → ${settings.baseCurrency} yet. Head to Settings to update rates, or try a different currency.`
       )
       return
     }

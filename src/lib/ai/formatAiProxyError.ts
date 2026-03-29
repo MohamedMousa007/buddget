@@ -22,10 +22,10 @@ export function formatProxyAiErrorForUser(message: string, httpStatus: number): 
 
   if (looksLikeGoogleQuota) {
     return (
-      "This is Google's Gemini API limit (free tier / billing on your API key), not Buddget's optional \"Throttle per device\" setting.\n\n" +
-      'Turning off throttling in Admin only removes this app\'s per-IP cap. Google still enforces its own RPM/quota.\n\n' +
+      "This is a Google Gemini API rate limit on your API key — it's separate from Buddget's per-device setting.\n\n" +
+      'Adjusting the throttle in Admin only changes this app\'s per-IP cap. Google still applies its own limits.\n\n' +
       `Details: ${message}\n\n` +
-      'What helps: wait a minute and retry; reduce how often you send messages; or enable billing / upgrade the key in Google AI Studio.'
+      'What helps: wait a minute and try again, send fewer messages, or upgrade your key in Google AI Studio.'
     )
   }
 

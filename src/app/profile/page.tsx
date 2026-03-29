@@ -144,7 +144,7 @@ export default function ProfilePage() {
         <PageHeaderContent>
           <h1 className="text-xl font-bold text-white flex items-center gap-2">
             <User className="w-6 h-6 text-[var(--color-brand-red)]" />
-            Profile
+            My Profile
           </h1>
         </PageHeaderContent>
       </PageHeader>
@@ -190,7 +190,7 @@ export default function ProfilePage() {
               {editMode ? (
                 <div className="space-y-4">
                   <div>
-                    <label className="text-xs uppercase tracking-wider text-[#5A5A72] block mb-1">Full Name</label>
+                    <label className="text-xs uppercase tracking-wider text-[#5A5A72] block mb-1">Your name</label>
                     <input
                       value={form.name}
                       onChange={(e) => updateField('name', e.target.value)}
@@ -200,7 +200,7 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <label className="text-xs uppercase tracking-wider text-[#5A5A72] block mb-1">
-                      Email {user ? '(from account)' : ''}
+                      Email address {user ? '(from account)' : ''}
                     </label>
                     <input
                       value={form.email}
@@ -210,7 +210,7 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs uppercase tracking-wider text-[#5A5A72] block mb-1">Phone Number</label>
+                    <label className="text-xs uppercase tracking-wider text-[#5A5A72] block mb-1">Phone number</label>
                     <input
                       value={form.phone}
                       onChange={(e) => updateField('phone', e.target.value)}
@@ -239,9 +239,9 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <>
-                  <FieldRow label="Full Name" value={displayName} />
-                  <FieldRow label="Email" value={displayEmail} />
-                  <FieldRow label="Phone Number" value={store.profile.phone || ''} />
+                  <FieldRow label="Your name" value={displayName} />
+                  <FieldRow label="Email address" value={displayEmail} />
+                  <FieldRow label="Phone number" value={store.profile.phone || ''} />
                   <FieldRow label="Country" value={store.profile.country || ''} />
                   <FieldRow label="City" value={store.profile.city || ''} />
                 </>

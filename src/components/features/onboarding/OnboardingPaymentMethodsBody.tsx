@@ -90,7 +90,7 @@ export function OnboardingPaymentMethodsBody({
           </label>
           {checked[o.value] ? (
             <Input
-              placeholder="Nickname (e.g. Work debit)"
+              placeholder="Give it a nickname (e.g. Work debit)"
               value={nicknames[o.value] ?? ''}
               onChange={(e) => {
                 const next = { ...nicknames, [o.value]: e.target.value }
@@ -106,7 +106,7 @@ export function OnboardingPaymentMethodsBody({
         {customRows.map((row, i) => (
           <div key={i} className="flex gap-2">
             <Input
-              placeholder="Custom method name"
+              placeholder="Your custom method name"
               value={row.nickname}
               onChange={(e) => {
                 const next = [...customRows]
@@ -138,7 +138,7 @@ export function OnboardingPaymentMethodsBody({
           }}
           className="text-xs text-[var(--color-brand-red)] hover:underline"
         >
-          + Add my own method
+          + Add your own method
         </button>
       </div>
     </div>

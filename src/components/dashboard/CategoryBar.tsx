@@ -37,7 +37,7 @@ export function CategoryBar({
         <p className="text-[11px] text-amber-200/90 leading-snug">{incomeBlockedNote}</p>
       ) : null}
       <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
-        Category Breakdown
+        Where Your Money Goes
       </h3>
       <div className="space-y-3">
         {budgetCategories.map((budget) => {
@@ -55,7 +55,7 @@ export function CategoryBar({
 
           const statusIcon =
             percent > 100
-              ? '✗'
+              ? '!'
               : percent > 80
                 ? '⚠'
                 : percent > 0
