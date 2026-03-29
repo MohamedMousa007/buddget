@@ -201,19 +201,18 @@
   }
 }
 
-/* ── RTL / Arabic support ───────────────────────────────────── */
-[dir="rtl"] body {
+/* ── Arabic typography (layout stays LTR; `dir` on <html> remains ltr) ── */
+html[data-locale='ar'] body {
   font-family: var(--font-sans-ar), var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }
-[dir="rtl"] .font-heading {
+html[data-locale='ar'] .font-heading {
   font-family: var(--font-sans-ar), var(--font-heading), ui-sans-serif, system-ui, sans-serif;
 }
-[dir="rtl"] .font-mono-numbers {
+html[data-locale='ar'] .font-mono-numbers {
   direction: ltr;
   unicode-bidi: isolate;
 }
 
-/* Default paragraph flow in Arabic without breaking flex/grid children */
-[dir="rtl"] .prose-rtl {
-  text-align: start;
+html[data-locale='ar'] .prose-rtl {
+  text-align: end;
 }

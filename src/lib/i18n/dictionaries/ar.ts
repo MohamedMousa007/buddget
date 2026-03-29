@@ -1,7 +1,8 @@
 import type { Dictionary } from '../types'
 
 export const ar: Dictionary = {
-  dir: 'rtl',
+  /** Layout stays LTR; Arabic is typography + `data-locale` text alignment only. */
+  dir: 'ltr',
   locale: 'ar-EG',
 
   common: {

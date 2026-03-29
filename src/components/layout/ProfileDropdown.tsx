@@ -15,7 +15,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 import { cn } from '@/lib/utils'
-import { useT } from '@/lib/i18n'
+import { localeInlineLabelClass, useLocale, useT } from '@/lib/i18n'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 
 interface ProfileDropdownProps {
@@ -32,6 +32,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
   const router = useRouter()
   const pathname = usePathname()
   const t = useT()
+  const { locale } = useLocale()
   const { user, signOut, openAuthModal } = useAuth()
   const profile = useFinanceStore(useShallow((s) => s.profile))
   const prevPathname = useRef(pathname)
@@ -104,8 +105,8 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
           className={cn(itemClass, 'rounded-t-2xl')}
           role="menuitem"
         >
-          <LogIn className="w-4 h-4" />
-          {t.common.signIn}
+          <LogIn className="w-4 h-4 shrink-0" />
+          <span className={localeInlineLabelClass(locale)}>{t.common.signIn}</span>
         </button>
         <button
           type="button"
@@ -116,8 +117,8 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
           className={cn(itemClass, 'rounded-b-2xl')}
           role="menuitem"
         >
-          <UserPlus className="w-4 h-4" />
-          {t.common.signUp}
+          <UserPlus className="w-4 h-4 shrink-0" />
+          <span className={localeInlineLabelClass(locale)}>{t.common.signUp}</span>
         </button>
       </div>
     )
@@ -137,7 +138,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
             <User className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
           )}
         </div>
-        <div className="min-w-0">
+        <div className={cn('min-w-0', locale === 'ar' && 'text-end')}>
           <p className="text-sm font-medium text-white truncate">{displayName}</p>
           {displayEmail ? (
             <p className="text-xs text-[#A0A0B8] truncate">{displayEmail}</p>
@@ -148,16 +149,16 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
       <div className="border-t border-[#2A2A38]" />
 
       <button type="button" onClick={() => navigate('/profile')} className={itemClass} role="menuitem">
-        <User className="w-4 h-4" />
-        {t.profileDropdown.yourProfile}
+        <User className="w-4 h-4 shrink-0" />
+        <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.yourProfile}</span>
       </button>
       <button type="button" onClick={() => navigate('/settings#budget')} className={itemClass} role="menuitem">
-        <SlidersHorizontal className="w-4 h-4" />
-        {t.profileDropdown.budgetSetup}
+        <SlidersHorizontal className="w-4 h-4 shrink-0" />
+        <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.budgetSetup}</span>
       </button>
       <button type="button" onClick={() => navigate('/settings')} className={itemClass} role="menuitem">
-        <Settings className="w-4 h-4" />
-        {t.profileDropdown.settings}
+        <Settings className="w-4 h-4 shrink-0" />
+        <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.settings}</span>
       </button>
 
       {configured ? (
@@ -169,8 +170,8 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
             className={cn(itemClass, 'text-[#E50914] hover:text-[#E50914]')}
             role="menuitem"
           >
-            <LogOut className="w-4 h-4" />
-            {t.common.signOut}
+            <LogOut className="w-4 h-4 shrink-0" />
+            <span className={localeInlineLabelClass(locale)}>{t.common.signOut}</span>
           </button>
         </>
       ) : null}

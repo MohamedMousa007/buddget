@@ -38,12 +38,14 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const html = document.documentElement
-    html.setAttribute('dir', t.dir)
-    html.setAttribute('lang', locale)
-  }, [locale, t.dir])
+    /** Keep layout mirror-identical to English; Arabic is language + text alignment only. */
+    html.setAttribute('dir', 'ltr')
+    html.setAttribute('lang', locale === 'ar' ? 'ar' : 'en')
+    html.setAttribute('data-locale', locale)
+  }, [locale])
 
   const value = useMemo<LocaleContextValue>(
-    () => ({ t, locale, dir: t.dir, setLocale }),
+    () => ({ t, locale, dir: 'ltr', setLocale }),
     [t, locale, setLocale],
   )
 
@@ -64,6 +66,13 @@ export function useLocale() {
 /** Shorthand: current text direction. */
 export function useDir(): 'ltr' | 'rtl' {
   return useContext(LocaleContext).dir
+}
+
+/**
+ * For icon + label rows (sidebar, menus): Arabic labels align end without mirroring the whole UI.
+ */
+export function localeInlineLabelClass(locale: Locale): string {
+  return locale === 'ar' ? 'flex-1 min-w-0 text-end' : 'min-w-0'
 }
 
 export type { Dictionary, Locale }
