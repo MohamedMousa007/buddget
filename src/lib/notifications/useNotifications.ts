@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState, useEffect } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -46,11 +46,7 @@ export function useNotifications() {
     }))
   )
 
-  const [readIds, setReadIds] = useState<Set<string>>(() => new Set())
-
-  useEffect(() => {
-    setReadIds(loadReadIds())
-  }, [])
+  const [readIds, setReadIds] = useState<Set<string>>(() => loadReadIds())
 
   const notifications = useMemo(() => {
     const list: AppNotification[] = []
