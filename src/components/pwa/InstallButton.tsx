@@ -11,6 +11,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
+import { useT } from '@/lib/i18n'
 
 const BANNER_DISMISS_KEY = 'buddget-pwa-install-banner-dismissed-at'
 const BANNER_STORE_EVENT = 'buddget-pwa-banner-dismiss'
@@ -54,6 +55,7 @@ export interface InstallButtonProps {
 
 export function InstallButton({ variant, className }: InstallButtonProps) {
   const { platform, canInstall, isInstalled, triggerInstall } = usePWAInstall()
+  const t = useT()
   const [iosOpen, setIosOpen] = useState(false)
   const bannerDismissed = useSyncExternalStore(
     subscribeBannerDismissed,
@@ -81,16 +83,16 @@ export function InstallButton({ variant, className }: InstallButtonProps) {
       <>
         <div
           className={cn(
-            'lg:hidden fixed left-2 right-2 z-[48] rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]/95 backdrop-blur-xl shadow-lg px-3 py-2.5 flex items-center gap-2',
+            'lg:hidden fixed start-2 end-2 z-[48] rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]/95 backdrop-blur-xl shadow-lg px-3 py-2.5 flex items-center gap-2',
             'bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))]',
             className
           )}
         >
           <Download className="w-5 h-5 shrink-0 text-[var(--color-brand-red)]" aria-hidden />
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-white">Get Buddget on your device</p>
+            <p className="text-xs font-semibold text-white">{t.pwa.installTitle}</p>
             <p className="text-[10px] text-[var(--color-brand-text-muted)] leading-snug">
-              Add it to your home screen for quick, easy access.
+              {t.pwa.installSubtitle}
             </p>
           </div>
           <button
@@ -98,7 +100,7 @@ export function InstallButton({ variant, className }: InstallButtonProps) {
             onClick={() => void openFlow()}
             className="shrink-0 px-3 py-1.5 rounded-lg bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-xs font-semibold"
           >
-            Install
+            {t.pwa.installButton}
           </button>
           <button
             type="button"
@@ -129,7 +131,7 @@ export function InstallButton({ variant, className }: InstallButtonProps) {
         )}
       >
         <Download className="w-4 h-4" />
-        Install app
+        {t.pwa.installApp}
       </button>
       <IosInstallDialog open={iosOpen} onOpenChange={setIosOpen} />
     </>
@@ -143,11 +145,12 @@ function IosInstallDialog({
   open: boolean
   onOpenChange: (v: boolean) => void
 }) {
+  const t = useT()
   const steps = [
-    { n: 1, text: 'Open this site in Safari (if you are not already).' },
-    { n: 2, text: 'Tap the Share button at the bottom of the screen.' },
-    { n: 3, text: 'Scroll and tap Add to Home Screen.' },
-    { n: 4, text: 'Tap Add in the top right.' },
+    { n: 1, text: t.pwa.iosStep1 },
+    { n: 2, text: t.pwa.iosStep2 },
+    { n: 3, text: t.pwa.iosStep3 },
+    { n: 4, text: t.pwa.iosStep4 },
   ]
 
   return (
@@ -157,9 +160,9 @@ function IosInstallDialog({
         showCloseButton
       >
         <DialogHeader>
-          <DialogTitle className="text-white">Add Buddget to your iPhone</DialogTitle>
+          <DialogTitle className="text-white">{t.pwa.iosDialogTitle}</DialogTitle>
           <DialogDescription className="text-[var(--color-brand-text-muted)]">
-            Here&apos;s how to get Buddget on your home screen.
+            {t.pwa.iosDialogDesc}
           </DialogDescription>
         </DialogHeader>
         <ol className="space-y-3 mt-2">

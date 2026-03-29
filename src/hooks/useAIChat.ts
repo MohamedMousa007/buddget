@@ -13,6 +13,7 @@ import {
   validateActionItem,
 } from '@/lib/ai/aiActionHandlers'
 import { useAuth } from '@/components/auth/AuthProvider'
+import { useT } from '@/lib/i18n'
 
 /** Single row in the AI assistant transcript. */
 export interface AIChatMessage {
@@ -30,6 +31,7 @@ export function useAIChat() {
   const { activeModal, setActiveModal, openAddExpenseWithPrefill, monthFilter } = useSettingsStore()
   const stats = useMonthlyStats()
   const { user, openAuthModal } = useAuth()
+  const t = useT()
   const pathname = usePathname()
   const supabaseConfigured = useMemo(
     () =>
@@ -46,10 +48,10 @@ export function useAIChat() {
     if (user) return true
     openAuthModal(
       pathname,
-      'Sign in to save what your assistant finds 🔐'
+      t.ai.guardSignIn
     )
     return false
-  }, [openAuthModal, pathname, supabaseConfigured, user])
+  }, [openAuthModal, pathname, supabaseConfigured, t, user])
 
   const [messages, setMessages] = useState<AIChatMessage[]>([])
   const [input, setInput] = useState('')

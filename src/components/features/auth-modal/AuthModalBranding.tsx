@@ -1,5 +1,7 @@
 'use client'
 
+import { useT } from '@/lib/i18n'
+
 export interface AuthModalBrandingProps {
   message: string | null
 }
@@ -8,6 +10,7 @@ export interface AuthModalBrandingProps {
  * Buddget wordmark and optional contextual message above the form.
  */
 export function AuthModalBranding({ message }: AuthModalBrandingProps) {
+  const t = useT()
   return (
     <div className="text-center mb-6">
       <h1
@@ -19,9 +22,9 @@ export function AuthModalBranding({ message }: AuthModalBrandingProps) {
         <span className="text-[#E50914]">d</span>
         <span className="text-white">get</span>
       </h1>
-      <p className="text-sm mt-1 text-[#5A5A72]">Your money, finally makes sense</p>
+      <p className="text-sm mt-1 text-[#5A5A72]">{t.brand.tagline}</p>
       {message ? (
-        <p className="mt-3 text-sm text-left rounded-lg border border-[#E50914]/35 bg-[#E50914]/10 text-[#fecaca] px-3 py-2 leading-snug">
+        <p className="mt-3 text-sm text-start rounded-lg border border-[#E50914]/35 bg-[#E50914]/10 text-[#fecaca] px-3 py-2 leading-snug">
           {message}
         </p>
       ) : null}

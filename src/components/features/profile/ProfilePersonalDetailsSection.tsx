@@ -3,6 +3,7 @@
 import type { User } from '@supabase/supabase-js'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useT } from '@/lib/i18n'
 import type { FinanceStore } from '@/lib/store/types'
 
 export interface ProfilePersonalDetailsSectionProps {
@@ -14,14 +15,16 @@ export interface ProfilePersonalDetailsSectionProps {
  * Name, email, phone, country, city fields.
  */
 export function ProfilePersonalDetailsSection({ store, user }: ProfilePersonalDetailsSectionProps) {
+  const t = useT()
+
   return (
     <section className="glass-card rounded-2xl p-5 space-y-4">
       <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
-        Your details
+        {t.profile.labelName}
       </h2>
       <div className="space-y-3">
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Your name</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.profile.labelName}</Label>
           <Input
             value={store.profile.name}
             onChange={(e) => store.updateProfile({ name: e.target.value })}
@@ -30,7 +33,7 @@ export function ProfilePersonalDetailsSection({ store, user }: ProfilePersonalDe
         </div>
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">
-            Email address {user ? '(from account)' : ''}
+            {user ? t.profile.labelEmailAccount : t.profile.labelEmail}
           </Label>
           <Input
             value={store.profile.email || ''}
@@ -42,7 +45,7 @@ export function ProfilePersonalDetailsSection({ store, user }: ProfilePersonalDe
           />
         </div>
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Phone number</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.profile.labelPhone}</Label>
           <Input
             value={store.profile.phone || ''}
             onChange={(e) => store.updateProfile({ phone: e.target.value })}
@@ -50,7 +53,7 @@ export function ProfilePersonalDetailsSection({ store, user }: ProfilePersonalDe
           />
         </div>
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Country</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.profile.labelCountry}</Label>
           <Input
             value={store.profile.country || ''}
             onChange={(e) => store.updateProfile({ country: e.target.value })}
@@ -58,7 +61,7 @@ export function ProfilePersonalDetailsSection({ store, user }: ProfilePersonalDe
           />
         </div>
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">City</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.profile.labelCity}</Label>
           <Input
             value={store.profile.city || ''}
             onChange={(e) => store.updateProfile({ city: e.target.value })}

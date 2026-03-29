@@ -10,18 +10,20 @@ import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useEditIncomeForm } from '@/hooks/useEditIncomeForm'
 import { INCOME_RECURRING_FREQ_OPTIONS } from '@/lib/constants/incomeRecurring'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
+import { useT } from '@/lib/i18n'
 
 export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onClose: () => void }) {
   useEscapeClose(true, onClose)
   const f = useEditIncomeForm(source, onClose)
+  const t = useT()
 
   return (
     <div className="p-6">
-      <ModalSheetHeader title="Edit Source" onClose={onClose} />
+      <ModalSheetHeader title={t.editIncome.title} onClose={onClose} />
 
       <div className="space-y-4">
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Where does it come from?</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.editIncome.labelSource}</Label>
           <Input
             value={f.name}
             onChange={(e) => f.setName(e.target.value)}
@@ -30,7 +32,7 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">How much?</Label>
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.editIncome.labelAmount}</Label>
             <Input
               type="number"
               step="0.01"
@@ -40,7 +42,7 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
             />
           </div>
           <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">In which currency?</Label>
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.editIncome.labelCurrency}</Label>
             <FiatCurrencySelect
               value={f.currency}
               onChange={f.setCurrency}
@@ -49,13 +51,13 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
           </div>
         </div>
         <div className="flex items-center justify-between">
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Recurring income?</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.editIncome.labelRecurring}</Label>
           <Switch checked={f.isRecurring} onCheckedChange={f.setIsRecurring} />
         </div>
         {f.isRecurring && (
           <>
             <div>
-              <Label className="text-xs text-[var(--color-brand-text-secondary)]">How often</Label>
+              <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.editIncome.labelFrequency}</Label>
               <select
                 value={f.recurringFrequency}
                 onChange={(e) => f.setRecurringFrequency(e.target.value as IncomeRecurringFrequency)}
@@ -70,12 +72,12 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
               <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-1">
                 {INCOME_RECURRING_FREQ_OPTIONS.find((x) => x.value === f.recurringFrequency)?.amountHint}
                 {' '}
-                Budgets use a monthly equivalent (e.g. weekly × 52÷12).
+                {t.editIncome.freqHint}
               </p>
             </div>
             {f.recurringFrequency === 'monthly' && (
               <div>
-                <Label className="text-xs text-[var(--color-brand-text-secondary)]">Day of month</Label>
+                <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.editIncome.labelDayOfMonth}</Label>
                 <Input
                   type="number"
                   min={1}
@@ -89,7 +91,7 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
           </>
         )}
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Notes</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.editIncome.labelNotes}</Label>
           <Textarea
             value={f.notes}
             onChange={(e) => f.setNotes(e.target.value)}
@@ -97,7 +99,7 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
           />
         </div>
         <p className="text-[10px] text-[var(--color-brand-text-muted)]">
-          Budgets in &quot;% of income&quot; use recurring income converted to {f.baseCurrency}.
+          {t.editIncome.budgetNote(f.baseCurrency)}
         </p>
         <div className="flex gap-3 pt-2">
           <button
@@ -105,7 +107,7 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
             onClick={onClose}
             className="flex-1 py-3 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)]"
           >
-            Cancel
+            {t.common.cancel}
           </button>
           <button
             type="button"
@@ -113,7 +115,7 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
             disabled={!f.name || !f.amount}
             className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] text-white text-sm font-semibold disabled:opacity-50"
           >
-            Save changes
+            {t.editIncome.buttonSave}
           </button>
         </div>
       </div>

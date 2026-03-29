@@ -5,6 +5,7 @@ import { X } from 'lucide-react'
 import { CARTOON_AVATAR_PRESETS, cartoonAvatarUrlForPreset } from '@/lib/onboarding/cartoonAvatars'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 import { cn } from '@/lib/utils'
+import { useT } from '@/lib/i18n'
 import type { FinanceStore } from '@/lib/store/types'
 
 type Tab = 'choose' | 'upload' | 'remove'
@@ -18,6 +19,7 @@ interface AvatarPickerModalProps {
 }
 
 export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalProps) {
+  const t = useT()
   const [tab, setTab] = useState<Tab>('choose')
   const [selectedPreset, setSelectedPreset] = useState<string | undefined>(store.profile.avatarPresetId)
   const [uploadPreview, setUploadPreview] = useState<string | null>(null)
@@ -30,7 +32,7 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
     e.target.value = ''
     if (!file || !file.type.startsWith('image/')) return
     if (file.size > AVATAR_FILE_MAX_BYTES) {
-      window.alert('That image is a bit large — pick one under 5 MB and try again.')
+      window.alert(t.profile.avatarTooLarge)
       return
     }
     const reader = new FileReader()
@@ -38,7 +40,7 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
       if (typeof reader.result === 'string') setUploadPreview(reader.result)
     }
     reader.readAsDataURL(file)
-  }, [])
+  }, [t.profile.avatarTooLarge])
 
   const handleSave = () => {
     if (tab === 'choose' && selectedPreset) {
@@ -74,28 +76,28 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
         <button
           type="button"
           onClick={handleClose}
-          className="absolute right-3 top-3 p-2 rounded-lg text-[#5A5A72] hover:bg-white/5 hover:text-white transition-colors"
+          className="absolute end-3 top-3 p-2 rounded-lg text-[#5A5A72] hover:bg-white/5 hover:text-white transition-colors"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <h2 className="text-lg font-semibold text-white mb-4">Update your photo</h2>
+        <h2 className="text-lg font-semibold text-white mb-4">{t.profile.avatarModalTitle}</h2>
 
         <div className="flex gap-2 mb-5">
-          {(['choose', 'upload', 'remove'] as const).map((t) => (
+          {(['choose', 'upload', 'remove'] as const).map((tabKey) => (
             <button
-              key={t}
+              key={tabKey}
               type="button"
-              onClick={() => setTab(t)}
+              onClick={() => setTab(tabKey)}
               className={cn(
                 'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-                tab === t
+                tab === tabKey
                   ? 'bg-[var(--color-brand-red)] text-white'
                   : 'bg-[var(--color-brand-elevated)] text-[#A0A0B8] hover:text-white'
               )}
             >
-              {t === 'choose' ? 'Pick an avatar' : t === 'upload' ? 'Upload a photo' : 'Remove photo'}
+              {tabKey === 'choose' ? t.profile.avatarTabPick : tabKey === 'upload' ? t.profile.avatarTabUpload : t.profile.avatarTabRemove}
             </button>
           ))}
         </div>
@@ -146,7 +148,7 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
                   onClick={() => { setUploadPreview(null); fileRef.current?.click() }}
                   className="text-sm text-[#A0A0B8] hover:text-white transition-colors"
                 >
-                  Choose a different photo
+                  {t.profile.avatarChooseDifferent}
                 </button>
               </div>
             ) : (
@@ -155,8 +157,8 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
                 onClick={() => fileRef.current?.click()}
                 className="w-full py-10 rounded-xl border-2 border-dashed border-[#2A2A38] hover:border-[#E50914] text-[#A0A0B8] hover:text-white transition-colors text-center"
               >
-                <p className="text-sm font-medium">Click to upload a photo</p>
-                <p className="text-xs text-[#5A5A72] mt-1">JPEG, PNG, WebP — max 5 MB</p>
+                <p className="text-sm font-medium">{t.profile.avatarClickToUpload}</p>
+                <p className="text-xs text-[#5A5A72] mt-1">{t.profile.avatarClickToUploadHint}</p>
               </button>
             )}
           </div>
@@ -174,11 +176,11 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
               </div>
             ) : (
               <div className="w-24 h-24 rounded-full bg-[var(--color-brand-elevated)] flex items-center justify-center ring-2 ring-[#2A2A38]">
-                <p className="text-xs text-[#5A5A72]">No photo</p>
+                <p className="text-xs text-[#5A5A72]">{t.profile.avatarNoPhoto}</p>
               </div>
             )}
             <p className="text-sm text-[#A0A0B8] text-center">
-              Go back to initials
+              {t.profile.avatarRemoveDesc}
             </p>
           </div>
         )}
@@ -189,14 +191,14 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
             onClick={handleClose}
             className="px-4 py-2 rounded-xl border border-[#2A2A38] text-sm text-[#A0A0B8] hover:text-white hover:bg-[var(--color-brand-elevated)] transition-colors"
           >
-            Never mind
+            {t.common.neverMind}
           </button>
           <button
             type="button"
             onClick={handleSave}
             className="px-4 py-2 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
           >
-            Use this photo
+            {t.profile.avatarUseThis}
           </button>
         </div>
       </div>

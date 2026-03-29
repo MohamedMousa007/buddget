@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { DebtFiatCurrencySelect } from '@/components/ui/DebtFiatCurrencySelect'
 import type { AppSettings, DebtCurrency, GoldKarat } from '@/lib/store/types'
+import { useT } from '@/lib/i18n'
 
 export interface AddDebtNewFormProps {
   settings: AppSettings
@@ -53,37 +54,38 @@ export function AddDebtNewForm({
   onCancel,
   onSubmit,
 }: AddDebtNewFormProps) {
+  const t = useT()
   return (
     <div className="space-y-4">
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Balance name</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelName}</Label>
         <Input
-          placeholder="e.g. Mom's balance"
+          placeholder={t.addDebt.placeholderName}
           value={name}
           onChange={(e) => setName(e.target.value)}
           className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
         />
       </div>
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Who is this with?</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelPerson}</Label>
         <Input
-          placeholder="e.g. Mom, Bank, Friend..."
+          placeholder={t.addDebt.placeholderPerson}
           value={person}
           onChange={(e) => setPerson(e.target.value)}
           className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
         />
       </div>
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Description (optional)</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelDescription}</Label>
         <Input
-          placeholder="e.g. Gold jewelry, Wedding loan..."
+          placeholder={t.addDebt.placeholderDescription}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
         />
       </div>
       <div className="flex items-center justify-between">
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Tracked in gold grams?</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelGold}</Label>
         <Switch
           checked={isGold}
           onCheckedChange={(val) => {
@@ -96,12 +98,12 @@ export function AddDebtNewForm({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">
-            {isGold ? 'Total amount (grams)' : 'What\u2019s the total amount?'}
+            {isGold ? t.addDebt.labelTotalGrams : t.addDebt.labelTotalAmount}
           </Label>
           <Input
             type="number"
             step="0.01"
-            placeholder="0.00"
+            placeholder={t.addDebt.placeholderAmount}
             value={startingBalance}
             onChange={(e) => setStartingBalance(e.target.value)}
             className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers"
@@ -109,7 +111,7 @@ export function AddDebtNewForm({
         </div>
         {!isGold ? (
           <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">In which currency?</Label>
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelCurrency}</Label>
             <DebtFiatCurrencySelect
               value={currency}
               onChange={setCurrency}
@@ -118,22 +120,22 @@ export function AddDebtNewForm({
           </div>
         ) : (
           <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">Gold purity</Label>
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelGoldPurity}</Label>
             <select
               value={goldKarat}
               onChange={(e) => setGoldKarat(parseInt(e.target.value, 10) as GoldKarat)}
               className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
             >
-              <option value="24">24K (99.9%)</option>
-              <option value="22">22K (91.7%)</option>
-              <option value="21">21K (87.5%)</option>
-              <option value="18">18K (75%)</option>
+              <option value="24">{t.goldPurity.k24}</option>
+              <option value="22">{t.goldPurity.k22}</option>
+              <option value="21">{t.goldPurity.k21}</option>
+              <option value="18">{t.goldPurity.k18}</option>
             </select>
           </div>
         )}
       </div>
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Any notes?</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelNotes}</Label>
         <Textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
@@ -146,7 +148,7 @@ export function AddDebtNewForm({
           onClick={onCancel}
           className="flex-1 py-3 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
         >
-          Cancel
+          {t.common.cancel}
         </button>
         <button
           type="button"
@@ -154,7 +156,7 @@ export function AddDebtNewForm({
           disabled={!name || !person || !startingBalance}
           className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50"
         >
-          Start tracking →
+          {t.addDebt.buttonSubmit}
         </button>
       </div>
     </div>

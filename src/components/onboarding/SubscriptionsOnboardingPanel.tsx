@@ -4,6 +4,8 @@ import { useMemo } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
+import { useT } from '@/lib/i18n'
+import type { Dictionary } from '@/lib/i18n/types'
 import type { Currency } from '@/lib/store/types'
 
 export type SubscriptionLine = {
@@ -18,19 +20,22 @@ export type SubscriptionsOnboardingPayload = {
   lines: SubscriptionLine[]
 }
 
-const PRESETS: { id: string; label: string }[] = [
-  { id: 'netflix', label: 'Netflix' },
-  { id: 'spotify', label: 'Spotify / Apple Music' },
-  { id: 'icloud', label: 'iCloud / cloud storage' },
-  { id: 'youtube', label: 'YouTube Premium' },
-  { id: 'disney', label: 'Disney+ / streaming bundle' },
-  { id: 'gym', label: 'Gym / fitness' },
-  { id: 'sports', label: 'Sports / entertainment apps' },
-  { id: 'gaming', label: 'Gaming / online subs' },
-]
+export function subscriptionPresetsFromDictionary(t: Dictionary): { id: string; label: string }[] {
+  const o = t.onboarding
+  return [
+    { id: 'netflix', label: o.subscriptionNetflix },
+    { id: 'spotify', label: o.subscriptionSpotify },
+    { id: 'icloud', label: o.subscriptionIcloud },
+    { id: 'youtube', label: o.subscriptionYoutube },
+    { id: 'disney', label: o.subscriptionDisney },
+    { id: 'gym', label: o.subscriptionGym },
+    { id: 'sports', label: o.subscriptionSports },
+    { id: 'gaming', label: o.subscriptionGaming },
+  ]
+}
 
-function defaultLines(baseCurrency: Currency): SubscriptionLine[] {
-  return PRESETS.map((p) => ({
+function defaultLines(baseCurrency: Currency, t: Dictionary): SubscriptionLine[] {
+  return subscriptionPresetsFromDictionary(t).map((p) => ({
     id: p.id,
     label: p.label,
     amount: 0,
@@ -40,20 +45,25 @@ function defaultLines(baseCurrency: Currency): SubscriptionLine[] {
 }
 
 /** Build lines from saved answers or defaults (presets + any custom rows). */
-export function subscriptionLinesFromSaved(raw: unknown, baseCurrency: Currency): SubscriptionLine[] {
+export function subscriptionLinesFromSaved(
+  raw: unknown,
+  baseCurrency: Currency,
+  t: Dictionary
+): SubscriptionLine[] {
+  const presets = subscriptionPresetsFromDictionary(t)
   let initial: SubscriptionLine[] | undefined
   if (raw && typeof raw === 'object' && 'lines' in raw && Array.isArray((raw as { lines: unknown }).lines)) {
     initial = (raw as { lines: SubscriptionLine[] }).lines
   }
-  if (!initial?.length) return defaultLines(baseCurrency)
+  if (!initial?.length) return defaultLines(baseCurrency, t)
   const byId = new Map(initial.map((l) => [l.id, l]))
-  const merged = PRESETS.map((p) => {
+  const merged = presets.map((p) => {
     const hit = byId.get(p.id)
     return hit
       ? { ...hit, label: p.label }
       : { id: p.id, label: p.label, amount: 0, currency: baseCurrency, enabled: false }
   })
-  const presetIds = new Set(PRESETS.map((x) => x.id))
+  const presetIds = new Set(presets.map((x) => x.id))
   const customs = initial.filter((l) => !presetIds.has(l.id))
   return [...merged, ...customs]
 }
@@ -67,6 +77,10 @@ export function SubscriptionsOnboardingPanel({
   baseCurrency: Currency
   onChange: (p: SubscriptionsOnboardingPayload) => void
 }) {
+  const t = useT()
+  const o = t.onboarding
+  const presets = useMemo(() => subscriptionPresetsFromDictionary(t), [t])
+
   const emit = (next: SubscriptionLine[]) => {
     onChange({ lines: next })
   }
@@ -84,7 +98,7 @@ export function SubscriptionsOnboardingPanel({
     ])
   }
 
-  const updatePreset = (id: string, patch: Partial<SubscriptionLine>) => {
+  const updateLine = (id: string, patch: Partial<SubscriptionLine>) => {
     emit(lines.map((l) => (l.id === id ? { ...l, ...patch } : l)))
   }
 
@@ -100,15 +114,15 @@ export function SubscriptionsOnboardingPanel({
     [lines]
   )
 
+  const presetIdSet = useMemo(() => new Set(presets.map((p) => p.id)), [presets])
+
   return (
-    <div className="space-y-4 text-left w-full max-w-lg">
-      <p className="text-[11px] text-[var(--color-brand-text-muted)]">
-        Toggle the services you pay for and set a monthly amount. You can add your own at the bottom.
-      </p>
+    <div className="space-y-4 text-start w-full max-w-lg">
+      <p className="text-[11px] text-[var(--color-brand-text-muted)]">{o.subscriptionIntro}</p>
 
       <div className="grid gap-3">
         {lines
-          .filter((l) => PRESETS.some((p) => p.id === l.id))
+          .filter((l) => presetIdSet.has(l.id))
           .map((line) => (
             <div
               key={line.id}
@@ -118,29 +132,33 @@ export function SubscriptionsOnboardingPanel({
                 <input
                   type="checkbox"
                   checked={line.enabled}
-                  onChange={(e) => updatePreset(line.id, { enabled: e.target.checked })}
+                  onChange={(e) => updateLine(line.id, { enabled: e.target.checked })}
                   className="rounded border-[var(--color-brand-border)]"
                 />
                 <span>{line.label}</span>
               </label>
               {line.enabled ? (
-                <div className="grid grid-cols-2 gap-2 pl-6">
+                <div className="grid grid-cols-2 gap-2 ps-6">
                   <div>
-                    <Label className="text-[10px] text-[var(--color-brand-text-muted)]">Monthly cost</Label>
+                    <Label className="text-[10px] text-[var(--color-brand-text-muted)]">
+                      {o.subscriptionMonthlyCost}
+                    </Label>
                     <Input
                       type="number"
                       step="0.01"
                       min={0}
                       value={line.amount || ''}
-                      onChange={(e) => updatePreset(line.id, { amount: parseFloat(e.target.value) || 0 })}
+                      onChange={(e) => updateLine(line.id, { amount: parseFloat(e.target.value) || 0 })}
                       className="mt-0.5 h-9 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers text-sm"
                     />
                   </div>
                   <div>
-                    <Label className="text-[10px] text-[var(--color-brand-text-muted)]">Currency</Label>
+                    <Label className="text-[10px] text-[var(--color-brand-text-muted)]">
+                      {o.subscriptionCurrency}
+                    </Label>
                     <FiatCurrencySelect
                       value={line.currency}
-                      onChange={(c) => updatePreset(line.id, { currency: c })}
+                      onChange={(c) => updateLine(line.id, { currency: c })}
                       className="mt-0.5 w-full h-9 px-2 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
                     />
                   </div>
@@ -151,7 +169,7 @@ export function SubscriptionsOnboardingPanel({
       </div>
 
       {lines
-        .filter((l) => !PRESETS.some((p) => p.id === l.id))
+        .filter((l) => !presetIdSet.has(l.id))
         .map((line) => (
           <div
             key={line.id}
@@ -159,9 +177,9 @@ export function SubscriptionsOnboardingPanel({
           >
             <div className="flex items-center justify-between gap-2">
               <Input
-                placeholder="What do you subscribe to?"
+                placeholder={o.subscriptionCustomPlaceholder}
                 value={line.label}
-                onChange={(e) => updatePreset(line.id, { label: e.target.value.trimStart() })}
+                onChange={(e) => updateLine(line.id, { label: e.target.value.trimStart() })}
                 className="flex-1 h-9 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white text-sm"
               />
               <button
@@ -169,21 +187,21 @@ export function SubscriptionsOnboardingPanel({
                 onClick={() => removeCustom(line.id)}
                 className="text-xs text-[var(--color-brand-text-muted)] shrink-0"
               >
-                Remove
+                {t.common.remove}
               </button>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <Input
                 type="number"
                 step="0.01"
-                placeholder="Amount"
+                placeholder={o.subscriptionAmountPlaceholder}
                 value={line.amount || ''}
-                onChange={(e) => updatePreset(line.id, { amount: parseFloat(e.target.value) || 0 })}
+                onChange={(e) => updateLine(line.id, { amount: parseFloat(e.target.value) || 0 })}
                 className="h-9 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers text-sm"
               />
               <FiatCurrencySelect
                 value={line.currency}
-                onChange={(c) => updatePreset(line.id, { currency: c })}
+                onChange={(c) => updateLine(line.id, { currency: c })}
                 className="h-9 px-2 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
               />
             </div>
@@ -195,11 +213,11 @@ export function SubscriptionsOnboardingPanel({
         onClick={addCustom}
         className="text-xs text-[var(--color-brand-red)] hover:underline"
       >
-        + Add another subscription
+        {o.subscriptionAddAnother}
       </button>
 
       <p className="text-[10px] text-[var(--color-brand-text-muted)]">
-        Your estimated total so far: {enabledTotal.toFixed(2)} (sum of entered amounts)
+        {o.subscriptionTotal(enabledTotal.toFixed(2))}
       </p>
     </div>
   )

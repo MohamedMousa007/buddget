@@ -5,6 +5,8 @@ import { AuthModeToggle } from '@/components/features/auth-modal/AuthModeToggle'
 import { AuthCredentialFields } from '@/components/features/auth-modal/AuthCredentialFields'
 import { AuthFormErrorAlert } from '@/components/features/auth-modal/AuthFormErrorAlert'
 import { AuthPrimaryButton } from '@/components/features/auth-modal/AuthPrimaryButton'
+import { useT } from '@/lib/i18n'
+import { LanguageToggle } from '@/components/ui/LanguageToggle'
 import type { AuthFormMode } from '@/hooks/useAuthModal'
 
 export interface AuthSignInUpStepProps {
@@ -49,6 +51,7 @@ export function AuthSignInUpStep({
   resendCode,
   switchToSignIn,
 }: AuthSignInUpStepProps) {
+  const t = useT()
   const submit = () => void (formMode === 'signin' ? signIn() : signUp())
 
   return (
@@ -88,12 +91,12 @@ export function AuthSignInUpStep({
         {loading ? (
           <>
             <Loader2 className="w-5 h-5 animate-spin" />
-            <span>{formMode === 'signin' ? 'Signing you in...' : 'Setting up your account...'}</span>
+            <span>{formMode === 'signin' ? t.auth.loadingSignIn : t.auth.loadingSignUp}</span>
           </>
         ) : formMode === 'signin' ? (
-          'Sign me in'
+          t.auth.submitSignIn
         ) : (
-          'Create my account'
+          t.auth.submitSignUp
         )}
       </AuthPrimaryButton>
 
@@ -107,7 +110,7 @@ export function AuthSignInUpStep({
               setError('')
             }}
           >
-            New here? Create a free account →
+            {t.auth.footerNewHere}
           </button>
         ) : (
           <button
@@ -118,10 +121,14 @@ export function AuthSignInUpStep({
               setError('')
             }}
           >
-            Already have an account? Sign in →
+            {t.auth.footerAlreadyHave}
           </button>
         )}
       </p>
+
+      <div className="flex justify-center pt-2">
+        <LanguageToggle size="sm" />
+      </div>
     </div>
   )
 }

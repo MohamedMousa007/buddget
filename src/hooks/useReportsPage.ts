@@ -19,12 +19,14 @@ import {
   sumRecurringIncomeOverDateRange,
   getPaymentMethodBreakdown,
 } from '@/lib/utils/calculations'
+import { useT } from '@/lib/i18n'
 import type { DateRange } from '@/components/reports/ReportFilters'
 
 /**
  * Date range filtering, aggregates, and export actions for the reports screen.
  */
 export function useReportsPage() {
+  const t = useT()
   const { expenses, incomeSources, paymentMethods, settings, exchangeRates } = useFinanceStore(
     useShallow((s) => ({
       expenses: s.expenses,
@@ -126,13 +128,13 @@ export function useReportsPage() {
     methodBreakdown.length > 0 ? methodBreakdown.reduce((max, m) => (m.count > max.count ? m : max)) : null
 
   const handleCopySummary = useCallback(() => {
-    const summary = `Period: ${format(startDate, 'd MMM')} – ${format(endDate, 'd MMM yyyy')}
-Total money in: ${formatCurrency(periodRecurringIncome, settings.baseCurrency)}
-Money sent home: ${formatCurrency(remittances, settings.baseCurrency)}
-Total money out: ${formatCurrency(totalExpenses, settings.baseCurrency)}
-Net saved: ${formatCurrency(periodRecurringIncome - totalExpenses, settings.baseCurrency)}
-${largestExpense ? `Biggest purchase: ${largestExpense.description} (${formatCurrency(largestExpense.amountInBaseCurrency, settings.baseCurrency)})` : ''}
-${mostUsedMethod ? `Go-to payment: ${mostUsedMethod.name} (${mostUsedMethod.count} times)` : ''}`
+    const summary = `${t.reports.summaryHeading(format(startDate, 'd MMM'), format(endDate, 'd MMM yyyy'))}
+${t.reports.kpiTotalIn}: ${formatCurrency(periodRecurringIncome, settings.baseCurrency)}
+${t.reports.kpiSentHome}: ${formatCurrency(remittances, settings.baseCurrency)}
+${t.reports.kpiTotalOut}: ${formatCurrency(totalExpenses, settings.baseCurrency)}
+${t.reports.kpiNetSaved}: ${formatCurrency(periodRecurringIncome - totalExpenses, settings.baseCurrency)}
+${largestExpense ? `${t.reports.kpiBiggestPurchase}: ${largestExpense.description} (${formatCurrency(largestExpense.amountInBaseCurrency, settings.baseCurrency)})` : ''}
+${mostUsedMethod ? `${t.reports.kpiGoToPayment}: ${mostUsedMethod.name} ${t.reports.timesUsed(mostUsedMethod.count)}` : ''}`
     void navigator.clipboard.writeText(summary)
   }, [
     endDate,
@@ -142,6 +144,7 @@ ${mostUsedMethod ? `Go-to payment: ${mostUsedMethod.name} (${mostUsedMethod.coun
     remittances,
     settings.baseCurrency,
     startDate,
+    t,
     totalExpenses,
   ])
 

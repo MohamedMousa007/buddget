@@ -11,6 +11,7 @@ import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useEditDebtForm } from '@/hooks/useEditDebtForm'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
+import { useT } from '@/lib/i18n'
 
 export function EditDebtForm({
   debt,
@@ -24,14 +25,15 @@ export function EditDebtForm({
   useEscapeClose(isOpen, onClose)
   const f = useEditDebtForm(debt, isOpen)
   const settings = useFinanceStore((s) => s.settings)
+  const t = useT()
 
   return (
     <div className="p-6">
-      <ModalSheetHeader title="Edit balance" onClose={onClose} />
+      <ModalSheetHeader title={`${t.common.edit} balance`} onClose={onClose} />
 
       <div className="space-y-4">
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Balance name</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelName}</Label>
           <Input
             value={f.name}
             onChange={(e) => f.setName(e.target.value)}
@@ -40,7 +42,7 @@ export function EditDebtForm({
         </div>
 
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Who is this with?</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelPerson}</Label>
           <Input
             value={f.person}
             onChange={(e) => f.setPerson(e.target.value)}
@@ -49,9 +51,9 @@ export function EditDebtForm({
         </div>
 
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Description (optional)</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelDescription}</Label>
           <Input
-            placeholder="e.g. Gold jewelry, Wedding loan..."
+            placeholder={t.addDebt.placeholderDescription}
             value={f.description}
             onChange={(e) => f.setDescription(e.target.value)}
             className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
@@ -59,7 +61,7 @@ export function EditDebtForm({
         </div>
 
         <div className="flex items-center justify-between">
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Tracked in gold grams?</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelGold}</Label>
           <Switch
             checked={f.isGold}
             onCheckedChange={(val) => {
@@ -72,7 +74,7 @@ export function EditDebtForm({
 
         {!f.isGold && (
           <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">In which currency?</Label>
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelCurrency}</Label>
             <DebtFiatCurrencySelect
               value={f.currency}
               onChange={f.setCurrency}
@@ -83,22 +85,22 @@ export function EditDebtForm({
 
         {f.isGold && (
           <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">Gold purity</Label>
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelGoldPurity}</Label>
             <select
               value={f.goldKarat}
               onChange={(e) => f.setGoldKarat(parseInt(e.target.value, 10) as GoldKarat)}
               className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
             >
-              <option value="24">24K (99.9%)</option>
-              <option value="22">22K (91.7%)</option>
-              <option value="21">21K (87.5%)</option>
-              <option value="18">18K (75%)</option>
+              <option value="24">{t.goldPurity.k24}</option>
+              <option value="22">{t.goldPurity.k22}</option>
+              <option value="21">{t.goldPurity.k21}</option>
+              <option value="18">{t.goldPurity.k18}</option>
             </select>
           </div>
         )}
 
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Any notes?</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelNotes}</Label>
           <Textarea
             value={f.notes}
             onChange={(e) => f.setNotes(e.target.value)}
@@ -124,7 +126,7 @@ export function EditDebtForm({
             onClick={onClose}
             className="flex-1 py-3 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
           >
-            Cancel
+            {t.common.cancel}
           </button>
           <button
             type="button"
@@ -132,7 +134,7 @@ export function EditDebtForm({
             disabled={!f.name || !f.person}
             className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50"
           >
-            Save Changes
+            {t.common.save}
           </button>
         </div>
       </div>

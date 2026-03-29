@@ -1,12 +1,13 @@
 'use client'
 
 import { Pencil, Trash2 } from 'lucide-react'
-import { formatDateShort } from '@/lib/utils/formatters'
+import { useLocalizedFormatters } from '@/hooks/useLocalizedFormatters'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { MoneyDisplay } from '@/components/ui/MoneyDisplay'
 import type { Expense } from '@/lib/store/types'
+import { useT } from '@/lib/i18n'
 
 const CATEGORY_ICONS: Record<string, string> = {
   Rent: '🏠',
@@ -25,6 +26,8 @@ interface ExpenseRowProps {
 }
 
 export function ExpenseRow({ expense, isMobile = false }: ExpenseRowProps) {
+  const t = useT()
+  const { formatDateShort } = useLocalizedFormatters()
   const { deleteExpense, paymentMethods } = useFinanceStore(
     useShallow((s) => ({ deleteExpense: s.deleteExpense, paymentMethods: s.paymentMethods }))
   )
@@ -35,7 +38,7 @@ export function ExpenseRow({ expense, isMobile = false }: ExpenseRowProps) {
     setActiveModal('editExpense')
   }
   const handleDelete = () => {
-    if (window.confirm('Remove this transaction? This will be gone for good.')) {
+    if (window.confirm(t.expenses.confirmDelete)) {
       deleteExpense(expense.id)
     }
   }
@@ -63,10 +66,10 @@ export function ExpenseRow({ expense, isMobile = false }: ExpenseRowProps) {
                 style={{ backgroundColor: method.color || '#fff' }}
               />
             )}
-            {method?.name || 'Unknown'}
+            {method?.name || t.common.unknown}
           </span>
         </td>
-        <td className="py-3 px-4 text-sm text-right">
+        <td className="py-3 px-4 text-sm text-end">
           <MoneyDisplay
             amount={expense.amount}
             currency={expense.currency}
@@ -75,7 +78,7 @@ export function ExpenseRow({ expense, isMobile = false }: ExpenseRowProps) {
             primaryClassName="text-white"
           />
         </td>
-        <td className="py-3 px-4 text-right">
+        <td className="py-3 px-4 text-end">
           <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={handleEdit}
@@ -101,10 +104,10 @@ export function ExpenseRow({ expense, isMobile = false }: ExpenseRowProps) {
       <div className="flex-1 min-w-0">
         <p className="text-sm text-white truncate">{expense.description}</p>
         <p className="text-xs text-[var(--color-brand-text-muted)]">
-          {formatDateShort(expense.date)} · {expense.category} · {method?.name || 'Unknown'}
+          {formatDateShort(expense.date)} · {expense.category} · {method?.name || t.common.unknown}
         </p>
       </div>
-      <div className="text-right">
+      <div className="text-end">
         <MoneyDisplay
           amount={expense.amount}
           currency={expense.currency}
@@ -116,14 +119,14 @@ export function ExpenseRow({ expense, isMobile = false }: ExpenseRowProps) {
       <button
         onClick={handleEdit}
         className="p-1.5 rounded-lg hover:bg-[var(--color-brand-border)] transition-colors"
-        aria-label="Edit purchase"
+        aria-label={t.expenses.editPurchase}
       >
         <Pencil className="w-4 h-4 text-[var(--color-brand-text-muted)]" />
       </button>
       <button
         onClick={handleDelete}
         className="p-1.5 rounded-lg hover:bg-red-900/30 transition-colors"
-        aria-label="Remove purchase"
+        aria-label={t.expenses.removePurchase}
       >
         <Trash2 className="w-4 h-4 text-[var(--color-brand-text-muted)]" />
       </button>

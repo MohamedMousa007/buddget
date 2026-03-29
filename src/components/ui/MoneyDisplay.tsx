@@ -52,7 +52,7 @@ export function MoneyDisplay({
           {formatCurrency(primaryAmount, base)}
         </span>
         {secondaryAmount != null && secondary && (
-          <span className={`text-xs text-[var(--color-brand-text-muted)] ml-1.5 ${secondaryClassName}`}>
+          <span className={`text-xs text-[var(--color-brand-text-muted)] ms-1.5 ${secondaryClassName}`}>
             ({formatCurrency(secondaryAmount, secondary)})
           </span>
         )}

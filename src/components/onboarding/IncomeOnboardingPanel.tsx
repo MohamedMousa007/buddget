@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useT } from '@/lib/i18n'
+import type { Dictionary } from '@/lib/i18n/types'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -10,14 +12,24 @@ import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import type { Currency, IncomeRecurringFrequency, IncomeSource } from '@/lib/store/types'
 
-const RECURRING_FREQ: { value: IncomeRecurringFrequency; label: string; amountHint: string }[] = [
-  { value: 'monthly', label: 'Monthly', amountHint: 'This is your monthly amount.' },
-  { value: 'biweekly', label: 'Bi-weekly', amountHint: "Per paycheck — that's 26 times a year." },
-  { value: 'weekly', label: 'Weekly', amountHint: 'This is your weekly amount.' },
-]
-
 export type IncomeOnboardingPayload = {
   entries: Omit<IncomeSource, 'id' | 'createdAt'>[]
+}
+
+function recurringOptions(t: Dictionary) {
+  const o = t.onboarding
+  return [
+    { value: 'monthly' as const, label: o.freqMonthly, amountHint: o.freqMonthlyHint },
+    { value: 'biweekly' as const, label: o.freqBiweekly, amountHint: o.freqBiweeklyHint },
+    { value: 'weekly' as const, label: o.freqWeekly, amountHint: o.freqWeeklyHint },
+  ]
+}
+
+function recurringLabelForEntry(t: Dictionary, f: IncomeRecurringFrequency | undefined): string {
+  const o = t.onboarding
+  if (f === 'biweekly') return o.freqBiweekly
+  if (f === 'weekly') return o.freqWeekly
+  return o.freqMonthly
 }
 
 /** Same fields as Add Income in the app — list + add, or skip with none. */
@@ -28,6 +40,9 @@ export function IncomeOnboardingPanel({
   entries: Omit<IncomeSource, 'id' | 'createdAt'>[]
   onChange: (p: IncomeOnboardingPayload) => void
 }) {
+  const t = useT()
+  const o = t.onboarding
+  const freqOpts = useMemo(() => recurringOptions(t), [t])
   const settings = useFinanceStore((s) => s.settings)
 
   const [name, setName] = useState('')
@@ -68,10 +83,8 @@ export function IncomeOnboardingPanel({
   }
 
   return (
-    <div className="space-y-4 text-left w-full max-w-lg">
-      <p className="text-[11px] text-[var(--color-brand-text-muted)]">
-        Add your income sources below — or skip this and come back to it anytime.
-      </p>
+    <div className="space-y-4 text-start w-full max-w-lg">
+      <p className="text-[11px] text-[var(--color-brand-text-muted)]">{o.incomeIntro}</p>
 
       {entries.length > 0 ? (
         <ul className="rounded-xl border border-[var(--color-brand-border)] divide-y divide-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/40 text-sm">
@@ -79,10 +92,10 @@ export function IncomeOnboardingPanel({
             <li key={i} className="flex items-center justify-between gap-2 px-3 py-2">
               <span className="text-white truncate">
                 {e.name} · {e.amount} {e.currency}
-                {e.isRecurring ? ` · ${e.recurringFrequency ?? 'monthly'}` : ''}
+                {e.isRecurring ? ` · ${recurringLabelForEntry(t, e.recurringFrequency)}` : ''}
               </span>
               <button type="button" onClick={() => removeAt(i)} className="text-xs text-[var(--color-brand-red)] shrink-0">
-                Remove
+                {o.incomeRemove}
               </button>
             </li>
           ))}
@@ -91,9 +104,9 @@ export function IncomeOnboardingPanel({
 
       <div className="space-y-4 rounded-xl border border-[var(--color-brand-border)] p-4 bg-[var(--color-brand-elevated)]/30">
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Source name</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{o.incomeSourceName}</Label>
           <Input
-            placeholder="e.g. Salary, Freelance, Side gig"
+            placeholder={o.incomeSourcePlaceholder}
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
@@ -101,18 +114,18 @@ export function IncomeOnboardingPanel({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">Amount</Label>
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{o.incomeAmountLabel}</Label>
             <Input
               type="number"
               step="0.01"
-              placeholder="0.00"
+              placeholder={o.incomeAmountPlaceholder}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers"
             />
           </div>
           <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">Currency</Label>
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{o.incomeCurrency}</Label>
             <FiatCurrencySelect
               value={currency}
               onChange={setCurrency}
@@ -121,31 +134,31 @@ export function IncomeOnboardingPanel({
           </div>
         </div>
         <div className="flex items-center justify-between">
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Is this recurring?</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{o.incomeIsRecurring}</Label>
           <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
         </div>
         {isRecurring && (
           <>
             <div>
-              <Label className="text-xs text-[var(--color-brand-text-secondary)]">How often do you get paid?</Label>
+              <Label className="text-xs text-[var(--color-brand-text-secondary)]">{o.incomePayFrequency}</Label>
               <select
                 value={recurringFrequency}
                 onChange={(e) => setRecurringFrequency(e.target.value as IncomeRecurringFrequency)}
                 className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
               >
-                {RECURRING_FREQ.map((f) => (
+                {freqOpts.map((f) => (
                   <option key={f.value} value={f.value}>
                     {f.label}
                   </option>
                 ))}
               </select>
               <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-1">
-                {RECURRING_FREQ.find((f) => f.value === recurringFrequency)?.amountHint}
+                {freqOpts.find((f) => f.value === recurringFrequency)?.amountHint}
               </p>
             </div>
             {recurringFrequency === 'monthly' && (
               <div>
-                <Label className="text-xs text-[var(--color-brand-text-secondary)]">Which day of the month?</Label>
+                <Label className="text-xs text-[var(--color-brand-text-secondary)]">{o.incomeDayOfMonth}</Label>
                 <Input
                   type="number"
                   min={1}
@@ -159,7 +172,7 @@ export function IncomeOnboardingPanel({
           </>
         )}
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Any notes? (optional)</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{o.incomeNotes}</Label>
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -172,7 +185,7 @@ export function IncomeOnboardingPanel({
           disabled={!name.trim() || !amount || parseFloat(amount) <= 0}
           className="w-full py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-white hover:bg-[var(--color-brand-elevated)] disabled:opacity-40"
         >
-          Add this income source
+          {o.incomeAddButton}
         </button>
       </div>
     </div>

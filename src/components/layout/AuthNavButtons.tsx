@@ -9,12 +9,14 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 import { cn } from '@/lib/utils'
+import { useT } from '@/lib/i18n'
 import { ProfileDropdown } from '@/components/layout/ProfileDropdown'
 
 const btnClass =
   'inline-flex items-center justify-center px-2 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors border border-[var(--color-brand-border)] text-white hover:bg-[var(--color-brand-elevated)] sm:px-3'
 
 function ProfileAvatarWithMenu({ className }: { className?: string }) {
+  const t = useT()
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const profile = useFinanceStore(useShallow((s) => s.profile))
@@ -29,7 +31,7 @@ function ProfileAvatarWithMenu({ className }: { className?: string }) {
           'rounded-full overflow-hidden border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] flex items-center justify-center shrink-0 w-9 h-9 hover:ring-2 hover:ring-[var(--color-brand-red)]/40 transition-all cursor-pointer',
           className
         )}
-        aria-label="Profile menu"
+        aria-label={t.nav.profileMenu}
         aria-expanded={open}
         aria-haspopup="true"
       >
@@ -59,6 +61,7 @@ export function AuthNavButtons({
   layout?: AuthNavLayout
 }) {
   const pathname = usePathname()
+  const t = useT()
   const { user, loading, openAuthModal } = useAuth()
 
   const configured = useMemo(() => {
@@ -106,14 +109,14 @@ export function AuthNavButtons({
       {!user ? (
         <>
           <button type="button" onClick={() => openAuthModal(nextPath)} className={btnClass}>
-            Sign in
+            {t.common.signIn}
           </button>
           <button
             type="button"
             onClick={() => openAuthModal(nextPath)}
             className="inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white transition-colors sm:px-3"
           >
-            Sign up
+            {t.common.signUp}
           </button>
         </>
       ) : null}

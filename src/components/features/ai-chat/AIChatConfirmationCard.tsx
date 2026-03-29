@@ -4,6 +4,7 @@ import { Check, Pencil } from 'lucide-react'
 import { looksLikeMultipleIntents } from '@/lib/ai/aiActionHandlers'
 import { AIChatActionPreview } from '@/components/features/ai-chat/AIChatActionPreview'
 import type { AIChatMessage } from '@/hooks/useAIChat'
+import { useT } from '@/lib/i18n'
 import type { Currency } from '@/lib/store/types'
 
 export interface AIChatConfirmationCardProps {
@@ -24,6 +25,7 @@ export function AIChatConfirmationCard({
   onConfirm,
   onEdit,
 }: AIChatConfirmationCardProps) {
+  const t = useT()
   if (!message.aiResponse || message.confirmed) return null
 
   const toShow = message.aiResponse.actions.filter(
@@ -38,7 +40,7 @@ export function AIChatConfirmationCard({
     <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
       {multiIntentHint ? (
         <p className="text-[11px] text-amber-200/90 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2 py-1.5">
-          Looks like you mentioned a few things at once. If anything is missing after saving, try sending one item per message or adjust and confirm again.
+          {t.ai.multiIntentHint}
         </p>
       ) : null}
       {toShow.map((item, idx) => {
@@ -60,7 +62,7 @@ export function AIChatConfirmationCard({
           className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--color-brand-green)] text-white text-xs font-medium"
         >
           <Check className="w-3 h-3" />
-          Looks good, add it ✓
+          {t.ai.confirmAdd}
         </button>
         <button
           type="button"
@@ -68,7 +70,7 @@ export function AIChatConfirmationCard({
           className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-white text-xs font-medium border border-white/10"
         >
           <Pencil className="w-3 h-3" />
-          Let me adjust
+          {t.ai.confirmEdit}
         </button>
       </div>
     </div>

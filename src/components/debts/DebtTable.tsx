@@ -1,11 +1,13 @@
 'use client'
 
 import { Trash2 } from 'lucide-react'
-import { formatCurrency, formatDateShort } from '@/lib/utils/formatters'
+import { formatCurrency } from '@/lib/utils/formatters'
+import { useLocalizedFormatters } from '@/hooks/useLocalizedFormatters'
 import { goldGramsToMoney } from '@/lib/utils/calculations'
 import { convertCurrency } from '@/lib/utils/currency'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Debt, DebtPayment } from '@/lib/store/types'
+import { useT } from '@/lib/i18n'
 
 interface DebtTableProps {
   debt: Debt
@@ -13,6 +15,8 @@ interface DebtTableProps {
 }
 
 export function DebtTable({ debt, payments }: DebtTableProps) {
+  const t = useT()
+  const { formatDateShort } = useLocalizedFormatters()
   const { deleteDebtPayment, settings, goldPricePerGram, exchangeRates } = useFinanceStore()
   const base = settings.baseCurrency
 
@@ -31,7 +35,7 @@ export function DebtTable({ debt, payments }: DebtTableProps) {
   if (paymentsWithBalance.length === 0) {
     return (
       <p className="text-sm text-[var(--color-brand-text-muted)] text-center py-4">
-        No payments logged yet
+        {t.debts.emptyPayments}
       </p>
     )
   }
@@ -46,10 +50,10 @@ export function DebtTable({ debt, payments }: DebtTableProps) {
       <table className="w-full">
         <thead>
           <tr className="border-b border-[var(--color-brand-border)]">
-            <th className="py-2 px-3 text-left text-xs font-medium text-[var(--color-brand-text-muted)] uppercase">Date</th>
-            <th className="py-2 px-3 text-right text-xs font-medium text-[var(--color-brand-text-muted)] uppercase">Paid</th>
-            <th className="py-2 px-3 text-right text-xs font-medium text-[var(--color-brand-text-muted)] uppercase">Still to go</th>
-            <th className="py-2 px-3 text-left text-xs font-medium text-[var(--color-brand-text-muted)] uppercase">Notes</th>
+            <th className="py-2 px-3 text-start text-xs font-medium text-[var(--color-brand-text-muted)] uppercase">{t.debts.colDate}</th>
+            <th className="py-2 px-3 text-end text-xs font-medium text-[var(--color-brand-text-muted)] uppercase">{t.debts.colPaid}</th>
+            <th className="py-2 px-3 text-end text-xs font-medium text-[var(--color-brand-text-muted)] uppercase">{t.debts.colStillToGo}</th>
+            <th className="py-2 px-3 text-start text-xs font-medium text-[var(--color-brand-text-muted)] uppercase">{t.debts.colNotes}</th>
             <th className="py-2 px-3 w-10"></th>
           </tr>
         </thead>
@@ -63,7 +67,7 @@ export function DebtTable({ debt, payments }: DebtTableProps) {
                 <td className="py-2.5 px-3 text-sm font-mono-numbers text-[var(--color-brand-text-secondary)]">
                   {formatDateShort(payment.date)}
                 </td>
-                <td className="py-2.5 px-3 text-right">
+                <td className="py-2.5 px-3 text-end">
                   {hasOriginal ? (
                     <>
                       <span className="text-sm font-mono-numbers text-[var(--color-brand-green)]">
@@ -79,7 +83,7 @@ export function DebtTable({ debt, payments }: DebtTableProps) {
                     </span>
                   )}
                 </td>
-                <td className="py-2.5 px-3 text-sm font-mono-numbers text-white text-right">
+                <td className="py-2.5 px-3 text-sm font-mono-numbers text-white text-end">
                   {formatCurrency(toBase(Math.max(0, payment.remainingAfter)), base)}
                 </td>
                 <td className="py-2.5 px-3 text-sm text-[var(--color-brand-text-muted)] max-w-[200px] truncate">
@@ -88,7 +92,7 @@ export function DebtTable({ debt, payments }: DebtTableProps) {
                 <td className="py-2.5 px-3">
                   <button
                     onClick={() => {
-                      if (window.confirm('Delete this payment? This can\u2019t be undone.')) {
+                      if (window.confirm(t.debts.confirmDeletePayment)) {
                         deleteDebtPayment(payment.id)
                       }
                     }}

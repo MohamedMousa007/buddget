@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from 'next'
-import { DM_Sans, JetBrains_Mono } from 'next/font/google'
+import { DM_Sans, JetBrains_Mono, IBM_Plex_Sans_Arabic } from 'next/font/google'
 import './globals.css'
 import { AppShell } from '@/components/layout/AppShell'
 import { AuthProvider } from '@/components/auth/AuthProvider'
+import { LocaleProvider } from '@/lib/i18n'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { UpdateToast } from '@/components/ui/UpdateToast'
 
@@ -22,6 +23,12 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   variable: '--font-mono',
   weight: ['400', '500', '600'],
+})
+
+const ibmPlexArabic = IBM_Plex_Sans_Arabic({
+  subsets: ['arabic'],
+  variable: '--font-sans-ar',
+  weight: ['300', '400', '500', '600', '700'],
 })
 
 export const metadata: Metadata = {
@@ -112,7 +119,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" dir="ltr" className="dark" suppressHydrationWarning>
       <head>
         <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
         <link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192" />
@@ -126,12 +133,14 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Buddget" />
       </head>
       <body
-        className={`${dmSans.variable} ${dmSansHeading.variable} ${jetbrainsMono.variable} font-sans antialiased`}
+        className={`${dmSans.variable} ${dmSansHeading.variable} ${jetbrainsMono.variable} ${ibmPlexArabic.variable} font-sans antialiased`}
       >
         <TooltipProvider>
           <AuthProvider>
-            <AppShell>{children}</AppShell>
-            <UpdateToast />
+            <LocaleProvider>
+              <AppShell>{children}</AppShell>
+              <UpdateToast />
+            </LocaleProvider>
           </AuthProvider>
         </TooltipProvider>
       </body>

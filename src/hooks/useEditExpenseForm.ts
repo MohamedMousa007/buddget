@@ -4,10 +4,12 @@ import { useState, useCallback } from 'react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
+import { useT } from '@/lib/i18n'
 import type { Expense, ExpenseCategory, Currency } from '@/lib/store/types'
 
 export function useEditExpenseForm(expense: Expense, onClose: () => void) {
   const { updateExpense, paymentMethods, settings, exchangeRates } = useFinanceStore()
+  const t = useT()
 
   const [date, setDate] = useState(expense.date)
   const [description, setDescription] = useState(expense.description)
@@ -27,7 +29,7 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
     const amountInBase = tryConvertCurrency(parsedAmount, cur, settings.baseCurrency, exchangeRates)
     if (amountInBase === null) {
       setSubmitError(
-        `We don't have a rate for ${cur} → ${settings.baseCurrency} yet. Head to Settings to update rates, or try a different currency.`
+        `${t.common.tryAgain} — ${cur} → ${settings.baseCurrency}`
       )
       return
     }
@@ -59,6 +61,7 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
     onClose,
     paymentMethodId,
     settings,
+    t.common.tryAgain,
     updateExpense,
   ])
 

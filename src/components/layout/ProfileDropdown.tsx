@@ -15,6 +15,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 import { cn } from '@/lib/utils'
+import { useT } from '@/lib/i18n'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 
 interface ProfileDropdownProps {
@@ -30,6 +31,7 @@ const itemClass =
 export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdownProps) {
   const router = useRouter()
   const pathname = usePathname()
+  const t = useT()
   const { user, signOut, openAuthModal } = useAuth()
   const profile = useFinanceStore(useShallow((s) => s.profile))
   const prevPathname = useRef(pathname)
@@ -72,7 +74,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
   if (!open) return null
 
   const avatarSrc = resolveProfileAvatarSrc(profile)
-  const displayName = profile.name || 'User'
+  const displayName = profile.name || t.common.user
   const displayEmail = user?.email || profile.email || ''
 
   const navigate = (href: string) => {
@@ -90,7 +92,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
   if (isGuest) {
     return (
       <div
-        className="absolute top-full right-0 mt-2 z-50 w-56 bg-[#111118] border border-[#2A2A38] rounded-2xl shadow-2xl overflow-hidden"
+        className="absolute top-full end-0 mt-2 z-50 w-56 bg-[#111118] border border-[#2A2A38] rounded-2xl shadow-2xl overflow-hidden"
         role="menu"
       >
         <button
@@ -103,7 +105,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
           role="menuitem"
         >
           <LogIn className="w-4 h-4" />
-          Sign in
+          {t.common.signIn}
         </button>
         <button
           type="button"
@@ -115,7 +117,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
           role="menuitem"
         >
           <UserPlus className="w-4 h-4" />
-          Sign up
+          {t.common.signUp}
         </button>
       </div>
     )
@@ -123,7 +125,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
 
   return (
     <div
-      className="absolute top-full right-0 mt-2 z-50 w-56 bg-[#111118] border border-[#2A2A38] rounded-2xl shadow-2xl overflow-hidden"
+      className="absolute top-full end-0 mt-2 z-50 w-56 bg-[#111118] border border-[#2A2A38] rounded-2xl shadow-2xl overflow-hidden"
       role="menu"
     >
       <div className="flex items-center gap-3 px-4 py-3">
@@ -147,15 +149,15 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
 
       <button type="button" onClick={() => navigate('/profile')} className={itemClass} role="menuitem">
         <User className="w-4 h-4" />
-        Your Profile
+        {t.profileDropdown.yourProfile}
       </button>
       <button type="button" onClick={() => navigate('/settings#budget')} className={itemClass} role="menuitem">
         <SlidersHorizontal className="w-4 h-4" />
-        Budget Setup
+        {t.profileDropdown.budgetSetup}
       </button>
       <button type="button" onClick={() => navigate('/settings')} className={itemClass} role="menuitem">
         <Settings className="w-4 h-4" />
-        Settings
+        {t.profileDropdown.settings}
       </button>
 
       {configured ? (
@@ -168,7 +170,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
             role="menuitem"
           >
             <LogOut className="w-4 h-4" />
-            Sign out
+            {t.common.signOut}
           </button>
         </>
       ) : null}

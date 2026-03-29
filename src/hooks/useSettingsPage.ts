@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { checkAIStatus } from '@/lib/ai/gemini'
+import { useT } from '@/lib/i18n'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 
 export interface SettingsImportBannerState {
@@ -16,6 +17,7 @@ export interface SettingsImportBannerState {
  * Local state, backup/import, and AI status polling for the settings screen.
  */
 export function useSettingsPage() {
+  const t = useT()
   const router = useRouter()
   const { user, signOut, openAuthModal } = useAuth()
   const store = useFinanceStore()
@@ -68,11 +70,11 @@ export function useSettingsPage() {
       if (!text) return
       try {
         store.importData(text)
-        setImportBanner({ variant: 'success', text: 'Your data is all set — import complete!' })
+        setImportBanner({ variant: 'success', text: t.settings.importSuccess })
       } catch (err) {
         setImportBanner({
           variant: 'error',
-          text: err instanceof Error ? err.message : 'Something went wrong with the import. Give it another try.',
+          text: err instanceof Error ? err.message : t.settings.importError,
         })
       }
     }

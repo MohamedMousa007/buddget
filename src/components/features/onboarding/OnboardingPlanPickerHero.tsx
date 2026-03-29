@@ -1,6 +1,7 @@
 'use client'
 
 import { Target } from 'lucide-react'
+import { useT } from '@/lib/i18n'
 import { MoneyDisplay } from '@/components/ui/MoneyDisplay'
 import type { OnboardingAiPlan } from '@/lib/store/types'
 import type { Currency } from '@/lib/store/types'
@@ -19,11 +20,14 @@ export function OnboardingPlanPickerHero({
   monthlyTakeHome: number
   baseCurrency: Currency
 }) {
+  const t = useT()
+  const o = t.onboarding
+
   return (
     <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
       <div className="space-y-2 min-w-0 flex-1">
         <p className="text-[10px] uppercase tracking-wider text-[var(--color-brand-text-muted)]">
-          Plan {idx + 1} / {plansLength}
+          {o.planPickerPlanIndex(idx + 1, plansLength)}
         </p>
         <div className="flex items-start gap-2">
           <span className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--color-brand-red)]/15 text-[var(--color-brand-red)] shrink-0">
@@ -44,7 +48,7 @@ export function OnboardingPlanPickerHero({
 
       <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/50 px-4 py-3 shrink-0 lg:min-w-[220px]">
         <p className="text-[10px] uppercase tracking-wider text-[var(--color-brand-text-muted)] mb-1">
-          Your monthly take-home
+          {o.planPickerMonthlyTakeHome}
         </p>
         <MoneyDisplay
           variant="card"

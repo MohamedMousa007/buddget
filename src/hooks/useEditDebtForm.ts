@@ -3,10 +3,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { clampDebtFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
+import { useT } from '@/lib/i18n'
 import type { Debt, DebtCurrency, GoldKarat } from '@/lib/store/types'
 
 export function useEditDebtForm(debt: Debt | undefined, isOpen: boolean) {
   const { updateDebt, deleteDebt, settings } = useFinanceStore()
+  const t = useT()
 
   const [name, setName] = useState('')
   const [person, setPerson] = useState('')
@@ -52,12 +54,12 @@ export function useEditDebtForm(debt: Debt | undefined, isOpen: boolean) {
   const handleDelete = useCallback(
     (onAfter: () => void) => {
       if (!debt) return
-      if (window.confirm(`Remove "${debt.name}" and all its payments? This can't be reversed.`)) {
+      if (window.confirm(t.common.confirmDeleteGeneric)) {
         deleteDebt(debt.id)
         onAfter()
       }
     },
-    [debt, deleteDebt]
+    [debt, deleteDebt, t]
   )
 
   return {

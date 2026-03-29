@@ -9,6 +9,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { calculateDebtRemaining } from '@/lib/utils/calculations'
+import { useT } from '@/lib/i18n'
 
 const READ_STORAGE_KEY = 'buddget-notifications-read'
 
@@ -40,6 +41,7 @@ function saveReadIds(ids: Set<string>) {
 
 export function useNotifications() {
   const stats = useMonthlyStats()
+  const t = useT()
   const { monthFilter } = useSettingsStore()
   const { debts, debtPayments, budgetCategories } = useFinanceStore(
     useShallow((s) => ({
@@ -64,11 +66,11 @@ export function useNotifications() {
         list.push({
           id: `budget_alert:${cat.category}:${monthFilter}`,
           type: 'budget_alert',
-          title: `Heads up on ${cat.category} 👀`,
+          title: t.notifications.budgetAlertTitle(cat.category),
           body:
             pct >= 100
-              ? `You've used ${Math.round(pct)}% of your ${cat.category} budget. Time to ease up a little!`
-              : `You've used ${Math.round(pct)}% of your ${cat.category} budget. ${100 - Math.round(pct)}% still to go.`,
+              ? t.notifications.budgetAlertBodyOver(pct, cat.category)
+              : t.notifications.budgetAlertBodyUnder(pct, cat.category, 100 - Math.round(pct)),
           severity: pct >= 100 ? 'critical' : 'warning',
           createdAt: now,
         })
@@ -81,8 +83,8 @@ export function useNotifications() {
         list.push({
           id: `debt_reminder:${debt.id}`,
           type: 'debt_reminder',
-          title: `Friendly reminder 📋`,
-          body: `Your scheduled payment toward ${debt.name} is coming up this month.`,
+          title: t.notifications.debtReminderTitle,
+          body: t.notifications.debtReminderBody(debt.name),
           severity: 'info',
           createdAt: now,
         })
@@ -94,12 +96,12 @@ export function useNotifications() {
         id: `month_end:${monthFilter}`,
         type: 'month_end',
         title: stats.daysLeft === 0
-          ? 'Last day to finish strong 💪'
-          : `${stats.daysLeft} day${stats.daysLeft === 1 ? '' : 's'} to finish strong 💪`,
+          ? t.notifications.monthEndTitleLast
+          : t.notifications.monthEndTitleDays(stats.daysLeft),
         body:
           stats.daysLeft === 0
-            ? 'Today wraps up your budget month. Finish on a high note!'
-            : `You've got ${stats.daysLeft} day${stats.daysLeft === 1 ? '' : 's'} left in your budget month. Keep it up!`,
+            ? t.notifications.monthEndBodyLast
+            : t.notifications.monthEndBodyDays(stats.daysLeft),
         severity: stats.daysLeft === 0 ? 'warning' : 'info',
         createdAt: now,
       })
@@ -110,15 +112,15 @@ export function useNotifications() {
       list.push({
         id: `savings_nudge:${monthFilter}`,
         type: 'savings_nudge',
-        title: "Haven't saved yet this month 🌱",
-        body: 'Even a small amount adds up. Log a saving today and keep the momentum going.',
+        title: t.notifications.savingsNudgeTitle,
+        body: t.notifications.savingsNudgeBody,
         severity: 'info',
         createdAt: now,
       })
     }
 
     return list
-  }, [budgetCategories, debts, debtPayments, monthFilter, stats])
+  }, [budgetCategories, debts, debtPayments, monthFilter, stats, t])
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => !readIds.has(n.id)).length,

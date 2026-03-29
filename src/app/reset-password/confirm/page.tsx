@@ -4,11 +4,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Lock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { useT } from '@/lib/i18n'
 
 const MIN = 8
 
 export default function ResetPasswordConfirmPage() {
   const router = useRouter()
+  const t = useT()
   const supabase = useMemo(() => createClient(), [])
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -48,18 +50,18 @@ export default function ResetPasswordConfirmPage() {
   const submit = async () => {
     setError('')
     if (password.length < MIN) {
-      setError(`Password needs to be at least ${MIN} characters.`)
+      setError(t.resetPassword.errorMinLength(MIN))
       return
     }
     if (password !== confirm) {
-      setError('Those passwords don\'t match. Try again.')
+      setError(t.resetPassword.errorMismatch)
       return
     }
     setLoading(true)
     const { error: e } = await supabase.auth.updateUser({ password })
     setLoading(false)
     if (e) {
-      setError('Oops, something went wrong. Let\'s try again.')
+      setError(t.resetPassword.errorUpdateFailed)
       return
     }
     router.replace('/')
@@ -80,32 +82,32 @@ export default function ResetPasswordConfirmPage() {
         className="w-full max-w-md border p-8 rounded-2xl space-y-4"
         style={{ background: '#111118', borderColor: '#2A2A38' }}
       >
-        <h1 className="text-xl font-bold text-white text-center">Choose a new password</h1>
-        <p className="text-sm text-[#5A5A72] text-center">Make it something strong that you&apos;ll remember.</p>
+        <h1 className="text-xl font-bold text-white text-center">{t.resetPassword.title}</h1>
+        <p className="text-sm text-[#5A5A72] text-center">{t.resetPassword.subtitle}</p>
         <div className="space-y-2">
-          <label className="text-xs text-[#5A5A72]">New password</label>
+          <label className="text-xs text-[#5A5A72]">{t.resetPassword.labelNew}</label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A5A72]" />
+            <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A5A72]" />
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="New password"
-              className="w-full h-12 pl-10 pr-3 rounded-[10px] border border-[#2A2A38] bg-[#1A1A24] text-white outline-none focus:border-[#E50914]"
+              placeholder={t.resetPassword.placeholderNew}
+              className="w-full h-12 ps-10 pe-3 rounded-[10px] border border-[#2A2A38] bg-[#1A1A24] text-white outline-none focus:border-[#E50914]"
             />
           </div>
         </div>
         <div className="space-y-2">
-          <label className="text-xs text-[#5A5A72]">Confirm new password</label>
+          <label className="text-xs text-[#5A5A72]">{t.resetPassword.labelConfirm}</label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A5A72]" />
+            <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A5A72]" />
             <input
               type="password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && void submit()}
-              placeholder="Confirm new password"
-              className="w-full h-12 pl-10 pr-3 rounded-[10px] border border-[#2A2A38] bg-[#1A1A24] text-white outline-none focus:border-[#E50914]"
+              placeholder={t.resetPassword.placeholderConfirm}
+              className="w-full h-12 ps-10 pe-3 rounded-[10px] border border-[#2A2A38] bg-[#1A1A24] text-white outline-none focus:border-[#E50914]"
             />
           </div>
         </div>
@@ -117,7 +119,7 @@ export default function ResetPasswordConfirmPage() {
           className="w-full h-12 rounded-xl font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-50"
           style={{ background: '#E50914' }}
         >
-          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Update my password'}
+          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : t.resetPassword.buttonSubmit}
         </button>
       </div>
     </div>

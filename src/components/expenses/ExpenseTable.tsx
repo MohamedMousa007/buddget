@@ -4,6 +4,7 @@ import { ExpenseRow } from './ExpenseRow'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { EmptyState } from '@/components/ui/EmptyState'
 import type { Expense } from '@/lib/store/types'
+import { useT } from '@/lib/i18n'
 
 interface ExpenseTableProps {
   expenses: Expense[]
@@ -13,19 +14,21 @@ interface ExpenseTableProps {
 }
 
 export function ExpenseTable({ expenses, totalAmount, currency, onAddExpense }: ExpenseTableProps) {
+  const t = useT()
+
   if (expenses.length === 0) {
     return (
       <EmptyState
-        icon="💸"
-        title="Nothing logged yet this month."
-        description="Tap + to record your first purchase 👇"
+        icon={t.expenses.emptyIcon}
+        title={t.expenses.emptyTitle}
+        description={t.expenses.emptyDesc}
         action={
           <button
             type="button"
             onClick={onAddExpense}
             className="px-6 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
           >
-            + Add expense
+            {t.expenses.emptyButton}
           </button>
         }
       />
@@ -39,12 +42,12 @@ export function ExpenseTable({ expenses, totalAmount, currency, onAddExpense }: 
         <table className="w-full">
           <thead>
             <tr className="border-b border-[var(--color-brand-border)]">
-              <th className="py-3 px-4 text-left text-xs font-medium text-[var(--color-brand-text-muted)] uppercase tracking-wider">Date</th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-[var(--color-brand-text-muted)] uppercase tracking-wider">What for</th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-[var(--color-brand-text-muted)] uppercase tracking-wider">Category</th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-[var(--color-brand-text-muted)] uppercase tracking-wider">Paid with</th>
-              <th className="py-3 px-4 text-right text-xs font-medium text-[var(--color-brand-text-muted)] uppercase tracking-wider">Amount</th>
-              <th className="py-3 px-4 text-right text-xs font-medium text-[var(--color-brand-text-muted)] uppercase tracking-wider">Action</th>
+              <th className="py-3 px-4 text-start text-xs font-medium text-[var(--color-brand-text-muted)] uppercase tracking-wider">{t.expenses.colDate}</th>
+              <th className="py-3 px-4 text-start text-xs font-medium text-[var(--color-brand-text-muted)] uppercase tracking-wider">{t.expenses.colWhatFor}</th>
+              <th className="py-3 px-4 text-start text-xs font-medium text-[var(--color-brand-text-muted)] uppercase tracking-wider">{t.expenses.colCategory}</th>
+              <th className="py-3 px-4 text-start text-xs font-medium text-[var(--color-brand-text-muted)] uppercase tracking-wider">{t.expenses.colPaidWith}</th>
+              <th className="py-3 px-4 text-end text-xs font-medium text-[var(--color-brand-text-muted)] uppercase tracking-wider">{t.expenses.colAmount}</th>
+              <th className="py-3 px-4 text-end text-xs font-medium text-[var(--color-brand-text-muted)] uppercase tracking-wider">{t.expenses.colAction}</th>
             </tr>
           </thead>
           <tbody>
@@ -65,16 +68,16 @@ export function ExpenseTable({ expenses, totalAmount, currency, onAddExpense }: 
       {/* Totals Footer */}
       <div className="sticky bottom-16 lg:bottom-0 bg-[var(--color-brand-card)]/95 backdrop-blur-xl border-t border-[var(--color-brand-border)] px-4 py-3 flex items-center justify-between">
         <p className="text-sm text-[var(--color-brand-text-secondary)]">
-          Showing {expenses.length} expense{expenses.length !== 1 ? 's' : ''}
+          {t.common.showingExpenses(expenses.length)}
         </p>
         <p className="text-sm font-semibold font-mono-numbers text-white">
-          Total spent: {formatCurrency(totalAmount, currency)}
+          {t.common.totalSpent(formatCurrency(totalAmount, currency))}
         </p>
         <button
           onClick={onAddExpense}
           className="px-4 py-2 rounded-lg bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-medium transition-colors"
         >
-          + Add Expense
+          {t.expenses.footerButton}
         </button>
       </div>
     </div>

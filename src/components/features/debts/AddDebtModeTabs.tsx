@@ -1,5 +1,7 @@
 'use client'
 
+import { useT } from '@/lib/i18n'
+
 export interface AddDebtModeTabsProps {
   mode: 'new' | 'payment'
   onModeChange: (m: 'new' | 'payment') => void
@@ -9,6 +11,7 @@ export interface AddDebtModeTabsProps {
  * New debt vs record payment when both modes are available.
  */
 export function AddDebtModeTabs({ mode, onModeChange }: AddDebtModeTabsProps) {
+  const t = useT()
   return (
     <div className="flex gap-2 mb-6">
       <button
@@ -20,7 +23,7 @@ export function AddDebtModeTabs({ mode, onModeChange }: AddDebtModeTabsProps) {
             : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
         }`}
       >
-        New balance
+        {t.addDebt.tabNew}
       </button>
       <button
         type="button"
@@ -31,7 +34,7 @@ export function AddDebtModeTabs({ mode, onModeChange }: AddDebtModeTabsProps) {
             : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
         }`}
       >
-        Log a payment
+        {t.addDebt.tabPayment}
       </button>
     </div>
   )

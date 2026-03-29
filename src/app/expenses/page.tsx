@@ -12,6 +12,7 @@ import type { ExpenseCategory } from '@/lib/store/types'
 import { MonthNavigationControl } from '@/components/layout/MonthNavigationControl'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
+import { useT } from '@/lib/i18n'
 
 export default function ExpensesPage() {
   const { expenses, settings } = useFinanceStore(
@@ -19,6 +20,7 @@ export default function ExpensesPage() {
   )
   const { monthFilter, setMonthFilter, setActiveModal } = useSettingsStore()
   const requireAuth = useRequireAuthAction()
+  const t = useT()
 
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<ExpenseCategory | 'All'>('All')
@@ -78,7 +80,7 @@ export default function ExpensesPage() {
     <div className="min-h-screen">
       <PageHeader>
         <PageHeaderContent className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-white">My Spending</h1>
+          <h1 className="text-xl font-bold text-white">{t.expenses.pageTitle}</h1>
           <MonthNavigationControl monthFilter={monthFilter} onChange={setMonthFilter} />
         </PageHeaderContent>
       </PageHeader>
@@ -100,7 +102,7 @@ export default function ExpensesPage() {
         onAddExpense={() =>
           requireAuth(
             () => setActiveModal('addExpense'),
-            'Sign in to log your spending and keep your budget on track.'
+            t.expenses.requireAuth
           )
         }
       />

@@ -3,6 +3,7 @@
 import { Lock, Mail } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { inputClass, inputFocus, inputStyle } from '@/components/features/auth-modal/authModalTokens'
+import { useT } from '@/lib/i18n'
 import type { AuthFormMode } from '@/hooks/useAuthModal'
 
 export interface AuthCredentialFieldsProps {
@@ -31,55 +32,56 @@ export function AuthCredentialFields({
   onForgotClick,
   onSubmitPrimary,
 }: AuthCredentialFieldsProps) {
+  const t = useT()
   return (
     <div className="space-y-3">
       <div>
-        <label className="text-xs text-[#5A5A72] mb-1 block">Email</label>
+        <label className="text-xs text-[#5A5A72] mb-1 block">{t.auth.labelEmail}</label>
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A5A72]" />
+          <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A5A72]" />
           <input
             type="email"
             value={email}
             onChange={(e) => onEmailChange(e.target.value)}
-            className={cn(inputClass, inputFocus, 'pl-10')}
+            className={cn(inputClass, inputFocus, 'ps-10')}
             style={inputStyle}
-            placeholder="your@email.com"
+            placeholder={t.auth.placeholderEmail}
           />
         </div>
       </div>
       <div>
-        <label className="text-xs text-[#5A5A72] mb-1 block">Password</label>
+        <label className="text-xs text-[#5A5A72] mb-1 block">{t.auth.labelPassword}</label>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A5A72]" />
+          <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A5A72]" />
           <input
             type="password"
             value={password}
             onChange={(e) => onPasswordChange(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && void onSubmitPrimary()}
-            className={cn(inputClass, inputFocus, 'pl-10')}
+            className={cn(inputClass, inputFocus, 'ps-10')}
             style={inputStyle}
-            placeholder="Your password"
+            placeholder={t.auth.placeholderPassword}
           />
         </div>
         {formMode === 'signin' ? (
           <button type="button" onClick={onForgotClick} className="mt-2 text-xs text-[#E50914] hover:underline">
-            Forgot your password?
+            {t.auth.forgotPassword}
           </button>
         ) : null}
       </div>
       {formMode === 'signup' ? (
         <div>
-          <label className="text-xs text-[#5A5A72] mb-1 block">Confirm your password</label>
+          <label className="text-xs text-[#5A5A72] mb-1 block">{t.auth.labelConfirm}</label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A5A72]" />
+            <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A5A72]" />
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => onConfirmPasswordChange(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && void onSubmitPrimary()}
-              className={cn(inputClass, inputFocus, 'pl-10')}
+              className={cn(inputClass, inputFocus, 'ps-10')}
               style={inputStyle}
-              placeholder="Confirm your password"
+              placeholder={t.auth.placeholderConfirm}
             />
           </div>
         </div>

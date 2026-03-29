@@ -1,6 +1,7 @@
 'use client'
 
 import { CreditCard, Trash2 } from 'lucide-react'
+import { useT } from '@/lib/i18n'
 import type { FinanceStore } from '@/lib/store/types'
 
 export interface SettingsPaymentMethodsSectionProps {
@@ -12,13 +13,15 @@ export interface SettingsPaymentMethodsSectionProps {
  * List of payment methods with delete and gated add.
  */
 export function SettingsPaymentMethodsSection({ store, onAddClick }: SettingsPaymentMethodsSectionProps) {
+  const t = useT()
+
   return (
     <section className="glass-card rounded-2xl p-5 space-y-4">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <CreditCard className="w-5 h-5 text-[var(--color-brand-red)]" />
           <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
-            Your Payment Methods
+            {t.settings.paymentMethodsTitle}
           </h2>
         </div>
         <button
@@ -26,7 +29,7 @@ export function SettingsPaymentMethodsSection({ store, onAddClick }: SettingsPay
           onClick={onAddClick}
           className="text-xs text-[var(--color-brand-red)] hover:text-[var(--color-brand-red-hover)]"
         >
-          + Add a method
+          {t.settings.paymentMethodsAdd}
         </button>
       </div>
       <div className="space-y-2">
@@ -47,7 +50,7 @@ export function SettingsPaymentMethodsSection({ store, onAddClick }: SettingsPay
             <button
               type="button"
               onClick={() => {
-                if (window.confirm('Remove this payment method? Your existing expenses won\u2019t be affected.')) {
+                if (window.confirm(t.settings.paymentMethodsRemoveConfirm)) {
                   store.deletePaymentMethod(method.id)
                 }
               }}

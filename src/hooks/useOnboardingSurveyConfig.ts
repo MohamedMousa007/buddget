@@ -2,13 +2,15 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useT } from '@/lib/i18n'
 import { type SurveyConfig } from '@/lib/onboarding/surveyConfig'
-import { EXPERT_ONBOARDING_CONFIG } from '@/lib/onboarding/expertSurveyConfig'
+import { getExpertSurveyConfig } from '@/lib/onboarding/expertSurveyConfig'
 import { pickSurveyConfig } from '@/lib/onboarding/onboardingPageHelpers'
 
 export function useOnboardingSurveyConfig() {
+  const t = useT()
   const supabase = useMemo(() => createClient(), [])
-  const [config, setConfig] = useState<SurveyConfig>(EXPERT_ONBOARDING_CONFIG)
+  const [config, setConfig] = useState<SurveyConfig>(() => getExpertSurveyConfig(t))
   const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -25,16 +27,17 @@ export function useOnboardingSurveyConfig() {
       if (cancelled) return
       if (error) {
         setLoadError(error.message)
-        setConfig(EXPERT_ONBOARDING_CONFIG)
+        setConfig(getExpertSurveyConfig(t))
         return
       }
-      setConfig(pickSurveyConfig(data?.config))
+      setLoadError(null)
+      setConfig(pickSurveyConfig(data?.config, t))
     }
     void load()
     return () => {
       cancelled = true
     }
-  }, [supabase])
+  }, [supabase, t])
 
   return { supabase, config, loadError }
 }

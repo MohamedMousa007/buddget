@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { mapAuthError, isValidEmailFormat } from '@/components/auth/authErrors'
 import { useAuth } from '@/components/auth/auth-context'
+import { useT } from '@/lib/i18n'
 import { APP_CONFIG } from '@/lib/config'
 import { routeAfterAuth } from '@/lib/auth/postAuthRedirect'
 import { MIN_PASSWORD_LEN } from '@/components/features/auth-modal/authModalTokens'
@@ -19,6 +20,7 @@ export function useAuthModal() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { pendingNext, setPendingNext, closeAuthModal, authModalMessage } = useAuth()
+  const t = useT()
   const supabase = useMemo(() => createClient(), [])
 
   const nextFromUrl = searchParams.get('next')
@@ -54,21 +56,21 @@ export function useAuthModal() {
 
   const validateEmailField = useCallback(() => {
     if (!email.trim()) {
-      setError('Please enter a real email address.')
+      setError(t.auth.errorEmailInvalid)
       return false
     }
     if (!isValidEmailFormat(email)) {
-      setError('Please enter a real email address.')
+      setError(t.auth.errorEmailInvalid)
       return false
     }
     return true
-  }, [email])
+  }, [email, t])
 
   const signIn = useCallback(async () => {
     setError('')
     if (!validateEmailField()) return
     if (!password) {
-      setError('Enter your email and password to continue.')
+      setError(t.auth.errorMissingPassword)
       return
     }
     setLoading(true)
@@ -78,23 +80,23 @@ export function useAuthModal() {
     })
     setLoading(false)
     if (e) {
-      setError(mapAuthError(e, 'signin'))
+      setError(mapAuthError(e, 'signin', t))
       return
     }
     const { data: userData } = await supabase.auth.getUser()
     router.refresh()
     router.replace(routeAfterAuth(userData.user, safeNext))
-  }, [email, password, router, safeNext, supabase, validateEmailField])
+  }, [email, password, router, safeNext, supabase, t, validateEmailField])
 
   const signUp = useCallback(async () => {
     setError('')
     if (!validateEmailField()) return
     if (password.length < MIN_PASSWORD_LEN) {
-      setError('Password needs to be at least 8 characters.')
+      setError(t.auth.errorPasswordShort)
       return
     }
     if (password !== confirmPassword) {
-      setError('Those passwords don\'t match. Try again.')
+      setError(t.auth.errorPasswordMismatch)
       return
     }
     setLoading(true)
@@ -107,9 +109,9 @@ export function useAuthModal() {
     })
     setLoading(false)
     if (e) {
-      const mapped = mapAuthError(e, 'signup')
+      const mapped = mapAuthError(e, 'signup', t)
       if (mapped === 'EMAIL_EXISTS') {
-        setError('Looks like you already have an account. Sign in instead?')
+        setError(t.auth.errorAccountExists)
         return
       }
       setError(mapped)
@@ -127,14 +129,14 @@ export function useAuthModal() {
       startResendCooldown()
       return
     }
-    setError('Something didn\'t work. Give it another try.')
-  }, [confirmPassword, email, password, router, safeNext, startResendCooldown, supabase, validateEmailField])
+    setError(t.auth.errorSignUpGeneric)
+  }, [confirmPassword, email, password, router, safeNext, startResendCooldown, supabase, t, validateEmailField])
 
   const verifySignupOtp = useCallback(async () => {
     setError('')
     const token = otp.replace(/\D/g, '').slice(0, 6)
     if (token.length !== 6) {
-      setError('Enter all 6 digits to continue.')
+      setError(t.auth.errorOtpIncomplete)
       return
     }
     setLoading(true)
@@ -145,13 +147,13 @@ export function useAuthModal() {
     })
     setLoading(false)
     if (e) {
-      setError(mapAuthError(e, 'otp'))
+      setError(mapAuthError(e, 'otp', t))
       return
     }
     const { data: userData } = await supabase.auth.getUser()
     router.refresh()
     router.replace(routeAfterAuth(userData.user, safeNext))
-  }, [email, otp, router, safeNext, supabase])
+  }, [email, otp, router, safeNext, supabase, t])
 
   const resendCode = useCallback(async () => {
     if (resendCooldown > 0) return
@@ -163,11 +165,11 @@ export function useAuthModal() {
     })
     setLoading(false)
     if (e) {
-      setError(mapAuthError(e, 'resend'))
+      setError(mapAuthError(e, 'resend', t))
       return
     }
     startResendCooldown()
-  }, [email, resendCooldown, startResendCooldown, supabase])
+  }, [email, resendCooldown, startResendCooldown, supabase, t])
 
   const sendForgot = useCallback(async () => {
     setError('')
@@ -180,11 +182,11 @@ export function useAuthModal() {
     })
     setLoading(false)
     if (e) {
-      setError(mapAuthError(e, 'forgot'))
+      setError(mapAuthError(e, 'forgot', t))
       return
     }
     setForgotSuccess(true)
-  }, [email, supabase, validateEmailField])
+  }, [email, supabase, t, validateEmailField])
 
   const switchToSignIn = useCallback(() => {
     setFormMode('signin')

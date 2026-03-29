@@ -6,15 +6,17 @@ import { BarChart3 } from 'lucide-react'
 import { AuthNavButtons } from '@/components/layout/AuthNavButtons'
 import { MonthNavigationControl } from '@/components/layout/MonthNavigationControl'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { useT } from '@/lib/i18n'
 
 export function DesktopHeaderBar() {
   const { monthFilter, setMonthFilter } = useSettingsStore()
   const pathname = usePathname()
+  const t = useT()
 
   return (
     <>
       {/* ─── Desktop header (lg+) ─── */}
-      <header className="hidden lg:flex fixed top-0 left-[200px] right-0 z-40 h-14 items-center justify-between px-8 bg-[#111118]/90 border-b border-[#2A2A38] backdrop-blur-xl">
+      <header className="hidden lg:flex fixed top-0 start-[200px] end-0 z-40 h-14 items-center justify-between px-8 bg-[#111118]/90 border-b border-[#2A2A38] backdrop-blur-xl">
         <div className="flex items-center shrink-0">
           {pathname === '/' && (
             <Link
@@ -22,7 +24,7 @@ export function DesktopHeaderBar() {
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-white hover:bg-[var(--color-brand-border)] transition-colors"
             >
               <BarChart3 className="w-4 h-4" />
-              <span>Reports</span>
+              <span>{t.nav.reports}</span>
             </Link>
           )}
         </div>
@@ -39,7 +41,7 @@ export function DesktopHeaderBar() {
       </header>
 
       {/* ─── Mobile header (<lg) ─── */}
-      <header className="flex lg:hidden fixed top-0 left-0 right-0 z-40 h-14 items-center px-4 bg-[#111118]/90 border-b border-[#2A2A38] backdrop-blur-xl">
+      <header className="flex lg:hidden fixed top-0 start-0 end-0 z-40 h-14 items-center px-4 bg-[#111118]/90 border-b border-[#2A2A38] backdrop-blur-xl">
         <div className="flex flex-1 min-w-0 justify-start items-center">
           <Link
             href="/"

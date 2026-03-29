@@ -31,7 +31,7 @@ export function ModalShell({
   const dragControls = useDragControls()
 
   const panelStaticClasses =
-    'fixed bottom-0 left-0 right-0 bg-[var(--color-brand-card)] rounded-t-3xl border-t border-[var(--color-brand-border)] max-h-[85vh] lg:bottom-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[480px] lg:rounded-2xl lg:border lg:max-h-[90vh]'
+    'fixed bottom-0 start-0 end-0 bg-[var(--color-brand-card)] rounded-t-3xl border-t border-[var(--color-brand-border)] max-h-[85vh] lg:bottom-auto lg:top-1/2 lg:start-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[480px] lg:rounded-2xl lg:border lg:max-h-[90vh]'
 
   return (
     <AnimatePresence>

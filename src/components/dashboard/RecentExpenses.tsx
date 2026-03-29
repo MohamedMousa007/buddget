@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
-import { groupByDate } from '@/lib/utils/formatters'
+import { useLocalizedFormatters } from '@/hooks/useLocalizedFormatters'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { useT } from '@/lib/i18n'
 
 const CATEGORY_ICONS: Record<string, string> = {
   Rent: '🏠',
@@ -32,12 +33,14 @@ interface RecentExpensesProps {
 }
 
 export function RecentExpenses({ expenses }: RecentExpensesProps) {
+  const t = useT()
+  const { groupByDate } = useLocalizedFormatters()
   const { deleteExpense, paymentMethods } = useFinanceStore(
     useShallow((s) => ({ deleteExpense: s.deleteExpense, paymentMethods: s.paymentMethods }))
   )
   const { setActiveModal, setEditingExpenseId } = useSettingsStore()
   const handleDelete = (expenseId: string) => {
-    if (window.confirm('Remove this transaction? This will be gone for good.')) {
+    if (window.confirm(t.dashboard.confirmDeleteExpense)) {
       deleteExpense(expenseId)
     }
   }
@@ -60,19 +63,19 @@ export function RecentExpenses({ expenses }: RecentExpensesProps) {
   }
 
   const getMethodName = (id: string) => {
-    return paymentMethods.find((m) => m.id === id)?.name || 'Unknown'
+    return paymentMethods.find((m) => m.id === id)?.name || t.common.unknown
   }
 
   if (recentExpenses.length === 0) {
     return (
       <div className="glass-card rounded-2xl p-5">
         <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-2">
-          Latest Transactions
+          {t.dashboard.recentTitle}
         </h3>
         <EmptyState
           icon="💸"
-          title="No expenses yet this month"
-          description="You're off to a great start! Add your first expense with the + button 🌟"
+          title={t.dashboard.recentEmpty}
+          description={t.dashboard.recentEmptyDesc}
           className="py-10"
         />
       </div>
@@ -83,13 +86,13 @@ export function RecentExpenses({ expenses }: RecentExpensesProps) {
     <div className="glass-card rounded-2xl p-5">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
-          Latest Transactions
+          {t.dashboard.recentTitle}
         </h3>
         <Link
           href="/expenses"
           className="text-xs text-[var(--color-brand-red)] hover:text-[var(--color-brand-red-hover)] transition-colors"
         >
-          See everything →
+          {t.dashboard.recentSeeAll}
         </Link>
       </div>
 
@@ -116,7 +119,7 @@ export function RecentExpenses({ expenses }: RecentExpensesProps) {
                       {expense.category}
                     </p>
                   </div>
-                  <div className="text-right mr-1">
+                  <div className="text-end me-1">
                     <MoneyDisplay
                       amount={expense.amount}
                       currency={expense.currency}
@@ -134,15 +137,15 @@ export function RecentExpenses({ expenses }: RecentExpensesProps) {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem className="text-xs" onClick={() => handleEdit(expense.id)}>
-                        <Pencil className="w-3 h-3 mr-2" />
-                        Edit
+                        <Pencil className="w-3 h-3 me-2" />
+                        {t.common.edit}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         className="text-xs text-[var(--color-brand-red)]"
                         onClick={() => handleDelete(expense.id)}
                       >
-                        <Trash2 className="w-3 h-3 mr-2" />
-                        Delete
+                        <Trash2 className="w-3 h-3 me-2" />
+                        {t.common.delete}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

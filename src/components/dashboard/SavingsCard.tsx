@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { convertCurrency } from '@/lib/utils/currency'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useT } from '@/lib/i18n'
 import { TrendingUp } from 'lucide-react'
 
 interface SavingsCardProps {
@@ -22,6 +23,7 @@ export function SavingsCard({
   savingsBudget,
   currency,
 }: SavingsCardProps) {
+  const t = useT()
   const { settings, exchangeRates } = useFinanceStore()
   const secondary = settings.showSecondaryCurrency ? settings.secondaryCurrency : null
   const percent = savingsBudget > 0 ? (savingsFromExpenses / savingsBudget) * 100 : 0
@@ -36,14 +38,14 @@ export function SavingsCard({
         <div className="flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-[var(--color-brand-green)]" />
           <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
-            Your Savings
+            {t.dashboard.savingsTitle}
           </h3>
         </div>
         <Link
           href="/savings"
           className="text-xs text-[var(--color-brand-red)] hover:text-[var(--color-brand-red-hover)]"
         >
-          See your stash →
+          {t.dashboard.savingsLink}
         </Link>
       </div>
 
@@ -59,10 +61,10 @@ export function SavingsCard({
               </p>
             )}
             <p className="text-xs text-[var(--color-brand-text-muted)]">
-              Stashed away {formatCurrency(savingsHoldingsTotal, currency)} · Added this month {formatCurrency(savingsFromExpenses, currency)}
+              {t.dashboard.savingsStashedAway}{formatCurrency(savingsHoldingsTotal, currency)}{t.dashboard.savingsDotSeparator}{t.dashboard.savingsAddedThisMonth}{formatCurrency(savingsFromExpenses, currency)}
             </p>
             <p className="text-xs text-[var(--color-brand-text-muted)] mt-1">
-              Your monthly target {formatCurrency(savingsBudget, currency)}
+              {t.dashboard.savingsMonthlyTarget}{formatCurrency(savingsBudget, currency)}
             </p>
           </div>
           <span className="text-sm font-mono-numbers text-[var(--color-brand-text-secondary)]">

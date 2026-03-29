@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useT } from '@/lib/i18n'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -31,6 +32,8 @@ export function DebtOnboardingPanel({
   entries: DebtOnboardingPayload['entries']
   onChange: (p: DebtOnboardingPayload) => void
 }) {
+  const t = useT()
+  const o = t.onboarding
   const settings = useFinanceStore((s) => s.settings)
 
   const [name, setName] = useState('')
@@ -80,10 +83,8 @@ export function DebtOnboardingPanel({
   }
 
   return (
-    <div className="space-y-4 text-left w-full max-w-lg">
-      <p className="text-[11px] text-[var(--color-brand-text-muted)]">
-        Add any debts you want to track — or skip this and come back later.
-      </p>
+    <div className="space-y-4 text-start w-full max-w-lg">
+      <p className="text-[11px] text-[var(--color-brand-text-muted)]">{o.debtIntro}</p>
 
       {entries.length > 0 ? (
         <ul className="rounded-xl border border-[var(--color-brand-border)] divide-y divide-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/40 text-sm">
@@ -94,7 +95,7 @@ export function DebtOnboardingPanel({
                 {e.isGold ? ` (${e.goldKarat}K)` : ''}
               </span>
               <button type="button" onClick={() => removeAt(i)} className="text-xs text-[var(--color-brand-red)] shrink-0">
-                Remove
+                {o.debtRemove}
               </button>
             </li>
           ))}
@@ -103,25 +104,25 @@ export function DebtOnboardingPanel({
 
       <div className="space-y-4 rounded-xl border border-[var(--color-brand-border)] p-4 bg-[var(--color-brand-elevated)]/30">
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">What&apos;s it called?</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{o.debtNameLabel}</Label>
           <Input
-            placeholder="e.g. Credit card, Car loan"
+            placeholder={o.debtNamePlaceholder}
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
           />
         </div>
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Who do you owe?</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{o.debtPersonLabel}</Label>
           <Input
-            placeholder="e.g. Bank, a friend"
+            placeholder={o.debtPersonPlaceholder}
             value={person}
             onChange={(e) => setPerson(e.target.value)}
             className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
           />
         </div>
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Description (optional)</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{o.debtDescLabel}</Label>
           <Input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -129,7 +130,7 @@ export function DebtOnboardingPanel({
           />
         </div>
         <div className="flex items-center justify-between">
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Is this a gold debt?</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{o.debtIsGold}</Label>
           <Switch
             checked={isGold}
             onCheckedChange={(v) => {
@@ -142,12 +143,12 @@ export function DebtOnboardingPanel({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">
-              {isGold ? 'Amount (grams)' : 'Amount'}
+              {isGold ? o.debtAmountGrams : o.debtAmountLabel}
             </Label>
             <Input
               type="number"
               step="0.01"
-              placeholder="0.00"
+              placeholder={o.debtAmountPlaceholder}
               value={startingBalance}
               onChange={(e) => setStartingBalance(e.target.value)}
               className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers"
@@ -155,7 +156,7 @@ export function DebtOnboardingPanel({
           </div>
           {!isGold ? (
             <div>
-              <Label className="text-xs text-[var(--color-brand-text-secondary)]">Currency</Label>
+              <Label className="text-xs text-[var(--color-brand-text-secondary)]">{o.debtCurrency}</Label>
               <DebtFiatCurrencySelect
                 value={currency}
                 onChange={setCurrency}
@@ -164,22 +165,22 @@ export function DebtOnboardingPanel({
             </div>
           ) : (
             <div>
-              <Label className="text-xs text-[var(--color-brand-text-secondary)]">Karat</Label>
+              <Label className="text-xs text-[var(--color-brand-text-secondary)]">{o.debtKarat}</Label>
               <select
                 value={goldKarat}
                 onChange={(e) => setGoldKarat(parseInt(e.target.value, 10) as GoldKarat)}
                 className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
               >
-                <option value={24}>24K</option>
-                <option value={22}>22K</option>
-                <option value={21}>21K</option>
-                <option value={18}>18K</option>
+                <option value={24}>{t.goldPurity.k24}</option>
+                <option value={22}>{t.goldPurity.k22}</option>
+                <option value={21}>{t.goldPurity.k21}</option>
+                <option value={18}>{t.goldPurity.k18}</option>
               </select>
             </div>
           )}
         </div>
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Any notes? (optional)</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{o.debtNotes}</Label>
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -192,7 +193,7 @@ export function DebtOnboardingPanel({
           disabled={!name.trim() || !person.trim() || !startingBalance}
           className="w-full py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-white hover:bg-[var(--color-brand-elevated)] disabled:opacity-40"
         >
-          Add this debt
+          {o.debtAddButton}
         </button>
       </div>
     </div>

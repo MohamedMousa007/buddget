@@ -14,24 +14,27 @@ import { cn } from '@/lib/utils'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
+import { useT } from '@/lib/i18n'
 import type { Currency } from '@/lib/store/types'
-const NAV_ITEMS = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/expenses', label: 'Expenses', icon: Receipt },
-  { href: '/income', label: 'Income', icon: Wallet },
-  { href: '/savings', label: 'Savings', icon: PiggyBank },
-  { href: '/debts', label: 'Debts', icon: Landmark },
-  { href: '/reports', label: 'Reports', icon: BarChart3 },
-]
 
 export function Sidebar() {
   const pathname = usePathname()
+  const t = useT()
+
+  const NAV_ITEMS = [
+    { href: '/', label: t.nav.dashboard, icon: LayoutDashboard },
+    { href: '/expenses', label: t.nav.expenses, icon: Receipt },
+    { href: '/income', label: t.nav.income, icon: Wallet },
+    { href: '/savings', label: t.nav.savings, icon: PiggyBank },
+    { href: '/debts', label: t.nav.debts, icon: Landmark },
+    { href: '/reports', label: t.nav.reports, icon: BarChart3 },
+  ]
   const { settings, updateSettings } = useFinanceStore(
     useShallow((s) => ({ settings: s.settings, updateSettings: s.updateSettings }))
   )
 
   return (
-    <aside className="hidden lg:flex flex-col w-[200px] h-screen bg-[var(--color-brand-card)] border-r border-[var(--color-brand-border)] fixed left-0 top-0 z-40 overflow-hidden">
+    <aside className="hidden lg:flex flex-col w-[200px] h-screen bg-[var(--color-brand-card)] border-e border-[var(--color-brand-border)] fixed start-0 top-0 z-40 overflow-hidden">
       <div className="p-6">
         <Link href="/" className="flex items-center gap-2">
           <span className="text-2xl font-bold font-heading tracking-tight">

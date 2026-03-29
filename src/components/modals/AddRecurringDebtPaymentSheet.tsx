@@ -5,19 +5,20 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { useRecurringDebtPaymentSheet } from '@/hooks/useRecurringDebtPaymentSheet'
 import { RecurringDebtPaymentForm } from '@/components/features/debts/RecurringDebtPaymentForm'
+import { useT } from '@/lib/i18n'
 
 export function AddRecurringDebtPaymentSheet() {
   const sheet = useRecurringDebtPaymentSheet()
+  const t = useT()
   useEscapeClose(sheet.isOpen, sheet.close)
 
   return (
     <ModalShell open={sheet.isOpen} onBackdropClick={sheet.close}>
       <div className="p-6">
-        <ModalSheetHeader title="Recurring balance payment" onClose={sheet.close} />
+        <ModalSheetHeader title={t.recurringDebt.sheetTitle} onClose={sheet.close} />
 
         <p className="text-xs text-[var(--color-brand-text-muted)] mb-4">
-          When the next due date arrives (or is in the past), Buddget logs the payment and a balance expense, then
-          advances the schedule. Same rules as a manual payment (rates, no overpay).
+          {t.recurringDebt.sheetDescription}
         </p>
 
         <RecurringDebtPaymentForm

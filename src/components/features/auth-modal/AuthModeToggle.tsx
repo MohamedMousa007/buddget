@@ -1,6 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
+import { useT } from '@/lib/i18n'
 import type { AuthFormMode } from '@/hooks/useAuthModal'
 
 export interface AuthModeToggleProps {
@@ -13,6 +14,7 @@ export interface AuthModeToggleProps {
  * Sign in vs Sign up segmented control.
  */
 export function AuthModeToggle({ formMode, onModeChange, onClearError }: AuthModeToggleProps) {
+  const t = useT()
   return (
     <div className="flex rounded-xl border p-1" style={{ background: '#1A1A24', borderColor: '#2A2A38' }}>
       <button
@@ -27,7 +29,7 @@ export function AuthModeToggle({ formMode, onModeChange, onClearError }: AuthMod
         )}
         style={formMode === 'signin' ? { background: '#E50914' } : {}}
       >
-        Sign in
+        {t.auth.signInLabel}
       </button>
       <button
         type="button"
@@ -41,7 +43,7 @@ export function AuthModeToggle({ formMode, onModeChange, onClearError }: AuthMod
         )}
         style={formMode === 'signup' ? { background: '#E50914' } : {}}
       >
-        Sign up
+        {t.auth.signUpLabel}
       </button>
     </div>
   )

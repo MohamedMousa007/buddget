@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from 'react'
 import { CalendarDays } from 'lucide-react'
-import { formatMonth, formatMonthShort } from '@/lib/utils/formatters'
 import { cn } from '@/lib/utils'
+import { useLocalizedFormatters } from '@/hooks/useLocalizedFormatters'
+import { useT } from '@/lib/i18n'
 import {
   Popover,
   PopoverContent,
@@ -19,6 +20,8 @@ interface MonthYearPickerProps {
 }
 
 export function MonthYearPicker({ monthFilter, onChange, className, compact }: MonthYearPickerProps) {
+  const t = useT()
+  const { formatMonth, formatMonthShort, monthButtonLabel } = useLocalizedFormatters()
   const [open, setOpen] = useState(false)
   const parsed = useMemo(() => {
     const [ys, ms] = monthFilter.split('-')
@@ -59,7 +62,7 @@ export function MonthYearPicker({ monthFilter, onChange, className, compact }: M
         align="center"
       >
         <div className="flex gap-2 mb-3">
-          <label className="text-xs text-[var(--color-brand-text-muted)] shrink-0 self-center">Year</label>
+          <label className="text-xs text-[var(--color-brand-text-muted)] shrink-0 self-center">{t.common.yearLabel}</label>
           <select
             value={parsed.year}
             onChange={(e) => {
@@ -75,15 +78,13 @@ export function MonthYearPicker({ monthFilter, onChange, className, compact }: M
           </select>
         </div>
         <div className="grid grid-cols-3 gap-1.5">
-          {[
-            'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-          ].map((lbl, i) => {
+          {Array.from({ length: 12 }, (_, i) => {
             const m = i + 1
+            const lbl = monthButtonLabel(m)
             const active = parsed.month === m
             return (
               <button
-                key={lbl}
+                key={m}
                 type="button"
                 onClick={() => pick(m)}
                 className={cn(

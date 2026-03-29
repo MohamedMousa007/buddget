@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch'
 import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
 import type { ExpenseCategory, Currency } from '@/lib/store/types'
 import { ExpenseCategoryChips, PaymentMethodChips } from '@/components/features/expenses/ExpenseFormPickers'
+import { useT } from '@/lib/i18n'
 
 export interface AddExpenseFormProps {
   date: string
@@ -55,10 +56,11 @@ export function AddExpenseForm({
   onCancel,
   onSubmit,
 }: AddExpenseFormProps) {
+  const t = useT()
   return (
     <div className="space-y-4">
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">When?</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addExpense.labelWhen}</Label>
         <Input
           type="date"
           value={date}
@@ -68,9 +70,9 @@ export function AddExpenseForm({
       </div>
 
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">What was it for?</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addExpense.labelDescription}</Label>
         <Input
-          placeholder="e.g. Lunch at work, Groceries, Metro top-up"
+          placeholder={t.addExpense.placeholderDescription}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
@@ -79,11 +81,11 @@ export function AddExpenseForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">How much?</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addExpense.labelAmount}</Label>
           <Input
             type="number"
             step="0.01"
-            placeholder="0.00"
+            placeholder={t.addExpense.placeholderAmount}
             value={amount}
             onChange={(e) => {
               setAmount(e.target.value)
@@ -93,7 +95,7 @@ export function AddExpenseForm({
           />
         </div>
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Currency</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addExpense.labelCurrency}</Label>
           <FiatCurrencySelect
             value={currency}
             onChange={(c) => {
@@ -115,14 +117,14 @@ export function AddExpenseForm({
       />
 
       <div className="flex items-center justify-between">
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Does this repeat?</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addExpense.labelRepeats}</Label>
         <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
       </div>
 
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Anything to add?</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addExpense.labelNotes}</Label>
         <Textarea
-          placeholder="Optional note about this purchase"
+          placeholder={t.addExpense.placeholderNotes}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)] min-h-[60px]"
@@ -135,7 +137,7 @@ export function AddExpenseForm({
           onClick={onCancel}
           className="flex-1 py-3 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
         >
-          Never mind
+          {t.common.neverMind}
         </button>
         <button
           type="button"
@@ -143,7 +145,7 @@ export function AddExpenseForm({
           disabled={!description || !amount}
           className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Log it ✓
+          {t.addExpense.buttonSubmit}
         </button>
       </div>
     </div>

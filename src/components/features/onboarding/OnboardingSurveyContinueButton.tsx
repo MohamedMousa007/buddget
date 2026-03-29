@@ -1,6 +1,7 @@
 'use client'
 
 import { ChevronRight } from 'lucide-react'
+import { useT } from '@/lib/i18n'
 import type { SurveyStep } from '@/lib/onboarding/surveyConfig'
 import type { StepContinuePayload } from '@/lib/onboarding/onboardingStepPayload'
 import type { OnboardingPaymentDraft } from '@/lib/store/types'
@@ -42,6 +43,9 @@ export function OnboardingSurveyContinueButton({
   debtPayload,
   subscriptionsPayload,
 }: OnboardingSurveyContinueButtonProps) {
+  const t = useT()
+  const o = t.onboarding
+
   return (
     <button
       type="button"
@@ -61,7 +65,7 @@ export function OnboardingSurveyContinueButton({
       }}
       className="w-full py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
     >
-      {planLoading ? 'Building your plans…' : finishing ? 'Wrapping up…' : isLastSurveyStep ? 'Generate my plans' : 'Continue'}
+      {planLoading ? o.planLoading : finishing ? o.finishing : isLastSurveyStep ? o.lastStep : o.continueButton}
       {!finishing && !planLoading ? <ChevronRight className="w-4 h-4" /> : null}
     </button>
   )

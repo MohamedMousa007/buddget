@@ -4,6 +4,7 @@ import type { RefObject } from 'react'
 import { Check } from 'lucide-react'
 import { AIChatConfirmationCard } from '@/components/features/ai-chat/AIChatConfirmationCard'
 import type { AIChatMessage } from '@/hooks/useAIChat'
+import { useT } from '@/lib/i18n'
 import type { Currency } from '@/lib/store/types'
 
 export interface AIChatMessageListProps {
@@ -26,6 +27,7 @@ export function AIChatMessageList({
   onEdit,
   scrollAnchorRef,
 }: AIChatMessageListProps) {
+  const t = useT()
   return (
     <>
       {messages.map((message) => (
@@ -52,7 +54,7 @@ export function AIChatMessageList({
 
             {message.confirmed ? (
               <p className="mt-2 text-xs text-[var(--color-brand-green)] flex items-center gap-1">
-                <Check className="w-3 h-3" aria-hidden /> All set! ✓
+                <Check className="w-3 h-3" aria-hidden /> {t.ai.confirmedLabel}
               </p>
             ) : null}
           </div>

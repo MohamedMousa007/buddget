@@ -1,6 +1,7 @@
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import type { Dictionary } from '@/lib/i18n/types'
 import { parseSurveyConfig, type SurveyConfig } from '@/lib/onboarding/surveyConfig'
-import { EXPERT_ONBOARDING_CONFIG } from '@/lib/onboarding/expertSurveyConfig'
+import { getExpertSurveyConfig } from '@/lib/onboarding/expertSurveyConfig'
 import type {
   AppSettings,
   Currency,
@@ -96,10 +97,10 @@ export function applyPaymentDrafts(redo: boolean, drafts: OnboardingPaymentDraft
   })
 }
 
-export function pickSurveyConfig(remote: unknown): SurveyConfig {
+export function pickSurveyConfig(remote: unknown, t: Dictionary): SurveyConfig {
   const parsed = parseSurveyConfig(remote)
   if (parsed?.steps?.some((s) => s.id === 'pre_plan')) return parsed
-  return EXPERT_ONBOARDING_CONFIG
+  return getExpertSurveyConfig(t)
 }
 
 export function valueForTextStep(stepId: string, answers: Record<string, unknown>, profile: UserProfile): string {

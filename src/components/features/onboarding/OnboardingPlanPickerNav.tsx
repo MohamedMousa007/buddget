@@ -1,6 +1,7 @@
 'use client'
 
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react'
+import { useT } from '@/lib/i18n'
 import { normalizeCategoryPercents } from '@/lib/onboarding/planNormalization'
 import type { OnboardingAiPlan } from '@/lib/store/types'
 
@@ -21,6 +22,9 @@ export function OnboardingPlanPickerNav({
   acceptPayload: OnboardingAiPlan
   onAccept: (plan: OnboardingAiPlan) => void
 }) {
+  const t = useT()
+  const o = t.onboarding
+
   return (
     <>
       <div className="flex flex-col sm:flex-row gap-2">
@@ -31,7 +35,7 @@ export function OnboardingPlanPickerNav({
           className="flex-1 py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-white disabled:opacity-40 flex items-center justify-center gap-1"
         >
           <ChevronLeft className="w-4 h-4" />
-          Previous
+          {o.planPickerPrevious}
         </button>
         <button
           type="button"
@@ -39,7 +43,7 @@ export function OnboardingPlanPickerNav({
           onClick={onNext}
           className="flex-1 py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-white disabled:opacity-40 flex items-center justify-center gap-1"
         >
-          Next
+          {o.planPickerNext}
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
@@ -50,7 +54,7 @@ export function OnboardingPlanPickerNav({
         onClick={() => onAccept({ ...acceptPayload, percents: normalizeCategoryPercents(acceptPayload.percents) })}
         className="w-full py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
       >
-        {busy ? 'Saving your setup…' : 'Take me to my dashboard'}
+        {busy ? o.planPickerAcceptBusy : o.planPickerAccept}
         <Check className="w-4 h-4" />
       </button>
     </>

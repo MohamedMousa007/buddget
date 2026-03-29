@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
+import { useT } from '@/lib/i18n'
 import type { Currency, IncomeRecurringFrequency } from '@/lib/store/types'
 
 const RECURRING_FREQ: { value: IncomeRecurringFrequency; label: string; amountHint: string }[] = [
@@ -23,6 +24,7 @@ const RECURRING_FREQ: { value: IncomeRecurringFrequency; label: string; amountHi
 export function AddIncomeSheet() {
   const { addIncomeSource, settings } = useFinanceStore()
   const { activeModal, setActiveModal } = useSettingsStore()
+  const t = useT()
   const isOpen = activeModal === 'addIncome'
 
   const [name, setName] = useState('')
@@ -80,13 +82,13 @@ export function AddIncomeSheet() {
   return (
     <ModalShell open={isOpen} onBackdropClick={handleClose}>
             <div className="p-6">
-              <ModalSheetHeader title="Add a Source" onClose={handleClose} />
+              <ModalSheetHeader title={t.addIncome.sheetTitle} onClose={handleClose} />
 
               <div className="space-y-4">
                 <div>
-                  <Label className="text-xs text-[var(--color-brand-text-secondary)]">Where does it come from?</Label>
+                  <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addIncome.labelSource}</Label>
                   <Input
-                    placeholder="e.g. Bask Health, Freelance"
+                    placeholder={t.addIncome.placeholderSource}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
@@ -95,18 +97,18 @@ export function AddIncomeSheet() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs text-[var(--color-brand-text-secondary)]">How much?</Label>
+                    <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addIncome.labelAmount}</Label>
                     <Input
                       type="number"
                       step="0.01"
-                      placeholder="0.00"
+                      placeholder={t.addIncome.placeholderAmount}
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers placeholder:text-[var(--color-brand-text-muted)]"
                     />
                   </div>
                   <div>
-                    <Label className="text-xs text-[var(--color-brand-text-secondary)]">In which currency?</Label>
+                    <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addIncome.labelCurrency}</Label>
                     <FiatCurrencySelect
                       value={currency}
                       onChange={setCurrency}
@@ -116,14 +118,14 @@ export function AddIncomeSheet() {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs text-[var(--color-brand-text-secondary)]">Recurring income?</Label>
+                  <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addIncome.labelRecurring}</Label>
                   <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
                 </div>
 
                 {isRecurring && (
                   <>
                     <div>
-                      <Label className="text-xs text-[var(--color-brand-text-secondary)]">How often</Label>
+                      <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addIncome.labelFrequency}</Label>
                       <select
                         value={recurringFrequency}
                         onChange={(e) => setRecurringFrequency(e.target.value as IncomeRecurringFrequency)}
@@ -142,7 +144,7 @@ export function AddIncomeSheet() {
                     </div>
                     {recurringFrequency === 'monthly' && (
                       <div>
-                        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Day of month</Label>
+                        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addIncome.labelDayOfMonth}</Label>
                         <Input
                           type="number"
                           min="1"
@@ -157,9 +159,9 @@ export function AddIncomeSheet() {
                 )}
 
                 <div>
-                  <Label className="text-xs text-[var(--color-brand-text-secondary)]">Notes (optional)</Label>
+                  <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addIncome.labelNotes}</Label>
                   <Textarea
-                    placeholder="Any extra details..."
+                    placeholder={t.addIncome.placeholderNotes}
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)] min-h-[60px]"
@@ -171,14 +173,14 @@ export function AddIncomeSheet() {
                     onClick={handleClose}
                     className="flex-1 py-3 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
                   >
-                    Cancel
+                    {t.common.cancel}
                   </button>
                   <button
                     onClick={handleSubmit}
                     disabled={!name || !amount}
                     className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Add a Source →
+                    {t.addIncome.buttonSubmit}
                   </button>
                 </div>
               </div>

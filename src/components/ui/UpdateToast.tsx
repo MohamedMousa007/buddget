@@ -3,12 +3,14 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { Sparkles, X } from 'lucide-react'
 import { usePwaUpdate } from '@/hooks/usePwaUpdate'
+import { useT } from '@/lib/i18n'
 
 /**
  * PWA “new build available” prompt — glass, dark-first, bottom-center.
  */
 export function UpdateToast() {
   const { updateAvailable, applyUpdate, dismiss } = usePwaUpdate()
+  const t = useT()
 
   return (
     <div
@@ -32,19 +34,19 @@ export function UpdateToast() {
               <button
                 type="button"
                 onClick={dismiss}
-                className="absolute right-2 top-2 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--color-brand-text-muted)] transition-colors hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 sm:right-3 sm:top-3"
+                className="absolute end-2 top-2 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--color-brand-text-muted)] transition-colors hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 sm:end-3 sm:top-3"
                 aria-label="Dismiss update notice"
               >
                 <X className="h-4 w-4" aria-hidden />
               </button>
-              <div className="flex min-w-0 items-start gap-3 pr-8 sm:pr-0">
+              <div className="flex min-w-0 items-start gap-3 pe-8 sm:pe-0">
                 <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400 shadow-inner shadow-blue-500/10">
                   <Sparkles className="h-4 w-4" aria-hidden />
                 </span>
                 <p className="text-sm leading-snug text-[var(--color-brand-text-secondary)]">
-                  <span className="font-medium text-white">A fresh update is waiting for you!</span>
+                  <span className="font-medium text-white">{t.pwa.updateTitle}</span>
                   <span className="mt-0.5 block text-xs text-[var(--color-brand-text-muted)]">
-                    Refresh to enjoy the latest improvements.
+                    {t.pwa.updateSubtitle}
                   </span>
                 </p>
               </div>
@@ -54,14 +56,14 @@ export function UpdateToast() {
                   onClick={dismiss}
                   className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-[var(--color-brand-text-secondary)] transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50"
                 >
-                  Not now
+                  {t.pwa.updateNotNow}
                 </button>
                 <button
                   type="button"
                   onClick={applyUpdate}
                   className="rounded-xl bg-[var(--color-brand-red)] px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-red-900/30 transition-colors hover:bg-[var(--color-brand-red-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50"
                 >
-                  Refresh Now
+                  {t.pwa.updateRefresh}
                 </button>
               </div>
             </div>

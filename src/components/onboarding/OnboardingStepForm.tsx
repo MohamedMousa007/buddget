@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
+import { useT } from '@/lib/i18n'
 import type { SurveyStep } from '@/lib/onboarding/surveyConfig'
 import type { Currency, IncomeSource, OnboardingPaymentDraft } from '@/lib/store/types'
 import {
@@ -48,6 +49,7 @@ export function OnboardingStepForm({
   planLoading: boolean
   onContinue: (payload: StepContinuePayload) => void | Promise<void>
 }) {
+  const t = useT()
   const [textValue, setTextValue] = useState(initialText)
   const [selected, setSelected] = useState<string | null>(initialSelected)
   const [multi, setMulti] = useState<string[]>(initialMulti)
@@ -59,7 +61,7 @@ export function OnboardingStepForm({
     entries: initialDebtEntries,
   }))
   const [subscriptionsPayload, setSubscriptionsPayload] = useState<SubscriptionsOnboardingPayload>(() => ({
-    lines: subscriptionLinesFromSaved(initialSubscriptionRaw, baseCurrency),
+    lines: subscriptionLinesFromSaved(initialSubscriptionRaw, baseCurrency, t),
   }))
 
   const canContinue = useMemo(() => {

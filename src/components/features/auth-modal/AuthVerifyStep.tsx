@@ -3,6 +3,7 @@
 import { Loader2 } from 'lucide-react'
 import { AuthOtpRow } from '@/components/features/auth-modal/AuthOtpRow'
 import { AuthPrimaryButton } from '@/components/features/auth-modal/AuthPrimaryButton'
+import { useT } from '@/lib/i18n'
 
 export interface AuthVerifyStepProps {
   email: string
@@ -28,12 +29,13 @@ export function AuthVerifyStep({
   onResend,
   onUseDifferentEmail,
 }: AuthVerifyStepProps) {
+  const t = useT()
   return (
     <div className="space-y-5">
       <div className="text-center">
-        <h2 className="text-lg font-semibold text-white">Check your inbox 📬</h2>
+        <h2 className="text-lg font-semibold text-white">{t.auth.verifyTitle}</h2>
         <p className="text-sm text-[#5A5A72] mt-1">
-          We sent a 6-digit code to <span className="text-white">{email}</span>
+          {t.auth.verifyCodeSent(email)}
         </p>
       </div>
       <AuthOtpRow value={otp} onChange={onOtpChange} disabled={loading} />
@@ -41,10 +43,10 @@ export function AuthVerifyStep({
         {loading ? (
           <>
             <Loader2 className="w-5 h-5 animate-spin" />
-            <span>Verifying…</span>
+            <span>{t.auth.verifying}</span>
           </>
         ) : (
-          'Confirm & get started'
+          t.auth.verifyConfirm
         )}
       </AuthPrimaryButton>
       <div className="flex flex-col items-center gap-2 text-sm">
@@ -54,10 +56,10 @@ export function AuthVerifyStep({
           onClick={() => void onResend()}
           className="text-[#E50914] disabled:opacity-50 disabled:cursor-not-allowed hover:underline"
         >
-          {resendCooldown > 0 ? `Send a new code (${resendCooldown}s)` : 'Send a new code'}
+          {resendCooldown > 0 ? t.auth.verifySendNewCooldown(resendCooldown) : t.auth.verifySendNew}
         </button>
         <button type="button" onClick={onUseDifferentEmail} className="text-[#5A5A72] hover:text-white">
-          Use a different email
+          {t.auth.verifyDifferentEmail}
         </button>
       </div>
     </div>

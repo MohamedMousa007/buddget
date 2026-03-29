@@ -14,27 +14,31 @@ import { Trash2 } from 'lucide-react'
 import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import type { Currency, SavingsBucket, SavingsHolding, SavingsSubtype } from '@/lib/store/types'
+import { useT } from '@/lib/i18n'
+import type { Dictionary } from '@/lib/i18n'
 
-const SUBTYPES: { value: SavingsSubtype; label: string }[] = [
-  { value: 'bank', label: 'Bank account' },
-  { value: 'cash', label: 'Cash at home' },
-  { value: 'gold', label: 'Gold' },
-  { value: 'stocks', label: 'Stocks & shares' },
-  { value: 'crypto', label: 'Crypto' },
-  { value: 'real_estate', label: 'Real estate' },
-  { value: 'other', label: 'Other' },
-]
+const SUBTYPE_KEYS: Record<SavingsSubtype, keyof Dictionary['savings']> = {
+  bank: 'subtypeBank',
+  cash: 'subtypeCash',
+  gold: 'subtypeGold',
+  stocks: 'subtypeStocks',
+  crypto: 'subtypeCrypto',
+  real_estate: 'subtypeRealEstate',
+  other: 'subtypeOther',
+}
 
 function SavingsHoldingRow({
   holding,
   baseCurrency,
   exchangeRates,
   onDelete,
+  savings,
 }: {
   holding: SavingsHolding
   baseCurrency: Currency
   exchangeRates: Record<string, number>
   onDelete: (id: string) => void
+  savings: Dictionary['savings']
 }) {
   const { id, name: n, bucket: b, subtype: st, amount: a, currency: c } = holding
   const inBase = convertCurrency(a, c, baseCurrency, exchangeRates)
@@ -43,10 +47,10 @@ function SavingsHoldingRow({
       <div className="min-w-0">
         <p className="text-sm text-white truncate">{n}</p>
         <p className="text-[10px] text-[var(--color-brand-text-muted)] uppercase">
-          {b === 'liquid' ? 'Liquid' : 'Investment'} · {SUBTYPES.find((s) => s.value === st)?.label ?? st}
+          {b === 'liquid' ? savings.bucketLiquid : savings.bucketInvestment} · {savings[SUBTYPE_KEYS[st]] as string}
         </p>
       </div>
-      <div className="text-right shrink-0 flex items-center gap-2">
+      <div className="text-end shrink-0 flex items-center gap-2">
         <div>
           <p className="text-sm font-mono-numbers text-white">{formatCurrency(a, c)}</p>
           <p className="text-[10px] text-[var(--color-brand-text-muted)] font-mono-numbers">
@@ -56,7 +60,7 @@ function SavingsHoldingRow({
         <button
           type="button"
           onClick={() => {
-            if (window.confirm('Remove this saving? This will be gone for good.')) onDelete(id)
+            if (window.confirm(savings.confirmDelete)) onDelete(id)
           }}
           className="p-1.5 rounded-lg hover:bg-red-900/30"
           aria-label="Delete"
@@ -96,6 +100,7 @@ export default function SavingsPage() {
   const liquid = savingsHoldings.filter((h) => h.bucket === 'liquid')
   const inv = savingsHoldings.filter((h) => h.bucket === 'investment')
   const requireAuth = useRequireAuthAction()
+  const t = useT()
 
   const handleAdd = () => {
     if (!name.trim() || !amount || parseFloat(amount) <= 0) return
@@ -110,16 +115,16 @@ export default function SavingsPage() {
       setName('')
       setAmount('')
       setCurrency(settings.baseCurrency)
-    }, 'Sign in to start tracking your savings.')
+    }, t.savings.requireAuth)
   }
 
   return (
     <div className="min-h-screen pb-24">
       <PageHeader>
         <PageHeaderContent>
-          <h1 className="text-xl font-bold text-white">My Savings</h1>
+          <h1 className="text-xl font-bold text-white">{t.savings.pageTitle}</h1>
           <p className="text-xs text-[var(--color-brand-text-muted)] mt-1">
-            Total in {settings.baseCurrency}:{' '}
+            {t.savings.totalLine(settings.baseCurrency)}
             <span className="font-mono-numbers text-[var(--color-brand-green)]">{formatCurrency(totalBase, settings.baseCurrency)}</span>
           </p>
         </PageHeaderContent>
@@ -127,43 +132,43 @@ export default function SavingsPage() {
 
       <div className="px-4 py-6 lg:px-8 max-w-3xl mx-auto space-y-6">
         <section className="glass-card rounded-2xl p-5 space-y-4">
-          <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">Add a saving</h2>
+          <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">{t.savings.addTitle}</h2>
           <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">What&apos;s this saving called?</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Emirates NBD, Cash at home" className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white" />
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelName}</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t.savings.placeholderName} className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs text-[var(--color-brand-text-secondary)]">What kind?</Label>
+              <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelKind}</Label>
               <select
                 value={bucket}
                 onChange={(e) => setBucket(e.target.value as SavingsBucket)}
                 className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
               >
-                <option value="liquid">Easy access</option>
-                <option value="investment">Growing assets</option>
+                <option value="liquid">{t.savings.optionLiquid}</option>
+                <option value="investment">{t.savings.optionInvestment}</option>
               </select>
             </div>
             <div>
-              <Label className="text-xs text-[var(--color-brand-text-secondary)]">What type?</Label>
+              <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelType}</Label>
               <select
                 value={subtype}
                 onChange={(e) => setSubtype(e.target.value as SavingsSubtype)}
                 className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
               >
-                {SUBTYPES.map((s) => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
+                {(Object.keys(SUBTYPE_KEYS) as SavingsSubtype[]).map((s) => (
+                  <option key={s} value={s}>{t.savings[SUBTYPE_KEYS[s]] as string}</option>
                 ))}
               </select>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs text-[var(--color-brand-text-secondary)]">Current amount</Label>
+              <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelCurrentAmount}</Label>
               <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers" />
             </div>
             <div>
-              <Label className="text-xs text-[var(--color-brand-text-secondary)]">Currency</Label>
+              <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelCurrency}</Label>
               <FiatCurrencySelect
                 value={currency}
                 onChange={setCurrency}
@@ -176,14 +181,14 @@ export default function SavingsPage() {
             onClick={handleAdd}
             className="w-full py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold"
           >
-            Add this saving
+            {t.savings.buttonAdd}
           </button>
         </section>
 
         <section className="glass-card rounded-2xl p-5">
-          <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-3">Easy Access</h2>
+          <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-3">{t.savings.sectionLiquid}</h2>
           {liquid.length === 0 ? (
-            <p className="text-sm text-[var(--color-brand-text-muted)] py-4 text-center">Your easy-access savings will appear here 🌱</p>
+            <p className="text-sm text-[var(--color-brand-text-muted)] py-4 text-center">{t.savings.emptyLiquid}</p>
           ) : (
             liquid.map((h) => (
               <SavingsHoldingRow
@@ -192,15 +197,16 @@ export default function SavingsPage() {
                 baseCurrency={settings.baseCurrency}
                 exchangeRates={exchangeRates}
                 onDelete={deleteSavingsHolding}
+                savings={t.savings}
               />
             ))
           )}
         </section>
 
         <section className="glass-card rounded-2xl p-5">
-          <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-3">Growing Assets</h2>
+          <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-3">{t.savings.sectionInvestment}</h2>
           {inv.length === 0 ? (
-            <p className="text-sm text-[var(--color-brand-text-muted)] py-4 text-center">Your growing assets will appear here 📈</p>
+            <p className="text-sm text-[var(--color-brand-text-muted)] py-4 text-center">{t.savings.emptyInvestment}</p>
           ) : (
             inv.map((h) => (
               <SavingsHoldingRow
@@ -209,6 +215,7 @@ export default function SavingsPage() {
                 baseCurrency={settings.baseCurrency}
                 exchangeRates={exchangeRates}
                 onDelete={deleteSavingsHolding}
+                savings={t.savings}
               />
             ))
           )}

@@ -1,6 +1,7 @@
 'use client'
 
 import { Bot, X } from 'lucide-react'
+import { useT } from '@/lib/i18n'
 
 export interface AIChatHeaderProps {
   onClose: () => void
@@ -10,12 +11,13 @@ export interface AIChatHeaderProps {
  * Title row for the AI assistant sheet.
  */
 export function AIChatHeader({ onClose }: AIChatHeaderProps) {
+  const t = useT()
   return (
     <div className="flex items-center justify-between p-4 border-b border-[var(--color-brand-border)]">
       <div className="flex items-center gap-2">
         <Bot className="w-5 h-5 text-[var(--color-brand-red)]" aria-hidden />
         <h3 id="ai-chat-title" className="text-sm font-semibold text-white">
-          Your AI Assistant
+          {t.ai.headerTitle}
         </h3>
       </div>
       <button

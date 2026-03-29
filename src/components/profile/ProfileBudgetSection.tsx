@@ -7,9 +7,11 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import { calculateMonthlyIncome, effectiveCategoryBudget } from '@/lib/utils/calculations'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useT } from '@/lib/i18n'
 import type { ExpenseCategory } from '@/lib/store/types'
 
 export function ProfileBudgetSection() {
+  const t = useT()
   const store = useFinanceStore()
   const [editingBudget, setEditingBudget] = useState<ExpenseCategory | null>(null)
   const [budgetInput, setBudgetInput] = useState('')
@@ -43,7 +45,7 @@ export function ProfileBudgetSection() {
     <section className="glass-card rounded-2xl p-5 space-y-4">
       <div className="flex items-center gap-2 mb-2">
         <Target className="w-5 h-5 text-[var(--color-brand-red)]" />
-        <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">Budget</h2>
+        <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">{t.profile.budgetTitle}</h2>
       </div>
       <p className="text-[10px] text-[var(--color-brand-text-muted)]">
         All budget amounts are shown in <strong className="text-white">{store.settings.baseCurrency}</strong>, your primary currency.
@@ -58,7 +60,7 @@ export function ProfileBudgetSection() {
               : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
           }`}
         >
-          Fixed amounts
+          {t.profile.budgetModeFixed}
         </button>
         <button
           type="button"
@@ -69,12 +71,12 @@ export function ProfileBudgetSection() {
               : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
           }`}
         >
-          % of monthly income
+          {t.profile.budgetModePercent}
         </button>
       </div>
       {budgetMode === 'percent_of_income' && (
         <p className="text-[10px] text-[var(--color-brand-text-muted)]">
-          Recurring income total (→ {store.settings.baseCurrency}):{' '}
+          {t.profile.budgetRecurringIncome(store.settings.baseCurrency)}
           <span className="font-mono-numbers text-white">
             {formatCurrency(monthlyIncome, store.settings.baseCurrency)}
           </span>
@@ -82,7 +84,7 @@ export function ProfileBudgetSection() {
         </p>
       )}
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Month starts on</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.profile.budgetMonthStarts}</Label>
         <select
           value={store.settings.monthStartDay}
           onChange={(e) => store.updateSettings({ monthStartDay: parseInt(e.target.value) })}
@@ -125,7 +127,7 @@ export function ProfileBudgetSection() {
                   onClick={() => handleBudgetSave(budget.category)}
                   className="text-xs text-[var(--color-brand-green)]"
                 >
-                  Save
+                  {t.profile.budgetSave}
                 </button>
               </div>
             ) : (

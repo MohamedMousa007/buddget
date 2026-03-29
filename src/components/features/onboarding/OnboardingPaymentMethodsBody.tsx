@@ -1,6 +1,7 @@
 'use client'
 
 import { useLayoutEffect, useState } from 'react'
+import { useT } from '@/lib/i18n'
 import { Input } from '@/components/ui/input'
 import type { SurveyStep } from '@/lib/onboarding/surveyConfig'
 import type { OnboardingPaymentDraft, PaymentMethodType } from '@/lib/store/types'
@@ -19,6 +20,9 @@ export function OnboardingPaymentMethodsBody({
   initialDrafts,
   onChange,
 }: OnboardingPaymentMethodsBodyProps) {
+  const t = useT()
+  const onb = t.onboarding
+
   const [customRows, setCustomRows] = useState<{ nickname: string }[]>(() => {
     const fromInitial = initialDrafts.filter(
       (d) => d.preset.startsWith('custom_') || (d.type === 'other' && !step.options.some((o) => o.value === d.preset))
@@ -34,9 +38,9 @@ export function OnboardingPaymentMethodsBody({
 
   const [nicknames, setNicknames] = useState<Record<string, string>>(() => {
     const m: Record<string, string> = {}
-    for (const o of step.options) {
-      const hit = initialDrafts.find((d) => d.preset === o.value)
-      m[o.value] = hit?.nickname ?? (o.value === 'cash' ? 'Cash' : o.label)
+    for (const opt of step.options) {
+      const hit = initialDrafts.find((d) => d.preset === opt.value)
+      m[opt.value] = hit?.nickname ?? (opt.value === 'cash' ? onb.paymentCash : opt.label)
     }
     return m
   })
@@ -90,7 +94,7 @@ export function OnboardingPaymentMethodsBody({
           </label>
           {checked[o.value] ? (
             <Input
-              placeholder="Give it a nickname (e.g. Work debit)"
+              placeholder={onb.paymentNickPlaceholder}
               value={nicknames[o.value] ?? ''}
               onChange={(e) => {
                 const next = { ...nicknames, [o.value]: e.target.value }
@@ -106,7 +110,7 @@ export function OnboardingPaymentMethodsBody({
         {customRows.map((row, i) => (
           <div key={i} className="flex gap-2">
             <Input
-              placeholder="Your custom method name"
+              placeholder={onb.paymentCustomPlaceholder}
               value={row.nickname}
               onChange={(e) => {
                 const next = [...customRows]
@@ -125,7 +129,7 @@ export function OnboardingPaymentMethodsBody({
                 emit(checked, nicknames, next)
               }}
             >
-              Remove
+              {onb.paymentRemove}
             </button>
           </div>
         ))}
@@ -138,7 +142,7 @@ export function OnboardingPaymentMethodsBody({
           }}
           className="text-xs text-[var(--color-brand-red)] hover:underline"
         >
-          + Add your own method
+          {onb.paymentAddCustom}
         </button>
       </div>
     </div>

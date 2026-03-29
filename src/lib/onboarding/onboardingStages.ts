@@ -1,3 +1,4 @@
+import type { Dictionary } from '@/lib/i18n/types'
 import type {
   BudgetCategory,
   Debt,
@@ -126,11 +127,12 @@ export type OnboardingProgressSnapshot = {
   settings: { baseCurrency: string }
 }
 
-export function getOnboardingStageRows(snap: OnboardingProgressSnapshot): OnboardingStageRow[] {
+export function getOnboardingStageRows(snap: OnboardingProgressSnapshot, t: Dictionary): OnboardingStageRow[] {
   const { profile, onboardingState, incomeSources, budgetCategories, debts, paymentMethods, exchangeRates, settings } =
     snap
   const answers = onboardingState.answers
   const base = settings.baseCurrency
+  const o = t.onboarding
 
   const personal = hasPersonalData(profile, answers)
   const income = hasIncomeData(answers, incomeSources, base, exchangeRates)
@@ -143,44 +145,44 @@ export function getOnboardingStageRows(snap: OnboardingProgressSnapshot): Onboar
   const rows: OnboardingStageRow[] = [
     {
       id: 'personal',
-      label: 'Your details',
-      description: 'Your name, country, and city',
+      label: o.stagePersonal,
+      description: o.stagePersonalDesc,
       status: personal ? 'complete' : 'pending',
     },
     {
       id: 'income',
-      label: 'Your income',
-      description: 'How you earn money',
+      label: o.stageIncome,
+      description: o.stageIncomeDesc,
       status: income ? 'complete' : 'pending',
     },
     {
       id: 'costs',
-      label: 'Housing & costs',
-      description: 'Your housing, subscriptions, and spending categories',
+      label: o.stageCosts,
+      description: o.stageCostsDesc,
       status: costs ? 'complete' : 'pending',
     },
     {
       id: 'debts',
-      label: 'Your debts',
-      description: 'Anything you owe',
+      label: o.stageDebts,
+      description: o.stageDebtsDesc,
       status: debtsDone ? 'complete' : 'pending',
     },
     {
       id: 'lifestyle',
-      label: 'Your goals & habits',
-      description: 'What matters most to you financially',
+      label: o.stageLifestyle,
+      description: o.stageLifestyleDesc,
       status: lifestyle ? 'complete' : 'pending',
     },
     {
       id: 'payments',
-      label: 'How you pay',
-      description: 'Your cards, cash, and other payment methods',
+      label: o.stagePayments,
+      description: o.stagePaymentsDesc,
       status: payments ? 'complete' : 'pending',
     },
     {
       id: 'plan',
-      label: 'Your budget plan',
-      description: 'Your personalized spending plan',
+      label: o.stagePlan,
+      description: o.stagePlanDesc,
       status: plan ? 'complete' : 'pending',
     },
   ]
@@ -191,9 +193,9 @@ export function getOnboardingStageRows(snap: OnboardingProgressSnapshot): Onboar
  * 0–100: blends survey answers with real app data (income, budgets, debts, methods).
  * 100 only when the plan stage is complete (accepted plan or manual finish).
  */
-export function getOnboardingCompletionPercentFromSnapshot(snap: OnboardingProgressSnapshot): number {
+export function getOnboardingCompletionPercentFromSnapshot(snap: OnboardingProgressSnapshot, t: Dictionary): number {
   if (isPlanStageComplete(snap.onboardingState)) return 100
-  const rows = getOnboardingStageRows(snap)
+  const rows = getOnboardingStageRows(snap, t)
   const done = rows.filter((r) => r.status === 'complete').length
   const total = rows.length
   if (total === 0) return 0

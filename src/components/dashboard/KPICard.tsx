@@ -97,7 +97,7 @@ export function KPICard({
           {trend !== undefined && (
             <span
               className={cn(
-                'mr-1',
+                'me-1',
                 trend >= 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red)]'
               )}
             >

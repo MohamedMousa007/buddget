@@ -1,6 +1,7 @@
 'use client'
 
 import { Input } from '@/components/ui/input'
+import { useT } from '@/lib/i18n'
 import type { SurveyStep } from '@/lib/onboarding/surveyConfig'
 import type { Currency, OnboardingPaymentDraft } from '@/lib/store/types'
 import {
@@ -54,6 +55,8 @@ export function OnboardingSurveyStepInputs({
   setSubscriptionsPayload,
   baseCurrency,
 }: OnboardingSurveyStepInputsProps) {
+  const t = useT()
+
   if (step.type === 'static') {
     return <p className="text-sm text-[var(--color-brand-text-secondary)] leading-relaxed">{step.body}</p>
   }
@@ -88,7 +91,7 @@ export function OnboardingSurveyStepInputs({
             key={opt.value}
             type="button"
             onClick={() => setSelected(opt.value)}
-            className={`w-full text-left rounded-xl border px-4 py-3 text-sm transition-colors ${
+            className={`w-full text-start rounded-xl border px-4 py-3 text-sm transition-colors ${
               selected === opt.value
                 ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10 text-white'
                 : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] hover:border-[var(--color-brand-red)]/40'
@@ -110,7 +113,7 @@ export function OnboardingSurveyStepInputs({
               key={opt.value}
               type="button"
               onClick={() => toggleMulti(opt.value)}
-              className={`w-full text-left rounded-xl border px-4 py-3 text-sm transition-colors ${
+              className={`w-full text-start rounded-xl border px-4 py-3 text-sm transition-colors ${
                 on
                   ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10 text-white'
                   : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] hover:border-[var(--color-brand-red)]/40'
@@ -121,9 +124,9 @@ export function OnboardingSurveyStepInputs({
           )
         })}
         <p className="text-[10px] text-[var(--color-brand-text-muted)]">
-          {multi.length} selected
-          {step.minSelections != null ? ` (pick at least ${step.minSelections})` : ''}
-          {step.maxSelections != null ? ` · up to ${step.maxSelections}` : ''}
+          {t.common.selected(multi.length)}
+          {step.minSelections != null ? ` ${t.common.pickAtLeast(step.minSelections)}` : ''}
+          {step.maxSelections != null ? ` · ${t.common.upTo(step.maxSelections)}` : ''}
         </p>
       </div>
     )

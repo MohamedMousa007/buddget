@@ -47,7 +47,7 @@ export function AIChat() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-[var(--color-brand-card)] rounded-t-3xl border-t border-[var(--color-brand-border)] h-[80vh] flex flex-col lg:bottom-8 lg:right-8 lg:left-auto lg:top-auto lg:w-[400px] lg:h-[600px] lg:rounded-2xl lg:border"
+            className="fixed bottom-0 start-0 end-0 z-50 bg-[var(--color-brand-card)] rounded-t-3xl border-t border-[var(--color-brand-border)] h-[80vh] flex flex-col lg:bottom-8 lg:end-8 lg:start-auto lg:top-auto lg:w-[400px] lg:h-[600px] lg:rounded-2xl lg:border"
           >
             <AIChatHeader onClose={close} />
 

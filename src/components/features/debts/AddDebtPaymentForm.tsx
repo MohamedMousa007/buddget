@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { buildFiatCurrencyPickerOptions } from '@/lib/utils/currencyPickerOptions'
 import type { AppSettings, Debt, PaymentMethod } from '@/lib/store/types'
+import { useT } from '@/lib/i18n'
 
 export interface AddDebtPaymentFormProps {
   settings: AppSettings
@@ -56,10 +57,12 @@ export function AddDebtPaymentForm({
   onCancel,
   onSubmit,
 }: AddDebtPaymentFormProps) {
+  const t = useT()
+
   if (payableDebts.length === 0) {
     return (
       <p className="text-sm text-[var(--color-brand-text-muted)] py-2">
-        All balances are cleared. You can track a new balance or edit an existing one.
+        {t.addDebtPayment.allCleared}
       </p>
     )
   }
@@ -67,7 +70,7 @@ export function AddDebtPaymentForm({
   return (
     <div className="space-y-4">
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Select balance</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebtPayment.labelBalance}</Label>
         <select
           value={selectedPayable ? selectedDebtId : payableDebts[0]?.id ?? ''}
           onChange={(e) => setSelectedDebtId(e.target.value)}
@@ -81,7 +84,7 @@ export function AddDebtPaymentForm({
         </select>
       </div>
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Date</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebtPayment.labelDate}</Label>
         <Input
           type="date"
           value={paymentDate}
@@ -91,11 +94,11 @@ export function AddDebtPaymentForm({
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Amount Paid</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebtPayment.labelAmountPaid}</Label>
           <Input
             type="number"
             step="0.01"
-            placeholder="0.00"
+            placeholder={t.addDebtPayment.placeholderAmount}
             value={paymentAmount}
             onChange={(e) => {
               setPaymentAmount(e.target.value)
@@ -104,7 +107,7 @@ export function AddDebtPaymentForm({
           />
         </div>
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Payment Currency</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebtPayment.labelPaymentCurrency}</Label>
           <select
             value={paymentCurrency}
             onChange={(e) => setPaymentCurrency(e.target.value)}
@@ -115,7 +118,7 @@ export function AddDebtPaymentForm({
                 {o.value}
               </option>
             ))}
-            {selectedDebt?.isGold ? <option value="XAU">Gold (grams)</option> : null}
+            {selectedDebt?.isGold ? <option value="XAU">{t.addDebtPayment.optionGoldGrams}</option> : null}
           </select>
         </div>
       </div>
@@ -124,7 +127,7 @@ export function AddDebtPaymentForm({
         <p className="text-xs text-[var(--color-brand-gold)] px-1">{paymentPreviewText}</p>
       ) : null}
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)] mb-2 block">Paid via</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)] mb-2 block">{t.addDebtPayment.labelPaidVia}</Label>
         <div className="flex flex-wrap gap-2">
           {paymentMethods.map((method) => (
             <button
@@ -143,7 +146,7 @@ export function AddDebtPaymentForm({
         </div>
       </div>
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Any notes?</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebtPayment.labelNotes}</Label>
         <Textarea
           value={paymentNotes}
           onChange={(e) => setPaymentNotes(e.target.value)}
@@ -156,7 +159,7 @@ export function AddDebtPaymentForm({
           onClick={onCancel}
           className="flex-1 py-3 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
         >
-          Cancel
+          {t.common.cancel}
         </button>
         <button
           type="button"
@@ -164,7 +167,7 @@ export function AddDebtPaymentForm({
           disabled={!selectedDebtId || !paymentAmount}
           className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50"
         >
-          Log payment →
+          {t.addDebtPayment.buttonSubmit}
         </button>
       </div>
     </div>

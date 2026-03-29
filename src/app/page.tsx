@@ -1,6 +1,6 @@
 'use client'
 
-import { INCOME_BLOCKED_HINT, useMonthlyStats } from '@/hooks/useMonthlyStats'
+import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useRates } from '@/hooks/useRates'
 import { useGoldPrice } from '@/hooks/useGoldPrice'
 import { useShallow } from 'zustand/react/shallow'
@@ -12,15 +12,17 @@ import { RecentExpenses } from '@/components/dashboard/RecentExpenses'
 import { SavingsCard } from '@/components/dashboard/SavingsCard'
 import { DebtSnapshot } from '@/components/dashboard/DebtSnapshot'
 import { useRouter } from 'next/navigation'
+import { useT } from '@/lib/i18n'
 
 export default function DashboardPage() {
   useRates()
   useGoldPrice()
   const router = useRouter()
+  const t = useT()
 
   const { budgetCategories } = useFinanceStore(useShallow((s) => ({ budgetCategories: s.budgetCategories })))
   const stats = useMonthlyStats()
-  const incomeNote = stats.incomeBlocked ? INCOME_BLOCKED_HINT : undefined
+  const incomeNote = stats.incomeBlocked ? t.dashboard.incomeBlockedHint : undefined
 
   const savingsBudget = budgetCategories.find((b) => b.category === 'Savings')?.budgetedAmount || 0
 
@@ -30,43 +32,43 @@ export default function DashboardPage() {
         {/* KPI Strip */}
         <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-1">
           <KPICard
-            title="Money In"
+            title={t.dashboard.kpiIncome}
             value={stats.totalIncome}
             currency={stats.baseCurrency}
-            icon="💵"
-            trendLabel="flowing in this month"
+            icon={t.dashboard.kpiIncomeIcon}
+            trendLabel={t.dashboard.kpiIncomeTrend}
             footnote={incomeNote}
           />
           <KPICard
-            title="Money Out"
+            title={t.dashboard.kpiSpent}
             value={stats.totalSpent}
             currency={stats.baseCurrency}
-            icon="💸"
-            trendLabel="This month"
+            icon={t.dashboard.kpiSpentIcon}
+            trendLabel={t.dashboard.kpiSpentTrend}
           />
           <KPICard
-            title="Left to Spend"
+            title={t.dashboard.kpiRemaining}
             value={stats.remaining}
             currency={stats.baseCurrency}
-            icon="💰"
+            icon={t.dashboard.kpiRemainingIcon}
             color={stats.remaining >= 0 ? 'green' : 'red'}
-            trendLabel="still in your pocket"
+            trendLabel={t.dashboard.kpiRemainingTrend}
           />
           <KPICard
-            title="Saved Up"
+            title={t.dashboard.kpiSavings}
             value={stats.savingsTotal}
             currency={stats.baseCurrency}
-            icon="🏦"
+            icon={t.dashboard.kpiSavingsIcon}
             color="gold"
-            trendLabel="total you've built up"
+            trendLabel={t.dashboard.kpiSavingsTrend}
           />
           <KPICard
-            title="To Clear"
+            title={t.dashboard.kpiDebt}
             value={stats.debtRemainingTotal}
             currency={stats.baseCurrency}
-            icon="📉"
+            icon={t.dashboard.kpiDebtIcon}
             color="red"
-            trendLabel="working on clearing"
+            trendLabel={t.dashboard.kpiDebtTrend}
             onClick={() => router.push('/debts')}
           />
         </div>
@@ -78,14 +80,14 @@ export default function DashboardPage() {
             remaining={stats.remaining}
             currency={stats.baseCurrency}
             daysLeft={stats.daysLeft}
-            incomeBlockedNote={stats.incomeBlocked ? INCOME_BLOCKED_HINT : null}
+            incomeBlockedNote={stats.incomeBlocked ? t.dashboard.incomeBlockedHint : null}
           />
           <CategoryBar
             budgetCategories={budgetCategories}
             categorySpending={stats.categorySpending}
             categoryBudgetCaps={stats.categoryBudgetCaps}
             currency={stats.baseCurrency}
-            incomeBlockedNote={stats.incomeBlocked ? INCOME_BLOCKED_HINT : null}
+            incomeBlockedNote={stats.incomeBlocked ? t.dashboard.incomeBlockedHint : null}
           />
         </div>
 

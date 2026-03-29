@@ -3,24 +3,27 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 import { useAuthModal } from '@/hooks/useAuthModal'
+import { useT } from '@/lib/i18n'
 import { cardStyle } from '@/components/features/auth-modal/authModalTokens'
 import { AuthModalBranding } from '@/components/features/auth-modal/AuthModalBranding'
 import { AuthForgotStep } from '@/components/features/auth-modal/AuthForgotStep'
 import { AuthVerifyStep } from '@/components/features/auth-modal/AuthVerifyStep'
 import { AuthSignInUpStep } from '@/components/features/auth-modal/AuthSignInUpStep'
+import { LanguageToggle } from '@/components/ui/LanguageToggle'
 
 /**
  * Global Supabase auth overlay; logic in `useAuthModal`.
  */
 export function AuthModal() {
   const a = useAuthModal()
+  const t = useT()
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" role="presentation">
       <button
         type="button"
         className="absolute inset-0 cursor-default bg-black/25 backdrop-blur-md transition-colors hover:bg-black/35"
-        aria-label="Close sign in"
+        aria-label={t.auth.closeSignIn}
         onClick={() => a.closeAuthModal()}
       />
       <motion.div
@@ -37,12 +40,16 @@ export function AuthModal() {
         <button
           type="button"
           onClick={() => a.closeAuthModal()}
-          className="absolute right-3 top-3 rounded-lg p-2 text-[#5A5A72] transition-colors hover:bg-white/5 hover:text-white"
-          aria-label="Close"
+          className="absolute end-3 top-3 rounded-lg p-2 text-[#5A5A72] transition-colors hover:bg-white/5 hover:text-white"
+          aria-label={t.common.close}
         >
           <X className="h-5 w-5" />
         </button>
         <AuthModalBranding message={a.authModalMessage} />
+
+        <div className="flex justify-center mb-5">
+          <LanguageToggle size="sm" />
+        </div>
 
         <AnimatePresence mode="wait">
           <motion.div

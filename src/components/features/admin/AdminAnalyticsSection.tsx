@@ -32,7 +32,7 @@ export function AdminAnalyticsSection({ admin }: AdminAnalyticsSectionProps) {
       </button>
       {admin.analytics && admin.users.length > 0 ? (
         <div className="overflow-x-auto rounded-xl border border-[var(--color-brand-border)] max-h-72 overflow-y-auto">
-          <table className="w-full text-left text-[11px]">
+          <table className="w-full text-start text-[11px]">
             <thead className="sticky top-0 bg-[var(--color-brand-bg)] text-[var(--color-brand-text-muted)]">
               <tr>
                 <th className="p-2 font-medium">User</th>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { User, Pencil } from 'lucide-react'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -13,6 +13,7 @@ import Link from 'next/link'
 import { LogOut, Check, ArrowRight, Lock } from 'lucide-react'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { formatCurrency } from '@/lib/utils/formatters'
+import { useT } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/client'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 
@@ -31,13 +32,9 @@ function FieldRow({ label, value }: FieldRowProps) {
 }
 
 export default function ProfilePage() {
+  const t = useT()
   const { user } = useAuth()
   const store = useFinanceStore()
-
-  const supabaseConfigured = useMemo(
-    () => !!(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()),
-    []
-  )
 
   useEffect(() => {
     if (user?.email) {
@@ -50,7 +47,7 @@ export default function ProfilePage() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', country: '', city: '' })
 
   const avatarSrc = resolveProfileAvatarSrc(store.profile)
-  const displayName = store.profile.name || 'User'
+  const displayName = store.profile.name || t.profile.displayNameFallback
   const displayEmail = user?.email || store.profile.email || ''
 
   const router = useRouter()
@@ -69,22 +66,22 @@ export default function ProfilePage() {
   const [resetSent, setResetSent] = useState(false)
 
   const setupSteps = [
-    { label: 'Added an income source', done: incomeSources.length > 0, href: '/income' },
-    { label: 'Set up budget categories', done: budgetCategories.some((b) => b.budgetedAmount > 0), href: '/settings' },
-    { label: 'Added a payment method', done: paymentMethods.length > 1, href: '/settings' },
-    { label: 'Logged first expense', done: expenses.length > 0, href: '/expenses' },
-    { label: 'Added a savings holding', done: savingsHoldings.length > 0, href: '/savings' },
+    { label: t.profile.setupStepIncome, done: incomeSources.length > 0, href: '/income' },
+    { label: t.profile.setupStepBudget, done: budgetCategories.some((b) => b.budgetedAmount > 0), href: '/settings' },
+    { label: t.profile.setupStepPayment, done: paymentMethods.length > 1, href: '/settings' },
+    { label: t.profile.setupStepExpense, done: expenses.length > 0, href: '/expenses' },
+    { label: t.profile.setupStepSavings, done: savingsHoldings.length > 0, href: '/savings' },
   ]
   const completedCount = setupSteps.filter((s) => s.done).length
 
   const setupMessage =
     completedCount === 0
-      ? "Let\u2019s get your dashboard set up! It takes 2 minutes."
+      ? t.profile.setupMsg0
       : completedCount <= 2
-        ? 'Great start! Keep going \uD83C\uDF31'
+        ? t.profile.setupMsg1
         : completedCount <= 4
-          ? "Almost there \u2014 you\u2019re nearly fully set up \uD83D\uDCAA"
-          : "Your setup is complete \u2014 you\u2019re all set! \uD83C\uDF89"
+          ? t.profile.setupMsg3
+          : t.profile.setupMsg5
 
   const handlePasswordReset = async () => {
     const email = user?.email
@@ -144,7 +141,7 @@ export default function ProfilePage() {
         <PageHeaderContent>
           <h1 className="text-xl font-bold text-white flex items-center gap-2">
             <User className="w-6 h-6 text-[var(--color-brand-red)]" />
-            My Profile
+            {t.profile.pageTitle}
           </h1>
         </PageHeaderContent>
       </PageHeader>
@@ -167,8 +164,8 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={() => setAvatarModalOpen(true)}
-                    className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-[#E50914] flex items-center justify-center cursor-pointer hover:bg-[var(--color-brand-red-hover)] transition-colors"
-                    aria-label="Change avatar"
+                    className="absolute bottom-0 end-0 w-7 h-7 rounded-full bg-[#E50914] flex items-center justify-center cursor-pointer hover:bg-[var(--color-brand-red-hover)] transition-colors"
+                    aria-label={t.profile.changeAvatar}
                   >
                     <Pencil className="w-3.5 h-3.5 text-white" />
                   </button>
@@ -180,7 +177,7 @@ export default function ProfilePage() {
                   onClick={enterEditMode}
                   className="text-sm text-[#A0A0B8] hover:text-white border border-[#2A2A38] rounded-lg px-3 py-1.5 mt-3 w-full text-center transition-colors"
                 >
-                  Edit Profile
+                  {t.profile.editProfile}
                 </button>
               )}
             </div>
@@ -190,17 +187,17 @@ export default function ProfilePage() {
               {editMode ? (
                 <div className="space-y-4">
                   <div>
-                    <label className="text-xs uppercase tracking-wider text-[#5A5A72] block mb-1">Your name</label>
+                    <label className="text-xs uppercase tracking-wider text-[#5A5A72] block mb-1">{t.profile.labelName}</label>
                     <input
                       value={form.name}
                       onChange={(e) => updateField('name', e.target.value)}
                       className={inputClass}
-                      placeholder="Your name"
+                      placeholder={t.profile.placeholderName}
                     />
                   </div>
                   <div>
                     <label className="text-xs uppercase tracking-wider text-[#5A5A72] block mb-1">
-                      Email address {user ? '(from account)' : ''}
+                      {user ? t.profile.labelEmailAccount : t.profile.labelEmail}
                     </label>
                     <input
                       value={form.email}
@@ -210,40 +207,40 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs uppercase tracking-wider text-[#5A5A72] block mb-1">Phone number</label>
+                    <label className="text-xs uppercase tracking-wider text-[#5A5A72] block mb-1">{t.profile.labelPhone}</label>
                     <input
                       value={form.phone}
                       onChange={(e) => updateField('phone', e.target.value)}
                       className={inputClass}
-                      placeholder="+971 50 000 0000"
+                      placeholder={t.profile.placeholderPhone}
                     />
                   </div>
                   <div>
-                    <label className="text-xs uppercase tracking-wider text-[#5A5A72] block mb-1">Country</label>
+                    <label className="text-xs uppercase tracking-wider text-[#5A5A72] block mb-1">{t.profile.labelCountry}</label>
                     <input
                       value={form.country}
                       onChange={(e) => updateField('country', e.target.value)}
                       className={inputClass}
-                      placeholder="Country"
+                      placeholder={t.profile.placeholderCountry}
                     />
                   </div>
                   <div>
-                    <label className="text-xs uppercase tracking-wider text-[#5A5A72] block mb-1">City</label>
+                    <label className="text-xs uppercase tracking-wider text-[#5A5A72] block mb-1">{t.profile.labelCity}</label>
                     <input
                       value={form.city}
                       onChange={(e) => updateField('city', e.target.value)}
                       className={inputClass}
-                      placeholder="Dubai"
+                      placeholder={t.profile.placeholderCity}
                     />
                   </div>
                 </div>
               ) : (
                 <>
-                  <FieldRow label="Your name" value={displayName} />
-                  <FieldRow label="Email address" value={displayEmail} />
-                  <FieldRow label="Phone number" value={store.profile.phone || ''} />
-                  <FieldRow label="Country" value={store.profile.country || ''} />
-                  <FieldRow label="City" value={store.profile.city || ''} />
+                  <FieldRow label={t.profile.labelName} value={displayName} />
+                  <FieldRow label={t.profile.labelEmail} value={displayEmail} />
+                  <FieldRow label={t.profile.labelPhone} value={store.profile.phone || ''} />
+                  <FieldRow label={t.profile.labelCountry} value={store.profile.country || ''} />
+                  <FieldRow label={t.profile.labelCity} value={store.profile.city || ''} />
                 </>
               )}
             </div>
@@ -256,14 +253,14 @@ export default function ProfilePage() {
                 onClick={discard}
                 className="px-4 py-2 rounded-xl border border-[#2A2A38] text-sm text-[#A0A0B8] hover:text-white hover:bg-[var(--color-brand-elevated)] transition-colors"
               >
-                Discard
+                {t.profile.discard}
               </button>
               <button
                 type="button"
                 onClick={save}
                 className="px-4 py-2 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
               >
-                Save changes
+                {t.profile.saveChanges}
               </button>
             </div>
           )}
@@ -273,13 +270,13 @@ export default function ProfilePage() {
         <div className="bg-[#111118] border border-[#2A2A38] rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
-              Your Monthly Budget Plan
+              {t.profile.budgetTitle}
             </h2>
             <Link
               href="/settings"
               className="text-xs text-[var(--color-brand-red)] hover:underline"
             >
-              Edit budget →
+              {t.profile.budgetEditLink}
             </Link>
           </div>
           <div className="space-y-3">
@@ -310,7 +307,7 @@ export default function ProfilePage() {
         {/* Section 3 — Setup Progress */}
         <div className="bg-[#111118] border border-[#2A2A38] rounded-2xl p-6">
           <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-1">
-            Setup Progress
+            {t.profile.setupTitle}
           </h2>
           <p className="text-xs text-[var(--color-brand-text-muted)] mb-4">{setupMessage}</p>
           <div className="h-2 bg-[var(--color-brand-border)] rounded-full overflow-hidden mb-4">
@@ -334,7 +331,7 @@ export default function ProfilePage() {
                 </div>
                 {!step.done && (
                   <Link href={step.href} className="text-xs text-[var(--color-brand-red)] hover:underline flex items-center gap-0.5">
-                    Do it <ArrowRight className="w-3 h-3" />
+                    {t.profile.doIt} <ArrowRight className="w-3 h-3" />
                   </Link>
                 )}
               </li>
@@ -346,11 +343,11 @@ export default function ProfilePage() {
         {user && (
           <div className="bg-[#111118] border border-[#2A2A38] rounded-2xl p-6">
             <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-4">
-              Account
+              {t.profile.accountTitle}
             </h2>
             <div className="space-y-3">
-              <FieldRow label="Email" value={user.email || ''} />
-              <FieldRow label="Member since" value={store.profile.createdAt ? new Date(store.profile.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : ''} />
+              <FieldRow label={t.profile.accountEmail} value={user.email || ''} />
+              <FieldRow label={t.profile.accountMemberSince} value={store.profile.createdAt ? new Date(store.profile.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : ''} />
             </div>
             <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-[#2A2A38]">
               <button
@@ -359,7 +356,7 @@ export default function ProfilePage() {
                 className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#2A2A38] text-sm text-[#A0A0B8] hover:text-white hover:bg-[var(--color-brand-elevated)] transition-colors"
               >
                 <Lock className="w-4 h-4" />
-                {resetSent ? 'Reset link sent 📬' : 'Change password'}
+                {resetSent ? t.profile.resetLinkSent : t.profile.changePassword}
               </button>
               <button
                 type="button"
@@ -367,7 +364,7 @@ export default function ProfilePage() {
                 className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#E50914]/30 text-sm text-[#E50914] hover:bg-[#E50914]/10 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
-                Sign out
+                {t.common.signOut}
               </button>
             </div>
           </div>

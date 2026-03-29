@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import { PAYMENT_METHOD_TYPE_OPTIONS } from '@/lib/constants/finance'
 import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
+import { useT } from '@/lib/i18n'
 import type { Currency, PaymentMethodType } from '@/lib/store/types'
 
 const COLORS = ['#C0C0C0', '#F5C842', '#1DB954', '#E50914', '#3B82F6', '#A855F7', '#EC4899', '#FFFFFF']
@@ -19,6 +20,7 @@ const COLORS = ['#C0C0C0', '#F5C842', '#1DB954', '#E50914', '#3B82F6', '#A855F7'
 export function AddPaymentMethodSheet() {
   const { addPaymentMethod, settings } = useFinanceStore()
   const { activeModal, setActiveModal } = useSettingsStore()
+  const t = useT()
   const isOpen = activeModal === 'addPaymentMethod'
 
   const [name, setName] = useState('')
@@ -70,13 +72,13 @@ export function AddPaymentMethodSheet() {
   return (
     <ModalShell open={isOpen} onBackdropClick={handleClose}>
             <div className="p-6">
-              <ModalSheetHeader title="Add a Payment Method" onClose={handleClose} />
+              <ModalSheetHeader title={t.modals.addPaymentTitle} onClose={handleClose} />
 
               <div className="space-y-4">
                 <div>
-                  <Label className="text-xs text-[var(--color-brand-text-secondary)]">Name</Label>
+                  <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.modals.addPaymentLabelName}</Label>
                   <Input
-                    placeholder="e.g. My Visa, Cash, ADCB Debit"
+                    placeholder={t.modals.addPaymentPlaceholderName}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
@@ -84,7 +86,7 @@ export function AddPaymentMethodSheet() {
                 </div>
 
                 <div>
-                  <Label className="text-xs text-[var(--color-brand-text-secondary)] mb-2 block">Type</Label>
+                  <Label className="text-xs text-[var(--color-brand-text-secondary)] mb-2 block">{t.modals.addPaymentLabelType}</Label>
                   <div className="flex flex-wrap gap-2">
                     {PAYMENT_METHOD_TYPE_OPTIONS.map((t) => (
                       <button
@@ -103,7 +105,7 @@ export function AddPaymentMethodSheet() {
                 </div>
 
                 <div>
-                  <Label className="text-xs text-[var(--color-brand-text-secondary)]">Currency</Label>
+                  <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.modals.addPaymentLabelCurrency}</Label>
                   <FiatCurrencySelect
                     value={currency}
                     onChange={setCurrency}
@@ -112,7 +114,7 @@ export function AddPaymentMethodSheet() {
                 </div>
 
                 <div>
-                  <Label className="text-xs text-[var(--color-brand-text-secondary)] mb-2 block">Color</Label>
+                  <Label className="text-xs text-[var(--color-brand-text-secondary)] mb-2 block">{t.modals.addPaymentLabelColor}</Label>
                   <div className="flex gap-2">
                     {COLORS.map((c) => (
                       <button
@@ -128,7 +130,7 @@ export function AddPaymentMethodSheet() {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs text-[var(--color-brand-text-secondary)]">Make this my default</Label>
+                  <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.modals.addPaymentLabelDefault}</Label>
                   <Switch checked={isDefault} onCheckedChange={setIsDefault} />
                 </div>
 
@@ -137,14 +139,14 @@ export function AddPaymentMethodSheet() {
                     onClick={handleClose}
                     className="flex-1 py-3 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
                   >
-                    Never mind
+                    {t.common.neverMind}
                   </button>
                   <button
                     onClick={handleSubmit}
                     disabled={!name}
                     className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50"
                   >
-                    Save method →
+                    {t.modals.addPaymentSubmit}
                   </button>
                 </div>
               </div>

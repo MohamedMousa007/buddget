@@ -6,23 +6,24 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
-
-const OPTIONS = [
-  { id: 'addExpense', label: 'Log a purchase', icon: Receipt, emoji: '💸' },
-  { id: 'addIncome', label: 'Add income source', icon: DollarSign, emoji: '💵' },
-  { id: 'addPaymentMethod', label: 'Add a payment method', icon: CreditCard, emoji: '💳' },
-  { id: 'addDebt', label: 'Track or pay a balance', icon: FileText, emoji: '📋' },
-  { id: 'aiChat', label: 'Ask your AI assistant', icon: Bot, emoji: '🤖' },
-]
+import { useT } from '@/lib/i18n'
 
 export function QuickAddFAB() {
   const { activeModal, setActiveModal, openDebtSheetNew } = useSettingsStore()
   const requireAuth = useRequireAuthAction()
+  const t = useT()
   const isOpen = activeModal === 'quickAdd'
 
+  const OPTIONS = [
+    { id: 'addExpense', label: t.modals.fabLogPurchase, icon: Receipt, emoji: '💸' },
+    { id: 'addIncome', label: t.modals.fabAddIncome, icon: DollarSign, emoji: '💵' },
+    { id: 'addPaymentMethod', label: t.modals.fabAddPayment, icon: CreditCard, emoji: '💳' },
+    { id: 'addDebt', label: t.modals.fabTrackDebt, icon: FileText, emoji: '📋' },
+    { id: 'aiChat', label: t.modals.fabAskAi, icon: Bot, emoji: '🤖' },
+  ]
+
   const runOption = (optionId: string) => {
-    const msg =
-      'Sign in to start tracking your finances and syncing across devices 🔐'
+    const msg = t.modals.fabRequireAuth
     if (optionId === 'addDebt') {
       requireAuth(() => {
         setActiveModal(null)
@@ -34,7 +35,7 @@ export function QuickAddFAB() {
       requireAuth(() => {
         setActiveModal(null)
         setActiveModal('aiChat')
-      }, 'Sign in to chat with your AI assistant 🤖')
+      }, t.modals.fabRequireAuthAi)
       return
     }
     requireAuth(() => {
@@ -50,7 +51,7 @@ export function QuickAddFAB() {
       {/* Desktop FAB */}
       <button
         onClick={() => setActiveModal(isOpen ? null : 'quickAdd')}
-        className="hidden lg:flex fixed bottom-8 right-8 z-50 items-center justify-center w-14 h-14 rounded-full bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white shadow-lg shadow-red-900/30 transition-all duration-200 active:scale-95 cursor-pointer"
+        className="hidden lg:flex fixed bottom-8 end-8 z-50 items-center justify-center w-14 h-14 rounded-full bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white shadow-lg shadow-red-900/30 transition-all duration-200 active:scale-95 cursor-pointer"
       >
         <motion.div
           animate={{ rotate: isOpen ? 45 : 0 }}
@@ -64,16 +65,16 @@ export function QuickAddFAB() {
         open={isOpen}
         onBackdropClick={() => setActiveModal(null)}
         dragToClose
-        panelClassName="!bottom-[max(0.5rem,calc(4rem+env(safe-area-inset-bottom,0px)))] !left-2 !right-2 !max-h-[min(72vh,calc(100dvh-5.5rem))] lg:!bottom-24 lg:!right-8 lg:!left-auto lg:!top-auto lg:!translate-x-0 lg:!translate-y-0 lg:!w-[360px] lg:!max-h-[min(90vh,520px)] lg:!rounded-2xl"
+        panelClassName="!bottom-[max(0.5rem,calc(4rem+env(safe-area-inset-bottom,0px)))] !start-2 !end-2 !max-h-[min(72vh,calc(100dvh-5.5rem))] lg:!bottom-24 lg:!end-8 lg:!start-auto lg:!top-auto lg:!translate-x-0 lg:!translate-y-0 lg:!w-[360px] lg:!max-h-[min(90vh,520px)] lg:!rounded-2xl"
       >
-        <h3 className="text-lg font-semibold text-white mb-4 pr-2">What would you like to do?</h3>
+        <h3 className="text-lg font-semibold text-white mb-4 pe-2">{t.modals.fabTitle}</h3>
         <div className="space-y-1">
           {OPTIONS.map((option) => (
             <button
               key={option.id}
               type="button"
               onClick={() => runOption(option.id)}
-              className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm text-white hover:bg-[var(--color-brand-elevated)] transition-colors text-left"
+              className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm text-white hover:bg-[var(--color-brand-elevated)] transition-colors text-start"
             >
               <span className="text-lg shrink-0">{option.emoji}</span>
               <span>{option.label}</span>

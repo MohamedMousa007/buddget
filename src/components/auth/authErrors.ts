@@ -1,13 +1,15 @@
+import type { Dictionary } from '@/lib/i18n'
+
 /** Map Supabase / network errors to user-facing copy (AuthModal). */
-export function mapAuthError(err: unknown, context: 'signin' | 'signup' | 'otp' | 'forgot' | 'resend'): string {
+export function mapAuthError(err: unknown, context: 'signin' | 'signup' | 'otp' | 'forgot' | 'resend', t: Dictionary): string {
   const raw = err instanceof Error ? err.message : String(err)
   const m = raw.toLowerCase()
 
   if (m.includes('fetch') || m.includes('network') || m.includes('failed to fetch')) {
-    return 'Can\'t connect right now. Check your internet and try again.'
+    return t.auth.errorNetwork
   }
   if (m.includes('rate limit') || m.includes('too many') || m.includes('over_email_send_rate_limit')) {
-    return 'Slow down a little — try again in a moment.'
+    return t.auth.errorRateLimit
   }
 
   if (context === 'signup') {
@@ -18,18 +20,18 @@ export function mapAuthError(err: unknown, context: 'signin' | 'signup' | 'otp' 
 
   if (context === 'signin') {
     if (m.includes('invalid login credentials') || m.includes('invalid credentials')) {
-      return 'That password doesn\'t look right. Try again or reset it.'
+      return t.auth.errorBadPassword
     }
     if (m.includes('email not confirmed')) {
-      return 'Looks like your email isn\'t confirmed yet. Resend confirmation code?'
+      return t.auth.errorUnconfirmed
     }
   }
 
   if (context === 'otp' && m.includes('expired')) {
-    return 'This code has expired. Request a new one.'
+    return t.auth.errorOtpExpired
   }
 
-  return raw || 'Oops, something went wrong. Let\'s try again.'
+  return raw || t.auth.errorFallback
 }
 
 export function isValidEmailFormat(email: string): boolean {

@@ -9,8 +9,10 @@ import {
 } from '@/lib/utils/calculations'
 import { convertCurrency } from '@/lib/utils/currency'
 import { MoneyDisplay } from '@/components/ui/MoneyDisplay'
+import { useT } from '@/lib/i18n'
 
 export function DebtSnapshot() {
+  const t = useT()
   const { debts, debtPayments, settings, exchangeRates, goldPricePerGram } = useFinanceStore(
     useShallow((s) => ({
       debts: s.debts,
@@ -27,7 +29,7 @@ export function DebtSnapshot() {
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
-        Balances You&apos;re Clearing
+        {t.dashboard.debtTitle}
       </h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {debts.map((debt) => {
@@ -52,7 +54,7 @@ export function DebtSnapshot() {
                       ? 'bg-[var(--color-brand-gold)]/20 text-[var(--color-brand-gold)]'
                       : 'bg-[var(--color-brand-green)]/20 text-[var(--color-brand-green)]'
                   }`}>
-                    {debt.isGold ? `${debt.goldKarat || 24}K` : 'Cash'}
+                    {debt.isGold ? `${debt.goldKarat || 24}K` : t.dashboard.debtBadgeCash}
                   </span>
                 </div>
 
@@ -78,7 +80,7 @@ export function DebtSnapshot() {
                 </div>
 
                 <p className="text-xs text-[var(--color-brand-text-muted)] mt-2">
-                  {paymentsCount} payment{paymentsCount !== 1 ? 's' : ''} towards this
+                  {t.dashboard.debtPayments(paymentsCount)}{t.dashboard.debtPaymentsTowardsThis}
                 </p>
               </div>
             </Link>

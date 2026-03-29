@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { AlertCircle } from 'lucide-react'
+import { useT } from '@/lib/i18n'
 
 export interface AuthFormErrorAlertProps {
   error: string
@@ -13,6 +14,7 @@ export interface AuthFormErrorAlertProps {
  * Inline auth error with optional recovery actions.
  */
 export function AuthFormErrorAlert({ error, onSignInInstead, onResendCode }: AuthFormErrorAlertProps) {
+  const t = useT()
   return (
     <AnimatePresence>
       {error ? (
@@ -25,19 +27,19 @@ export function AuthFormErrorAlert({ error, onSignInInstead, onResendCode }: Aut
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>
             {error}
-            {error.includes('Sign in instead?') ? (
+            {error === t.auth.errorAccountExists ? (
               <>
                 {' '}
                 <button type="button" className="underline font-medium" onClick={onSignInInstead}>
-                  Sign in instead
+                  {t.auth.signInInstead}
                 </button>
               </>
             ) : null}
-            {error.includes('Resend confirmation code?') ? (
+            {error === t.auth.errorUnconfirmed ? (
               <>
                 {' '}
                 <button type="button" className="underline font-medium" onClick={() => void onResendCode()}>
-                  Send a new code
+                  {t.auth.sendNewCode}
                 </button>
               </>
             ) : null}

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
+import { useT } from '@/lib/i18n'
 import {
   getOnboardingCompletionPercent,
   getOnboardingStageRows,
@@ -17,6 +18,7 @@ const AVATAR_FILE_MAX_BYTES = 2 * 1024 * 1024
  * Profile screen: avatar upload, onboarding progress, navigation to redo flow.
  */
 export function useProfilePage() {
+  const t = useT()
   const router = useRouter()
   const fileRef = useRef<HTMLInputElement>(null)
   const { user, openAuthModal } = useAuth()
@@ -34,9 +36,9 @@ export function useProfilePage() {
     }
   }, [user?.email])
 
-  const pct = getOnboardingCompletionPercent(store)
+  const pct = getOnboardingCompletionPercent(store, t)
   const expertDone = isExpertOnboardingComplete(store.onboardingState)
-  const onboardingStages = getOnboardingStageRows(onboardingProgressSnapshotFromStore(store))
+  const onboardingStages = getOnboardingStageRows(onboardingProgressSnapshotFromStore(store), t)
   const activePreset = store.profile.avatarPresetId
 
   const onAvatarFile = useCallback(
@@ -45,7 +47,7 @@ export function useProfilePage() {
       e.target.value = ''
       if (!file || !file.type.startsWith('image/')) return
       if (file.size > AVATAR_FILE_MAX_BYTES) {
-        window.alert('That image is a bit large — please pick one under 2 MB.')
+        window.alert(t.profile.avatarTooLarge)
         return
       }
       const reader = new FileReader()
@@ -57,7 +59,7 @@ export function useProfilePage() {
       }
       reader.readAsDataURL(file)
     },
-    [store]
+    [store, t]
   )
 
   const goOnboarding = useCallback(() => {

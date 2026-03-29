@@ -5,15 +5,17 @@ import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useAddExpenseSheet } from '@/hooks/useAddExpenseSheet'
 import { AddExpenseForm } from '@/components/features/expenses/AddExpenseForm'
+import { useT } from '@/lib/i18n'
 
 export function AddExpenseSheet() {
   const sheet = useAddExpenseSheet()
+  const t = useT()
   useEscapeClose(sheet.isOpen, sheet.handleClose)
 
   return (
     <ModalShell open={sheet.isOpen} onBackdropClick={sheet.handleClose}>
       <div className="p-6">
-        <ModalSheetHeader title="Log a Purchase" onClose={sheet.handleClose} />
+        <ModalSheetHeader title={t.addExpense.sheetTitle} onClose={sheet.handleClose} />
         <AddExpenseForm
           date={sheet.date}
           setDate={sheet.setDate}

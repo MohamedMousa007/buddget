@@ -10,18 +10,20 @@ import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useEditExpenseForm } from '@/hooks/useEditExpenseForm'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { ExpenseCategoryChips, PaymentMethodChips } from '@/components/features/expenses/ExpenseFormPickers'
+import { useT } from '@/lib/i18n'
 
 export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClose: () => void }) {
   useEscapeClose(true, onClose)
   const f = useEditExpenseForm(expense, onClose)
+  const t = useT()
 
   return (
     <div className="p-6">
-      <ModalSheetHeader title="Edit Purchase" onClose={onClose} />
+      <ModalSheetHeader title={t.addExpense.editTitle} onClose={onClose} />
 
       <div className="space-y-4">
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">When?</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addExpense.labelWhen}</Label>
           <Input
             type="date"
             value={f.date}
@@ -31,7 +33,7 @@ export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClos
         </div>
 
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">What was it for?</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addExpense.labelDescription}</Label>
           <Input
             value={f.description}
             onChange={(e) => f.setDescription(e.target.value)}
@@ -41,7 +43,7 @@ export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClos
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">How much?</Label>
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addExpense.labelAmount}</Label>
             <Input
               type="number"
               step="0.01"
@@ -54,7 +56,7 @@ export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClos
             />
           </div>
           <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">Currency</Label>
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addExpense.labelCurrency}</Label>
             <FiatCurrencySelect
               value={f.currency}
               onChange={(c) => {
@@ -76,12 +78,12 @@ export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClos
         />
 
         <div className="flex items-center justify-between">
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Does this repeat?</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addExpense.labelRepeats}</Label>
           <Switch checked={f.isRecurring} onCheckedChange={f.setIsRecurring} />
         </div>
 
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">Anything to add?</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addExpense.labelNotes}</Label>
           <Textarea
             value={f.notes}
             onChange={(e) => f.setNotes(e.target.value)}
@@ -95,7 +97,7 @@ export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClos
             onClick={onClose}
             className="flex-1 py-3 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
           >
-          Never mind
+          {t.common.neverMind}
         </button>
           <button
             type="button"
@@ -103,7 +105,7 @@ export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClos
             disabled={!f.description || !f.amount}
             className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Save it ✓
+            {t.addExpense.buttonSave}
           </button>
         </div>
       </div>

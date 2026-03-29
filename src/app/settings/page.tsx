@@ -5,6 +5,7 @@ import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useSettingsPage } from '@/hooks/useSettingsPage'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useT } from '@/lib/i18n'
 import { SettingsImportBanner } from '@/components/features/settings/SettingsImportBanner'
 import { SettingsGuestAccountCard } from '@/components/features/settings/SettingsGuestAccountCard'
 import { SettingsSignedInAccountCard } from '@/components/features/settings/SettingsSignedInAccountCard'
@@ -17,6 +18,7 @@ import { SettingsDataManagementSection } from '@/components/features/settings/Se
 import { SettingsAppPreferencesSection } from '@/components/features/settings/SettingsAppPreferencesSection'
 
 export default function SettingsPage() {
+  const t = useT()
   const store = useFinanceStore()
   const { setActiveModal } = useSettingsStore()
   const requireAuth = useRequireAuthAction()
@@ -26,9 +28,9 @@ export default function SettingsPage() {
     <div className="min-h-screen">
       <PageHeader>
         <PageHeaderContent>
-          <h1 className="text-xl font-bold text-white">Your Preferences</h1>
+          <h1 className="text-xl font-bold text-white">{t.settings.pageTitle}</h1>
           <p className="text-xs text-[var(--color-brand-text-muted)] mt-1">
-            Manage your currencies, payments, and data. Budget settings live in your Profile.
+            {t.settings.pageSubtitle}
           </p>
         </PageHeaderContent>
       </PageHeader>
@@ -49,7 +51,7 @@ export default function SettingsPage() {
           onAddClick={() =>
             requireAuth(
               () => setActiveModal('addPaymentMethod'),
-              'Sign in to start adding your payment methods.'
+              t.modals.fabRequireAuth
             )
           }
         />
@@ -66,7 +68,7 @@ export default function SettingsPage() {
         <SettingsAppPreferencesSection store={store} />
 
         <p className="text-center text-xs text-[var(--color-brand-text-muted)] pb-8">
-          Buddget v1.0 — Your money, your way.
+          {t.settings.footer}
         </p>
       </div>
     </div>

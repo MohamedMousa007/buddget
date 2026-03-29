@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import type { Debt, DebtRecurringFrequency } from '@/lib/store/types'
 import { RECURRING_DEBT_FREQUENCIES } from '@/lib/constants/debtRecurring'
+import { useT } from '@/lib/i18n'
 
 export interface RecurringDebtPaymentFormProps {
   payableDebts: Debt[]
@@ -60,10 +61,12 @@ export function RecurringDebtPaymentForm({
   onCancel,
   onSubmit,
 }: RecurringDebtPaymentFormProps) {
+  const t = useT()
+
   if (payableDebts.length === 0) {
     return (
       <p className="text-sm text-[var(--color-brand-text-muted)]">
-        No balances with an amount remaining. Clear or add a balance first.
+        {t.recurringDebt.emptyNoBalances}
       </p>
     )
   }
@@ -71,7 +74,7 @@ export function RecurringDebtPaymentForm({
   return (
     <div className="space-y-4">
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Balance</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.recurringDebt.labelBalance}</Label>
         <select
           value={selectDebtValue}
           onChange={(e) => onDebtChange(e.target.value)}
@@ -86,12 +89,12 @@ export function RecurringDebtPaymentForm({
       </div>
 
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Amount per payment</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.recurringDebt.labelAmount}</Label>
         <div className="grid grid-cols-2 gap-3 mt-1">
           <Input
             type="number"
             step="0.01"
-            placeholder="0.00"
+            placeholder={t.recurringDebt.placeholderAmount}
             value={amount}
             onChange={(e) => onAmountChange(e.target.value)}
             className="bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers"
@@ -106,7 +109,7 @@ export function RecurringDebtPaymentForm({
                 {o.value}
               </option>
             ))}
-            {selectedDebt?.isGold ? <option value="XAU">Gold (grams)</option> : null}
+            {selectedDebt?.isGold ? <option value="XAU">{t.addDebtPayment.optionGoldGrams}</option> : null}
           </select>
         </div>
       </div>
@@ -115,7 +118,7 @@ export function RecurringDebtPaymentForm({
       {previewLine ? <p className="text-xs text-[var(--color-brand-gold)]">{previewLine}</p> : null}
 
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Frequency</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.recurringDebt.labelFrequency}</Label>
         <select
           value={frequency}
           onChange={(e) => onFrequencyChange(e.target.value as DebtRecurringFrequency)}
@@ -130,7 +133,7 @@ export function RecurringDebtPaymentForm({
       </div>
 
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Next due date</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.recurringDebt.labelNextDue}</Label>
         <Input
           type="date"
           value={nextDueDate}
@@ -140,7 +143,7 @@ export function RecurringDebtPaymentForm({
       </div>
 
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)] mb-2 block">Paid via</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)] mb-2 block">{t.recurringDebt.labelPaidVia}</Label>
         <div className="flex flex-wrap gap-2">
           {paymentMethods.map((method) => (
             <button
@@ -160,12 +163,12 @@ export function RecurringDebtPaymentForm({
       </div>
 
       <div className="flex items-center justify-between">
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Active</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.recurringDebt.labelActive}</Label>
         <Switch checked={isActive} onCheckedChange={onIsActiveChange} />
       </div>
 
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">Any notes?</Label>
+        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.recurringDebt.labelNotes}</Label>
         <Textarea
           value={notes}
           onChange={(e) => onNotesChange(e.target.value)}
@@ -179,7 +182,7 @@ export function RecurringDebtPaymentForm({
           onClick={onCancel}
           className="flex-1 py-3 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)]"
         >
-          Cancel
+          {t.common.cancel}
         </button>
         <button
           type="button"
@@ -187,7 +190,7 @@ export function RecurringDebtPaymentForm({
           disabled={!selectDebtValue || !amount || payableDebts.length === 0}
           className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] text-white text-sm font-semibold disabled:opacity-50"
         >
-          Save schedule
+          {t.recurringDebt.buttonSubmit}
         </button>
       </div>
     </div>

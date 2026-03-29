@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { formatCurrency, formatPercent } from '@/lib/utils/formatters'
 import { convertCurrency } from '@/lib/utils/currency'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useT } from '@/lib/i18n'
 
 interface BudgetRingProps {
   percent: number
@@ -15,6 +16,7 @@ interface BudgetRingProps {
 }
 
 export function BudgetRing({ percent, remaining, currency, daysLeft, incomeBlockedNote }: BudgetRingProps) {
+  const t = useT()
   const { settings, exchangeRates } = useFinanceStore()
   const secondary = settings.showSecondaryCurrency ? settings.secondaryCurrency : null
 
@@ -32,10 +34,10 @@ export function BudgetRing({ percent, remaining, currency, daysLeft, incomeBlock
 
   const statusText =
     percent > 100
-      ? 'OVER BUDGET'
+      ? t.dashboard.statusOverBudget
       : percent > 80
-        ? 'CLOSE TO BUDGET'
-        : 'WITHIN BUDGET ✓'
+        ? t.dashboard.statusCloseToBudget
+        : t.dashboard.statusWithinBudget
 
   const statusColor =
     percent > 100
@@ -87,14 +89,14 @@ export function BudgetRing({ percent, remaining, currency, daysLeft, incomeBlock
             {formatPercent(percent)}
           </span>
           <span className="text-xs text-[var(--color-brand-text-secondary)] mt-1">
-            of budget used
+            {t.dashboard.budgetUsedLabel}
           </span>
         </div>
       </div>
 
       <div className="mt-4 text-center space-y-1">
         <p className="text-lg font-semibold font-mono-numbers text-white">
-          {formatCurrency(Math.abs(remaining), currency)} {remaining >= 0 ? 'remaining' : 'over budget'}
+          {formatCurrency(Math.abs(remaining), currency)} {remaining >= 0 ? t.dashboard.remainingSuffix : t.dashboard.overBudgetSuffix}
         </p>
         {secondaryRemaining != null && (
           <p className="text-xs text-[var(--color-brand-text-muted)] font-mono-numbers">
@@ -105,7 +107,7 @@ export function BudgetRing({ percent, remaining, currency, daysLeft, incomeBlock
           {percent <= 100 && '●'} {statusText}
         </p>
         <p className="text-xs text-[var(--color-brand-text-muted)]">
-          {daysLeft} days left in month
+          {t.common.daysLeft(daysLeft)}
         </p>
       </div>
     </div>

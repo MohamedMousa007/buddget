@@ -18,6 +18,8 @@ import {
   valueForTextStep,
 } from '@/lib/onboarding/onboardingPageHelpers'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useT } from '@/lib/i18n'
+import { LanguageToggle } from '@/components/ui/LanguageToggle'
 
 export interface OnboardingPageViewProps {
   answersReady: boolean
@@ -62,10 +64,13 @@ export function OnboardingPageView({
   redo,
   router,
 }: OnboardingPageViewProps) {
+  const t = useT()
+  const o = t.onboarding
+
   if (!answersReady || !step) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 text-white">
-        <p className="text-sm text-[var(--color-brand-text-muted)]">Hang tight — we&apos;re getting things ready for you…</p>
+        <p className="text-sm text-[var(--color-brand-text-muted)]">{o.loadingMessage}</p>
       </div>
     )
   }
@@ -78,17 +83,14 @@ export function OnboardingPageView({
             <div className="flex items-start gap-2 min-w-0">
               <ClipboardList className="w-5 h-5 text-[var(--color-brand-red)] shrink-0 mt-0.5" aria-hidden />
               <div className="min-w-0">
-                <h1 className="text-lg font-bold text-white font-heading">Let&apos;s Set Up Your Budget</h1>
+                <h1 className="text-lg font-bold text-white font-heading">{o.pageTitle}</h1>
                 <p className="text-[11px] text-[var(--color-brand-text-muted)] leading-snug">
-                  {phase === 'plans'
-                    ? 'Pick a plan that feels right — you can tweak every number later.'
-                    : redo
-                      ? "Update your answers anytime — we'll refresh your suggestions based on what you share."
-                      : 'A quick walkthrough so your budget fits the way you actually earn, spend, and save.'}
+                  {phase === 'plans' ? o.subtitlePlans : redo ? o.subtitleRedo : o.subtitleDefault}
                 </p>
               </div>
             </div>
             <div className="flex flex-col items-end gap-1.5 shrink-0">
+              {index === 0 && phase === 'survey' ? <LanguageToggle size="sm" /> : null}
               {phase === 'survey' ? (
                 <button
                   type="button"
@@ -96,7 +98,7 @@ export function OnboardingPageView({
                   onClick={() => void finishOnboarding(null)}
                   className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:text-white hover:bg-[var(--color-brand-elevated)] disabled:opacity-40 transition-colors"
                 >
-                  I&apos;ll set it up myself
+                  {o.skipButton}
                 </button>
               ) : null}
               {redo ? (
@@ -105,7 +107,7 @@ export function OnboardingPageView({
                   onClick={() => router.push('/profile')}
                   className="text-xs text-[var(--color-brand-text-secondary)] hover:text-white"
                 >
-                  Back to profile
+                  {o.backToProfile}
                 </button>
               ) : null}
             </div>
@@ -158,16 +160,14 @@ export function OnboardingPageView({
               animate={{ opacity: 1 }}
               className="glass-card rounded-2xl p-6 max-w-md text-center space-y-4"
             >
-              <p className="text-sm text-[var(--color-brand-text-secondary)]">
-                We couldn&apos;t load plans right now. No worries — you can set budgets anytime from your Profile.
-              </p>
+              <p className="text-sm text-[var(--color-brand-text-secondary)]">{o.plansLoadError}</p>
               <button
                 type="button"
                 onClick={() => void finishOnboarding(null)}
                 disabled={finishing}
                 className="px-4 py-2 rounded-xl bg-[var(--color-brand-red)] text-white text-sm font-semibold disabled:opacity-50"
               >
-                {finishing ? 'Saving your setup…' : 'Continue without a plan'}
+                {finishing ? o.continueWithoutPlanBusy : o.continueWithoutPlan}
               </button>
             </motion.div>
           )}

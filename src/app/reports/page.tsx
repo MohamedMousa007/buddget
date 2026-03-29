@@ -8,6 +8,7 @@ import { useReportsPage } from '@/hooks/useReportsPage'
 import { ReportsSummaryPanel } from '@/components/features/reports/ReportsSummaryPanel'
 import { ReportsPaymentMethodPanel } from '@/components/features/reports/ReportsPaymentMethodPanel'
 import { ReportsExportBar } from '@/components/features/reports/ReportsExportBar'
+import { useT } from '@/lib/i18n'
 
 const MonthlyChart = dynamic(
   () => import('@/components/reports/MonthlyChart').then((m) => ({ default: m.MonthlyChart })),
@@ -21,12 +22,13 @@ const CategoryPieChart = dynamic(
 
 export default function ReportsPage() {
   const r = useReportsPage()
+  const t = useT()
 
   return (
     <div className="min-h-screen">
       <PageHeader>
         <PageHeaderContent>
-          <h1 className="text-xl font-bold text-white">Your Financial Story</h1>
+          <h1 className="text-xl font-bold text-white">{t.reports.pageTitle}</h1>
         </PageHeaderContent>
       </PageHeader>
 

@@ -1,3 +1,4 @@
+import type { Dictionary } from '@/lib/i18n/types'
 import type { OnboardingState } from '@/lib/store/types'
 import type { FinanceStore } from '@/lib/store/types'
 import {
@@ -55,8 +56,8 @@ export type OnboardingProgressStoreSlice = Pick<
 >
 
 /** 0–100: blends survey answers with income, budgets, debts, and payment methods already in the app. */
-export function getOnboardingCompletionPercent(store: OnboardingProgressStoreSlice): number {
-  return getOnboardingCompletionPercentFromSnapshot(onboardingProgressSnapshotFromStore(store))
+export function getOnboardingCompletionPercent(store: OnboardingProgressStoreSlice, t: Dictionary): number {
+  return getOnboardingCompletionPercentFromSnapshot(onboardingProgressSnapshotFromStore(store), t)
 }
 
 export function expertSurveyStepCount(): number {

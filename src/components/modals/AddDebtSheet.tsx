@@ -7,19 +7,21 @@ import { AddDebtSheetHeader } from '@/components/features/debts/AddDebtSheetHead
 import { AddDebtModeTabs } from '@/components/features/debts/AddDebtModeTabs'
 import { AddDebtNewForm } from '@/components/features/debts/AddDebtNewForm'
 import { AddDebtPaymentForm } from '@/components/features/debts/AddDebtPaymentForm'
+import { useT } from '@/lib/i18n'
 
 /**
  * Bottom sheet: create debt or record payment. Logic in `useAddDebtSheet`.
  */
 export function AddDebtSheet() {
   const d = useAddDebtSheet()
+  const t = useT()
   useEscapeClose(d.isOpen, d.closeSheet)
 
   const title = d.debtSheetPaymentOnly
-    ? 'Log a payment'
+    ? t.addDebt.titlePayment
     : d.mode === 'new'
-      ? 'Start tracking a balance'
-      : 'Log a payment'
+      ? t.addDebt.titleNew
+      : t.addDebt.titlePayment
 
   return (
     <ModalShell open={d.isOpen} onBackdropClick={d.closeSheet}>

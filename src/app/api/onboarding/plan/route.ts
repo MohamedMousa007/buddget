@@ -2,10 +2,12 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { normalizeCategoryPercents } from '@/lib/onboarding/planNormalization'
+import { en } from '@/lib/i18n/dictionaries/en'
 import {
-  ONBOARDING_PERSONA_PRESETS,
+  getOnboardingPersonaPresets,
   personaPromptBlock,
   isValidPersonaId,
+  type OnboardingPersonaId,
 } from '@/lib/onboarding/personas'
 import type { OnboardingAiPlan } from '@/lib/store/types'
 
@@ -60,9 +62,11 @@ function truncate(s: string, max: number): string {
   return `${t.slice(0, max - 1).trim()}…`
 }
 
+const EN_PERSONA_PRESETS = getOnboardingPersonaPresets(en)
+
 function enrichPersona(p: z.infer<typeof planRowSchema>): OnboardingAiPlan {
   const pid = isValidPersonaId(p.personaId) ? p.personaId : 'steady_navigator'
-  const preset = ONBOARDING_PERSONA_PRESETS.find((x) => x.id === pid) ?? ONBOARDING_PERSONA_PRESETS[0]
+  const preset = EN_PERSONA_PRESETS.find((x) => x.id === pid) ?? EN_PERSONA_PRESETS[0]
   return {
     id: p.id,
     label: p.label,
@@ -89,7 +93,7 @@ TASK:
 2) Propose EXACTLY THREE different monthly budget allocation plans as PERCENTAGES of monthly take-home across categories: Rent, Transport, Food, Enjoyment, Savings, Debt, Remittance, Other. Each plan must sum to 100 (±0.5 before rounding).
 3) Plans should reflect: (A) balanced real life, (B) stronger alignment with their stated goals, (C) either more savings stability OR more aggressive debt paydown depending on their answers — make C meaningfully different from A and B.
 4) Assign each plan a personaId from this FIXED list only:
-${personaPromptBlock()}
+${personaPromptBlock(en)}
 
 Tone: friendly and human — NOT long AI prose. Keep copy tight.
 
@@ -126,11 +130,11 @@ function fallbackPlans(currency: string): OnboardingAiPlan[] {
   const mk = (
     id: string,
     label: string,
-    personaId: (typeof ONBOARDING_PERSONA_PRESETS)[number]['id'],
+    personaId: OnboardingPersonaId,
     rationale: string,
     percents: Record<string, number>
   ): OnboardingAiPlan => {
-    const preset = ONBOARDING_PERSONA_PRESETS.find((p) => p.id === personaId)!
+    const preset = EN_PERSONA_PRESETS.find((p) => p.id === personaId)!
     return {
       id,
       label,

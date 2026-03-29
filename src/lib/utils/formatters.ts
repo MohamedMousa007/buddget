@@ -27,6 +27,9 @@ export function formatCurrency(amount: number, currency: Currency | string, show
   return `${symbol} ${formatted}`
 }
 
+/**
+ * English-only relative labels. For UI that follows the app language, use `useLocalizedFormatters` from `@/hooks/useLocalizedFormatters`.
+ */
 export function formatDate(dateStr: string): string {
   const date = parseISO(dateStr)
   if (isToday(date)) return 'Today'

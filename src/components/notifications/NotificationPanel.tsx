@@ -5,7 +5,8 @@
 
 import { useEffect, useRef } from 'react'
 import { Check } from 'lucide-react'
-import { formatRelativeTime } from '@/lib/utils/formatters'
+import { useLocalizedFormatters } from '@/hooks/useLocalizedFormatters'
+import { useT } from '@/lib/i18n'
 import type { AppNotification } from '@/lib/notifications/useNotifications'
 
 const SEVERITY_DOT: Record<AppNotification['severity'], string> = {
@@ -22,6 +23,8 @@ interface NotificationPanelProps {
 }
 
 export function NotificationPanel({ open, onClose, notifications, anchorRef }: NotificationPanelProps) {
+  const t = useT()
+  const { formatRelativeTime } = useLocalizedFormatters()
   const panelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -50,12 +53,12 @@ export function NotificationPanel({ open, onClose, notifications, anchorRef }: N
   return (
     <div
       ref={panelRef}
-      className="absolute top-full right-0 z-50 mt-1.5 w-80 max-h-[400px] flex flex-col rounded-2xl border border-[#2A2A38] bg-[#111118] shadow-xl ring-1 ring-white/5"
+      className="absolute top-full end-0 z-50 mt-1.5 w-80 max-h-[400px] flex flex-col rounded-2xl border border-[#2A2A38] bg-[#111118] shadow-xl ring-1 ring-white/5"
       role="dialog"
-      aria-label="Notifications"
+      aria-label={t.notifications.title}
     >
       <div className="shrink-0 border-b border-[#2A2A38] px-3 py-2.5">
-        <p className="text-sm font-semibold text-white">Notifications</p>
+        <p className="text-sm font-semibold text-white">{t.notifications.title}</p>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {notifications.length === 0 ? (
@@ -63,7 +66,7 @@ export function NotificationPanel({ open, onClose, notifications, anchorRef }: N
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1A1A24] text-[#1DB954]">
               <Check className="h-5 w-5" strokeWidth={2.5} />
             </div>
-            <p className="text-sm text-[#A0A0B8]">You&apos;re all caught up 🎉</p>
+            <p className="text-sm text-[#A0A0B8]">{t.notifications.emptyState}</p>
           </div>
         ) : (
           <ul className="divide-y divide-[#2A2A38]">

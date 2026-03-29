@@ -200,3 +200,20 @@
     display: none;
   }
 }
+
+/* ── RTL / Arabic support ───────────────────────────────────── */
+[dir="rtl"] body {
+  font-family: var(--font-sans-ar), var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+[dir="rtl"] .font-heading {
+  font-family: var(--font-sans-ar), var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+}
+[dir="rtl"] .font-mono-numbers {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+/* Default paragraph flow in Arabic without breaking flex/grid children */
+[dir="rtl"] .prose-rtl {
+  text-align: start;
+}

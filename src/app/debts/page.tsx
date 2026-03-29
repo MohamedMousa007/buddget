@@ -11,6 +11,7 @@ import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { Switch } from '@/components/ui/switch'
 import { Trash2 } from 'lucide-react'
+import { useT } from '@/lib/i18n'
 
 export default function DebtsPage() {
   const { debts, debtPayments, recurringDebtPayments, updateRecurringDebtPayment, deleteRecurringDebtPayment } =
@@ -25,22 +26,23 @@ export default function DebtsPage() {
     )
   const { openDebtSheetNew, openDebtSheetRecordPayment, setActiveModal, setEditingDebtId } = useSettingsStore()
   const requireAuth = useRequireAuthAction()
+  const t = useT()
 
   const guardedNewDebt = () =>
     requireAuth(
       () => openDebtSheetNew(),
-      'Sign in or create an account to add balances or log payments.'
+      t.debts.requireAuthNew
     )
   const guardedRecordPayment = (debtId: string) =>
     requireAuth(
       () => openDebtSheetRecordPayment(debtId),
-      'Sign in or create an account to log balance payments.'
+      t.debts.requireAuthPayment
     )
 
   const openRecurringDebtSheet = () =>
     requireAuth(
       () => setActiveModal('addRecurringDebtPayment'),
-      'Sign in or create an account to add recurring balance payments.'
+      t.debts.requireAuthRecurring
     )
 
   const handleEditDebt = (debtId: string) => {
@@ -52,21 +54,21 @@ export default function DebtsPage() {
     <div className="min-h-screen">
       <PageHeader>
         <PageHeaderContent className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="text-xl font-bold text-white">Balances to Clear</h1>
+          <h1 className="text-xl font-bold text-white">{t.debts.pageTitle}</h1>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => openRecurringDebtSheet()}
               className="px-4 py-2 rounded-lg border border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] text-sm font-medium transition-colors"
             >
-              + Recurring payment
+              {t.debts.buttonRecurring}
             </button>
             <button
               type="button"
               onClick={() => guardedNewDebt()}
               className="px-4 py-2 rounded-lg bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-medium transition-colors"
             >
-              + Track a balance
+              {t.debts.buttonTrack}
             </button>
           </div>
         </PageHeaderContent>
@@ -75,16 +77,16 @@ export default function DebtsPage() {
       <div className="px-4 py-6 lg:px-8 space-y-8 max-w-5xl mx-auto">
         {debts.length === 0 ? (
           <EmptyState
-            icon="📋"
-            title="Nothing to clear right now — great position to be in! 🎉"
-            description="Add a balance if you're working toward clearing something."
+            icon={t.debts.emptyIcon}
+            title={t.debts.emptyTitle}
+            description={t.debts.emptyDesc}
             action={
               <button
                 type="button"
                 onClick={() => guardedNewDebt()}
                 className="px-6 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
               >
-                + Track a balance
+                {t.debts.emptyButton}
               </button>
             }
           />
@@ -93,30 +95,29 @@ export default function DebtsPage() {
             {recurringDebtPayments.length > 0 ? (
               <section className="glass-card rounded-2xl p-5 space-y-3">
                 <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
-                  Recurring payments
+                  {t.debts.sectionRecurring}
                 </h2>
                 <p className="text-xs text-[var(--color-brand-text-muted)]">
-                  Due payments post automatically when you open the app (next due date today or earlier). You can pause
-                  or delete a schedule anytime.
+                  {t.debts.recurringHelp}
                 </p>
                 <ul className="space-y-2">
                   {recurringDebtPayments.map((r) => {
                     const debt = debts.find((d) => d.id === r.debtId)
                     const freqLabel =
-                      r.frequency === 'monthly' ? 'Monthly' : r.frequency === 'biweekly' ? 'Bi-weekly' : 'Weekly'
+                      r.frequency === 'monthly' ? t.debts.freqMonthly : r.frequency === 'biweekly' ? t.debts.freqBiweekly : t.debts.freqWeekly
                     return (
                       <li
                         key={r.id}
                         className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[var(--color-brand-elevated)]/60 px-3 py-2"
                       >
                         <div>
-                          <p className="text-sm text-white">{debt?.name ?? 'Unknown balance'}</p>
+                          <p className="text-sm text-white">{debt?.name ?? t.debts.unknownBalance}</p>
                           <p className="text-xs text-[var(--color-brand-text-muted)]">
-                            {formatCurrency(r.amount, r.currency)} · {freqLabel} · next {r.nextDueDate}
+                            {formatCurrency(r.amount, r.currency)} · {freqLabel} · {t.debts.paymentNext}{r.nextDueDate}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-[var(--color-brand-text-muted)] uppercase">Active</span>
+                          <span className="text-[10px] text-[var(--color-brand-text-muted)] uppercase">{t.debts.activeLabel}</span>
                           <Switch
                             checked={r.isActive}
                             onCheckedChange={(on) => updateRecurringDebtPayment(r.id, { isActive: on })}
@@ -124,7 +125,7 @@ export default function DebtsPage() {
                           <button
                             type="button"
                             onClick={() => {
-                              if (window.confirm('Remove this recurring schedule? This will be gone for good.')) {
+                              if (window.confirm(t.debts.confirmDeleteSchedule)) {
                                 deleteRecurringDebtPayment(r.id)
                               }
                             }}
@@ -161,7 +162,7 @@ export default function DebtsPage() {
               return (
                 <div key={debt.id} className="glass-card rounded-2xl p-5">
                   <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-4">
-                    {debt.name} — Payment History
+                    {t.debts.paymentHistory(debt.name)}
                   </h3>
                   <DebtTable debt={debt} payments={payments} />
                 </div>
