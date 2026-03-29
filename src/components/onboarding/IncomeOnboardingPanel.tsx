@@ -12,7 +12,7 @@ import type { Currency, IncomeRecurringFrequency, IncomeSource } from '@/lib/sto
 
 const RECURRING_FREQ: { value: IncomeRecurringFrequency; label: string; amountHint: string }[] = [
   { value: 'monthly', label: 'Monthly', amountHint: 'This is your monthly amount.' },
-  { value: 'biweekly', label: 'Bi-weekly', amountHint: 'Per paycheck — that’s 26 times a year.' },
+  { value: 'biweekly', label: 'Bi-weekly', amountHint: "Per paycheck — that's 26 times a year." },
   { value: 'weekly', label: 'Weekly', amountHint: 'This is your weekly amount.' },
 ]
 

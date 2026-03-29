@@ -65,7 +65,7 @@ export function OnboardingPageView({
   if (!answersReady || !step) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 text-white">
-        <p className="text-sm text-[var(--color-brand-text-muted)]">Hang tight — we're getting things ready for you…</p>
+        <p className="text-sm text-[var(--color-brand-text-muted)]">Hang tight — we&apos;re getting things ready for you…</p>
       </div>
     )
   }
@@ -78,12 +78,12 @@ export function OnboardingPageView({
             <div className="flex items-start gap-2 min-w-0">
               <ClipboardList className="w-5 h-5 text-[var(--color-brand-red)] shrink-0 mt-0.5" aria-hidden />
               <div className="min-w-0">
-                <h1 className="text-lg font-bold text-white font-heading">Let's Set Up Your Budget</h1>
+                <h1 className="text-lg font-bold text-white font-heading">Let&apos;s Set Up Your Budget</h1>
                 <p className="text-[11px] text-[var(--color-brand-text-muted)] leading-snug">
                   {phase === 'plans'
                     ? 'Pick a plan that feels right — you can tweak every number later.'
                     : redo
-                      ? 'Update your answers anytime — we’ll refresh your suggestions based on what you share.'
+                      ? "Update your answers anytime — we'll refresh your suggestions based on what you share."
                       : 'A quick walkthrough so your budget fits the way you actually earn, spend, and save.'}
                 </p>
               </div>
@@ -96,7 +96,7 @@ export function OnboardingPageView({
                   onClick={() => void finishOnboarding(null)}
                   className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:text-white hover:bg-[var(--color-brand-elevated)] disabled:opacity-40 transition-colors"
                 >
-                  I'll set it up myself
+                  I&apos;ll set it up myself
                 </button>
               ) : null}
               {redo ? (
@@ -159,7 +159,7 @@ export function OnboardingPageView({
               className="glass-card rounded-2xl p-6 max-w-md text-center space-y-4"
             >
               <p className="text-sm text-[var(--color-brand-text-secondary)]">
-                We couldn't load plans right now. No worries — you can set budgets anytime from your Profile.
+                We couldn&apos;t load plans right now. No worries — you can set budgets anytime from your Profile.
               </p>
               <button
                 type="button"

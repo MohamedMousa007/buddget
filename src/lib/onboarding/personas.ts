@@ -3,7 +3,7 @@ export const ONBOARDING_PERSONA_PRESETS = [
   {
     id: 'steady_navigator',
     label: 'Steady Navigator',
-    tagline: 'You keep today’s bills and tomorrow’s peace of mind in perfect balance.',
+    tagline: "You keep today's bills and tomorrow's peace of mind in perfect balance.",
   },
   {
     id: 'goal_accelerator',
@@ -33,7 +33,7 @@ export const ONBOARDING_PERSONA_PRESETS = [
   {
     id: 'family_anchor',
     label: 'Family Anchor',
-    tagline: 'Your family’s stability is the headline in your money story.',
+    tagline: "Your family's stability is the headline in your money story.",
   },
   {
     id: 'flex_explorer',

@@ -159,7 +159,7 @@ function IosInstallDialog({
         <DialogHeader>
           <DialogTitle className="text-white">Add Buddget to your iPhone</DialogTitle>
           <DialogDescription className="text-[var(--color-brand-text-muted)]">
-            Here's how to get Buddget on your home screen.
+            Here&apos;s how to get Buddget on your home screen.
           </DialogDescription>
         </DialogHeader>
         <ol className="space-y-3 mt-2">

@@ -11,7 +11,7 @@ export const EXPERT_ONBOARDING_CONFIG: SurveyConfig = {
       type: 'static',
       title: 'Welcome to Buddget',
       subtitle: 'Your guided setup',
-      body: 'Let’s take 2 minutes to set up your dashboard. It’ll feel like home by the end 🏡',
+      body: "Let's take 2 minutes to set up your dashboard. It'll feel like home by the end 🏡",
       helpText: 'You can revisit this anytime from your Profile.',
     },
     {
@@ -44,7 +44,7 @@ export const EXPERT_ONBOARDING_CONFIG: SurveyConfig = {
     {
       id: 'living_situation',
       type: 'single_select',
-      title: 'What's your living situation?',
+      title: "What's your living situation?",
       mapsTo: 'onboarding.livingSituation',
       helpText: 'Housing is usually the biggest part of any budget — good to know yours.',
       options: [
@@ -59,7 +59,7 @@ export const EXPERT_ONBOARDING_CONFIG: SurveyConfig = {
     {
       id: 'relationship_status',
       type: 'single_select',
-      title: 'What's your relationship status?',
+      title: "What's your relationship status?",
       mapsTo: 'onboarding.relationship',
       options: [
         { value: 'single', label: 'Single' },
@@ -139,14 +139,14 @@ export const EXPERT_ONBOARDING_CONFIG: SurveyConfig = {
     {
       id: 'income_entries',
       type: 'income_entry',
-      title: 'Let's talk income 💵',
+      title: "Let's talk income 💵",
       mapsTo: 'onboarding.incomeEntries',
-      helpText: 'Add your main income source. Don't worry — you can add more or edit these anytime.',
+      helpText: "Add your main income source. Don't worry — you can add more or edit these anytime.",
     },
     {
       id: 'housing_monthly',
       type: 'number',
-      title: 'What's your rough monthly housing cost?',
+      title: "What's your rough monthly housing cost?",
       placeholder: 'Rent or mortgage — 0 if none',
       mapsTo: 'onboarding.housingMonthly',
       min: 0,
@@ -159,8 +159,8 @@ export const EXPERT_ONBOARDING_CONFIG: SurveyConfig = {
       mapsTo: 'onboarding.debtSituation',
       options: [
         { value: 'none', label: 'None or very little' },
-        { value: 'manageable', label: 'Some — but I'm managing it' },
-        { value: 'stressful', label: 'Quite a bit — it's stressful' },
+        { value: 'manageable', label: "Some — but I'm managing it" },
+        { value: 'stressful', label: "Quite a bit — it's stressful" },
         { value: 'prefer_not', label: 'Prefer not to say' },
       ],
     },
@@ -178,7 +178,7 @@ export const EXPERT_ONBOARDING_CONFIG: SurveyConfig = {
       mapsTo: 'onboarding.goals',
       minSelections: 1,
       maxSelections: 6,
-      helpText: 'Pick everything that matters to you — we’ll shape your plan around these.',
+      helpText: "Pick everything that matters to you — we'll shape your plan around these.",
       options: [
         { value: 'emergency_fund', label: 'Build an emergency fund' },
         { value: 'debt_free', label: 'Pay down debt faster' },
@@ -252,9 +252,9 @@ export const EXPERT_ONBOARDING_CONFIG: SurveyConfig = {
       title: 'How do you feel about saving right now?',
       mapsTo: 'onboarding.savingsOrientation',
       options: [
-        { value: 'already_save', label: 'I’m already saving regularly' },
+        { value: 'already_save', label: "I'm already saving regularly" },
         { value: 'want_to_start', label: 'I want to start saving (or save more)' },
-        { value: 'hard_to_save', label: 'It’s hard to save after bills' },
+        { value: 'hard_to_save', label: "It's hard to save after bills" },
       ],
     },
     {
@@ -263,7 +263,7 @@ export const EXPERT_ONBOARDING_CONFIG: SurveyConfig = {
       title: 'How do you usually pay?',
       subtitle: 'Pick all that apply — add a nickname so you remember which is which',
       mapsTo: 'onboarding.paymentMethods',
-      helpText: 'Use “Something else” to add your own — we’ll save it to your profile.',
+      helpText: `Use “Something else” to add your own — we'll save it to your profile.`,
       options: [
         { value: 'cash', label: 'Cash', methodType: 'cash' },
         { value: 'debit', label: 'Debit card', methodType: 'card_debit' },
@@ -276,9 +276,9 @@ export const EXPERT_ONBOARDING_CONFIG: SurveyConfig = {
     {
       id: 'pre_plan',
       type: 'static',
-      title: 'You’re all set! Let’s go 🚀',
+      title: "You're all set! Let's go 🚀",
       body: 'Your dashboard is ready. Start by logging your first expense — it takes 5 seconds.',
-      helpText: 'Takes a few seconds. We’ll build three personalized plans just for you.',
+      helpText: "Takes a few seconds. We'll build three personalized plans just for you.",
     },
   ],
 }

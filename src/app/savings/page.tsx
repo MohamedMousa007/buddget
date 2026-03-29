@@ -129,7 +129,7 @@ export default function SavingsPage() {
         <section className="glass-card rounded-2xl p-5 space-y-4">
           <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">Add a saving</h2>
           <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">What's this saving called?</Label>
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">What&apos;s this saving called?</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Emirates NBD, Cash at home" className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white" />
           </div>
           <div className="grid grid-cols-2 gap-3">

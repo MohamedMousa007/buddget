@@ -103,7 +103,7 @@ export function DebtOnboardingPanel({
 
       <div className="space-y-4 rounded-xl border border-[var(--color-brand-border)] p-4 bg-[var(--color-brand-elevated)]/30">
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">What’s it called?</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">What&apos;s it called?</Label>
           <Input
             placeholder="e.g. Credit card, Car loan"
             value={name}

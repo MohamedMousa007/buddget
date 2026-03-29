@@ -62,7 +62,7 @@ export function OnboardingPlanPickerCategoryGrid({
         })}
       </div>
       <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-2">
-        Set a monthly limit for each category. Buddget will track how you're doing in real time.
+        Set a monthly limit for each category. Buddget will track how you&apos;re doing in real time.
       </p>
     </div>
   )

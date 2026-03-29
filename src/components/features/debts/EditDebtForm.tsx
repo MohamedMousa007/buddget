@@ -108,7 +108,7 @@ export function EditDebtForm({
 
         <p className="text-xs text-[var(--color-brand-text-muted)]">
           Starting amount ({debt.isGold ? `${debt.startingBalance}g` : `${debt.currency} ${debt.startingBalance}`})
-          can't be changed — delete and recreate the balance if needed.
+          can&apos;t be changed — delete and recreate the balance if needed.
         </p>
 
         <div className="flex gap-3 pt-2">

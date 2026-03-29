@@ -23,7 +23,7 @@ export function OnboardingBanner() {
   const dismiss = () => {
     updateSettings({ dismissOnboardingBanner: true })
     window.alert(
-      'Got it! You can always finish setting up from your Profile → Onboarding whenever you’re ready.'
+      "Got it! You can always finish setting up from your Profile → Onboarding whenever you're ready."
     )
   }
 
@@ -55,7 +55,7 @@ export function OnboardingBanner() {
             href="/onboarding?redo=1"
             className="text-center text-xs font-semibold px-3 py-2 rounded-xl bg-[var(--color-brand-red)] text-white hover:bg-[var(--color-brand-red-hover)] transition-colors"
           >
-            Let’s finish setup
+            Let&apos;s finish setup
           </Link>
         </div>
       </div>

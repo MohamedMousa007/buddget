@@ -40,7 +40,7 @@ export function ReportsSummaryPanel({
             {formatCurrency(periodRecurringIncome, baseCurrency)}
           </p>
           <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-0.5 max-w-[14rem]">
-            All recurring income earned during this period, starting from each source's start date.
+            All recurring income earned during this period, starting from each source&apos;s start date.
           </p>
         </div>
         <div>

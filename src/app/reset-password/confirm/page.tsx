@@ -81,7 +81,7 @@ export default function ResetPasswordConfirmPage() {
         style={{ background: '#111118', borderColor: '#2A2A38' }}
       >
         <h1 className="text-xl font-bold text-white text-center">Choose a new password</h1>
-        <p className="text-sm text-[#5A5A72] text-center">Make it something strong that you'll remember.</p>
+        <p className="text-sm text-[#5A5A72] text-center">Make it something strong that you&apos;ll remember.</p>
         <div className="space-y-2">
           <label className="text-xs text-[#5A5A72]">New password</label>
           <div className="relative">
