@@ -5,7 +5,6 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { QuickAddFAB } from '@/components/modals/QuickAddFAB'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { Pencil, Trash2 } from 'lucide-react'
@@ -133,8 +132,6 @@ export default function IncomePage() {
           ))
         )}
       </div>
-
-      <QuickAddFAB />
     </div>
   )
 }

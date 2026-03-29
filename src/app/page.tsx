@@ -11,7 +11,6 @@ import { CategoryBar } from '@/components/dashboard/CategoryBar'
 import { RecentExpenses } from '@/components/dashboard/RecentExpenses'
 import { SavingsCard } from '@/components/dashboard/SavingsCard'
 import { DebtSnapshot } from '@/components/dashboard/DebtSnapshot'
-import { QuickAddFAB } from '@/components/modals/QuickAddFAB'
 import { useRouter } from 'next/navigation'
 
 export default function DashboardPage() {
@@ -105,8 +104,6 @@ export default function DashboardPage() {
         {/* Debt Snapshot */}
         <DebtSnapshot />
       </div>
-
-      <QuickAddFAB />
     </div>
   )
 }

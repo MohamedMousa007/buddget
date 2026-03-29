@@ -8,8 +8,6 @@ import {
   Wallet,
   PiggyBank,
   BarChart3,
-  User,
-  Settings,
 } from 'lucide-react'
 
 export type BottomNavItem =
@@ -30,8 +28,6 @@ export const BOTTOM_NAV_MORE_MENU: { href: string; label: string; icon: LucideIc
   { href: '/income', label: 'Income', icon: Wallet },
   { href: '/savings', label: 'Savings', icon: PiggyBank },
   { href: '/reports', label: 'Reports', icon: BarChart3 },
-  { href: '/profile', label: 'Profile', icon: User },
-  { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
 export const BOTTOM_NAV_MORE_HREFS = new Set(BOTTOM_NAV_MORE_MENU.map((m) => m.href))

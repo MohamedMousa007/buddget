@@ -6,7 +6,6 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { convertCurrency } from '@/lib/utils/currency'
 import { totalSavingsHoldingsInBase } from '@/lib/utils/calculations'
-import { QuickAddFAB } from '@/components/modals/QuickAddFAB'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { Input } from '@/components/ui/input'
@@ -215,8 +214,6 @@ export default function SavingsPage() {
           )}
         </section>
       </div>
-
-      <QuickAddFAB />
     </div>
   )
 }

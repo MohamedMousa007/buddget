@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useCallback, useSyncExternalStore } from 'react'
-import Link from 'next/link'
-import { Download, X, ChevronRight } from 'lucide-react'
+import { Download, X } from 'lucide-react'
 import { usePWAInstall } from '@/hooks/usePWAInstall'
 import {
   Dialog,
@@ -115,59 +114,8 @@ export function InstallButton({ variant, className }: InstallButtonProps) {
     )
   }
 
-  if (variant === 'menu-item') {
-    if (!canInstall) {
-      return (
-        <Link
-          href="/install"
-          className={cn(
-            'flex items-center justify-between w-full px-4 py-3 rounded-xl text-sm text-white border border-[var(--color-brand-border)] hover:bg-[var(--color-brand-elevated)] transition-colors',
-            className
-          )}
-        >
-          <span className="flex items-center gap-2">
-            <Download className="w-4 h-4 text-[var(--color-brand-red)]" />
-            Install Buddget app
-          </span>
-          <ChevronRight className="w-4 h-4 text-[var(--color-brand-text-muted)]" />
-        </Link>
-      )
-    }
-    return (
-      <>
-        <button
-          type="button"
-          onClick={() => void openFlow()}
-          className={cn(
-            'flex items-center justify-between w-full px-4 py-3 rounded-xl text-sm text-white border border-[var(--color-brand-border)] hover:bg-[var(--color-brand-elevated)] transition-colors text-left',
-            className
-          )}
-        >
-          <span className="flex items-center gap-2">
-            <Download className="w-4 h-4 text-[var(--color-brand-red)]" />
-            Install Buddget app
-          </span>
-          <ChevronRight className="w-4 h-4 text-[var(--color-brand-text-muted)]" />
-        </button>
-        <IosInstallDialog open={iosOpen} onOpenChange={setIosOpen} />
-      </>
-    )
-  }
-
-  /* variant === 'button' */
-  if (!canInstall) {
-    return (
-      <Link
-        href="/install"
-        className={cn(
-          'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-white border border-[var(--color-brand-border)] hover:bg-[var(--color-brand-elevated)] transition-colors w-full justify-center',
-          className
-        )}
-      >
-        <Download className="w-4 h-4 text-[var(--color-brand-red)]" />
-        Install app
-      </Link>
-    )
+  if (variant === 'menu-item' || variant === 'button') {
+    if (!canInstall) return null
   }
 
   return (

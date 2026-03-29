@@ -3,58 +3,16 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useMemo, useRef, useState } from 'react'
-import { User, Settings, Bell } from 'lucide-react'
+import { User, Settings } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 import { cn } from '@/lib/utils'
-import { useNotifications } from '@/lib/notifications/useNotifications'
-import { NotificationPanel } from '@/components/notifications/NotificationPanel'
 import { ProfileDropdown } from '@/components/layout/ProfileDropdown'
 
 const btnClass =
   'inline-flex items-center justify-center px-2 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors border border-[var(--color-brand-border)] text-white hover:bg-[var(--color-brand-elevated)] sm:px-3'
-
-function NotificationBellWithPanel() {
-  const { notifications, unreadCount, markAllRead } = useNotifications()
-  const [open, setOpen] = useState(false)
-  const bellRef = useRef<HTMLButtonElement>(null)
-
-  const toggle = () => {
-    setOpen((prev) => {
-      if (!prev) markAllRead()
-      return !prev
-    })
-  }
-
-  return (
-    <div className="relative shrink-0">
-      <button
-        ref={bellRef}
-        type="button"
-        onClick={toggle}
-        className="relative inline-flex p-2 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-red)]/50"
-        aria-label="Open notifications"
-        aria-expanded={open}
-      >
-        <Bell className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
-        {unreadCount > 0 ? (
-          <span
-            className="absolute top-0 right-0 h-2 w-2 rounded-full bg-[#E50914]"
-            aria-hidden
-          />
-        ) : null}
-      </button>
-      <NotificationPanel
-        open={open}
-        onClose={() => setOpen(false)}
-        notifications={notifications}
-        anchorRef={bellRef}
-      />
-    </div>
-  )
-}
 
 function ProfileAvatarWithMenu({ className }: { className?: string }) {
   const [open, setOpen] = useState(false)
@@ -90,8 +48,8 @@ function ProfileAvatarWithMenu({ className }: { className?: string }) {
 type AuthNavLayout = 'desktop' | 'mobile'
 
 /**
- * Desktop (`layout="desktop"`): full auth + settings + notifications.
- * Mobile toolbar (`layout="mobile"`): notifications + profile or compact sign-in only (no gear, no text buttons).
+ * Desktop (`layout="desktop"`): auth buttons + profile avatar with dropdown + settings gear.
+ * Mobile toolbar (`layout="mobile"`): profile avatar with dropdown only.
  */
 export function AuthNavButtons({
   className,
@@ -115,14 +73,12 @@ export function AuthNavButtons({
     if (layout === 'mobile') {
       return (
         <div className={cn('flex flex-nowrap items-center justify-end gap-1', className)}>
-          <NotificationBellWithPanel />
           <ProfileAvatarWithMenu />
         </div>
       )
     }
     return (
       <div className={cn('flex flex-nowrap items-center gap-1.5 sm:gap-2', className)}>
-        <NotificationBellWithPanel />
         <ProfileAvatarWithMenu />
         <Link
           href="/settings"
@@ -147,7 +103,6 @@ export function AuthNavButtons({
   if (layout === 'mobile') {
     return (
       <div className={cn('flex flex-nowrap items-center justify-end gap-1', className)}>
-        <NotificationBellWithPanel />
         <ProfileAvatarWithMenu />
       </div>
     )
@@ -155,7 +110,6 @@ export function AuthNavButtons({
 
   return (
     <div className={cn('flex flex-nowrap items-center gap-1.5 sm:gap-2', className)}>
-      <NotificationBellWithPanel />
       {!user ? (
         <>
           <button type="button" onClick={() => openAuthModal(nextPath)} className={btnClass}>

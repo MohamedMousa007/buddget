@@ -1,3 +1,6 @@
+// Reserved for native push notifications integration
+// Wire to FCM (Firebase Cloud Messaging) or web-push
+// when deploying to Google Play via PWABuilder TWA wrapper
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'

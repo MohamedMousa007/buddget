@@ -63,7 +63,6 @@ export async function middleware(request: NextRequest) {
   const isPublicMarketing =
     pathname === '/privacy' ||
     pathname === '/terms' ||
-    pathname === '/install' ||
     pathname === '/sitemap.xml' ||
     pathname === '/robots.txt' ||
     pathname.startsWith('/opengraph-image')

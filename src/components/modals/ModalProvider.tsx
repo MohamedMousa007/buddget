@@ -10,6 +10,7 @@ import { EditExpenseSheet } from './EditExpenseSheet'
 import { EditDebtSheet } from './EditDebtSheet'
 import { AIChat } from '@/components/features/ai-chat/AIChat'
 import { AIChatBubble } from '@/components/ai/AIChatBubble'
+import { QuickAddFAB } from '@/components/modals/QuickAddFAB'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useRecurringDebtPaymentScheduler } from '@/hooks/useRecurringDebtPaymentScheduler'
@@ -30,6 +31,7 @@ export function ModalProvider() {
       <EditExpenseSheet />
       <EditDebtSheet />
       <AIChat />
+      <QuickAddFAB />
       <AIChatBubble
         onClick={() =>
           requireAuth(

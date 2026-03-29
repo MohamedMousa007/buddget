@@ -158,6 +158,12 @@
   html {
     @apply scroll-smooth;
   }
+  button {
+    cursor: pointer;
+  }
+  [role="button"] {
+    cursor: pointer;
+  }
 }
 
 @layer utilities {

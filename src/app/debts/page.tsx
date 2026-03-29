@@ -6,7 +6,6 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { DebtCard } from '@/components/debts/DebtCard'
 import { DebtTable } from '@/components/debts/DebtTable'
-import { QuickAddFAB } from '@/components/modals/QuickAddFAB'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { formatCurrency } from '@/lib/utils/formatters'
@@ -171,8 +170,6 @@ export default function DebtsPage() {
           </>
         )}
       </div>
-
-      <QuickAddFAB />
     </div>
   )
 }

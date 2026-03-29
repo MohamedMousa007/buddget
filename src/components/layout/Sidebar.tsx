@@ -15,7 +15,6 @@ import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
 import type { Currency } from '@/lib/store/types'
-import { InstallButton } from '@/components/pwa/InstallButton'
 const NAV_ITEMS = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/expenses', label: 'Expenses', icon: Receipt },
@@ -74,9 +73,6 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="shrink-0 p-3 border-t border-[var(--color-brand-border)]">
-        <InstallButton variant="button" />
-      </div>
     </aside>
   )
 }

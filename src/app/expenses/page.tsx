@@ -8,7 +8,6 @@ import { filterExpensesByMonth } from '@/lib/utils/calculations'
 import { escapeCsvField } from '@/lib/utils/formatters'
 import { FilterBar } from '@/components/expenses/FilterBar'
 import { ExpenseTable } from '@/components/expenses/ExpenseTable'
-import { QuickAddFAB } from '@/components/modals/QuickAddFAB'
 import type { ExpenseCategory } from '@/lib/store/types'
 import { MonthNavigationControl } from '@/components/layout/MonthNavigationControl'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
@@ -105,8 +104,6 @@ export default function ExpensesPage() {
           )
         }
       />
-
-      <QuickAddFAB />
     </div>
   )
 }
