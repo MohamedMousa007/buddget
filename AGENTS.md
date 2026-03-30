@@ -6,4 +6,6 @@ This project uses **Next.js 16** (App Router). APIs and conventions may differ f
 **Project docs:** [`docs/README.md`](docs/README.md) — deploy, development checklist, Supabase.
 
 **Stack notes:** Production build must use `next build --webpack` (see `package.json`) because `next-pwa` hooks into webpack. Dev uses the same for consistency.
+
+**Git default:** Implement and push on `dev` (see `.cursor/rules/deployment-protocol.mdc`). Production goes to `main` via PR only.
 <!-- END:nextjs-agent-rules -->
