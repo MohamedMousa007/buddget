@@ -250,6 +250,11 @@ export interface Dictionary {
     activeLabel: string
     confirmDeleteSchedule: string
     paymentHistory: (name: string) => string
+    paymentHistorySectionTitle: string
+    filterByDebt: string
+    allDebtsFilter: string
+    colBalance: string
+    deletePaymentAria: string
     clearedMessage: string
     buttonLogPayment: string
     owedTo: string
