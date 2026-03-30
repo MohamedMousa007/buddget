@@ -5,7 +5,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { DebtCard } from '@/components/debts/DebtCard'
-import { DebtTable } from '@/components/debts/DebtTable'
+import { AllDebtsPaymentHistory } from '@/components/features/debts/AllDebtsPaymentHistory'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { formatCurrency } from '@/lib/utils/formatters'
@@ -157,17 +157,7 @@ export default function DebtsPage() {
               })}
             </div>
 
-            {debts.map((debt) => {
-              const payments = debtPayments.filter((p) => p.debtId === debt.id)
-              return (
-                <div key={debt.id} className="glass-card rounded-2xl p-5">
-                  <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-4">
-                    {t.debts.paymentHistory(debt.name)}
-                  </h3>
-                  <DebtTable debt={debt} payments={payments} />
-                </div>
-              )
-            })}
+            <AllDebtsPaymentHistory debts={debts} debtPayments={debtPayments} />
           </>
         )}
       </div>
