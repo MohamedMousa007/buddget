@@ -3,7 +3,8 @@
 import type { User } from '@supabase/supabase-js'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useT } from '@/lib/i18n'
+import { useT, useLocale } from '@/lib/i18n'
+import { CountrySelect } from '@/components/ui/CountrySelect'
 import type { FinanceStore } from '@/lib/store/types'
 
 export interface ProfilePersonalDetailsSectionProps {
@@ -16,6 +17,9 @@ export interface ProfilePersonalDetailsSectionProps {
  */
 export function ProfilePersonalDetailsSection({ store, user }: ProfilePersonalDetailsSectionProps) {
   const t = useT()
+  const { locale } = useLocale()
+  const inputClass =
+    'mt-1 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-sm text-white outline-none transition-colors focus:border-[var(--color-brand-red)]'
 
   return (
     <section className="glass-card rounded-2xl p-5 space-y-4">
@@ -54,10 +58,12 @@ export function ProfilePersonalDetailsSection({ store, user }: ProfilePersonalDe
         </div>
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.profile.labelCountry}</Label>
-          <Input
+          <CountrySelect
             value={store.profile.country || ''}
-            onChange={(e) => store.updateProfile({ country: e.target.value })}
-            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
+            onChange={(nameEn) => store.updateProfile({ country: nameEn })}
+            locale={locale}
+            placeholder={t.profile.placeholderCountrySelect}
+            className={inputClass}
           />
         </div>
         <div>

@@ -16,6 +16,8 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import { useT, useLocale } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/client'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
+import { CountrySelect } from '@/components/ui/CountrySelect'
+import { getProfileCountryDisplayLabel } from '@/lib/profile/countryOptions'
 
 interface FieldRowProps {
   label: string
@@ -218,11 +220,12 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <label className="text-xs uppercase tracking-wider text-[#5A5A72] block mb-1">{t.profile.labelCountry}</label>
-                    <input
+                    <CountrySelect
                       value={form.country}
-                      onChange={(e) => updateField('country', e.target.value)}
+                      onChange={(nameEn) => updateField('country', nameEn)}
+                      locale={locale}
+                      placeholder={t.profile.placeholderCountrySelect}
                       className={inputClass}
-                      placeholder={t.profile.placeholderCountry}
                     />
                   </div>
                   <div>
@@ -240,7 +243,10 @@ export default function ProfilePage() {
                   <FieldRow label={t.profile.labelName} value={displayName} />
                   <FieldRow label={t.profile.labelEmail} value={displayEmail} />
                   <FieldRow label={t.profile.labelPhone} value={store.profile.phone || ''} />
-                  <FieldRow label={t.profile.labelCountry} value={store.profile.country || ''} />
+                  <FieldRow
+                    label={t.profile.labelCountry}
+                    value={getProfileCountryDisplayLabel(store.profile.country, locale)}
+                  />
                   <FieldRow label={t.profile.labelCity} value={store.profile.city || ''} />
                 </>
               )}
