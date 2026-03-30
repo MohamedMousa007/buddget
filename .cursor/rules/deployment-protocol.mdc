@@ -7,5 +7,24 @@ alwaysApply: true
 # Deployment Protocol
 
 - **`dev`:** Staging / testing environment (`dev.buddget.online`).
-- **`main`:** Production; changes are promoted via pull request rather than direct pushes where your team requires it.
-- Run `npm test` before pushing when you have changed application code.
+- **`main`:** Production (`buddget.online` / primary Vercel production branch).
+
+## Validation before any push
+
+- When application code changed: run **`npm test`** (and fix failures) before pushing.
+- Prefer a full local CI parity check when practical: `npm run lint`, `npm run test`, `npm run build`.
+
+## Promote finished work to `dev` and `main`
+
+When a task is **complete** and validation above **passes**, do not leave changes only on a feature branch. **Merge into `dev` and `main` and push both** so staging and production stay current.
+
+Suggested sequence (replace `<feature-branch>` with the working branch):
+
+1. Commit on `<feature-branch>` and `git push -u origin <feature-branch>`.
+2. `git fetch origin dev main`
+3. `git checkout dev && git pull origin dev && git merge <feature-branch> && git push -u origin dev`
+4. `git checkout main && git pull origin main && git merge dev && git push -u origin main`
+
+Resolve merge conflicts on the branch you are merging into, re-run validation if merges touched application code, then push.
+
+For small doc-only or rules-only changes, `npm test` may be optional if no runtime code changed; still run it when unsure.
