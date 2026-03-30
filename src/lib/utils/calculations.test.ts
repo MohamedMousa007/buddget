@@ -7,8 +7,10 @@ import {
   goldPurityFactor,
   goldGramsToMoney,
   moneyToGoldGrams,
+  calculateTotalSpent,
+  expenseAmountInBase,
 } from './calculations'
-import type { IncomeSource } from '@/lib/store/types'
+import type { Expense, IncomeSource } from '@/lib/store/types'
 
 const jan2025 = new Date('2025-01-15T12:00:00.000Z')
 
@@ -97,6 +99,40 @@ describe('sumRecurringIncomeOverDateRange', () => {
     const start = new Date('2025-01-10')
     const end = new Date('2025-03-20')
     expect(sumRecurringIncomeOverDateRange(sources, 'AED', {}, start, end)).toBe(3000)
+  })
+})
+
+describe('expenseAmountInBase', () => {
+  const rates = { USD_AED: 3.6725, EUR_AED: 4.02 }
+
+  it('recomputes in primary currency from original amount when base changes', () => {
+    const e: Pick<Expense, 'amount' | 'currency' | 'amountInBaseCurrency'> = {
+      amount: 100,
+      currency: 'USD',
+      amountInBaseCurrency: 5023.94,
+    }
+    const inEur = expenseAmountInBase(e, 'EUR', rates)
+    expect(inEur).toBeCloseTo(100 * (3.6725 / 4.02), 4)
+  })
+
+  it('calculateTotalSpent uses live conversion not stale amountInBaseCurrency', () => {
+    const expenses: Expense[] = [
+      {
+        id: '1',
+        date: '2026-03-01',
+        description: 'x',
+        category: 'Food',
+        amount: 100,
+        currency: 'USD',
+        amountInBaseCurrency: 5023.94,
+        paymentMethodId: 'pm',
+        isRecurring: false,
+        createdAt: '2026-03-01T00:00:00.000Z',
+        updatedAt: '2026-03-01T00:00:00.000Z',
+      },
+    ]
+    const total = calculateTotalSpent(expenses, 'EUR', rates)
+    expect(total).toBeCloseTo(100 * (3.6725 / 4.02), 4)
   })
 })
 

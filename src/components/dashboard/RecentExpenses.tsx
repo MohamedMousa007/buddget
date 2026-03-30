@@ -123,7 +123,6 @@ export function RecentExpenses({ expenses }: RecentExpensesProps) {
                     <MoneyDisplay
                       amount={expense.amount}
                       currency={expense.currency}
-                      amountInPrimary={expense.amountInBaseCurrency}
                       variant="table"
                       primaryClassName="text-sm text-white"
                     />
