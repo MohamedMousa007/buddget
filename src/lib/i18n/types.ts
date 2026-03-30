@@ -93,6 +93,10 @@ export interface Dictionary {
     remainingSuffix: string
     overBudgetSuffix: string
     categoryTitle: string
+    /** Tab: spending breakdown vs category caps */
+    categoryTabSpending: string
+    /** Tab: edit monthly budget amounts / % of income */
+    categoryTabBudgetSetup: string
     recentTitle: string
     recentEmpty: string
     recentEmptyDesc: string

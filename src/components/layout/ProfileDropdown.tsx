@@ -152,7 +152,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
         <User className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.yourProfile}</span>
       </button>
-      <button type="button" onClick={() => navigate('/settings#budget')} className={itemClass} role="menuitem">
+      <button type="button" onClick={() => navigate('/#budget')} className={itemClass} role="menuitem">
         <SlidersHorizontal className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.budgetSetup}</span>
       </button>

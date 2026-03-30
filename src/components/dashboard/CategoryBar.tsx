@@ -1,9 +1,10 @@
 'use client'
 
-import { motion } from 'framer-motion'
-import { formatCurrency } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
 import type { BudgetCategory } from '@/lib/store/types'
+import { CategorySpendingBars } from '@/components/dashboard/CategorySpendingBars'
+import { ProfileBudgetSection } from '@/components/profile/ProfileBudgetSection'
+import { useCategoryPanelFromHash } from '@/hooks/useCategoryPanelFromHash'
 
 interface CategoryBarProps {
   budgetCategories: BudgetCategory[]
@@ -14,17 +15,9 @@ interface CategoryBarProps {
   incomeBlockedNote?: string | null
 }
 
-const CATEGORY_ICONS: Record<string, string> = {
-  Rent: '🏠',
-  Transport: '🚇',
-  Food: '🍕',
-  Enjoyment: '🎮',
-  Savings: '💰',
-  Debt: '💳',
-  Remittance: '💸',
-  Other: '📦',
-}
-
+/**
+ * Home dashboard card: category spending vs caps, with a second tab for in-place budget setup.
+ */
 export function CategoryBar({
   budgetCategories,
   categorySpending,
@@ -33,70 +26,60 @@ export function CategoryBar({
   incomeBlockedNote,
 }: CategoryBarProps) {
   const t = useT()
+  const { panel, selectSpending, selectBudget } = useCategoryPanelFromHash()
+
+  const tabBtn = (active: boolean) =>
+    `flex-1 min-w-0 rounded-xl px-2 py-2 text-xs font-medium transition-colors sm:text-sm ${
+      active
+        ? 'bg-[var(--color-brand-elevated)] text-white shadow-sm border border-[var(--color-brand-border)]'
+        : 'text-[var(--color-brand-text-muted)] hover:text-white'
+    }`
+
   return (
     <div className="glass-card rounded-2xl p-5 space-y-4">
       {incomeBlockedNote ? (
         <p className="text-[11px] text-amber-200/90 leading-snug">{incomeBlockedNote}</p>
       ) : null}
-      <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
-        {t.dashboard.categoryTitle}
-      </h3>
-      <div className="space-y-3">
-        {budgetCategories.map((budget) => {
-          const spent = categorySpending[budget.category] || 0
-          const cap = categoryBudgetCaps[budget.category] ?? budget.budgetedAmount
-          const percent = cap > 0 ? (spent / cap) * 100 : 0
-          const clampedPercent = Math.min(percent, 100)
-
-          const barColor =
-            percent > 100
-              ? 'bg-[var(--color-brand-red)]'
-              : percent > 80
-                ? 'bg-[var(--color-brand-amber)]'
-                : 'bg-[var(--color-brand-red)]'
-
-          const statusIcon =
-            percent > 100
-              ? '!'
-              : percent > 80
-                ? '⚠'
-                : percent > 0
-                  ? '✓'
-                  : '–'
-
-          const statusColor =
-            percent > 100
-              ? 'text-[var(--color-brand-red)]'
-              : percent > 80
-                ? 'text-[var(--color-brand-amber)]'
-                : 'text-[var(--color-brand-green)]'
-
-          return (
-            <div key={budget.category} className="space-y-1.5">
-              <div className="flex items-center justify-between text-sm">
-                <span className="flex items-center gap-2 text-white">
-                  <span>{CATEGORY_ICONS[budget.category] || '📦'}</span>
-                  {budget.category}
-                </span>
-                <span className="flex items-center gap-2">
-                  <span className="font-mono-numbers text-[var(--color-brand-text-secondary)] text-xs">
-                    {formatCurrency(spent, currency, false)} / {formatCurrency(cap, currency, false)}
-                  </span>
-                  <span className={`text-xs ${statusColor}`}>{statusIcon}</span>
-                </span>
-              </div>
-              <div className="h-2 bg-[var(--color-brand-border)] rounded-full overflow-hidden">
-                <motion.div
-                  className={`h-full rounded-full ${barColor}`}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${clampedPercent}%` }}
-                  transition={{ duration: 0.8, ease: 'easeOut' }}
-                />
-              </div>
-            </div>
-          )
-        })}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider shrink-0">
+          {t.dashboard.categoryTitle}
+        </h3>
+        <div
+          className="flex w-full gap-1 rounded-xl bg-[var(--color-brand-elevated)]/60 p-1 border border-[var(--color-brand-border)]/80 sm:max-w-md"
+          role="tablist"
+          aria-label={t.dashboard.categoryTitle}
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={panel === 'spending'}
+            className={tabBtn(panel === 'spending')}
+            onClick={selectSpending}
+          >
+            {t.dashboard.categoryTabSpending}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={panel === 'budget'}
+            className={tabBtn(panel === 'budget')}
+            onClick={selectBudget}
+          >
+            {t.dashboard.categoryTabBudgetSetup}
+          </button>
+        </div>
       </div>
+
+      {panel === 'spending' ? (
+        <CategorySpendingBars
+          budgetCategories={budgetCategories}
+          categorySpending={categorySpending}
+          categoryBudgetCaps={categoryBudgetCaps}
+          currency={currency}
+        />
+      ) : (
+        <ProfileBudgetSection variant="embedded" />
+      )}
     </div>
   )
 }

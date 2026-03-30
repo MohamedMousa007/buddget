@@ -91,6 +91,8 @@ export const ar: Dictionary = {
     remainingSuffix: 'متبقي',
     overBudgetSuffix: 'تجاوز الميزانية',
     categoryTitle: 'أين تذهب أموالك',
+    categoryTabSpending: 'المصروف',
+    categoryTabBudgetSetup: 'إعداد الميزانية',
     recentTitle: 'آخر المعاملات',
     recentEmpty: 'لا مصروفات هذا الشهر بعد',
     recentEmptyDesc: 'بداية موفقة! أضف أول مصروف بالضغط على زر + 🌟',

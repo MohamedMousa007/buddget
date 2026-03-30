@@ -68,7 +68,7 @@ export default function ProfilePage() {
 
   const setupSteps = [
     { label: t.profile.setupStepIncome, done: incomeSources.length > 0, href: '/income' },
-    { label: t.profile.setupStepBudget, done: budgetCategories.some((b) => b.budgetedAmount > 0), href: '/settings' },
+    { label: t.profile.setupStepBudget, done: budgetCategories.some((b) => b.budgetedAmount > 0), href: '/#budget' },
     { label: t.profile.setupStepPayment, done: paymentMethods.length > 1, href: '/settings' },
     { label: t.profile.setupStepExpense, done: expenses.length > 0, href: '/expenses' },
     { label: t.profile.setupStepSavings, done: savingsHoldings.length > 0, href: '/savings' },
@@ -273,10 +273,7 @@ export default function ProfilePage() {
             <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
               {t.profile.budgetTitle}
             </h2>
-            <Link
-              href="/settings"
-              className="text-xs text-[var(--color-brand-red)] hover:underline"
-            >
+            <Link href="/#budget" className="text-xs text-[var(--color-brand-red)] hover:underline">
               {t.profile.budgetEditLink}
             </Link>
           </div>

@@ -90,6 +90,8 @@ export const en: Dictionary = {
     remainingSuffix: 'remaining',
     overBudgetSuffix: 'over budget',
     categoryTitle: 'Where Your Money Goes',
+    categoryTabSpending: 'Spending',
+    categoryTabBudgetSetup: 'Budget setup',
     recentTitle: 'Latest Transactions',
     recentEmpty: 'No expenses yet this month',
     recentEmptyDesc: 'You\u2019re off to a great start! Add your first expense with the + button \uD83C\uDF1F',
