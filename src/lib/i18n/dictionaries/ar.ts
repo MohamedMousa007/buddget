@@ -98,6 +98,8 @@ export const ar: Dictionary = {
       'المدخرات لا تُسجّل كمصروفات. تتبع الأرصدة من صفحة المدخرات؛ المبالغ الموسومة «مدخرات» في بيانات قديمة ما زالت تُحتسب ضمن هدفك الشهري هنا.',
     categorySavingsHoldingsLabel: 'الأرصدة (كل الوقت): ',
     categorySavingsManageLink: 'إدارة المدخرات ←',
+    categoryTabSpending: 'المصروف',
+    categoryTabBudgetSetup: 'إعداد الميزانية',
     recentTitle: 'آخر المعاملات',
     recentEmpty: 'لا مصروفات هذا الشهر بعد',
     recentEmptyDesc: 'بداية موفقة! أضف أول مصروف بالضغط على زر + 🌟',

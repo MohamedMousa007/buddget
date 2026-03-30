@@ -97,6 +97,8 @@ export const en: Dictionary = {
       'Savings are not logged as expenses. Track balances on the Savings page; amounts tagged Savings in older data still count toward your monthly target here.',
     categorySavingsHoldingsLabel: 'Holdings (all time): ',
     categorySavingsManageLink: 'Manage savings →',
+    categoryTabSpending: 'Spending',
+    categoryTabBudgetSetup: 'Budget setup',
     recentTitle: 'Latest Transactions',
     recentEmpty: 'No expenses yet this month',
     recentEmptyDesc: 'You\u2019re off to a great start! Add your first expense with the + button \uD83C\uDF1F',

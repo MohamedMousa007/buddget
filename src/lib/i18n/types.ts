@@ -99,6 +99,10 @@ export interface Dictionary {
     categorySavingsHint: string
     categorySavingsHoldingsLabel: string
     categorySavingsManageLink: string
+    /** Outer tab: expense/savings breakdown vs caps */
+    categoryTabSpending: string
+    /** Outer tab: edit monthly budget amounts / % of income */
+    categoryTabBudgetSetup: string
     recentTitle: string
     recentEmpty: string
     recentEmptyDesc: string
