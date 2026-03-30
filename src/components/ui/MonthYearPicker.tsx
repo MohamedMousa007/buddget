@@ -25,9 +25,10 @@ export function MonthYearPicker({ monthFilter, onChange, className, compact }: M
   const [open, setOpen] = useState(false)
   const parsed = useMemo(() => {
     const [ys, ms] = monthFilter.split('-')
-    const year = parseInt(ys || '2025', 10)
+    const fallbackYear = new Date().getFullYear()
+    const year = parseInt(ys || String(fallbackYear), 10)
     const month = parseInt(ms || '1', 10)
-    return { year: Number.isFinite(year) ? year : 2025, month: Number.isFinite(month) ? month : 1 }
+    return { year: Number.isFinite(year) ? year : fallbackYear, month: Number.isFinite(month) ? month : 1 }
   }, [monthFilter])
 
   const years = useMemo(() => {

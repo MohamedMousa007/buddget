@@ -13,7 +13,7 @@ import Link from 'next/link'
 import { LogOut, Check, ArrowRight, Lock } from 'lucide-react'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { formatCurrency } from '@/lib/utils/formatters'
-import { useT } from '@/lib/i18n'
+import { useT, useLocale } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/client'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 
@@ -33,6 +33,7 @@ function FieldRow({ label, value }: FieldRowProps) {
 
 export default function ProfilePage() {
   const t = useT()
+  const { locale } = useLocale()
   const { user } = useAuth()
   const store = useFinanceStore()
 
@@ -347,7 +348,7 @@ export default function ProfilePage() {
             </h2>
             <div className="space-y-3">
               <FieldRow label={t.profile.accountEmail} value={user.email || ''} />
-              <FieldRow label={t.profile.accountMemberSince} value={store.profile.createdAt ? new Date(store.profile.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : ''} />
+              <FieldRow label={t.profile.accountMemberSince} value={store.profile.createdAt ? new Date(store.profile.createdAt).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' }) : ''} />
             </div>
             <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-[#2A2A38]">
               <button

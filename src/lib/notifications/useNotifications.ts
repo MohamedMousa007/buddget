@@ -36,7 +36,11 @@ function loadReadIds(): Set<string> {
 }
 
 function saveReadIds(ids: Set<string>) {
-  localStorage.setItem(READ_STORAGE_KEY, JSON.stringify([...ids]))
+  try {
+    localStorage.setItem(READ_STORAGE_KEY, JSON.stringify([...ids]))
+  } catch {
+    // Quota exceeded or private-mode restriction — ignore
+  }
 }
 
 export function useNotifications() {

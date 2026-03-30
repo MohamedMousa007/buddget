@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [pendingNext, setPendingNext] = useState('/')
   const [authModalOpen, setAuthModalOpen] = useState(false)
-  const authModalMessage: string | null = null
+  const [authModalMessage, setAuthModalMessage] = useState<string | null>(null)
 
   const configured = useMemo(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
@@ -48,15 +48,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return !!(url && key)
   }, [])
 
-  const openAuthModal = useCallback((next?: string) => {
+  const openAuthModal = useCallback((next?: string, message?: string | null) => {
     if (next && next.startsWith('/') && !next.startsWith('//')) {
       setPendingNext(next)
     }
+    setAuthModalMessage(message ?? null)
     setAuthModalOpen(true)
   }, [])
 
   const closeAuthModal = useCallback(() => {
     setAuthModalOpen(false)
+    setAuthModalMessage(null)
   }, [])
 
   useEffect(() => {
