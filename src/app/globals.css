@@ -199,6 +199,14 @@
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
+  /** PWA / notched devices: use with `viewport-fit=cover` in layout viewport. */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }
 
 /* ── Arabic typography (layout stays LTR; `dir` on <html> remains ltr) ── */
