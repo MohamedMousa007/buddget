@@ -42,24 +42,26 @@ export function DesktopHeaderBar() {
       </header>
 
       {/* ─── Mobile header (<lg) ─── */}
-      <header className="flex lg:hidden fixed top-0 start-0 end-0 z-40 h-14 items-center px-4 bg-[#111118]/90 border-b border-[#2A2A38] backdrop-blur-xl">
-        <div className="flex flex-1 min-w-0 justify-start items-center">
-          <Link
-            href="/"
-            className="shrink-0 text-xl font-bold font-heading tracking-tight text-white"
-          >
-            Bud<span className="text-[var(--color-brand-red)]">d</span>get
-          </Link>
-        </div>
+      <header className="flex lg:hidden fixed top-0 start-0 end-0 z-40 min-h-[calc(3.5rem+env(safe-area-inset-top,0px))] flex-col bg-[#111118]/90 border-b border-[#2A2A38] backdrop-blur-xl safe-area-top">
+        <div className="flex h-14 shrink-0 items-center px-4">
+          <div className="flex flex-1 min-w-0 justify-start items-center">
+            <Link
+              href="/"
+              className="shrink-0 text-xl font-bold font-heading tracking-tight text-white"
+            >
+              Bud<span className="text-[var(--color-brand-red)]">d</span>get
+            </Link>
+          </div>
 
-        <div className="flex flex-1 min-w-0 justify-center items-center">
-          {pathname === '/' && (
-            <MonthNavigationControl monthFilter={monthFilter} onChange={setMonthFilter} compact />
-          )}
-        </div>
+          <div className="flex flex-1 min-w-0 justify-center items-center">
+            {pathname === '/' && (
+              <MonthNavigationControl monthFilter={monthFilter} onChange={setMonthFilter} compact />
+            )}
+          </div>
 
-        <div className="flex flex-1 min-w-0 justify-end items-center">
-          <AuthNavButtons layout="mobile" />
+          <div className="flex flex-1 min-w-0 justify-end items-center">
+            <AuthNavButtons layout="mobile" />
+          </div>
         </div>
       </header>
     </>

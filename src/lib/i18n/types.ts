@@ -250,6 +250,11 @@ export interface Dictionary {
     activeLabel: string
     confirmDeleteSchedule: string
     paymentHistory: (name: string) => string
+    paymentHistorySectionTitle: string
+    filterByDebt: string
+    allDebtsFilter: string
+    colBalance: string
+    deletePaymentAria: string
     clearedMessage: string
     buttonLogPayment: string
     owedTo: string
@@ -396,6 +401,10 @@ export interface Dictionary {
     desktopApp: string
     appInstalled: string
     installDesktop: string
+    /** Shown when Chrome has not fired install yet (engagement / HTTPS). */
+    installAndroidHint: string
+    /** Desktop browsers without install support. */
+    installUnavailableBrowser: string
 
     languageLabel: string
     languageEn: string

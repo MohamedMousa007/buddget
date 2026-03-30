@@ -8,7 +8,8 @@ const withPWA = require('next-pwa')({
   register: true,
   /** false = new SW can stay in `waiting` until the user refreshes (see UpdateToast + usePwaUpdate). */
   skipWaiting: false,
-  disable: process.env.NODE_ENV === 'development',
+  /** Local dev disables SW by default; set `NEXT_PUBLIC_PWA_DEV=true` to test install prompts locally. */
+  disable: process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_PWA_DEV !== 'true',
   buildExcludes: [/middleware-manifest\.json$/],
 })
 

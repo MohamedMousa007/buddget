@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { convertCurrency } from '@/lib/utils/currency'
@@ -53,16 +53,21 @@ export function KPICard({
       ease: 'easeOut',
     })
     return controls.stop
-  }, [value, count])
+  }, [value, count, currency])
 
-  useEffect(() => {
-    const unsubscribe = rounded.on('change', (v) => {
-      if (displayRef.current) {
-        displayRef.current.textContent = v
-      }
-    })
+  // Drive the label via the ref only. Rendering `formatCurrency(0, currency)` as children
+  // would reset the DOM to zero on every currency change while `value` is unchanged, so the
+  // motion subscriber never runs again and the card stays at £0 until a full refresh.
+  useLayoutEffect(() => {
+    const el = displayRef.current
+    if (!el) return
+    const apply = () => {
+      el.textContent = formatCurrency(count.get(), currency)
+    }
+    apply()
+    const unsubscribe = rounded.on('change', apply)
     return unsubscribe
-  }, [rounded])
+  }, [count, rounded, currency])
 
   const secondaryValue = secondary
     ? convertCurrency(value, currency, secondary, exchangeRates)
@@ -85,7 +90,7 @@ export function KPICard({
         </p>
       </div>
       <p className={cn('text-2xl font-bold font-mono-numbers', COLOR_MAP[color])}>
-        <span ref={displayRef}>{formatCurrency(0, currency)}</span>
+        <span ref={displayRef} />
       </p>
       {secondaryValue != null && (
         <p className="text-xs text-[var(--color-brand-text-muted)] font-mono-numbers mt-0.5">

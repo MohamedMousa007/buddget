@@ -20,7 +20,8 @@ function readInitialPwaHints(): PwaHintState {
     return { platform: 'unsupported', canInstall: false, isInstalled: false }
   }
 
-  if (window.matchMedia('(display-mode: standalone)').matches) {
+  const installedModes = ['standalone', 'fullscreen', 'minimal-ui'] as const
+  if (installedModes.some((mode) => window.matchMedia(`(display-mode: ${mode})`).matches)) {
     return { platform: 'installed', canInstall: false, isInstalled: true }
   }
 

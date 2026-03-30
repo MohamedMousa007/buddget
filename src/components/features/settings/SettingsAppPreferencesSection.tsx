@@ -1,10 +1,12 @@
 'use client'
 
+import { useState } from 'react'
 import { Download, Palette } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { LanguageToggle } from '@/components/ui/LanguageToggle'
 import { usePWAInstall } from '@/hooks/usePWAInstall'
+import { IosInstallDialog } from '@/components/pwa/IosInstallDialog'
 import { useT } from '@/lib/i18n'
 import type { FinanceStore } from '@/lib/store/types'
 
@@ -15,8 +17,7 @@ export interface SettingsAppPreferencesSectionProps {
 export function SettingsAppPreferencesSection({ store }: SettingsAppPreferencesSectionProps) {
   const t = useT()
   const { platform, canInstall, isInstalled, triggerInstall } = usePWAInstall()
-
-  const showInstallRow = isInstalled || (platform === 'desktop' && canInstall)
+  const [iosOpen, setIosOpen] = useState(false)
 
   return (
     <section className="glass-card rounded-2xl p-5 space-y-4">
@@ -38,23 +39,41 @@ export function SettingsAppPreferencesSection({ store }: SettingsAppPreferencesS
         />
       </div>
 
-      {showInstallRow ? (
-        <div className="pt-2 border-t border-[var(--color-brand-border)]">
-          <p className="text-xs text-[var(--color-brand-text-muted)] mb-2">{t.settings.desktopApp}</p>
-          {isInstalled ? (
-            <p className="text-sm font-medium text-emerald-400">{t.settings.appInstalled}</p>
-          ) : (
+      <div className="pt-2 border-t border-[var(--color-brand-border)]">
+        <p className="text-xs text-[var(--color-brand-text-muted)] mb-2">{t.settings.desktopApp}</p>
+        {isInstalled ? (
+          <p className="text-sm font-medium text-emerald-400">{t.settings.appInstalled}</p>
+        ) : platform === 'ios' ? (
+          <>
             <button
               type="button"
-              onClick={() => void triggerInstall()}
+              onClick={() => setIosOpen(true)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
             >
               <Download className="w-4 h-4" />
-              {t.settings.installDesktop}
+              {t.pwa.installApp}
             </button>
-          )}
-        </div>
-      ) : null}
+            <IosInstallDialog open={iosOpen} onOpenChange={setIosOpen} />
+          </>
+        ) : canInstall ? (
+          <button
+            type="button"
+            onClick={() => void triggerInstall()}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            {platform === 'desktop' ? t.settings.installDesktop : t.pwa.installApp}
+          </button>
+        ) : platform === 'android' ? (
+          <p className="text-sm text-[var(--color-brand-text-secondary)] leading-relaxed">
+            {t.settings.installAndroidHint}
+          </p>
+        ) : (
+          <p className="text-sm text-[var(--color-brand-text-secondary)] leading-relaxed">
+            {t.settings.installUnavailableBrowser}
+          </p>
+        )}
+      </div>
     </section>
   )
 }

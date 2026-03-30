@@ -248,6 +248,11 @@ export const ar: Dictionary = {
     activeLabel: 'نشط',
     confirmDeleteSchedule: 'هل تريد حذف هذا الجدول المتكرر؟ لا يمكن التراجع عن هذا.',
     paymentHistory: (name) => `${name} — سجل الدفعات`,
+    paymentHistorySectionTitle: 'سجل الدفعات',
+    filterByDebt: 'الرصيد',
+    allDebtsFilter: 'كل الأرصدة',
+    colBalance: 'الرصيد',
+    deletePaymentAria: 'حذف الدفعة',
     clearedMessage: 'تم السداد بالكامل! عمل رائع 🎉 — سجل دفعات إضافية فقط إذا حدثت الرصيد',
     buttonLogPayment: '+ سجل دفعة',
     owedTo: 'مستحق لـ ',
@@ -391,9 +396,13 @@ export const ar: Dictionary = {
 
     lookFeelTitle: 'المظهر والشكل',
     showCents: 'إظهار الفلوس/القروش في لوحة التحكم',
-    desktopApp: 'احصل على تطبيق سطح المكتب',
+    desktopApp: 'تثبيت Buddget',
     appInstalled: 'جاهز — التطبيق مثبت ✓',
     installDesktop: 'تثبيت Buddget على سطح المكتب',
+    installAndroidHint:
+      'كروم: القائمة (⋮) ← تثبيت التطبيق أو إضافة إلى الشاشة الرئيسية. يظهر الخيار غالباً بعد استخدام الموقع قليلاً ويتطلب اتصالاً آمناً (HTTPS).',
+    installUnavailableBrowser:
+      'هذا المتصفح لا يدعم التثبيت من هنا. جرّب كروم أو إيدج، أو افتح Buddget على هاتفك لإضافة الاختصار إلى الشاشة الرئيسية.',
 
     languageLabel: 'اللغة',
     languageEn: 'EN',

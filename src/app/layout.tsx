@@ -111,6 +111,8 @@ export const viewport: Viewport = {
   themeColor: '#E50914',
   width: 'device-width',
   initialScale: 1,
+  /** Edge-to-edge in installed PWA / iOS; pairs with `env(safe-area-inset-*)` in layout. */
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({

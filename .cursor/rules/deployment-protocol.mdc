@@ -1,24 +1,11 @@
 ---
-description: Rules for deploying code to dev and main branches
+description: High-level deploy / branch conventions
 globs: ["**/*"]
 alwaysApply: true
 ---
 
 # Deployment Protocol
 
-- **Dev Branch (Testing):** You have PERMISSION to push directly to the `dev` branch. This is our testing domain (`dev.buddget.online`).
-- **Main Branch (Production):** You are FORBIDDEN from pushing to `main`. You must create a Pull Request (PR) for any changes intended for production.
-- **Pre-Push Check:** Always run `npm test` before pushing to `dev`. If tests fail, do not push and notify the user via Linear or Slack.
-
-## Default Git Workflow (Linear / Cursor agents)
-
-Issues are often assigned from Linear with **no** per-issue branch settings. Treat this as the standard workflow unless the user explicitly says otherwise:
-
-1. **Implementation branch:** Use `dev` only. Do **not** create or use a separate feature branch (e.g. `cursor/…`) for routine fixes.
-2. **Start of work:** `git fetch origin dev && git checkout dev && git pull origin dev`.
-3. **Finish:** Commit on `dev`, run `npm test`, then `git push origin dev`.
-4. **Production:** Open a PR from `dev` → `main` when promoting to production (never push straight to `main`).
-
-Optional: add a one-line hint in the Linear issue template (e.g. “Implement on `dev`, push to `origin dev`”) so humans and any extra context parsers see it—but **repo rules above are authoritative** for agents.
-
-You should be fixing assigned linear issues automatically after assigning them to you while staying strict with rules above
+- **`dev`:** Staging / testing environment (`dev.buddget.online`).
+- **`main`:** Production; changes are promoted via pull request rather than direct pushes where your team requires it.
+- Run `npm test` before pushing when you have changed application code.
