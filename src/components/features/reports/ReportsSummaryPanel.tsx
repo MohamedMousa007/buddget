@@ -13,6 +13,8 @@ export interface ReportsSummaryPanelProps {
   remittances: number
   totalExpenses: number
   largestExpense: Expense | null
+  /** Same expense as `largestExpense`, converted to `baseCurrency` with current rates (not cached `amountInBaseCurrency`). */
+  largestExpenseInPrimary: number | null
   mostUsedMethod: { name: string; count: number; total: number } | null
 }
 
@@ -27,6 +29,7 @@ export function ReportsSummaryPanel({
   remittances,
   totalExpenses,
   largestExpense,
+  largestExpenseInPrimary,
   mostUsedMethod,
 }: ReportsSummaryPanelProps) {
   const t = useT()
@@ -63,13 +66,13 @@ export function ReportsSummaryPanel({
             {formatCurrency(periodRecurringIncome - totalExpenses, baseCurrency)}
           </p>
         </div>
-        {largestExpense ? (
+        {largestExpense && largestExpenseInPrimary != null ? (
           <div>
             <p className="text-xs text-[var(--color-brand-text-muted)]">{t.reports.kpiBiggestPurchase}</p>
             <p className="text-sm font-medium text-white">
               {largestExpense.description}
               <span className="text-[var(--color-brand-text-secondary)] ms-1 font-mono-numbers">
-                ({formatCurrency(largestExpense.amountInBaseCurrency, baseCurrency)})
+                ({formatCurrency(largestExpenseInPrimary, baseCurrency)})
               </span>
             </p>
           </div>

@@ -11,6 +11,7 @@ import {
   calculateTotalSpentExcludingSavings,
   calculateTotalBudget,
   calculateTotalBudgetExcludingSavings,
+  expenseAmountInBase,
 } from './calculations'
 import type { IncomeSource, Expense, BudgetCategory } from '@/lib/store/types'
 import { DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
@@ -122,8 +123,8 @@ describe('spending and budget excluding Savings', () => {
   const savings: Expense = { ...baseExpense, id: '2', category: 'Savings' }
 
   it('calculateTotalSpentExcludingSavings omits Savings category', () => {
-    expect(calculateTotalSpent([food, savings])).toBe(200)
-    expect(calculateTotalSpentExcludingSavings([food, savings])).toBe(100)
+    expect(calculateTotalSpent([food, savings], 'AED', {})).toBe(200)
+    expect(calculateTotalSpentExcludingSavings([food, savings], 'AED', {})).toBe(100)
   })
 
   it('calculateTotalBudgetExcludingSavings omits Savings row', () => {
@@ -133,6 +134,40 @@ describe('spending and budget excluding Savings', () => {
     ]
     expect(calculateTotalBudget(cats, DEFAULT_SETTINGS, 0)).toBe(700)
     expect(calculateTotalBudgetExcludingSavings(cats, DEFAULT_SETTINGS, 0)).toBe(500)
+  })
+})
+
+describe('expenseAmountInBase', () => {
+  const rates = { USD_AED: 3.6725, EUR_AED: 4.02 }
+
+  it('recomputes in primary currency from original amount when base changes', () => {
+    const e: Pick<Expense, 'amount' | 'currency' | 'amountInBaseCurrency'> = {
+      amount: 100,
+      currency: 'USD',
+      amountInBaseCurrency: 5023.94,
+    }
+    const inEur = expenseAmountInBase(e, 'EUR', rates)
+    expect(inEur).toBeCloseTo(100 * (3.6725 / 4.02), 4)
+  })
+
+  it('calculateTotalSpent uses live conversion not stale amountInBaseCurrency', () => {
+    const expenses: Expense[] = [
+      {
+        id: '1',
+        date: '2026-03-01',
+        description: 'x',
+        category: 'Food',
+        amount: 100,
+        currency: 'USD',
+        amountInBaseCurrency: 5023.94,
+        paymentMethodId: 'pm',
+        isRecurring: false,
+        createdAt: '2026-03-01T00:00:00.000Z',
+        updatedAt: '2026-03-01T00:00:00.000Z',
+      },
+    ]
+    const total = calculateTotalSpent(expenses, 'EUR', rates)
+    expect(total).toBeCloseTo(100 * (3.6725 / 4.02), 4)
   })
 })
 

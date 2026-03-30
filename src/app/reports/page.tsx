@@ -5,6 +5,7 @@ import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { ChartPlaceholder } from '@/components/reports/ChartPlaceholder'
 import { ReportFilters } from '@/components/reports/ReportFilters'
 import { useReportsPage } from '@/hooks/useReportsPage'
+import { expenseAmountInBase } from '@/lib/utils/calculations'
 import { ReportsSummaryPanel } from '@/components/features/reports/ReportsSummaryPanel'
 import { ReportsPaymentMethodPanel } from '@/components/features/reports/ReportsPaymentMethodPanel'
 import { ReportsExportBar } from '@/components/features/reports/ReportsExportBar'
@@ -43,6 +44,11 @@ export default function ReportsPage() {
           remittances={r.remittances}
           totalExpenses={r.totalExpenses}
           largestExpense={r.largestExpense}
+          largestExpenseInPrimary={
+            r.largestExpense
+              ? expenseAmountInBase(r.largestExpense, r.settings.baseCurrency, r.exchangeRates)
+              : null
+          }
           mostUsedMethod={r.mostUsedMethod}
         />
 

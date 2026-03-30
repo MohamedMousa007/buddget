@@ -18,6 +18,7 @@ import {
   calculateRecurringIncomeForCalendarMonth,
   sumRecurringIncomeOverDateRange,
   getPaymentMethodBreakdown,
+  expenseAmountInBase,
 } from '@/lib/utils/calculations'
 import { useT } from '@/lib/i18n'
 import type { DateRange } from '@/components/reports/ReportFilters'
@@ -79,20 +80,24 @@ export function useReportsPage() {
     startDate,
     endDate
   )
-  const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amountInBaseCurrency, 0)
+  const totalExpenses = filteredExpenses.reduce(
+    (sum, e) => sum + expenseAmountInBase(e, settings.baseCurrency, exchangeRates),
+    0
+  )
   const remittances = filteredExpenses
     .filter((e) => e.category === 'Remittance')
-    .reduce((sum, e) => sum + e.amountInBaseCurrency, 0)
+    .reduce((sum, e) => sum + expenseAmountInBase(e, settings.baseCurrency, exchangeRates), 0)
 
   const categoryData = useMemo(() => {
     const byCategory: Record<string, number> = {}
     for (const e of filteredExpenses) {
-      byCategory[e.category] = (byCategory[e.category] || 0) + e.amountInBaseCurrency
+      byCategory[e.category] =
+        (byCategory[e.category] || 0) + expenseAmountInBase(e, settings.baseCurrency, exchangeRates)
     }
     return Object.entries(byCategory)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
-  }, [filteredExpenses])
+  }, [filteredExpenses, settings.baseCurrency, exchangeRates])
 
   const monthlyData = useMemo(() => {
     const monthStarts = eachMonthOfInterval({ start: startOfMonth(startDate), end: startOfMonth(endDate) })
@@ -111,18 +116,29 @@ export function useReportsPage() {
       for (const e of filteredExpenses) {
         const d = parseISO(e.date)
         if (!isWithinInterval(d, { start: monthStart, end: monthEnd })) continue
-        expSum += e.amountInBaseCurrency
-        if (e.category === 'Savings') savings += e.amountInBaseCurrency
+        const inBase = expenseAmountInBase(e, settings.baseCurrency, exchangeRates)
+        expSum += inBase
+        if (e.category === 'Savings') savings += inBase
       }
       return { month: monthLabel, income, expenses: expSum, savings }
     })
   }, [filteredExpenses, incomeSources, settings.baseCurrency, exchangeRates, startDate, endDate])
 
-  const methodBreakdown = getPaymentMethodBreakdown(filteredExpenses, paymentMethods)
+  const methodBreakdown = getPaymentMethodBreakdown(
+    filteredExpenses,
+    paymentMethods,
+    settings.baseCurrency,
+    exchangeRates
+  )
 
   const largestExpense =
     filteredExpenses.length > 0
-      ? filteredExpenses.reduce((max, e) => (e.amountInBaseCurrency > max.amountInBaseCurrency ? e : max))
+      ? filteredExpenses.reduce((max, e) =>
+          expenseAmountInBase(e, settings.baseCurrency, exchangeRates) >
+          expenseAmountInBase(max, settings.baseCurrency, exchangeRates)
+            ? e
+            : max
+        )
       : null
   const mostUsedMethod =
     methodBreakdown.length > 0 ? methodBreakdown.reduce((max, m) => (m.count > max.count ? m : max)) : null
@@ -133,11 +149,12 @@ ${t.reports.kpiTotalIn}: ${formatCurrency(periodRecurringIncome, settings.baseCu
 ${t.reports.kpiSentHome}: ${formatCurrency(remittances, settings.baseCurrency)}
 ${t.reports.kpiTotalOut}: ${formatCurrency(totalExpenses, settings.baseCurrency)}
 ${t.reports.kpiNetSaved}: ${formatCurrency(periodRecurringIncome - totalExpenses, settings.baseCurrency)}
-${largestExpense ? `${t.reports.kpiBiggestPurchase}: ${largestExpense.description} (${formatCurrency(largestExpense.amountInBaseCurrency, settings.baseCurrency)})` : ''}
+${largestExpense ? `${t.reports.kpiBiggestPurchase}: ${largestExpense.description} (${formatCurrency(expenseAmountInBase(largestExpense, settings.baseCurrency, exchangeRates), settings.baseCurrency)})` : ''}
 ${mostUsedMethod ? `${t.reports.kpiGoToPayment}: ${mostUsedMethod.name} ${t.reports.timesUsed(mostUsedMethod.count)}` : ''}`
     void navigator.clipboard.writeText(summary)
   }, [
     endDate,
+    exchangeRates,
     largestExpense,
     mostUsedMethod,
     periodRecurringIncome,
@@ -158,7 +175,7 @@ ${mostUsedMethod ? `${t.reports.kpiGoToPayment}: ${mostUsedMethod.name} ${t.repo
           escapeCsvField(e.category),
           escapeCsvField(e.amount),
           escapeCsvField(e.currency),
-          escapeCsvField(e.amountInBaseCurrency),
+          escapeCsvField(expenseAmountInBase(e, settings.baseCurrency, exchangeRates)),
         ].join(',')
       )
       .join('\n')
@@ -169,12 +186,13 @@ ${mostUsedMethod ? `${t.reports.kpiGoToPayment}: ${mostUsedMethod.name} ${t.repo
     a.download = `buddget-report-${dateRange}.csv`
     a.click()
     URL.revokeObjectURL(url)
-  }, [dateRange, filteredExpenses])
+  }, [dateRange, filteredExpenses, settings.baseCurrency, exchangeRates])
 
   return {
     dateRange,
     setDateRange,
     settings,
+    exchangeRates,
     filteredExpenses,
     startDate,
     endDate,

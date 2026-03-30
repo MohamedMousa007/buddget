@@ -17,6 +17,7 @@ import {
   totalSavingsHoldingsInBase,
   effectiveCategoryBudget,
   totalDebtRemainingInBase,
+  expenseAmountInBase,
 } from '@/lib/utils/calculations'
 
 export function useMonthlyStats() {
@@ -56,8 +57,12 @@ export function useMonthlyStats() {
     const incomeBlocked =
       settings.noIncomeDeclared === true && incomeSources.length === 0
     const totalIncome = incomeBlocked ? 0 : rawMonthlyIncome
-    const totalSpent = calculateTotalSpent(monthlyExpenses)
-    const totalSpentForExpenseBudget = calculateTotalSpentExcludingSavings(monthlyExpenses)
+    const totalSpent = calculateTotalSpent(monthlyExpenses, settings.baseCurrency, exchangeRates)
+    const totalSpentForExpenseBudget = calculateTotalSpentExcludingSavings(
+      monthlyExpenses,
+      settings.baseCurrency,
+      exchangeRates
+    )
     const totalBudget = calculateTotalBudget(budgetCategories, settings, totalIncome)
     const totalExpenseBudget = calculateTotalBudgetExcludingSavings(
       budgetCategories,
@@ -66,12 +71,16 @@ export function useMonthlyStats() {
     )
     const remaining = totalExpenseBudget - totalSpentForExpenseBudget
     const budgetUsedPercent = calculateBudgetUsedPercent(totalSpentForExpenseBudget, totalExpenseBudget)
-    const categorySpending = calculateCategorySpending(monthlyExpenses)
+    const categorySpending = calculateCategorySpending(
+      monthlyExpenses,
+      settings.baseCurrency,
+      exchangeRates
+    )
     const daysLeft = calculateDaysLeftInMonth(monthFilter, settings.monthStartDay)
 
     const savingsFromExpenses = monthlyExpenses
       .filter((e) => e.category === 'Savings')
-      .reduce((sum, e) => sum + e.amountInBaseCurrency, 0)
+      .reduce((sum, e) => sum + expenseAmountInBase(e, settings.baseCurrency, exchangeRates), 0)
 
     const savingsHoldingsTotal = totalSavingsHoldingsInBase(
       savingsHoldings,

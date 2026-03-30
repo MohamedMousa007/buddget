@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { filterExpensesByMonth } from '@/lib/utils/calculations'
+import { filterExpensesByMonth, expenseAmountInBase } from '@/lib/utils/calculations'
 import { escapeCsvField } from '@/lib/utils/formatters'
 import { FilterBar } from '@/components/expenses/FilterBar'
 import { ExpenseTable } from '@/components/expenses/ExpenseTable'
@@ -15,8 +15,12 @@ import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useT } from '@/lib/i18n'
 
 export default function ExpensesPage() {
-  const { expenses, settings } = useFinanceStore(
-    useShallow((s) => ({ expenses: s.expenses, settings: s.settings }))
+  const { expenses, settings, exchangeRates } = useFinanceStore(
+    useShallow((s) => ({
+      expenses: s.expenses,
+      settings: s.settings,
+      exchangeRates: s.exchangeRates,
+    }))
   )
   const { monthFilter, setMonthFilter, setActiveModal } = useSettingsStore()
   const requireAuth = useRequireAuthAction()
@@ -50,7 +54,10 @@ export default function ExpensesPage() {
     return result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
   }, [expenses, monthFilter, settings.monthStartDay, categoryFilter, methodFilter, search])
 
-  const totalAmount = filteredExpenses.reduce((sum, e) => sum + e.amountInBaseCurrency, 0)
+  const totalAmount = filteredExpenses.reduce(
+    (sum, e) => sum + expenseAmountInBase(e, settings.baseCurrency, exchangeRates),
+    0
+  )
 
   const handleExport = () => {
     const headers = 'Date,Description,Category,Amount,Currency,Payment Method\n'

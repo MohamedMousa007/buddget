@@ -22,6 +22,21 @@ import type {
 } from '@/lib/store/types'
 import { convertCurrency, tryConvertCurrency } from './currency'
 
+/**
+ * Expense total in the user's current primary currency, derived from the stored original
+ * `amount` + `currency` and live rates. Prefer this over summing `amountInBaseCurrency`, which
+ * was captured at entry time and becomes wrong after the user changes primary currency.
+ */
+export function expenseAmountInBase(
+  expense: Pick<Expense, 'amount' | 'currency' | 'amountInBaseCurrency'>,
+  baseCurrency: Currency,
+  rates: Record<string, number>
+): number {
+  const converted = tryConvertCurrency(expense.amount, expense.currency, baseCurrency, rates)
+  if (converted !== null) return converted
+  return expense.amountInBaseCurrency
+}
+
 /** Converts per-period recurring income to an equivalent monthly amount for budgets and KPIs. */
 export function incomeMonthlyMultiplier(freq: IncomeRecurringFrequency | undefined): number {
   const f = freq ?? 'monthly'
@@ -113,23 +128,34 @@ export function sumRecurringIncomeOverDateRange(
   return sum
 }
 
-export function calculateTotalSpent(expenses: Expense[]): number {
-  return expenses.reduce((total, e) => total + e.amountInBaseCurrency, 0)
+export function calculateTotalSpent(
+  expenses: Expense[],
+  baseCurrency: Currency,
+  rates: Record<string, number>
+): number {
+  return expenses.reduce((total, e) => total + expenseAmountInBase(e, baseCurrency, rates), 0)
 }
 
 /** Spending totals for the expense budget ring and "Money Out" — excludes Savings (allocations, not consumption). */
-export function calculateTotalSpentExcludingSavings(expenses: Expense[]): number {
+export function calculateTotalSpentExcludingSavings(
+  expenses: Expense[],
+  baseCurrency: Currency,
+  rates: Record<string, number>
+): number {
   return expenses
     .filter((e) => e.category !== 'Savings')
-    .reduce((total, e) => total + e.amountInBaseCurrency, 0)
+    .reduce((total, e) => total + expenseAmountInBase(e, baseCurrency, rates), 0)
 }
 
 export function calculateCategorySpending(
-  expenses: Expense[]
+  expenses: Expense[],
+  baseCurrency: Currency,
+  rates: Record<string, number>
 ): Record<string, number> {
   const spending: Record<string, number> = {}
   for (const expense of expenses) {
-    spending[expense.category] = (spending[expense.category] || 0) + expense.amountInBaseCurrency
+    spending[expense.category] =
+      (spending[expense.category] || 0) + expenseAmountInBase(expense, baseCurrency, rates)
   }
   return spending
 }
@@ -361,16 +387,20 @@ export function calculateDebtRemainingInBaseCurrency(
 }
 
 export function calculateSavingsTotal(
-  expenses: Expense[]
+  expenses: Expense[],
+  baseCurrency: Currency,
+  rates: Record<string, number>
 ): number {
   return expenses
     .filter((e) => e.category === 'Savings')
-    .reduce((total, e) => total + e.amountInBaseCurrency, 0)
+    .reduce((total, e) => total + expenseAmountInBase(e, baseCurrency, rates), 0)
 }
 
 export function getPaymentMethodBreakdown(
   expenses: Expense[],
-  paymentMethods: { id: string; name: string }[]
+  paymentMethods: { id: string; name: string }[],
+  baseCurrency: Currency,
+  rates: Record<string, number>
 ): { name: string; count: number; total: number }[] {
   const breakdown: Record<string, { count: number; total: number }> = {}
 
@@ -379,7 +409,7 @@ export function getPaymentMethodBreakdown(
     const name = method?.name || 'Unknown'
     if (!breakdown[name]) breakdown[name] = { count: 0, total: 0 }
     breakdown[name].count++
-    breakdown[name].total += expense.amountInBaseCurrency
+    breakdown[name].total += expenseAmountInBase(expense, baseCurrency, rates)
   }
 
   return Object.entries(breakdown).map(([name, data]) => ({

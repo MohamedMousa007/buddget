@@ -73,7 +73,6 @@ export function ExpenseRow({ expense, isMobile = false }: ExpenseRowProps) {
           <MoneyDisplay
             amount={expense.amount}
             currency={expense.currency}
-            amountInPrimary={expense.amountInBaseCurrency}
             variant="table"
             primaryClassName="text-white"
           />
@@ -111,7 +110,6 @@ export function ExpenseRow({ expense, isMobile = false }: ExpenseRowProps) {
         <MoneyDisplay
           amount={expense.amount}
           currency={expense.currency}
-          amountInPrimary={expense.amountInBaseCurrency}
           variant="table"
           primaryClassName="text-sm text-white"
         />
