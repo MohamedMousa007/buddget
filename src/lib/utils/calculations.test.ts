@@ -7,8 +7,13 @@ import {
   goldPurityFactor,
   goldGramsToMoney,
   moneyToGoldGrams,
+  calculateTotalSpent,
+  calculateTotalSpentExcludingSavings,
+  calculateTotalBudget,
+  calculateTotalBudgetExcludingSavings,
 } from './calculations'
-import type { IncomeSource } from '@/lib/store/types'
+import type { IncomeSource, Expense, BudgetCategory } from '@/lib/store/types'
+import { DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
 
 const jan2025 = new Date('2025-01-15T12:00:00.000Z')
 
@@ -97,6 +102,37 @@ describe('sumRecurringIncomeOverDateRange', () => {
     const start = new Date('2025-01-10')
     const end = new Date('2025-03-20')
     expect(sumRecurringIncomeOverDateRange(sources, 'AED', {}, start, end)).toBe(3000)
+  })
+})
+
+describe('spending and budget excluding Savings', () => {
+  const baseExpense = {
+    id: '1',
+    date: '2025-01-15',
+    description: 'x',
+    amount: 100,
+    currency: 'AED' as const,
+    amountInBaseCurrency: 100,
+    paymentMethodId: 'pm',
+    isRecurring: false,
+    createdAt: '2025-01-15',
+    updatedAt: '2025-01-15',
+  }
+  const food: Expense = { ...baseExpense, category: 'Food' }
+  const savings: Expense = { ...baseExpense, id: '2', category: 'Savings' }
+
+  it('calculateTotalSpentExcludingSavings omits Savings category', () => {
+    expect(calculateTotalSpent([food, savings])).toBe(200)
+    expect(calculateTotalSpentExcludingSavings([food, savings])).toBe(100)
+  })
+
+  it('calculateTotalBudgetExcludingSavings omits Savings row', () => {
+    const cats: BudgetCategory[] = [
+      { category: 'Food', budgetedAmount: 500, currency: 'AED' },
+      { category: 'Savings', budgetedAmount: 200, currency: 'AED' },
+    ]
+    expect(calculateTotalBudget(cats, DEFAULT_SETTINGS, 0)).toBe(700)
+    expect(calculateTotalBudgetExcludingSavings(cats, DEFAULT_SETTINGS, 0)).toBe(500)
   })
 })
 

@@ -6,7 +6,7 @@ import {
   calculateDebtRemainingRaw,
   isDebtFullyPaid,
 } from '@/lib/utils/calculations'
-import { EXPENSE_CATEGORIES, PAYMENT_METHOD_TYPES } from '@/lib/constants/finance'
+import { EXPENSE_CATEGORIES, EXPENSE_ENTRY_CATEGORIES, PAYMENT_METHOD_TYPES } from '@/lib/constants/finance'
 import type {
   Currency,
   ExpenseCategory,
@@ -125,6 +125,10 @@ export function validateActionItem(
   if (action === 'add_expense') {
     const amount = Number(getField(d, 'amount')) || 0
     if (amount <= 0) return 'Each expense needs a positive amount.'
+    const rawCat = String(getField(d, 'category') || 'Other')
+    if (rawCat === 'Savings') {
+      return 'Savings are not logged as expenses. Use add_savings_holding or the Savings page.'
+    }
     const currency = String(getField(d, 'currency') || ctx.settings.baseCurrency)
     if (
       tryConvertCurrency(amount, currency, ctx.settings.baseCurrency, ctx.exchangeRates) === null
@@ -214,10 +218,15 @@ export function executeActionItem(
     const amount = Number(getField(d, 'amount')) || 0
     const currency = String(getField(d, 'currency') || ctx.settings.baseCurrency)
     const pm = findPaymentMethod(ctx, getField(d, 'paymentMethod', 'payment_method'))
+    const requestedCat = String(getField(d, 'category') || 'Other') as ExpenseCategory
+    const category: ExpenseCategory =
+      requestedCat === 'Savings' || !EXPENSE_ENTRY_CATEGORIES.includes(requestedCat)
+        ? 'Other'
+        : requestedCat
     ctx.addExpense({
       date: String(getField(d, 'date') || new Date().toISOString().slice(0, 10)),
       description: String(getField(d, 'description') || 'Expense'),
-      category: String(getField(d, 'category') || 'Other') as ExpenseCategory,
+      category,
       amount,
       currency: currency as Currency,
       paymentMethodId: pm?.id || '',

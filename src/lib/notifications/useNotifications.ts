@@ -62,6 +62,7 @@ export function useNotifications() {
     const now = new Date().toISOString()
 
     for (const cat of budgetCategories) {
+      if (cat.category === 'Savings') continue
       const cap = stats.categoryBudgetCaps[cat.category] ?? 0
       if (cap <= 0) continue
       const spent = stats.categorySpending[cat.category] ?? 0
@@ -111,8 +112,9 @@ export function useNotifications() {
       })
     }
 
-    const hasSavingsExpense = stats.monthlyExpenses.some((e) => e.category === 'Savings')
-    if (!hasSavingsExpense) {
+    const hasSavingsActivity =
+      stats.savingsHoldingsTotal > 0.0001 || stats.savingsFromExpenses > 0.0001
+    if (!hasSavingsActivity) {
       list.push({
         id: `savings_nudge:${monthFilter}`,
         type: 'savings_nudge',

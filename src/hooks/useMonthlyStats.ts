@@ -8,8 +8,10 @@ import {
   filterExpensesByMonth,
   calculateMonthlyIncome,
   calculateTotalSpent,
+  calculateTotalSpentExcludingSavings,
   calculateCategorySpending,
   calculateTotalBudget,
+  calculateTotalBudgetExcludingSavings,
   calculateBudgetUsedPercent,
   calculateDaysLeftInMonth,
   totalSavingsHoldingsInBase,
@@ -55,9 +57,15 @@ export function useMonthlyStats() {
       settings.noIncomeDeclared === true && incomeSources.length === 0
     const totalIncome = incomeBlocked ? 0 : rawMonthlyIncome
     const totalSpent = calculateTotalSpent(monthlyExpenses)
+    const totalSpentForExpenseBudget = calculateTotalSpentExcludingSavings(monthlyExpenses)
     const totalBudget = calculateTotalBudget(budgetCategories, settings, totalIncome)
-    const remaining = totalBudget - totalSpent
-    const budgetUsedPercent = calculateBudgetUsedPercent(totalSpent, totalBudget)
+    const totalExpenseBudget = calculateTotalBudgetExcludingSavings(
+      budgetCategories,
+      settings,
+      totalIncome
+    )
+    const remaining = totalExpenseBudget - totalSpentForExpenseBudget
+    const budgetUsedPercent = calculateBudgetUsedPercent(totalSpentForExpenseBudget, totalExpenseBudget)
     const categorySpending = calculateCategorySpending(monthlyExpenses)
     const daysLeft = calculateDaysLeftInMonth(monthFilter, settings.monthStartDay)
 
@@ -92,7 +100,9 @@ export function useMonthlyStats() {
       monthlyExpenses,
       totalIncome,
       totalSpent,
+      totalSpentExcludingSavings: totalSpentForExpenseBudget,
       totalBudget,
+      totalExpenseBudget,
       remaining,
       budgetUsedPercent,
       categorySpending,

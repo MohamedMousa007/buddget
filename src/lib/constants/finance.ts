@@ -14,6 +14,19 @@ export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   'Other',
 ]
 
+/**
+ * Categories allowed when adding or normally editing an expense.
+ * Savings is managed via the Savings page and dashboard card, not as spending.
+ */
+export const EXPENSE_ENTRY_CATEGORIES: ExpenseCategory[] = EXPENSE_CATEGORIES.filter((c) => c !== 'Savings')
+
+/**
+ * Chip list for add/edit forms. Includes Savings only when the row is already Savings (legacy), so users can reclassify.
+ */
+export function expenseCategoryOptionsForForm(currentCategory: ExpenseCategory): ExpenseCategory[] {
+  return currentCategory === 'Savings' ? EXPENSE_CATEGORIES : EXPENSE_ENTRY_CATEGORIES
+}
+
 /** Filter dropdown: All + every expense category. */
 export const EXPENSE_FILTER_CATEGORIES: (ExpenseCategory | 'All')[] = [
   'All',

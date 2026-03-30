@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { EXPENSE_CATEGORIES, FIAT_CURRENCIES } from '@/lib/constants/finance'
+import { EXPENSE_ENTRY_CATEGORIES, EXPENSE_CATEGORIES, FIAT_CURRENCIES } from '@/lib/constants/finance'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import type { ExpenseCategory, Currency } from '@/lib/store/types'
 import { matchPaymentMethodForExpense } from '@/lib/modals/matchPaymentMethodForExpense'
@@ -36,8 +36,16 @@ export function useAddExpenseSheet() {
       if (expensePrefill.currency && FIAT_CURRENCIES.includes(expensePrefill.currency as Currency)) {
         setCurrency(clampFiatToAllowed(settings, expensePrefill.currency as Currency))
       }
-      if (expensePrefill.category && EXPENSE_CATEGORIES.includes(expensePrefill.category as ExpenseCategory)) {
+      if (
+        expensePrefill.category &&
+        EXPENSE_ENTRY_CATEGORIES.includes(expensePrefill.category as ExpenseCategory)
+      ) {
         setCategory(expensePrefill.category as ExpenseCategory)
+      } else if (
+        expensePrefill.category === 'Savings' &&
+        EXPENSE_CATEGORIES.includes(expensePrefill.category as ExpenseCategory)
+      ) {
+        setCategory('Other')
       }
       if (expensePrefill.paymentMethod) {
         setPaymentMethodId(matchPaymentMethodForExpense(expensePrefill.paymentMethod, paymentMethods))

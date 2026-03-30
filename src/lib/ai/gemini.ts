@@ -140,7 +140,8 @@ CONTEXT:
 - Base currency: ${baseCurrency}
 - Today's date: ${today}
 - Payment methods: ${methodList}
-- Expense categories: Rent, Transport, Food, Enjoyment, Savings, Debt, Remittance, Other
+- Expense categories (for add_expense): Rent, Transport, Food, Enjoyment, Debt, Remittance, Other — NOT Savings (use add_savings_holding for money set aside)
+- Budget updates may still use Savings as a category for allocation targets
 - Active debts: ${debtList}
 ${live}
 RULES:

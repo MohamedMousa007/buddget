@@ -117,6 +117,13 @@ export function calculateTotalSpent(expenses: Expense[]): number {
   return expenses.reduce((total, e) => total + e.amountInBaseCurrency, 0)
 }
 
+/** Spending totals for the expense budget ring and "Money Out" — excludes Savings (allocations, not consumption). */
+export function calculateTotalSpentExcludingSavings(expenses: Expense[]): number {
+  return expenses
+    .filter((e) => e.category !== 'Savings')
+    .reduce((total, e) => total + e.amountInBaseCurrency, 0)
+}
+
 export function calculateCategorySpending(
   expenses: Expense[]
 ): Record<string, number> {
@@ -151,6 +158,20 @@ export function calculateTotalBudget(
     (total, b) => total + effectiveCategoryBudget(b, settings, monthlyIncomeInBase),
     0
   )
+}
+
+/** Budget total aligned with expense spending (excludes Savings allocation cap). */
+export function calculateTotalBudgetExcludingSavings(
+  budgetCategories: BudgetCategory[],
+  settings: AppSettings,
+  monthlyIncomeInBase: number
+): number {
+  return budgetCategories
+    .filter((b) => b.category !== 'Savings')
+    .reduce(
+      (total, b) => total + effectiveCategoryBudget(b, settings, monthlyIncomeInBase),
+      0
+    )
 }
 
 export function totalSavingsHoldingsInBase(
