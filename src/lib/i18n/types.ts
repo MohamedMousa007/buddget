@@ -541,6 +541,7 @@ export interface Dictionary {
     errorMismatch: string
     errorUpdateFailed: string
     buttonSubmit: string
+    successSignInPrompt: string
   }
 
   notifications: {

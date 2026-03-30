@@ -7,6 +7,7 @@ import { ModalProvider } from '@/components/modals/ModalProvider'
 import { OnboardingBanner } from '@/components/layout/OnboardingBanner'
 import { DesktopHeaderBar } from '@/components/layout/DesktopHeaderBar'
 import { InstallButton } from '@/components/pwa/InstallButton'
+import { PasswordUpdatedBanner } from '@/components/auth/PasswordUpdatedBanner'
 
 interface AppShellProps {
   children: React.ReactNode
@@ -37,6 +38,7 @@ export function AppShell({ children }: AppShellProps) {
       <Sidebar />
       <DesktopHeaderBar />
       <main className="pt-14 lg:ms-[200px] pb-20 lg:pb-0 min-h-screen">
+        <PasswordUpdatedBanner />
         <OnboardingBanner />
         {children}
       </main>

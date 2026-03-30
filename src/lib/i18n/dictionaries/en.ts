@@ -538,6 +538,8 @@ export const en: Dictionary = {
     errorMismatch: "Those passwords don\u2019t match. Try again.",
     errorUpdateFailed: "Oops, something went wrong. Let\u2019s try again.",
     buttonSubmit: 'Update my password',
+    successSignInPrompt:
+      'Your password is updated. Sign in with your new password to continue.',
   },
 
   notifications: {

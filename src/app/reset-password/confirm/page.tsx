@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Lock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 import { useT } from '@/lib/i18n'
 
 const MIN = 8
@@ -59,12 +60,19 @@ export default function ResetPasswordConfirmPage() {
     }
     setLoading(true)
     const { error: e } = await supabase.auth.updateUser({ password })
-    setLoading(false)
     if (e) {
+      setLoading(false)
       setError(t.resetPassword.errorUpdateFailed)
       return
     }
-    router.replace('/')
+    clearBudgetData()
+    const { error: signOutError } = await supabase.auth.signOut()
+    setLoading(false)
+    if (signOutError) {
+      setError(t.resetPassword.errorUpdateFailed)
+      return
+    }
+    router.replace('/?passwordUpdated=1')
     router.refresh()
   }
 

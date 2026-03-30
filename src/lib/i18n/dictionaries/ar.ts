@@ -539,6 +539,7 @@ export const ar: Dictionary = {
     errorMismatch: 'كلمتا المرور غير متطابقتين. حاول مرة أخرى.',
     errorUpdateFailed: 'عذراً، حدث خطأ ما. هيا نحاول مرة أخرى.',
     buttonSubmit: 'تحديث كلمة المرور',
+    successSignInPrompt: 'تم تحديث كلمة المرور. سجّل الدخول بكلمة المرور الجديدة للمتابعة.',
   },
 
   notifications: {
