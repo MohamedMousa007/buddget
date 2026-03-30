@@ -436,6 +436,7 @@ export const en: Dictionary = {
     placeholderPhone: '+971 50 000 0000',
     labelCountry: 'Country',
     placeholderCountry: 'Country',
+    placeholderCountrySelect: 'Select country',
     labelCity: 'City',
     placeholderCity: 'Dubai',
     emptyField: '\u2014',

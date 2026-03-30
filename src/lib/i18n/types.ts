@@ -440,6 +440,7 @@ export interface Dictionary {
     placeholderPhone: string
     labelCountry: string
     placeholderCountry: string
+    placeholderCountrySelect: string
     labelCity: string
     placeholderCity: string
     emptyField: string

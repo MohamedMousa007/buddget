@@ -437,6 +437,7 @@ export const ar: Dictionary = {
     placeholderPhone: '+971 50 000 0000',
     labelCountry: 'الدولة',
     placeholderCountry: 'الدولة',
+    placeholderCountrySelect: 'اختر الدولة',
     labelCity: 'المدينة',
     placeholderCity: 'دبي',
     emptyField: '—',
