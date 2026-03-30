@@ -91,6 +91,13 @@ export const ar: Dictionary = {
     remainingSuffix: 'متبقي',
     overBudgetSuffix: 'تجاوز الميزانية',
     categoryTitle: 'أين تذهب أموالك',
+    categoryBreakdownTabsAria: 'تفصيل الفئات',
+    categoryTabExpenses: 'المصروفات',
+    categoryTabSavings: 'المدخرات',
+    categorySavingsHint:
+      'المدخرات لا تُسجّل كمصروفات. تتبع الأرصدة من صفحة المدخرات؛ المبالغ الموسومة «مدخرات» في بيانات قديمة ما زالت تُحتسب ضمن هدفك الشهري هنا.',
+    categorySavingsHoldingsLabel: 'الأرصدة (كل الوقت): ',
+    categorySavingsManageLink: 'إدارة المدخرات ←',
     recentTitle: 'آخر المعاملات',
     recentEmpty: 'لا مصروفات هذا الشهر بعد',
     recentEmptyDesc: 'بداية موفقة! أضف أول مصروف بالضغط على زر + 🌟',

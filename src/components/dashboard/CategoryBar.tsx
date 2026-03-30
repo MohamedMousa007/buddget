@@ -1,38 +1,44 @@
 'use client'
 
-import { motion } from 'framer-motion'
-import { formatCurrency } from '@/lib/utils/formatters'
+import { useState } from 'react'
 import { useT } from '@/lib/i18n'
 import type { BudgetCategory } from '@/lib/store/types'
+import { CategoryBarExpenseRows } from '@/components/dashboard/CategoryBarExpenseRows'
+import { CategoryBarSavingsTab } from '@/components/dashboard/CategoryBarSavingsTab'
+
+type BreakdownTab = 'expenses' | 'savings'
 
 interface CategoryBarProps {
   budgetCategories: BudgetCategory[]
   categorySpending: Record<string, number>
-  /** Effective cap per category (handles % of income mode) */
   categoryBudgetCaps: Record<string, number>
   currency: string
   incomeBlockedNote?: string | null
+  savingsHoldingsTotal: number
 }
 
-const CATEGORY_ICONS: Record<string, string> = {
-  Rent: '🏠',
-  Transport: '🚇',
-  Food: '🍕',
-  Enjoyment: '🎮',
-  Savings: '💰',
-  Debt: '💳',
-  Remittance: '💸',
-  Other: '📦',
-}
-
+/**
+ * Home category breakdown: **Expenses** (budget vs spend) and **Savings** (allocation / holdings), not mixed in one list.
+ */
 export function CategoryBar({
   budgetCategories,
   categorySpending,
   categoryBudgetCaps,
   currency,
   incomeBlockedNote,
+  savingsHoldingsTotal,
 }: CategoryBarProps) {
   const t = useT()
+  const [tab, setTab] = useState<BreakdownTab>('expenses')
+
+  const expenseBudgets = budgetCategories.filter((b) => b.category !== 'Savings')
+  const savingsBudget = budgetCategories.find((b) => b.category === 'Savings')
+  const savingsSpent = categorySpending.Savings ?? 0
+  const savingsCap =
+    savingsBudget != null
+      ? (categoryBudgetCaps.Savings ?? savingsBudget.budgetedAmount)
+      : 0
+
   return (
     <div className="glass-card rounded-2xl p-5 space-y-4">
       {incomeBlockedNote ? (
@@ -41,62 +47,53 @@ export function CategoryBar({
       <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
         {t.dashboard.categoryTitle}
       </h3>
-      <div className="space-y-3">
-        {budgetCategories.map((budget) => {
-          const spent = categorySpending[budget.category] || 0
-          const cap = categoryBudgetCaps[budget.category] ?? budget.budgetedAmount
-          const percent = cap > 0 ? (spent / cap) * 100 : 0
-          const clampedPercent = Math.min(percent, 100)
-
-          const barColor =
-            percent > 100
-              ? 'bg-[var(--color-brand-red)]'
-              : percent > 80
-                ? 'bg-[var(--color-brand-amber)]'
-                : 'bg-[var(--color-brand-red)]'
-
-          const statusIcon =
-            percent > 100
-              ? '!'
-              : percent > 80
-                ? '⚠'
-                : percent > 0
-                  ? '✓'
-                  : '–'
-
-          const statusColor =
-            percent > 100
-              ? 'text-[var(--color-brand-red)]'
-              : percent > 80
-                ? 'text-[var(--color-brand-amber)]'
-                : 'text-[var(--color-brand-green)]'
-
-          return (
-            <div key={budget.category} className="space-y-1.5">
-              <div className="flex items-center justify-between text-sm">
-                <span className="flex items-center gap-2 text-white">
-                  <span>{CATEGORY_ICONS[budget.category] || '📦'}</span>
-                  {budget.category}
-                </span>
-                <span className="flex items-center gap-2">
-                  <span className="font-mono-numbers text-[var(--color-brand-text-secondary)] text-xs">
-                    {formatCurrency(spent, currency, false)} / {formatCurrency(cap, currency, false)}
-                  </span>
-                  <span className={`text-xs ${statusColor}`}>{statusIcon}</span>
-                </span>
-              </div>
-              <div className="h-2 bg-[var(--color-brand-border)] rounded-full overflow-hidden">
-                <motion.div
-                  className={`h-full rounded-full ${barColor}`}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${clampedPercent}%` }}
-                  transition={{ duration: 0.8, ease: 'easeOut' }}
-                />
-              </div>
-            </div>
-          )
-        })}
+      <div
+        className="flex rounded-xl bg-[var(--color-brand-elevated)] p-1 gap-1"
+        role="tablist"
+        aria-label={t.dashboard.categoryBreakdownTabsAria}
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'expenses'}
+          onClick={() => setTab('expenses')}
+          className={`flex-1 rounded-lg py-2 px-3 text-xs font-medium transition-colors ${
+            tab === 'expenses'
+              ? 'bg-[var(--color-brand-border)] text-white shadow-sm'
+              : 'text-[var(--color-brand-text-secondary)] hover:text-white'
+          }`}
+        >
+          {t.dashboard.categoryTabExpenses}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'savings'}
+          onClick={() => setTab('savings')}
+          className={`flex-1 rounded-lg py-2 px-3 text-xs font-medium transition-colors ${
+            tab === 'savings'
+              ? 'bg-[var(--color-brand-border)] text-white shadow-sm'
+              : 'text-[var(--color-brand-text-secondary)] hover:text-white'
+          }`}
+        >
+          {t.dashboard.categoryTabSavings}
+        </button>
       </div>
+      {tab === 'expenses' ? (
+        <CategoryBarExpenseRows
+          budgetCategories={expenseBudgets}
+          categorySpending={categorySpending}
+          categoryBudgetCaps={categoryBudgetCaps}
+          currency={currency}
+        />
+      ) : (
+        <CategoryBarSavingsTab
+          spentThisMonth={savingsSpent}
+          budgetCap={savingsCap}
+          holdingsTotal={savingsHoldingsTotal}
+          currency={currency}
+        />
+      )}
     </div>
   )
 }

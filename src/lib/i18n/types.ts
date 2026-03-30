@@ -93,6 +93,12 @@ export interface Dictionary {
     remainingSuffix: string
     overBudgetSuffix: string
     categoryTitle: string
+    categoryBreakdownTabsAria: string
+    categoryTabExpenses: string
+    categoryTabSavings: string
+    categorySavingsHint: string
+    categorySavingsHoldingsLabel: string
+    categorySavingsManageLink: string
     recentTitle: string
     recentEmpty: string
     recentEmptyDesc: string

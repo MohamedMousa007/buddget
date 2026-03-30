@@ -1,21 +1,24 @@
 'use client'
 
 import { Label } from '@/components/ui/label'
-import { EXPENSE_CATEGORIES } from '@/lib/constants/finance'
+import { EXPENSE_ENTRY_CATEGORIES } from '@/lib/constants/finance'
 import type { ExpenseCategory } from '@/lib/store/types'
 
 export function ExpenseCategoryChips({
   category,
   onChange,
+  categories = EXPENSE_ENTRY_CATEGORIES,
 }: {
   category: ExpenseCategory
   onChange: (c: ExpenseCategory) => void
+  /** Defaults to expense entry list (excludes Savings). Pass full list when editing a legacy Savings row. */
+  categories?: ExpenseCategory[]
 }) {
   return (
     <div>
       <Label className="text-xs text-[var(--color-brand-text-secondary)] mb-2 block">Category</Label>
       <div className="flex flex-wrap gap-2">
-        {EXPENSE_CATEGORIES.map((cat) => (
+        {categories.map((cat) => (
           <button
             key={cat}
             type="button"

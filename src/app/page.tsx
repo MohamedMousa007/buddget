@@ -88,6 +88,7 @@ export default function DashboardPage() {
             categoryBudgetCaps={stats.categoryBudgetCaps}
             currency={stats.baseCurrency}
             incomeBlockedNote={stats.incomeBlocked ? t.dashboard.incomeBlockedHint : null}
+            savingsHoldingsTotal={stats.savingsHoldingsTotal}
           />
         </div>
 
