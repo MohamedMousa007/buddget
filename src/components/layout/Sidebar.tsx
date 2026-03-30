@@ -14,12 +14,13 @@ import { cn } from '@/lib/utils'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
-import { useT } from '@/lib/i18n'
+import { localeInlineLabelClass, useLocale, useT } from '@/lib/i18n'
 import type { Currency } from '@/lib/store/types'
 
 export function Sidebar() {
   const pathname = usePathname()
   const t = useT()
+  const { locale } = useLocale()
 
   const NAV_ITEMS = [
     { href: '/', label: t.nav.dashboard, icon: LayoutDashboard },
@@ -69,8 +70,8 @@ export function Sidebar() {
                   : 'text-[var(--color-brand-text-secondary)] hover:text-white hover:bg-[var(--color-brand-elevated)]'
               )}
             >
-              <item.icon className="w-5 h-5" />
-              {item.label}
+              <item.icon className="w-5 h-5 shrink-0" />
+              <span className={localeInlineLabelClass(locale)}>{item.label}</span>
             </Link>
           )
         })}

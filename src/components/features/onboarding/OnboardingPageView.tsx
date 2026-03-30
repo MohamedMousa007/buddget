@@ -18,7 +18,8 @@ import {
   valueForTextStep,
 } from '@/lib/onboarding/onboardingPageHelpers'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { useT } from '@/lib/i18n'
+import { useLocale, useT } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 import { LanguageToggle } from '@/components/ui/LanguageToggle'
 
 export interface OnboardingPageViewProps {
@@ -65,6 +66,7 @@ export function OnboardingPageView({
   router,
 }: OnboardingPageViewProps) {
   const t = useT()
+  const { locale } = useLocale()
   const o = t.onboarding
 
   if (!answersReady || !step) {
@@ -82,7 +84,7 @@ export function OnboardingPageView({
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-2 min-w-0">
               <ClipboardList className="w-5 h-5 text-[var(--color-brand-red)] shrink-0 mt-0.5" aria-hidden />
-              <div className="min-w-0">
+              <div className={cn('min-w-0', locale === 'ar' && 'text-end')}>
                 <h1 className="text-lg font-bold text-white font-heading">{o.pageTitle}</h1>
                 <p className="text-[11px] text-[var(--color-brand-text-muted)] leading-snug">
                   {phase === 'plans' ? o.subtitlePlans : redo ? o.subtitleRedo : o.subtitleDefault}

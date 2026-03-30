@@ -1,6 +1,7 @@
 /** Buddget i18n dictionary shape — every key in ar.ts must match en.ts exactly. */
 
 export interface Dictionary {
+  /** Document layout direction; kept `ltr` for Arabic so chrome matches English. */
   dir: 'ltr' | 'rtl'
   locale: string
 

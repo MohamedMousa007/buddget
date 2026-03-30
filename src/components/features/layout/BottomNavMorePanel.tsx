@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useT } from '@/lib/i18n'
+import { localeInlineLabelClass, useLocale, useT } from '@/lib/i18n'
 import type { Dictionary } from '@/lib/i18n'
 
 export function BottomNavMorePanel({
@@ -16,12 +16,18 @@ export function BottomNavMorePanel({
   onNavigate: () => void
 }) {
   const t = useT()
+  const { locale } = useLocale()
   return (
     <div
       className="fixed start-3 end-3 z-[56] rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] shadow-xl shadow-black/40 p-2 pb-3"
       style={{ bottom: 'max(1rem, calc(4rem + env(safe-area-inset-bottom, 0px)))' }}
     >
-      <p className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
+      <p
+        className={cn(
+          'px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]',
+          locale === 'ar' && 'text-end',
+        )}
+      >
         {t.common.goTo}
       </p>
       <ul className="flex flex-col gap-0.5">
@@ -40,7 +46,9 @@ export function BottomNavMorePanel({
                 )}
               >
                 <m.icon className="h-5 w-5 shrink-0 opacity-90" />
-                {t.nav[m.label as keyof Dictionary['nav']]}
+                <span className={localeInlineLabelClass(locale)}>
+                  {t.nav[m.label as keyof Dictionary['nav']]}
+                </span>
               </Link>
             </li>
           )

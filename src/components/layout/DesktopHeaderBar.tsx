@@ -6,12 +6,13 @@ import { BarChart3 } from 'lucide-react'
 import { AuthNavButtons } from '@/components/layout/AuthNavButtons'
 import { MonthNavigationControl } from '@/components/layout/MonthNavigationControl'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { useT } from '@/lib/i18n'
+import { useLocale, useT } from '@/lib/i18n'
 
 export function DesktopHeaderBar() {
   const { monthFilter, setMonthFilter } = useSettingsStore()
   const pathname = usePathname()
   const t = useT()
+  const { locale } = useLocale()
 
   return (
     <>
@@ -23,8 +24,8 @@ export function DesktopHeaderBar() {
               href="/reports"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-white hover:bg-[var(--color-brand-border)] transition-colors"
             >
-              <BarChart3 className="w-4 h-4" />
-              <span>{t.nav.reports}</span>
+              <BarChart3 className="w-4 h-4 shrink-0" />
+              <span className={locale === 'ar' ? 'text-end' : undefined}>{t.nav.reports}</span>
             </Link>
           )}
         </div>

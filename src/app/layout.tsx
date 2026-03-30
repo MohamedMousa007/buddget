@@ -119,7 +119,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" dir="ltr" className="dark" suppressHydrationWarning>
+    <html lang="en" dir="ltr" data-locale="en" className="dark" suppressHydrationWarning>
       <head>
         <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
         <link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192" />
