@@ -390,9 +390,13 @@ export const en: Dictionary = {
 
     lookFeelTitle: 'Look & Feel',
     showCents: 'Show cents on the dashboard',
-    desktopApp: 'Get the desktop app',
+    desktopApp: 'Install Buddget',
     appInstalled: "You\u2019re all set \u2014 app installed \u2713",
     installDesktop: 'Install Buddget on your desktop',
+    installAndroidHint:
+      'Chrome: tap the menu (\u22EE) \u2192 Install app or Add to Home screen. The option appears after you\u2019ve used the site a bit and needs a secure (HTTPS) connection.',
+    installUnavailableBrowser:
+      'This browser doesn\u2019t offer install here. Try Chrome or Edge, or open Buddget on your phone for Add to Home Screen.',
 
     languageLabel: 'Language',
     languageEn: 'EN',

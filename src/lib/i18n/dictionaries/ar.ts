@@ -391,9 +391,13 @@ export const ar: Dictionary = {
 
     lookFeelTitle: 'المظهر والشكل',
     showCents: 'إظهار الفلوس/القروش في لوحة التحكم',
-    desktopApp: 'احصل على تطبيق سطح المكتب',
+    desktopApp: 'تثبيت Buddget',
     appInstalled: 'جاهز — التطبيق مثبت ✓',
     installDesktop: 'تثبيت Buddget على سطح المكتب',
+    installAndroidHint:
+      'كروم: القائمة (⋮) ← تثبيت التطبيق أو إضافة إلى الشاشة الرئيسية. يظهر الخيار غالباً بعد استخدام الموقع قليلاً ويتطلب اتصالاً آمناً (HTTPS).',
+    installUnavailableBrowser:
+      'هذا المتصفح لا يدعم التثبيت من هنا. جرّب كروم أو إيدج، أو افتح Buddget على هاتفك لإضافة الاختصار إلى الشاشة الرئيسية.',
 
     languageLabel: 'اللغة',
     languageEn: 'EN',

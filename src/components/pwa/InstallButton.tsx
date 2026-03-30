@@ -3,13 +3,7 @@
 import { useState, useCallback, useSyncExternalStore } from 'react'
 import { Download, X } from 'lucide-react'
 import { usePWAInstall } from '@/hooks/usePWAInstall'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog'
+import { IosInstallDialog } from '@/components/pwa/IosInstallDialog'
 import { cn } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
 
@@ -78,7 +72,8 @@ export function InstallButton({ variant, className }: InstallButtonProps) {
   if (isInstalled) return null
 
   if (variant === 'banner') {
-    if (bannerDismissed || !canInstall) return null
+    /** iOS Safari never fires `beforeinstallprompt`; still show the banner with Add to Home Screen steps. */
+    if (bannerDismissed || (!canInstall && platform !== 'ios')) return null
     return (
       <>
         <div
@@ -117,7 +112,7 @@ export function InstallButton({ variant, className }: InstallButtonProps) {
   }
 
   if (variant === 'menu-item' || variant === 'button') {
-    if (!canInstall) return null
+    if (!canInstall && platform !== 'ios') return null
   }
 
   return (
@@ -135,50 +130,5 @@ export function InstallButton({ variant, className }: InstallButtonProps) {
       </button>
       <IosInstallDialog open={iosOpen} onOpenChange={setIosOpen} />
     </>
-  )
-}
-
-function IosInstallDialog({
-  open,
-  onOpenChange,
-}: {
-  open: boolean
-  onOpenChange: (v: boolean) => void
-}) {
-  const t = useT()
-  const steps = [
-    { n: 1, text: t.pwa.iosStep1 },
-    { n: 2, text: t.pwa.iosStep2 },
-    { n: 3, text: t.pwa.iosStep3 },
-    { n: 4, text: t.pwa.iosStep4 },
-  ]
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="sm:max-w-md bg-[var(--color-brand-card)] border-[var(--color-brand-border)] text-white ring-white/10"
-        showCloseButton
-      >
-        <DialogHeader>
-          <DialogTitle className="text-white">{t.pwa.iosDialogTitle}</DialogTitle>
-          <DialogDescription className="text-[var(--color-brand-text-muted)]">
-            {t.pwa.iosDialogDesc}
-          </DialogDescription>
-        </DialogHeader>
-        <ol className="space-y-3 mt-2">
-          {steps.map((s) => (
-            <li
-              key={s.n}
-              className="flex gap-3 text-sm text-[var(--color-brand-text-secondary)]"
-            >
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--color-brand-elevated)] text-xs font-bold text-[var(--color-brand-red)]">
-                {s.n}
-              </span>
-              <span className="pt-0.5 leading-snug">{s.text}</span>
-            </li>
-          ))}
-        </ol>
-      </DialogContent>
-    </Dialog>
   )
 }

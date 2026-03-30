@@ -396,6 +396,10 @@ export interface Dictionary {
     desktopApp: string
     appInstalled: string
     installDesktop: string
+    /** Shown when Chrome has not fired install yet (engagement / HTTPS). */
+    installAndroidHint: string
+    /** Desktop browsers without install support. */
+    installUnavailableBrowser: string
 
     languageLabel: string
     languageEn: string
