@@ -1,6 +1,6 @@
 'use client'
 
-import { addMonths, subMonths } from 'date-fns'
+import { addMonths, subMonths, format } from 'date-fns'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { MonthYearPicker } from '@/components/ui/MonthYearPicker'
@@ -15,9 +15,14 @@ interface MonthNavigationControlProps {
 const btnBase =
   'inline-flex items-center justify-center shrink-0 rounded-lg text-[#A0A0B8] hover:text-white hover:bg-[var(--color-brand-elevated)] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-red)]/50'
 
+function parseLocalMonth(yyyyMm: string): Date {
+  const [y, m] = yyyyMm.split('-').map(Number)
+  return new Date(y, m - 1, 1)
+}
+
 export function MonthNavigationControl({ monthFilter, onChange, compact }: MonthNavigationControlProps) {
-  const prev = () => onChange(subMonths(new Date(`${monthFilter}-01`), 1).toISOString().slice(0, 7))
-  const next = () => onChange(addMonths(new Date(`${monthFilter}-01`), 1).toISOString().slice(0, 7))
+  const prev = () => onChange(format(subMonths(parseLocalMonth(monthFilter), 1), 'yyyy-MM'))
+  const next = () => onChange(format(addMonths(parseLocalMonth(monthFilter), 1), 'yyyy-MM'))
 
   return (
     <div className={cn('flex items-center', compact ? 'gap-0.5' : 'gap-1')}>

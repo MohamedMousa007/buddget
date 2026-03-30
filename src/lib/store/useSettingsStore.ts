@@ -37,7 +37,10 @@ interface SettingsState {
   resetSettings: () => void
 }
 
-const currentMonth = new Date().toISOString().slice(0, 7)
+function getCurrentMonth(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
@@ -48,7 +51,7 @@ export const useSettingsStore = create<SettingsState>()(
       editingDebtId: null,
       editingIncomeId: null,
       expensePrefill: null,
-      monthFilter: currentMonth,
+      monthFilter: getCurrentMonth(),
       debtSheetPaymentOnly: false,
       debtSheetPrefillDebtId: null,
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
@@ -82,7 +85,7 @@ export const useSettingsStore = create<SettingsState>()(
           editingDebtId: null,
           editingIncomeId: null,
           expensePrefill: null,
-          monthFilter: currentMonth,
+          monthFilter: getCurrentMonth(),
           debtSheetPaymentOnly: false,
           debtSheetPrefillDebtId: null,
         }),
