@@ -527,6 +527,13 @@ export const ar: Dictionary = {
     amount: 'المبلغ',
     delete: 'حذف',
     expandCategory: 'إظهار أو إخفاء الفئات الفرعية',
+    chooseCategoryTitle: 'إضافة فئة',
+    customCategoryOption: 'فئة مخصصة',
+    addCustomCategory: 'إضافة',
+    categoryNamePlaceholder: 'اسم الفئة',
+    subcategoryNamePlaceholder: 'اسم الفئة الفرعية',
+    amountPlaceholder: '0.00',
+    emojiPickerLabel: 'اختر أيقونة',
   },
 
   auth: {

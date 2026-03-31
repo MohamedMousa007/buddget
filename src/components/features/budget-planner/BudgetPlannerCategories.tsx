@@ -2,20 +2,28 @@
 
 import type { BudgetPlanCategory, BudgetPlanSubcategory } from '@/lib/store/types'
 import { BudgetPlannerCategoryRow } from '@/components/features/budget-planner/BudgetPlannerCategoryRow'
+import { BudgetPlannerAddCategoryMenu } from '@/components/features/budget-planner/BudgetPlannerAddCategoryMenu'
+
+export interface BudgetPlannerCategoriesLabels {
+  categoriesTitle: string
+  addCategory: string
+  chooseCategoryTitle: string
+  customCategoryOption: string
+  addCustomCategory: string
+  subcategories: string
+  addSubcategory: string
+  amount: string
+  delete: string
+  expandCategory: string
+  categoryNamePlaceholder: string
+  subcategoryNamePlaceholder: string
+  amountPlaceholder: string
+  emojiPickerLabel: string
+}
 
 export interface BudgetPlannerCategoriesProps {
   categories: BudgetPlanCategory[]
-  labels: {
-    categoriesTitle: string
-    addCategory: string
-    subcategories: string
-    addSubcategory: string
-    amount: string
-    delete: string
-    expandCategory: string
-    newCategoryName: string
-    iconPlaceholder: string
-  }
+  labels: BudgetPlannerCategoriesLabels
   onUpdateCategory: (
     categoryId: string,
     updates: Partial<Omit<BudgetPlanCategory, 'id' | 'subcategories'>> & {
@@ -27,13 +35,14 @@ export interface BudgetPlannerCategoriesProps {
   onUpdateSubcategory: (
     categoryId: string,
     subId: string,
-    updates: Partial<Pick<BudgetPlanSubcategory, 'name' | 'amount'>>
+    updates: Partial<Pick<BudgetPlanSubcategory, 'name' | 'amount' | 'icon'>>
   ) => void
   onDeleteSubcategory: (categoryId: string, subId: string) => void
-  onAddCategory: () => void
+  onAddPresetCategory: (icon: string, name: string) => void
+  onAddCustomCategory: (name: string, icon: string) => void
 }
 
-/** List of plan categories + add button. */
+/** List of plan categories + add menu (predefined or custom). */
 export function BudgetPlannerCategories({
   categories,
   labels,
@@ -42,28 +51,49 @@ export function BudgetPlannerCategories({
   onAddSubcategory,
   onUpdateSubcategory,
   onDeleteSubcategory,
-  onAddCategory,
+  onAddPresetCategory,
+  onAddCustomCategory,
 }: BudgetPlannerCategoriesProps) {
+  const rowLabels = {
+    subcategories: labels.subcategories,
+    addSubcategory: labels.addSubcategory,
+    amount: labels.amount,
+    delete: labels.delete,
+    expandCategory: labels.expandCategory,
+    categoryNamePlaceholder: labels.categoryNamePlaceholder,
+    subcategoryNamePlaceholder: labels.subcategoryNamePlaceholder,
+    amountPlaceholder: labels.amountPlaceholder,
+    emojiPickerLabel: labels.emojiPickerLabel,
+  }
+
+  const menuLabels = {
+    addCategory: labels.addCategory,
+    chooseCategoryTitle: labels.chooseCategoryTitle,
+    customCategoryOption: labels.customCategoryOption,
+    addCustomCategory: labels.addCustomCategory,
+    categoryNamePlaceholder: labels.categoryNamePlaceholder,
+    emojiPickerLabel: labels.emojiPickerLabel,
+  }
+
   return (
     <div className="bg-[#111118] border border-[#2A2A38] rounded-2xl p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
           {labels.categoriesTitle}
         </h2>
-        <button
-          type="button"
-          onClick={onAddCategory}
-          className="text-xs font-medium text-[var(--color-brand-red)] hover:underline"
-        >
-          + {labels.addCategory}
-        </button>
+        <BudgetPlannerAddCategoryMenu
+          categories={categories}
+          onSelectPreset={(p) => onAddPresetCategory(p.icon, p.label)}
+          onAddCustom={(name, icon) => onAddCustomCategory(name, icon)}
+          labels={menuLabels}
+        />
       </div>
       <div className="space-y-2">
         {categories.map((c) => (
           <BudgetPlannerCategoryRow
             key={c.id}
             category={c}
-            labels={labels}
+            labels={rowLabels}
             onUpdateCategory={(u) => onUpdateCategory(c.id, u)}
             onDeleteCategory={() => onDeleteCategory(c.id)}
             onAddSubcategory={() => onAddSubcategory(c.id)}

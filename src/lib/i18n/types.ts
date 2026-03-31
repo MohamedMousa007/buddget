@@ -530,6 +530,13 @@ export interface Dictionary {
     amount: string
     delete: string
     expandCategory: string
+    chooseCategoryTitle: string
+    customCategoryOption: string
+    addCustomCategory: string
+    categoryNamePlaceholder: string
+    subcategoryNamePlaceholder: string
+    amountPlaceholder: string
+    emojiPickerLabel: string
   }
 
   auth: {

@@ -338,8 +338,9 @@ export const useFinanceStore = create<FinanceStore>()(
                     ...c.subcategories,
                     {
                       id: sid,
-                      name: sub.name.trim() || 'Subcategory',
+                      name: sub.name,
                       amount: Number.isFinite(sub.amount) ? sub.amount : 0,
+                      ...(sub.icon !== undefined ? { icon: sub.icon } : {}),
                     },
                   ],
                 }
@@ -364,10 +365,11 @@ export const useFinanceStore = create<FinanceStore>()(
                     s.id === subId
                       ? {
                           ...s,
-                          ...(updates.name !== undefined ? { name: updates.name.trim() || s.name } : {}),
+                          ...(updates.name !== undefined ? { name: updates.name.trim() } : {}),
                           ...(updates.amount !== undefined
                             ? { amount: Number.isFinite(updates.amount) ? updates.amount : 0 }
                             : {}),
+                          ...(updates.icon !== undefined ? { icon: updates.icon } : {}),
                         }
                       : s
                   ),

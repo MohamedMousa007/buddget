@@ -84,6 +84,8 @@ export interface BudgetPlanSubcategory {
   id: string
   name: string
   amount: number
+  /** Optional emoji for custom subcategory rows */
+  icon?: string
 }
 
 /** Custom category row inside a budget plan (fixed amounts only in the planner UI). */
@@ -302,7 +304,12 @@ export interface FinanceStore {
   updatePlanCategory: (planId: string, categoryId: string, updates: Partial<Omit<BudgetPlanCategory, 'id' | 'subcategories'>> & { subcategories?: BudgetPlanSubcategory[] }) => void
   deletePlanCategory: (planId: string, categoryId: string) => void
   addPlanSubcategory: (planId: string, categoryId: string, sub: Omit<BudgetPlanSubcategory, 'id'>) => string
-  updatePlanSubcategory: (planId: string, categoryId: string, subId: string, updates: Partial<Omit<BudgetPlanSubcategory, 'id'>>) => void
+  updatePlanSubcategory: (
+    planId: string,
+    categoryId: string,
+    subId: string,
+    updates: Partial<Pick<BudgetPlanSubcategory, 'name' | 'amount' | 'icon'>>
+  ) => void
   deletePlanSubcategory: (planId: string, categoryId: string, subId: string) => void
   addSavingsHolding: (h: Omit<SavingsHolding, 'id' | 'createdAt' | 'updatedAt'>) => void
   updateSavingsHolding: (id: string, updates: Partial<SavingsHolding>) => void

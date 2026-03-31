@@ -106,15 +106,22 @@ export default function BudgetSetupPage() {
   }, [addBudgetPlan, t.budgetPlanner])
 
   const tabLabels = useMemo(() => ({ addPlan: t.budgetPlanner.addPlan }), [t.budgetPlanner.addPlan])
-  const rowLabels = useMemo(
+  const categoryLabels = useMemo(
     () => ({
+      categoriesTitle: t.budgetPlanner.categoriesTitle,
+      addCategory: t.budgetPlanner.addCategory,
+      chooseCategoryTitle: t.budgetPlanner.chooseCategoryTitle,
+      customCategoryOption: t.budgetPlanner.customCategoryOption,
+      addCustomCategory: t.budgetPlanner.addCustomCategory,
       subcategories: t.budgetPlanner.subcategories,
       addSubcategory: t.budgetPlanner.addSubcategory,
       amount: t.budgetPlanner.amount,
       delete: t.budgetPlanner.delete,
       expandCategory: t.budgetPlanner.expandCategory,
-      newCategoryName: t.budgetPlanner.newCategoryName,
-      iconPlaceholder: t.budgetPlanner.iconPlaceholder,
+      categoryNamePlaceholder: t.budgetPlanner.categoryNamePlaceholder,
+      subcategoryNamePlaceholder: t.budgetPlanner.subcategoryNamePlaceholder,
+      amountPlaceholder: t.budgetPlanner.amountPlaceholder,
+      emojiPickerLabel: t.budgetPlanner.emojiPickerLabel,
     }),
     [t.budgetPlanner]
   )
@@ -176,24 +183,19 @@ export default function BudgetSetupPage() {
             {activePlan ? (
               <BudgetPlannerCategories
                 categories={activePlan.categories}
-                labels={{
-                  categoriesTitle: t.budgetPlanner.categoriesTitle,
-                  addCategory: t.budgetPlanner.addCategory,
-                  ...rowLabels,
-                }}
-                onAddCategory={() =>
-                  addPlanCategory(activePlan.id, {
-                    name: t.budgetPlanner.newCategoryName,
-                    icon: '📦',
-                    amount: 0,
-                  })
+                labels={categoryLabels}
+                onAddPresetCategory={(icon, name) =>
+                  addPlanCategory(activePlan.id, { name, icon, amount: 0 })
+                }
+                onAddCustomCategory={(name, icon) =>
+                  addPlanCategory(activePlan.id, { name, icon, amount: 0 })
                 }
                 onUpdateCategory={(categoryId, updates) =>
                   updatePlanCategory(activePlan.id, categoryId, updates)
                 }
                 onDeleteCategory={(categoryId) => deletePlanCategory(activePlan.id, categoryId)}
                 onAddSubcategory={(categoryId) =>
-                  addPlanSubcategory(activePlan.id, categoryId, { name: 'Subcategory', amount: 0 })
+                  addPlanSubcategory(activePlan.id, categoryId, { name: '', amount: 0, icon: '📦' })
                 }
                 onUpdateSubcategory={(categoryId, subId, updates) =>
                   updatePlanSubcategory(activePlan.id, categoryId, subId, updates)

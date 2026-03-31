@@ -132,6 +132,7 @@ export const importDataSchema = z.object({
                 id: z.string(),
                 name: z.string(),
                 amount: z.number(),
+                icon: z.string().optional(),
               })
             ),
           })

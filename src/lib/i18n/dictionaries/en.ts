@@ -527,6 +527,13 @@ export const en: Dictionary = {
     amount: 'Amount',
     delete: 'Delete',
     expandCategory: 'Show or hide subcategories',
+    chooseCategoryTitle: 'Add a category',
+    customCategoryOption: 'Custom category',
+    addCustomCategory: 'Add',
+    categoryNamePlaceholder: 'Category name',
+    subcategoryNamePlaceholder: 'Subcategory name',
+    amountPlaceholder: '0.00',
+    emojiPickerLabel: 'Choose icon',
   },
 
   auth: {
