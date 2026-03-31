@@ -103,6 +103,10 @@ export const en: Dictionary = {
     recentTitle: 'Latest Transactions',
     recentEmpty: 'No expenses yet this month',
     recentEmptyDesc: 'You\u2019re off to a great start! Add your first expense with the + button \uD83C\uDF1F',
+    categoryEmptyTitle: 'No budget set up yet',
+    categoryEmptyDesc:
+      'Set up your budget categories in Budget Setup to see your spending breakdown here.',
+    categoryEmptyCta: 'Open Budget Setup',
     recentSeeAll: 'See everything →',
     confirmDeleteExpense: 'Remove this transaction? This will be gone for good.',
     savingsTitle: 'Your Savings',

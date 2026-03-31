@@ -107,6 +107,9 @@ export interface Dictionary {
     recentTitle: string
     recentEmpty: string
     recentEmptyDesc: string
+    categoryEmptyTitle: string
+    categoryEmptyDesc: string
+    categoryEmptyCta: string
     recentSeeAll: string
     confirmDeleteExpense: string
     savingsTitle: string
