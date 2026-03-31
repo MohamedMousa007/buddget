@@ -12,7 +12,7 @@ export interface AuthModalBrandingProps {
 export function AuthModalBranding({ message }: AuthModalBrandingProps) {
   const t = useT()
   return (
-    <div className="text-center mb-6">
+    <div className="text-center mb-5">
       <h1
         id="auth-modal-title"
         className="text-2xl font-extrabold tracking-tight"
