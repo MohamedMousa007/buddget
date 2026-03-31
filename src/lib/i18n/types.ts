@@ -500,6 +500,35 @@ export interface Dictionary {
     removePhoto: string
   }
 
+  budgetPlanner: {
+    categoriesTitle: string
+    addPlan: string
+    newPlanName: string
+    addCategory: string
+    deletePlan: string
+    subcategories: string
+    addSubcategory: string
+    totalIncome: string
+    totalPlanned: string
+    projectedSavings: string
+    projectedSavingsLine: (amount: string) => string
+    aiEvalTitle: string
+    aiEvalLoading: string
+    aiEvalError: string
+    aiChatTitle: string
+    aiChatPlaceholder: string
+    aiSend: string
+    applySuggestion: string
+    applied: string
+    noPlansHint: string
+    defaultPlanName: string
+    newCategoryName: string
+    iconPlaceholder: string
+    amount: string
+    delete: string
+    expandCategory: string
+  }
+
   auth: {
     closeSignIn: string
     signInLabel: string
