@@ -138,12 +138,12 @@ export default function RootLayout({
         className={`${dmSans.variable} ${dmSansHeading.variable} ${jetbrainsMono.variable} ${ibmPlexArabic.variable} font-sans antialiased`}
       >
         <TooltipProvider>
-          <AuthProvider>
-            <LocaleProvider>
+          <LocaleProvider>
+            <AuthProvider>
               <AppShell>{children}</AppShell>
               <UpdateToast />
-            </LocaleProvider>
-          </AuthProvider>
+            </AuthProvider>
+          </LocaleProvider>
         </TooltipProvider>
       </body>
     </html>
