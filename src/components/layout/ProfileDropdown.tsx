@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, type RefObject } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import {
   User,
-  SlidersHorizontal,
   Settings,
   LogOut,
   LogIn,
@@ -151,10 +150,6 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
       <button type="button" onClick={() => navigate('/profile')} className={itemClass} role="menuitem">
         <User className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.yourProfile}</span>
-      </button>
-      <button type="button" onClick={() => navigate('/profile#budget')} className={itemClass} role="menuitem">
-        <SlidersHorizontal className="w-4 h-4 shrink-0" />
-        <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.budgetSetup}</span>
       </button>
       <button type="button" onClick={() => navigate('/settings')} className={itemClass} role="menuitem">
         <Settings className="w-4 h-4 shrink-0" />

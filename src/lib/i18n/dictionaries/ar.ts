@@ -51,6 +51,7 @@ export const ar: Dictionary = {
 
   nav: {
     dashboard: 'الرئيسية',
+    budgetSetup: 'إعداد الميزانية',
     expenses: 'المصروفات',
     income: 'الدخل',
     savings: 'المدخرات',

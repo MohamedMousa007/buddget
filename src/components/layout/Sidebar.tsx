@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
+  SlidersHorizontal,
   Receipt,
   Wallet,
   PiggyBank,
@@ -24,6 +25,7 @@ export function Sidebar() {
 
   const NAV_ITEMS = [
     { href: '/', label: t.nav.dashboard, icon: LayoutDashboard },
+    { href: '/budget-setup', label: t.nav.budgetSetup, icon: SlidersHorizontal },
     { href: '/expenses', label: t.nav.expenses, icon: Receipt },
     { href: '/income', label: t.nav.income, icon: Wallet },
     { href: '/savings', label: t.nav.savings, icon: PiggyBank },

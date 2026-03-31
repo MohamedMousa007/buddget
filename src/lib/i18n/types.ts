@@ -53,6 +53,7 @@ export interface Dictionary {
 
   nav: {
     dashboard: string
+    budgetSetup: string
     expenses: string
     income: string
     savings: string

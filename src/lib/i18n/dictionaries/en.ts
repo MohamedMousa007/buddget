@@ -50,6 +50,7 @@ export const en: Dictionary = {
 
   nav: {
     dashboard: 'Dashboard',
+    budgetSetup: 'Budget Setup',
     expenses: 'Expenses',
     income: 'Income',
     savings: 'Savings',
