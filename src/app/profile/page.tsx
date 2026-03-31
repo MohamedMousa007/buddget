@@ -11,13 +11,12 @@ import { useShallow } from 'zustand/react/shallow'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { LogOut, Check, ArrowRight, Lock } from 'lucide-react'
-import { useMonthlyStats } from '@/hooks/useMonthlyStats'
-import { formatCurrency } from '@/lib/utils/formatters'
 import { useT, useLocale } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/client'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 import { CountrySelect } from '@/components/ui/CountrySelect'
 import { getProfileCountryDisplayLabel } from '@/lib/profile/countryOptions'
+import { ProfileBudgetSection } from '@/components/profile/ProfileBudgetSection'
 
 interface FieldRowProps {
   label: string
@@ -55,7 +54,6 @@ export default function ProfilePage() {
 
   const router = useRouter()
   const { signOut } = useAuth()
-  const stats = useMonthlyStats()
   const { budgetCategories, incomeSources, expenses, savingsHoldings, paymentMethods } = useFinanceStore(
     useShallow((s) => ({
       budgetCategories: s.budgetCategories,
@@ -70,7 +68,7 @@ export default function ProfilePage() {
 
   const setupSteps = [
     { label: t.profile.setupStepIncome, done: incomeSources.length > 0, href: '/income' },
-    { label: t.profile.setupStepBudget, done: budgetCategories.some((b) => b.budgetedAmount > 0), href: '/#budget' },
+    { label: t.profile.setupStepBudget, done: budgetCategories.some((b) => b.budgetedAmount > 0), href: '/profile#budget' },
     { label: t.profile.setupStepPayment, done: paymentMethods.length > 1, href: '/settings' },
     { label: t.profile.setupStepExpense, done: expenses.length > 0, href: '/expenses' },
     { label: t.profile.setupStepSavings, done: savingsHoldings.length > 0, href: '/savings' },
@@ -273,39 +271,12 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* Section 2 — Budget Overview */}
-        <div className="bg-[#111118] border border-[#2A2A38] rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
-              {t.profile.budgetTitle}
-            </h2>
-            <Link href="/#budget" className="text-xs text-[var(--color-brand-red)] hover:underline">
-              {t.profile.budgetEditLink}
-            </Link>
-          </div>
-          <div className="space-y-3">
-            {budgetCategories.map((b) => {
-              const spent = stats.categorySpending[b.category] || 0
-              const cap = stats.categoryBudgetCaps?.[b.category] ?? b.budgetedAmount
-              const pct = cap > 0 ? Math.min((spent / cap) * 100, 100) : 0
-              return (
-                <div key={b.category} className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-white">{b.category}</span>
-                    <span className="text-xs text-[var(--color-brand-text-muted)] font-mono-numbers">
-                      {formatCurrency(spent, stats.baseCurrency, false)} / {formatCurrency(cap, stats.baseCurrency, false)}
-                    </span>
-                  </div>
-                  <div className="h-1.5 bg-[var(--color-brand-border)] rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-[var(--color-brand-red)]"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+        {/* Section 2 — Budget setup (was dashboard tab; deep link /profile#budget) */}
+        <div id="budget" className="bg-[#111118] border border-[#2A2A38] rounded-2xl p-6 scroll-mt-6">
+          <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-4">
+            {t.profile.budgetTitle}
+          </h2>
+          <ProfileBudgetSection variant="embedded" />
         </div>
 
         {/* Section 3 — Setup Progress */}

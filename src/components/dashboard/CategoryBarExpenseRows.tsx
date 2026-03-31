@@ -9,6 +9,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   Transport: '🚇',
   Food: '🍕',
   Enjoyment: '🎮',
+  Savings: '💰',
   Debt: '💳',
   Remittance: '💸',
   Other: '📦',
@@ -22,7 +23,7 @@ interface CategoryBarExpenseRowsProps {
 }
 
 /**
- * Progress rows for expense budget categories (excludes Savings — see Savings tab on dashboard).
+ * Progress rows for every budget category (spent vs cap), same bar treatment for all.
  */
 export function CategoryBarExpenseRows({
   budgetCategories,
