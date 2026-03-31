@@ -6,7 +6,6 @@ import { AuthCredentialFields } from '@/components/features/auth-modal/AuthCrede
 import { AuthFormErrorAlert } from '@/components/features/auth-modal/AuthFormErrorAlert'
 import { AuthPrimaryButton } from '@/components/features/auth-modal/AuthPrimaryButton'
 import { useT } from '@/lib/i18n'
-import { LanguageToggle } from '@/components/ui/LanguageToggle'
 import type { AuthFormMode } from '@/hooks/useAuthModal'
 
 export interface AuthSignInUpStepProps {
@@ -125,10 +124,6 @@ export function AuthSignInUpStep({
           </button>
         )}
       </p>
-
-      <div className="flex justify-center pt-2">
-        <LanguageToggle size="sm" />
-      </div>
     </div>
   )
 }

@@ -47,10 +47,6 @@ export function AuthModal() {
         </button>
         <AuthModalBranding message={a.authModalMessage} />
 
-        <div className="flex justify-center mb-5">
-          <LanguageToggle size="sm" />
-        </div>
-
         <AnimatePresence mode="wait">
           <motion.div
             key={a.contentKey}
@@ -111,6 +107,10 @@ export function AuthModal() {
             )}
           </motion.div>
         </AnimatePresence>
+
+        <div className="flex justify-center mt-4">
+          <LanguageToggle size="sm" />
+        </div>
       </motion.div>
     </div>
   )
