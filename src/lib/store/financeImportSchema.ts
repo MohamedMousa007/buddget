@@ -115,6 +115,32 @@ export const importDataSchema = z.object({
       })
     )
     .optional(),
+  budgetPlans: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        createdAt: z.string(),
+        categories: z.array(
+          z.object({
+            id: z.string(),
+            name: z.string(),
+            icon: z.string(),
+            amount: z.number(),
+            subcategories: z.array(
+              z.object({
+                id: z.string(),
+                name: z.string(),
+                amount: z.number(),
+                icon: z.string().optional(),
+              })
+            ),
+          })
+        ),
+      })
+    )
+    .optional(),
+  activeBudgetPlanId: z.string().nullable().optional(),
   savingsHoldings: z
     .array(
       z.object({

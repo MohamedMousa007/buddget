@@ -107,6 +107,9 @@ export interface Dictionary {
     recentTitle: string
     recentEmpty: string
     recentEmptyDesc: string
+    categoryEmptyTitle: string
+    categoryEmptyDesc: string
+    categoryEmptyCta: string
     recentSeeAll: string
     confirmDeleteExpense: string
     savingsTitle: string
@@ -498,6 +501,44 @@ export interface Dictionary {
     photoTitle: string
     photoDesc: string
     removePhoto: string
+  }
+
+  budgetPlanner: {
+    categoriesTitle: string
+    addPlan: string
+    newPlanName: string
+    addCategory: string
+    deletePlan: string
+    subcategories: string
+    addSubcategory: string
+    totalIncome: string
+    totalPlanned: string
+    projectedSavings: string
+    projectedSavingsLine: (amount: string) => string
+    aiEvalTitle: string
+    aiEvalLoading: string
+    aiEvalError: string
+    aiChatTitle: string
+    aiChatPlaceholder: string
+    aiSend: string
+    applySuggestion: string
+    applied: string
+    noPlansHint: string
+    defaultPlanName: string
+    newCategoryName: string
+    iconPlaceholder: string
+    amount: string
+    delete: string
+    expandCategory: string
+    chooseCategoryTitle: string
+    customCategoryOption: string
+    addCustomCategory: string
+    categoryNamePlaceholder: string
+    subcategoryNamePlaceholder: string
+    amountPlaceholder: string
+    emojiPickerLabel: string
+    categoriesEmptyTitle: string
+    categoriesEmptyDesc: string
   }
 
   auth: {

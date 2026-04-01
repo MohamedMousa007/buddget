@@ -12,6 +12,7 @@ export type AIAction =
   | 'add_payment_method'
   | 'add_savings_holding'
   | 'update_budget_category'
+  | 'update_budget_plan_row'
   | 'query'
   | 'unclear'
 
@@ -35,6 +36,7 @@ const AI_ACTIONS: AIAction[] = [
   'add_payment_method',
   'add_savings_holding',
   'update_budget_category',
+  'update_budget_plan_row',
   'query',
   'unclear',
 ]
@@ -279,6 +281,10 @@ function friendlyLineForActionItem(action: AIAction, d: Record<string, unknown>)
       }
       const amt = d.budgetedAmount ?? d.amount
       return `Budget ${cat}: ${amt}`
+    }
+    case 'update_budget_plan_row': {
+      const amt = d.newAmount ?? d.amount ?? d.budgetedAmount
+      return `Plan category → ${amt} (base currency)`
     }
     case 'unclear':
       return d.clarificationNeeded ? String(d.clarificationNeeded) : 'Could you clarify that?'

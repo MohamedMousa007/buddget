@@ -82,6 +82,7 @@ export function buildAIActionHandlerContext(store: FinanceStore): AIActionHandle
     addPaymentMethod: store.addPaymentMethod,
     addSavingsHolding: store.addSavingsHolding,
     updateBudgetCategory: store.updateBudgetCategory,
+    updatePlanCategory: store.updatePlanCategory,
   }
 }
 
@@ -100,6 +101,7 @@ export interface AIActionHandlerContext {
   addPaymentMethod: FinanceStore['addPaymentMethod']
   addSavingsHolding: FinanceStore['addSavingsHolding']
   updateBudgetCategory: FinanceStore['updateBudgetCategory']
+  updatePlanCategory: FinanceStore['updatePlanCategory']
 }
 
 export function findPaymentMethod(
@@ -204,6 +206,14 @@ export function validateActionItem(
     if (!EXPENSE_CATEGORIES.includes(cat as ExpenseCategory)) {
       return `Unknown budget category "${cat}".`
     }
+    return null
+  }
+  if (action === 'update_budget_plan_row') {
+    const planId = String(getField(d, 'planId', 'plan_id') || '')
+    const categoryId = String(getField(d, 'categoryId', 'category_id') || '')
+    const amt = Number(getField(d, 'newAmount', 'amount', 'budgetedAmount')) || 0
+    if (!planId || !categoryId) return 'Budget plan update needs planId and categoryId.'
+    if (amt < 0 || !Number.isFinite(amt)) return 'Amount must be a non-negative number.'
     return null
   }
   return null
@@ -353,6 +363,16 @@ export function executeActionItem(
       const raw = Number(getField(d, 'budgetedAmount', 'amount')) || 0
       ctx.updateBudgetCategory(cat, raw, null)
     }
+    return
+  }
+  if (action === 'update_budget_plan_row') {
+    const planId = String(getField(d, 'planId', 'plan_id') || '')
+    const categoryId = String(getField(d, 'categoryId', 'category_id') || '')
+    const newAmount = Math.max(0, Number(getField(d, 'newAmount', 'amount', 'budgetedAmount')) || 0)
+    ctx.updatePlanCategory(planId, categoryId, {
+      amount: newAmount,
+      subcategories: [],
+    })
   }
 }
 

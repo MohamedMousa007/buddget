@@ -3,8 +3,6 @@
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useRates } from '@/hooks/useRates'
 import { useGoldPrice } from '@/hooks/useGoldPrice'
-import { useShallow } from 'zustand/react/shallow'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { KPICard } from '@/components/dashboard/KPICard'
 import { BudgetRing } from '@/components/dashboard/BudgetRing'
 import { CategoryBar } from '@/components/dashboard/CategoryBar'
@@ -20,11 +18,11 @@ export default function DashboardPage() {
   const router = useRouter()
   const t = useT()
 
-  const { budgetCategories } = useFinanceStore(useShallow((s) => ({ budgetCategories: s.budgetCategories })))
   const stats = useMonthlyStats()
   const incomeNote = stats.incomeBlocked ? t.dashboard.incomeBlockedHint : undefined
 
-  const savingsBudget = budgetCategories.find((b) => b.category === 'Savings')?.budgetedAmount || 0
+  const savingsBudget =
+    stats.dashboardBudgetCategories.find((b) => String(b.category).toLowerCase() === 'savings')?.budgetedAmount || 0
 
   return (
     <div className="min-h-screen">
@@ -83,7 +81,7 @@ export default function DashboardPage() {
             incomeBlockedNote={stats.incomeBlocked ? t.dashboard.incomeBlockedHint : null}
           />
           <CategoryBar
-            budgetCategories={budgetCategories}
+            budgetCategories={stats.dashboardBudgetCategories}
             categorySpending={stats.categorySpending}
             categoryBudgetCaps={stats.categoryBudgetCaps}
             currency={stats.baseCurrency}

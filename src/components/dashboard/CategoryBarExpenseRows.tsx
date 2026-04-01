@@ -60,7 +60,7 @@ export function CategoryBarExpenseRows({
           <div key={budget.category} className="space-y-1.5">
             <div className="flex items-center justify-between text-sm">
               <span className="flex items-center gap-2 text-white">
-                <span>{CATEGORY_ICONS[budget.category] || '📦'}</span>
+                <span>{budget.icon || CATEGORY_ICONS[budget.category] || '📦'}</span>
                 {budget.category}
               </span>
               <span className="flex items-center gap-2">

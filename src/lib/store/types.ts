@@ -75,6 +75,34 @@ export interface BudgetCategory {
   /** When using % of income mode, 0–100 */
   percentOfIncome?: number | null
   notes?: string
+  /** Optional emoji from Budget Planner when `category` is a custom label */
+  icon?: string
+}
+
+/** Sub-row under a custom budget plan category (amounts in base currency). */
+export interface BudgetPlanSubcategory {
+  id: string
+  name: string
+  amount: number
+  /** Optional emoji for custom subcategory rows */
+  icon?: string
+}
+
+/** Custom category row inside a budget plan (fixed amounts only in the planner UI). */
+export interface BudgetPlanCategory {
+  id: string
+  name: string
+  icon: string
+  amount: number
+  subcategories: BudgetPlanSubcategory[]
+}
+
+/** Named budget scenario with its own category tree (persists separately from legacy `budgetCategories`). */
+export interface BudgetPlan {
+  id: string
+  name: string
+  categories: BudgetPlanCategory[]
+  createdAt: string
 }
 
 export type SavingsBucket = 'liquid' | 'investment'
@@ -231,6 +259,10 @@ export interface FinanceStore {
   expenses: Expense[]
   recurringExpenses: RecurringExpense[]
   budgetCategories: BudgetCategory[]
+  /** Optional multi-plan budget planner; when empty, dashboard uses `budgetCategories`. */
+  budgetPlans: BudgetPlan[]
+  /** Selected plan for dashboard caps and planner UI; ignored when `budgetPlans` is empty. */
+  activeBudgetPlanId: string | null
   savingsHoldings: SavingsHolding[]
   paymentMethods: PaymentMethod[]
   debts: Debt[]
@@ -264,6 +296,21 @@ export interface FinanceStore {
   updateBudgetCategory: (category: ExpenseCategory, amount: number, percentOfIncome?: number | null) => void
   /** Replace all budget rows (e.g. onboarding preset). */
   setBudgetCategories: (categories: BudgetCategory[]) => void
+  addBudgetPlan: (name: string) => string
+  updateBudgetPlan: (planId: string, updates: Partial<Pick<BudgetPlan, 'name'>>) => void
+  deleteBudgetPlan: (planId: string) => void
+  setActiveBudgetPlanId: (id: string | null) => void
+  addPlanCategory: (planId: string, category: Omit<BudgetPlanCategory, 'id' | 'subcategories'> & { subcategories?: BudgetPlanSubcategory[] }) => string
+  updatePlanCategory: (planId: string, categoryId: string, updates: Partial<Omit<BudgetPlanCategory, 'id' | 'subcategories'>> & { subcategories?: BudgetPlanSubcategory[] }) => void
+  deletePlanCategory: (planId: string, categoryId: string) => void
+  addPlanSubcategory: (planId: string, categoryId: string, sub: Omit<BudgetPlanSubcategory, 'id'>) => string
+  updatePlanSubcategory: (
+    planId: string,
+    categoryId: string,
+    subId: string,
+    updates: Partial<Pick<BudgetPlanSubcategory, 'name' | 'amount' | 'icon'>>
+  ) => void
+  deletePlanSubcategory: (planId: string, categoryId: string, subId: string) => void
   addSavingsHolding: (h: Omit<SavingsHolding, 'id' | 'createdAt' | 'updatedAt'>) => void
   updateSavingsHolding: (id: string, updates: Partial<SavingsHolding>) => void
   deleteSavingsHolding: (id: string) => void

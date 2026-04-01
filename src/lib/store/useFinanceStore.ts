@@ -12,10 +12,10 @@ import {
   DEFAULT_PROFILE,
   DEFAULT_SETTINGS,
 } from './defaultFinanceData'
-import type { FinanceStore, OnboardingState } from './types'
+import type { BudgetPlanCategory, FinanceStore, OnboardingState } from './types'
 import { defaultOnboardingState } from '@/lib/onboarding/onboardingTypes'
 
-const PERSIST_VERSION = 5
+const PERSIST_VERSION = 6
 
 function generateId(): string {
   return `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
@@ -43,6 +43,8 @@ export const useFinanceStore = create<FinanceStore>()(
       expenses: [],
       recurringExpenses: [],
       budgetCategories: DEFAULT_BUDGET,
+      budgetPlans: [],
+      activeBudgetPlanId: null,
       savingsHoldings: [],
       paymentMethods: DEFAULT_PAYMENT_METHODS,
       debts: DEFAULT_DEBTS,
@@ -224,6 +226,174 @@ export const useFinanceStore = create<FinanceStore>()(
 
       setBudgetCategories: (categories) => set({ budgetCategories: categories }),
 
+      addBudgetPlan: (name) => {
+        const id = generateId()
+        const trimmed = name.trim() || 'New plan'
+        set((state) => ({
+          budgetPlans: [
+            ...state.budgetPlans,
+            { id, name: trimmed, categories: [], createdAt: new Date().toISOString() },
+          ],
+          activeBudgetPlanId: id,
+        }))
+        return id
+      },
+
+      updateBudgetPlan: (planId, updates) =>
+        set((state) => ({
+          budgetPlans: state.budgetPlans.map((p) => {
+            if (p.id !== planId) return p
+            const nextName =
+              updates.name !== undefined ? updates.name.trim() || p.name : p.name
+            return { ...p, ...updates, name: nextName }
+          }),
+        })),
+
+      deleteBudgetPlan: (planId) =>
+        set((state) => {
+          const next = state.budgetPlans.filter((p) => p.id !== planId)
+          let active = state.activeBudgetPlanId
+          if (active === planId) {
+            active = next[0]?.id ?? null
+          }
+          return { budgetPlans: next, activeBudgetPlanId: active }
+        }),
+
+      setActiveBudgetPlanId: (id) => set({ activeBudgetPlanId: id }),
+
+      addPlanCategory: (planId, category) => {
+        const catId = generateId()
+        set((state) => ({
+          budgetPlans: state.budgetPlans.map((p) => {
+            if (p.id !== planId) return p
+            const row: BudgetPlanCategory = {
+              id: catId,
+              name: category.name.trim() || 'Category',
+              icon: category.icon || '📦',
+              amount: Number.isFinite(category.amount) ? category.amount : 0,
+              subcategories: (category.subcategories ?? []).map((s) => ({
+                ...s,
+                id: s.id || generateId(),
+                name: s.name.trim() || 'Subcategory',
+                amount: Number.isFinite(s.amount) ? s.amount : 0,
+              })),
+            }
+            return { ...p, categories: [...p.categories, row] }
+          }),
+        }))
+        return catId
+      },
+
+      updatePlanCategory: (planId, categoryId, updates) =>
+        set((state) => ({
+          budgetPlans: state.budgetPlans.map((p) => {
+            if (p.id !== planId) return p
+            return {
+              ...p,
+              categories: p.categories.map((c) => {
+                if (c.id !== categoryId) return c
+                const nextSubs =
+                  updates.subcategories !== undefined
+                    ? updates.subcategories.map((s) => ({
+                        id: s.id || generateId(),
+                        name: (s.name || '').trim() || 'Subcategory',
+                        amount: Number.isFinite(s.amount) ? s.amount : 0,
+                      }))
+                    : c.subcategories
+                return {
+                  ...c,
+                  ...(updates.name !== undefined ? { name: updates.name.trim() || c.name } : {}),
+                  ...(updates.icon !== undefined ? { icon: updates.icon } : {}),
+                  ...(updates.amount !== undefined
+                    ? { amount: Number.isFinite(updates.amount) ? updates.amount : 0 }
+                    : {}),
+                  subcategories: nextSubs,
+                }
+              }),
+            }
+          }),
+        })),
+
+      deletePlanCategory: (planId, categoryId) =>
+        set((state) => ({
+          budgetPlans: state.budgetPlans.map((p) =>
+            p.id === planId
+              ? { ...p, categories: p.categories.filter((c) => c.id !== categoryId) }
+              : p
+          ),
+        })),
+
+      addPlanSubcategory: (planId, categoryId, sub) => {
+        const sid = generateId()
+        set((state) => ({
+          budgetPlans: state.budgetPlans.map((p) => {
+            if (p.id !== planId) return p
+            return {
+              ...p,
+              categories: p.categories.map((c) => {
+                if (c.id !== categoryId) return c
+                return {
+                  ...c,
+                  subcategories: [
+                    ...c.subcategories,
+                    {
+                      id: sid,
+                      name: sub.name,
+                      amount: Number.isFinite(sub.amount) ? sub.amount : 0,
+                      ...(sub.icon !== undefined ? { icon: sub.icon } : {}),
+                    },
+                  ],
+                }
+              }),
+            }
+          }),
+        }))
+        return sid
+      },
+
+      updatePlanSubcategory: (planId, categoryId, subId, updates) =>
+        set((state) => ({
+          budgetPlans: state.budgetPlans.map((p) => {
+            if (p.id !== planId) return p
+            return {
+              ...p,
+              categories: p.categories.map((c) => {
+                if (c.id !== categoryId) return c
+                return {
+                  ...c,
+                  subcategories: c.subcategories.map((s) =>
+                    s.id === subId
+                      ? {
+                          ...s,
+                          ...(updates.name !== undefined ? { name: updates.name.trim() } : {}),
+                          ...(updates.amount !== undefined
+                            ? { amount: Number.isFinite(updates.amount) ? updates.amount : 0 }
+                            : {}),
+                          ...(updates.icon !== undefined ? { icon: updates.icon } : {}),
+                        }
+                      : s
+                  ),
+                }
+              }),
+            }
+          }),
+        })),
+
+      deletePlanSubcategory: (planId, categoryId, subId) =>
+        set((state) => ({
+          budgetPlans: state.budgetPlans.map((p) => {
+            if (p.id !== planId) return p
+            return {
+              ...p,
+              categories: p.categories.map((c) =>
+                c.id === categoryId
+                  ? { ...c, subcategories: c.subcategories.filter((s) => s.id !== subId) }
+                  : c
+              ),
+            }
+          }),
+        })),
+
       addSavingsHolding: (h) =>
         set((state) => ({
           savingsHoldings: [
@@ -306,6 +476,9 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => ({
           ...state,
           ...data,
+          budgetPlans: data.budgetPlans ?? state.budgetPlans,
+          activeBudgetPlanId:
+            data.activeBudgetPlanId !== undefined ? data.activeBudgetPlanId : state.activeBudgetPlanId,
           settings: data.settings
             ? { ...state.settings, ...data.settings }
             : state.settings,
@@ -325,6 +498,8 @@ export const useFinanceStore = create<FinanceStore>()(
           expenses: state.expenses,
           recurringExpenses: state.recurringExpenses,
           budgetCategories: state.budgetCategories,
+          budgetPlans: state.budgetPlans,
+          activeBudgetPlanId: state.activeBudgetPlanId,
           savingsHoldings: state.savingsHoldings,
           paymentMethods: state.paymentMethods,
           debts: state.debts,
@@ -343,6 +518,8 @@ export const useFinanceStore = create<FinanceStore>()(
           expenses: [],
           recurringExpenses: [],
           budgetCategories: DEFAULT_BUDGET,
+          budgetPlans: [],
+          activeBudgetPlanId: null,
           savingsHoldings: [],
           paymentMethods: DEFAULT_PAYMENT_METHODS,
           debts: DEFAULT_DEBTS,
@@ -362,6 +539,27 @@ export const useFinanceStore = create<FinanceStore>()(
           persistedState && typeof persistedState === 'object'
             ? (persistedState as Record<string, unknown>)
             : {}
+        if (fromVersion >= 5) {
+          const prevSettings = (p.settings as Record<string, unknown> | undefined) || {}
+          return {
+            ...p,
+            budgetPlans: Array.isArray(p.budgetPlans) ? p.budgetPlans : [],
+            activeBudgetPlanId:
+              typeof p.activeBudgetPlanId === 'string' || p.activeBudgetPlanId === null
+                ? p.activeBudgetPlanId
+                : null,
+            onboardingState: (p.onboardingState as OnboardingState | undefined) ?? defaultOnboardingState(),
+            recurringDebtPayments: Array.isArray(p.recurringDebtPayments)
+              ? p.recurringDebtPayments
+              : [],
+            settings: {
+              ...DEFAULT_SETTINGS,
+              ...prevSettings,
+              noIncomeDeclared: Boolean(prevSettings.noIncomeDeclared),
+              showAllCurrenciesInForms: migrateShowAllCurrenciesInForms(prevSettings),
+            },
+          } as never
+        }
         if (fromVersion >= 3) {
           const prevSettings = (p.settings as Record<string, unknown> | undefined) || {}
           return {
@@ -417,6 +615,9 @@ export const useFinanceStore = create<FinanceStore>()(
         return {
           ...current,
           ...p,
+          budgetPlans: p.budgetPlans ?? current.budgetPlans,
+          activeBudgetPlanId:
+            p.activeBudgetPlanId !== undefined ? p.activeBudgetPlanId : current.activeBudgetPlanId,
           savingsHoldings: p.savingsHoldings ?? current.savingsHoldings,
           recurringDebtPayments: p.recurringDebtPayments ?? current.recurringDebtPayments,
           onboardingState: p.onboardingState

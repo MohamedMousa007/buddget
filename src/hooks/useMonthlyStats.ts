@@ -5,6 +5,12 @@ import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import {
+  budgetCategoriesFromPlan,
+  categorySpendingForPlanRows,
+  totalExpenseBudgetFromPlan,
+  totalPlannedExpensesForPlan,
+} from '@/lib/budget/budgetPlans'
+import {
   filterExpensesByMonth,
   calculateMonthlyIncome,
   calculateTotalSpent,
@@ -25,6 +31,8 @@ export function useMonthlyStats() {
     expenses,
     incomeSources,
     budgetCategories,
+    budgetPlans,
+    activeBudgetPlanId,
     savingsHoldings,
     debts,
     debtPayments,
@@ -36,6 +44,8 @@ export function useMonthlyStats() {
       expenses: s.expenses,
       incomeSources: s.incomeSources,
       budgetCategories: s.budgetCategories,
+      budgetPlans: s.budgetPlans,
+      activeBudgetPlanId: s.activeBudgetPlanId,
       savingsHoldings: s.savingsHoldings,
       debts: s.debts,
       debtPayments: s.debtPayments,
@@ -63,19 +73,27 @@ export function useMonthlyStats() {
       settings.baseCurrency,
       exchangeRates
     )
-    const totalBudget = calculateTotalBudget(budgetCategories, settings, totalIncome)
-    const totalExpenseBudget = calculateTotalBudgetExcludingSavings(
-      budgetCategories,
-      settings,
-      totalIncome
-    )
+    const activePlan =
+      budgetPlans.length > 0
+        ? budgetPlans.find((p) => p.id === activeBudgetPlanId) ?? budgetPlans[0]
+        : null
+
+    const totalBudget = activePlan
+      ? totalPlannedExpensesForPlan(activePlan)
+      : calculateTotalBudget(budgetCategories, settings, totalIncome)
+    const totalExpenseBudget = activePlan
+      ? totalExpenseBudgetFromPlan(activePlan)
+      : calculateTotalBudgetExcludingSavings(budgetCategories, settings, totalIncome)
     const remaining = totalExpenseBudget - totalSpentForExpenseBudget
     const budgetUsedPercent = calculateBudgetUsedPercent(totalSpentForExpenseBudget, totalExpenseBudget)
-    const categorySpending = calculateCategorySpending(
+    const spendingByEnum = calculateCategorySpending(
       monthlyExpenses,
       settings.baseCurrency,
       exchangeRates
     )
+    const categorySpending = activePlan
+      ? categorySpendingForPlanRows(spendingByEnum, activePlan)
+      : spendingByEnum
     const daysLeft = calculateDaysLeftInMonth(monthFilter, settings.monthStartDay)
 
     const savingsFromExpenses = monthlyExpenses
@@ -90,10 +108,13 @@ export function useMonthlyStats() {
 
     const savingsTotal = savingsHoldingsTotal + savingsFromExpenses
 
+    const effectiveBudgetRows = activePlan
+      ? budgetCategoriesFromPlan(activePlan, settings.baseCurrency)
+      : budgetCategories
     const categoryBudgetCaps = Object.fromEntries(
-      budgetCategories.map((b) => [
+      effectiveBudgetRows.map((b) => [
         b.category,
-        effectiveCategoryBudget(b, settings, totalIncome),
+        activePlan ? b.budgetedAmount : effectiveCategoryBudget(b, settings, totalIncome),
       ])
     ) as Record<string, number>
 
@@ -115,6 +136,8 @@ export function useMonthlyStats() {
       remaining,
       budgetUsedPercent,
       categorySpending,
+      /** Rows for CategoryBar caps/labels (active plan or legacy `budgetCategories`). */
+      dashboardBudgetCategories: effectiveBudgetRows,
       daysLeft,
       savingsTotal,
       savingsHoldingsTotal,
@@ -128,6 +151,8 @@ export function useMonthlyStats() {
     expenses,
     incomeSources,
     budgetCategories,
+    budgetPlans,
+    activeBudgetPlanId,
     savingsHoldings,
     debts,
     debtPayments,
