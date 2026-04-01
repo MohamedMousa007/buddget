@@ -93,7 +93,7 @@ export function BudgetPlannerCategories({
       </div>
       {categories.length === 0 ? (
         <EmptyState
-          icon="🗂️"
+          icon="📊"
           title={t.budgetPlanner.categoriesEmptyTitle}
           description={t.budgetPlanner.categoriesEmptyDesc}
           className="py-10"
