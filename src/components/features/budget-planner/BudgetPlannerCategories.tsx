@@ -1,6 +1,8 @@
 'use client'
 
 import type { BudgetPlanCategory, BudgetPlanSubcategory } from '@/lib/store/types'
+import { useT } from '@/lib/i18n'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { BudgetPlannerCategoryRow } from '@/components/features/budget-planner/BudgetPlannerCategoryRow'
 import { BudgetPlannerAddCategoryMenu } from '@/components/features/budget-planner/BudgetPlannerAddCategoryMenu'
 
@@ -54,6 +56,7 @@ export function BudgetPlannerCategories({
   onAddPresetCategory,
   onAddCustomCategory,
 }: BudgetPlannerCategoriesProps) {
+  const t = useT()
   const rowLabels = {
     subcategories: labels.subcategories,
     addSubcategory: labels.addSubcategory,
@@ -88,20 +91,29 @@ export function BudgetPlannerCategories({
           labels={menuLabels}
         />
       </div>
-      <div className="space-y-2">
-        {categories.map((c) => (
-          <BudgetPlannerCategoryRow
-            key={c.id}
-            category={c}
-            labels={rowLabels}
-            onUpdateCategory={(u) => onUpdateCategory(c.id, u)}
-            onDeleteCategory={() => onDeleteCategory(c.id)}
-            onAddSubcategory={() => onAddSubcategory(c.id)}
-            onUpdateSubcategory={(subId, u) => onUpdateSubcategory(c.id, subId, u)}
-            onDeleteSubcategory={(subId) => onDeleteSubcategory(c.id, subId)}
-          />
-        ))}
-      </div>
+      {categories.length === 0 ? (
+        <EmptyState
+          icon="🗂️"
+          title={t.budgetPlanner.categoriesEmptyTitle}
+          description={t.budgetPlanner.categoriesEmptyDesc}
+          className="py-10"
+        />
+      ) : (
+        <div className="space-y-2">
+          {categories.map((c) => (
+            <BudgetPlannerCategoryRow
+              key={c.id}
+              category={c}
+              labels={rowLabels}
+              onUpdateCategory={(u) => onUpdateCategory(c.id, u)}
+              onDeleteCategory={() => onDeleteCategory(c.id)}
+              onAddSubcategory={() => onAddSubcategory(c.id)}
+              onUpdateSubcategory={(subId, u) => onUpdateSubcategory(c.id, subId, u)}
+              onDeleteSubcategory={(subId) => onDeleteSubcategory(c.id, subId)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

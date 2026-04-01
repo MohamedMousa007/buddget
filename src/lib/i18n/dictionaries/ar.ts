@@ -534,6 +534,8 @@ export const ar: Dictionary = {
     subcategoryNamePlaceholder: 'اسم الفئة الفرعية',
     amountPlaceholder: '0.00',
     emojiPickerLabel: 'اختر أيقونة',
+    categoriesEmptyTitle: 'لا توجد فئات بعد',
+    categoriesEmptyDesc: 'أضف أول فئة لتبدأ التخطيط لأين تذهب أموالك كل شهر.',
   },
 
   auth: {

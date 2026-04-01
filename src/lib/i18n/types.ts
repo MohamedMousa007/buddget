@@ -537,6 +537,8 @@ export interface Dictionary {
     subcategoryNamePlaceholder: string
     amountPlaceholder: string
     emojiPickerLabel: string
+    categoriesEmptyTitle: string
+    categoriesEmptyDesc: string
   }
 
   auth: {

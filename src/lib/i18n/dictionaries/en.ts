@@ -534,6 +534,9 @@ export const en: Dictionary = {
     subcategoryNamePlaceholder: 'Subcategory name',
     amountPlaceholder: '0.00',
     emojiPickerLabel: 'Choose icon',
+    categoriesEmptyTitle: 'No categories yet',
+    categoriesEmptyDesc:
+      'Add your first category to start planning where your money goes each month.',
   },
 
   auth: {
