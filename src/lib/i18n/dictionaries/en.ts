@@ -537,6 +537,10 @@ export const en: Dictionary = {
     categoriesEmptyTitle: 'No categories yet',
     categoriesEmptyDesc:
       'Add your first category to start planning where your money goes each month.',
+    categoryNameExample: 'e.g. Rent, Gym membership, Netflix...',
+    noPlansEmptyTitle: 'No budget plans yet',
+    noPlansEmptyDesc: 'Create your first plan to start tracking where your money goes each month',
+    noPlansCreateFirst: '+ Create your first plan',
   },
 
   auth: {

@@ -16,6 +16,8 @@ export interface BudgetPlannerCategoryRowLabels {
   delete: string
   expandCategory: string
   categoryNamePlaceholder: string
+  /** Shown on custom category name field only */
+  categoryNameExample: string
   subcategoryNamePlaceholder: string
   amountPlaceholder: string
   emojiPickerLabel: string
@@ -118,7 +120,7 @@ export function BudgetPlannerCategoryRow({
           <input
             value={category.name}
             onChange={(e) => onUpdateCategory({ name: e.target.value })}
-            placeholder={labels.categoryNamePlaceholder}
+            placeholder={labels.categoryNameExample}
             className="flex-1 min-w-[120px] rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-2 py-1.5 text-sm text-white placeholder:text-[var(--color-brand-text-muted)]"
           />
         )}

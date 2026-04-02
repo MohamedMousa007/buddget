@@ -17,6 +17,7 @@ export interface BudgetPlannerAddCategoryMenuLabels {
   customCategoryOption: string
   addCustomCategory: string
   categoryNamePlaceholder: string
+  categoryNameExample: string
   emojiPickerLabel: string
 }
 
@@ -111,7 +112,7 @@ export function BudgetPlannerAddCategoryMenu({
             <input
               value={customName}
               onChange={(e) => setCustomName(e.target.value)}
-              placeholder={labels.categoryNamePlaceholder}
+              placeholder={labels.categoryNameExample}
               className="min-w-0 flex-1 rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-2 py-1.5 text-sm text-white placeholder:text-[var(--color-brand-text-muted)]"
             />
           </div>
