@@ -539,6 +539,10 @@ export interface Dictionary {
     emojiPickerLabel: string
     categoriesEmptyTitle: string
     categoriesEmptyDesc: string
+    categoryNameExample: string
+    noPlansEmptyTitle: string
+    noPlansEmptyDesc: string
+    noPlansCreateFirst: string
   }
 
   auth: {

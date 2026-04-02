@@ -536,6 +536,10 @@ export const ar: Dictionary = {
     emojiPickerLabel: 'اختر أيقونة',
     categoriesEmptyTitle: 'لا توجد فئات بعد',
     categoriesEmptyDesc: 'أضف أول فئة لتبدأ التخطيط لأين تذهب أموالك كل شهر.',
+    categoryNameExample: 'مثال: الإيجار، اشتراك النادي، نتفليكس...',
+    noPlansEmptyTitle: 'لا توجد خطط ميزانية بعد',
+    noPlansEmptyDesc: 'أنشئ خطتك الأولى لتبدأ تتبع أين تذهب أموالك كل شهر',
+    noPlansCreateFirst: '+ أنشئ خطتك الأولى',
   },
 
   auth: {

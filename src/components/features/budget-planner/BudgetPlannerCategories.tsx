@@ -18,6 +18,7 @@ export interface BudgetPlannerCategoriesLabels {
   delete: string
   expandCategory: string
   categoryNamePlaceholder: string
+  categoryNameExample: string
   subcategoryNamePlaceholder: string
   amountPlaceholder: string
   emojiPickerLabel: string
@@ -64,6 +65,7 @@ export function BudgetPlannerCategories({
     delete: labels.delete,
     expandCategory: labels.expandCategory,
     categoryNamePlaceholder: labels.categoryNamePlaceholder,
+    categoryNameExample: labels.categoryNameExample,
     subcategoryNamePlaceholder: labels.subcategoryNamePlaceholder,
     amountPlaceholder: labels.amountPlaceholder,
     emojiPickerLabel: labels.emojiPickerLabel,
@@ -75,6 +77,7 @@ export function BudgetPlannerCategories({
     customCategoryOption: labels.customCategoryOption,
     addCustomCategory: labels.addCustomCategory,
     categoryNamePlaceholder: labels.categoryNamePlaceholder,
+    categoryNameExample: labels.categoryNameExample,
     emojiPickerLabel: labels.emojiPickerLabel,
   }
 

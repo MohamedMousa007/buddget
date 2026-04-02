@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { SlidersHorizontal, Trash2 } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
@@ -15,6 +15,7 @@ import { BudgetPlannerAiEvalCard } from '@/components/features/budget-planner/Bu
 import { BudgetPlannerChatPanel } from '@/components/features/budget-planner/BudgetPlannerChatPanel'
 import { useBudgetPlanEval } from '@/hooks/useBudgetPlanEval'
 import { useBudgetPlannerChat } from '@/hooks/useBudgetPlannerChat'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 /**
  * Multi-plan budget editor with subcategories, projected savings, and AI evaluation + chat.
@@ -59,13 +60,6 @@ export default function BudgetSetupPage() {
 
   const [editingTabId, setEditingTabId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
-  const autoPlanCreatedRef = useRef(false)
-
-  useEffect(() => {
-    if (autoPlanCreatedRef.current || budgetPlans.length > 0) return
-    autoPlanCreatedRef.current = true
-    addBudgetPlan(t.budgetPlanner.defaultPlanName)
-  }, [budgetPlans.length, addBudgetPlan, t.budgetPlanner.defaultPlanName])
 
   const activePlan = useMemo(() => {
     if (budgetPlans.length === 0) return null
@@ -119,6 +113,7 @@ export default function BudgetSetupPage() {
       delete: t.budgetPlanner.delete,
       expandCategory: t.budgetPlanner.expandCategory,
       categoryNamePlaceholder: t.budgetPlanner.categoryNamePlaceholder,
+      categoryNameExample: t.budgetPlanner.categoryNameExample,
       subcategoryNamePlaceholder: t.budgetPlanner.subcategoryNamePlaceholder,
       amountPlaceholder: t.budgetPlanner.amountPlaceholder,
       emojiPickerLabel: t.budgetPlanner.emojiPickerLabel,
@@ -237,7 +232,23 @@ export default function BudgetSetupPage() {
             />
           </>
         ) : (
-          <p className="text-sm text-[var(--color-brand-text-muted)]">{t.budgetPlanner.noPlansHint}</p>
+          <div className="bg-[#111118] border border-[#2A2A38] rounded-2xl p-6">
+            <EmptyState
+              icon="🎯"
+              title={t.budgetPlanner.noPlansEmptyTitle}
+              description={t.budgetPlanner.noPlansEmptyDesc}
+              className="py-12"
+              action={
+                <button
+                  type="button"
+                  onClick={handleAddPlan}
+                  className="inline-flex items-center justify-center rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] px-5 py-2.5 text-sm font-semibold text-white transition-colors"
+                >
+                  {t.budgetPlanner.noPlansCreateFirst}
+                </button>
+              }
+            />
+          </div>
         )}
       </div>
     </div>
