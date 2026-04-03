@@ -7,7 +7,7 @@ import {
   SlidersHorizontal,
   Receipt,
   Wallet,
-  PiggyBank,
+  Vault,
   Landmark,
   BarChart3,
 } from 'lucide-react'
@@ -28,7 +28,7 @@ export function Sidebar() {
     { href: '/budget-setup', label: t.nav.budgetSetup, icon: SlidersHorizontal },
     { href: '/expenses', label: t.nav.expenses, icon: Receipt },
     { href: '/income', label: t.nav.income, icon: Wallet },
-    { href: '/savings', label: t.nav.savings, icon: PiggyBank },
+    { href: '/savings', label: t.nav.savings, icon: Vault },
     { href: '/debts', label: t.nav.debts, icon: Landmark },
     { href: '/reports', label: t.nav.reports, icon: BarChart3 },
   ]
@@ -67,6 +67,7 @@ export function Sidebar() {
               href={item.href}
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+                locale === 'ar' && 'flex-row-reverse',
                 isActive
                   ? 'bg-[var(--color-brand-red)] text-white'
                   : 'text-[var(--color-brand-text-secondary)] hover:text-white hover:bg-[var(--color-brand-elevated)]'

@@ -6,7 +6,7 @@ import {
   Plus,
   Menu,
   Wallet,
-  PiggyBank,
+  Vault,
   BarChart3,
   SlidersHorizontal,
 } from 'lucide-react'
@@ -28,7 +28,7 @@ export const BOTTOM_NAV_ITEMS: BottomNavItem[] = [
 export const BOTTOM_NAV_MORE_MENU: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/budget-setup', label: 'budgetSetup', icon: SlidersHorizontal },
   { href: '/income', label: 'income', icon: Wallet },
-  { href: '/savings', label: 'savings', icon: PiggyBank },
+  { href: '/savings', label: 'savings', icon: Vault },
   { href: '/reports', label: 'reports', icon: BarChart3 },
 ]
 

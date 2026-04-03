@@ -77,6 +77,9 @@ export function useMonthlyStats() {
       budgetPlans.length > 0
         ? budgetPlans.find((p) => p.id === activeBudgetPlanId) ?? budgetPlans[0]
         : null
+    /** Plan drives dashboard category rows only when it has at least one category row. */
+    const planForCategoryBar =
+      activePlan != null && activePlan.categories.length > 0 ? activePlan : null
 
     const totalBudget = activePlan
       ? totalPlannedExpensesForPlan(activePlan)
@@ -91,8 +94,8 @@ export function useMonthlyStats() {
       settings.baseCurrency,
       exchangeRates
     )
-    const categorySpending = activePlan
-      ? categorySpendingForPlanRows(spendingByEnum, activePlan)
+    const categorySpending = planForCategoryBar
+      ? categorySpendingForPlanRows(spendingByEnum, planForCategoryBar)
       : spendingByEnum
     const daysLeft = calculateDaysLeftInMonth(monthFilter, settings.monthStartDay)
 
@@ -108,13 +111,13 @@ export function useMonthlyStats() {
 
     const savingsTotal = savingsHoldingsTotal + savingsFromExpenses
 
-    const effectiveBudgetRows = activePlan
-      ? budgetCategoriesFromPlan(activePlan, settings.baseCurrency)
-      : budgetCategories
+    const effectiveBudgetRows = planForCategoryBar
+      ? budgetCategoriesFromPlan(planForCategoryBar, settings.baseCurrency)
+      : []
     const categoryBudgetCaps = Object.fromEntries(
       effectiveBudgetRows.map((b) => [
         b.category,
-        activePlan ? b.budgetedAmount : effectiveCategoryBudget(b, settings, totalIncome),
+        planForCategoryBar ? b.budgetedAmount : effectiveCategoryBudget(b, settings, totalIncome),
       ])
     ) as Record<string, number>
 
