@@ -632,6 +632,7 @@ export const ar: Dictionary = {
     fabAskAi: 'اسأل مساعدك الذكي',
     fabRequireAuth: 'سجل دخولك لبدء تتبع أموالك ومزامنتها عبر الأجهزة 🔐',
     fabRequireAuthAi: 'سجل دخولك للتحدث مع مساعدك الذكي 🤖',
+    requireAuthBudgetSetup: 'سجل دخولك أو أنشئ حساباً لإعداد خطط ميزانيتك.',
     addPaymentTitle: 'إضافة طريقة دفع',
     addPaymentLabelName: 'الاسم',
     addPaymentPlaceholderName: 'مثال: فيزا، نقد، بطاقة ADCB',

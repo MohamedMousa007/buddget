@@ -1,9 +1,10 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { SlidersHorizontal, Trash2 } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
+import { useAuth } from '@/components/auth/auth-context'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { calculateMonthlyIncome } from '@/lib/utils/calculations'
@@ -22,6 +23,29 @@ import { EmptyState } from '@/components/ui/EmptyState'
  */
 export default function BudgetSetupPage() {
   const t = useT()
+  const { user, loading: authLoading, openAuthModal } = useAuth()
+  const supabaseConfigured = useMemo(
+    () =>
+      !!(
+        process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() &&
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+      ),
+    []
+  )
+  const isGuest = supabaseConfigured && !user
+  const guestAuthPromptedRef = useRef(false)
+
+  useEffect(() => {
+    if (!supabaseConfigured || authLoading) return
+    if (user) {
+      guestAuthPromptedRef.current = false
+      return
+    }
+    if (guestAuthPromptedRef.current) return
+    guestAuthPromptedRef.current = true
+    openAuthModal('/budget-setup', t.modals.requireAuthBudgetSetup)
+  }, [supabaseConfigured, authLoading, user, openAuthModal, t.modals.requireAuthBudgetSetup])
+
   const {
     budgetPlans,
     activeBudgetPlanId,
@@ -94,10 +118,14 @@ export default function BudgetSetupPage() {
   }, [editingTabId, editingName, updateBudgetPlan])
 
   const handleAddPlan = useCallback(() => {
+    if (isGuest) {
+      openAuthModal('/budget-setup', t.modals.requireAuthBudgetSetup)
+      return
+    }
     const name = window.prompt(t.budgetPlanner.newPlanName, t.budgetPlanner.defaultPlanName)
     if (name === null) return
     addBudgetPlan(name.trim() || t.budgetPlanner.defaultPlanName)
-  }, [addBudgetPlan, t.budgetPlanner])
+  }, [addBudgetPlan, isGuest, openAuthModal, t.budgetPlanner, t.modals.requireAuthBudgetSetup])
 
   const tabLabels = useMemo(() => ({ addPlan: t.budgetPlanner.addPlan }), [t.budgetPlanner.addPlan])
   const categoryLabels = useMemo(
@@ -133,7 +161,8 @@ export default function BudgetSetupPage() {
       </PageHeader>
 
       <div className="px-4 py-6 lg:px-8 max-w-3xl mx-auto space-y-6">
-        {budgetPlans.length > 0 ? (
+        {!supabaseConfigured || user ? (
+          budgetPlans.length > 0 ? (
           <>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <BudgetPlanTabs
@@ -249,6 +278,9 @@ export default function BudgetSetupPage() {
               }
             />
           </div>
+        )
+        ) : (
+          <div className="min-h-[40vh]" aria-hidden />
         )}
       </div>
     </div>

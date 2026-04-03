@@ -635,6 +635,7 @@ export interface Dictionary {
     fabAskAi: string
     fabRequireAuth: string
     fabRequireAuthAi: string
+    requireAuthBudgetSetup: string
     addPaymentTitle: string
     addPaymentLabelName: string
     addPaymentPlaceholderName: string

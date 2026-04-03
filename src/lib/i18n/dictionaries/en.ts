@@ -634,6 +634,7 @@ export const en: Dictionary = {
     fabAskAi: 'Ask your AI assistant',
     fabRequireAuth: 'Sign in to start tracking your finances and syncing across devices \uD83D\uDD10',
     fabRequireAuthAi: 'Sign in to chat with your AI assistant \uD83E\uDD16',
+    requireAuthBudgetSetup: 'Sign in or create an account to set up your budget plans.',
     addPaymentTitle: 'Add a Payment Method',
     addPaymentLabelName: 'Name',
     addPaymentPlaceholderName: 'e.g. My Visa, Cash, ADCB Debit',
