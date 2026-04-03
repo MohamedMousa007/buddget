@@ -1,3 +1,4 @@
+import type { ComponentType, SVGProps } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import {
   LayoutDashboard,
@@ -6,10 +7,13 @@ import {
   Plus,
   Menu,
   Wallet,
-  PiggyBank,
   BarChart3,
   SlidersHorizontal,
 } from 'lucide-react'
+import { SavingsIcon } from '@/components/ui/icons/SavingsIcon'
+
+/** Lucide or custom stroke icons used in nav / more sheet (same className API). */
+export type NavSheetIcon = LucideIcon | ComponentType<SVGProps<SVGSVGElement>>
 
 export type BottomNavItem =
   | { kind: 'link'; href: string; label: string; icon: LucideIcon }
@@ -25,10 +29,10 @@ export const BOTTOM_NAV_ITEMS: BottomNavItem[] = [
 ]
 
 /** Extra routes in the "More" sheet — keep in sync when adding top-level pages. */
-export const BOTTOM_NAV_MORE_MENU: { href: string; label: string; icon: LucideIcon }[] = [
+export const BOTTOM_NAV_MORE_MENU: { href: string; label: string; icon: NavSheetIcon }[] = [
   { href: '/budget-setup', label: 'budgetSetup', icon: SlidersHorizontal },
   { href: '/income', label: 'income', icon: Wallet },
-  { href: '/savings', label: 'savings', icon: PiggyBank },
+  { href: '/savings', label: 'savings', icon: SavingsIcon },
   { href: '/reports', label: 'reports', icon: BarChart3 },
 ]
 
