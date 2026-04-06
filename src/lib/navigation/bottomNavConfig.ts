@@ -6,10 +6,13 @@ import {
   Plus,
   Menu,
   Wallet,
-  Vault,
   BarChart3,
   SlidersHorizontal,
 } from 'lucide-react'
+import { SavingsIcon } from '@/components/icons/SavingsIcon'
+
+/** Lucide icons or stroke-matched custom SVGs (e.g. savings). */
+export type BuddgetNavIcon = LucideIcon | typeof SavingsIcon
 
 export type BottomNavItem =
   | { kind: 'link'; href: string; label: string; icon: LucideIcon }
@@ -25,10 +28,10 @@ export const BOTTOM_NAV_ITEMS: BottomNavItem[] = [
 ]
 
 /** Extra routes in the "More" sheet — keep in sync when adding top-level pages. */
-export const BOTTOM_NAV_MORE_MENU: { href: string; label: string; icon: LucideIcon }[] = [
+export const BOTTOM_NAV_MORE_MENU: { href: string; label: string; icon: BuddgetNavIcon }[] = [
   { href: '/budget-setup', label: 'budgetSetup', icon: SlidersHorizontal },
   { href: '/income', label: 'income', icon: Wallet },
-  { href: '/savings', label: 'savings', icon: Vault },
+  { href: '/savings', label: 'savings', icon: SavingsIcon },
   { href: '/reports', label: 'reports', icon: BarChart3 },
 ]
 

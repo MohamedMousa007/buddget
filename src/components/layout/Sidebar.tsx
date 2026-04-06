@@ -7,10 +7,10 @@ import {
   SlidersHorizontal,
   Receipt,
   Wallet,
-  Vault,
   Landmark,
   BarChart3,
 } from 'lucide-react'
+import { SavingsIcon } from '@/components/icons/SavingsIcon'
 import { cn } from '@/lib/utils'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -28,7 +28,7 @@ export function Sidebar() {
     { href: '/budget-setup', label: t.nav.budgetSetup, icon: SlidersHorizontal },
     { href: '/expenses', label: t.nav.expenses, icon: Receipt },
     { href: '/income', label: t.nav.income, icon: Wallet },
-    { href: '/savings', label: t.nav.savings, icon: Vault },
+    { href: '/savings', label: t.nav.savings, icon: SavingsIcon },
     { href: '/debts', label: t.nav.debts, icon: Landmark },
     { href: '/reports', label: t.nav.reports, icon: BarChart3 },
   ]

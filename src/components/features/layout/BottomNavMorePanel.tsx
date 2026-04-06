@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import type { LucideIcon } from 'lucide-react'
+import type { BuddgetNavIcon } from '@/lib/navigation/bottomNavConfig'
 import { cn } from '@/lib/utils'
 import { localeInlineLabelClass, useLocale, useT } from '@/lib/i18n'
 import type { Dictionary } from '@/lib/i18n'
@@ -12,7 +12,7 @@ export function BottomNavMorePanel({
   onNavigate,
 }: {
   pathname: string
-  items: { href: string; label: string; icon: LucideIcon }[]
+  items: { href: string; label: string; icon: BuddgetNavIcon }[]
   onNavigate: () => void
 }) {
   const t = useT()
