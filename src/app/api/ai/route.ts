@@ -5,6 +5,10 @@ import {
   buildBuddgyBudgetPlannerSystemPrompt,
   type BudgetPlannerContextPayload,
 } from '@/lib/ai/buddgyBudgetPlannerPrompt'
+import {
+  buildBuddgyFillSystemPrompt,
+  type BuddgyFillContextPayload,
+} from '@/lib/ai/buddgyFillPrompt'
 
 function supabaseAuthConfigured(): boolean {
   return !!(
@@ -82,11 +86,12 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
-    const { contents, generationConfig, mode, budgetPlannerContext } = body as {
+    const { contents, generationConfig, mode, budgetPlannerContext, buddgyFillContext } = body as {
       contents?: unknown[]
       generationConfig?: Record<string, unknown>
       mode?: string
       budgetPlannerContext?: BudgetPlannerContextPayload
+      buddgyFillContext?: BuddgyFillContextPayload
     }
 
     if (!Array.isArray(contents) || contents.length === 0) {
@@ -103,6 +108,11 @@ export async function POST(req: Request) {
 
     if (mode === 'budget-planner' && budgetPlannerContext && typeof budgetPlannerContext === 'object') {
       const sys = buildBuddgyBudgetPlannerSystemPrompt(budgetPlannerContext)
+      geminiBody.systemInstruction = { parts: [{ text: sys }] }
+    }
+
+    if (mode === 'buddgy-fill' && buddgyFillContext && typeof buddgyFillContext === 'object') {
+      const sys = buildBuddgyFillSystemPrompt(buddgyFillContext)
       geminiBody.systemInstruction = { parts: [{ text: sys }] }
     }
 

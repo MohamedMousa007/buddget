@@ -1,26 +1,17 @@
 'use client'
 
-import type { RefObject } from 'react'
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { calculateMonthlyIncome } from '@/lib/utils/calculations'
 import { totalPlannedExpensesForPlan } from '@/lib/budget/budgetPlans'
-import { useBudgetPlanEval } from '@/hooks/useBudgetPlanEval'
-import { useBudgetPlannerChat } from '@/hooks/useBudgetPlannerChat'
-
-export interface UseBudgetSetupPageOptions {
-  /** Scroll target after Buddgy applies a full plan replace. */
-  scrollToCategoriesRef?: RefObject<HTMLElement | null>
-}
 
 /**
- * Budget setup route: plans, income/planned totals, Buddgy eval + chat, guest auth gating.
+ * Budget setup route: plans, income/planned totals, guest auth gating.
  */
-export function useBudgetSetupPage(options: UseBudgetSetupPageOptions = {}) {
-  const { scrollToCategoriesRef } = options
+export function useBudgetSetupPage() {
   const t = useT()
   const { user, loading: authLoading, openAuthModal } = useAuth()
   const supabaseConfigured = useMemo(
@@ -99,21 +90,6 @@ export function useBudgetSetupPage(options: UseBudgetSetupPageOptions = {}) {
     : 0
   const projectedSavings = totalIncome - totalPlanned
 
-  const buddgyAutostartAfterPlanRef = useRef(false)
-
-  const evalHook = useBudgetPlanEval(activePlan, totalIncome, settings.baseCurrency, exchangeRates)
-  const chat = useBudgetPlannerChat(activePlan, totalIncome, settings.baseCurrency, exchangeRates, {
-    onReplacePlanApplied: () => {
-      scrollToCategoriesRef?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    },
-  })
-
-  useLayoutEffect(() => {
-    if (!buddgyAutostartAfterPlanRef.current || !activePlan) return
-    buddgyAutostartAfterPlanRef.current = false
-    chat.startBuilder(t.budgetPlanner.buddgyBuilderOpening)
-  }, [activePlan, chat, t.budgetPlanner.buddgyBuilderOpening])
-
   const startRename = useCallback((plan: { id: string; name: string }) => {
     setEditingTabId(plan.id)
     setEditingName(plan.name)
@@ -135,24 +111,10 @@ export function useBudgetSetupPage(options: UseBudgetSetupPageOptions = {}) {
     addBudgetPlan(name.trim() || t.budgetPlanner.defaultPlanName)
   }, [addBudgetPlan, isGuest, openAuthModal, t.budgetPlanner, t.modals.requireAuthBudgetSetup])
 
-  const openBuddgyPlanBuilder = useCallback(() => {
-    if (isGuest) {
-      openAuthModal('/budget-setup', t.modals.requireAuthBudgetSetup)
-      return
-    }
-    if (budgetPlans.length === 0) {
-      addBudgetPlan(t.budgetPlanner.defaultPlanName)
-      buddgyAutostartAfterPlanRef.current = true
-      return
-    }
-    chat.startBuilder(t.budgetPlanner.buddgyBuilderOpening)
-  }, [isGuest, budgetPlans.length, addBudgetPlan, openAuthModal, t.modals, t.budgetPlanner, chat])
-
   const tabLabels = useMemo(() => ({ addPlan: t.budgetPlanner.addPlan }), [t.budgetPlanner.addPlan])
 
   const categoryLabels = useMemo(
     () => ({
-      buddgyEvalSectionTitle: t.budgetPlanner.buddgyEvalSectionTitle,
       categoriesTitle: t.budgetPlanner.categoriesTitle,
       addCategory: t.budgetPlanner.addCategory,
       chooseCategoryTitle: t.budgetPlanner.chooseCategoryTitle,
@@ -173,22 +135,6 @@ export function useBudgetSetupPage(options: UseBudgetSetupPageOptions = {}) {
     [t.budgetPlanner]
   )
 
-  const buddgyHeroLabels = useMemo(
-    () => ({
-      title: t.budgetPlanner.buddgyHeroTitleMeet,
-      subtitle: t.budgetPlanner.buddgyHeroSubtitle,
-      body: t.budgetPlanner.buddgyHeroBody,
-      cta: t.budgetPlanner.buddgyHeroCta,
-      manualHint: t.budgetPlanner.buddgyHeroManualHint,
-      compactTitle: t.budgetPlanner.buddgyCompactTitle,
-      compactBody: t.budgetPlanner.buddgyCompactBody,
-      compactCta: t.budgetPlanner.buddgyCompactCta,
-    }),
-    [t.budgetPlanner]
-  )
-
-  const hasCategoryRows = (activePlan?.categories.length ?? 0) > 0
-
   return {
     t,
     supabaseConfigured,
@@ -200,13 +146,6 @@ export function useBudgetSetupPage(options: UseBudgetSetupPageOptions = {}) {
     totalIncome,
     totalPlanned,
     projectedSavings,
-    evalResult: evalHook.result,
-    evalLoading: evalHook.loading,
-    evalError: evalHook.error,
-    chat,
-    openBuddgyPlanBuilder,
-    buddgyHeroLabels,
-    hasCategoryRows,
     editingTabId,
     editingName,
     setEditingName,

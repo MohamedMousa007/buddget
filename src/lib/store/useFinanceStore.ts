@@ -284,7 +284,14 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => ({
           budgetPlans: [
             ...state.budgetPlans,
-            { id, name: trimmed, categories: [], createdAt: new Date().toISOString() },
+            {
+              id,
+              name: trimmed,
+              categories: [],
+              createdAt: new Date().toISOString(),
+              household: null,
+              buddgyFlow: null,
+            },
           ],
           activeBudgetPlanId: id,
         }))
@@ -297,9 +304,37 @@ export const useFinanceStore = create<FinanceStore>()(
             if (p.id !== planId) return p
             const nextName =
               updates.name !== undefined ? updates.name.trim() || p.name : p.name
-            return { ...p, ...updates, name: nextName }
+            const nextCategories =
+              updates.categories !== undefined ? updates.categories : p.categories
+            const nextHousehold =
+              updates.household !== undefined ? updates.household : p.household
+            const nextBuddgyGuidedComplete =
+              updates.buddgyGuidedComplete !== undefined ? updates.buddgyGuidedComplete : p.buddgyGuidedComplete
+            let nextBuddgyFlow = p.buddgyFlow
+            if (updates.buddgyFlow !== undefined) {
+              nextBuddgyFlow =
+                updates.buddgyFlow === null ?
+                  null
+                : { ...(p.buddgyFlow ?? {}), ...updates.buddgyFlow }
+            }
+            return {
+              ...p,
+              name: nextName,
+              categories: nextCategories,
+              household: nextHousehold,
+              buddgyGuidedComplete: nextBuddgyGuidedComplete,
+              buddgyFlow: nextBuddgyFlow,
+            }
           }),
         })),
+
+      updateBudgetMeta: (planId, updates) => {
+        get().updateBudgetPlan(planId, updates)
+      },
+
+      replaceBudgetPlanCategories: (planId, categories) => {
+        get().updateBudgetPlan(planId, { categories })
+      },
 
       setFinancialGoalsNotes: (notes) => set({ financialGoalsNotes: notes }),
 

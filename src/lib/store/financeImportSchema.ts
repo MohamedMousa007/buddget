@@ -126,6 +126,31 @@ export const importDataSchema = z.object({
         id: z.string(),
         name: z.string(),
         createdAt: z.string(),
+        household: z.enum(['solo', 'partner', 'family']).nullable().optional(),
+        buddgyGuidedComplete: z.boolean().optional(),
+        buddgyFlow: z
+          .object({
+            rentIncludesUtilities: z.boolean().optional(),
+            dewaMonthly: z.number().optional(),
+            transportMode: z.enum(['car', 'public', 'walk', 'mix']).optional(),
+            transportCarMonthly: z.number().optional(),
+            transportPublicDaily: z.number().optional(),
+            savingsPercent: z.number().optional(),
+            aiFillAccepted: z.boolean().optional(),
+            flowFinished: z.boolean().optional(),
+            aiSuggestions: z
+              .array(
+                z.object({
+                  name: z.string(),
+                  emoji: z.string(),
+                  amount: z.number(),
+                  currency: fiatCurrencySchema,
+                })
+              )
+              .optional(),
+          })
+          .nullable()
+          .optional(),
         categories: z.array(
           z.object({
             id: z.string(),

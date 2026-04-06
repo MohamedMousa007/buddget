@@ -3,13 +3,20 @@
 import { createClient } from '@/lib/supabase/client'
 
 /**
- * Best-effort sync of name to `user_profiles` when the user is signed in.
- * City/country live in the finance JSON payload via `updateProfile` elsewhere.
+ * Best-effort sync of profile fields to `user_profiles` when the user is signed in.
+ * Finance JSON (`user_finance`) remains the source of truth for income; this mirrors
+ * name/city/country onto relational columns when present.
  */
 export async function pushProfileFieldsToSupabase(updates: {
   name?: string
+  city?: string | null
+  country?: string | null
 }): Promise<void> {
-  if (!updates.name?.trim()) return
+  const patch: Record<string, string | null> = {}
+  if (updates.name?.trim()) patch.display_name = updates.name.trim()
+  if (updates.city !== undefined) patch.city = updates.city?.trim() || null
+  if (updates.country !== undefined) patch.country = updates.country?.trim() || null
+  if (Object.keys(patch).length === 0) return
   try {
     const supabase = createClient()
     const {
@@ -19,7 +26,7 @@ export async function pushProfileFieldsToSupabase(updates: {
     await supabase
       .from('user_profiles')
       .update({
-        display_name: updates.name.trim(),
+        ...patch,
         updated_at: new Date().toISOString(),
       })
       .eq('user_id', user.id)

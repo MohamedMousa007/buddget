@@ -1,0 +1,66 @@
+'use client'
+
+import { buildFiatCurrencyPickerOptions } from '@/lib/utils/currencyPickerOptions'
+import { formatMoneyAmount } from '@/lib/budget/buddgyFlowHelpers'
+import type { BuddgyFlowApi } from '@/hooks/useBuddgyFlow'
+
+export function BuddgyStepIncome({ flow }: { flow: BuddgyFlowApi }) {
+  const opts = buildFiatCurrencyPickerOptions(flow.settings)
+  const restartNote =
+    flow.flowMode === 'restart' &&
+    flow.primaryIncomePreview &&
+    flow.primaryIncomePreview.amount > 0 ?
+      formatMoneyAmount(flow.primaryIncomePreview.amount, flow.primaryIncomePreview.currency)
+    : null
+  const existing =
+    !restartNote && flow.incomeAmount && flow.monthlyIncome > 0 ?
+      `${flow.incomeAmount} ${flow.incomeCurrency}`
+    : null
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-white font-sans">What&apos;s your monthly income?</p>
+      {restartNote ?
+        <p className="text-xs text-[var(--color-brand-text-muted)]">
+          Currently <span className="font-mono">{restartNote}</span> — update?
+        </p>
+      : existing ?
+        <p className="text-xs text-[var(--color-brand-text-muted)]">
+          Currently {existing} — update below if needed.
+        </p>
+      : null}
+      <div className="flex flex-wrap gap-2 items-center">
+        <select
+          value={flow.incomeCurrency}
+          onChange={(e) => flow.setIncomeCurrency(e.target.value as typeof flow.incomeCurrency)}
+          className="cursor-pointer rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-2 py-2 text-sm text-white"
+        >
+          {opts.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.value}
+            </option>
+          ))}
+        </select>
+        <input
+          type="text"
+          inputMode="decimal"
+          value={flow.incomeAmount}
+          onChange={(e) => flow.setIncomeAmount(e.target.value)}
+          className="min-w-[140px] flex-1 rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-3 py-2 font-mono text-sm text-white"
+          placeholder="0"
+        />
+      </div>
+      <button
+        type="button"
+        onClick={() => {
+          const n = Number.parseFloat(flow.incomeAmount.replace(/,/g, '')) || 0
+          flow.ensureIncome(n, flow.incomeCurrency)
+          flow.setStep('household')
+        }}
+        className="cursor-pointer rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] px-5 py-2.5 text-sm font-semibold text-white"
+      >
+        Next →
+      </button>
+    </div>
+  )
+}

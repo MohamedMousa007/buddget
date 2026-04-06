@@ -4,14 +4,16 @@ import {
 } from '@/lib/ai/formatAiProxyError'
 
 import type { BudgetPlannerContextPayload } from '@/lib/ai/buddgyBudgetPlannerPrompt'
+import type { BuddgyFillContextPayload } from '@/lib/ai/buddgyFillPrompt'
 
 /** POST body shape for `/api/ai` (Gemini proxy). */
 export interface GeminiProxyRequestBody {
   contents: unknown[]
   generationConfig?: Record<string, unknown>
   /** Switches Gemini systemInstruction for budget planner / Buddgy builder flows. */
-  mode?: 'budget-planner'
+  mode?: 'budget-planner' | 'buddgy-fill'
   budgetPlannerContext?: BudgetPlannerContextPayload
+  buddgyFillContext?: BuddgyFillContextPayload
 }
 
 const DEFAULT_MAX_ATTEMPTS = 3

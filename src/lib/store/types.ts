@@ -104,12 +104,36 @@ export interface BudgetPlanCategory {
   subcategories: BudgetPlanSubcategory[]
 }
 
+/** Who the budget is for (Buddgy Flow). */
+export type BudgetHousehold = 'solo' | 'partner' | 'family'
+
+/** Draft fields while running Buddgy Flow (persisted on the plan). */
+export interface BuddgyFlowDraft {
+  rentIncludesUtilities?: boolean
+  dewaMonthly?: number
+  transportMode?: 'car' | 'public' | 'walk' | 'mix'
+  transportCarMonthly?: number
+  transportPublicDaily?: number
+  savingsPercent?: number
+  /** Prefetched AI rows for step 6 */
+  aiSuggestions?: Array<{ name: string; emoji: string; amount: number; currency: Currency }>
+  /** User accepted AI rows in step 6 */
+  aiFillAccepted?: boolean
+  /** User finished summary step (Done) */
+  flowFinished?: boolean
+}
+
 /** Named budget scenario with its own category tree (persists separately from legacy `budgetCategories`). */
 export interface BudgetPlan {
   id: string
   name: string
   categories: BudgetPlanCategory[]
   createdAt: string
+  /** Buddgy Flow: household size for AI and sliders. */
+  household?: BudgetHousehold | null
+  buddgyFlow?: BuddgyFlowDraft | null
+  /** User finished Buddgy guided flow (Done). Cleared when rebuilding. */
+  buddgyGuidedComplete?: boolean
 }
 
 export type SavingsBucket = 'liquid' | 'investment'
@@ -317,7 +341,17 @@ export interface FinanceStore {
   /** Replace all budget rows (e.g. onboarding preset). */
   setBudgetCategories: (categories: BudgetCategory[]) => void
   addBudgetPlan: (name: string) => string
-  updateBudgetPlan: (planId: string, updates: Partial<Pick<BudgetPlan, 'name' | 'categories'>>) => void
+  updateBudgetPlan: (
+    planId: string,
+    updates: Partial<Pick<BudgetPlan, 'name' | 'categories' | 'household' | 'buddgyFlow' | 'buddgyGuidedComplete'>>
+  ) => void
+  /** Merge household / buddgyFlow into the active plan (Buddgy Flow). */
+  updateBudgetMeta: (
+    planId: string,
+    updates: Partial<Pick<BudgetPlan, 'household' | 'buddgyFlow'>>
+  ) => void
+  /** Replace all category rows on a plan at once. */
+  replaceBudgetPlanCategories: (planId: string, categories: BudgetPlanCategory[]) => void
   deleteBudgetPlan: (planId: string) => void
   setActiveBudgetPlanId: (id: string | null) => void
   setActiveSharedBudgetId: (id: string | null) => void

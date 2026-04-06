@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useState } from 'react'
 import { SlidersHorizontal } from 'lucide-react'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -11,18 +11,15 @@ import { InviteMemberSheet } from '@/components/features/budget-planner/InviteMe
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { BudgetPlannerSummary } from '@/components/features/budget-planner/BudgetPlannerSummary'
 import { BudgetPlannerCategories } from '@/components/features/budget-planner/BudgetPlannerCategories'
-import { BudgetPlannerChatPanel } from '@/components/features/budget-planner/BudgetPlannerChatPanel'
-import { BudgetPlannerBuddgyHero } from '@/components/features/budget-planner/BudgetPlannerBuddgyHero'
 import { BudgetSetupNoPlansEmpty } from '@/components/features/budget-planner/BudgetSetupNoPlansEmpty'
 import { BudgetSetupPlanToolbar } from '@/components/features/budget-planner/BudgetSetupPlanToolbar'
 import { useBudgetSetupPage } from '@/hooks/useBudgetSetupPage'
 
 /**
- * Multi-plan budget editor with Buddgy evaluation, plan builder chat, and manual edits.
+ * Multi-plan budget editor with manual edits and Buddgy guided setup.
  */
 export default function BudgetSetupPage() {
-  const categoriesSectionRef = useRef<HTMLDivElement>(null)
-  const p = useBudgetSetupPage({ scrollToCategoriesRef: categoriesSectionRef })
+  const p = useBudgetSetupPage()
   const { t } = p
   const { user } = useAuth()
   const { plans: sharedPlans, createSharedPlan, refresh: refreshShared } = useSharedBudgets()
@@ -31,20 +28,6 @@ export default function BudgetSetupPage() {
   const setActiveSharedBudgetId = useFinanceStore((s) => s.setActiveSharedBudgetId)
   const setDefaultSharedBudgetPlanId = useFinanceStore((s) => s.setDefaultSharedBudgetPlanId)
   const [inviteOpen, setInviteOpen] = useState(false)
-
-  const handleSetDefaultForShared = useCallback(async () => {
-    if (!activeSharedBudgetId) return
-    try {
-      const res = await fetch('/api/budget/profile-default', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ defaultBudgetPlanId: activeSharedBudgetId }),
-      })
-      if (res.ok) setDefaultSharedBudgetPlanId(activeSharedBudgetId)
-    } catch {
-      /* ignore */
-    }
-  }, [activeSharedBudgetId, setDefaultSharedBudgetPlanId])
 
   return (
     <div className="min-h-screen">
@@ -58,8 +41,8 @@ export default function BudgetSetupPage() {
       </PageHeader>
 
       <div className="px-4 py-6 lg:px-8 max-w-3xl mx-auto space-y-6">
-        {!p.supabaseConfigured || p.user ? (
-          p.budgetPlans.length > 0 ? (
+        {!p.supabaseConfigured || p.user ?
+          p.budgetPlans.length > 0 ?
             <>
               {user && p.supabaseConfigured ?
                 <div className="space-y-4">
@@ -88,7 +71,19 @@ export default function BudgetSetupPage() {
                         (s) => s.id === activeSharedBudgetId && s.membership.kind === 'owner'
                       )}
                       onOpenInvite={() => setInviteOpen(true)}
-                      onSetDefault={handleSetDefaultForShared}
+                      onSetDefault={async () => {
+                        if (!activeSharedBudgetId) return
+                        try {
+                          const res = await fetch('/api/budget/profile-default', {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ defaultBudgetPlanId: activeSharedBudgetId }),
+                          })
+                          if (res.ok) setDefaultSharedBudgetPlanId(activeSharedBudgetId)
+                        } catch {
+                          /* ignore */
+                        }
+                      }}
                       showSetDefault={defaultSharedBudgetPlanId !== activeSharedBudgetId}
                     />
                   : null}
@@ -114,11 +109,6 @@ export default function BudgetSetupPage() {
                   />
                 </div>
               : null}
-              <BudgetPlannerBuddgyHero
-                variant={p.hasCategoryRows ? 'compact' : 'primary'}
-                labels={p.buddgyHeroLabels}
-                onStartBuilder={p.openBuddgyPlanBuilder}
-              />
 
               <BudgetSetupPlanToolbar
                 plans={p.budgetPlans}
@@ -150,17 +140,12 @@ export default function BudgetSetupPage() {
                 }}
               />
 
-              {p.activePlan ? (
-                <div ref={categoriesSectionRef}>
+              {p.activePlan ?
+                <div>
                   <BudgetPlannerCategories
+                    planId={p.activePlan.id}
                     categories={p.activePlan.categories}
                     settings={p.settings}
-                    planEval={{
-                      loading: p.evalLoading,
-                      error: p.evalError,
-                      rating: p.evalResult?.rating ?? null,
-                      explanation: p.evalResult?.explanation ?? null,
-                    }}
                     labels={p.categoryLabels}
                     onAddPresetCategory={(icon, name) =>
                       p.addPlanCategory(p.activePlan!.id, { name, icon, amount: 0 })
@@ -183,36 +168,9 @@ export default function BudgetSetupPage() {
                     }
                   />
                 </div>
-              ) : null}
-
-              <BudgetPlannerChatPanel
-                plan={p.activePlan}
-                messages={p.chat.messages}
-                input={p.chat.input}
-                onInputChange={p.chat.setInput}
-                onSend={() => void p.chat.handleSend()}
-                loading={p.chat.loading}
-                onApply={p.chat.applyFromMessage}
-                scrollAnchorRef={p.chat.scrollAnchorRef}
-                builderActive={p.chat.builderActive}
-                labels={{
-                  title: t.budgetPlanner.aiChatTitle,
-                  subtitle: t.budgetPlanner.buddgyChatSubtitle,
-                  builderBadge: t.budgetPlanner.buddgyBuilderBadge,
-                  placeholder: t.budgetPlanner.aiChatPlaceholder,
-                  send: t.budgetPlanner.aiSend,
-                  apply: t.budgetPlanner.applySuggestion,
-                  applied: t.budgetPlanner.applied,
-                }}
-              />
+              : null}
             </>
-          ) : (
-            <>
-              <BudgetPlannerBuddgyHero
-                variant="primary"
-                labels={p.buddgyHeroLabels}
-                onStartBuilder={p.openBuddgyPlanBuilder}
-              />
+          : <>
               <BudgetSetupNoPlansEmpty
                 title={t.budgetPlanner.noPlansEmptyTitle}
                 description={t.budgetPlanner.noPlansEmptyDesc}
@@ -220,10 +178,7 @@ export default function BudgetSetupPage() {
                 onCreate={p.handleAddPlan}
               />
             </>
-          )
-        ) : (
-          <div className="min-h-[40vh]" aria-hidden />
-        )}
+        : <div className="min-h-[40vh]" aria-hidden />}
       </div>
     </div>
   )
