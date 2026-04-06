@@ -1,10 +1,8 @@
-// Reserved for native push notifications integration
-// Wire to FCM (Firebase Cloud Messaging) or web-push
-// when deploying to Google Play via PWABuilder TWA wrapper
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
+import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
@@ -20,6 +18,16 @@ export type AppNotification = {
   body: string
   severity: 'warning' | 'info' | 'critical'
   createdAt: string
+}
+
+export type ServerNotificationRow = {
+  id: string
+  type: string
+  title: string
+  body: string | null
+  metadata: Record<string, unknown>
+  read: boolean
+  created_at: string
 }
 
 function loadReadIds(): Set<string> {
@@ -44,6 +52,7 @@ function saveReadIds(ids: Set<string>) {
 }
 
 export function useNotifications() {
+  const { user } = useAuth()
   const stats = useMonthlyStats()
   const t = useT()
   const { monthFilter } = useSettingsStore()
@@ -56,6 +65,39 @@ export function useNotifications() {
   )
 
   const [readIds, setReadIds] = useState<Set<string>>(() => loadReadIds())
+  const [serverNotifications, setServerNotifications] = useState<ServerNotificationRow[]>([])
+
+  const fetchServerNotifications = useCallback(async () => {
+    try {
+      const res = await fetch('/api/notifications')
+      if (!res.ok) return
+      const data = (await res.json()) as { notifications?: ServerNotificationRow[] }
+      setServerNotifications(data.notifications ?? [])
+    } catch {
+      /* ignore */
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!user) {
+      queueMicrotask(() => setServerNotifications([]))
+      return
+    }
+    let cancelled = false
+    void (async () => {
+      try {
+        const res = await fetch('/api/notifications')
+        if (!res.ok || cancelled) return
+        const data = (await res.json()) as { notifications?: ServerNotificationRow[] }
+        if (!cancelled) setServerNotifications(data.notifications ?? [])
+      } catch {
+        /* ignore */
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [user])
 
   const notifications = useMemo(() => {
     const list: AppNotification[] = []
@@ -100,9 +142,10 @@ export function useNotifications() {
       list.push({
         id: `month_end:${monthFilter}`,
         type: 'month_end',
-        title: stats.daysLeft === 0
-          ? t.notifications.monthEndTitleLast
-          : t.notifications.monthEndTitleDays(stats.daysLeft),
+        title:
+          stats.daysLeft === 0
+            ? t.notifications.monthEndTitleLast
+            : t.notifications.monthEndTitleDays(stats.daysLeft),
         body:
           stats.daysLeft === 0
             ? t.notifications.monthEndBodyLast
@@ -128,12 +171,19 @@ export function useNotifications() {
     return list
   }, [budgetCategories, debts, debtPayments, monthFilter, stats, t])
 
-  const unreadCount = useMemo(
+  const localUnread = useMemo(
     () => notifications.filter((n) => !readIds.has(n.id)).length,
     [notifications, readIds]
   )
 
-  const markAllRead = useCallback(() => {
+  const serverUnread = useMemo(
+    () => serverNotifications.filter((n) => !n.read).length,
+    [serverNotifications]
+  )
+
+  const unreadCount = localUnread + serverUnread
+
+  const markAllRead = useCallback(async () => {
     setReadIds((prev) => {
       const next = new Set(prev)
       for (const n of notifications) {
@@ -142,7 +192,43 @@ export function useNotifications() {
       saveReadIds(next)
       return next
     })
-  }, [notifications])
+    if (user) {
+      try {
+        await fetch('/api/notifications', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ markAllRead: true }),
+        })
+        void fetchServerNotifications()
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [notifications, user, fetchServerNotifications])
 
-  return { notifications, unreadCount, markAllRead }
+  const markServerReadByIds = useCallback(
+    async (ids: string[]) => {
+      if (!ids.length) return
+      try {
+        await fetch('/api/notifications', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids }),
+        })
+        void fetchServerNotifications()
+      } catch {
+        /* ignore */
+      }
+    },
+    [fetchServerNotifications]
+  )
+
+  return {
+    notifications,
+    serverNotifications,
+    unreadCount,
+    markAllRead,
+    markServerReadByIds,
+    refetchServerNotifications: fetchServerNotifications,
+  }
 }

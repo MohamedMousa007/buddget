@@ -11,4 +11,7 @@ export interface BudgetPlannerCategoryRowLabels {
   subcategoryNamePlaceholder: string
   amountPlaceholder: string
   emojiPickerLabel: string
+  chooseCategoryTitle: string
+  customCategoryOption: string
+  editCategoryName: string
 }

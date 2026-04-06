@@ -11,6 +11,7 @@ import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 import { cn } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
 import { ProfileDropdown } from '@/components/layout/ProfileDropdown'
+import { NotificationInbox } from '@/components/notifications/NotificationInbox'
 
 const btnClass =
   'inline-flex items-center justify-center px-2 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors border border-[var(--color-brand-border)] text-white hover:bg-[var(--color-brand-elevated)] sm:px-3'
@@ -99,6 +100,7 @@ export function AuthNavButtons({
   if (layout === 'mobile') {
     return (
       <div className={cn('flex flex-nowrap items-center justify-end gap-1', className)}>
+        {user ? <NotificationInbox /> : null}
         <ProfileAvatarWithMenu />
       </div>
     )
@@ -119,7 +121,9 @@ export function AuthNavButtons({
             {t.common.signUp}
           </button>
         </>
-      ) : null}
+      ) : (
+        <NotificationInbox />
+      )}
       <ProfileAvatarWithMenu />
     </div>
   )

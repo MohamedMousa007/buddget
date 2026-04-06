@@ -2,9 +2,8 @@
 
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import type { BudgetPlanCategory, BudgetPlanSubcategory } from '@/lib/store/types'
+import type { AppSettings, BudgetPlanCategory, BudgetPlanSubcategory, Currency } from '@/lib/store/types'
 import { effectivePlanCategoryAmount } from '@/lib/budget/budgetPlans'
-import { presetForCategoryName } from '@/lib/budget/budgetPlannerPresets'
 import type { BudgetPlannerCategoryRowLabels } from '@/components/features/budget-planner/budgetPlannerCategoryLabels'
 import { BudgetPlannerCategoryRowHeader } from '@/components/features/budget-planner/BudgetPlannerCategoryRowHeader'
 import { BudgetPlannerCategorySubcategoriesPanel } from '@/components/features/budget-planner/BudgetPlannerCategorySubcategoriesPanel'
@@ -13,11 +12,14 @@ export type { BudgetPlannerCategoryRowLabels } from '@/components/features/budge
 
 export interface BudgetPlannerCategoryRowProps {
   category: BudgetPlanCategory
+  planCategories: BudgetPlanCategory[]
+  settings: AppSettings
   labels: BudgetPlannerCategoryRowLabels
   onUpdateCategory: (updates: {
     name?: string
     icon?: string
     amount?: number
+    currency?: Currency
     subcategories?: BudgetPlanSubcategory[]
   }) => void
   onDeleteCategory: () => void
@@ -29,6 +31,8 @@ export interface BudgetPlannerCategoryRowProps {
 /** One expandable category row with subcategory editors. */
 export function BudgetPlannerCategoryRow({
   category,
+  planCategories,
+  settings,
   labels,
   onUpdateCategory,
   onDeleteCategory,
@@ -39,9 +43,6 @@ export function BudgetPlannerCategoryRow({
   const [open, setOpen] = useState(false)
   const hasSubs = category.subcategories.length > 0
   const effective = effectivePlanCategoryAmount(category)
-
-  const preset = presetForCategoryName(category.name)
-  const isPredefined = preset != null && category.icon === preset.icon
 
   const [amountFocused, setAmountFocused] = useState(false)
   const [amountStr, setAmountStr] = useState('')
@@ -75,10 +76,11 @@ export function BudgetPlannerCategoryRow({
     <div className="rounded-xl border border-[#2A2A38] bg-[var(--color-brand-elevated)]/40 overflow-hidden">
       <BudgetPlannerCategoryRowHeader
         category={category}
+        planCategories={planCategories}
+        settings={settings}
         labels={labels}
         open={open}
         onToggleOpen={() => setOpen((o) => !o)}
-        isPredefined={isPredefined}
         hasSubs={hasSubs}
         categoryAmountInputValue={categoryAmountInputValue}
         onAmountChange={setAmountStr}

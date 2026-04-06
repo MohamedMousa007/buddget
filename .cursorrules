@@ -1,3 +1,9 @@
+# budget.ai (Buddget) — project rules
+
+This folder is the **Next.js app root**. When this workspace is opened as `buddget/` only, all application code lives under **`src/`** — prefer `src/` for features, components, hooks, and lib unless the task is explicitly repo-level (docs, scripts, config at project root).
+
+---
+
 # budget.ai Corporate-Grade Development Rules
 
 ## 1. Architecture Philosophy

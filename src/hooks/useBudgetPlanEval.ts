@@ -19,6 +19,7 @@ function planFingerprint(plan: BudgetPlan): string {
       id: c.id,
       n: c.name,
       i: c.icon,
+      cur: c.currency,
       a: c.amount,
       s: c.subcategories.map((x) => [x.id, x.name, x.amount]),
     })),
@@ -28,7 +29,12 @@ function planFingerprint(plan: BudgetPlan): string {
 /**
  * Debounced AI evaluation of the active budget plan (rating + short explanation).
  */
-export function useBudgetPlanEval(plan: BudgetPlan | null, totalMonthlyIncome: number, baseCurrency: Currency) {
+export function useBudgetPlanEval(
+  plan: BudgetPlan | null,
+  totalMonthlyIncome: number,
+  baseCurrency: Currency,
+  exchangeRates: Record<string, number>
+) {
   const [result, setResult] = useState<BudgetPlanEvalResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -37,7 +43,7 @@ export function useBudgetPlanEval(plan: BudgetPlan | null, totalMonthlyIncome: n
 
   const runEval = useCallback(
     async (p: BudgetPlan) => {
-      const block = buildBudgetPlannerContextBlock(p, totalMonthlyIncome, baseCurrency)
+      const block = buildBudgetPlannerContextBlock(p, totalMonthlyIncome, baseCurrency, exchangeRates)
       setLoading(true)
       setError(null)
       try {
@@ -51,7 +57,7 @@ export function useBudgetPlanEval(plan: BudgetPlan | null, totalMonthlyIncome: n
         setLoading(false)
       }
     },
-    [totalMonthlyIncome, baseCurrency]
+    [totalMonthlyIncome, baseCurrency, exchangeRates]
   )
 
   useEffect(() => {
@@ -70,7 +76,7 @@ export function useBudgetPlanEval(plan: BudgetPlan | null, totalMonthlyIncome: n
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
     }
-  }, [plan, planSig, totalMonthlyIncome, baseCurrency, runEval])
+  }, [plan, planSig, totalMonthlyIncome, baseCurrency, exchangeRates, runEval])
 
   return { result, loading, error, refresh: () => plan && void runEval(plan) }
 }

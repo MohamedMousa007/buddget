@@ -66,9 +66,12 @@ export const importDataSchema = z.object({
         dayOfMonth: z.number().int().min(1).max(31).optional(),
         notes: z.string().optional(),
         createdAt: z.string(),
+        sharedPlanId: z.string().uuid().nullable().optional(),
       })
     )
     .optional(),
+  activeSharedBudgetId: z.string().uuid().nullable().optional(),
+  defaultSharedBudgetPlanId: z.string().uuid().nullable().optional(),
   expenses: z
     .array(
       z.object({
@@ -86,6 +89,7 @@ export const importDataSchema = z.object({
         tags: z.array(z.string()).optional(),
         createdAt: z.string(),
         updatedAt: z.string(),
+        sharedPlanId: z.string().uuid().nullable().optional(),
       })
     )
     .optional(),
@@ -101,6 +105,7 @@ export const importDataSchema = z.object({
         dayOfMonth: z.number().int().min(1).max(31),
         isActive: z.boolean(),
         notes: z.string().optional(),
+        sharedPlanId: z.string().uuid().nullable().optional(),
       })
     )
     .optional(),
@@ -127,6 +132,7 @@ export const importDataSchema = z.object({
             name: z.string(),
             icon: z.string(),
             amount: z.number(),
+            currency: fiatCurrencySchema.optional(),
             subcategories: z.array(
               z.object({
                 id: z.string(),
@@ -183,6 +189,7 @@ export const importDataSchema = z.object({
         goldKarat: z.union([z.literal(24), z.literal(22), z.literal(21), z.literal(18)]).optional(),
         description: z.string().optional(),
         notes: z.string().optional(),
+        sharedPlanId: z.string().uuid().nullable().optional(),
         createdAt: z.string(),
       })
     )
@@ -199,6 +206,7 @@ export const importDataSchema = z.object({
         amountInPrimary: z.number().optional(),
         rateAtEntry: z.number().optional(),
         notes: z.string().optional(),
+        sharedPlanId: z.string().uuid().nullable().optional(),
         createdAt: z.string(),
       })
     )
@@ -219,6 +227,7 @@ export const importDataSchema = z.object({
       })
     )
     .optional(),
+  financialGoalsNotes: z.string().optional(),
   onboardingState: z
     .object({
       flowVersion: z.number(),

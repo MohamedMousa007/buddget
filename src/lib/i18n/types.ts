@@ -518,6 +518,14 @@ export interface Dictionary {
     aiEvalTitle: string
     aiEvalLoading: string
     aiEvalError: string
+    aiEvalStatusGood: string
+    aiEvalStatusNeedsAdjustment: string
+    aiEvalStatusUnrealistic: string
+    aiEvalTipGood: string
+    aiEvalTipTight: string
+    aiEvalTipUnrealistic: string
+    aiEvalExpandAria: string
+    aiEvalSuggestionLabel: string
     aiChatTitle: string
     aiChatPlaceholder: string
     aiSend: string
@@ -533,6 +541,7 @@ export interface Dictionary {
     chooseCategoryTitle: string
     customCategoryOption: string
     addCustomCategory: string
+    editCategoryName: string
     categoryNamePlaceholder: string
     subcategoryNamePlaceholder: string
     amountPlaceholder: string
@@ -543,6 +552,48 @@ export interface Dictionary {
     noPlansEmptyTitle: string
     noPlansEmptyDesc: string
     noPlansCreateFirst: string
+    buddgyTagline: string
+    buddgyHeroTitleMeet: string
+    buddgyHeroSubtitle: string
+    buddgyHeroBody: string
+    buddgyHeroCta: string
+    buddgyHeroManualHint: string
+    buddgyCompactTitle: string
+    buddgyCompactBody: string
+    buddgyCompactCta: string
+    buddgyBuilderOpening: string
+    buddgyChatSubtitle: string
+    buddgyBuilderBadge: string
+    buddgyEvalSectionTitle: string
+  }
+
+  sharedBudget: {
+    membersTitle: string
+    you: string
+    roleOwner: string
+    roleManager: string
+    roleViewer: string
+    syncOn: string
+    setAsDefaultPlan: string
+    addPartner: string
+    previewPlan: string
+    accept: string
+    decline: string
+    inviteTitle: string
+    inviteEmail: string
+    inviteEmailPlaceholder: string
+    roleView: string
+    roleManage: string
+    syncLabel: string
+    syncHelp: string
+    sendInvite: string
+    notFoundHint: string
+    inviteApp: string
+    foundAs: string
+    closeSheet: string
+    planSwitcherPersonal: string
+    planSwitcherCreateShared: string
+    defaultBadge: string
   }
 
   auth: {
@@ -612,6 +663,7 @@ export interface Dictionary {
 
   notifications: {
     title: string
+    markAllRead: string
     emptyState: string
     budgetAlertTitle: (category: string) => string
     budgetAlertBodyOver: (pct: number, category: string) => string
@@ -648,6 +700,7 @@ export interface Dictionary {
 
   ai: {
     headerTitle: string
+    headerSubtitle: string
     composerPlaceholder: string
     sendMessage: string
     emptyIntro: string

@@ -31,6 +31,8 @@ export interface IncomeSource {
   name: string
   amount: number
   currency: Currency
+  /** When set, income is attributed to this shared budget plan. */
+  sharedPlanId?: string | null
   isRecurring: boolean
   /** When recurring: monthly = per month, biweekly = per paycheck, weekly = per week. Defaults to monthly if omitted. */
   recurringFrequency?: IncomeRecurringFrequency
@@ -52,6 +54,8 @@ export interface Expense {
   recurringId?: string
   notes?: string
   tags?: string[]
+  /** When set, this expense belongs to a shared household budget plan (`shared_budget_plans.id`). */
+  sharedPlanId?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -66,6 +70,7 @@ export interface RecurringExpense {
   dayOfMonth: number
   isActive: boolean
   notes?: string
+  sharedPlanId?: string | null
 }
 
 export interface BudgetCategory {
@@ -94,6 +99,8 @@ export interface BudgetPlanCategory {
   name: string
   icon: string
   amount: number
+  /** Fiat for this row's amounts; omitted legacy rows use base currency. */
+  currency?: Currency
   subcategories: BudgetPlanSubcategory[]
 }
 
@@ -143,6 +150,7 @@ export interface Debt {
   isGold: boolean
   goldKarat?: GoldKarat
   notes?: string
+  sharedPlanId?: string | null
   createdAt: string
 }
 
@@ -156,6 +164,7 @@ export interface DebtPayment {
   amountInPrimary?: number
   rateAtEntry?: number
   notes?: string
+  sharedPlanId?: string | null
   createdAt: string
 }
 
@@ -253,6 +262,17 @@ export interface OnboardingState {
 export interface FinanceStore {
   profile: UserProfile
   settings: AppSettings
+  /**
+   * Active shared budget plan UUID for filtering transactions and dashboard scope.
+   * `null` = personal-only scope (transactions without `sharedPlanId`).
+   */
+  activeSharedBudgetId: string | null
+  /**
+   * Default shared plan UUID for tagging new transactions (from `user_profiles.default_budget_plan_id`).
+   */
+  defaultSharedBudgetPlanId: string | null
+  /** Free-text financial goals from Buddgy plan builder; synced in finance payload. */
+  financialGoalsNotes: string
   /** Expert onboarding progress, answers, and cached AI plans (synced in user_finance payload). */
   onboardingState: OnboardingState
   incomeSources: IncomeSource[]
@@ -297,9 +317,11 @@ export interface FinanceStore {
   /** Replace all budget rows (e.g. onboarding preset). */
   setBudgetCategories: (categories: BudgetCategory[]) => void
   addBudgetPlan: (name: string) => string
-  updateBudgetPlan: (planId: string, updates: Partial<Pick<BudgetPlan, 'name'>>) => void
+  updateBudgetPlan: (planId: string, updates: Partial<Pick<BudgetPlan, 'name' | 'categories'>>) => void
   deleteBudgetPlan: (planId: string) => void
   setActiveBudgetPlanId: (id: string | null) => void
+  setActiveSharedBudgetId: (id: string | null) => void
+  setDefaultSharedBudgetPlanId: (id: string | null) => void
   addPlanCategory: (planId: string, category: Omit<BudgetPlanCategory, 'id' | 'subcategories'> & { subcategories?: BudgetPlanSubcategory[] }) => string
   updatePlanCategory: (planId: string, categoryId: string, updates: Partial<Omit<BudgetPlanCategory, 'id' | 'subcategories'>> & { subcategories?: BudgetPlanSubcategory[] }) => void
   deletePlanCategory: (planId: string, categoryId: string) => void
@@ -316,6 +338,7 @@ export interface FinanceStore {
   deleteSavingsHolding: (id: string) => void
   updateSettings: (updates: Partial<AppSettings>) => void
   updateProfile: (updates: Partial<UserProfile>) => void
+  setFinancialGoalsNotes: (notes: string) => void
   setOnboardingState: (updates: Partial<OnboardingState> | ((prev: OnboardingState) => OnboardingState)) => void
   updateRates: (rates: Record<string, number>) => void
   updateGoldPrice: (price: number) => void

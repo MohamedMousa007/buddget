@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAiRuntimeConfig } from '@/lib/server/aiRuntimeConfig'
+import {
+  buildBuddgyBudgetPlannerSystemPrompt,
+  type BudgetPlannerContextPayload,
+} from '@/lib/ai/buddgyBudgetPlannerPrompt'
 
 function supabaseAuthConfigured(): boolean {
   return !!(
@@ -78,7 +82,12 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
-    const { contents, generationConfig } = body
+    const { contents, generationConfig, mode, budgetPlannerContext } = body as {
+      contents?: unknown[]
+      generationConfig?: Record<string, unknown>
+      mode?: string
+      budgetPlannerContext?: BudgetPlannerContextPayload
+    }
 
     if (!Array.isArray(contents) || contents.length === 0) {
       return NextResponse.json(
@@ -87,10 +96,20 @@ export async function POST(req: Request) {
       )
     }
 
+    const geminiBody: Record<string, unknown> = { contents }
+    if (generationConfig && typeof generationConfig === 'object') {
+      geminiBody.generationConfig = generationConfig
+    }
+
+    if (mode === 'budget-planner' && budgetPlannerContext && typeof budgetPlannerContext === 'object') {
+      const sys = buildBuddgyBudgetPlannerSystemPrompt(budgetPlannerContext)
+      geminiBody.systemInstruction = { parts: [{ text: sys }] }
+    }
+
     const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents, generationConfig }),
+      body: JSON.stringify(geminiBody),
     })
 
     const payload = await response.json()

@@ -3,10 +3,15 @@ import {
   isBuddgetServerThrottleMessage,
 } from '@/lib/ai/formatAiProxyError'
 
+import type { BudgetPlannerContextPayload } from '@/lib/ai/buddgyBudgetPlannerPrompt'
+
 /** POST body shape for `/api/ai` (Gemini proxy). */
 export interface GeminiProxyRequestBody {
   contents: unknown[]
   generationConfig?: Record<string, unknown>
+  /** Switches Gemini systemInstruction for budget planner / Buddgy builder flows. */
+  mode?: 'budget-planner'
+  budgetPlannerContext?: BudgetPlannerContextPayload
 }
 
 const DEFAULT_MAX_ATTEMPTS = 3

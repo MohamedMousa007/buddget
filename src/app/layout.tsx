@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     template: '%s | Buddget',
   },
   description:
-    'Track expenses, manage budgets, monitor debts and savings. Free personal finance tracker with AI assistant. Works on iPhone and Android. Supports AED, USD, EGP and 10+ currencies.',
+    'Track expenses, manage budgets, monitor debts and savings. Free personal finance tracker with Buddgy, your budget buddy. Works on iPhone and Android. Supports AED, USD, EGP and 10+ currencies.',
   keywords: [
     'budget planner',
     'expense tracker',
@@ -73,7 +73,7 @@ export const metadata: Metadata = {
     url: 'https://buddget.online',
     siteName: 'Buddget',
     title: 'Buddget — Personal Finance Tracker & Budget Planner',
-    description: 'Track expenses, manage budgets, monitor debts. Free with AI assistant.',
+    description: 'Track expenses, manage budgets, monitor debts. Free with Buddgy.',
     images: [
       {
         url: '/opengraph-image',
@@ -86,7 +86,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Buddget — Personal Finance Tracker',
-    description: 'Track expenses, manage budgets, monitor debts. Free with AI assistant.',
+    description: 'Track expenses, manage budgets, monitor debts. Free with Buddgy.',
     images: ['/opengraph-image'],
   },
   alternates: { canonical: 'https://buddget.online' },

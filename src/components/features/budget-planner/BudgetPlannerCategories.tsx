@@ -1,17 +1,21 @@
 'use client'
 
-import type { BudgetPlanCategory, BudgetPlanSubcategory } from '@/lib/store/types'
+import type { AppSettings, BudgetPlanCategory, BudgetPlanSubcategory } from '@/lib/store/types'
+import type { BudgetPlanEvalRating } from '@/lib/ai/budgetPlannerAi'
 import { useT } from '@/lib/i18n'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { BudgetPlannerCategoryRow } from '@/components/features/budget-planner/BudgetPlannerCategoryRow'
 import { BudgetPlannerAddCategoryMenu } from '@/components/features/budget-planner/BudgetPlannerAddCategoryMenu'
+import { BudgetPlannerEvalInline } from '@/components/features/budget-planner/BudgetPlannerEvalInline'
 
 export interface BudgetPlannerCategoriesLabels {
+  buddgyEvalSectionTitle: string
   categoriesTitle: string
   addCategory: string
   chooseCategoryTitle: string
   customCategoryOption: string
   addCustomCategory: string
+  editCategoryName: string
   subcategories: string
   addSubcategory: string
   amount: string
@@ -26,6 +30,13 @@ export interface BudgetPlannerCategoriesLabels {
 
 export interface BudgetPlannerCategoriesProps {
   categories: BudgetPlanCategory[]
+  settings: AppSettings
+  planEval: {
+    loading: boolean
+    error: string | null
+    rating: BudgetPlanEvalRating | null
+    explanation: string | null
+  }
   labels: BudgetPlannerCategoriesLabels
   onUpdateCategory: (
     categoryId: string,
@@ -48,6 +59,8 @@ export interface BudgetPlannerCategoriesProps {
 /** List of plan categories + add menu (predefined or custom). */
 export function BudgetPlannerCategories({
   categories,
+  settings,
+  planEval,
   labels,
   onUpdateCategory,
   onDeleteCategory,
@@ -69,6 +82,9 @@ export function BudgetPlannerCategories({
     subcategoryNamePlaceholder: labels.subcategoryNamePlaceholder,
     amountPlaceholder: labels.amountPlaceholder,
     emojiPickerLabel: labels.emojiPickerLabel,
+    chooseCategoryTitle: labels.chooseCategoryTitle,
+    customCategoryOption: labels.customCategoryOption,
+    editCategoryName: labels.editCategoryName,
   }
 
   const menuLabels = {
@@ -83,10 +99,21 @@ export function BudgetPlannerCategories({
 
   return (
     <div className="bg-[#111118] border border-[#2A2A38] rounded-2xl p-6 space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
-          {labels.categoriesTitle}
-        </h2>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 flex-1 space-y-2">
+          <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
+            {labels.categoriesTitle}
+          </h2>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
+            {labels.buddgyEvalSectionTitle}
+          </p>
+          <BudgetPlannerEvalInline
+            loading={planEval.loading}
+            error={planEval.error}
+            rating={planEval.rating}
+            explanation={planEval.explanation}
+          />
+        </div>
         <BudgetPlannerAddCategoryMenu
           categories={categories}
           onSelectPreset={(p) => onAddPresetCategory(p.icon, p.label)}
@@ -107,6 +134,8 @@ export function BudgetPlannerCategories({
             <BudgetPlannerCategoryRow
               key={c.id}
               category={c}
+              planCategories={categories}
+              settings={settings}
               labels={rowLabels}
               onUpdateCategory={(u) => onUpdateCategory(c.id, u)}
               onDeleteCategory={() => onDeleteCategory(c.id)}

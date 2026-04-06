@@ -66,6 +66,11 @@ export function categoryNameAlreadyInPlan(name: string, categories: { name: stri
   return categories.some((c) => c.name.trim().toLowerCase() === key)
 }
 
+/** Semicolon-separated list for Buddgy / AI prompts. */
+export function predefinedBudgetCategoryLabelsForPrompt(): string {
+  return PREDEFINED_BUDGET_CATEGORIES.map((p) => `${p.icon} ${p.label}`).join('; ')
+}
+
 export const EMOJI_PICKER_GROUPS: { title: string; emojis: string[] }[] = [
   { title: 'Home & Bills', emojis: ['🏠', '💡', '💧', '📱', '🔑'] },
   { title: 'Food', emojis: ['🍕', '🛒', '☕', '🍔', '🥗'] },

@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import type { BudgetPlannerChatMessage } from '@/hooks/useBudgetPlannerChat'
 import type { BudgetPlan } from '@/lib/store/types'
 import type { AIActionItem } from '@/lib/ai/gemini'
+import { AIChatTypingIndicator } from '@/components/features/ai-chat/AIChatTypingIndicator'
 
 export interface BudgetPlannerChatPanelProps {
   plan: BudgetPlan | null
@@ -16,8 +17,11 @@ export interface BudgetPlannerChatPanelProps {
   loading: boolean
   onApply: (messageId: string) => void
   scrollAnchorRef: RefObject<HTMLDivElement | null>
+  builderActive?: boolean
   labels: {
     title: string
+    subtitle: string
+    builderBadge: string
     placeholder: string
     send: string
     apply: string
@@ -27,14 +31,14 @@ export interface BudgetPlannerChatPanelProps {
 
 function countApplyable(actions: AIActionItem[] | undefined, planId: string): number {
   if (!actions) return 0
-  return actions.filter(
-    (a) =>
-      a.action === 'update_budget_plan_row' &&
-      String(a.data.planId ?? a.data.plan_id ?? '') === planId
-  ).length
+  return actions.filter((a) => {
+    const pid = String(a.data.planId ?? a.data.plan_id ?? '')
+    if (pid !== planId) return false
+    return a.action === 'update_budget_plan_row' || a.action === 'replace_budget_plan'
+  }).length
 }
 
-/** Inline AI chat with Apply for plan row updates. */
+/** Buddgy chat with Apply for plan row updates or full plan replace. */
 export function BudgetPlannerChatPanel({
   plan,
   messages,
@@ -44,15 +48,22 @@ export function BudgetPlannerChatPanel({
   loading,
   onApply,
   scrollAnchorRef,
+  builderActive = false,
   labels,
 }: BudgetPlannerChatPanelProps) {
   return (
-    <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[#111118] flex flex-col min-h-[320px] max-h-[480px]">
-      <div className="flex items-center gap-2 px-5 pt-4 pb-2 border-b border-[var(--color-brand-border)]/60">
-        <MessageSquare className="h-4 w-4 text-[var(--color-brand-red)]" />
-        <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
-          {labels.title}
-        </h2>
+    <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[#111118] flex flex-col min-h-[320px] max-h-[480px] font-sans">
+      <div className="flex flex-col gap-0.5 px-5 pt-4 pb-2 border-b border-[var(--color-brand-border)]/60">
+        <div className="flex items-center gap-2">
+          <MessageSquare className="h-4 w-4 text-[var(--color-brand-red)] shrink-0" />
+          <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
+            {labels.title}
+          </h2>
+        </div>
+        <p className="text-xs text-[var(--color-brand-text-muted)] ps-6">{labels.subtitle}</p>
+        {builderActive ? (
+          <p className="text-[11px] text-[var(--color-brand-amber)] ps-6 font-medium">{labels.builderBadge}</p>
+        ) : null}
       </div>
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
         {!plan ? (
@@ -70,7 +81,7 @@ export function BudgetPlannerChatPanel({
                     : 'bg-[var(--color-brand-elevated)] text-white'
                 )}
               >
-                <p className="whitespace-pre-line">{m.content}</p>
+                <p className="whitespace-pre-line font-sans">{m.content}</p>
                 {m.role === 'assistant' && plan && m.aiResponse ? (
                   (() => {
                     const n = countApplyable(m.aiResponse.actions, plan.id)
@@ -96,6 +107,11 @@ export function BudgetPlannerChatPanel({
             </div>
           ))
         )}
+        {loading ? (
+          <div className="flex justify-start ps-1">
+            <AIChatTypingIndicator />
+          </div>
+        ) : null}
         <div ref={scrollAnchorRef} />
       </div>
       <div className="p-3 border-t border-[var(--color-brand-border)]/60 flex gap-2">
