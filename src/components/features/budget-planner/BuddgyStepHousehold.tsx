@@ -3,6 +3,7 @@
 import { useRef } from 'react'
 import type { BudgetHousehold } from '@/lib/store/types'
 import type { BuddgyFlowApi } from '@/hooks/useBuddgyFlow'
+import { BuddgyStepBack } from '@/components/features/budget-planner/BuddgyStepBack'
 
 const pills: { id: BudgetHousehold; label: string }[] = [
   { id: 'solo', label: 'Just me' },
@@ -17,7 +18,7 @@ export function BuddgyStepHousehold({ flow }: { flow: BuddgyFlowApi }) {
     if (timer.current) globalThis.clearTimeout(timer.current)
     flow.saveHousehold(h)
     timer.current = globalThis.setTimeout(() => {
-      flow.setStep('rent')
+      flow.advanceFromStep('household')
     }, 400)
   }
 
@@ -43,6 +44,7 @@ export function BuddgyStepHousehold({ flow }: { flow: BuddgyFlowApi }) {
           )
         })}
       </div>
+      <BuddgyStepBack flow={flow} />
     </div>
   )
 }

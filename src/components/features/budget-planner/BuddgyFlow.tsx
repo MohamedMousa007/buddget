@@ -11,7 +11,6 @@ import { BuddgyStepDewa } from '@/components/features/budget-planner/BuddgyStepD
 import { BuddgyStepTransportMode } from '@/components/features/budget-planner/BuddgyStepTransportMode'
 import { BuddgyStepTransportDetail } from '@/components/features/budget-planner/BuddgyStepTransportDetail'
 import { BuddgyStepSavings } from '@/components/features/budget-planner/BuddgyStepSavings'
-import { BuddgyStepAiFill } from '@/components/features/budget-planner/BuddgyStepAiFill'
 import { BuddgyStepSummary } from '@/components/features/budget-planner/BuddgyStepSummary'
 
 const slide = {
@@ -25,15 +24,18 @@ export interface BuddgyFlowProps {
   planId: string
   mode?: UseBuddgyFlowOptions['mode']
   onClose: () => void
+  /** Clears guided state and remounts flow at step 1 (summary actions). */
+  onRestartWizard?: () => void
 }
 
 /**
  * Inline Buddgy guided budget setup: step cards with slide transitions and store writes.
  */
-export function BuddgyFlow({ planId, mode = 'resume', onClose }: BuddgyFlowProps) {
+export function BuddgyFlow({ planId, mode = 'resume', onClose, onRestartWizard }: BuddgyFlowProps) {
   const flow = useBuddgyFlow(planId, {
     mode,
     onFlowComplete: onClose,
+    onRestartWizard,
   })
 
   return (
@@ -59,8 +61,6 @@ export function BuddgyFlow({ planId, mode = 'resume', onClose }: BuddgyFlowProps
               <BuddgyStepTransportDetail flow={flow} />
             : flow.step === 'savings' ?
               <BuddgyStepSavings flow={flow} />
-            : flow.step === 'aiFill' ?
-              <BuddgyStepAiFill flow={flow} />
             : flow.step === 'summary' ?
               <BuddgyStepSummary flow={flow} />
             : null}

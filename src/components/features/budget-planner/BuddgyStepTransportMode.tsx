@@ -2,6 +2,7 @@
 
 import { useRef } from 'react'
 import type { BuddgyFlowApi } from '@/hooks/useBuddgyFlow'
+import { BuddgyStepBack } from '@/components/features/budget-planner/BuddgyStepBack'
 
 const modes = [
   { id: 'car' as const, label: '🚗 Car' },
@@ -15,15 +16,11 @@ export function BuddgyStepTransportMode({ flow }: { flow: BuddgyFlowApi }) {
 
   const onPick = (id: (typeof modes)[number]['id']) => {
     flow.setTransportMode(id)
-    if (id === 'walk') {
-      if (timer.current) globalThis.clearTimeout(timer.current)
-      timer.current = globalThis.setTimeout(() => {
-        flow.commitWalkTransport()
-        flow.setStep('savings')
-      }, 400)
-      return
-    }
-    flow.setStep('transportDetail')
+    if (timer.current) globalThis.clearTimeout(timer.current)
+    timer.current = globalThis.setTimeout(() => {
+      if (id === 'walk') flow.commitWalkTransport()
+      flow.advanceFromStep('transportMode', { transportModePicked: id })
+    }, 400)
   }
 
   return (
@@ -48,6 +45,7 @@ export function BuddgyStepTransportMode({ flow }: { flow: BuddgyFlowApi }) {
           )
         })}
       </div>
+      <BuddgyStepBack flow={flow} />
     </div>
   )
 }

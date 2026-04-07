@@ -3,23 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import type { BudgetHousehold, BudgetPlan, BudgetPlanCategory, Currency, IncomeSource } from '@/lib/store/types'
+import type { BudgetHousehold, BudgetPlan, Currency, IncomeSource } from '@/lib/store/types'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { calculateMonthlyIncome } from '@/lib/utils/calculations'
-import { planCategoryCurrency } from '@/lib/budget/budgetPlans'
-import {
-  findCategoryByName,
-  remainingForAiSlice,
-  plannedExcludingSavings,
-  cityCountryFromProfile,
-  formatMoneyAmount,
-} from '@/lib/budget/buddgyFlowHelpers'
-import { fetchBuddgyFillCategories } from '@/lib/budget/buddgyFillAi'
+import { findCategoryByName, plannedExcludingSavings } from '@/lib/budget/buddgyFlowHelpers'
 import { pushProfileFieldsToSupabase } from '@/lib/profile/pushProfileFieldsToSupabase'
-
-function newId(): string {
-  return `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
-}
 
 export type BuddgyFlowStep =
   | 'income'
@@ -29,7 +17,6 @@ export type BuddgyFlowStep =
   | 'transportMode'
   | 'transportDetail'
   | 'savings'
-  | 'aiFill'
   | 'summary'
 
 function hasDewaSub(plan: BudgetPlan): boolean {
@@ -52,7 +39,6 @@ function deriveResumeStep(plan: BudgetPlan | null, monthlyIncome: number): Buddg
     return 'transportDetail'
   }
   if (!findCategoryByName(plan, 'Savings')) return 'savings'
-  if (!plan.buddgyFlow?.aiFillAccepted) return 'aiFill'
   return 'summary'
 }
 
@@ -65,15 +51,48 @@ function stepToProgress(s: BuddgyFlowStep): number {
     'transportMode',
     'transportDetail',
     'savings',
-    'aiFill',
     'summary',
   ]
   const i = order.indexOf(s)
   return Math.round(((i + 1) / order.length) * 100)
 }
 
+/** Linear wizard steps for this plan (excludes summary). */
+export function buildBuddgyFlowOrder(plan: BudgetPlan | null): BuddgyFlowStep[] {
+  const o: BuddgyFlowStep[] = ['income', 'household', 'rent']
+  const rent = plan && findCategoryByName(plan, 'Rent')
+  const needsDewa = Boolean(rent && plan.buddgyFlow?.rentIncludesUtilities === false)
+  if (needsDewa) o.push('dewa')
+  o.push('transportMode')
+  const tm = plan?.buddgyFlow?.transportMode
+  if (tm && tm !== 'walk') o.push('transportDetail')
+  o.push('savings')
+  return o
+}
+
+export function getPreviousBuddgyStep(step: BuddgyFlowStep, plan: BudgetPlan | null): BuddgyFlowStep | null {
+  if (step === 'summary') {
+    const order = buildBuddgyFlowOrder(plan)
+    return order[order.length - 1] ?? 'savings'
+  }
+  const order = buildBuddgyFlowOrder(plan)
+  const i = order.indexOf(step)
+  if (i <= 0) return null
+  return order[i - 1] ?? null
+}
+
+/** Map transportDetail to the "transport" dot index (transportMode position). */
+export function buddgyDotIndexForStep(step: BuddgyFlowStep, plan: BudgetPlan | null): number {
+  const order = buildBuddgyFlowOrder(plan)
+  const key = step === 'transportDetail' ? 'transportMode' : step
+  const idx = order.indexOf(key as BuddgyFlowStep)
+  return idx >= 0 ? idx : 0
+}
+
 export type UseBuddgyFlowOptions = {
   onFlowComplete?: () => void
+  /** Parent resets plan + remounts flow (e.g. "Rebuild with Buddgy" / summary Adjust). */
+  onRestartWizard?: () => void
   /** `restart` starts at income; `resume` continues from store. */
   mode?: 'resume' | 'restart'
 }
@@ -82,12 +101,10 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
   const {
     budgetPlans,
     incomeSources,
-    profile,
     settings,
     exchangeRates,
     updateBudgetPlan,
     updateBudgetMeta,
-    replaceBudgetPlanCategories,
     addPlanCategory,
     updatePlanCategory,
     addPlanSubcategory,
@@ -98,12 +115,10 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
     useShallow((s) => ({
       budgetPlans: s.budgetPlans,
       incomeSources: s.incomeSources,
-      profile: s.profile,
       settings: s.settings,
       exchangeRates: s.exchangeRates,
       updateBudgetPlan: s.updateBudgetPlan,
       updateBudgetMeta: s.updateBudgetMeta,
-      replaceBudgetPlanCategories: s.replaceBudgetPlanCategories,
       addPlanCategory: s.addPlanCategory,
       updatePlanCategory: s.updatePlanCategory,
       addPlanSubcategory: s.addPlanSubcategory,
@@ -134,7 +149,8 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
   const [step, setStep] = useState<BuddgyFlowStep>('income')
   const [showFlash, setShowFlash] = useState(false)
   const stepInitDone = useRef(false)
-  const aiPrefetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  /** After jumping from summary to edit a step, next forward navigation returns here. */
+  const returnToSummaryAfterEditRef = useRef(false)
 
   const [incomeAmount, setIncomeAmount] = useState('')
   const [incomeCurrency, setIncomeCurrency] = useState<Currency>(settings.baseCurrency)
@@ -146,11 +162,8 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
   const [transportCarMonthly, setTransportCarMonthly] = useState('')
   const [transportPublicDaily, setTransportPublicDaily] = useState('')
   const [savingsAmount, setSavingsAmount] = useState(0)
-  const [aiRows, setAiRows] = useState<
-    Array<{ name: string; emoji: string; amount: number; currency: Currency }>
-  >([])
-  const [aiLoading, setAiLoading] = useState(false)
-  const [aiAdjustAll, setAiAdjustAll] = useState(false)
+  const [savingsNextLoading, setSavingsNextLoading] = useState(false)
+  const [savingsMode, setSavingsMode] = useState<'maximum' | 'custom'>('custom')
   const savingsInitDone = useRef(false)
 
   useEffect(() => {
@@ -174,7 +187,6 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
     if (plan.buddgyFlow?.transportPublicDaily !== undefined) {
       setTransportPublicDaily(String(plan.buddgyFlow.transportPublicDaily))
     }
-    if (plan.buddgyFlow?.aiSuggestions?.length) setAiRows(plan.buddgyFlow.aiSuggestions)
   }, [plan, incomeSources, settings.baseCurrency])
 
   useEffect(() => {
@@ -380,25 +392,6 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
     triggerFlash()
   }, [planId, plan, savingsAmount, settings, addPlanCategory, updatePlanCategory, updateBudgetMeta, triggerFlash])
 
-  const applyAiRows = useCallback(() => {
-    if (!planId || !plan) return
-    const existingNames = new Set(plan.categories.map((c) => c.name.toLowerCase()))
-    const additions = aiRows.filter((r) => !existingNames.has(r.name.toLowerCase()))
-    const newCats: BudgetPlanCategory[] = additions.map((r) => ({
-      id: newId(),
-      name: r.name,
-      icon: r.emoji,
-      amount: r.amount,
-      currency: r.currency,
-      subcategories: [],
-    }))
-    replaceBudgetPlanCategories(planId, [...plan.categories, ...newCats])
-    updateBudgetMeta(planId, {
-      buddgyFlow: { ...plan.buddgyFlow, aiSuggestions: aiRows, aiFillAccepted: true },
-    })
-    triggerFlash()
-  }, [planId, plan, aiRows, replaceBudgetPlanCategories, updateBudgetMeta, triggerFlash])
-
   const finishFlow = useCallback(() => {
     if (planId && plan) {
       updateBudgetPlan(planId, { buddgyFlow: null, buddgyGuidedComplete: true })
@@ -406,68 +399,72 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
     options?.onFlowComplete?.()
   }, [planId, plan, updateBudgetPlan, options])
 
-  const loadAiFillRows = useCallback(async () => {
-    if (!planId) return
-    const latest =
-      useFinanceStore.getState().budgetPlans.find((p) => p.id === planId) ?? plan
-    if (!latest) return
-    const h = household ?? latest.household
-    if (!h) return
-    setAiLoading(true)
-    try {
-      const inc = calculateMonthlyIncome(incomeSources, settings.baseCurrency, exchangeRates)
-      const rem = remainingForAiSlice(inc, latest, settings.baseCurrency, exchangeRates, savingsAmount)
-      const { city, country } = cityCountryFromProfile(profile)
-      const lines = latest.categories
-        .map((c) =>
-          `${c.name}: ${formatMoneyAmount(c.amount, planCategoryCurrency(c, settings.baseCurrency))}`
-        )
-        .join('\n')
-      const rows = await fetchBuddgyFillCategories({
-        city,
-        country,
-        alreadySetLines: lines || '(none)',
-        remainingBudget: rem,
-        currency: settings.baseCurrency,
-        household: h,
-      })
-      setAiRows(rows)
-    } finally {
-      setAiLoading(false)
-    }
-  }, [
-    planId,
-    plan,
-    household,
-    savingsAmount,
-    incomeSources,
-    settings.baseCurrency,
-    exchangeRates,
-    profile,
-  ])
-
   const progress = useMemo(() => stepToProgress(step), [step])
 
-  useEffect(() => {
-    const h = household ?? plan?.household
-    if (step !== 'savings' || !plan || !h) {
-      if (aiPrefetchTimer.current) {
-        globalThis.clearTimeout(aiPrefetchTimer.current)
-        aiPrefetchTimer.current = null
+  const advanceFromStep = useCallback(
+    (
+      from: BuddgyFlowStep,
+      ctx?: { transportModePicked?: 'car' | 'public' | 'walk' | 'mix' }
+    ) => {
+      if (returnToSummaryAfterEditRef.current) {
+        returnToSummaryAfterEditRef.current = false
+        setStep('summary')
+        return
       }
-      return
-    }
-    if (aiPrefetchTimer.current) globalThis.clearTimeout(aiPrefetchTimer.current)
-    aiPrefetchTimer.current = globalThis.setTimeout(() => {
-      void loadAiFillRows()
-    }, 500)
-    return () => {
-      if (aiPrefetchTimer.current) {
-        globalThis.clearTimeout(aiPrefetchTimer.current)
-        aiPrefetchTimer.current = null
+      if (from === 'income') setStep('household')
+      else if (from === 'household') setStep('rent')
+      else if (from === 'rent') {
+        if (!rentIncludes) setStep('dewa')
+        else setStep('transportMode')
+      } else if (from === 'dewa') setStep('transportMode')
+      else if (from === 'transportMode') {
+        const m = ctx?.transportModePicked ?? transportMode
+        if (m && m !== 'walk') setStep('transportDetail')
+        else setStep('savings')
+      } else if (from === 'transportDetail') setStep('savings')
+      else if (from === 'savings') setStep('summary')
+    },
+    [rentIncludes, transportMode]
+  )
+
+  const goBack = useCallback(() => {
+    returnToSummaryAfterEditRef.current = false
+    const latest = useFinanceStore.getState().budgetPlans.find((p) => p.id === planId) ?? plan
+    const prev = getPreviousBuddgyStep(step, latest)
+    if (prev) setStep(prev)
+  }, [step, planId, plan])
+
+  const prepareJumpFromSummary = useCallback(() => {
+    returnToSummaryAfterEditRef.current = true
+  }, [])
+
+  const navigateToDotFromSummary = useCallback(
+    (dotIndex: number) => {
+      const latest = useFinanceStore.getState().budgetPlans.find((p) => p.id === planId) ?? plan
+      const order = buildBuddgyFlowOrder(latest)
+      const target = order[dotIndex]
+      if (target) {
+        prepareJumpFromSummary()
+        setStep(target)
       }
+    },
+    [planId, plan, prepareJumpFromSummary]
+  )
+
+  const restartGuidedWizard = useCallback(() => {
+    options?.onRestartWizard?.()
+  }, [options])
+
+  const onSavingsNext = useCallback(async () => {
+    setSavingsNextLoading(true)
+    try {
+      await new Promise((r) => globalThis.setTimeout(r, 350))
+      saveSavings()
+      advanceFromStep('savings')
+    } finally {
+      setSavingsNextLoading(false)
     }
-  }, [step, plan, household, savingsAmount, loadAiFillRows])
+  }, [saveSavings, advanceFromStep])
 
   const maxSavings = useMemo(() => {
     if (!plan) return 0
@@ -513,13 +510,10 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
     setTransportPublicDaily,
     savingsAmount,
     setSavingsAmount,
-    aiRows,
-    setAiRows,
-    aiLoading,
-    aiAdjustAll,
-    setAiAdjustAll,
+    savingsNextLoading,
+    savingsMode,
+    setSavingsMode,
     settings,
-    profile,
     exchangeRates,
     incomeSources,
     ensureIncome,
@@ -529,10 +523,16 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
     saveTransportFromDetail,
     commitWalkTransport,
     saveSavings,
-    applyAiRows,
     finishFlow,
     triggerFlash,
-    loadAiFillRows,
+    advanceFromStep,
+    goBack,
+    prepareJumpFromSummary,
+    navigateToDotFromSummary,
+    restartGuidedWizard,
+    onSavingsNext,
+    buildBuddgyFlowOrder,
+    buddgyDotIndexForStep,
   }
 }
 

@@ -119,6 +119,12 @@ export function BudgetPlannerCategories({
     emojiPickerLabel: labels.emojiPickerLabel,
   }
 
+  const restartGuidedWizardInPlace = useCallback(() => {
+    updateBudgetPlan(planId, { buddgyGuidedComplete: false, buddgyFlow: null })
+    setFlowKey((k) => k + 1)
+    setFlowMode('restart')
+  }, [updateBudgetPlan, planId])
+
   const startBuddgy = useCallback(
     (mode: 'resume' | 'restart') => {
       if (supabaseConfigured && !user) {
@@ -171,6 +177,7 @@ export function BudgetPlannerCategories({
           planId={planId}
           mode={flowMode}
           onClose={() => setFlowOpen(false)}
+          onRestartWizard={restartGuidedWizardInPlace}
         />
       : categories.length === 0 ?
         <div className="space-y-3 py-6">

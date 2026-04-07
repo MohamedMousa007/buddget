@@ -1,6 +1,7 @@
 'use client'
 
 import type { BuddgyFlowApi } from '@/hooks/useBuddgyFlow'
+import { BuddgyStepBack } from '@/components/features/budget-planner/BuddgyStepBack'
 
 export function BuddgyStepTransportDetail({ flow }: { flow: BuddgyFlowApi }) {
   const mode = flow.transportMode
@@ -41,11 +42,12 @@ export function BuddgyStepTransportDetail({ flow }: { flow: BuddgyFlowApi }) {
           placeholder="0"
         />
       }
+      <BuddgyStepBack flow={flow} />
       <button
         type="button"
         onClick={() => {
           flow.saveTransportFromDetail()
-          flow.setStep('savings')
+          flow.advanceFromStep('transportDetail')
         }}
         className="cursor-pointer rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] px-5 py-2.5 text-sm font-semibold text-white"
       >

@@ -2,6 +2,7 @@
 
 import { buildFiatCurrencyPickerOptions } from '@/lib/utils/currencyPickerOptions'
 import type { BuddgyFlowApi } from '@/hooks/useBuddgyFlow'
+import { BuddgyStepBack } from '@/components/features/budget-planner/BuddgyStepBack'
 
 export function BuddgyStepDewa({ flow }: { flow: BuddgyFlowApi }) {
   const opts = buildFiatCurrencyPickerOptions(flow.settings)
@@ -30,11 +31,12 @@ export function BuddgyStepDewa({ flow }: { flow: BuddgyFlowApi }) {
           placeholder="0"
         />
       </div>
+      <BuddgyStepBack flow={flow} />
       <button
         type="button"
         onClick={() => {
           flow.saveDewa()
-          flow.setStep('transportMode')
+          flow.advanceFromStep('dewa')
         }}
         className="cursor-pointer rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] px-5 py-2.5 text-sm font-semibold text-white"
       >
