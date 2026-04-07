@@ -44,7 +44,9 @@ export function BuddgyStepHousehold({ flow }: { flow: BuddgyFlowApi }) {
           )
         })}
       </div>
-      <BuddgyStepBack flow={flow} />
+      <div className="pt-1">
+        <BuddgyStepBack flow={flow} />
+      </div>
     </div>
   )
 }

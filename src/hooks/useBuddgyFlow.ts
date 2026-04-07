@@ -165,6 +165,8 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
   const [savingsNextLoading, setSavingsNextLoading] = useState(false)
   const [savingsMode, setSavingsMode] = useState<'maximum' | 'custom'>('custom')
   const savingsInitDone = useRef(false)
+  /** How many wizard dots to show (progressive reveal; summary = full row). */
+  const [visitedDotCount, setVisitedDotCount] = useState(0)
 
   useEffect(() => {
     if (!plan) return
@@ -480,6 +482,17 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
     setSavingsAmount(Math.round(maxSavings * 0.52))
   }, [plan, step, maxSavings])
 
+  useEffect(() => {
+    if (!plan) return
+    const order = buildBuddgyFlowOrder(plan)
+    if (step === 'summary') {
+      setVisitedDotCount(order.length)
+      return
+    }
+    const idx = order.indexOf(step)
+    if (idx >= 0) setVisitedDotCount((prev) => Math.max(prev, idx + 1))
+  }, [step, plan])
+
   return {
     step,
     setStep,
@@ -533,6 +546,7 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
     onSavingsNext,
     buildBuddgyFlowOrder,
     buddgyDotIndexForStep,
+    visitedDotCount,
   }
 }
 

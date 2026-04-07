@@ -41,7 +41,7 @@ export function PlanSwitcher({
     : labels.personal
 
   return (
-    <div className="relative w-full sm:w-auto">
+    <div className="relative z-0 w-full sm:w-auto isolate">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -64,7 +64,7 @@ export function PlanSwitcher({
       </button>
       {open ?
         <ul
-          className="absolute z-30 mt-1 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] py-1 shadow-lg"
+          className="absolute left-0 right-0 top-full z-50 mt-1 max-h-[min(70vh,24rem)] w-full overflow-y-auto rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] py-1 shadow-lg"
           role="listbox"
         >
           <li>

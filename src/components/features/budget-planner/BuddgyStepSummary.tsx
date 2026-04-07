@@ -7,31 +7,11 @@ import {
   totalExpenseBudgetFromPlan,
 } from '@/lib/budget/budgetPlans'
 import { findCategoryByName } from '@/lib/budget/buddgyFlowHelpers'
-import type { BuddgyFlowApi, BuddgyFlowStep } from '@/hooks/useBuddgyFlow'
+import type { BuddgyFlowApi } from '@/hooks/useBuddgyFlow'
 import { BuddgyStepBack } from '@/components/features/budget-planner/BuddgyStepBack'
 
 function fmt(n: number, currency: string) {
   return `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(n)} ${currency}`
-}
-
-function dotLabel(step: BuddgyFlowStep): string {
-  switch (step) {
-    case 'income':
-      return 'Income'
-    case 'household':
-      return 'Household'
-    case 'rent':
-      return 'Rent'
-    case 'dewa':
-      return 'DEWA'
-    case 'transportMode':
-    case 'transportDetail':
-      return 'Transport'
-    case 'savings':
-      return 'Savings'
-    default:
-      return ''
-  }
 }
 
 export function BuddgyStepSummary({ flow }: { flow: BuddgyFlowApi }) {
@@ -46,8 +26,6 @@ export function BuddgyStepSummary({ flow }: { flow: BuddgyFlowApi }) {
   const rate = income > 0 ? Math.round((savingsAmt / income) * 100) : 0
 
   const hasCategoryAmounts = expenses > 0.0001 || savingsAmt > 0.0001
-  const order = flow.buildBuddgyFlowOrder(plan)
-  const activeDotIndex = order.length > 0 ? order.length - 1 : 0
 
   return (
     <div className="space-y-5">
@@ -92,28 +70,7 @@ export function BuddgyStepSummary({ flow }: { flow: BuddgyFlowApi }) {
         </div>
       }
 
-      <div className="flex flex-wrap items-center justify-center gap-2 pt-1" role="tablist" aria-label="Wizard steps">
-        {order.map((s, i) => {
-          const active = i === activeDotIndex
-          return (
-            <button
-              key={`${s}-${i}`}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              title={dotLabel(s)}
-              onClick={() => flow.navigateToDotFromSummary(i)}
-              className={
-                active ?
-                  'h-2.5 w-2.5 rounded-full bg-[var(--color-brand-red)] ring-2 ring-[var(--color-brand-red)]/40'
-                : 'h-2 w-2 rounded-full bg-[#3A3A48] hover:bg-[#5A5A72]'
-              }
-            />
-          )
-        })}
-      </div>
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
         <button
           type="button"
           onClick={() => flow.restartGuidedWizard()}
@@ -128,8 +85,8 @@ export function BuddgyStepSummary({ flow }: { flow: BuddgyFlowApi }) {
         >
           Done
         </button>
+        <BuddgyStepBack flow={flow} className="sm:ms-1" />
       </div>
-      <BuddgyStepBack flow={flow} />
     </div>
   )
 }

@@ -74,20 +74,22 @@ export function BuddgyStepSavings({ flow }: { flow: BuddgyFlowApi }) {
           Custom
         </button>
       </div>
-      <BuddgyStepBack flow={flow} />
-      <button
-        type="button"
-        disabled={savingsNextLoading}
-        onClick={() => void flow.onSavingsNext()}
-        className="cursor-pointer rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
-      >
-        {savingsNextLoading ?
-          <>
-            <Loader2 className="h-4 w-4 animate-spin shrink-0" />
-            <span>Loading...</span>
-          </>
-        : 'Next →'}
-      </button>
+      <div className="flex flex-col-reverse gap-4 sm:flex-row sm:flex-wrap sm:items-center">
+        <BuddgyStepBack flow={flow} />
+        <button
+          type="button"
+          disabled={savingsNextLoading}
+          onClick={() => void flow.onSavingsNext()}
+          className="cursor-pointer rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+        >
+          {savingsNextLoading ?
+            <>
+              <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+              <span>Loading...</span>
+            </>
+          : 'Next →'}
+        </button>
+      </div>
     </div>
   )
 }

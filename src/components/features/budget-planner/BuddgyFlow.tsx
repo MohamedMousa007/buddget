@@ -12,6 +12,7 @@ import { BuddgyStepTransportMode } from '@/components/features/budget-planner/Bu
 import { BuddgyStepTransportDetail } from '@/components/features/budget-planner/BuddgyStepTransportDetail'
 import { BuddgyStepSavings } from '@/components/features/budget-planner/BuddgyStepSavings'
 import { BuddgyStepSummary } from '@/components/features/budget-planner/BuddgyStepSummary'
+import { BuddgyWizardDots } from '@/components/features/budget-planner/BuddgyWizardDots'
 
 const slide = {
   initial: { x: 100, opacity: 0 },
@@ -43,6 +44,9 @@ export function BuddgyFlow({ planId, mode = 'resume', onClose, onRestartWizard }
       <BuddgySaveFlash show={flow.showFlash} />
       <div className="p-1">
         <BuddgyProgressBar progress={flow.progress} />
+      </div>
+      <div className="px-4 pt-1">
+        <BuddgyWizardDots flow={flow} />
       </div>
       <div className="px-4 pb-5 pt-3">
         <AnimatePresence mode="wait">
