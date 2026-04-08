@@ -6,8 +6,10 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { BudgetHousehold, BudgetPlan, Currency, IncomeSource } from '@/lib/store/types'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { calculateMonthlyIncome } from '@/lib/utils/calculations'
+import { effectivePlanCategoryAmountInBase } from '@/lib/budget/budgetPlans'
 import { findCategoryByName, plannedExcludingSavings } from '@/lib/budget/buddgyFlowHelpers'
 import { pushProfileFieldsToSupabase } from '@/lib/profile/pushProfileFieldsToSupabase'
+import { parseBuddgyAmountInput } from '@/lib/budget/buddgyAmountInput'
 
 export type BuddgyFlowStep =
   | 'income'
@@ -79,14 +81,6 @@ export function getPreviousBuddgyStep(step: BuddgyFlowStep, plan: BudgetPlan | n
   const i = order.indexOf(step)
   if (i <= 0) return null
   return order[i - 1] ?? null
-}
-
-/** Map transportDetail to the "transport" dot index (transportMode position). */
-export function buddgyDotIndexForStep(step: BuddgyFlowStep, plan: BudgetPlan | null): number {
-  const order = buildBuddgyFlowOrder(plan)
-  const key = step === 'transportDetail' ? 'transportMode' : step
-  const idx = order.indexOf(key as BuddgyFlowStep)
-  return idx >= 0 ? idx : 0
 }
 
 export type UseBuddgyFlowOptions = {
@@ -164,36 +158,92 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
   const [savingsAmount, setSavingsAmount] = useState(0)
   const [savingsNextLoading, setSavingsNextLoading] = useState(false)
   const [savingsMode, setSavingsMode] = useState<'maximum' | 'custom'>('custom')
-  const savingsInitDone = useRef(false)
-  /** How many wizard dots to show (progressive reveal; summary = full row). */
-  const [visitedDotCount, setVisitedDotCount] = useState(0)
+  const hydrateFieldsForStep = useCallback(
+    (target: BuddgyFlowStep) => {
+      if (target === 'summary') return
+      const st = useFinanceStore.getState()
+      const p = planId ? st.budgetPlans.find((x) => x.id === planId) ?? null : null
+      const base = st.settings.baseCurrency
+      const rates = st.exchangeRates
+      const incSrc = st.incomeSources[0]
+
+      if (target === 'income') {
+        if (incSrc && incSrc.amount > 0) {
+          setIncomeAmount(String(incSrc.amount))
+          setIncomeCurrency(clampFiatToAllowed(st.settings, incSrc.currency))
+        } else {
+          setIncomeAmount('')
+          setIncomeCurrency(clampFiatToAllowed(st.settings, base))
+        }
+        return
+      }
+
+      if (!p) return
+
+      if (target === 'household') {
+        if (p.household) setHousehold(p.household)
+        return
+      }
+
+      if (target === 'rent') {
+        const rent = findCategoryByName(p, 'Rent')
+        setRentAmount(rent && rent.amount > 0 ? String(rent.amount) : '')
+        setRentIncludes(p.buddgyFlow?.rentIncludesUtilities !== false)
+        if (incSrc) setIncomeCurrency(clampFiatToAllowed(st.settings, incSrc.currency))
+        return
+      }
+
+      if (target === 'dewa') {
+        const d = p.buddgyFlow?.dewaMonthly
+        setDewaAmount(d !== undefined && d > 0 ? String(d) : '')
+        if (incSrc) setIncomeCurrency(clampFiatToAllowed(st.settings, incSrc.currency))
+        return
+      }
+
+      if (target === 'transportMode') {
+        setTransportMode(p.buddgyFlow?.transportMode ?? null)
+        return
+      }
+
+      if (target === 'transportDetail') {
+        if (p.buddgyFlow?.transportCarMonthly !== undefined && p.buddgyFlow.transportCarMonthly > 0) {
+          setTransportCarMonthly(String(p.buddgyFlow.transportCarMonthly))
+        } else {
+          setTransportCarMonthly('')
+        }
+        if (p.buddgyFlow?.transportPublicDaily !== undefined && p.buddgyFlow.transportPublicDaily > 0) {
+          setTransportPublicDaily(String(p.buddgyFlow.transportPublicDaily))
+        } else {
+          setTransportPublicDaily('')
+        }
+        return
+      }
+
+      if (target === 'savings') {
+        const inc = calculateMonthlyIncome(st.incomeSources, base, rates)
+        const planned = plannedExcludingSavings(p, base, rates)
+        const maxSav = Math.max(0, inc - planned)
+        const sav = findCategoryByName(p, 'Savings')
+        if (sav) {
+          const amtBase = effectivePlanCategoryAmountInBase(sav, base, rates)
+          setSavingsAmount(Math.round(Math.min(maxSav, Math.max(0, amtBase))))
+          const atMax = maxSav > 0 && Math.round(amtBase) >= Math.round(maxSav)
+          setSavingsMode(atMax ? 'maximum' : 'custom')
+        } else {
+          setSavingsAmount(0)
+          setSavingsMode('custom')
+        }
+      }
+    },
+    [planId]
+  )
 
   useEffect(() => {
-    if (!plan) return
-    setIncomeCurrency(settings.baseCurrency)
-    if (incomeSources[0]) {
-      setIncomeAmount(String(incomeSources[0].amount))
-      setIncomeCurrency(incomeSources[0].currency)
-    }
-    if (plan.household) setHousehold(plan.household)
-    const rent = findCategoryByName(plan, 'Rent')
-    if (rent) {
-      setRentAmount(String(rent.amount))
-      setRentIncludes(plan.buddgyFlow?.rentIncludesUtilities !== false)
-    }
-    if (plan.buddgyFlow?.dewaMonthly !== undefined) setDewaAmount(String(plan.buddgyFlow.dewaMonthly))
-    if (plan.buddgyFlow?.transportMode) setTransportMode(plan.buddgyFlow.transportMode)
-    if (plan.buddgyFlow?.transportCarMonthly !== undefined) {
-      setTransportCarMonthly(String(plan.buddgyFlow.transportCarMonthly))
-    }
-    if (plan.buddgyFlow?.transportPublicDaily !== undefined) {
-      setTransportPublicDaily(String(plan.buddgyFlow.transportPublicDaily))
-    }
-  }, [plan, incomeSources, settings.baseCurrency])
+    hydrateFieldsForStep(step)
+  }, [step, hydrateFieldsForStep])
 
   useEffect(() => {
     stepInitDone.current = false
-    savingsInitDone.current = false
   }, [planId, options?.mode])
 
   useEffect(() => {
@@ -255,7 +305,7 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
 
   const saveRent = useCallback(() => {
     if (!planId || !plan) return
-    const amt = Number.parseFloat(rentAmount.replace(/,/g, '')) || 0
+    const amt = parseBuddgyAmountInput(rentAmount)
     const cur = clampFiatToAllowed(settings, incomeCurrency)
     const existing = findCategoryByName(plan, 'Rent')
     if (existing) {
@@ -284,7 +334,7 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
     if (!planId || !plan) return
     const rent = findCategoryByName(plan, 'Rent')
     if (!rent) return
-    const amt = Number.parseFloat(dewaAmount.replace(/,/g, '')) || 0
+    const amt = parseBuddgyAmountInput(dewaAmount)
     const dewaSub = rent.subcategories.find((s) => s.name.toLowerCase().includes('dewa'))
     if (dewaSub) {
       updatePlanCategory(planId, rent.id, {
@@ -316,7 +366,7 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
     }
     let monthly = 0
     if (transportMode === 'public') {
-      const daily = Number.parseFloat(transportPublicDaily.replace(/,/g, '')) || 0
+      const daily = parseBuddgyAmountInput(transportPublicDaily)
       monthly = daily * 30
       updateBudgetMeta(planId, {
         buddgyFlow: {
@@ -326,7 +376,7 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
         },
       })
     } else {
-      monthly = Number.parseFloat(transportCarMonthly.replace(/,/g, '')) || 0
+      monthly = parseBuddgyAmountInput(transportCarMonthly)
       updateBudgetMeta(planId, {
         buddgyFlow: {
           ...plan.buddgyFlow,
@@ -475,24 +525,6 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
     return Math.max(0, inc - planned)
   }, [plan, incomeSources, settings.baseCurrency, exchangeRates])
 
-  useEffect(() => {
-    if (!plan || step !== 'savings') return
-    if (savingsInitDone.current) return
-    savingsInitDone.current = true
-    setSavingsAmount(Math.round(maxSavings * 0.52))
-  }, [plan, step, maxSavings])
-
-  useEffect(() => {
-    if (!plan) return
-    const order = buildBuddgyFlowOrder(plan)
-    if (step === 'summary') {
-      setVisitedDotCount(order.length)
-      return
-    }
-    const idx = order.indexOf(step)
-    if (idx >= 0) setVisitedDotCount((prev) => Math.max(prev, idx + 1))
-  }, [step, plan])
-
   return {
     step,
     setStep,
@@ -545,8 +577,6 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
     restartGuidedWizard,
     onSavingsNext,
     buildBuddgyFlowOrder,
-    buddgyDotIndexForStep,
-    visitedDotCount,
   }
 }
 

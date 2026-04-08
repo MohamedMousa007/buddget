@@ -1,5 +1,6 @@
 'use client'
 
+import { parseBuddgyAmountInput, sanitizeBuddgyAmountTyping, buddgyAmountBlurDisplay } from '@/lib/budget/buddgyAmountInput'
 import type { BuddgyFlowApi } from '@/hooks/useBuddgyFlow'
 import { BuddgyStepBack } from '@/components/features/budget-planner/BuddgyStepBack'
 
@@ -8,9 +9,7 @@ export function BuddgyStepTransportDetail({ flow }: { flow: BuddgyFlowApi }) {
   if (!mode || mode === 'walk') return null
   const isPublic = mode === 'public'
   const monthlyPreview =
-    isPublic ?
-      (Number.parseFloat(flow.transportPublicDaily.replace(/,/g, '')) || 0) * 30
-    : Number.parseFloat(flow.transportCarMonthly.replace(/,/g, '')) || 0
+    isPublic ? parseBuddgyAmountInput(flow.transportPublicDaily) * 30 : parseBuddgyAmountInput(flow.transportCarMonthly)
 
   return (
     <div className="space-y-4">
@@ -22,10 +21,12 @@ export function BuddgyStepTransportDetail({ flow }: { flow: BuddgyFlowApi }) {
           <input
             type="text"
             inputMode="decimal"
+            autoComplete="off"
             value={flow.transportPublicDaily}
-            onChange={(e) => flow.setTransportPublicDaily(e.target.value)}
+            onChange={(e) => flow.setTransportPublicDaily(sanitizeBuddgyAmountTyping(e.target.value))}
+            onBlur={() => flow.setTransportPublicDaily(buddgyAmountBlurDisplay(flow.transportPublicDaily))}
             className="w-full rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-3 py-2 font-mono text-sm text-white"
-            placeholder="0"
+            placeholder="0.00"
           />
           <p className="text-xs text-[var(--color-brand-text-muted)] font-mono">
             ≈{' '}
@@ -36,10 +37,12 @@ export function BuddgyStepTransportDetail({ flow }: { flow: BuddgyFlowApi }) {
       : <input
           type="text"
           inputMode="decimal"
+          autoComplete="off"
           value={flow.transportCarMonthly}
-          onChange={(e) => flow.setTransportCarMonthly(e.target.value)}
+          onChange={(e) => flow.setTransportCarMonthly(sanitizeBuddgyAmountTyping(e.target.value))}
+          onBlur={() => flow.setTransportCarMonthly(buddgyAmountBlurDisplay(flow.transportCarMonthly))}
           className="w-full rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-3 py-2 font-mono text-sm text-white"
-          placeholder="0"
+          placeholder="0.00"
         />
       }
       <div className="flex flex-col-reverse gap-4 sm:flex-row sm:flex-wrap sm:items-center">

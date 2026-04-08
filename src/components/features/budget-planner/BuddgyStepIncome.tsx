@@ -2,6 +2,11 @@
 
 import { buildFiatCurrencyPickerOptions } from '@/lib/utils/currencyPickerOptions'
 import { formatMoneyAmount } from '@/lib/budget/buddgyFlowHelpers'
+import {
+  buddgyAmountBlurDisplay,
+  parseBuddgyAmountInput,
+  sanitizeBuddgyAmountTyping,
+} from '@/lib/budget/buddgyAmountInput'
 import type { BuddgyFlowApi } from '@/hooks/useBuddgyFlow'
 import { BuddgyStepBack } from '@/components/features/budget-planner/BuddgyStepBack'
 
@@ -13,10 +18,6 @@ export function BuddgyStepIncome({ flow }: { flow: BuddgyFlowApi }) {
     flow.primaryIncomePreview.amount > 0 ?
       formatMoneyAmount(flow.primaryIncomePreview.amount, flow.primaryIncomePreview.currency)
     : null
-  const existing =
-    !restartNote && flow.incomeAmount && flow.monthlyIncome > 0 ?
-      `${flow.incomeAmount} ${flow.incomeCurrency}`
-    : null
 
   return (
     <div className="space-y-4">
@@ -24,10 +25,6 @@ export function BuddgyStepIncome({ flow }: { flow: BuddgyFlowApi }) {
       {restartNote ?
         <p className="text-xs text-[var(--color-brand-text-muted)]">
           Currently <span className="font-mono">{restartNote}</span> — update?
-        </p>
-      : existing ?
-        <p className="text-xs text-[var(--color-brand-text-muted)]">
-          Currently {existing} — update below if needed.
         </p>
       : null}
       <div className="flex flex-wrap gap-2 items-center">
@@ -45,10 +42,12 @@ export function BuddgyStepIncome({ flow }: { flow: BuddgyFlowApi }) {
         <input
           type="text"
           inputMode="decimal"
+          autoComplete="off"
           value={flow.incomeAmount}
-          onChange={(e) => flow.setIncomeAmount(e.target.value)}
+          onChange={(e) => flow.setIncomeAmount(sanitizeBuddgyAmountTyping(e.target.value))}
+          onBlur={() => flow.setIncomeAmount(buddgyAmountBlurDisplay(flow.incomeAmount))}
           className="min-w-[140px] flex-1 rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-3 py-2 font-mono text-sm text-white"
-          placeholder="0"
+          placeholder="0.00"
         />
       </div>
       <div className="flex flex-col-reverse gap-4 sm:flex-row sm:flex-wrap sm:items-center">
@@ -56,7 +55,7 @@ export function BuddgyStepIncome({ flow }: { flow: BuddgyFlowApi }) {
         <button
           type="button"
           onClick={() => {
-            const n = Number.parseFloat(flow.incomeAmount.replace(/,/g, '')) || 0
+            const n = parseBuddgyAmountInput(flow.incomeAmount)
             flow.ensureIncome(n, flow.incomeCurrency)
             flow.advanceFromStep('income')
           }}

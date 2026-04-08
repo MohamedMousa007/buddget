@@ -1,6 +1,10 @@
 'use client'
 
 import { buildFiatCurrencyPickerOptions } from '@/lib/utils/currencyPickerOptions'
+import {
+  buddgyAmountBlurDisplay,
+  sanitizeBuddgyAmountTyping,
+} from '@/lib/budget/buddgyAmountInput'
 import type { BuddgyFlowApi } from '@/hooks/useBuddgyFlow'
 import { BuddgyStepBack } from '@/components/features/budget-planner/BuddgyStepBack'
 
@@ -25,10 +29,12 @@ export function BuddgyStepDewa({ flow }: { flow: BuddgyFlowApi }) {
         <input
           type="text"
           inputMode="decimal"
+          autoComplete="off"
           value={flow.dewaAmount}
-          onChange={(e) => flow.setDewaAmount(e.target.value)}
+          onChange={(e) => flow.setDewaAmount(sanitizeBuddgyAmountTyping(e.target.value))}
+          onBlur={() => flow.setDewaAmount(buddgyAmountBlurDisplay(flow.dewaAmount))}
           className="min-w-[140px] flex-1 rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-3 py-2 font-mono text-sm text-white"
-          placeholder="0"
+          placeholder="0.00"
         />
       </div>
       <div className="flex flex-col-reverse gap-4 sm:flex-row sm:flex-wrap sm:items-center">

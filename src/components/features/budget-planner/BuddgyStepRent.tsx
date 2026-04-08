@@ -1,6 +1,10 @@
 'use client'
 
 import { buildFiatCurrencyPickerOptions } from '@/lib/utils/currencyPickerOptions'
+import {
+  buddgyAmountBlurDisplay,
+  sanitizeBuddgyAmountTyping,
+} from '@/lib/budget/buddgyAmountInput'
 import type { BuddgyFlowApi } from '@/hooks/useBuddgyFlow'
 import { BuddgyStepBack } from '@/components/features/budget-planner/BuddgyStepBack'
 
@@ -25,10 +29,12 @@ export function BuddgyStepRent({ flow }: { flow: BuddgyFlowApi }) {
         <input
           type="text"
           inputMode="decimal"
+          autoComplete="off"
           value={flow.rentAmount}
-          onChange={(e) => flow.setRentAmount(e.target.value)}
+          onChange={(e) => flow.setRentAmount(sanitizeBuddgyAmountTyping(e.target.value))}
+          onBlur={() => flow.setRentAmount(buddgyAmountBlurDisplay(flow.rentAmount))}
           className="min-w-[140px] flex-1 rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-3 py-2 font-mono text-sm text-white"
-          placeholder="0"
+          placeholder="0.00"
         />
       </div>
       <label className="flex cursor-pointer items-center gap-2 text-sm text-[var(--color-brand-text-secondary)]">
