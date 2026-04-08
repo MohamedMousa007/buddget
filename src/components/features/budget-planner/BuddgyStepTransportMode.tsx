@@ -2,7 +2,6 @@
 
 import { useRef } from 'react'
 import type { BuddgyFlowApi } from '@/hooks/useBuddgyFlow'
-import { BuddgyStepBack } from '@/components/features/budget-planner/BuddgyStepBack'
 
 const modes = [
   { id: 'car' as const, label: '🚗 Car' },
@@ -44,9 +43,6 @@ export function BuddgyStepTransportMode({ flow }: { flow: BuddgyFlowApi }) {
             </button>
           )
         })}
-      </div>
-      <div className="pt-1">
-        <BuddgyStepBack flow={flow} />
       </div>
     </div>
   )

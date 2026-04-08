@@ -158,6 +158,9 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
   const [savingsAmount, setSavingsAmount] = useState(0)
   const [savingsNextLoading, setSavingsNextLoading] = useState(false)
   const [savingsMode, setSavingsMode] = useState<'maximum' | 'custom'>('custom')
+  /** After first visit to summary, dots show on all steps for navigation. */
+  const [dotsUnlocked, setDotsUnlocked] = useState(false)
+
   const hydrateFieldsForStep = useCallback(
     (target: BuddgyFlowStep) => {
       if (target === 'summary') return
@@ -241,6 +244,10 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
   useEffect(() => {
     hydrateFieldsForStep(step)
   }, [step, hydrateFieldsForStep])
+
+  useEffect(() => {
+    if (step === 'summary') setDotsUnlocked(true)
+  }, [step])
 
   useEffect(() => {
     stepInitDone.current = false
@@ -490,8 +497,9 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
     returnToSummaryAfterEditRef.current = true
   }, [])
 
-  const navigateToDotFromSummary = useCallback(
+  const navigateToWizardDot = useCallback(
     (dotIndex: number) => {
+      if (!dotsUnlocked) return
       const latest = useFinanceStore.getState().budgetPlans.find((p) => p.id === planId) ?? plan
       const order = buildBuddgyFlowOrder(latest)
       const target = order[dotIndex]
@@ -500,7 +508,7 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
         setStep(target)
       }
     },
-    [planId, plan, prepareJumpFromSummary]
+    [planId, plan, prepareJumpFromSummary, dotsUnlocked]
   )
 
   const restartGuidedWizard = useCallback(() => {
@@ -573,7 +581,8 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
     advanceFromStep,
     goBack,
     prepareJumpFromSummary,
-    navigateToDotFromSummary,
+    navigateToWizardDot,
+    dotsUnlocked,
     restartGuidedWizard,
     onSavingsNext,
     buildBuddgyFlowOrder,

@@ -4,11 +4,9 @@ import { buildFiatCurrencyPickerOptions } from '@/lib/utils/currencyPickerOption
 import { formatMoneyAmount } from '@/lib/budget/buddgyFlowHelpers'
 import {
   buddgyAmountBlurDisplay,
-  parseBuddgyAmountInput,
   sanitizeBuddgyAmountTyping,
 } from '@/lib/budget/buddgyAmountInput'
 import type { BuddgyFlowApi } from '@/hooks/useBuddgyFlow'
-import { BuddgyStepBack } from '@/components/features/budget-planner/BuddgyStepBack'
 
 export function BuddgyStepIncome({ flow }: { flow: BuddgyFlowApi }) {
   const opts = buildFiatCurrencyPickerOptions(flow.settings)
@@ -49,20 +47,6 @@ export function BuddgyStepIncome({ flow }: { flow: BuddgyFlowApi }) {
           className="min-w-[140px] flex-1 rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-3 py-2 font-mono text-sm text-white"
           placeholder="0.00"
         />
-      </div>
-      <div className="flex flex-col-reverse gap-4 sm:flex-row sm:flex-wrap sm:items-center">
-        <BuddgyStepBack flow={flow} />
-        <button
-          type="button"
-          onClick={() => {
-            const n = parseBuddgyAmountInput(flow.incomeAmount)
-            flow.ensureIncome(n, flow.incomeCurrency)
-            flow.advanceFromStep('income')
-          }}
-          className="cursor-pointer rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] px-5 py-2.5 text-sm font-semibold text-white sm:ms-0"
-        >
-          Next →
-        </button>
       </div>
     </div>
   )

@@ -1,12 +1,8 @@
 'use client'
 
 import { buildFiatCurrencyPickerOptions } from '@/lib/utils/currencyPickerOptions'
-import {
-  buddgyAmountBlurDisplay,
-  sanitizeBuddgyAmountTyping,
-} from '@/lib/budget/buddgyAmountInput'
+import { buddgyAmountBlurDisplay, sanitizeBuddgyAmountTyping } from '@/lib/budget/buddgyAmountInput'
 import type { BuddgyFlowApi } from '@/hooks/useBuddgyFlow'
-import { BuddgyStepBack } from '@/components/features/budget-planner/BuddgyStepBack'
 
 export function BuddgyStepRent({ flow }: { flow: BuddgyFlowApi }) {
   const opts = buildFiatCurrencyPickerOptions(flow.settings)
@@ -46,19 +42,6 @@ export function BuddgyStepRent({ flow }: { flow: BuddgyFlowApi }) {
         />
         Includes utilities
       </label>
-      <div className="flex flex-col-reverse gap-4 sm:flex-row sm:flex-wrap sm:items-center">
-        <BuddgyStepBack flow={flow} />
-        <button
-          type="button"
-          onClick={() => {
-            flow.saveRent()
-            flow.advanceFromStep('rent')
-          }}
-          className="cursor-pointer rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] px-5 py-2.5 text-sm font-semibold text-white"
-        >
-          Next →
-        </button>
-      </div>
     </div>
   )
 }
