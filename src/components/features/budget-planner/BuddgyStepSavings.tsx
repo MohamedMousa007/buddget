@@ -1,7 +1,9 @@
 'use client'
 
 import { useCallback } from 'react'
+import { Loader2 } from 'lucide-react'
 import type { BuddgyFlowApi } from '@/hooks/useBuddgyFlow'
+import { BuddgyStepBack } from '@/components/features/budget-planner/BuddgyStepBack'
 
 function fmt(n: number, currency: string) {
   return `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(n)} ${currency}`
@@ -18,6 +20,7 @@ export function BuddgyStepSavings({ flow }: { flow: BuddgyFlowApi }) {
     savingsAmount,
     setSavingsAmount,
     settings,
+    savingsNextLoading,
     savingsMode,
     setSavingsMode,
   } = flow
@@ -69,6 +72,22 @@ export function BuddgyStepSavings({ flow }: { flow: BuddgyFlowApi }) {
         </button>
         <button type="button" onClick={onCustom} className={savingsMode === 'custom' ? activePill : idlePill}>
           Custom
+        </button>
+      </div>
+      <div className="flex flex-col-reverse gap-4 pt-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <BuddgyStepBack flow={flow} />
+        <button
+          type="button"
+          disabled={savingsNextLoading}
+          onClick={() => void flow.onSavingsNext()}
+          className="cursor-pointer rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+        >
+          {savingsNextLoading ?
+            <>
+              <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+              <span>Loading...</span>
+            </>
+          : 'Next →'}
         </button>
       </div>
     </div>

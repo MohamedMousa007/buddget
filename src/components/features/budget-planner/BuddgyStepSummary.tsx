@@ -13,6 +13,12 @@ function fmt(n: number, currency: string) {
   return `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(n)} ${currency}`
 }
 
+const ghostRebuildClass =
+  'cursor-pointer rounded-xl border border-[var(--color-brand-border)] bg-transparent px-5 py-2.5 text-sm font-semibold text-[var(--color-brand-text-secondary)] hover:text-white hover:border-[var(--color-brand-text-muted)] transition-colors'
+
+const primaryDoneClass =
+  'cursor-pointer rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] px-5 py-2.5 text-sm font-semibold text-white'
+
 export function BuddgyStepSummary({ flow }: { flow: BuddgyFlowApi }) {
   const { plan, incomeSources, settings, exchangeRates } = flow
   const income = calculateMonthlyIncome(incomeSources, settings.baseCurrency, exchangeRates)
@@ -51,12 +57,29 @@ export function BuddgyStepSummary({ flow }: { flow: BuddgyFlowApi }) {
         </div>
       </div>
 
-      <div className="space-y-3 rounded-xl border border-[#2A2A38] bg-[#1A1A24] p-4">
+      <div className="space-y-4 rounded-xl border border-[#2A2A38] bg-[#1A1A24] p-4">
         {hasCategoryAmounts ?
-          <p className="text-sm font-sans text-white">{rate}% savings rate — incredible! 🎉</p>
-        : <p className="text-sm font-sans text-[var(--color-brand-text-secondary)]">
-            It looks like your plan is empty. Let Buddgy rebuild it for you.
-          </p>
+          <>
+            <p className="text-sm font-sans text-white">{rate}% savings rate — incredible! 🎉</p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <button type="button" onClick={() => flow.finishFlow()} className={primaryDoneClass}>
+                Done
+              </button>
+            </div>
+          </>
+        : <>
+            <p className="text-sm font-sans text-[var(--color-brand-text-secondary)]">
+              It looks like your plan is empty. Let Buddgy rebuild it for you.
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <button type="button" onClick={() => flow.restartGuidedWizard()} className={ghostRebuildClass}>
+                Rebuild with Buddgy
+              </button>
+              <button type="button" onClick={() => flow.finishFlow()} className={primaryDoneClass}>
+                Done
+              </button>
+            </div>
+          </>
         }
       </div>
     </div>

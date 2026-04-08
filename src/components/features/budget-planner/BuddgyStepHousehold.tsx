@@ -3,6 +3,7 @@
 import { useRef } from 'react'
 import type { BudgetHousehold } from '@/lib/store/types'
 import type { BuddgyFlowApi } from '@/hooks/useBuddgyFlow'
+import { BuddgyStepBack } from '@/components/features/budget-planner/BuddgyStepBack'
 
 const pills: { id: BudgetHousehold; label: string }[] = [
   { id: 'solo', label: 'Just me' },
@@ -42,6 +43,9 @@ export function BuddgyStepHousehold({ flow }: { flow: BuddgyFlowApi }) {
             </button>
           )
         })}
+      </div>
+      <div className="pt-2">
+        <BuddgyStepBack flow={flow} />
       </div>
     </div>
   )

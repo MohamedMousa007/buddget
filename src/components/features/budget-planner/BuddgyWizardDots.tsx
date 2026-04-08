@@ -22,26 +22,20 @@ function dotLabel(s: BuddgyFlowStep): string {
   }
 }
 
-/** Step navigator after first visit to summary; shown under top action row. */
+/** Step navigator at top of summary card (after first visit to summary). */
 export function BuddgyWizardDots({ flow }: { flow: BuddgyFlowApi }) {
-  if (!flow.dotsUnlocked) return null
+  if (!flow.dotsUnlocked || flow.step !== 'summary') return null
 
-  const { plan, step, buildBuddgyFlowOrder, navigateToWizardDot } = flow
+  const { plan, buildBuddgyFlowOrder, navigateToWizardDot } = flow
   const order = buildBuddgyFlowOrder(plan)
   if (order.length === 0) return null
 
-  const keyStep: BuddgyFlowStep =
-    step === 'summary' ? (order[order.length - 1] ?? 'savings')
-    : step === 'transportDetail' ? 'transportMode'
-    : step
-  const activeDot =
-    step === 'summary' ? order.length - 1
-    : Math.max(0, order.indexOf(keyStep))
+  const activeDot = order.length - 1
 
   return (
-    <div className="flex flex-wrap items-center justify-center gap-2 pt-1" role="tablist" aria-label="Wizard steps">
+    <div className="flex flex-wrap items-center justify-center gap-2" role="tablist" aria-label="Wizard steps">
       {order.map((s, i) => {
-        const active = i === activeDot && activeDot >= 0
+        const active = i === activeDot
         return (
           <button
             key={`${s}-${i}`}
