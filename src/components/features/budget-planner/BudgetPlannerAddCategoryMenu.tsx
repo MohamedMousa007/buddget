@@ -38,8 +38,9 @@ export function BudgetPlannerAddCategoryMenu({
 }: BudgetPlannerAddCategoryMenuProps) {
   const [open, setOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [customName, setCustomName] = useState('')
+  const [customNameOverride, setCustomNameOverride] = useState<string | null>(null)
   const [customIcon, setCustomIcon] = useState('📦')
+  const customName = customNameOverride ?? searchQuery
 
   const taken = useMemo(() => {
     const s = new Set(categories.map((c) => c.name.trim().toLowerCase()))
@@ -63,7 +64,7 @@ export function BudgetPlannerAddCategoryMenu({
     const name = customName.trim()
     if (!name || categoryNameAlreadyInPlan(name, categories)) return
     onAddCustom(name, customIcon.trim() || '📦')
-    setCustomName('')
+    setCustomNameOverride(null)
     setCustomIcon('📦')
     setSearchQuery('')
     setOpen(false)
@@ -94,7 +95,7 @@ export function BudgetPlannerAddCategoryMenu({
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value)
-                if (!customName) setCustomName(e.target.value)
+                setCustomNameOverride(null)
               }}
               placeholder="Search categories..."
               className="w-full rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] pl-8 pr-3 py-1.5 text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-red)]/40"
@@ -146,7 +147,7 @@ export function BudgetPlannerAddCategoryMenu({
             />
             <input
               value={customName}
-              onChange={(e) => setCustomName(e.target.value)}
+              onChange={(e) => setCustomNameOverride(e.target.value)}
               placeholder={labels.categoryNameExample}
               className="min-w-0 flex-1 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1.5 text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)]"
             />
