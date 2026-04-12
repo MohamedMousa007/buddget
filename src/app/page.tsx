@@ -21,9 +21,6 @@ export default function DashboardPage() {
   const stats = useMonthlyStats()
   const incomeNote = stats.incomeBlocked ? t.dashboard.incomeBlockedHint : undefined
 
-  const savingsBudget =
-    stats.dashboardBudgetCategories.find((b) => String(b.category).toLowerCase() === 'savings')?.budgetedAmount || 0
-
   return (
     <div className="min-h-screen">
       <div className="px-4 py-6 lg:px-8 space-y-6 max-w-5xl mx-auto">
@@ -102,7 +99,7 @@ export default function DashboardPage() {
             savingsHoldingsTotal={stats.savingsHoldingsTotal}
             savingsFromExpenses={stats.savingsFromExpenses}
             netSavingsTransfersThisMonth={stats.netSavingsTransfersThisMonth}
-            savingsBudget={savingsBudget}
+            savingsBudget={stats.plannedSavingsBudget}
             currency={stats.baseCurrency}
           />
           <RecentExpenses expenses={stats.monthlyExpenses} />

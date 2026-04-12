@@ -10,6 +10,7 @@ import {
   categorySpendingForPlanRows,
   totalExpenseBudgetFromPlan,
   totalPlannedExpensesForPlan,
+  totalPlannedSavingsAllocationForPlan,
 } from '@/lib/budget/budgetPlans'
 import {
   filterExpensesByMonth,
@@ -116,6 +117,7 @@ export function useMonthlyStats() {
         paceStatus: 'on_track' as PaceStatus,
         suggestedDaily: 0,
         overBudgetCategories: [] as OverspentCategory[],
+        plannedSavingsBudget: 0,
       }
     }
     const monthlyExpenses = filterExpensesByMonth(expenses, monthFilter, settings.monthStartDay)
@@ -147,6 +149,11 @@ export function useMonthlyStats() {
     const totalExpenseBudget = activePlan
       ? totalExpenseBudgetFromPlan(activePlan, settings.baseCurrency, exchangeRates)
       : calculateTotalBudgetExcludingSavings(budgetCategories, settings, totalIncome)
+    const plannedSavingsBudget = activePlan
+      ? totalPlannedSavingsAllocationForPlan(activePlan, settings.baseCurrency, exchangeRates)
+      : budgetCategories
+          .filter((b) => b.category === 'Savings')
+          .reduce((s, b) => s + effectiveCategoryBudget(b, settings, totalIncome), 0)
     const remaining = totalExpenseBudget - totalSpentForExpenseBudget
     const budgetUsedPercent = calculateBudgetUsedPercent(totalSpentForExpenseBudget, totalExpenseBudget)
     const spendingByEnum = calculateCategorySpending(
@@ -260,6 +267,7 @@ export function useMonthlyStats() {
       paceStatus,
       suggestedDaily,
       overBudgetCategories,
+      plannedSavingsBudget,
     }
   }, [
     expenses,

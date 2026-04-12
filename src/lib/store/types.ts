@@ -1,4 +1,17 @@
-export type Currency = 'AED' | 'USD' | 'EGP' | 'EUR' | 'GBP' | 'SAR' | 'XAU'
+export type Currency =
+  | 'AED'
+  | 'USD'
+  | 'EGP'
+  | 'EUR'
+  | 'GBP'
+  | 'SAR'
+  | 'XAU'
+  /** Savings / ledger only — approximate USD peg for totals when crossing currencies. */
+  | 'USDT'
+  | 'USDC'
+  /** Savings / ledger only — no built-in FX; same-code math only unless rates exist. */
+  | 'BTC'
+  | 'ETH'
 
 export type ExpenseCategory =
   | 'Rent'
@@ -110,6 +123,8 @@ export interface BudgetPlanCategory {
   amount: number
   /** Fiat for this row's amounts; omitted legacy rows use base currency. */
   currency?: Currency
+  /** When true, this row is a savings allocation target — not counted as a planned expense. */
+  isSavings?: boolean
   subcategories: BudgetPlanSubcategory[]
 }
 
@@ -188,11 +203,27 @@ export interface SavingsAutoSave {
   lastRunKey?: string
 }
 
-/** Savings goal / account with ledger balance (transfers, not expenses). */
+/** High-level savings product; drives default Lucide icon in the UI. */
+export type SavingsType =
+  | 'bank'
+  | 'cash'
+  | 'gold'
+  | 'crypto_stable'
+  | 'crypto'
+  | 'stocks'
+  | 'real_estate'
+  | 'other'
+
+/** Savings bucket with ledger balance (transfers, not expenses). */
 export interface SavingsAccount {
   id: string
   name: string
-  emoji: string
+  type: SavingsType
+  /** Lucide icon component name; defaults from `type`, user-pickable when `type === 'other'`. */
+  icon?: string
+  /** @deprecated Legacy row marker; UI prefers `type` + `icon`. */
+  emoji?: string
+  /** Reserved for a future Goals feature — not shown in create/card UI. */
   targetAmount?: number
   currency: Currency
   currentBalance: number
@@ -459,7 +490,9 @@ export interface FinanceStore {
   addSavingsHolding: (h: Omit<SavingsHolding, 'id' | 'createdAt' | 'updatedAt'>) => void
   updateSavingsHolding: (id: string, updates: Partial<SavingsHolding>) => void
   deleteSavingsHolding: (id: string) => void
-  addSavingsAccount: (a: Omit<SavingsAccount, 'id' | 'createdAt' | 'currentBalance'>) => string
+  addSavingsAccount: (
+    a: Omit<SavingsAccount, 'id' | 'createdAt' | 'currentBalance'> & { openingBalance?: number }
+  ) => string
   updateSavingsAccount: (id: string, updates: Partial<SavingsAccount>) => void
   deleteSavingsAccount: (id: string) => void
   depositToSavings: (

@@ -21,6 +21,16 @@ export function tryConvertCurrency(
   if (fromCurrency === toCurrency) return amount
   if (amount === 0) return 0
 
+  const from = String(fromCurrency)
+  const to = String(toCurrency)
+  /** Treat stables as USD for FX bridges (no on-chain spread modeled). */
+  if (from === 'USDT' || from === 'USDC') {
+    return tryConvertCurrency(amount, 'USD', toCurrency, rates)
+  }
+  if (to === 'USDT' || to === 'USDC') {
+    return tryConvertCurrency(amount, fromCurrency, 'USD', rates)
+  }
+
   const mergedRates = { ...DEFAULT_RATES, ...rates }
 
   const direct = mergedRates[`${fromCurrency}_${toCurrency}`]

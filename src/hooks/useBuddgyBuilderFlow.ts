@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { parseBudgetInput, type ParsedBudgetInput } from '@/lib/ai/parseBudgetInput'
@@ -13,12 +13,17 @@ import {
   type HouseholdType,
   type BudgetCategoryRow,
 } from '@/lib/budget/lifestyleMappings'
+import {
+  applyRegenerateTweak,
+  redistributeFlexibleExpenseRows,
+  type RegenerateTweak,
+} from '@/lib/budget/buddgyBuilderRedistribution'
 import { pushProfileFieldsToSupabase } from '@/lib/profile/pushProfileFieldsToSupabase'
 import type { Currency } from '@/lib/store/types'
 
-export type BuilderStep = 'describe' | 'confirm' | 'lifestyle' | 'savings' | 'plan' | 'applied'
+export type BuilderStep = 'describe' | 'confirm' | 'lifestyle' | 'savings' | 'applied'
 
-const STEP_ORDER: BuilderStep[] = ['describe', 'confirm', 'lifestyle', 'savings', 'plan', 'applied']
+export const BUDDGY_BUILDER_STEP_ORDER: BuilderStep[] = ['describe', 'confirm', 'lifestyle', 'savings', 'applied']
 
 export interface ConfirmedBasics {
   income: number
@@ -36,12 +41,22 @@ export interface LifestyleChoices {
   tier: LifestyleTier | null
 }
 
+export type BuddgyBuilderLoadingKind = 'idle' | 'parse' | 'plan'
+
+export interface BuddgyBuilderOpenOptions {
+  initialDescribeText?: string
+  knownIncome?: { amount: number; currency: Currency }
+}
+
 /**
- * State machine for the Buddgy Builder v3 guided experience.
- * 2 AI calls total: parse (Step 0) + generate tip (Step 4).
- * Everything in between is deterministic UI.
+ * State machine for Buddgy Builder: describe → confirm → lifestyle → savings (preview + confirm) → applied.
+ * Parse + plan generation are the only AI calls.
  */
-export function useBuddgyBuilderFlow(planId: string, onClose: () => void) {
+export function useBuddgyBuilderFlow(
+  planId: string,
+  onClose: () => void,
+  options?: BuddgyBuilderOpenOptions
+) {
   const {
     settings,
     incomeSources,
@@ -65,14 +80,15 @@ export function useBuddgyBuilderFlow(planId: string, onClose: () => void) {
   )
 
   const [step, setStep] = useState<BuilderStep>('describe')
-  const [loading, setLoading] = useState(false)
+  const [loadingKind, setLoadingKind] = useState<BuddgyBuilderLoadingKind>('idle')
   const [error, setError] = useState<string | null>(null)
   const [regenCount, setRegenCount] = useState(0)
+  const [extraAiContext, setExtraAiContext] = useState<string[]>([])
+  const [rentAdjustHint, setRentAdjustHint] = useState<string | null>(null)
 
-  // Step 0 result
   const [parsed, setParsed] = useState<ParsedBudgetInput | null>(null)
+  const [describeText, setDescribeText] = useState(() => options?.initialDescribeText ?? '')
 
-  // Step 1 — editable basics
   const [basics, setBasics] = useState<ConfirmedBasics>({
     income: 0,
     currency: settings.baseCurrency,
@@ -83,25 +99,19 @@ export function useBuddgyBuilderFlow(planId: string, onClose: () => void) {
     rentIncludesUtilities: true,
   })
 
-  // Step 2 — lifestyle
   const [lifestyle, setLifestyle] = useState<LifestyleChoices>({
     food: null,
     transport: null,
     tier: null,
   })
 
-  // Step 3 — savings
   const [savingsPercent, setSavingsPercent] = useState(70)
-
-  // Step 4 — generated plan
   const [plan, setPlan] = useState<GeneratedPlan | null>(null)
-  const [editingPlan, setEditingPlan] = useState(false)
-  const [editedCategories, setEditedCategories] = useState<BudgetCategoryRow[]>([])
+  const [expenseBaseOverride, setExpenseBaseOverride] = useState<BudgetCategoryRow[] | null>(null)
 
-  const stepIndex = STEP_ORDER.indexOf(step)
-  const progress = ((stepIndex + 1) / STEP_ORDER.length) * 100
+  const stepIndex = BUDDGY_BUILDER_STEP_ORDER.indexOf(step)
+  const loading = loadingKind !== 'idle'
 
-  // Computed budget from lifestyle choices
   const computedBudget = useMemo(() => {
     if (!lifestyle.food || !lifestyle.transport || !lifestyle.tier) return null
     return computeBudgetFromChoices({
@@ -116,71 +126,192 @@ export function useBuddgyBuilderFlow(planId: string, onClose: () => void) {
     })
   }, [basics, lifestyle])
 
-  const remaining = computedBudget?.remaining ?? 0
-  const savingsAmount = Math.round(remaining * (savingsPercent / 100))
-  const bufferAmount = remaining - savingsAmount
+  useEffect(() => {
+    setExpenseBaseOverride(null)
+    setExtraAiContext([])
+    setRegenCount(0)
+  }, [lifestyle.food, lifestyle.transport, lifestyle.tier])
 
-  // Step 0 → 1: Parse free text
-  const submitDescription = useCallback(async (text: string) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const result = await parseBudgetInput(text)
-      setParsed(result)
+  const rawExpenseBase = useMemo(
+    () => expenseBaseOverride ?? computedBudget?.categories ?? [],
+    [expenseBaseOverride, computedBudget]
+  )
 
-      const needsIncome = result.income.amount == null
-      if (needsIncome && result.missingFields.includes('income')) {
-        // Still advance, user edits in Step 1
+  const remainingPool = useMemo(() => {
+    if (basics.income <= 0 || rawExpenseBase.length === 0) return 0
+    const spent = rawExpenseBase.reduce((s, r) => s + r.amount, 0)
+    return Math.max(0, basics.income - spent)
+  }, [basics.income, rawExpenseBase])
+
+  const savingsAmountTarget = useMemo(
+    () => Math.round(remainingPool * (savingsPercent / 100)),
+    [remainingPool, savingsPercent]
+  )
+
+  const redistributed = useMemo(() => {
+    if (rawExpenseBase.length === 0 || basics.income <= 0) {
+      return {
+        rows: [] as BudgetCategoryRow[],
+        savingsAmount: 0,
+        totalExpenses: 0,
       }
-
-      const VALID_CURRENCIES: Currency[] = ['AED', 'USD', 'EGP', 'EUR', 'GBP', 'SAR', 'XAU']
-      const parsedCur = (result.income.currency ?? '').toUpperCase() as Currency
-      const currency: Currency = VALID_CURRENCIES.includes(parsedCur) ? parsedCur : settings.baseCurrency
-
-      setBasics({
-        income: result.income.amount ?? 0,
-        currency,
-        city: result.city ?? '',
-        country: result.country ?? '',
-        household: result.household ?? 'solo',
-        rent: result.rent.amount ?? 0,
-        rentIncludesUtilities: result.rent.includesUtilities,
-      })
-
-      if (result.savingsGoal === 'maximum') setSavingsPercent(100)
-      else if (result.savingsGoal === 'moderate') setSavingsPercent(70)
-      else if (result.savingsGoal === 'some') setSavingsPercent(50)
-
-      setStep('confirm')
-    } catch {
-      setError('Could not process your input. Try again.')
-    } finally {
-      setLoading(false)
     }
-  }, [settings.baseCurrency])
+    return redistributeFlexibleExpenseRows(rawExpenseBase, basics.income, savingsAmountTarget)
+  }, [rawExpenseBase, basics.income, savingsAmountTarget])
 
-  // Step 1 → 2
+  const displayExpenseRows = redistributed.rows
+  const savingsAmount = redistributed.savingsAmount
+  const totalPlannedExpenses = redistributed.totalExpenses
+
+  const submitDescription = useCallback(
+    async (text: string) => {
+      const trimmed = text.trim()
+      if (trimmed.length < 10) return
+      setLoadingKind('parse')
+      setError(null)
+      try {
+        const known = options?.knownIncome
+        const result = await parseBudgetInput(trimmed, {
+          knownIncome:
+            known && known.amount > 0 ?
+              { amount: known.amount, currency: known.currency }
+            : undefined,
+          preamble: undefined,
+        })
+        setParsed(result)
+
+        const VALID_CURRENCIES: Currency[] = ['AED', 'USD', 'EGP', 'EUR', 'GBP', 'SAR', 'XAU']
+        const parsedCur = (result.income.currency ?? '').toUpperCase() as Currency
+        const fromParse = VALID_CURRENCIES.includes(parsedCur) ? parsedCur : settings.baseCurrency
+        const incomeAmt =
+          result.income.amount != null && result.income.amount > 0 ?
+            result.income.amount
+          : known && known.amount > 0 ? known.amount
+          : 0
+        const currency: Currency =
+          result.income.amount != null && result.income.amount > 0 ? fromParse
+          : known && known.amount > 0 ? known.currency
+          : fromParse
+
+        setBasics({
+          income: incomeAmt,
+          currency,
+          city: result.city ?? '',
+          country: result.country ?? '',
+          household: result.household ?? 'solo',
+          rent: result.rent.amount ?? 0,
+          rentIncludesUtilities: result.rent.includesUtilities,
+        })
+
+        if (result.savingsGoal === 'maximum') setSavingsPercent(100)
+        else if (result.savingsGoal === 'moderate') setSavingsPercent(70)
+        else if (result.savingsGoal === 'some') setSavingsPercent(50)
+
+        setStep('confirm')
+      } catch {
+        setError('Could not process your input. Try again.')
+      } finally {
+        setLoadingKind('idle')
+      }
+    },
+    [options?.knownIncome, settings.baseCurrency]
+  )
+
   const confirmBasics = useCallback(() => {
     if (basics.income <= 0) return
     setStep('lifestyle')
   }, [basics.income])
 
-  // Step 2 → 3
   const confirmLifestyle = useCallback(() => {
     if (!lifestyle.food || !lifestyle.transport || !lifestyle.tier) return
     setStep('savings')
   }, [lifestyle])
 
-  // Step 3 → 4: Generate plan
-  const generatePlan = useCallback(async () => {
-    if (!computedBudget) return
-    setLoading(true)
+  const mergedLifestyleNotes = useMemo(() => {
+    const parts = [parsed?.lifestyleNotes, ...extraAiContext].filter(Boolean) as string[]
+    return parts.length > 0 ? parts.join(' | ') : null
+  }, [parsed?.lifestyleNotes, extraAiContext])
+
+  const applyCategoriesToStore = useCallback(
+    (cats: BudgetCategoryRow[]) => {
+      const cur = basics.currency
+      if (incomeSources.length === 0) {
+        addIncomeSource({
+          name: 'Monthly income',
+          amount: basics.income,
+          currency: cur,
+          isRecurring: true,
+          recurringFrequency: 'monthly',
+        })
+      } else {
+        updateIncomeSource(incomeSources[0].id, {
+          amount: basics.income,
+          currency: cur,
+          isRecurring: true,
+          recurringFrequency: 'monthly',
+        })
+      }
+      updateSettings({ noIncomeDeclared: false })
+
+      replaceBudgetPlanCategories(
+        planId,
+        cats.map((c) => ({
+          id: crypto.randomUUID(),
+          name: c.name,
+          icon: c.emoji,
+          amount: c.amount,
+          currency: basics.currency,
+          ...(c.isSavings === true ? { isSavings: true as const } : {}),
+          subcategories: [],
+        }))
+      )
+
+      updateBudgetPlan(planId, { buddgyGuidedComplete: true, buddgyFlow: null })
+
+      if (parsed?.lifestyleNotes || extraAiContext.length > 0) {
+        const note = [parsed?.lifestyleNotes, ...extraAiContext].filter(Boolean).join(' | ')
+        if (note.trim()) setFinancialGoalsNotes(note.trim())
+      }
+
+      if (basics.city || basics.country) {
+        void pushProfileFieldsToSupabase({
+          city: basics.city || undefined,
+          country: basics.country || undefined,
+        })
+      }
+    },
+    [
+      basics,
+      planId,
+      incomeSources,
+      addIncomeSource,
+      updateIncomeSource,
+      updateSettings,
+      replaceBudgetPlanCategories,
+      updateBudgetPlan,
+      parsed?.lifestyleNotes,
+      extraAiContext,
+      setFinancialGoalsNotes,
+    ]
+  )
+
+  const confirmAndApplyPlan = useCallback(async () => {
+    if (displayExpenseRows.length === 0 || basics.income <= 0) return
+    setLoadingKind('plan')
     setError(null)
     try {
       const allCategories: BudgetCategoryRow[] = [
-        ...computedBudget.categories,
-        { name: 'Savings', emoji: '💰', amount: savingsAmount, currency: basics.currency },
+        ...displayExpenseRows,
+        {
+          name: 'Savings',
+          emoji: '💰',
+          amount: savingsAmount,
+          currency: basics.currency,
+          isSavings: true,
+        },
       ]
+
+      const bufferAmount = Math.max(0, basics.income - totalPlannedExpenses - savingsAmount)
 
       const result = await generateBudgetPlan({
         income: basics.income,
@@ -189,101 +320,65 @@ export function useBuddgyBuilderFlow(planId: string, onClose: () => void) {
         household: basics.household,
         rent: basics.rent,
         rentIncludesUtilities: basics.rentIncludesUtilities,
-        groceries: computedBudget.categories.find((c) => c.name === 'Groceries')?.amount ?? 0,
-        dining: computedBudget.categories.find((c) => c.name === 'Dining Out')?.amount ?? 0,
-        transport: computedBudget.categories.find((c) => c.name === 'Transport')?.amount ?? 0,
+        groceries: displayExpenseRows.find((c) => c.name === 'Groceries')?.amount ?? 0,
+        dining: displayExpenseRows.find((c) => c.name === 'Dining Out')?.amount ?? 0,
+        transport: displayExpenseRows.find((c) => c.name === 'Transport')?.amount ?? 0,
         transportMode: lifestyle.transport ?? 'public',
-        entertainmentTotal: computedBudget.categories
-          .filter((c) => ['Entertainment', 'Personal Care', 'Phone & Internet', 'Subscriptions'].includes(c.name))
+        entertainmentTotal: displayExpenseRows
+          .filter((c) =>
+            ['Entertainment', 'Personal Care', 'Phone & Internet', 'Subscriptions'].includes(c.name)
+          )
           .reduce((s, c) => s + c.amount, 0),
         savingsAmount,
         bufferAmount,
-        lifestyleNotes: parsed?.lifestyleNotes ?? null,
+        lifestyleNotes: mergedLifestyleNotes,
         categories: allCategories,
       })
 
       setPlan(result)
-      setEditedCategories(result.categories)
-      setRegenCount((c) => c + 1)
-      setStep('plan')
+      applyCategoriesToStore(result.categories)
+      setStep('applied')
     } catch {
-      setError('Could not generate plan. Try again.')
+      setError('Could not finalize your plan. Try again.')
     } finally {
-      setLoading(false)
+      setLoadingKind('idle')
     }
-  }, [computedBudget, basics, lifestyle, savingsAmount, bufferAmount, parsed])
-
-  // Step 4 → 5: Apply plan
-  const applyPlan = useCallback(() => {
-    const cats = editingPlan ? editedCategories : plan?.categories
-    if (!cats || cats.length === 0) return
-
-    // 1. Update income
-    const cur = basics.currency
-    if (incomeSources.length === 0) {
-      addIncomeSource({
-        name: 'Monthly income',
-        amount: basics.income,
-        currency: cur,
-        isRecurring: true,
-        recurringFrequency: 'monthly',
-      })
-    } else {
-      updateIncomeSource(incomeSources[0].id, {
-        amount: basics.income,
-        currency: cur,
-        isRecurring: true,
-        recurringFrequency: 'monthly',
-      })
-    }
-    updateSettings({ noIncomeDeclared: false })
-
-    // 2. Replace budget plan categories
-    replaceBudgetPlanCategories(planId, cats.map((c) => ({
-      id: crypto.randomUUID(),
-      name: c.name,
-      icon: c.emoji,
-      amount: c.amount,
-      currency: basics.currency,
-      subcategories: [],
-    })))
-
-    // 3. Mark plan as complete
-    updateBudgetPlan(planId, { buddgyGuidedComplete: true, buddgyFlow: null })
-
-    // 4. Store financial goals
-    if (parsed?.lifestyleNotes) {
-      setFinancialGoalsNotes(parsed.lifestyleNotes)
-    }
-
-    // 5. Push profile updates
-    if (basics.city || basics.country) {
-      void pushProfileFieldsToSupabase({
-        city: basics.city || undefined,
-        country: basics.country || undefined,
-      })
-    }
-
-    setStep('applied')
   }, [
-    editingPlan, editedCategories, plan, basics, planId, parsed,
-    incomeSources, addIncomeSource, updateIncomeSource, updateSettings,
-    replaceBudgetPlanCategories, updateBudgetPlan, setFinancialGoalsNotes,
+    displayExpenseRows,
+    basics,
+    savingsAmount,
+    totalPlannedExpenses,
+    lifestyle.transport,
+    mergedLifestyleNotes,
+    applyCategoriesToStore,
   ])
 
-  const goBackToLifestyle = useCallback(() => {
-    setStep('lifestyle')
-  }, [])
+  const goBack = useCallback(() => {
+    setError(null)
+    if (step === 'confirm') setStep('describe')
+    else if (step === 'lifestyle') setStep('confirm')
+    else if (step === 'savings') setStep('lifestyle')
+  }, [step])
 
-  const updateEditedCategory = useCallback((index: number, amount: number) => {
-    setEditedCategories((prev) => prev.map((c, i) => i === index ? { ...c, amount } : c))
-  }, [])
+  const submitRegenerateFeedback = useCallback(
+    (tweak: RegenerateTweak, customNote: string | null) => {
+      if (regenCount >= 3) return
+      if (rawExpenseBase.length === 0) return
+      const { rows, noteForAi, rentNote } = applyRegenerateTweak(rawExpenseBase, tweak, customNote)
+      setExpenseBaseOverride(rows)
+      if (noteForAi) setExtraAiContext((prev) => [...prev, noteForAi])
+      if (rentNote) setRentAdjustHint(rentNote)
+      else setRentAdjustHint(null)
+      setRegenCount((c) => c + 1)
+    },
+    [regenCount, rawExpenseBase]
+  )
 
   return {
     step,
     stepIndex,
-    progress,
     loading,
+    loadingKind,
     error,
     parsed,
     basics,
@@ -292,22 +387,24 @@ export function useBuddgyBuilderFlow(planId: string, onClose: () => void) {
     setLifestyle,
     savingsPercent,
     setSavingsPercent,
-    remaining,
+    remainingPool,
     savingsAmount,
-    bufferAmount,
+    totalPlannedExpenses,
+    displayExpenseRows,
     plan,
-    editingPlan,
-    setEditingPlan,
-    editedCategories,
-    updateEditedCategory,
     regenCount,
     computedBudget,
+    describeText,
+    setDescribeText,
+    initialDescribeText: options?.initialDescribeText ?? '',
+    knownIncome: options?.knownIncome,
     submitDescription,
     confirmBasics,
     confirmLifestyle,
-    generatePlan,
-    applyPlan,
-    goBackToLifestyle,
+    confirmAndApplyPlan,
+    goBack,
+    submitRegenerateFeedback,
+    rentAdjustHint,
     onClose,
     baseCurrency: settings.baseCurrency,
   }

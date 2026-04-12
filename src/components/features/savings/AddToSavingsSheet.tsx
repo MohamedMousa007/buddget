@@ -18,7 +18,7 @@ export interface AddToSavingsSheetProps {
 }
 
 /**
- * Deposit into a savings account (ledger only — not an expense).
+ * Deposit into savings (ledger only — not an expense).
  * Remount via `key` on the parent when opening so fields reset.
  */
 export function AddToSavingsSheet({
@@ -50,7 +50,7 @@ export function AddToSavingsSheet({
         <div className="mt-4 space-y-3">
           <div>
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">
-              {t.savings.labelWhichAccount}
+              {t.savings.labelWhichSavings}
             </Label>
             <select
               value={accountId}
@@ -59,7 +59,7 @@ export function AddToSavingsSheet({
             >
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
-                  {a.emoji} {a.name} ({formatCurrency(a.currentBalance, a.currency)})
+                  {a.name} ({formatCurrency(a.currentBalance, a.currency)})
                 </option>
               ))}
             </select>

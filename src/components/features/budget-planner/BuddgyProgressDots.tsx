@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 
-const STEPS = ['describe', 'confirm', 'lifestyle', 'savings', 'plan', 'applied'] as const
+const STEPS = ['describe', 'confirm', 'lifestyle', 'savings', 'applied'] as const
 
 interface BuddgyProgressDotsProps {
   currentIndex: number

@@ -1,12 +1,10 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import type { BuddgyBuilderApi } from '@/hooks/useBuddgyBuilderFlow'
 import type { FoodFrequency, TransportMode, LifestyleTier } from '@/lib/budget/lifestyleMappings'
 
 type SubStep = 'food' | 'transport' | 'tier'
-const SUB_ORDER: SubStep[] = ['food', 'transport', 'tier']
 
 const FOOD_OPTIONS: { value: FoodFrequency; label: string }[] = [
   { value: 'everyday', label: 'Every day' },
@@ -35,73 +33,39 @@ const PROMPTS: Record<SubStep, string> = {
 }
 
 /**
- * Step 2: Lifestyle choices — all tappable pills, no typing.
- * Auto-advances between sub-questions after 400ms.
+ * Step 2: Lifestyle choices — tappable pills; advances immediately (no duplicate progress row).
  */
 export function BuddgyStepLifestyle({ flow }: { flow: BuddgyBuilderApi }) {
   const { lifestyle, setLifestyle, confirmLifestyle } = flow
-  const [subStep, setSubStep] = useState<SubStep>('food')
-  const advanceTimer = useRef<ReturnType<typeof setTimeout>>(null)
 
-  const currentIndex = SUB_ORDER.indexOf(subStep)
-
-  function advanceSub(next: SubStep | 'done') {
-    if (advanceTimer.current) clearTimeout(advanceTimer.current)
-    advanceTimer.current = setTimeout(() => {
-      if (next === 'done') {
-        confirmLifestyle()
-      } else {
-        setSubStep(next)
-      }
-    }, 400)
-  }
-
-  useEffect(() => () => {
-    if (advanceTimer.current) clearTimeout(advanceTimer.current)
-  }, [])
+  const subStep: SubStep =
+    !lifestyle.food ? 'food'
+    : !lifestyle.transport ? 'transport'
+    : 'tier'
 
   const selectFood = (v: FoodFrequency) => {
     setLifestyle((prev) => ({ ...prev, food: v }))
-    advanceSub('transport')
   }
 
   const selectTransport = (v: TransportMode) => {
     setLifestyle((prev) => ({ ...prev, transport: v }))
-    advanceSub('tier')
   }
 
   const selectTier = (v: LifestyleTier) => {
     setLifestyle((prev) => ({ ...prev, tier: v }))
-    advanceSub('done')
+    confirmLifestyle()
   }
 
   return (
     <div className="space-y-4">
-      {/* Sub-step indicators */}
-      <div className="flex items-center gap-1.5 justify-center">
-        {SUB_ORDER.map((_, i) => (
-          <div
-            key={i}
-            className={`h-1 rounded-full transition-all duration-300 ${
-              i === currentIndex ? 'w-6 bg-[var(--color-brand-red)]'
-              : i < currentIndex ? 'w-3 bg-[var(--color-brand-green)]'
-              : 'w-3 bg-[var(--color-brand-border)]'
-            }`}
-          />
-        ))}
-      </div>
-
       <motion.div
         key={subStep}
-        initial={{ x: 60, opacity: 0 }}
+        initial={{ x: 40, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
-        exit={{ x: -60, opacity: 0 }}
-        transition={{ duration: 0.25 }}
+        transition={{ duration: 0.2 }}
         className="space-y-4"
       >
-        <p className="text-sm text-[var(--color-brand-text-primary)]">
-          {PROMPTS[subStep]}
-        </p>
+        <p className="text-sm text-[var(--color-brand-text-primary)]">{PROMPTS[subStep]}</p>
 
         <div className="flex flex-wrap gap-2">
           {subStep === 'food' &&

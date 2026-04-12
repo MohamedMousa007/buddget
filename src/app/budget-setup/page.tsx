@@ -1,13 +1,12 @@
 'use client'
 
-import { useRef, useEffect, useState } from 'react'
-import { Bot, SlidersHorizontal } from 'lucide-react'
+import { useRef, useEffect } from 'react'
+import { SlidersHorizontal } from 'lucide-react'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { BudgetPlannerSummary } from '@/components/features/budget-planner/BudgetPlannerSummary'
 import { BudgetPlannerCategories } from '@/components/features/budget-planner/BudgetPlannerCategories'
 import { BudgetSetupNoPlansEmpty } from '@/components/features/budget-planner/BudgetSetupNoPlansEmpty'
 import { BudgetSetupPlanToolbar } from '@/components/features/budget-planner/BudgetSetupPlanToolbar'
-import { BuddgyAiChat } from '@/components/features/budget-planner/BuddgyAiChat'
 import { AddIncomeSheet } from '@/components/modals/AddIncomeSheet'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useBudgetSetupPage } from '@/hooks/useBudgetSetupPage'
@@ -19,7 +18,6 @@ export default function BudgetSetupPage() {
   const p = useBudgetSetupPage()
   const { t } = p
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
-  const [buddgyAiOpen, setBuddgyAiOpen] = useState(false)
   const planNameInputRef = useRef<HTMLInputElement>(null)
   const hasIncome = p.totalIncome > 0
 
@@ -120,46 +118,31 @@ export default function BudgetSetupPage() {
                 />
 
                 {p.activePlan ?
-                  <div className="space-y-4">
-                    <BudgetPlannerCategories
-                      planId={p.activePlan.id}
-                      categories={p.activePlan.categories}
-                      settings={p.settings}
-                      labels={p.categoryLabels}
-                      onAddPresetCategory={(icon, name) =>
-                        p.addPlanCategory(p.activePlan!.id, { name, icon, amount: 0 })
-                      }
-                      onAddCustomCategory={(name, icon) =>
-                        p.addPlanCategory(p.activePlan!.id, { name, icon, amount: 0 })
-                      }
-                      onUpdateCategory={(categoryId, updates) =>
-                        p.updatePlanCategory(p.activePlan!.id, categoryId, updates)
-                      }
-                      onDeleteCategory={(categoryId) => p.deletePlanCategory(p.activePlan!.id, categoryId)}
-                      onAddSubcategory={(categoryId) =>
-                        p.addPlanSubcategory(p.activePlan!.id, categoryId, { name: '', amount: 0, icon: '📦' })
-                      }
-                      onUpdateSubcategory={(categoryId, subId, updates) =>
-                        p.updatePlanSubcategory(p.activePlan!.id, categoryId, subId, updates)
-                      }
-                      onDeleteSubcategory={(categoryId, subId) =>
-                        p.deletePlanSubcategory(p.activePlan!.id, categoryId, subId)
-                      }
-                    />
-
-                    {buddgyAiOpen ? (
-                      <BuddgyAiChat planId={p.activePlan.id} onClose={() => setBuddgyAiOpen(false)} />
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setBuddgyAiOpen(true)}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--color-brand-border)] py-3 text-sm font-medium text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] hover:text-[var(--color-brand-text-primary)] transition-colors"
-                      >
-                        <Bot className="h-4 w-4" />
-                        Chat with Buddgy to adjust your plan
-                      </button>
-                    )}
-                  </div>
+                  <BudgetPlannerCategories
+                    planId={p.activePlan.id}
+                    categories={p.activePlan.categories}
+                    settings={p.settings}
+                    labels={p.categoryLabels}
+                    onAddPresetCategory={(icon, name) =>
+                      p.addPlanCategory(p.activePlan!.id, { name, icon, amount: 0 })
+                    }
+                    onAddCustomCategory={(name, icon) =>
+                      p.addPlanCategory(p.activePlan!.id, { name, icon, amount: 0 })
+                    }
+                    onUpdateCategory={(categoryId, updates) =>
+                      p.updatePlanCategory(p.activePlan!.id, categoryId, updates)
+                    }
+                    onDeleteCategory={(categoryId) => p.deletePlanCategory(p.activePlan!.id, categoryId)}
+                    onAddSubcategory={(categoryId) =>
+                      p.addPlanSubcategory(p.activePlan!.id, categoryId, { name: '', amount: 0, icon: '📦' })
+                    }
+                    onUpdateSubcategory={(categoryId, subId, updates) =>
+                      p.updatePlanSubcategory(p.activePlan!.id, categoryId, subId, updates)
+                    }
+                    onDeleteSubcategory={(categoryId, subId) =>
+                      p.deletePlanSubcategory(p.activePlan!.id, categoryId, subId)
+                    }
+                  />
                 : null}
               </>
             )}

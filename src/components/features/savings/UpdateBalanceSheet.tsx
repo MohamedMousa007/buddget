@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import type { SavingsAccount } from '@/lib/store/types'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
+import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 
 export interface UpdateBalanceSheetProps {
   open: boolean
@@ -35,8 +36,9 @@ export function UpdateBalanceSheet({ open, onClose, account, onCorrect }: Update
     <ModalShell open={open} onBackdropClick={onClose}>
       <div className="p-6 max-h-[90vh] overflow-y-auto">
         <ModalSheetHeader title={t.savings.sheetUpdateTitle} onClose={onClose} />
-        <p className="mt-2 text-sm text-[var(--color-brand-text-primary)]">
-          {account.emoji} {account.name}
+        <p className="mt-2 flex items-center gap-2 text-sm text-[var(--color-brand-text-primary)]">
+          <SavingsAccountIcon account={account} className="h-5 w-5 shrink-0" />
+          <span>{account.name}</span>
         </p>
         <p className="text-xs text-[var(--color-brand-text-muted)] mt-1">
           {t.savings.currentBalanceLabel}{' '}

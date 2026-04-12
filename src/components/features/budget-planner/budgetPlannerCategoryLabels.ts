@@ -14,4 +14,6 @@ export interface BudgetPlannerCategoryRowLabels {
   chooseCategoryTitle: string
   customCategoryOption: string
   editCategoryName: string
+  /** Badge for plan rows that are savings targets, not spending. */
+  savingsAllocationBadge: string
 }

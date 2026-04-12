@@ -164,7 +164,7 @@ RULES:
 11. For "update_budget_category", include data.category (one of the expense categories) and either data.budgetedAmount (number in ${baseCurrency}) OR data.percentOfIncome (0-100). If user sets a percent, use percentOfIncome; if a fixed amount, use budgetedAmount.
 
 12. For "update_budget_plan_row", include data.planId, data.categoryId, data.newAmount (number in base currency). Use this to adjust a single category's budget amount in the active plan.
-13. For "replace_budget_plan", include data.planId, data.categories (array of {name, emoji, amount, currency}). Use this to completely rebuild the user's budget plan. Only use when the user asks for a full plan rebuild.
+13. For "replace_budget_plan", include data.planId, data.categories (array of {name, emoji, amount, currency, isSavings?: boolean}). Set isSavings: true only on the savings allocation row; omit or false on expense rows. Use this to completely rebuild the user's budget plan. Only use when the user asks for a full plan rebuild.
 ${budgetPlanContext ? `
 ACTIVE_BUDGET_PLAN:
 - Plan ID: ${budgetPlanContext.planId}
@@ -176,7 +176,7 @@ RESPONSE FORMAT for update_budget_plan_row:
 {"action":"update_budget_plan_row","data":{"planId":"plan-uuid","categoryId":"category-uuid","newAmount":1500},"confidence":1,"clarificationNeeded":null,"message":"short friendly confirmation"}
 
 RESPONSE FORMAT for replace_budget_plan:
-{"action":"replace_budget_plan","data":{"planId":"plan-uuid","categories":[{"name":"Rent","emoji":"🏠","amount":3000,"currency":"${baseCurrency}"},{"name":"Food","emoji":"🍕","amount":1500,"currency":"${baseCurrency}"}]},"confidence":1,"clarificationNeeded":null,"message":"short friendly confirmation"}
+{"action":"replace_budget_plan","data":{"planId":"plan-uuid","categories":[{"name":"Rent","emoji":"🏠","amount":3000,"currency":"${baseCurrency}"},{"name":"Food","emoji":"🍕","amount":1500,"currency":"${baseCurrency}"},{"name":"Savings","emoji":"💰","amount":2000,"currency":"${baseCurrency}","isSavings":true}]},"confidence":1,"clarificationNeeded":null,"message":"short friendly confirmation"}
 
 RESPONSE FORMAT for add_expense:
 {"action":"add_expense","data":{"description":"string","amount":number,"currency":"${baseCurrency}","category":"Food","paymentMethod":"Bank Transfer","date":"${today}","isRecurring":false},"confidence":1,"clarificationNeeded":null,"message":"short friendly confirmation"}

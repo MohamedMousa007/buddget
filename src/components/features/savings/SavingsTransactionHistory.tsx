@@ -5,6 +5,7 @@ import { format, parseISO } from 'date-fns'
 import type { SavingsAccount, SavingsTransaction } from '@/lib/store/types'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
+import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 
 export interface SavingsTransactionHistoryProps {
   transactions: SavingsTransaction[]
@@ -37,10 +38,10 @@ export function SavingsTransactionHistory({ transactions, accounts }: SavingsTra
           onChange={(e) => setFilterId(e.target.value)}
           className="h-9 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-xs text-[var(--color-brand-text-primary)]"
         >
-          <option value="all">{t.savings.filterAllAccounts}</option>
+          <option value="all">{t.savings.filterAllSavings}</option>
           {accounts.map((a) => (
             <option key={a.id} value={a.id}>
-              {a.emoji} {a.name}
+              {a.name}
             </option>
           ))}
         </select>
@@ -57,8 +58,15 @@ export function SavingsTransactionHistory({ transactions, accounts }: SavingsTra
             return (
               <li key={tx.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
                 <div className="min-w-0">
-                  <span className="text-[var(--color-brand-text-primary)]">
-                    {a ? `${a.emoji} ${a.name}` : tx.accountId}
+                  <span className="inline-flex items-center gap-1.5 text-[var(--color-brand-text-primary)]">
+                    {a ? (
+                      <>
+                        <SavingsAccountIcon account={a} className="h-4 w-4" />
+                        <span>{a.name}</span>
+                      </>
+                    ) : (
+                      tx.accountId
+                    )}
                   </span>
                   <span className="mx-2 text-[var(--color-brand-text-muted)]">
                     {format(parseISO(tx.date.length > 10 ? tx.date : `${tx.date}T12:00:00`), 'd MMM')}

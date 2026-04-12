@@ -2,6 +2,29 @@ import { z } from 'zod'
 
 const currencySchema = z.enum(['AED', 'USD', 'EGP', 'EUR', 'GBP', 'SAR', 'XAU'])
 const fiatCurrencySchema = z.enum(['AED', 'USD', 'EGP', 'EUR', 'GBP', 'SAR'])
+const savingsCurrencySchema = z.enum([
+  'AED',
+  'USD',
+  'EGP',
+  'EUR',
+  'GBP',
+  'SAR',
+  'XAU',
+  'USDT',
+  'USDC',
+  'BTC',
+  'ETH',
+])
+const savingsTypeSchema = z.enum([
+  'bank',
+  'cash',
+  'gold',
+  'crypto_stable',
+  'crypto',
+  'stocks',
+  'real_estate',
+  'other',
+])
 
 const paymentMethodTypeSchema = z.enum([
   'cash',
@@ -151,6 +174,7 @@ export const importDataSchema = z.object({
             icon: z.string(),
             amount: z.number(),
             currency: fiatCurrencySchema.optional(),
+            isSavings: z.boolean().optional(),
             subcategories: z.array(
               z.object({
                 id: z.string(),
@@ -186,9 +210,11 @@ export const importDataSchema = z.object({
       z.object({
         id: z.string(),
         name: z.string(),
-        emoji: z.string(),
+        type: savingsTypeSchema.optional(),
+        icon: z.string().optional(),
+        emoji: z.string().optional(),
         targetAmount: z.number().optional(),
-        currency: fiatCurrencySchema,
+        currency: savingsCurrencySchema,
         currentBalance: z.number(),
         createdAt: z.string(),
         notes: z.string().optional(),
@@ -214,7 +240,7 @@ export const importDataSchema = z.object({
         accountId: z.string(),
         type: z.enum(['deposit', 'withdrawal']),
         amount: z.number(),
-        currency: fiatCurrencySchema,
+        currency: savingsCurrencySchema,
         date: z.string(),
         source: z.string().optional(),
         notes: z.string().optional(),

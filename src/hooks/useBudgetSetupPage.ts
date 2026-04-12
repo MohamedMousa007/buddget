@@ -144,6 +144,7 @@ export function useBudgetSetupPage() {
       subcategoryNamePlaceholder: t.budgetPlanner.subcategoryNamePlaceholder,
       amountPlaceholder: t.budgetPlanner.amountPlaceholder,
       emojiPickerLabel: t.budgetPlanner.emojiPickerLabel,
+      savingsAllocationBadge: t.budgetPlanner.savingsAllocationBadge,
     }),
     [t.budgetPlanner]
   )

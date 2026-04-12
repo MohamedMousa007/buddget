@@ -25,6 +25,8 @@ export interface BudgetPlannerCategoryRowHeaderProps {
     currency?: Currency
   }) => void
   onDeleteCategory: () => void
+  savingsAllocationBadge: string
+  showSavingsBadge: boolean
 }
 
 /**
@@ -44,6 +46,8 @@ export function BudgetPlannerCategoryRowHeader({
   onAmountBlur,
   onUpdateCategory,
   onDeleteCategory,
+  savingsAllocationBadge,
+  showSavingsBadge,
 }: BudgetPlannerCategoryRowHeaderProps) {
   return (
     <div className="flex flex-wrap items-center gap-2 p-3">
@@ -62,6 +66,11 @@ export function BudgetPlannerCategoryRowHeader({
         labels={labels}
         onUpdateCategory={onUpdateCategory}
       />
+      {showSavingsBadge ? (
+        <span className="shrink-0 rounded-md bg-[var(--color-brand-green)]/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-brand-green)]">
+          {savingsAllocationBadge}
+        </span>
+      ) : null}
       <BudgetPlannerCategoryCurrencyAmountField
         category={category}
         settings={settings}

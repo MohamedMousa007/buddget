@@ -5,8 +5,10 @@ import { generateWithFallback, throwIfAiProxyNotOk } from '@/lib/ai/generateWith
 import {
   effectivePlanCategoryAmount,
   effectivePlanCategoryAmountInBase,
+  isSavingsPlanCategory,
   planCategoryCurrency,
   totalPlannedExpensesForPlan,
+  totalPlannedSavingsAllocationForPlan,
 } from '@/lib/budget/budgetPlans'
 import { parseModelJsonToAIResponse, type AIResponse } from '@/lib/ai/gemini'
 
@@ -46,6 +48,7 @@ export function buildPlanRowsForPrompt(
     categoryId: c.id,
     name: c.name,
     icon: c.icon,
+    isSavings: isSavingsPlanCategory(c),
     rowCurrency: planCategoryCurrency(c, baseCurrency),
     amountIfNoSubs: c.amount,
     subcategories: c.subcategories.map((s) => ({
@@ -65,15 +68,17 @@ export function buildBudgetPlannerContextBlock(
   baseCurrency: Currency,
   exchangeRates: Record<string, number>
 ): string {
-  const planned = totalPlannedExpensesForPlan(plan, baseCurrency, exchangeRates)
-  const projectedSavings = totalMonthlyIncome - planned
+  const plannedExpenses = totalPlannedExpensesForPlan(plan, baseCurrency, exchangeRates)
+  const plannedSavingsAlloc = totalPlannedSavingsAllocationForPlan(plan, baseCurrency, exchangeRates)
+  const projectedSavings = totalMonthlyIncome - plannedExpenses
   return [
     `BASE_CURRENCY: ${baseCurrency}`,
     `PLAN_ID: ${plan.id}`,
     `PLAN_NAME: ${plan.name}`,
     `TOTAL_MONTHLY_INCOME (estimated, base currency): ${totalMonthlyIncome}`,
-    `TOTAL_PLANNED_EXPENSES (sum of category effective totals, converted to base): ${planned}`,
-    `PROJECTED_SAVINGS (income - planned): ${projectedSavings}`,
+    `TOTAL_PLANNED_EXPENSES (expense categories only, base currency): ${plannedExpenses}`,
+    `PLANNED_SAVINGS_ALLOCATION (savings rows, base currency): ${plannedSavingsAlloc}`,
+    `PROJECTED_SAVINGS (income - planned expenses): ${projectedSavings}`,
     'PLAN_ROWS_JSON:',
     buildPlanRowsForPrompt(plan, baseCurrency, exchangeRates),
   ].join('\n')

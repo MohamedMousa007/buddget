@@ -6,6 +6,7 @@ import type { SavingsAccount, SavingsAutoSave } from '@/lib/store/types'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
 import { AutoSaveConfig } from '@/components/features/savings/AutoSaveConfig'
+import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 
 export interface SavingsAccountCardProps {
   account: SavingsAccount
@@ -17,7 +18,7 @@ export interface SavingsAccountCardProps {
 }
 
 /**
- * Single savings goal / account with balance, goal bar, and actions.
+ * Single savings bucket with balance, auto-save, and transfer actions.
  */
 export function SavingsAccountCard({
   account,
@@ -29,23 +30,23 @@ export function SavingsAccountCard({
 }: SavingsAccountCardProps) {
   const t = useT()
   const [menuOpen, setMenuOpen] = useState(false)
-  const hasTarget = account.targetAmount != null && account.targetAmount > 0
-  const pct =
-    hasTarget && account.targetAmount
-      ? Math.min(100, (account.currentBalance / account.targetAmount) * 100)
-      : 0
 
   return (
     <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4 space-y-3">
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-[var(--color-brand-text-primary)] truncate">
-            <span className="mr-1.5">{account.emoji}</span>
-            {account.name}
-          </p>
-          <p className="mt-1 text-2xl font-mono-numbers font-bold text-[var(--color-brand-text-primary)]">
-            {formatCurrency(account.currentBalance, account.currency)}
-          </p>
+        <div className="min-w-0 flex gap-2">
+          <SavingsAccountIcon
+            account={account}
+            className="mt-0.5 h-6 w-6 text-[var(--color-brand-text-primary)]"
+          />
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-[var(--color-brand-text-primary)] truncate">
+              {account.name}
+            </p>
+            <p className="mt-1 text-2xl font-mono-numbers font-bold text-[var(--color-brand-text-primary)]">
+              {formatCurrency(account.currentBalance, account.currency)}
+            </p>
+          </div>
         </div>
         <div className="relative shrink-0">
           <button
@@ -72,20 +73,6 @@ export function SavingsAccountCard({
           )}
         </div>
       </div>
-
-      {hasTarget && (
-        <>
-          <div className="h-1.5 rounded-full bg-[var(--color-brand-border)] overflow-hidden">
-            <div
-              className="h-full rounded-full bg-[var(--color-brand-green)]"
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-          <p className="text-xs text-[var(--color-brand-text-muted)]">
-            {t.savings.ofGoal(Math.round(pct))} · {formatCurrency(account.targetAmount!, account.currency)}
-          </p>
-        </>
-      )}
 
       {account.autoSave?.enabled && (
         <p className="text-xs text-[var(--color-brand-text-secondary)]">

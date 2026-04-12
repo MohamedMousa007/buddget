@@ -9,6 +9,10 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   GBP: '£',
   SAR: 'SAR',
   XAU: 'g',
+  USDT: 'USDT',
+  USDC: 'USDC',
+  BTC: 'BTC',
+  ETH: 'ETH',
 }
 
 export function formatCurrency(amount: number, currency: Currency | string, showCents = true): string {

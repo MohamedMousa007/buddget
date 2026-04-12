@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import type { AppSettings, BudgetPlanCategory, BudgetPlanSubcategory, Currency } from '@/lib/store/types'
-import { effectivePlanCategoryAmount } from '@/lib/budget/budgetPlans'
+import { effectivePlanCategoryAmount, isSavingsPlanCategory } from '@/lib/budget/budgetPlans'
 import type { BudgetPlannerCategoryRowLabels } from '@/components/features/budget-planner/budgetPlannerCategoryLabels'
 import { BudgetPlannerCategoryRowHeader } from '@/components/features/budget-planner/BudgetPlannerCategoryRowHeader'
 import { BudgetPlannerCategorySubcategoriesPanel } from '@/components/features/budget-planner/BudgetPlannerCategorySubcategoriesPanel'
@@ -72,8 +72,14 @@ export function BudgetPlannerCategoryRow({
     setAmountStr('')
   }
 
+  const savingsRow = isSavingsPlanCategory(category)
+
   return (
-    <div className="rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/40 overflow-hidden">
+    <div
+      className={`rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/40 overflow-hidden ${
+        savingsRow ? 'border-l-[3px] border-l-[var(--color-brand-green)]' : ''
+      }`}
+    >
       <BudgetPlannerCategoryRowHeader
         category={category}
         planCategories={planCategories}
@@ -88,6 +94,8 @@ export function BudgetPlannerCategoryRow({
         onAmountBlur={blurCategoryAmount}
         onUpdateCategory={onUpdateCategory}
         onDeleteCategory={onDeleteCategory}
+        savingsAllocationBadge={labels.savingsAllocationBadge}
+        showSavingsBadge={savingsRow}
       />
       <AnimatePresence initial={false}>
         {open ? (

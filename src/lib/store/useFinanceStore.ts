@@ -20,23 +20,26 @@ import type {
   SavingsAccount,
   SavingsHolding,
   SavingsTransaction,
+  SavingsType,
 } from './types'
 import { defaultOnboardingState } from '@/lib/onboarding/onboardingTypes'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
+import { SAVINGS_TYPE_ICONS } from '@/lib/constants/savingsIcons'
+import { normalizeSavingsAccountsList } from '@/lib/savings/normalizeSavingsAccount'
 
-const PERSIST_VERSION = 8
+const PERSIST_VERSION = 9
 
-function savingsSubtypeEmoji(subtype: string): string {
-  const m: Record<string, string> = {
-    bank: '🏦',
-    cash: '💵',
-    gold: '🪙',
-    stocks: '📈',
-    crypto: '₿',
-    real_estate: '🏠',
-    other: '💰',
+function holdingSubtypeToSavingsType(sub: SavingsHolding['subtype']): SavingsType {
+  const m: Record<SavingsHolding['subtype'], SavingsType> = {
+    bank: 'bank',
+    cash: 'cash',
+    gold: 'gold',
+    stocks: 'stocks',
+    crypto: 'crypto',
+    real_estate: 'real_estate',
+    other: 'other',
   }
-  return m[subtype] ?? '💰'
+  return m[sub]
 }
 
 function migrateSavingsHoldingsToLedger(
@@ -46,10 +49,12 @@ function migrateSavingsHoldingsToLedger(
   const accounts: SavingsAccount[] = []
   const transactions: SavingsTransaction[] = []
   for (const h of holdings) {
+    const st = holdingSubtypeToSavingsType(h.subtype)
     accounts.push({
       id: h.id,
       name: h.name,
-      emoji: savingsSubtypeEmoji(h.subtype),
+      type: st,
+      icon: SAVINGS_TYPE_ICONS[st],
       currency: h.currency,
       currentBalance: h.amount,
       createdAt: h.createdAt,
@@ -575,18 +580,40 @@ export const useFinanceStore = create<FinanceStore>()(
         })),
 
       addSavingsAccount: (a) => {
+        const input = a as Omit<SavingsAccount, 'id' | 'createdAt' | 'currentBalance'> & {
+          openingBalance?: number
+        }
+        const { openingBalance: openingField, ...rest } = input
+        const openingBalance = Math.max(0, Number(openingField) || 0)
         const id = generateId()
-        set((state) => ({
-          savingsAccounts: [
-            ...state.savingsAccounts,
-            {
-              ...a,
-              id,
-              currentBalance: 0,
-              createdAt: new Date().toISOString(),
-            },
-          ],
-        }))
+        const today = new Date().toISOString().slice(0, 10)
+        set((state) => {
+          const row: SavingsAccount = {
+            ...rest,
+            id,
+            currentBalance: openingBalance,
+            createdAt: new Date().toISOString(),
+          }
+          const nextTx =
+            openingBalance > 0.00001
+              ? [
+                  ...state.savingsTransactions,
+                  {
+                    id: generateId(),
+                    accountId: id,
+                    type: 'deposit' as const,
+                    amount: openingBalance,
+                    currency: row.currency,
+                    date: today,
+                    notes: 'Opening balance',
+                  },
+                ]
+              : state.savingsTransactions
+          return {
+            savingsAccounts: [...state.savingsAccounts, row],
+            savingsTransactions: nextTx,
+          }
+        })
         return id
       },
 
@@ -604,12 +631,13 @@ export const useFinanceStore = create<FinanceStore>()(
         })),
 
       depositToSavings: (accountId, amount, currency, notes, opts) => {
-        const cIn = clampFiatToAllowed(get().settings, currency)
         const raw = Math.max(0, Number(amount) || 0)
         if (raw <= 0) return
         set((state) => {
           const acc = state.savingsAccounts.find((a) => a.id === accountId)
           if (!acc) return state
+          const cIn =
+            currency === acc.currency ? acc.currency : clampFiatToAllowed(state.settings, currency)
           const rates = state.exchangeRates
           const amt =
             cIn === acc.currency ? raw : convertCurrency(raw, cIn, acc.currency, rates)
@@ -635,12 +663,13 @@ export const useFinanceStore = create<FinanceStore>()(
       },
 
       withdrawFromSavings: (accountId, amount, currency, notes) => {
-        const cIn = clampFiatToAllowed(get().settings, currency)
         const raw = Math.max(0, Number(amount) || 0)
         if (raw <= 0) return
         set((state) => {
           const acc = state.savingsAccounts.find((a) => a.id === accountId)
           if (!acc) return state
+          const cIn =
+            currency === acc.currency ? acc.currency : clampFiatToAllowed(state.settings, currency)
           const rates = state.exchangeRates
           const amt =
             cIn === acc.currency ? raw : convertCurrency(raw, cIn, acc.currency, rates)
@@ -745,7 +774,9 @@ export const useFinanceStore = create<FinanceStore>()(
 
         const data = result.data
         const holdings = data.savingsHoldings ?? []
-        let savingsAccounts: SavingsAccount[] = (data.savingsAccounts ?? []) as SavingsAccount[]
+        let savingsAccounts: SavingsAccount[] = normalizeSavingsAccountsList(
+          (data.savingsAccounts ?? []) as unknown[]
+        )
         let savingsTransactions: SavingsTransaction[] = (data.savingsTransactions ?? []) as SavingsTransaction[]
         let savingsHoldingsOut = holdings
         if (savingsAccounts.length === 0 && holdings.length > 0) {
@@ -848,6 +879,9 @@ export const useFinanceStore = create<FinanceStore>()(
             savingsTransactions = migrated.transactions
             savingsHoldingsOut = []
           }
+          if (fromVersion < 9) {
+            savingsAccounts = normalizeSavingsAccountsList(savingsAccounts as unknown[])
+          }
           return {
             ...p,
             budgetPlans: Array.isArray(p.budgetPlans) ? p.budgetPlans : [],
@@ -872,6 +906,12 @@ export const useFinanceStore = create<FinanceStore>()(
         }
         if (fromVersion >= 5) {
           const prevSettings = (p.settings as Record<string, unknown> | undefined) || {}
+          const savingsAccounts =
+            fromVersion < 9
+              ? normalizeSavingsAccountsList(
+                  Array.isArray(p.savingsAccounts) ? (p.savingsAccounts as unknown[]) : []
+                )
+              : ((p.savingsAccounts as SavingsAccount[]) ?? [])
           return {
             ...p,
             budgetPlans: Array.isArray(p.budgetPlans) ? p.budgetPlans : [],
@@ -883,6 +923,7 @@ export const useFinanceStore = create<FinanceStore>()(
             recurringDebtPayments: Array.isArray(p.recurringDebtPayments)
               ? p.recurringDebtPayments
               : [],
+            savingsAccounts,
             settings: {
               ...DEFAULT_SETTINGS,
               ...prevSettings,
@@ -893,12 +934,19 @@ export const useFinanceStore = create<FinanceStore>()(
         }
         if (fromVersion >= 3) {
           const prevSettings = (p.settings as Record<string, unknown> | undefined) || {}
+          const savingsAccounts =
+            fromVersion < 9
+              ? normalizeSavingsAccountsList(
+                  Array.isArray(p.savingsAccounts) ? (p.savingsAccounts as unknown[]) : []
+                )
+              : ((p.savingsAccounts as SavingsAccount[]) ?? [])
           return {
             ...p,
             onboardingState: (p.onboardingState as OnboardingState | undefined) ?? defaultOnboardingState(),
             recurringDebtPayments: Array.isArray(p.recurringDebtPayments)
               ? p.recurringDebtPayments
               : [],
+            savingsAccounts,
             settings: {
               ...DEFAULT_SETTINGS,
               ...prevSettings,
@@ -909,10 +957,17 @@ export const useFinanceStore = create<FinanceStore>()(
         }
         if (fromVersion >= 2) {
           const prevSettings = (p.settings as Record<string, unknown> | undefined) || {}
+          const savingsAccounts =
+            fromVersion < 9
+              ? normalizeSavingsAccountsList(
+                  Array.isArray(p.savingsAccounts) ? (p.savingsAccounts as unknown[]) : []
+                )
+              : ((p.savingsAccounts as SavingsAccount[]) ?? [])
           return {
             ...p,
             onboardingState: (p.onboardingState as OnboardingState | undefined) ?? defaultOnboardingState(),
             recurringDebtPayments: [],
+            savingsAccounts,
             settings: {
               ...DEFAULT_SETTINGS,
               ...prevSettings,

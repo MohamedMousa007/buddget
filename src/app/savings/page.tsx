@@ -21,7 +21,7 @@ import type { SavingsAccount } from '@/lib/store/types'
 import { useT } from '@/lib/i18n'
 
 /**
- * Savings accounts, transfer sheets, and ledger history (not expenses).
+ * Savings buckets, transfer sheets, and ledger history (not expenses).
  */
 export default function SavingsPage() {
   const t = useT()
@@ -159,7 +159,7 @@ export default function SavingsPage() {
                 }}
                 onUpdateAutoSave={(auto) => updateSavingsAccount(acc.id, { autoSave: auto })}
                 onDelete={() => {
-                  if (globalThis.confirm?.(t.savings.confirmDeleteAccount)) {
+                  if (globalThis.confirm?.(t.savings.confirmDeleteSavings)) {
                     deleteSavingsAccount(acc.id)
                   }
                 }}

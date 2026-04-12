@@ -9,6 +9,7 @@ import {
 import { EXPENSE_CATEGORIES, EXPENSE_ENTRY_CATEGORIES, PAYMENT_METHOD_TYPES } from '@/lib/constants/finance'
 import { pushProfileFieldsToSupabase } from '@/lib/profile/pushProfileFieldsToSupabase'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
+import { SAVINGS_TYPE_ICONS } from '@/lib/constants/savingsIcons'
 import type {
   BudgetPlanCategory,
   Currency,
@@ -16,6 +17,7 @@ import type {
   PaymentMethodType,
   SavingsBucket,
   SavingsSubtype,
+  SavingsType,
   Debt,
   DebtPayment,
   IncomeSource,
@@ -53,6 +55,19 @@ export function coercePaymentMethodType(raw: unknown): PaymentMethodType {
 export function coerceSavingsBucket(raw: unknown): SavingsBucket {
   const x = String(raw || '').toLowerCase()
   return x === 'investment' ? 'investment' : 'liquid'
+}
+
+function subtypeToSavingsType(sub: SavingsSubtype): SavingsType {
+  const m: Record<SavingsSubtype, SavingsType> = {
+    bank: 'bank',
+    cash: 'cash',
+    gold: 'gold',
+    stocks: 'stocks',
+    crypto: 'crypto',
+    real_estate: 'real_estate',
+    other: 'other',
+  }
+  return m[sub]
 }
 
 export function coerceSavingsSubtype(raw: unknown): SavingsSubtype {
@@ -378,15 +393,12 @@ export function executeActionItem(
       ctx.settings,
       String(getField(d, 'currency') || ctx.settings.baseCurrency) as Currency
     )
-    const emoji =
-      coerceSavingsSubtype(getField(d, 'subtype')) === 'bank'
-        ? '🏦'
-        : coerceSavingsSubtype(getField(d, 'subtype')) === 'cash'
-          ? '💵'
-          : '💰'
+    const sub = coerceSavingsSubtype(getField(d, 'subtype'))
+    const st = subtypeToSavingsType(sub)
     const id = ctx.addSavingsAccount({
       name: name || 'Savings',
-      emoji,
+      type: st,
+      icon: SAVINGS_TYPE_ICONS[st],
       currency,
       notes: getField(d, 'notes') as string | undefined,
     })
@@ -437,12 +449,16 @@ export function executeActionItem(
       const amount = Math.max(0, Number(row.amount) || 0)
       const curRaw = String(row.currency || ctx.settings.baseCurrency)
       const currency = clampFiatToAllowed(ctx.settings, curRaw as Currency)
+      const markSavings =
+        row.isSavings === true ||
+        (row.isSavings !== false && name.trim().toLowerCase() === 'savings')
       return {
         id: generateActionId(),
         name,
         icon: emoji,
         amount,
         currency,
+        ...(markSavings ? { isSavings: true as const } : {}),
         subcategories: [],
       }
     })

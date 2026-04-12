@@ -19,6 +19,7 @@ export function applyTheme(setting: ThemeSetting): void {
   const root = document.documentElement
   root.classList.toggle('dark', effective === 'dark')
   root.setAttribute('data-theme', effective)
+  root.style.colorScheme = effective === 'dark' ? 'dark' : 'light'
 }
 
 /**
@@ -28,7 +29,7 @@ export function applyTheme(setting: ThemeSetting): void {
 export const THEME_INIT_SCRIPT = `
 (function(){
   try {
-    var raw = localStorage.getItem('buddget-finance-data');
+    var raw = localStorage.getItem('buddget-storage');
     var theme = 'dark';
     if (raw) {
       var parsed = JSON.parse(raw);
@@ -39,11 +40,15 @@ export const THEME_INIT_SCRIPT = `
     if (theme === 'system') {
       eff = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
-    var cl = document.documentElement.classList;
+    var root = document.documentElement;
+    var cl = root.classList;
     if (eff === 'dark') cl.add('dark'); else cl.remove('dark');
-    document.documentElement.setAttribute('data-theme', eff);
+    root.setAttribute('data-theme', eff);
+    root.style.colorScheme = eff === 'dark' ? 'dark' : 'light';
   } catch(e) {
-    document.documentElement.classList.add('dark');
+    var r = document.documentElement;
+    r.classList.add('dark');
+    r.style.colorScheme = 'dark';
   }
 })();
 `

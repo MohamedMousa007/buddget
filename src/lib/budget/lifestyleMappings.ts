@@ -50,6 +50,15 @@ export interface BudgetCategoryRow {
   emoji: string
   amount: number
   currency: string
+  /** True for the savings allocation row from Buddgy Builder (not an expense category). */
+  isSavings?: boolean
+}
+
+/** Aligns with {@link isSavingsPlanCategory} for builder/editing rows before they are persisted. */
+export function isSavingsCategoryRow(r: BudgetCategoryRow): boolean {
+  if (r.isSavings === true) return true
+  if (r.isSavings === false) return false
+  return r.name.trim().toLowerCase() === 'savings'
 }
 
 export interface ComputedBudget {

@@ -1,5 +1,5 @@
 import { generateWithFallback, throwIfAiProxyNotOk } from '@/lib/ai/generateWithFallback'
-import type { BudgetCategoryRow } from '@/lib/budget/lifestyleMappings'
+import { isSavingsCategoryRow, type BudgetCategoryRow } from '@/lib/budget/lifestyleMappings'
 
 export interface GeneratedPlan {
   categories: BudgetCategoryRow[]
@@ -33,7 +33,9 @@ export async function generateBudgetPlan(params: {
   lifestyleNotes: string | null
   categories: BudgetCategoryRow[]
 }): Promise<GeneratedPlan> {
-  const totalExpenses = params.categories.reduce((s, c) => s + c.amount, 0)
+  const totalExpenses = params.categories
+    .filter((c) => !isSavingsCategoryRow(c))
+    .reduce((s, c) => s + c.amount, 0)
   const savingsRate = params.income > 0 ? Math.round((params.savingsAmount / params.income) * 100) : 0
 
   const systemPrompt = `You are Buddgy, a financial advisor for the Buddget app.

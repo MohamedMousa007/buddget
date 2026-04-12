@@ -34,17 +34,40 @@ Rules:
 - "missingFields" lists critical missing info (income is always required if not stated)
 - "lifestyleNotes" captures qualitative clues like "save the most" or "enjoy life"
 - If user mentions a currency, use it. Default to AED if city is in UAE.
-- "household": "solo" for single person, "couple" for with partner/spouse, "family" for with children`
+- "household": "solo" for single person, "couple" for with partner/spouse, "family" for with children
+- If CONTEXT says the app already knows monthly income, keep that amount unless the user clearly overrides it in their message.`
+
+export interface ParseBudgetInputOptions {
+  /** When rebuilding, pass known income so the model does not treat it as missing. */
+  knownIncome?: { amount: number; currency: string }
+  /** Extra lines (e.g. plan summary) prepended before the user's text. */
+  preamble?: string
+}
 
 /**
  * Parse free-text user description into structured budget input.
  * Single lightweight AI call (~500 input tokens, ~200 output tokens).
  */
-export async function parseBudgetInput(userText: string): Promise<ParsedBudgetInput> {
+export async function parseBudgetInput(
+  userText: string,
+  options?: ParseBudgetInputOptions
+): Promise<ParsedBudgetInput> {
+  const ctxParts: string[] = []
+  if (options?.knownIncome && options.knownIncome.amount > 0) {
+    ctxParts.push(
+      `CONTEXT: The user's monthly income is already ${options.knownIncome.amount} ${options.knownIncome.currency} in the app. Use this as income unless they explicitly give a different amount.`
+    )
+  }
+  if (options?.preamble?.trim()) {
+    ctxParts.push(`CONTEXT:\n${options.preamble.trim()}`)
+  }
+  const userBlock =
+    ctxParts.length > 0 ? `${ctxParts.join('\n\n')}\n\nUser message:\n${userText}` : userText
+
   const contents = [
     { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },
     { role: 'model', parts: [{ text: '{"income":{"amount":null,"currency":null},"city":null,"country":null,"household":null,"rent":{"amount":null,"includesUtilities":false},"transport":null,"savingsGoal":null,"lifestyleNotes":null,"missingFields":["income"]}' }] },
-    { role: 'user', parts: [{ text: userText }] },
+    { role: 'user', parts: [{ text: userBlock }] },
   ]
 
   const response = await generateWithFallback({

@@ -15,7 +15,7 @@ export interface BudgetPlannerSummaryProps {
     totalIncome: string
     totalPlanned: string
     projectedSavings: string
-    projectedSavingsLine: (amount: string) => string
+    projectedSavingsLine: (amount: string, savingsRatePercent: number) => string
   }
 }
 
@@ -30,6 +30,10 @@ export function BudgetPlannerSummary({
   labels,
 }: BudgetPlannerSummaryProps) {
   const savingsStr = hasIncome ? formatCurrency(projectedSavings, currency, true) : '—'
+  const savingsRatePercent =
+    hasIncome && totalIncome > 0
+      ? Math.max(0, Math.min(100, Math.round((projectedSavings / totalIncome) * 100)))
+      : 0
   return (
     <div className="rounded-2xl border border-[var(--color-brand-border)] bg-gradient-to-br from-[var(--color-brand-elevated)]/90 to-[var(--color-brand-card)] p-5 space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -81,7 +85,7 @@ export function BudgetPlannerSummary({
       </div>
       {hasIncome && (
         <p className="text-sm text-[var(--color-brand-text-secondary)] leading-relaxed border-t border-[var(--color-brand-border)]/60 pt-4">
-          {labels.projectedSavingsLine(savingsStr)}
+          {labels.projectedSavingsLine(savingsStr, savingsRatePercent)}
         </p>
       )}
     </div>

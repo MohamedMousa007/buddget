@@ -1,15 +1,15 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import type { AppSettings, BudgetPlanCategory, BudgetPlanSubcategory } from '@/lib/store/types'
-import { Bot, Plus, RefreshCcw } from 'lucide-react'
+import type { AppSettings, BudgetPlanCategory, BudgetPlanSubcategory, Currency } from '@/lib/store/types'
+import { Bot, Plus, Sparkles } from 'lucide-react'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
+import type { BuddgyBuilderOpenOptions } from '@/hooks/useBuddgyBuilderFlow'
 import { calculateMonthlyIncome } from '@/lib/utils/calculations'
 import { BudgetPlannerCategoryRow } from '@/components/features/budget-planner/BudgetPlannerCategoryRow'
-import { BuddgyRebuildPrompt } from '@/components/features/budget-planner/BuddgyRebuildPrompt'
 import { BudgetPlannerAddCategoryMenu } from '@/components/features/budget-planner/BudgetPlannerAddCategoryMenu'
 import { BuddgyBuilderFlow } from '@/components/features/budget-planner/BuddgyBuilderFlow'
 
@@ -30,6 +30,7 @@ export interface BudgetPlannerCategoriesLabels {
   subcategoryNamePlaceholder: string
   amountPlaceholder: string
   emojiPickerLabel: string
+  savingsAllocationBadge: string
 }
 
 export interface BudgetPlannerCategoriesProps {
@@ -71,9 +72,8 @@ export function BudgetPlannerCategories({
 }: BudgetPlannerCategoriesProps) {
   const t = useT()
   const { user, openAuthModal } = useAuth()
-  const { budgetPlans, incomeSources, exchangeRates } = useFinanceStore(
+  const { incomeSources, exchangeRates } = useFinanceStore(
     useShallow((s) => ({
-      budgetPlans: s.budgetPlans,
       incomeSources: s.incomeSources,
       exchangeRates: s.exchangeRates,
     }))
@@ -84,13 +84,31 @@ export function BudgetPlannerCategories({
 
   const [flowOpen, setFlowOpen] = useState(false)
   const [flowKey, setFlowKey] = useState(0)
-  const [rebuildPromptOpen, setRebuildPromptOpen] = useState(false)
 
-  const planRow = budgetPlans.find((p) => p.id === planId)
   const monthlyIncome = calculateMonthlyIncome(incomeSources, settings.baseCurrency, exchangeRates)
-  const needsRebuildConfirm =
-    categories.length > 0 &&
-    (monthlyIncome > 0.0001 || Boolean(planRow?.buddgyGuidedComplete))
+
+  const builderOptions = useMemo((): BuddgyBuilderOpenOptions => {
+    const lines: string[] = []
+    if (categories.length > 0) {
+      if (monthlyIncome > 0.0001) {
+        lines.push(
+          `My monthly income is about ${Math.round(monthlyIncome)} ${settings.baseCurrency}.`
+        )
+      }
+      const rent = categories.find((c) => c.name === 'Rent')
+      if (rent && rent.amount > 0) {
+        lines.push(`My rent is about ${rent.amount} per month.`)
+      }
+      lines.push('I want to rebuild my budget with Buddgy.')
+    }
+    return {
+      initialDescribeText: lines.length > 0 ? lines.join(' ') : undefined,
+      knownIncome:
+        monthlyIncome > 0.0001 ?
+          { amount: Math.round(monthlyIncome), currency: settings.baseCurrency as Currency }
+        : undefined,
+    }
+  }, [categories, monthlyIncome, settings.baseCurrency])
 
   const rowLabels = {
     subcategories: labels.subcategories,
@@ -106,6 +124,7 @@ export function BudgetPlannerCategories({
     chooseCategoryTitle: labels.chooseCategoryTitle,
     customCategoryOption: labels.customCategoryOption,
     editCategoryName: labels.editCategoryName,
+    savingsAllocationBadge: labels.savingsAllocationBadge,
   }
 
   const menuLabels = {
@@ -127,17 +146,7 @@ export function BudgetPlannerCategories({
     setFlowOpen(true)
   }, [supabaseConfigured, user, openAuthModal, t.modals.requireAuthBudgetSetup])
 
-  const onRebuildClick = useCallback(() => {
-    if (supabaseConfigured && !user) {
-      openAuthModal('/budget-setup', t.modals.requireAuthBudgetSetup)
-      return
-    }
-    if (needsRebuildConfirm) {
-      setRebuildPromptOpen(true)
-      return
-    }
-    startBuddgy()
-  }, [supabaseConfigured, user, openAuthModal, needsRebuildConfirm, startBuddgy, t.modals.requireAuthBudgetSetup])
+  const showRebuild = !flowOpen && categories.length > 0
 
   return (
     <div className="bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl p-6 space-y-4">
@@ -162,6 +171,7 @@ export function BudgetPlannerCategories({
           key={`${planId}-${flowKey}`}
           planId={planId}
           onClose={() => setFlowOpen(false)}
+          builderOptions={builderOptions}
         />
       : categories.length === 0 ?
         <div className="rounded-xl border border-[var(--color-brand-border)] bg-gradient-to-br from-[var(--color-brand-elevated)] to-[var(--color-brand-card)] p-5 space-y-4 text-center">
@@ -201,26 +211,6 @@ export function BudgetPlannerCategories({
           </div>
         </div>
       : <>
-          <div className="flex flex-col items-end gap-2 pb-1">
-            {rebuildPromptOpen ?
-              <BuddgyRebuildPrompt
-                monthlyIncome={monthlyIncome}
-                baseCurrency={settings.baseCurrency}
-                onContinue={() => {
-                  startBuddgy()
-                  setRebuildPromptOpen(false)
-                }}
-                onCancel={() => setRebuildPromptOpen(false)}
-              />
-            : <button
-                type="button"
-                onClick={onRebuildClick}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] px-3 py-1.5 text-xs font-medium text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
-              >
-                <RefreshCcw className="h-3.5 w-3.5" />
-                Rebuild with Buddgy
-              </button>}
-          </div>
           <div className="space-y-2">
             {categories.map((c) => (
               <BudgetPlannerCategoryRow
@@ -237,6 +227,19 @@ export function BudgetPlannerCategories({
               />
             ))}
           </div>
+
+          {showRebuild ?
+            <div className="flex justify-center pt-2">
+              <button
+                type="button"
+                onClick={startBuddgy}
+                className="inline-flex items-center gap-1.5 text-sm text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-secondary)] transition-colors"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-[var(--color-brand-amber)]" />
+                Rebuild with Buddgy
+              </button>
+            </div>
+          : null}
         </>
       }
     </div>

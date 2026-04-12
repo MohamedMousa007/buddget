@@ -237,6 +237,7 @@ export interface Dictionary {
     optionInvestment: string
     labelType: string
     labelCurrentAmount: string
+    labelCurrentBalance: string
     labelCurrency: string
     buttonAdd: string
     createAccountButton: string
@@ -261,7 +262,7 @@ export interface Dictionary {
     emptyAccounts: string
     emptyAccountsCta: string
     historyTitle: string
-    filterAllAccounts: string
+    filterAllSavings: string
     deposit: string
     withdrawal: string
     autoSave: string
@@ -274,9 +275,10 @@ export interface Dictionary {
     whenMonthly: string
     whenWeekly: string
     sheetAddTitle: string
+    sheetAddNewTitle: string
     sheetWithdrawTitle: string
     sheetUpdateTitle: string
-    labelWhichAccount: string
+    labelWhichSavings: string
     labelAmount: string
     labelNotes: string
     labelReason: string
@@ -289,9 +291,30 @@ export interface Dictionary {
     differenceDeposit: string
     differenceWithdrawal: string
     exceedsBalance: string
-    confirmDeleteAccount: string
+    confirmDeleteSavings: string
     tagAutoSave: string
-    ofGoal: (pct: number) => string
+    labelPickIcon: string
+    goldCurrencyHint: string
+    types: {
+      bank: string
+      cash: string
+      gold: string
+      crypto_stable: string
+      crypto: string
+      stocks: string
+      real_estate: string
+      other: string
+    }
+    placeholders: {
+      bank: string
+      cash: string
+      gold: string
+      crypto_stable: string
+      crypto: string
+      stocks: string
+      real_estate: string
+      other: string
+    }
   }
 
   debts: {
@@ -657,7 +680,9 @@ export interface Dictionary {
     totalIncome: string
     totalPlanned: string
     projectedSavings: string
-    projectedSavingsLine: (amount: string) => string
+    projectedSavingsLine: (amount: string, savingsRatePercent: number) => string
+    /** Short label on budget planner rows that are savings allocation, not spending. */
+    savingsAllocationBadge: string
     aiEvalTitle: string
     aiEvalLoading: string
     aiEvalError: string

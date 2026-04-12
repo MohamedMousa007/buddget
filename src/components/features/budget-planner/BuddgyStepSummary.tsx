@@ -3,10 +3,9 @@
 import { motion } from 'framer-motion'
 import { calculateMonthlyIncome } from '@/lib/utils/calculations'
 import {
-  effectivePlanCategoryAmountInBase,
   totalExpenseBudgetFromPlan,
+  totalPlannedSavingsAllocationForPlan,
 } from '@/lib/budget/budgetPlans'
-import { findCategoryByName } from '@/lib/budget/buddgyFlowHelpers'
 import type { BuddgyFlowApi } from '@/hooks/useBuddgyFlow'
 
 function fmt(n: number, currency: string) {
@@ -23,10 +22,8 @@ export function BuddgyStepSummary({ flow }: { flow: BuddgyFlowApi }) {
   const { plan, incomeSources, settings, exchangeRates } = flow
   const income = calculateMonthlyIncome(incomeSources, settings.baseCurrency, exchangeRates)
   const expenses = plan ? totalExpenseBudgetFromPlan(plan, settings.baseCurrency, exchangeRates) : 0
-  const savingsCat = plan ? findCategoryByName(plan, 'Savings') : undefined
-  const savingsAmt =
-    savingsCat ?
-      effectivePlanCategoryAmountInBase(savingsCat, settings.baseCurrency, exchangeRates)
+  const savingsAmt = plan
+    ? totalPlannedSavingsAllocationForPlan(plan, settings.baseCurrency, exchangeRates)
     : 0
   const rate = income > 0 ? Math.round((savingsAmt / income) * 100) : 0
 

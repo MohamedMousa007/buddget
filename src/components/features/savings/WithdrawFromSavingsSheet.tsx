@@ -51,7 +51,7 @@ export function WithdrawFromSavingsSheet({
         <div className="mt-4 space-y-3">
           <div>
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">
-              {t.savings.labelWhichAccount}
+              {t.savings.labelWhichSavings}
             </Label>
             <select
               value={accountId}
@@ -60,7 +60,7 @@ export function WithdrawFromSavingsSheet({
             >
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
-                  {a.emoji} {a.name} ({formatCurrency(a.currentBalance, a.currency)})
+                  {a.name} ({formatCurrency(a.currentBalance, a.currency)})
                 </option>
               ))}
             </select>
@@ -91,17 +91,18 @@ export function WithdrawFromSavingsSheet({
           )}
           <div>
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelReason}</Label>
-            <Input
+            <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="mt-1 h-10 rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]"
+              rows={3}
+              className="mt-1 w-full min-h-[4.5rem] resize-y rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-brand-red)]/30"
             />
           </div>
           <button
             type="button"
             onClick={submit}
             disabled={!valid}
-            className="mt-2 w-full rounded-xl bg-[var(--color-brand-amber)] py-3 text-sm font-semibold text-[var(--color-brand-bg)] hover:opacity-90 disabled:opacity-40"
+            className="mt-2 w-full rounded-xl bg-[var(--color-brand-red)] py-3 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)] disabled:opacity-40 transition-colors"
           >
             {t.savings.submitWithdraw}
           </button>

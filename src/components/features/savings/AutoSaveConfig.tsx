@@ -9,7 +9,7 @@ export interface AutoSaveConfigProps {
 }
 
 /**
- * Inline auto-save toggles for a savings account.
+ * Inline auto-save toggles for a savings bucket.
  */
 export function AutoSaveConfig({ account, onChange }: AutoSaveConfigProps) {
   const t = useT()
