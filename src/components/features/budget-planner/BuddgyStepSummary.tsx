@@ -2,10 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { calculateMonthlyIncome } from '@/lib/utils/calculations'
-import {
-  totalExpenseBudgetFromPlan,
-  totalPlannedSavingsAllocationForPlan,
-} from '@/lib/budget/budgetPlans'
+import { totalExpenseBudgetFromPlan } from '@/lib/budget/budgetPlans'
 import type { BuddgyFlowApi } from '@/hooks/useBuddgyFlow'
 
 function fmt(n: number, currency: string) {
@@ -22,12 +19,10 @@ export function BuddgyStepSummary({ flow }: { flow: BuddgyFlowApi }) {
   const { plan, incomeSources, settings, exchangeRates } = flow
   const income = calculateMonthlyIncome(incomeSources, settings.baseCurrency, exchangeRates)
   const expenses = plan ? totalExpenseBudgetFromPlan(plan, settings.baseCurrency, exchangeRates) : 0
-  const savingsAmt = plan
-    ? totalPlannedSavingsAllocationForPlan(plan, settings.baseCurrency, exchangeRates)
-    : 0
-  const rate = income > 0 ? Math.round((savingsAmt / income) * 100) : 0
+  const projected = income - expenses
+  const rate = income > 0 ? Math.max(0, Math.min(100, Math.round((projected / income) * 100))) : 0
 
-  const hasCategoryAmounts = expenses > 0.0001 || savingsAmt > 0.0001
+  const hasCategoryAmounts = expenses > 0.0001
 
   return (
     <div className="space-y-4">
@@ -43,13 +38,13 @@ export function BuddgyStepSummary({ flow }: { flow: BuddgyFlowApi }) {
           <span className="text-[var(--color-brand-text-primary)]">{fmt(expenses, settings.baseCurrency)}</span>
         </div>
         <div className="flex justify-between gap-4">
-          <span className="text-[var(--color-brand-text-secondary)]">Savings</span>
+          <span className="text-[var(--color-brand-text-secondary)]">Projected savings</span>
           <motion.span
-            className="text-[var(--color-brand-green)]"
+            className={projected >= 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red)]'}
             animate={{ scale: [1, 1.05, 1] }}
             transition={{ duration: 0.6, repeat: 2, ease: 'easeInOut' }}
           >
-            {fmt(savingsAmt, settings.baseCurrency)}
+            {fmt(projected, settings.baseCurrency)}
           </motion.span>
         </div>
       </div>

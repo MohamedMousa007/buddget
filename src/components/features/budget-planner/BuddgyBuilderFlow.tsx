@@ -8,7 +8,7 @@ import { BuddgyProgressDots } from '@/components/features/budget-planner/BuddgyP
 import { BuddgyStepDescribe } from '@/components/features/budget-planner/BuddgyStepDescribe'
 import { BuddgyStepConfirm } from '@/components/features/budget-planner/BuddgyStepConfirm'
 import { BuddgyStepLifestyle } from '@/components/features/budget-planner/BuddgyStepLifestyle'
-import { BuddgyStepSavingsV3 } from '@/components/features/budget-planner/BuddgyStepSavingsV3'
+import { BuddgyStepPlan } from '@/components/features/budget-planner/BuddgyStepPlan'
 import { BuddgyStepApplied } from '@/components/features/budget-planner/BuddgyStepApplied'
 
 const slide = {
@@ -64,7 +64,7 @@ export function BuddgyBuilderFlow({ planId, onClose, builderOptions }: BuddgyBui
             {flow.step === 'describe' && <BuddgyStepDescribe flow={flow} />}
             {flow.step === 'confirm' && <BuddgyStepConfirm flow={flow} />}
             {flow.step === 'lifestyle' && <BuddgyStepLifestyle flow={flow} />}
-            {flow.step === 'savings' && <BuddgyStepSavingsV3 flow={flow} />}
+            {flow.step === 'plan' && <BuddgyStepPlan flow={flow} />}
             {flow.step === 'applied' && <BuddgyStepApplied flow={flow} />}
           </motion.div>
         </AnimatePresence>

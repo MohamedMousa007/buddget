@@ -6,47 +6,77 @@ export interface ParsedBudgetInput {
   city: string | null
   country: string | null
   household: 'solo' | 'couple' | 'family' | null
-  rent: { amount: number | null; includesUtilities: boolean }
-  transport: 'public' | 'car' | 'walk' | 'mixed' | null
+  rent: { amount: number | null; includesUtilities: boolean | null }
+  transport: 'public' | 'car' | 'walk' | 'mixed' | 'taxi' | null
   savingsGoal: 'maximum' | 'moderate' | 'some' | null
   lifestyleNotes: string | null
   missingFields: string[]
 }
 
-const SYSTEM_PROMPT = `You are a JSON parser for a budget app. Extract structured data from the user's free-text description.
+const SYSTEM_PROMPT = `You are a JSON extractor. Parse the user's text into structured budget data.
 
-Respond with ONLY valid JSON, no markdown, no explanation:
+CRITICAL: Extract ALL information mentioned. The user said specific details — capture them.
+
+Return ONLY valid JSON, no explanation:
 {
-  "income": { "amount": number|null, "currency": "AED"|"USD"|"EGP"|null },
+  "income": { "amount": number|null, "currency": string|null },
   "city": string|null,
   "country": string|null,
   "household": "solo"|"couple"|"family"|null,
-  "rent": { "amount": number|null, "includesUtilities": boolean },
-  "transport": "public"|"car"|"walk"|"mixed"|null,
+  "rent": { "amount": number|null, "includesUtilities": boolean|null },
+  "transportMode": string|null,
   "savingsGoal": "maximum"|"moderate"|"some"|null,
   "lifestyleNotes": string|null,
-  "missingFields": ["income"|"city"|"household"]
+  "missingFields": string[]
 }
 
+Use "transportMode" for how they commute: map to one of "public"|"car"|"walk"|"mixed" (lowercase). If unclear, null.
+
+Examples:
+Input: "I live in Dubai with my wife, earning 17000 AED, rent 5000 including utilities"
+Output: {"income":{"amount":17000,"currency":"AED"},"city":"Dubai","country":"UAE","household":"couple","rent":{"amount":5000,"includesUtilities":true},"transportMode":null,"savingsGoal":null,"lifestyleNotes":null,"missingFields":[]}
+
+Input: "Single in Abu Dhabi, 12k salary, studio 3500, want to save max"
+Output: {"income":{"amount":12000,"currency":"AED"},"city":"Abu Dhabi","country":"UAE","household":"solo","rent":{"amount":3500,"includesUtilities":null},"transportMode":null,"savingsGoal":"maximum","lifestyleNotes":"want to save maximum","missingFields":[]}
+
 Rules:
-- Extract ONLY what the user explicitly stated
-- Set null for anything not mentioned
-- "missingFields" lists critical missing info (income is always required if not stated)
-- "lifestyleNotes" captures qualitative clues like "save the most" or "enjoy life"
-- If user mentions a currency, use it. Default to AED if city is in UAE.
-- "household": "solo" for single person, "couple" for with partner/spouse, "family" for with children
-- If CONTEXT says the app already knows monthly income, keep that amount unless the user clearly overrides it in their message.`
+- If CONTEXT says the app already knows monthly income, keep that amount unless the user clearly overrides it in their message.
+- Default currency to AED when the city is in the UAE and no currency was stated.
+- "missingFields" should list critical gaps (e.g. ["income"] if income is still unknown after applying CONTEXT).
+- "includesUtilities": true only if they say utilities are included; false if explicitly excluded; null if not said.`
+
+function stripJsonFromMarkdown(text: string): string {
+  let s = text.trim()
+  if (s.startsWith('```')) {
+    s = s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/g, '').trim()
+  }
+  const start = s.indexOf('{')
+  const end = s.lastIndexOf('}')
+  if (start >= 0 && end > start) s = s.slice(start, end + 1)
+  return s
+}
+
+function normalizeTransport(raw: unknown): ParsedBudgetInput['transport'] {
+  const t = String(raw ?? '')
+    .toLowerCase()
+    .trim()
+  if (!t) return null
+  if (t.includes('mix')) return 'mixed'
+  if (t.includes('taxi') || t.includes('uber') || t.includes('careem')) return 'taxi'
+  if (t.includes('metro') || t.includes('bus') || t.includes('public')) return 'public'
+  if (t.includes('walk')) return 'walk'
+  if (t.includes('car') || t.includes('drive')) return 'car'
+  if (t === 'public' || t === 'car' || t === 'walk' || t === 'mixed' || t === 'taxi') return t
+  return null
+}
 
 export interface ParseBudgetInputOptions {
-  /** When rebuilding, pass known income so the model does not treat it as missing. */
   knownIncome?: { amount: number; currency: string }
-  /** Extra lines (e.g. plan summary) prepended before the user's text. */
   preamble?: string
 }
 
 /**
  * Parse free-text user description into structured budget input.
- * Single lightweight AI call (~500 input tokens, ~200 output tokens).
  */
 export async function parseBudgetInput(
   userText: string,
@@ -66,27 +96,71 @@ export async function parseBudgetInput(
 
   const contents = [
     { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },
-    { role: 'model', parts: [{ text: '{"income":{"amount":null,"currency":null},"city":null,"country":null,"household":null,"rent":{"amount":null,"includesUtilities":false},"transport":null,"savingsGoal":null,"lifestyleNotes":null,"missingFields":["income"]}' }] },
+    {
+      role: 'model',
+      parts: [
+        {
+          text: '{"income":{"amount":null,"currency":null},"city":null,"country":null,"household":null,"rent":{"amount":null,"includesUtilities":null},"transportMode":null,"savingsGoal":null,"lifestyleNotes":null,"missingFields":["income"]}',
+        },
+      ],
+    },
     { role: 'user', parts: [{ text: userBlock }] },
   ]
 
   const response = await generateWithFallback({
     contents,
-    generationConfig: { temperature: 0, maxOutputTokens: 512 },
+    generationConfig: { temperature: 0, maxOutputTokens: 768 },
   })
   await throwIfAiProxyNotOk(response)
   const result = await response.json()
   const text: string = result.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
 
-  let jsonStr = text.trim()
-  if (jsonStr.startsWith('```')) {
-    jsonStr = jsonStr.replace(/```json?\n?/g, '').replace(/```/g, '').trim()
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[parseBudgetInput] raw model text:', text)
   }
 
+  const jsonStr = stripJsonFromMarkdown(text)
+
   try {
-    const parsed = JSON.parse(jsonStr) as ParsedBudgetInput
-    if (!parsed.missingFields) parsed.missingFields = []
-    if (parsed.income?.amount == null && !parsed.missingFields.includes('income')) {
+    const raw = JSON.parse(jsonStr) as Record<string, unknown>
+    const income = (raw.income as ParsedBudgetInput['income']) ?? { amount: null, currency: null }
+    const rentRaw = (raw.rent as Record<string, unknown>) ?? {}
+    const rentAmount =
+      typeof rentRaw.amount === 'number' && Number.isFinite(rentRaw.amount) ? rentRaw.amount : null
+    const rentUtil =
+      rentRaw.includesUtilities === true ? true
+      : rentRaw.includesUtilities === false ? false
+      : null
+
+    const transport =
+      normalizeTransport(raw.transport) ?? normalizeTransport(raw.transportMode)
+
+    const missingFields = Array.isArray(raw.missingFields)
+      ? (raw.missingFields as string[]).filter((x) => typeof x === 'string')
+      : []
+
+    const parsed: ParsedBudgetInput = {
+      income: {
+        amount: typeof income.amount === 'number' && Number.isFinite(income.amount) ? income.amount : null,
+        currency: typeof income.currency === 'string' ? income.currency : null,
+      },
+      city: typeof raw.city === 'string' ? raw.city : null,
+      country: typeof raw.country === 'string' ? raw.country : null,
+      household:
+        raw.household === 'solo' || raw.household === 'couple' || raw.household === 'family' ?
+          raw.household
+        : null,
+      rent: { amount: rentAmount, includesUtilities: rentUtil },
+      transport,
+      savingsGoal:
+        raw.savingsGoal === 'maximum' || raw.savingsGoal === 'moderate' || raw.savingsGoal === 'some' ?
+          raw.savingsGoal
+        : null,
+      lifestyleNotes: typeof raw.lifestyleNotes === 'string' ? raw.lifestyleNotes : null,
+      missingFields,
+    }
+
+    if (!parsed.missingFields.includes('income') && parsed.income.amount == null) {
       parsed.missingFields.push('income')
     }
     return parsed
@@ -96,7 +170,7 @@ export async function parseBudgetInput(
       city: null,
       country: null,
       household: null,
-      rent: { amount: null, includesUtilities: false },
+      rent: { amount: null, includesUtilities: null },
       transport: null,
       savingsGoal: null,
       lifestyleNotes: userText,

@@ -6,8 +6,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { BudgetHousehold, BudgetPlan, Currency, IncomeSource } from '@/lib/store/types'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { calculateMonthlyIncome } from '@/lib/utils/calculations'
-import { effectivePlanCategoryAmountInBase } from '@/lib/budget/budgetPlans'
-import { findCategoryByName, plannedExcludingSavings } from '@/lib/budget/buddgyFlowHelpers'
+import { findCategoryByName } from '@/lib/budget/buddgyFlowHelpers'
 import { pushProfileFieldsToSupabase } from '@/lib/profile/pushProfileFieldsToSupabase'
 import { parseBuddgyAmountInput } from '@/lib/budget/buddgyAmountInput'
 
@@ -18,7 +17,6 @@ export type BuddgyFlowStep =
   | 'dewa'
   | 'transportMode'
   | 'transportDetail'
-  | 'savings'
   | 'summary'
 
 function hasDewaSub(plan: BudgetPlan): boolean {
@@ -36,11 +34,10 @@ function deriveResumeStep(plan: BudgetPlan | null, monthlyIncome: number): Buddg
   if (!plan.buddgyFlow?.transportMode) return 'transportMode'
   const mode = plan.buddgyFlow.transportMode
   if (mode === 'walk') {
-    if (!findCategoryByName(plan, 'Savings')) return 'savings'
+    // Walk: no transport row required
   } else if (!findCategoryByName(plan, 'Transport')) {
     return 'transportDetail'
   }
-  if (!findCategoryByName(plan, 'Savings')) return 'savings'
   return 'summary'
 }
 
@@ -52,7 +49,6 @@ function stepToProgress(s: BuddgyFlowStep): number {
     'dewa',
     'transportMode',
     'transportDetail',
-    'savings',
     'summary',
   ]
   const i = order.indexOf(s)
@@ -68,14 +64,13 @@ export function buildBuddgyFlowOrder(plan: BudgetPlan | null): BuddgyFlowStep[] 
   o.push('transportMode')
   const tm = plan?.buddgyFlow?.transportMode
   if (tm && tm !== 'walk') o.push('transportDetail')
-  o.push('savings')
   return o
 }
 
 export function getPreviousBuddgyStep(step: BuddgyFlowStep, plan: BudgetPlan | null): BuddgyFlowStep | null {
   if (step === 'summary') {
     const order = buildBuddgyFlowOrder(plan)
-    return order[order.length - 1] ?? 'savings'
+    return order[order.length - 1] ?? 'transportMode'
   }
   const order = buildBuddgyFlowOrder(plan)
   const i = order.indexOf(step)
@@ -143,7 +138,7 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
   const [step, setStep] = useState<BuddgyFlowStep>('income')
   const [showFlash, setShowFlash] = useState(false)
   const stepInitDone = useRef(false)
-  /** After Edit Plan from summary: hide Next on earlier steps; Next on savings returns to summary. */
+  /** After Edit Plan from summary: hide Next on earlier steps; Next on last wizard step returns to summary. */
   const [editPlanReturnViaSavings, setEditPlanReturnViaSavings] = useState(false)
 
   const [incomeAmount, setIncomeAmount] = useState('')
@@ -155,17 +150,12 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
   const [transportMode, setTransportMode] = useState<'car' | 'public' | 'walk' | 'mix' | null>(null)
   const [transportCarMonthly, setTransportCarMonthly] = useState('')
   const [transportPublicDaily, setTransportPublicDaily] = useState('')
-  const [savingsAmount, setSavingsAmount] = useState(0)
-  const [savingsNextLoading, setSavingsNextLoading] = useState(false)
-  const [savingsMode, setSavingsMode] = useState<'maximum' | 'custom'>('custom')
-
   const hydrateFieldsForStep = useCallback(
     (target: BuddgyFlowStep) => {
       if (target === 'summary') return
       const st = useFinanceStore.getState()
       const p = planId ? st.budgetPlans.find((x) => x.id === planId) ?? null : null
       const base = st.settings.baseCurrency
-      const rates = st.exchangeRates
       const incSrc = st.incomeSources[0]
 
       if (target === 'income') {
@@ -220,27 +210,14 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
         return
       }
 
-      if (target === 'savings') {
-        const inc = calculateMonthlyIncome(st.incomeSources, base, rates)
-        const planned = plannedExcludingSavings(p, base, rates)
-        const maxSav = Math.max(0, inc - planned)
-        const sav = findCategoryByName(p, 'Savings')
-        if (sav) {
-          const amtBase = effectivePlanCategoryAmountInBase(sav, base, rates)
-          setSavingsAmount(Math.round(Math.min(maxSav, Math.max(0, amtBase))))
-          const atMax = maxSav > 0 && Math.round(amtBase) >= Math.round(maxSav)
-          setSavingsMode(atMax ? 'maximum' : 'custom')
-        } else {
-          setSavingsAmount(0)
-          setSavingsMode('custom')
-        }
-      }
     },
     [planId]
   )
 
   useEffect(() => {
-    hydrateFieldsForStep(step)
+    queueMicrotask(() => {
+      hydrateFieldsForStep(step)
+    })
   }, [step, hydrateFieldsForStep])
 
   useEffect(() => {
@@ -250,12 +227,14 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
   useEffect(() => {
     if (!plan || stepInitDone.current) return
     stepInitDone.current = true
-    const inc = calculateMonthlyIncome(incomeSources, settings.baseCurrency, exchangeRates)
-    if (options?.mode === 'restart') {
-      setStep('income')
-      return
-    }
-    setStep(deriveResumeStep(plan, inc))
+    queueMicrotask(() => {
+      const inc = calculateMonthlyIncome(incomeSources, settings.baseCurrency, exchangeRates)
+      if (options?.mode === 'restart') {
+        setStep('income')
+        return
+      }
+      setStep(deriveResumeStep(plan, inc))
+    })
   }, [plan, options?.mode, incomeSources, settings.baseCurrency, exchangeRates])
 
   const triggerFlash = useCallback(() => {
@@ -419,32 +398,6 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
     commitWalkTransport,
   ])
 
-  const saveSavings = useCallback(() => {
-    if (!planId || !plan) return
-    const cur = clampFiatToAllowed(settings, settings.baseCurrency)
-    const existing = findCategoryByName(plan, 'Savings')
-    if (existing) {
-      updatePlanCategory(planId, existing.id, {
-        amount: savingsAmount,
-        currency: cur,
-        name: 'Savings',
-        icon: '💰',
-      })
-    } else {
-      addPlanCategory(planId, {
-        name: 'Savings',
-        icon: '💰',
-        amount: savingsAmount,
-        currency: cur,
-        subcategories: [],
-      })
-    }
-    updateBudgetMeta(planId, {
-      buddgyFlow: { ...plan.buddgyFlow },
-    })
-    triggerFlash()
-  }, [planId, plan, savingsAmount, settings, addPlanCategory, updatePlanCategory, updateBudgetMeta, triggerFlash])
-
   const finishFlow = useCallback(() => {
     if (planId && plan) {
       updateBudgetPlan(planId, { buddgyFlow: null, buddgyGuidedComplete: true })
@@ -459,11 +412,6 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
       from: BuddgyFlowStep,
       ctx?: { transportModePicked?: 'car' | 'public' | 'walk' | 'mix' }
     ) => {
-      if (from === 'savings' && editPlanReturnViaSavings) {
-        setEditPlanReturnViaSavings(false)
-        setStep('summary')
-        return
-      }
       if (from === 'income') setStep('household')
       else if (from === 'household') setStep('rent')
       else if (from === 'rent') {
@@ -473,11 +421,16 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
       else if (from === 'transportMode') {
         const m = ctx?.transportModePicked ?? transportMode
         if (m && m !== 'walk') setStep('transportDetail')
-        else setStep('savings')
-      } else if (from === 'transportDetail') setStep('savings')
-      else if (from === 'savings') setStep('summary')
+        else {
+          setEditPlanReturnViaSavings(false)
+          setStep('summary')
+        }
+      } else if (from === 'transportDetail') {
+        setEditPlanReturnViaSavings(false)
+        setStep('summary')
+      }
     },
-    [rentIncludes, transportMode, editPlanReturnViaSavings]
+    [rentIncludes, transportMode]
   )
 
   const goBack = useCallback(() => {
@@ -487,33 +440,18 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
     if (prev) setStep(prev)
   }, [step, planId, plan])
 
-  /** From summary: jump to savings to edit; Back-only on earlier steps; Next on savings returns to summary. */
+  /** From summary: jump to last wizard step to edit; Next returns to summary. */
   const startEditPlanFromSummary = useCallback(() => {
     setEditPlanReturnViaSavings(true)
-    setStep('savings')
-  }, [])
+    const latest = useFinanceStore.getState().budgetPlans.find((p) => p.id === planId) ?? plan
+    const order = buildBuddgyFlowOrder(latest)
+    const last = order[order.length - 1] ?? 'transportMode'
+    setStep(last)
+  }, [planId, plan])
 
   const restartGuidedWizard = useCallback(() => {
     options?.onRestartWizard?.()
   }, [options])
-
-  const onSavingsNext = useCallback(async () => {
-    setSavingsNextLoading(true)
-    try {
-      await new Promise((r) => globalThis.setTimeout(r, 350))
-      saveSavings()
-      advanceFromStep('savings')
-    } finally {
-      setSavingsNextLoading(false)
-    }
-  }, [saveSavings, advanceFromStep])
-
-  const maxSavings = useMemo(() => {
-    if (!plan) return 0
-    const inc = calculateMonthlyIncome(incomeSources, settings.baseCurrency, exchangeRates)
-    const planned = plannedExcludingSavings(plan, settings.baseCurrency, exchangeRates)
-    return Math.max(0, inc - planned)
-  }, [plan, incomeSources, settings.baseCurrency, exchangeRates])
 
   return {
     step,
@@ -524,7 +462,6 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
     primaryIncomePreview,
     flowMode,
     plan,
-    maxSavings,
     incomeAmount,
     setIncomeAmount,
     incomeCurrency,
@@ -543,11 +480,6 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
     setTransportCarMonthly,
     transportPublicDaily,
     setTransportPublicDaily,
-    savingsAmount,
-    setSavingsAmount,
-    savingsNextLoading,
-    savingsMode,
-    setSavingsMode,
     settings,
     exchangeRates,
     incomeSources,
@@ -557,7 +489,6 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
     saveDewa,
     saveTransportFromDetail,
     commitWalkTransport,
-    saveSavings,
     finishFlow,
     triggerFlash,
     advanceFromStep,
@@ -566,7 +497,6 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
     /** True after Edit Plan: hide Next until savings; Next on savings returns to summary. */
     editPlanReturnViaSavings,
     restartGuidedWizard,
-    onSavingsNext,
     buildBuddgyFlowOrder,
   }
 }
