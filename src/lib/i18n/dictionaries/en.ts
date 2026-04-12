@@ -120,6 +120,13 @@ export const en: Dictionary = {
     debtPayments: (n) => `${n} payment${n !== 1 ? 's' : ''}`,
     debtPaymentsTowardsThis: ' towards this',
     loadingMessage: 'Getting your numbers ready\u2026',
+    paceLabel: 'Pace',
+    projectedLabel: 'Projected',
+    suggestedDailyLabel: 'Try {amount}/day to stay on track',
+    paceOnTrack: 'On track',
+    paceWarning: 'Spending fast',
+    paceOver: 'Over budget pace',
+    cutBackHint: 'Cut back on',
   },
 
   expenses: {
@@ -424,6 +431,14 @@ export const en: Dictionary = {
     expenseFilterAll: 'All expenses',
     expenseFilterDebtOnly: 'Debt payments only',
     expenseFilterExcludeDebt: 'Exclude debt payments',
+    spendingPaceTitle: 'Spending Pace',
+    avgDailySpend: 'Avg. daily spend',
+    projectedTotal: 'Projected total',
+    categoriesToWatch: 'Categories to watch',
+    paceOnTrack: 'On track',
+    paceWarning: 'Spending fast',
+    paceOver: 'Over budget pace',
+    suggestedDailyLabel: 'Try {amount}/day to stay on track',
   },
 
   settings: {

@@ -123,6 +123,13 @@ export interface Dictionary {
     debtPayments: (n: number) => string
     debtPaymentsTowardsThis: string
     loadingMessage: string
+    paceLabel: string
+    projectedLabel: string
+    suggestedDailyLabel: string
+    paceOnTrack: string
+    paceWarning: string
+    paceOver: string
+    cutBackHint: string
   }
 
   expenses: {
@@ -425,6 +432,14 @@ export interface Dictionary {
     expenseFilterAll: string
     expenseFilterDebtOnly: string
     expenseFilterExcludeDebt: string
+    spendingPaceTitle: string
+    avgDailySpend: string
+    projectedTotal: string
+    categoriesToWatch: string
+    paceOnTrack: string
+    paceWarning: string
+    paceOver: string
+    suggestedDailyLabel: string
   }
 
   settings: {

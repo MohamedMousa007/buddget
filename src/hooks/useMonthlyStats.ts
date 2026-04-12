@@ -26,6 +26,17 @@ import {
   totalDebtRemainingInBase,
   expenseAmountInBase,
 } from '@/lib/utils/calculations'
+import {
+  daysElapsedInMonth,
+  totalDaysInMonth,
+  dailySpendingRate,
+  projectedMonthSpend,
+  spendingPaceStatus,
+  suggestedDailyBudget,
+  topOverspentCategories,
+  type PaceStatus,
+  type OverspentCategory,
+} from '@/lib/utils/spendingPace'
 
 function filterBySharedScope<T extends { sharedPlanId?: string | null }>(
   items: T[],
@@ -101,6 +112,12 @@ export function useMonthlyStats() {
         debtRemainingTotal: 0,
         baseCurrency: settings.baseCurrency,
         incomeBlocked: false,
+        daysElapsed: 1,
+        dailyRate: 0,
+        projectedSpend: 0,
+        paceStatus: 'on_track' as PaceStatus,
+        suggestedDaily: 0,
+        overBudgetCategories: [] as OverspentCategory[],
       }
     }
     const scopedExpenses = filterBySharedScope(expenses, activeSharedBudgetId)
@@ -180,6 +197,24 @@ export function useMonthlyStats() {
       goldPricePerGram
     )
 
+    const elapsed = daysElapsedInMonth(monthFilter, settings.monthStartDay)
+    const totalDays = totalDaysInMonth(monthFilter, settings.monthStartDay)
+    const dailyRate = dailySpendingRate(totalSpentForExpenseBudget, elapsed)
+    const projectedSpend = projectedMonthSpend(dailyRate, totalDays)
+    const paceStatus = spendingPaceStatus(projectedSpend, totalExpenseBudget)
+    const suggestedDaily = suggestedDailyBudget(remaining, daysLeft)
+
+    const catIcons = Object.fromEntries(
+      effectiveBudgetRows.map((b) => [b.category, b.icon ?? ''])
+    ) as Record<string, string>
+    const overBudgetCategories = topOverspentCategories(
+      categorySpending,
+      categoryBudgetCaps,
+      elapsed,
+      totalDays,
+      catIcons,
+    )
+
     return {
       monthlyExpenses,
       totalIncome,
@@ -200,6 +235,12 @@ export function useMonthlyStats() {
       debtRemainingTotal,
       baseCurrency: settings.baseCurrency,
       incomeBlocked,
+      daysElapsed: elapsed,
+      dailyRate,
+      projectedSpend,
+      paceStatus,
+      suggestedDaily,
+      overBudgetCategories,
     }
   }, [
     expenses,

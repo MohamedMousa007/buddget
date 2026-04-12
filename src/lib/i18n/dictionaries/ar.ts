@@ -120,6 +120,13 @@ export const ar: Dictionary = {
     debtPayments: (n) => `${n} ${n === 1 ? 'دفعة' : 'دفعات'}`,
     debtPaymentsTowardsThis: ' لهذا الرصيد',
     loadingMessage: 'جارٍ تجهيز أرقامك…',
+    paceLabel: 'السرعة',
+    projectedLabel: 'المتوقع',
+    suggestedDailyLabel: 'حاول {amount}/يوم للبقاء ضمن الميزانية',
+    paceOnTrack: 'على المسار',
+    paceWarning: 'إنفاق سريع',
+    paceOver: 'تجاوز وتيرة الميزانية',
+    cutBackHint: 'قلل من',
   },
 
   expenses: {
@@ -424,6 +431,14 @@ export const ar: Dictionary = {
     expenseFilterAll: 'كل المصروفات',
     expenseFilterDebtOnly: 'دفعات الديون فقط',
     expenseFilterExcludeDebt: 'بدون دفعات الديون',
+    spendingPaceTitle: 'وتيرة الإنفاق',
+    avgDailySpend: 'متوسط الإنفاق اليومي',
+    projectedTotal: 'الإجمالي المتوقع',
+    categoriesToWatch: 'فئات يجب الانتباه لها',
+    paceOnTrack: 'على المسار',
+    paceWarning: 'إنفاق سريع',
+    paceOver: 'تجاوز وتيرة الميزانية',
+    suggestedDailyLabel: 'حاول {amount}/يوم للبقاء ضمن الميزانية',
   },
 
   settings: {

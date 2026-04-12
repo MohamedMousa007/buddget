@@ -79,6 +79,11 @@ export default function DashboardPage() {
             currency={stats.baseCurrency}
             daysLeft={stats.daysLeft}
             incomeBlockedNote={stats.incomeBlocked ? t.dashboard.incomeBlockedHint : null}
+            dailyRate={stats.dailyRate}
+            projectedSpend={stats.projectedSpend}
+            paceStatus={stats.paceStatus}
+            suggestedDaily={stats.suggestedDaily}
+            overBudgetCategories={stats.overBudgetCategories}
           />
           <CategoryBar
             budgetCategories={stats.dashboardBudgetCategories}
