@@ -67,7 +67,7 @@ export function ProfileBudgetModeAndCalendar({
         <select
           value={monthStartDay}
           onChange={(e) => onMonthStartDay(parseInt(e.target.value))}
-          className="mt-1 w-24 h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+          className="mt-1 w-24 h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
         >
           {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
             <option key={d} value={d}>

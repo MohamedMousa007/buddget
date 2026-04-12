@@ -143,7 +143,7 @@ export default function SavingsPage() {
               <select
                 value={bucket}
                 onChange={(e) => setBucket(e.target.value as SavingsBucket)}
-                className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
               >
                 <option value="liquid">{t.savings.optionLiquid}</option>
                 <option value="investment">{t.savings.optionInvestment}</option>
@@ -154,7 +154,7 @@ export default function SavingsPage() {
               <select
                 value={subtype}
                 onChange={(e) => setSubtype(e.target.value as SavingsSubtype)}
-                className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
               >
                 {(Object.keys(SUBTYPE_KEYS) as SavingsSubtype[]).map((s) => (
                   <option key={s} value={s}>{t.savings[SUBTYPE_KEYS[s]] as string}</option>
@@ -172,7 +172,7 @@ export default function SavingsPage() {
               <FiatCurrencySelect
                 value={currency}
                 onChange={setCurrency}
-                className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
               />
             </div>
           </div>

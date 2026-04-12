@@ -160,7 +160,7 @@ export function DebtOnboardingPanel({
               <DebtFiatCurrencySelect
                 value={currency}
                 onChange={setCurrency}
-                className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
               />
             </div>
           ) : (
@@ -169,7 +169,7 @@ export function DebtOnboardingPanel({
               <select
                 value={goldKarat}
                 onChange={(e) => setGoldKarat(parseInt(e.target.value, 10) as GoldKarat)}
-                className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
               >
                 <option value={24}>{t.goldPurity.k24}</option>
                 <option value={22}>{t.goldPurity.k22}</option>

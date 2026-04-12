@@ -98,7 +98,7 @@ export default function DebtsPage() {
                 <p className="text-sm text-[var(--color-brand-text-muted)]">{t.debts.emptyActiveDesc}</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className={`grid gap-6 ${activeDebts.length === 1 ? 'grid-cols-1 max-w-lg mx-auto' : 'grid-cols-1 lg:grid-cols-2'}`}>
                 {activeDebts.map((debt) => {
                   const payments = debtPayments.filter((p) => p.debtId === debt.id)
                   return (

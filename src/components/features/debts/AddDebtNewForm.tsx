@@ -41,8 +41,6 @@ export interface AddDebtNewFormProps {
   setInstallmentFrequency: (v: 'weekly' | 'monthly' | 'quarterly' | 'annually') => void
   installmentStartDate: string
   setInstallmentStartDate: (v: string) => void
-  interestFree: boolean
-  setInterestFree: (v: boolean) => void
   installmentPreview: number | null
   goalDraft: DebtGoal | null
   onOpenGoal: () => void
@@ -87,8 +85,6 @@ export function AddDebtNewForm({
   setInstallmentFrequency,
   installmentStartDate,
   setInstallmentStartDate,
-  interestFree,
-  setInterestFree,
   installmentPreview,
   goalDraft,
   onOpenGoal,
@@ -113,8 +109,6 @@ export function AddDebtNewForm({
         setInstallmentFrequency={setInstallmentFrequency}
         installmentStartDate={installmentStartDate}
         setInstallmentStartDate={setInstallmentStartDate}
-        interestFree={interestFree}
-        setInterestFree={setInterestFree}
         relationship={relationship}
         setRelationship={setRelationship}
         direction={direction}
@@ -124,7 +118,7 @@ export function AddDebtNewForm({
       />
 
       {debtType !== 'installment' ? (
-        <>
+        <div className="grid grid-cols-2 gap-3">
           <div>
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelName}</Label>
             <Input
@@ -143,7 +137,7 @@ export function AddDebtNewForm({
               className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
             />
           </div>
-        </>
+        </div>
       ) : null}
 
       <div>
@@ -190,7 +184,7 @@ export function AddDebtNewForm({
             <DebtFiatCurrencySelect
               value={currency}
               onChange={setCurrency}
-              className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+              className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
             />
           </div>
         ) : (
@@ -199,7 +193,7 @@ export function AddDebtNewForm({
             <select
               value={goldKarat}
               onChange={(e) => setGoldKarat(parseInt(e.target.value, 10) as GoldKarat)}
-              className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+              className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
             >
               <option value="24">{t.goldPurity.k24}</option>
               <option value="22">{t.goldPurity.k22}</option>
@@ -212,8 +206,7 @@ export function AddDebtNewForm({
 
       {debtType === 'installment' && installmentPreview !== null ? (
         <p className="text-xs text-[var(--color-brand-text-secondary)] font-mono-numbers">
-          ≈ {formatCurrency(installmentPreview, currency)} / {t.addDebt.freqMonthly.toLowerCase()} (
-          {t.addDebt.labelInterestFree}: {interestFree ? 'yes' : 'no'})
+          ≈ {formatCurrency(installmentPreview, currency)} / {t.addDebt.freqMonthly.toLowerCase()}
         </p>
       ) : null}
 
@@ -241,7 +234,7 @@ export function AddDebtNewForm({
           <button
             type="button"
             onClick={onOpenGoal}
-            className="text-sm px-3 py-1.5 rounded-lg border border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
+            className="text-sm px-3 py-1.5 rounded-lg bg-[var(--color-brand-green)]/15 text-[var(--color-brand-green)] hover:bg-[var(--color-brand-green)]/25 transition-colors"
           >
             {t.addDebt.goalTrigger}
           </button>

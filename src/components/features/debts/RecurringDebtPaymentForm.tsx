@@ -78,7 +78,7 @@ export function RecurringDebtPaymentForm({
         <select
           value={selectDebtValue}
           onChange={(e) => onDebtChange(e.target.value)}
-          className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+          className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
         >
           {payableDebts.map((d) => (
             <option key={d.id} value={d.id}>
@@ -102,7 +102,7 @@ export function RecurringDebtPaymentForm({
           <select
             value={paymentCurrency}
             onChange={(e) => onPaymentCurrencyChange(e.target.value)}
-            className="w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+            className="w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
           >
             {fiatOptions.map((o) => (
               <option key={o.value} value={o.value} disabled={o.disabled}>
@@ -122,7 +122,7 @@ export function RecurringDebtPaymentForm({
         <select
           value={frequency}
           onChange={(e) => onFrequencyChange(e.target.value as DebtRecurringFrequency)}
-          className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+          className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
         >
           {RECURRING_DEBT_FREQUENCIES.map((f) => (
             <option key={f.value} value={f.value}>

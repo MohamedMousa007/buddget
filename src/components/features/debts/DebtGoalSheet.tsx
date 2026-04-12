@@ -132,7 +132,7 @@ export function DebtGoalSheet({
             <select
               value={frequency}
               onChange={(e) => setFrequency(e.target.value as GoalFreq)}
-              className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+              className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
             >
               <option value="weekly">{t.addDebt.goalFreqWeekly}</option>
               <option value="monthly">{t.addDebt.goalFreqMonthly}</option>

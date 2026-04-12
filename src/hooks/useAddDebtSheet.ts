@@ -510,8 +510,6 @@ export function useAddDebtSheet() {
     setInstallmentFrequency,
     installmentStartDate,
     setInstallmentStartDate,
-    interestFree,
-    setInterestFree,
     goalDraft,
     setGoalDraft,
     goalRemindRecurring,

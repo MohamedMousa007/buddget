@@ -87,7 +87,7 @@ export function EditDebtForm({
               <DebtFiatCurrencySelect
                 value={f.currency}
                 onChange={f.setCurrency}
-                className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
               />
             </div>
           )}
@@ -98,7 +98,7 @@ export function EditDebtForm({
               <select
                 value={f.goldKarat}
                 onChange={(e) => f.setGoldKarat(parseInt(e.target.value, 10) as GoldKarat)}
-                className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
               >
                 <option value="24">{t.goldPurity.k24}</option>
                 <option value="22">{t.goldPurity.k22}</option>
@@ -132,7 +132,7 @@ export function EditDebtForm({
                 <button
                   type="button"
                   onClick={() => f.setGoalSheetOpen(true)}
-                  className="text-sm px-3 py-1.5 rounded-lg border border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
+                  className="text-sm px-3 py-1.5 rounded-lg bg-[var(--color-brand-green)]/15 text-[var(--color-brand-green)] hover:bg-[var(--color-brand-green)]/25 transition-colors"
                 >
                   {t.addDebt.goalTrigger}
                 </button>

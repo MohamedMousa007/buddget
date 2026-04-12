@@ -46,7 +46,7 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
             <FiatCurrencySelect
               value={f.currency}
               onChange={f.setCurrency}
-              className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+              className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
             />
           </div>
         </div>
@@ -61,7 +61,7 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
               <select
                 value={f.recurringFrequency}
                 onChange={(e) => f.setRecurringFrequency(e.target.value as IncomeRecurringFrequency)}
-                className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
               >
                 {INCOME_RECURRING_FREQ_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>

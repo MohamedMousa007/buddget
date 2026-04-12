@@ -34,7 +34,7 @@ export function SettingsCurrencySection({ store }: SettingsCurrencySectionProps)
         <select
           value={store.settings.baseCurrency}
           onChange={(e) => store.updateSettings({ baseCurrency: e.target.value as Currency })}
-          className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+          className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
         >
           {FIAT_CURRENCIES.map((c) => (
             <option key={c} value={c}>
@@ -66,7 +66,7 @@ export function SettingsCurrencySection({ store }: SettingsCurrencySectionProps)
           <select
             value={store.settings.secondaryCurrency || ''}
             onChange={(e) => store.updateSettings({ secondaryCurrency: (e.target.value || null) as Currency | null })}
-            className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+            className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
           >
             <option value="">{t.settings.secondaryNone}</option>
             {FIAT_CURRENCIES.filter((c) => c !== store.settings.baseCurrency).map((c) => (

@@ -333,7 +333,7 @@ export const ar: Dictionary = {
     labelNotes: 'ملاحظات؟',
     buttonSubmit: 'إضافة الدين ←',
     debtTypeLabel: 'نوع الدين',
-    debtTypePersonal: 'مُقترَض أو مُقرض',
+    debtTypePersonal: 'مُقترَض',
     debtTypeInstallment: 'خطة تقسيط',
     debtTypeGeneral: 'دين آخر',
     labelRelationship: 'العلاقة (اختياري)',

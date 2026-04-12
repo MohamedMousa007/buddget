@@ -105,7 +105,7 @@ export function AddDebtPaymentForm({
           <select
             value={selectedPayable ? selectedDebtId : payableDebts[0]?.id ?? ''}
             onChange={(e) => setSelectedDebtId(e.target.value)}
-            className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+            className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
           >
             {payableDebts.map((d) => (
               <option key={d.id} value={d.id}>
@@ -158,7 +158,7 @@ export function AddDebtPaymentForm({
           <select
             value={recurringFrequency}
             onChange={(e) => setRecurringFrequency(e.target.value as DebtRecurringFrequency)}
-            className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+            className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
           >
             {RECURRING_DEBT_FREQUENCIES.filter((f) => f.value !== 'biweekly').map((f) => (
               <option key={f.value} value={f.value}>
@@ -188,7 +188,7 @@ export function AddDebtPaymentForm({
           <select
             value={paymentCurrency}
             onChange={(e) => setPaymentCurrency(e.target.value)}
-            className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+            className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
           >
             {buildFiatCurrencyPickerOptions(settings).map((o) => (
               <option key={o.value} value={o.value} disabled={o.disabled}>

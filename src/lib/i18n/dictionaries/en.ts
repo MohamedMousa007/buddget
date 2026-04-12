@@ -333,7 +333,7 @@ export const en: Dictionary = {
     labelNotes: 'Any notes?',
     buttonSubmit: 'Add debt \u2192',
     debtTypeLabel: 'Debt type',
-    debtTypePersonal: 'Lent or borrowed',
+    debtTypePersonal: 'Borrowed',
     debtTypeInstallment: 'Installment plan',
     debtTypeGeneral: 'Other debt',
     labelRelationship: 'Relationship (optional)',

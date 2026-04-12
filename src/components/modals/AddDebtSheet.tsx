@@ -4,7 +4,6 @@ import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useAddDebtSheet } from '@/hooks/useAddDebtSheet'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { AddDebtSheetHeader } from '@/components/features/debts/AddDebtSheetHeader'
-import { AddDebtModeTabs } from '@/components/features/debts/AddDebtModeTabs'
 import { AddDebtNewForm } from '@/components/features/debts/AddDebtNewForm'
 import { AddDebtPaymentForm } from '@/components/features/debts/AddDebtPaymentForm'
 import { PayDebtSelectList } from '@/components/features/debts/PayDebtSelectList'
@@ -23,9 +22,7 @@ export function AddDebtSheet() {
     ? t.addDebt.titlePayDebt
     : d.debtSheetPaymentOnly
       ? t.addDebt.titlePayment
-      : d.mode === 'new'
-        ? t.addDebt.titleNew
-        : t.addDebt.titlePayment
+      : t.addDebt.titleNew
 
   const paymentFormProps = {
     settings: d.settings,
@@ -82,58 +79,49 @@ export function AddDebtSheet() {
           ) : d.debtSheetPaymentOnly ? (
             <AddDebtPaymentForm {...paymentFormProps} />
           ) : (
-            <>
-              <AddDebtModeTabs mode={d.mode} onModeChange={d.setMode} />
-              {d.mode === 'new' ? (
-                <AddDebtNewForm
-                  settings={d.settings}
-                  debtType={d.debtType}
-                  setDebtType={d.setDebtType}
-                  name={d.name}
-                  setName={d.setName}
-                  person={d.person}
-                  setPerson={d.setPerson}
-                  description={d.description}
-                  setDescription={d.setDescription}
-                  isGold={d.isGold}
-                  setIsGold={d.setIsGold}
-                  startingBalance={d.startingBalance}
-                  setStartingBalance={d.setStartingBalance}
-                  currency={d.currency}
-                  setCurrency={d.setCurrency}
-                  goldKarat={d.goldKarat}
-                  setGoldKarat={d.setGoldKarat}
-                  relationship={d.relationship}
-                  setRelationship={d.setRelationship}
-                  direction={d.direction}
-                  setDirection={d.setDirection}
-                  creditor={d.creditor}
-                  setCreditor={d.setCreditor}
-                  installmentItemName={d.installmentItemName}
-                  setInstallmentItemName={d.setInstallmentItemName}
-                  installmentCount={d.installmentCount}
-                  setInstallmentCount={d.setInstallmentCount}
-                  installmentFrequency={d.installmentFrequency}
-                  setInstallmentFrequency={d.setInstallmentFrequency}
-                  installmentStartDate={d.installmentStartDate}
-                  setInstallmentStartDate={d.setInstallmentStartDate}
-                  interestFree={d.interestFree}
-                  setInterestFree={d.setInterestFree}
-                  installmentPreview={d.installmentPreview}
-                  goalDraft={d.goalDraft}
-                  onOpenGoal={() => d.setGoalSheetOpen(true)}
-                  onClearGoal={() => {
-                    d.setGoalDraft(null)
-                    d.setGoalRemindRecurring(false)
-                  }}
-                  onCancel={d.closeSheet}
-                  onSubmit={d.handleAddDebt}
-                  canSubmit={d.canSubmitNewDebt}
-                />
-              ) : (
-                <AddDebtPaymentForm {...paymentFormProps} />
-              )}
-            </>
+            <AddDebtNewForm
+              settings={d.settings}
+              debtType={d.debtType}
+              setDebtType={d.setDebtType}
+              name={d.name}
+              setName={d.setName}
+              person={d.person}
+              setPerson={d.setPerson}
+              description={d.description}
+              setDescription={d.setDescription}
+              isGold={d.isGold}
+              setIsGold={d.setIsGold}
+              startingBalance={d.startingBalance}
+              setStartingBalance={d.setStartingBalance}
+              currency={d.currency}
+              setCurrency={d.setCurrency}
+              goldKarat={d.goldKarat}
+              setGoldKarat={d.setGoldKarat}
+              relationship={d.relationship}
+              setRelationship={d.setRelationship}
+              direction={d.direction}
+              setDirection={d.setDirection}
+              creditor={d.creditor}
+              setCreditor={d.setCreditor}
+              installmentItemName={d.installmentItemName}
+              setInstallmentItemName={d.setInstallmentItemName}
+              installmentCount={d.installmentCount}
+              setInstallmentCount={d.setInstallmentCount}
+              installmentFrequency={d.installmentFrequency}
+              setInstallmentFrequency={d.setInstallmentFrequency}
+              installmentStartDate={d.installmentStartDate}
+              setInstallmentStartDate={d.setInstallmentStartDate}
+              installmentPreview={d.installmentPreview}
+              goalDraft={d.goalDraft}
+              onOpenGoal={() => d.setGoalSheetOpen(true)}
+              onClearGoal={() => {
+                d.setGoalDraft(null)
+                d.setGoalRemindRecurring(false)
+              }}
+              onCancel={d.closeSheet}
+              onSubmit={d.handleAddDebt}
+              canSubmit={d.canSubmitNewDebt}
+            />
           )}
         </div>
       </ModalShell>

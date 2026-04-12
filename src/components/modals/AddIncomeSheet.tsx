@@ -112,7 +112,7 @@ export function AddIncomeSheet() {
                     <FiatCurrencySelect
                       value={currency}
                       onChange={setCurrency}
-                      className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                      className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
                     />
                   </div>
                 </div>
@@ -129,7 +129,7 @@ export function AddIncomeSheet() {
                       <select
                         value={recurringFrequency}
                         onChange={(e) => setRecurringFrequency(e.target.value as IncomeRecurringFrequency)}
-                        className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                        className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
                       >
                         {RECURRING_FREQ.map((f) => (
                           <option key={f.value} value={f.value}>

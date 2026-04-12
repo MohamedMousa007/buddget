@@ -2,7 +2,6 @@
 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import type { DebtKind } from '@/lib/store/types'
 import { useT } from '@/lib/i18n'
 
@@ -18,8 +17,6 @@ interface AddDebtDebtTypeSectionProps {
   setInstallmentFrequency: (v: 'weekly' | 'monthly' | 'quarterly' | 'annually') => void
   installmentStartDate: string
   setInstallmentStartDate: (v: string) => void
-  interestFree: boolean
-  setInterestFree: (v: boolean) => void
   relationship: string
   setRelationship: (v: string) => void
   direction: 'i_owe' | 'they_owe'
@@ -42,8 +39,6 @@ export function AddDebtDebtTypeSection({
   setInstallmentFrequency,
   installmentStartDate,
   setInstallmentStartDate,
-  interestFree,
-  setInterestFree,
   relationship,
   setRelationship,
   direction,
@@ -82,8 +77,19 @@ export function AddDebtDebtTypeSection({
       </div>
 
       {debtType === 'personal' ? (
-        <>
-          <div className="max-w-[220px]">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelDirection}</Label>
+            <select
+              value={direction}
+              onChange={(e) => setDirection(e.target.value as 'i_owe' | 'they_owe')}
+              className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+            >
+              <option value="i_owe">{t.addDebt.directionIOwe}</option>
+              <option value="they_owe">{t.addDebt.directionTheyOwe}</option>
+            </select>
+          </div>
+          <div>
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelRelationship}</Label>
             <Input
               value={relationship}
@@ -91,18 +97,7 @@ export function AddDebtDebtTypeSection({
               className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
             />
           </div>
-          <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelDirection}</Label>
-            <select
-              value={direction}
-              onChange={(e) => setDirection(e.target.value as 'i_owe' | 'they_owe')}
-              className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
-            >
-              <option value="i_owe">{t.addDebt.directionIOwe}</option>
-              <option value="they_owe">{t.addDebt.directionTheyOwe}</option>
-            </select>
-          </div>
-        </>
+        </div>
       ) : null}
 
       {debtType === 'installment' ? (
@@ -133,7 +128,7 @@ export function AddDebtDebtTypeSection({
                 onChange={(e) =>
                   setInstallmentFrequency(e.target.value as 'weekly' | 'monthly' | 'quarterly' | 'annually')
                 }
-                className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
               >
                 <option value="weekly">{t.addDebt.freqWeekly}</option>
                 <option value="monthly">{t.addDebt.freqMonthly}</option>
@@ -150,10 +145,6 @@ export function AddDebtDebtTypeSection({
               onChange={(e) => setInstallmentStartDate(e.target.value)}
               className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
             />
-          </div>
-          <div className="flex items-center justify-between">
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelInterestFree}</Label>
-            <Switch checked={interestFree} onCheckedChange={setInterestFree} />
           </div>
         </>
       ) : null}
