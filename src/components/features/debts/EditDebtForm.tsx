@@ -116,7 +116,7 @@ export function EditDebtForm({
                   <button
                     type="button"
                     onClick={() => f.setGoalSheetOpen(true)}
-                    className="text-sm px-3 py-1.5 rounded-lg bg-[var(--color-brand-gold)]/20 text-[var(--color-brand-gold)] hover:bg-[var(--color-brand-gold)]/30 transition-colors"
+                    className="text-sm px-3 py-1.5 rounded-lg bg-[var(--color-brand-red)]/15 text-[var(--color-brand-red)] hover:bg-[var(--color-brand-red)]/25 transition-colors"
                   >
                     {t.debts.goalEditButton}
                   </button>
@@ -132,7 +132,7 @@ export function EditDebtForm({
                 <button
                   type="button"
                   onClick={() => f.setGoalSheetOpen(true)}
-                  className="text-sm text-[var(--color-brand-gold)] hover:underline"
+                  className="text-sm px-3 py-1.5 rounded-lg border border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
                 >
                   {t.addDebt.goalTrigger}
                 </button>

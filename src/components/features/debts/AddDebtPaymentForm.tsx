@@ -93,7 +93,7 @@ export function AddDebtPaymentForm({
             <button
               type="button"
               onClick={onBackToDebtList}
-              className="text-sm text-[var(--color-brand-gold)] hover:underline shrink-0 pt-5"
+              className="text-sm px-3 py-1.5 rounded-lg border border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors shrink-0 mt-5"
             >
               {t.addDebtPayment.backDebtList}
             </button>
@@ -201,7 +201,7 @@ export function AddDebtPaymentForm({
       </div>
       {paymentRateError ? <p className="text-xs text-[var(--color-brand-red)] px-1">{paymentRateError}</p> : null}
       {paymentPreviewText ? (
-        <p className="text-xs text-[var(--color-brand-gold)] px-1">{paymentPreviewText}</p>
+        <p className="text-xs text-[var(--color-brand-text-secondary)] px-1">{paymentPreviewText}</p>
       ) : null}
       <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)] mb-2 block">{t.addDebtPayment.labelPaidVia}</Label>

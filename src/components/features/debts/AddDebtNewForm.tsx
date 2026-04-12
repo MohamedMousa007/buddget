@@ -2,7 +2,6 @@
 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { DebtFiatCurrencySelect } from '@/components/ui/DebtFiatCurrencySelect'
 import { AddDebtDebtTypeSection } from '@/components/features/debts/AddDebtDebtTypeSection'
@@ -28,8 +27,6 @@ export interface AddDebtNewFormProps {
   setCurrency: (v: DebtCurrency) => void
   goldKarat: GoldKarat
   setGoldKarat: (v: GoldKarat) => void
-  notes: string
-  setNotes: (v: string) => void
   relationship: string
   setRelationship: (v: string) => void
   direction: 'i_owe' | 'they_owe'
@@ -76,8 +73,6 @@ export function AddDebtNewForm({
   setCurrency,
   goldKarat,
   setGoldKarat,
-  notes,
-  setNotes,
   relationship,
   setRelationship,
   direction,
@@ -216,26 +211,17 @@ export function AddDebtNewForm({
       </div>
 
       {debtType === 'installment' && installmentPreview !== null ? (
-        <p className="text-xs text-[var(--color-brand-gold)] font-mono-numbers">
+        <p className="text-xs text-[var(--color-brand-text-secondary)] font-mono-numbers">
           ≈ {formatCurrency(installmentPreview, currency)} / {t.addDebt.freqMonthly.toLowerCase()} (
           {t.addDebt.labelInterestFree}: {interestFree ? 'yes' : 'no'})
         </p>
       ) : null}
 
-      <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelNotes}</Label>
-        <Textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white min-h-[60px]"
-        />
-      </div>
-
       <div className="space-y-2">
         {goalDraft ? (
           <div className="flex items-center justify-between gap-2 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-sm">
             <button type="button" onClick={onOpenGoal} className="min-w-0 flex-1 text-left">
-              <span className="text-[var(--color-brand-gold)]">🎯</span>{' '}
+              <span>🎯</span>{' '}
               <span className="font-mono-numbers text-white">
                 {formatCurrency(goalDraft.calculatedAmount, currency)}/
                 {goalDraft.paymentFrequency === 'monthly' ? 'mo' : goalDraft.paymentFrequency} until{' '}
@@ -255,7 +241,7 @@ export function AddDebtNewForm({
           <button
             type="button"
             onClick={onOpenGoal}
-            className="text-sm text-[var(--color-brand-gold)] hover:underline cursor-pointer"
+            className="text-sm px-3 py-1.5 rounded-lg border border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
           >
             {t.addDebt.goalTrigger}
           </button>

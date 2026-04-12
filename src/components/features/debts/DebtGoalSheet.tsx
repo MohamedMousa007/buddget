@@ -118,7 +118,7 @@ export function DebtGoalSheet({
           </span>
         </p>
         <div className="space-y-4">
-          <div>
+          <div className="max-w-[200px]">
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.goalClearBy}</Label>
             <Input
               type="month"
@@ -127,7 +127,7 @@ export function DebtGoalSheet({
               className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
             />
           </div>
-          <div>
+          <div className="max-w-[180px]">
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.goalPaying}</Label>
             <select
               value={frequency}
@@ -181,7 +181,7 @@ export function DebtGoalSheet({
             <button
               type="button"
               onClick={handleSave}
-              className="flex-1 py-3 rounded-xl bg-[var(--color-brand-gold)]/90 hover:bg-[var(--color-brand-gold)] text-black text-sm font-semibold"
+              className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
             >
               {t.addDebt.goalSetButton}
             </button>

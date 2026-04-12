@@ -57,7 +57,7 @@ export function AddDebtDebtTypeSection({
     <div className="space-y-3">
       <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.debtTypeLabel}</Label>
-        <div className="mt-2 grid grid-cols-1 gap-2">
+        <div className="mt-2 flex flex-wrap gap-2">
           {(
             [
               ['personal', t.addDebt.debtTypePersonal],
@@ -69,7 +69,7 @@ export function AddDebtDebtTypeSection({
               key={value}
               type="button"
               onClick={() => setDebtType(value)}
-              className={`rounded-xl border px-3 py-2 text-left text-sm transition-colors ${
+              className={`rounded-lg border px-3 py-1.5 text-sm text-center transition-colors ${
                 debtType === value
                   ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10 text-white'
                   : 'border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]'
@@ -83,7 +83,7 @@ export function AddDebtDebtTypeSection({
 
       {debtType === 'personal' ? (
         <>
-          <div>
+          <div className="max-w-[220px]">
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelRelationship}</Label>
             <Input
               value={relationship}
@@ -142,7 +142,7 @@ export function AddDebtDebtTypeSection({
               </select>
             </div>
           </div>
-          <div>
+          <div className="max-w-[180px]">
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelStartDate}</Label>
             <Input
               type="date"
@@ -159,7 +159,7 @@ export function AddDebtDebtTypeSection({
       ) : null}
 
       {debtType === 'general' ? (
-        <div>
+        <div className="max-w-[220px]">
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelCreditor}</Label>
           <Input
             value={creditor}

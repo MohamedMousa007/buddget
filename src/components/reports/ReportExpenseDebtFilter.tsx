@@ -35,7 +35,7 @@ export function ReportExpenseDebtFilter({ value, onChange }: ReportExpenseDebtFi
             className={cn(
               'px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors',
               value === opt.value
-                ? 'bg-[var(--color-brand-gold)]/90 text-black'
+                ? 'bg-[var(--color-brand-red)] text-white'
                 : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-border)]'
             )}
           >

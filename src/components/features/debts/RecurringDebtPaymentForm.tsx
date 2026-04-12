@@ -115,7 +115,7 @@ export function RecurringDebtPaymentForm({
       </div>
 
       {error ? <p className="text-xs text-[var(--color-brand-red)]">{error}</p> : null}
-      {previewLine ? <p className="text-xs text-[var(--color-brand-gold)]">{previewLine}</p> : null}
+      {previewLine ? <p className="text-xs text-[var(--color-brand-text-secondary)]">{previewLine}</p> : null}
 
       <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.recurringDebt.labelFrequency}</Label>

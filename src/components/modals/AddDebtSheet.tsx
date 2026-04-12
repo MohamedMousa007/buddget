@@ -103,8 +103,6 @@ export function AddDebtSheet() {
                   setCurrency={d.setCurrency}
                   goldKarat={d.goldKarat}
                   setGoldKarat={d.setGoldKarat}
-                  notes={d.notes}
-                  setNotes={d.setNotes}
                   relationship={d.relationship}
                   setRelationship={d.setRelationship}
                   direction={d.direction}
