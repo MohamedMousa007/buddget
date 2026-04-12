@@ -11,7 +11,6 @@ import { BuddgyStepRent } from '@/components/features/budget-planner/BuddgyStepR
 import { BuddgyStepDewa } from '@/components/features/budget-planner/BuddgyStepDewa'
 import { BuddgyStepTransportMode } from '@/components/features/budget-planner/BuddgyStepTransportMode'
 import { BuddgyStepTransportDetail } from '@/components/features/budget-planner/BuddgyStepTransportDetail'
-import { BuddgyStepSavings } from '@/components/features/budget-planner/BuddgyStepSavings'
 import { BuddgyStepSummary } from '@/components/features/budget-planner/BuddgyStepSummary'
 
 const slide = {
@@ -70,8 +69,6 @@ export function BuddgyFlow({ planId, mode = 'resume', onClose, onRestartWizard }
               <BuddgyStepTransportMode flow={flow} />
             : flow.step === 'transportDetail' ?
               <BuddgyStepTransportDetail flow={flow} />
-            : flow.step === 'savings' ?
-              <BuddgyStepSavings flow={flow} />
             : flow.step === 'summary' ?
               <BuddgyStepSummary flow={flow} />
             : null}

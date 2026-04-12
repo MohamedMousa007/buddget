@@ -6,7 +6,7 @@ import { BuddgyLoadingState } from '@/components/features/budget-planner/BuddgyL
 
 const PARSE_MESSAGES = [
   'Reading your details…',
-  'Checking typical costs in your area…',
+  'Checking Dubai costs…',
   'Crunching numbers…',
 ]
 
@@ -17,9 +17,7 @@ export function BuddgyStepDescribe({ flow }: { flow: BuddgyBuilderApi }) {
   const canSubmit = flow.describeText.trim().length > 10 && !flow.loading
 
   if (flow.loading && flow.loadingKind === 'parse') {
-    return (
-      <BuddgyLoadingState title="Buddgy is reading your details…" messages={PARSE_MESSAGES} />
-    )
+    return <BuddgyLoadingState messages={PARSE_MESSAGES} intervalMs={2000} />
   }
 
   return (
