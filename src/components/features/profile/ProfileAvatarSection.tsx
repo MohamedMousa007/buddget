@@ -35,7 +35,7 @@ export function ProfileAvatarSection({ fileRef, store, activePreset, onAvatarFil
       <button
         type="button"
         onClick={() => fileRef.current?.click()}
-        className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-white hover:bg-[var(--color-brand-elevated)] transition-colors"
+        className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
       >
         {t.profile.avatarUploadPhoto}
       </button>

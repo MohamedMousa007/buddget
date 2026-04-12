@@ -99,11 +99,11 @@ export function AuthSignInUpStep({
         )}
       </AuthPrimaryButton>
 
-      <p className="text-center text-sm text-[#5A5A72]">
+      <p className="text-center text-sm text-[var(--color-brand-text-muted)]">
         {formMode === 'signin' ? (
           <button
             type="button"
-            className="text-[#E50914] font-medium hover:underline"
+            className="text-[var(--color-brand-red)] font-medium hover:underline"
             onClick={() => {
               setFormMode('signup')
               setError('')
@@ -114,7 +114,7 @@ export function AuthSignInUpStep({
         ) : (
           <button
             type="button"
-            className="text-[#E50914] font-medium hover:underline"
+            className="text-[var(--color-brand-red)] font-medium hover:underline"
             onClick={() => {
               setFormMode('signin')
               setError('')

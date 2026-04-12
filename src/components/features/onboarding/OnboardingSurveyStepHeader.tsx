@@ -13,7 +13,7 @@ export interface OnboardingSurveyStepHeaderProps {
 export function OnboardingSurveyStepHeader({ step, loadError }: OnboardingSurveyStepHeaderProps) {
   return (
     <div>
-      <h2 className="text-xl font-bold text-white font-heading mb-1">{step.title}</h2>
+      <h2 className="text-xl font-bold text-[var(--color-brand-text-primary)] font-heading mb-1">{step.title}</h2>
       {'subtitle' in step && step.subtitle ? (
         <p className="text-xs text-[var(--color-brand-text-secondary)] mb-2">{step.subtitle}</p>
       ) : null}

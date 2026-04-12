@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useShallow } from 'zustand/react/shallow'
+import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import {
   calculateDebtRemaining,
@@ -11,8 +12,16 @@ import { convertCurrency } from '@/lib/utils/currency'
 import { MoneyDisplay } from '@/components/ui/MoneyDisplay'
 import { useT } from '@/lib/i18n'
 
+function supabaseAuthConfigured(): boolean {
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+  )
+}
+
 export function DebtSnapshot() {
   const t = useT()
+  const { session } = useAuth()
+  const hideFinance = supabaseAuthConfigured() && session == null
   const { debts, debtPayments, settings, exchangeRates, goldPricePerGram } = useFinanceStore(
     useShallow((s) => ({
       debts: s.debts,
@@ -24,6 +33,7 @@ export function DebtSnapshot() {
   )
   const base = settings.baseCurrency
 
+  if (hideFinance) return null
   if (debts.length === 0) return null
 
   return (
@@ -48,7 +58,7 @@ export function DebtSnapshot() {
               <div className="glass-card rounded-2xl p-4 hover:bg-[var(--color-brand-elevated)] transition-colors cursor-pointer">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-base">{debt.isGold ? '🪙' : '💵'}</span>
-                  <h4 className="text-sm font-medium text-white">{debt.name}</h4>
+                  <h4 className="text-sm font-medium text-[var(--color-brand-text-primary)]">{debt.name}</h4>
                   <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase ${
                     debt.isGold
                       ? 'bg-[var(--color-brand-gold)]/20 text-[var(--color-brand-gold)]'
@@ -63,7 +73,7 @@ export function DebtSnapshot() {
                   currency={debt.isGold ? 'XAU' : debt.currency}
                   amountInPrimary={remainingInBase}
                   variant="card"
-                  primaryClassName="text-lg font-bold text-white"
+                  primaryClassName="text-lg font-bold text-[var(--color-brand-text-primary)]"
                 />
 
                 {debt.isGold && (

@@ -10,6 +10,8 @@ interface ModalShellProps {
   open: boolean
   onBackdropClick: () => void
   children: ReactNode
+  /** Tailwind z-index classes for backdrop + panel (e.g. `z-[110]` for nested sheets). */
+  zIndexClassName?: string
   /** Appended to the panel `className` (e.g. wider sheet). */
   panelClassName?: string
   /**
@@ -25,10 +27,12 @@ export function ModalShell({
   open,
   onBackdropClick,
   children,
+  zIndexClassName,
   panelClassName = '',
   dragToClose = false,
 }: ModalShellProps) {
   const dragControls = useDragControls()
+  const zStack = zIndexClassName ?? OVERLAY_Z
 
   const panelStaticClasses =
     'fixed bottom-0 start-0 end-0 bg-[var(--color-brand-card)] rounded-t-3xl border-t border-[var(--color-brand-border)] max-h-[85vh] lg:bottom-auto lg:top-1/2 lg:start-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[480px] lg:rounded-2xl lg:border lg:max-h-[90vh]'
@@ -43,7 +47,7 @@ export function ModalShell({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onBackdropClick}
-            className={cn('fixed inset-0 bg-black/60 backdrop-blur-sm', OVERLAY_Z)}
+            className={cn('fixed inset-0 bg-black/60 backdrop-blur-sm', zStack)}
           />
           <motion.div
             key="modal-panel"
@@ -66,7 +70,7 @@ export function ModalShell({
             }}
             className={cn(
               panelStaticClasses,
-              OVERLAY_Z,
+              zStack,
               dragToClose ? 'flex flex-col overflow-hidden' : 'overflow-y-auto',
               panelClassName
             )}

@@ -12,6 +12,7 @@ import type { ExpenseCategory } from '@/lib/store/types'
 import { MonthNavigationControl } from '@/components/layout/MonthNavigationControl'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
+import { Receipt } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 
 export default function ExpensesPage() {
@@ -87,7 +88,10 @@ export default function ExpensesPage() {
     <div className="min-h-screen">
       <PageHeader>
         <PageHeaderContent className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-white">{t.expenses.pageTitle}</h1>
+          <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)] flex items-center gap-2">
+            <Receipt className="w-6 h-6 text-[var(--color-brand-red)]" />
+            {t.expenses.pageTitle}
+          </h1>
           <MonthNavigationControl monthFilter={monthFilter} onChange={setMonthFilter} />
         </PageHeaderContent>
       </PageHeader>

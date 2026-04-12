@@ -79,7 +79,7 @@ export function OnboardingPaymentMethodsBody({
           key={o.value}
           className="rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/60 p-3 space-y-2"
         >
-          <label className="flex items-center gap-2 text-sm text-white cursor-pointer">
+          <label className="flex items-center gap-2 text-sm text-[var(--color-brand-text-primary)] cursor-pointer">
             <input
               type="checkbox"
               checked={!!checked[o.value]}
@@ -101,7 +101,7 @@ export function OnboardingPaymentMethodsBody({
                 setNicknames(next)
                 emit(checked, next, customRows)
               }}
-              className="bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white text-sm"
+              className="bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
             />
           ) : null}
         </div>
@@ -118,7 +118,7 @@ export function OnboardingPaymentMethodsBody({
                 setCustomRows(next)
                 emit(checked, nicknames, next)
               }}
-              className="flex-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white text-sm"
+              className="flex-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
             />
             <button
               type="button"

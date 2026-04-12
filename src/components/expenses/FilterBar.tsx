@@ -35,7 +35,7 @@ export function FilterBar({
       <select
         value={categoryFilter}
         onChange={(e) => onCategoryChange(e.target.value as ExpenseCategory | 'All')}
-        className="h-9 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+        className="h-9 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
       >
         {EXPENSE_FILTER_CATEGORIES.map((c) => (
           <option key={c} value={c}>
@@ -47,7 +47,7 @@ export function FilterBar({
       <select
         value={methodFilter}
         onChange={(e) => onMethodChange(e.target.value)}
-        className="h-9 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+        className="h-9 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
       >
         <option value="All">{t.expenses.filterAllMethods}</option>
         {paymentMethods.map((m) => (
@@ -61,7 +61,7 @@ export function FilterBar({
           placeholder={t.expenses.searchPlaceholder}
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="ps-9 h-9 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)] text-sm"
+          className="ps-9 h-9 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] text-sm"
         />
       </div>
 

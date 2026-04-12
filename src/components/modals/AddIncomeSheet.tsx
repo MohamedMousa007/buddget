@@ -91,7 +91,7 @@ export function AddIncomeSheet() {
                     placeholder={t.addIncome.placeholderSource}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
+                    className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)]"
                   />
                 </div>
 
@@ -104,7 +104,7 @@ export function AddIncomeSheet() {
                       placeholder={t.addIncome.placeholderAmount}
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers placeholder:text-[var(--color-brand-text-muted)]"
+                      className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers placeholder:text-[var(--color-brand-text-muted)]"
                     />
                   </div>
                   <div>
@@ -112,7 +112,7 @@ export function AddIncomeSheet() {
                     <FiatCurrencySelect
                       value={currency}
                       onChange={setCurrency}
-                      className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                      className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
                     />
                   </div>
                 </div>
@@ -129,7 +129,7 @@ export function AddIncomeSheet() {
                       <select
                         value={recurringFrequency}
                         onChange={(e) => setRecurringFrequency(e.target.value as IncomeRecurringFrequency)}
-                        className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                        className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
                       >
                         {RECURRING_FREQ.map((f) => (
                           <option key={f.value} value={f.value}>
@@ -151,7 +151,7 @@ export function AddIncomeSheet() {
                           max="31"
                           value={dayOfMonth}
                           onChange={(e) => setDayOfMonth(e.target.value)}
-                          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers w-24"
+                          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers w-24"
                         />
                       </div>
                     )}
@@ -164,7 +164,7 @@ export function AddIncomeSheet() {
                     placeholder={t.addIncome.placeholderNotes}
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)] min-h-[60px]"
+                    className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] min-h-[60px]"
                   />
                 </div>
 

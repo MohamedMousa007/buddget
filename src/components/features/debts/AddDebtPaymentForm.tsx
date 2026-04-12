@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { buildFiatCurrencyPickerOptions } from '@/lib/utils/currencyPickerOptions'
-import type { AppSettings, Debt, PaymentMethod } from '@/lib/store/types'
+import { RECURRING_DEBT_FREQUENCIES } from '@/lib/constants/debtRecurring'
+import type { AppSettings, Debt, DebtRecurringFrequency, PaymentMethod } from '@/lib/store/types'
 import { useT } from '@/lib/i18n'
 
 export interface AddDebtPaymentFormProps {
@@ -29,6 +30,13 @@ export interface AddDebtPaymentFormProps {
   setPaymentNotes: (v: string) => void
   onCancel: () => void
   onSubmit: () => void
+  /** When set, debt was chosen in a prior step (e.g. Pay a debt flow). */
+  hideDebtSelect?: boolean
+  onBackToDebtList?: () => void
+  paymentScheduleMode: 'one_time' | 'recurring'
+  setPaymentScheduleMode: (m: 'one_time' | 'recurring') => void
+  recurringFrequency: DebtRecurringFrequency
+  setRecurringFrequency: (f: DebtRecurringFrequency) => void
 }
 
 /**
@@ -56,6 +64,12 @@ export function AddDebtPaymentForm({
   setPaymentNotes,
   onCancel,
   onSubmit,
+  hideDebtSelect = false,
+  onBackToDebtList,
+  paymentScheduleMode,
+  setPaymentScheduleMode,
+  recurringFrequency,
+  setRecurringFrequency,
 }: AddDebtPaymentFormProps) {
   const t = useT()
 
@@ -69,29 +83,92 @@ export function AddDebtPaymentForm({
 
   return (
     <div className="space-y-4">
-      <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebtPayment.labelBalance}</Label>
-        <select
-          value={selectedPayable ? selectedDebtId : payableDebts[0]?.id ?? ''}
-          onChange={(e) => setSelectedDebtId(e.target.value)}
-          className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+      {hideDebtSelect && selectedDebt ? (
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebtPayment.labelDebt}</Label>
+            <p className="mt-1 text-sm font-medium text-[var(--color-brand-text-primary)] truncate">{selectedDebt.name}</p>
+          </div>
+          {onBackToDebtList ? (
+            <button
+              type="button"
+              onClick={onBackToDebtList}
+              className="text-sm px-3 py-1.5 rounded-lg border border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors shrink-0 mt-5"
+            >
+              {t.addDebtPayment.backDebtList}
+            </button>
+          ) : null}
+        </div>
+      ) : (
+        <div>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebtPayment.labelDebt}</Label>
+          <select
+            value={selectedPayable ? selectedDebtId : payableDebts[0]?.id ?? ''}
+            onChange={(e) => setSelectedDebtId(e.target.value)}
+            className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
+          >
+            {payableDebts.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name} {d.isGold ? `(${d.goldKarat}K Gold)` : `(${d.currency})`}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      <div className="flex rounded-xl border border-[var(--color-brand-border)] p-1 gap-1">
+        <button
+          type="button"
+          onClick={() => setPaymentScheduleMode('one_time')}
+          className={`flex-1 py-2 rounded-lg text-xs font-medium transition-colors ${
+            paymentScheduleMode === 'one_time'
+              ? 'bg-[var(--color-brand-red)] text-white'
+              : 'text-[var(--color-brand-text-secondary)]'
+          }`}
         >
-          {payableDebts.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.name} {d.isGold ? `(${d.goldKarat}K Gold)` : `(${d.currency})`}
-            </option>
-          ))}
-        </select>
+          {t.addDebtPayment.paymentModeOneTime}
+        </button>
+        <button
+          type="button"
+          onClick={() => setPaymentScheduleMode('recurring')}
+          className={`flex-1 py-2 rounded-lg text-xs font-medium transition-colors ${
+            paymentScheduleMode === 'recurring'
+              ? 'bg-[var(--color-brand-red)] text-white'
+              : 'text-[var(--color-brand-text-secondary)]'
+          }`}
+        >
+          {t.addDebtPayment.paymentModeRecurring}
+        </button>
       </div>
+
       <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebtPayment.labelDate}</Label>
         <Input
           type="date"
           value={paymentDate}
           onChange={(e) => setPaymentDate(e.target.value)}
-          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
+          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
         />
       </div>
+
+      {paymentScheduleMode === 'recurring' ? (
+        <div>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">
+            {t.addDebtPayment.labelRecurringFrequency}
+          </Label>
+          <select
+            value={recurringFrequency}
+            onChange={(e) => setRecurringFrequency(e.target.value as DebtRecurringFrequency)}
+            className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
+          >
+            {RECURRING_DEBT_FREQUENCIES.filter((f) => f.value !== 'biweekly').map((f) => (
+              <option key={f.value} value={f.value}>
+                {f.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebtPayment.labelAmountPaid}</Label>
@@ -103,7 +180,7 @@ export function AddDebtPaymentForm({
             onChange={(e) => {
               setPaymentAmount(e.target.value)
             }}
-            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers"
+            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers"
           />
         </div>
         <div>
@@ -111,7 +188,7 @@ export function AddDebtPaymentForm({
           <select
             value={paymentCurrency}
             onChange={(e) => setPaymentCurrency(e.target.value)}
-            className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+            className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
           >
             {buildFiatCurrencyPickerOptions(settings).map((o) => (
               <option key={o.value} value={o.value} disabled={o.disabled}>
@@ -124,7 +201,7 @@ export function AddDebtPaymentForm({
       </div>
       {paymentRateError ? <p className="text-xs text-[var(--color-brand-red)] px-1">{paymentRateError}</p> : null}
       {paymentPreviewText ? (
-        <p className="text-xs text-[var(--color-brand-gold)] px-1">{paymentPreviewText}</p>
+        <p className="text-xs text-[var(--color-brand-text-secondary)] px-1">{paymentPreviewText}</p>
       ) : null}
       <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)] mb-2 block">{t.addDebtPayment.labelPaidVia}</Label>
@@ -150,7 +227,7 @@ export function AddDebtPaymentForm({
         <Textarea
           value={paymentNotes}
           onChange={(e) => setPaymentNotes(e.target.value)}
-          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white min-h-[60px]"
+          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] min-h-[60px]"
         />
       </div>
       <div className="flex gap-3 pt-2">
@@ -167,7 +244,7 @@ export function AddDebtPaymentForm({
           disabled={!selectedDebtId || !paymentAmount}
           className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50"
         >
-          {t.addDebtPayment.buttonSubmit}
+          {paymentScheduleMode === 'recurring' ? t.recurringDebt.buttonSubmit : t.addDebtPayment.buttonSubmit}
         </button>
       </div>
     </div>

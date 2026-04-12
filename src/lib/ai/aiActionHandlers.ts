@@ -7,7 +7,10 @@ import {
   isDebtFullyPaid,
 } from '@/lib/utils/calculations'
 import { EXPENSE_CATEGORIES, EXPENSE_ENTRY_CATEGORIES, PAYMENT_METHOD_TYPES } from '@/lib/constants/finance'
+import { pushProfileFieldsToSupabase } from '@/lib/profile/pushProfileFieldsToSupabase'
+import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import type {
+  BudgetPlanCategory,
   Currency,
   ExpenseCategory,
   PaymentMethodType,
@@ -19,7 +22,12 @@ import type {
   PaymentMethod,
   AppSettings,
   FinanceStore,
+  UserProfile,
 } from '@/lib/store/types'
+
+function generateActionId(): string {
+  return `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+}
 
 export function getField(d: Record<string, unknown>, ...keys: string[]): unknown {
   for (const key of keys) {
@@ -83,6 +91,9 @@ export function buildAIActionHandlerContext(store: FinanceStore): AIActionHandle
     addSavingsHolding: store.addSavingsHolding,
     updateBudgetCategory: store.updateBudgetCategory,
     updatePlanCategory: store.updatePlanCategory,
+    updateBudgetPlan: store.updateBudgetPlan,
+    updateProfile: store.updateProfile,
+    setFinancialGoalsNotes: store.setFinancialGoalsNotes,
   }
 }
 
@@ -102,6 +113,9 @@ export interface AIActionHandlerContext {
   addSavingsHolding: FinanceStore['addSavingsHolding']
   updateBudgetCategory: FinanceStore['updateBudgetCategory']
   updatePlanCategory: FinanceStore['updatePlanCategory']
+  updateBudgetPlan: FinanceStore['updateBudgetPlan']
+  updateProfile: FinanceStore['updateProfile']
+  setFinancialGoalsNotes: FinanceStore['setFinancialGoalsNotes']
 }
 
 export function findPaymentMethod(
@@ -214,6 +228,23 @@ export function validateActionItem(
     const amt = Number(getField(d, 'newAmount', 'amount', 'budgetedAmount')) || 0
     if (!planId || !categoryId) return 'Budget plan update needs planId and categoryId.'
     if (amt < 0 || !Number.isFinite(amt)) return 'Amount must be a non-negative number.'
+    return null
+  }
+  if (action === 'replace_budget_plan') {
+    const planId = String(getField(d, 'planId', 'plan_id') || '')
+    const rawCats = d.categories
+    if (!planId.trim()) return 'Budget plan replace needs planId.'
+    if (!Array.isArray(rawCats) || rawCats.length === 0) {
+      return 'Budget plan replace needs a non-empty categories array.'
+    }
+    for (const c of rawCats) {
+      if (!c || typeof c !== 'object') return 'Invalid category row in plan.'
+      const row = c as Record<string, unknown>
+      const name = String(row.name || '').trim()
+      const amt = Number(row.amount)
+      if (!name) return 'Each plan category needs a name.'
+      if (!Number.isFinite(amt) || amt < 0) return 'Each plan category needs a non-negative amount.'
+    }
     return null
   }
   return null
@@ -372,7 +403,50 @@ export function executeActionItem(
     ctx.updatePlanCategory(planId, categoryId, {
       amount: newAmount,
       subcategories: [],
+      currency: ctx.settings.baseCurrency,
     })
+    return
+  }
+  if (action === 'replace_budget_plan') {
+    const planId = String(getField(d, 'planId', 'plan_id') || '')
+    const rawCats = d.categories as unknown[]
+    const notes = String(getField(d, 'financialGoalsNotes') || '').trim()
+    const profilePatch = d.profileUpdates as Record<string, unknown> | undefined
+
+    const categories: BudgetPlanCategory[] = rawCats.map((raw) => {
+      const row = raw as Record<string, unknown>
+      const emoji = String(row.emoji || row.icon || '📦')
+      const name = String(row.name || 'Category').trim() || 'Category'
+      const amount = Math.max(0, Number(row.amount) || 0)
+      const curRaw = String(row.currency || ctx.settings.baseCurrency)
+      const currency = clampFiatToAllowed(ctx.settings, curRaw as Currency)
+      return {
+        id: generateActionId(),
+        name,
+        icon: emoji,
+        amount,
+        currency,
+        subcategories: [],
+      }
+    })
+
+    ctx.updateBudgetPlan(planId, { categories })
+
+    if (notes) ctx.setFinancialGoalsNotes(notes)
+
+    if (profilePatch && typeof profilePatch === 'object') {
+      const patch: Partial<UserProfile> = {}
+      const name = profilePatch.name != null ? String(profilePatch.name).trim() : ''
+      const city = profilePatch.city != null ? String(profilePatch.city).trim() : ''
+      const country = profilePatch.country != null ? String(profilePatch.country).trim() : ''
+      if (name) patch.name = name
+      if (city) patch.city = city
+      if (country) patch.country = country
+      if (Object.keys(patch).length > 0) {
+        ctx.updateProfile(patch)
+        if (patch.name) void pushProfileFieldsToSupabase({ name: patch.name })
+      }
+    }
   }
 }
 

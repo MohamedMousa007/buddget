@@ -62,14 +62,14 @@ export function ReportsSummaryPanel({
         </div>
         <div>
           <p className="text-xs text-[var(--color-brand-text-muted)]">{t.reports.kpiNetSaved}</p>
-          <p className="text-lg font-bold font-mono-numbers text-white">
+          <p className="text-lg font-bold font-mono-numbers text-[var(--color-brand-text-primary)]">
             {formatCurrency(periodRecurringIncome - totalExpenses, baseCurrency)}
           </p>
         </div>
         {largestExpense && largestExpenseInPrimary != null ? (
           <div>
             <p className="text-xs text-[var(--color-brand-text-muted)]">{t.reports.kpiBiggestPurchase}</p>
-            <p className="text-sm font-medium text-white">
+            <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">
               {largestExpense.description}
               <span className="text-[var(--color-brand-text-secondary)] ms-1 font-mono-numbers">
                 ({formatCurrency(largestExpenseInPrimary, baseCurrency)})
@@ -80,7 +80,7 @@ export function ReportsSummaryPanel({
         {mostUsedMethod ? (
           <div>
             <p className="text-xs text-[var(--color-brand-text-muted)]">{t.reports.kpiGoToPayment}</p>
-            <p className="text-sm font-medium text-white">
+            <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">
               {mostUsedMethod.name}
               <span className="text-[var(--color-brand-text-secondary)] ms-1">
                 {t.reports.timesUsed(mostUsedMethod.count)}

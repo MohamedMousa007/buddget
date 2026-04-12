@@ -1,34 +1,28 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { useT } from '@/lib/i18n'
-import {
-  getOnboardingCompletionPercent,
-  getOnboardingStageRows,
-  isExpertOnboardingComplete,
-  onboardingProgressSnapshotFromStore,
-} from '@/lib/onboarding/onboardingProgress'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useLocale, useT } from '@/lib/i18n'
+import { createClient } from '@/lib/supabase/client'
+import { clearBudgetData } from '@/lib/auth/clearBudgetData'
+import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 
-const AVATAR_FILE_MAX_BYTES = 2 * 1024 * 1024
+const INPUT_CLASS =
+  'bg-[#1A1A24] border border-[#2A2A38] focus:border-[#E50914] rounded-xl px-3 py-2 text-white text-sm w-full outline-none transition-colors'
+
+type ProfileForm = { name: string; email: string; phone: string; country: string; city: string }
 
 /**
- * Profile screen: avatar upload, onboarding progress, navigation to redo flow.
+ * Profile route: identity edit form, avatar modal trigger, password reset, sign-out.
  */
 export function useProfilePage() {
   const t = useT()
-  const router = useRouter()
-  const fileRef = useRef<HTMLInputElement>(null)
-  const { user, openAuthModal } = useAuth()
+  const { locale } = useLocale()
+  const { user, signOut } = useAuth()
   const store = useFinanceStore()
-
-  const supabaseConfigured = useMemo(
-    () =>
-      !!(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()),
-    []
-  )
+  const router = useRouter()
 
   useEffect(() => {
     if (user?.email) {
@@ -36,50 +30,89 @@ export function useProfilePage() {
     }
   }, [user?.email])
 
-  const pct = getOnboardingCompletionPercent(store, t)
-  const expertDone = isExpertOnboardingComplete(store.onboardingState)
-  const onboardingStages = getOnboardingStageRows(onboardingProgressSnapshotFromStore(store), t)
-  const activePreset = store.profile.avatarPresetId
+  const [editMode, setEditMode] = useState(false)
+  const [avatarModalOpen, setAvatarModalOpen] = useState(false)
+  const [form, setForm] = useState<ProfileForm>({
+    name: '',
+    email: '',
+    phone: '',
+    country: '',
+    city: '',
+  })
+  const [resetSent, setResetSent] = useState(false)
 
-  const onAvatarFile = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0]
-      e.target.value = ''
-      if (!file || !file.type.startsWith('image/')) return
-      if (file.size > AVATAR_FILE_MAX_BYTES) {
-        window.alert(t.profile.avatarTooLarge)
-        return
-      }
-      const reader = new FileReader()
-      reader.onload = () => {
-        const data = reader.result
-        if (typeof data === 'string') {
-          store.updateProfile({ avatar: data, avatarPresetId: undefined })
-        }
-      }
-      reader.readAsDataURL(file)
-    },
-    [store, t]
-  )
+  const avatarSrc = resolveProfileAvatarSrc(store.profile)
+  const displayName = store.profile.name || t.profile.displayNameFallback
+  const displayEmail = user?.email || store.profile.email || ''
 
-  const goOnboarding = useCallback(() => {
-    if (supabaseConfigured && !user) {
-      openAuthModal('/onboarding?redo=1')
-      return
+  const enterEditMode = useCallback(() => {
+    setForm({
+      name: store.profile.name,
+      email: store.profile.email || user?.email || '',
+      phone: store.profile.phone || '',
+      country: store.profile.country || '',
+      city: store.profile.city || '',
+    })
+    setEditMode(true)
+  }, [store.profile, user?.email])
+
+  const discard = useCallback(() => setEditMode(false), [])
+
+  const save = useCallback(() => {
+    store.updateProfile({
+      name: form.name,
+      phone: form.phone,
+      country: form.country,
+      city: form.city,
+    })
+    if (!user) store.updateProfile({ email: form.email })
+    setEditMode(false)
+  }, [form, store, user])
+
+  const updateField = useCallback((field: keyof ProfileForm, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }))
+  }, [])
+
+  const handlePasswordReset = useCallback(async () => {
+    const email = user?.email
+    if (!email) return
+    try {
+      const supabase = createClient()
+      await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password/confirm`,
+      })
+      setResetSent(true)
+      setTimeout(() => setResetSent(false), 5000)
+    } catch {
+      // silently fail
     }
-    router.push('/onboarding?redo=1')
-  }, [openAuthModal, router, supabaseConfigured, user])
+  }, [user?.email])
+
+  const handleSignOut = useCallback(async () => {
+    clearBudgetData()
+    await signOut()
+    router.push('/')
+  }, [router, signOut])
 
   return {
-    store,
+    t,
+    locale,
     user,
-    fileRef,
-    supabaseConfigured,
-    pct,
-    expertDone,
-    onboardingStages,
-    activePreset,
-    onAvatarFile,
-    goOnboarding,
+    store,
+    editMode,
+    avatarModalOpen,
+    setAvatarModalOpen,
+    form,
+    resetSent,
+    avatarSrc,
+    displayName,
+    displayEmail,
+    inputClass: INPUT_CLASS,
+    enterEditMode,
+    discard,
+    save,
+    updateField,
+    handlePasswordReset,
+    handleSignOut,
   }
 }

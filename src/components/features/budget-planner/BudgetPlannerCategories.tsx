@@ -1,10 +1,16 @@
 'use client'
 
-import type { BudgetPlanCategory, BudgetPlanSubcategory } from '@/lib/store/types'
+import { useCallback, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
+import type { AppSettings, BudgetPlanCategory, BudgetPlanSubcategory } from '@/lib/store/types'
+import { useAuth } from '@/components/auth/AuthProvider'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
-import { EmptyState } from '@/components/ui/EmptyState'
+import { calculateMonthlyIncome } from '@/lib/utils/calculations'
 import { BudgetPlannerCategoryRow } from '@/components/features/budget-planner/BudgetPlannerCategoryRow'
+import { BuddgyRebuildPrompt } from '@/components/features/budget-planner/BuddgyRebuildPrompt'
 import { BudgetPlannerAddCategoryMenu } from '@/components/features/budget-planner/BudgetPlannerAddCategoryMenu'
+import { BuddgyFlow } from '@/components/features/budget-planner/BuddgyFlow'
 
 export interface BudgetPlannerCategoriesLabels {
   categoriesTitle: string
@@ -12,6 +18,7 @@ export interface BudgetPlannerCategoriesLabels {
   chooseCategoryTitle: string
   customCategoryOption: string
   addCustomCategory: string
+  editCategoryName: string
   subcategories: string
   addSubcategory: string
   amount: string
@@ -25,7 +32,9 @@ export interface BudgetPlannerCategoriesLabels {
 }
 
 export interface BudgetPlannerCategoriesProps {
+  planId: string
   categories: BudgetPlanCategory[]
+  settings: AppSettings
   labels: BudgetPlannerCategoriesLabels
   onUpdateCategory: (
     categoryId: string,
@@ -45,9 +54,11 @@ export interface BudgetPlannerCategoriesProps {
   onAddCustomCategory: (name: string, icon: string) => void
 }
 
-/** List of plan categories + add menu (predefined or custom). */
+/** List of plan categories + add menu (predefined or custom), with optional Buddgy guided flow. */
 export function BudgetPlannerCategories({
+  planId,
   categories,
+  settings,
   labels,
   onUpdateCategory,
   onDeleteCategory,
@@ -58,6 +69,30 @@ export function BudgetPlannerCategories({
   onAddCustomCategory,
 }: BudgetPlannerCategoriesProps) {
   const t = useT()
+  const { user, openAuthModal } = useAuth()
+  const updateBudgetPlan = useFinanceStore((s) => s.updateBudgetPlan)
+  const { budgetPlans, incomeSources, exchangeRates } = useFinanceStore(
+    useShallow((s) => ({
+      budgetPlans: s.budgetPlans,
+      incomeSources: s.incomeSources,
+      exchangeRates: s.exchangeRates,
+    }))
+  )
+  const supabaseConfigured = Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+  )
+
+  const [flowOpen, setFlowOpen] = useState(false)
+  const [flowMode, setFlowMode] = useState<'resume' | 'restart'>('resume')
+  const [flowKey, setFlowKey] = useState(0)
+  const [rebuildPromptOpen, setRebuildPromptOpen] = useState(false)
+
+  const planRow = budgetPlans.find((p) => p.id === planId)
+  const monthlyIncome = calculateMonthlyIncome(incomeSources, settings.baseCurrency, exchangeRates)
+  const needsRebuildConfirm =
+    categories.length > 0 &&
+    (monthlyIncome > 0.0001 || Boolean(planRow?.buddgyGuidedComplete))
+
   const rowLabels = {
     subcategories: labels.subcategories,
     addSubcategory: labels.addSubcategory,
@@ -69,6 +104,9 @@ export function BudgetPlannerCategories({
     subcategoryNamePlaceholder: labels.subcategoryNamePlaceholder,
     amountPlaceholder: labels.amountPlaceholder,
     emojiPickerLabel: labels.emojiPickerLabel,
+    chooseCategoryTitle: labels.chooseCategoryTitle,
+    customCategoryOption: labels.customCategoryOption,
+    editCategoryName: labels.editCategoryName,
   }
 
   const menuLabels = {
@@ -81,42 +119,115 @@ export function BudgetPlannerCategories({
     emojiPickerLabel: labels.emojiPickerLabel,
   }
 
+  const restartGuidedWizardInPlace = useCallback(() => {
+    updateBudgetPlan(planId, { buddgyGuidedComplete: false, buddgyFlow: null })
+    setFlowKey((k) => k + 1)
+    setFlowMode('restart')
+  }, [updateBudgetPlan, planId])
+
+  const startBuddgy = useCallback(
+    (mode: 'resume' | 'restart') => {
+      if (supabaseConfigured && !user) {
+        openAuthModal('/budget-setup', t.modals.requireAuthBudgetSetup)
+        return
+      }
+      if (mode === 'restart') {
+        updateBudgetPlan(planId, { buddgyGuidedComplete: false, buddgyFlow: null })
+        setFlowKey((k) => k + 1)
+      }
+      setFlowMode(mode)
+      setFlowOpen(true)
+    },
+    [supabaseConfigured, user, openAuthModal, t.modals.requireAuthBudgetSetup, updateBudgetPlan, planId]
+  )
+
+  const onRebuildClick = useCallback(() => {
+    if (supabaseConfigured && !user) {
+      openAuthModal('/budget-setup', t.modals.requireAuthBudgetSetup)
+      return
+    }
+    if (needsRebuildConfirm) {
+      setRebuildPromptOpen(true)
+      return
+    }
+    startBuddgy('restart')
+  }, [supabaseConfigured, user, openAuthModal, needsRebuildConfirm, startBuddgy, t.modals.requireAuthBudgetSetup])
+
   return (
-    <div className="bg-[#111118] border border-[#2A2A38] rounded-2xl p-6 space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
-          {labels.categoriesTitle}
-        </h2>
-        <BudgetPlannerAddCategoryMenu
-          categories={categories}
-          onSelectPreset={(p) => onAddPresetCategory(p.icon, p.label)}
-          onAddCustom={(name, icon) => onAddCustomCategory(name, icon)}
-          labels={menuLabels}
-        />
-      </div>
-      {categories.length === 0 ? (
-        <EmptyState
-          icon="📊"
-          title={t.budgetPlanner.categoriesEmptyTitle}
-          description={t.budgetPlanner.categoriesEmptyDesc}
-          className="py-10"
-        />
-      ) : (
-        <div className="space-y-2">
-          {categories.map((c) => (
-            <BudgetPlannerCategoryRow
-              key={c.id}
-              category={c}
-              labels={rowLabels}
-              onUpdateCategory={(u) => onUpdateCategory(c.id, u)}
-              onDeleteCategory={() => onDeleteCategory(c.id)}
-              onAddSubcategory={() => onAddSubcategory(c.id)}
-              onUpdateSubcategory={(subId, u) => onUpdateSubcategory(c.id, subId, u)}
-              onDeleteSubcategory={(subId) => onDeleteSubcategory(c.id, subId)}
-            />
-          ))}
+    <div className="bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl p-6 space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 flex-1 space-y-2">
+          <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
+            {labels.categoriesTitle}
+          </h2>
         </div>
-      )}
+        {!flowOpen ?
+          <BudgetPlannerAddCategoryMenu
+            categories={categories}
+            onSelectPreset={(p) => onAddPresetCategory(p.icon, p.label)}
+            onAddCustom={(name, icon) => onAddCustomCategory(name, icon)}
+            labels={menuLabels}
+          />
+        : null}
+      </div>
+
+      {flowOpen ?
+        <BuddgyFlow
+          key={`${planId}-${flowKey}`}
+          planId={planId}
+          mode={flowMode}
+          onClose={() => setFlowOpen(false)}
+          onRestartWizard={restartGuidedWizardInPlace}
+        />
+      : categories.length === 0 ?
+        <div className="space-y-3 py-6">
+          <p className="text-sm text-[var(--color-brand-text-muted)]">No categories yet.</p>
+          <button
+            type="button"
+            onClick={() => startBuddgy('resume')}
+            className="text-sm text-brand-gold hover:underline cursor-pointer text-left"
+          >
+            ✨ Let Buddgy set it up for you
+          </button>
+        </div>
+      : <>
+          <div className="flex flex-col items-end gap-2 pb-1">
+            {rebuildPromptOpen ?
+              <BuddgyRebuildPrompt
+                monthlyIncome={monthlyIncome}
+                baseCurrency={settings.baseCurrency}
+                onContinue={() => {
+                  startBuddgy('restart')
+                  setRebuildPromptOpen(false)
+                }}
+                onCancel={() => setRebuildPromptOpen(false)}
+              />
+            : <button
+                type="button"
+                onClick={onRebuildClick}
+                className="text-sm text-brand-gold hover:underline cursor-pointer"
+              >
+                ✨ Ask Buddgy to rebuild your plan
+              </button>}
+          </div>
+          <div className="space-y-2">
+            {categories.map((c) => (
+              <BudgetPlannerCategoryRow
+                key={c.id}
+                category={c}
+                planCategories={categories}
+                settings={settings}
+                labels={rowLabels}
+                onUpdateCategory={(u) => onUpdateCategory(c.id, u)}
+                onDeleteCategory={() => onDeleteCategory(c.id)}
+                onAddSubcategory={() => onAddSubcategory(c.id)}
+                onUpdateSubcategory={(subId, u) => onUpdateSubcategory(c.id, subId, u)}
+                onDeleteSubcategory={(subId) => onDeleteSubcategory(c.id, subId)}
+              />
+            ))}
+          </div>
+        </>
+      }
     </div>
   )
 }

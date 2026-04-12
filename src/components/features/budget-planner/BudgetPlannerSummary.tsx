@@ -26,13 +26,13 @@ export function BudgetPlannerSummary({
 }: BudgetPlannerSummaryProps) {
   const savingsStr = formatCurrency(projectedSavings, currency, true)
   return (
-    <div className="rounded-2xl border border-[var(--color-brand-border)] bg-gradient-to-br from-[var(--color-brand-elevated)]/90 to-[#111118] p-5 space-y-4">
+    <div className="rounded-2xl border border-[var(--color-brand-border)] bg-gradient-to-br from-[var(--color-brand-elevated)]/90 to-[var(--color-brand-card)] p-5 space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
             {labels.totalIncome}
           </p>
-          <p className="mt-1 text-lg font-semibold text-white font-mono-numbers">
+          <p className="mt-1 text-lg font-semibold text-[var(--color-brand-text-primary)] font-mono-numbers">
             {formatCurrency(totalIncome, currency, true)}
           </p>
         </div>
@@ -40,7 +40,7 @@ export function BudgetPlannerSummary({
           <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
             {labels.totalPlanned}
           </p>
-          <p className="mt-1 text-lg font-semibold text-white font-mono-numbers">
+          <p className="mt-1 text-lg font-semibold text-[var(--color-brand-text-primary)] font-mono-numbers">
             {formatCurrency(totalPlanned, currency, true)}
           </p>
         </div>

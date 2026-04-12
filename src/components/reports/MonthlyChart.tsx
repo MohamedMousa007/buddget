@@ -24,32 +24,32 @@ export function MonthlyChart({ data, currency }: MonthlyChartProps) {
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2A2A38" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-brand-border)" />
               <XAxis
                 dataKey="month"
-                tick={{ fill: '#A0A0B8', fontSize: 12 }}
-                axisLine={{ stroke: '#2A2A38' }}
+                tick={{ fill: 'var(--color-brand-text-secondary)', fontSize: 12 }}
+                axisLine={{ stroke: 'var(--color-brand-border)' }}
               />
               <YAxis
-                tick={{ fill: '#A0A0B8', fontSize: 12 }}
-                axisLine={{ stroke: '#2A2A38' }}
+                tick={{ fill: 'var(--color-brand-text-secondary)', fontSize: 12 }}
+                axisLine={{ stroke: 'var(--color-brand-border)' }}
                 tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#1A1A24',
-                  border: '1px solid #2A2A38',
+                  backgroundColor: 'var(--color-brand-elevated)',
+                  border: '1px solid var(--color-brand-border)',
                   borderRadius: '12px',
                   color: '#fff',
                 }}
                 formatter={(value) => [`${currency} ${Number(value).toLocaleString()}`, undefined]}
               />
               <Legend
-                wrapperStyle={{ color: '#A0A0B8', fontSize: 12 }}
+                wrapperStyle={{ color: 'var(--color-brand-text-secondary)', fontSize: 12 }}
               />
-              <Bar dataKey="income" fill="#1DB954" radius={[4, 4, 0, 0]} name="Money in" />
-              <Bar dataKey="expenses" fill="#E50914" radius={[4, 4, 0, 0]} name="Money out" />
-              <Bar dataKey="savings" fill="#F5C842" radius={[4, 4, 0, 0]} name="Saved" />
+              <Bar dataKey="income" fill="var(--color-brand-green)" radius={[4, 4, 0, 0]} name="Money in" />
+              <Bar dataKey="expenses" fill="var(--color-brand-red)" radius={[4, 4, 0, 0]} name="Money out" />
+              <Bar dataKey="savings" fill="var(--color-brand-gold)" radius={[4, 4, 0, 0]} name="Saved" />
             </BarChart>
           </ResponsiveContainer>
         </div>

@@ -11,16 +11,24 @@ import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 import { cn } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
 import { ProfileDropdown } from '@/components/layout/ProfileDropdown'
+import { NotificationInbox } from '@/components/notifications/NotificationInbox'
 
 const btnClass =
-  'inline-flex items-center justify-center px-2 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors border border-[var(--color-brand-border)] text-white hover:bg-[var(--color-brand-elevated)] sm:px-3'
+  'inline-flex items-center justify-center px-2 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] sm:px-3'
 
 function ProfileAvatarWithMenu({ className }: { className?: string }) {
   const t = useT()
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const { user } = useAuth()
+  const configured = useMemo(() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+    return !!(url && key)
+  }, [])
   const profile = useFinanceStore(useShallow((s) => s.profile))
-  const src = resolveProfileAvatarSrc(profile)
+  const src =
+    configured && !user ? null : resolveProfileAvatarSrc(profile)
 
   return (
     <div ref={containerRef} className="relative">
@@ -99,6 +107,7 @@ export function AuthNavButtons({
   if (layout === 'mobile') {
     return (
       <div className={cn('flex flex-nowrap items-center justify-end gap-1', className)}>
+        {user ? <NotificationInbox /> : null}
         <ProfileAvatarWithMenu />
       </div>
     )
@@ -119,7 +128,9 @@ export function AuthNavButtons({
             {t.common.signUp}
           </button>
         </>
-      ) : null}
+      ) : (
+        <NotificationInbox />
+      )}
       <ProfileAvatarWithMenu />
     </div>
   )

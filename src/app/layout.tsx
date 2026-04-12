@@ -6,6 +6,7 @@ import { AuthProvider } from '@/components/auth/AuthProvider'
 import { LocaleProvider } from '@/lib/i18n'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { UpdateToast } from '@/components/ui/UpdateToast'
+import { THEME_INIT_SCRIPT } from '@/lib/theme/applyTheme'
 
 const dmSans = DM_Sans({
   subsets: ['latin'],
@@ -38,7 +39,7 @@ export const metadata: Metadata = {
     template: '%s | Buddget',
   },
   description:
-    'Track expenses, manage budgets, monitor debts and savings. Free personal finance tracker with AI assistant. Works on iPhone and Android. Supports AED, USD, EGP and 10+ currencies.',
+    'Track expenses, manage budgets, monitor debts and savings. Free personal finance tracker with Buddgy, your budget buddy. Works on iPhone and Android. Supports AED, USD, EGP and 10+ currencies.',
   keywords: [
     'budget planner',
     'expense tracker',
@@ -73,7 +74,7 @@ export const metadata: Metadata = {
     url: 'https://buddget.online',
     siteName: 'Buddget',
     title: 'Buddget — Personal Finance Tracker & Budget Planner',
-    description: 'Track expenses, manage budgets, monitor debts. Free with AI assistant.',
+    description: 'Track expenses, manage budgets, monitor debts. Free with Buddgy.',
     images: [
       {
         url: '/opengraph-image',
@@ -86,7 +87,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Buddget — Personal Finance Tracker',
-    description: 'Track expenses, manage budgets, monitor debts. Free with AI assistant.',
+    description: 'Track expenses, manage budgets, monitor debts. Free with Buddgy.',
     images: ['/opengraph-image'],
   },
   alternates: { canonical: 'https://buddget.online' },
@@ -121,8 +122,9 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" dir="ltr" data-locale="en" className="dark" suppressHydrationWarning>
+    <html lang="en" dir="ltr" data-locale="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
         <link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192" />
         <link rel="icon" href="/icons/icon-32.png" type="image/png" sizes="32x32" />

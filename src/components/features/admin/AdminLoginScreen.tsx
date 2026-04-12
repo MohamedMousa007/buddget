@@ -28,7 +28,7 @@ export function AdminLoginScreen({ pin, onPinChange, error, loading, onLogin }: 
           <div className="w-16 h-16 rounded-2xl bg-[var(--color-brand-elevated)] flex items-center justify-center mb-4">
             <Shield className="w-8 h-8 text-[var(--color-brand-red)]" />
           </div>
-          <h1 className="text-xl font-bold text-white">Admin Panel</h1>
+          <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)]">Admin Panel</h1>
           <p className="text-sm text-[var(--color-brand-text-muted)] mt-1">Enter your admin PIN to continue</p>
         </div>
 
@@ -39,7 +39,7 @@ export function AdminLoginScreen({ pin, onPinChange, error, loading, onLogin }: 
             value={pin}
             onChange={(e) => onPinChange(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onLogin()}
-            className="bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white text-center text-2xl tracking-[0.5em] font-mono-numbers placeholder:text-[var(--color-brand-text-muted)] placeholder:tracking-normal placeholder:text-sm"
+            className="bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-center text-2xl tracking-[0.5em] font-mono-numbers placeholder:text-[var(--color-brand-text-muted)] placeholder:tracking-normal placeholder:text-sm"
             autoFocus
           />
 

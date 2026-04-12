@@ -26,7 +26,7 @@ export function ModalSheetHeader({ title, onClose, titleRowClassName = 'mb-6' }:
     <>
       <ModalSheetDragHandle />
       <div className={cn('flex items-center justify-between', titleRowClassName)}>
-        <h3 className="text-lg font-semibold text-white">{title}</h3>
+        <h3 className="text-lg font-semibold text-[var(--color-brand-text-primary)]">{title}</h3>
         <button
           type="button"
           onClick={onClose}

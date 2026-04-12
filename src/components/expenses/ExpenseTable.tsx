@@ -70,7 +70,7 @@ export function ExpenseTable({ expenses, totalAmount, currency, onAddExpense }: 
         <p className="text-sm text-[var(--color-brand-text-secondary)]">
           {t.common.showingExpenses(expenses.length)}
         </p>
-        <p className="text-sm font-semibold font-mono-numbers text-white">
+        <p className="text-sm font-semibold font-mono-numbers text-[var(--color-brand-text-primary)]">
           {t.common.totalSpent(formatCurrency(totalAmount, currency))}
         </p>
         <button

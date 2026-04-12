@@ -31,6 +31,8 @@ export interface IncomeSource {
   name: string
   amount: number
   currency: Currency
+  /** When set, income is attributed to this shared budget plan. */
+  sharedPlanId?: string | null
   isRecurring: boolean
   /** When recurring: monthly = per month, biweekly = per paycheck, weekly = per week. Defaults to monthly if omitted. */
   recurringFrequency?: IncomeRecurringFrequency
@@ -52,6 +54,11 @@ export interface Expense {
   recurringId?: string
   notes?: string
   tags?: string[]
+  /** When set, this expense belongs to a shared household budget plan (`shared_budget_plans.id`). */
+  sharedPlanId?: string | null
+  /** When set, this expense was created from a debt payment flow. */
+  linkedDebtId?: string
+  isDebtPayment?: boolean
   createdAt: string
   updatedAt: string
 }
@@ -66,6 +73,7 @@ export interface RecurringExpense {
   dayOfMonth: number
   isActive: boolean
   notes?: string
+  sharedPlanId?: string | null
 }
 
 export interface BudgetCategory {
@@ -94,7 +102,28 @@ export interface BudgetPlanCategory {
   name: string
   icon: string
   amount: number
+  /** Fiat for this row's amounts; omitted legacy rows use base currency. */
+  currency?: Currency
   subcategories: BudgetPlanSubcategory[]
+}
+
+/** Who the budget is for (Buddgy Flow). */
+export type BudgetHousehold = 'solo' | 'partner' | 'family'
+
+/** Draft fields while running Buddgy Flow (persisted on the plan). */
+export interface BuddgyFlowDraft {
+  rentIncludesUtilities?: boolean
+  dewaMonthly?: number
+  transportMode?: 'car' | 'public' | 'walk' | 'mix'
+  transportCarMonthly?: number
+  transportPublicDaily?: number
+  savingsPercent?: number
+  /** Prefetched AI rows for step 6 */
+  aiSuggestions?: Array<{ name: string; emoji: string; amount: number; currency: Currency }>
+  /** User accepted AI rows in step 6 */
+  aiFillAccepted?: boolean
+  /** User finished summary step (Done) */
+  flowFinished?: boolean
 }
 
 /** Named budget scenario with its own category tree (persists separately from legacy `budgetCategories`). */
@@ -103,6 +132,11 @@ export interface BudgetPlan {
   name: string
   categories: BudgetPlanCategory[]
   createdAt: string
+  /** Buddgy Flow: household size for AI and sliders. */
+  household?: BudgetHousehold | null
+  buddgyFlow?: BuddgyFlowDraft | null
+  /** User finished Buddgy guided flow (Done). Cleared when rebuilding. */
+  buddgyGuidedComplete?: boolean
 }
 
 export type SavingsBucket = 'liquid' | 'investment'
@@ -133,6 +167,17 @@ export type DebtCurrency = 'EGP' | 'XAU' | Currency
 
 export type GoldKarat = 24 | 22 | 21 | 18
 
+/** High-level debt category for UI and fields (optional on legacy rows). */
+export type DebtKind = 'personal' | 'installment' | 'general'
+
+export type DebtLifecycleStatus = 'active' | 'cleared'
+
+export interface DebtGoal {
+  targetDate: string
+  paymentFrequency: 'weekly' | 'monthly' | 'quarterly' | 'annually'
+  calculatedAmount: number
+}
+
 export interface Debt {
   id: string
   name: string
@@ -143,7 +188,26 @@ export interface Debt {
   isGold: boolean
   goldKarat?: GoldKarat
   notes?: string
+  sharedPlanId?: string | null
   createdAt: string
+  /** Optional lifecycle; omitted legacy rows are treated as active until migrated. */
+  status?: DebtLifecycleStatus
+  /** ISO date (YYYY-MM-DD) when fully cleared. */
+  clearedAt?: string
+  emoji?: string
+  debtType?: DebtKind
+  /** Personal debt (optional; legacy uses `person`). */
+  personName?: string
+  relationship?: string
+  direction?: 'i_owe' | 'they_owe'
+  /** Installment plan */
+  installmentCount?: number
+  installmentFrequency?: 'weekly' | 'monthly' | 'quarterly' | 'annually'
+  installmentAmount?: number
+  startDate?: string
+  interestFree?: boolean
+  creditor?: string
+  goal?: DebtGoal
 }
 
 export interface DebtPayment {
@@ -156,12 +220,18 @@ export interface DebtPayment {
   amountInPrimary?: number
   rateAtEntry?: number
   notes?: string
+  sharedPlanId?: string | null
   createdAt: string
 }
 
-export type DebtRecurringFrequency = 'monthly' | 'biweekly' | 'weekly'
+export type DebtRecurringFrequency =
+  | 'monthly'
+  | 'biweekly'
+  | 'weekly'
+  | 'quarterly'
+  | 'annually'
 
-/** Template: when `nextDueDate` is on or before today, a payment + Debt expense are posted and the date advances. */
+/** Template: due dates are surfaced in-app; user confirms before a payment + expense are posted. */
 export interface RecurringDebtPayment {
   id: string
   debtId: string
@@ -253,6 +323,17 @@ export interface OnboardingState {
 export interface FinanceStore {
   profile: UserProfile
   settings: AppSettings
+  /**
+   * Active shared budget plan UUID for filtering transactions and dashboard scope.
+   * `null` = personal-only scope (transactions without `sharedPlanId`).
+   */
+  activeSharedBudgetId: string | null
+  /**
+   * Default shared plan UUID for tagging new transactions (from `user_profiles.default_budget_plan_id`).
+   */
+  defaultSharedBudgetPlanId: string | null
+  /** Free-text financial goals from Buddgy plan builder; synced in finance payload. */
+  financialGoalsNotes: string
   /** Expert onboarding progress, answers, and cached AI plans (synced in user_finance payload). */
   onboardingState: OnboardingState
   incomeSources: IncomeSource[]
@@ -282,9 +363,19 @@ export interface FinanceStore {
   addPaymentMethod: (method: Omit<PaymentMethod, 'id'>) => void
   updatePaymentMethod: (id: string, updates: Partial<PaymentMethod>) => void
   deletePaymentMethod: (id: string) => void
-  addDebt: (debt: Omit<Debt, 'id' | 'createdAt'>) => void
+  addDebt: (debt: Omit<Debt, 'id' | 'createdAt'>) => string
   updateDebt: (id: string, updates: Partial<Debt>) => void
+  /** Marks a debt cleared (history); does not remove payments. */
+  clearDebt: (id: string, clearedAtIsoDate?: string) => void
   addDebtPayment: (payment: Omit<DebtPayment, 'id' | 'createdAt'>) => void
+  /**
+   * Atomically records a debt payment and matching expense (e.g. debt payment → expense with `linkedDebtId`).
+   * Does not auto-clear lifecycle status; the UI runs celebration then calls `clearDebt`.
+   */
+  addDebtPaymentWithExpense: (
+    payment: Omit<DebtPayment, 'id' | 'createdAt'>,
+    expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'amountInBaseCurrency'>
+  ) => void
   deleteDebt: (id: string) => void
   deleteDebtPayment: (id: string) => void
   addRecurringDebtPayment: (r: Omit<RecurringDebtPayment, 'id' | 'createdAt'>) => void
@@ -297,9 +388,21 @@ export interface FinanceStore {
   /** Replace all budget rows (e.g. onboarding preset). */
   setBudgetCategories: (categories: BudgetCategory[]) => void
   addBudgetPlan: (name: string) => string
-  updateBudgetPlan: (planId: string, updates: Partial<Pick<BudgetPlan, 'name'>>) => void
+  updateBudgetPlan: (
+    planId: string,
+    updates: Partial<Pick<BudgetPlan, 'name' | 'categories' | 'household' | 'buddgyFlow' | 'buddgyGuidedComplete'>>
+  ) => void
+  /** Merge household / buddgyFlow into the active plan (Buddgy Flow). */
+  updateBudgetMeta: (
+    planId: string,
+    updates: Partial<Pick<BudgetPlan, 'household' | 'buddgyFlow'>>
+  ) => void
+  /** Replace all category rows on a plan at once. */
+  replaceBudgetPlanCategories: (planId: string, categories: BudgetPlanCategory[]) => void
   deleteBudgetPlan: (planId: string) => void
   setActiveBudgetPlanId: (id: string | null) => void
+  setActiveSharedBudgetId: (id: string | null) => void
+  setDefaultSharedBudgetPlanId: (id: string | null) => void
   addPlanCategory: (planId: string, category: Omit<BudgetPlanCategory, 'id' | 'subcategories'> & { subcategories?: BudgetPlanSubcategory[] }) => string
   updatePlanCategory: (planId: string, categoryId: string, updates: Partial<Omit<BudgetPlanCategory, 'id' | 'subcategories'>> & { subcategories?: BudgetPlanSubcategory[] }) => void
   deletePlanCategory: (planId: string, categoryId: string) => void
@@ -316,6 +419,7 @@ export interface FinanceStore {
   deleteSavingsHolding: (id: string) => void
   updateSettings: (updates: Partial<AppSettings>) => void
   updateProfile: (updates: Partial<UserProfile>) => void
+  setFinancialGoalsNotes: (notes: string) => void
   setOnboardingState: (updates: Partial<OnboardingState> | ((prev: OnboardingState) => OnboardingState)) => void
   updateRates: (rates: Record<string, number>) => void
   updateGoldPrice: (price: number) => void
@@ -323,4 +427,6 @@ export interface FinanceStore {
   importData: (data: string) => void
   exportData: () => string
   resetAllData: () => void
+  /** Same as `resetAllData` (logout / full client wipe). */
+  reset: () => void
 }

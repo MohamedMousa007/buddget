@@ -1,20 +1,38 @@
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 
+/** Persisted localStorage keys used by Zustand and related client caches. */
+const STORAGE_KEYS = [
+  'buddget-storage',
+  'buddget-ui-settings',
+  'buddget-notifications-read',
+  'buddget-pwa-install-banner-dismissed-at',
+  'pwa-install-dismissed',
+] as const
+
 /**
- * Wipe all user data from Zustand stores and localStorage.
- * Call immediately before or after supabase.auth.signOut().
+ * Wipe persisted client data and reset in-memory Zustand state.
+ * Safe to call multiple times (e.g. sign-out handler + `SIGNED_OUT` listener).
+ * Call before `supabase.auth.signOut()` when possible; still sign out if this throws.
  */
 export function clearBudgetData(): void {
-  useFinanceStore.getState().resetAllData()
-  useSettingsStore.getState().resetSettings()
+  for (const key of STORAGE_KEYS) {
+    try {
+      localStorage.removeItem(key)
+    } catch {
+      /* SSR or restricted storage */
+    }
+  }
 
   try {
-    localStorage.removeItem('buddget-storage')
-    localStorage.removeItem('buddget-ui-settings')
-    localStorage.removeItem('buddget-notifications-read')
-    localStorage.removeItem('pwa-install-dismissed')
-  } catch {
-    // SSR or restricted storage — ignore
+    useFinanceStore.getState().reset()
+  } catch (e) {
+    console.error('[clearBudgetData] finance reset failed', e)
+  }
+
+  try {
+    useSettingsStore.getState().reset()
+  } catch (e) {
+    console.error('[clearBudgetData] settings reset failed', e)
   }
 }

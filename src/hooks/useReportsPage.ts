@@ -22,6 +22,12 @@ import {
 } from '@/lib/utils/calculations'
 import { useT } from '@/lib/i18n'
 import type { DateRange } from '@/components/reports/ReportFilters'
+import type { ExpenseDebtFilterMode } from '@/components/reports/ReportExpenseDebtFilter'
+import type { Expense } from '@/lib/store/types'
+
+function isDebtLinkedExpense(e: Expense): boolean {
+  return e.category === 'Debt' || e.isDebtPayment === true || Boolean(e.linkedDebtId)
+}
 
 /**
  * Date range filtering, aggregates, and export actions for the reports screen.
@@ -38,6 +44,7 @@ export function useReportsPage() {
     }))
   )
   const [dateRange, setDateRange] = useState<DateRange>('thisMonth')
+  const [expenseDebtFilter, setExpenseDebtFilter] = useState<ExpenseDebtFilterMode>('all')
 
   const { filteredExpenses, startDate, endDate } = useMemo(() => {
     const now = new Date()
@@ -65,13 +72,20 @@ export function useReportsPage() {
         start = startOfMonth(now)
     }
 
-    const filtered = expenses.filter((e) => {
+    const inRange = expenses.filter((e) => {
       const date = parseISO(e.date)
       return isWithinInterval(date, { start, end })
     })
 
+    const filtered =
+      expenseDebtFilter === 'all'
+        ? inRange
+        : expenseDebtFilter === 'debt_only'
+          ? inRange.filter(isDebtLinkedExpense)
+          : inRange.filter((e) => !isDebtLinkedExpense(e))
+
     return { filteredExpenses: filtered, startDate: start, endDate: end }
-  }, [expenses, dateRange])
+  }, [expenses, dateRange, expenseDebtFilter])
 
   const periodRecurringIncome = sumRecurringIncomeOverDateRange(
     incomeSources,
@@ -191,6 +205,8 @@ ${mostUsedMethod ? `${t.reports.kpiGoToPayment}: ${mostUsedMethod.name} ${t.repo
   return {
     dateRange,
     setDateRange,
+    expenseDebtFilter,
+    setExpenseDebtFilter,
     settings,
     exchangeRates,
     filteredExpenses,

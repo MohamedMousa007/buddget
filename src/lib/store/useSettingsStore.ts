@@ -32,9 +32,12 @@ interface SettingsState {
   openAddExpenseWithPrefill: (data: ExpensePrefill) => void
   setMonthFilter: (month: string) => void
   openDebtSheetNew: () => void
+  openPayDebtSheet: () => void
   openDebtSheetRecordPayment: (debtId: string) => void
   resetDebtSheetIntent: () => void
   resetSettings: () => void
+  /** Same as `resetSettings` (logout UI state). */
+  reset: () => void
 }
 
 function getCurrentMonth(): string {
@@ -44,7 +47,7 @@ function getCurrentMonth(): string {
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       sidebarOpen: false,
       activeModal: null,
       editingExpenseId: null,
@@ -69,6 +72,12 @@ export const useSettingsStore = create<SettingsState>()(
           debtSheetPrefillDebtId: null,
           activeModal: 'addDebt',
         }),
+      openPayDebtSheet: () =>
+        set({
+          debtSheetPaymentOnly: false,
+          debtSheetPrefillDebtId: null,
+          activeModal: 'payDebt',
+        }),
       openDebtSheetRecordPayment: (debtId) =>
         set({
           debtSheetPaymentOnly: true,
@@ -89,6 +98,10 @@ export const useSettingsStore = create<SettingsState>()(
           debtSheetPaymentOnly: false,
           debtSheetPrefillDebtId: null,
         }),
+
+      reset: () => {
+        get().resetSettings()
+      },
     }),
     {
       name: 'buddget-ui-settings',

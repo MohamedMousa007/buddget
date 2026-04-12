@@ -16,7 +16,7 @@ export interface AuthModeToggleProps {
 export function AuthModeToggle({ formMode, onModeChange, onClearError }: AuthModeToggleProps) {
   const t = useT()
   return (
-    <div className="flex rounded-xl border p-1" style={{ background: '#1A1A24', borderColor: '#2A2A38' }}>
+    <div className="flex rounded-xl border p-1" style={{ background: 'var(--color-brand-elevated)', borderColor: 'var(--color-brand-border)' }}>
       <button
         type="button"
         onClick={() => {
@@ -25,9 +25,9 @@ export function AuthModeToggle({ formMode, onModeChange, onClearError }: AuthMod
         }}
         className={cn(
           'flex-1 py-2 rounded-lg text-sm font-semibold transition-colors',
-          formMode === 'signin' ? 'text-white' : 'text-[#5A5A72]'
+          formMode === 'signin' ? 'text-[var(--color-brand-text-primary)]' : 'text-[var(--color-brand-text-muted)]'
         )}
-        style={formMode === 'signin' ? { background: '#E50914' } : {}}
+        style={formMode === 'signin' ? { background: 'var(--color-brand-red)' } : {}}
       >
         {t.auth.signInLabel}
       </button>
@@ -39,9 +39,9 @@ export function AuthModeToggle({ formMode, onModeChange, onClearError }: AuthMod
         }}
         className={cn(
           'flex-1 py-2 rounded-lg text-sm font-semibold transition-colors',
-          formMode === 'signup' ? 'text-white' : 'text-[#5A5A72]'
+          formMode === 'signup' ? 'text-[var(--color-brand-text-primary)]' : 'text-[var(--color-brand-text-muted)]'
         )}
-        style={formMode === 'signup' ? { background: '#E50914' } : {}}
+        style={formMode === 'signup' ? { background: 'var(--color-brand-red)' } : {}}
       >
         {t.auth.signUpLabel}
       </button>

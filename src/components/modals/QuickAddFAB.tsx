@@ -67,14 +67,14 @@ export function QuickAddFAB() {
         dragToClose
         panelClassName="!bottom-[max(0.5rem,calc(4rem+env(safe-area-inset-bottom,0px)))] !start-2 !end-2 !max-h-[min(72vh,calc(100dvh-5.5rem))] lg:!bottom-24 lg:!end-8 lg:!start-auto lg:!top-auto lg:!translate-x-0 lg:!translate-y-0 lg:!w-[360px] lg:!max-h-[min(90vh,520px)] lg:!rounded-2xl"
       >
-        <h3 className="text-lg font-semibold text-white mb-4 pe-2">{t.modals.fabTitle}</h3>
+        <h3 className="text-lg font-semibold text-[var(--color-brand-text-primary)] mb-4 pe-2">{t.modals.fabTitle}</h3>
         <div className="space-y-1">
           {OPTIONS.map((option) => (
             <button
               key={option.id}
               type="button"
               onClick={() => runOption(option.id)}
-              className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm text-white hover:bg-[var(--color-brand-elevated)] transition-colors text-start"
+              className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors text-start"
             >
               <span className="text-lg shrink-0">{option.emoji}</span>
               <span>{option.label}</span>

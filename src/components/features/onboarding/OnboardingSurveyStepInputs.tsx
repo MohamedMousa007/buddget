@@ -67,7 +67,7 @@ export function OnboardingSurveyStepInputs({
         maxLength={step.maxLength ?? 120}
         placeholder={step.placeholder ?? ''}
         onChange={(e) => setTextValue(e.target.value)}
-        className="bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
+        className="bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
       />
     )
   }
@@ -79,7 +79,7 @@ export function OnboardingSurveyStepInputs({
         value={textValue}
         placeholder={step.placeholder ?? ''}
         onChange={(e) => setTextValue(e.target.value.replace(/[^\d.,]/g, ''))}
-        className="bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers"
+        className="bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers"
       />
     )
   }
@@ -93,7 +93,7 @@ export function OnboardingSurveyStepInputs({
             onClick={() => setSelected(opt.value)}
             className={`w-full text-start rounded-xl border px-4 py-3 text-sm transition-colors ${
               selected === opt.value
-                ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10 text-white'
+                ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10 text-[var(--color-brand-text-primary)]'
                 : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] hover:border-[var(--color-brand-red)]/40'
             }`}
           >
@@ -115,7 +115,7 @@ export function OnboardingSurveyStepInputs({
               onClick={() => toggleMulti(opt.value)}
               className={`w-full text-start rounded-xl border px-4 py-3 text-sm transition-colors ${
                 on
-                  ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10 text-white'
+                  ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10 text-[var(--color-brand-text-primary)]'
                   : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] hover:border-[var(--color-brand-red)]/40'
               }`}
             >

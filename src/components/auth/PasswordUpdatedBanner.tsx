@@ -55,7 +55,7 @@ function PasswordUpdatedBannerInner() {
       <button
         type="button"
         onClick={dismiss}
-        className="shrink-0 rounded-lg p-1 text-emerald-200/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50"
+        className="shrink-0 rounded-lg p-1 text-emerald-200/80 transition-colors hover:bg-[var(--color-brand-text-primary)]/10 hover:text-[var(--color-brand-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50"
         aria-label="Dismiss"
       >
         <X className="h-4 w-4" aria-hidden />

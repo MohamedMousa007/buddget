@@ -12,11 +12,13 @@ import { AIChat } from '@/components/features/ai-chat/AIChat'
 import { AIChatBubble } from '@/components/ai/AIChatBubble'
 import { QuickAddFAB } from '@/components/modals/QuickAddFAB'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { useT } from '@/lib/i18n'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useRecurringDebtPaymentScheduler } from '@/hooks/useRecurringDebtPaymentScheduler'
 
 export function ModalProvider() {
   const { setActiveModal } = useSettingsStore()
+  const t = useT()
   const requireAuth = useRequireAuthAction()
   useRecurringDebtPaymentScheduler()
 
@@ -34,10 +36,7 @@ export function ModalProvider() {
       <QuickAddFAB />
       <AIChatBubble
         onClick={() =>
-          requireAuth(
-            () => setActiveModal('aiChat'),
-            'Sign in or create an account to use Buddget AI.'
-          )
+          requireAuth(() => setActiveModal('aiChat'), t.modals.fabRequireAuthAi)
         }
       />
     </>

@@ -7,9 +7,9 @@ import {
   SlidersHorizontal,
   Receipt,
   Wallet,
-  Vault,
   Landmark,
   BarChart3,
+  HandCoins,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useShallow } from 'zustand/react/shallow'
@@ -28,7 +28,7 @@ export function Sidebar() {
     { href: '/budget-setup', label: t.nav.budgetSetup, icon: SlidersHorizontal },
     { href: '/expenses', label: t.nav.expenses, icon: Receipt },
     { href: '/income', label: t.nav.income, icon: Wallet },
-    { href: '/savings', label: t.nav.savings, icon: Vault },
+    { href: '/savings', label: t.nav.savings, icon: HandCoins },
     { href: '/debts', label: t.nav.debts, icon: Landmark },
     { href: '/reports', label: t.nav.reports, icon: BarChart3 },
   ]
@@ -50,7 +50,7 @@ export function Sidebar() {
         <select
           value={settings.baseCurrency}
           onChange={(e) => updateSettings({ baseCurrency: e.target.value as Currency })}
-          className="w-full h-8 px-2.5 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-xs font-medium cursor-pointer"
+          className="w-full h-8 px-2.5 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-xs font-medium cursor-pointer"
         >
           {FIAT_CURRENCIES.map((c) => (
             <option key={c} value={c}>{c}</option>
@@ -70,7 +70,7 @@ export function Sidebar() {
                 locale === 'ar' && 'flex-row-reverse',
                 isActive
                   ? 'bg-[var(--color-brand-red)] text-white'
-                  : 'text-[var(--color-brand-text-secondary)] hover:text-white hover:bg-[var(--color-brand-elevated)]'
+                  : 'text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)]'
               )}
             >
               <item.icon className="w-5 h-5 shrink-0" />

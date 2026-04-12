@@ -65,7 +65,11 @@ export default function ResetPasswordConfirmPage() {
       setError(t.resetPassword.errorUpdateFailed)
       return
     }
-    clearBudgetData()
+    try {
+      clearBudgetData()
+    } catch (e) {
+      console.error('[reset-password] clearBudgetData failed', e)
+    }
     const { error: signOutError } = await supabase.auth.signOut()
     setLoading(false)
     if (signOutError) {
@@ -78,54 +82,54 @@ export default function ResetPasswordConfirmPage() {
 
   if (checking) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0A0A0F]">
-        <Loader2 className="w-8 h-8 animate-spin text-[#E50914]" />
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-brand-bg)]">
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--color-brand-red)]" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[#0A0A0F]">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--color-brand-bg)]">
       <div
         className="w-full max-w-md border p-8 rounded-2xl space-y-4"
-        style={{ background: '#111118', borderColor: '#2A2A38' }}
+        style={{ background: 'var(--color-brand-card)', borderColor: 'var(--color-brand-border)' }}
       >
-        <h1 className="text-xl font-bold text-white text-center">{t.resetPassword.title}</h1>
-        <p className="text-sm text-[#5A5A72] text-center">{t.resetPassword.subtitle}</p>
+        <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)] text-center">{t.resetPassword.title}</h1>
+        <p className="text-sm text-[var(--color-brand-text-muted)] text-center">{t.resetPassword.subtitle}</p>
         <div className="space-y-2">
-          <label className="text-xs text-[#5A5A72]">{t.resetPassword.labelNew}</label>
+          <label className="text-xs text-[var(--color-brand-text-muted)]">{t.resetPassword.labelNew}</label>
           <div className="relative">
-            <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A5A72]" />
+            <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={t.resetPassword.placeholderNew}
-              className="w-full h-12 ps-10 pe-3 rounded-[10px] border border-[#2A2A38] bg-[#1A1A24] text-white outline-none focus:border-[#E50914]"
+              className="w-full h-12 ps-10 pe-3 rounded-[10px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)] outline-none focus:border-[var(--color-brand-red)]"
             />
           </div>
         </div>
         <div className="space-y-2">
-          <label className="text-xs text-[#5A5A72]">{t.resetPassword.labelConfirm}</label>
+          <label className="text-xs text-[var(--color-brand-text-muted)]">{t.resetPassword.labelConfirm}</label>
           <div className="relative">
-            <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A5A72]" />
+            <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
             <input
               type="password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && void submit()}
               placeholder={t.resetPassword.placeholderConfirm}
-              className="w-full h-12 ps-10 pe-3 rounded-[10px] border border-[#2A2A38] bg-[#1A1A24] text-white outline-none focus:border-[#E50914]"
+              className="w-full h-12 ps-10 pe-3 rounded-[10px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)] outline-none focus:border-[var(--color-brand-red)]"
             />
           </div>
         </div>
-        {error ? <p className="text-sm text-[#E50914]">{error}</p> : null}
+        {error ? <p className="text-sm text-[var(--color-brand-red)]">{error}</p> : null}
         <button
           type="button"
           onClick={() => void submit()}
           disabled={loading}
-          className="w-full h-12 rounded-xl font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-50"
-          style={{ background: '#E50914' }}
+          className="w-full h-12 rounded-xl font-semibold text-[var(--color-brand-text-primary)] flex items-center justify-center gap-2 disabled:opacity-50"
+          style={{ background: 'var(--color-brand-red)' }}
         >
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : t.resetPassword.buttonSubmit}
         </button>

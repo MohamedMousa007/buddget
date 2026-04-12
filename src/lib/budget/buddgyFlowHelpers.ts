@@ -1,0 +1,59 @@
+import type { BudgetPlan, BudgetPlanCategory, Currency, IncomeSource } from '@/lib/store/types'
+import { calculateMonthlyIncome } from '@/lib/utils/calculations'
+import { totalPlannedExpensesForPlan } from '@/lib/budget/budgetPlans'
+
+export function findCategoryByName(plan: BudgetPlan, name: string): BudgetPlanCategory | undefined {
+  const n = name.trim().toLowerCase()
+  return plan.categories.find((c) => c.name.trim().toLowerCase() === n)
+}
+
+export function hasPositiveIncome(
+  incomeSources: IncomeSource[],
+  baseCurrency: Currency,
+  exchangeRates: Record<string, number>,
+  noIncomeDeclared: boolean
+): boolean {
+  if (noIncomeDeclared && incomeSources.length === 0) return false
+  return calculateMonthlyIncome(incomeSources, baseCurrency, exchangeRates) > 0.0001
+}
+
+/** Planned total excluding Savings row (for slider + AI remaining). */
+export function plannedExcludingSavings(
+  plan: BudgetPlan,
+  baseCurrency: Currency,
+  exchangeRates: Record<string, number>
+): number {
+  const sans: BudgetPlan = {
+    ...plan,
+    categories: plan.categories.filter((c) => c.name !== 'Savings'),
+  }
+  return totalPlannedExpensesForPlan(sans, baseCurrency, exchangeRates)
+}
+
+export function remainingForAiSlice(
+  monthlyIncome: number,
+  plan: BudgetPlan,
+  baseCurrency: Currency,
+  exchangeRates: Record<string, number>,
+  savingsAmount: number
+): number {
+  const planned = plannedExcludingSavings(plan, baseCurrency, exchangeRates)
+  return Math.max(0, monthlyIncome - planned - savingsAmount)
+}
+
+export function formatMoneyAmount(amount: number, currency: string): string {
+  const formatted = new Intl.NumberFormat(undefined, {
+    maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
+  }).format(amount)
+  return `${formatted} ${currency}`
+}
+
+export function cityCountryFromProfile(profile: { city?: string; country?: string }): {
+  city: string
+  country: string
+} {
+  return {
+    city: profile.city?.trim() || 'Dubai',
+    country: profile.country?.trim() || 'UAE',
+  }
+}

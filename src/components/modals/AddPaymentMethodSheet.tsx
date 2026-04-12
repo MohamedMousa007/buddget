@@ -81,7 +81,7 @@ export function AddPaymentMethodSheet() {
                     placeholder={t.modals.addPaymentPlaceholderName}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
+                    className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)]"
                   />
                 </div>
 
@@ -109,7 +109,7 @@ export function AddPaymentMethodSheet() {
                   <FiatCurrencySelect
                     value={currency}
                     onChange={setCurrency}
-                    className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                    className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
                   />
                 </div>
 

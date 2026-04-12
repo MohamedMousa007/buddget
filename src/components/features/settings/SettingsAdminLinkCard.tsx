@@ -16,7 +16,7 @@ export function SettingsAdminLinkCard() {
         <div className="flex items-center gap-2">
           <Shield className="w-5 h-5 text-[var(--color-brand-red)]" />
           <div>
-            <p className="text-sm text-white">{t.settings.adminTitle}</p>
+            <p className="text-sm text-[var(--color-brand-text-primary)]">{t.settings.adminTitle}</p>
             <p className="text-xs text-[var(--color-brand-text-muted)]">{t.settings.adminSubtitle}</p>
           </div>
         </div>

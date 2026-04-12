@@ -50,7 +50,7 @@ export function AllDebtsPaymentHistory({ debts, debtPayments }: AllDebtsPaymentH
           <select
             value={filterDebtId}
             onChange={(e) => setFilterDebtId(e.target.value)}
-            className="w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/40 px-3 py-2.5 text-sm text-white outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-red)]/40 transition-colors"
+            className="w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/40 px-3 py-2.5 text-sm text-[var(--color-brand-text-primary)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-red)]/40 transition-colors"
           >
             <option value="all">{t.debts.allDebtsFilter}</option>
             {debts.map((d) => (

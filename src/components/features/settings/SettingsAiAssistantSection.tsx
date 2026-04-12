@@ -28,7 +28,7 @@ export function SettingsAiAssistantSection({ store, aiStatus }: SettingsAiAssist
 
       <div className="flex items-center justify-between">
         <div>
-          <Label className="text-sm text-white">{t.settings.aiToggle}</Label>
+          <Label className="text-sm text-[var(--color-brand-text-primary)]">{t.settings.aiToggle}</Label>
           <p className="text-xs text-[var(--color-brand-text-muted)]">
             {t.settings.aiToggleHint}
           </p>
@@ -38,7 +38,7 @@ export function SettingsAiAssistantSection({ store, aiStatus }: SettingsAiAssist
 
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-white">{t.settings.aiConnection}</p>
+          <p className="text-sm text-[var(--color-brand-text-primary)]">{t.settings.aiConnection}</p>
           <p className="text-xs text-[var(--color-brand-text-muted)]">{t.settings.aiConnectionSub}</p>
         </div>
         <div className="flex items-center gap-2">

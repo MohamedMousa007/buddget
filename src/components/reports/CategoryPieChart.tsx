@@ -8,7 +8,7 @@ interface CategoryPieChartProps {
   currency: string
 }
 
-const COLORS = ['#E50914', '#1DB954', '#F5C842', '#FF9F0A', '#3B82F6', '#A855F7', '#EC4899', '#6B7280']
+const COLORS = ['var(--color-brand-red)', 'var(--color-brand-green)', 'var(--color-brand-gold)', 'var(--color-brand-amber)', '#3B82F6', '#A855F7', '#EC4899', '#6B7280']
 
 export function CategoryPieChart({ data, currency }: CategoryPieChartProps) {
   return (
@@ -39,15 +39,15 @@ export function CategoryPieChart({ data, currency }: CategoryPieChartProps) {
               </Pie>
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#1A1A24',
-                  border: '1px solid #2A2A38',
+                  backgroundColor: 'var(--color-brand-elevated)',
+                  border: '1px solid var(--color-brand-border)',
                   borderRadius: '12px',
                   color: '#fff',
                 }}
                 formatter={(value) => [formatCurrency(Number(value), currency), undefined]}
               />
               <Legend
-                wrapperStyle={{ color: '#A0A0B8', fontSize: 12 }}
+                wrapperStyle={{ color: 'var(--color-brand-text-secondary)', fontSize: 12 }}
               />
             </PieChart>
           </ResponsiveContainer>

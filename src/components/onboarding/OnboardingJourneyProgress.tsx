@@ -37,7 +37,7 @@ export function OnboardingJourneyProgress({
             className={cn(
               'h-1 flex-1 min-w-[2px] rounded-full transition-all duration-300',
               done && 'bg-[var(--color-brand-red)] shadow-[0_0_8px_rgba(229,9,20,0.35)]',
-              current && 'bg-white/70 ring-1 ring-white/30',
+              current && 'bg-[var(--color-brand-text-primary)]/70 ring-1 ring-[var(--color-brand-text-primary)]/30',
               !done && !current && 'bg-[var(--color-brand-border)]/45'
             )}
           />

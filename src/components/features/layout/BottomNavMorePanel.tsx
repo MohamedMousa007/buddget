@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import type { LucideIcon } from 'lucide-react'
+import type { BuddgetNavIcon } from '@/lib/navigation/bottomNavConfig'
 import { cn } from '@/lib/utils'
 import { localeInlineLabelClass, useLocale, useT } from '@/lib/i18n'
 import type { Dictionary } from '@/lib/i18n'
@@ -12,7 +12,7 @@ export function BottomNavMorePanel({
   onNavigate,
 }: {
   pathname: string
-  items: { href: string; label: string; icon: LucideIcon }[]
+  items: { href: string; label: string; icon: BuddgetNavIcon }[]
   onNavigate: () => void
 }) {
   const t = useT()
@@ -42,7 +42,7 @@ export function BottomNavMorePanel({
                   'flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors',
                   active
                     ? 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-red)]'
-                    : 'text-white hover:bg-[var(--color-brand-elevated)]'
+                    : 'text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)]'
                 )}
               >
                 <m.icon className="h-5 w-5 shrink-0 opacity-90" />

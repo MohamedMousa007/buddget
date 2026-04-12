@@ -112,7 +112,7 @@ export function RecentExpenses({ expenses }: RecentExpensesProps) {
                     {CATEGORY_ICONS[expense.category] || '📦'}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-white truncate">
+                    <p className="text-sm text-[var(--color-brand-text-primary)] truncate">
                       {expense.description}
                     </p>
                     <p className="text-xs text-[var(--color-brand-text-muted)]">
@@ -124,7 +124,7 @@ export function RecentExpenses({ expenses }: RecentExpensesProps) {
                       amount={expense.amount}
                       currency={expense.currency}
                       variant="table"
-                      primaryClassName="text-sm text-white"
+                      primaryClassName="text-sm text-[var(--color-brand-text-primary)]"
                     />
                     <p className="text-xs text-[var(--color-brand-text-muted)]">
                       {getMethodName(expense.paymentMethodId)}

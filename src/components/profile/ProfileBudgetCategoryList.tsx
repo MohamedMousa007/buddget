@@ -40,14 +40,14 @@ export function ProfileBudgetCategoryList({
           key={budget.category}
           className="flex items-center justify-between py-2 border-b border-[var(--color-brand-border)] last:border-0"
         >
-          <span className="text-sm text-white">{budget.category}</span>
+          <span className="text-sm text-[var(--color-brand-text-primary)]">{budget.category}</span>
           {editingBudget === budget.category ? (
             <div className="flex items-center gap-2">
               <Input
                 type="number"
                 value={budgetInput}
                 onChange={(e) => setBudgetInput(e.target.value)}
-                className="w-28 h-8 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers text-sm"
+                className="w-28 h-8 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers text-sm"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') onSave(budget.category)
@@ -79,7 +79,7 @@ export function ProfileBudgetCategoryList({
                   setBudgetInput(budget.budgetedAmount.toString())
                 }
               }}
-              className="flex flex-col items-end gap-0.5 text-sm font-mono-numbers text-[var(--color-brand-text-secondary)] hover:text-white transition-colors"
+              className="flex flex-col items-end gap-0.5 text-sm font-mono-numbers text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] transition-colors"
             >
               <span className="flex items-center gap-2">
                 {budgetMode === 'percent_of_income' ? (

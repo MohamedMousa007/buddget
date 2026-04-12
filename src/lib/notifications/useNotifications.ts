@@ -1,25 +1,43 @@
-// Reserved for native push notifications integration
-// Wire to FCM (Firebase Cloud Messaging) or web-push
-// when deploying to Google Play via PWABuilder TWA wrapper
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
+import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
-import { calculateDebtRemaining } from '@/lib/utils/calculations'
+import { addDays, format } from 'date-fns'
+import { isDebtFullyPaid } from '@/lib/utils/calculations'
+import { isRecurringDebtDue } from '@/lib/utils/recurringDebtPayments'
 import { useT } from '@/lib/i18n'
 
 const READ_STORAGE_KEY = 'buddget-notifications-read'
 
 export type AppNotification = {
   id: string
-  type: 'budget_alert' | 'debt_reminder' | 'month_end' | 'savings_nudge'
+  type:
+    | 'budget_alert'
+    | 'debt_reminder'
+    | 'month_end'
+    | 'savings_nudge'
+    | 'recurring_due'
+    | 'recurring_tomorrow'
   title: string
   body: string
   severity: 'warning' | 'info' | 'critical'
   createdAt: string
+  /** When `type` is `recurring_due`, user can confirm/snooze from the inbox. */
+  recurringId?: string
+}
+
+export type ServerNotificationRow = {
+  id: string
+  type: string
+  title: string
+  body: string | null
+  metadata: Record<string, unknown>
+  read: boolean
+  created_at: string
 }
 
 function loadReadIds(): Set<string> {
@@ -44,18 +62,53 @@ function saveReadIds(ids: Set<string>) {
 }
 
 export function useNotifications() {
+  const { user } = useAuth()
   const stats = useMonthlyStats()
   const t = useT()
   const { monthFilter } = useSettingsStore()
-  const { debts, debtPayments, budgetCategories } = useFinanceStore(
+  const { debts, debtPayments, budgetCategories, recurringDebtPayments } = useFinanceStore(
     useShallow((s) => ({
       debts: s.debts,
       debtPayments: s.debtPayments,
       budgetCategories: s.budgetCategories,
+      recurringDebtPayments: s.recurringDebtPayments,
     }))
   )
 
   const [readIds, setReadIds] = useState<Set<string>>(() => loadReadIds())
+  const [serverNotifications, setServerNotifications] = useState<ServerNotificationRow[]>([])
+
+  const fetchServerNotifications = useCallback(async () => {
+    try {
+      const res = await fetch('/api/notifications')
+      if (!res.ok) return
+      const data = (await res.json()) as { notifications?: ServerNotificationRow[] }
+      setServerNotifications(data.notifications ?? [])
+    } catch {
+      /* ignore */
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!user) {
+      queueMicrotask(() => setServerNotifications([]))
+      return
+    }
+    let cancelled = false
+    void (async () => {
+      try {
+        const res = await fetch('/api/notifications')
+        if (!res.ok || cancelled) return
+        const data = (await res.json()) as { notifications?: ServerNotificationRow[] }
+        if (!cancelled) setServerNotifications(data.notifications ?? [])
+      } catch {
+        /* ignore */
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [user])
 
   const notifications = useMemo(() => {
     const list: AppNotification[] = []
@@ -82,15 +135,33 @@ export function useNotifications() {
       }
     }
 
-    for (const debt of debts) {
-      const remaining = calculateDebtRemaining(debt, debtPayments)
-      if (remaining > 0.0001) {
+    const todayYmd = format(new Date(), 'yyyy-MM-dd')
+    const tomorrowYmd = format(addDays(new Date(), 1), 'yyyy-MM-dd')
+
+    for (const r of recurringDebtPayments) {
+      if (!r.isActive) continue
+      const debt = debts.find((d) => d.id === r.debtId)
+      if (!debt || isDebtFullyPaid(debt, debtPayments)) continue
+
+      if (r.nextDueDate === tomorrowYmd) {
         list.push({
-          id: `debt_reminder:${debt.id}`,
-          type: 'debt_reminder',
-          title: t.notifications.debtReminderTitle,
-          body: t.notifications.debtReminderBody(debt.name),
+          id: `recurring_tomorrow:${r.id}:${tomorrowYmd}`,
+          type: 'recurring_tomorrow',
+          title: debt.name,
+          body: t.notifications.recurringTomorrowBody(debt.name, r.amount, r.currency),
           severity: 'info',
+          createdAt: now,
+        })
+      }
+
+      if (isRecurringDebtDue(r.nextDueDate)) {
+        list.push({
+          id: `recurring_due:${r.id}:${todayYmd}`,
+          type: 'recurring_due',
+          recurringId: r.id,
+          title: debt.name,
+          body: t.notifications.recurringDueBody(debt.name, r.amount, r.currency),
+          severity: 'warning',
           createdAt: now,
         })
       }
@@ -100,9 +171,10 @@ export function useNotifications() {
       list.push({
         id: `month_end:${monthFilter}`,
         type: 'month_end',
-        title: stats.daysLeft === 0
-          ? t.notifications.monthEndTitleLast
-          : t.notifications.monthEndTitleDays(stats.daysLeft),
+        title:
+          stats.daysLeft === 0
+            ? t.notifications.monthEndTitleLast
+            : t.notifications.monthEndTitleDays(stats.daysLeft),
         body:
           stats.daysLeft === 0
             ? t.notifications.monthEndBodyLast
@@ -126,14 +198,21 @@ export function useNotifications() {
     }
 
     return list
-  }, [budgetCategories, debts, debtPayments, monthFilter, stats, t])
+  }, [budgetCategories, debts, debtPayments, monthFilter, recurringDebtPayments, stats, t])
 
-  const unreadCount = useMemo(
+  const localUnread = useMemo(
     () => notifications.filter((n) => !readIds.has(n.id)).length,
     [notifications, readIds]
   )
 
-  const markAllRead = useCallback(() => {
+  const serverUnread = useMemo(
+    () => serverNotifications.filter((n) => !n.read).length,
+    [serverNotifications]
+  )
+
+  const unreadCount = localUnread + serverUnread
+
+  const markAllRead = useCallback(async () => {
     setReadIds((prev) => {
       const next = new Set(prev)
       for (const n of notifications) {
@@ -142,7 +221,43 @@ export function useNotifications() {
       saveReadIds(next)
       return next
     })
-  }, [notifications])
+    if (user) {
+      try {
+        await fetch('/api/notifications', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ markAllRead: true }),
+        })
+        void fetchServerNotifications()
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [notifications, user, fetchServerNotifications])
 
-  return { notifications, unreadCount, markAllRead }
+  const markServerReadByIds = useCallback(
+    async (ids: string[]) => {
+      if (!ids.length) return
+      try {
+        await fetch('/api/notifications', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids }),
+        })
+        void fetchServerNotifications()
+      } catch {
+        /* ignore */
+      }
+    },
+    [fetchServerNotifications]
+  )
+
+  return {
+    notifications,
+    serverNotifications,
+    unreadCount,
+    markAllRead,
+    markServerReadByIds,
+    refetchServerNotifications: fetchServerNotifications,
+  }
 }

@@ -21,11 +21,11 @@ export function AdminServerSection({ config }: AdminServerSectionProps) {
       <div className="space-y-3">
         <div className="flex items-center justify-between py-2">
           <span className="text-sm text-[var(--color-brand-text-secondary)]">Environment</span>
-          <span className="text-sm font-mono-numbers text-white">{config?.environment || '—'}</span>
+          <span className="text-sm font-mono-numbers text-[var(--color-brand-text-primary)]">{config?.environment || '—'}</span>
         </div>
         <div className="flex items-center justify-between py-2 border-t border-[var(--color-brand-border)]">
           <span className="text-sm text-[var(--color-brand-text-secondary)]">App URL</span>
-          <span className="text-sm font-mono-numbers text-white">{config?.appUrl || '—'}</span>
+          <span className="text-sm font-mono-numbers text-[var(--color-brand-text-primary)]">{config?.appUrl || '—'}</span>
         </div>
       </div>
     </section>

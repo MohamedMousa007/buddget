@@ -3,10 +3,11 @@
 import { useEffect } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { applyDueRecurringDebtPayments } from '@/lib/utils/recurringDebtPayments'
+import { pushRecurringDebtReminders } from '@/lib/debts/recurringDebtPush'
 
 /**
- * Runs when finance data changes so due recurring debt payments post automatically (same session).
+ * Keeps recurring debt state consistent; surfaces local push reminders (due / tomorrow).
+ * Payments post only after user confirms in-app (see `confirmRecurringDebtPayment`).
  */
 export function useRecurringDebtPaymentScheduler() {
   const snap = useFinanceStore(
@@ -21,6 +22,6 @@ export function useRecurringDebtPaymentScheduler() {
   )
 
   useEffect(() => {
-    applyDueRecurringDebtPayments()
+    pushRecurringDebtReminders()
   }, [snap])
 }

@@ -21,7 +21,7 @@ interface KPICardProps {
 }
 
 const COLOR_MAP = {
-  default: 'text-white',
+  default: 'text-[var(--color-brand-text-primary)]',
   green: 'text-[var(--color-brand-green)]',
   red: 'text-[var(--color-brand-red)]',
   gold: 'text-[var(--color-brand-gold)]',

@@ -1,14 +1,45 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { format } from 'date-fns'
+import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { clampDebtFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
+import { clampDebtFiatToAllowed, clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { useT } from '@/lib/i18n'
-import type { Debt, DebtCurrency, GoldKarat } from '@/lib/store/types'
+import { calculateDebtRemaining } from '@/lib/utils/calculations'
+import type { Currency, Debt, DebtCurrency, DebtGoal, GoldKarat } from '@/lib/store/types'
+
+function goalFrequencyToRecurring(
+  f: DebtGoal['paymentFrequency']
+): import('@/lib/store/types').DebtRecurringFrequency {
+  return f
+}
 
 export function useEditDebtForm(debt: Debt | undefined, isOpen: boolean) {
-  const { updateDebt, deleteDebt, settings } = useFinanceStore()
   const t = useT()
+  const {
+    updateDebt,
+    deleteDebt,
+    settings,
+    debtPayments,
+    recurringDebtPayments,
+    paymentMethods,
+    addRecurringDebtPayment,
+    updateRecurringDebtPayment,
+    deleteRecurringDebtPayment,
+  } = useFinanceStore(
+    useShallow((s) => ({
+      updateDebt: s.updateDebt,
+      deleteDebt: s.deleteDebt,
+      settings: s.settings,
+      debtPayments: s.debtPayments,
+      recurringDebtPayments: s.recurringDebtPayments,
+      paymentMethods: s.paymentMethods,
+      addRecurringDebtPayment: s.addRecurringDebtPayment,
+      updateRecurringDebtPayment: s.updateRecurringDebtPayment,
+      deleteRecurringDebtPayment: s.deleteRecurringDebtPayment,
+    }))
+  )
 
   const [name, setName] = useState('')
   const [person, setPerson] = useState('')
@@ -17,6 +48,7 @@ export function useEditDebtForm(debt: Debt | undefined, isOpen: boolean) {
   const [isGold, setIsGold] = useState(false)
   const [goldKarat, setGoldKarat] = useState<GoldKarat>(24)
   const [notes, setNotes] = useState('')
+  const [goalSheetOpen, setGoalSheetOpen] = useState(false)
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- hydrate form when editing debt opens */
@@ -28,9 +60,79 @@ export function useEditDebtForm(debt: Debt | undefined, isOpen: boolean) {
       setIsGold(debt.isGold)
       setGoldKarat(debt.goldKarat || 24)
       setNotes(debt.notes || '')
+      setGoalSheetOpen(false)
     }
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [isOpen, debt])
+
+  const paymentsForDebt = useMemo(
+    () => (debt ? debtPayments.filter((p) => p.debtId === debt.id) : []),
+    [debt, debtPayments]
+  )
+
+  const remainingForGoal = useMemo(() => {
+    if (!debt) return 0
+    return calculateDebtRemaining(debt, paymentsForDebt)
+  }, [debt, paymentsForDebt])
+
+  const recurringForDebt = useMemo(
+    () => (debt ? recurringDebtPayments.find((r) => r.debtId === debt.id) : undefined),
+    [debt, recurringDebtPayments]
+  )
+
+  const handleGoalSave = useCallback(
+    (goal: DebtGoal, remindRecurring: boolean) => {
+      if (!debt) return
+      updateDebt(debt.id, { goal })
+
+      const pmId = paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || ''
+      const payCur = debt.isGold ? 'XAU' : clampFiatToAllowed(settings, debt.currency as Currency)
+      const existing = useFinanceStore.getState().recurringDebtPayments.find((r) => r.debtId === debt.id)
+
+      if (remindRecurring) {
+        if (existing) {
+          updateRecurringDebtPayment(existing.id, {
+            amount: goal.calculatedAmount,
+            frequency: goalFrequencyToRecurring(goal.paymentFrequency),
+            nextDueDate: format(new Date(), 'yyyy-MM-dd'),
+            isActive: true,
+          })
+        } else {
+          addRecurringDebtPayment({
+            debtId: debt.id,
+            amount: goal.calculatedAmount,
+            currency: payCur,
+            frequency: goalFrequencyToRecurring(goal.paymentFrequency),
+            nextDueDate: format(new Date(), 'yyyy-MM-dd'),
+            paymentMethodId: pmId,
+            isActive: true,
+            notes: 'Payoff goal',
+          })
+        }
+      } else if (existing) {
+        deleteRecurringDebtPayment(existing.id)
+      }
+    },
+    [
+      addRecurringDebtPayment,
+      deleteRecurringDebtPayment,
+      debt,
+      paymentMethods,
+      settings,
+      updateDebt,
+      updateRecurringDebtPayment,
+    ]
+  )
+
+  const handleRemoveGoal = useCallback(() => {
+    if (!debt) return
+    if (!window.confirm(t.debts.confirmRemoveGoal)) return
+    updateDebt(debt.id, { goal: undefined })
+    const existing = useFinanceStore.getState().recurringDebtPayments.find((r) => r.debtId === debt.id)
+    if (existing) {
+      deleteRecurringDebtPayment(existing.id)
+    }
+  }, [debt, deleteRecurringDebtPayment, t.debts.confirmRemoveGoal, updateDebt])
 
   const handleSave = useCallback(
     (onAfter: () => void) => {
@@ -79,5 +181,11 @@ export function useEditDebtForm(debt: Debt | undefined, isOpen: boolean) {
     setNotes,
     handleSave,
     handleDelete,
+    goalSheetOpen,
+    setGoalSheetOpen,
+    remainingForGoal,
+    recurringForDebt,
+    handleGoalSave,
+    handleRemoveGoal,
   }
 }

@@ -146,6 +146,7 @@ export interface Dictionary {
     editPurchase: string
     removePurchase: string
     confirmDelete: string
+    badgeDebt: string
   }
 
   addExpense: {
@@ -248,6 +249,8 @@ export interface Dictionary {
     requireAuthNew: string
     requireAuthPayment: string
     requireAuthRecurring: string
+    buttonPayDebt: string
+    buttonAddDebt: string
     buttonRecurring: string
     buttonTrack: string
     emptyIcon: string
@@ -257,6 +260,9 @@ export interface Dictionary {
     sectionRecurring: string
     recurringHelp: string
     unknownBalance: string
+    unknownDebt: string
+    emptyActiveTitle: string
+    emptyActiveDesc: string
     freqMonthly: string
     freqBiweekly: string
     freqWeekly: string
@@ -268,8 +274,24 @@ export interface Dictionary {
     filterByDebt: string
     allDebtsFilter: string
     colBalance: string
+    colDebt: string
+    debtHistorySectionTitle: string
+    historyColDebt: string
+    historyColType: string
+    historyColTotal: string
+    historyColPaid: string
+    historyColStatus: string
+    historyColSettled: string
+    statusCleared: string
+    statusInProgress: string
+    debtTypePersonal: string
+    debtTypeInstallment: string
+    debtTypeGeneral: string
+    debtTypeLegacy: string
     deletePaymentAria: string
     clearedMessage: string
+    celebrationTitle: string
+    celebrationTapHint: string
     buttonLogPayment: string
     owedTo: string
     labelStartedAt: string
@@ -282,6 +304,14 @@ export interface Dictionary {
     colNotes: string
     confirmDeletePayment: string
     emptyPayments: string
+    editSheetTitle: string
+    goalSectionTitle: string
+    goalEditButton: string
+    confirmRemoveGoal: string
+    installmentProgress: (paid: number, total: number) => string
+    installmentNextDue: (date: string) => string
+    goalPayoffLine: string
+    goalTargetPassed: string
   }
 
   addDebt: {
@@ -289,6 +319,7 @@ export interface Dictionary {
     tabPayment: string
     titleNew: string
     titlePayment: string
+    titlePayDebt: string
     labelName: string
     placeholderName: string
     labelPerson: string
@@ -303,11 +334,52 @@ export interface Dictionary {
     labelGoldPurity: string
     labelNotes: string
     buttonSubmit: string
+    debtTypeLabel: string
+    debtTypePersonal: string
+    debtTypeInstallment: string
+    debtTypeGeneral: string
+    labelRelationship: string
+    labelDirection: string
+    directionIOwe: string
+    directionTheyOwe: string
+    labelItemName: string
+    labelInstallments: string
+    labelInstallmentFreq: string
+    labelStartDate: string
+    labelInterestFree: string
+    labelCreditor: string
+    freqWeekly: string
+    freqMonthly: string
+    freqQuarterly: string
+    freqAnnually: string
+    goalTrigger: string
+    goalChipRemoveAria: string
+    goalSheetTitle: string
+    goalClearBy: string
+    goalPaying: string
+    goalYouNeed: string
+    goalFreqWeekly: string
+    goalFreqMonthly: string
+    goalFreqQuarterly: string
+    goalFreqAnnually: string
+    goalSuffixWeekly: string
+    goalSuffixMonthly: string
+    goalSuffixQuarterly: string
+    goalSuffixAnnually: string
+    goalPaymentsCount: (n: number) => string
+    goalRemindCheckbox: string
+    goalSetButton: string
+    goalIncomeWarning: (pct: string) => string
   }
 
   addDebtPayment: {
     allCleared: string
     labelBalance: string
+    labelDebt: string
+    backDebtList: string
+    paymentModeOneTime: string
+    paymentModeRecurring: string
+    labelRecurringFrequency: string
     labelDate: string
     labelAmountPaid: string
     placeholderAmount: string
@@ -349,6 +421,10 @@ export interface Dictionary {
     howYouPay: string
     useSingular: string
     usePlural: string
+    expenseFilterHeading: string
+    expenseFilterAll: string
+    expenseFilterDebtOnly: string
+    expenseFilterExcludeDebt: string
   }
 
   settings: {
@@ -411,6 +487,10 @@ export interface Dictionary {
     dataCancelReset: string
 
     lookFeelTitle: string
+    themeLabel: string
+    themeDark: string
+    themeLight: string
+    themeSystem: string
     showCents: string
     desktopApp: string
     appInstalled: string
@@ -518,6 +598,14 @@ export interface Dictionary {
     aiEvalTitle: string
     aiEvalLoading: string
     aiEvalError: string
+    aiEvalStatusGood: string
+    aiEvalStatusNeedsAdjustment: string
+    aiEvalStatusUnrealistic: string
+    aiEvalTipGood: string
+    aiEvalTipTight: string
+    aiEvalTipUnrealistic: string
+    aiEvalExpandAria: string
+    aiEvalSuggestionLabel: string
     aiChatTitle: string
     aiChatPlaceholder: string
     aiSend: string
@@ -533,6 +621,7 @@ export interface Dictionary {
     chooseCategoryTitle: string
     customCategoryOption: string
     addCustomCategory: string
+    editCategoryName: string
     categoryNamePlaceholder: string
     subcategoryNamePlaceholder: string
     amountPlaceholder: string
@@ -543,6 +632,48 @@ export interface Dictionary {
     noPlansEmptyTitle: string
     noPlansEmptyDesc: string
     noPlansCreateFirst: string
+    buddgyTagline: string
+    buddgyHeroTitleMeet: string
+    buddgyHeroSubtitle: string
+    buddgyHeroBody: string
+    buddgyHeroCta: string
+    buddgyHeroManualHint: string
+    buddgyCompactTitle: string
+    buddgyCompactBody: string
+    buddgyCompactCta: string
+    buddgyBuilderOpening: string
+    buddgyChatSubtitle: string
+    buddgyBuilderBadge: string
+    buddgyEvalSectionTitle: string
+  }
+
+  sharedBudget: {
+    membersTitle: string
+    you: string
+    roleOwner: string
+    roleManager: string
+    roleViewer: string
+    syncOn: string
+    setAsDefaultPlan: string
+    addPartner: string
+    previewPlan: string
+    accept: string
+    decline: string
+    inviteTitle: string
+    inviteEmail: string
+    inviteEmailPlaceholder: string
+    roleView: string
+    roleManage: string
+    syncLabel: string
+    syncHelp: string
+    sendInvite: string
+    notFoundHint: string
+    inviteApp: string
+    foundAs: string
+    closeSheet: string
+    planSwitcherPersonal: string
+    planSwitcherCreateShared: string
+    defaultBadge: string
   }
 
   auth: {
@@ -612,6 +743,7 @@ export interface Dictionary {
 
   notifications: {
     title: string
+    markAllRead: string
     emptyState: string
     budgetAlertTitle: (category: string) => string
     budgetAlertBodyOver: (pct: number, category: string) => string
@@ -624,6 +756,10 @@ export interface Dictionary {
     monthEndBodyDays: (n: number) => string
     savingsNudgeTitle: string
     savingsNudgeBody: string
+    recurringDueBody: (name: string, amount: number, currency: string) => string
+    recurringTomorrowBody: (name: string, amount: number, currency: string) => string
+    recurringConfirmPaid: string
+    recurringSnooze: string
   }
 
   modals: {
@@ -648,6 +784,7 @@ export interface Dictionary {
 
   ai: {
     headerTitle: string
+    headerSubtitle: string
     composerPlaceholder: string
     sendMessage: string
     emptyIntro: string

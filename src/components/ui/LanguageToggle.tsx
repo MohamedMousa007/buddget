@@ -27,7 +27,7 @@ export function LanguageToggle({ size = 'md', className = '' }: LanguageTogglePr
 
   return (
     <div
-      className={`inline-flex rounded-full border border-[#2A2A38] bg-[#111118] p-0.5 ${className}`}
+      className={`inline-flex rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-0.5 ${className}`}
       role="radiogroup"
       aria-label={t.common.languageSwitcherAria}
     >
@@ -43,7 +43,7 @@ export function LanguageToggle({ size = 'md', className = '' }: LanguageTogglePr
             className={`
               inline-flex items-center gap-1.5 rounded-full px-3 font-medium transition-colors
               ${pill}
-              ${active ? 'bg-[#E50914] text-white shadow-sm' : 'text-[#A0A0B8] hover:text-white'}
+              ${active ? 'bg-[var(--color-brand-red)] text-white shadow-sm' : 'text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)]'}
             `}
           >
             <Icon size={iconSize} />

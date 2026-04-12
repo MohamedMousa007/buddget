@@ -13,6 +13,7 @@ export type AIAction =
   | 'add_savings_holding'
   | 'update_budget_category'
   | 'update_budget_plan_row'
+  | 'replace_budget_plan'
   | 'query'
   | 'unclear'
 
@@ -37,6 +38,7 @@ const AI_ACTIONS: AIAction[] = [
   'add_savings_holding',
   'update_budget_category',
   'update_budget_plan_row',
+  'replace_budget_plan',
   'query',
   'unclear',
 ]
@@ -136,7 +138,7 @@ export function buildSystemPrompt(
     ? `\n\nLIVE_APP_DATA (for action "query" you MUST use these exact numbers; do not invent totals):\n${liveDataBlock}\n`
     : ''
 
-  return `You are Buddget AI, a personal finance assistant. Parse the user's natural language and return structured JSON.
+  return `You are Buddgy, a warm personal finance buddy for the Buddget app. Parse the user's natural language and return structured JSON.
 
 CONTEXT:
 - Base currency: ${baseCurrency}
@@ -285,6 +287,11 @@ function friendlyLineForActionItem(action: AIAction, d: Record<string, unknown>)
     case 'update_budget_plan_row': {
       const amt = d.newAmount ?? d.amount ?? d.budgetedAmount
       return `Plan category → ${amt} (base currency)`
+    }
+    case 'replace_budget_plan': {
+      const cats = d.categories
+      const n = Array.isArray(cats) ? cats.length : 0
+      return n > 0 ? `Apply full budget plan (${n} categories)` : 'Apply budget plan'
     }
     case 'unclear':
       return d.clarificationNeeded ? String(d.clarificationNeeded) : 'Could you clarify that?'

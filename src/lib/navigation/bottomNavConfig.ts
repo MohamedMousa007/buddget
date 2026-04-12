@@ -6,10 +6,12 @@ import {
   Plus,
   Menu,
   Wallet,
-  Vault,
   BarChart3,
   SlidersHorizontal,
+  HandCoins,
 } from 'lucide-react'
+
+export type BuddgetNavIcon = LucideIcon
 
 export type BottomNavItem =
   | { kind: 'link'; href: string; label: string; icon: LucideIcon }
@@ -25,10 +27,10 @@ export const BOTTOM_NAV_ITEMS: BottomNavItem[] = [
 ]
 
 /** Extra routes in the "More" sheet — keep in sync when adding top-level pages. */
-export const BOTTOM_NAV_MORE_MENU: { href: string; label: string; icon: LucideIcon }[] = [
+export const BOTTOM_NAV_MORE_MENU: { href: string; label: string; icon: BuddgetNavIcon }[] = [
   { href: '/budget-setup', label: 'budgetSetup', icon: SlidersHorizontal },
   { href: '/income', label: 'income', icon: Wallet },
-  { href: '/savings', label: 'savings', icon: Vault },
+  { href: '/savings', label: 'savings', icon: HandCoins },
   { href: '/reports', label: 'reports', icon: BarChart3 },
 ]
 

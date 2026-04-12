@@ -66,9 +66,12 @@ export const importDataSchema = z.object({
         dayOfMonth: z.number().int().min(1).max(31).optional(),
         notes: z.string().optional(),
         createdAt: z.string(),
+        sharedPlanId: z.string().uuid().nullable().optional(),
       })
     )
     .optional(),
+  activeSharedBudgetId: z.string().uuid().nullable().optional(),
+  defaultSharedBudgetPlanId: z.string().uuid().nullable().optional(),
   expenses: z
     .array(
       z.object({
@@ -86,6 +89,9 @@ export const importDataSchema = z.object({
         tags: z.array(z.string()).optional(),
         createdAt: z.string(),
         updatedAt: z.string(),
+        sharedPlanId: z.string().uuid().nullable().optional(),
+        linkedDebtId: z.string().optional(),
+        isDebtPayment: z.boolean().optional(),
       })
     )
     .optional(),
@@ -101,6 +107,7 @@ export const importDataSchema = z.object({
         dayOfMonth: z.number().int().min(1).max(31),
         isActive: z.boolean(),
         notes: z.string().optional(),
+        sharedPlanId: z.string().uuid().nullable().optional(),
       })
     )
     .optional(),
@@ -121,12 +128,38 @@ export const importDataSchema = z.object({
         id: z.string(),
         name: z.string(),
         createdAt: z.string(),
+        household: z.enum(['solo', 'partner', 'family']).nullable().optional(),
+        buddgyGuidedComplete: z.boolean().optional(),
+        buddgyFlow: z
+          .object({
+            rentIncludesUtilities: z.boolean().optional(),
+            dewaMonthly: z.number().optional(),
+            transportMode: z.enum(['car', 'public', 'walk', 'mix']).optional(),
+            transportCarMonthly: z.number().optional(),
+            transportPublicDaily: z.number().optional(),
+            savingsPercent: z.number().optional(),
+            aiFillAccepted: z.boolean().optional(),
+            flowFinished: z.boolean().optional(),
+            aiSuggestions: z
+              .array(
+                z.object({
+                  name: z.string(),
+                  emoji: z.string(),
+                  amount: z.number(),
+                  currency: fiatCurrencySchema,
+                })
+              )
+              .optional(),
+          })
+          .nullable()
+          .optional(),
         categories: z.array(
           z.object({
             id: z.string(),
             name: z.string(),
             icon: z.string(),
             amount: z.number(),
+            currency: fiatCurrencySchema.optional(),
             subcategories: z.array(
               z.object({
                 id: z.string(),
@@ -183,7 +216,28 @@ export const importDataSchema = z.object({
         goldKarat: z.union([z.literal(24), z.literal(22), z.literal(21), z.literal(18)]).optional(),
         description: z.string().optional(),
         notes: z.string().optional(),
+        sharedPlanId: z.string().uuid().nullable().optional(),
         createdAt: z.string(),
+        status: z.enum(['active', 'cleared']).optional(),
+        clearedAt: z.string().optional(),
+        emoji: z.string().optional(),
+        debtType: z.enum(['personal', 'installment', 'general']).optional(),
+        personName: z.string().optional(),
+        relationship: z.string().optional(),
+        direction: z.enum(['i_owe', 'they_owe']).optional(),
+        installmentCount: z.number().optional(),
+        installmentFrequency: z.enum(['weekly', 'monthly', 'quarterly', 'annually']).optional(),
+        installmentAmount: z.number().optional(),
+        startDate: z.string().optional(),
+        interestFree: z.boolean().optional(),
+        creditor: z.string().optional(),
+        goal: z
+          .object({
+            targetDate: z.string(),
+            paymentFrequency: z.enum(['weekly', 'monthly', 'quarterly', 'annually']),
+            calculatedAmount: z.number(),
+          })
+          .optional(),
       })
     )
     .optional(),
@@ -199,6 +253,7 @@ export const importDataSchema = z.object({
         amountInPrimary: z.number().optional(),
         rateAtEntry: z.number().optional(),
         notes: z.string().optional(),
+        sharedPlanId: z.string().uuid().nullable().optional(),
         createdAt: z.string(),
       })
     )
@@ -211,7 +266,7 @@ export const importDataSchema = z.object({
         amount: z.number(),
         currency: currencySchema,
         paymentMethodId: z.string(),
-        frequency: z.enum(['monthly', 'biweekly', 'weekly']),
+        frequency: z.enum(['monthly', 'biweekly', 'weekly', 'quarterly', 'annually']),
         nextDueDate: z.string(),
         isActive: z.boolean(),
         notes: z.string().optional(),
@@ -219,6 +274,7 @@ export const importDataSchema = z.object({
       })
     )
     .optional(),
+  financialGoalsNotes: z.string().optional(),
   onboardingState: z
     .object({
       flowVersion: z.number(),

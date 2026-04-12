@@ -90,7 +90,7 @@ export function IncomeOnboardingPanel({
         <ul className="rounded-xl border border-[var(--color-brand-border)] divide-y divide-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/40 text-sm">
           {entries.map((e, i) => (
             <li key={i} className="flex items-center justify-between gap-2 px-3 py-2">
-              <span className="text-white truncate">
+              <span className="text-[var(--color-brand-text-primary)] truncate">
                 {e.name} · {e.amount} {e.currency}
                 {e.isRecurring ? ` · ${recurringLabelForEntry(t, e.recurringFrequency)}` : ''}
               </span>
@@ -109,7 +109,7 @@ export function IncomeOnboardingPanel({
             placeholder={o.incomeSourcePlaceholder}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
+            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -121,7 +121,7 @@ export function IncomeOnboardingPanel({
               placeholder={o.incomeAmountPlaceholder}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers"
+              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers"
             />
           </div>
           <div>
@@ -129,7 +129,7 @@ export function IncomeOnboardingPanel({
             <FiatCurrencySelect
               value={currency}
               onChange={setCurrency}
-              className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+              className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
             />
           </div>
         </div>
@@ -144,7 +144,7 @@ export function IncomeOnboardingPanel({
               <select
                 value={recurringFrequency}
                 onChange={(e) => setRecurringFrequency(e.target.value as IncomeRecurringFrequency)}
-                className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
               >
                 {freqOpts.map((f) => (
                   <option key={f.value} value={f.value}>
@@ -165,7 +165,7 @@ export function IncomeOnboardingPanel({
                   max={31}
                   value={dayOfMonth}
                   onChange={(e) => setDayOfMonth(e.target.value)}
-                  className="mt-1 w-24 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers"
+                  className="mt-1 w-24 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers"
                 />
               </div>
             )}
@@ -176,14 +176,14 @@ export function IncomeOnboardingPanel({
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white min-h-[50px]"
+            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] min-h-[50px]"
           />
         </div>
         <button
           type="button"
           onClick={addRow}
           disabled={!name.trim() || !amount || parseFloat(amount) <= 0}
-          className="w-full py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-white hover:bg-[var(--color-brand-elevated)] disabled:opacity-40"
+          className="w-full py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] disabled:opacity-40"
         >
           {o.incomeAddButton}
         </button>

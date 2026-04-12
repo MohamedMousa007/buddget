@@ -34,12 +34,12 @@ export function ReportsPaymentMethodPanel({ methods, baseCurrency }: ReportsPaym
               key={method.name}
               className="flex items-center justify-between py-2 border-b border-[var(--color-brand-border)] last:border-0"
             >
-              <span className="text-sm text-white">{method.name}</span>
+              <span className="text-sm text-[var(--color-brand-text-primary)]">{method.name}</span>
               <div className="flex items-center gap-4">
                 <span className="text-xs text-[var(--color-brand-text-muted)]">
                   {method.count} {method.count !== 1 ? t.reports.usePlural : t.reports.useSingular}
                 </span>
-                <span className="text-sm font-mono-numbers text-white">
+                <span className="text-sm font-mono-numbers text-[var(--color-brand-text-primary)]">
                   {formatCurrency(method.total, baseCurrency)}
                 </span>
               </div>

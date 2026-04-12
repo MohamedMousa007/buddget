@@ -85,7 +85,7 @@ export function InstallButton({ variant, className }: InstallButtonProps) {
         >
           <Download className="w-5 h-5 shrink-0 text-[var(--color-brand-red)]" aria-hidden />
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-white">{t.pwa.installTitle}</p>
+            <p className="text-xs font-semibold text-[var(--color-brand-text-primary)]">{t.pwa.installTitle}</p>
             <p className="text-[10px] text-[var(--color-brand-text-muted)] leading-snug">
               {t.pwa.installSubtitle}
             </p>

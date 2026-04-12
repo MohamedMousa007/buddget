@@ -69,9 +69,9 @@ export function BudgetPlannerAddCategoryMenu({
       </PopoverTrigger>
       <PopoverContent
         align="end"
-        className="max-h-[min(70vh,28rem)] w-[min(100vw-2rem,22rem)] overflow-y-auto border border-[var(--color-brand-border)] bg-[#111118] p-0 text-white shadow-xl"
+        className="max-h-[min(70vh,28rem)] w-[min(100vw-2rem,22rem)] overflow-y-auto border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-0 text-[var(--color-brand-text-primary)] shadow-xl"
       >
-        <p className="border-b border-[#2A2A38] px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
+        <p className="border-b border-[var(--color-brand-border)] px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
           {labels.chooseCategoryTitle}
         </p>
         <ul className="max-h-52 overflow-y-auto py-1">
@@ -99,7 +99,7 @@ export function BudgetPlannerAddCategoryMenu({
             )
           })}
         </ul>
-        <div className="border-t border-[#2A2A38] p-3 space-y-2">
+        <div className="border-t border-[var(--color-brand-border)] p-3 space-y-2">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
             {labels.customCategoryOption}
           </p>
@@ -113,7 +113,7 @@ export function BudgetPlannerAddCategoryMenu({
               value={customName}
               onChange={(e) => setCustomName(e.target.value)}
               placeholder={labels.categoryNameExample}
-              className="min-w-0 flex-1 rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-2 py-1.5 text-sm text-white placeholder:text-[var(--color-brand-text-muted)]"
+              className="min-w-0 flex-1 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1.5 text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)]"
             />
           </div>
           <button

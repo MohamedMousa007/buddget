@@ -17,12 +17,12 @@ export function DesktopHeaderBar() {
   return (
     <>
       {/* ─── Desktop header (lg+) ─── */}
-      <header className="hidden lg:flex fixed top-0 start-[200px] end-0 z-40 h-14 items-center justify-between px-8 bg-[#111118]/90 border-b border-[#2A2A38] backdrop-blur-xl">
+      <header className="hidden lg:flex fixed top-0 start-[200px] end-0 z-40 h-14 items-center justify-between px-8 bg-[var(--color-brand-card)]/90 border-b border-[var(--color-brand-border)] backdrop-blur-xl">
         <div className="flex items-center shrink-0">
           {pathname === '/' && (
             <Link
               href="/reports"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-white hover:bg-[var(--color-brand-border)] transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-border)] transition-colors"
             >
               <BarChart3 className="w-4 h-4 shrink-0" />
               <span className={locale === 'ar' ? 'text-end' : undefined}>{t.nav.reports}</span>
@@ -42,12 +42,12 @@ export function DesktopHeaderBar() {
       </header>
 
       {/* ─── Mobile header (<lg) ─── */}
-      <header className="flex lg:hidden fixed top-0 start-0 end-0 z-40 min-h-[calc(3.5rem+env(safe-area-inset-top,0px))] flex-col bg-[#111118]/90 border-b border-[#2A2A38] backdrop-blur-xl safe-area-top">
+      <header className="flex lg:hidden fixed top-0 start-0 end-0 z-40 min-h-[calc(3.5rem+env(safe-area-inset-top,0px))] flex-col bg-[var(--color-brand-card)]/90 border-b border-[var(--color-brand-border)] backdrop-blur-xl safe-area-top">
         <div className="flex h-14 shrink-0 items-center px-4">
           <div className="flex flex-1 min-w-0 justify-start items-center">
             <Link
               href="/"
-              className="shrink-0 text-xl font-bold font-heading tracking-tight text-white"
+              className="shrink-0 text-xl font-bold font-heading tracking-tight text-[var(--color-brand-text-primary)]"
             >
               Bud<span className="text-[var(--color-brand-red)]">d</span>get
             </Link>

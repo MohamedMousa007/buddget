@@ -27,7 +27,7 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
           <Input
             value={f.name}
             onChange={(e) => f.setName(e.target.value)}
-            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
+            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -38,7 +38,7 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
               step="0.01"
               value={f.amount}
               onChange={(e) => f.setAmount(e.target.value)}
-              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers"
+              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers"
             />
           </div>
           <div>
@@ -46,7 +46,7 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
             <FiatCurrencySelect
               value={f.currency}
               onChange={f.setCurrency}
-              className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+              className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
             />
           </div>
         </div>
@@ -61,7 +61,7 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
               <select
                 value={f.recurringFrequency}
                 onChange={(e) => f.setRecurringFrequency(e.target.value as IncomeRecurringFrequency)}
-                className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
               >
                 {INCOME_RECURRING_FREQ_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -84,7 +84,7 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
                   max={31}
                   value={f.dayOfMonth}
                   onChange={(e) => f.setDayOfMonth(e.target.value)}
-                  className="mt-1 w-24 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers"
+                  className="mt-1 w-24 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers"
                 />
               </div>
             )}
@@ -95,7 +95,7 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
           <Textarea
             value={f.notes}
             onChange={(e) => f.setNotes(e.target.value)}
-            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white min-h-[60px]"
+            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] min-h-[60px]"
           />
         </div>
         <p className="text-[10px] text-[var(--color-brand-text-muted)]">

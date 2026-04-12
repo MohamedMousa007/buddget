@@ -71,7 +71,7 @@ export function OnboardingPageView({
 
   if (!answersReady || !step) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 text-white">
+      <div className="min-h-screen flex items-center justify-center p-6 text-[var(--color-brand-text-primary)]">
         <p className="text-sm text-[var(--color-brand-text-muted)]">{o.loadingMessage}</p>
       </div>
     )
@@ -85,7 +85,7 @@ export function OnboardingPageView({
             <div className="flex items-start gap-2 min-w-0">
               <ClipboardList className="w-5 h-5 text-[var(--color-brand-red)] shrink-0 mt-0.5" aria-hidden />
               <div className={cn('min-w-0', locale === 'ar' && 'text-end')}>
-                <h1 className="text-lg font-bold text-white font-heading">{o.pageTitle}</h1>
+                <h1 className="text-lg font-bold text-[var(--color-brand-text-primary)] font-heading">{o.pageTitle}</h1>
                 <p className="text-[11px] text-[var(--color-brand-text-muted)] leading-snug">
                   {phase === 'plans' ? o.subtitlePlans : redo ? o.subtitleRedo : o.subtitleDefault}
                 </p>
@@ -98,7 +98,7 @@ export function OnboardingPageView({
                   type="button"
                   disabled={finishing || planLoading}
                   onClick={() => void finishOnboarding(null)}
-                  className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:text-white hover:bg-[var(--color-brand-elevated)] disabled:opacity-40 transition-colors"
+                  className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] disabled:opacity-40 transition-colors"
                 >
                   {o.skipButton}
                 </button>
@@ -107,7 +107,7 @@ export function OnboardingPageView({
                 <button
                   type="button"
                   onClick={() => router.push('/profile')}
-                  className="text-xs text-[var(--color-brand-text-secondary)] hover:text-white"
+                  className="text-xs text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)]"
                 >
                   {o.backToProfile}
                 </button>

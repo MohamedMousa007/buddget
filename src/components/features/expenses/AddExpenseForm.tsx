@@ -65,7 +65,7 @@ export function AddExpenseForm({
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
+          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
         />
       </div>
 
@@ -75,7 +75,7 @@ export function AddExpenseForm({
           placeholder={t.addExpense.placeholderDescription}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
+          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)]"
         />
       </div>
 
@@ -91,7 +91,7 @@ export function AddExpenseForm({
               setAmount(e.target.value)
               setSubmitError('')
             }}
-            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers placeholder:text-[var(--color-brand-text-muted)]"
+            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers placeholder:text-[var(--color-brand-text-muted)]"
           />
         </div>
         <div>
@@ -102,7 +102,7 @@ export function AddExpenseForm({
               setCurrency(c)
               setSubmitError('')
             }}
-            className="mt-1 w-full h-9 px-3 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+            className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
           />
         </div>
       </div>
@@ -127,7 +127,7 @@ export function AddExpenseForm({
           placeholder={t.addExpense.placeholderNotes}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)] min-h-[60px]"
+          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] min-h-[60px]"
         />
       </div>
 
