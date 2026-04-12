@@ -6,7 +6,7 @@ import { Switch } from '@/components/ui/switch'
 import type { DebtKind } from '@/lib/store/types'
 import { useT } from '@/lib/i18n'
 
-export interface AddDebtDebtTypeSectionProps {
+interface AddDebtDebtTypeSectionProps {
   debtType: DebtKind
   setDebtType: (k: DebtKind) => void
   /** Installment item label */

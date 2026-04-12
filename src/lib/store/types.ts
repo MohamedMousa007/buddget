@@ -178,14 +178,6 @@ export interface DebtGoal {
   calculatedAmount: number
 }
 
-export interface DebtRecurringPaymentSchedule {
-  enabled: boolean
-  frequency: 'weekly' | 'monthly' | 'quarterly' | 'annually'
-  amount: number
-  nextDueDate: string
-  reminderEnabled: boolean
-}
-
 export interface Debt {
   id: string
   name: string
@@ -215,7 +207,6 @@ export interface Debt {
   startDate?: string
   interestFree?: boolean
   creditor?: string
-  recurringPayment?: DebtRecurringPaymentSchedule
   goal?: DebtGoal
 }
 

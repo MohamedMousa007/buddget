@@ -13,7 +13,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import { useT } from '@/lib/i18n'
 
-export interface DebtGoalSheetProps {
+interface DebtGoalSheetProps {
   open: boolean
   onClose: () => void
   debtTitle: string

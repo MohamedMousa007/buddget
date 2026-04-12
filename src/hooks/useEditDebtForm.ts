@@ -127,7 +127,7 @@ export function useEditDebtForm(debt: Debt | undefined, isOpen: boolean) {
   const handleRemoveGoal = useCallback(() => {
     if (!debt) return
     if (!window.confirm(t.debts.confirmRemoveGoal)) return
-    updateDebt(debt.id, { goal: undefined, recurringPayment: undefined })
+    updateDebt(debt.id, { goal: undefined })
     const existing = useFinanceStore.getState().recurringDebtPayments.find((r) => r.debtId === debt.id)
     if (existing) {
       deleteRecurringDebtPayment(existing.id)

@@ -273,7 +273,6 @@ export function useAddDebtSheet() {
     }
     if (goalDraft) {
       payload.goal = goalDraft
-      /** Reminders use `recurringDebtPayments` rows only — avoid duplicating on `debt.recurringPayment`. */
     }
 
     const id = addDebt(payload)
@@ -475,7 +474,6 @@ export function useAddDebtSheet() {
     debtSheetPaymentOnly,
     isPayDebtFlow,
     payDebtStep,
-    setPayDebtStep,
     selectDebtForPayFlow,
     backToPayDebtList,
     mode,

@@ -231,15 +231,6 @@ export const importDataSchema = z.object({
         startDate: z.string().optional(),
         interestFree: z.boolean().optional(),
         creditor: z.string().optional(),
-        recurringPayment: z
-          .object({
-            enabled: z.boolean(),
-            frequency: z.enum(['weekly', 'monthly', 'quarterly', 'annually']),
-            amount: z.number(),
-            nextDueDate: z.string(),
-            reminderEnabled: z.boolean(),
-          })
-          .optional(),
         goal: z
           .object({
             targetDate: z.string(),

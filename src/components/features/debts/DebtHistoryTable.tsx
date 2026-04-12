@@ -29,7 +29,7 @@ function debtTypeLabel(
   return tr.debtTypeLegacy
 }
 
-export interface DebtHistoryTableProps {
+interface DebtHistoryTableProps {
   debts: Debt[]
   debtPayments: DebtPayment[]
 }

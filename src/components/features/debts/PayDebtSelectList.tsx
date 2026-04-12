@@ -6,7 +6,7 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import type { Debt } from '@/lib/store/types'
 import { useT } from '@/lib/i18n'
 
-export interface PayDebtSelectListProps {
+interface PayDebtSelectListProps {
   debts: Debt[]
   onSelect: (debtId: string) => void
 }

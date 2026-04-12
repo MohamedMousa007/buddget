@@ -3,7 +3,6 @@
 import { useEffect } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { applyDueRecurringDebtPayments } from '@/lib/utils/recurringDebtPayments'
 import { pushRecurringDebtReminders } from '@/lib/debts/recurringDebtPush'
 
 /**
@@ -23,7 +22,6 @@ export function useRecurringDebtPaymentScheduler() {
   )
 
   useEffect(() => {
-    applyDueRecurringDebtPayments()
     pushRecurringDebtReminders()
   }, [snap])
 }

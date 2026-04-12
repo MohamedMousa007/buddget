@@ -18,10 +18,3 @@ export function isRecurringDebtDue(nextDueDate: string): boolean {
   const ymd = format(new Date(), 'yyyy-MM-dd')
   return nextDueDate <= ymd
 }
-
-/**
- * Legacy auto-post path: disabled — recurring payments require confirmation (see in-app notifications).
- */
-export function applyDueRecurringDebtPayments(): void {
-  /* no-op: confirm via `confirmRecurringDebtPayment` in `@/lib/debts/recurringDebtDueHandlers` */
-}
