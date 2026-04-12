@@ -3,7 +3,7 @@
 export function AdminAiThrottleIntro() {
   return (
     <div>
-      <h3 className="text-xs font-semibold text-white mb-1">Optional: throttle users on this server</h3>
+      <h3 className="text-xs font-semibold text-[var(--color-brand-text-primary)] mb-1">Optional: throttle users on this server</h3>
       <p className="text-[11px] text-[var(--color-brand-text-muted)] mb-3">
         <span className="text-[var(--color-brand-text-secondary)]">Off</span> = no Buddget-side limits (only you or you
         trust your users). Google&apos;s Gemini quotas still apply.{' '}

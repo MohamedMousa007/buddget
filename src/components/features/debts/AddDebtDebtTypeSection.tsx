@@ -66,7 +66,7 @@ export function AddDebtDebtTypeSection({
               onClick={() => setDebtType(value)}
               className={`rounded-lg border px-3 py-1.5 text-sm text-center transition-colors ${
                 debtType === value
-                  ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10 text-white'
+                  ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10 text-[var(--color-brand-text-primary)]'
                   : 'border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]'
               }`}
             >
@@ -83,7 +83,7 @@ export function AddDebtDebtTypeSection({
             <select
               value={direction}
               onChange={(e) => setDirection(e.target.value as 'i_owe' | 'they_owe')}
-              className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+              className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
             >
               <option value="i_owe">{t.addDebt.directionIOwe}</option>
               <option value="they_owe">{t.addDebt.directionTheyOwe}</option>
@@ -94,7 +94,7 @@ export function AddDebtDebtTypeSection({
             <Input
               value={relationship}
               onChange={(e) => setRelationship(e.target.value)}
-              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
+              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
             />
           </div>
         </div>
@@ -107,7 +107,7 @@ export function AddDebtDebtTypeSection({
             <Input
               value={installmentItemName}
               onChange={(e) => setInstallmentItemName(e.target.value)}
-              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
+              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -118,7 +118,7 @@ export function AddDebtDebtTypeSection({
                 min={1}
                 value={installmentCount}
                 onChange={(e) => setInstallmentCount(e.target.value)}
-                className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers"
+                className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers"
               />
             </div>
             <div>
@@ -128,7 +128,7 @@ export function AddDebtDebtTypeSection({
                 onChange={(e) =>
                   setInstallmentFrequency(e.target.value as 'weekly' | 'monthly' | 'quarterly' | 'annually')
                 }
-                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
               >
                 <option value="weekly">{t.addDebt.freqWeekly}</option>
                 <option value="monthly">{t.addDebt.freqMonthly}</option>
@@ -143,7 +143,7 @@ export function AddDebtDebtTypeSection({
               type="date"
               value={installmentStartDate}
               onChange={(e) => setInstallmentStartDate(e.target.value)}
-              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
+              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
             />
           </div>
         </>
@@ -155,7 +155,7 @@ export function AddDebtDebtTypeSection({
           <Input
             value={creditor}
             onChange={(e) => setCreditor(e.target.value)}
-            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
+            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
           />
         </div>
       ) : null}

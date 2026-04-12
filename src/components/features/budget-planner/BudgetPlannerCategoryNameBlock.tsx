@@ -70,7 +70,7 @@ export function BudgetPlannerCategoryNameBlock({
             setPickerOpen(false)
             setPenMode(false)
           }}
-          className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-white hover:bg-[#2A2A38]"
+          className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-border)]"
         >
           <span className="text-lg" aria-hidden>
             {p.icon}
@@ -87,7 +87,7 @@ export function BudgetPlannerCategoryNameBlock({
             setPickerOpen(false)
             setPenMode(false)
           }}
-          className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-white hover:bg-[#2A2A38]"
+          className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-border)]"
         >
           <span className="text-lg" aria-hidden>
             {c.icon}
@@ -102,7 +102,7 @@ export function BudgetPlannerCategoryNameBlock({
           setDraftName(category.name)
           setPenMode(true)
         }}
-        className="cursor-pointer rounded-lg border border-dashed border-[#2A2A38] px-2 py-2 text-left text-sm text-[var(--color-brand-text-secondary)] hover:bg-[#2A2A38]/60"
+        className="cursor-pointer rounded-lg border border-dashed border-[var(--color-brand-border)] px-2 py-2 text-left text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-border)]/60"
       >
         + {labels.customCategoryOption}
       </button>
@@ -129,7 +129,7 @@ export function BudgetPlannerCategoryNameBlock({
             }
           }}
           placeholder={labels.categoryNameExample}
-          className="min-w-[120px] flex-1 rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-2 py-1.5 text-sm text-white ring-1 ring-[var(--color-brand-red)]/50 placeholder:text-[var(--color-brand-text-muted)]"
+          className="min-w-[120px] flex-1 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1.5 text-sm text-[var(--color-brand-text-primary)] ring-1 ring-[var(--color-brand-red)]/50 placeholder:text-[var(--color-brand-text-muted)]"
         />
       </div>
     )
@@ -138,7 +138,7 @@ export function BudgetPlannerCategoryNameBlock({
   return (
     <div className="flex min-w-0 flex-1 items-center gap-2">
       <span
-        className="flex h-9 w-10 shrink-0 items-center justify-center rounded-lg border border-[#2A2A38] bg-[#1A1A24] text-lg"
+        className="flex h-9 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-lg"
         aria-hidden
       >
         {category.icon}
@@ -148,7 +148,7 @@ export function BudgetPlannerCategoryNameBlock({
           <PopoverTrigger
             type="button"
             className={cn(
-              'flex min-w-0 flex-1 cursor-pointer items-center gap-1 rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-2 py-1.5 text-left text-sm text-white hover:border-[var(--color-brand-border)]'
+              'flex min-w-0 flex-1 cursor-pointer items-center gap-1 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1.5 text-left text-sm text-[var(--color-brand-text-primary)] hover:border-[var(--color-brand-border)]'
             )}
           >
             <span className="truncate">{category.name || labels.categoryNamePlaceholder}</span>
@@ -156,9 +156,9 @@ export function BudgetPlannerCategoryNameBlock({
           </PopoverTrigger>
           <PopoverContent
             align="start"
-            className="w-[min(100vw-2rem,18rem)] border border-[#2A2A38] bg-[#1A1A24] p-0 text-white shadow-xl"
+            className="w-[min(100vw-2rem,18rem)] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-0 text-[var(--color-brand-text-primary)] shadow-xl"
           >
-            <p className="border-b border-[#2A2A38] px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
+            <p className="border-b border-[var(--color-brand-border)] px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
               {labels.chooseCategoryTitle}
             </p>
             {popoverItems}
@@ -170,7 +170,7 @@ export function BudgetPlannerCategoryNameBlock({
             setDraftName(category.name)
             setPenMode(true)
           }}
-          className="cursor-pointer rounded-lg p-1.5 text-[var(--color-brand-text-muted)] hover:text-white"
+          className="cursor-pointer rounded-lg p-1.5 text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]"
           aria-label={labels.editCategoryName}
         >
           <Pencil className="h-4 w-4" />

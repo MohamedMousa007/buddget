@@ -113,7 +113,7 @@ export function DebtGoalSheet({
         <ModalSheetHeader title={t.addDebt.goalSheetTitle} onClose={onClose} />
         <p className="text-sm text-[var(--color-brand-text-muted)] mt-1 mb-4">
           {debtTitle} —{' '}
-          <span className="font-mono-numbers text-white">
+          <span className="font-mono-numbers text-[var(--color-brand-text-primary)]">
             {formatCurrency(remainingAmount, currency)}
           </span>
         </p>
@@ -124,7 +124,7 @@ export function DebtGoalSheet({
               type="month"
               value={monthValue}
               onChange={(e) => setMonthValue(e.target.value)}
-              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
+              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
             />
           </div>
           <div className="max-w-[180px]">
@@ -132,7 +132,7 @@ export function DebtGoalSheet({
             <select
               value={frequency}
               onChange={(e) => setFrequency(e.target.value as GoalFreq)}
-              className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+              className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
             >
               <option value="weekly">{t.addDebt.goalFreqWeekly}</option>
               <option value="monthly">{t.addDebt.goalFreqMonthly}</option>
@@ -142,7 +142,7 @@ export function DebtGoalSheet({
           </div>
           <div className="rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/40 p-4 space-y-1">
             <p className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.goalYouNeed}</p>
-            <p className="text-lg font-mono-numbers text-white">
+            <p className="text-lg font-mono-numbers text-[var(--color-brand-text-primary)]">
               {formatCurrency(preview.amountPerPeriod, currency as Currency)}
               <span className="text-sm text-[var(--color-brand-text-muted)]">
                 {frequency === 'weekly'

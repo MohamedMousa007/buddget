@@ -14,7 +14,7 @@ function fmt(n: number, currency: string) {
 }
 
 const ghostOutlineClass =
-  'cursor-pointer rounded-xl border border-[var(--color-brand-border)] bg-transparent px-5 py-2.5 text-sm font-semibold text-[var(--color-brand-text-secondary)] hover:text-white hover:border-[var(--color-brand-text-muted)] transition-colors'
+  'cursor-pointer rounded-xl border border-[var(--color-brand-border)] bg-transparent px-5 py-2.5 text-sm font-semibold text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] hover:border-[var(--color-brand-text-muted)] transition-colors'
 
 const primaryDoneClass =
   'cursor-pointer rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] px-5 py-2.5 text-sm font-semibold text-white'
@@ -34,16 +34,16 @@ export function BuddgyStepSummary({ flow }: { flow: BuddgyFlowApi }) {
 
   return (
     <div className="space-y-4">
-      <div className="space-y-2 rounded-xl border border-[#2A2A38] bg-[#1A1A24] p-4 font-mono text-sm">
-        <p className="text-sm font-sans text-white pb-1">You&apos;re all set! Here&apos;s your plan.</p>
+      <div className="space-y-2 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-4 font-mono text-sm">
+        <p className="text-sm font-sans text-[var(--color-brand-text-primary)] pb-1">You&apos;re all set! Here&apos;s your plan.</p>
         <div className="flex justify-between gap-4 text-[var(--color-brand-text-secondary)]">
           <span>Income</span>
-          <span className="text-white">{fmt(income, settings.baseCurrency)}</span>
+          <span className="text-[var(--color-brand-text-primary)]">{fmt(income, settings.baseCurrency)}</span>
         </div>
-        <div className="border-t border-[#2A2A38]" />
+        <div className="border-t border-[var(--color-brand-border)]" />
         <div className="flex justify-between gap-4 text-[var(--color-brand-text-secondary)]">
           <span>Total expenses</span>
-          <span className="text-white">{fmt(expenses, settings.baseCurrency)}</span>
+          <span className="text-[var(--color-brand-text-primary)]">{fmt(expenses, settings.baseCurrency)}</span>
         </div>
         <div className="flex justify-between gap-4">
           <span className="text-[var(--color-brand-text-secondary)]">Savings</span>
@@ -57,10 +57,10 @@ export function BuddgyStepSummary({ flow }: { flow: BuddgyFlowApi }) {
         </div>
       </div>
 
-      <div className="space-y-4 rounded-xl border border-[#2A2A38] bg-[#1A1A24] p-4">
+      <div className="space-y-4 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-4">
         {hasCategoryAmounts ?
           <>
-            <p className="text-sm font-sans text-white">{rate}% savings rate — incredible! 🎉</p>
+            <p className="text-sm font-sans text-[var(--color-brand-text-primary)]">{rate}% savings rate — incredible! 🎉</p>
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <button type="button" onClick={() => flow.startEditPlanFromSummary()} className={ghostOutlineClass}>
                 Edit Plan

@@ -45,7 +45,7 @@ export function PlanSwitcher({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-4 py-3 text-left text-sm font-medium text-white sm:min-w-[220px]"
+        className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-4 py-3 text-left text-sm font-medium text-[var(--color-brand-text-primary)] sm:min-w-[220px]"
         aria-expanded={open}
         aria-haspopup="listbox"
       >
@@ -70,7 +70,7 @@ export function PlanSwitcher({
           <li>
             <button
               type="button"
-              className="flex w-full cursor-pointer items-center gap-2 px-3 py-2.5 text-sm text-white hover:bg-[var(--color-brand-elevated)]"
+              className="flex w-full cursor-pointer items-center gap-2 px-3 py-2.5 text-sm text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)]"
               onClick={() => {
                 onSelectPersonal()
                 setOpen(false)
@@ -86,7 +86,7 @@ export function PlanSwitcher({
                 type="button"
                 className={cn(
                   'flex w-full cursor-pointer items-center gap-2 px-3 py-2.5 text-sm hover:bg-[var(--color-brand-elevated)]',
-                  activeSharedId === p.id ? 'text-[var(--color-brand-red)]' : 'text-white'
+                  activeSharedId === p.id ? 'text-[var(--color-brand-red)]' : 'text-[var(--color-brand-text-primary)]'
                 )}
                 onClick={() => {
                   onSelectShared(p.id)

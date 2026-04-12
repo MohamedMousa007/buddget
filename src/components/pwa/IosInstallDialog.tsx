@@ -29,11 +29,11 @@ export function IosInstallDialog({ open, onOpenChange }: IosInstallDialogProps) 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="sm:max-w-md bg-[var(--color-brand-card)] border-[var(--color-brand-border)] text-white ring-white/10"
+        className="sm:max-w-md bg-[var(--color-brand-card)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] ring-[var(--color-brand-text-primary)]/10"
         showCloseButton
       >
         <DialogHeader>
-          <DialogTitle className="text-white">{t.pwa.iosDialogTitle}</DialogTitle>
+          <DialogTitle className="text-[var(--color-brand-text-primary)]">{t.pwa.iosDialogTitle}</DialogTitle>
           <DialogDescription className="text-[var(--color-brand-text-muted)]">
             {t.pwa.iosDialogDesc}
           </DialogDescription>

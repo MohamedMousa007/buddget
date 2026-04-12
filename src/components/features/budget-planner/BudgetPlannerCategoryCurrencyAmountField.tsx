@@ -48,14 +48,14 @@ export function BudgetPlannerCategoryCurrencyAmountField({
     <Popover open={currencyOpen} onOpenChange={setCurrencyOpen}>
       <PopoverTrigger
         type="button"
-        className="flex cursor-pointer items-center gap-0.5 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1 font-mono text-xs text-[var(--color-brand-text-secondary)] hover:border-white/20"
+        className="flex cursor-pointer items-center gap-0.5 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1 font-mono text-xs text-[var(--color-brand-text-secondary)] hover:border-[var(--color-brand-text-primary)]/20"
       >
         {rowCurrency}
         <ChevronDown className="h-3 w-3 opacity-70" aria-hidden />
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="min-w-[8rem] border border-[#2A2A38] bg-[#1A1A24] p-1 text-white shadow-xl"
+        className="min-w-[8rem] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-1 text-[var(--color-brand-text-primary)] shadow-xl"
       >
         <div className="flex flex-col gap-0.5">
           {codes.map((c) => (
@@ -67,8 +67,8 @@ export function BudgetPlannerCategoryCurrencyAmountField({
                 setCurrencyOpen(false)
               }}
               className={cn(
-                'cursor-pointer rounded-lg px-2 py-1.5 text-left font-mono text-xs hover:bg-[#2A2A38]',
-                c === rowCurrency && 'bg-[#2A2A38]/80'
+                'cursor-pointer rounded-lg px-2 py-1.5 text-left font-mono text-xs hover:bg-[var(--color-brand-border)]',
+                c === rowCurrency && 'bg-[var(--color-brand-border)]/80'
               )}
             >
               {c}
@@ -95,7 +95,7 @@ export function BudgetPlannerCategoryCurrencyAmountField({
           placeholder={amountPlaceholder}
           readOnly={hasSubs}
           className={cn(
-            'w-24 rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-2 py-1.5 font-mono text-sm text-white placeholder:text-[var(--color-brand-text-muted)]',
+            'w-24 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1.5 font-mono text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)]',
             hasSubs && 'cursor-not-allowed opacity-60'
           )}
         />

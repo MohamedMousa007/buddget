@@ -53,7 +53,7 @@ export function BudgetInviteCard({
 
   return (
     <div className="rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/80 p-3 space-y-2">
-      <p className="text-sm font-medium text-white">{row.title}</p>
+      <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">{row.title}</p>
       {row.body ? <p className="text-xs text-[var(--color-brand-text-muted)]">{row.body}</p> : null}
       <div className="flex flex-wrap gap-2 pt-1">
         {planId ? (
@@ -61,7 +61,7 @@ export function BudgetInviteCard({
             type="button"
             disabled={busy}
             onClick={() => onPreview(planId)}
-            className="cursor-pointer rounded-lg border border-[var(--color-brand-border)] px-2.5 py-1.5 text-xs font-medium text-white hover:bg-[var(--color-brand-card)] disabled:opacity-50"
+            className="cursor-pointer rounded-lg border border-[var(--color-brand-border)] px-2.5 py-1.5 text-xs font-medium text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-card)] disabled:opacity-50"
           >
             {labels.preview}
           </button>
@@ -78,7 +78,7 @@ export function BudgetInviteCard({
           type="button"
           disabled={busy || !memberId}
           onClick={() => void patch('decline')}
-          className="cursor-pointer rounded-lg border border-[var(--color-brand-border)] px-2.5 py-1.5 text-xs text-[var(--color-brand-text-muted)] hover:text-white disabled:opacity-50"
+          className="cursor-pointer rounded-lg border border-[var(--color-brand-border)] px-2.5 py-1.5 text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)] disabled:opacity-50"
         >
           {labels.decline}
         </button>

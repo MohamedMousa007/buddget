@@ -46,7 +46,7 @@ export function BudgetPlannerSubcategoryRow({ sub, labels, onUpdate, onDelete }:
         value={sub.name}
         onChange={(e) => onUpdate({ name: e.target.value })}
         placeholder={labels.subcategoryNamePlaceholder}
-        className="flex-1 min-w-[100px] rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-2 py-1 text-xs text-white placeholder:text-[var(--color-brand-text-muted)]"
+        className="flex-1 min-w-[100px] rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1 text-xs text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)]"
       />
       <input
         type="text"
@@ -56,7 +56,7 @@ export function BudgetPlannerSubcategoryRow({ sub, labels, onUpdate, onDelete }:
         onFocus={focusAmount}
         onBlur={blurAmount}
         placeholder={labels.amountPlaceholder}
-        className="w-24 rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-2 py-1 text-xs text-white font-mono-numbers placeholder:text-[var(--color-brand-text-muted)]"
+        className="w-24 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1 text-xs text-[var(--color-brand-text-primary)] font-mono-numbers placeholder:text-[var(--color-brand-text-muted)]"
       />
       <button
         type="button"

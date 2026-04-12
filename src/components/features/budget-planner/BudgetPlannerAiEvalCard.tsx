@@ -20,7 +20,7 @@ function ratingStyle(r: BudgetPlanEvalRating): string {
 /** AI rating + explanation for the active plan. */
 export function BudgetPlannerAiEvalCard({ rating, explanation, loading, error, labels }: BudgetPlannerAiEvalCardProps) {
   return (
-    <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[#111118] p-5">
+    <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-5">
       <div className="flex items-center gap-2 mb-3">
         <Sparkles className="h-4 w-4 text-[var(--color-brand-red)]" />
         <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">

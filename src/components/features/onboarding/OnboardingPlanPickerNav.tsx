@@ -32,7 +32,7 @@ export function OnboardingPlanPickerNav({
           type="button"
           disabled={idx <= 0 || busy}
           onClick={onPrev}
-          className="flex-1 py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-white disabled:opacity-40 flex items-center justify-center gap-1"
+          className="flex-1 py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-primary)] disabled:opacity-40 flex items-center justify-center gap-1"
         >
           <ChevronLeft className="w-4 h-4" />
           {o.planPickerPrevious}
@@ -41,7 +41,7 @@ export function OnboardingPlanPickerNav({
           type="button"
           disabled={idx >= plansLength - 1 || busy}
           onClick={onNext}
-          className="flex-1 py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-white disabled:opacity-40 flex items-center justify-center gap-1"
+          className="flex-1 py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-primary)] disabled:opacity-40 flex items-center justify-center gap-1"
         >
           {o.planPickerNext}
           <ChevronRight className="w-4 h-4" />

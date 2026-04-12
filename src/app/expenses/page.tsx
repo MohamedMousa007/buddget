@@ -88,7 +88,7 @@ export default function ExpensesPage() {
     <div className="min-h-screen">
       <PageHeader>
         <PageHeaderContent className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)] flex items-center gap-2">
             <Receipt className="w-6 h-6 text-[var(--color-brand-red)]" />
             {t.expenses.pageTitle}
           </h1>

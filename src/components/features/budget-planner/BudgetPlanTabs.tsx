@@ -43,7 +43,7 @@ export function BudgetPlanTabs({
                 onChange={(e) => onEditingNameChange(e.target.value)}
                 onBlur={onCommitRename}
                 onKeyDown={(e) => e.key === 'Enter' && onCommitRename()}
-                className="min-w-[8rem] rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-sm text-white outline-none focus:border-[var(--color-brand-red)]"
+                className="min-w-[8rem] rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-sm text-[var(--color-brand-text-primary)] outline-none focus:border-[var(--color-brand-red)]"
                 autoFocus
               />
             ) : (
@@ -55,7 +55,7 @@ export function BudgetPlanTabs({
                   'rounded-xl px-3 py-2 text-sm font-medium transition-colors whitespace-nowrap',
                   active
                     ? 'bg-[var(--color-brand-red)] text-white'
-                    : 'bg-[var(--color-brand-elevated)]/80 text-[var(--color-brand-text-secondary)] hover:text-white border border-transparent hover:border-[var(--color-brand-border)]'
+                    : 'bg-[var(--color-brand-elevated)]/80 text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] border border-transparent hover:border-[var(--color-brand-border)]'
                 )}
               >
                 {p.name}
@@ -67,7 +67,7 @@ export function BudgetPlanTabs({
       <button
         type="button"
         onClick={onAddPlan}
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-dashed border-[var(--color-brand-border)] text-[var(--color-brand-text-muted)] hover:text-white hover:border-[var(--color-brand-red)] transition-colors"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-dashed border-[var(--color-brand-border)] text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)] hover:border-[var(--color-brand-red)] transition-colors"
         aria-label={labels.addPlan}
       >
         <Plus className="h-5 w-5" />

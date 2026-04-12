@@ -45,14 +45,14 @@ function SavingsHoldingRow({
   return (
     <div className="flex items-center justify-between py-3 border-b border-[var(--color-brand-border)] last:border-0 gap-2">
       <div className="min-w-0">
-        <p className="text-sm text-white truncate">{n}</p>
+        <p className="text-sm text-[var(--color-brand-text-primary)] truncate">{n}</p>
         <p className="text-[10px] text-[var(--color-brand-text-muted)] uppercase">
           {b === 'liquid' ? savings.bucketLiquid : savings.bucketInvestment} · {savings[SUBTYPE_KEYS[st]] as string}
         </p>
       </div>
       <div className="text-end shrink-0 flex items-center gap-2">
         <div>
-          <p className="text-sm font-mono-numbers text-white">{formatCurrency(a, c)}</p>
+          <p className="text-sm font-mono-numbers text-[var(--color-brand-text-primary)]">{formatCurrency(a, c)}</p>
           <p className="text-[10px] text-[var(--color-brand-text-muted)] font-mono-numbers">
             ≈ {formatCurrency(inBase, baseCurrency)}
           </p>
@@ -122,7 +122,7 @@ export default function SavingsPage() {
     <div className="min-h-screen pb-24">
       <PageHeader>
         <PageHeaderContent>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)] flex items-center gap-2">
             <HandCoins className="w-6 h-6 text-[var(--color-brand-red)]" />
             {t.savings.pageTitle}
           </h1>
@@ -138,7 +138,7 @@ export default function SavingsPage() {
           <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">{t.savings.addTitle}</h2>
           <div>
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelName}</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t.savings.placeholderName} className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white" />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t.savings.placeholderName} className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -146,7 +146,7 @@ export default function SavingsPage() {
               <select
                 value={bucket}
                 onChange={(e) => setBucket(e.target.value as SavingsBucket)}
-                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
               >
                 <option value="liquid">{t.savings.optionLiquid}</option>
                 <option value="investment">{t.savings.optionInvestment}</option>
@@ -157,7 +157,7 @@ export default function SavingsPage() {
               <select
                 value={subtype}
                 onChange={(e) => setSubtype(e.target.value as SavingsSubtype)}
-                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
               >
                 {(Object.keys(SUBTYPE_KEYS) as SavingsSubtype[]).map((s) => (
                   <option key={s} value={s}>{t.savings[SUBTYPE_KEYS[s]] as string}</option>
@@ -168,14 +168,14 @@ export default function SavingsPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelCurrentAmount}</Label>
-              <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers" />
+              <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers" />
             </div>
             <div>
               <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelCurrency}</Label>
               <FiatCurrencySelect
                 value={currency}
                 onChange={setCurrency}
-                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
               />
             </div>
           </div>

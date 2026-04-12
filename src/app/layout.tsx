@@ -6,6 +6,7 @@ import { AuthProvider } from '@/components/auth/AuthProvider'
 import { LocaleProvider } from '@/lib/i18n'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { UpdateToast } from '@/components/ui/UpdateToast'
+import { THEME_INIT_SCRIPT } from '@/lib/theme/applyTheme'
 
 const dmSans = DM_Sans({
   subsets: ['latin'],
@@ -121,8 +122,9 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" dir="ltr" data-locale="en" className="dark" suppressHydrationWarning>
+    <html lang="en" dir="ltr" data-locale="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
         <link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192" />
         <link rel="icon" href="/icons/icon-32.png" type="image/png" sizes="32x32" />

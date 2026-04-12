@@ -49,7 +49,7 @@ export function ExpenseRow({ expense, isMobile = false }: ExpenseRowProps) {
         <td className="py-3 px-4 text-sm text-[var(--color-brand-text-secondary)] font-mono-numbers">
           {formatDateShort(expense.date)}
         </td>
-        <td className="py-3 px-4 text-sm text-white">
+        <td className="py-3 px-4 text-sm text-[var(--color-brand-text-primary)]">
           <div className="flex items-center gap-2 flex-wrap">
             <span>{expense.description}</span>
             {expense.isDebtPayment ? (
@@ -81,7 +81,7 @@ export function ExpenseRow({ expense, isMobile = false }: ExpenseRowProps) {
             amount={expense.amount}
             currency={expense.currency}
             variant="table"
-            primaryClassName="text-white"
+            primaryClassName="text-[var(--color-brand-text-primary)]"
           />
         </td>
         <td className="py-3 px-4 text-end">
@@ -109,7 +109,7 @@ export function ExpenseRow({ expense, isMobile = false }: ExpenseRowProps) {
       <span className="text-lg">{CATEGORY_ICONS[expense.category]}</span>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap min-w-0">
-          <p className="text-sm text-white truncate">{expense.description}</p>
+          <p className="text-sm text-[var(--color-brand-text-primary)] truncate">{expense.description}</p>
           {expense.isDebtPayment ? (
             <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] shrink-0">
               {t.expenses.badgeDebt}
@@ -125,7 +125,7 @@ export function ExpenseRow({ expense, isMobile = false }: ExpenseRowProps) {
           amount={expense.amount}
           currency={expense.currency}
           variant="table"
-          primaryClassName="text-sm text-white"
+          primaryClassName="text-sm text-[var(--color-brand-text-primary)]"
         />
       </div>
       <button

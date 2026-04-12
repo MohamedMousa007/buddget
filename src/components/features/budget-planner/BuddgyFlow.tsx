@@ -39,7 +39,7 @@ export function BuddgyFlow({ planId, mode = 'resume', onClose, onRestartWizard }
   })
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-[#2A2A38] bg-[#111118]">
+    <div className="relative overflow-hidden rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
       <BuddgySaveFlash show={flow.showFlash} />
       <div className="p-1">
         <BuddgyProgressBar progress={flow.progress} />

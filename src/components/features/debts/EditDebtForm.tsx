@@ -46,7 +46,7 @@ export function EditDebtForm({
             <Input
               value={f.name}
               onChange={(e) => f.setName(e.target.value)}
-              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
+              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
             />
           </div>
 
@@ -55,7 +55,7 @@ export function EditDebtForm({
             <Input
               value={f.person}
               onChange={(e) => f.setPerson(e.target.value)}
-              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
+              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
             />
           </div>
 
@@ -65,7 +65,7 @@ export function EditDebtForm({
               placeholder={t.addDebt.placeholderDescription}
               value={f.description}
               onChange={(e) => f.setDescription(e.target.value)}
-              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
+              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)]"
             />
           </div>
 
@@ -87,7 +87,7 @@ export function EditDebtForm({
               <DebtFiatCurrencySelect
                 value={f.currency}
                 onChange={f.setCurrency}
-                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
               />
             </div>
           )}
@@ -98,7 +98,7 @@ export function EditDebtForm({
               <select
                 value={f.goldKarat}
                 onChange={(e) => f.setGoldKarat(parseInt(e.target.value, 10) as GoldKarat)}
-                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
               >
                 <option value="24">{t.goldPurity.k24}</option>
                 <option value="22">{t.goldPurity.k22}</option>
@@ -145,7 +145,7 @@ export function EditDebtForm({
             <Textarea
               value={f.notes}
               onChange={(e) => f.setNotes(e.target.value)}
-              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white min-h-[60px]"
+              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] min-h-[60px]"
             />
           </div>
 

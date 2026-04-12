@@ -13,7 +13,7 @@ export function BuddgyStepTransportDetail({ flow }: { flow: BuddgyFlowApi }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-white font-sans">
+      <p className="text-sm text-[var(--color-brand-text-primary)] font-sans">
         {isPublic ? 'Daily transport cost?' : 'Monthly fuel and parking?'}
       </p>
       {isPublic ?
@@ -25,7 +25,7 @@ export function BuddgyStepTransportDetail({ flow }: { flow: BuddgyFlowApi }) {
             value={flow.transportPublicDaily}
             onChange={(e) => flow.setTransportPublicDaily(sanitizeBuddgyAmountTyping(e.target.value))}
             onBlur={() => flow.setTransportPublicDaily(buddgyAmountBlurDisplay(flow.transportPublicDaily))}
-            className="w-full rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-3 py-2 font-mono text-sm text-white"
+            className="w-full rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 font-mono text-sm text-[var(--color-brand-text-primary)]"
             placeholder="0.00"
           />
           <p className="text-xs text-[var(--color-brand-text-muted)] font-mono">
@@ -41,7 +41,7 @@ export function BuddgyStepTransportDetail({ flow }: { flow: BuddgyFlowApi }) {
           value={flow.transportCarMonthly}
           onChange={(e) => flow.setTransportCarMonthly(sanitizeBuddgyAmountTyping(e.target.value))}
           onBlur={() => flow.setTransportCarMonthly(buddgyAmountBlurDisplay(flow.transportCarMonthly))}
-          className="w-full rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-3 py-2 font-mono text-sm text-white"
+          className="w-full rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 font-mono text-sm text-[var(--color-brand-text-primary)]"
           placeholder="0.00"
         />
       }

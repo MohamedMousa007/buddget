@@ -23,7 +23,7 @@ export function BudgetPlannerEmojiPicker({ value, onChange, ariaLabel, className
       <PopoverTrigger
         type="button"
         className={cn(
-          'flex h-9 w-10 shrink-0 items-center justify-center rounded-lg border border-[#2A2A38] bg-[#1A1A24] text-lg transition-colors hover:border-[var(--color-brand-border)]',
+          'flex h-9 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-lg transition-colors hover:border-[var(--color-brand-border)]',
           className
         )}
         aria-label={ariaLabel}
@@ -31,7 +31,7 @@ export function BudgetPlannerEmojiPicker({ value, onChange, ariaLabel, className
         <span className="leading-none">{display}</span>
       </PopoverTrigger>
       <PopoverContent
-        className="max-h-72 w-[min(100vw-2rem,20rem)] overflow-y-auto border border-[var(--color-brand-border)] bg-[#111118] p-3 text-white shadow-xl"
+        className="max-h-72 w-[min(100vw-2rem,20rem)] overflow-y-auto border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-3 text-[var(--color-brand-text-primary)] shadow-xl"
         align="start"
       >
         <div className="space-y-3">

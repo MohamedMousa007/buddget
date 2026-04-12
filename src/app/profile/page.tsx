@@ -21,7 +21,7 @@ export default function ProfilePage() {
     <div className="min-h-screen">
       <PageHeader>
         <PageHeaderContent>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)] flex items-center gap-2">
             <User className="w-6 h-6 text-[var(--color-brand-red)]" />
             {t.profile.pageTitle}
           </h1>
@@ -29,11 +29,11 @@ export default function ProfilePage() {
       </PageHeader>
 
       <div className="px-4 py-6 lg:px-8 max-w-3xl mx-auto space-y-6">
-        <div className="bg-[#111118] border border-[#2A2A38] rounded-2xl p-6">
+        <div className="bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl p-6">
           <div className="flex flex-col sm:flex-row gap-6">
             <div className="w-32 shrink-0 flex flex-col items-center">
               <div className="relative">
-                <div className="w-24 h-24 rounded-full overflow-hidden ring-2 ring-[#2A2A38] bg-[var(--color-brand-elevated)] flex items-center justify-center">
+                <div className="w-24 h-24 rounded-full overflow-hidden ring-2 ring-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] flex items-center justify-center">
                   {p.avatarSrc ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={p.avatarSrc} alt="" className="w-full h-full object-cover" width={96} height={96} />
@@ -45,10 +45,10 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={() => p.setAvatarModalOpen(true)}
-                    className="absolute bottom-0 end-0 w-7 h-7 rounded-full bg-[#E50914] flex items-center justify-center cursor-pointer hover:bg-[var(--color-brand-red-hover)] transition-colors"
+                    className="absolute bottom-0 end-0 w-7 h-7 rounded-full bg-[var(--color-brand-red)] flex items-center justify-center cursor-pointer hover:bg-[var(--color-brand-red-hover)] transition-colors"
                     aria-label={t.profile.changeAvatar}
                   >
-                    <Pencil className="w-3.5 h-3.5 text-white" />
+                    <Pencil className="w-3.5 h-3.5 text-[var(--color-brand-text-primary)]" />
                   </button>
                 )}
               </div>
@@ -56,7 +56,7 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={p.enterEditMode}
-                  className="text-sm text-[#A0A0B8] hover:text-white border border-[#2A2A38] rounded-lg px-3 py-1.5 mt-3 w-full text-center transition-colors"
+                  className="text-sm text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] border border-[var(--color-brand-border)] rounded-lg px-3 py-1.5 mt-3 w-full text-center transition-colors"
                 >
                   {t.profile.editProfile}
                 </button>
@@ -67,7 +67,7 @@ export default function ProfilePage() {
               {p.editMode ? (
                 <div className="space-y-4">
                   <div>
-                    <label className="text-xs uppercase tracking-wider text-[#5A5A72] block mb-1">{t.profile.labelName}</label>
+                    <label className="text-xs uppercase tracking-wider text-[var(--color-brand-text-muted)] block mb-1">{t.profile.labelName}</label>
                     <input
                       value={p.form.name}
                       onChange={(e) => p.updateField('name', e.target.value)}
@@ -76,7 +76,7 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs uppercase tracking-wider text-[#5A5A72] block mb-1">
+                    <label className="text-xs uppercase tracking-wider text-[var(--color-brand-text-muted)] block mb-1">
                       {p.user ? t.profile.labelEmailAccount : t.profile.labelEmail}
                     </label>
                     <input
@@ -89,7 +89,7 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs uppercase tracking-wider text-[#5A5A72] block mb-1">{t.profile.labelPhone}</label>
+                    <label className="text-xs uppercase tracking-wider text-[var(--color-brand-text-muted)] block mb-1">{t.profile.labelPhone}</label>
                     <input
                       value={p.form.phone}
                       onChange={(e) => p.updateField('phone', e.target.value)}
@@ -98,7 +98,7 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs uppercase tracking-wider text-[#5A5A72] block mb-1">{t.profile.labelCountry}</label>
+                    <label className="text-xs uppercase tracking-wider text-[var(--color-brand-text-muted)] block mb-1">{t.profile.labelCountry}</label>
                     <CountrySelect
                       value={p.form.country}
                       onChange={(nameEn) => p.updateField('country', nameEn)}
@@ -108,7 +108,7 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs uppercase tracking-wider text-[#5A5A72] block mb-1">{t.profile.labelCity}</label>
+                    <label className="text-xs uppercase tracking-wider text-[var(--color-brand-text-muted)] block mb-1">{t.profile.labelCity}</label>
                     <input
                       value={p.form.city}
                       onChange={(e) => p.updateField('city', e.target.value)}
@@ -133,18 +133,18 @@ export default function ProfilePage() {
           </div>
 
           {p.editMode && (
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-[#2A2A38]">
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-[var(--color-brand-border)]">
               <button
                 type="button"
                 onClick={p.discard}
-                className="px-4 py-2 rounded-xl border border-[#2A2A38] text-sm text-[#A0A0B8] hover:text-white hover:bg-[var(--color-brand-elevated)] transition-colors"
+                className="px-4 py-2 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
               >
                 {t.profile.discard}
               </button>
               <button
                 type="button"
                 onClick={p.save}
-                className="px-4 py-2 rounded-xl bg-[#E50914] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
+                className="px-4 py-2 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
               >
                 {t.profile.saveChanges}
               </button>
@@ -163,7 +163,7 @@ export default function ProfilePage() {
         />
 
         {p.user && (
-          <div className="bg-[#111118] border border-[#2A2A38] rounded-2xl p-6">
+          <div className="bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl p-6">
             <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-4">
               {t.profile.accountTitle}
             </h2>
@@ -181,11 +181,11 @@ export default function ProfilePage() {
                 }
               />
             </div>
-            <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-[#2A2A38]">
+            <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-[var(--color-brand-border)]">
               <button
                 type="button"
                 onClick={p.handlePasswordReset}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#2A2A38] text-sm text-[#A0A0B8] hover:text-white hover:bg-[var(--color-brand-elevated)] transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
               >
                 <Lock className="w-4 h-4" />
                 {p.resetSent ? t.profile.resetLinkSent : t.profile.changePassword}
@@ -193,7 +193,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={p.handleSignOut}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#E50914]/30 text-sm text-[#E50914] hover:bg-[#E50914]/10 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--color-brand-red)]/30 text-sm text-[var(--color-brand-red)] hover:bg-[var(--color-brand-red)]/10 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
                 {t.common.signOut}

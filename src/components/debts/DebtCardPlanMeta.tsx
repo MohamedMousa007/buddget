@@ -83,7 +83,7 @@ export function DebtCardPlanMeta({ debt, payments, paidOff }: DebtCardPlanMetaPr
           }`}
         >
           <p className="text-[var(--color-brand-text-secondary)]">{t.debts.goalPayoffLine}</p>
-          <p className="font-mono-numbers text-white mt-0.5">
+          <p className="font-mono-numbers text-[var(--color-brand-text-primary)] mt-0.5">
             {format(parseISO(goal.targetDate + 'T12:00:00'), 'MMM yyyy')} ·{' '}
             {formatCurrency(goal.calculatedAmount, debt.isGold ? 'XAU' : debt.currency)}
             {freqSuffix ? <span className="text-[var(--color-brand-text-muted)]">{freqSuffix}</span> : null}

@@ -8,6 +8,7 @@ import { OnboardingBanner } from '@/components/layout/OnboardingBanner'
 import { DesktopHeaderBar } from '@/components/layout/DesktopHeaderBar'
 import { InstallButton } from '@/components/pwa/InstallButton'
 import { PasswordUpdatedBanner } from '@/components/auth/PasswordUpdatedBanner'
+import { useThemeSync } from '@/hooks/useThemeSync'
 
 interface AppShellProps {
   children: React.ReactNode
@@ -21,6 +22,7 @@ function isBareAuthRoute(pathname: string | null) {
 }
 
 export function AppShell({ children }: AppShellProps) {
+  useThemeSync()
   const pathname = usePathname()
   const bare = isBareAuthRoute(pathname)
 

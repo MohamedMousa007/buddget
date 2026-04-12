@@ -26,7 +26,7 @@ export function AdminAnalyticsSection({ admin }: AdminAnalyticsSectionProps) {
         type="button"
         disabled={admin.analyticsLoading || !admin.sessionPin}
         onClick={() => void admin.loadAnalytics()}
-        className="text-xs px-3 py-2 rounded-xl bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white hover:border-[var(--color-brand-red)]/40 disabled:opacity-50"
+        className="text-xs px-3 py-2 rounded-xl bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] hover:border-[var(--color-brand-red)]/40 disabled:opacity-50"
       >
         {admin.analyticsLoading ? 'Loading…' : 'Load last 7 days'}
       </button>
@@ -45,7 +45,7 @@ export function AdminAnalyticsSection({ admin }: AdminAnalyticsSectionProps) {
                 const row = admin.analytics?.byUser[u.id]
                 return (
                   <tr key={u.id} className="border-t border-[var(--color-brand-border)]">
-                    <td className="p-2 text-white font-mono-numbers">{u.email || u.id.slice(0, 8)}</td>
+                    <td className="p-2 text-[var(--color-brand-text-primary)] font-mono-numbers">{u.email || u.id.slice(0, 8)}</td>
                     <td className="p-2">{row?.sessionStarts ?? 0}</td>
                     <td className="p-2 text-[var(--color-brand-text-secondary)]">
                       {row ? `${Math.round(row.engagedSecondsApprox / 60)} min` : '—'}

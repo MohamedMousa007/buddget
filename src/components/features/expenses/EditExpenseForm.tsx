@@ -29,7 +29,7 @@ export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClos
             type="date"
             value={f.date}
             onChange={(e) => f.setDate(e.target.value)}
-            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
+            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
           />
         </div>
 
@@ -38,7 +38,7 @@ export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClos
           <Input
             value={f.description}
             onChange={(e) => f.setDescription(e.target.value)}
-            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
+            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)]"
           />
         </div>
 
@@ -53,7 +53,7 @@ export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClos
                 f.setAmount(e.target.value)
                 f.setSubmitError('')
               }}
-              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers placeholder:text-[var(--color-brand-text-muted)]"
+              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers placeholder:text-[var(--color-brand-text-muted)]"
             />
           </div>
           <div>
@@ -64,7 +64,7 @@ export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClos
                 f.setCurrency(c)
                 f.setSubmitError('')
               }}
-              className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+              className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
             />
           </div>
         </div>
@@ -92,7 +92,7 @@ export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClos
           <Textarea
             value={f.notes}
             onChange={(e) => f.setNotes(e.target.value)}
-            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)] min-h-[60px]"
+            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] min-h-[60px]"
           />
         </div>
 

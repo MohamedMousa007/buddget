@@ -22,7 +22,7 @@ export function AuthFormErrorAlert({ error, onSignInInstead, onResendCode }: Aut
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
-          className="flex items-start gap-2 text-sm text-[#E50914]"
+          className="flex items-start gap-2 text-sm text-[var(--color-brand-red)]"
         >
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>

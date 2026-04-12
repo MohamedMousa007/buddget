@@ -486,6 +486,10 @@ export const en: Dictionary = {
     dataCancelReset: 'Keep my data',
 
     lookFeelTitle: 'Look & Feel',
+    themeLabel: 'Theme',
+    themeDark: 'Dark',
+    themeLight: 'Light',
+    themeSystem: 'System',
     showCents: 'Show cents on the dashboard',
     desktopApp: 'Install Buddget',
     appInstalled: "You\u2019re all set \u2014 app installed \u2713",

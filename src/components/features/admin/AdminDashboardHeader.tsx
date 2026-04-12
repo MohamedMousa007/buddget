@@ -21,13 +21,13 @@ export function AdminDashboardHeader({ onLock }: AdminDashboardHeaderProps) {
           </Link>
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-[var(--color-brand-red)]" />
-            <h1 className="text-xl font-bold text-white">Admin Panel</h1>
+            <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)]">Admin Panel</h1>
           </div>
         </div>
         <button
           type="button"
           onClick={onLock}
-          className="text-xs text-[var(--color-brand-text-muted)] hover:text-white transition-colors px-3 py-1.5 rounded-lg border border-[var(--color-brand-border)]"
+          className="text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)] transition-colors px-3 py-1.5 rounded-lg border border-[var(--color-brand-border)]"
         >
           Lock
         </button>

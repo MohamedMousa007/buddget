@@ -133,7 +133,7 @@ function DebtHistoryRow({
     colDate: string
   }
 }) {
-  const rowCls = isMuted ? 'opacity-75 text-[var(--color-brand-text-muted)]' : 'text-white'
+  const rowCls = isMuted ? 'opacity-75 text-[var(--color-brand-text-muted)]' : 'text-[var(--color-brand-text-primary)]'
 
   return (
     <>

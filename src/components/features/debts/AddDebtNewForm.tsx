@@ -125,7 +125,7 @@ export function AddDebtNewForm({
               placeholder={t.addDebt.placeholderName}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
+              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)]"
             />
           </div>
           <div>
@@ -134,7 +134,7 @@ export function AddDebtNewForm({
               placeholder={t.addDebt.placeholderPerson}
               value={person}
               onChange={(e) => setPerson(e.target.value)}
-              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
+              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)]"
             />
           </div>
         </div>
@@ -146,7 +146,7 @@ export function AddDebtNewForm({
           placeholder={t.addDebt.placeholderDescription}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
+          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)]"
         />
       </div>
 
@@ -175,7 +175,7 @@ export function AddDebtNewForm({
             placeholder={t.addDebt.placeholderAmount}
             value={startingBalance}
             onChange={(e) => setStartingBalance(e.target.value)}
-            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers"
+            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers"
           />
         </div>
         {!isGold ? (
@@ -184,7 +184,7 @@ export function AddDebtNewForm({
             <DebtFiatCurrencySelect
               value={currency}
               onChange={setCurrency}
-              className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+              className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
             />
           </div>
         ) : (
@@ -193,7 +193,7 @@ export function AddDebtNewForm({
             <select
               value={goldKarat}
               onChange={(e) => setGoldKarat(parseInt(e.target.value, 10) as GoldKarat)}
-              className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+              className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
             >
               <option value="24">{t.goldPurity.k24}</option>
               <option value="22">{t.goldPurity.k22}</option>
@@ -215,7 +215,7 @@ export function AddDebtNewForm({
           <div className="flex items-center justify-between gap-2 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-sm">
             <button type="button" onClick={onOpenGoal} className="min-w-0 flex-1 text-left">
               <span>🎯</span>{' '}
-              <span className="font-mono-numbers text-white">
+              <span className="font-mono-numbers text-[var(--color-brand-text-primary)]">
                 {formatCurrency(goalDraft.calculatedAmount, currency)}/
                 {goalDraft.paymentFrequency === 'monthly' ? 'mo' : goalDraft.paymentFrequency} until{' '}
                 {goalDraft.targetDate.slice(0, 7)}
@@ -224,7 +224,7 @@ export function AddDebtNewForm({
             <button
               type="button"
               onClick={onClearGoal}
-              className="text-[var(--color-brand-text-muted)] hover:text-white"
+              className="text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]"
               aria-label={t.addDebt.goalChipRemoveAria}
             >
               ✕

@@ -487,6 +487,10 @@ export interface Dictionary {
     dataCancelReset: string
 
     lookFeelTitle: string
+    themeLabel: string
+    themeDark: string
+    themeLight: string
+    themeSystem: string
     showCents: string
     desktopApp: string
     appInstalled: string

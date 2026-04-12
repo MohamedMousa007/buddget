@@ -486,6 +486,10 @@ export const ar: Dictionary = {
     dataCancelReset: 'احتفظ ببياناتي',
 
     lookFeelTitle: 'المظهر والشكل',
+    themeLabel: 'المظهر',
+    themeDark: 'داكن',
+    themeLight: 'فاتح',
+    themeSystem: 'تلقائي',
     showCents: 'إظهار الفلوس/القروش في لوحة التحكم',
     desktopApp: 'تثبيت Buddget',
     appInstalled: 'جاهز — التطبيق مثبت ✓',

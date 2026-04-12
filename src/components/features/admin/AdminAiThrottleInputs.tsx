@@ -22,7 +22,7 @@ export function AdminAiThrottleInputs({
     <>
       <div className="flex items-center justify-between gap-3 py-2">
         <div>
-          <p className="text-sm text-white">Throttle per device (IP)</p>
+          <p className="text-sm text-[var(--color-brand-text-primary)]">Throttle per device (IP)</p>
           <p className="text-[11px] text-[var(--color-brand-text-muted)]">
             Turn off for solo use; turn on to limit what each visitor can send to Gemini through your server.
           </p>
@@ -43,7 +43,7 @@ export function AdminAiThrottleInputs({
             max={1000}
             value={rateLimitMax}
             onChange={(e) => onRateLimitMax(Number(e.target.value))}
-            className="bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers"
+            className="bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers"
           />
         </div>
         <div>
@@ -54,7 +54,7 @@ export function AdminAiThrottleInputs({
             max={3600}
             value={rateLimitWindowSec}
             onChange={(e) => onRateLimitWindowSec(Number(e.target.value))}
-            className="bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers"
+            className="bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers"
           />
         </div>
       </div>

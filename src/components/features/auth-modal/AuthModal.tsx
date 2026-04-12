@@ -40,7 +40,7 @@ export function AuthModal() {
         <button
           type="button"
           onClick={() => a.closeAuthModal()}
-          className="absolute end-3 top-3 rounded-lg p-2 text-[#5A5A72] transition-colors hover:bg-white/5 hover:text-white"
+          className="absolute end-3 top-3 rounded-lg p-2 text-[var(--color-brand-text-muted)] transition-colors hover:bg-[var(--color-brand-text-primary)]/5 hover:text-[var(--color-brand-text-primary)]"
           aria-label={t.common.close}
         >
           <X className="h-5 w-5" />

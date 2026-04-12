@@ -10,12 +10,12 @@ export function BuddgyStepRent({ flow }: { flow: BuddgyFlowApi }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-white font-sans">How much is rent?</p>
+      <p className="text-sm text-[var(--color-brand-text-primary)] font-sans">How much is rent?</p>
       <div className="flex flex-wrap gap-2 items-center">
         <select
           value={flow.incomeCurrency}
           onChange={(e) => flow.setIncomeCurrency(e.target.value as typeof flow.incomeCurrency)}
-          className="cursor-pointer rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-2 py-2 text-sm text-white"
+          className="cursor-pointer rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-2 text-sm text-[var(--color-brand-text-primary)]"
         >
           {opts.map((o) => (
             <option key={o.value} value={o.value}>
@@ -30,7 +30,7 @@ export function BuddgyStepRent({ flow }: { flow: BuddgyFlowApi }) {
           value={flow.rentAmount}
           onChange={(e) => flow.setRentAmount(sanitizeBuddgyAmountTyping(e.target.value))}
           onBlur={() => flow.setRentAmount(buddgyAmountBlurDisplay(flow.rentAmount))}
-          className="min-w-[140px] flex-1 rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-3 py-2 font-mono text-sm text-white"
+          className="min-w-[140px] flex-1 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 font-mono text-sm text-[var(--color-brand-text-primary)]"
           placeholder="0.00"
         />
       </div>
@@ -39,7 +39,7 @@ export function BuddgyStepRent({ flow }: { flow: BuddgyFlowApi }) {
           type="checkbox"
           checked={flow.rentIncludes}
           onChange={(e) => flow.setRentIncludes(e.target.checked)}
-          className="h-4 w-4 rounded border-[#2A2A38] bg-[#1A1A24]"
+          className="h-4 w-4 rounded border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]"
         />
         Includes utilities
       </label>

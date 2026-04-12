@@ -17,7 +17,7 @@ export function EmptyState({ icon, title, description, action, className = '' }:
       role="status"
     >
       {icon != null ? <div className="text-4xl mb-4" aria-hidden>{icon}</div> : null}
-      <p className="text-lg font-medium text-white mb-1">{title}</p>
+      <p className="text-lg font-medium text-[var(--color-brand-text-primary)] mb-1">{title}</p>
       {description ? (
         <p className="text-sm text-[var(--color-brand-text-muted)] max-w-sm mb-6">{description}</p>
       ) : null}

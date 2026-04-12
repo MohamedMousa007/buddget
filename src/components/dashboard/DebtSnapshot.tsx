@@ -58,7 +58,7 @@ export function DebtSnapshot() {
               <div className="glass-card rounded-2xl p-4 hover:bg-[var(--color-brand-elevated)] transition-colors cursor-pointer">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-base">{debt.isGold ? '🪙' : '💵'}</span>
-                  <h4 className="text-sm font-medium text-white">{debt.name}</h4>
+                  <h4 className="text-sm font-medium text-[var(--color-brand-text-primary)]">{debt.name}</h4>
                   <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase ${
                     debt.isGold
                       ? 'bg-[var(--color-brand-gold)]/20 text-[var(--color-brand-gold)]'
@@ -73,7 +73,7 @@ export function DebtSnapshot() {
                   currency={debt.isGold ? 'XAU' : debt.currency}
                   amountInPrimary={remainingInBase}
                   variant="card"
-                  primaryClassName="text-lg font-bold text-white"
+                  primaryClassName="text-lg font-bold text-[var(--color-brand-text-primary)]"
                 />
 
                 {debt.isGold && (

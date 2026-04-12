@@ -50,12 +50,12 @@ export function MonthYearPicker({ monthFilter, onChange, className, compact }: M
         type="button"
         className={cn(
           'inline-flex items-center gap-1.5 cursor-pointer',
-          'text-white hover:text-[#A0A0B8] transition-colors duration-150',
+          'text-[var(--color-brand-text-primary)] hover:text-[var(--color-brand-text-secondary)] transition-colors duration-150',
           'outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-red)]/50',
           className
         )}
       >
-        <CalendarDays className="w-3.5 h-3.5 shrink-0 text-[#A0A0B8]" aria-hidden />
+        <CalendarDays className="w-3.5 h-3.5 shrink-0 text-[var(--color-brand-text-secondary)]" aria-hidden />
         <span className="font-medium whitespace-nowrap">{label}</span>
       </PopoverTrigger>
       <PopoverContent
@@ -71,7 +71,7 @@ export function MonthYearPicker({ monthFilter, onChange, className, compact }: M
               const mm = String(parsed.month).padStart(2, '0')
               onChange(`${y}-${mm}`)
             }}
-            className="flex-1 h-9 px-2 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+            className="flex-1 h-9 px-2 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
           >
             {years.map((y) => (
               <option key={y} value={y}>{y}</option>

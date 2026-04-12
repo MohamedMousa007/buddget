@@ -1,23 +1,35 @@
 'use client'
 
 import { useState } from 'react'
-import { Download, Palette } from 'lucide-react'
+import { Download, Palette, Moon, Sun, Monitor } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { LanguageToggle } from '@/components/ui/LanguageToggle'
 import { usePWAInstall } from '@/hooks/usePWAInstall'
 import { IosInstallDialog } from '@/components/pwa/IosInstallDialog'
 import { useT } from '@/lib/i18n'
+import { applyTheme } from '@/lib/theme/applyTheme'
 import type { FinanceStore } from '@/lib/store/types'
 
 export interface SettingsAppPreferencesSectionProps {
   store: FinanceStore
 }
 
+const THEME_OPTIONS = [
+  { value: 'light' as const, icon: Sun, labelKey: 'themeLight' as const },
+  { value: 'dark' as const, icon: Moon, labelKey: 'themeDark' as const },
+  { value: 'system' as const, icon: Monitor, labelKey: 'themeSystem' as const },
+]
+
 export function SettingsAppPreferencesSection({ store }: SettingsAppPreferencesSectionProps) {
   const t = useT()
   const { platform, canInstall, isInstalled, triggerInstall } = usePWAInstall()
   const [iosOpen, setIosOpen] = useState(false)
+
+  const handleThemeChange = (value: 'dark' | 'light' | 'system') => {
+    store.updateSettings({ theme: value })
+    applyTheme(value)
+  }
 
   return (
     <section className="glass-card rounded-2xl p-5 space-y-4">
@@ -27,12 +39,33 @@ export function SettingsAppPreferencesSection({ store }: SettingsAppPreferencesS
       </div>
 
       <div className="flex items-center justify-between">
-        <Label className="text-sm text-white">{t.settings.languageLabel}</Label>
+        <Label className="text-sm text-[var(--color-brand-text-primary)]">{t.settings.themeLabel}</Label>
+        <div className="flex rounded-lg border border-[var(--color-brand-border)] p-0.5 gap-0.5">
+          {THEME_OPTIONS.map(({ value, icon: Icon, labelKey }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => handleThemeChange(value)}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                store.settings.theme === value
+                  ? 'bg-[var(--color-brand-red)] text-white'
+                  : 'text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {t.settings[labelKey]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <Label className="text-sm text-[var(--color-brand-text-primary)]">{t.settings.languageLabel}</Label>
         <LanguageToggle size="sm" />
       </div>
 
       <div className="flex items-center justify-between">
-        <Label className="text-sm text-white">{t.settings.showCents}</Label>
+        <Label className="text-sm text-[var(--color-brand-text-primary)]">{t.settings.showCents}</Label>
         <Switch
           checked={store.settings.showCentsInDashboard}
           onCheckedChange={(val) => store.updateSettings({ showCentsInDashboard: val })}

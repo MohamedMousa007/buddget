@@ -42,7 +42,7 @@ export function BottomNavMorePanel({
                   'flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors',
                   active
                     ? 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-red)]'
-                    : 'text-white hover:bg-[var(--color-brand-elevated)]'
+                    : 'text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)]'
                 )}
               >
                 <m.icon className="h-5 w-5 shrink-0 opacity-90" />

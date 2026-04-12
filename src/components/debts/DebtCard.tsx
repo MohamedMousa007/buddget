@@ -115,7 +115,7 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
           >
             <Check className="w-8 h-8 text-[var(--color-brand-green)]" strokeWidth={3} />
           </motion.div>
-          <p className="text-lg font-semibold text-white text-center">{t.debts.celebrationTitle}</p>
+          <p className="text-lg font-semibold text-[var(--color-brand-text-primary)] text-center">{t.debts.celebrationTitle}</p>
           <p className="text-xs text-[var(--color-brand-text-muted)]">{t.debts.celebrationTapHint}</p>
         </motion.button>
       ) : null}
@@ -124,7 +124,7 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
         <span className="text-2xl mt-0.5">{debt.isGold ? '🪙' : '💵'}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-lg font-semibold text-white uppercase">{debt.name}</h3>
+            <h3 className="text-lg font-semibold text-[var(--color-brand-text-primary)] uppercase">{debt.name}</h3>
             <span
               className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
                 debt.isGold
@@ -170,7 +170,7 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
               currency={debt.isGold ? 'XAU' : debt.currency}
               amountInPrimary={startingInBase}
               variant="card"
-              primaryClassName="text-white"
+              primaryClassName="text-[var(--color-brand-text-primary)]"
             />
             {debt.isGold && (
               <span className="text-xs text-[var(--color-brand-text-muted)] ms-1.5">
@@ -188,7 +188,7 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
               currency={debt.isGold ? 'XAU' : debt.currency}
               amountInPrimary={remainingInBase}
               variant="card"
-              primaryClassName="text-white font-semibold"
+              primaryClassName="text-[var(--color-brand-text-primary)] font-semibold"
             />
             {debt.isGold && (
               <span className="text-xs text-[var(--color-brand-text-muted)] ms-1.5">

@@ -33,7 +33,7 @@ export function SettingsGuestAccountCard({ onOpenAuth }: SettingsGuestAccountCar
         <button
           type="button"
           onClick={onOpenAuth}
-          className="inline-flex items-center justify-center px-4 py-2 rounded-xl border border-[var(--color-brand-border)] text-sm text-white hover:bg-[var(--color-brand-elevated)] transition-colors"
+          className="inline-flex items-center justify-center px-4 py-2 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
         >
           {t.settings.guestSignIn}
         </button>

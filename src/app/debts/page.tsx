@@ -55,7 +55,7 @@ export default function DebtsPage() {
     <div className="min-h-screen">
       <PageHeader>
         <PageHeaderContent className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)] flex items-center gap-2">
             <Landmark className="w-6 h-6 text-[var(--color-brand-red)]" />
             {t.debts.pageTitle}
           </h1>
@@ -98,7 +98,7 @@ export default function DebtsPage() {
           <>
             {activeDebts.length === 0 ? (
               <div className="glass-card rounded-2xl p-8 text-center space-y-2">
-                <p className="text-lg font-semibold text-white">{t.debts.emptyActiveTitle}</p>
+                <p className="text-lg font-semibold text-[var(--color-brand-text-primary)]">{t.debts.emptyActiveTitle}</p>
                 <p className="text-sm text-[var(--color-brand-text-muted)]">{t.debts.emptyActiveDesc}</p>
               </div>
             ) : (

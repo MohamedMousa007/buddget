@@ -63,7 +63,7 @@ export function BudgetPlanMembers({
     <section className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/40 p-4">
       <div className="flex items-center gap-2 mb-3">
         <Users className="h-5 w-5 text-[var(--color-brand-red)]" />
-        <h2 className="text-base font-semibold text-white">{t.sharedBudget.membersTitle}</h2>
+        <h2 className="text-base font-semibold text-[var(--color-brand-text-primary)]">{t.sharedBudget.membersTitle}</h2>
       </div>
       {error ?
         <p className="text-xs text-amber-200/90 mb-2">{error}</p>
@@ -74,7 +74,7 @@ export function BudgetPlanMembers({
             key={r.id}
             className="flex items-center justify-between gap-2 text-sm text-[var(--color-brand-text-muted)]"
           >
-            <span className="text-white">
+            <span className="text-[var(--color-brand-text-primary)]">
               {r.user_id === user?.id ?
                 `${t.sharedBudget.you}`
               : r.invited_email ?
@@ -92,7 +92,7 @@ export function BudgetPlanMembers({
         <button
           type="button"
           onClick={() => void onSetDefault()}
-          className="mb-3 w-full cursor-pointer rounded-lg border border-[var(--color-brand-border)] py-2 text-xs font-medium text-white hover:bg-[var(--color-brand-card)]"
+          className="mb-3 w-full cursor-pointer rounded-lg border border-[var(--color-brand-border)] py-2 text-xs font-medium text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-card)]"
         >
           {t.sharedBudget.setAsDefaultPlan}
         </button>

@@ -68,7 +68,7 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
         aria-hidden
       />
       <div
-        className="relative z-10 bg-[#111118] border border-[#2A2A38] rounded-2xl max-w-lg w-full mx-4 p-6 max-h-[80vh] overflow-y-auto"
+        className="relative z-10 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl max-w-lg w-full mx-4 p-6 max-h-[80vh] overflow-y-auto"
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
@@ -76,13 +76,13 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
         <button
           type="button"
           onClick={handleClose}
-          className="absolute end-3 top-3 p-2 rounded-lg text-[#5A5A72] hover:bg-white/5 hover:text-white transition-colors"
+          className="absolute end-3 top-3 p-2 rounded-lg text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-text-primary)]/5 hover:text-[var(--color-brand-text-primary)] transition-colors"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <h2 className="text-lg font-semibold text-white mb-4">{t.profile.avatarModalTitle}</h2>
+        <h2 className="text-lg font-semibold text-[var(--color-brand-text-primary)] mb-4">{t.profile.avatarModalTitle}</h2>
 
         <div className="flex gap-2 mb-5">
           {(['choose', 'upload', 'remove'] as const).map((tabKey) => (
@@ -94,7 +94,7 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
                 'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
                 tab === tabKey
                   ? 'bg-[var(--color-brand-red)] text-white'
-                  : 'bg-[var(--color-brand-elevated)] text-[#A0A0B8] hover:text-white'
+                  : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)]'
               )}
             >
               {tabKey === 'choose' ? t.profile.avatarTabPick : tabKey === 'upload' ? t.profile.avatarTabUpload : t.profile.avatarTabRemove}
@@ -116,8 +116,8 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
                   className={cn(
                     'w-16 h-16 rounded-full overflow-hidden ring-2 transition-all duration-150 cursor-pointer',
                     isSelected
-                      ? 'ring-[#E50914] scale-105'
-                      : 'ring-transparent hover:ring-[#E50914]'
+                      ? 'ring-[var(--color-brand-red)] scale-105'
+                      : 'ring-transparent hover:ring-[var(--color-brand-red)]'
                   )}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -139,14 +139,14 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
             />
             {uploadPreview ? (
               <div className="flex flex-col items-center gap-3">
-                <div className="w-32 h-32 rounded-full overflow-hidden ring-2 ring-[#2A2A38]">
+                <div className="w-32 h-32 rounded-full overflow-hidden ring-2 ring-[var(--color-brand-border)]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={uploadPreview} alt="Preview" className="w-full h-full object-cover" />
                 </div>
                 <button
                   type="button"
                   onClick={() => { setUploadPreview(null); fileRef.current?.click() }}
-                  className="text-sm text-[#A0A0B8] hover:text-white transition-colors"
+                  className="text-sm text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] transition-colors"
                 >
                   {t.profile.avatarChooseDifferent}
                 </button>
@@ -155,10 +155,10 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="w-full py-10 rounded-xl border-2 border-dashed border-[#2A2A38] hover:border-[#E50914] text-[#A0A0B8] hover:text-white transition-colors text-center"
+                className="w-full py-10 rounded-xl border-2 border-dashed border-[var(--color-brand-border)] hover:border-[var(--color-brand-red)] text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] transition-colors text-center"
               >
                 <p className="text-sm font-medium">{t.profile.avatarClickToUpload}</p>
-                <p className="text-xs text-[#5A5A72] mt-1">{t.profile.avatarClickToUploadHint}</p>
+                <p className="text-xs text-[var(--color-brand-text-muted)] mt-1">{t.profile.avatarClickToUploadHint}</p>
               </button>
             )}
           </div>
@@ -167,29 +167,29 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
         {tab === 'remove' && (
           <div className="flex flex-col items-center gap-4 py-4">
             {currentSrc ? (
-              <div className="relative w-24 h-24 rounded-full overflow-hidden ring-2 ring-[#E50914]">
+              <div className="relative w-24 h-24 rounded-full overflow-hidden ring-2 ring-[var(--color-brand-red)]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={currentSrc} alt="" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <X className="w-8 h-8 text-[#E50914]" />
+                  <X className="w-8 h-8 text-[var(--color-brand-red)]" />
                 </div>
               </div>
             ) : (
-              <div className="w-24 h-24 rounded-full bg-[var(--color-brand-elevated)] flex items-center justify-center ring-2 ring-[#2A2A38]">
-                <p className="text-xs text-[#5A5A72]">{t.profile.avatarNoPhoto}</p>
+              <div className="w-24 h-24 rounded-full bg-[var(--color-brand-elevated)] flex items-center justify-center ring-2 ring-[var(--color-brand-border)]">
+                <p className="text-xs text-[var(--color-brand-text-muted)]">{t.profile.avatarNoPhoto}</p>
               </div>
             )}
-            <p className="text-sm text-[#A0A0B8] text-center">
+            <p className="text-sm text-[var(--color-brand-text-secondary)] text-center">
               {t.profile.avatarRemoveDesc}
             </p>
           </div>
         )}
 
-        <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-[#2A2A38]">
+        <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-[var(--color-brand-border)]">
           <button
             type="button"
             onClick={handleClose}
-            className="px-4 py-2 rounded-xl border border-[#2A2A38] text-sm text-[#A0A0B8] hover:text-white hover:bg-[var(--color-brand-elevated)] transition-colors"
+            className="px-4 py-2 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
           >
             {t.common.neverMind}
           </button>

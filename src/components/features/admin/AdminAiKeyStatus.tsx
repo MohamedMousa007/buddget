@@ -40,7 +40,7 @@ export function AdminAiKeyStatus({ config }: AdminAiKeyStatusProps) {
 
         <div className="flex items-center justify-between py-2 border-t border-[var(--color-brand-border)]">
           <span className="text-sm text-[var(--color-brand-text-secondary)]">Model</span>
-          <span className="text-sm font-mono-numbers text-white">{config?.ai.model || '—'}</span>
+          <span className="text-sm font-mono-numbers text-[var(--color-brand-text-primary)]">{config?.ai.model || '—'}</span>
         </div>
 
         <div className="flex items-center justify-between py-2 border-t border-[var(--color-brand-border)]">

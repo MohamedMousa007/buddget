@@ -15,12 +15,12 @@ export function BuddgyRebuildPrompt({
   onCancel: () => void
 }) {
   return (
-    <div className="w-full max-w-md rounded-xl border border-[#2A2A38] bg-[#1A1A24] p-4 space-y-3 text-left">
+    <div className="w-full max-w-md rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-4 space-y-3 text-left">
       <p className="text-xs text-[var(--color-brand-text-muted)] leading-relaxed">
         {monthlyIncome > 0.0001 ?
           <>
             Currently{' '}
-            <span className="font-mono text-white">
+            <span className="font-mono text-[var(--color-brand-text-primary)]">
               {formatMoneyAmount(monthlyIncome, baseCurrency)}
             </span>{' '}
             income — update plan?
@@ -38,7 +38,7 @@ export function BuddgyRebuildPrompt({
         <button
           type="button"
           onClick={onCancel}
-          className="cursor-pointer rounded-lg border border-[#2A2A38] bg-transparent px-4 py-2 text-xs font-medium text-[var(--color-brand-text-secondary)]"
+          className="cursor-pointer rounded-lg border border-[var(--color-brand-border)] bg-transparent px-4 py-2 text-xs font-medium text-[var(--color-brand-text-secondary)]"
         >
           Cancel
         </button>

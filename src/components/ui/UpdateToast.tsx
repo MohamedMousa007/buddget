@@ -30,11 +30,11 @@ export function UpdateToast() {
             transition={{ type: 'spring', stiffness: 420, damping: 32 }}
             className="pointer-events-auto w-full max-w-md"
           >
-            <div className="relative flex flex-col gap-3 rounded-2xl border border-white/[0.08] bg-[var(--color-brand-card)]/70 px-4 py-3.5 shadow-lg shadow-blue-500/20 backdrop-blur-xl ring-1 ring-blue-500/20 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="relative flex flex-col gap-3 rounded-2xl border border-[var(--color-brand-text-primary)]/[0.08] bg-[var(--color-brand-card)]/70 px-4 py-3.5 shadow-lg shadow-blue-500/20 backdrop-blur-xl ring-1 ring-blue-500/20 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <button
                 type="button"
                 onClick={dismiss}
-                className="absolute end-2 top-2 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--color-brand-text-muted)] transition-colors hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 sm:end-3 sm:top-3"
+                className="absolute end-2 top-2 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--color-brand-text-muted)] transition-colors hover:bg-[var(--color-brand-text-primary)]/5 hover:text-[var(--color-brand-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 sm:end-3 sm:top-3"
                 aria-label="Dismiss update notice"
               >
                 <X className="h-4 w-4" aria-hidden />
@@ -44,7 +44,7 @@ export function UpdateToast() {
                   <Sparkles className="h-4 w-4" aria-hidden />
                 </span>
                 <p className="text-sm leading-snug text-[var(--color-brand-text-secondary)]">
-                  <span className="font-medium text-white">{t.pwa.updateTitle}</span>
+                  <span className="font-medium text-[var(--color-brand-text-primary)]">{t.pwa.updateTitle}</span>
                   <span className="mt-0.5 block text-xs text-[var(--color-brand-text-muted)]">
                     {t.pwa.updateSubtitle}
                   </span>
@@ -54,7 +54,7 @@ export function UpdateToast() {
                 <button
                   type="button"
                   onClick={dismiss}
-                  className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-[var(--color-brand-text-secondary)] transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50"
+                  className="rounded-xl border border-[var(--color-brand-text-primary)]/10 bg-[var(--color-brand-text-primary)]/5 px-4 py-2.5 text-sm font-medium text-[var(--color-brand-text-secondary)] transition-colors hover:bg-[var(--color-brand-text-primary)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50"
                 >
                   {t.pwa.updateNotNow}
                 </button>

@@ -128,7 +128,7 @@ export function SubscriptionsOnboardingPanel({
               key={line.id}
               className="rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/40 p-3 space-y-2"
             >
-              <label className="flex items-center gap-2 text-sm text-white cursor-pointer">
+              <label className="flex items-center gap-2 text-sm text-[var(--color-brand-text-primary)] cursor-pointer">
                 <input
                   type="checkbox"
                   checked={line.enabled}
@@ -149,7 +149,7 @@ export function SubscriptionsOnboardingPanel({
                       min={0}
                       value={line.amount || ''}
                       onChange={(e) => updateLine(line.id, { amount: parseFloat(e.target.value) || 0 })}
-                      className="mt-0.5 h-9 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers text-sm"
+                      className="mt-0.5 h-9 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers text-sm"
                     />
                   </div>
                   <div>
@@ -159,7 +159,7 @@ export function SubscriptionsOnboardingPanel({
                     <FiatCurrencySelect
                       value={line.currency}
                       onChange={(c) => updateLine(line.id, { currency: c })}
-                      className="mt-0.5 w-full h-9 px-2 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                      className="mt-0.5 w-full h-9 px-2 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
                     />
                   </div>
                 </div>
@@ -180,7 +180,7 @@ export function SubscriptionsOnboardingPanel({
                 placeholder={o.subscriptionCustomPlaceholder}
                 value={line.label}
                 onChange={(e) => updateLine(line.id, { label: e.target.value.trimStart() })}
-                className="flex-1 h-9 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white text-sm"
+                className="flex-1 h-9 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
               />
               <button
                 type="button"
@@ -197,12 +197,12 @@ export function SubscriptionsOnboardingPanel({
                 placeholder={o.subscriptionAmountPlaceholder}
                 value={line.amount || ''}
                 onChange={(e) => updateLine(line.id, { amount: parseFloat(e.target.value) || 0 })}
-                className="h-9 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers text-sm"
+                className="h-9 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers text-sm"
               />
               <FiatCurrencySelect
                 value={line.currency}
                 onChange={(c) => updateLine(line.id, { currency: c })}
-                className="h-9 px-2 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                className="h-9 px-2 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
               />
             </div>
           </div>

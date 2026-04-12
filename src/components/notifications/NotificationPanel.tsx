@@ -10,9 +10,9 @@ import { useT } from '@/lib/i18n'
 import type { AppNotification } from '@/lib/notifications/useNotifications'
 
 const SEVERITY_DOT: Record<AppNotification['severity'], string> = {
-  critical: '#E50914',
-  warning: '#FF9F0A',
-  info: '#1DB954',
+  critical: 'var(--color-brand-red)',
+  warning: 'var(--color-brand-amber)',
+  info: 'var(--color-brand-green)',
 }
 
 interface NotificationPanelProps {
@@ -53,23 +53,23 @@ export function NotificationPanel({ open, onClose, notifications, anchorRef }: N
   return (
     <div
       ref={panelRef}
-      className="absolute top-full end-0 z-50 mt-1.5 w-80 max-h-[400px] flex flex-col rounded-2xl border border-[#2A2A38] bg-[#111118] shadow-xl ring-1 ring-white/5"
+      className="absolute top-full end-0 z-50 mt-1.5 w-80 max-h-[400px] flex flex-col rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] shadow-xl ring-1 ring-[var(--color-brand-text-primary)]/5"
       role="dialog"
       aria-label={t.notifications.title}
     >
-      <div className="shrink-0 border-b border-[#2A2A38] px-3 py-2.5">
-        <p className="text-sm font-semibold text-white">{t.notifications.title}</p>
+      <div className="shrink-0 border-b border-[var(--color-brand-border)] px-3 py-2.5">
+        <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{t.notifications.title}</p>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 px-4 py-10 text-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1A1A24] text-[#1DB954]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] text-[var(--color-brand-green)]">
               <Check className="h-5 w-5" strokeWidth={2.5} />
             </div>
-            <p className="text-sm text-[#A0A0B8]">{t.notifications.emptyState}</p>
+            <p className="text-sm text-[var(--color-brand-text-secondary)]">{t.notifications.emptyState}</p>
           </div>
         ) : (
-          <ul className="divide-y divide-[#2A2A38]">
+          <ul className="divide-y divide-[var(--color-brand-border)]">
             {notifications.map((n) => (
               <li key={n.id} className="px-3 py-3">
                 <div className="flex gap-2.5">
@@ -79,9 +79,9 @@ export function NotificationPanel({ open, onClose, notifications, anchorRef }: N
                     aria-hidden
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-white">{n.title}</p>
-                    <p className="mt-0.5 text-xs leading-relaxed text-[#A0A0B8]">{n.body}</p>
-                    <p className="mt-1 text-[10px] text-[#6B6B7A]">{formatRelativeTime(n.createdAt)}</p>
+                    <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">{n.title}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-[var(--color-brand-text-secondary)]">{n.body}</p>
+                    <p className="mt-1 text-[10px] text-[var(--color-brand-text-muted)]">{formatRelativeTime(n.createdAt)}</p>
                   </div>
                 </div>
               </li>

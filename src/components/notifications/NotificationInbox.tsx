@@ -14,9 +14,9 @@ import {
 } from '@/lib/debts/recurringDebtDueHandlers'
 
 const SEVERITY_DOT: Record<'warning' | 'info' | 'critical', string> = {
-  critical: '#E50914',
-  warning: '#FF9F0A',
-  info: '#1DB954',
+  critical: 'var(--color-brand-red)',
+  warning: 'var(--color-brand-amber)',
+  info: 'var(--color-brand-green)',
 }
 
 /**
@@ -60,7 +60,7 @@ export function NotificationInbox({ className }: { className?: string }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="relative cursor-pointer inline-flex items-center justify-center rounded-lg border border-[var(--color-brand-border)] p-2 text-white hover:bg-[var(--color-brand-elevated)]"
+        className="relative cursor-pointer inline-flex items-center justify-center rounded-lg border border-[var(--color-brand-border)] p-2 text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)]"
         aria-label={t.notifications.title}
         aria-expanded={open}
       >
@@ -74,12 +74,12 @@ export function NotificationInbox({ className }: { className?: string }) {
 
       {open ? (
         <div
-          className="absolute top-full end-0 z-50 mt-1.5 w-80 max-h-[min(420px,70vh)] overflow-y-auto rounded-2xl border border-[#2A2A38] bg-[#111118] shadow-xl ring-1 ring-white/5"
+          className="absolute top-full end-0 z-50 mt-1.5 w-80 max-h-[min(420px,70vh)] overflow-y-auto rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] shadow-xl ring-1 ring-[var(--color-brand-text-primary)]/5"
           role="dialog"
           aria-label={t.notifications.title}
         >
-          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#2A2A38] bg-[#111118] px-3 py-2.5">
-            <p className="text-sm font-semibold text-white">{t.notifications.title}</p>
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-3 py-2.5">
+            <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{t.notifications.title}</p>
             <button
               type="button"
               onClick={() => void markAllRead()}
@@ -108,7 +108,7 @@ export function NotificationInbox({ className }: { className?: string }) {
               />
             ))}
             {notifications.length > 0 ? (
-              <ul className="divide-y divide-[#2A2A38]">
+              <ul className="divide-y divide-[var(--color-brand-border)]">
                 {notifications.map((n) => (
                   <li key={n.id} className="py-3">
                     <div className="flex gap-2.5">
@@ -118,8 +118,8 @@ export function NotificationInbox({ className }: { className?: string }) {
                         aria-hidden
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-white">{n.title}</p>
-                        <p className="mt-0.5 text-xs leading-relaxed text-[#A0A0B8]">{n.body}</p>
+                        <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">{n.title}</p>
+                        <p className="mt-0.5 text-xs leading-relaxed text-[var(--color-brand-text-secondary)]">{n.body}</p>
                         {n.type === 'recurring_due' && n.recurringId ? (
                           <div className="mt-2 flex flex-wrap gap-2">
                             <button
@@ -134,7 +134,7 @@ export function NotificationInbox({ className }: { className?: string }) {
                             <button
                               type="button"
                               onClick={() => snoozeRecurringDebtPayment(n.recurringId!)}
-                              className="rounded-lg border border-[#2A2A38] px-2.5 py-1 text-xs text-[#A0A0B8] hover:bg-[#1A1A24]"
+                              className="rounded-lg border border-[var(--color-brand-border)] px-2.5 py-1 text-xs text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
                             >
                               {t.notifications.recurringSnooze}
                             </button>
@@ -147,7 +147,7 @@ export function NotificationInbox({ className }: { className?: string }) {
               </ul>
             ) : null}
             {notifications.length === 0 && inviteRows.length === 0 ? (
-              <p className="text-sm text-[#A0A0B8] text-center py-8">{t.notifications.emptyState}</p>
+              <p className="text-sm text-[var(--color-brand-text-secondary)] text-center py-8">{t.notifications.emptyState}</p>
             ) : null}
           </div>
         </div>

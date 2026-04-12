@@ -24,7 +24,7 @@ export function OnboardingPlanPickerCategoryGrid({
 
   return (
     <div>
-      <p className="text-xs font-medium text-white mb-3">{o.planPickerSection}</p>
+      <p className="text-xs font-medium text-[var(--color-brand-text-primary)] mb-3">{o.planPickerSection}</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {ONBOARDING_PLAN_DISPLAY_CATEGORIES.map((c) => {
           const pct = percents[c] ?? 0
@@ -35,14 +35,14 @@ export function OnboardingPlanPickerCategoryGrid({
               className="rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/35 p-3 flex flex-col gap-2"
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="text-sm text-white font-medium">{t.categories[c] ?? c}</span>
+                <span className="text-sm text-[var(--color-brand-text-primary)] font-medium">{t.categories[c] ?? c}</span>
                 <div className="flex items-center gap-1">
                   <Input
                     type="text"
                     inputMode="decimal"
                     value={String(pct)}
                     onChange={(e) => onPctChange(c, e.target.value)}
-                    className="w-14 h-8 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers text-xs px-2"
+                    className="w-14 h-8 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers text-xs px-2"
                   />
                   <span className="text-[var(--color-brand-text-muted)] text-xs">%</span>
                 </div>
@@ -58,7 +58,7 @@ export function OnboardingPlanPickerCategoryGrid({
                   value={monthlyTakeHome > 0 ? String(Math.round(amt * 100) / 100) : ''}
                   onChange={(e) => onAmtChange(c, e.target.value)}
                   placeholder={monthlyTakeHome <= 0 ? o.planPickerPlaceholderNoIncome : '0'}
-                  className="flex-1 min-w-[6rem] h-8 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers text-xs px-2"
+                  className="flex-1 min-w-[6rem] h-8 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers text-xs px-2"
                 />
               </div>
             </div>

@@ -46,7 +46,7 @@ export function OnboardingBanner() {
           <button
             type="button"
             onClick={dismiss}
-            className="p-2 rounded-xl border border-[var(--color-brand-border)] text-[var(--color-brand-text-muted)] hover:text-white hover:bg-[var(--color-brand-elevated)] transition-colors"
+            className="p-2 rounded-xl border border-[var(--color-brand-border)] text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
             aria-label="Dismiss onboarding reminder"
           >
             <X className="w-4 h-4" />

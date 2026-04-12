@@ -29,15 +29,15 @@ export function AuthForgotStep({
   const t = useT()
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-white text-center">{t.auth.forgotTitle}</h2>
+      <h2 className="text-lg font-semibold text-[var(--color-brand-text-primary)] text-center">{t.auth.forgotTitle}</h2>
       {forgotSuccess ? (
-        <p className="text-sm text-center text-[#5A5A72]">{t.auth.forgotSuccess}</p>
+        <p className="text-sm text-center text-[var(--color-brand-text-muted)]">{t.auth.forgotSuccess}</p>
       ) : (
         <>
           <div>
-            <label className="text-xs text-[#5A5A72] mb-1 block">{t.auth.forgotLabelEmail}</label>
+            <label className="text-xs text-[var(--color-brand-text-muted)] mb-1 block">{t.auth.forgotLabelEmail}</label>
             <div className="relative">
-              <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A5A72]" />
+              <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
               <input
                 type="email"
                 value={email}
@@ -53,7 +53,7 @@ export function AuthForgotStep({
           </AuthPrimaryButton>
         </>
       )}
-      <button type="button" onClick={onBackToSignIn} className="w-full text-sm text-[#5A5A72] hover:text-white">
+      <button type="button" onClick={onBackToSignIn} className="w-full text-sm text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]">
         {t.auth.forgotBackToSignIn}
       </button>
     </div>

@@ -25,7 +25,7 @@ interface ProfileDropdownProps {
 }
 
 const itemClass =
-  'flex items-center gap-3 px-4 py-2.5 text-sm text-[#A0A0B8] hover:text-white hover:bg-[#1A1A24] transition-colors duration-150 cursor-pointer w-full'
+  'flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors duration-150 cursor-pointer w-full'
 
 export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdownProps) {
   const router = useRouter()
@@ -92,7 +92,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
   if (isGuest) {
     return (
       <div
-        className="absolute top-full end-0 mt-2 z-50 w-56 bg-[#111118] border border-[#2A2A38] rounded-2xl shadow-2xl overflow-hidden"
+        className="absolute top-full end-0 mt-2 z-50 w-56 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl shadow-2xl overflow-hidden"
         role="menu"
       >
         <button
@@ -125,11 +125,11 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
 
   return (
     <div
-      className="absolute top-full end-0 mt-2 z-50 w-56 bg-[#111118] border border-[#2A2A38] rounded-2xl shadow-2xl overflow-hidden"
+      className="absolute top-full end-0 mt-2 z-50 w-56 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl shadow-2xl overflow-hidden"
       role="menu"
     >
       <div className="flex items-center gap-3 px-4 py-3">
-        <div className="w-10 h-10 rounded-full overflow-hidden border border-[#2A2A38] bg-[var(--color-brand-elevated)] flex items-center justify-center shrink-0">
+        <div className="w-10 h-10 rounded-full overflow-hidden border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] flex items-center justify-center shrink-0">
           {avatarSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={avatarSrc} alt="" className="w-full h-full object-cover" width={40} height={40} />
@@ -138,14 +138,14 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
           )}
         </div>
         <div className={cn('min-w-0', locale === 'ar' && 'text-end')}>
-          <p className="text-sm font-medium text-white truncate">{displayName}</p>
+          <p className="text-sm font-medium text-[var(--color-brand-text-primary)] truncate">{displayName}</p>
           {displayEmail ? (
-            <p className="text-xs text-[#A0A0B8] truncate">{displayEmail}</p>
+            <p className="text-xs text-[var(--color-brand-text-secondary)] truncate">{displayEmail}</p>
           ) : null}
         </div>
       </div>
 
-      <div className="border-t border-[#2A2A38]" />
+      <div className="border-t border-[var(--color-brand-border)]" />
 
       <button type="button" onClick={() => navigate('/profile')} className={itemClass} role="menuitem">
         <User className="w-4 h-4 shrink-0" />
@@ -158,11 +158,11 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
 
       {configured ? (
         <>
-          <div className="border-t border-[#2A2A38]" />
+          <div className="border-t border-[var(--color-brand-border)]" />
           <button
             type="button"
             onClick={handleSignOut}
-            className={cn(itemClass, 'text-[#E50914] hover:text-[#E50914]')}
+            className={cn(itemClass, 'text-[var(--color-brand-red)] hover:text-[var(--color-brand-red)]')}
             role="menuitem"
           >
             <LogOut className="w-4 h-4 shrink-0" />

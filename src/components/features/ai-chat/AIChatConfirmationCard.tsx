@@ -37,7 +37,7 @@ export function AIChatConfirmationCard({
     toShow.length === 1 && priorUserText && looksLikeMultipleIntents(priorUserText)
 
   return (
-    <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
+    <div className="mt-3 pt-3 border-t border-[var(--color-brand-text-primary)]/10 space-y-2">
       {multiIntentHint ? (
         <p className="text-[11px] text-amber-200/90 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2 py-1.5">
           {t.ai.multiIntentHint}
@@ -48,7 +48,7 @@ export function AIChatConfirmationCard({
         return (
           <div
             key={idx}
-            className="text-xs space-y-1 text-white/80 pb-2 border-b border-white/5 last:border-0 last:pb-0"
+            className="text-xs space-y-1 text-[var(--color-brand-text-primary)]/80 pb-2 border-b border-[var(--color-brand-text-primary)]/5 last:border-0 last:pb-0"
           >
             <AIChatActionPreview action={item.action} data={d} baseCurrency={baseCurrency} />
           </div>
@@ -67,7 +67,7 @@ export function AIChatConfirmationCard({
         <button
           type="button"
           onClick={() => onEdit(message)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-white text-xs font-medium border border-white/10"
+          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)] text-xs font-medium border border-[var(--color-brand-text-primary)]/10"
         >
           <Pencil className="w-3 h-3" />
           {t.ai.confirmEdit}

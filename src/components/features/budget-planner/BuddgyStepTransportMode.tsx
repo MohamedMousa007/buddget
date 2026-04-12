@@ -25,7 +25,7 @@ export function BuddgyStepTransportMode({ flow }: { flow: BuddgyFlowApi }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-white font-sans">How do you get around?</p>
+      <p className="text-sm text-[var(--color-brand-text-primary)] font-sans">How do you get around?</p>
       <div className="flex flex-wrap gap-2">
         {modes.map((m) => {
           const selected = flow.transportMode === m.id
@@ -37,7 +37,7 @@ export function BuddgyStepTransportMode({ flow }: { flow: BuddgyFlowApi }) {
               className={
                 selected ?
                   'cursor-pointer rounded-full border border-transparent bg-[var(--color-brand-red)] px-4 py-2 text-sm font-medium text-white'
-                : 'cursor-pointer rounded-full border border-[#2A2A38] bg-[#1A1A24] px-4 py-2 text-sm font-medium text-white'
+                : 'cursor-pointer rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-4 py-2 text-sm font-medium text-[var(--color-brand-text-primary)]'
               }
             >
               {m.label}

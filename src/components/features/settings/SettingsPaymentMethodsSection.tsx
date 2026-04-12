@@ -41,7 +41,7 @@ export function SettingsPaymentMethodsSection({ store, onAddClick }: SettingsPay
             <div className="flex items-center gap-3">
               <span className="w-3 h-3 rounded-full" style={{ backgroundColor: method.color || '#fff' }} />
               <div>
-                <p className="text-sm text-white">{method.name}</p>
+                <p className="text-sm text-[var(--color-brand-text-primary)]">{method.name}</p>
                 <p className="text-xs text-[var(--color-brand-text-muted)]">
                   {method.type.replace('_', ' ')} · {method.currency}
                 </p>

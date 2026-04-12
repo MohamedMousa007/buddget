@@ -60,7 +60,7 @@ export function ProfileOnboardingSection({
                   <CircleDashed className="w-4 h-4 text-[var(--color-brand-text-muted)] shrink-0 mt-0.5" aria-hidden />
                 )}
                 <div>
-                  <p className="text-xs font-medium text-white">{row.label}</p>
+                  <p className="text-xs font-medium text-[var(--color-brand-text-primary)]">{row.label}</p>
                   <p className="text-[10px] text-[var(--color-brand-text-muted)]">{row.description}</p>
                 </div>
               </li>

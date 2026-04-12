@@ -50,7 +50,7 @@ export function BudgetPlannerCategoryRowHeader({
       <button
         type="button"
         onClick={onToggleOpen}
-        className="cursor-pointer p-1 rounded-lg text-[var(--color-brand-text-muted)] hover:text-white"
+        className="cursor-pointer p-1 rounded-lg text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]"
         aria-expanded={open}
         aria-label={labels.expandCategory}
       >

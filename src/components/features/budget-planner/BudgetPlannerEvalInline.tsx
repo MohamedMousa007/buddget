@@ -12,30 +12,30 @@ function presentationForRating(rating: BudgetPlanEvalRating, t: ReturnType<typeo
   switch (rating) {
     case 'Realistic':
       return {
-        dot: 'bg-[#1DB954]',
-        labelClass: 'text-[#1DB954]',
+        dot: 'bg-[var(--color-brand-green)]',
+        labelClass: 'text-[var(--color-brand-green)]',
         label: t.budgetPlanner.aiEvalStatusGood,
         tip: t.budgetPlanner.aiEvalTipGood,
       }
     case 'Tight':
       return {
-        dot: 'bg-[#FF9F0A]',
-        labelClass: 'text-[#FF9F0A]',
+        dot: 'bg-[var(--color-brand-amber)]',
+        labelClass: 'text-[var(--color-brand-amber)]',
         label: t.budgetPlanner.aiEvalStatusNeedsAdjustment,
         tip: t.budgetPlanner.aiEvalTipTight,
       }
     case 'Needs Adjustment':
     case 'Unrealistic':
       return {
-        dot: 'bg-[#E50914]',
-        labelClass: 'text-[#E50914]',
+        dot: 'bg-[var(--color-brand-red)]',
+        labelClass: 'text-[var(--color-brand-red)]',
         label: t.budgetPlanner.aiEvalStatusUnrealistic,
         tip: t.budgetPlanner.aiEvalTipUnrealistic,
       }
     default: {
       return {
-        dot: 'bg-[#1DB954]',
-        labelClass: 'text-[#1DB954]',
+        dot: 'bg-[var(--color-brand-green)]',
+        labelClass: 'text-[var(--color-brand-green)]',
         label: t.budgetPlanner.aiEvalStatusGood,
         tip: t.budgetPlanner.aiEvalTipGood,
       }

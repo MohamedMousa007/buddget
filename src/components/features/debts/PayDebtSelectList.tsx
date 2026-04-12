@@ -39,7 +39,7 @@ export function PayDebtSelectList({ debts, onSelect }: PayDebtSelectListProps) {
             >
               <span className="text-lg shrink-0">{emoji}</span>
               <span className="flex-1 min-w-0">
-                <span className="block text-sm font-medium text-white truncate">{d.name}</span>
+                <span className="block text-sm font-medium text-[var(--color-brand-text-primary)] truncate">{d.name}</span>
               </span>
               <span className="text-sm font-mono-numbers text-[var(--color-brand-text-secondary)] shrink-0">
                 {d.isGold ? `${rem.toFixed(2)}g` : formatCurrency(rem, d.currency)}

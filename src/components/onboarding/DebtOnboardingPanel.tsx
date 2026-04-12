@@ -90,7 +90,7 @@ export function DebtOnboardingPanel({
         <ul className="rounded-xl border border-[var(--color-brand-border)] divide-y divide-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/40 text-sm">
           {entries.map((e, i) => (
             <li key={i} className="flex items-center justify-between gap-2 px-3 py-2">
-              <span className="text-white truncate">
+              <span className="text-[var(--color-brand-text-primary)] truncate">
                 {e.name} · {e.person} · {e.startingBalance} {e.currency}
                 {e.isGold ? ` (${e.goldKarat}K)` : ''}
               </span>
@@ -109,7 +109,7 @@ export function DebtOnboardingPanel({
             placeholder={o.debtNamePlaceholder}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
+            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
           />
         </div>
         <div>
@@ -118,7 +118,7 @@ export function DebtOnboardingPanel({
             placeholder={o.debtPersonPlaceholder}
             value={person}
             onChange={(e) => setPerson(e.target.value)}
-            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
+            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
           />
         </div>
         <div>
@@ -126,7 +126,7 @@ export function DebtOnboardingPanel({
           <Input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
+            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
           />
         </div>
         <div className="flex items-center justify-between">
@@ -151,7 +151,7 @@ export function DebtOnboardingPanel({
               placeholder={o.debtAmountPlaceholder}
               value={startingBalance}
               onChange={(e) => setStartingBalance(e.target.value)}
-              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers"
+              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers"
             />
           </div>
           {!isGold ? (
@@ -160,7 +160,7 @@ export function DebtOnboardingPanel({
               <DebtFiatCurrencySelect
                 value={currency}
                 onChange={setCurrency}
-                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
               />
             </div>
           ) : (
@@ -169,7 +169,7 @@ export function DebtOnboardingPanel({
               <select
                 value={goldKarat}
                 onChange={(e) => setGoldKarat(parseInt(e.target.value, 10) as GoldKarat)}
-                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
               >
                 <option value={24}>{t.goldPurity.k24}</option>
                 <option value={22}>{t.goldPurity.k22}</option>
@@ -184,14 +184,14 @@ export function DebtOnboardingPanel({
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white min-h-[50px]"
+            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] min-h-[50px]"
           />
         </div>
         <button
           type="button"
           onClick={addRow}
           disabled={!name.trim() || !person.trim() || !startingBalance}
-          className="w-full py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-white hover:bg-[var(--color-brand-elevated)] disabled:opacity-40"
+          className="w-full py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] disabled:opacity-40"
         >
           {o.debtAddButton}
         </button>

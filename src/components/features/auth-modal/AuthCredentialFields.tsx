@@ -36,9 +36,9 @@ export function AuthCredentialFields({
   return (
     <div className="space-y-3">
       <div>
-        <label className="text-xs text-[#5A5A72] mb-1 block">{t.auth.labelEmail}</label>
+        <label className="text-xs text-[var(--color-brand-text-muted)] mb-1 block">{t.auth.labelEmail}</label>
         <div className="relative">
-          <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A5A72]" />
+          <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
           <input
             type="email"
             value={email}
@@ -50,9 +50,9 @@ export function AuthCredentialFields({
         </div>
       </div>
       <div>
-        <label className="text-xs text-[#5A5A72] mb-1 block">{t.auth.labelPassword}</label>
+        <label className="text-xs text-[var(--color-brand-text-muted)] mb-1 block">{t.auth.labelPassword}</label>
         <div className="relative">
-          <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A5A72]" />
+          <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
           <input
             type="password"
             value={password}
@@ -64,16 +64,16 @@ export function AuthCredentialFields({
           />
         </div>
         {formMode === 'signin' ? (
-          <button type="button" onClick={onForgotClick} className="mt-2 text-xs text-[#E50914] hover:underline">
+          <button type="button" onClick={onForgotClick} className="mt-2 text-xs text-[var(--color-brand-red)] hover:underline">
             {t.auth.forgotPassword}
           </button>
         ) : null}
       </div>
       {formMode === 'signup' ? (
         <div>
-          <label className="text-xs text-[#5A5A72] mb-1 block">{t.auth.labelConfirm}</label>
+          <label className="text-xs text-[var(--color-brand-text-muted)] mb-1 block">{t.auth.labelConfirm}</label>
           <div className="relative">
-            <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A5A72]" />
+            <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
             <input
               type="password"
               value={confirmPassword}

@@ -27,7 +27,7 @@ export function SettingsSignedInAccountCard({ user, onSignOut }: SettingsSignedI
       <button
         type="button"
         onClick={() => void onSignOut()}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--color-brand-border)] text-sm text-white hover:bg-[var(--color-brand-elevated)] transition-colors"
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
       >
         <LogOut className="w-4 h-4" />
         {t.settings.accountSignOut}

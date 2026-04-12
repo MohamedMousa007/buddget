@@ -73,7 +73,7 @@ export function BudgetPlannerCategoryRow({
   }
 
   return (
-    <div className="rounded-xl border border-[#2A2A38] bg-[var(--color-brand-elevated)]/40 overflow-hidden">
+    <div className="rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/40 overflow-hidden">
       <BudgetPlannerCategoryRowHeader
         category={category}
         planCategories={planCategories}
@@ -96,7 +96,7 @@ export function BudgetPlannerCategoryRow({
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="overflow-hidden border-t border-[#2A2A38]/80"
+            className="overflow-hidden border-t border-[var(--color-brand-border)]/80"
           >
             <BudgetPlannerCategorySubcategoriesPanel
               category={category}

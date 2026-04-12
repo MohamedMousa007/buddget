@@ -87,7 +87,7 @@ export function AddDebtPaymentForm({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebtPayment.labelDebt}</Label>
-            <p className="mt-1 text-sm font-medium text-white truncate">{selectedDebt.name}</p>
+            <p className="mt-1 text-sm font-medium text-[var(--color-brand-text-primary)] truncate">{selectedDebt.name}</p>
           </div>
           {onBackToDebtList ? (
             <button
@@ -105,7 +105,7 @@ export function AddDebtPaymentForm({
           <select
             value={selectedPayable ? selectedDebtId : payableDebts[0]?.id ?? ''}
             onChange={(e) => setSelectedDebtId(e.target.value)}
-            className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+            className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
           >
             {payableDebts.map((d) => (
               <option key={d.id} value={d.id}>
@@ -146,7 +146,7 @@ export function AddDebtPaymentForm({
           type="date"
           value={paymentDate}
           onChange={(e) => setPaymentDate(e.target.value)}
-          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
+          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
         />
       </div>
 
@@ -158,7 +158,7 @@ export function AddDebtPaymentForm({
           <select
             value={recurringFrequency}
             onChange={(e) => setRecurringFrequency(e.target.value as DebtRecurringFrequency)}
-            className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+            className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
           >
             {RECURRING_DEBT_FREQUENCIES.filter((f) => f.value !== 'biweekly').map((f) => (
               <option key={f.value} value={f.value}>
@@ -180,7 +180,7 @@ export function AddDebtPaymentForm({
             onChange={(e) => {
               setPaymentAmount(e.target.value)
             }}
-            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers"
+            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers"
           />
         </div>
         <div>
@@ -188,7 +188,7 @@ export function AddDebtPaymentForm({
           <select
             value={paymentCurrency}
             onChange={(e) => setPaymentCurrency(e.target.value)}
-            className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+            className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
           >
             {buildFiatCurrencyPickerOptions(settings).map((o) => (
               <option key={o.value} value={o.value} disabled={o.disabled}>
@@ -227,7 +227,7 @@ export function AddDebtPaymentForm({
         <Textarea
           value={paymentNotes}
           onChange={(e) => setPaymentNotes(e.target.value)}
-          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white min-h-[60px]"
+          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] min-h-[60px]"
         />
       </div>
       <div className="flex gap-3 pt-2">

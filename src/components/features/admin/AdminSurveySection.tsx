@@ -29,7 +29,7 @@ export function AdminSurveySection({ admin }: AdminSurveySectionProps) {
           type="button"
           disabled={admin.surveyLoading || !admin.sessionPin}
           onClick={() => void admin.loadSurveyRows()}
-          className="text-xs px-3 py-2 rounded-xl bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white hover:border-[var(--color-brand-red)]/40 disabled:opacity-50"
+          className="text-xs px-3 py-2 rounded-xl bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] hover:border-[var(--color-brand-red)]/40 disabled:opacity-50"
         >
           {admin.surveyLoading ? 'Loading…' : 'Load survey rows'}
         </button>
@@ -37,7 +37,7 @@ export function AdminSurveySection({ admin }: AdminSurveySectionProps) {
           <label className="text-[11px] text-[var(--color-brand-text-secondary)] flex items-center gap-2">
             Row
             <select
-              className="bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] rounded-lg px-2 py-1 text-white"
+              className="bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] rounded-lg px-2 py-1 text-[var(--color-brand-text-primary)]"
               value={admin.surveyEditId ?? ''}
               onChange={(e) => {
                 const id = e.target.value
@@ -58,7 +58,7 @@ export function AdminSurveySection({ admin }: AdminSurveySectionProps) {
       <Textarea
         value={admin.surveyJson}
         onChange={(e) => admin.setSurveyJson(e.target.value)}
-        className="min-h-[220px] bg-[var(--color-brand-bg)] border-[var(--color-brand-border)] text-white font-mono-numbers text-[11px]"
+        className="min-h-[220px] bg-[var(--color-brand-bg)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers text-[11px]"
       />
       <div className="flex flex-wrap gap-2">
         <button
@@ -73,7 +73,7 @@ export function AdminSurveySection({ admin }: AdminSurveySectionProps) {
           type="button"
           disabled={admin.surveyBusy || !admin.sessionPin || !admin.surveyEditId}
           onClick={() => void admin.publishSurvey()}
-          className="text-xs px-3 py-2 rounded-xl border border-[var(--color-brand-border)] text-white hover:bg-[var(--color-brand-elevated)] disabled:opacity-50"
+          className="text-xs px-3 py-2 rounded-xl border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] disabled:opacity-50"
         >
           Publish selected
         </button>

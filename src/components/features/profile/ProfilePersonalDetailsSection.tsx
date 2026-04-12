@@ -19,7 +19,7 @@ export function ProfilePersonalDetailsSection({ store, user }: ProfilePersonalDe
   const t = useT()
   const { locale } = useLocale()
   const inputClass =
-    'mt-1 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-sm text-white outline-none transition-colors focus:border-[var(--color-brand-red)]'
+    'mt-1 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-sm text-[var(--color-brand-text-primary)] outline-none transition-colors focus:border-[var(--color-brand-red)]'
 
   return (
     <section className="glass-card rounded-2xl p-5 space-y-4">
@@ -32,7 +32,7 @@ export function ProfilePersonalDetailsSection({ store, user }: ProfilePersonalDe
           <Input
             value={store.profile.name}
             onChange={(e) => store.updateProfile({ name: e.target.value })}
-            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
+            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
           />
         </div>
         <div>
@@ -45,7 +45,7 @@ export function ProfilePersonalDetailsSection({ store, user }: ProfilePersonalDe
               if (!user) store.updateProfile({ email: e.target.value })
             }}
             readOnly={!!user}
-            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white read-only:opacity-80"
+            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] read-only:opacity-80"
           />
         </div>
         <div>
@@ -53,7 +53,7 @@ export function ProfilePersonalDetailsSection({ store, user }: ProfilePersonalDe
           <Input
             value={store.profile.phone || ''}
             onChange={(e) => store.updateProfile({ phone: e.target.value })}
-            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
+            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
           />
         </div>
         <div>
@@ -71,7 +71,7 @@ export function ProfilePersonalDetailsSection({ store, user }: ProfilePersonalDe
           <Input
             value={store.profile.city || ''}
             onChange={(e) => store.updateProfile({ city: e.target.value })}
-            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
+            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
           />
         </div>
       </div>

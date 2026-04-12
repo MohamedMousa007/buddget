@@ -31,7 +31,7 @@ export default function ReportsPage() {
     <div className="min-h-screen">
       <PageHeader>
         <PageHeaderContent>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)] flex items-center gap-2">
             <BarChart3 className="w-6 h-6 text-[var(--color-brand-red)]" />
             {t.reports.pageTitle}
           </h1>

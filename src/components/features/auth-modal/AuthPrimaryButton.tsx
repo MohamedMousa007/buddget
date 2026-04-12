@@ -8,8 +8,8 @@ export interface AuthPrimaryButtonProps {
   onClick: () => void
 }
 
-const BG = '#E50914'
-const BG_HOVER = '#F40612'
+const BG = 'var(--color-brand-red)'
+const BG_HOVER = 'var(--color-brand-red-hover)'
 
 /**
  * Full-width red CTA used across auth steps.

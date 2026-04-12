@@ -39,7 +39,7 @@ export function AIChatMessageList({
             className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
               message.role === 'user'
                 ? 'bg-[var(--color-brand-red)] text-white'
-                : 'bg-[var(--color-brand-elevated)] text-white'
+                : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)]'
             }`}
           >
             <p className={message.role === 'assistant' ? 'whitespace-pre-line' : undefined}>{message.content}</p>

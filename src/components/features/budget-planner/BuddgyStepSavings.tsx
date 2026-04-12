@@ -12,7 +12,7 @@ function fmt(n: number, currency: string) {
 const activePill =
   'cursor-pointer rounded-full border border-transparent bg-[var(--color-brand-red)] px-4 py-2 text-sm font-medium text-white shadow-sm'
 const idlePill =
-  'cursor-pointer rounded-full border border-[#2A2A38] bg-[#1A1A24] px-4 py-2 text-sm font-medium text-white hover:bg-[#1A1A24]/90'
+  'cursor-pointer rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-4 py-2 text-sm font-medium text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)]/90'
 
 export function BuddgyStepSavings({ flow }: { flow: BuddgyFlowApi }) {
   const {
@@ -47,7 +47,7 @@ export function BuddgyStepSavings({ flow }: { flow: BuddgyFlowApi }) {
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-white font-sans">How much do you want to save?</p>
+      <p className="text-sm text-[var(--color-brand-text-primary)] font-sans">How much do you want to save?</p>
       <div className="space-y-2">
         <input
           type="range"
@@ -59,10 +59,10 @@ export function BuddgyStepSavings({ flow }: { flow: BuddgyFlowApi }) {
         />
         <div className="flex justify-between text-xs text-[var(--color-brand-text-muted)]">
           <span>0%</span>
-          <span className="font-mono text-sm text-white">{pct}%</span>
+          <span className="font-mono text-sm text-[var(--color-brand-text-primary)]">{pct}%</span>
           <span>100%</span>
         </div>
-        <p className="text-center font-mono text-base text-white">
+        <p className="text-center font-mono text-base text-[var(--color-brand-text-primary)]">
           {fmt(savingsAmount, settings.baseCurrency)} / month
         </p>
       </div>

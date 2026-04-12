@@ -34,7 +34,7 @@ export function OnboardingPlanPickerHero({
             <Target className="w-4 h-4" aria-hidden />
           </span>
           <div>
-            <h2 className="text-xl font-bold text-white font-heading leading-tight">{plan.label}</h2>
+            <h2 className="text-xl font-bold text-[var(--color-brand-text-primary)] font-heading leading-tight">{plan.label}</h2>
             <p className="text-sm text-[var(--color-brand-red)] font-medium mt-0.5">{plan.personaLabel}</p>
             <p className="text-xs text-[var(--color-brand-text-secondary)] mt-1">{plan.personaTagline}</p>
           </div>
@@ -54,7 +54,7 @@ export function OnboardingPlanPickerHero({
           variant="card"
           amount={monthlyTakeHome}
           currency={baseCurrency}
-          primaryClassName="text-lg font-semibold text-white"
+          primaryClassName="text-lg font-semibold text-[var(--color-brand-text-primary)]"
           secondaryClassName="text-[11px]"
         />
       </div>

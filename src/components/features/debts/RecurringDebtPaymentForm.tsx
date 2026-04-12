@@ -78,7 +78,7 @@ export function RecurringDebtPaymentForm({
         <select
           value={selectDebtValue}
           onChange={(e) => onDebtChange(e.target.value)}
-          className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+          className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
         >
           {payableDebts.map((d) => (
             <option key={d.id} value={d.id}>
@@ -97,12 +97,12 @@ export function RecurringDebtPaymentForm({
             placeholder={t.recurringDebt.placeholderAmount}
             value={amount}
             onChange={(e) => onAmountChange(e.target.value)}
-            className="bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white font-mono-numbers"
+            className="bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers"
           />
           <select
             value={paymentCurrency}
             onChange={(e) => onPaymentCurrencyChange(e.target.value)}
-            className="w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+            className="w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
           >
             {fiatOptions.map((o) => (
               <option key={o.value} value={o.value} disabled={o.disabled}>
@@ -122,7 +122,7 @@ export function RecurringDebtPaymentForm({
         <select
           value={frequency}
           onChange={(e) => onFrequencyChange(e.target.value as DebtRecurringFrequency)}
-          className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+          className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
         >
           {RECURRING_DEBT_FREQUENCIES.map((f) => (
             <option key={f.value} value={f.value}>
@@ -138,7 +138,7 @@ export function RecurringDebtPaymentForm({
           type="date"
           value={nextDueDate}
           onChange={(e) => onNextDueDateChange(e.target.value)}
-          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white"
+          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
         />
       </div>
 
@@ -172,7 +172,7 @@ export function RecurringDebtPaymentForm({
         <Textarea
           value={notes}
           onChange={(e) => onNotesChange(e.target.value)}
-          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white min-h-[50px]"
+          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] min-h-[50px]"
         />
       </div>
 

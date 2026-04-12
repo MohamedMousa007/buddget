@@ -29,7 +29,7 @@ export function ProfileBudgetModeAndCalendar({
   return (
     <>
       <p className="text-[10px] text-[var(--color-brand-text-muted)]">
-        All budget amounts are shown in <strong className="text-white">{baseCurrency}</strong>, your primary currency.
+        All budget amounts are shown in <strong className="text-[var(--color-brand-text-primary)]">{baseCurrency}</strong>, your primary currency.
       </p>
       <div className="flex flex-wrap gap-2">
         <button
@@ -58,7 +58,7 @@ export function ProfileBudgetModeAndCalendar({
       {budgetMode === 'percent_of_income' && (
         <p className="text-[10px] text-[var(--color-brand-text-muted)]">
           {t.budgetRecurringIncome(baseCurrency)}
-          <span className="font-mono-numbers text-white">{formatCurrency(monthlyIncome, baseCurrency)}</span>
+          <span className="font-mono-numbers text-[var(--color-brand-text-primary)]">{formatCurrency(monthlyIncome, baseCurrency)}</span>
           /mo. Your category percentages should add up to around 100% for a full allocation.
         </p>
       )}
@@ -67,7 +67,7 @@ export function ProfileBudgetModeAndCalendar({
         <select
           value={monthStartDay}
           onChange={(e) => onMonthStartDay(parseInt(e.target.value))}
-          className="mt-1 w-24 h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-white text-sm"
+          className="mt-1 w-24 h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
         >
           {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
             <option key={d} value={d}>

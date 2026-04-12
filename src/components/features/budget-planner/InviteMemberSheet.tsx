@@ -125,11 +125,11 @@ export function InviteMemberSheet({
             transition={{ type: 'spring', stiffness: 320, damping: 28 }}
           >
             <div className="flex items-center justify-between gap-2 mb-4">
-              <h2 className="text-lg font-semibold text-white">{labels.title}</h2>
+              <h2 className="text-lg font-semibold text-[var(--color-brand-text-primary)]">{labels.title}</h2>
               <button
                 type="button"
                 onClick={onClose}
-                className="cursor-pointer rounded-lg p-2 text-[var(--color-brand-text-muted)] hover:text-white"
+                className="cursor-pointer rounded-lg p-2 text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -140,21 +140,21 @@ export function InviteMemberSheet({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={labels.emailPlaceholder}
-              className="w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2.5 text-sm text-white mb-3"
+              className="w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2.5 text-sm text-[var(--color-brand-text-primary)] mb-3"
               autoComplete="email"
             />
             {loading ?
               <p className="text-xs text-[var(--color-brand-text-muted)] mb-3">{labels.foundAs}…</p>
             : lookup?.found ?
               <p className="text-xs text-[var(--color-brand-text-muted)] mb-3">
-                {labels.foundAs}: <span className="text-white font-medium">{lookup.displayName}</span>
+                {labels.foundAs}: <span className="text-[var(--color-brand-text-primary)] font-medium">{lookup.displayName}</span>
               </p>
             : debounced.includes('@') && lookup && !lookup.found ?
               <p className="text-xs text-amber-200/90 mb-3">{labels.notFoundHint}</p>
             : null}
 
             <div className="space-y-2 mb-3">
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-white">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-[var(--color-brand-text-primary)]">
                 <input
                   type="radio"
                   className="cursor-pointer"
@@ -163,7 +163,7 @@ export function InviteMemberSheet({
                 />
                 {labels.roleView}
               </label>
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-white">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-[var(--color-brand-text-primary)]">
                 <input
                   type="radio"
                   className="cursor-pointer"
@@ -176,7 +176,7 @@ export function InviteMemberSheet({
 
             {role === 'manager' ?
               <div className="mb-4">
-                <label className="flex cursor-pointer items-center gap-2 text-sm text-white">
+                <label className="flex cursor-pointer items-center gap-2 text-sm text-[var(--color-brand-text-primary)]">
                   <input
                     type="checkbox"
                     className="cursor-pointer rounded"
@@ -194,7 +194,7 @@ export function InviteMemberSheet({
               disabled={sending || !email.trim()}
               onClick={() => void send()}
               className={cn(
-                'w-full cursor-pointer rounded-xl py-3 text-sm font-semibold text-white transition-colors',
+                'w-full cursor-pointer rounded-xl py-3 text-sm font-semibold text-[var(--color-brand-text-primary)] transition-colors',
                 sending || !email.trim() ? 'bg-[var(--color-brand-border)]' : 'bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)]'
               )}
             >

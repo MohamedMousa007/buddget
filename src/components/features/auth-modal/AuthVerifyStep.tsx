@@ -33,8 +33,8 @@ export function AuthVerifyStep({
   return (
     <div className="space-y-5">
       <div className="text-center">
-        <h2 className="text-lg font-semibold text-white">{t.auth.verifyTitle}</h2>
-        <p className="text-sm text-[#5A5A72] mt-1">
+        <h2 className="text-lg font-semibold text-[var(--color-brand-text-primary)]">{t.auth.verifyTitle}</h2>
+        <p className="text-sm text-[var(--color-brand-text-muted)] mt-1">
           {t.auth.verifyCodeSent(email)}
         </p>
       </div>
@@ -54,11 +54,11 @@ export function AuthVerifyStep({
           type="button"
           disabled={resendCooldown > 0 || loading}
           onClick={() => void onResend()}
-          className="text-[#E50914] disabled:opacity-50 disabled:cursor-not-allowed hover:underline"
+          className="text-[var(--color-brand-red)] disabled:opacity-50 disabled:cursor-not-allowed hover:underline"
         >
           {resendCooldown > 0 ? t.auth.verifySendNewCooldown(resendCooldown) : t.auth.verifySendNew}
         </button>
-        <button type="button" onClick={onUseDifferentEmail} className="text-[#5A5A72] hover:text-white">
+        <button type="button" onClick={onUseDifferentEmail} className="text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]">
           {t.auth.verifyDifferentEmail}
         </button>
       </div>

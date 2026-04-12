@@ -85,7 +85,7 @@ export function BudgetRing({ percent, remaining, currency, daysLeft, incomeBlock
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-3xl font-bold font-mono-numbers text-white">
+          <span className="text-3xl font-bold font-mono-numbers text-[var(--color-brand-text-primary)]">
             {formatPercent(percent)}
           </span>
           <span className="text-xs text-[var(--color-brand-text-secondary)] mt-1">
@@ -95,7 +95,7 @@ export function BudgetRing({ percent, remaining, currency, daysLeft, incomeBlock
       </div>
 
       <div className="mt-4 text-center space-y-1">
-        <p className="text-lg font-semibold font-mono-numbers text-white">
+        <p className="text-lg font-semibold font-mono-numbers text-[var(--color-brand-text-primary)]">
           {formatCurrency(Math.abs(remaining), currency)} {remaining >= 0 ? t.dashboard.remainingSuffix : t.dashboard.overBudgetSuffix}
         </p>
         {secondaryRemaining != null && (
