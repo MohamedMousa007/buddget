@@ -246,7 +246,7 @@ export const en: Dictionary = {
     requireAuthNew: 'Sign in or create an account to add debts or log payments.',
     requireAuthPayment: 'Sign in or create an account to log debt payments.',
     requireAuthRecurring: 'Sign in or create an account to add recurring debt payments.',
-    buttonPayDebt: 'Settle a debt',
+    buttonPayDebt: 'Pay off',
     buttonAddDebt: '+ Add a debt',
     buttonRecurring: '+ Recurring payment',
     buttonTrack: '+ Add a debt',

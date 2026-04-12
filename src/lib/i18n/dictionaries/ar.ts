@@ -246,7 +246,7 @@ export const ar: Dictionary = {
     requireAuthNew: 'سجل دخولك لإضافة ديون أو تسجيل دفعات.',
     requireAuthPayment: 'سجل دخولك لتسجيل دفعات الديون.',
     requireAuthRecurring: 'سجل دخولك لإضافة دفعات ديون متكررة.',
-    buttonPayDebt: 'تسوية دين',
+    buttonPayDebt: 'سداد',
     buttonAddDebt: '+ إضافة دين',
     buttonRecurring: '+ دفعة متكررة',
     buttonTrack: '+ إضافة دين',
