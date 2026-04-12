@@ -19,6 +19,8 @@ import type {
   GoldKarat,
   AppSettings,
   SavingsHolding,
+  SavingsAccount,
+  SavingsTransaction,
 } from '@/lib/store/types'
 import { convertCurrency, tryConvertCurrency } from './currency'
 
@@ -209,6 +211,86 @@ export function totalSavingsHoldingsInBase(
     (sum, h) => sum + convertCurrency(h.amount, h.currency, baseCurrency, rates),
     0
   )
+}
+
+export function filterSavingsTransactionsByMonth(
+  transactions: SavingsTransaction[],
+  monthStr: string,
+  monthStartDay = 1
+): SavingsTransaction[] {
+  const { start, end } = getMonthRange(monthStr, monthStartDay)
+  return transactions.filter((t) => {
+    const raw = t.date.length > 10 ? t.date : `${t.date}T12:00:00`
+    const date = parseISO(raw)
+    return isWithinInterval(date, { start, end })
+  })
+}
+
+/** Net savings transfers this month in base currency (deposits − withdrawals). */
+export function netSavingsLedgerInBaseForMonth(
+  transactions: SavingsTransaction[],
+  monthStr: string,
+  monthStartDay: number,
+  baseCurrency: Currency,
+  rates: Record<string, number>
+): number {
+  const rows = filterSavingsTransactionsByMonth(transactions, monthStr, monthStartDay)
+  return rows.reduce((sum, t) => {
+    const inBase = convertCurrency(t.amount, t.currency, baseCurrency, rates)
+    return sum + (t.type === 'deposit' ? inBase : -inBase)
+  }, 0)
+}
+
+export function totalSavingsAccountsBalanceInBase(
+  accounts: Pick<SavingsAccount, 'currentBalance' | 'currency'>[],
+  baseCurrency: Currency,
+  rates: Record<string, number>
+): number {
+  return accounts.reduce(
+    (sum, a) => sum + convertCurrency(a.currentBalance, a.currency, baseCurrency, rates),
+    0
+  )
+}
+
+/**
+ * Cash-flow "left to spend": income minus non-savings spending, legacy savings-tagged expenses,
+ * and net savings ledger transfers for the month.
+ */
+export function calculateLeftToSpendCashFlow(params: {
+  monthStr: string
+  monthStartDay: number
+  expenses: Expense[]
+  incomeSources: IncomeSource[]
+  savingsTransactions: SavingsTransaction[]
+  baseCurrency: Currency
+  exchangeRates: Record<string, number>
+  incomeBlocked: boolean
+}): number {
+  const {
+    monthStr,
+    monthStartDay,
+    expenses,
+    incomeSources,
+    savingsTransactions,
+    baseCurrency,
+    exchangeRates,
+    incomeBlocked,
+  } = params
+  const monthlyExpenses = filterExpensesByMonth(expenses, monthStr, monthStartDay)
+  const rawIncome = calculateMonthlyIncome(incomeSources, baseCurrency, exchangeRates)
+  const totalIncome = incomeBlocked ? 0 : rawIncome
+  const nonSav = calculateTotalSpentExcludingSavings(monthlyExpenses, baseCurrency, exchangeRates)
+  const savTagged = monthlyExpenses
+    .filter((e) => e.category === 'Savings')
+    .reduce((sum, e) => sum + expenseAmountInBase(e, baseCurrency, exchangeRates), 0)
+  const netLedger = netSavingsLedgerInBaseForMonth(
+    savingsTransactions,
+    monthStr,
+    monthStartDay,
+    baseCurrency,
+    exchangeRates
+  )
+  return totalIncome - nonSav - savTagged - netLedger
 }
 
 export function totalDebtRemainingInBase(

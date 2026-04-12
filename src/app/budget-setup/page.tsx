@@ -1,18 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useEffect } from 'react'
 import { SlidersHorizontal } from 'lucide-react'
-import { useAuth } from '@/components/auth/AuthProvider'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { useSharedBudgets } from '@/hooks/useSharedBudgets'
-import { PlanSwitcher } from '@/components/features/budget-planner/PlanSwitcher'
-import { BudgetPlanMembers } from '@/components/features/budget-planner/BudgetPlanMembers'
-import { InviteMemberSheet } from '@/components/features/budget-planner/InviteMemberSheet'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { BudgetPlannerSummary } from '@/components/features/budget-planner/BudgetPlannerSummary'
 import { BudgetPlannerCategories } from '@/components/features/budget-planner/BudgetPlannerCategories'
 import { BudgetSetupNoPlansEmpty } from '@/components/features/budget-planner/BudgetSetupNoPlansEmpty'
 import { BudgetSetupPlanToolbar } from '@/components/features/budget-planner/BudgetSetupPlanToolbar'
+import { AddIncomeSheet } from '@/components/modals/AddIncomeSheet'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useBudgetSetupPage } from '@/hooks/useBudgetSetupPage'
 
 /**
@@ -21,13 +17,13 @@ import { useBudgetSetupPage } from '@/hooks/useBudgetSetupPage'
 export default function BudgetSetupPage() {
   const p = useBudgetSetupPage()
   const { t } = p
-  const { user } = useAuth()
-  const { plans: sharedPlans, createSharedPlan, refresh: refreshShared } = useSharedBudgets()
-  const activeSharedBudgetId = useFinanceStore((s) => s.activeSharedBudgetId)
-  const defaultSharedBudgetPlanId = useFinanceStore((s) => s.defaultSharedBudgetPlanId)
-  const setActiveSharedBudgetId = useFinanceStore((s) => s.setActiveSharedBudgetId)
-  const setDefaultSharedBudgetPlanId = useFinanceStore((s) => s.setDefaultSharedBudgetPlanId)
-  const [inviteOpen, setInviteOpen] = useState(false)
+  const setActiveModal = useSettingsStore((s) => s.setActiveModal)
+  const planNameInputRef = useRef<HTMLInputElement>(null)
+  const hasIncome = p.totalIncome > 0
+
+  useEffect(() => {
+    if (p.newPlanDialogOpen) planNameInputRef.current?.select()
+  }, [p.newPlanDialogOpen])
 
   return (
     <div className="min-h-screen">
@@ -42,74 +38,8 @@ export default function BudgetSetupPage() {
 
       <div className="px-4 py-6 lg:px-8 max-w-3xl mx-auto space-y-6">
         {!p.supabaseConfigured || p.user ?
-          p.budgetPlans.length > 0 ?
-            <>
-              {user && p.supabaseConfigured ?
-                <div className="space-y-4">
-                  <PlanSwitcher
-                    sharedPlans={sharedPlans}
-                    activeSharedId={activeSharedBudgetId}
-                    defaultSharedId={defaultSharedBudgetPlanId}
-                    labels={{
-                      personal: t.sharedBudget.planSwitcherPersonal,
-                      createShared: t.sharedBudget.planSwitcherCreateShared,
-                      defaultBadge: t.sharedBudget.defaultBadge,
-                    }}
-                    onSelectPersonal={() => setActiveSharedBudgetId(null)}
-                    onSelectShared={(id) => setActiveSharedBudgetId(id)}
-                    onCreateShared={() =>
-                      void (async () => {
-                        const plan = await createSharedPlan('Shared Budget')
-                        if (plan?.id) setActiveSharedBudgetId(plan.id)
-                      })()
-                    }
-                  />
-                  {activeSharedBudgetId ?
-                    <BudgetPlanMembers
-                      planId={activeSharedBudgetId}
-                      isOwner={sharedPlans.some(
-                        (s) => s.id === activeSharedBudgetId && s.membership.kind === 'owner'
-                      )}
-                      onOpenInvite={() => setInviteOpen(true)}
-                      onSetDefault={async () => {
-                        if (!activeSharedBudgetId) return
-                        try {
-                          const res = await fetch('/api/budget/profile-default', {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ defaultBudgetPlanId: activeSharedBudgetId }),
-                          })
-                          if (res.ok) setDefaultSharedBudgetPlanId(activeSharedBudgetId)
-                        } catch {
-                          /* ignore */
-                        }
-                      }}
-                      showSetDefault={defaultSharedBudgetPlanId !== activeSharedBudgetId}
-                    />
-                  : null}
-                  <InviteMemberSheet
-                    open={inviteOpen && Boolean(activeSharedBudgetId)}
-                    onClose={() => setInviteOpen(false)}
-                    planId={activeSharedBudgetId ?? ''}
-                    labels={{
-                      title: t.sharedBudget.inviteTitle,
-                      email: t.sharedBudget.inviteEmail,
-                      emailPlaceholder: t.sharedBudget.inviteEmailPlaceholder,
-                      roleView: t.sharedBudget.roleView,
-                      roleManage: t.sharedBudget.roleManage,
-                      syncLabel: t.sharedBudget.syncLabel,
-                      syncHelp: t.sharedBudget.syncHelp,
-                      send: t.sharedBudget.sendInvite,
-                      notFoundHint: t.sharedBudget.notFoundHint,
-                      inviteApp: t.sharedBudget.inviteApp,
-                      foundAs: t.sharedBudget.foundAs,
-                      close: t.sharedBudget.closeSheet,
-                    }}
-                    onInviteSent={() => void refreshShared()}
-                  />
-                </div>
-              : null}
-
+          <>
+            {p.budgetPlans.length > 0 ?
               <BudgetSetupPlanToolbar
                 plans={p.budgetPlans}
                 activeId={p.activeBudgetPlanId}
@@ -126,22 +56,68 @@ export default function BudgetSetupPage() {
                 deletePlanLabel={t.budgetPlanner.deletePlan}
                 onDeleteActivePlan={() => p.deleteBudgetPlan(p.activePlan!.id)}
               />
-
-              <BudgetPlannerSummary
-                totalIncome={p.totalIncome}
-                totalPlanned={p.totalPlanned}
-                projectedSavings={p.projectedSavings}
-                currency={p.settings.baseCurrency}
-                labels={{
-                  totalIncome: t.budgetPlanner.totalIncome,
-                  totalPlanned: t.budgetPlanner.totalPlanned,
-                  projectedSavings: t.budgetPlanner.projectedSavings,
-                  projectedSavingsLine: t.budgetPlanner.projectedSavingsLine,
-                }}
+            : (
+              <BudgetSetupNoPlansEmpty
+                title={t.budgetPlanner.noPlansEmptyTitle}
+                description={t.budgetPlanner.noPlansEmptyDesc}
+                createLabel={t.budgetPlanner.noPlansCreateFirst}
+                onCreate={p.handleAddPlan}
               />
+            )}
 
-              {p.activePlan ?
-                <div>
+            {p.newPlanDialogOpen && (
+              <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4 space-y-3">
+                <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">
+                  {t.budgetPlanner.newPlanName}
+                </p>
+                <input
+                  ref={planNameInputRef}
+                  value={p.newPlanName}
+                  onChange={(e) => p.setNewPlanName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') p.commitNewPlan()
+                    if (e.key === 'Escape') p.cancelNewPlan()
+                  }}
+                  className="w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-red)]/40"
+                  autoFocus
+                />
+                <div className="flex gap-2 justify-end">
+                  <button
+                    type="button"
+                    onClick={p.cancelNewPlan}
+                    className="rounded-xl border border-[var(--color-brand-border)] px-4 py-2 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
+                  >
+                    {t.common.cancel}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={p.commitNewPlan}
+                    className="rounded-xl bg-[var(--color-brand-red)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)]"
+                  >
+                    {t.common.ok}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {p.budgetPlans.length > 0 && (
+              <>
+                <BudgetPlannerSummary
+                  totalIncome={p.totalIncome}
+                  totalPlanned={p.totalPlanned}
+                  projectedSavings={p.projectedSavings}
+                  currency={p.settings.baseCurrency}
+                  hasIncome={hasIncome}
+                  onAddIncome={() => setActiveModal('addIncome')}
+                  labels={{
+                    totalIncome: t.budgetPlanner.totalIncome,
+                    totalPlanned: t.budgetPlanner.totalPlanned,
+                    projectedSavings: t.budgetPlanner.projectedSavings,
+                    projectedSavingsLine: t.budgetPlanner.projectedSavingsLine,
+                  }}
+                />
+
+                {p.activePlan ?
                   <BudgetPlannerCategories
                     planId={p.activePlan.id}
                     categories={p.activePlan.categories}
@@ -167,19 +143,14 @@ export default function BudgetSetupPage() {
                       p.deletePlanSubcategory(p.activePlan!.id, categoryId, subId)
                     }
                   />
-                </div>
-              : null}
-            </>
-          : <>
-              <BudgetSetupNoPlansEmpty
-                title={t.budgetPlanner.noPlansEmptyTitle}
-                description={t.budgetPlanner.noPlansEmptyDesc}
-                createLabel={t.budgetPlanner.noPlansCreateFirst}
-                onCreate={p.handleAddPlan}
-              />
-            </>
+                : null}
+              </>
+            )}
+          </>
         : <div className="min-h-[40vh]" aria-hidden />}
       </div>
+
+      <AddIncomeSheet />
     </div>
   )
 }

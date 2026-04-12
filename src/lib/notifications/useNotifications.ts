@@ -185,7 +185,9 @@ export function useNotifications() {
     }
 
     const hasSavingsActivity =
-      stats.savingsHoldingsTotal > 0.0001 || stats.savingsFromExpenses > 0.0001
+      stats.savingsAccountsTotal > 0.0001 ||
+      stats.savingsHoldingsTotal > 0.0001 ||
+      stats.savingsFromExpenses > 0.0001
     if (!hasSavingsActivity) {
       list.push({
         id: `savings_nudge:${monthFilter}`,

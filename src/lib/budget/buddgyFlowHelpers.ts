@@ -17,17 +17,13 @@ export function hasPositiveIncome(
   return calculateMonthlyIncome(incomeSources, baseCurrency, exchangeRates) > 0.0001
 }
 
-/** Planned total excluding Savings row (for slider + AI remaining). */
+/** Planned expense total (savings allocation rows excluded). */
 export function plannedExcludingSavings(
   plan: BudgetPlan,
   baseCurrency: Currency,
   exchangeRates: Record<string, number>
 ): number {
-  const sans: BudgetPlan = {
-    ...plan,
-    categories: plan.categories.filter((c) => c.name !== 'Savings'),
-  }
-  return totalPlannedExpensesForPlan(sans, baseCurrency, exchangeRates)
+  return totalPlannedExpensesForPlan(plan, baseCurrency, exchangeRates)
 }
 
 export function remainingForAiSlice(

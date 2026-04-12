@@ -2,6 +2,29 @@ import { z } from 'zod'
 
 const currencySchema = z.enum(['AED', 'USD', 'EGP', 'EUR', 'GBP', 'SAR', 'XAU'])
 const fiatCurrencySchema = z.enum(['AED', 'USD', 'EGP', 'EUR', 'GBP', 'SAR'])
+const savingsCurrencySchema = z.enum([
+  'AED',
+  'USD',
+  'EGP',
+  'EUR',
+  'GBP',
+  'SAR',
+  'XAU',
+  'USDT',
+  'USDC',
+  'BTC',
+  'ETH',
+])
+const savingsTypeSchema = z.enum([
+  'bank',
+  'cash',
+  'gold',
+  'crypto_stable',
+  'crypto',
+  'stocks',
+  'real_estate',
+  'other',
+])
 
 const paymentMethodTypeSchema = z.enum([
   'cash',
@@ -61,8 +84,6 @@ export const importDataSchema = z.object({
       })
     )
     .optional(),
-  activeSharedBudgetId: z.string().uuid().nullable().optional(),
-  defaultSharedBudgetPlanId: z.string().uuid().nullable().optional(),
   expenses: z
     .array(
       z.object({
@@ -153,6 +174,7 @@ export const importDataSchema = z.object({
             icon: z.string(),
             amount: z.number(),
             currency: fiatCurrencySchema.optional(),
+            isSavings: z.boolean().optional(),
             subcategories: z.array(
               z.object({
                 id: z.string(),
@@ -180,6 +202,49 @@ export const importDataSchema = z.object({
         asOfDate: z.string().optional(),
         createdAt: z.string(),
         updatedAt: z.string(),
+      })
+    )
+    .optional(),
+  savingsAccounts: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        type: savingsTypeSchema.optional(),
+        icon: z.string().optional(),
+        emoji: z.string().optional(),
+        targetAmount: z.number().optional(),
+        currency: savingsCurrencySchema,
+        currentBalance: z.number(),
+        createdAt: z.string(),
+        notes: z.string().optional(),
+        autoSave: z
+          .object({
+            enabled: z.boolean(),
+            mode: z.enum(['fixed_schedule', 'end_of_month', 'percent_of_income']),
+            amount: z.number().optional(),
+            frequency: z.enum(['weekly', 'monthly']).optional(),
+            dayOfMonth: z.number().optional(),
+            weekday: z.number().optional(),
+            percent: z.number().optional(),
+            lastRunKey: z.string().optional(),
+          })
+          .optional(),
+      })
+    )
+    .optional(),
+  savingsTransactions: z
+    .array(
+      z.object({
+        id: z.string(),
+        accountId: z.string(),
+        type: z.enum(['deposit', 'withdrawal']),
+        amount: z.number(),
+        currency: savingsCurrencySchema,
+        date: z.string(),
+        source: z.string().optional(),
+        notes: z.string().optional(),
+        isAutoSave: z.boolean().optional(),
       })
     )
     .optional(),

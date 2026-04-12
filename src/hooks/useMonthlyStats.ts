@@ -10,6 +10,7 @@ import {
   categorySpendingForPlanRows,
   totalExpenseBudgetFromPlan,
   totalPlannedExpensesForPlan,
+  totalPlannedSavingsAllocationForPlan,
 } from '@/lib/budget/budgetPlans'
 import {
   filterExpensesByMonth,
@@ -22,20 +23,24 @@ import {
   calculateBudgetUsedPercent,
   calculateDaysLeftInMonth,
   totalSavingsHoldingsInBase,
+  totalSavingsAccountsBalanceInBase,
+  netSavingsLedgerInBaseForMonth,
+  calculateLeftToSpendCashFlow,
   effectiveCategoryBudget,
   totalDebtRemainingInBase,
   expenseAmountInBase,
 } from '@/lib/utils/calculations'
-
-function filterBySharedScope<T extends { sharedPlanId?: string | null }>(
-  items: T[],
-  activeSharedBudgetId: string | null
-): T[] {
-  if (activeSharedBudgetId) {
-    return items.filter((x) => x.sharedPlanId === activeSharedBudgetId)
-  }
-  return items.filter((x) => !x.sharedPlanId)
-}
+import {
+  daysElapsedInMonth,
+  totalDaysInMonth,
+  dailySpendingRate,
+  projectedMonthSpend,
+  spendingPaceStatus,
+  suggestedDailyBudget,
+  topOverspentCategories,
+  type PaceStatus,
+  type OverspentCategory,
+} from '@/lib/utils/spendingPace'
 
 function supabaseAuthConfigured(): boolean {
   return Boolean(
@@ -53,8 +58,9 @@ export function useMonthlyStats() {
     budgetCategories,
     budgetPlans,
     activeBudgetPlanId,
-    activeSharedBudgetId,
     savingsHoldings,
+    savingsAccounts,
+    savingsTransactions,
     debts,
     debtPayments,
     settings,
@@ -67,8 +73,9 @@ export function useMonthlyStats() {
       budgetCategories: s.budgetCategories,
       budgetPlans: s.budgetPlans,
       activeBudgetPlanId: s.activeBudgetPlanId,
-      activeSharedBudgetId: s.activeSharedBudgetId,
       savingsHoldings: s.savingsHoldings,
+      savingsAccounts: s.savingsAccounts,
+      savingsTransactions: s.savingsTransactions,
       debts: s.debts,
       debtPayments: s.debtPayments,
       settings: s.settings,
@@ -96,27 +103,31 @@ export function useMonthlyStats() {
         daysLeft,
         savingsTotal: 0,
         savingsHoldingsTotal: 0,
+        savingsAccountsTotal: 0,
         savingsFromExpenses: 0,
+        netSavingsTransfersThisMonth: 0,
+        leftToSpend: 0,
         categoryBudgetCaps: {} as Record<string, number>,
         debtRemainingTotal: 0,
         baseCurrency: settings.baseCurrency,
         incomeBlocked: false,
+        daysElapsed: 1,
+        dailyRate: 0,
+        projectedSpend: 0,
+        paceStatus: 'on_track' as PaceStatus,
+        suggestedDaily: 0,
+        overBudgetCategories: [] as OverspentCategory[],
+        plannedSavingsBudget: 0,
       }
     }
-    const scopedExpenses = filterBySharedScope(expenses, activeSharedBudgetId)
-    const scopedIncome = filterBySharedScope(incomeSources, activeSharedBudgetId)
-    const scopedDebts = filterBySharedScope(debts, activeSharedBudgetId)
-    const debtIdSet = new Set(scopedDebts.map((d) => d.id))
-    const scopedDebtPayments = debtPayments.filter((p) => debtIdSet.has(p.debtId))
-
-    const monthlyExpenses = filterExpensesByMonth(scopedExpenses, monthFilter, settings.monthStartDay)
+    const monthlyExpenses = filterExpensesByMonth(expenses, monthFilter, settings.monthStartDay)
     const rawMonthlyIncome = calculateMonthlyIncome(
-      scopedIncome,
+      incomeSources,
       settings.baseCurrency,
       exchangeRates
     )
     const incomeBlocked =
-      settings.noIncomeDeclared === true && scopedIncome.length === 0
+      settings.noIncomeDeclared === true && incomeSources.length === 0
     const totalIncome = incomeBlocked ? 0 : rawMonthlyIncome
     const totalSpent = calculateTotalSpent(monthlyExpenses, settings.baseCurrency, exchangeRates)
     const totalSpentForExpenseBudget = calculateTotalSpentExcludingSavings(
@@ -138,6 +149,11 @@ export function useMonthlyStats() {
     const totalExpenseBudget = activePlan
       ? totalExpenseBudgetFromPlan(activePlan, settings.baseCurrency, exchangeRates)
       : calculateTotalBudgetExcludingSavings(budgetCategories, settings, totalIncome)
+    const plannedSavingsBudget = activePlan
+      ? totalPlannedSavingsAllocationForPlan(activePlan, settings.baseCurrency, exchangeRates)
+      : budgetCategories
+          .filter((b) => b.category === 'Savings')
+          .reduce((s, b) => s + effectiveCategoryBudget(b, settings, totalIncome), 0)
     const remaining = totalExpenseBudget - totalSpentForExpenseBudget
     const budgetUsedPercent = calculateBudgetUsedPercent(totalSpentForExpenseBudget, totalExpenseBudget)
     const spendingByEnum = calculateCategorySpending(
@@ -159,8 +175,32 @@ export function useMonthlyStats() {
       settings.baseCurrency,
       exchangeRates
     )
+    const savingsAccountsTotal = totalSavingsAccountsBalanceInBase(
+      savingsAccounts,
+      settings.baseCurrency,
+      exchangeRates
+    )
 
-    const savingsTotal = savingsHoldingsTotal + savingsFromExpenses
+    const savingsTotal = savingsAccountsTotal + savingsHoldingsTotal + savingsFromExpenses
+
+    const netSavingsTransfersThisMonth = netSavingsLedgerInBaseForMonth(
+      savingsTransactions,
+      monthFilter,
+      settings.monthStartDay,
+      settings.baseCurrency,
+      exchangeRates
+    )
+
+    const leftToSpend = calculateLeftToSpendCashFlow({
+      monthStr: monthFilter,
+      monthStartDay: settings.monthStartDay,
+      expenses,
+      incomeSources,
+      savingsTransactions,
+      baseCurrency: settings.baseCurrency,
+      exchangeRates,
+      incomeBlocked,
+    })
 
     const effectiveBudgetRows = planForCategoryBar
       ? budgetCategoriesFromPlan(planForCategoryBar, settings.baseCurrency, exchangeRates)
@@ -173,11 +213,29 @@ export function useMonthlyStats() {
     ) as Record<string, number>
 
     const debtRemainingTotal = totalDebtRemainingInBase(
-      scopedDebts,
-      scopedDebtPayments,
+      debts,
+      debtPayments,
       settings.baseCurrency,
       exchangeRates,
       goldPricePerGram
+    )
+
+    const elapsed = daysElapsedInMonth(monthFilter, settings.monthStartDay)
+    const totalDays = totalDaysInMonth(monthFilter, settings.monthStartDay)
+    const dailyRate = dailySpendingRate(totalSpentForExpenseBudget, elapsed)
+    const projectedSpend = projectedMonthSpend(dailyRate, totalDays)
+    const paceStatus = spendingPaceStatus(projectedSpend, totalExpenseBudget)
+    const suggestedDaily = suggestedDailyBudget(remaining, daysLeft)
+
+    const catIcons = Object.fromEntries(
+      effectiveBudgetRows.map((b) => [b.category, b.icon ?? ''])
+    ) as Record<string, string>
+    const overBudgetCategories = topOverspentCategories(
+      categorySpending,
+      categoryBudgetCaps,
+      elapsed,
+      totalDays,
+      catIcons,
     )
 
     return {
@@ -195,11 +253,21 @@ export function useMonthlyStats() {
       daysLeft,
       savingsTotal,
       savingsHoldingsTotal,
+      savingsAccountsTotal,
       savingsFromExpenses,
+      netSavingsTransfersThisMonth,
+      leftToSpend,
       categoryBudgetCaps,
       debtRemainingTotal,
       baseCurrency: settings.baseCurrency,
       incomeBlocked,
+      daysElapsed: elapsed,
+      dailyRate,
+      projectedSpend,
+      paceStatus,
+      suggestedDaily,
+      overBudgetCategories,
+      plannedSavingsBudget,
     }
   }, [
     expenses,
@@ -207,8 +275,9 @@ export function useMonthlyStats() {
     budgetCategories,
     budgetPlans,
     activeBudgetPlanId,
-    activeSharedBudgetId,
     savingsHoldings,
+    savingsAccounts,
+    savingsTransactions,
     debts,
     debtPayments,
     settings,

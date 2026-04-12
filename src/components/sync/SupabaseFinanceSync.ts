@@ -19,9 +19,9 @@ function buildFinancePayload() {
     budgetCategories: state.budgetCategories,
     budgetPlans: state.budgetPlans,
     activeBudgetPlanId: state.activeBudgetPlanId,
-    activeSharedBudgetId: state.activeSharedBudgetId,
-    defaultSharedBudgetPlanId: state.defaultSharedBudgetPlanId,
     savingsHoldings: state.savingsHoldings,
+    savingsAccounts: state.savingsAccounts,
+    savingsTransactions: state.savingsTransactions,
     paymentMethods: state.paymentMethods,
     debts: state.debts,
     debtPayments: state.debtPayments,
@@ -56,20 +56,6 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         } catch (e) {
           console.error('[finance sync] import failed', e)
         }
-      }
-
-      const { data: prof, error: profErr } = await supabase
-        .from('user_profiles')
-        .select('default_budget_plan_id')
-        .eq('user_id', userId)
-        .maybeSingle()
-
-      if (
-        !profErr &&
-        prof &&
-        (typeof prof.default_budget_plan_id === 'string' || prof.default_budget_plan_id === null)
-      ) {
-        useFinanceStore.getState().setDefaultSharedBudgetPlanId(prof.default_budget_plan_id)
       }
 
       hydrated.current = true

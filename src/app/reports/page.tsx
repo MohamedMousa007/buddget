@@ -10,6 +10,9 @@ import { expenseAmountInBase } from '@/lib/utils/calculations'
 import { ReportsSummaryPanel } from '@/components/features/reports/ReportsSummaryPanel'
 import { ReportsPaymentMethodPanel } from '@/components/features/reports/ReportsPaymentMethodPanel'
 import { ReportsExportBar } from '@/components/features/reports/ReportsExportBar'
+import { SpendingPacePanel } from '@/components/reports/SpendingPacePanel'
+import { ReportsSavingsPanel } from '@/components/reports/ReportsSavingsPanel'
+import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { BarChart3 } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 
@@ -25,6 +28,7 @@ const CategoryPieChart = dynamic(
 
 export default function ReportsPage() {
   const r = useReportsPage()
+  const stats = useMonthlyStats()
   const t = useT()
 
   return (
@@ -57,6 +61,24 @@ export default function ReportsPage() {
               : null
           }
           mostUsedMethod={r.mostUsedMethod}
+        />
+
+        <SpendingPacePanel
+          dailyRate={stats.dailyRate}
+          projectedSpend={stats.projectedSpend}
+          totalExpenseBudget={stats.totalExpenseBudget}
+          paceStatus={stats.paceStatus}
+          suggestedDaily={stats.suggestedDaily}
+          overBudgetCategories={stats.overBudgetCategories}
+          currency={stats.baseCurrency}
+        />
+
+        <ReportsSavingsPanel
+          transactions={r.savingsTransactions}
+          startDate={r.startDate}
+          endDate={r.endDate}
+          baseCurrency={r.settings.baseCurrency}
+          exchangeRates={r.exchangeRates}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -21,9 +21,6 @@ export default function DashboardPage() {
   const stats = useMonthlyStats()
   const incomeNote = stats.incomeBlocked ? t.dashboard.incomeBlockedHint : undefined
 
-  const savingsBudget =
-    stats.dashboardBudgetCategories.find((b) => String(b.category).toLowerCase() === 'savings')?.budgetedAmount || 0
-
   return (
     <div className="min-h-screen">
       <div className="px-4 py-6 lg:px-8 space-y-6 max-w-5xl mx-auto">
@@ -46,10 +43,10 @@ export default function DashboardPage() {
           />
           <KPICard
             title={t.dashboard.kpiRemaining}
-            value={stats.remaining}
+            value={stats.leftToSpend}
             currency={stats.baseCurrency}
             icon={t.dashboard.kpiRemainingIcon}
-            color={stats.remaining >= 0 ? 'green' : 'red'}
+            color={stats.leftToSpend >= 0 ? 'green' : 'red'}
             trendLabel={t.dashboard.kpiRemainingTrend}
           />
           <KPICard
@@ -79,6 +76,11 @@ export default function DashboardPage() {
             currency={stats.baseCurrency}
             daysLeft={stats.daysLeft}
             incomeBlockedNote={stats.incomeBlocked ? t.dashboard.incomeBlockedHint : null}
+            dailyRate={stats.dailyRate}
+            projectedSpend={stats.projectedSpend}
+            paceStatus={stats.paceStatus}
+            suggestedDaily={stats.suggestedDaily}
+            overBudgetCategories={stats.overBudgetCategories}
           />
           <CategoryBar
             budgetCategories={stats.dashboardBudgetCategories}
@@ -93,9 +95,11 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <SavingsCard
             savingsTotal={stats.savingsTotal}
+            savingsAccountsTotal={stats.savingsAccountsTotal}
             savingsHoldingsTotal={stats.savingsHoldingsTotal}
             savingsFromExpenses={stats.savingsFromExpenses}
-            savingsBudget={savingsBudget}
+            netSavingsTransfersThisMonth={stats.netSavingsTransfersThisMonth}
+            savingsBudget={stats.plannedSavingsBudget}
             currency={stats.baseCurrency}
           />
           <RecentExpenses expenses={stats.monthlyExpenses} />

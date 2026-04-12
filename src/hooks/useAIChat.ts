@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore, type ExpensePrefill } from '@/lib/store/useSettingsStore'
 import { buildSystemPrompt, sendToGemini, type AIResponse } from '@/lib/ai/gemini'
+import { buildPlanRowsForPrompt } from '@/lib/ai/budgetPlannerAi'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import {
   buildAIActionHandlerContext,
@@ -95,11 +96,22 @@ export function useAIChat() {
         `Days left in month: ${stats.daysLeft}`,
       ].join('\n')
 
+      const activePlan =
+        store.budgetPlans.find((p) => p.id === store.activeBudgetPlanId) ?? store.budgetPlans[0]
+      const budgetPlanContext = activePlan
+        ? {
+            planId: activePlan.id,
+            planName: activePlan.name,
+            categoryRows: buildPlanRowsForPrompt(activePlan, store.settings.baseCurrency, store.exchangeRates),
+          }
+        : undefined
+
       const systemPrompt = buildSystemPrompt(
         store.settings.baseCurrency,
         store.paymentMethods,
         store.debts,
-        liveDataBlock
+        liveDataBlock,
+        budgetPlanContext
       )
 
       const history = messages.slice(-AI_CHAT_HISTORY_MAX_MESSAGES).map((m) => ({

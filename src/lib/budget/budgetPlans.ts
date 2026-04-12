@@ -3,6 +3,16 @@ import type { BudgetCategory, BudgetPlan, BudgetPlanCategory, Currency, ExpenseC
 import { tryConvertCurrency } from '@/lib/utils/currency'
 
 /**
+ * Savings allocation rows are excluded from "planned expenses" totals.
+ * Legacy plans: only the single top-level name "Savings" (case-insensitive) is treated as savings unless `isSavings` is false.
+ */
+export function isSavingsPlanCategory(c: BudgetPlanCategory): boolean {
+  if (c.isSavings === true) return true
+  if (c.isSavings === false) return false
+  return c.name.trim().toLowerCase() === 'savings'
+}
+
+/**
  * Effective budget for a plan category: sum of subcategories when any exist, else parent `amount`.
  * Values are in the row's fiat (`planCategoryCurrency`), not necessarily base.
  */
@@ -35,45 +45,56 @@ export function effectivePlanCategoryAmountInBase(
   return converted ?? raw
 }
 
-/** Sum of all effective category amounts in a plan, in base currency. */
+/** Sum of planned expense categories only (excludes savings allocation rows), in base currency. */
 export function totalPlannedExpensesForPlan(
   plan: BudgetPlan,
   baseCurrency: Currency,
   exchangeRates: Record<string, number>
 ): number {
-  return plan.categories.reduce(
-    (sum, c) => sum + effectivePlanCategoryAmountInBase(c, baseCurrency, exchangeRates),
-    0
-  )
+  return plan.categories.reduce((sum, c) => {
+    if (isSavingsPlanCategory(c)) return sum
+    return sum + effectivePlanCategoryAmountInBase(c, baseCurrency, exchangeRates)
+  }, 0)
 }
 
-/** Expense budget total for KPIs: all plan rows except a top-level "Savings" row (case-insensitive), matching legacy behavior. */
-export function totalExpenseBudgetFromPlan(
+/** Sum of savings allocation rows in the plan, in base currency. */
+export function totalPlannedSavingsAllocationForPlan(
   plan: BudgetPlan,
   baseCurrency: Currency,
   exchangeRates: Record<string, number>
 ): number {
   return plan.categories.reduce((sum, c) => {
-    if (c.name.trim().toLowerCase() === 'savings') return sum
+    if (!isSavingsPlanCategory(c)) return sum
     return sum + effectivePlanCategoryAmountInBase(c, baseCurrency, exchangeRates)
   }, 0)
 }
 
+/** Same as {@link totalPlannedExpensesForPlan} — expense caps only, no savings row. */
+export function totalExpenseBudgetFromPlan(
+  plan: BudgetPlan,
+  baseCurrency: Currency,
+  exchangeRates: Record<string, number>
+): number {
+  return totalPlannedExpensesForPlan(plan, baseCurrency, exchangeRates)
+}
+
 /**
- * Map custom plan categories to legacy `BudgetCategory` rows for dashboard caps (category string = display name).
+ * Map plan categories to legacy `BudgetCategory` rows for dashboard expense caps (excludes savings rows).
  */
 export function budgetCategoriesFromPlan(
   plan: BudgetPlan,
   baseCurrency: Currency,
   exchangeRates: Record<string, number>
 ): BudgetCategory[] {
-  return plan.categories.map((c) => ({
-    category: c.name as BudgetCategory['category'],
-    budgetedAmount: effectivePlanCategoryAmountInBase(c, baseCurrency, exchangeRates),
-    currency: baseCurrency,
-    percentOfIncome: null,
-    icon: c.icon,
-  }))
+  return plan.categories
+    .filter((c) => !isSavingsPlanCategory(c))
+    .map((c) => ({
+      category: c.name as BudgetCategory['category'],
+      budgetedAmount: effectivePlanCategoryAmountInBase(c, baseCurrency, exchangeRates),
+      currency: baseCurrency,
+      percentOfIncome: null,
+      icon: c.icon,
+    }))
 }
 
 function matchExpenseCategory(planName: string): ExpenseCategory | null {
@@ -93,6 +114,7 @@ export function categorySpendingForPlanRows(
 ): Record<string, number> {
   const out: Record<string, number> = {}
   for (const cat of plan.categories) {
+    if (isSavingsPlanCategory(cat)) continue
     const name = cat.name.trim()
     if (!name) continue
     const direct = spendingByCategory[name] ?? 0

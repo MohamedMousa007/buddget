@@ -1,4 +1,17 @@
-export type Currency = 'AED' | 'USD' | 'EGP' | 'EUR' | 'GBP' | 'SAR' | 'XAU'
+export type Currency =
+  | 'AED'
+  | 'USD'
+  | 'EGP'
+  | 'EUR'
+  | 'GBP'
+  | 'SAR'
+  | 'XAU'
+  /** Savings / ledger only — approximate USD peg for totals when crossing currencies. */
+  | 'USDT'
+  | 'USDC'
+  /** Savings / ledger only — no built-in FX; same-code math only unless rates exist. */
+  | 'BTC'
+  | 'ETH'
 
 export type ExpenseCategory =
   | 'Rent'
@@ -110,6 +123,8 @@ export interface BudgetPlanCategory {
   amount: number
   /** Fiat for this row's amounts; omitted legacy rows use base currency. */
   currency?: Currency
+  /** When true, this row is a savings allocation target — not counted as a planned expense. */
+  isSavings?: boolean
   subcategories: BudgetPlanSubcategory[]
 }
 
@@ -167,6 +182,66 @@ export interface SavingsHolding {
   asOfDate?: string
   createdAt: string
   updatedAt: string
+}
+
+/** Auto-save: fixed schedule, end-of-month sweep, or percent of income (confirm in UI). */
+export type SavingsAutoSaveMode = 'fixed_schedule' | 'end_of_month' | 'percent_of_income'
+
+export interface SavingsAutoSave {
+  enabled: boolean
+  mode: SavingsAutoSaveMode
+  /** Fixed schedule: amount per run */
+  amount?: number
+  frequency?: 'weekly' | 'monthly'
+  /** Monthly: day 1–28 */
+  dayOfMonth?: number
+  /** Weekly: 0–6 (Sun–Sat) */
+  weekday?: number
+  /** percent_of_income: 0–100 */
+  percent?: number
+  /** Dedupe key last successful auto-run, e.g. `YYYY-MM` or `YYYY-MM-DD` */
+  lastRunKey?: string
+}
+
+/** High-level savings product; drives default Lucide icon in the UI. */
+export type SavingsType =
+  | 'bank'
+  | 'cash'
+  | 'gold'
+  | 'crypto_stable'
+  | 'crypto'
+  | 'stocks'
+  | 'real_estate'
+  | 'other'
+
+/** Savings bucket with ledger balance (transfers, not expenses). */
+export interface SavingsAccount {
+  id: string
+  name: string
+  type: SavingsType
+  /** Lucide icon component name; defaults from `type`, user-pickable when `type === 'other'`. */
+  icon?: string
+  /** @deprecated Legacy row marker; UI prefers `type` + `icon`. */
+  emoji?: string
+  /** Reserved for a future Goals feature — not shown in create/card UI. */
+  targetAmount?: number
+  currency: Currency
+  currentBalance: number
+  createdAt: string
+  notes?: string
+  autoSave?: SavingsAutoSave
+}
+
+export interface SavingsTransaction {
+  id: string
+  accountId: string
+  type: 'deposit' | 'withdrawal'
+  amount: number
+  currency: Currency
+  date: string
+  source?: string
+  notes?: string
+  isAutoSave?: boolean
 }
 
 export type DebtCurrency = 'EGP' | 'XAU' | Currency
@@ -329,15 +404,6 @@ export interface OnboardingState {
 export interface FinanceStore {
   profile: UserProfile
   settings: AppSettings
-  /**
-   * Active shared budget plan UUID for filtering transactions and dashboard scope.
-   * `null` = personal-only scope (transactions without `sharedPlanId`).
-   */
-  activeSharedBudgetId: string | null
-  /**
-   * Default shared plan UUID for tagging new transactions (from `user_profiles.default_budget_plan_id`).
-   */
-  defaultSharedBudgetPlanId: string | null
   /** Free-text financial goals from Buddgy plan builder; synced in finance payload. */
   financialGoalsNotes: string
   /** Expert onboarding progress, answers, and cached AI plans (synced in user_finance payload). */
@@ -351,6 +417,9 @@ export interface FinanceStore {
   /** Selected plan for dashboard caps and planner UI; ignored when `budgetPlans` is empty. */
   activeBudgetPlanId: string | null
   savingsHoldings: SavingsHolding[]
+  /** Multi-account savings with transfer ledger (deposits / withdrawals). */
+  savingsAccounts: SavingsAccount[]
+  savingsTransactions: SavingsTransaction[]
   paymentMethods: PaymentMethod[]
   debts: Debt[]
   debtPayments: DebtPayment[]
@@ -407,8 +476,6 @@ export interface FinanceStore {
   replaceBudgetPlanCategories: (planId: string, categories: BudgetPlanCategory[]) => void
   deleteBudgetPlan: (planId: string) => void
   setActiveBudgetPlanId: (id: string | null) => void
-  setActiveSharedBudgetId: (id: string | null) => void
-  setDefaultSharedBudgetPlanId: (id: string | null) => void
   addPlanCategory: (planId: string, category: Omit<BudgetPlanCategory, 'id' | 'subcategories'> & { subcategories?: BudgetPlanSubcategory[] }) => string
   updatePlanCategory: (planId: string, categoryId: string, updates: Partial<Omit<BudgetPlanCategory, 'id' | 'subcategories'>> & { subcategories?: BudgetPlanSubcategory[] }) => void
   deletePlanCategory: (planId: string, categoryId: string) => void
@@ -423,6 +490,20 @@ export interface FinanceStore {
   addSavingsHolding: (h: Omit<SavingsHolding, 'id' | 'createdAt' | 'updatedAt'>) => void
   updateSavingsHolding: (id: string, updates: Partial<SavingsHolding>) => void
   deleteSavingsHolding: (id: string) => void
+  addSavingsAccount: (
+    a: Omit<SavingsAccount, 'id' | 'createdAt' | 'currentBalance'> & { openingBalance?: number }
+  ) => string
+  updateSavingsAccount: (id: string, updates: Partial<SavingsAccount>) => void
+  deleteSavingsAccount: (id: string) => void
+  depositToSavings: (
+    accountId: string,
+    amount: number,
+    currency: Currency,
+    notes?: string,
+    opts?: { isAutoSave?: boolean; source?: string }
+  ) => void
+  withdrawFromSavings: (accountId: string, amount: number, currency: Currency, notes?: string) => void
+  correctSavingsBalance: (accountId: string, newBalance: number, notes?: string) => void
   updateSettings: (updates: Partial<AppSettings>) => void
   updateProfile: (updates: Partial<UserProfile>) => void
   setFinancialGoalsNotes: (notes: string) => void

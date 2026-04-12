@@ -118,11 +118,22 @@ export interface Dictionary {
     savingsDotSeparator: string
     savingsAddedThisMonth: string
     savingsMonthlyTarget: string
+    savingsSubAccounts: string
+    savingsSubLegacy: string
+    savingsSubExpensesTagged: string
+    savingsNetLedgerMonth: string
     debtTitle: string
     debtBadgeCash: string
     debtPayments: (n: number) => string
     debtPaymentsTowardsThis: string
     loadingMessage: string
+    paceLabel: string
+    projectedLabel: string
+    suggestedDailyLabel: string
+    paceOnTrack: string
+    paceWarning: string
+    paceOver: string
+    cutBackHint: string
   }
 
   expenses: {
@@ -226,8 +237,10 @@ export interface Dictionary {
     optionInvestment: string
     labelType: string
     labelCurrentAmount: string
+    labelCurrentBalance: string
     labelCurrency: string
     buttonAdd: string
+    createAccountButton: string
     sectionLiquid: string
     emptyLiquid: string
     sectionInvestment: string
@@ -242,6 +255,66 @@ export interface Dictionary {
     bucketLiquid: string
     bucketInvestment: string
     confirmDelete: string
+    addAccount: string
+    addToSavings: string
+    withdraw: string
+    updateBalance: string
+    emptyAccounts: string
+    emptyAccountsCta: string
+    historyTitle: string
+    filterAllSavings: string
+    deposit: string
+    withdrawal: string
+    autoSave: string
+    autoSaveOff: string
+    autoSaveOn: string
+    autoSaveMode: string
+    modeFixed: string
+    modeEndOfMonth: string
+    modePercent: string
+    whenMonthly: string
+    whenWeekly: string
+    sheetAddTitle: string
+    sheetAddNewTitle: string
+    sheetWithdrawTitle: string
+    sheetUpdateTitle: string
+    labelWhichSavings: string
+    labelAmount: string
+    labelNotes: string
+    labelReason: string
+    labelNewBalance: string
+    currentBalanceLabel: string
+    available: string
+    submitAdd: string
+    submitWithdraw: string
+    submitUpdate: string
+    differenceDeposit: string
+    differenceWithdrawal: string
+    exceedsBalance: string
+    confirmDeleteSavings: string
+    tagAutoSave: string
+    labelPickIcon: string
+    goldCurrencyHint: string
+    types: {
+      bank: string
+      cash: string
+      gold: string
+      crypto_stable: string
+      crypto: string
+      stocks: string
+      real_estate: string
+      other: string
+    }
+    placeholders: {
+      bank: string
+      cash: string
+      gold: string
+      crypto_stable: string
+      crypto: string
+      stocks: string
+      real_estate: string
+      other: string
+    }
   }
 
   debts: {
@@ -425,6 +498,19 @@ export interface Dictionary {
     expenseFilterAll: string
     expenseFilterDebtOnly: string
     expenseFilterExcludeDebt: string
+    spendingPaceTitle: string
+    avgDailySpend: string
+    projectedTotal: string
+    categoriesToWatch: string
+    paceOnTrack: string
+    paceWarning: string
+    paceOver: string
+    suggestedDailyLabel: string
+    savingsSectionTitle: string
+    savingsDeposits: string
+    savingsWithdrawals: string
+    savingsNet: string
+    moneyFlowHint: string
   }
 
   settings: {
@@ -594,7 +680,9 @@ export interface Dictionary {
     totalIncome: string
     totalPlanned: string
     projectedSavings: string
-    projectedSavingsLine: (amount: string) => string
+    projectedSavingsLine: (amount: string, savingsRatePercent: number) => string
+    /** Short label on budget planner rows that are savings allocation, not spending. */
+    savingsAllocationBadge: string
     aiEvalTitle: string
     aiEvalLoading: string
     aiEvalError: string
@@ -633,47 +721,9 @@ export interface Dictionary {
     noPlansEmptyDesc: string
     noPlansCreateFirst: string
     buddgyTagline: string
-    buddgyHeroTitleMeet: string
-    buddgyHeroSubtitle: string
-    buddgyHeroBody: string
-    buddgyHeroCta: string
-    buddgyHeroManualHint: string
-    buddgyCompactTitle: string
-    buddgyCompactBody: string
-    buddgyCompactCta: string
     buddgyBuilderOpening: string
     buddgyChatSubtitle: string
     buddgyBuilderBadge: string
-    buddgyEvalSectionTitle: string
-  }
-
-  sharedBudget: {
-    membersTitle: string
-    you: string
-    roleOwner: string
-    roleManager: string
-    roleViewer: string
-    syncOn: string
-    setAsDefaultPlan: string
-    addPartner: string
-    previewPlan: string
-    accept: string
-    decline: string
-    inviteTitle: string
-    inviteEmail: string
-    inviteEmailPlaceholder: string
-    roleView: string
-    roleManage: string
-    syncLabel: string
-    syncHelp: string
-    sendInvite: string
-    notFoundHint: string
-    inviteApp: string
-    foundAs: string
-    closeSheet: string
-    planSwitcherPersonal: string
-    planSwitcherCreateShared: string
-    defaultBadge: string
   }
 
   auth: {

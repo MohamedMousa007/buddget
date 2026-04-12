@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { tryConvertCurrency } from '@/lib/utils/currency'
+import { convertCurrency, tryConvertCurrency } from '@/lib/utils/currency'
 import { importDataSchema } from './financeImportSchema'
 import {
   DEFAULT_BUDGET,
@@ -13,11 +13,67 @@ import {
   DEFAULT_SETTINGS,
   createFreshDefaultProfile,
 } from './defaultFinanceData'
-import type { BudgetPlanCategory, FinanceStore, OnboardingState } from './types'
+import type {
+  BudgetPlanCategory,
+  FinanceStore,
+  OnboardingState,
+  SavingsAccount,
+  SavingsHolding,
+  SavingsTransaction,
+  SavingsType,
+} from './types'
 import { defaultOnboardingState } from '@/lib/onboarding/onboardingTypes'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
+import { SAVINGS_TYPE_ICONS } from '@/lib/constants/savingsIcons'
+import { normalizeSavingsAccountsList } from '@/lib/savings/normalizeSavingsAccount'
 
-const PERSIST_VERSION = 7
+const PERSIST_VERSION = 9
+
+function holdingSubtypeToSavingsType(sub: SavingsHolding['subtype']): SavingsType {
+  const m: Record<SavingsHolding['subtype'], SavingsType> = {
+    bank: 'bank',
+    cash: 'cash',
+    gold: 'gold',
+    stocks: 'stocks',
+    crypto: 'crypto',
+    real_estate: 'real_estate',
+    other: 'other',
+  }
+  return m[sub]
+}
+
+function migrateSavingsHoldingsToLedger(
+  holdings: SavingsHolding[],
+  genId: () => string
+): { accounts: SavingsAccount[]; transactions: SavingsTransaction[] } {
+  const accounts: SavingsAccount[] = []
+  const transactions: SavingsTransaction[] = []
+  for (const h of holdings) {
+    const st = holdingSubtypeToSavingsType(h.subtype)
+    accounts.push({
+      id: h.id,
+      name: h.name,
+      type: st,
+      icon: SAVINGS_TYPE_ICONS[st],
+      currency: h.currency,
+      currentBalance: h.amount,
+      createdAt: h.createdAt,
+      notes: h.notes,
+    })
+    if (h.amount > 0.00001) {
+      transactions.push({
+        id: genId(),
+        accountId: h.id,
+        type: 'deposit',
+        amount: h.amount,
+        currency: h.currency,
+        date: (h.asOfDate || h.createdAt).slice(0, 10),
+        notes: 'Balance from previous savings record',
+      })
+    }
+  }
+  return { accounts, transactions }
+}
 
 function generateId(): string {
   return `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
@@ -40,8 +96,6 @@ export const useFinanceStore = create<FinanceStore>()(
     (set, get) => ({
       profile: DEFAULT_PROFILE,
       settings: DEFAULT_SETTINGS,
-      activeSharedBudgetId: null,
-      defaultSharedBudgetPlanId: null,
       financialGoalsNotes: '',
       onboardingState: defaultOnboardingState(),
       incomeSources: DEFAULT_INCOME,
@@ -51,6 +105,8 @@ export const useFinanceStore = create<FinanceStore>()(
       budgetPlans: [],
       activeBudgetPlanId: null,
       savingsHoldings: [],
+      savingsAccounts: [],
+      savingsTransactions: [],
       paymentMethods: DEFAULT_PAYMENT_METHODS,
       debts: DEFAULT_DEBTS,
       debtPayments: [],
@@ -60,7 +116,7 @@ export const useFinanceStore = create<FinanceStore>()(
       lastRatesFetch: null,
 
       addExpense: (expense) => {
-        const { exchangeRates, settings, defaultSharedBudgetPlanId } = get()
+        const { exchangeRates, settings } = get()
         const converted = tryConvertCurrency(
           expense.amount,
           expense.currency,
@@ -68,17 +124,12 @@ export const useFinanceStore = create<FinanceStore>()(
           exchangeRates
         )
         const amountInBaseCurrency = converted ?? expense.amount
-        const sharedPlanId =
-          expense.sharedPlanId !== undefined ?
-            expense.sharedPlanId
-          : defaultSharedBudgetPlanId ?? undefined
 
         set((state) => ({
           expenses: [
             ...state.expenses,
             {
               ...expense,
-              ...(sharedPlanId !== undefined ? { sharedPlanId } : {}),
               amountInBaseCurrency,
               id: generateId(),
               createdAt: new Date().toISOString(),
@@ -101,24 +152,17 @@ export const useFinanceStore = create<FinanceStore>()(
         })),
 
       addIncomeSource: (source) =>
-        set((state) => {
-          const sid =
-            source.sharedPlanId !== undefined ?
-              source.sharedPlanId
-            : state.defaultSharedBudgetPlanId ?? undefined
-          return {
-            incomeSources: [
-              ...state.incomeSources,
-              {
-                ...source,
-                ...(sid !== undefined ? { sharedPlanId: sid } : {}),
-                id: generateId(),
-                createdAt: new Date().toISOString(),
-              },
-            ],
-            settings: { ...state.settings, noIncomeDeclared: false },
-          }
-        }),
+        set((state) => ({
+          incomeSources: [
+            ...state.incomeSources,
+            {
+              ...source,
+              id: generateId(),
+              createdAt: new Date().toISOString(),
+            },
+          ],
+          settings: { ...state.settings, noIncomeDeclared: false },
+        })),
 
       updateIncomeSource: (id, updates) =>
         set((state) => ({
@@ -159,23 +203,16 @@ export const useFinanceStore = create<FinanceStore>()(
 
       addDebt: (debt) => {
         const id = generateId()
-        set((state) => {
-          const sid =
-            debt.sharedPlanId !== undefined ?
-              debt.sharedPlanId
-            : state.defaultSharedBudgetPlanId ?? undefined
-          return {
-            debts: [
-              ...state.debts,
-              {
-                ...debt,
-                ...(sid !== undefined ? { sharedPlanId: sid } : {}),
-                id,
-                createdAt: new Date().toISOString(),
-              },
-            ],
-          }
-        })
+        set((state) => ({
+          debts: [
+            ...state.debts,
+            {
+              ...debt,
+              id,
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        }))
         return id
       },
 
@@ -200,7 +237,7 @@ export const useFinanceStore = create<FinanceStore>()(
         })),
 
       addDebtPaymentWithExpense: (payment, expense) => {
-        const { exchangeRates, settings, defaultSharedBudgetPlanId } = get()
+        const { exchangeRates, settings } = get()
         const converted = tryConvertCurrency(
           expense.amount,
           expense.currency,
@@ -208,53 +245,32 @@ export const useFinanceStore = create<FinanceStore>()(
           exchangeRates
         )
         const amountInBaseCurrency = converted ?? expense.amount
-        const expenseShared =
-          expense.sharedPlanId !== undefined ? expense.sharedPlanId : defaultSharedBudgetPlanId ?? undefined
 
-        set((state) => {
-          const paySid =
-            payment.sharedPlanId !== undefined
-              ? payment.sharedPlanId
-              : state.defaultSharedBudgetPlanId ?? undefined
-          const newPayment = {
-            ...payment,
-            ...(paySid !== undefined ? { sharedPlanId: paySid } : {}),
-            id: generateId(),
-            createdAt: new Date().toISOString(),
-          }
-          const newExpense = {
-            ...expense,
-            ...(expenseShared !== undefined ? { sharedPlanId: expenseShared } : {}),
-            amountInBaseCurrency,
-            id: generateId(),
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          }
-          return {
-            debtPayments: [...state.debtPayments, newPayment],
-            expenses: [...state.expenses, newExpense],
-          }
-        })
+        set((state) => ({
+          debtPayments: [
+            ...state.debtPayments,
+            { ...payment, id: generateId(), createdAt: new Date().toISOString() },
+          ],
+          expenses: [
+            ...state.expenses,
+            {
+              ...expense,
+              amountInBaseCurrency,
+              id: generateId(),
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+          ],
+        }))
       },
 
       addDebtPayment: (payment) =>
-        set((state) => {
-          const sid =
-            payment.sharedPlanId !== undefined ?
-              payment.sharedPlanId
-            : state.defaultSharedBudgetPlanId ?? undefined
-          return {
-            debtPayments: [
-              ...state.debtPayments,
-              {
-                ...payment,
-                ...(sid !== undefined ? { sharedPlanId: sid } : {}),
-                id: generateId(),
-                createdAt: new Date().toISOString(),
-              },
-            ],
-          }
-        }),
+        set((state) => ({
+          debtPayments: [
+            ...state.debtPayments,
+            { ...payment, id: generateId(), createdAt: new Date().toISOString() },
+          ],
+        })),
 
       deleteDebt: (id) =>
         set((state) => ({
@@ -289,22 +305,12 @@ export const useFinanceStore = create<FinanceStore>()(
         })),
 
       addRecurringExpense: (expense) =>
-        set((state) => {
-          const sid =
-            expense.sharedPlanId !== undefined ?
-              expense.sharedPlanId
-            : state.defaultSharedBudgetPlanId ?? undefined
-          return {
-            recurringExpenses: [
-              ...state.recurringExpenses,
-              {
-                ...expense,
-                ...(sid !== undefined ? { sharedPlanId: sid } : {}),
-                id: generateId(),
-              },
-            ],
-          }
-        }),
+        set((state) => ({
+          recurringExpenses: [
+            ...state.recurringExpenses,
+            { ...expense, id: generateId() },
+          ],
+        })),
 
       updateRecurringExpense: (id, updates) =>
         set((state) => ({
@@ -404,10 +410,6 @@ export const useFinanceStore = create<FinanceStore>()(
         }),
 
       setActiveBudgetPlanId: (id) => set({ activeBudgetPlanId: id }),
-
-      setActiveSharedBudgetId: (id) => set({ activeSharedBudgetId: id }),
-
-      setDefaultSharedBudgetPlanId: (id) => set({ defaultSharedBudgetPlanId: id }),
 
       addPlanCategory: (planId, category) => {
         const catId = generateId()
@@ -577,6 +579,145 @@ export const useFinanceStore = create<FinanceStore>()(
           savingsHoldings: state.savingsHoldings.filter((s) => s.id !== id),
         })),
 
+      addSavingsAccount: (a) => {
+        const input = a as Omit<SavingsAccount, 'id' | 'createdAt' | 'currentBalance'> & {
+          openingBalance?: number
+        }
+        const { openingBalance: openingField, ...rest } = input
+        const openingBalance = Math.max(0, Number(openingField) || 0)
+        const id = generateId()
+        const today = new Date().toISOString().slice(0, 10)
+        set((state) => {
+          const row: SavingsAccount = {
+            ...rest,
+            id,
+            currentBalance: openingBalance,
+            createdAt: new Date().toISOString(),
+          }
+          const nextTx =
+            openingBalance > 0.00001
+              ? [
+                  ...state.savingsTransactions,
+                  {
+                    id: generateId(),
+                    accountId: id,
+                    type: 'deposit' as const,
+                    amount: openingBalance,
+                    currency: row.currency,
+                    date: today,
+                    notes: 'Opening balance',
+                  },
+                ]
+              : state.savingsTransactions
+          return {
+            savingsAccounts: [...state.savingsAccounts, row],
+            savingsTransactions: nextTx,
+          }
+        })
+        return id
+      },
+
+      updateSavingsAccount: (id, updates) =>
+        set((state) => ({
+          savingsAccounts: state.savingsAccounts.map((acc) =>
+            acc.id === id ? { ...acc, ...updates } : acc
+          ),
+        })),
+
+      deleteSavingsAccount: (id) =>
+        set((state) => ({
+          savingsAccounts: state.savingsAccounts.filter((a) => a.id !== id),
+          savingsTransactions: state.savingsTransactions.filter((t) => t.accountId !== id),
+        })),
+
+      depositToSavings: (accountId, amount, currency, notes, opts) => {
+        const raw = Math.max(0, Number(amount) || 0)
+        if (raw <= 0) return
+        set((state) => {
+          const acc = state.savingsAccounts.find((a) => a.id === accountId)
+          if (!acc) return state
+          const cIn =
+            currency === acc.currency ? acc.currency : clampFiatToAllowed(state.settings, currency)
+          const rates = state.exchangeRates
+          const amt =
+            cIn === acc.currency ? raw : convertCurrency(raw, cIn, acc.currency, rates)
+          if (amt <= 0) return state
+          const tx: SavingsTransaction = {
+            id: generateId(),
+            accountId,
+            type: 'deposit',
+            amount: amt,
+            currency: acc.currency,
+            date: new Date().toISOString().slice(0, 10),
+            notes,
+            source: opts?.source,
+            isAutoSave: opts?.isAutoSave,
+          }
+          return {
+            savingsTransactions: [...state.savingsTransactions, tx],
+            savingsAccounts: state.savingsAccounts.map((a) =>
+              a.id === accountId ? { ...a, currentBalance: a.currentBalance + amt } : a
+            ),
+          }
+        })
+      },
+
+      withdrawFromSavings: (accountId, amount, currency, notes) => {
+        const raw = Math.max(0, Number(amount) || 0)
+        if (raw <= 0) return
+        set((state) => {
+          const acc = state.savingsAccounts.find((a) => a.id === accountId)
+          if (!acc) return state
+          const cIn =
+            currency === acc.currency ? acc.currency : clampFiatToAllowed(state.settings, currency)
+          const rates = state.exchangeRates
+          const amt =
+            cIn === acc.currency ? raw : convertCurrency(raw, cIn, acc.currency, rates)
+          if (amt <= 0 || acc.currentBalance + 0.0001 < amt) return state
+          const tx: SavingsTransaction = {
+            id: generateId(),
+            accountId,
+            type: 'withdrawal',
+            amount: amt,
+            currency: acc.currency,
+            date: new Date().toISOString().slice(0, 10),
+            notes,
+          }
+          return {
+            savingsTransactions: [...state.savingsTransactions, tx],
+            savingsAccounts: state.savingsAccounts.map((a) =>
+              a.id === accountId ? { ...a, currentBalance: Math.max(0, a.currentBalance - amt) } : a
+            ),
+          }
+        })
+      },
+
+      correctSavingsBalance: (accountId, newBalance, notes) => {
+        const nb = Math.max(0, Number(newBalance) || 0)
+        set((state) => {
+          const acc = state.savingsAccounts.find((a) => a.id === accountId)
+          if (!acc) return state
+          const diff = nb - acc.currentBalance
+          if (Math.abs(diff) < 0.0001) return state
+          const type: SavingsTransaction['type'] = diff > 0 ? 'deposit' : 'withdrawal'
+          const tx: SavingsTransaction = {
+            id: generateId(),
+            accountId,
+            type,
+            amount: Math.abs(diff),
+            currency: acc.currency,
+            date: new Date().toISOString().slice(0, 10),
+            notes: notes?.trim() || 'Manual balance correction',
+          }
+          return {
+            savingsTransactions: [...state.savingsTransactions, tx],
+            savingsAccounts: state.savingsAccounts.map((a) =>
+              a.id === accountId ? { ...a, currentBalance: nb } : a
+            ),
+          }
+        })
+      },
+
       updateSettings: (updates) =>
         set((state) => ({
           settings: { ...state.settings, ...updates },
@@ -632,20 +773,29 @@ export const useFinanceStore = create<FinanceStore>()(
         }
 
         const data = result.data
+        const holdings = data.savingsHoldings ?? []
+        let savingsAccounts: SavingsAccount[] = normalizeSavingsAccountsList(
+          (data.savingsAccounts ?? []) as unknown[]
+        )
+        let savingsTransactions: SavingsTransaction[] = (data.savingsTransactions ?? []) as SavingsTransaction[]
+        let savingsHoldingsOut = holdings
+        if (savingsAccounts.length === 0 && holdings.length > 0) {
+          const migrated = migrateSavingsHoldingsToLedger(holdings, generateId)
+          savingsAccounts = migrated.accounts
+          savingsTransactions = migrated.transactions
+          savingsHoldingsOut = []
+        }
         set((state) => ({
           ...state,
           ...data,
           budgetPlans: data.budgetPlans ?? state.budgetPlans,
           activeBudgetPlanId:
             data.activeBudgetPlanId !== undefined ? data.activeBudgetPlanId : state.activeBudgetPlanId,
-          activeSharedBudgetId:
-            data.activeSharedBudgetId !== undefined ? data.activeSharedBudgetId : state.activeSharedBudgetId,
-          defaultSharedBudgetPlanId:
-            data.defaultSharedBudgetPlanId !== undefined
-              ? data.defaultSharedBudgetPlanId
-              : state.defaultSharedBudgetPlanId,
           financialGoalsNotes:
             data.financialGoalsNotes !== undefined ? data.financialGoalsNotes : state.financialGoalsNotes,
+          savingsHoldings: data.savingsHoldings !== undefined ? savingsHoldingsOut : state.savingsHoldings,
+          savingsAccounts,
+          savingsTransactions,
           settings: data.settings
             ? { ...state.settings, ...data.settings }
             : state.settings,
@@ -667,10 +817,10 @@ export const useFinanceStore = create<FinanceStore>()(
           budgetCategories: state.budgetCategories,
           budgetPlans: state.budgetPlans,
           activeBudgetPlanId: state.activeBudgetPlanId,
-          activeSharedBudgetId: state.activeSharedBudgetId,
-          defaultSharedBudgetPlanId: state.defaultSharedBudgetPlanId,
           financialGoalsNotes: state.financialGoalsNotes,
           savingsHoldings: state.savingsHoldings,
+          savingsAccounts: state.savingsAccounts,
+          savingsTransactions: state.savingsTransactions,
           paymentMethods: state.paymentMethods,
           debts: state.debts,
           debtPayments: state.debtPayments,
@@ -690,10 +840,10 @@ export const useFinanceStore = create<FinanceStore>()(
           budgetCategories: DEFAULT_BUDGET,
           budgetPlans: [],
           activeBudgetPlanId: null,
-          activeSharedBudgetId: null,
-          defaultSharedBudgetPlanId: null,
           financialGoalsNotes: '',
           savingsHoldings: [],
+          savingsAccounts: [],
+          savingsTransactions: [],
           paymentMethods: DEFAULT_PAYMENT_METHODS,
           debts: DEFAULT_DEBTS,
           debtPayments: [],
@@ -717,16 +867,23 @@ export const useFinanceStore = create<FinanceStore>()(
             : {}
         if (fromVersion >= 6) {
           const prevSettings = (p.settings as Record<string, unknown> | undefined) || {}
+          const holdings = (Array.isArray(p.savingsHoldings) ? p.savingsHoldings : []) as SavingsHolding[]
+          let savingsAccounts = (p.savingsAccounts as SavingsAccount[] | undefined) ?? []
+          let savingsTransactions = (p.savingsTransactions as SavingsTransaction[] | undefined) ?? []
+          let savingsHoldingsOut = holdings
+          if (fromVersion < 8 && savingsAccounts.length === 0 && holdings.length > 0) {
+            const gen = (): string =>
+              `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+            const migrated = migrateSavingsHoldingsToLedger(holdings, gen)
+            savingsAccounts = migrated.accounts
+            savingsTransactions = migrated.transactions
+            savingsHoldingsOut = []
+          }
+          if (fromVersion < 9) {
+            savingsAccounts = normalizeSavingsAccountsList(savingsAccounts as unknown[])
+          }
           return {
             ...p,
-            activeSharedBudgetId:
-              typeof p.activeSharedBudgetId === 'string' || p.activeSharedBudgetId === null
-                ? p.activeSharedBudgetId
-                : null,
-            defaultSharedBudgetPlanId:
-              typeof p.defaultSharedBudgetPlanId === 'string' || p.defaultSharedBudgetPlanId === null
-                ? p.defaultSharedBudgetPlanId
-                : null,
             budgetPlans: Array.isArray(p.budgetPlans) ? p.budgetPlans : [],
             activeBudgetPlanId:
               typeof p.activeBudgetPlanId === 'string' || p.activeBudgetPlanId === null
@@ -736,6 +893,9 @@ export const useFinanceStore = create<FinanceStore>()(
             recurringDebtPayments: Array.isArray(p.recurringDebtPayments)
               ? p.recurringDebtPayments
               : [],
+            savingsHoldings: savingsHoldingsOut,
+            savingsAccounts,
+            savingsTransactions,
             settings: {
               ...DEFAULT_SETTINGS,
               ...prevSettings,
@@ -746,10 +906,14 @@ export const useFinanceStore = create<FinanceStore>()(
         }
         if (fromVersion >= 5) {
           const prevSettings = (p.settings as Record<string, unknown> | undefined) || {}
+          const savingsAccounts =
+            fromVersion < 9
+              ? normalizeSavingsAccountsList(
+                  Array.isArray(p.savingsAccounts) ? (p.savingsAccounts as unknown[]) : []
+                )
+              : ((p.savingsAccounts as SavingsAccount[]) ?? [])
           return {
             ...p,
-            activeSharedBudgetId: null,
-            defaultSharedBudgetPlanId: null,
             budgetPlans: Array.isArray(p.budgetPlans) ? p.budgetPlans : [],
             activeBudgetPlanId:
               typeof p.activeBudgetPlanId === 'string' || p.activeBudgetPlanId === null
@@ -759,6 +923,7 @@ export const useFinanceStore = create<FinanceStore>()(
             recurringDebtPayments: Array.isArray(p.recurringDebtPayments)
               ? p.recurringDebtPayments
               : [],
+            savingsAccounts,
             settings: {
               ...DEFAULT_SETTINGS,
               ...prevSettings,
@@ -769,12 +934,19 @@ export const useFinanceStore = create<FinanceStore>()(
         }
         if (fromVersion >= 3) {
           const prevSettings = (p.settings as Record<string, unknown> | undefined) || {}
+          const savingsAccounts =
+            fromVersion < 9
+              ? normalizeSavingsAccountsList(
+                  Array.isArray(p.savingsAccounts) ? (p.savingsAccounts as unknown[]) : []
+                )
+              : ((p.savingsAccounts as SavingsAccount[]) ?? [])
           return {
             ...p,
             onboardingState: (p.onboardingState as OnboardingState | undefined) ?? defaultOnboardingState(),
             recurringDebtPayments: Array.isArray(p.recurringDebtPayments)
               ? p.recurringDebtPayments
               : [],
+            savingsAccounts,
             settings: {
               ...DEFAULT_SETTINGS,
               ...prevSettings,
@@ -785,10 +957,17 @@ export const useFinanceStore = create<FinanceStore>()(
         }
         if (fromVersion >= 2) {
           const prevSettings = (p.settings as Record<string, unknown> | undefined) || {}
+          const savingsAccounts =
+            fromVersion < 9
+              ? normalizeSavingsAccountsList(
+                  Array.isArray(p.savingsAccounts) ? (p.savingsAccounts as unknown[]) : []
+                )
+              : ((p.savingsAccounts as SavingsAccount[]) ?? [])
           return {
             ...p,
             onboardingState: (p.onboardingState as OnboardingState | undefined) ?? defaultOnboardingState(),
             recurringDebtPayments: [],
+            savingsAccounts,
             settings: {
               ...DEFAULT_SETTINGS,
               ...prevSettings,
@@ -807,6 +986,8 @@ export const useFinanceStore = create<FinanceStore>()(
           recurringExpenses: [],
           budgetCategories: DEFAULT_BUDGET,
           savingsHoldings: [],
+          savingsAccounts: [],
+          savingsTransactions: [],
           paymentMethods: DEFAULT_PAYMENT_METHODS,
           debts: [],
           debtPayments: [],
@@ -826,13 +1007,9 @@ export const useFinanceStore = create<FinanceStore>()(
           budgetPlans: p.budgetPlans ?? current.budgetPlans,
           activeBudgetPlanId:
             p.activeBudgetPlanId !== undefined ? p.activeBudgetPlanId : current.activeBudgetPlanId,
-          activeSharedBudgetId:
-            p.activeSharedBudgetId !== undefined ? p.activeSharedBudgetId : current.activeSharedBudgetId,
-          defaultSharedBudgetPlanId:
-            p.defaultSharedBudgetPlanId !== undefined
-              ? p.defaultSharedBudgetPlanId
-              : current.defaultSharedBudgetPlanId,
           savingsHoldings: p.savingsHoldings ?? current.savingsHoldings,
+          savingsAccounts: p.savingsAccounts ?? current.savingsAccounts,
+          savingsTransactions: p.savingsTransactions ?? current.savingsTransactions,
           recurringDebtPayments: p.recurringDebtPayments ?? current.recurringDebtPayments,
           onboardingState: p.onboardingState
             ? { ...current.onboardingState, ...p.onboardingState }

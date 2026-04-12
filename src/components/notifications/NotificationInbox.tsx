@@ -4,9 +4,6 @@ import { useEffect, useRef, useState } from 'react'
 import { Bell } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useNotifications } from '@/hooks/useNotifications'
-import { BudgetInviteCard } from '@/components/notifications/BudgetInviteCard'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
 import {
   confirmRecurringDebtPayment,
@@ -20,23 +17,17 @@ const SEVERITY_DOT: Record<'warning' | 'info' | 'critical', string> = {
 }
 
 /**
- * Bell + dropdown: local nudges + server budget invites (invite card actions).
+ * Bell + dropdown: local nudges.
  */
 export function NotificationInbox({ className }: { className?: string }) {
   const t = useT()
-  const router = useRouter()
   const wrapRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
   const {
     notifications,
-    serverNotifications,
     unreadCount,
     markAllRead,
-    refetchServerNotifications,
   } = useNotifications()
-  const setActiveSharedBudgetId = useFinanceStore((s) => s.setActiveSharedBudgetId)
-
-  const inviteRows = serverNotifications.filter((n) => n.type === 'budget_invite' && !n.read)
 
   useEffect(() => {
     if (!open) return
@@ -89,24 +80,6 @@ export function NotificationInbox({ className }: { className?: string }) {
             </button>
           </div>
           <div className="px-3 py-3 space-y-3">
-            {inviteRows.map((row) => (
-              <BudgetInviteCard
-                key={row.id}
-                row={row}
-                labels={{
-                  preview: t.sharedBudget.previewPlan,
-                  accept: t.sharedBudget.accept,
-                  decline: t.sharedBudget.decline,
-                  working: t.common.loading,
-                }}
-                onPreview={(planId) => {
-                  setActiveSharedBudgetId(planId)
-                  setOpen(false)
-                  router.push('/budget-setup')
-                }}
-                onResolved={() => void refetchServerNotifications()}
-              />
-            ))}
             {notifications.length > 0 ? (
               <ul className="divide-y divide-[var(--color-brand-border)]">
                 {notifications.map((n) => (
@@ -146,7 +119,7 @@ export function NotificationInbox({ className }: { className?: string }) {
                 ))}
               </ul>
             ) : null}
-            {notifications.length === 0 && inviteRows.length === 0 ? (
+            {notifications.length === 0 ? (
               <p className="text-sm text-[var(--color-brand-text-secondary)] text-center py-8">{t.notifications.emptyState}</p>
             ) : null}
           </div>
