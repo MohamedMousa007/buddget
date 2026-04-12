@@ -5,17 +5,20 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { useT } from '@/lib/i18n'
-import type { Expense, ExpenseCategory, Currency } from '@/lib/store/types'
+import { usePlanCategories } from '@/hooks/usePlanCategories'
+import type { Expense, Currency } from '@/lib/store/types'
 
 export function useEditExpenseForm(expense: Expense, onClose: () => void) {
   const { updateExpense, paymentMethods, settings, exchangeRates } = useFinanceStore()
   const t = useT()
+  const { categoryChipOptions } = usePlanCategories()
 
   const [date, setDate] = useState(expense.date)
   const [description, setDescription] = useState(expense.description)
   const [amount, setAmount] = useState(expense.amount.toString())
   const [currency, setCurrency] = useState<Currency>(expense.currency)
-  const [category, setCategory] = useState<ExpenseCategory>(expense.category)
+  const [category, setCategory] = useState<string>(expense.category)
+  const [subcategory, setSubcategory] = useState<string | undefined>(expense.subcategory)
   const [paymentMethodId, setPaymentMethodId] = useState(expense.paymentMethodId)
   const [isRecurring, setIsRecurring] = useState(expense.isRecurring)
   const [notes, setNotes] = useState(expense.notes || '')
@@ -39,6 +42,7 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
       date,
       description,
       category,
+      subcategory,
       amount: parsedAmount,
       currency: cur,
       amountInBaseCurrency: amountInBase,
@@ -51,6 +55,7 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
   }, [
     amount,
     category,
+    subcategory,
     currency,
     date,
     description,
@@ -76,6 +81,9 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
     setCurrency,
     category,
     setCategory,
+    subcategory,
+    setSubcategory,
+    categoryChipOptions,
     paymentMethodId,
     setPaymentMethodId,
     isRecurring,

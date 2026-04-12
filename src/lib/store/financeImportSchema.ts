@@ -2,16 +2,7 @@ import { z } from 'zod'
 
 const currencySchema = z.enum(['AED', 'USD', 'EGP', 'EUR', 'GBP', 'SAR', 'XAU'])
 const fiatCurrencySchema = z.enum(['AED', 'USD', 'EGP', 'EUR', 'GBP', 'SAR'])
-const expenseCategorySchema = z.enum([
-  'Rent',
-  'Transport',
-  'Food',
-  'Enjoyment',
-  'Savings',
-  'Debt',
-  'Remittance',
-  'Other',
-])
+
 const paymentMethodTypeSchema = z.enum([
   'cash',
   'bank_transfer',
@@ -78,7 +69,8 @@ export const importDataSchema = z.object({
         id: z.string(),
         date: z.string(),
         description: z.string(),
-        category: expenseCategorySchema,
+        category: z.string(),
+        subcategory: z.string().optional(),
         amount: z.number(),
         currency: fiatCurrencySchema,
         amountInBaseCurrency: z.number(),
@@ -100,7 +92,8 @@ export const importDataSchema = z.object({
       z.object({
         id: z.string(),
         description: z.string(),
-        category: expenseCategorySchema,
+        category: z.string(),
+        subcategory: z.string().optional(),
         amount: z.number(),
         currency: currencySchema.exclude(['XAU']),
         paymentMethodId: z.string(),
@@ -114,7 +107,7 @@ export const importDataSchema = z.object({
   budgetCategories: z
     .array(
       z.object({
-        category: expenseCategorySchema,
+        category: z.string(),
         budgetedAmount: z.number(),
         currency: fiatCurrencySchema,
         percentOfIncome: z.number().min(0).max(100).nullable().optional(),

@@ -3,16 +3,16 @@
 import { Search, Download } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { EXPENSE_FILTER_CATEGORIES } from '@/lib/constants/finance'
-import type { ExpenseCategory } from '@/lib/store/types'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { usePlanCategories } from '@/hooks/usePlanCategories'
 import { useT } from '@/lib/i18n'
 
 interface FilterBarProps {
   search: string
   onSearchChange: (value: string) => void
-  categoryFilter: ExpenseCategory | 'All'
-  onCategoryChange: (value: ExpenseCategory | 'All') => void
+  categoryFilter: string
+  onCategoryChange: (value: string) => void
   methodFilter: string
   onMethodChange: (value: string) => void
   onExport: () => void
@@ -28,18 +28,27 @@ export function FilterBar({
   onExport,
 }: FilterBarProps) {
   const { paymentMethods } = useFinanceStore(useShallow((s) => ({ paymentMethods: s.paymentMethods })))
+  const { hasPlan, categoryChipOptions } = usePlanCategories()
   const t = useT()
+
+  const filterOptions = hasPlan
+    ? categoryChipOptions.map((c) => ({ value: c.id, label: c.icon ? `${c.icon} ${c.label}` : c.label }))
+    : EXPENSE_FILTER_CATEGORIES.filter((c) => c !== 'All').map((c) => ({
+        value: c,
+        label: t.categories[c as keyof typeof t.categories] ?? c,
+      }))
 
   return (
     <div className="flex flex-wrap items-center gap-3 px-4 py-3 bg-[var(--color-brand-card)]/90 backdrop-blur-xl border-b border-[var(--color-brand-border)] sticky top-[57px] z-20">
       <select
         value={categoryFilter}
-        onChange={(e) => onCategoryChange(e.target.value as ExpenseCategory | 'All')}
+        onChange={(e) => onCategoryChange(e.target.value)}
         className="h-9 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
       >
-        {EXPENSE_FILTER_CATEGORIES.map((c) => (
-          <option key={c} value={c}>
-            {c === 'All' ? t.expenses.filterAllCategories : t.categories[c]}
+        <option value="All">{t.expenses.filterAllCategories}</option>
+        {filterOptions.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
           </option>
         ))}
       </select>

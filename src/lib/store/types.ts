@@ -45,7 +45,10 @@ export interface Expense {
   id: string
   date: string
   description: string
-  category: ExpenseCategory
+  /** Category label — matches a budget plan category name or a legacy `ExpenseCategory` enum value. */
+  category: string
+  /** Optional subcategory from the active budget plan. */
+  subcategory?: string
   amount: number
   currency: Currency
   amountInBaseCurrency: number
@@ -66,7 +69,10 @@ export interface Expense {
 export interface RecurringExpense {
   id: string
   description: string
-  category: ExpenseCategory
+  /** Category label — matches a budget plan category name or a legacy `ExpenseCategory` enum value. */
+  category: string
+  /** Optional subcategory from the active budget plan. */
+  subcategory?: string
   amount: number
   currency: Currency
   paymentMethodId: string
@@ -77,7 +83,7 @@ export interface RecurringExpense {
 }
 
 export interface BudgetCategory {
-  category: ExpenseCategory
+  category: string
   budgetedAmount: number
   currency: Currency
   /** When using % of income mode, 0–100 */
@@ -384,7 +390,7 @@ export interface FinanceStore {
   addRecurringExpense: (expense: Omit<RecurringExpense, 'id'>) => void
   updateRecurringExpense: (id: string, updates: Partial<RecurringExpense>) => void
   deleteRecurringExpense: (id: string) => void
-  updateBudgetCategory: (category: ExpenseCategory, amount: number, percentOfIncome?: number | null) => void
+  updateBudgetCategory: (category: string, amount: number, percentOfIncome?: number | null) => void
   /** Replace all budget rows (e.g. onboarding preset). */
   setBudgetCategories: (categories: BudgetCategory[]) => void
   addBudgetPlan: (name: string) => string

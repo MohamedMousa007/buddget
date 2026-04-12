@@ -10,7 +10,6 @@ import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useEditExpenseForm } from '@/hooks/useEditExpenseForm'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { ExpenseCategoryChips, PaymentMethodChips } from '@/components/features/expenses/ExpenseFormPickers'
-import { expenseCategoryOptionsForForm } from '@/lib/constants/finance'
 import { useT } from '@/lib/i18n'
 
 export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClose: () => void }) {
@@ -74,7 +73,9 @@ export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClos
         <ExpenseCategoryChips
           category={f.category}
           onChange={f.setCategory}
-          categories={expenseCategoryOptionsForForm(f.category)}
+          options={f.categoryChipOptions}
+          subcategory={f.subcategory}
+          onSubcategoryChange={f.setSubcategory}
         />
         <PaymentMethodChips
           methods={f.paymentMethods}

@@ -8,7 +8,7 @@ import { filterExpensesByMonth, expenseAmountInBase } from '@/lib/utils/calculat
 import { escapeCsvField } from '@/lib/utils/formatters'
 import { FilterBar } from '@/components/expenses/FilterBar'
 import { ExpenseTable } from '@/components/expenses/ExpenseTable'
-import type { ExpenseCategory } from '@/lib/store/types'
+
 import { MonthNavigationControl } from '@/components/layout/MonthNavigationControl'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
@@ -28,7 +28,7 @@ export default function ExpensesPage() {
   const t = useT()
 
   const [search, setSearch] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState<ExpenseCategory | 'All'>('All')
+  const [categoryFilter, setCategoryFilter] = useState<string>('All')
   const [methodFilter, setMethodFilter] = useState('All')
 
   const filteredExpenses = useMemo(() => {

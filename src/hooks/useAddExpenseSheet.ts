@@ -3,21 +3,24 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { EXPENSE_ENTRY_CATEGORIES, EXPENSE_CATEGORIES, FIAT_CURRENCIES } from '@/lib/constants/finance'
+import { FIAT_CURRENCIES } from '@/lib/constants/finance'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
-import type { ExpenseCategory, Currency } from '@/lib/store/types'
+import type { Currency } from '@/lib/store/types'
 import { matchPaymentMethodForExpense } from '@/lib/modals/matchPaymentMethodForExpense'
+import { usePlanCategories } from '@/hooks/usePlanCategories'
 
 export function useAddExpenseSheet() {
   const { addExpense, paymentMethods, settings } = useFinanceStore()
   const { activeModal, setActiveModal, expensePrefill, setExpensePrefill } = useSettingsStore()
   const isOpen = activeModal === 'addExpense'
+  const { categoryChipOptions, defaultCategory } = usePlanCategories()
 
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
   const [currency, setCurrency] = useState<Currency>(settings.baseCurrency)
-  const [category, setCategory] = useState<ExpenseCategory>('Food')
+  const [category, setCategory] = useState<string>(defaultCategory)
+  const [subcategory, setSubcategory] = useState<string | undefined>(undefined)
   const [paymentMethodId, setPaymentMethodId] = useState(
     paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || ''
   )
@@ -36,16 +39,8 @@ export function useAddExpenseSheet() {
       if (expensePrefill.currency && FIAT_CURRENCIES.includes(expensePrefill.currency as Currency)) {
         setCurrency(clampFiatToAllowed(settings, expensePrefill.currency as Currency))
       }
-      if (
-        expensePrefill.category &&
-        EXPENSE_ENTRY_CATEGORIES.includes(expensePrefill.category as ExpenseCategory)
-      ) {
-        setCategory(expensePrefill.category as ExpenseCategory)
-      } else if (
-        expensePrefill.category === 'Savings' &&
-        EXPENSE_CATEGORIES.includes(expensePrefill.category as ExpenseCategory)
-      ) {
-        setCategory('Other')
+      if (expensePrefill.category) {
+        setCategory(expensePrefill.category)
       }
       if (expensePrefill.paymentMethod) {
         setPaymentMethodId(matchPaymentMethodForExpense(expensePrefill.paymentMethod, paymentMethods))
@@ -72,12 +67,13 @@ export function useAddExpenseSheet() {
     setDescription('')
     setAmount('')
     setCurrency(settings.baseCurrency)
-    setCategory('Food')
+    setCategory(defaultCategory)
+    setSubcategory(undefined)
     setPaymentMethodId(paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || '')
     setIsRecurring(false)
     setNotes('')
     setSubmitError('')
-  }, [paymentMethods, settings.baseCurrency])
+  }, [paymentMethods, settings.baseCurrency, defaultCategory])
 
   const handleClose = useCallback(() => {
     setSubmitError('')
@@ -95,6 +91,7 @@ export function useAddExpenseSheet() {
       date,
       description,
       category,
+      subcategory,
       amount: parsedAmount,
       currency: cur,
       paymentMethodId,
@@ -107,6 +104,7 @@ export function useAddExpenseSheet() {
     addExpense,
     amount,
     category,
+    subcategory,
     date,
     description,
     isRecurring,
@@ -131,6 +129,8 @@ export function useAddExpenseSheet() {
     setCurrency,
     category,
     setCategory,
+    subcategory,
+    setSubcategory,
     paymentMethodId,
     setPaymentMethodId,
     isRecurring,
@@ -140,6 +140,7 @@ export function useAddExpenseSheet() {
     submitError,
     setSubmitError,
     paymentMethods,
+    categoryChipOptions,
     handleSubmit,
   }
 }

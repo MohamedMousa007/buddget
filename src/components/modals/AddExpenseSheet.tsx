@@ -27,6 +27,9 @@ export function AddExpenseSheet() {
           setCurrency={sheet.setCurrency}
           category={sheet.category}
           setCategory={sheet.setCategory}
+          subcategory={sheet.subcategory}
+          setSubcategory={sheet.setSubcategory}
+          categoryChipOptions={sheet.categoryChipOptions}
           paymentMethodId={sheet.paymentMethodId}
           setPaymentMethodId={sheet.setPaymentMethodId}
           isRecurring={sheet.isRecurring}

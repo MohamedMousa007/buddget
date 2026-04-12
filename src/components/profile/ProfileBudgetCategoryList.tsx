@@ -5,7 +5,7 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import { effectiveCategoryBudget } from '@/lib/utils/calculations'
 import { Input } from '@/components/ui/input'
 import type { Dictionary } from '@/lib/i18n/types'
-import type { AppSettings, BudgetCategory, ExpenseCategory } from '@/lib/store/types'
+import type { AppSettings, BudgetCategory } from '@/lib/store/types'
 
 export interface ProfileBudgetCategoryListProps {
   t: Dictionary['profile']
@@ -13,11 +13,11 @@ export interface ProfileBudgetCategoryListProps {
   settings: AppSettings
   budgetMode: 'amount' | 'percent_of_income'
   monthlyIncome: number
-  editingBudget: ExpenseCategory | null
+  editingBudget: string | null
   budgetInput: string
   setBudgetInput: (v: string) => void
-  setEditingBudget: (v: ExpenseCategory | null) => void
-  onSave: (category: ExpenseCategory) => void
+  setEditingBudget: (v: string | null) => void
+  onSave: (category: string) => void
 }
 
 /** Inline-editable rows for each budget category (fixed amount or % of income). */
