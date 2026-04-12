@@ -11,7 +11,7 @@ import { calculateMonthlyIncome } from '@/lib/utils/calculations'
 import { BudgetPlannerCategoryRow } from '@/components/features/budget-planner/BudgetPlannerCategoryRow'
 import { BuddgyRebuildPrompt } from '@/components/features/budget-planner/BuddgyRebuildPrompt'
 import { BudgetPlannerAddCategoryMenu } from '@/components/features/budget-planner/BudgetPlannerAddCategoryMenu'
-import { BuddgyFlow } from '@/components/features/budget-planner/BuddgyFlow'
+import { BuddgyBuilderFlow } from '@/components/features/budget-planner/BuddgyBuilderFlow'
 
 export interface BudgetPlannerCategoriesLabels {
   categoriesTitle: string
@@ -71,7 +71,6 @@ export function BudgetPlannerCategories({
 }: BudgetPlannerCategoriesProps) {
   const t = useT()
   const { user, openAuthModal } = useAuth()
-  const updateBudgetPlan = useFinanceStore((s) => s.updateBudgetPlan)
   const { budgetPlans, incomeSources, exchangeRates } = useFinanceStore(
     useShallow((s) => ({
       budgetPlans: s.budgetPlans,
@@ -84,7 +83,6 @@ export function BudgetPlannerCategories({
   )
 
   const [flowOpen, setFlowOpen] = useState(false)
-  const [flowMode, setFlowMode] = useState<'resume' | 'restart'>('resume')
   const [flowKey, setFlowKey] = useState(0)
   const [rebuildPromptOpen, setRebuildPromptOpen] = useState(false)
 
@@ -120,27 +118,14 @@ export function BudgetPlannerCategories({
     emojiPickerLabel: labels.emojiPickerLabel,
   }
 
-  const restartGuidedWizardInPlace = useCallback(() => {
-    updateBudgetPlan(planId, { buddgyGuidedComplete: false, buddgyFlow: null })
+  const startBuddgy = useCallback(() => {
+    if (supabaseConfigured && !user) {
+      openAuthModal('/budget-setup', t.modals.requireAuthBudgetSetup)
+      return
+    }
     setFlowKey((k) => k + 1)
-    setFlowMode('restart')
-  }, [updateBudgetPlan, planId])
-
-  const startBuddgy = useCallback(
-    (mode: 'resume' | 'restart') => {
-      if (supabaseConfigured && !user) {
-        openAuthModal('/budget-setup', t.modals.requireAuthBudgetSetup)
-        return
-      }
-      if (mode === 'restart') {
-        updateBudgetPlan(planId, { buddgyGuidedComplete: false, buddgyFlow: null })
-        setFlowKey((k) => k + 1)
-      }
-      setFlowMode(mode)
-      setFlowOpen(true)
-    },
-    [supabaseConfigured, user, openAuthModal, t.modals.requireAuthBudgetSetup, updateBudgetPlan, planId]
-  )
+    setFlowOpen(true)
+  }, [supabaseConfigured, user, openAuthModal, t.modals.requireAuthBudgetSetup])
 
   const onRebuildClick = useCallback(() => {
     if (supabaseConfigured && !user) {
@@ -151,7 +136,7 @@ export function BudgetPlannerCategories({
       setRebuildPromptOpen(true)
       return
     }
-    startBuddgy('restart')
+    startBuddgy()
   }, [supabaseConfigured, user, openAuthModal, needsRebuildConfirm, startBuddgy, t.modals.requireAuthBudgetSetup])
 
   return (
@@ -173,12 +158,10 @@ export function BudgetPlannerCategories({
       </div>
 
       {flowOpen ?
-        <BuddgyFlow
+        <BuddgyBuilderFlow
           key={`${planId}-${flowKey}`}
           planId={planId}
-          mode={flowMode}
           onClose={() => setFlowOpen(false)}
-          onRestartWizard={restartGuidedWizardInPlace}
         />
       : categories.length === 0 ?
         <div className="rounded-xl border border-[var(--color-brand-border)] bg-gradient-to-br from-[var(--color-brand-elevated)] to-[var(--color-brand-card)] p-5 space-y-4 text-center">
@@ -198,7 +181,7 @@ export function BudgetPlannerCategories({
           <div className="flex flex-col sm:flex-row gap-2 justify-center">
             <button
               type="button"
-              onClick={() => startBuddgy('resume')}
+              onClick={startBuddgy}
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--color-brand-red)] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)] transition-colors"
             >
               <Bot className="h-4 w-4" />
@@ -224,7 +207,7 @@ export function BudgetPlannerCategories({
                 monthlyIncome={monthlyIncome}
                 baseCurrency={settings.baseCurrency}
                 onContinue={() => {
-                  startBuddgy('restart')
+                  startBuddgy()
                   setRebuildPromptOpen(false)
                 }}
                 onCancel={() => setRebuildPromptOpen(false)}
