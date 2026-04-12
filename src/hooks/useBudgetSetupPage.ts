@@ -101,15 +101,28 @@ export function useBudgetSetupPage() {
     setEditingTabId(null)
   }, [editingTabId, editingName, updateBudgetPlan])
 
+  const [newPlanDialogOpen, setNewPlanDialogOpen] = useState(false)
+  const [newPlanName, setNewPlanName] = useState('')
+
   const handleAddPlan = useCallback(() => {
     if (isGuest) {
       openAuthModal('/budget-setup', t.modals.requireAuthBudgetSetup)
       return
     }
-    const name = window.prompt(t.budgetPlanner.newPlanName, t.budgetPlanner.defaultPlanName)
-    if (name === null) return
-    addBudgetPlan(name.trim() || t.budgetPlanner.defaultPlanName)
-  }, [addBudgetPlan, isGuest, openAuthModal, t.budgetPlanner, t.modals.requireAuthBudgetSetup])
+    setNewPlanName(t.budgetPlanner.defaultPlanName)
+    setNewPlanDialogOpen(true)
+  }, [isGuest, openAuthModal, t.budgetPlanner.defaultPlanName, t.modals.requireAuthBudgetSetup])
+
+  const commitNewPlan = useCallback(() => {
+    addBudgetPlan(newPlanName.trim() || t.budgetPlanner.defaultPlanName)
+    setNewPlanDialogOpen(false)
+    setNewPlanName('')
+  }, [addBudgetPlan, newPlanName, t.budgetPlanner.defaultPlanName])
+
+  const cancelNewPlan = useCallback(() => {
+    setNewPlanDialogOpen(false)
+    setNewPlanName('')
+  }, [])
 
   const tabLabels = useMemo(() => ({ addPlan: t.budgetPlanner.addPlan }), [t.budgetPlanner.addPlan])
 
@@ -152,6 +165,11 @@ export function useBudgetSetupPage() {
     startRename,
     commitRename,
     handleAddPlan,
+    newPlanDialogOpen,
+    newPlanName,
+    setNewPlanName,
+    commitNewPlan,
+    cancelNewPlan,
     setActiveBudgetPlanId,
     deleteBudgetPlan,
     updateBudgetPlan,

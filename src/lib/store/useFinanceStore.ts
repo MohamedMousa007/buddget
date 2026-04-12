@@ -40,8 +40,6 @@ export const useFinanceStore = create<FinanceStore>()(
     (set, get) => ({
       profile: DEFAULT_PROFILE,
       settings: DEFAULT_SETTINGS,
-      activeSharedBudgetId: null,
-      defaultSharedBudgetPlanId: null,
       financialGoalsNotes: '',
       onboardingState: defaultOnboardingState(),
       incomeSources: DEFAULT_INCOME,
@@ -60,7 +58,7 @@ export const useFinanceStore = create<FinanceStore>()(
       lastRatesFetch: null,
 
       addExpense: (expense) => {
-        const { exchangeRates, settings, defaultSharedBudgetPlanId } = get()
+        const { exchangeRates, settings } = get()
         const converted = tryConvertCurrency(
           expense.amount,
           expense.currency,
@@ -68,17 +66,12 @@ export const useFinanceStore = create<FinanceStore>()(
           exchangeRates
         )
         const amountInBaseCurrency = converted ?? expense.amount
-        const sharedPlanId =
-          expense.sharedPlanId !== undefined ?
-            expense.sharedPlanId
-          : defaultSharedBudgetPlanId ?? undefined
 
         set((state) => ({
           expenses: [
             ...state.expenses,
             {
               ...expense,
-              ...(sharedPlanId !== undefined ? { sharedPlanId } : {}),
               amountInBaseCurrency,
               id: generateId(),
               createdAt: new Date().toISOString(),
@@ -101,24 +94,17 @@ export const useFinanceStore = create<FinanceStore>()(
         })),
 
       addIncomeSource: (source) =>
-        set((state) => {
-          const sid =
-            source.sharedPlanId !== undefined ?
-              source.sharedPlanId
-            : state.defaultSharedBudgetPlanId ?? undefined
-          return {
-            incomeSources: [
-              ...state.incomeSources,
-              {
-                ...source,
-                ...(sid !== undefined ? { sharedPlanId: sid } : {}),
-                id: generateId(),
-                createdAt: new Date().toISOString(),
-              },
-            ],
-            settings: { ...state.settings, noIncomeDeclared: false },
-          }
-        }),
+        set((state) => ({
+          incomeSources: [
+            ...state.incomeSources,
+            {
+              ...source,
+              id: generateId(),
+              createdAt: new Date().toISOString(),
+            },
+          ],
+          settings: { ...state.settings, noIncomeDeclared: false },
+        })),
 
       updateIncomeSource: (id, updates) =>
         set((state) => ({
@@ -159,23 +145,16 @@ export const useFinanceStore = create<FinanceStore>()(
 
       addDebt: (debt) => {
         const id = generateId()
-        set((state) => {
-          const sid =
-            debt.sharedPlanId !== undefined ?
-              debt.sharedPlanId
-            : state.defaultSharedBudgetPlanId ?? undefined
-          return {
-            debts: [
-              ...state.debts,
-              {
-                ...debt,
-                ...(sid !== undefined ? { sharedPlanId: sid } : {}),
-                id,
-                createdAt: new Date().toISOString(),
-              },
-            ],
-          }
-        })
+        set((state) => ({
+          debts: [
+            ...state.debts,
+            {
+              ...debt,
+              id,
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        }))
         return id
       },
 
@@ -200,7 +179,7 @@ export const useFinanceStore = create<FinanceStore>()(
         })),
 
       addDebtPaymentWithExpense: (payment, expense) => {
-        const { exchangeRates, settings, defaultSharedBudgetPlanId } = get()
+        const { exchangeRates, settings } = get()
         const converted = tryConvertCurrency(
           expense.amount,
           expense.currency,
@@ -208,53 +187,32 @@ export const useFinanceStore = create<FinanceStore>()(
           exchangeRates
         )
         const amountInBaseCurrency = converted ?? expense.amount
-        const expenseShared =
-          expense.sharedPlanId !== undefined ? expense.sharedPlanId : defaultSharedBudgetPlanId ?? undefined
 
-        set((state) => {
-          const paySid =
-            payment.sharedPlanId !== undefined
-              ? payment.sharedPlanId
-              : state.defaultSharedBudgetPlanId ?? undefined
-          const newPayment = {
-            ...payment,
-            ...(paySid !== undefined ? { sharedPlanId: paySid } : {}),
-            id: generateId(),
-            createdAt: new Date().toISOString(),
-          }
-          const newExpense = {
-            ...expense,
-            ...(expenseShared !== undefined ? { sharedPlanId: expenseShared } : {}),
-            amountInBaseCurrency,
-            id: generateId(),
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          }
-          return {
-            debtPayments: [...state.debtPayments, newPayment],
-            expenses: [...state.expenses, newExpense],
-          }
-        })
+        set((state) => ({
+          debtPayments: [
+            ...state.debtPayments,
+            { ...payment, id: generateId(), createdAt: new Date().toISOString() },
+          ],
+          expenses: [
+            ...state.expenses,
+            {
+              ...expense,
+              amountInBaseCurrency,
+              id: generateId(),
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+          ],
+        }))
       },
 
       addDebtPayment: (payment) =>
-        set((state) => {
-          const sid =
-            payment.sharedPlanId !== undefined ?
-              payment.sharedPlanId
-            : state.defaultSharedBudgetPlanId ?? undefined
-          return {
-            debtPayments: [
-              ...state.debtPayments,
-              {
-                ...payment,
-                ...(sid !== undefined ? { sharedPlanId: sid } : {}),
-                id: generateId(),
-                createdAt: new Date().toISOString(),
-              },
-            ],
-          }
-        }),
+        set((state) => ({
+          debtPayments: [
+            ...state.debtPayments,
+            { ...payment, id: generateId(), createdAt: new Date().toISOString() },
+          ],
+        })),
 
       deleteDebt: (id) =>
         set((state) => ({
@@ -289,22 +247,12 @@ export const useFinanceStore = create<FinanceStore>()(
         })),
 
       addRecurringExpense: (expense) =>
-        set((state) => {
-          const sid =
-            expense.sharedPlanId !== undefined ?
-              expense.sharedPlanId
-            : state.defaultSharedBudgetPlanId ?? undefined
-          return {
-            recurringExpenses: [
-              ...state.recurringExpenses,
-              {
-                ...expense,
-                ...(sid !== undefined ? { sharedPlanId: sid } : {}),
-                id: generateId(),
-              },
-            ],
-          }
-        }),
+        set((state) => ({
+          recurringExpenses: [
+            ...state.recurringExpenses,
+            { ...expense, id: generateId() },
+          ],
+        })),
 
       updateRecurringExpense: (id, updates) =>
         set((state) => ({
@@ -404,10 +352,6 @@ export const useFinanceStore = create<FinanceStore>()(
         }),
 
       setActiveBudgetPlanId: (id) => set({ activeBudgetPlanId: id }),
-
-      setActiveSharedBudgetId: (id) => set({ activeSharedBudgetId: id }),
-
-      setDefaultSharedBudgetPlanId: (id) => set({ defaultSharedBudgetPlanId: id }),
 
       addPlanCategory: (planId, category) => {
         const catId = generateId()
@@ -638,12 +582,6 @@ export const useFinanceStore = create<FinanceStore>()(
           budgetPlans: data.budgetPlans ?? state.budgetPlans,
           activeBudgetPlanId:
             data.activeBudgetPlanId !== undefined ? data.activeBudgetPlanId : state.activeBudgetPlanId,
-          activeSharedBudgetId:
-            data.activeSharedBudgetId !== undefined ? data.activeSharedBudgetId : state.activeSharedBudgetId,
-          defaultSharedBudgetPlanId:
-            data.defaultSharedBudgetPlanId !== undefined
-              ? data.defaultSharedBudgetPlanId
-              : state.defaultSharedBudgetPlanId,
           financialGoalsNotes:
             data.financialGoalsNotes !== undefined ? data.financialGoalsNotes : state.financialGoalsNotes,
           settings: data.settings
@@ -667,8 +605,6 @@ export const useFinanceStore = create<FinanceStore>()(
           budgetCategories: state.budgetCategories,
           budgetPlans: state.budgetPlans,
           activeBudgetPlanId: state.activeBudgetPlanId,
-          activeSharedBudgetId: state.activeSharedBudgetId,
-          defaultSharedBudgetPlanId: state.defaultSharedBudgetPlanId,
           financialGoalsNotes: state.financialGoalsNotes,
           savingsHoldings: state.savingsHoldings,
           paymentMethods: state.paymentMethods,
@@ -690,8 +626,6 @@ export const useFinanceStore = create<FinanceStore>()(
           budgetCategories: DEFAULT_BUDGET,
           budgetPlans: [],
           activeBudgetPlanId: null,
-          activeSharedBudgetId: null,
-          defaultSharedBudgetPlanId: null,
           financialGoalsNotes: '',
           savingsHoldings: [],
           paymentMethods: DEFAULT_PAYMENT_METHODS,
@@ -719,14 +653,6 @@ export const useFinanceStore = create<FinanceStore>()(
           const prevSettings = (p.settings as Record<string, unknown> | undefined) || {}
           return {
             ...p,
-            activeSharedBudgetId:
-              typeof p.activeSharedBudgetId === 'string' || p.activeSharedBudgetId === null
-                ? p.activeSharedBudgetId
-                : null,
-            defaultSharedBudgetPlanId:
-              typeof p.defaultSharedBudgetPlanId === 'string' || p.defaultSharedBudgetPlanId === null
-                ? p.defaultSharedBudgetPlanId
-                : null,
             budgetPlans: Array.isArray(p.budgetPlans) ? p.budgetPlans : [],
             activeBudgetPlanId:
               typeof p.activeBudgetPlanId === 'string' || p.activeBudgetPlanId === null
@@ -748,8 +674,6 @@ export const useFinanceStore = create<FinanceStore>()(
           const prevSettings = (p.settings as Record<string, unknown> | undefined) || {}
           return {
             ...p,
-            activeSharedBudgetId: null,
-            defaultSharedBudgetPlanId: null,
             budgetPlans: Array.isArray(p.budgetPlans) ? p.budgetPlans : [],
             activeBudgetPlanId:
               typeof p.activeBudgetPlanId === 'string' || p.activeBudgetPlanId === null
@@ -826,12 +750,6 @@ export const useFinanceStore = create<FinanceStore>()(
           budgetPlans: p.budgetPlans ?? current.budgetPlans,
           activeBudgetPlanId:
             p.activeBudgetPlanId !== undefined ? p.activeBudgetPlanId : current.activeBudgetPlanId,
-          activeSharedBudgetId:
-            p.activeSharedBudgetId !== undefined ? p.activeSharedBudgetId : current.activeSharedBudgetId,
-          defaultSharedBudgetPlanId:
-            p.defaultSharedBudgetPlanId !== undefined
-              ? p.defaultSharedBudgetPlanId
-              : current.defaultSharedBudgetPlanId,
           savingsHoldings: p.savingsHoldings ?? current.savingsHoldings,
           recurringDebtPayments: p.recurringDebtPayments ?? current.recurringDebtPayments,
           onboardingState: p.onboardingState

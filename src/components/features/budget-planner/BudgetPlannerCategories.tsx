@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import type { AppSettings, BudgetPlanCategory, BudgetPlanSubcategory } from '@/lib/store/types'
+import { Bot, Plus, RefreshCcw } from 'lucide-react'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
@@ -180,15 +181,41 @@ export function BudgetPlannerCategories({
           onRestartWizard={restartGuidedWizardInPlace}
         />
       : categories.length === 0 ?
-        <div className="space-y-3 py-6">
-          <p className="text-sm text-[var(--color-brand-text-muted)]">No categories yet.</p>
-          <button
-            type="button"
-            onClick={() => startBuddgy('resume')}
-            className="text-sm text-brand-gold hover:underline cursor-pointer text-left"
-          >
-            ✨ Let Buddgy set it up for you
-          </button>
+        <div className="rounded-xl border border-[var(--color-brand-border)] bg-gradient-to-br from-[var(--color-brand-elevated)] to-[var(--color-brand-card)] p-5 space-y-4 text-center">
+          <div className="flex justify-center">
+            <div className="rounded-full bg-[var(--color-brand-red)]/10 p-3">
+              <Bot className="h-6 w-6 text-[var(--color-brand-red)]" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">
+              Meet Buddgy, your financial expert buddy
+            </p>
+            <p className="text-xs text-[var(--color-brand-text-secondary)]">
+              Buddgy will build a personalized budget plan based on your income and lifestyle.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            <button
+              type="button"
+              onClick={() => startBuddgy('resume')}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--color-brand-red)] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)] transition-colors"
+            >
+              <Bot className="h-4 w-4" />
+              Let Buddgy build my plan
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const menu = document.querySelector<HTMLButtonElement>('[data-add-category-trigger]')
+                menu?.click()
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--color-brand-border)] px-5 py-2.5 text-sm font-medium text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              Add category manually
+            </button>
+          </div>
         </div>
       : <>
           <div className="flex flex-col items-end gap-2 pb-1">
@@ -205,9 +232,10 @@ export function BudgetPlannerCategories({
             : <button
                 type="button"
                 onClick={onRebuildClick}
-                className="text-sm text-brand-gold hover:underline cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] px-3 py-1.5 text-xs font-medium text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
               >
-                ✨ Ask Buddgy to rebuild your plan
+                <RefreshCcw className="h-3.5 w-3.5" />
+                Rebuild with Buddgy
               </button>}
           </div>
           <div className="space-y-2">

@@ -329,15 +329,6 @@ export interface OnboardingState {
 export interface FinanceStore {
   profile: UserProfile
   settings: AppSettings
-  /**
-   * Active shared budget plan UUID for filtering transactions and dashboard scope.
-   * `null` = personal-only scope (transactions without `sharedPlanId`).
-   */
-  activeSharedBudgetId: string | null
-  /**
-   * Default shared plan UUID for tagging new transactions (from `user_profiles.default_budget_plan_id`).
-   */
-  defaultSharedBudgetPlanId: string | null
   /** Free-text financial goals from Buddgy plan builder; synced in finance payload. */
   financialGoalsNotes: string
   /** Expert onboarding progress, answers, and cached AI plans (synced in user_finance payload). */
@@ -407,8 +398,6 @@ export interface FinanceStore {
   replaceBudgetPlanCategories: (planId: string, categories: BudgetPlanCategory[]) => void
   deleteBudgetPlan: (planId: string) => void
   setActiveBudgetPlanId: (id: string | null) => void
-  setActiveSharedBudgetId: (id: string | null) => void
-  setDefaultSharedBudgetPlanId: (id: string | null) => void
   addPlanCategory: (planId: string, category: Omit<BudgetPlanCategory, 'id' | 'subcategories'> & { subcategories?: BudgetPlanSubcategory[] }) => string
   updatePlanCategory: (planId: string, categoryId: string, updates: Partial<Omit<BudgetPlanCategory, 'id' | 'subcategories'>> & { subcategories?: BudgetPlanSubcategory[] }) => void
   deletePlanCategory: (planId: string, categoryId: string) => void

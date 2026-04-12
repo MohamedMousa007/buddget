@@ -648,47 +648,9 @@ export interface Dictionary {
     noPlansEmptyDesc: string
     noPlansCreateFirst: string
     buddgyTagline: string
-    buddgyHeroTitleMeet: string
-    buddgyHeroSubtitle: string
-    buddgyHeroBody: string
-    buddgyHeroCta: string
-    buddgyHeroManualHint: string
-    buddgyCompactTitle: string
-    buddgyCompactBody: string
-    buddgyCompactCta: string
     buddgyBuilderOpening: string
     buddgyChatSubtitle: string
     buddgyBuilderBadge: string
-    buddgyEvalSectionTitle: string
-  }
-
-  sharedBudget: {
-    membersTitle: string
-    you: string
-    roleOwner: string
-    roleManager: string
-    roleViewer: string
-    syncOn: string
-    setAsDefaultPlan: string
-    addPartner: string
-    previewPlan: string
-    accept: string
-    decline: string
-    inviteTitle: string
-    inviteEmail: string
-    inviteEmailPlaceholder: string
-    roleView: string
-    roleManage: string
-    syncLabel: string
-    syncHelp: string
-    sendInvite: string
-    notFoundHint: string
-    inviteApp: string
-    foundAs: string
-    closeSheet: string
-    planSwitcherPersonal: string
-    planSwitcherCreateShared: string
-    defaultBadge: string
   }
 
   auth: {

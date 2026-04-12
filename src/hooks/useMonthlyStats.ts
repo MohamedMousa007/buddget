@@ -38,16 +38,6 @@ import {
   type OverspentCategory,
 } from '@/lib/utils/spendingPace'
 
-function filterBySharedScope<T extends { sharedPlanId?: string | null }>(
-  items: T[],
-  activeSharedBudgetId: string | null
-): T[] {
-  if (activeSharedBudgetId) {
-    return items.filter((x) => x.sharedPlanId === activeSharedBudgetId)
-  }
-  return items.filter((x) => !x.sharedPlanId)
-}
-
 function supabaseAuthConfigured(): boolean {
   return Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
@@ -64,7 +54,6 @@ export function useMonthlyStats() {
     budgetCategories,
     budgetPlans,
     activeBudgetPlanId,
-    activeSharedBudgetId,
     savingsHoldings,
     debts,
     debtPayments,
@@ -78,7 +67,6 @@ export function useMonthlyStats() {
       budgetCategories: s.budgetCategories,
       budgetPlans: s.budgetPlans,
       activeBudgetPlanId: s.activeBudgetPlanId,
-      activeSharedBudgetId: s.activeSharedBudgetId,
       savingsHoldings: s.savingsHoldings,
       debts: s.debts,
       debtPayments: s.debtPayments,
@@ -120,20 +108,14 @@ export function useMonthlyStats() {
         overBudgetCategories: [] as OverspentCategory[],
       }
     }
-    const scopedExpenses = filterBySharedScope(expenses, activeSharedBudgetId)
-    const scopedIncome = filterBySharedScope(incomeSources, activeSharedBudgetId)
-    const scopedDebts = filterBySharedScope(debts, activeSharedBudgetId)
-    const debtIdSet = new Set(scopedDebts.map((d) => d.id))
-    const scopedDebtPayments = debtPayments.filter((p) => debtIdSet.has(p.debtId))
-
-    const monthlyExpenses = filterExpensesByMonth(scopedExpenses, monthFilter, settings.monthStartDay)
+    const monthlyExpenses = filterExpensesByMonth(expenses, monthFilter, settings.monthStartDay)
     const rawMonthlyIncome = calculateMonthlyIncome(
-      scopedIncome,
+      incomeSources,
       settings.baseCurrency,
       exchangeRates
     )
     const incomeBlocked =
-      settings.noIncomeDeclared === true && scopedIncome.length === 0
+      settings.noIncomeDeclared === true && incomeSources.length === 0
     const totalIncome = incomeBlocked ? 0 : rawMonthlyIncome
     const totalSpent = calculateTotalSpent(monthlyExpenses, settings.baseCurrency, exchangeRates)
     const totalSpentForExpenseBudget = calculateTotalSpentExcludingSavings(
@@ -190,8 +172,8 @@ export function useMonthlyStats() {
     ) as Record<string, number>
 
     const debtRemainingTotal = totalDebtRemainingInBase(
-      scopedDebts,
-      scopedDebtPayments,
+      debts,
+      debtPayments,
       settings.baseCurrency,
       exchangeRates,
       goldPricePerGram
@@ -248,7 +230,6 @@ export function useMonthlyStats() {
     budgetCategories,
     budgetPlans,
     activeBudgetPlanId,
-    activeSharedBudgetId,
     savingsHoldings,
     debts,
     debtPayments,

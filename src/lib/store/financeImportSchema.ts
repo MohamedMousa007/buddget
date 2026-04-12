@@ -61,8 +61,6 @@ export const importDataSchema = z.object({
       })
     )
     .optional(),
-  activeSharedBudgetId: z.string().uuid().nullable().optional(),
-  defaultSharedBudgetPlanId: z.string().uuid().nullable().optional(),
   expenses: z
     .array(
       z.object({

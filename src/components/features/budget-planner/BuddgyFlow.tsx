@@ -1,5 +1,6 @@
 'use client'
 
+import { X } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useBuddgyFlow, type UseBuddgyFlowOptions } from '@/hooks/useBuddgyFlow'
 import { BuddgyProgressBar } from '@/components/features/budget-planner/BuddgyProgressBar'
@@ -41,8 +42,18 @@ export function BuddgyFlow({ planId, mode = 'resume', onClose, onRestartWizard }
   return (
     <div className="relative overflow-hidden rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
       <BuddgySaveFlash show={flow.showFlash} />
-      <div className="p-1">
-        <BuddgyProgressBar progress={flow.progress} />
+      <div className="flex items-center gap-2 p-1">
+        <div className="flex-1">
+          <BuddgyProgressBar progress={flow.progress} />
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="shrink-0 rounded-lg p-1.5 text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
+          aria-label="Close"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
       <div className="px-4 pt-3 pb-5">
         <AnimatePresence mode="wait">
