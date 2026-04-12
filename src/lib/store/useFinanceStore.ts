@@ -17,6 +17,7 @@ import type {
   BudgetPlanCategory,
   FinanceStore,
   OnboardingState,
+  RecurringSavingsDeposit,
   SavingsAccount,
   SavingsHolding,
   SavingsTransaction,
@@ -26,8 +27,9 @@ import { defaultOnboardingState } from '@/lib/onboarding/onboardingTypes'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { SAVINGS_TYPE_ICONS } from '@/lib/constants/savingsIcons'
 import { normalizeSavingsAccountsList } from '@/lib/savings/normalizeSavingsAccount'
+import { defaultCategoryForSavingsType } from '@/lib/constants/savingsTypes'
 
-const PERSIST_VERSION = 9
+const PERSIST_VERSION = 10
 
 function holdingSubtypeToSavingsType(sub: SavingsHolding['subtype']): SavingsType {
   const m: Record<SavingsHolding['subtype'], SavingsType> = {
@@ -53,6 +55,7 @@ function migrateSavingsHoldingsToLedger(
     accounts.push({
       id: h.id,
       name: h.name,
+      category: defaultCategoryForSavingsType(st),
       type: st,
       icon: SAVINGS_TYPE_ICONS[st],
       currency: h.currency,
@@ -107,6 +110,7 @@ export const useFinanceStore = create<FinanceStore>()(
       savingsHoldings: [],
       savingsAccounts: [],
       savingsTransactions: [],
+      recurringSavingsDeposits: [],
       paymentMethods: DEFAULT_PAYMENT_METHODS,
       debts: DEFAULT_DEBTS,
       debtPayments: [],
@@ -590,6 +594,7 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => {
           const row: SavingsAccount = {
             ...rest,
+            category: rest.category ?? defaultCategoryForSavingsType(rest.type),
             id,
             currentBalance: openingBalance,
             createdAt: new Date().toISOString(),
@@ -628,6 +633,29 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => ({
           savingsAccounts: state.savingsAccounts.filter((a) => a.id !== id),
           savingsTransactions: state.savingsTransactions.filter((t) => t.accountId !== id),
+          recurringSavingsDeposits: state.recurringSavingsDeposits.filter((r) => r.accountId !== id),
+        })),
+
+      addRecurringSavingsDeposit: (r) =>
+        set((state) => {
+          const row: RecurringSavingsDeposit = {
+            ...r,
+            id: generateId(),
+            createdAt: new Date().toISOString(),
+          }
+          return { recurringSavingsDeposits: [...state.recurringSavingsDeposits, row] }
+        }),
+
+      updateRecurringSavingsDeposit: (id, updates) =>
+        set((state) => ({
+          recurringSavingsDeposits: state.recurringSavingsDeposits.map((x) =>
+            x.id === id ? { ...x, ...updates } : x
+          ),
+        })),
+
+      deleteRecurringSavingsDeposit: (id) =>
+        set((state) => ({
+          recurringSavingsDeposits: state.recurringSavingsDeposits.filter((x) => x.id !== id),
         })),
 
       depositToSavings: (accountId, amount, currency, notes, opts) => {
@@ -796,6 +824,7 @@ export const useFinanceStore = create<FinanceStore>()(
           savingsHoldings: data.savingsHoldings !== undefined ? savingsHoldingsOut : state.savingsHoldings,
           savingsAccounts,
           savingsTransactions,
+          recurringSavingsDeposits: data.recurringSavingsDeposits ?? state.recurringSavingsDeposits,
           settings: data.settings
             ? { ...state.settings, ...data.settings }
             : state.settings,
@@ -821,6 +850,7 @@ export const useFinanceStore = create<FinanceStore>()(
           savingsHoldings: state.savingsHoldings,
           savingsAccounts: state.savingsAccounts,
           savingsTransactions: state.savingsTransactions,
+          recurringSavingsDeposits: state.recurringSavingsDeposits,
           paymentMethods: state.paymentMethods,
           debts: state.debts,
           debtPayments: state.debtPayments,
@@ -844,6 +874,7 @@ export const useFinanceStore = create<FinanceStore>()(
           savingsHoldings: [],
           savingsAccounts: [],
           savingsTransactions: [],
+          recurringSavingsDeposits: [],
           paymentMethods: DEFAULT_PAYMENT_METHODS,
           debts: DEFAULT_DEBTS,
           debtPayments: [],
@@ -879,7 +910,7 @@ export const useFinanceStore = create<FinanceStore>()(
             savingsTransactions = migrated.transactions
             savingsHoldingsOut = []
           }
-          if (fromVersion < 9) {
+          if (fromVersion < 10) {
             savingsAccounts = normalizeSavingsAccountsList(savingsAccounts as unknown[])
           }
           return {
@@ -892,6 +923,9 @@ export const useFinanceStore = create<FinanceStore>()(
             onboardingState: (p.onboardingState as OnboardingState | undefined) ?? defaultOnboardingState(),
             recurringDebtPayments: Array.isArray(p.recurringDebtPayments)
               ? p.recurringDebtPayments
+              : [],
+            recurringSavingsDeposits: Array.isArray(p.recurringSavingsDeposits)
+              ? (p.recurringSavingsDeposits as RecurringSavingsDeposit[])
               : [],
             savingsHoldings: savingsHoldingsOut,
             savingsAccounts,
@@ -907,7 +941,7 @@ export const useFinanceStore = create<FinanceStore>()(
         if (fromVersion >= 5) {
           const prevSettings = (p.settings as Record<string, unknown> | undefined) || {}
           const savingsAccounts =
-            fromVersion < 9
+            fromVersion < 10
               ? normalizeSavingsAccountsList(
                   Array.isArray(p.savingsAccounts) ? (p.savingsAccounts as unknown[]) : []
                 )
@@ -923,6 +957,7 @@ export const useFinanceStore = create<FinanceStore>()(
             recurringDebtPayments: Array.isArray(p.recurringDebtPayments)
               ? p.recurringDebtPayments
               : [],
+            recurringSavingsDeposits: [],
             savingsAccounts,
             settings: {
               ...DEFAULT_SETTINGS,
@@ -935,7 +970,7 @@ export const useFinanceStore = create<FinanceStore>()(
         if (fromVersion >= 3) {
           const prevSettings = (p.settings as Record<string, unknown> | undefined) || {}
           const savingsAccounts =
-            fromVersion < 9
+            fromVersion < 10
               ? normalizeSavingsAccountsList(
                   Array.isArray(p.savingsAccounts) ? (p.savingsAccounts as unknown[]) : []
                 )
@@ -946,6 +981,7 @@ export const useFinanceStore = create<FinanceStore>()(
             recurringDebtPayments: Array.isArray(p.recurringDebtPayments)
               ? p.recurringDebtPayments
               : [],
+            recurringSavingsDeposits: [],
             savingsAccounts,
             settings: {
               ...DEFAULT_SETTINGS,
@@ -958,7 +994,7 @@ export const useFinanceStore = create<FinanceStore>()(
         if (fromVersion >= 2) {
           const prevSettings = (p.settings as Record<string, unknown> | undefined) || {}
           const savingsAccounts =
-            fromVersion < 9
+            fromVersion < 10
               ? normalizeSavingsAccountsList(
                   Array.isArray(p.savingsAccounts) ? (p.savingsAccounts as unknown[]) : []
                 )
@@ -967,6 +1003,7 @@ export const useFinanceStore = create<FinanceStore>()(
             ...p,
             onboardingState: (p.onboardingState as OnboardingState | undefined) ?? defaultOnboardingState(),
             recurringDebtPayments: [],
+            recurringSavingsDeposits: [],
             savingsAccounts,
             settings: {
               ...DEFAULT_SETTINGS,
@@ -988,6 +1025,7 @@ export const useFinanceStore = create<FinanceStore>()(
           savingsHoldings: [],
           savingsAccounts: [],
           savingsTransactions: [],
+          recurringSavingsDeposits: [],
           paymentMethods: DEFAULT_PAYMENT_METHODS,
           debts: [],
           debtPayments: [],
@@ -1010,6 +1048,7 @@ export const useFinanceStore = create<FinanceStore>()(
           savingsHoldings: p.savingsHoldings ?? current.savingsHoldings,
           savingsAccounts: p.savingsAccounts ?? current.savingsAccounts,
           savingsTransactions: p.savingsTransactions ?? current.savingsTransactions,
+          recurringSavingsDeposits: p.recurringSavingsDeposits ?? current.recurringSavingsDeposits,
           recurringDebtPayments: p.recurringDebtPayments ?? current.recurringDebtPayments,
           onboardingState: p.onboardingState
             ? { ...current.onboardingState, ...p.onboardingState }

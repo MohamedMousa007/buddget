@@ -22,6 +22,7 @@ function buildFinancePayload() {
     savingsHoldings: state.savingsHoldings,
     savingsAccounts: state.savingsAccounts,
     savingsTransactions: state.savingsTransactions,
+    recurringSavingsDeposits: state.recurringSavingsDeposits,
     paymentMethods: state.paymentMethods,
     debts: state.debts,
     debtPayments: state.debtPayments,

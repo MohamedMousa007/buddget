@@ -102,7 +102,7 @@ export function WithdrawFromSavingsSheet({
             type="button"
             onClick={submit}
             disabled={!valid}
-            className="mt-2 w-full rounded-xl bg-[var(--color-brand-red)] py-3 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)] disabled:opacity-40 transition-colors"
+            className="mt-2 w-full rounded-xl bg-[#E50914] py-3 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)] disabled:opacity-40 transition-colors"
           >
             {t.savings.submitWithdraw}
           </button>

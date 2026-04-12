@@ -10,6 +10,8 @@ import {
   totalSavingsHoldingsInBase,
 } from '@/lib/utils/calculations'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
+import { useNetWorth } from '@/hooks/useNetWorth'
+import { useRates } from '@/hooks/useRates'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { SavingsAccountCard } from '@/components/features/savings/SavingsAccountCard'
 import { AddToSavingsSheet } from '@/components/features/savings/AddToSavingsSheet'
@@ -17,15 +19,25 @@ import { WithdrawFromSavingsSheet } from '@/components/features/savings/Withdraw
 import { UpdateBalanceSheet } from '@/components/features/savings/UpdateBalanceSheet'
 import { SavingsTransactionHistory } from '@/components/features/savings/SavingsTransactionHistory'
 import { AddSavingsAccountSheet } from '@/components/modals/AddSavingsAccountSheet'
+import { EditSavingsAccountSheet } from '@/components/modals/EditSavingsAccountSheet'
 import type { SavingsAccount } from '@/lib/store/types'
 import { useT } from '@/lib/i18n'
+import { convertCurrency } from '@/lib/utils/currency'
+
+const headerWithdrawClass =
+  'inline-flex items-center gap-1.5 rounded-xl bg-[#E50914] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)] transition-colors'
+
+const outlineBtnClass =
+  'inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-4 py-2 text-sm font-medium text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-border)]/30 transition-colors'
 
 /**
  * Savings buckets, transfer sheets, and ledger history (not expenses).
  */
 export default function SavingsPage() {
+  useRates()
   const t = useT()
   const requireAuth = useRequireAuthAction()
+  const nw = useNetWorth()
   const {
     savingsAccounts,
     savingsTransactions,
@@ -35,7 +47,6 @@ export default function SavingsPage() {
     depositToSavings,
     withdrawFromSavings,
     correctSavingsBalance,
-    updateSavingsAccount,
     deleteSavingsAccount,
   } = useFinanceStore(
     useShallow((s) => ({
@@ -47,7 +58,6 @@ export default function SavingsPage() {
       depositToSavings: s.depositToSavings,
       withdrawFromSavings: s.withdrawFromSavings,
       correctSavingsBalance: s.correctSavingsBalance,
-      updateSavingsAccount: s.updateSavingsAccount,
       deleteSavingsAccount: s.deleteSavingsAccount,
     }))
   )
@@ -55,15 +65,24 @@ export default function SavingsPage() {
   const [addOpen, setAddOpen] = useState(false)
   const [withdrawOpen, setWithdrawOpen] = useState(false)
   const [newAccountOpen, setNewAccountOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
   const [updateOpen, setUpdateOpen] = useState(false)
   const [prefillId, setPrefillId] = useState<string | null>(null)
   const [updateAcc, setUpdateAcc] = useState<SavingsAccount | null>(null)
+  const [editAcc, setEditAcc] = useState<SavingsAccount | null>(null)
 
   const totalBase = useMemo(() => {
     const a = totalSavingsAccountsBalanceInBase(savingsAccounts, settings.baseCurrency, exchangeRates)
     const h = totalSavingsHoldingsInBase(savingsHoldings, settings.baseCurrency, exchangeRates)
     return a + h
   }, [savingsAccounts, savingsHoldings, settings.baseCurrency, exchangeRates])
+
+  const totalSavedDisplay = nw.totalSavings + nw.totalInvestments
+
+  const nwSecondary =
+    settings.showSecondaryCurrency && settings.secondaryCurrency
+      ? convertCurrency(nw.netWorth, settings.baseCurrency, settings.secondaryCurrency, exchangeRates)
+      : null
 
   const guard = useCallback(
     (fn: () => void) => requireAuth(fn, t.savings.requireAuth),
@@ -84,36 +103,57 @@ export default function SavingsPage() {
     })
   }
 
+  const confirmDelete = (acc: SavingsAccount) => {
+    if (globalThis.confirm?.(t.savings.confirmDeleteSavings)) {
+      deleteSavingsAccount(acc.id)
+    }
+  }
+
   return (
     <div className="min-h-screen pb-24">
       <PageHeader>
-        <PageHeaderContent className="flex flex-wrap items-center justify-between gap-2">
-          <div>
+        <PageHeaderContent className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
             <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)] flex items-center gap-2">
               <HandCoins className="w-6 h-6 text-[var(--color-brand-red)]" />
               {t.savings.pageTitle}
             </h1>
-            <p className="text-xs text-[var(--color-brand-text-muted)] mt-1">
-              {t.savings.totalLine(settings.baseCurrency)}
-              <span className="font-mono-numbers text-[var(--color-brand-green)]">
-                {formatCurrency(totalBase, settings.baseCurrency)}
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--color-brand-text-muted)]">
+              <span>
+                <span className="text-[var(--color-brand-text-secondary)]">{t.savings.netWorthShort}: </span>
+                <span
+                  className={`font-mono-numbers font-semibold ${
+                    nw.netWorth >= 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red)]'
+                  }`}
+                >
+                  {formatCurrency(nw.netWorth, settings.baseCurrency)}
+                </span>
+                {nwSecondary != null && settings.secondaryCurrency ? (
+                  <span className="font-mono-numbers text-[var(--color-brand-text-muted)] ms-1">
+                    ({formatCurrency(nwSecondary, settings.secondaryCurrency)})
+                  </span>
+                ) : null}
               </span>
-            </p>
+              <span>
+                <span className="text-[var(--color-brand-text-secondary)]">{t.savings.totalSavedShort}: </span>
+                <span className="font-mono-numbers font-semibold text-[var(--color-brand-green)]">
+                  {formatCurrency(totalSavedDisplay, settings.baseCurrency)}
+                </span>
+              </span>
+              <span className="text-[10px] opacity-80">
+                {t.savings.totalLine(settings.baseCurrency)}
+                <span className="font-mono-numbers text-[var(--color-brand-text-primary)]">
+                  {formatCurrency(totalBase, settings.baseCurrency)}
+                </span>
+              </span>
+            </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => guard(() => setWithdrawOpen(true))}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] px-4 py-2 text-sm font-medium text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)]"
-            >
+            <button type="button" onClick={() => guard(() => setWithdrawOpen(true))} className={headerWithdrawClass}>
               <Minus className="h-4 w-4" />
               {t.savings.withdraw}
             </button>
-            <button
-              type="button"
-              onClick={() => guard(() => setAddOpen(true))}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--color-brand-green)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
-            >
+            <button type="button" onClick={() => guard(() => setAddOpen(true))} className={headerWithdrawClass}>
               <Plus className="h-4 w-4" />
               {t.savings.addToSavings}
             </button>
@@ -122,15 +162,44 @@ export default function SavingsPage() {
       </PageHeader>
 
       <div className="px-4 py-6 lg:px-8 max-w-3xl mx-auto space-y-6">
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={() => guard(() => setNewAccountOpen(true))}
-            className="text-sm font-medium text-[var(--color-brand-red)] hover:underline"
-          >
+        <div className="flex flex-wrap justify-end gap-2">
+          <button type="button" onClick={() => guard(() => setNewAccountOpen(true))} className={outlineBtnClass}>
             + {t.savings.addAccount}
           </button>
         </div>
+
+        <section className="rounded-2xl border border-[var(--color-brand-border)]/80 bg-[var(--color-brand-elevated)]/40 p-4 space-y-2 text-xs">
+          <p className="font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
+            {t.savings.breakdownTitle}
+          </p>
+          <div className="grid gap-1 font-mono-numbers text-[var(--color-brand-text-secondary)]">
+            <div className="flex justify-between">
+              <span>{t.savings.breakdownRowSavings}</span>
+              <span className="text-[var(--color-brand-green)]">+ {formatCurrency(nw.totalSavings, settings.baseCurrency)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>{t.savings.breakdownRowInvestments}</span>
+              <span className="text-[var(--color-brand-green)]">+ {formatCurrency(nw.totalInvestments, settings.baseCurrency)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>{t.savings.breakdownRowMonth}</span>
+              <span className={nw.monthlyFlow >= 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red)]'}>
+                {nw.monthlyFlow >= 0 ? '+ ' : '− '}
+                {formatCurrency(Math.abs(nw.monthlyFlow), settings.baseCurrency)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>{t.savings.breakdownRowDebt}</span>
+              <span className="text-[var(--color-brand-red)]">− {formatCurrency(nw.totalDebt, settings.baseCurrency)}</span>
+            </div>
+            <div className="flex justify-between border-t border-[var(--color-brand-border)]/60 pt-2 mt-1 font-semibold text-[var(--color-brand-text-primary)]">
+              <span>{t.savings.breakdownRowTotal}</span>
+              <span className={nw.netWorth >= 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red)]'}>
+                {formatCurrency(nw.netWorth, settings.baseCurrency)}
+              </span>
+            </div>
+          </div>
+        </section>
 
         {savingsAccounts.length === 0 ? (
           <div className="glass-card rounded-2xl p-8 text-center space-y-3">
@@ -157,12 +226,13 @@ export default function SavingsPage() {
                     setUpdateOpen(true)
                   })
                 }}
-                onUpdateAutoSave={(auto) => updateSavingsAccount(acc.id, { autoSave: auto })}
-                onDelete={() => {
-                  if (globalThis.confirm?.(t.savings.confirmDeleteSavings)) {
-                    deleteSavingsAccount(acc.id)
-                  }
+                onEdit={() => {
+                  guard(() => {
+                    setEditAcc(acc)
+                    setEditOpen(true)
+                  })
                 }}
+                onDelete={() => confirmDelete(acc)}
               />
             ))}
           </div>
@@ -209,8 +279,16 @@ export default function SavingsPage() {
           }}
         />
       )}
-      {newAccountOpen && (
-        <AddSavingsAccountSheet open onClose={() => setNewAccountOpen(false)} />
+      {newAccountOpen && <AddSavingsAccountSheet open onClose={() => setNewAccountOpen(false)} />}
+      {editOpen && (
+        <EditSavingsAccountSheet
+          open={editOpen}
+          account={editAcc}
+          onClose={() => {
+            setEditOpen(false)
+            setEditAcc(null)
+          }}
+        />
       )}
     </div>
   )

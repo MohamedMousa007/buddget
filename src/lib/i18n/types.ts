@@ -86,6 +86,9 @@ export interface Dictionary {
     kpiDebt: string
     kpiDebtIcon: string
     kpiDebtTrend: string
+    kpiNetWorth: string
+    kpiNetWorthIcon: string
+    kpiNetWorthTrend: string
     incomeBlockedHint: string
     budgetUsedLabel: string
     statusOverBudget: string
@@ -265,17 +268,9 @@ export interface Dictionary {
     filterAllSavings: string
     deposit: string
     withdrawal: string
-    autoSave: string
-    autoSaveOff: string
-    autoSaveOn: string
-    autoSaveMode: string
-    modeFixed: string
-    modeEndOfMonth: string
-    modePercent: string
-    whenMonthly: string
-    whenWeekly: string
     sheetAddTitle: string
     sheetAddNewTitle: string
+    sheetEditTitle: string
     sheetWithdrawTitle: string
     sheetUpdateTitle: string
     labelWhichSavings: string
@@ -292,14 +287,33 @@ export interface Dictionary {
     differenceWithdrawal: string
     exceedsBalance: string
     confirmDeleteSavings: string
-    tagAutoSave: string
     labelPickIcon: string
     goldCurrencyHint: string
+    labelProductCategory: string
+    categorySavings: string
+    categoryInvestment: string
+    recurringQuestion: string
+    recurringOneTime: string
+    recurringRepeat: string
+    labelFrequency: string
+    freqMonthly: string
+    labelDayOfMonth: string
+    liveCryptoSoon: string
+    liveStocksSoon: string
+    tagRecurring: string
+    netWorthShort: string
+    totalSavedShort: string
+    breakdownTitle: string
+    breakdownRowSavings: string
+    breakdownRowInvestments: string
+    breakdownRowMonth: string
+    breakdownRowDebt: string
+    breakdownRowTotal: string
     types: {
       bank: string
       cash: string
       gold: string
-      crypto_stable: string
+      stablecoin: string
       crypto: string
       stocks: string
       real_estate: string
@@ -309,7 +323,7 @@ export interface Dictionary {
       bank: string
       cash: string
       gold: string
-      crypto_stable: string
+      stablecoin: string
       crypto: string
       stocks: string
       real_estate: string
@@ -511,6 +525,8 @@ export interface Dictionary {
     savingsWithdrawals: string
     savingsNet: string
     moneyFlowHint: string
+    netWorthTitle: string
+    netWorthHint: string
   }
 
   settings: {

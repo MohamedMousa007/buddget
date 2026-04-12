@@ -5,7 +5,7 @@ export const SAVINGS_TYPE_ICONS: Record<SavingsType, string> = {
   bank: 'Landmark',
   cash: 'Banknote',
   gold: 'Gem',
-  crypto_stable: 'CircleDollarSign',
+  stablecoin: 'CircleDollarSign',
   crypto: 'Bitcoin',
   stocks: 'TrendingUp',
   real_estate: 'Home',

@@ -10,6 +10,7 @@ import { EXPENSE_CATEGORIES, EXPENSE_ENTRY_CATEGORIES, PAYMENT_METHOD_TYPES } fr
 import { pushProfileFieldsToSupabase } from '@/lib/profile/pushProfileFieldsToSupabase'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { SAVINGS_TYPE_ICONS } from '@/lib/constants/savingsIcons'
+import { defaultCategoryForSavingsType } from '@/lib/constants/savingsTypes'
 import type {
   BudgetPlanCategory,
   Currency,
@@ -397,6 +398,7 @@ export function executeActionItem(
     const st = subtypeToSavingsType(sub)
     const id = ctx.addSavingsAccount({
       name: name || 'Savings',
+      category: defaultCategoryForSavingsType(st),
       type: st,
       icon: SAVINGS_TYPE_ICONS[st],
       currency,

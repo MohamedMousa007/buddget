@@ -15,14 +15,14 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT } from '@/lib/i18n'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useRecurringDebtPaymentScheduler } from '@/hooks/useRecurringDebtPaymentScheduler'
-import { useAutoSaveScheduler } from '@/hooks/useAutoSaveScheduler'
+import { useRecurringSavingsScheduler } from '@/hooks/useRecurringSavingsScheduler'
 
 export function ModalProvider() {
   const { setActiveModal } = useSettingsStore()
   const t = useT()
   const requireAuth = useRequireAuthAction()
   useRecurringDebtPaymentScheduler()
-  useAutoSaveScheduler()
+  useRecurringSavingsScheduler()
 
   return (
     <>

@@ -12,6 +12,7 @@ import { ReportsPaymentMethodPanel } from '@/components/features/reports/Reports
 import { ReportsExportBar } from '@/components/features/reports/ReportsExportBar'
 import { SpendingPacePanel } from '@/components/reports/SpendingPacePanel'
 import { ReportsSavingsPanel } from '@/components/reports/ReportsSavingsPanel'
+import { ReportsNetWorthPanel } from '@/components/reports/ReportsNetWorthPanel'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { BarChart3 } from 'lucide-react'
 import { useT } from '@/lib/i18n'
@@ -46,6 +47,8 @@ export default function ReportsPage() {
         <ReportFilters selected={r.dateRange} onSelect={r.setDateRange} />
 
         <ReportExpenseDebtFilter value={r.expenseDebtFilter} onChange={r.setExpenseDebtFilter} />
+
+        <ReportsNetWorthPanel />
 
         <ReportsSummaryPanel
           startDate={r.startDate}

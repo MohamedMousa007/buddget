@@ -184,40 +184,26 @@ export interface SavingsHolding {
   updatedAt: string
 }
 
-/** Auto-save: fixed schedule, end-of-month sweep, or percent of income (confirm in UI). */
-export type SavingsAutoSaveMode = 'fixed_schedule' | 'end_of_month' | 'percent_of_income'
-
-export interface SavingsAutoSave {
-  enabled: boolean
-  mode: SavingsAutoSaveMode
-  /** Fixed schedule: amount per run */
-  amount?: number
-  frequency?: 'weekly' | 'monthly'
-  /** Monthly: day 1–28 */
-  dayOfMonth?: number
-  /** Weekly: 0–6 (Sun–Sat) */
-  weekday?: number
-  /** percent_of_income: 0–100 */
-  percent?: number
-  /** Dedupe key last successful auto-run, e.g. `YYYY-MM` or `YYYY-MM-DD` */
-  lastRunKey?: string
-}
-
 /** High-level savings product; drives default Lucide icon in the UI. */
 export type SavingsType =
   | 'bank'
   | 'cash'
   | 'gold'
-  | 'crypto_stable'
+  | 'stablecoin'
   | 'crypto'
   | 'stocks'
   | 'real_estate'
   | 'other'
 
+/** Safe/liquid vs growth bucket (split in UI and net-worth rollups). */
+export type SavingsAccountCategory = 'savings' | 'investment'
+
 /** Savings bucket with ledger balance (transfers, not expenses). */
 export interface SavingsAccount {
   id: string
   name: string
+  /** Product grouping for net worth (defaults from `type` when omitted). */
+  category: SavingsAccountCategory
   type: SavingsType
   /** Lucide icon component name; defaults from `type`, user-pickable when `type === 'other'`. */
   icon?: string
@@ -229,7 +215,22 @@ export interface SavingsAccount {
   currentBalance: number
   createdAt: string
   notes?: string
-  autoSave?: SavingsAutoSave
+}
+
+/** Template for monthly recurring deposits (user confirms amount in Add flow; scheduler posts on due date). */
+export interface RecurringSavingsDeposit {
+  id: string
+  accountId: string
+  amount: number
+  currency: Currency
+  frequency: 'monthly'
+  /** Calendar day 1–28. */
+  dayOfMonth: number
+  /** Next run date YYYY-MM-DD. */
+  nextDueDate: string
+  isActive: boolean
+  notes?: string
+  createdAt: string
 }
 
 export interface SavingsTransaction {
@@ -420,6 +421,8 @@ export interface FinanceStore {
   /** Multi-account savings with transfer ledger (deposits / withdrawals). */
   savingsAccounts: SavingsAccount[]
   savingsTransactions: SavingsTransaction[]
+  /** Monthly deposit schedules (not expenses). */
+  recurringSavingsDeposits: RecurringSavingsDeposit[]
   paymentMethods: PaymentMethod[]
   debts: Debt[]
   debtPayments: DebtPayment[]
@@ -495,6 +498,9 @@ export interface FinanceStore {
   ) => string
   updateSavingsAccount: (id: string, updates: Partial<SavingsAccount>) => void
   deleteSavingsAccount: (id: string) => void
+  addRecurringSavingsDeposit: (r: Omit<RecurringSavingsDeposit, 'id' | 'createdAt'>) => void
+  updateRecurringSavingsDeposit: (id: string, updates: Partial<RecurringSavingsDeposit>) => void
+  deleteRecurringSavingsDeposit: (id: string) => void
   depositToSavings: (
     accountId: string,
     amount: number,
