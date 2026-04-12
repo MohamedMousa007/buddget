@@ -46,10 +46,10 @@ export default function DashboardPage() {
           />
           <KPICard
             title={t.dashboard.kpiRemaining}
-            value={stats.remaining}
+            value={stats.leftToSpend}
             currency={stats.baseCurrency}
             icon={t.dashboard.kpiRemainingIcon}
-            color={stats.remaining >= 0 ? 'green' : 'red'}
+            color={stats.leftToSpend >= 0 ? 'green' : 'red'}
             trendLabel={t.dashboard.kpiRemainingTrend}
           />
           <KPICard
@@ -98,8 +98,10 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <SavingsCard
             savingsTotal={stats.savingsTotal}
+            savingsAccountsTotal={stats.savingsAccountsTotal}
             savingsHoldingsTotal={stats.savingsHoldingsTotal}
             savingsFromExpenses={stats.savingsFromExpenses}
+            netSavingsTransfersThisMonth={stats.netSavingsTransfersThisMonth}
             savingsBudget={savingsBudget}
             currency={stats.baseCurrency}
           />

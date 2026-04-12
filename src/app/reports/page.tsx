@@ -11,6 +11,7 @@ import { ReportsSummaryPanel } from '@/components/features/reports/ReportsSummar
 import { ReportsPaymentMethodPanel } from '@/components/features/reports/ReportsPaymentMethodPanel'
 import { ReportsExportBar } from '@/components/features/reports/ReportsExportBar'
 import { SpendingPacePanel } from '@/components/reports/SpendingPacePanel'
+import { ReportsSavingsPanel } from '@/components/reports/ReportsSavingsPanel'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { BarChart3 } from 'lucide-react'
 import { useT } from '@/lib/i18n'
@@ -70,6 +71,14 @@ export default function ReportsPage() {
           suggestedDaily={stats.suggestedDaily}
           overBudgetCategories={stats.overBudgetCategories}
           currency={stats.baseCurrency}
+        />
+
+        <ReportsSavingsPanel
+          transactions={r.savingsTransactions}
+          startDate={r.startDate}
+          endDate={r.endDate}
+          baseCurrency={r.settings.baseCurrency}
+          exchangeRates={r.exchangeRates}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

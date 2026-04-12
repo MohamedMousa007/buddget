@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { tryConvertCurrency } from '@/lib/utils/currency'
+import { convertCurrency, tryConvertCurrency } from '@/lib/utils/currency'
 import { importDataSchema } from './financeImportSchema'
 import {
   DEFAULT_BUDGET,
@@ -13,11 +13,62 @@ import {
   DEFAULT_SETTINGS,
   createFreshDefaultProfile,
 } from './defaultFinanceData'
-import type { BudgetPlanCategory, FinanceStore, OnboardingState } from './types'
+import type {
+  BudgetPlanCategory,
+  FinanceStore,
+  OnboardingState,
+  SavingsAccount,
+  SavingsHolding,
+  SavingsTransaction,
+} from './types'
 import { defaultOnboardingState } from '@/lib/onboarding/onboardingTypes'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 
-const PERSIST_VERSION = 7
+const PERSIST_VERSION = 8
+
+function savingsSubtypeEmoji(subtype: string): string {
+  const m: Record<string, string> = {
+    bank: '🏦',
+    cash: '💵',
+    gold: '🪙',
+    stocks: '📈',
+    crypto: '₿',
+    real_estate: '🏠',
+    other: '💰',
+  }
+  return m[subtype] ?? '💰'
+}
+
+function migrateSavingsHoldingsToLedger(
+  holdings: SavingsHolding[],
+  genId: () => string
+): { accounts: SavingsAccount[]; transactions: SavingsTransaction[] } {
+  const accounts: SavingsAccount[] = []
+  const transactions: SavingsTransaction[] = []
+  for (const h of holdings) {
+    accounts.push({
+      id: h.id,
+      name: h.name,
+      emoji: savingsSubtypeEmoji(h.subtype),
+      currency: h.currency,
+      currentBalance: h.amount,
+      createdAt: h.createdAt,
+      notes: h.notes,
+    })
+    if (h.amount > 0.00001) {
+      transactions.push({
+        id: genId(),
+        accountId: h.id,
+        type: 'deposit',
+        amount: h.amount,
+        currency: h.currency,
+        date: (h.asOfDate || h.createdAt).slice(0, 10),
+        notes: 'Balance from previous savings record',
+      })
+    }
+  }
+  return { accounts, transactions }
+}
 
 function generateId(): string {
   return `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
@@ -49,6 +100,8 @@ export const useFinanceStore = create<FinanceStore>()(
       budgetPlans: [],
       activeBudgetPlanId: null,
       savingsHoldings: [],
+      savingsAccounts: [],
+      savingsTransactions: [],
       paymentMethods: DEFAULT_PAYMENT_METHODS,
       debts: DEFAULT_DEBTS,
       debtPayments: [],
@@ -521,6 +574,121 @@ export const useFinanceStore = create<FinanceStore>()(
           savingsHoldings: state.savingsHoldings.filter((s) => s.id !== id),
         })),
 
+      addSavingsAccount: (a) => {
+        const id = generateId()
+        set((state) => ({
+          savingsAccounts: [
+            ...state.savingsAccounts,
+            {
+              ...a,
+              id,
+              currentBalance: 0,
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        }))
+        return id
+      },
+
+      updateSavingsAccount: (id, updates) =>
+        set((state) => ({
+          savingsAccounts: state.savingsAccounts.map((acc) =>
+            acc.id === id ? { ...acc, ...updates } : acc
+          ),
+        })),
+
+      deleteSavingsAccount: (id) =>
+        set((state) => ({
+          savingsAccounts: state.savingsAccounts.filter((a) => a.id !== id),
+          savingsTransactions: state.savingsTransactions.filter((t) => t.accountId !== id),
+        })),
+
+      depositToSavings: (accountId, amount, currency, notes, opts) => {
+        const cIn = clampFiatToAllowed(get().settings, currency)
+        const raw = Math.max(0, Number(amount) || 0)
+        if (raw <= 0) return
+        set((state) => {
+          const acc = state.savingsAccounts.find((a) => a.id === accountId)
+          if (!acc) return state
+          const rates = state.exchangeRates
+          const amt =
+            cIn === acc.currency ? raw : convertCurrency(raw, cIn, acc.currency, rates)
+          if (amt <= 0) return state
+          const tx: SavingsTransaction = {
+            id: generateId(),
+            accountId,
+            type: 'deposit',
+            amount: amt,
+            currency: acc.currency,
+            date: new Date().toISOString().slice(0, 10),
+            notes,
+            source: opts?.source,
+            isAutoSave: opts?.isAutoSave,
+          }
+          return {
+            savingsTransactions: [...state.savingsTransactions, tx],
+            savingsAccounts: state.savingsAccounts.map((a) =>
+              a.id === accountId ? { ...a, currentBalance: a.currentBalance + amt } : a
+            ),
+          }
+        })
+      },
+
+      withdrawFromSavings: (accountId, amount, currency, notes) => {
+        const cIn = clampFiatToAllowed(get().settings, currency)
+        const raw = Math.max(0, Number(amount) || 0)
+        if (raw <= 0) return
+        set((state) => {
+          const acc = state.savingsAccounts.find((a) => a.id === accountId)
+          if (!acc) return state
+          const rates = state.exchangeRates
+          const amt =
+            cIn === acc.currency ? raw : convertCurrency(raw, cIn, acc.currency, rates)
+          if (amt <= 0 || acc.currentBalance + 0.0001 < amt) return state
+          const tx: SavingsTransaction = {
+            id: generateId(),
+            accountId,
+            type: 'withdrawal',
+            amount: amt,
+            currency: acc.currency,
+            date: new Date().toISOString().slice(0, 10),
+            notes,
+          }
+          return {
+            savingsTransactions: [...state.savingsTransactions, tx],
+            savingsAccounts: state.savingsAccounts.map((a) =>
+              a.id === accountId ? { ...a, currentBalance: Math.max(0, a.currentBalance - amt) } : a
+            ),
+          }
+        })
+      },
+
+      correctSavingsBalance: (accountId, newBalance, notes) => {
+        const nb = Math.max(0, Number(newBalance) || 0)
+        set((state) => {
+          const acc = state.savingsAccounts.find((a) => a.id === accountId)
+          if (!acc) return state
+          const diff = nb - acc.currentBalance
+          if (Math.abs(diff) < 0.0001) return state
+          const type: SavingsTransaction['type'] = diff > 0 ? 'deposit' : 'withdrawal'
+          const tx: SavingsTransaction = {
+            id: generateId(),
+            accountId,
+            type,
+            amount: Math.abs(diff),
+            currency: acc.currency,
+            date: new Date().toISOString().slice(0, 10),
+            notes: notes?.trim() || 'Manual balance correction',
+          }
+          return {
+            savingsTransactions: [...state.savingsTransactions, tx],
+            savingsAccounts: state.savingsAccounts.map((a) =>
+              a.id === accountId ? { ...a, currentBalance: nb } : a
+            ),
+          }
+        })
+      },
+
       updateSettings: (updates) =>
         set((state) => ({
           settings: { ...state.settings, ...updates },
@@ -576,6 +744,16 @@ export const useFinanceStore = create<FinanceStore>()(
         }
 
         const data = result.data
+        const holdings = data.savingsHoldings ?? []
+        let savingsAccounts: SavingsAccount[] = (data.savingsAccounts ?? []) as SavingsAccount[]
+        let savingsTransactions: SavingsTransaction[] = (data.savingsTransactions ?? []) as SavingsTransaction[]
+        let savingsHoldingsOut = holdings
+        if (savingsAccounts.length === 0 && holdings.length > 0) {
+          const migrated = migrateSavingsHoldingsToLedger(holdings, generateId)
+          savingsAccounts = migrated.accounts
+          savingsTransactions = migrated.transactions
+          savingsHoldingsOut = []
+        }
         set((state) => ({
           ...state,
           ...data,
@@ -584,6 +762,9 @@ export const useFinanceStore = create<FinanceStore>()(
             data.activeBudgetPlanId !== undefined ? data.activeBudgetPlanId : state.activeBudgetPlanId,
           financialGoalsNotes:
             data.financialGoalsNotes !== undefined ? data.financialGoalsNotes : state.financialGoalsNotes,
+          savingsHoldings: data.savingsHoldings !== undefined ? savingsHoldingsOut : state.savingsHoldings,
+          savingsAccounts,
+          savingsTransactions,
           settings: data.settings
             ? { ...state.settings, ...data.settings }
             : state.settings,
@@ -607,6 +788,8 @@ export const useFinanceStore = create<FinanceStore>()(
           activeBudgetPlanId: state.activeBudgetPlanId,
           financialGoalsNotes: state.financialGoalsNotes,
           savingsHoldings: state.savingsHoldings,
+          savingsAccounts: state.savingsAccounts,
+          savingsTransactions: state.savingsTransactions,
           paymentMethods: state.paymentMethods,
           debts: state.debts,
           debtPayments: state.debtPayments,
@@ -628,6 +811,8 @@ export const useFinanceStore = create<FinanceStore>()(
           activeBudgetPlanId: null,
           financialGoalsNotes: '',
           savingsHoldings: [],
+          savingsAccounts: [],
+          savingsTransactions: [],
           paymentMethods: DEFAULT_PAYMENT_METHODS,
           debts: DEFAULT_DEBTS,
           debtPayments: [],
@@ -651,6 +836,18 @@ export const useFinanceStore = create<FinanceStore>()(
             : {}
         if (fromVersion >= 6) {
           const prevSettings = (p.settings as Record<string, unknown> | undefined) || {}
+          const holdings = (Array.isArray(p.savingsHoldings) ? p.savingsHoldings : []) as SavingsHolding[]
+          let savingsAccounts = (p.savingsAccounts as SavingsAccount[] | undefined) ?? []
+          let savingsTransactions = (p.savingsTransactions as SavingsTransaction[] | undefined) ?? []
+          let savingsHoldingsOut = holdings
+          if (fromVersion < 8 && savingsAccounts.length === 0 && holdings.length > 0) {
+            const gen = (): string =>
+              `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+            const migrated = migrateSavingsHoldingsToLedger(holdings, gen)
+            savingsAccounts = migrated.accounts
+            savingsTransactions = migrated.transactions
+            savingsHoldingsOut = []
+          }
           return {
             ...p,
             budgetPlans: Array.isArray(p.budgetPlans) ? p.budgetPlans : [],
@@ -662,6 +859,9 @@ export const useFinanceStore = create<FinanceStore>()(
             recurringDebtPayments: Array.isArray(p.recurringDebtPayments)
               ? p.recurringDebtPayments
               : [],
+            savingsHoldings: savingsHoldingsOut,
+            savingsAccounts,
+            savingsTransactions,
             settings: {
               ...DEFAULT_SETTINGS,
               ...prevSettings,
@@ -731,6 +931,8 @@ export const useFinanceStore = create<FinanceStore>()(
           recurringExpenses: [],
           budgetCategories: DEFAULT_BUDGET,
           savingsHoldings: [],
+          savingsAccounts: [],
+          savingsTransactions: [],
           paymentMethods: DEFAULT_PAYMENT_METHODS,
           debts: [],
           debtPayments: [],
@@ -751,6 +953,8 @@ export const useFinanceStore = create<FinanceStore>()(
           activeBudgetPlanId:
             p.activeBudgetPlanId !== undefined ? p.activeBudgetPlanId : current.activeBudgetPlanId,
           savingsHoldings: p.savingsHoldings ?? current.savingsHoldings,
+          savingsAccounts: p.savingsAccounts ?? current.savingsAccounts,
+          savingsTransactions: p.savingsTransactions ?? current.savingsTransactions,
           recurringDebtPayments: p.recurringDebtPayments ?? current.recurringDebtPayments,
           onboardingState: p.onboardingState
             ? { ...current.onboardingState, ...p.onboardingState }

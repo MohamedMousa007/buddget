@@ -20,6 +20,8 @@ function buildFinancePayload() {
     budgetPlans: state.budgetPlans,
     activeBudgetPlanId: state.activeBudgetPlanId,
     savingsHoldings: state.savingsHoldings,
+    savingsAccounts: state.savingsAccounts,
+    savingsTransactions: state.savingsTransactions,
     paymentMethods: state.paymentMethods,
     debts: state.debts,
     debtPayments: state.debtPayments,

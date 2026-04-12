@@ -34,15 +34,17 @@ function isDebtLinkedExpense(e: Expense): boolean {
  */
 export function useReportsPage() {
   const t = useT()
-  const { expenses, incomeSources, paymentMethods, settings, exchangeRates } = useFinanceStore(
-    useShallow((s) => ({
-      expenses: s.expenses,
-      incomeSources: s.incomeSources,
-      paymentMethods: s.paymentMethods,
-      settings: s.settings,
-      exchangeRates: s.exchangeRates,
-    }))
-  )
+  const { expenses, incomeSources, paymentMethods, settings, exchangeRates, savingsTransactions } =
+    useFinanceStore(
+      useShallow((s) => ({
+        expenses: s.expenses,
+        incomeSources: s.incomeSources,
+        paymentMethods: s.paymentMethods,
+        settings: s.settings,
+        exchangeRates: s.exchangeRates,
+        savingsTransactions: s.savingsTransactions,
+      }))
+    )
   const [dateRange, setDateRange] = useState<DateRange>('thisMonth')
   const [expenseDebtFilter, setExpenseDebtFilter] = useState<ExpenseDebtFilterMode>('all')
 
@@ -105,6 +107,7 @@ export function useReportsPage() {
   const categoryData = useMemo(() => {
     const byCategory: Record<string, number> = {}
     for (const e of filteredExpenses) {
+      if (e.category === 'Savings') continue
       byCategory[e.category] =
         (byCategory[e.category] || 0) + expenseAmountInBase(e, settings.baseCurrency, exchangeRates)
     }
@@ -193,14 +196,32 @@ ${mostUsedMethod ? `${t.reports.kpiGoToPayment}: ${mostUsedMethod.name} ${t.repo
         ].join(',')
       )
       .join('\n')
-    const blob = new Blob([headers + rows], { type: 'text/csv' })
+    const savHeader = '\n\nSavings ledger,Date,AccountId,Type,Amount,Currency,Notes\n'
+    const savRows = savingsTransactions
+      .filter((t) => {
+        const d = parseISO(t.date.length > 10 ? t.date : `${t.date}T12:00:00`)
+        return isWithinInterval(d, { start: startDate, end: endDate })
+      })
+      .map((t) =>
+        [
+          '',
+          escapeCsvField(t.date),
+          escapeCsvField(t.accountId),
+          escapeCsvField(t.type),
+          escapeCsvField(t.amount),
+          escapeCsvField(t.currency),
+          escapeCsvField(t.notes ?? ''),
+        ].join(',')
+      )
+      .join('\n')
+    const blob = new Blob([headers + rows + savHeader + savRows], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
     a.download = `buddget-report-${dateRange}.csv`
     a.click()
     URL.revokeObjectURL(url)
-  }, [dateRange, filteredExpenses, settings.baseCurrency, exchangeRates])
+  }, [dateRange, filteredExpenses, savingsTransactions, startDate, endDate, settings.baseCurrency, exchangeRates])
 
   return {
     dateRange,
@@ -222,5 +243,6 @@ ${mostUsedMethod ? `${t.reports.kpiGoToPayment}: ${mostUsedMethod.name} ${t.repo
     mostUsedMethod,
     handleCopySummary,
     handleExportCSV,
+    savingsTransactions,
   }
 }

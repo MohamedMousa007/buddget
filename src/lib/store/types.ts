@@ -169,6 +169,50 @@ export interface SavingsHolding {
   updatedAt: string
 }
 
+/** Auto-save: fixed schedule, end-of-month sweep, or percent of income (confirm in UI). */
+export type SavingsAutoSaveMode = 'fixed_schedule' | 'end_of_month' | 'percent_of_income'
+
+export interface SavingsAutoSave {
+  enabled: boolean
+  mode: SavingsAutoSaveMode
+  /** Fixed schedule: amount per run */
+  amount?: number
+  frequency?: 'weekly' | 'monthly'
+  /** Monthly: day 1–28 */
+  dayOfMonth?: number
+  /** Weekly: 0–6 (Sun–Sat) */
+  weekday?: number
+  /** percent_of_income: 0–100 */
+  percent?: number
+  /** Dedupe key last successful auto-run, e.g. `YYYY-MM` or `YYYY-MM-DD` */
+  lastRunKey?: string
+}
+
+/** Savings goal / account with ledger balance (transfers, not expenses). */
+export interface SavingsAccount {
+  id: string
+  name: string
+  emoji: string
+  targetAmount?: number
+  currency: Currency
+  currentBalance: number
+  createdAt: string
+  notes?: string
+  autoSave?: SavingsAutoSave
+}
+
+export interface SavingsTransaction {
+  id: string
+  accountId: string
+  type: 'deposit' | 'withdrawal'
+  amount: number
+  currency: Currency
+  date: string
+  source?: string
+  notes?: string
+  isAutoSave?: boolean
+}
+
 export type DebtCurrency = 'EGP' | 'XAU' | Currency
 
 export type GoldKarat = 24 | 22 | 21 | 18
@@ -342,6 +386,9 @@ export interface FinanceStore {
   /** Selected plan for dashboard caps and planner UI; ignored when `budgetPlans` is empty. */
   activeBudgetPlanId: string | null
   savingsHoldings: SavingsHolding[]
+  /** Multi-account savings with transfer ledger (deposits / withdrawals). */
+  savingsAccounts: SavingsAccount[]
+  savingsTransactions: SavingsTransaction[]
   paymentMethods: PaymentMethod[]
   debts: Debt[]
   debtPayments: DebtPayment[]
@@ -412,6 +459,18 @@ export interface FinanceStore {
   addSavingsHolding: (h: Omit<SavingsHolding, 'id' | 'createdAt' | 'updatedAt'>) => void
   updateSavingsHolding: (id: string, updates: Partial<SavingsHolding>) => void
   deleteSavingsHolding: (id: string) => void
+  addSavingsAccount: (a: Omit<SavingsAccount, 'id' | 'createdAt' | 'currentBalance'>) => string
+  updateSavingsAccount: (id: string, updates: Partial<SavingsAccount>) => void
+  deleteSavingsAccount: (id: string) => void
+  depositToSavings: (
+    accountId: string,
+    amount: number,
+    currency: Currency,
+    notes?: string,
+    opts?: { isAutoSave?: boolean; source?: string }
+  ) => void
+  withdrawFromSavings: (accountId: string, amount: number, currency: Currency, notes?: string) => void
+  correctSavingsBalance: (accountId: string, newBalance: number, notes?: string) => void
   updateSettings: (updates: Partial<AppSettings>) => void
   updateProfile: (updates: Partial<UserProfile>) => void
   setFinancialGoalsNotes: (notes: string) => void

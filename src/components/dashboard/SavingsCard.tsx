@@ -10,16 +10,23 @@ import { TrendingUp } from 'lucide-react'
 
 interface SavingsCardProps {
   savingsTotal: number
+  savingsAccountsTotal: number
   savingsHoldingsTotal: number
   savingsFromExpenses: number
+  netSavingsTransfersThisMonth: number
   savingsBudget: number
   currency: string
 }
 
+/**
+ * Dashboard summary: cumulative saved up plus optional budget progress.
+ */
 export function SavingsCard({
   savingsTotal,
+  savingsAccountsTotal,
   savingsHoldingsTotal,
   savingsFromExpenses,
+  netSavingsTransfersThisMonth,
   savingsBudget,
   currency,
 }: SavingsCardProps) {
@@ -61,10 +68,32 @@ export function SavingsCard({
               </p>
             )}
             <p className="text-xs text-[var(--color-brand-text-muted)]">
-              {t.dashboard.savingsStashedAway}{formatCurrency(savingsHoldingsTotal, currency)}{t.dashboard.savingsDotSeparator}{t.dashboard.savingsAddedThisMonth}{formatCurrency(savingsFromExpenses, currency)}
+              {t.dashboard.savingsSubAccounts}
+              {formatCurrency(savingsAccountsTotal, currency)}
+              {savingsHoldingsTotal > 0.0001 && (
+                <>
+                  {t.dashboard.savingsDotSeparator}
+                  {t.dashboard.savingsSubLegacy}
+                  {formatCurrency(savingsHoldingsTotal, currency)}
+                </>
+              )}
+              {savingsFromExpenses > 0.0001 && (
+                <>
+                  {t.dashboard.savingsDotSeparator}
+                  {t.dashboard.savingsSubExpensesTagged}
+                  {formatCurrency(savingsFromExpenses, currency)}
+                </>
+              )}
             </p>
+            {Math.abs(netSavingsTransfersThisMonth) > 0.0001 && (
+              <p className="text-xs text-[var(--color-brand-text-muted)] mt-0.5">
+                {t.dashboard.savingsNetLedgerMonth}
+                {formatCurrency(netSavingsTransfersThisMonth, currency)}
+              </p>
+            )}
             <p className="text-xs text-[var(--color-brand-text-muted)] mt-1">
-              {t.dashboard.savingsMonthlyTarget}{formatCurrency(savingsBudget, currency)}
+              {t.dashboard.savingsMonthlyTarget}
+              {formatCurrency(savingsBudget, currency)}
             </p>
           </div>
           <span className="text-sm font-mono-numbers text-[var(--color-brand-text-secondary)]">

@@ -118,6 +118,10 @@ export interface Dictionary {
     savingsDotSeparator: string
     savingsAddedThisMonth: string
     savingsMonthlyTarget: string
+    savingsSubAccounts: string
+    savingsSubLegacy: string
+    savingsSubExpensesTagged: string
+    savingsNetLedgerMonth: string
     debtTitle: string
     debtBadgeCash: string
     debtPayments: (n: number) => string
@@ -235,6 +239,7 @@ export interface Dictionary {
     labelCurrentAmount: string
     labelCurrency: string
     buttonAdd: string
+    createAccountButton: string
     sectionLiquid: string
     emptyLiquid: string
     sectionInvestment: string
@@ -249,6 +254,44 @@ export interface Dictionary {
     bucketLiquid: string
     bucketInvestment: string
     confirmDelete: string
+    addAccount: string
+    addToSavings: string
+    withdraw: string
+    updateBalance: string
+    emptyAccounts: string
+    emptyAccountsCta: string
+    historyTitle: string
+    filterAllAccounts: string
+    deposit: string
+    withdrawal: string
+    autoSave: string
+    autoSaveOff: string
+    autoSaveOn: string
+    autoSaveMode: string
+    modeFixed: string
+    modeEndOfMonth: string
+    modePercent: string
+    whenMonthly: string
+    whenWeekly: string
+    sheetAddTitle: string
+    sheetWithdrawTitle: string
+    sheetUpdateTitle: string
+    labelWhichAccount: string
+    labelAmount: string
+    labelNotes: string
+    labelReason: string
+    labelNewBalance: string
+    currentBalanceLabel: string
+    available: string
+    submitAdd: string
+    submitWithdraw: string
+    submitUpdate: string
+    differenceDeposit: string
+    differenceWithdrawal: string
+    exceedsBalance: string
+    confirmDeleteAccount: string
+    tagAutoSave: string
+    ofGoal: (pct: number) => string
   }
 
   debts: {
@@ -440,6 +483,11 @@ export interface Dictionary {
     paceWarning: string
     paceOver: string
     suggestedDailyLabel: string
+    savingsSectionTitle: string
+    savingsDeposits: string
+    savingsWithdrawals: string
+    savingsNet: string
+    moneyFlowHint: string
   }
 
   settings: {

@@ -89,6 +89,8 @@ export function buildAIActionHandlerContext(store: FinanceStore): AIActionHandle
     addIncomeSource: store.addIncomeSource,
     addPaymentMethod: store.addPaymentMethod,
     addSavingsHolding: store.addSavingsHolding,
+    addSavingsAccount: store.addSavingsAccount,
+    depositToSavings: store.depositToSavings,
     updateBudgetCategory: store.updateBudgetCategory,
     updatePlanCategory: store.updatePlanCategory,
     updateBudgetPlan: store.updateBudgetPlan,
@@ -111,6 +113,8 @@ export interface AIActionHandlerContext {
   addIncomeSource: FinanceStore['addIncomeSource']
   addPaymentMethod: FinanceStore['addPaymentMethod']
   addSavingsHolding: FinanceStore['addSavingsHolding']
+  addSavingsAccount: FinanceStore['addSavingsAccount']
+  depositToSavings: FinanceStore['depositToSavings']
   updateBudgetCategory: FinanceStore['updateBudgetCategory']
   updatePlanCategory: FinanceStore['updatePlanCategory']
   updateBudgetPlan: FinanceStore['updateBudgetPlan']
@@ -368,14 +372,27 @@ export function executeActionItem(
     return
   }
   if (action === 'add_savings_holding') {
-    ctx.addSavingsHolding({
-      name: String(getField(d, 'name') || '').trim(),
-      bucket: coerceSavingsBucket(getField(d, 'bucket')),
-      subtype: coerceSavingsSubtype(getField(d, 'subtype')),
-      amount: Number(getField(d, 'amount')) || 0,
-      currency: String(getField(d, 'currency') || ctx.settings.baseCurrency) as Currency,
+    const name = String(getField(d, 'name') || '').trim()
+    const amount = Number(getField(d, 'amount')) || 0
+    const currency = clampFiatToAllowed(
+      ctx.settings,
+      String(getField(d, 'currency') || ctx.settings.baseCurrency) as Currency
+    )
+    const emoji =
+      coerceSavingsSubtype(getField(d, 'subtype')) === 'bank'
+        ? '🏦'
+        : coerceSavingsSubtype(getField(d, 'subtype')) === 'cash'
+          ? '💵'
+          : '💰'
+    const id = ctx.addSavingsAccount({
+      name: name || 'Savings',
+      emoji,
+      currency,
       notes: getField(d, 'notes') as string | undefined,
     })
+    if (amount > 0) {
+      ctx.depositToSavings(id, amount, currency, getField(d, 'notes') as string | undefined)
+    }
     return
   }
   if (action === 'update_budget_category') {

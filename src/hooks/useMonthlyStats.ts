@@ -22,6 +22,9 @@ import {
   calculateBudgetUsedPercent,
   calculateDaysLeftInMonth,
   totalSavingsHoldingsInBase,
+  totalSavingsAccountsBalanceInBase,
+  netSavingsLedgerInBaseForMonth,
+  calculateLeftToSpendCashFlow,
   effectiveCategoryBudget,
   totalDebtRemainingInBase,
   expenseAmountInBase,
@@ -55,6 +58,8 @@ export function useMonthlyStats() {
     budgetPlans,
     activeBudgetPlanId,
     savingsHoldings,
+    savingsAccounts,
+    savingsTransactions,
     debts,
     debtPayments,
     settings,
@@ -68,6 +73,8 @@ export function useMonthlyStats() {
       budgetPlans: s.budgetPlans,
       activeBudgetPlanId: s.activeBudgetPlanId,
       savingsHoldings: s.savingsHoldings,
+      savingsAccounts: s.savingsAccounts,
+      savingsTransactions: s.savingsTransactions,
       debts: s.debts,
       debtPayments: s.debtPayments,
       settings: s.settings,
@@ -95,7 +102,10 @@ export function useMonthlyStats() {
         daysLeft,
         savingsTotal: 0,
         savingsHoldingsTotal: 0,
+        savingsAccountsTotal: 0,
         savingsFromExpenses: 0,
+        netSavingsTransfersThisMonth: 0,
+        leftToSpend: 0,
         categoryBudgetCaps: {} as Record<string, number>,
         debtRemainingTotal: 0,
         baseCurrency: settings.baseCurrency,
@@ -158,8 +168,32 @@ export function useMonthlyStats() {
       settings.baseCurrency,
       exchangeRates
     )
+    const savingsAccountsTotal = totalSavingsAccountsBalanceInBase(
+      savingsAccounts,
+      settings.baseCurrency,
+      exchangeRates
+    )
 
-    const savingsTotal = savingsHoldingsTotal + savingsFromExpenses
+    const savingsTotal = savingsAccountsTotal + savingsHoldingsTotal + savingsFromExpenses
+
+    const netSavingsTransfersThisMonth = netSavingsLedgerInBaseForMonth(
+      savingsTransactions,
+      monthFilter,
+      settings.monthStartDay,
+      settings.baseCurrency,
+      exchangeRates
+    )
+
+    const leftToSpend = calculateLeftToSpendCashFlow({
+      monthStr: monthFilter,
+      monthStartDay: settings.monthStartDay,
+      expenses,
+      incomeSources,
+      savingsTransactions,
+      baseCurrency: settings.baseCurrency,
+      exchangeRates,
+      incomeBlocked,
+    })
 
     const effectiveBudgetRows = planForCategoryBar
       ? budgetCategoriesFromPlan(planForCategoryBar, settings.baseCurrency, exchangeRates)
@@ -212,7 +246,10 @@ export function useMonthlyStats() {
       daysLeft,
       savingsTotal,
       savingsHoldingsTotal,
+      savingsAccountsTotal,
       savingsFromExpenses,
+      netSavingsTransfersThisMonth,
+      leftToSpend,
       categoryBudgetCaps,
       debtRemainingTotal,
       baseCurrency: settings.baseCurrency,
@@ -231,6 +268,8 @@ export function useMonthlyStats() {
     budgetPlans,
     activeBudgetPlanId,
     savingsHoldings,
+    savingsAccounts,
+    savingsTransactions,
     debts,
     debtPayments,
     settings,

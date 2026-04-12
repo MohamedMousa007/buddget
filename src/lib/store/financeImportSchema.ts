@@ -181,6 +181,47 @@ export const importDataSchema = z.object({
       })
     )
     .optional(),
+  savingsAccounts: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        emoji: z.string(),
+        targetAmount: z.number().optional(),
+        currency: fiatCurrencySchema,
+        currentBalance: z.number(),
+        createdAt: z.string(),
+        notes: z.string().optional(),
+        autoSave: z
+          .object({
+            enabled: z.boolean(),
+            mode: z.enum(['fixed_schedule', 'end_of_month', 'percent_of_income']),
+            amount: z.number().optional(),
+            frequency: z.enum(['weekly', 'monthly']).optional(),
+            dayOfMonth: z.number().optional(),
+            weekday: z.number().optional(),
+            percent: z.number().optional(),
+            lastRunKey: z.string().optional(),
+          })
+          .optional(),
+      })
+    )
+    .optional(),
+  savingsTransactions: z
+    .array(
+      z.object({
+        id: z.string(),
+        accountId: z.string(),
+        type: z.enum(['deposit', 'withdrawal']),
+        amount: z.number(),
+        currency: fiatCurrencySchema,
+        date: z.string(),
+        source: z.string().optional(),
+        notes: z.string().optional(),
+        isAutoSave: z.boolean().optional(),
+      })
+    )
+    .optional(),
   paymentMethods: z
     .array(
       z.object({
