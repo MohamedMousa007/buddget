@@ -35,6 +35,7 @@ function AuthNextQuerySync({ configured }: { configured: boolean }) {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
   const [user, setUser] = useState<AuthContextValue['user']>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
@@ -72,7 +73,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, nextSession: Session | null) => {
       if (_event === 'SIGNED_OUT') {
-        clearBudgetData()
+        try {
+          clearBudgetData()
+        } catch (e) {
+          console.error('[auth] clearBudgetData on SIGNED_OUT failed', e)
+        }
       }
       setSession(nextSession)
       setUser(nextSession?.user ?? null)
@@ -92,12 +97,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     if (!configured) return
-    clearBudgetData()
+    try {
+      clearBudgetData()
+    } catch (e) {
+      console.error('[auth] clearBudgetData before signOut failed', e)
+    }
     const supabase = createClient()
-    await supabase.auth.signOut()
-    setUser(null)
-    setSession(null)
-  }, [configured])
+    try {
+      await supabase.auth.signOut()
+    } finally {
+      setUser(null)
+      setSession(null)
+      router.refresh()
+    }
+  }, [configured, router])
 
   const noopSignOut = useCallback(async () => {}, [])
 

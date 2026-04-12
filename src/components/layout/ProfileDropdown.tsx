@@ -73,7 +73,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
 
   if (!open) return null
 
-  const avatarSrc = resolveProfileAvatarSrc(profile)
+  const avatarSrc = isGuest ? null : resolveProfileAvatarSrc(profile)
   const displayName = profile.name || t.common.user
   const displayEmail = user?.email || profile.email || ''
 

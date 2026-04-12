@@ -11,6 +11,7 @@ import {
   DEFAULT_PAYMENT_METHODS,
   DEFAULT_PROFILE,
   DEFAULT_SETTINGS,
+  createFreshDefaultProfile,
 } from './defaultFinanceData'
 import type { BudgetPlanCategory, FinanceStore, OnboardingState } from './types'
 import { defaultOnboardingState } from '@/lib/onboarding/onboardingTypes'
@@ -626,8 +627,8 @@ export const useFinanceStore = create<FinanceStore>()(
 
       resetAllData: () =>
         set({
-          profile: DEFAULT_PROFILE,
-          settings: DEFAULT_SETTINGS,
+          profile: createFreshDefaultProfile(),
+          settings: { ...DEFAULT_SETTINGS },
           onboardingState: defaultOnboardingState(),
           incomeSources: DEFAULT_INCOME,
           expenses: [],
@@ -647,6 +648,9 @@ export const useFinanceStore = create<FinanceStore>()(
           goldPricePerGram: DEFAULT_GOLD_PRICE_PER_GRAM,
           lastRatesFetch: null,
         }),
+
+      /** Alias for `resetAllData` (logout / wipe client state). */
+      reset: () => get().resetAllData(),
     }),
     {
       name: 'buddget-storage',

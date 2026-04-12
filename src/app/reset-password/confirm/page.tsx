@@ -65,7 +65,11 @@ export default function ResetPasswordConfirmPage() {
       setError(t.resetPassword.errorUpdateFailed)
       return
     }
-    clearBudgetData()
+    try {
+      clearBudgetData()
+    } catch (e) {
+      console.error('[reset-password] clearBudgetData failed', e)
+    }
     const { error: signOutError } = await supabase.auth.signOut()
     setLoading(false)
     if (signOutError) {

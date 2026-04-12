@@ -380,4 +380,6 @@ export interface FinanceStore {
   importData: (data: string) => void
   exportData: () => string
   resetAllData: () => void
+  /** Same as `resetAllData` (logout / full client wipe). */
+  reset: () => void
 }

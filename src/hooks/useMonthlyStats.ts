@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
+import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import {
@@ -36,7 +37,16 @@ function filterBySharedScope<T extends { sharedPlanId?: string | null }>(
   return items.filter((x) => !x.sharedPlanId)
 }
 
+function supabaseAuthConfigured(): boolean {
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+  )
+}
+
 export function useMonthlyStats() {
+  const { session } = useAuth()
+  const trustLocalFinance = !supabaseAuthConfigured() || session != null
+
   const {
     expenses,
     incomeSources,
@@ -70,6 +80,29 @@ export function useMonthlyStats() {
   const { monthFilter } = useSettingsStore()
 
   return useMemo(() => {
+    if (!trustLocalFinance) {
+      const daysLeft = calculateDaysLeftInMonth(monthFilter, settings.monthStartDay)
+      return {
+        monthlyExpenses: [],
+        totalIncome: 0,
+        totalSpent: 0,
+        totalSpentExcludingSavings: 0,
+        totalBudget: 0,
+        totalExpenseBudget: 0,
+        remaining: 0,
+        budgetUsedPercent: 0,
+        categorySpending: {} as ReturnType<typeof calculateCategorySpending>,
+        dashboardBudgetCategories: [],
+        daysLeft,
+        savingsTotal: 0,
+        savingsHoldingsTotal: 0,
+        savingsFromExpenses: 0,
+        categoryBudgetCaps: {} as Record<string, number>,
+        debtRemainingTotal: 0,
+        baseCurrency: settings.baseCurrency,
+        incomeBlocked: false,
+      }
+    }
     const scopedExpenses = filterBySharedScope(expenses, activeSharedBudgetId)
     const scopedIncome = filterBySharedScope(incomeSources, activeSharedBudgetId)
     const scopedDebts = filterBySharedScope(debts, activeSharedBudgetId)
@@ -182,6 +215,7 @@ export function useMonthlyStats() {
     exchangeRates,
     goldPricePerGram,
     monthFilter,
+    trustLocalFinance,
   ])
 }
 

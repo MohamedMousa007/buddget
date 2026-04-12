@@ -64,6 +64,16 @@ export const DEFAULT_PROFILE: UserProfile = {
   createdAt: new Date().toISOString(),
 }
 
+/** New profile snapshot after logout / reset — no avatar, location, or cached URLs. */
+export function createFreshDefaultProfile(): UserProfile {
+  return {
+    id: 'local',
+    name: '',
+    baseCurrency: 'USD',
+    createdAt: new Date().toISOString(),
+  }
+}
+
 /** FX / gold defaults for conversions and Settings display (not user-specific). */
 export const DEFAULT_MARKET_RATES: Record<string, number> = {
   USD_AED: 3.6725,

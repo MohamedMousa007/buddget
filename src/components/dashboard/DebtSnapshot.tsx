@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useShallow } from 'zustand/react/shallow'
+import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import {
   calculateDebtRemaining,
@@ -11,8 +12,16 @@ import { convertCurrency } from '@/lib/utils/currency'
 import { MoneyDisplay } from '@/components/ui/MoneyDisplay'
 import { useT } from '@/lib/i18n'
 
+function supabaseAuthConfigured(): boolean {
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+  )
+}
+
 export function DebtSnapshot() {
   const t = useT()
+  const { session } = useAuth()
+  const hideFinance = supabaseAuthConfigured() && session == null
   const { debts, debtPayments, settings, exchangeRates, goldPricePerGram } = useFinanceStore(
     useShallow((s) => ({
       debts: s.debts,
@@ -24,6 +33,7 @@ export function DebtSnapshot() {
   )
   const base = settings.baseCurrency
 
+  if (hideFinance) return null
   if (debts.length === 0) return null
 
   return (

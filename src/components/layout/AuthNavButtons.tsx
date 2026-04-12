@@ -20,8 +20,15 @@ function ProfileAvatarWithMenu({ className }: { className?: string }) {
   const t = useT()
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const { user } = useAuth()
+  const configured = useMemo(() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+    return !!(url && key)
+  }, [])
   const profile = useFinanceStore(useShallow((s) => s.profile))
-  const src = resolveProfileAvatarSrc(profile)
+  const src =
+    configured && !user ? null : resolveProfileAvatarSrc(profile)
 
   return (
     <div ref={containerRef} className="relative">
