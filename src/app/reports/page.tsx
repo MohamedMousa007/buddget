@@ -10,6 +10,7 @@ import { expenseAmountInBase } from '@/lib/utils/calculations'
 import { ReportsSummaryPanel } from '@/components/features/reports/ReportsSummaryPanel'
 import { ReportsPaymentMethodPanel } from '@/components/features/reports/ReportsPaymentMethodPanel'
 import { ReportsExportBar } from '@/components/features/reports/ReportsExportBar'
+import { BarChart3 } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 
 const MonthlyChart = dynamic(
@@ -30,7 +31,10 @@ export default function ReportsPage() {
     <div className="min-h-screen">
       <PageHeader>
         <PageHeaderContent>
-          <h1 className="text-xl font-bold text-white">{t.reports.pageTitle}</h1>
+          <h1 className="text-xl font-bold text-white flex items-center gap-2">
+            <BarChart3 className="w-6 h-6 text-[var(--color-brand-red)]" />
+            {t.reports.pageTitle}
+          </h1>
         </PageHeaderContent>
       </PageHeader>
 

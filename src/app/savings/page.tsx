@@ -10,7 +10,7 @@ import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Trash2 } from 'lucide-react'
+import { Trash2, HandCoins } from 'lucide-react'
 import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import type { Currency, SavingsBucket, SavingsHolding, SavingsSubtype } from '@/lib/store/types'
@@ -122,7 +122,10 @@ export default function SavingsPage() {
     <div className="min-h-screen pb-24">
       <PageHeader>
         <PageHeaderContent>
-          <h1 className="text-xl font-bold text-white">{t.savings.pageTitle}</h1>
+          <h1 className="text-xl font-bold text-white flex items-center gap-2">
+            <HandCoins className="w-6 h-6 text-[var(--color-brand-red)]" />
+            {t.savings.pageTitle}
+          </h1>
           <p className="text-xs text-[var(--color-brand-text-muted)] mt-1">
             {t.savings.totalLine(settings.baseCurrency)}
             <span className="font-mono-numbers text-[var(--color-brand-green)]">{formatCurrency(totalBase, settings.baseCurrency)}</span>

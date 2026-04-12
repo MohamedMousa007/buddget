@@ -123,7 +123,7 @@ export const en: Dictionary = {
   },
 
   expenses: {
-    pageTitle: 'My Spending',
+    pageTitle: 'My Expenses',
     requireAuth: 'Sign in to log your spending and keep your budget on track.',
     emptyIcon: '💸',
     emptyTitle: 'Nothing logged yet this month.',
@@ -163,7 +163,7 @@ export const en: Dictionary = {
   },
 
   income: {
-    pageTitle: 'Money Coming In',
+    pageTitle: 'My Income',
     requireAuth: 'Sign in to add income sources and keep your budget on track.',
     addSource: '+ Add a source',
     helperText: 'Your recurring income is shown as a monthly total for your budget plan. Weekly and bi-weekly amounts reflect what you earn per paycheck.',
@@ -242,7 +242,7 @@ export const en: Dictionary = {
   },
 
   debts: {
-    pageTitle: 'Debts to clear',
+    pageTitle: 'Debts To Clear',
     requireAuthNew: 'Sign in or create an account to add debts or log payments.',
     requireAuthPayment: 'Sign in or create an account to log debt payments.',
     requireAuthRecurring: 'Sign in or create an account to add recurring debt payments.',

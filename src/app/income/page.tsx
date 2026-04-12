@@ -7,7 +7,7 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2, Wallet } from 'lucide-react'
 import type { IncomeSource } from '@/lib/store/types'
 import { incomeMonthlyMultiplier } from '@/lib/utils/calculations'
 import { useT } from '@/lib/i18n'
@@ -59,7 +59,10 @@ export default function IncomePage() {
     <div className="min-h-screen">
       <PageHeader>
         <PageHeaderContent className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-white">{t.income.pageTitle}</h1>
+          <h1 className="text-xl font-bold text-white flex items-center gap-2">
+            <Wallet className="w-6 h-6 text-[var(--color-brand-red)]" />
+            {t.income.pageTitle}
+          </h1>
           <button
             type="button"
             onClick={openAddIncome}
