@@ -40,17 +40,17 @@ export function CategoryBarExpenseRows({
         const clampedPercent = Math.min(percent, 100)
 
         const barColor =
-          percent > 100
+          percent >= 100
             ? 'bg-[var(--color-brand-red)]'
             : percent > 80
               ? 'bg-[var(--color-brand-amber)]'
-              : 'bg-[var(--color-brand-red)]'
+              : 'bg-[var(--color-brand-green)]'
 
         const statusIcon =
-          percent > 100 ? '!' : percent > 80 ? '⚠' : percent > 0 ? '✓' : '–'
+          percent >= 100 ? '!' : percent > 80 ? '⚠' : percent > 0 ? '✓' : '–'
 
         const statusColor =
-          percent > 100
+          percent >= 100
             ? 'text-[var(--color-brand-red)]'
             : percent > 80
               ? 'text-[var(--color-brand-amber)]'
