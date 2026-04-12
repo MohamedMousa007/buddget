@@ -6,11 +6,16 @@ import { AvatarPickerModal } from '@/components/profile/AvatarPickerModal'
 import { CountrySelect } from '@/components/ui/CountrySelect'
 import { ProfileFieldRow } from '@/components/profile/ProfileFieldRow'
 import { getProfileCountryDisplayLabel } from '@/lib/profile/countryOptions'
+import { SettingsPaymentMethodsSection } from '@/components/features/settings/SettingsPaymentMethodsSection'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useProfilePage } from '@/hooks/useProfilePage'
 
 export default function ProfilePage() {
   const p = useProfilePage()
   const { t } = p
+  const { setActiveModal } = useSettingsStore()
+  const requireAuth = useRequireAuthAction()
 
   return (
     <div className="min-h-screen">
@@ -146,6 +151,16 @@ export default function ProfilePage() {
             </div>
           )}
         </div>
+
+        <SettingsPaymentMethodsSection
+          store={p.store}
+          onAddClick={() =>
+            requireAuth(
+              () => setActiveModal('addPaymentMethod'),
+              t.modals.fabRequireAuth
+            )
+          }
+        />
 
         {p.user && (
           <div className="bg-[#111118] border border-[#2A2A38] rounded-2xl p-6">

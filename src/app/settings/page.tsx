@@ -1,8 +1,6 @@
 'use client'
 
-import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
-import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useSettingsPage } from '@/hooks/useSettingsPage'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
@@ -10,18 +8,13 @@ import { SettingsImportBanner } from '@/components/features/settings/SettingsImp
 import { SettingsGuestAccountCard } from '@/components/features/settings/SettingsGuestAccountCard'
 import { SettingsSignedInAccountCard } from '@/components/features/settings/SettingsSignedInAccountCard'
 import { SettingsCurrencySection } from '@/components/features/settings/SettingsCurrencySection'
-import { SettingsPageLinksSection } from '@/components/features/settings/SettingsPageLinksSection'
-import { SettingsPaymentMethodsSection } from '@/components/features/settings/SettingsPaymentMethodsSection'
 import { SettingsAiAssistantSection } from '@/components/features/settings/SettingsAiAssistantSection'
-import { SettingsAdminLinkCard } from '@/components/features/settings/SettingsAdminLinkCard'
 import { SettingsDataManagementSection } from '@/components/features/settings/SettingsDataManagementSection'
 import { SettingsAppPreferencesSection } from '@/components/features/settings/SettingsAppPreferencesSection'
 
 export default function SettingsPage() {
   const t = useT()
   const store = useFinanceStore()
-  const { setActiveModal } = useSettingsStore()
-  const requireAuth = useRequireAuthAction()
   const s = useSettingsPage()
 
   return (
@@ -45,18 +38,7 @@ export default function SettingsPage() {
         {s.user ? <SettingsSignedInAccountCard user={s.user} onSignOut={s.signOutAndHome} /> : null}
 
         <SettingsCurrencySection store={store} />
-        <SettingsPageLinksSection />
-        <SettingsPaymentMethodsSection
-          store={store}
-          onAddClick={() =>
-            requireAuth(
-              () => setActiveModal('addPaymentMethod'),
-              t.modals.fabRequireAuth
-            )
-          }
-        />
         <SettingsAiAssistantSection store={store} aiStatus={s.aiStatus} />
-        <SettingsAdminLinkCard />
         <SettingsDataManagementSection
           store={store}
           fileInputRef={s.fileInputRef}
