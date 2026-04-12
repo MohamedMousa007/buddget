@@ -40,8 +40,8 @@ export default function BudgetSetupPage() {
 
       <div className="px-4 py-6 lg:px-8 max-w-3xl mx-auto space-y-6">
         {!p.supabaseConfigured || p.user ?
-          p.budgetPlans.length > 0 ?
-            <>
+          <>
+            {p.budgetPlans.length > 0 ?
               <BudgetSetupPlanToolbar
                 plans={p.budgetPlans}
                 activeId={p.activeBudgetPlanId}
@@ -58,108 +58,112 @@ export default function BudgetSetupPage() {
                 deletePlanLabel={t.budgetPlanner.deletePlan}
                 onDeleteActivePlan={() => p.deleteBudgetPlan(p.activePlan!.id)}
               />
-
-              {p.newPlanDialogOpen && (
-                <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4 space-y-3">
-                  <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">
-                    {t.budgetPlanner.newPlanName}
-                  </p>
-                  <input
-                    ref={planNameInputRef}
-                    value={p.newPlanName}
-                    onChange={(e) => p.setNewPlanName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') p.commitNewPlan()
-                      if (e.key === 'Escape') p.cancelNewPlan()
-                    }}
-                    className="w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-red)]/40"
-                    autoFocus
-                  />
-                  <div className="flex gap-2 justify-end">
-                    <button
-                      type="button"
-                      onClick={p.cancelNewPlan}
-                      className="rounded-xl border border-[var(--color-brand-border)] px-4 py-2 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
-                    >
-                      {t.common.cancel}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={p.commitNewPlan}
-                      className="rounded-xl bg-[var(--color-brand-red)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)]"
-                    >
-                      {t.common.ok}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <BudgetPlannerSummary
-                totalIncome={p.totalIncome}
-                totalPlanned={p.totalPlanned}
-                projectedSavings={p.projectedSavings}
-                currency={p.settings.baseCurrency}
-                hasIncome={hasIncome}
-                onAddIncome={() => setActiveModal('addIncome')}
-                labels={{
-                  totalIncome: t.budgetPlanner.totalIncome,
-                  totalPlanned: t.budgetPlanner.totalPlanned,
-                  projectedSavings: t.budgetPlanner.projectedSavings,
-                  projectedSavingsLine: t.budgetPlanner.projectedSavingsLine,
-                }}
-              />
-
-              {p.activePlan ?
-                <div className="space-y-4">
-                  <BudgetPlannerCategories
-                    planId={p.activePlan.id}
-                    categories={p.activePlan.categories}
-                    settings={p.settings}
-                    labels={p.categoryLabels}
-                    onAddPresetCategory={(icon, name) =>
-                      p.addPlanCategory(p.activePlan!.id, { name, icon, amount: 0 })
-                    }
-                    onAddCustomCategory={(name, icon) =>
-                      p.addPlanCategory(p.activePlan!.id, { name, icon, amount: 0 })
-                    }
-                    onUpdateCategory={(categoryId, updates) =>
-                      p.updatePlanCategory(p.activePlan!.id, categoryId, updates)
-                    }
-                    onDeleteCategory={(categoryId) => p.deletePlanCategory(p.activePlan!.id, categoryId)}
-                    onAddSubcategory={(categoryId) =>
-                      p.addPlanSubcategory(p.activePlan!.id, categoryId, { name: '', amount: 0, icon: '📦' })
-                    }
-                    onUpdateSubcategory={(categoryId, subId, updates) =>
-                      p.updatePlanSubcategory(p.activePlan!.id, categoryId, subId, updates)
-                    }
-                    onDeleteSubcategory={(categoryId, subId) =>
-                      p.deletePlanSubcategory(p.activePlan!.id, categoryId, subId)
-                    }
-                  />
-
-                  {buddgyAiOpen ? (
-                    <BuddgyAiChat planId={p.activePlan.id} onClose={() => setBuddgyAiOpen(false)} />
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setBuddgyAiOpen(true)}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--color-brand-border)] py-3 text-sm font-medium text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] hover:text-[var(--color-brand-text-primary)] transition-colors"
-                    >
-                      <Bot className="h-4 w-4" />
-                      Chat with Buddgy to adjust your plan
-                    </button>
-                  )}
-                </div>
-              : null}
-            </>
-          : <>
+            : (
               <BudgetSetupNoPlansEmpty
                 title={t.budgetPlanner.noPlansEmptyTitle}
                 description={t.budgetPlanner.noPlansEmptyDesc}
                 createLabel={t.budgetPlanner.noPlansCreateFirst}
                 onCreate={p.handleAddPlan}
               />
-            </>
+            )}
+
+            {p.newPlanDialogOpen && (
+              <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4 space-y-3">
+                <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">
+                  {t.budgetPlanner.newPlanName}
+                </p>
+                <input
+                  ref={planNameInputRef}
+                  value={p.newPlanName}
+                  onChange={(e) => p.setNewPlanName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') p.commitNewPlan()
+                    if (e.key === 'Escape') p.cancelNewPlan()
+                  }}
+                  className="w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-red)]/40"
+                  autoFocus
+                />
+                <div className="flex gap-2 justify-end">
+                  <button
+                    type="button"
+                    onClick={p.cancelNewPlan}
+                    className="rounded-xl border border-[var(--color-brand-border)] px-4 py-2 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
+                  >
+                    {t.common.cancel}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={p.commitNewPlan}
+                    className="rounded-xl bg-[var(--color-brand-red)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)]"
+                  >
+                    {t.common.ok}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {p.budgetPlans.length > 0 && (
+              <>
+                <BudgetPlannerSummary
+                  totalIncome={p.totalIncome}
+                  totalPlanned={p.totalPlanned}
+                  projectedSavings={p.projectedSavings}
+                  currency={p.settings.baseCurrency}
+                  hasIncome={hasIncome}
+                  onAddIncome={() => setActiveModal('addIncome')}
+                  labels={{
+                    totalIncome: t.budgetPlanner.totalIncome,
+                    totalPlanned: t.budgetPlanner.totalPlanned,
+                    projectedSavings: t.budgetPlanner.projectedSavings,
+                    projectedSavingsLine: t.budgetPlanner.projectedSavingsLine,
+                  }}
+                />
+
+                {p.activePlan ?
+                  <div className="space-y-4">
+                    <BudgetPlannerCategories
+                      planId={p.activePlan.id}
+                      categories={p.activePlan.categories}
+                      settings={p.settings}
+                      labels={p.categoryLabels}
+                      onAddPresetCategory={(icon, name) =>
+                        p.addPlanCategory(p.activePlan!.id, { name, icon, amount: 0 })
+                      }
+                      onAddCustomCategory={(name, icon) =>
+                        p.addPlanCategory(p.activePlan!.id, { name, icon, amount: 0 })
+                      }
+                      onUpdateCategory={(categoryId, updates) =>
+                        p.updatePlanCategory(p.activePlan!.id, categoryId, updates)
+                      }
+                      onDeleteCategory={(categoryId) => p.deletePlanCategory(p.activePlan!.id, categoryId)}
+                      onAddSubcategory={(categoryId) =>
+                        p.addPlanSubcategory(p.activePlan!.id, categoryId, { name: '', amount: 0, icon: '📦' })
+                      }
+                      onUpdateSubcategory={(categoryId, subId, updates) =>
+                        p.updatePlanSubcategory(p.activePlan!.id, categoryId, subId, updates)
+                      }
+                      onDeleteSubcategory={(categoryId, subId) =>
+                        p.deletePlanSubcategory(p.activePlan!.id, categoryId, subId)
+                      }
+                    />
+
+                    {buddgyAiOpen ? (
+                      <BuddgyAiChat planId={p.activePlan.id} onClose={() => setBuddgyAiOpen(false)} />
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setBuddgyAiOpen(true)}
+                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--color-brand-border)] py-3 text-sm font-medium text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] hover:text-[var(--color-brand-text-primary)] transition-colors"
+                      >
+                        <Bot className="h-4 w-4" />
+                        Chat with Buddgy to adjust your plan
+                      </button>
+                    )}
+                  </div>
+                : null}
+              </>
+            )}
+          </>
         : <div className="min-h-[40vh]" aria-hidden />}
       </div>
 
