@@ -29,7 +29,7 @@ export function buildSavingsCurrencyOptions(
   switch (savingsType) {
     case 'gold':
       return uniq([{ value: 'XAU', label: 'XAU (g)' }, ...fiat])
-    case 'crypto_stable':
+    case 'stablecoin':
       return uniq([
         { value: 'USDT', label: 'USDT' },
         { value: 'USDC', label: 'USDC' },

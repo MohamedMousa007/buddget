@@ -71,9 +71,9 @@ export function SavingsTransactionHistory({ transactions, accounts }: SavingsTra
                   <span className="mx-2 text-[var(--color-brand-text-muted)]">
                     {format(parseISO(tx.date.length > 10 ? tx.date : `${tx.date}T12:00:00`), 'd MMM')}
                   </span>
-                  {tx.isAutoSave && (
+                  {tx.source === 'recurring_savings' && (
                     <span className="text-[10px] uppercase text-[var(--color-brand-text-muted)]">
-                      {t.savings.tagAutoSave}
+                      {t.savings.tagRecurring}
                     </span>
                   )}
                 </div>

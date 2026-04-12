@@ -1,6 +1,7 @@
 'use client'
 
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
+import { useNetWorth } from '@/hooks/useNetWorth'
 import { useRates } from '@/hooks/useRates'
 import { useGoldPrice } from '@/hooks/useGoldPrice'
 import { KPICard } from '@/components/dashboard/KPICard'
@@ -19,6 +20,7 @@ export default function DashboardPage() {
   const t = useT()
 
   const stats = useMonthlyStats()
+  const nw = useNetWorth()
   const incomeNote = stats.incomeBlocked ? t.dashboard.incomeBlockedHint : undefined
 
   return (
@@ -26,6 +28,14 @@ export default function DashboardPage() {
       <div className="px-4 py-6 lg:px-8 space-y-6 max-w-5xl mx-auto">
         {/* KPI Strip */}
         <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-1">
+          <KPICard
+            title={t.dashboard.kpiNetWorth}
+            value={nw.netWorth}
+            currency={nw.baseCurrency}
+            icon={t.dashboard.kpiNetWorthIcon}
+            trendLabel={t.dashboard.kpiNetWorthTrend}
+            color={nw.netWorth >= 0 ? 'green' : 'red'}
+          />
           <KPICard
             title={t.dashboard.kpiIncome}
             value={stats.totalIncome}

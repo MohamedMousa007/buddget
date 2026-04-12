@@ -10,18 +10,10 @@ import { Label } from '@/components/ui/label'
 import { OTHER_SAVINGS_ICON_KEYS, SAVINGS_TYPE_ICONS } from '@/lib/constants/savingsIcons'
 import { INVESTMENT_PRODUCT_TYPES, SAVINGS_PRODUCT_TYPES } from '@/lib/constants/savingsTypes'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import type { Currency, SavingsAccountCategory, SavingsType } from '@/lib/store/types'
-import {
-  buildSavingsCurrencyOptions,
-  pickDefaultSavingsCurrency,
-} from '@/lib/savings/savingsCurrencyOptions'
+import type { Currency, SavingsAccount, SavingsAccountCategory, SavingsType } from '@/lib/store/types'
+import { buildSavingsCurrencyOptions, pickDefaultSavingsCurrency } from '@/lib/savings/savingsCurrencyOptions'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-
-export interface AddSavingsAccountSheetProps {
-  open: boolean
-  onClose: () => void
-}
 
 const tab = (on: boolean) =>
   cn(
@@ -31,21 +23,33 @@ const tab = (on: boolean) =>
       : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
   )
 
+export interface EditSavingsAccountSheetProps {
+  open: boolean
+  onClose: () => void
+  account: SavingsAccount | null
+}
+
 /**
- * Create savings or investment bucket with category split and uniform type pills.
+ * Edit name, category, product type, currency, and notes for an existing savings row.
  */
-export function AddSavingsAccountSheet({ open, onClose }: AddSavingsAccountSheetProps) {
+export function EditSavingsAccountSheet({ open, onClose, account }: EditSavingsAccountSheetProps) {
+  if (!open || !account) return null
+  return <EditSavingsAccountForm key={account.id} account={account} onClose={onClose} />
+}
+
+function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount; onClose: () => void }) {
   const t = useT()
   const settings = useFinanceStore((s) => s.settings)
-  const addSavingsAccount = useFinanceStore((s) => s.addSavingsAccount)
+  const updateSavingsAccount = useFinanceStore((s) => s.updateSavingsAccount)
 
-  const [productCategory, setProductCategory] = useState<SavingsAccountCategory>('savings')
-  const [savingsType, setSavingsType] = useState<SavingsType>('bank')
-  const [otherIcon, setOtherIcon] = useState<string>(SAVINGS_TYPE_ICONS.other)
-  const [name, setName] = useState('')
-  const [currency, setCurrency] = useState<Currency>(() => pickDefaultSavingsCurrency(settings, 'bank'))
-  const [openingBalance, setOpeningBalance] = useState('')
-  const [notes, setNotes] = useState('')
+  const [productCategory, setProductCategory] = useState<SavingsAccountCategory>(account.category)
+  const [savingsType, setSavingsType] = useState<SavingsType>(account.type)
+  const [otherIcon, setOtherIcon] = useState(
+    account.type === 'other' && account.icon ? account.icon : SAVINGS_TYPE_ICONS.other
+  )
+  const [name, setName] = useState(account.name)
+  const [currency, setCurrency] = useState<Currency>(account.currency)
+  const [notes, setNotes] = useState(account.notes ?? '')
 
   const typeList = productCategory === 'savings' ? SAVINGS_PRODUCT_TYPES : INVESTMENT_PRODUCT_TYPES
 
@@ -68,36 +72,25 @@ export function AddSavingsAccountSheet({ open, onClose }: AddSavingsAccountSheet
 
   const submit = () => {
     if (!name.trim()) return
-    const bal = parseFloat(openingBalance)
     const resolvedIcon = savingsType === 'other' ? otherIcon : SAVINGS_TYPE_ICONS[savingsType]
-    addSavingsAccount({
+    updateSavingsAccount(account.id, {
       name: name.trim(),
       category: productCategory,
       type: savingsType,
       icon: resolvedIcon,
       currency,
       notes: notes.trim() || undefined,
-      ...(Number.isFinite(bal) && bal > 0 ? { openingBalance: bal } : {}),
     })
-    setProductCategory('savings')
-    setSavingsType('bank')
-    setOtherIcon(SAVINGS_TYPE_ICONS.other)
-    setName('')
-    setCurrency(pickDefaultSavingsCurrency(settings, 'bank'))
-    setOpeningBalance('')
-    setNotes('')
     onClose()
   }
-
-  if (!open) return null
 
   const inputClass =
     'rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)]'
 
   return (
-    <ModalShell open={open} onBackdropClick={onClose}>
+    <ModalShell open onBackdropClick={onClose}>
       <div className="p-6 max-h-[90vh] overflow-y-auto">
-        <ModalSheetHeader title={t.savings.sheetAddNewTitle} onClose={onClose} />
+        <ModalSheetHeader title={t.savings.sheetEditTitle} onClose={onClose} />
         <div className="mt-4 space-y-4">
           <div>
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelProductCategory}</Label>
@@ -156,37 +149,23 @@ export function AddSavingsAccountSheet({ open, onClose }: AddSavingsAccountSheet
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={t.savings.placeholders[savingsType]}
               className={cn('mt-1 h-10', inputClass)}
             />
           </div>
 
           <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelCurrentBalance}</Label>
-            <div className="mt-1 flex gap-2 items-stretch">
-              <select
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value as Currency)}
-                className={cn('h-10 min-w-[5.5rem] shrink-0 rounded-xl border px-2 text-sm', inputClass)}
-              >
-                {currencyOptions.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-              <Input
-                type="number"
-                step="0.01"
-                value={openingBalance}
-                onChange={(e) => setOpeningBalance(e.target.value)}
-                placeholder="0.00"
-                className={cn('h-10 flex-1 font-mono-numbers', inputClass)}
-              />
-            </div>
-            {savingsType === 'gold' ? (
-              <p className="mt-1 text-[11px] text-[var(--color-brand-text-muted)]">{t.savings.goldCurrencyHint}</p>
-            ) : null}
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelCurrency}</Label>
+            <select
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value as Currency)}
+              className={cn('mt-1 w-full h-10 px-3 text-sm', inputClass)}
+            >
+              {currencyOptions.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -207,7 +186,7 @@ export function AddSavingsAccountSheet({ open, onClose }: AddSavingsAccountSheet
             onClick={submit}
             className="w-full rounded-xl bg-[var(--color-brand-red)] py-3 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)] transition-colors"
           >
-            {t.savings.createAccountButton}
+            {t.common.save}
           </button>
         </div>
       </div>

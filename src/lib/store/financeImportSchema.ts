@@ -19,6 +19,7 @@ const savingsTypeSchema = z.enum([
   'bank',
   'cash',
   'gold',
+  'stablecoin',
   'crypto_stable',
   'crypto',
   'stocks',
@@ -210,6 +211,7 @@ export const importDataSchema = z.object({
       z.object({
         id: z.string(),
         name: z.string(),
+        category: z.enum(['savings', 'investment']).optional(),
         type: savingsTypeSchema.optional(),
         icon: z.string().optional(),
         emoji: z.string().optional(),
@@ -218,18 +220,23 @@ export const importDataSchema = z.object({
         currentBalance: z.number(),
         createdAt: z.string(),
         notes: z.string().optional(),
-        autoSave: z
-          .object({
-            enabled: z.boolean(),
-            mode: z.enum(['fixed_schedule', 'end_of_month', 'percent_of_income']),
-            amount: z.number().optional(),
-            frequency: z.enum(['weekly', 'monthly']).optional(),
-            dayOfMonth: z.number().optional(),
-            weekday: z.number().optional(),
-            percent: z.number().optional(),
-            lastRunKey: z.string().optional(),
-          })
-          .optional(),
+        autoSave: z.unknown().optional(),
+      })
+    )
+    .optional(),
+  recurringSavingsDeposits: z
+    .array(
+      z.object({
+        id: z.string(),
+        accountId: z.string(),
+        amount: z.number(),
+        currency: savingsCurrencySchema,
+        frequency: z.literal('monthly'),
+        dayOfMonth: z.number().int().min(1).max(28),
+        nextDueDate: z.string(),
+        isActive: z.boolean(),
+        notes: z.string().optional(),
+        createdAt: z.string(),
       })
     )
     .optional(),

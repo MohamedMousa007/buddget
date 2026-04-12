@@ -8,6 +8,9 @@ import { Label } from '@/components/ui/label'
 import type { Currency, SavingsAccount } from '@/lib/store/types'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { nextRecurringSavingsDueDate } from '@/lib/savings/recurringSavingsDates'
+import { cn } from '@/lib/utils'
 
 export interface AddToSavingsSheetProps {
   open: boolean
@@ -17,9 +20,16 @@ export interface AddToSavingsSheetProps {
   onDeposit: (accountId: string, amount: number, currency: Currency, notes?: string) => void
 }
 
+const pill = (on: boolean) =>
+  cn(
+    'rounded-xl border px-3 py-2 text-xs font-medium transition-colors',
+    on
+      ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10 text-[var(--color-brand-text-primary)]'
+      : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
+  )
+
 /**
- * Deposit into savings (ledger only — not an expense).
- * Remount via `key` on the parent when opening so fields reset.
+ * Deposit into savings (ledger only). Optional monthly recurring schedule.
  */
 export function AddToSavingsSheet({
   open,
@@ -29,9 +39,12 @@ export function AddToSavingsSheet({
   onDeposit,
 }: AddToSavingsSheetProps) {
   const t = useT()
+  const addRecurringSavingsDeposit = useFinanceStore((s) => s.addRecurringSavingsDeposit)
   const [accountId, setAccountId] = useState(defaultAccountId ?? accounts[0]?.id ?? '')
   const [amount, setAmount] = useState('')
   const [notes, setNotes] = useState('')
+  const [recurring, setRecurring] = useState(false)
+  const [dayOfMonth, setDayOfMonth] = useState(1)
   const acc = accounts.find((a) => a.id === accountId)
 
   if (!open) return null
@@ -40,8 +53,23 @@ export function AddToSavingsSheet({
     const n = parseFloat(amount)
     if (!acc || !Number.isFinite(n) || n <= 0) return
     onDeposit(acc.id, n, acc.currency, notes.trim() || undefined)
+    if (recurring) {
+      addRecurringSavingsDeposit({
+        accountId: acc.id,
+        amount: n,
+        currency: acc.currency,
+        frequency: 'monthly',
+        dayOfMonth,
+        nextDueDate: nextRecurringSavingsDueDate(dayOfMonth),
+        isActive: true,
+        notes: notes.trim() || undefined,
+      })
+    }
     onClose()
   }
+
+  const inputClass =
+    'rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)]'
 
   return (
     <ModalShell open={open} onBackdropClick={onClose}>
@@ -55,7 +83,7 @@ export function AddToSavingsSheet({
             <select
               value={accountId}
               onChange={(e) => setAccountId(e.target.value)}
-              className="mt-1 w-full h-10 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-sm text-[var(--color-brand-text-primary)]"
+              className={cn('mt-1 w-full h-10 px-3 text-sm', inputClass)}
             >
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -75,16 +103,52 @@ export function AddToSavingsSheet({
                 step="0.01"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="h-10 flex-1 rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] font-mono-numbers"
+                className={cn('h-10 flex-1 font-mono-numbers', inputClass)}
               />
             </div>
           </div>
+
+          <div>
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.recurringQuestion}</Label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button type="button" className={pill(!recurring)} onClick={() => setRecurring(false)}>
+                {t.savings.recurringOneTime}
+              </button>
+              <button type="button" className={pill(recurring)} onClick={() => setRecurring(true)}>
+                {t.savings.recurringRepeat}
+              </button>
+            </div>
+          </div>
+
+          {recurring && (
+            <div className="space-y-2 rounded-xl border border-[var(--color-brand-border)]/60 bg-[var(--color-brand-elevated)]/40 p-3">
+              <p className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelFrequency}</p>
+              <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">{t.savings.freqMonthly}</p>
+              <div>
+                <Label className="text-xs text-[var(--color-brand-text-secondary)]">
+                  {t.savings.labelDayOfMonth}
+                </Label>
+                <select
+                  value={dayOfMonth}
+                  onChange={(e) => setDayOfMonth(Number(e.target.value))}
+                  className={cn('mt-1 w-full h-10 px-3 text-sm', inputClass)}
+                >
+                  {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
           <div>
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelNotes}</Label>
             <Input
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="mt-1 h-10 rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]"
+              className={cn('mt-1 h-10', inputClass)}
             />
           </div>
           <button
