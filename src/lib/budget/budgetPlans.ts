@@ -84,18 +84,21 @@ function matchExpenseCategory(planName: string): ExpenseCategory | null {
 }
 
 /**
- * Spending per plan row: uses `categorySpendingByEnum` when the row name matches a standard expense category (case-insensitive).
+ * Spending per plan row: matches expenses by exact plan category name first,
+ * then falls back to legacy enum matching for old expenses.
  */
 export function categorySpendingForPlanRows(
-  categorySpendingByEnum: Record<string, number>,
+  spendingByCategory: Record<string, number>,
   plan: BudgetPlan
 ): Record<string, number> {
   const out: Record<string, number> = {}
   for (const cat of plan.categories) {
     const name = cat.name.trim()
     if (!name) continue
+    const direct = spendingByCategory[name] ?? 0
     const enumCat = matchExpenseCategory(name)
-    out[name] = enumCat != null ? categorySpendingByEnum[enumCat] ?? 0 : 0
+    const legacy = enumCat != null && enumCat !== name ? spendingByCategory[enumCat] ?? 0 : 0
+    out[name] = direct + legacy
   }
   return out
 }

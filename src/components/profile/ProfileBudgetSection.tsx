@@ -5,7 +5,8 @@ import { Target } from 'lucide-react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { calculateMonthlyIncome } from '@/lib/utils/calculations'
 import { useT } from '@/lib/i18n'
-import type { ExpenseCategory } from '@/lib/store/types'
+
+
 import { ProfileBudgetCategoryList } from '@/components/profile/ProfileBudgetCategoryList'
 import { ProfileBudgetModeAndCalendar } from '@/components/profile/ProfileBudgetModeAndCalendar'
 
@@ -17,7 +18,7 @@ export interface ProfileBudgetSectionProps {
 export function ProfileBudgetSection({ variant = 'standalone' }: ProfileBudgetSectionProps) {
   const t = useT()
   const store = useFinanceStore()
-  const [editingBudget, setEditingBudget] = useState<ExpenseCategory | null>(null)
+  const [editingBudget, setEditingBudget] = useState<string | null>(null)
   const [budgetInput, setBudgetInput] = useState('')
 
   const monthlyIncome = calculateMonthlyIncome(
@@ -27,7 +28,7 @@ export function ProfileBudgetSection({ variant = 'standalone' }: ProfileBudgetSe
   )
   const budgetMode = store.settings.budgetEntryMode ?? 'amount'
 
-  const handleBudgetSave = (category: ExpenseCategory) => {
+  const handleBudgetSave = (category: string) => {
     const raw = parseFloat(budgetInput)
     if (Number.isNaN(raw) || raw < 0) {
       setEditingBudget(null)

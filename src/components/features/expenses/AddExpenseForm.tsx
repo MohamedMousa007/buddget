@@ -5,7 +5,8 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
-import type { ExpenseCategory, Currency } from '@/lib/store/types'
+import type { Currency } from '@/lib/store/types'
+import type { CategoryChipOption } from '@/hooks/usePlanCategories'
 import { ExpenseCategoryChips, PaymentMethodChips } from '@/components/features/expenses/ExpenseFormPickers'
 import { useT } from '@/lib/i18n'
 
@@ -18,8 +19,11 @@ export interface AddExpenseFormProps {
   setAmount: (v: string) => void
   currency: Currency
   setCurrency: (c: Currency) => void
-  category: ExpenseCategory
-  setCategory: (c: ExpenseCategory) => void
+  category: string
+  setCategory: (c: string) => void
+  subcategory?: string
+  setSubcategory?: (s: string | undefined) => void
+  categoryChipOptions?: CategoryChipOption[]
   paymentMethodId: string
   setPaymentMethodId: (id: string) => void
   isRecurring: boolean
@@ -44,6 +48,9 @@ export function AddExpenseForm({
   setCurrency,
   category,
   setCategory,
+  subcategory,
+  setSubcategory,
+  categoryChipOptions,
   paymentMethodId,
   setPaymentMethodId,
   isRecurring,
@@ -109,7 +116,13 @@ export function AddExpenseForm({
 
       {submitError ? <p className="text-xs text-[var(--color-brand-red)]">{submitError}</p> : null}
 
-      <ExpenseCategoryChips category={category} onChange={setCategory} />
+      <ExpenseCategoryChips
+        category={category}
+        onChange={setCategory}
+        options={categoryChipOptions}
+        subcategory={subcategory}
+        onSubcategoryChange={setSubcategory}
+      />
       <PaymentMethodChips
         methods={paymentMethods}
         paymentMethodId={paymentMethodId}
