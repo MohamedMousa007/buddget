@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { ChartPlaceholder } from '@/components/reports/ChartPlaceholder'
 import { ReportFilters } from '@/components/reports/ReportFilters'
+import { ReportExpenseDebtFilter } from '@/components/reports/ReportExpenseDebtFilter'
 import { useReportsPage } from '@/hooks/useReportsPage'
 import { expenseAmountInBase } from '@/lib/utils/calculations'
 import { ReportsSummaryPanel } from '@/components/features/reports/ReportsSummaryPanel'
@@ -35,6 +36,8 @@ export default function ReportsPage() {
 
       <div className="px-4 py-6 lg:px-8 space-y-6 max-w-5xl mx-auto">
         <ReportFilters selected={r.dateRange} onSelect={r.setDateRange} />
+
+        <ReportExpenseDebtFilter value={r.expenseDebtFilter} onChange={r.setExpenseDebtFilter} />
 
         <ReportsSummaryPanel
           startDate={r.startDate}

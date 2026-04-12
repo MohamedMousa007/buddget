@@ -8,6 +8,10 @@ import { BudgetInviteCard } from '@/components/notifications/BudgetInviteCard'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
+import {
+  confirmRecurringDebtPayment,
+  snoozeRecurringDebtPayment,
+} from '@/lib/debts/recurringDebtDueHandlers'
 
 const SEVERITY_DOT: Record<'warning' | 'info' | 'critical', string> = {
   critical: '#E50914',
@@ -116,6 +120,26 @@ export function NotificationInbox({ className }: { className?: string }) {
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-white">{n.title}</p>
                         <p className="mt-0.5 text-xs leading-relaxed text-[#A0A0B8]">{n.body}</p>
+                        {n.type === 'recurring_due' && n.recurringId ? (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                void confirmRecurringDebtPayment(n.recurringId!)
+                              }}
+                              className="rounded-lg bg-[var(--color-brand-green)]/20 px-2.5 py-1 text-xs font-medium text-[var(--color-brand-green)] hover:bg-[var(--color-brand-green)]/30"
+                            >
+                              {t.notifications.recurringConfirmPaid}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => snoozeRecurringDebtPayment(n.recurringId!)}
+                              className="rounded-lg border border-[#2A2A38] px-2.5 py-1 text-xs text-[#A0A0B8] hover:bg-[#1A1A24]"
+                            >
+                              {t.notifications.recurringSnooze}
+                            </button>
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   </li>

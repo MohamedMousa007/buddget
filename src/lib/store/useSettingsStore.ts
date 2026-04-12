@@ -32,6 +32,7 @@ interface SettingsState {
   openAddExpenseWithPrefill: (data: ExpensePrefill) => void
   setMonthFilter: (month: string) => void
   openDebtSheetNew: () => void
+  openPayDebtSheet: () => void
   openDebtSheetRecordPayment: (debtId: string) => void
   resetDebtSheetIntent: () => void
   resetSettings: () => void
@@ -70,6 +71,12 @@ export const useSettingsStore = create<SettingsState>()(
           debtSheetPaymentOnly: false,
           debtSheetPrefillDebtId: null,
           activeModal: 'addDebt',
+        }),
+      openPayDebtSheet: () =>
+        set({
+          debtSheetPaymentOnly: false,
+          debtSheetPrefillDebtId: null,
+          activeModal: 'payDebt',
         }),
       openDebtSheetRecordPayment: (debtId) =>
         set({

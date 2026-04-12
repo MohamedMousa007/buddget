@@ -90,6 +90,8 @@ export const importDataSchema = z.object({
         createdAt: z.string(),
         updatedAt: z.string(),
         sharedPlanId: z.string().uuid().nullable().optional(),
+        linkedDebtId: z.string().optional(),
+        isDebtPayment: z.boolean().optional(),
       })
     )
     .optional(),
@@ -216,6 +218,35 @@ export const importDataSchema = z.object({
         notes: z.string().optional(),
         sharedPlanId: z.string().uuid().nullable().optional(),
         createdAt: z.string(),
+        status: z.enum(['active', 'cleared']).optional(),
+        clearedAt: z.string().optional(),
+        emoji: z.string().optional(),
+        debtType: z.enum(['personal', 'installment', 'general']).optional(),
+        personName: z.string().optional(),
+        relationship: z.string().optional(),
+        direction: z.enum(['i_owe', 'they_owe']).optional(),
+        installmentCount: z.number().optional(),
+        installmentFrequency: z.enum(['weekly', 'monthly', 'quarterly', 'annually']).optional(),
+        installmentAmount: z.number().optional(),
+        startDate: z.string().optional(),
+        interestFree: z.boolean().optional(),
+        creditor: z.string().optional(),
+        recurringPayment: z
+          .object({
+            enabled: z.boolean(),
+            frequency: z.enum(['weekly', 'monthly', 'quarterly', 'annually']),
+            amount: z.number(),
+            nextDueDate: z.string(),
+            reminderEnabled: z.boolean(),
+          })
+          .optional(),
+        goal: z
+          .object({
+            targetDate: z.string(),
+            paymentFrequency: z.enum(['weekly', 'monthly', 'quarterly', 'annually']),
+            calculatedAmount: z.number(),
+          })
+          .optional(),
       })
     )
     .optional(),
@@ -244,7 +275,7 @@ export const importDataSchema = z.object({
         amount: z.number(),
         currency: currencySchema,
         paymentMethodId: z.string(),
-        frequency: z.enum(['monthly', 'biweekly', 'weekly']),
+        frequency: z.enum(['monthly', 'biweekly', 'weekly', 'quarterly', 'annually']),
         nextDueDate: z.string(),
         isActive: z.boolean(),
         notes: z.string().optional(),

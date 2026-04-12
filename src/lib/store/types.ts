@@ -56,6 +56,9 @@ export interface Expense {
   tags?: string[]
   /** When set, this expense belongs to a shared household budget plan (`shared_budget_plans.id`). */
   sharedPlanId?: string | null
+  /** When set, this expense was created from a debt payment flow. */
+  linkedDebtId?: string
+  isDebtPayment?: boolean
   createdAt: string
   updatedAt: string
 }
@@ -164,6 +167,25 @@ export type DebtCurrency = 'EGP' | 'XAU' | Currency
 
 export type GoldKarat = 24 | 22 | 21 | 18
 
+/** High-level debt category for UI and fields (optional on legacy rows). */
+export type DebtKind = 'personal' | 'installment' | 'general'
+
+export type DebtLifecycleStatus = 'active' | 'cleared'
+
+export interface DebtGoal {
+  targetDate: string
+  paymentFrequency: 'weekly' | 'monthly' | 'quarterly' | 'annually'
+  calculatedAmount: number
+}
+
+export interface DebtRecurringPaymentSchedule {
+  enabled: boolean
+  frequency: 'weekly' | 'monthly' | 'quarterly' | 'annually'
+  amount: number
+  nextDueDate: string
+  reminderEnabled: boolean
+}
+
 export interface Debt {
   id: string
   name: string
@@ -176,6 +198,25 @@ export interface Debt {
   notes?: string
   sharedPlanId?: string | null
   createdAt: string
+  /** Optional lifecycle; omitted legacy rows are treated as active until migrated. */
+  status?: DebtLifecycleStatus
+  /** ISO date (YYYY-MM-DD) when fully cleared. */
+  clearedAt?: string
+  emoji?: string
+  debtType?: DebtKind
+  /** Personal debt (optional; legacy uses `person`). */
+  personName?: string
+  relationship?: string
+  direction?: 'i_owe' | 'they_owe'
+  /** Installment plan */
+  installmentCount?: number
+  installmentFrequency?: 'weekly' | 'monthly' | 'quarterly' | 'annually'
+  installmentAmount?: number
+  startDate?: string
+  interestFree?: boolean
+  creditor?: string
+  recurringPayment?: DebtRecurringPaymentSchedule
+  goal?: DebtGoal
 }
 
 export interface DebtPayment {
@@ -192,9 +233,14 @@ export interface DebtPayment {
   createdAt: string
 }
 
-export type DebtRecurringFrequency = 'monthly' | 'biweekly' | 'weekly'
+export type DebtRecurringFrequency =
+  | 'monthly'
+  | 'biweekly'
+  | 'weekly'
+  | 'quarterly'
+  | 'annually'
 
-/** Template: when `nextDueDate` is on or before today, a payment + Debt expense are posted and the date advances. */
+/** Template: due dates are surfaced in-app; user confirms before a payment + expense are posted. */
 export interface RecurringDebtPayment {
   id: string
   debtId: string
@@ -326,9 +372,19 @@ export interface FinanceStore {
   addPaymentMethod: (method: Omit<PaymentMethod, 'id'>) => void
   updatePaymentMethod: (id: string, updates: Partial<PaymentMethod>) => void
   deletePaymentMethod: (id: string) => void
-  addDebt: (debt: Omit<Debt, 'id' | 'createdAt'>) => void
+  addDebt: (debt: Omit<Debt, 'id' | 'createdAt'>) => string
   updateDebt: (id: string, updates: Partial<Debt>) => void
+  /** Marks a debt cleared (history); does not remove payments. */
+  clearDebt: (id: string, clearedAtIsoDate?: string) => void
   addDebtPayment: (payment: Omit<DebtPayment, 'id' | 'createdAt'>) => void
+  /**
+   * Atomically records a debt payment and matching expense (e.g. debt payment → expense with `linkedDebtId`).
+   * Does not auto-clear lifecycle status; the UI runs celebration then calls `clearDebt`.
+   */
+  addDebtPaymentWithExpense: (
+    payment: Omit<DebtPayment, 'id' | 'createdAt'>,
+    expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'amountInBaseCurrency'>
+  ) => void
   deleteDebt: (id: string) => void
   deleteDebtPayment: (id: string) => void
   addRecurringDebtPayment: (r: Omit<RecurringDebtPayment, 'id' | 'createdAt'>) => void

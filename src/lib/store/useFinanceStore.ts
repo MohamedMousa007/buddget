@@ -157,7 +157,8 @@ export const useFinanceStore = create<FinanceStore>()(
           paymentMethods: state.paymentMethods.filter((m) => m.id !== id),
         })),
 
-      addDebt: (debt) =>
+      addDebt: (debt) => {
+        const id = generateId()
         set((state) => {
           const sid =
             debt.sharedPlanId !== undefined ?
@@ -169,12 +170,14 @@ export const useFinanceStore = create<FinanceStore>()(
               {
                 ...debt,
                 ...(sid !== undefined ? { sharedPlanId: sid } : {}),
-                id: generateId(),
+                id,
                 createdAt: new Date().toISOString(),
               },
             ],
           }
-        }),
+        })
+        return id
+      },
 
       updateDebt: (id, updates) =>
         set((state) => ({
@@ -182,6 +185,57 @@ export const useFinanceStore = create<FinanceStore>()(
             d.id === id ? { ...d, ...updates } : d
           ),
         })),
+
+      clearDebt: (id, clearedAtIsoDate) =>
+        set((state) => ({
+          debts: state.debts.map((d) =>
+            d.id === id
+              ? {
+                  ...d,
+                  status: 'cleared',
+                  clearedAt: clearedAtIsoDate ?? new Date().toISOString().slice(0, 10),
+                }
+              : d
+          ),
+        })),
+
+      addDebtPaymentWithExpense: (payment, expense) => {
+        const { exchangeRates, settings, defaultSharedBudgetPlanId } = get()
+        const converted = tryConvertCurrency(
+          expense.amount,
+          expense.currency,
+          settings.baseCurrency,
+          exchangeRates
+        )
+        const amountInBaseCurrency = converted ?? expense.amount
+        const expenseShared =
+          expense.sharedPlanId !== undefined ? expense.sharedPlanId : defaultSharedBudgetPlanId ?? undefined
+
+        set((state) => {
+          const paySid =
+            payment.sharedPlanId !== undefined
+              ? payment.sharedPlanId
+              : state.defaultSharedBudgetPlanId ?? undefined
+          const newPayment = {
+            ...payment,
+            ...(paySid !== undefined ? { sharedPlanId: paySid } : {}),
+            id: generateId(),
+            createdAt: new Date().toISOString(),
+          }
+          const newExpense = {
+            ...expense,
+            ...(expenseShared !== undefined ? { sharedPlanId: expenseShared } : {}),
+            amountInBaseCurrency,
+            id: generateId(),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }
+          return {
+            debtPayments: [...state.debtPayments, newPayment],
+            expenses: [...state.expenses, newExpense],
+          }
+        })
+      },
 
       addDebtPayment: (payment) =>
         set((state) => {

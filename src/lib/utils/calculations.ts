@@ -298,6 +298,7 @@ export function calculateDebtRemainingRaw(debt: Debt, payments: DebtPayment[]): 
 const DEBT_PAID_EPS = 1e-6
 
 export function isDebtFullyPaid(debt: Debt, payments: DebtPayment[]): boolean {
+  if (debt.status === 'cleared') return true
   return calculateDebtRemainingRaw(debt, payments) <= DEBT_PAID_EPS
 }
 
@@ -322,7 +323,7 @@ export function computeDebtPaymentRecord(
   }
 
   if (isDebtFullyPaid(debt, debtPayments)) {
-    return { ok: false, error: 'This debt is already paid off.' }
+    return { ok: false, error: 'This debt is already fully paid.' }
   }
 
   let amountInBase: number
@@ -361,7 +362,7 @@ export function computeDebtPaymentRecord(
     const unit = debt.isGold ? 'g' : debt.currency
     return {
       ok: false,
-      error: `This payment is more than the remaining balance (${remainingRaw.toFixed(2)} ${unit}).`,
+      error: `This payment is more than the remaining amount (${remainingRaw.toFixed(2)} ${unit}).`,
     }
   }
 

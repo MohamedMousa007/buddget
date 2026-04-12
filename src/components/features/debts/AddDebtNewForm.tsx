@@ -5,11 +5,15 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { DebtFiatCurrencySelect } from '@/components/ui/DebtFiatCurrencySelect'
-import type { AppSettings, DebtCurrency, GoldKarat } from '@/lib/store/types'
+import { AddDebtDebtTypeSection } from '@/components/features/debts/AddDebtDebtTypeSection'
+import type { AppSettings, DebtCurrency, DebtGoal, DebtKind, GoldKarat } from '@/lib/store/types'
+import { formatCurrency } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
 
 export interface AddDebtNewFormProps {
   settings: AppSettings
+  debtType: DebtKind
+  setDebtType: (k: DebtKind) => void
   name: string
   setName: (v: string) => void
   person: string
@@ -26,15 +30,38 @@ export interface AddDebtNewFormProps {
   setGoldKarat: (v: GoldKarat) => void
   notes: string
   setNotes: (v: string) => void
+  relationship: string
+  setRelationship: (v: string) => void
+  direction: 'i_owe' | 'they_owe'
+  setDirection: (v: 'i_owe' | 'they_owe') => void
+  creditor: string
+  setCreditor: (v: string) => void
+  installmentItemName: string
+  setInstallmentItemName: (v: string) => void
+  installmentCount: string
+  setInstallmentCount: (v: string) => void
+  installmentFrequency: 'weekly' | 'monthly' | 'quarterly' | 'annually'
+  setInstallmentFrequency: (v: 'weekly' | 'monthly' | 'quarterly' | 'annually') => void
+  installmentStartDate: string
+  setInstallmentStartDate: (v: string) => void
+  interestFree: boolean
+  setInterestFree: (v: boolean) => void
+  installmentPreview: number | null
+  goalDraft: DebtGoal | null
+  onOpenGoal: () => void
+  onClearGoal: () => void
   onCancel: () => void
   onSubmit: () => void
+  canSubmit: boolean
 }
 
 /**
- * Fields for creating a new debt (fiat or gold).
+ * Fields for creating a new debt (fiat or gold) with debt-type sections.
  */
 export function AddDebtNewForm({
   settings,
+  debtType,
+  setDebtType,
   name,
   setName,
   person,
@@ -51,30 +78,79 @@ export function AddDebtNewForm({
   setGoldKarat,
   notes,
   setNotes,
+  relationship,
+  setRelationship,
+  direction,
+  setDirection,
+  creditor,
+  setCreditor,
+  installmentItemName,
+  setInstallmentItemName,
+  installmentCount,
+  setInstallmentCount,
+  installmentFrequency,
+  setInstallmentFrequency,
+  installmentStartDate,
+  setInstallmentStartDate,
+  interestFree,
+  setInterestFree,
+  installmentPreview,
+  goalDraft,
+  onOpenGoal,
+  onClearGoal,
   onCancel,
   onSubmit,
+  canSubmit,
 }: AddDebtNewFormProps) {
   const t = useT()
+  const showGold = debtType !== 'installment'
+
   return (
     <div className="space-y-4">
-      <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelName}</Label>
-        <Input
-          placeholder={t.addDebt.placeholderName}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
-        />
-      </div>
-      <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelPerson}</Label>
-        <Input
-          placeholder={t.addDebt.placeholderPerson}
-          value={person}
-          onChange={(e) => setPerson(e.target.value)}
-          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
-        />
-      </div>
+      <AddDebtDebtTypeSection
+        debtType={debtType}
+        setDebtType={setDebtType}
+        installmentItemName={installmentItemName}
+        setInstallmentItemName={setInstallmentItemName}
+        installmentCount={installmentCount}
+        setInstallmentCount={setInstallmentCount}
+        installmentFrequency={installmentFrequency}
+        setInstallmentFrequency={setInstallmentFrequency}
+        installmentStartDate={installmentStartDate}
+        setInstallmentStartDate={setInstallmentStartDate}
+        interestFree={interestFree}
+        setInterestFree={setInterestFree}
+        relationship={relationship}
+        setRelationship={setRelationship}
+        direction={direction}
+        setDirection={setDirection}
+        creditor={creditor}
+        setCreditor={setCreditor}
+      />
+
+      {debtType !== 'installment' ? (
+        <>
+          <div>
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelName}</Label>
+            <Input
+              placeholder={t.addDebt.placeholderName}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
+            />
+          </div>
+          <div>
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelPerson}</Label>
+            <Input
+              placeholder={t.addDebt.placeholderPerson}
+              value={person}
+              onChange={(e) => setPerson(e.target.value)}
+              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
+            />
+          </div>
+        </>
+      ) : null}
+
       <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelDescription}</Label>
         <Input
@@ -84,17 +160,21 @@ export function AddDebtNewForm({
           className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white placeholder:text-[var(--color-brand-text-muted)]"
         />
       </div>
-      <div className="flex items-center justify-between">
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelGold}</Label>
-        <Switch
-          checked={isGold}
-          onCheckedChange={(val) => {
-            setIsGold(val)
-            if (val) setCurrency('XAU')
-            else setCurrency(settings.baseCurrency as DebtCurrency)
-          }}
-        />
-      </div>
+
+      {showGold ? (
+        <div className="flex items-center justify-between">
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelGold}</Label>
+          <Switch
+            checked={isGold}
+            onCheckedChange={(val) => {
+              setIsGold(val)
+              if (val) setCurrency('XAU')
+              else setCurrency(settings.baseCurrency as DebtCurrency)
+            }}
+          />
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">
@@ -134,6 +214,14 @@ export function AddDebtNewForm({
           </div>
         )}
       </div>
+
+      {debtType === 'installment' && installmentPreview !== null ? (
+        <p className="text-xs text-[var(--color-brand-gold)] font-mono-numbers">
+          ≈ {formatCurrency(installmentPreview, currency)} / {t.addDebt.freqMonthly.toLowerCase()} (
+          {t.addDebt.labelInterestFree}: {interestFree ? 'yes' : 'no'})
+        </p>
+      ) : null}
+
       <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelNotes}</Label>
         <Textarea
@@ -142,6 +230,38 @@ export function AddDebtNewForm({
           className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-white min-h-[60px]"
         />
       </div>
+
+      <div className="space-y-2">
+        {goalDraft ? (
+          <div className="flex items-center justify-between gap-2 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-sm">
+            <button type="button" onClick={onOpenGoal} className="min-w-0 flex-1 text-left">
+              <span className="text-[var(--color-brand-gold)]">🎯</span>{' '}
+              <span className="font-mono-numbers text-white">
+                {formatCurrency(goalDraft.calculatedAmount, currency)}/
+                {goalDraft.paymentFrequency === 'monthly' ? 'mo' : goalDraft.paymentFrequency} until{' '}
+                {goalDraft.targetDate.slice(0, 7)}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={onClearGoal}
+              className="text-[var(--color-brand-text-muted)] hover:text-white"
+              aria-label={t.addDebt.goalChipRemoveAria}
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onOpenGoal}
+            className="text-sm text-[var(--color-brand-gold)] hover:underline cursor-pointer"
+          >
+            {t.addDebt.goalTrigger}
+          </button>
+        )}
+      </div>
+
       <div className="flex gap-3 pt-2">
         <button
           type="button"
@@ -153,7 +273,7 @@ export function AddDebtNewForm({
         <button
           type="button"
           onClick={onSubmit}
-          disabled={!name || !person || !startingBalance}
+          disabled={!canSubmit}
           className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50"
         >
           {t.addDebt.buttonSubmit}

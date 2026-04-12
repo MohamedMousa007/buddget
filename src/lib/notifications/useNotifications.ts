@@ -6,18 +6,28 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
-import { calculateDebtRemaining } from '@/lib/utils/calculations'
+import { addDays, format } from 'date-fns'
+import { isDebtFullyPaid } from '@/lib/utils/calculations'
+import { isRecurringDebtDue } from '@/lib/utils/recurringDebtPayments'
 import { useT } from '@/lib/i18n'
 
 const READ_STORAGE_KEY = 'buddget-notifications-read'
 
 export type AppNotification = {
   id: string
-  type: 'budget_alert' | 'debt_reminder' | 'month_end' | 'savings_nudge'
+  type:
+    | 'budget_alert'
+    | 'debt_reminder'
+    | 'month_end'
+    | 'savings_nudge'
+    | 'recurring_due'
+    | 'recurring_tomorrow'
   title: string
   body: string
   severity: 'warning' | 'info' | 'critical'
   createdAt: string
+  /** When `type` is `recurring_due`, user can confirm/snooze from the inbox. */
+  recurringId?: string
 }
 
 export type ServerNotificationRow = {
@@ -56,11 +66,12 @@ export function useNotifications() {
   const stats = useMonthlyStats()
   const t = useT()
   const { monthFilter } = useSettingsStore()
-  const { debts, debtPayments, budgetCategories } = useFinanceStore(
+  const { debts, debtPayments, budgetCategories, recurringDebtPayments } = useFinanceStore(
     useShallow((s) => ({
       debts: s.debts,
       debtPayments: s.debtPayments,
       budgetCategories: s.budgetCategories,
+      recurringDebtPayments: s.recurringDebtPayments,
     }))
   )
 
@@ -124,15 +135,33 @@ export function useNotifications() {
       }
     }
 
-    for (const debt of debts) {
-      const remaining = calculateDebtRemaining(debt, debtPayments)
-      if (remaining > 0.0001) {
+    const todayYmd = format(new Date(), 'yyyy-MM-dd')
+    const tomorrowYmd = format(addDays(new Date(), 1), 'yyyy-MM-dd')
+
+    for (const r of recurringDebtPayments) {
+      if (!r.isActive) continue
+      const debt = debts.find((d) => d.id === r.debtId)
+      if (!debt || isDebtFullyPaid(debt, debtPayments)) continue
+
+      if (r.nextDueDate === tomorrowYmd) {
         list.push({
-          id: `debt_reminder:${debt.id}`,
-          type: 'debt_reminder',
-          title: t.notifications.debtReminderTitle,
-          body: t.notifications.debtReminderBody(debt.name),
+          id: `recurring_tomorrow:${r.id}:${tomorrowYmd}`,
+          type: 'recurring_tomorrow',
+          title: debt.name,
+          body: t.notifications.recurringTomorrowBody(debt.name, r.amount, r.currency),
           severity: 'info',
+          createdAt: now,
+        })
+      }
+
+      if (isRecurringDebtDue(r.nextDueDate)) {
+        list.push({
+          id: `recurring_due:${r.id}:${todayYmd}`,
+          type: 'recurring_due',
+          recurringId: r.id,
+          title: debt.name,
+          body: t.notifications.recurringDueBody(debt.name, r.amount, r.currency),
+          severity: 'warning',
           createdAt: now,
         })
       }
@@ -169,7 +198,7 @@ export function useNotifications() {
     }
 
     return list
-  }, [budgetCategories, debts, debtPayments, monthFilter, stats, t])
+  }, [budgetCategories, debts, debtPayments, monthFilter, recurringDebtPayments, stats, t])
 
   const localUnread = useMemo(
     () => notifications.filter((n) => !readIds.has(n.id)).length,
