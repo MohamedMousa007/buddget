@@ -10,6 +10,7 @@ import { AllDebtsPaymentHistory } from '@/components/features/debts/AllDebtsPaym
 import { DebtHistoryTable } from '@/components/features/debts/DebtHistoryTable'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
+import { Landmark } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 
 export default function DebtsPage() {
@@ -54,7 +55,10 @@ export default function DebtsPage() {
     <div className="min-h-screen">
       <PageHeader>
         <PageHeaderContent className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="text-xl font-bold text-white">{t.debts.pageTitle}</h1>
+          <h1 className="text-xl font-bold text-white flex items-center gap-2">
+            <Landmark className="w-6 h-6 text-[var(--color-brand-red)]" />
+            {t.debts.pageTitle}
+          </h1>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
