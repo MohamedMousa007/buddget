@@ -143,8 +143,8 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
   const [step, setStep] = useState<BuddgyFlowStep>('income')
   const [showFlash, setShowFlash] = useState(false)
   const stepInitDone = useRef(false)
-  /** After jumping from summary to edit a step, next forward navigation returns here. */
-  const returnToSummaryAfterEditRef = useRef(false)
+  /** After Edit Plan from summary: hide Next on earlier steps; Next on savings returns to summary. */
+  const [editPlanReturnViaSavings, setEditPlanReturnViaSavings] = useState(false)
 
   const [incomeAmount, setIncomeAmount] = useState('')
   const [incomeCurrency, setIncomeCurrency] = useState<Currency>(settings.baseCurrency)
@@ -158,8 +158,6 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
   const [savingsAmount, setSavingsAmount] = useState(0)
   const [savingsNextLoading, setSavingsNextLoading] = useState(false)
   const [savingsMode, setSavingsMode] = useState<'maximum' | 'custom'>('custom')
-  /** After first visit to summary, dots show on all steps for navigation. */
-  const [dotsUnlocked, setDotsUnlocked] = useState(false)
 
   const hydrateFieldsForStep = useCallback(
     (target: BuddgyFlowStep) => {
@@ -244,10 +242,6 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
   useEffect(() => {
     hydrateFieldsForStep(step)
   }, [step, hydrateFieldsForStep])
-
-  useEffect(() => {
-    if (step === 'summary') setDotsUnlocked(true)
-  }, [step])
 
   useEffect(() => {
     stepInitDone.current = false
@@ -465,8 +459,8 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
       from: BuddgyFlowStep,
       ctx?: { transportModePicked?: 'car' | 'public' | 'walk' | 'mix' }
     ) => {
-      if (returnToSummaryAfterEditRef.current) {
-        returnToSummaryAfterEditRef.current = false
+      if (from === 'savings' && editPlanReturnViaSavings) {
+        setEditPlanReturnViaSavings(false)
         setStep('summary')
         return
       }
@@ -483,33 +477,21 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
       } else if (from === 'transportDetail') setStep('savings')
       else if (from === 'savings') setStep('summary')
     },
-    [rentIncludes, transportMode]
+    [rentIncludes, transportMode, editPlanReturnViaSavings]
   )
 
   const goBack = useCallback(() => {
-    returnToSummaryAfterEditRef.current = false
+    setEditPlanReturnViaSavings(false)
     const latest = useFinanceStore.getState().budgetPlans.find((p) => p.id === planId) ?? plan
     const prev = getPreviousBuddgyStep(step, latest)
     if (prev) setStep(prev)
   }, [step, planId, plan])
 
-  const prepareJumpFromSummary = useCallback(() => {
-    returnToSummaryAfterEditRef.current = true
+  /** From summary: jump to savings to edit; Back-only on earlier steps; Next on savings returns to summary. */
+  const startEditPlanFromSummary = useCallback(() => {
+    setEditPlanReturnViaSavings(true)
+    setStep('savings')
   }, [])
-
-  const navigateToWizardDot = useCallback(
-    (dotIndex: number) => {
-      if (!dotsUnlocked) return
-      const latest = useFinanceStore.getState().budgetPlans.find((p) => p.id === planId) ?? plan
-      const order = buildBuddgyFlowOrder(latest)
-      const target = order[dotIndex]
-      if (target) {
-        prepareJumpFromSummary()
-        setStep(target)
-      }
-    },
-    [planId, plan, prepareJumpFromSummary, dotsUnlocked]
-  )
 
   const restartGuidedWizard = useCallback(() => {
     options?.onRestartWizard?.()
@@ -580,9 +562,9 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
     triggerFlash,
     advanceFromStep,
     goBack,
-    prepareJumpFromSummary,
-    navigateToWizardDot,
-    dotsUnlocked,
+    startEditPlanFromSummary,
+    /** True after Edit Plan: hide Next until savings; Next on savings returns to summary. */
+    editPlanReturnViaSavings,
     restartGuidedWizard,
     onSavingsNext,
     buildBuddgyFlowOrder,

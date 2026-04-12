@@ -13,7 +13,7 @@ function fmt(n: number, currency: string) {
   return `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(n)} ${currency}`
 }
 
-const ghostRebuildClass =
+const ghostOutlineClass =
   'cursor-pointer rounded-xl border border-[var(--color-brand-border)] bg-transparent px-5 py-2.5 text-sm font-semibold text-[var(--color-brand-text-secondary)] hover:text-white hover:border-[var(--color-brand-text-muted)] transition-colors'
 
 const primaryDoneClass =
@@ -62,6 +62,9 @@ export function BuddgyStepSummary({ flow }: { flow: BuddgyFlowApi }) {
           <>
             <p className="text-sm font-sans text-white">{rate}% savings rate — incredible! 🎉</p>
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <button type="button" onClick={() => flow.startEditPlanFromSummary()} className={ghostOutlineClass}>
+                Edit Plan
+              </button>
               <button type="button" onClick={() => flow.finishFlow()} className={primaryDoneClass}>
                 Done
               </button>
@@ -72,8 +75,11 @@ export function BuddgyStepSummary({ flow }: { flow: BuddgyFlowApi }) {
               It looks like your plan is empty. Let Buddgy rebuild it for you.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-              <button type="button" onClick={() => flow.restartGuidedWizard()} className={ghostRebuildClass}>
+              <button type="button" onClick={() => flow.restartGuidedWizard()} className={ghostOutlineClass}>
                 Rebuild with Buddgy
+              </button>
+              <button type="button" onClick={() => flow.startEditPlanFromSummary()} className={ghostOutlineClass}>
+                Edit Plan
               </button>
               <button type="button" onClick={() => flow.finishFlow()} className={primaryDoneClass}>
                 Done

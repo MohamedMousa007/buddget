@@ -47,16 +47,18 @@ export function BuddgyStepTransportDetail({ flow }: { flow: BuddgyFlowApi }) {
       }
       <div className="flex flex-col-reverse gap-4 pt-2 sm:flex-row sm:flex-wrap sm:items-center">
         <BuddgyStepBack flow={flow} />
-        <button
-          type="button"
-          onClick={() => {
-            flow.saveTransportFromDetail()
-            flow.advanceFromStep('transportDetail')
-          }}
-          className="cursor-pointer rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] px-5 py-2.5 text-sm font-semibold text-white"
-        >
-          Next →
-        </button>
+        {!flow.editPlanReturnViaSavings ?
+          <button
+            type="button"
+            onClick={() => {
+              flow.saveTransportFromDetail()
+              flow.advanceFromStep('transportDetail')
+            }}
+            className="cursor-pointer rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] px-5 py-2.5 text-sm font-semibold text-white"
+          >
+            Next →
+          </button>
+        : null}
       </div>
     </div>
   )
