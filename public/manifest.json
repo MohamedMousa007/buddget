@@ -9,6 +9,22 @@
   "background_color": "#0A0A0F",
   "theme_color": "#E50914",
   "orientation": "portrait",
+  "shortcuts": [
+    {
+      "name": "Log a Purchase",
+      "short_name": "Log",
+      "description": "Quickly log a new expense",
+      "url": "/?action=addExpense",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Budget Setup",
+      "short_name": "Budget",
+      "description": "Set up or adjust your budget",
+      "url": "/budget-setup",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.png",

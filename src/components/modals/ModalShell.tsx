@@ -1,10 +1,13 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { AnimatePresence, motion, useDragControls } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
 const OVERLAY_Z = 'z-[100]'
+
+const FOCUSABLE =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 interface ModalShellProps {
   open: boolean
@@ -33,6 +36,44 @@ export function ModalShell({
 }: ModalShellProps) {
   const dragControls = useDragControls()
   const zStack = zIndexClassName ?? OVERLAY_Z
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const el = panelRef.current
+    if (!el) return
+
+    const focusPanel = () => {
+      el.focus()
+    }
+    const id = requestAnimationFrame(focusPanel)
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return
+      const nodes = Array.from(el.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+        (node) => node.offsetParent !== null || node.getClientRects().length > 0
+      )
+      if (nodes.length === 0) return
+      const first = nodes[0]
+      const last = nodes[nodes.length - 1]
+      const active = document.activeElement as HTMLElement | null
+      if (e.shiftKey) {
+        if (active === first) {
+          e.preventDefault()
+          last.focus()
+        }
+      } else if (active === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+
+    el.addEventListener('keydown', onKeyDown)
+    return () => {
+      cancelAnimationFrame(id)
+      el.removeEventListener('keydown', onKeyDown)
+    }
+  }, [open])
 
   const panelStaticClasses =
     'fixed bottom-0 start-0 end-0 bg-[var(--color-brand-card)] rounded-t-3xl border-t border-[var(--color-brand-border)] max-h-[85vh] lg:bottom-auto lg:top-1/2 lg:start-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[480px] lg:rounded-2xl lg:border lg:max-h-[90vh]'
@@ -50,9 +91,11 @@ export function ModalShell({
             className={cn('fixed inset-0 bg-black/60 backdrop-blur-sm', zStack)}
           />
           <motion.div
+            ref={panelRef}
             key="modal-panel"
             role="dialog"
             aria-modal="true"
+            tabIndex={-1}
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
@@ -71,7 +114,7 @@ export function ModalShell({
             className={cn(
               panelStaticClasses,
               zStack,
-              dragToClose ? 'flex flex-col overflow-hidden' : 'overflow-y-auto',
+              dragToClose ? 'flex flex-col overflow-hidden outline-none' : 'overflow-y-auto outline-none',
               panelClassName
             )}
           >

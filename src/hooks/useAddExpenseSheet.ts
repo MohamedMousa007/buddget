@@ -8,8 +8,12 @@ import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import type { Currency } from '@/lib/store/types'
 import { matchPaymentMethodForExpense } from '@/lib/modals/matchPaymentMethodForExpense'
 import { usePlanCategories } from '@/hooks/usePlanCategories'
+import { useActionToast } from '@/components/ui/ActionToast'
+import { useT } from '@/lib/i18n'
 
 export function useAddExpenseSheet() {
+  const showToast = useActionToast()
+  const t = useT()
   const { addExpense, paymentMethods, settings } = useFinanceStore()
   const { activeModal, setActiveModal, expensePrefill, setExpensePrefill } = useSettingsStore()
   const isOpen = activeModal === 'addExpense'
@@ -98,6 +102,7 @@ export function useAddExpenseSheet() {
       isRecurring,
       notes: notes || undefined,
     })
+    showToast(t.common.toastExpenseLogged)
     resetForm()
     setActiveModal(null)
   }, [
@@ -114,6 +119,8 @@ export function useAddExpenseSheet() {
     setActiveModal,
     settings,
     currency,
+    showToast,
+    t,
   ])
 
   return {

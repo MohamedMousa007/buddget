@@ -66,17 +66,19 @@ export function SavingsAccountCard({
             type="button"
             onClick={onEdit}
             title={t.common.edit}
+            aria-label={t.common.edit}
             className="rounded-lg p-1.5 text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)] hover:text-[var(--color-brand-text-primary)]"
           >
-            <Pencil className="h-4 w-4" />
+            <Pencil className="h-4 w-4" aria-hidden />
           </button>
           <button
             type="button"
             onClick={onDelete}
             title={t.common.delete}
+            aria-label={t.common.delete}
             className="rounded-lg p-1.5 text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)] hover:text-[var(--color-brand-red)]"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-4 w-4" aria-hidden />
           </button>
         </div>
       </div>

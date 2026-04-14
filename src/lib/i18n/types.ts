@@ -49,6 +49,13 @@ export interface Dictionary {
     yearLabel: string
     /** Accessible label for EN/AR language control */
     languageSwitcherAria: string
+    offlineBanner: string
+    toastExpenseLogged: string
+    toastIncomeAdded: string
+    toastDebtAdded: string
+    toastDebtPaymentRecorded: string
+    toastSavingsDeposited: string
+    ariaSwapCurrencies: string
   }
 
   nav: {
@@ -592,6 +599,7 @@ export interface Dictionary {
 
     dataTitle: string
     dataIntro: string
+    dataDeviceOnlyNote: string
     dataDownload: string
     dataRestore: string
     dataStartFresh: string

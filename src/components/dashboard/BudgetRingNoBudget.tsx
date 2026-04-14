@@ -2,6 +2,7 @@
 
 import { formatCurrency } from '@/lib/utils/formatters'
 import { convertCurrency } from '@/lib/utils/currency'
+import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import type { PaceStatus } from '@/lib/utils/spendingPace'
@@ -41,7 +42,9 @@ export function BudgetRingNoBudget({
   incomeBlockedNote?: string | null
 }) {
   const t = useT()
-  const { settings, exchangeRates } = useFinanceStore()
+  const { settings, exchangeRates } = useFinanceStore(
+    useShallow((s) => ({ settings: s.settings, exchangeRates: s.exchangeRates }))
+  )
   const secondary = settings.showSecondaryCurrency ? settings.secondaryCurrency : null
   const spent = Math.abs(remaining)
   const secondarySpent = secondary ? convertCurrency(spent, currency, secondary, exchangeRates) : null

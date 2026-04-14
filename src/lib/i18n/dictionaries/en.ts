@@ -46,6 +46,13 @@ export const en: Dictionary = {
     tryAgain: 'Try again',
     yearLabel: 'Year',
     languageSwitcherAria: 'Choose app language',
+    offlineBanner: "You're offline — data is saved locally",
+    toastExpenseLogged: 'Expense logged',
+    toastIncomeAdded: 'Income added',
+    toastDebtAdded: 'Debt saved',
+    toastDebtPaymentRecorded: 'Payment recorded',
+    toastSavingsDeposited: 'Savings deposit saved',
+    ariaSwapCurrencies: 'Swap from and to currencies',
   },
 
   nav: {
@@ -591,6 +598,8 @@ export const en: Dictionary = {
 
     dataTitle: 'Your Data',
     dataIntro: 'Everything lives in this browser. Download a backup now and then \u2014 especially if you have months or years of transactions \u2014 so you can restore quickly if you ever clear site data or switch devices.',
+    dataDeviceOnlyNote:
+      'Your data is saved on this device only. Export a backup regularly to avoid data loss.',
     dataDownload: 'Download a backup',
     dataRestore: 'Restore from backup',
     dataStartFresh: 'Start fresh',

@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { formatCurrency, formatPercent } from '@/lib/utils/formatters'
 import { convertCurrency } from '@/lib/utils/currency'
+import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { BudgetRingNoBudget } from '@/components/dashboard/BudgetRingNoBudget'
@@ -47,7 +48,9 @@ export function BudgetRing({
   overBudgetCategories = [],
 }: BudgetRingProps) {
   const t = useT()
-  const { settings, exchangeRates } = useFinanceStore()
+  const { settings, exchangeRates } = useFinanceStore(
+    useShallow((s) => ({ settings: s.settings, exchangeRates: s.exchangeRates }))
+  )
   const secondary = settings.showSecondaryCurrency ? settings.secondaryCurrency : null
 
   const noBudgetSet = percent < 0

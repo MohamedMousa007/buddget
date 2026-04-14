@@ -2,6 +2,7 @@
 
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useT } from '@/lib/i18n'
 
 export function ModalSheetDragHandle({ className }: { className?: string }) {
   return (
@@ -22,6 +23,7 @@ export interface ModalSheetHeaderProps {
 }
 
 export function ModalSheetHeader({ title, onClose, titleRowClassName = 'mb-6' }: ModalSheetHeaderProps) {
+  const t = useT()
   return (
     <>
       <ModalSheetDragHandle />
@@ -31,8 +33,9 @@ export function ModalSheetHeader({ title, onClose, titleRowClassName = 'mb-6' }:
           type="button"
           onClick={onClose}
           className="p-1 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors"
+          aria-label={t.common.close}
         >
-          <X className="w-5 h-5 text-[var(--color-brand-text-muted)]" />
+          <X className="w-5 h-5 text-[var(--color-brand-text-muted)]" aria-hidden />
         </button>
       </div>
     </>

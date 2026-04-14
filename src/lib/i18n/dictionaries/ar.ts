@@ -47,6 +47,13 @@ export const ar: Dictionary = {
     tryAgain: 'حاول مرة أخرى',
     yearLabel: 'السنة',
     languageSwitcherAria: 'اختر لغة التطبيق',
+    offlineBanner: 'أنت غير متصل — البيانات تُحفظ محلياً',
+    toastExpenseLogged: 'تم تسجيل المصروف',
+    toastIncomeAdded: 'تمت إضافة الدخل',
+    toastDebtAdded: 'تم حفظ الدين',
+    toastDebtPaymentRecorded: 'تم تسجيل الدفعة',
+    toastSavingsDeposited: 'تم حفظ الإيداع',
+    ariaSwapCurrencies: 'تبديل العملتين من وإلى',
   },
 
   nav: {
@@ -591,6 +598,8 @@ export const ar: Dictionary = {
 
     dataTitle: 'بياناتك',
     dataIntro: 'كل شيء محفوظ في هذا المتصفح. حمّل نسخة احتياطية بين الحين والآخر — خاصة إذا كان لديك شهور أو سنوات من المعاملات — حتى تستعيدها بسرعة إذا مسحت بيانات الموقع أو غيرت الجهاز.',
+    dataDeviceOnlyNote:
+      'بياناتك تُحفظ على هذا الجهاز فقط. صدّر نسخة احتياطية بانتظام لتجنب فقدان البيانات.',
     dataDownload: 'تحميل نسخة احتياطية',
     dataRestore: 'استعادة من نسخة',
     dataStartFresh: 'بداية جديدة',

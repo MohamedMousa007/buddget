@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef } from 'react'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { convertCurrency } from '@/lib/utils/currency'
+import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { cn } from '@/lib/utils'
 
@@ -38,7 +39,9 @@ export function KPICard({
   icon,
   onClick,
 }: KPICardProps) {
-  const { settings, exchangeRates } = useFinanceStore()
+  const { settings, exchangeRates } = useFinanceStore(
+    useShallow((s) => ({ settings: s.settings, exchangeRates: s.exchangeRates }))
+  )
   const secondary = settings.showSecondaryCurrency ? settings.secondaryCurrency : null
 
   const count = useMotionValue(0)

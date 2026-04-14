@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch'
 import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { useT } from '@/lib/i18n'
+import { useActionToast } from '@/components/ui/ActionToast'
 import type { Currency, IncomeRecurringFrequency } from '@/lib/store/types'
 
 const RECURRING_FREQ: { value: IncomeRecurringFrequency; label: string; amountHint: string }[] = [
@@ -22,6 +23,7 @@ const RECURRING_FREQ: { value: IncomeRecurringFrequency; label: string; amountHi
 ]
 
 export function AddIncomeSheet() {
+  const showToast = useActionToast()
   const { addIncomeSource, settings } = useFinanceStore()
   const { activeModal, setActiveModal } = useSettingsStore()
   const t = useT()
@@ -68,6 +70,7 @@ export function AddIncomeSheet() {
       notes: notes || undefined,
     })
 
+    showToast(t.common.toastIncomeAdded)
     resetForm()
     setActiveModal(null)
   }

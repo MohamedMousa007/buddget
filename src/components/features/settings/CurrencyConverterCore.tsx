@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { ArrowDownUp } from 'lucide-react'
 import type { FinanceStore } from '@/lib/store/types'
+import { useT } from '@/lib/i18n'
 import { CONVERTER_CODES } from '@/components/features/settings/currencyConverterConstants'
 import { CurrencyConverterAmountBlock } from '@/components/features/settings/CurrencyConverterAmountBlock'
 import type { Dictionary } from '@/lib/i18n/types'
@@ -13,6 +14,7 @@ type SettingsCopy = Dictionary['settings']
  * Amount in / swap / amount out + cross-rate lines (no header or gold row).
  */
 export function CurrencyConverterCore({ store, t }: { store: FinanceStore; t: SettingsCopy }) {
+  const tc = useT()
   const [fromCurrency, setFromCurrency] = useState<string>(store.settings.baseCurrency)
   const [toCurrency, setToCurrency] = useState<string>(
     store.settings.secondaryCurrency || (store.settings.baseCurrency === 'AED' ? 'EGP' : 'AED')
@@ -66,8 +68,9 @@ export function CurrencyConverterCore({ store, t }: { store: FinanceStore; t: Se
           type="button"
           onClick={handleSwap}
           className="p-2 rounded-full bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] hover:bg-[var(--color-brand-card)] transition-colors"
+          aria-label={tc.common.ariaSwapCurrencies}
         >
-          <ArrowDownUp className="w-4 h-4 text-[var(--color-brand-text-secondary)]" />
+          <ArrowDownUp className="w-4 h-4 text-[var(--color-brand-text-secondary)]" aria-hidden />
         </button>
       </div>
 

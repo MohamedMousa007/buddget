@@ -87,16 +87,20 @@ export function ExpenseRow({ expense, isMobile = false }: ExpenseRowProps) {
         <td className="py-3 px-4 text-end">
           <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
             <button
+              type="button"
               onClick={handleEdit}
               className="p-1.5 rounded-lg hover:bg-[var(--color-brand-border)] transition-colors"
+              aria-label={t.expenses.editPurchase}
             >
-              <Pencil className="w-3.5 h-3.5 text-[var(--color-brand-text-muted)]" />
+              <Pencil className="w-3.5 h-3.5 text-[var(--color-brand-text-muted)]" aria-hidden />
             </button>
             <button
+              type="button"
               onClick={handleDelete}
               className="p-1.5 rounded-lg hover:bg-red-900/30 transition-colors"
+              aria-label={t.expenses.removePurchase}
             >
-              <Trash2 className="w-3.5 h-3.5 text-[var(--color-brand-red)]" />
+              <Trash2 className="w-3.5 h-3.5 text-[var(--color-brand-red)]" aria-hidden />
             </button>
           </div>
         </td>

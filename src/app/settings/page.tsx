@@ -14,6 +14,7 @@ import { SettingsAppPreferencesSection } from '@/components/features/settings/Se
 
 export default function SettingsPage() {
   const t = useT()
+  // TODO: Settings children accept the full store — refactor to individual selectors per section
   const store = useFinanceStore()
   const s = useSettingsPage()
 

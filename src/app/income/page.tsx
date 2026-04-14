@@ -118,9 +118,9 @@ export default function IncomePage() {
                     setActiveModal('editIncome')
                   }}
                   className="p-1.5 rounded-lg hover:bg-[var(--color-brand-elevated)] opacity-70 group-hover:opacity-100"
-                  aria-label="Edit"
+                  aria-label={t.common.edit}
                 >
-                  <Pencil className="w-4 h-4 text-[var(--color-brand-text-muted)]" />
+                  <Pencil className="w-4 h-4 text-[var(--color-brand-text-muted)]" aria-hidden />
                 </button>
                 <button
                   type="button"
@@ -128,9 +128,9 @@ export default function IncomePage() {
                     if (window.confirm(t.income.confirmDelete)) deleteIncomeSource(source.id)
                   }}
                   className="p-1.5 rounded-lg hover:bg-red-900/30 opacity-70 group-hover:opacity-100"
-                  aria-label="Delete"
+                  aria-label={t.common.delete}
                 >
-                  <Trash2 className="w-4 h-4 text-[var(--color-brand-red)]" />
+                  <Trash2 className="w-4 h-4 text-[var(--color-brand-red)]" aria-hidden />
                 </button>
               </div>
             </div>

@@ -20,6 +20,8 @@ import type {
   DebtRecurringFrequency,
   GoldKarat,
 } from '@/lib/store/types'
+import { useActionToast } from '@/components/ui/ActionToast'
+import { useT } from '@/lib/i18n'
 
 type NewDebtPayload = Omit<Debt, 'id' | 'createdAt'>
 
@@ -35,6 +37,8 @@ function mapGoalFreqToRecurring(f: DebtGoal['paymentFrequency']): DebtRecurringF
  * State and handlers for the add-debt / record-payment bottom sheet.
  */
 export function useAddDebtSheet() {
+  const showToast = useActionToast()
+  const tI18n = useT()
   const store = useFinanceStore()
   const {
     addDebt,
@@ -292,6 +296,7 @@ export function useAddDebtSheet() {
       })
     }
 
+    showToast(tI18n.common.toastDebtAdded)
     resetForm()
     closeSheet()
   }, [
@@ -321,6 +326,8 @@ export function useAddDebtSheet() {
     settings,
     startingBalance,
     goldKarat,
+    showToast,
+    tI18n,
   ])
 
   const handleAddPayment = useCallback(() => {
@@ -346,6 +353,7 @@ export function useAddDebtSheet() {
         isActive: true,
         notes: paymentNotes || undefined,
       })
+      showToast(tI18n.common.toastDebtPaymentRecorded)
       resetForm()
       closeSheet()
       return
@@ -390,6 +398,7 @@ export function useAddDebtSheet() {
         isDebtPayment: true,
       }
     )
+    showToast(tI18n.common.toastDebtPaymentRecorded)
     resetForm()
     closeSheet()
   }, [
@@ -411,6 +420,8 @@ export function useAddDebtSheet() {
     selectedDebt,
     selectedDebtId,
     settings,
+    showToast,
+    tI18n,
   ])
 
   const selectDebtForPayFlow = useCallback((id: string) => {
