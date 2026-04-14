@@ -169,20 +169,22 @@ export function useBuddgyBuilderFlow(
       if (trimmed.length < 10) return
       setLoadingKind('parse')
       setError(null)
-      try {
-        const known = options?.knownIncome
-        const result = await parseBudgetInput(trimmed, {
-          knownIncome:
-            known && known.amount > 0 ?
-              { amount: known.amount, currency: known.currency }
-            : undefined,
-          preamble: undefined,
-        })
+
+      const parseOpts = {
+        knownIncome:
+          options?.knownIncome && options.knownIncome.amount > 0 ?
+            { amount: options.knownIncome.amount, currency: options.knownIncome.currency }
+          : undefined,
+        preamble: undefined,
+      }
+
+      const applyParsed = (result: Awaited<ReturnType<typeof parseBudgetInput>>) => {
         setParsed(result)
 
         const VALID_CURRENCIES: Currency[] = ['AED', 'USD', 'EGP', 'EUR', 'GBP', 'SAR', 'XAU']
         const parsedCur = (result.income.currency ?? '').toUpperCase() as Currency
         const fromParse = VALID_CURRENCIES.includes(parsedCur) ? parsedCur : settings.baseCurrency
+        const known = options?.knownIncome
         const incomeAmt =
           result.income.amount != null && result.income.amount > 0 ?
             result.income.amount
@@ -204,8 +206,37 @@ export function useBuddgyBuilderFlow(
         })
 
         setStep('confirm')
-      } catch {
-        setError('Could not process your input. Try again.')
+      }
+
+      const handleParseError = (err: unknown) => {
+        const msg = err instanceof Error ? err.message : 'Unknown error'
+        if (msg.includes('429') || msg.includes('Too many') || msg.includes('breather')) {
+          setError('Buddgy is taking a breather — please wait a moment and try again.')
+        } else if (msg.includes('503') || msg.includes('unavailable')) {
+          setError('Buddgy AI is temporarily unavailable. You can set up your budget manually.')
+        } else if (msg.includes('JSON') || msg.includes('parse')) {
+          setError('Buddgy had trouble understanding that. Please try rephrasing or try again.')
+        } else {
+          setError('Could not process your input. Try again.')
+        }
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[BuddgyBuilder] parse failed:', msg)
+        }
+      }
+
+      try {
+        const result = await parseBudgetInput(trimmed, parseOpts)
+        applyParsed(result)
+      } catch (firstErr) {
+        try {
+          const retry = await parseBudgetInput(
+            `IMPORTANT: Return ONLY a JSON object, no explanation.\n\n${trimmed}`,
+            parseOpts
+          )
+          applyParsed(retry)
+        } catch (retryErr) {
+          handleParseError(retryErr ?? firstErr)
+        }
       } finally {
         setLoadingKind('idle')
       }

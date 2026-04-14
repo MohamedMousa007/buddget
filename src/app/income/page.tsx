@@ -11,12 +11,13 @@ import { useT } from '@/lib/i18n'
 import { IncomeSourceRow } from '@/components/features/income/IncomeSourceRow'
 
 export default function IncomePage() {
-  const { incomeSources, deleteIncomeSource, savingsAccounts, debts } = useFinanceStore(
+  const { incomeSources, deleteIncomeSource, savingsAccounts, debts, paymentMethods } = useFinanceStore(
     useShallow((s) => ({
       incomeSources: s.incomeSources,
       deleteIncomeSource: s.deleteIncomeSource,
       savingsAccounts: s.savingsAccounts,
       debts: s.debts,
+      paymentMethods: s.paymentMethods,
     }))
   )
   const { setActiveModal, setEditingIncomeId } = useSettingsStore()
@@ -75,6 +76,7 @@ export default function IncomePage() {
               source={source}
               savingsAccounts={savingsAccounts}
               debts={debts}
+              paymentMethods={paymentMethods}
               inc={t.income}
               common={t.common}
               onEdit={() => {

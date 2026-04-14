@@ -2,15 +2,14 @@
 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
+import { DebtReceivedViaPills } from '@/components/features/debts/DebtReceivedViaPills'
 import { DebtFiatCurrencySelect } from '@/components/ui/DebtFiatCurrencySelect'
 import { AddDebtDebtTypeSection } from '@/components/features/debts/AddDebtDebtTypeSection'
-import type { AppSettings, DebtCurrency, DebtGoal, DebtKind, GoldKarat } from '@/lib/store/types'
+import type { DebtCurrency, DebtGoal, DebtKind, DebtReceivedVia, GoldKarat } from '@/lib/store/types'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
 
 export interface AddDebtNewFormProps {
-  settings: AppSettings
   debtType: DebtKind
   setDebtType: (k: DebtKind) => void
   name: string
@@ -19,8 +18,8 @@ export interface AddDebtNewFormProps {
   setPerson: (v: string) => void
   description: string
   setDescription: (v: string) => void
-  isGold: boolean
-  setIsGold: (v: boolean) => void
+  receivedVia: DebtReceivedVia
+  onReceivedViaChange: (v: DebtReceivedVia) => void
   startingBalance: string
   setStartingBalance: (v: string) => void
   currency: DebtCurrency
@@ -54,7 +53,6 @@ export interface AddDebtNewFormProps {
  * Fields for creating a new debt (fiat or gold) with debt-type sections.
  */
 export function AddDebtNewForm({
-  settings,
   debtType,
   setDebtType,
   name,
@@ -63,8 +61,8 @@ export function AddDebtNewForm({
   setPerson,
   description,
   setDescription,
-  isGold,
-  setIsGold,
+  receivedVia,
+  onReceivedViaChange,
   startingBalance,
   setStartingBalance,
   currency,
@@ -94,6 +92,7 @@ export function AddDebtNewForm({
   canSubmit,
 }: AddDebtNewFormProps) {
   const t = useT()
+  const isGold = receivedVia === 'gold'
   const showGold = debtType !== 'installment'
 
   return (
@@ -151,17 +150,7 @@ export function AddDebtNewForm({
       </div>
 
       {showGold ? (
-        <div className="flex items-center justify-between">
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelGold}</Label>
-          <Switch
-            checked={isGold}
-            onCheckedChange={(val) => {
-              setIsGold(val)
-              if (val) setCurrency('XAU')
-              else setCurrency(settings.baseCurrency as DebtCurrency)
-            }}
-          />
-        </div>
+        <DebtReceivedViaPills value={receivedVia} onChange={onReceivedViaChange} />
       ) : null}
 
       <div className="grid grid-cols-2 gap-3">

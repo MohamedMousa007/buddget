@@ -39,6 +39,9 @@ Output: {"income":{"amount":17000,"currency":"AED"},"city":"Dubai","country":"UA
 Input: "Single in Abu Dhabi, 12k salary, studio 3500, want to save max"
 Output: {"income":{"amount":12000,"currency":"AED"},"city":"Abu Dhabi","country":"UAE","household":"solo","rent":{"amount":3500,"includesUtilities":null},"transportMode":null,"savingsGoal":"maximum","lifestyleNotes":"want to save maximum","missingFields":[]}
 
+Input: "I earn $4500 a month, rent is $1200, I want to save for an emergency fund and pay off a $200/month loan"
+Output: {"income":{"amount":4500,"currency":"USD"},"city":null,"country":null,"household":"solo","rent":{"amount":1200,"includesUtilities":null},"transportMode":null,"savingsGoal":"moderate","lifestyleNotes":"wants emergency fund, has $200/month loan to pay off","missingFields":["city"]}
+
 Rules:
 - If CONTEXT says the app already knows monthly income, keep that amount unless the user clearly overrides it in their message.
 - Default currency to AED when the city is in the UAE and no currency was stated.
@@ -109,7 +112,7 @@ export async function parseBudgetInput(
 
   const response = await generateWithFallback({
     contents,
-    generationConfig: { temperature: 0, maxOutputTokens: 768 },
+    generationConfig: { temperature: 0, maxOutputTokens: 1024 },
   })
   await throwIfAiProxyNotOk(response)
   const result = await response.json()

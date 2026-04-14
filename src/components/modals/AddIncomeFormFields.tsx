@@ -1,13 +1,14 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { AddIncomeDebtFields } from '@/components/modals/AddIncomeDebtFields'
 import { AddIncomeRecurringSection } from '@/components/modals/AddIncomeRecurringSection'
 import { AddIncomeTypeAndAmount } from '@/components/modals/AddIncomeTypeAndAmount'
 import { AddIncomeNotesField } from '@/components/modals/AddIncomeNotesField'
 import type { Dictionary } from '@/lib/i18n/types'
 import type { Currency, IncomeRecurringFrequency, IncomeSourceType } from '@/lib/store/types'
+import type { PaymentMethod } from '@/lib/store/types'
 
 export type AddIncomeFormFieldsProps = {
   t: Dictionary
@@ -17,6 +18,9 @@ export type AddIncomeFormFieldsProps = {
   setAmount: (v: string) => void
   currency: Currency
   setCurrency: (v: Currency) => void
+  paymentMethods: PaymentMethod[]
+  paymentMethodId: string
+  setPaymentMethodId: (id: string) => void
   sourceType: IncomeSourceType
   onSourceTypeChange: (st: IncomeSourceType) => void
   isRecurring: boolean
@@ -27,10 +31,7 @@ export type AddIncomeFormFieldsProps = {
   setDayOfMonth: (v: string) => void
   notes: string
   setNotes: (v: string) => void
-  debtPerson: string
-  setDebtPerson: (v: string) => void
-  debtDescription: string
-  setDebtDescription: (v: string) => void
+  debtSection?: ReactNode
 }
 
 /** Fields for the add-income sheet. */
@@ -43,6 +44,9 @@ export function AddIncomeFormFields(props: AddIncomeFormFieldsProps) {
     setAmount,
     currency,
     setCurrency,
+    paymentMethods,
+    paymentMethodId,
+    setPaymentMethodId,
     sourceType,
     onSourceTypeChange,
     isRecurring,
@@ -53,10 +57,7 @@ export function AddIncomeFormFields(props: AddIncomeFormFieldsProps) {
     setDayOfMonth,
     notes,
     setNotes,
-    debtPerson,
-    setDebtPerson,
-    debtDescription,
-    setDebtDescription,
+    debtSection,
   } = props
 
   return (
@@ -69,18 +70,13 @@ export function AddIncomeFormFields(props: AddIncomeFormFieldsProps) {
         setAmount={setAmount}
         currency={currency}
         setCurrency={setCurrency}
+        paymentMethods={paymentMethods}
+        paymentMethodId={paymentMethodId}
+        setPaymentMethodId={setPaymentMethodId}
         sourceType={sourceType}
         onSourceTypeChange={onSourceTypeChange}
       />
-      {sourceType === 'debt' ? (
-        <AddIncomeDebtFields
-          t={t}
-          debtPerson={debtPerson}
-          setDebtPerson={setDebtPerson}
-          debtDescription={debtDescription}
-          setDebtDescription={setDebtDescription}
-        />
-      ) : null}
+      {sourceType === 'debt' ? debtSection : null}
       <div className="flex items-center justify-between">
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addIncome.labelRecurring}</Label>
         <Switch checked={isRecurring} onCheckedChange={setIsRecurring} disabled={sourceType === 'debt'} />

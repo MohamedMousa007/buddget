@@ -246,7 +246,7 @@ export const en: Dictionary = {
   addIncome: {
     sheetTitle: 'Add a Source',
     labelSource: 'Where does it come from?',
-    placeholderSource: 'e.g. Bask Health, Freelance',
+    placeholderSource: 'e.g. Company name, Client',
     labelAmount: 'How much?',
     placeholderAmount: '0.00',
     labelCurrency: 'In which currency?',
@@ -260,6 +260,8 @@ export const en: Dictionary = {
     salaryRecurringHint: 'Salary defaults to recurring monthly; you can turn it off.',
     debtDescriptionLabel: 'Description (optional)',
     debtDescriptionPlaceholder: 'Notes about this loan',
+    labelPaymentMethod: 'Received into',
+    debtUsesIncomeAmount: 'Amount and currency match the income above.',
   },
 
   savings: {
@@ -493,6 +495,13 @@ export const en: Dictionary = {
     goalRemindCheckbox: 'Remind me when payments are due',
     goalSetButton: 'Set goal',
     goalIncomeWarning: (pct) => `Heads up — that\u2019s about ${pct}% of your monthly income.`,
+    receivedViaLabel: 'Received via',
+    receivedViaCash: 'Cash',
+    receivedViaBank: 'Bank transfer',
+    receivedViaCard: 'Card',
+    receivedViaCrypto: 'Crypto',
+    receivedViaGold: 'Gold',
+    receivedViaOther: 'Other',
   },
 
   addDebtPayment: {
@@ -1117,7 +1126,7 @@ export const en: Dictionary = {
     incomeIntro: 'Add your income sources below \u2014 or skip this and come back to it anytime.',
     incomeRemove: 'Remove',
     incomeSourceName: 'Source name',
-    incomeSourcePlaceholder: 'e.g. Salary, Freelance, Side gig',
+    incomeSourcePlaceholder: 'e.g. Salary, Side project, Client work',
     incomeAmountLabel: 'Amount',
     incomeAmountPlaceholder: '0.00',
     incomeCurrency: 'Currency',

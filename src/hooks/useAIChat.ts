@@ -111,7 +111,9 @@ export function useAIChat() {
         store.paymentMethods,
         store.debts,
         liveDataBlock,
-        budgetPlanContext
+        budgetPlanContext,
+        store.incomeSources,
+        store.savingsAccounts
       )
 
       const history = messages.slice(-AI_CHAT_HISTORY_MAX_MESSAGES).map((m) => ({

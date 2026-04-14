@@ -15,6 +15,7 @@ import {
 } from './defaultFinanceData'
 import type {
   BudgetPlanCategory,
+  DebtReceivedVia,
   FinanceStore,
   IncomeSource,
   IncomeSourceType,
@@ -25,6 +26,7 @@ import type {
   SavingsTransaction,
   SavingsType,
 } from './types'
+import { normalizeDebtIncoming } from '@/lib/debt/normalizeDebt'
 import { defaultOnboardingState } from '@/lib/onboarding/onboardingTypes'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { SAVINGS_TYPE_ICONS } from '@/lib/constants/savingsIcons'
@@ -32,7 +34,7 @@ import { normalizeSavingsAccountsList } from '@/lib/savings/normalizeSavingsAcco
 import { defaultCategoryForSavingsType } from '@/lib/constants/savingsTypes'
 import { createSafeLocalStorage } from '@/lib/store/safeLocalStorage'
 
-const PERSIST_VERSION = 12
+const PERSIST_VERSION = 13
 
 function holdingSubtypeToSavingsType(sub: SavingsHolding['subtype']): SavingsType {
   const m: Record<SavingsHolding['subtype'], SavingsType> = {
@@ -174,11 +176,12 @@ export const useFinanceStore = create<FinanceStore>()(
           settings: { ...state.settings, noIncomeDeclared: false },
         })),
 
-      addIncomeWithDebt: (income, debtInfo) => {
+      addIncomeWithDebt: (income, debtRow) => {
         const incomeId = generateId()
         const debtId = generateId()
         const iso = new Date().toISOString()
         const cur = clampFiatToAllowed(get().settings, income.currency)
+        const normalized = normalizeDebtIncoming(debtRow)
         set((state) => ({
           incomeSources: [
             ...state.incomeSources,
@@ -194,19 +197,8 @@ export const useFinanceStore = create<FinanceStore>()(
           debts: [
             ...state.debts,
             {
+              ...normalized,
               id: debtId,
-              name: income.name,
-              person: debtInfo.personName?.trim() || '',
-              personName: debtInfo.personName?.trim() || '',
-              description:
-                debtInfo.description?.trim() ||
-                `Recorded from income: ${income.name}`,
-              startingBalance: income.amount,
-              currency: cur,
-              isGold: false,
-              debtType: 'personal',
-              direction: 'i_owe',
-              status: 'active',
               createdAt: iso,
             },
           ],
@@ -253,11 +245,12 @@ export const useFinanceStore = create<FinanceStore>()(
 
       addDebt: (debt) => {
         const id = generateId()
+        const row = normalizeDebtIncoming(debt)
         set((state) => ({
           debts: [
             ...state.debts,
             {
-              ...debt,
+              ...row,
               id,
               createdAt: new Date().toISOString(),
             },
@@ -962,7 +955,7 @@ export const useFinanceStore = create<FinanceStore>()(
           persistedState && typeof persistedState === 'object'
             ? (persistedState as Record<string, unknown>)
             : {}
-        const p: Record<string, unknown> =
+        let p: Record<string, unknown> =
           fromVersion < 12 && Array.isArray(base.incomeSources)
             ? {
                 ...base,
@@ -972,6 +965,17 @@ export const useFinanceStore = create<FinanceStore>()(
                 })),
               }
             : base
+        if (fromVersion < 13 && Array.isArray(p.debts)) {
+          p = {
+            ...p,
+            debts: (p.debts as Record<string, unknown>[]).map((d) => ({
+              ...d,
+              receivedVia:
+                (d.receivedVia as DebtReceivedVia | undefined) ??
+                ((d.isGold as boolean | undefined) ? 'gold' : 'cash'),
+            })),
+          }
+        }
         if (fromVersion >= 6) {
           const prevSettings = (p.settings as Record<string, unknown> | undefined) || {}
           const holdings = (Array.isArray(p.savingsHoldings) ? p.savingsHoldings : []) as SavingsHolding[]
