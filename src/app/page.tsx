@@ -2,8 +2,6 @@
 
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useNetWorth } from '@/hooks/useNetWorth'
-import { useRates } from '@/hooks/useRates'
-import { useGoldPrice } from '@/hooks/useGoldPrice'
 import { KPICard } from '@/components/dashboard/KPICard'
 import { BudgetRing } from '@/components/dashboard/BudgetRing'
 import { CategoryBar } from '@/components/dashboard/CategoryBar'
@@ -14,8 +12,6 @@ import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
 
 export default function DashboardPage() {
-  useRates()
-  useGoldPrice()
   const router = useRouter()
   const t = useT()
 
@@ -35,6 +31,7 @@ export default function DashboardPage() {
             icon={t.dashboard.kpiNetWorthIcon}
             trendLabel={t.dashboard.kpiNetWorthTrend}
             color={nw.netWorth >= 0 ? 'green' : 'red'}
+            footnote={nw.netWorthGoldIncomplete ? t.dashboard.kpiNetWorthGoldNote : undefined}
           />
           <KPICard
             title={t.dashboard.kpiIncome}

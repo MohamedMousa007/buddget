@@ -1,7 +1,21 @@
 import type { Currency, DebtCurrency, ExpenseCategory, PaymentMethodType } from '@/lib/store/types'
 
 /** Fiat currencies only (expenses, income, savings, payment methods, sidebar base currency). */
-export const FIAT_CURRENCIES: Currency[] = ['AED', 'USD', 'EGP', 'EUR', 'GBP', 'SAR']
+export const FIAT_CURRENCIES: Currency[] = [
+  'AED',
+  'USD',
+  'EGP',
+  'EUR',
+  'GBP',
+  'SAR',
+  'KWD',
+  'QAR',
+  'BHD',
+  'OMR',
+  'MAD',
+  'TND',
+  'JOD',
+]
 
 export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   'Rent',

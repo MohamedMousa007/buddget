@@ -86,6 +86,7 @@ export const en: Dictionary = {
     kpiNetWorth: 'Net Worth',
     kpiNetWorthIcon: '📊',
     kpiNetWorthTrend: 'savings + investments + month − debt',
+    kpiNetWorthGoldNote: 'Net worth may be incomplete — gold price unavailable.',
     incomeBlockedHint: 'Add at least one income source under Income for these totals to update.',
     budgetUsedLabel: 'of budget used',
     statusOverBudget: 'OVER BUDGET',
@@ -297,6 +298,7 @@ export const en: Dictionary = {
     labelDayOfMonth: 'Day of month',
     liveCryptoSoon: 'Live price coming soon',
     liveStocksSoon: 'Live valuation coming soon',
+    goldAedUnavailable: 'AED value unavailable — gold price unavailable',
     tagRecurring: 'Recurring',
     netWorthShort: 'Net worth',
     totalSavedShort: 'Total saved',
@@ -526,6 +528,7 @@ export const en: Dictionary = {
     moneyFlowHint: 'Savings moves are not expenses or income. They appear only here.',
     netWorthTitle: 'Net worth',
     netWorthHint: 'Account balances + this month’s cash flow − active debt (see Savings for detail).',
+    netWorthGoldIncomplete: 'Net worth may be incomplete — gold price unavailable.',
   },
 
   settings: {
@@ -555,6 +558,10 @@ export const en: Dictionary = {
     ratesRefreshed: 'Rates refreshed ',
     ratesNotRefreshed: 'Not refreshed yet',
     goldLabel: 'Gold (24k/g)',
+    currencyConverterTitle: 'Currency converter',
+    currencyConverterNoRate: 'Rate not available for this pair',
+    goldPriceUnavailable: 'Unavailable — retrying…',
+    ratesAttribution: 'Rates by Exchange Rate API',
 
     pageLinksIncomeTitle: 'Your Income',
     pageLinksIncomeDesc: 'Add, edit, or remove salary and other income sources on the Income page.',

@@ -5,6 +5,13 @@ export type Currency =
   | 'EUR'
   | 'GBP'
   | 'SAR'
+  | 'KWD'
+  | 'QAR'
+  | 'BHD'
+  | 'OMR'
+  | 'MAD'
+  | 'TND'
+  | 'JOD'
   | 'XAU'
   /** Savings / ledger only — approximate USD peg for totals when crossing currencies. */
   | 'USDT'
@@ -429,6 +436,10 @@ export interface FinanceStore {
   recurringDebtPayments: RecurringDebtPayment[]
   exchangeRates: Record<string, number>
   goldPricePerGram: number
+  /** ISO time of last successful `/api/gold` fetch (client). */
+  lastGoldFetch: string | null
+  /** When false, live gold failed — UI must not show a trusted AED/gram figure. */
+  goldPriceAvailable: boolean
   lastRatesFetch: string | null
 
   /** `amountInBaseCurrency` is computed in the store from rates + base currency. */
@@ -516,6 +527,7 @@ export interface FinanceStore {
   setOnboardingState: (updates: Partial<OnboardingState> | ((prev: OnboardingState) => OnboardingState)) => void
   updateRates: (rates: Record<string, number>) => void
   updateGoldPrice: (price: number) => void
+  setGoldUnavailable: () => void
   /** @throws Error on invalid JSON or failed Zod validation (message is user-facing). */
   importData: (data: string) => void
   exportData: () => string

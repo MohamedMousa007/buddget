@@ -244,12 +244,17 @@ export function netSavingsLedgerInBaseForMonth(
 export function totalSavingsAccountsBalanceInBase(
   accounts: Pick<SavingsAccount, 'currentBalance' | 'currency'>[],
   baseCurrency: Currency,
-  rates: Record<string, number>
+  rates: Record<string, number>,
+  goldPricePerGram: number,
+  goldPriceAvailable: boolean
 ): number {
-  return accounts.reduce(
-    (sum, a) => sum + convertCurrency(a.currentBalance, a.currency, baseCurrency, rates),
-    0
-  )
+  return accounts.reduce((sum, a) => {
+    if (a.currency === 'XAU') {
+      if (!goldPriceAvailable) return sum
+      return sum + goldGramsToMoney(a.currentBalance, goldPricePerGram, 24)
+    }
+    return sum + convertCurrency(a.currentBalance, a.currency, baseCurrency, rates)
+  }, 0)
 }
 
 /**
@@ -298,7 +303,8 @@ export function totalDebtRemainingInBase(
   debtPayments: DebtPayment[],
   baseCurrency: Currency,
   rates: Record<string, number>,
-  goldPricePerGram: number
+  goldPricePerGram: number,
+  goldPriceAvailable: boolean
 ): number {
   let total = 0
   for (const debt of debts) {
@@ -308,7 +314,8 @@ export function totalDebtRemainingInBase(
       debt,
       baseCurrency,
       rates,
-      goldPricePerGram
+      goldPricePerGram,
+      goldPriceAvailable
     )
   }
   return total
@@ -461,9 +468,11 @@ export function calculateDebtRemainingInBaseCurrency(
   debt: Debt,
   baseCurrency: Currency,
   rates: Record<string, number>,
-  goldPricePerGram: number
+  goldPricePerGram: number,
+  goldPriceAvailable: boolean
 ): number {
   if (debt.isGold) {
+    if (!goldPriceAvailable) return 0
     return goldGramsToMoney(remaining, goldPricePerGram, debt.goldKarat)
   }
   return convertCurrency(remaining, debt.currency, baseCurrency, rates)

@@ -89,6 +89,7 @@ export interface Dictionary {
     kpiNetWorth: string
     kpiNetWorthIcon: string
     kpiNetWorthTrend: string
+    kpiNetWorthGoldNote: string
     incomeBlockedHint: string
     budgetUsedLabel: string
     statusOverBudget: string
@@ -300,6 +301,7 @@ export interface Dictionary {
     labelDayOfMonth: string
     liveCryptoSoon: string
     liveStocksSoon: string
+    goldAedUnavailable: string
     tagRecurring: string
     netWorthShort: string
     totalSavedShort: string
@@ -527,6 +529,7 @@ export interface Dictionary {
     moneyFlowHint: string
     netWorthTitle: string
     netWorthHint: string
+    netWorthGoldIncomplete: string
   }
 
   settings: {
@@ -556,6 +559,10 @@ export interface Dictionary {
     ratesRefreshed: string
     ratesNotRefreshed: string
     goldLabel: string
+    currencyConverterTitle: string
+    currencyConverterNoRate: string
+    goldPriceUnavailable: string
+    ratesAttribution: string
 
     pageLinksIncomeTitle: string
     pageLinksIncomeDesc: string

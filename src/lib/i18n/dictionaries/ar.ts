@@ -87,6 +87,7 @@ export const ar: Dictionary = {
     kpiNetWorth: 'صافي الثروة',
     kpiNetWorthIcon: '📊',
     kpiNetWorthTrend: 'مدخرات + استثمار + الشهر − الدين',
+    kpiNetWorthGoldNote: 'صافي الثروة قد يكون غير مكتمل — سعر الذهب غير متاح.',
     incomeBlockedHint: 'أضف مصدر دخل واحد على الأقل في صفحة الدخل حتى يتم تحديث هذه الأرقام.',
     budgetUsedLabel: 'من الميزانية مُستخدَم',
     statusOverBudget: 'تجاوزت الميزانية',
@@ -297,6 +298,7 @@ export const ar: Dictionary = {
     labelDayOfMonth: 'يوم الشهر',
     liveCryptoSoon: 'سعر مباشر قريباً',
     liveStocksSoon: 'تقييم مباشر قريباً',
+    goldAedUnavailable: 'قيمة بالدرهم غير متاحة — سعر الذهب غير متاح',
     tagRecurring: 'متكرر',
     netWorthShort: 'صافي الثروة',
     totalSavedShort: 'إجمالي المدخر',
@@ -526,6 +528,7 @@ export const ar: Dictionary = {
     moneyFlowHint: 'حركات المدخرات ليست مصروفات أو دخل. تظهر هنا فقط.',
     netWorthTitle: 'صافي الثروة',
     netWorthHint: 'أرصدة الحسابات + تدفق الشهر − الدين النشط (التفاصيل في المدخرات).',
+    netWorthGoldIncomplete: 'صافي الثروة قد يكون غير مكتمل — سعر الذهب غير متاح.',
   },
 
   settings: {
@@ -555,6 +558,10 @@ export const ar: Dictionary = {
     ratesRefreshed: 'تم تحديث الأسعار ',
     ratesNotRefreshed: 'لم يتم التحديث بعد',
     goldLabel: 'ذهب (24 قيراط/جرام)',
+    currencyConverterTitle: 'محوّل العملات',
+    currencyConverterNoRate: 'لا يوجد سعر لهذا الزوج',
+    goldPriceUnavailable: 'غير متاح — إعادة المحاولة…',
+    ratesAttribution: 'الأسعار عبر Exchange Rate API',
 
     pageLinksIncomeTitle: 'دخلك',
     pageLinksIncomeDesc: 'أضف أو عدّل أو احذف مصادر الراتب والدخل الأخرى في صفحة الدخل.',

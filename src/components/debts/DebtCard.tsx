@@ -26,7 +26,7 @@ interface DebtCardProps {
 export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardProps) {
   const t = useT()
   const clearDebt = useFinanceStore((s) => s.clearDebt)
-  const { settings, exchangeRates, goldPricePerGram } = useFinanceStore()
+  const { settings, exchangeRates, goldPricePerGram, goldPriceAvailable } = useFinanceStore()
   const base = settings.baseCurrency
 
   const [celebrating, setCelebrating] = useState(false)
@@ -36,12 +36,17 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
   const paidOff = isDebtFullyPaid(debt, payments)
   const remainingRaw = calculateDebtRemaining(debt, payments)
 
+  const goldOk = goldPriceAvailable !== false
   const startingInBase = debt.isGold
-    ? goldGramsToMoney(debt.startingBalance, goldPricePerGram, debt.goldKarat)
+    ? goldOk
+      ? goldGramsToMoney(debt.startingBalance, goldPricePerGram, debt.goldKarat)
+      : null
     : convertCurrency(debt.startingBalance, debt.currency, base, exchangeRates)
 
   const remainingInBase = debt.isGold
-    ? goldGramsToMoney(remainingRaw, goldPricePerGram, debt.goldKarat)
+    ? goldOk
+      ? goldGramsToMoney(remainingRaw, goldPricePerGram, debt.goldKarat)
+      : null
     : convertCurrency(remainingRaw, debt.currency, base, exchangeRates)
 
   const paidPercent =
@@ -165,17 +170,30 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
         <div className="flex justify-between text-sm">
           <span className="text-[var(--color-brand-text-secondary)]">{t.debts.labelStartedAt}</span>
           <div className="text-right">
-            <MoneyDisplay
-              amount={debt.startingBalance}
-              currency={debt.isGold ? 'XAU' : debt.currency}
-              amountInPrimary={startingInBase}
-              variant="card"
-              primaryClassName="text-[var(--color-brand-text-primary)]"
-            />
-            {debt.isGold && (
-              <span className="text-xs text-[var(--color-brand-text-muted)] ms-1.5">
-                ({debt.startingBalance}g)
-              </span>
+            {debt.isGold && !goldOk ? (
+              <div>
+                <span className="font-mono-numbers text-[var(--color-brand-text-primary)]">
+                  {formatCurrency(debt.startingBalance, 'XAU')}
+                </span>
+                <p className="text-[10px] text-[var(--color-brand-text-muted)] italic mt-0.5">
+                  {t.savings.goldAedUnavailable}
+                </p>
+              </div>
+            ) : (
+              <>
+                <MoneyDisplay
+                  amount={debt.startingBalance}
+                  currency={debt.isGold ? 'XAU' : debt.currency}
+                  amountInPrimary={startingInBase ?? undefined}
+                  variant="card"
+                  primaryClassName="text-[var(--color-brand-text-primary)]"
+                />
+                {debt.isGold ? (
+                  <span className="text-xs text-[var(--color-brand-text-muted)] ms-1.5">
+                    ({debt.startingBalance}g)
+                  </span>
+                ) : null}
+              </>
             )}
           </div>
         </div>
@@ -183,17 +201,30 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
         <div className="flex justify-between text-sm">
           <span className="text-[var(--color-brand-text-secondary)]">{t.debts.labelStillToGo}</span>
           <div className="text-right">
-            <MoneyDisplay
-              amount={remainingRaw}
-              currency={debt.isGold ? 'XAU' : debt.currency}
-              amountInPrimary={remainingInBase}
-              variant="card"
-              primaryClassName="text-[var(--color-brand-text-primary)] font-semibold"
-            />
-            {debt.isGold && (
-              <span className="text-xs text-[var(--color-brand-text-muted)] ms-1.5">
-                ({remainingRaw.toFixed(1)}g)
-              </span>
+            {debt.isGold && !goldOk ? (
+              <div>
+                <span className="font-mono-numbers text-[var(--color-brand-text-primary)] font-semibold">
+                  {formatCurrency(remainingRaw, 'XAU')}
+                </span>
+                <p className="text-[10px] text-[var(--color-brand-text-muted)] italic mt-0.5">
+                  {t.savings.goldAedUnavailable}
+                </p>
+              </div>
+            ) : (
+              <>
+                <MoneyDisplay
+                  amount={remainingRaw}
+                  currency={debt.isGold ? 'XAU' : debt.currency}
+                  amountInPrimary={remainingInBase ?? undefined}
+                  variant="card"
+                  primaryClassName="text-[var(--color-brand-text-primary)] font-semibold"
+                />
+                {debt.isGold ? (
+                  <span className="text-xs text-[var(--color-brand-text-muted)] ms-1.5">
+                    ({remainingRaw.toFixed(1)}g)
+                  </span>
+                ) : null}
+              </>
             )}
           </div>
         </div>
@@ -216,12 +247,14 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
           </span>
         </div>
 
-        {debt.isGold && (
+        {debt.isGold && goldOk ? (
           <p className="text-xs text-[var(--color-brand-gold)] flex items-center gap-1">
             {debt.goldKarat || 24}K gold @ {formatCurrency(goldPricePerGram * (debt.goldKarat || 24) / 24, base)}/g
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-brand-green)] animate-pulse" />
           </p>
-        )}
+        ) : debt.isGold ? (
+          <p className="text-xs text-[var(--color-brand-text-muted)] italic">{t.settings.goldPriceUnavailable}</p>
+        ) : null}
       </div>
 
       {paidOff ? (

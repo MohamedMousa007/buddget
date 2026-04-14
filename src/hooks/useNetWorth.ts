@@ -5,7 +5,6 @@ import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useRates } from '@/hooks/useRates'
-import { useGoldPrice } from '@/hooks/useGoldPrice'
 import { savingsAccountBalanceInBase } from '@/lib/savings/savingsConversions'
 import { convertCurrency } from '@/lib/utils/currency'
 
@@ -15,23 +14,32 @@ import { convertCurrency } from '@/lib/utils/currency'
  */
 export function useNetWorth() {
   useRates()
-  useGoldPrice()
   const stats = useMonthlyStats()
-  const { savingsAccounts, settings, exchangeRates, goldPricePerGram } = useFinanceStore(
+  const {
+    savingsAccounts,
+    debts,
+    settings,
+    exchangeRates,
+    goldPricePerGram,
+    goldPriceAvailable,
+  } = useFinanceStore(
     useShallow((s) => ({
       savingsAccounts: s.savingsAccounts,
+      debts: s.debts,
       settings: s.settings,
       exchangeRates: s.exchangeRates,
       goldPricePerGram: s.goldPricePerGram,
+      goldPriceAvailable: s.goldPriceAvailable,
     }))
   )
 
   return useMemo(() => {
     const base = settings.baseCurrency
+    const goldOk = goldPriceAvailable !== false
     let totalSavings = 0
     let totalInvestments = 0
     for (const a of savingsAccounts) {
-      const v = savingsAccountBalanceInBase(a, base, exchangeRates, goldPricePerGram)
+      const v = savingsAccountBalanceInBase(a, base, exchangeRates, goldPricePerGram, goldOk)
       if (a.category === 'investment') totalInvestments += v
       else totalSavings += v
     }
@@ -44,6 +52,10 @@ export function useNetWorth() {
         ? convertCurrency(netWorth, base, settings.secondaryCurrency, exchangeRates)
         : null
 
+    const hasGoldSavings = savingsAccounts.some((a) => a.currency === 'XAU')
+    const hasGoldDebt = debts.some((d) => d.isGold)
+    const netWorthGoldIncomplete = !goldOk && (hasGoldSavings || hasGoldDebt)
+
     return {
       netWorth,
       netWorthSecondary,
@@ -54,14 +66,17 @@ export function useNetWorth() {
       monthlyExpenses: stats.totalSpentExcludingSavings,
       monthlyFlow,
       baseCurrency: base,
+      netWorthGoldIncomplete,
     }
   }, [
     savingsAccounts,
+    debts,
     settings.baseCurrency,
     settings.secondaryCurrency,
     settings.showSecondaryCurrency,
     exchangeRates,
     goldPricePerGram,
+    goldPriceAvailable,
     stats.totalIncome,
     stats.totalSpentExcludingSavings,
     stats.debtRemainingTotal,

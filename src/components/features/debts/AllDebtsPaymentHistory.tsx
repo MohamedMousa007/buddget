@@ -21,8 +21,10 @@ interface AllDebtsPaymentHistoryProps {
 export function AllDebtsPaymentHistory({ debts, debtPayments }: AllDebtsPaymentHistoryProps) {
   const t = useT()
   const { formatDateShort } = useLocalizedFormatters()
-  const { deleteDebtPayment, settings, goldPricePerGram, exchangeRates } = useFinanceStore()
+  const { deleteDebtPayment, settings, goldPricePerGram, goldPriceAvailable, exchangeRates } =
+    useFinanceStore()
   const base = settings.baseCurrency
+  const goldOk = goldPriceAvailable !== false
   const allRows = useDebtPaymentHistoryRows(debts, debtPayments)
   const [filterDebtId, setFilterDebtId] = useState<string>('all')
 
@@ -33,7 +35,10 @@ export function AllDebtsPaymentHistory({ debts, debtPayments }: AllDebtsPaymentH
   )
 
   const toBase = (debt: Debt, debtUnitAmount: number) => {
-    if (debt.isGold) return goldGramsToMoney(debtUnitAmount, goldPricePerGram, debt.goldKarat)
+    if (debt.isGold) {
+      if (!goldOk) return null
+      return goldGramsToMoney(debtUnitAmount, goldPricePerGram, debt.goldKarat)
+    }
     return convertCurrency(debtUnitAmount, debt.currency, base, exchangeRates)
   }
 
@@ -72,6 +77,7 @@ export function AllDebtsPaymentHistory({ debts, debtPayments }: AllDebtsPaymentH
           baseCurrency={base}
           formatDateShort={formatDateShort}
           toBase={toBase}
+          goldLiveOk={goldOk}
           deleteDebtPayment={deleteDebtPayment}
           t={t.debts}
         />

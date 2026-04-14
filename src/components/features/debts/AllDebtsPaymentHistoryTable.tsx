@@ -12,7 +12,9 @@ interface AllDebtsPaymentHistoryTableProps {
   rows: DebtPaymentHistoryRow[]
   baseCurrency: string
   formatDateShort: (iso: string) => string
-  toBase: (debt: Debt, debtUnitAmount: number) => number
+  toBase: (debt: Debt, debtUnitAmount: number) => number | null
+  /** When false, gold rows must not show a trusted live conversion in base currency. */
+  goldLiveOk: boolean
   deleteDebtPayment: (id: string) => void
   t: DebtsCopy
 }
@@ -23,6 +25,7 @@ export function AllDebtsPaymentHistoryTable({
   baseCurrency,
   formatDateShort,
   toBase,
+  goldLiveOk,
   deleteDebtPayment,
   t,
 }: AllDebtsPaymentHistoryTableProps) {
@@ -51,7 +54,9 @@ export function AllDebtsPaymentHistoryTable({
         </thead>
         <tbody>
           {rows.map(({ debt, payment }) => {
-            const paidInBase = payment.amountInPrimary ?? toBase(debt, payment.amountPaid)
+            const convertedPaid = toBase(debt, payment.amountPaid)
+            const paidInBase =
+              payment.amountInPrimary ?? (convertedPaid != null ? convertedPaid : null)
             const hasOriginal =
               payment.originalAmount != null &&
               payment.paymentCurrency &&
@@ -75,17 +80,36 @@ export function AllDebtsPaymentHistoryTable({
                         {formatCurrency(payment.originalAmount!, payment.paymentCurrency!)}
                       </span>
                       <span className="block text-[10px] text-[var(--color-brand-text-muted)]">
-                        {formatCurrency(paidInBase, baseCurrency)}
+                        {paidInBase != null
+                          ? formatCurrency(paidInBase, baseCurrency)
+                          : debt.isGold && !goldLiveOk
+                            ? '—'
+                            : formatCurrency(0, baseCurrency)}
                       </span>
                     </>
-                  ) : (
+                  ) : paidInBase != null ? (
                     <span className="text-sm font-mono-numbers text-[var(--color-brand-green)]">
                       {formatCurrency(paidInBase, baseCurrency)}
+                    </span>
+                  ) : debt.isGold && !goldLiveOk ? (
+                    <span className="text-sm font-mono-numbers text-[var(--color-brand-text-muted)] italic">
+                      —
+                    </span>
+                  ) : (
+                    <span className="text-sm font-mono-numbers text-[var(--color-brand-green)]">
+                      {formatCurrency(0, baseCurrency)}
                     </span>
                   )}
                 </td>
                 <td className="py-2.5 px-2 sm:px-3 text-sm font-mono-numbers text-[var(--color-brand-text-primary)] text-end whitespace-nowrap">
-                  {formatCurrency(toBase(debt, Math.max(0, payment.remainingAfter)), baseCurrency)}
+                  {(() => {
+                    const still = toBase(debt, Math.max(0, payment.remainingAfter))
+                    if (still != null) return formatCurrency(still, baseCurrency)
+                    if (debt.isGold && !goldLiveOk) {
+                      return <span className="text-[var(--color-brand-text-muted)] italic">—</span>
+                    }
+                    return formatCurrency(0, baseCurrency)
+                  })()}
                 </td>
                 <td className="py-2.5 px-2 sm:px-3 text-sm text-[var(--color-brand-text-muted)] max-w-[200px] truncate hidden md:table-cell">
                   {payment.notes || '–'}

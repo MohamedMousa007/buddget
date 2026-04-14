@@ -1,25 +1,23 @@
 'use client'
 
-import { Globe, RefreshCw } from 'lucide-react'
+import { Globe } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
-import { formatCurrency } from '@/lib/utils/formatters'
-import { useLocalizedFormatters } from '@/hooks/useLocalizedFormatters'
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
 import { useT } from '@/lib/i18n'
 import type { Currency, FinanceStore } from '@/lib/store/types'
+import { CurrencyConverter } from '@/components/features/settings/CurrencyConverter'
 
 export interface SettingsCurrencySectionProps {
   store: FinanceStore
 }
 
 /**
- * Primary/secondary currency, form picker restriction, rates display.
+ * Primary/secondary currency, form picker restriction, and interactive rate converter.
  */
 export function SettingsCurrencySection({ store }: SettingsCurrencySectionProps) {
   const t = useT()
-  const { formatRelativeTime } = useLocalizedFormatters()
 
   return (
     <section className="glass-card rounded-2xl p-5 space-y-4">
@@ -94,29 +92,7 @@ export function SettingsCurrencySection({ store }: SettingsCurrencySectionProps)
 
       <Separator className="bg-[var(--color-brand-border)]" />
 
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-xs text-[var(--color-brand-text-secondary)]">{t.settings.liveRates}</p>
-          <p className="text-xs text-[var(--color-brand-text-muted)] flex items-center gap-1">
-            <RefreshCw className="w-3 h-3" />
-            {store.lastRatesFetch ? `${t.settings.ratesRefreshed}${formatRelativeTime(store.lastRatesFetch)}` : t.settings.ratesNotRefreshed}
-          </p>
-        </div>
-        <div className="space-y-1.5">
-          {Object.entries(store.exchangeRates).map(([key, rate]) => (
-            <div key={key} className="flex justify-between text-sm">
-              <span className="text-[var(--color-brand-text-secondary)]">{key.replace('_', ' → ')}</span>
-              <span className="font-mono-numbers text-[var(--color-brand-text-primary)]">{(rate as number).toFixed(4)}</span>
-            </div>
-          ))}
-          <div className="flex justify-between text-sm">
-            <span className="text-[var(--color-brand-gold)]">{t.settings.goldLabel}</span>
-            <span className="font-mono-numbers text-[var(--color-brand-gold)]">
-              {formatCurrency(store.goldPricePerGram, store.settings.baseCurrency)}
-            </span>
-          </div>
-        </div>
-      </div>
+      <CurrencyConverter store={store} />
     </section>
   )
 }
