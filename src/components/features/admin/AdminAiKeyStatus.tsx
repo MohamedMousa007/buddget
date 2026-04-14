@@ -8,7 +8,7 @@ export interface AdminAiKeyStatusProps {
 }
 
 /**
- * Shows whether Gemini is configured (API key preview + model).
+ * Shows whether Gemini is configured (presence + model only — no key material).
  */
 export function AdminAiKeyStatus({ config }: AdminAiKeyStatusProps) {
   return (
@@ -24,7 +24,7 @@ export function AdminAiKeyStatus({ config }: AdminAiKeyStatusProps) {
         <div className="flex items-center justify-between py-2">
           <span className="text-sm text-[var(--color-brand-text-secondary)]">Status</span>
           <span className="flex items-center gap-2">
-            {!config?.ai.keyPreview ? (
+            {!config?.ai.keyPresent ? (
               <>
                 <XCircle className="w-4 h-4 text-[var(--color-brand-red)]" />
                 <span className="text-sm text-[var(--color-brand-red)] font-medium">No API key</span>
@@ -44,13 +44,13 @@ export function AdminAiKeyStatus({ config }: AdminAiKeyStatusProps) {
         </div>
 
         <div className="flex items-center justify-between py-2 border-t border-[var(--color-brand-border)]">
-          <span className="text-sm text-[var(--color-brand-text-secondary)]">API Key</span>
-          <span className="text-sm font-mono-numbers text-[var(--color-brand-text-muted)]">
-            {config?.ai.keyPreview || 'Not set'}
+          <span className="text-sm text-[var(--color-brand-text-secondary)]">API key on server</span>
+          <span className="text-sm text-[var(--color-brand-text-muted)]">
+            {config?.ai.keyPresent ? 'Configured' : 'Not set'}
           </span>
         </div>
 
-        {!config?.ai.keyPreview ? (
+        {!config?.ai.keyPresent ? (
           <div className="p-3 rounded-xl bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)]">
             <p className="text-xs text-[var(--color-brand-text-secondary)]">
               To enable AI, add{' '}

@@ -23,7 +23,7 @@ const BUDGET_CATEGORY_ORDER: ExpenseCategory[] = [
 export const DEFAULT_BUDGET: BudgetCategory[] = BUDGET_CATEGORY_ORDER.map((category) => ({
   category,
   budgetedAmount: 0,
-  currency: 'USD',
+  currency: 'AED',
 }))
 
 /** One default method so “add expense” always has a valid payment method. */
@@ -32,7 +32,7 @@ export const DEFAULT_PAYMENT_METHODS: PaymentMethod[] = [
     id: 'pm_default_cash',
     name: 'Cash',
     type: 'cash',
-    currency: 'USD',
+    currency: 'AED',
     color: '#A3A3A3',
     isDefault: true,
   },
@@ -42,7 +42,7 @@ export const DEFAULT_INCOME: IncomeSource[] = []
 export const DEFAULT_DEBTS: Debt[] = []
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  baseCurrency: 'USD',
+  baseCurrency: 'AED',
   secondaryCurrency: null,
   showSecondaryCurrency: false,
   theme: 'dark',
@@ -60,7 +60,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
 export const DEFAULT_PROFILE: UserProfile = {
   id: 'local',
   name: '',
-  baseCurrency: 'USD',
+  baseCurrency: 'AED',
   createdAt: new Date().toISOString(),
 }
 
@@ -69,7 +69,7 @@ export function createFreshDefaultProfile(): UserProfile {
   return {
     id: 'local',
     name: '',
-    baseCurrency: 'USD',
+    baseCurrency: 'AED',
     createdAt: new Date().toISOString(),
   }
 }
@@ -77,9 +77,11 @@ export function createFreshDefaultProfile(): UserProfile {
 /** FX / gold defaults for conversions and Settings display (not user-specific). */
 export const DEFAULT_MARKET_RATES: Record<string, number> = {
   USD_AED: 3.6725,
-  EGP_AED: 0.0731,
-  EUR_AED: 4.02,
-  GBP_AED: 4.65,
+  USD_EGP: 53.1,
+  EGP_AED: 0.0692,
+  AED_EGP: 14.45,
+  EUR_AED: 4.15,
+  GBP_AED: 4.78,
   SAR_AED: 0.98,
 }
 

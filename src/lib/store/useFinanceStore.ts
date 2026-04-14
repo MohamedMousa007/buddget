@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
+import { createJSONStorage, persist } from 'zustand/middleware'
 import { convertCurrency, tryConvertCurrency } from '@/lib/utils/currency'
 import { importDataSchema } from './financeImportSchema'
 import {
@@ -28,8 +28,9 @@ import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { SAVINGS_TYPE_ICONS } from '@/lib/constants/savingsIcons'
 import { normalizeSavingsAccountsList } from '@/lib/savings/normalizeSavingsAccount'
 import { defaultCategoryForSavingsType } from '@/lib/constants/savingsTypes'
+import { createSafeLocalStorage } from '@/lib/store/safeLocalStorage'
 
-const PERSIST_VERSION = 10
+const PERSIST_VERSION = 11
 
 function holdingSubtypeToSavingsType(sub: SavingsHolding['subtype']): SavingsType {
   const m: Record<SavingsHolding['subtype'], SavingsType> = {
@@ -923,6 +924,8 @@ export const useFinanceStore = create<FinanceStore>()(
           }
           return {
             ...p,
+            lastGoldFetch: p.lastGoldFetch ?? null,
+            goldPriceAvailable: typeof p.goldPriceAvailable === 'boolean' ? p.goldPriceAvailable : true,
             budgetPlans: Array.isArray(p.budgetPlans) ? p.budgetPlans : [],
             activeBudgetPlanId:
               typeof p.activeBudgetPlanId === 'string' || p.activeBudgetPlanId === null
@@ -1045,7 +1048,7 @@ export const useFinanceStore = create<FinanceStore>()(
           lastRatesFetch: null,
         } as never
       },
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => createSafeLocalStorage()),
       merge: (persisted, current) => {
         const p = persisted as Partial<typeof current>
         return {

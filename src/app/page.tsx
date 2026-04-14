@@ -21,7 +21,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen">
-      <div className="px-4 py-6 lg:px-8 space-y-6 max-w-5xl mx-auto">
+      <div className="px-4 pt-8 pb-6 lg:pt-6 lg:px-8 space-y-6 max-w-5xl mx-auto">
         {/* KPI Strip */}
         <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-1">
           <KPICard

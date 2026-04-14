@@ -10,9 +10,6 @@ import { APP_CONFIG } from '@/lib/config'
 
 function buildAdminConfig() {
   const hasGeminiKey = !!process.env.GEMINI_API_KEY?.trim()
-  const geminiKeyPreview = process.env.GEMINI_API_KEY
-    ? `${process.env.GEMINI_API_KEY.slice(0, 8)}...${process.env.GEMINI_API_KEY.slice(-4)}`
-    : null
 
   const stored = getStoredAiRuntimeConfig()
   const effective = getEffectiveAiRuntimeConfig()
@@ -22,7 +19,8 @@ function buildAdminConfig() {
       /** Key present — AI routes are available (Gemini quotas still apply). */
       enabled: hasGeminiKey,
       model: 'gemini-2.5-flash',
-      keyPreview: geminiKeyPreview,
+      /** Never expose key material — boolean only. */
+      keyPresent: hasGeminiKey,
       runtime: {
         /** Values last saved from Admin (or defaults). */
         stored,

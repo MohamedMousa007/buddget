@@ -1,6 +1,7 @@
 'use client'
 
-import { Plus, X, Receipt, DollarSign, CreditCard, FileText, Bot } from 'lucide-react'
+import { Plus, X, Receipt, DollarSign, CreditCard, FileText, Sparkles } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -9,6 +10,7 @@ import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useT } from '@/lib/i18n'
 
 export function QuickAddFAB() {
+  const router = useRouter()
   const { activeModal, setActiveModal, openDebtSheetNew } = useSettingsStore()
   const requireAuth = useRequireAuthAction()
   const t = useT()
@@ -19,7 +21,7 @@ export function QuickAddFAB() {
     { id: 'addIncome', label: t.modals.fabAddIncome, icon: DollarSign, emoji: '💵' },
     { id: 'addPaymentMethod', label: t.modals.fabAddPayment, icon: CreditCard, emoji: '💳' },
     { id: 'addDebt', label: t.modals.fabTrackDebt, icon: FileText, emoji: '📋' },
-    { id: 'aiChat', label: t.modals.fabAskAi, icon: Bot, emoji: '🤖' },
+    { id: 'budgetSetup', label: t.modals.fabAskAi, icon: Sparkles, emoji: '✨' },
   ]
 
   const runOption = (optionId: string) => {
@@ -31,10 +33,10 @@ export function QuickAddFAB() {
       }, msg)
       return
     }
-    if (optionId === 'aiChat') {
+    if (optionId === 'budgetSetup') {
       requireAuth(() => {
         setActiveModal(null)
-        setActiveModal('aiChat')
+        router.push('/budget-setup')
       }, t.modals.fabRequireAuthAi)
       return
     }

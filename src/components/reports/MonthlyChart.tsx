@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState, useRef } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
 interface MonthlyChartProps {
@@ -8,6 +9,15 @@ interface MonthlyChartProps {
 }
 
 export function MonthlyChart({ data, currency }: MonthlyChartProps) {
+  const [mounted, setMounted] = useState(false)
+  const rafRef = useRef<number | undefined>(undefined)
+  useEffect(() => {
+    rafRef.current = requestAnimationFrame(() => setMounted(true))
+    return () => {
+      if (rafRef.current !== undefined) cancelAnimationFrame(rafRef.current)
+    }
+  }, [])
+
   return (
     <div className="glass-card rounded-2xl p-5">
       <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-1">
@@ -21,9 +31,10 @@ export function MonthlyChart({ data, currency }: MonthlyChartProps) {
           Nothing here yet — add some transactions to see your trends
         </p>
       ) : (
-        <div className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+        <div className="h-[300px] min-h-[300px] min-w-[100px]">
+          {mounted ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-brand-border)" />
               <XAxis
                 dataKey="month"
@@ -51,7 +62,8 @@ export function MonthlyChart({ data, currency }: MonthlyChartProps) {
               <Bar dataKey="expenses" fill="var(--color-brand-red)" radius={[4, 4, 0, 0]} name="Money out" />
               <Bar dataKey="savings" fill="var(--color-brand-gold)" radius={[4, 4, 0, 0]} name="Saved" />
             </BarChart>
-          </ResponsiveContainer>
+            </ResponsiveContainer>
+          ) : null}
         </div>
       )}
     </div>

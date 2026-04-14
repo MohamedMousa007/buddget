@@ -29,7 +29,10 @@ export async function GET() {
 
   if (error) {
     // Table may not exist yet (migration pending); avoid 500 spam in the client.
-    console.error('[notifications GET]', error.message)
+    const msg = error.message ?? ''
+    if (!msg.includes('does not exist') && !msg.includes('schema cache')) {
+      console.warn('[notifications GET]', msg)
+    }
     return NextResponse.json({ notifications: [], unreadCount: 0 })
   }
 
