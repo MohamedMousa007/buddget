@@ -20,9 +20,29 @@ function defaultPmId(pms: { id: string; isDefault: boolean }[]): string {
   return pms.find((m) => m.isDefault)?.id || pms[0]?.id || ''
 }
 
+/** Picks a calendar date on `billingDay` in the current or previous month (when that day has not occurred yet this month). */
+function computeStartDateFromBillingDay(billingDay: number): string {
+  const today = new Date()
+  const day = Math.min(31, Math.max(1, billingDay))
+  const domToday = today.getDate()
+  let y = today.getFullYear()
+  let m = today.getMonth()
+  if (domToday < day) {
+    m -= 1
+    if (m < 0) {
+      m = 11
+      y -= 1
+    }
+  }
+  const lastDayOfMonth = new Date(y, m + 1, 0).getDate()
+  const dom = Math.min(day, lastDayOfMonth)
+  return format(new Date(y, m, dom), 'yyyy-MM-dd')
+}
+
 /**
  * Add flow: catalog (always for new subs) → configure. Regional catalog prices apply when profile
  * maps to UAE/Egypt; otherwise the user enters amount manually. Edit opens configure directly.
+ * `startDate` on save is derived from `billingDay` (see `computeStartDateFromBillingDay`).
  */
 export function useAddSubscriptionForm(editing: Subscription | null, onClose: () => void) {
   const { profile, settings, exchangeRates, paymentMethods, addSubscription, updateSubscription } =
@@ -56,14 +76,21 @@ export function useAddSubscriptionForm(editing: Subscription | null, onClose: ()
   const [billingCycle, setBillingCycle] = useState<SubscriptionBillingCycle>(
     () => editing?.billingCycle ?? 'monthly'
   )
-  const [billingDay, setBillingDay] = useState(() => editing?.billingDay ?? new Date().getDate())
-  const [startDate, setStartDate] = useState(() => editing?.startDate ?? format(new Date(), 'yyyy-MM-dd'))
+  const [billingDay, setBillingDay] = useState(() => {
+    const d = editing?.billingDay ?? new Date().getDate()
+    return Math.min(31, Math.max(1, d))
+  })
   const [paymentMethodId, setPaymentMethodId] = useState(() =>
     editing?.paymentMethodId ?? defaultPmId(paymentMethods)
   )
   const [expenseCategory, setExpenseCategory] = useState(() => editing?.expenseCategory ?? 'Enjoyment')
   const [notes, setNotes] = useState(() => editing?.notes ?? '')
   const [planIndex, setPlanIndex] = useState(0)
+
+  const canSubmit = useMemo(() => {
+    const amount = Number.parseFloat(amountStr.replace(',', '.'))
+    return name.trim().length > 0 && !Number.isNaN(amount) && amount > 0
+  }, [name, amountStr])
 
   const availableBrands = useMemo(() => {
     const visible = filterVisibleBrands(SUBSCRIPTION_CATALOG, region)
@@ -139,6 +166,7 @@ export function useAddSubscriptionForm(editing: Subscription | null, onClose: ()
     if (!name.trim() || Number.isNaN(amount) || amount <= 0) return
     const cur = clampFiatToAllowed(settings, currency)
     const brandKey = customMode || pickedBrand === 'custom' || !pickedBrand ? null : pickedBrand.key
+    const startDate = computeStartDateFromBillingDay(billingDay)
     const payload: Omit<Subscription, 'id' | 'createdAt' | 'cancelledAt' | 'linkedRecurringExpenseId'> = {
       name: name.trim(),
       brandKey,
@@ -167,7 +195,6 @@ export function useAddSubscriptionForm(editing: Subscription | null, onClose: ()
     currency,
     billingCycle,
     billingDay,
-    startDate,
     paymentMethodId,
     expenseCategory,
     notes,
@@ -208,8 +235,6 @@ export function useAddSubscriptionForm(editing: Subscription | null, onClose: ()
     setBillingCycle,
     billingDay,
     setBillingDay,
-    startDate,
-    setStartDate,
     paymentMethodId,
     setPaymentMethodId,
     expenseCategory,
@@ -221,6 +246,7 @@ export function useAddSubscriptionForm(editing: Subscription | null, onClose: ()
     plansForPicker,
     paymentMethods,
     submit,
+    canSubmit,
     isEdit: !!editing,
   }
 }
