@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { CARTOON_AVATAR_PRESETS, cartoonAvatarUrlForPreset } from '@/lib/onboarding/cartoonAvatars'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
+import { isValidImageDataUrl } from '@/lib/profile/validImageDataUrl'
 import { cn } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
 import type { FinanceStore } from '@/lib/store/types'
@@ -37,15 +38,24 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
     }
     const reader = new FileReader()
     reader.onload = () => {
-      if (typeof reader.result === 'string') setUploadPreview(reader.result)
+      if (typeof reader.result !== 'string') return
+      if (!isValidImageDataUrl(reader.result)) {
+        window.alert(t.profile.avatarInvalidFormat)
+        return
+      }
+      setUploadPreview(reader.result)
     }
     reader.readAsDataURL(file)
-  }, [t.profile.avatarTooLarge])
+  }, [t.profile.avatarTooLarge, t.profile.avatarInvalidFormat])
 
   const handleSave = () => {
     if (tab === 'choose' && selectedPreset) {
       store.updateProfile({ avatarPresetId: selectedPreset, avatar: undefined })
     } else if (tab === 'upload' && uploadPreview) {
+      if (!isValidImageDataUrl(uploadPreview)) {
+        window.alert(t.profile.avatarInvalidFormat)
+        return
+      }
       store.updateProfile({ avatar: uploadPreview, avatarPresetId: undefined })
     } else if (tab === 'remove') {
       store.updateProfile({ avatar: undefined, avatarPresetId: undefined })

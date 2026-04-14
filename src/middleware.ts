@@ -2,6 +2,21 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import type { SupabaseCookieToSet } from '@/lib/supabase/cookieTypes'
 
+/** Simple in-process limiter for unauthenticated public FX/gold routes (best-effort per isolate). */
+const PUBLIC_API_WINDOW_MS = 60_000
+const PUBLIC_API_MAX = 120
+const publicApiHits = new Map<string, number[]>()
+
+function publicApiRateLimitOk(ip: string): boolean {
+  const now = Date.now()
+  const windowStart = now - PUBLIC_API_WINDOW_MS
+  const prev = publicApiHits.get(ip) ?? []
+  const recent = prev.filter((t) => t > windowStart)
+  recent.push(now)
+  publicApiHits.set(ip, recent)
+  return recent.length <= PUBLIC_API_MAX
+}
+
 const AUTH_CALLBACK = '/auth/callback'
 const ONBOARDING_PATH = '/onboarding'
 
@@ -13,6 +28,19 @@ function isSupabaseConfigured(): boolean {
 }
 
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
+
+  if (pathname.startsWith('/api/gold') || pathname.startsWith('/api/rates')) {
+    const forwarded = request.headers.get('x-forwarded-for')
+    const ip =
+      forwarded?.split(',')[0]?.trim() ||
+      request.headers.get('x-real-ip')?.trim() ||
+      'unknown'
+    if (!publicApiRateLimitOk(ip)) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+    }
+  }
+
   if (!isSupabaseConfigured()) {
     return NextResponse.next()
   }
@@ -41,8 +69,6 @@ export async function middleware(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  const pathname = request.nextUrl.pathname
 
   if (pathname.startsWith('/api')) {
     return supabaseResponse

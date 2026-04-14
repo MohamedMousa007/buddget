@@ -52,11 +52,18 @@ export async function generateWithFallback(
   return last as Response
 }
 
+/** Shown when Gemini is not configured server-side (503 from `/api/ai`). */
+export const AI_UNAVAILABLE_MANUAL_SETUP_MESSAGE =
+  'Buddgy AI is currently unavailable. You can still set up your budget manually using the category editor above.'
+
 /** Maps failed proxy responses to a single Error for callers (Gemini vs Buddget throttle). */
 export async function throwIfAiProxyNotOk(response: Response): Promise<void> {
   if (response.ok) return
   const errorData = (await response.json().catch(() => null)) as { error?: string } | null
   const raw = errorData?.error || `Oops, something didn't go as planned (${response.status})`
+  if (response.status === 503) {
+    throw new Error(AI_UNAVAILABLE_MANUAL_SETUP_MESSAGE)
+  }
   if (response.status === 429) {
     if (isBuddgetServerThrottleMessage(raw)) {
       throw new Error(SYSTEM_RESTING_MESSAGE)

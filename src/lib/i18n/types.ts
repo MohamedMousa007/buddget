@@ -97,6 +97,10 @@ export interface Dictionary {
     statusWithinBudget: string
     remainingSuffix: string
     overBudgetSuffix: string
+    noBudgetRingLabel: string
+    noBudgetHint: string
+    spentLabel: string
+    monthEnded: string
     categoryTitle: string
     categoryBreakdownTabsAria: string
     categoryTabExpenses: string
@@ -636,6 +640,8 @@ export interface Dictionary {
     placeholderCountrySelect: string
     labelCity: string
     placeholderCity: string
+    /** Friendly copy when a read-only field has no value (e.g. country / city). */
+    readOnlyFieldEmptyHint: string
     emptyField: string
     displayNameFallback: string
     discard: string
@@ -679,6 +685,7 @@ export interface Dictionary {
     avatarRemoveDesc: string
     avatarUseThis: string
     avatarTooLarge: string
+    avatarInvalidFormat: string
 
     onboardingTitle: string
     onboardingDoneBody: string

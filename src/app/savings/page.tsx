@@ -26,9 +26,6 @@ import { convertCurrency } from '@/lib/utils/currency'
 const headerWithdrawClass =
   'inline-flex items-center gap-1.5 rounded-xl bg-[#E50914] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)] transition-colors'
 
-const outlineBtnClass =
-  'inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-4 py-2 text-sm font-medium text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-border)]/30 transition-colors'
-
 /**
  * Savings buckets, transfer sheets, and ledger history (not expenses).
  */
@@ -178,11 +175,13 @@ export default function SavingsPage() {
       </PageHeader>
 
       <div className="px-4 py-6 lg:px-8 max-w-3xl mx-auto space-y-6">
-        <div className="flex flex-wrap justify-end gap-2">
-          <button type="button" onClick={() => guard(() => setNewAccountOpen(true))} className={outlineBtnClass}>
-            + {t.savings.addAccount}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => guard(() => setNewAccountOpen(true))}
+          className="w-full py-3 rounded-xl border-2 border-dashed border-[var(--color-brand-border)] text-sm font-medium text-[var(--color-brand-text-secondary)] hover:border-[var(--color-brand-red)] hover:text-[var(--color-brand-red)] transition-colors"
+        >
+          + {t.savings.addAccount}
+        </button>
 
         <section className="rounded-2xl border border-[var(--color-brand-border)]/80 bg-[var(--color-brand-elevated)]/40 p-4 space-y-2 text-xs">
           <p className="font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">

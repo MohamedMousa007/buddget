@@ -5,6 +5,7 @@ import { formatCurrency, formatPercent } from '@/lib/utils/formatters'
 import { convertCurrency } from '@/lib/utils/currency'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
+import { BudgetRingNoBudget } from '@/components/dashboard/BudgetRingNoBudget'
 import type { PaceStatus, OverspentCategory } from '@/lib/utils/spendingPace'
 
 interface BudgetRingProps {
@@ -48,6 +49,22 @@ export function BudgetRing({
   const t = useT()
   const { settings, exchangeRates } = useFinanceStore()
   const secondary = settings.showSecondaryCurrency ? settings.secondaryCurrency : null
+
+  const noBudgetSet = percent < 0
+
+  if (noBudgetSet) {
+    return (
+      <BudgetRingNoBudget
+        remaining={remaining}
+        currency={currency}
+        daysLeft={daysLeft}
+        dailyRate={dailyRate}
+        projectedSpend={projectedSpend}
+        paceStatus={paceStatus}
+        incomeBlockedNote={incomeBlockedNote}
+      />
+    )
+  }
 
   const clampedPercent = Math.min(percent, 150)
   const radius = 80
@@ -145,7 +162,7 @@ export function BudgetRing({
           {percent <= 100 && '●'} {statusText}
         </p>
         <p className="text-xs text-[var(--color-brand-text-muted)]">
-          {t.common.daysLeft(daysLeft)}
+          {daysLeft > 0 ? t.common.daysLeft(daysLeft) : t.dashboard.monthEnded}
         </p>
       </div>
 

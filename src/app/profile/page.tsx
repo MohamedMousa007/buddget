@@ -125,8 +125,13 @@ export default function ProfilePage() {
                   <ProfileFieldRow
                     label={t.profile.labelCountry}
                     value={getProfileCountryDisplayLabel(p.store.profile.country, p.locale)}
+                    emptyHint={t.profile.readOnlyFieldEmptyHint}
                   />
-                  <ProfileFieldRow label={t.profile.labelCity} value={p.store.profile.city || ''} />
+                  <ProfileFieldRow
+                    label={t.profile.labelCity}
+                    value={p.store.profile.city || ''}
+                    emptyHint={t.profile.readOnlyFieldEmptyHint}
+                  />
                 </>
               )}
             </div>

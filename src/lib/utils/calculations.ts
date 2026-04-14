@@ -321,8 +321,14 @@ export function totalDebtRemainingInBase(
   return total
 }
 
+/**
+ * When `totalBudget` is 0 but there is spending, returns **-1** so the UI can show
+ * a “no budget set” state instead of contradictory 0% vs over-budget copy.
+ */
 export function calculateBudgetUsedPercent(totalSpent: number, totalBudget: number): number {
-  if (totalBudget === 0) return 0
+  if (totalBudget === 0) {
+    return totalSpent > 0 ? -1 : 0
+  }
   return (totalSpent / totalBudget) * 100
 }
 

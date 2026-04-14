@@ -10,7 +10,7 @@ export interface AdminConfig {
   ai: {
     enabled: boolean
     model: string
-    keyPreview: string | null
+    keyPresent: boolean
     runtime: {
       stored: AiRuntimeSlice
       effective: AiRuntimeSlice
