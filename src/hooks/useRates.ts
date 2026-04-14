@@ -17,6 +17,16 @@ export function useRates() {
       if (data.rates && typeof data.rates === 'object') {
         updateRates(data.rates as Record<string, number>)
       }
+      if (
+        data.gold &&
+        typeof data.gold === 'object' &&
+        typeof data.gold.pricePerGramUsd === 'number' &&
+        data.gold.pricePerGramUsd > 0
+      ) {
+        const usdToAed = (data.rates?.['USD_AED'] as number) ?? 3.6725
+        const aedPerGram = data.gold.pricePerGramUsd * usdToAed
+        useFinanceStore.getState().updateGoldPrice(aedPerGram)
+      }
     } catch (err) {
       console.warn('Failed to fetch exchange rates, using cached values', err)
     }

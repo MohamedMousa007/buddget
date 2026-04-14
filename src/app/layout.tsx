@@ -6,6 +6,9 @@ import { AuthProvider } from '@/components/auth/AuthProvider'
 import { LocaleProvider } from '@/lib/i18n'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { UpdateToast } from '@/components/ui/UpdateToast'
+import { OfflineBanner } from '@/components/ui/OfflineBanner'
+import { ActionToastProvider } from '@/components/ui/ActionToast'
+import { MotionConfigRoot } from '@/components/layout/MotionConfigRoot'
 import { THEME_INIT_SCRIPT } from '@/lib/theme/applyTheme'
 
 const dmSans = DM_Sans({
@@ -142,8 +145,13 @@ export default function RootLayout({
         <TooltipProvider>
           <LocaleProvider>
             <AuthProvider>
-              <AppShell>{children}</AppShell>
-              <UpdateToast />
+              <ActionToastProvider>
+                <MotionConfigRoot>
+                  <AppShell>{children}</AppShell>
+                  <UpdateToast />
+                  <OfflineBanner />
+                </MotionConfigRoot>
+              </ActionToastProvider>
             </AuthProvider>
           </LocaleProvider>
         </TooltipProvider>

@@ -1,11 +1,38 @@
 import { NextResponse } from 'next/server'
 
 // Currencies relevant to our target markets: UAE, Egypt, GCC, global
-const CURRENCIES = 'AED,EGP,EUR,GBP,SAR,KWD,QAR,BHD,OMR,MAD,TND,JOD'
+const CURRENCIES = 'AED,EGP,EUR,GBP,SAR,KWD,QAR,BHD,OMR,MAD,TND,JOD,XAU'
 
 interface RateSource {
   name: string
   fetch: () => Promise<Record<string, number> | null>
+}
+
+/** Frankfurter v2 returns `[{ quote, rate }, ...]` (or legacy `{ rates: { … } }`). */
+function parseFrankfurterV2Rates(data: unknown): Record<string, number> | null {
+  if (Array.isArray(data)) {
+    const rates: Record<string, number> = {}
+    for (const row of data) {
+      if (
+        row &&
+        typeof row === 'object' &&
+        'quote' in row &&
+        'rate' in row &&
+        typeof (row as { quote: unknown }).quote === 'string' &&
+        typeof (row as { rate: unknown }).rate === 'number'
+      ) {
+        const q = (row as { quote: string; rate: number }).quote
+        rates[q] = (row as { rate: number }).rate
+      }
+    }
+    return Object.keys(rates).length ? rates : null
+  }
+  if (data && typeof data === 'object') {
+    const o = data as { data?: { rates?: Record<string, number> }; rates?: Record<string, number> }
+    const r = o.data?.rates ?? o.rates
+    return r && Object.keys(r).length ? r : null
+  }
+  return null
 }
 
 const sources: RateSource[] = [
@@ -32,7 +59,7 @@ const sources: RateSource[] = [
       )
       if (!res.ok) return null
       const data = await res.json()
-      return (data.data?.rates ?? data.rates ?? null) as Record<string, number> | null
+      return parseFrankfurterV2Rates(data)
     },
   },
   {
@@ -74,6 +101,25 @@ export async function GET() {
       )
     }
 
+    // XAU is only on Frankfurter — merge if primary FX source omitted it
+    if (!rawRates['XAU'] || rawRates['XAU'] <= 0) {
+      try {
+        const xauRes = await fetch(
+          'https://api.frankfurter.dev/v2/rates?base=USD&quotes=XAU',
+          { signal: AbortSignal.timeout(8000) }
+        )
+        if (xauRes.ok) {
+          const xauParsed = parseFrankfurterV2Rates(await xauRes.json())
+          const xau = xauParsed?.['XAU']
+          if (xau && xau > 0) {
+            rawRates = { ...rawRates, XAU: xau }
+          }
+        }
+      } catch {
+        /* keep rates without XAU */
+      }
+    }
+
     // Build comprehensive cross-rate map
     const rates: Record<string, number> = {}
     const allCurrencies = CURRENCIES.split(',')
@@ -99,9 +145,21 @@ export async function GET() {
       }
     }
 
+    let goldFromRates: { pricePerOunceUsd: number; pricePerGramUsd: number } | null = null
+    if (rawRates['XAU'] && rawRates['XAU'] > 0) {
+      const perOunce = 1 / rawRates['XAU']
+      if (perOunce > 500 && perOunce < 50000) {
+        goldFromRates = {
+          pricePerOunceUsd: perOunce,
+          pricePerGramUsd: perOunce / 31.1035,
+        }
+      }
+    }
+
     return NextResponse.json(
       {
         rates,
+        gold: goldFromRates,
         base: 'USD',
         provider: providerUsed,
         date: new Date().toISOString().split('T')[0],

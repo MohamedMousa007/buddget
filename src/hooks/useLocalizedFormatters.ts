@@ -8,7 +8,7 @@ import { useLocale, useT } from '@/lib/i18n'
 
 /**
  * Date/time helpers that follow the active app locale (EN / AR) for copy and month names.
- * Amounts stay Western-numeral via `formatCurrency` in `@/lib/utils/formatters`.
+ * Amounts: `formatCurrency` uses `en-US` or `ar-EG` numerals from active settings language.
  */
 export function useLocalizedFormatters() {
   const { locale } = useLocale()

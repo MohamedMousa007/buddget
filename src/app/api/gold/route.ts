@@ -9,6 +9,39 @@ interface GoldProvider {
 
 const providers: GoldProvider[] = [
   {
+    name: 'frankfurter.dev',
+    fetch: async () => {
+      const res = await fetch('https://api.frankfurter.dev/v2/rates?base=USD&quotes=XAU', {
+        signal: AbortSignal.timeout(8000),
+      })
+      if (!res.ok) throw new Error(`frankfurter.dev ${res.status}`)
+      const data = await res.json()
+      let xauRate: number | undefined
+      if (Array.isArray(data)) {
+        const row = data.find((r: { quote?: string; rate?: number }) => r.quote === 'XAU')
+        xauRate = row?.rate
+      } else {
+        const o = data as { data?: { rates?: { XAU?: number } }; rates?: { XAU?: number } }
+        xauRate = o.data?.rates?.XAU ?? o.rates?.XAU
+      }
+      if (!xauRate || xauRate <= 0) throw new Error('No XAU in response')
+      return 1 / xauRate
+    },
+  },
+  {
+    name: 'frankfurter.dev-pair',
+    fetch: async () => {
+      const res = await fetch('https://api.frankfurter.dev/v2/rate/USD/XAU', {
+        signal: AbortSignal.timeout(8000),
+      })
+      if (!res.ok) throw new Error(`frankfurter.dev-pair ${res.status}`)
+      const data = await res.json()
+      const rate = data.data?.rate ?? data.rate
+      if (!rate || rate <= 0) throw new Error('No rate')
+      return 1 / rate
+    },
+  },
+  {
     name: 'metals.live',
     fetch: async () => {
       const res = await fetch('https://metals.live/api/spot', {
@@ -29,10 +62,8 @@ const providers: GoldProvider[] = [
       })
       if (!res.ok) throw new Error(`api.metals.live ${res.status}`)
       const data = await res.json()
-      if (Array.isArray(data) && data.length > 0 && data[0].price) {
-        return data[0].price
-      }
-      throw new Error('No price in response')
+      if (Array.isArray(data) && data.length > 0 && data[0].price) return data[0].price
+      throw new Error('No price')
     },
   },
   {
@@ -44,22 +75,26 @@ const providers: GoldProvider[] = [
       if (!res.ok) throw new Error(`gold-api.com ${res.status}`)
       const data = await res.json()
       if (data.price) return data.price
-      throw new Error('No price in response')
+      throw new Error('No price')
     },
   },
 ]
 
 async function fetchGoldPriceUSD(): Promise<{ price: number; provider: string } | null> {
+  const errors: string[] = []
   for (const provider of providers) {
     try {
       const price = await provider.fetch()
       if (price > 500 && price < 50000) {
         return { price, provider: provider.name }
       }
-    } catch {
+      errors.push(`${provider.name}: price ${price} out of range`)
+    } catch (e) {
+      errors.push(`${provider.name}: ${e instanceof Error ? e.message : 'unknown'}`)
       continue
     }
   }
+  console.warn('[gold] All 5 providers failed:', errors.join(' | '))
   return null
 }
 
@@ -91,7 +126,7 @@ async function fetchUsdToAed(): Promise<number> {
       continue
     }
   }
-  return 3.6725 // AED is pegged to USD — this fallback is always accurate
+  return 3.6725
 }
 
 export async function GET() {
@@ -100,7 +135,6 @@ export async function GET() {
     fetchUsdToAed(),
   ])
 
-  // If NO provider returned a price, return unavailable — NOT a fake price
   if (!goldResult) {
     return NextResponse.json(
       {
@@ -108,7 +142,7 @@ export async function GET() {
         available: false,
       },
       {
-        status: 200, // 200 not 500 — this is a handled state, not a crash
+        status: 200,
         headers: {
           'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
         },

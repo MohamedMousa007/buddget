@@ -1,5 +1,14 @@
 import { format, formatDistanceToNow, isToday, isYesterday, parseISO } from 'date-fns'
 import type { Currency } from '@/lib/store/types'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+
+function numberLocale(): string {
+  try {
+    return useFinanceStore.getState().settings.language === 'ar' ? 'ar-EG' : 'en-US'
+  } catch {
+    return 'en-US'
+  }
+}
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   AED: 'AED',
@@ -21,9 +30,10 @@ export function formatCurrency(amount: number, currency: Currency | string, show
   }
 
   const symbol = CURRENCY_SYMBOLS[currency] || currency
+  const loc = numberLocale()
   const formatted = showCents
-    ? amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    : amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+    ? amount.toLocaleString(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : amount.toLocaleString(loc, { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 
   if (['$', '€', '£'].includes(symbol)) {
     return `${symbol}${formatted}`

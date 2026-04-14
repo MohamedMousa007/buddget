@@ -39,6 +39,9 @@ export function SettingsDataManagementSection({
       <p className="text-xs text-[var(--color-brand-text-muted)] rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/40 px-3 py-2.5">
         {t.settings.dataIntro}
       </p>
+      <p className="text-xs text-[var(--color-brand-amber)]/95 rounded-xl border border-[var(--color-brand-amber)]/35 bg-[var(--color-brand-amber)]/10 px-3 py-2.5">
+        {t.settings.dataDeviceOnlyNote}
+      </p>
 
       <div className="flex flex-wrap gap-3">
         <button

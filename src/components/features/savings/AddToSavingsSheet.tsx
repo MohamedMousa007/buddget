@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import type { Currency, SavingsAccount } from '@/lib/store/types'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
+import { useActionToast } from '@/components/ui/ActionToast'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { nextRecurringSavingsDueDate } from '@/lib/savings/recurringSavingsDates'
 import { cn } from '@/lib/utils'
@@ -38,6 +39,7 @@ export function AddToSavingsSheet({
   defaultAccountId,
   onDeposit,
 }: AddToSavingsSheetProps) {
+  const showToast = useActionToast()
   const t = useT()
   const addRecurringSavingsDeposit = useFinanceStore((s) => s.addRecurringSavingsDeposit)
   const [accountId, setAccountId] = useState(defaultAccountId ?? accounts[0]?.id ?? '')
@@ -65,6 +67,7 @@ export function AddToSavingsSheet({
         notes: notes.trim() || undefined,
       })
     }
+    showToast(t.common.toastSavingsDeposited)
     onClose()
   }
 

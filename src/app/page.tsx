@@ -1,5 +1,6 @@
 'use client'
 
+import { DashboardSearchParamsSync } from '@/components/dashboard/DashboardSearchParamsSync'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useNetWorth } from '@/hooks/useNetWorth'
 import { KPICard } from '@/components/dashboard/KPICard'
@@ -21,6 +22,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen">
+      <DashboardSearchParamsSync />
       <div className="px-4 pt-8 pb-6 lg:pt-6 lg:px-8 space-y-6 max-w-5xl mx-auto">
         {/* KPI Strip */}
         <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-1">

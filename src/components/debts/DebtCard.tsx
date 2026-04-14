@@ -10,6 +10,7 @@ import {
   isDebtFullyPaid,
 } from '@/lib/utils/calculations'
 import { convertCurrency } from '@/lib/utils/currency'
+import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { MoneyDisplay } from '@/components/ui/MoneyDisplay'
 import type { Debt, DebtPayment } from '@/lib/store/types'
@@ -26,7 +27,14 @@ interface DebtCardProps {
 export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardProps) {
   const t = useT()
   const clearDebt = useFinanceStore((s) => s.clearDebt)
-  const { settings, exchangeRates, goldPricePerGram, goldPriceAvailable } = useFinanceStore()
+  const { settings, exchangeRates, goldPricePerGram, goldPriceAvailable } = useFinanceStore(
+    useShallow((s) => ({
+      settings: s.settings,
+      exchangeRates: s.exchangeRates,
+      goldPricePerGram: s.goldPricePerGram,
+      goldPriceAvailable: s.goldPriceAvailable,
+    }))
+  )
   const base = settings.baseCurrency
 
   const [celebrating, setCelebrating] = useState(false)
@@ -111,6 +119,7 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
           animate={{ opacity: 1 }}
           className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-2xl bg-[var(--color-brand-card)]/95 backdrop-blur-sm px-4"
           onClick={dismissCelebration}
+          aria-label={t.common.close}
         >
           <motion.div
             initial={{ scale: 0.6 }}
@@ -156,11 +165,12 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
           )}
         </div>
         <button
+          type="button"
           onClick={onEdit}
           className="p-1.5 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors shrink-0"
-          title="Edit debt"
+          aria-label={t.common.edit}
         >
-          <Pencil className="w-3.5 h-3.5 text-[var(--color-brand-text-muted)]" />
+          <Pencil className="w-3.5 h-3.5 text-[var(--color-brand-text-muted)]" aria-hidden />
         </button>
       </div>
 
