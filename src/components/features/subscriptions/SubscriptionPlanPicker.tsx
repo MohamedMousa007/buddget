@@ -22,7 +22,7 @@ function cycleSuffix(
 }
 
 /**
- * Horizontal pricing cards for regional plans; accent uses `brandColor` when selected.
+ * Horizontal pricing cards for regional plans; selected state uses brand color (border + tint).
  */
 export function SubscriptionPlanPicker({
   plans,
@@ -42,8 +42,13 @@ export function SubscriptionPlanPicker({
   if (plans.length === 0) return null
 
   return (
-    <div className="-mx-1 overflow-x-auto pb-1">
-      <div className="flex gap-3 min-w-min sm:flex-wrap sm:overflow-visible">
+    <div className="-mx-1 overflow-x-auto overflow-y-visible pb-1 [scrollbar-width:thin]">
+      <div
+        className={cn(
+          'flex min-w-min gap-3 px-1',
+          'snap-x snap-mandatory sm:flex-wrap sm:overflow-visible sm:snap-none'
+        )}
+      >
         {plans.map((pl, i) => {
           const selected = i === selectedIndex
           const suffix = cycleSuffix(pl.cycle, cycleLabels)
@@ -53,29 +58,34 @@ export function SubscriptionPlanPicker({
               type="button"
               onClick={() => onSelect(i)}
               className={cn(
-                'shrink-0 w-[8.5rem] sm:w-[9.25rem] rounded-xl border border-solid text-left transition-colors',
-                'px-3 py-3 flex flex-col gap-1',
-                selected ? 'shadow-sm' : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] hover:bg-[var(--color-brand-card)]'
+                'snap-start shrink-0 rounded-xl border border-solid text-left transition-colors',
+                'flex min-h-[7.5rem] w-[9rem] flex-col justify-between sm:w-[9.25rem]',
+                'px-3 py-3',
+                selected
+                  ? 'shadow-sm'
+                  : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] hover:bg-[var(--color-brand-card)]'
               )}
               style={
                 selected
                   ? {
                       borderColor: brandColor,
-                      backgroundColor: `${brandColor}18`,
-                      boxShadow: `inset 0 3px 0 0 ${brandColor}`,
+                      backgroundColor: `${brandColor}1A`,
+                      boxShadow: `inset 0 3px 0 0 ${brandColor}, inset 4px 0 0 0 ${brandColor}`,
                     }
                   : undefined
               }
             >
-              <span className="text-sm font-semibold text-[var(--color-brand-text-primary)] leading-tight line-clamp-2">
+              <span className="text-[15px] font-semibold leading-tight text-[var(--color-brand-text-primary)] line-clamp-2">
                 {pl.name}
               </span>
-              <span className="text-lg font-mono-numbers font-semibold text-[var(--color-brand-text-primary)] tabular-nums">
-                {formatCurrency(pl.amount, currency)}
-                <span className="text-xs font-normal text-[var(--color-brand-text-muted)] ms-0.5">{suffix}</span>
-              </span>
+              <div className="mt-2">
+                <span className="font-mono-numbers text-xl font-semibold tabular-nums text-[var(--color-brand-text-primary)]">
+                  {formatCurrency(pl.amount, currency)}
+                </span>
+                <span className="ms-0.5 text-xs font-normal text-[var(--color-brand-text-muted)]">{suffix}</span>
+              </div>
               {pl.description ? (
-                <span className="text-[10px] leading-snug text-[var(--color-brand-text-secondary)] line-clamp-2">
+                <span className="mt-2 text-[10px] leading-snug text-[var(--color-brand-text-secondary)] line-clamp-2">
                   {pl.description}
                 </span>
               ) : null}

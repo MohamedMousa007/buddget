@@ -94,6 +94,8 @@ export function SubscriptionCatalogGrid({
       .filter((b): b is SubscriptionBrand => Boolean(b))
   }, [brands])
 
+  const popularKeySet = useMemo(() => new Set(popular.map((b) => b.key)), [popular])
+
   const bySection = useMemo(() => {
     const m = new Map<CatalogSectionKey, SubscriptionBrand[]>()
     for (const id of CATALOG_SECTION_ORDER) {
@@ -150,7 +152,7 @@ export function SubscriptionCatalogGrid({
       ) : null}
 
       {CATALOG_SECTION_ORDER.map((sec) => {
-        const list = bySection.get(sec) ?? []
+        const list = (bySection.get(sec) ?? []).filter((b) => !popularKeySet.has(b.key))
         if (list.length === 0) return null
         return (
           <div key={sec}>

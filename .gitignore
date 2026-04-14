@@ -17,6 +17,8 @@
 /.next/
 /out/
 
+# Subscription catalog PNGs under public/subscription-icons/ are committed to the repo.
+
 # next-pwa build output (regenerated each build)
 public/sw.js
 public/sw.js.map
