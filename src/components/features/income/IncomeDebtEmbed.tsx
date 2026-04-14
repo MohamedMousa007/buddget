@@ -4,7 +4,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AddDebtDebtTypeSection } from '@/components/features/debts/AddDebtDebtTypeSection'
 import { DebtReceivedViaPills } from '@/components/features/debts/DebtReceivedViaPills'
-import type { DebtCurrency, DebtGoal, DebtKind, DebtReceivedVia, GoldKarat } from '@/lib/store/types'
+import type {
+  DebtCurrency,
+  DebtGoal,
+  DebtKind,
+  DebtReceivedVia,
+  GoldKarat,
+  InstallmentProvider,
+} from '@/lib/store/types'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
 
@@ -31,6 +38,11 @@ export type IncomeDebtEmbedProps = {
   setInstallmentFrequency: (v: 'weekly' | 'monthly' | 'quarterly' | 'annually') => void
   installmentStartDate: string
   setInstallmentStartDate: (v: string) => void
+  installmentProvider: InstallmentProvider
+  setInstallmentProvider: (k: InstallmentProvider) => void
+  linkedCreditCardDebtId: string
+  setLinkedCreditCardDebtId: (id: string) => void
+  creditCardDebts: { id: string; name: string }[]
   interestFree: boolean
   setInterestFree: (v: boolean) => void
   receivedVia: DebtReceivedVia
@@ -69,6 +81,11 @@ export function IncomeDebtEmbed({
   setInstallmentFrequency,
   installmentStartDate,
   setInstallmentStartDate,
+  installmentProvider,
+  setInstallmentProvider,
+  linkedCreditCardDebtId,
+  setLinkedCreditCardDebtId,
+  creditCardDebts,
   interestFree,
   setInterestFree,
   receivedVia,
@@ -104,6 +121,11 @@ export function IncomeDebtEmbed({
         setInstallmentFrequency={setInstallmentFrequency}
         installmentStartDate={installmentStartDate}
         setInstallmentStartDate={setInstallmentStartDate}
+        installmentProvider={installmentProvider}
+        setInstallmentProvider={setInstallmentProvider}
+        linkedCreditCardDebtId={linkedCreditCardDebtId}
+        setLinkedCreditCardDebtId={setLinkedCreditCardDebtId}
+        creditCardDebts={creditCardDebts}
         relationship={relationship}
         setRelationship={setRelationship}
         direction={direction}

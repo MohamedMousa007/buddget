@@ -9,6 +9,7 @@ import {
   BarChart3,
   SlidersHorizontal,
   HandCoins,
+  RefreshCw,
 } from 'lucide-react'
 
 export type BuddgetNavIcon = LucideIcon
@@ -31,6 +32,7 @@ export const BOTTOM_NAV_MORE_MENU: { href: string; label: string; icon: BuddgetN
   { href: '/budget-setup', label: 'budgetSetup', icon: SlidersHorizontal },
   { href: '/income', label: 'income', icon: Wallet },
   { href: '/savings', label: 'savings', icon: HandCoins },
+  { href: '/subscriptions', label: 'subscriptions', icon: RefreshCw },
   { href: '/reports', label: 'reports', icon: BarChart3 },
 ]
 

@@ -1,7 +1,13 @@
 import { addDays, format } from 'date-fns'
+import {
+  computeCreditCardOutstanding,
+  getNextCreditCardDueDate,
+  minimumPaymentAmount,
+} from '@/lib/debt/computeCreditCardBalance'
 import { showLocalNotification } from '@/lib/notifications/pushNotifications'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { isRecurringDebtDue } from '@/lib/utils/recurringDebtPayments'
+import { formatCurrency } from '@/lib/utils/formatters'
 
 const PUSH_KEY = 'buddget-recurring-push-sent'
 
@@ -39,7 +45,22 @@ export function pushRecurringDebtReminders(): void {
   void (async () => {
     const today = format(new Date(), 'yyyy-MM-dd')
     const tomorrow = format(addDays(new Date(), 1), 'yyyy-MM-dd')
-    const { recurringDebtPayments, debts } = useFinanceStore.getState()
+    const { recurringDebtPayments, debts, expenses, debtPayments, exchangeRates } = useFinanceStore.getState()
+
+    for (const d of debts) {
+      if (d.debtType !== 'credit_card' || !d.paymentDueDay) continue
+      const nextDue = getNextCreditCardDueDate(d, new Date())
+      if (!nextDue || nextDue !== tomorrow) continue
+      if (alreadySent(`cc:${d.id}:tom`, today)) continue
+      const pays = debtPayments.filter((p) => p.debtId === d.id)
+      const outstanding = computeCreditCardOutstanding(d, expenses, pays, exchangeRates)
+      const minPay = minimumPaymentAmount(outstanding, d.minimumPaymentPercent)
+      await showLocalNotification(
+        `💳 Credit card payment due tomorrow`,
+        `${d.name} — ${formatCurrency(outstanding, d.currency)} outstanding · Min: ${formatCurrency(minPay, d.currency)} · Full: ${formatCurrency(outstanding, d.currency)}`
+      )
+      markSent(`cc:${d.id}:tom`, today)
+    }
 
     for (const r of recurringDebtPayments) {
       if (!r.isActive) continue

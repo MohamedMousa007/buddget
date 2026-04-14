@@ -9,11 +9,12 @@ import type { Goal } from '@/lib/store/types'
 
 /** For debt_freedom goals: total remaining linked debt converted to the goal currency. */
 export function useDebtRemainingForGoal(goal: Goal): number | null {
-  const { debts, debtPayments, exchangeRates, goldPricePerGram, goldPriceAvailable, settings } =
+  const { debts, debtPayments, expenses, exchangeRates, goldPricePerGram, goldPriceAvailable, settings } =
     useFinanceStore(
       useShallow((s) => ({
         debts: s.debts,
         debtPayments: s.debtPayments,
+        expenses: s.expenses,
         exchangeRates: s.exchangeRates,
         goldPricePerGram: s.goldPricePerGram,
         goldPriceAvailable: s.goldPriceAvailable,
@@ -25,9 +26,10 @@ export function useDebtRemainingForGoal(goal: Goal): number | null {
     if (goal.category !== 'debt_freedom') return null
     const linked = debts.filter((d) => goal.linkedDebtIds.includes(d.id))
     if (linked.length === 0) return null
+    const balanceCtx = { expenses, exchangeRates, allDebts: debts }
     let sumBase = 0
     for (const d of linked) {
-      const rem = calculateDebtRemaining(d, debtPayments)
+      const rem = calculateDebtRemaining(d, debtPayments, balanceCtx)
       sumBase += calculateDebtRemainingInBaseCurrency(
         rem,
         d,
@@ -44,6 +46,7 @@ export function useDebtRemainingForGoal(goal: Goal): number | null {
     goal.linkedDebtIds,
     debts,
     debtPayments,
+    expenses,
     exchangeRates,
     goldPricePerGram,
     goldPriceAvailable,

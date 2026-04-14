@@ -8,6 +8,7 @@ import {
   convertPaymentToDebtUnit,
   computeDebtPaymentRecord,
   isDebtFullyPaid,
+  type DebtBalanceContext,
 } from '@/lib/utils/calculations'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { clampDebtFiatToAllowed, clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
@@ -20,6 +21,7 @@ import type {
   DebtReceivedVia,
   DebtRecurringFrequency,
   GoldKarat,
+  InstallmentProvider,
 } from '@/lib/store/types'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useT } from '@/lib/i18n'
@@ -43,10 +45,13 @@ export function useAddDebtSheet() {
   const store = useFinanceStore()
   const {
     addDebt,
+    addCreditCardDebt,
+    addDebtPayment,
     addDebtPaymentWithExpense,
     addRecurringDebtPayment,
     debts,
     debtPayments,
+    expenses,
     paymentMethods,
     settings,
     exchangeRates,
@@ -92,6 +97,14 @@ export function useAddDebtSheet() {
   const [goalRemindRecurring, setGoalRemindRecurring] = useState(false)
   const [goalSheetOpen, setGoalSheetOpen] = useState(false)
 
+  const [ccLast4, setCcLast4] = useState('')
+  const [ccCreditLimit, setCcCreditLimit] = useState('')
+  const [ccPaymentDueDay, setCcPaymentDueDay] = useState('15')
+  const [ccGraceDays, setCcGraceDays] = useState('55')
+  const [ccMinPercent, setCcMinPercent] = useState('5')
+  const [installmentProvider, setInstallmentProvider] = useState<InstallmentProvider>('other')
+  const [linkedCreditCardDebtId, setLinkedCreditCardDebtId] = useState('')
+
   const [selectedDebtId, setSelectedDebtId] = useState(debts[0]?.id || '')
   const [paymentAmount, setPaymentAmount] = useState('')
   const [paymentCurrency, setPaymentCurrency] = useState<string>(settings.baseCurrency)
@@ -105,12 +118,17 @@ export function useAddDebtSheet() {
   const [recurringFrequency, setRecurringFrequency] = useState<DebtRecurringFrequency>('monthly')
   const prevIsOpen = useRef(false)
 
+  const debtBalanceCtx: DebtBalanceContext | undefined = useMemo(
+    () => ({ expenses, exchangeRates, allDebts: debts }),
+    [expenses, exchangeRates, debts]
+  )
+
   const payableDebts = useMemo(
     () =>
       debts.filter(
-        (d) => isDebtListedAsActive(d) && !isDebtFullyPaid(d, debtPayments)
+        (d) => isDebtListedAsActive(d) && !isDebtFullyPaid(d, debtPayments, debtBalanceCtx)
       ),
-    [debts, debtPayments]
+    [debts, debtPayments, debtBalanceCtx]
   )
 
   const selectedDebt = debts.find((d) => d.id === selectedDebtId)
@@ -139,7 +157,31 @@ export function useAddDebtSheet() {
       setCurrency(settings.baseCurrency as DebtCurrency)
       /* eslint-enable react-hooks/set-state-in-effect */
     }
+    if (debtType === 'credit_card' && receivedVia === 'gold') {
+      setReceivedVia('cash')
+      setCurrency(settings.baseCurrency as DebtCurrency)
+    }
   }, [debtType, receivedVia, isOpen, settings.baseCurrency])
+
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- BNPL defaults when switching provider */
+    if (installmentProvider === 'tabby' || installmentProvider === 'tamara') {
+      setInstallmentCount('4')
+      setInstallmentFrequency('monthly')
+    }
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [installmentProvider])
+
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- default linked card when list loads */
+    if (debtType !== 'installment' || installmentProvider !== 'credit_card') return
+    const list = debts.filter((d) => d.debtType === 'credit_card')
+    if (list.length === 0) return
+    if (!linkedCreditCardDebtId || !list.some((d) => d.id === linkedCreditCardDebtId)) {
+      setLinkedCreditCardDebtId(list[0].id)
+    }
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [debtType, installmentProvider, debts, linkedCreditCardDebtId])
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- keep payment target on a payable debt while sheet open */
@@ -147,11 +189,21 @@ export function useAddDebtSheet() {
     if (mode !== 'payment' && !debtSheetPaymentOnly && !isPayDebtFlow) return
     if (payableDebts.length === 0) return
     const sel = debts.find((d) => d.id === selectedDebtId)
-    if (!sel || isDebtFullyPaid(sel, debtPayments)) {
+    if (!sel || isDebtFullyPaid(sel, debtPayments, debtBalanceCtx)) {
       setSelectedDebtId(payableDebts[0].id)
     }
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [isOpen, mode, debtSheetPaymentOnly, isPayDebtFlow, debts, debtPayments, payableDebts, selectedDebtId])
+  }, [
+    isOpen,
+    mode,
+    debtSheetPaymentOnly,
+    isPayDebtFlow,
+    debts,
+    debtPayments,
+    payableDebts,
+    selectedDebtId,
+    debtBalanceCtx,
+  ])
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- reset currency when sheet opens */
@@ -216,15 +268,30 @@ export function useAddDebtSheet() {
     setPaymentRateError('')
     setPaymentScheduleMode('one_time')
     setRecurringFrequency('monthly')
+    setCcLast4('')
+    setCcCreditLimit('')
+    setCcPaymentDueDay('15')
+    setCcGraceDays('55')
+    setCcMinPercent('5')
+    setInstallmentProvider('other')
+    setLinkedCreditCardDebtId('')
   }, [settings.baseCurrency])
 
   const canSubmitNewDebt = useMemo(() => {
+    if (debtType === 'credit_card') {
+      const out = parseFloat(startingBalance)
+      if (startingBalance === '' || Number.isNaN(out) || out < 0) return false
+      return !!name.trim()
+    }
     const total = parseFloat(startingBalance)
     if (!startingBalance || Number.isNaN(total) || total <= 0) return false
     if (debtType === 'personal') return !!(name.trim() && person.trim())
     if (debtType === 'installment') {
       const n = parseInt(installmentCount, 10)
-      return !!(installmentItemName.trim() && !Number.isNaN(n) && n > 0 && installmentStartDate)
+      const baseOk = !!(installmentItemName.trim() && !Number.isNaN(n) && n > 0 && installmentStartDate)
+      if (!baseOk) return false
+      if (installmentProvider === 'credit_card' && !linkedCreditCardDebtId) return false
+      return true
     }
     return !!(name.trim() && person.trim())
   }, [
@@ -232,6 +299,8 @@ export function useAddDebtSheet() {
     installmentCount,
     installmentItemName,
     installmentStartDate,
+    installmentProvider,
+    linkedCreditCardDebtId,
     name,
     person,
     startingBalance,
@@ -240,6 +309,30 @@ export function useAddDebtSheet() {
   const handleAddDebt = useCallback(() => {
     if (!canSubmitNewDebt) return
     const total = parseFloat(startingBalance)
+    if (debtType === 'credit_card') {
+      const out = Number.isNaN(total) ? 0 : Math.max(0, total)
+      addCreditCardDebt(
+        {
+          name: name.trim(),
+          person: '',
+          description: description || undefined,
+          startingBalance: out,
+          currency: clampDebtFiatToAllowed(settings, currency),
+          isGold: false,
+          notes: notes || undefined,
+          emoji: '💳',
+          creditLimit: ccCreditLimit.trim() ? parseFloat(ccCreditLimit) : undefined,
+          paymentDueDay: ccPaymentDueDay.trim() ? parseInt(ccPaymentDueDay, 10) : undefined,
+          gracePeriodDays: parseInt(ccGraceDays, 10) || 55,
+          minimumPaymentPercent: parseFloat(ccMinPercent) || 5,
+        },
+        { name: name.trim(), last4: ccLast4.trim() || undefined }
+      )
+      showToast(tI18n.common.toastDebtAdded)
+      resetForm()
+      closeSheet()
+      return
+    }
     const baseEmoji = isGold ? '🪙' : '💳'
     const payload: NewDebtPayload = {
       name: debtType === 'installment' ? installmentItemName.trim() : name.trim(),
@@ -274,6 +367,10 @@ export function useAddDebtSheet() {
       payload.startDate = installmentStartDate
       payload.interestFree = interestFree
       payload.installmentAmount = Math.round(per * 100) / 100
+      payload.installmentProvider = installmentProvider
+      if (installmentProvider === 'credit_card' && linkedCreditCardDebtId) {
+        payload.linkedCreditCardDebtId = linkedCreditCardDebtId
+      }
     }
     if (debtType === 'general') {
       payload.creditor = creditor.trim() || undefined
@@ -303,9 +400,15 @@ export function useAddDebtSheet() {
     resetForm()
     closeSheet()
   }, [
+    addCreditCardDebt,
     addDebt,
     addRecurringDebtPayment,
     canSubmitNewDebt,
+    ccCreditLimit,
+    ccGraceDays,
+    ccLast4,
+    ccMinPercent,
+    ccPaymentDueDay,
     closeSheet,
     creditor,
     currency,
@@ -317,9 +420,11 @@ export function useAddDebtSheet() {
     installmentCount,
     installmentFrequency,
     installmentItemName,
+    installmentProvider,
     installmentStartDate,
     interestFree,
     isGold,
+    linkedCreditCardDebtId,
     receivedVia,
     name,
     notes,
@@ -370,7 +475,8 @@ export function useAddDebtSheet() {
       settings.baseCurrency,
       exchangeRates,
       goldPricePerGram,
-      debtPayments
+      debtPayments,
+      debtBalanceCtx
     )
     if (!computed.ok) {
       setPaymentRateError(computed.error)
@@ -378,6 +484,22 @@ export function useAddDebtSheet() {
     }
     const { amountInDebtUnit, amountInBase, rateAtEntry } = computed
     const pmId = paymentMethodId || paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || ''
+    if (selectedDebt.debtType === 'credit_card') {
+      addDebtPayment({
+        debtId: selectedDebtId,
+        date: paymentDate,
+        amountPaid: amountInDebtUnit,
+        paymentCurrency: payCur,
+        originalAmount: amount,
+        amountInPrimary: amountInBase,
+        rateAtEntry,
+        notes: paymentNotes || undefined,
+      })
+      showToast(tI18n.common.toastDebtPaymentRecorded)
+      resetForm()
+      closeSheet()
+      return
+    }
     addDebtPaymentWithExpense(
       {
         debtId: selectedDebtId,
@@ -406,9 +528,11 @@ export function useAddDebtSheet() {
     resetForm()
     closeSheet()
   }, [
+    addDebtPayment,
     addDebtPaymentWithExpense,
     addRecurringDebtPayment,
     closeSheet,
+    debtBalanceCtx,
     debtPayments,
     exchangeRates,
     goldPricePerGram,
@@ -492,6 +616,8 @@ export function useAddDebtSheet() {
     return Math.round(per * 100) / 100
   }, [installmentCount, interestFree, startingBalance])
 
+  const creditCardDebts = useMemo(() => debts.filter((d) => d.debtType === 'credit_card'), [debts])
+
   return {
     isOpen,
     closeSheet,
@@ -526,6 +652,21 @@ export function useAddDebtSheet() {
     setDirection,
     creditor,
     setCreditor,
+    ccLast4,
+    setCcLast4,
+    ccCreditLimit,
+    setCcCreditLimit,
+    ccPaymentDueDay,
+    setCcPaymentDueDay,
+    ccGraceDays,
+    setCcGraceDays,
+    ccMinPercent,
+    setCcMinPercent,
+    creditCardDebts,
+    installmentProvider,
+    setInstallmentProvider,
+    linkedCreditCardDebtId,
+    setLinkedCreditCardDebtId,
     installmentItemName,
     setInstallmentItemName,
     installmentCount,

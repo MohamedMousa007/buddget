@@ -18,6 +18,7 @@ import type {
   GoldKarat,
   IncomeRecurringFrequency,
   IncomeSourceType,
+  InstallmentProvider,
 } from '@/lib/store/types'
 import { AddIncomeFormFields } from '@/components/modals/AddIncomeFormFields'
 import { IncomeDebtEmbed } from '@/components/features/income/IncomeDebtEmbed'
@@ -32,25 +33,31 @@ function canSubmitIncomeDebt(
   installmentItemName: string,
   installmentCount: string,
   installmentStartDate: string,
-  creditor: string
+  creditor: string,
+  installmentProvider: InstallmentProvider,
+  linkedCreditCardDebtId: string
 ): boolean {
   if (!name.trim() || amount <= 0) return false
   if (debtType === 'personal') return !!person.trim()
   if (debtType === 'installment') {
     const n = parseInt(installmentCount, 10)
-    return !!(installmentItemName.trim() && !Number.isNaN(n) && n > 0 && installmentStartDate)
+    const baseOk = !!(installmentItemName.trim() && !Number.isNaN(n) && n > 0 && installmentStartDate)
+    if (!baseOk) return false
+    if (installmentProvider === 'credit_card' && !linkedCreditCardDebtId.trim()) return false
+    return true
   }
   return !!(name.trim() && (person.trim() || creditor.trim()))
 }
 
 export function AddIncomeSheet() {
   const showToast = useActionToast()
-  const { addIncomeSource, addIncomeWithDebt, settings, paymentMethods } = useFinanceStore(
+  const { addIncomeSource, addIncomeWithDebt, settings, paymentMethods, debts } = useFinanceStore(
     useShallow((s) => ({
       addIncomeSource: s.addIncomeSource,
       addIncomeWithDebt: s.addIncomeWithDebt,
       settings: s.settings,
       paymentMethods: s.paymentMethods,
+      debts: s.debts,
     }))
   )
   const { activeModal, setActiveModal } = useSettingsStore()
@@ -88,8 +95,34 @@ export function AddIncomeSheet() {
   const [goldKarat, setGoldKarat] = useState<GoldKarat>(24)
   const [goalDraft, setGoalDraft] = useState<DebtGoal | null>(null)
   const [goalSheetOpen, setGoalSheetOpen] = useState(false)
+  const [installmentProvider, setInstallmentProvider] = useState<InstallmentProvider>('other')
+  const [linkedCreditCardDebtId, setLinkedCreditCardDebtId] = useState('')
 
   const prevIsOpen = useRef(false)
+
+  const creditCardDebts = useMemo(
+    () => debts.filter((d) => d.debtType === 'credit_card').map((d) => ({ id: d.id, name: d.name })),
+    [debts]
+  )
+
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- BNPL defaults when switching provider */
+    if (installmentProvider === 'tabby' || installmentProvider === 'tamara') {
+      setInstallmentCount('4')
+      setInstallmentFrequency('monthly')
+    }
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [installmentProvider])
+
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- default linked card when list loads */
+    if (debtType !== 'installment' || installmentProvider !== 'credit_card') return
+    if (creditCardDebts.length === 0) return
+    if (!linkedCreditCardDebtId || !creditCardDebts.some((d) => d.id === linkedCreditCardDebtId)) {
+      setLinkedCreditCardDebtId(creditCardDebts[0].id)
+    }
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [debtType, installmentProvider, creditCardDebts, linkedCreditCardDebtId])
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- sync default currency when sheet opens */
@@ -116,6 +149,8 @@ export function AddIncomeSheet() {
     setGoldKarat(24)
     setGoalDraft(null)
     setGoalSheetOpen(false)
+    setInstallmentProvider('other')
+    setLinkedCreditCardDebtId('')
   }, [])
 
   const resetForm = useCallback(() => {
@@ -179,7 +214,9 @@ export function AddIncomeSheet() {
           installmentItemName,
           installmentCount,
           installmentStartDate,
-          creditor
+          creditor,
+          installmentProvider,
+          linkedCreditCardDebtId
         )
       ) {
         return
@@ -201,6 +238,9 @@ export function AddIncomeSheet() {
         receivedVia: debtReceivedVia,
         goldKarat,
         goal: goalDraft,
+        installmentProvider,
+        linkedCreditCardDebtId:
+          installmentProvider === 'credit_card' ? linkedCreditCardDebtId : undefined,
       })
       addIncomeWithDebt(
         {
@@ -251,7 +291,9 @@ export function AddIncomeSheet() {
       installmentItemName,
       installmentCount,
       installmentStartDate,
-      creditor
+      creditor,
+      installmentProvider,
+      linkedCreditCardDebtId
     )
 
   const goalTitle =
@@ -292,6 +334,11 @@ export function AddIncomeSheet() {
         goalDraft={goalDraft}
         onOpenGoal={() => setGoalSheetOpen(true)}
         onClearGoal={() => setGoalDraft(null)}
+        installmentProvider={installmentProvider}
+        setInstallmentProvider={setInstallmentProvider}
+        linkedCreditCardDebtId={linkedCreditCardDebtId}
+        setLinkedCreditCardDebtId={setLinkedCreditCardDebtId}
+        creditCardDebts={creditCardDebts}
       />
     ) : null
 

@@ -225,7 +225,8 @@ export function useMonthlyStats() {
       settings.baseCurrency,
       exchangeRates,
       goldPricePerGram,
-      goldOk
+      goldOk,
+      expenses
     )
 
     const elapsed = daysElapsedInMonth(monthFilter, settings.monthStartDay)

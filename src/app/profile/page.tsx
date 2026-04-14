@@ -8,6 +8,7 @@ import { ProfileFieldRow } from '@/components/profile/ProfileFieldRow'
 import { getProfileCountryDisplayLabel } from '@/lib/profile/countryOptions'
 import { SettingsPaymentMethodsSection } from '@/components/features/settings/SettingsPaymentMethodsSection'
 import { ProfileGoalsSummary } from '@/components/features/profile/ProfileGoalsSummary'
+import { ProfileSubscriptionsSummary } from '@/components/features/profile/ProfileSubscriptionsSummary'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useProfilePage } from '@/hooks/useProfilePage'
@@ -159,6 +160,8 @@ export default function ProfilePage() {
         </div>
 
         <ProfileGoalsSummary />
+
+        <ProfileSubscriptionsSummary />
 
         <SettingsPaymentMethodsSection
           store={p.store}

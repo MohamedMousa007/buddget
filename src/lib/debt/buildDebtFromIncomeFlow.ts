@@ -7,6 +7,7 @@ import type {
   DebtKind,
   DebtReceivedVia,
   GoldKarat,
+  InstallmentProvider,
 } from '@/lib/store/types'
 import { clampDebtFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { debtIsGoldFromReceived } from '@/lib/debt/debtReceivedViaMap'
@@ -29,6 +30,8 @@ export type IncomeDebtFlowInput = {
   receivedVia: DebtReceivedVia
   goldKarat: GoldKarat
   goal?: DebtGoal | null
+  installmentProvider?: InstallmentProvider
+  linkedCreditCardDebtId?: string
 }
 
 /**
@@ -77,6 +80,12 @@ export function buildDebtFromIncomeFlow(
     payload.startDate = input.installmentStartDate
     payload.interestFree = input.interestFree
     payload.installmentAmount = Math.round(per * 100) / 100
+    if (input.installmentProvider) {
+      payload.installmentProvider = input.installmentProvider
+    }
+    if (input.linkedCreditCardDebtId) {
+      payload.linkedCreditCardDebtId = input.linkedCreditCardDebtId
+    }
   }
   if (debtType === 'general') {
     payload.creditor = input.creditor?.trim() || undefined

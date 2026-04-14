@@ -4,21 +4,22 @@ import { format, parseISO } from 'date-fns'
 import type { Debt, DebtPayment } from '@/lib/store/types'
 import { useT } from '@/lib/i18n'
 import { installmentPaymentsCompleted, nextInstallmentDueFormatted } from '@/lib/debts/installmentSchedule'
-import { calculateDebtRemaining } from '@/lib/utils/calculations'
+import { calculateDebtRemaining, type DebtBalanceContext } from '@/lib/utils/calculations'
 import { formatCurrency } from '@/lib/utils/formatters'
 
 type DebtCardPlanMetaProps = {
   debt: Debt
   payments: DebtPayment[]
   paidOff: boolean
+  balanceCtx?: DebtBalanceContext
 }
 
 /**
  * Debt type badge, installment segment bar, and payoff goal summary on the debt card.
  */
-export function DebtCardPlanMeta({ debt, payments, paidOff }: DebtCardPlanMetaProps) {
+export function DebtCardPlanMeta({ debt, payments, paidOff, balanceCtx }: DebtCardPlanMetaProps) {
   const t = useT()
-  const remaining = calculateDebtRemaining(debt, payments)
+  const remaining = calculateDebtRemaining(debt, payments, balanceCtx)
   const completed = installmentPaymentsCompleted(debt, payments.length)
   const nextDue = nextInstallmentDueFormatted(debt, payments.length)
 
@@ -29,7 +30,9 @@ export function DebtCardPlanMeta({ debt, payments, paidOff }: DebtCardPlanMetaPr
         ? t.debts.debtTypeInstallment
         : debt.debtType === 'general'
           ? t.debts.debtTypeGeneral
-          : null
+          : debt.debtType === 'credit_card'
+            ? t.debts.debtTypeCreditCard
+            : null
 
   const goal = debt.goal
   const targetPassed =

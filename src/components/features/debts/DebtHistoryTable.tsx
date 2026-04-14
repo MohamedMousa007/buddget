@@ -1,8 +1,10 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { ChevronDown } from 'lucide-react'
-import { calculateDebtRemaining, totalPaidTowardDebt } from '@/lib/utils/calculations'
+import { calculateDebtRemaining, totalPaidTowardDebt, type DebtBalanceContext } from '@/lib/utils/calculations'
 import { formatCurrency } from '@/lib/utils/formatters'
 import type { Currency, Debt, DebtPayment } from '@/lib/store/types'
 import { useLocalizedFormatters } from '@/hooks/useLocalizedFormatters'
@@ -20,12 +22,14 @@ function debtTypeLabel(
     debtTypePersonal: string
     debtTypeInstallment: string
     debtTypeGeneral: string
+    debtTypeCreditCard: string
     debtTypeLegacy: string
   }
 ): string {
   if (debt.debtType === 'installment') return tr.debtTypeInstallment
   if (debt.debtType === 'general') return tr.debtTypeGeneral
   if (debt.debtType === 'personal') return tr.debtTypePersonal
+  if (debt.debtType === 'credit_card') return tr.debtTypeCreditCard
   return tr.debtTypeLegacy
 }
 
@@ -41,6 +45,17 @@ export function DebtHistoryTable({ debts, debtPayments }: DebtHistoryTableProps)
   const t = useT()
   const { formatDateShort } = useLocalizedFormatters()
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const { expenses, exchangeRates, allDebts } = useFinanceStore(
+    useShallow((s) => ({
+      expenses: s.expenses,
+      exchangeRates: s.exchangeRates,
+      allDebts: s.debts,
+    }))
+  )
+  const balanceCtx: DebtBalanceContext | undefined = useMemo(
+    () => ({ expenses, exchangeRates, allDebts }),
+    [expenses, exchangeRates, allDebts]
+  )
 
   const sorted = useMemo(() => {
     return [...debts].sort((a, b) => {
@@ -75,7 +90,7 @@ export function DebtHistoryTable({ debts, debtPayments }: DebtHistoryTableProps)
             {sorted.map((debt) => {
               const payments = debtPayments.filter((p) => p.debtId === debt.id)
               const paid = totalPaidTowardDebt(debt.id, debtPayments)
-              const remaining = calculateDebtRemaining(debt, payments)
+              const remaining = calculateDebtRemaining(debt, payments, balanceCtx)
               const cleared = debt.status === 'cleared'
               const isMuted = cleared
               const expanded = expandedId === debt.id

@@ -13,7 +13,12 @@ export function confirmRecurringDebtPayment(scheduleId: string): boolean {
   if (!due?.isActive) return false
 
   const debt = state.debts.find((d) => d.id === due.debtId)
-  if (!debt || isDebtFullyPaid(debt, state.debtPayments)) {
+  const balanceCtx = {
+    expenses: state.expenses,
+    exchangeRates: state.exchangeRates,
+    allDebts: state.debts,
+  }
+  if (!debt || isDebtFullyPaid(debt, state.debtPayments, balanceCtx)) {
     state.updateRecurringDebtPayment(scheduleId, { isActive: false })
     return false
   }
@@ -25,7 +30,8 @@ export function confirmRecurringDebtPayment(scheduleId: string): boolean {
     state.settings.baseCurrency,
     state.exchangeRates,
     state.goldPricePerGram,
-    state.debtPayments
+    state.debtPayments,
+    balanceCtx
   )
   if (!result.ok) return false
 
@@ -37,18 +43,21 @@ export function confirmRecurringDebtPayment(scheduleId: string): boolean {
 
   const paymentDate = due.nextDueDate
 
-  state.addDebtPaymentWithExpense(
-    {
-      debtId: due.debtId,
-      date: paymentDate,
-      amountPaid: result.amountInDebtUnit,
-      paymentCurrency: due.currency,
-      originalAmount: due.amount,
-      amountInPrimary: result.amountInBase,
-      rateAtEntry: result.rateAtEntry,
-      notes: due.notes ? `Recurring · ${due.notes}` : 'Recurring debt payment',
-    },
-    {
+  const paymentPayload = {
+    debtId: due.debtId,
+    date: paymentDate,
+    amountPaid: result.amountInDebtUnit,
+    paymentCurrency: due.currency,
+    originalAmount: due.amount,
+    amountInPrimary: result.amountInBase,
+    rateAtEntry: result.rateAtEntry,
+    notes: due.notes ? `Recurring · ${due.notes}` : 'Recurring debt payment',
+  }
+
+  if (debt.debtType === 'credit_card') {
+    state.addDebtPayment(paymentPayload)
+  } else {
+    state.addDebtPaymentWithExpense(paymentPayload, {
       date: paymentDate,
       description: `${debt.name} — debt payment`,
       category: 'Debt',
@@ -59,8 +68,8 @@ export function confirmRecurringDebtPayment(scheduleId: string): boolean {
       notes: due.notes,
       linkedDebtId: due.debtId,
       isDebtPayment: true,
-    }
-  )
+    })
+  }
 
   const next = advanceRecurringDebtDueDate(due.nextDueDate, due.frequency)
   state.updateRecurringDebtPayment(scheduleId, { nextDueDate: next })

@@ -1,9 +1,15 @@
 'use client'
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { computeDebtPaymentRecord, convertPaymentToDebtUnit, isDebtFullyPaid } from '@/lib/utils/calculations'
+import {
+  computeDebtPaymentRecord,
+  convertPaymentToDebtUnit,
+  isDebtFullyPaid,
+  type DebtBalanceContext,
+} from '@/lib/utils/calculations'
 import { formatCurrency } from '@/lib/utils/formatters'
 import {
   buildFiatCurrencyPickerOptions,
@@ -17,17 +23,34 @@ export function useRecurringDebtPaymentSheet() {
     addRecurringDebtPayment,
     debts,
     debtPayments,
+    expenses,
     paymentMethods,
     settings,
     exchangeRates,
     goldPricePerGram,
-  } = useFinanceStore()
+  } = useFinanceStore(
+    useShallow((s) => ({
+      addRecurringDebtPayment: s.addRecurringDebtPayment,
+      debts: s.debts,
+      debtPayments: s.debtPayments,
+      expenses: s.expenses,
+      paymentMethods: s.paymentMethods,
+      settings: s.settings,
+      exchangeRates: s.exchangeRates,
+      goldPricePerGram: s.goldPricePerGram,
+    }))
+  )
   const { activeModal, setActiveModal } = useSettingsStore()
   const isOpen = activeModal === 'addRecurringDebtPayment'
 
+  const debtBalanceCtx: DebtBalanceContext | undefined = useMemo(
+    () => ({ expenses, exchangeRates, allDebts: debts }),
+    [expenses, exchangeRates, debts]
+  )
+
   const payableDebts = useMemo(
-    () => debts.filter((d) => !isDebtFullyPaid(d, debtPayments)),
-    [debts, debtPayments]
+    () => debts.filter((d) => !isDebtFullyPaid(d, debtPayments, debtBalanceCtx)),
+    [debts, debtPayments, debtBalanceCtx]
   )
 
   const [selectedDebtId, setSelectedDebtId] = useState(payableDebts[0]?.id ?? '')
@@ -75,13 +98,13 @@ export function useRecurringDebtPaymentSheet() {
     /* eslint-disable react-hooks/set-state-in-effect -- reset defaults when opening */
     if (payableDebts.length > 0) {
       const sel = debts.find((d) => d.id === selectedDebtId)
-      if (!sel || isDebtFullyPaid(sel, debtPayments)) {
+      if (!sel || isDebtFullyPaid(sel, debtPayments, debtBalanceCtx)) {
         setSelectedDebtId(payableDebts[0].id)
       }
     }
     setPaymentMethodId(paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || '')
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [isOpen, payableDebts, debts, debtPayments, selectedDebtId, paymentMethods])
+  }, [isOpen, payableDebts, debts, debtPayments, debtBalanceCtx, selectedDebtId, paymentMethods])
 
   const handleSubmit = useCallback(() => {
     if (!selectedDebtId || !selectedDebt || !amount) return
@@ -101,7 +124,8 @@ export function useRecurringDebtPaymentSheet() {
       settings.baseCurrency,
       exchangeRates,
       goldPricePerGram,
-      debtPayments
+      debtPayments,
+      debtBalanceCtx
     )
     if (!check.ok) {
       setError(check.error)
@@ -123,6 +147,7 @@ export function useRecurringDebtPaymentSheet() {
     addRecurringDebtPayment,
     amount,
     close,
+    debtBalanceCtx,
     debtPayments,
     exchangeRates,
     frequency,

@@ -13,7 +13,6 @@ import { useEditDebtForm } from '@/hooks/useEditDebtForm'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { useT } from '@/lib/i18n'
-import { isDebtFullyPaid } from '@/lib/utils/calculations'
 import { DebtGoalSheet } from '@/components/features/debts/DebtGoalSheet'
 
 export function EditDebtForm({
@@ -28,11 +27,9 @@ export function EditDebtForm({
   useEscapeClose(isOpen, onClose)
   const f = useEditDebtForm(debt, isOpen)
   const settings = useFinanceStore((s) => s.settings)
-  const debtPayments = useFinanceStore((s) => s.debtPayments)
   const t = useT()
 
-  const paymentsForDebt = debtPayments.filter((p) => p.debtId === debt.id)
-  const paidOff = isDebtFullyPaid(debt, paymentsForDebt)
+  const paidOff = f.paidOff
   const goalCurrency = debt.isGold ? 'XAU' : String(debt.currency)
 
   return (

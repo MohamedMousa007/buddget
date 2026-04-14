@@ -1,7 +1,10 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { computeCreditCardOutstanding } from '@/lib/debt/computeCreditCardBalance'
+import { formatCurrency } from '@/lib/utils/formatters'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
@@ -14,7 +17,18 @@ import { useT } from '@/lib/i18n'
 export function useAddExpenseSheet() {
   const showToast = useActionToast()
   const t = useT()
-  const { addExpense, paymentMethods, settings } = useFinanceStore()
+  const { addExpense, paymentMethods, settings, debtPayments, debts, expenses, exchangeRates } =
+    useFinanceStore(
+      useShallow((s) => ({
+        addExpense: s.addExpense,
+        paymentMethods: s.paymentMethods,
+        settings: s.settings,
+        debtPayments: s.debtPayments,
+        debts: s.debts,
+        expenses: s.expenses,
+        exchangeRates: s.exchangeRates,
+      }))
+    )
   const { activeModal, setActiveModal, expensePrefill, setExpensePrefill } = useSettingsStore()
   const isOpen = activeModal === 'addExpense'
   const { categoryChipOptions, defaultCategory } = usePlanCategories()
@@ -32,6 +46,16 @@ export function useAddExpenseSheet() {
   const [notes, setNotes] = useState('')
   const [submitError, setSubmitError] = useState('')
   const skipNextDefaultCurrencySync = useRef(false)
+
+  const creditCardOutstandingHint = useMemo(() => {
+    const pm = paymentMethods.find((m) => m.id === paymentMethodId)
+    if (!pm || pm.type !== 'card_credit') return null
+    const cardDebt = debts.find((d) => d.debtType === 'credit_card' && d.linkedPaymentMethodId === pm.id)
+    if (!cardDebt) return null
+    const pays = debtPayments.filter((p) => p.debtId === cardDebt.id)
+    const out = computeCreditCardOutstanding(cardDebt, expenses, pays, exchangeRates)
+    return { cardName: cardDebt.name, amountLabel: formatCurrency(out, cardDebt.currency) }
+  }, [paymentMethodId, paymentMethods, debts, debtPayments, expenses, exchangeRates])
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- apply AI/sheet prefill when opening */
@@ -149,5 +173,6 @@ export function useAddExpenseSheet() {
     paymentMethods,
     categoryChipOptions,
     handleSubmit,
+    creditCardOutstandingHint,
   }
 }

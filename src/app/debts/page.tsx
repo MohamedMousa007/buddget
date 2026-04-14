@@ -6,6 +6,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { DebtCard } from '@/components/debts/DebtCard'
+import { CreditCardDebtCard } from '@/components/features/debts/CreditCardDebtCard'
 import { AllDebtsPaymentHistory } from '@/components/features/debts/AllDebtsPaymentHistory'
 import { DebtHistoryTable } from '@/components/features/debts/DebtHistoryTable'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
@@ -105,6 +106,17 @@ export default function DebtsPage() {
               <div className={`grid gap-6 ${activeDebts.length === 1 ? 'grid-cols-1 max-w-lg mx-auto' : 'grid-cols-1 lg:grid-cols-2'}`}>
                 {activeDebts.map((debt) => {
                   const payments = debtPayments.filter((p) => p.debtId === debt.id)
+                  if (debt.debtType === 'credit_card') {
+                    return (
+                      <CreditCardDebtCard
+                        key={debt.id}
+                        debt={debt}
+                        payments={payments}
+                        onRecordPayment={() => guardedRecordPayment(debt.id)}
+                        onEdit={() => handleEditDebt(debt.id)}
+                      />
+                    )
+                  }
                   return (
                     <DebtCard
                       key={debt.id}
