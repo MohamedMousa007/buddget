@@ -49,9 +49,19 @@ export default function SettingsPage() {
         />
         <SettingsAppPreferencesSection store={store} />
 
-        <p className="text-center text-xs text-[var(--color-brand-text-muted)] pb-8">
-          {t.settings.footer}
-        </p>
+        <div className="text-center text-xs text-[var(--color-brand-text-muted)] pb-8 space-y-2">
+          <p>{t.settings.footer}</p>
+          <p>
+            <a
+              href="https://www.exchangerate-api.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-[var(--color-brand-text-secondary)]"
+            >
+              {t.settings.ratesAttribution}
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   )

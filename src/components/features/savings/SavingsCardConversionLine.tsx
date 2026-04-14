@@ -9,15 +9,25 @@ export function SavingsCardConversionLine({
   account,
   settings,
   exchangeRates,
+  goldPriceAvailable,
   liveCryptoLabel,
   liveStocksLabel,
+  goldAedUnavailableLabel,
 }: {
   account: SavingsAccount
   settings: AppSettings
   exchangeRates: Record<string, number>
+  goldPriceAvailable: boolean
   liveCryptoLabel: string
   liveStocksLabel: string
+  goldAedUnavailableLabel: string
 }) {
+  if (account.currency === 'XAU' && !goldPriceAvailable) {
+    return (
+      <p className="text-[11px] text-[var(--color-brand-text-muted)] italic">({goldAedUnavailableLabel})</p>
+    )
+  }
+
   const primary = settings.baseCurrency
   const secondary = settings.showSecondaryCurrency ? settings.secondaryCurrency : null
   const { primary: pAmt, secondary: sAmt, needsPlaceholder } = savingsAccountConversionAmounts(

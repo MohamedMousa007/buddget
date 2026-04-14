@@ -66,6 +66,7 @@ export function useMonthlyStats() {
     settings,
     exchangeRates,
     goldPricePerGram,
+    goldPriceAvailable,
   } = useFinanceStore(
     useShallow((s) => ({
       expenses: s.expenses,
@@ -81,6 +82,7 @@ export function useMonthlyStats() {
       settings: s.settings,
       exchangeRates: s.exchangeRates,
       goldPricePerGram: s.goldPricePerGram,
+      goldPriceAvailable: s.goldPriceAvailable,
     }))
   )
 
@@ -175,10 +177,13 @@ export function useMonthlyStats() {
       settings.baseCurrency,
       exchangeRates
     )
+    const goldOk = goldPriceAvailable !== false
     const savingsAccountsTotal = totalSavingsAccountsBalanceInBase(
       savingsAccounts,
       settings.baseCurrency,
-      exchangeRates
+      exchangeRates,
+      goldPricePerGram,
+      goldOk
     )
 
     const savingsTotal = savingsAccountsTotal + savingsHoldingsTotal + savingsFromExpenses
@@ -217,7 +222,8 @@ export function useMonthlyStats() {
       debtPayments,
       settings.baseCurrency,
       exchangeRates,
-      goldPricePerGram
+      goldPricePerGram,
+      goldOk
     )
 
     const elapsed = daysElapsedInMonth(monthFilter, settings.monthStartDay)
@@ -283,6 +289,7 @@ export function useMonthlyStats() {
     settings,
     exchangeRates,
     goldPricePerGram,
+    goldPriceAvailable,
     monthFilter,
     trustLocalFinance,
   ])

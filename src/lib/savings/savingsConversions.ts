@@ -10,10 +10,12 @@ export function savingsAccountBalanceInBase(
   account: SavingsAccount,
   baseCurrency: Currency,
   rates: Record<string, number>,
-  goldPricePerGram: number
+  goldPricePerGram: number,
+  goldPriceAvailable: boolean
 ): number {
   const c = account.currency
   if (c === 'XAU') {
+    if (!goldPriceAvailable) return 0
     return goldGramsToMoney(account.currentBalance, goldPricePerGram, 24)
   }
   return convertCurrency(account.currentBalance, c, baseCurrency, rates)

@@ -9,6 +9,15 @@ import { DesktopHeaderBar } from '@/components/layout/DesktopHeaderBar'
 import { InstallButton } from '@/components/pwa/InstallButton'
 import { PasswordUpdatedBanner } from '@/components/auth/PasswordUpdatedBanner'
 import { useThemeSync } from '@/hooks/useThemeSync'
+import { useRates } from '@/hooks/useRates'
+import { useGoldPrice } from '@/hooks/useGoldPrice'
+
+/** Keeps FX + gold spot in sync for all main app routes (not auth/onboarding). */
+function MarketRatesSync() {
+  useRates()
+  useGoldPrice()
+  return null
+}
 
 interface AppShellProps {
   children: React.ReactNode
@@ -37,6 +46,7 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="min-h-screen bg-[var(--color-brand-bg)]">
+      <MarketRatesSync />
       <Sidebar />
       <DesktopHeaderBar />
       <main className="pt-[calc(3.5rem+env(safe-area-inset-top,0px))] lg:pt-14 lg:ms-[200px] pb-20 lg:pb-0 min-h-screen">

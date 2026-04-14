@@ -1,7 +1,26 @@
 import { z } from 'zod'
 
-const currencySchema = z.enum(['AED', 'USD', 'EGP', 'EUR', 'GBP', 'SAR', 'XAU'])
-const fiatCurrencySchema = z.enum(['AED', 'USD', 'EGP', 'EUR', 'GBP', 'SAR'])
+const GCC_FIATS = [
+  'KWD',
+  'QAR',
+  'BHD',
+  'OMR',
+  'MAD',
+  'TND',
+  'JOD',
+] as const
+
+const currencySchema = z.enum([
+  'AED',
+  'USD',
+  'EGP',
+  'EUR',
+  'GBP',
+  'SAR',
+  ...GCC_FIATS,
+  'XAU',
+])
+const fiatCurrencySchema = z.enum(['AED', 'USD', 'EGP', 'EUR', 'GBP', 'SAR', ...GCC_FIATS])
 const savingsCurrencySchema = z.enum([
   'AED',
   'USD',
@@ -9,6 +28,7 @@ const savingsCurrencySchema = z.enum([
   'EUR',
   'GBP',
   'SAR',
+  ...GCC_FIATS,
   'XAU',
   'USDT',
   'USDC',

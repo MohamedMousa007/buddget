@@ -11,7 +11,6 @@ import {
 } from '@/lib/utils/calculations'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useNetWorth } from '@/hooks/useNetWorth'
-import { useRates } from '@/hooks/useRates'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { SavingsAccountCard } from '@/components/features/savings/SavingsAccountCard'
 import { AddToSavingsSheet } from '@/components/features/savings/AddToSavingsSheet'
@@ -34,7 +33,6 @@ const outlineBtnClass =
  * Savings buckets, transfer sheets, and ledger history (not expenses).
  */
 export default function SavingsPage() {
-  useRates()
   const t = useT()
   const requireAuth = useRequireAuthAction()
   const nw = useNetWorth()
@@ -44,6 +42,8 @@ export default function SavingsPage() {
     savingsHoldings,
     settings,
     exchangeRates,
+    goldPricePerGram,
+    goldPriceAvailable,
     depositToSavings,
     withdrawFromSavings,
     correctSavingsBalance,
@@ -55,6 +55,8 @@ export default function SavingsPage() {
       savingsHoldings: s.savingsHoldings,
       settings: s.settings,
       exchangeRates: s.exchangeRates,
+      goldPricePerGram: s.goldPricePerGram,
+      goldPriceAvailable: s.goldPriceAvailable,
       depositToSavings: s.depositToSavings,
       withdrawFromSavings: s.withdrawFromSavings,
       correctSavingsBalance: s.correctSavingsBalance,
@@ -72,10 +74,24 @@ export default function SavingsPage() {
   const [editAcc, setEditAcc] = useState<SavingsAccount | null>(null)
 
   const totalBase = useMemo(() => {
-    const a = totalSavingsAccountsBalanceInBase(savingsAccounts, settings.baseCurrency, exchangeRates)
+    const goldOk = goldPriceAvailable !== false
+    const a = totalSavingsAccountsBalanceInBase(
+      savingsAccounts,
+      settings.baseCurrency,
+      exchangeRates,
+      goldPricePerGram,
+      goldOk
+    )
     const h = totalSavingsHoldingsInBase(savingsHoldings, settings.baseCurrency, exchangeRates)
     return a + h
-  }, [savingsAccounts, savingsHoldings, settings.baseCurrency, exchangeRates])
+  }, [
+    savingsAccounts,
+    savingsHoldings,
+    settings.baseCurrency,
+    exchangeRates,
+    goldPricePerGram,
+    goldPriceAvailable,
+  ])
 
   const totalSavedDisplay = nw.totalSavings + nw.totalInvestments
 

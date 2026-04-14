@@ -3,44 +3,55 @@
 import { useEffect, useCallback } from 'react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 
-const TROY_OUNCE_TO_GRAMS = 31.1035
+const FIFTEEN_MINUTES = 15 * 60 * 1000
 
 export function useGoldPrice() {
-  const { goldPricePerGram, exchangeRates, updateGoldPrice } = useFinanceStore()
+  const goldPricePerGram = useFinanceStore((s) => s.goldPricePerGram)
+  const goldPriceAvailable = useFinanceStore((s) => s.goldPriceAvailable)
+  const lastGoldFetch = useFinanceStore((s) => s.lastGoldFetch)
+  const updateGoldPrice = useFinanceStore((s) => s.updateGoldPrice)
+  const setGoldUnavailable = useFinanceStore((s) => s.setGoldUnavailable)
 
   const fetchGoldPrice = useCallback(async () => {
     try {
       const res = await fetch('/api/gold')
-      if (!res.ok) return
+      if (!res.ok) {
+        setGoldUnavailable()
+        return
+      }
 
       const data = await res.json()
+
+      if (data.available === false) {
+        // API is up but gold providers are all down
+        setGoldUnavailable()
+        return
+      }
+
       if (data.pricePerGram) {
         updateGoldPrice(data.pricePerGram)
       }
     } catch {
-      // Try direct metals.live API as fallback
-      try {
-        const res = await fetch('https://metals.live/api/spot')
-        if (!res.ok) return
-
-        const metals = await res.json()
-        const gold = metals.find((m: { metal: string }) => m.metal === 'gold')
-        if (gold) {
-          const usdPerGram = gold.price / TROY_OUNCE_TO_GRAMS
-          const usdToAed = exchangeRates['USD_AED'] || 3.6725
-          updateGoldPrice(usdPerGram * usdToAed)
-        }
-      } catch {
-        console.warn('Failed to fetch gold price, using cached value')
-      }
+      setGoldUnavailable()
     }
-  }, [exchangeRates, updateGoldPrice])
+  }, [updateGoldPrice, setGoldUnavailable])
 
   useEffect(() => {
-    fetchGoldPrice()
-    const interval = setInterval(fetchGoldPrice, 30 * 60 * 1000) // every 30 min
-    return () => clearInterval(interval)
-  }, [fetchGoldPrice])
+    const shouldFetch =
+      !lastGoldFetch ||
+      Date.now() - new Date(lastGoldFetch).getTime() > FIFTEEN_MINUTES
 
-  return { goldPricePerGram, refetch: fetchGoldPrice }
+    if (shouldFetch) {
+      fetchGoldPrice()
+    }
+
+    const interval = setInterval(fetchGoldPrice, FIFTEEN_MINUTES)
+    return () => clearInterval(interval)
+  }, [lastGoldFetch, fetchGoldPrice])
+
+  return {
+    goldPricePerGram,
+    goldPriceAvailable: goldPriceAvailable !== false, // default true for backwards compat
+    refetch: fetchGoldPrice,
+  }
 }

@@ -117,6 +117,8 @@ export const useFinanceStore = create<FinanceStore>()(
       recurringDebtPayments: [],
       exchangeRates: { ...DEFAULT_MARKET_RATES },
       goldPricePerGram: DEFAULT_GOLD_PRICE_PER_GRAM,
+      lastGoldFetch: null,
+      goldPriceAvailable: true,
       lastRatesFetch: null,
 
       addExpense: (expense) => {
@@ -773,9 +775,13 @@ export const useFinanceStore = create<FinanceStore>()(
         })),
 
       updateGoldPrice: (price) =>
-        set(() => ({
+        set({
           goldPricePerGram: price,
-        })),
+          lastGoldFetch: new Date().toISOString(),
+          goldPriceAvailable: true,
+        }),
+
+      setGoldUnavailable: () => set({ goldPriceAvailable: false }),
 
       importData: (jsonString) => {
         let parsed: unknown
@@ -881,6 +887,8 @@ export const useFinanceStore = create<FinanceStore>()(
           recurringDebtPayments: [],
           exchangeRates: { ...DEFAULT_MARKET_RATES },
           goldPricePerGram: DEFAULT_GOLD_PRICE_PER_GRAM,
+          lastGoldFetch: null,
+          goldPriceAvailable: true,
           lastRatesFetch: null,
         }),
 
@@ -1032,6 +1040,8 @@ export const useFinanceStore = create<FinanceStore>()(
           recurringDebtPayments: [],
           exchangeRates: { ...DEFAULT_MARKET_RATES },
           goldPricePerGram: DEFAULT_GOLD_PRICE_PER_GRAM,
+          lastGoldFetch: null,
+          goldPriceAvailable: true,
           lastRatesFetch: null,
         } as never
       },
@@ -1041,6 +1051,8 @@ export const useFinanceStore = create<FinanceStore>()(
         return {
           ...current,
           ...p,
+          lastGoldFetch: p.lastGoldFetch ?? current.lastGoldFetch,
+          goldPriceAvailable: p.goldPriceAvailable ?? current.goldPriceAvailable,
           financialGoalsNotes: p.financialGoalsNotes ?? current.financialGoalsNotes,
           budgetPlans: p.budgetPlans ?? current.budgetPlans,
           activeBudgetPlanId:
