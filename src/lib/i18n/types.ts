@@ -209,6 +209,23 @@ export interface Dictionary {
     perWeek: (amount: string) => string
     monthlyEquiv: (amount: string) => string
     confirmDelete: string
+    sourceTypeSalary: string
+    sourceTypeBonus: string
+    sourceTypeSideHustle: string
+    sourceTypeInvestment: string
+    sourceTypeSavings: string
+    sourceTypeDebt: string
+    sourceTypeGift: string
+    sourceTypeRefund: string
+    sourceTypeOther: string
+    sourceTypeLabel: string
+    debtPersonLabel: string
+    debtPersonPlaceholder: string
+    linkedDebtNote: string
+    linkedSavingsNote: string
+    linkedInvestmentNote: string
+    linkedToDebt: (name: string) => string
+    linkedAccountName: (name: string) => string
   }
 
   editIncome: {
@@ -223,6 +240,10 @@ export interface Dictionary {
     freqHint: string
     budgetNote: (currency: string) => string
     buttonSave: string
+    labelSourceType: string
+    salaryRecurringHint: string
+    debtDescriptionLabel: string
+    debtDescriptionPlaceholder: string
   }
 
   addIncome: {
@@ -238,6 +259,10 @@ export interface Dictionary {
     labelNotes: string
     placeholderNotes: string
     buttonSubmit: string
+    labelSourceType: string
+    salaryRecurringHint: string
+    debtDescriptionLabel: string
+    debtDescriptionPlaceholder: string
   }
 
   savings: {

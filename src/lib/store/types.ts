@@ -46,6 +46,17 @@ export interface PaymentMethod {
 /** How often recurring income is received; amount is per that period (e.g. weekly = per week). */
 export type IncomeRecurringFrequency = 'monthly' | 'biweekly' | 'weekly'
 
+export type IncomeSourceType =
+  | 'salary'
+  | 'bonus'
+  | 'side_hustle'
+  | 'investment'
+  | 'savings'
+  | 'debt'
+  | 'gift'
+  | 'refund'
+  | 'other'
+
 export interface IncomeSource {
   id: string
   name: string
@@ -59,6 +70,12 @@ export interface IncomeSource {
   dayOfMonth?: number
   notes?: string
   createdAt: string
+  /** Type/source of income. Defaults to `other` for legacy data. */
+  sourceType?: IncomeSourceType
+  /** When `sourceType` is savings or investment, links to the savings account row. */
+  linkedSavingsAccountId?: string
+  /** When `sourceType` is debt, links to the auto-created debt row. */
+  linkedDebtId?: string
 }
 
 export interface Expense {
@@ -447,6 +464,13 @@ export interface FinanceStore {
   updateExpense: (id: string, updates: Partial<Expense>) => void
   deleteExpense: (id: string) => void
   addIncomeSource: (source: Omit<IncomeSource, 'id' | 'createdAt'>) => void
+  /**
+   * Adds income from borrowed money and creates a matching personal debt (`i_owe`) in one update.
+   */
+  addIncomeWithDebt: (
+    income: Omit<IncomeSource, 'id' | 'createdAt' | 'linkedDebtId' | 'linkedSavingsAccountId' | 'sourceType'>,
+    debtInfo: { personName?: string; description?: string }
+  ) => void
   updateIncomeSource: (id: string, updates: Partial<IncomeSource>) => void
   deleteIncomeSource: (id: string) => void
   addPaymentMethod: (method: Omit<PaymentMethod, 'id'>) => void

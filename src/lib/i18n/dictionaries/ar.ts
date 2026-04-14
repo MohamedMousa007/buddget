@@ -206,6 +206,23 @@ export const ar: Dictionary = {
     perWeek: (amount) => `${amount}/أسبوع`,
     monthlyEquiv: (amount) => `≈ ${amount}/شهر للميزانية (المعادل الشهري)`,
     confirmDelete: 'هل تريد حذف مصدر الدخل هذا؟ لا يمكن التراجع عن هذا.',
+    sourceTypeSalary: 'راتب',
+    sourceTypeBonus: 'مكافأة',
+    sourceTypeSideHustle: 'عمل إضافي',
+    sourceTypeInvestment: 'استثمار',
+    sourceTypeSavings: 'مدخرات',
+    sourceTypeDebt: 'دين',
+    sourceTypeGift: 'هدية',
+    sourceTypeRefund: 'استرداد',
+    sourceTypeOther: 'أخرى',
+    sourceTypeLabel: 'نوع المصدر',
+    debtPersonLabel: 'من هذا؟',
+    debtPersonPlaceholder: 'مثال: أمي، بطاقة ADCB',
+    linkedDebtNote: 'أُضيف إلى ديونك',
+    linkedSavingsNote: 'من سحب مدخرات',
+    linkedInvestmentNote: 'من عائد استثمار',
+    linkedToDebt: (name) => `← مرتبط بدين: ${name}`,
+    linkedAccountName: (name) => `← من حساب: ${name}`,
   },
 
   editIncome: {
@@ -220,6 +237,10 @@ export const ar: Dictionary = {
     freqHint: ' تستخدم الميزانيات المعادل الشهري (مثال: أسبوعي × 52÷12).',
     budgetNote: (currency) => `الميزانيات بنسبة "% من الدخل" تستخدم الدخل المتكرر محولاً إلى ${currency}.`,
     buttonSave: 'حفظ التغييرات',
+    labelSourceType: 'نوع المصدر',
+    salaryRecurringHint: 'الراتب يُضبط افتراضياً كمتكرر شهري؛ يمكنك إيقاف ذلك.',
+    debtDescriptionLabel: 'وصف (اختياري)',
+    debtDescriptionPlaceholder: 'ملاحظات عن هذا القرض',
   },
 
   addIncome: {
@@ -235,6 +256,10 @@ export const ar: Dictionary = {
     labelNotes: 'ملاحظات (اختياري)',
     placeholderNotes: 'أي تفاصيل إضافية...',
     buttonSubmit: 'أضف المصدر ←',
+    labelSourceType: 'نوع المصدر',
+    salaryRecurringHint: 'الراتب يُضبط افتراضياً كمتكرر شهري؛ يمكنك إيقاف ذلك.',
+    debtDescriptionLabel: 'وصف (اختياري)',
+    debtDescriptionPlaceholder: 'ملاحظات عن هذا القرض',
   },
 
   savings: {

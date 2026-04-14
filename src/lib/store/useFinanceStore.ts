@@ -16,6 +16,8 @@ import {
 import type {
   BudgetPlanCategory,
   FinanceStore,
+  IncomeSource,
+  IncomeSourceType,
   OnboardingState,
   RecurringSavingsDeposit,
   SavingsAccount,
@@ -30,7 +32,7 @@ import { normalizeSavingsAccountsList } from '@/lib/savings/normalizeSavingsAcco
 import { defaultCategoryForSavingsType } from '@/lib/constants/savingsTypes'
 import { createSafeLocalStorage } from '@/lib/store/safeLocalStorage'
 
-const PERSIST_VERSION = 11
+const PERSIST_VERSION = 12
 
 function holdingSubtypeToSavingsType(sub: SavingsHolding['subtype']): SavingsType {
   const m: Record<SavingsHolding['subtype'], SavingsType> = {
@@ -164,12 +166,53 @@ export const useFinanceStore = create<FinanceStore>()(
             ...state.incomeSources,
             {
               ...source,
+              sourceType: source.sourceType ?? 'other',
               id: generateId(),
               createdAt: new Date().toISOString(),
             },
           ],
           settings: { ...state.settings, noIncomeDeclared: false },
         })),
+
+      addIncomeWithDebt: (income, debtInfo) => {
+        const incomeId = generateId()
+        const debtId = generateId()
+        const iso = new Date().toISOString()
+        const cur = clampFiatToAllowed(get().settings, income.currency)
+        set((state) => ({
+          incomeSources: [
+            ...state.incomeSources,
+            {
+              ...income,
+              id: incomeId,
+              currency: cur,
+              sourceType: 'debt' as IncomeSourceType,
+              linkedDebtId: debtId,
+              createdAt: iso,
+            },
+          ],
+          debts: [
+            ...state.debts,
+            {
+              id: debtId,
+              name: income.name,
+              person: debtInfo.personName?.trim() || '',
+              personName: debtInfo.personName?.trim() || '',
+              description:
+                debtInfo.description?.trim() ||
+                `Recorded from income: ${income.name}`,
+              startingBalance: income.amount,
+              currency: cur,
+              isGold: false,
+              debtType: 'personal',
+              direction: 'i_owe',
+              status: 'active',
+              createdAt: iso,
+            },
+          ],
+          settings: { ...state.settings, noIncomeDeclared: false },
+        }))
+      },
 
       updateIncomeSource: (id, updates) =>
         set((state) => ({
@@ -714,11 +757,25 @@ export const useFinanceStore = create<FinanceStore>()(
             date: new Date().toISOString().slice(0, 10),
             notes,
           }
+          const isInvestment = acc.category === 'investment'
+          const incomeEntry: IncomeSource = {
+            id: generateId(),
+            name: isInvestment ? `Return from ${acc.name}` : `Withdrawal from ${acc.name}`,
+            amount: amt,
+            currency: acc.currency,
+            isRecurring: false,
+            sourceType: isInvestment ? 'investment' : 'savings',
+            linkedSavingsAccountId: accountId,
+            notes: notes?.trim() || undefined,
+            createdAt: new Date().toISOString(),
+          }
           return {
             savingsTransactions: [...state.savingsTransactions, tx],
             savingsAccounts: state.savingsAccounts.map((a) =>
               a.id === accountId ? { ...a, currentBalance: Math.max(0, a.currentBalance - amt) } : a
             ),
+            incomeSources: [...state.incomeSources, incomeEntry],
+            settings: { ...state.settings, noIncomeDeclared: false },
           }
         })
       },
@@ -901,10 +958,20 @@ export const useFinanceStore = create<FinanceStore>()(
       version: PERSIST_VERSION,
       migrate: (persistedState, fromVersion) => {
         if (fromVersion >= PERSIST_VERSION) return persistedState as never
-        const p =
+        const base =
           persistedState && typeof persistedState === 'object'
             ? (persistedState as Record<string, unknown>)
             : {}
+        const p: Record<string, unknown> =
+          fromVersion < 12 && Array.isArray(base.incomeSources)
+            ? {
+                ...base,
+                incomeSources: (base.incomeSources as Record<string, unknown>[]).map((s) => ({
+                  ...s,
+                  sourceType: (s.sourceType as IncomeSourceType | undefined) ?? 'other',
+                })),
+              }
+            : base
         if (fromVersion >= 6) {
           const prevSettings = (p.settings as Record<string, unknown> | undefined) || {}
           const holdings = (Array.isArray(p.savingsHoldings) ? p.savingsHoldings : []) as SavingsHolding[]

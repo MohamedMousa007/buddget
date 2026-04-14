@@ -37,12 +37,41 @@ describe('incomeMonthlyMultiplier', () => {
 })
 
 describe('calculateMonthlyIncome', () => {
-  it('sums only recurring sources', () => {
+  it('sums recurring sources; omits one-time when month params omitted', () => {
     const sources: IncomeSource[] = [
       src({ id: '1', name: 'A', amount: 1000, currency: 'AED', isRecurring: true }),
       src({ id: '2', name: 'B', amount: 500, currency: 'AED', isRecurring: false }),
     ]
     expect(calculateMonthlyIncome(sources, 'AED', {})).toBe(1000)
+  })
+
+  it('adds one-time sources whose createdAt falls in the selected month', () => {
+    const sources: IncomeSource[] = [
+      src({ id: '1', name: 'A', amount: 1000, currency: 'AED', isRecurring: true }),
+      src({
+        id: '2',
+        name: 'B',
+        amount: 500,
+        currency: 'AED',
+        isRecurring: false,
+        createdAt: '2025-01-15T12:00:00.000Z',
+      }),
+    ]
+    expect(calculateMonthlyIncome(sources, 'AED', {}, '2025-01', 1)).toBe(1500)
+  })
+
+  it('excludes one-time sources outside the selected month', () => {
+    const sources: IncomeSource[] = [
+      src({
+        id: '2',
+        name: 'B',
+        amount: 500,
+        currency: 'AED',
+        isRecurring: false,
+        createdAt: '2025-02-15T12:00:00.000Z',
+      }),
+    ]
+    expect(calculateMonthlyIncome(sources, 'AED', {}, '2025-01', 1)).toBe(0)
   })
 
   it('treats weekly amount as per-week before monthly conversion', () => {

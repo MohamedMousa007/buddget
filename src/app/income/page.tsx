@@ -3,46 +3,20 @@
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { formatCurrency } from '@/lib/utils/formatters'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
-import { Pencil, Trash2, Wallet } from 'lucide-react'
-import type { IncomeSource } from '@/lib/store/types'
-import { incomeMonthlyMultiplier } from '@/lib/utils/calculations'
+import { Wallet } from 'lucide-react'
 import { useT } from '@/lib/i18n'
-import type { Dictionary } from '@/lib/i18n'
-
-function recurringSubtitle(source: IncomeSource, inc: Dictionary['income']): string {
-  if (!source.isRecurring) return inc.oneTime
-  const f = source.recurringFrequency ?? 'monthly'
-  if (f === 'monthly') return inc.recurringMonthly(source.dayOfMonth ?? 1)
-  if (f === 'biweekly') return inc.recurringBiweekly
-  return inc.recurringWeekly
-}
-
-function amountLine(source: IncomeSource, inc: Dictionary['income']): string {
-  const amt = formatCurrency(source.amount, source.currency)
-  if (!source.isRecurring) return amt
-  const f = source.recurringFrequency ?? 'monthly'
-  if (f === 'monthly') return inc.perMonth(amt)
-  if (f === 'biweekly') return inc.perPaycheck(amt)
-  return inc.perWeek(amt)
-}
-
-function monthlyEquivNote(source: IncomeSource, inc: Dictionary['income']): string | null {
-  if (!source.isRecurring) return null
-  const m = incomeMonthlyMultiplier(source.recurringFrequency)
-  if (m === 1) return null
-  const eq = source.amount * m
-  return inc.monthlyEquiv(formatCurrency(eq, source.currency))
-}
+import { IncomeSourceRow } from '@/components/features/income/IncomeSourceRow'
 
 export default function IncomePage() {
-  const { incomeSources, deleteIncomeSource } = useFinanceStore(
+  const { incomeSources, deleteIncomeSource, savingsAccounts, debts } = useFinanceStore(
     useShallow((s) => ({
       incomeSources: s.incomeSources,
       deleteIncomeSource: s.deleteIncomeSource,
+      savingsAccounts: s.savingsAccounts,
+      debts: s.debts,
     }))
   )
   const { setActiveModal, setEditingIncomeId } = useSettingsStore()
@@ -96,44 +70,21 @@ export default function IncomePage() {
           </div>
         ) : (
           incomeSources.map((source) => (
-            <div
+            <IncomeSourceRow
               key={source.id}
-              className="glass-card rounded-2xl p-4 flex items-center justify-between gap-3 group"
-            >
-              <div>
-                <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">{source.name}</p>
-                <p className="text-xs text-[var(--color-brand-text-muted)]">{recurringSubtitle(source, t.income)}</p>
-                {monthlyEquivNote(source, t.income) ? (
-                  <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-0.5">
-                    {monthlyEquivNote(source, t.income)}
-                  </p>
-                ) : null}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-mono-numbers text-[var(--color-brand-text-primary)]">{amountLine(source, t.income)}</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingIncomeId(source.id)
-                    setActiveModal('editIncome')
-                  }}
-                  className="p-1.5 rounded-lg hover:bg-[var(--color-brand-elevated)] opacity-70 group-hover:opacity-100"
-                  aria-label={t.common.edit}
-                >
-                  <Pencil className="w-4 h-4 text-[var(--color-brand-text-muted)]" aria-hidden />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (window.confirm(t.income.confirmDelete)) deleteIncomeSource(source.id)
-                  }}
-                  className="p-1.5 rounded-lg hover:bg-red-900/30 opacity-70 group-hover:opacity-100"
-                  aria-label={t.common.delete}
-                >
-                  <Trash2 className="w-4 h-4 text-[var(--color-brand-red)]" aria-hidden />
-                </button>
-              </div>
-            </div>
+              source={source}
+              savingsAccounts={savingsAccounts}
+              debts={debts}
+              inc={t.income}
+              common={t.common}
+              onEdit={() => {
+                setEditingIncomeId(source.id)
+                setActiveModal('editIncome')
+              }}
+              onDelete={() => {
+                if (window.confirm(t.income.confirmDelete)) deleteIncomeSource(source.id)
+              }}
+            />
           ))
         )}
       </div>

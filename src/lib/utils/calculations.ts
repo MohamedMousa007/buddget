@@ -78,13 +78,24 @@ export function filterExpensesByMonth(expenses: Expense[], monthStr: string, mon
 export function calculateMonthlyIncome(
   sources: IncomeSource[],
   baseCurrency: Currency,
-  rates: Record<string, number>
+  rates: Record<string, number>,
+  monthStr?: string,
+  monthStartDay?: number
 ): number {
-  return sources.reduce((total, source) => {
-    if (!source.isRecurring) return total
-    const monthlyEq = source.amount * incomeMonthlyMultiplier(source.recurringFrequency)
-    return total + convertCurrency(monthlyEq, source.currency, baseCurrency, rates)
-  }, 0)
+  let total = 0
+  for (const source of sources) {
+    if (source.isRecurring) {
+      const monthlyEq = source.amount * incomeMonthlyMultiplier(source.recurringFrequency)
+      total += convertCurrency(monthlyEq, source.currency, baseCurrency, rates)
+    } else if (monthStr !== undefined && monthStartDay !== undefined) {
+      const { start, end } = getMonthRange(monthStr, monthStartDay)
+      const created = parseISO(source.createdAt)
+      if (isWithinInterval(created, { start, end })) {
+        total += convertCurrency(source.amount, source.currency, baseCurrency, rates)
+      }
+    }
+  }
+  return total
 }
 
 /**
@@ -282,7 +293,13 @@ export function calculateLeftToSpendCashFlow(params: {
     incomeBlocked,
   } = params
   const monthlyExpenses = filterExpensesByMonth(expenses, monthStr, monthStartDay)
-  const rawIncome = calculateMonthlyIncome(incomeSources, baseCurrency, exchangeRates)
+  const rawIncome = calculateMonthlyIncome(
+    incomeSources,
+    baseCurrency,
+    exchangeRates,
+    monthStr,
+    monthStartDay
+  )
   const totalIncome = incomeBlocked ? 0 : rawIncome
   const nonSav = calculateTotalSpentExcludingSavings(monthlyExpenses, baseCurrency, exchangeRates)
   const savTagged = monthlyExpenses

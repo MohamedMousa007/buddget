@@ -102,6 +102,21 @@ export const importDataSchema = z.object({
         notes: z.string().optional(),
         createdAt: z.string(),
         sharedPlanId: z.string().uuid().nullable().optional(),
+        sourceType: z
+          .enum([
+            'salary',
+            'bonus',
+            'side_hustle',
+            'investment',
+            'savings',
+            'debt',
+            'gift',
+            'refund',
+            'other',
+          ])
+          .optional(),
+        linkedSavingsAccountId: z.string().optional(),
+        linkedDebtId: z.string().optional(),
       })
     )
     .optional(),
