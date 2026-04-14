@@ -1,11 +1,11 @@
 'use client'
 
-import { BRAND_ICONS } from '@/lib/constants/subscriptionIcons'
+import Image from 'next/image'
 import { cn } from '@/lib/utils'
 
 /**
- * Branded inline SVG when `brandKey` maps in `BRAND_ICONS`; otherwise a rounded-square
- * tile (iOS-style) with emoji or initial — not a circle.
+ * Renders the brand’s app icon from `/public/subscription-icons/{brandKey}.png`.
+ * On load error, falls back to a rounded square with `initial` (and optional `emoji` as label).
  */
 export function SubscriptionBrandIcon({
   brandKey,
@@ -17,41 +17,59 @@ export function SubscriptionBrandIcon({
 }: {
   brandKey?: string | null
   color: string
-  emoji: string
+  /** Kept for API compatibility; fallback prefers `initial`. */
+  emoji?: string
   initial: string
   size?: 'sm' | 'md' | 'lg'
   className?: string
 }) {
   const px = size === 'lg' ? 48 : size === 'sm' ? 32 : 40
+  const radius = size === 'lg' ? 'rounded-xl' : size === 'sm' ? 'rounded-lg' : 'rounded-[10px]'
+  const label = (initial || emoji || '?').trim()
 
-  if (brandKey && BRAND_ICONS[brandKey]) {
-    return <div className={cn('shrink-0', className)}>{BRAND_ICONS[brandKey].icon(px)}</div>
+  if (brandKey) {
+    return (
+      <div
+        className={cn('relative shrink-0 overflow-hidden bg-[var(--color-brand-elevated)]', radius, className)}
+        style={{ width: px, height: px }}
+      >
+        <Image
+          src={`/subscription-icons/${brandKey}.png`}
+          alt=""
+          width={px}
+          height={px}
+          className="h-full w-full object-cover"
+          sizes={`${px}px`}
+          onError={(e) => {
+            const target = e.currentTarget
+            target.style.display = 'none'
+            const fallback = target.nextElementSibling as HTMLElement | null
+            if (fallback) fallback.style.display = 'flex'
+          }}
+        />
+        <div
+          className={cn(
+            'absolute inset-0 hidden items-center justify-center font-semibold text-white',
+            radius
+          )}
+          style={{ backgroundColor: color, fontSize: px * 0.38 }}
+        >
+          {label}
+        </div>
+      </div>
+    )
   }
 
-  const r = px * 0.22
-  const label = emoji || initial
   return (
-    <svg
-      width={px}
-      height={px}
-      viewBox={`0 0 ${px} ${px}`}
-      fill="none"
-      className={cn('shrink-0', className)}
-      aria-hidden
+    <div
+      className={cn(
+        'flex shrink-0 items-center justify-center font-semibold text-white',
+        radius,
+        className
+      )}
+      style={{ width: px, height: px, backgroundColor: color, fontSize: px * 0.38 }}
     >
-      <rect width={px} height={px} rx={r} fill={color} />
-      <text
-        x="50%"
-        y="54%"
-        dominantBaseline="central"
-        textAnchor="middle"
-        fill="white"
-        fontSize={px * 0.32}
-        fontWeight="600"
-        fontFamily="system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
-      >
-        {label}
-      </text>
-    </svg>
+      {label}
+    </div>
   )
 }
