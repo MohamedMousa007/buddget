@@ -1,11 +1,20 @@
 import { z } from 'zod'
-import type { Currency, PaymentMethod, Debt, IncomeSource, SavingsAccount } from '@/lib/store/types'
+import type {
+  Currency,
+  PaymentMethod,
+  Debt,
+  IncomeSource,
+  SavingsAccount,
+  Goal,
+} from '@/lib/store/types'
 import {
   generateWithFallback,
   throwIfAiProxyNotOk,
 } from '@/lib/ai/generateWithFallback'
 
 export type AIAction =
+  | 'add_goal'
+  | 'update_goal'
   | 'add_expense'
   | 'update_expense'
   | 'delete_expense'
@@ -42,6 +51,8 @@ export interface AIResponse {
 }
 
 const AI_ACTIONS: AIAction[] = [
+  'add_goal',
+  'update_goal',
   'add_expense',
   'update_expense',
   'delete_expense',
@@ -148,7 +159,8 @@ export function buildSystemPrompt(
   liveDataBlock?: string,
   budgetPlanContext?: { planId: string; planName: string; categoryRows: string },
   incomeSources: IncomeSource[] = [],
-  savingsAccounts: SavingsAccount[] = []
+  savingsAccounts: SavingsAccount[] = [],
+  goals: Goal[] = []
 ): string {
   const methodList = paymentMethods.map((m) => `"${m.name}" (id: ${m.id})`).join(', ')
   const debtList = debts
@@ -167,6 +179,9 @@ export function buildSystemPrompt(
   const savingsAccountList = savingsAccounts
     .map((a) => `"${a.name}" (${a.currency} ${a.currentBalance})`)
     .join(', ')
+  const goalsList = goals
+    .map((g) => `"${g.name}" (${g.category}${g.targetAmount != null ? `, target ${g.currency} ${g.targetAmount}` : ''})`)
+    .join(', ')
   const today = new Date().toISOString().slice(0, 10)
 
   const live = liveDataBlock
@@ -184,6 +199,7 @@ CONTEXT:
 - Expense categories (for add_expense): Rent, Transport, Food, Enjoyment, Debt, Remittance, Other — NOT Savings (use add_savings_holding or deposit_savings for money set aside)
 - Budget updates may still use Savings as a category for allocation targets
 - Active debts: ${debtList}
+- Savings goals: ${goalsList || '(none)'}
 ${live}
 RULES:
 1. ALWAYS return a single valid JSON object. No markdown, no code blocks, no extra text.
@@ -211,6 +227,8 @@ RULES:
 21. For "withdraw_savings", include data.account, data.amount, data.currency (optional).
 22. For "add_savings_account", include data.name, data.category ("savings" or "investment"), data.type ("bank", "cash", "gold", "stablecoin", "crypto", "stocks", "real_estate", "other"), data.currency, data.openingBalance (optional).
 23. For "delete_payment_method", include data.name to identify the payment method.
+24. For "add_goal", include data.name (optional), data.category (one of: emergency_fund, house, car, vacation, education, wedding, phone_device, family_support, sadaqah_charity, gift, investment, debt_freedom, quality_of_life, spending_control, retirement, custom), data.targetAmount (optional number), data.currency, data.targetDate (optional), data.monthlyContribution (optional).
+25. For "update_goal", include data.name (to match an existing goal) and optional data.targetAmount, data.targetDate, data.monthlyContribution, data.status ("active"|"paused"|"achieved"|"cancelled").
 ${budgetPlanContext ? `
 ACTIVE_BUDGET_PLAN:
 - Plan ID: ${budgetPlanContext.planId}
@@ -391,6 +409,13 @@ function friendlyLineForActionItem(action: AIAction, d: Record<string, unknown>)
       const cats = d.categories
       const n = Array.isArray(cats) ? cats.length : 0
       return n > 0 ? `Apply full budget plan (${n} categories)` : 'Apply budget plan'
+    }
+    case 'add_goal': {
+      const cat = d.category || 'goal'
+      return `Add goal (${String(cat)})`
+    }
+    case 'update_goal': {
+      return `Update goal "${d.name || d.goalName || ''}"`
     }
     case 'unclear':
       return d.clarificationNeeded ? String(d.clarificationNeeded) : 'Could you clarify that?'

@@ -17,6 +17,7 @@ import type {
   BudgetPlanCategory,
   DebtReceivedVia,
   FinanceStore,
+  Goal,
   IncomeSource,
   IncomeSourceType,
   OnboardingState,
@@ -33,8 +34,15 @@ import { SAVINGS_TYPE_ICONS } from '@/lib/constants/savingsIcons'
 import { normalizeSavingsAccountsList } from '@/lib/savings/normalizeSavingsAccount'
 import { defaultCategoryForSavingsType } from '@/lib/constants/savingsTypes'
 import { createSafeLocalStorage } from '@/lib/store/safeLocalStorage'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { buildGoalProgressContext } from '@/lib/goals/computeGoalProgress'
+import { reconcileAchievedGoals } from '@/lib/goals/reconcileAchievedGoals'
+const PERSIST_VERSION = 14
 
-const PERSIST_VERSION = 13
+function reconcileGoalsForState(state: FinanceStore): Goal[] {
+  const ctx = buildGoalProgressContext(state, useSettingsStore.getState().monthFilter)
+  return reconcileAchievedGoals(state.goals, ctx).goals
+}
 
 function holdingSubtypeToSavingsType(sub: SavingsHolding['subtype']): SavingsType {
   const m: Record<SavingsHolding['subtype'], SavingsType> = {
@@ -120,6 +128,7 @@ export const useFinanceStore = create<FinanceStore>()(
       debts: DEFAULT_DEBTS,
       debtPayments: [],
       recurringDebtPayments: [],
+      goals: [],
       exchangeRates: { ...DEFAULT_MARKET_RATES },
       goldPricePerGram: DEFAULT_GOLD_PRICE_PER_GRAM,
       lastGoldFetch: null,
@@ -289,38 +298,66 @@ export const useFinanceStore = create<FinanceStore>()(
         )
         const amountInBaseCurrency = converted ?? expense.amount
 
-        set((state) => ({
-          debtPayments: [
-            ...state.debtPayments,
-            { ...payment, id: generateId(), createdAt: new Date().toISOString() },
-          ],
-          expenses: [
-            ...state.expenses,
-            {
-              ...expense,
-              amountInBaseCurrency,
-              id: generateId(),
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            },
-          ],
-        }))
+        set((state) => {
+          const nextState: FinanceStore = {
+            ...state,
+            debtPayments: [
+              ...state.debtPayments,
+              { ...payment, id: generateId(), createdAt: new Date().toISOString() },
+            ],
+            expenses: [
+              ...state.expenses,
+              {
+                ...expense,
+                amountInBaseCurrency,
+                id: generateId(),
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              },
+            ],
+          }
+          return {
+            debtPayments: nextState.debtPayments,
+            expenses: nextState.expenses,
+            goals: reconcileGoalsForState(nextState),
+          }
+        })
       },
 
       addDebtPayment: (payment) =>
-        set((state) => ({
-          debtPayments: [
-            ...state.debtPayments,
-            { ...payment, id: generateId(), createdAt: new Date().toISOString() },
-          ],
-        })),
+        set((state) => {
+          const nextState: FinanceStore = {
+            ...state,
+            debtPayments: [
+              ...state.debtPayments,
+              { ...payment, id: generateId(), createdAt: new Date().toISOString() },
+            ],
+          }
+          return {
+            debtPayments: nextState.debtPayments,
+            goals: reconcileGoalsForState(nextState),
+          }
+        }),
 
       deleteDebt: (id) =>
-        set((state) => ({
-          debts: state.debts.filter((d) => d.id !== id),
-          debtPayments: state.debtPayments.filter((p) => p.debtId !== id),
-          recurringDebtPayments: state.recurringDebtPayments.filter((r) => r.debtId !== id),
-        })),
+        set((state) => {
+          const nextState: FinanceStore = {
+            ...state,
+            debts: state.debts.filter((d) => d.id !== id),
+            debtPayments: state.debtPayments.filter((p) => p.debtId !== id),
+            recurringDebtPayments: state.recurringDebtPayments.filter((r) => r.debtId !== id),
+            goals: state.goals.map((g) => ({
+              ...g,
+              linkedDebtIds: g.linkedDebtIds.filter((x) => x !== id),
+            })),
+          }
+          return {
+            debts: nextState.debts,
+            debtPayments: nextState.debtPayments,
+            recurringDebtPayments: nextState.recurringDebtPayments,
+            goals: reconcileGoalsForState(nextState),
+          }
+        }),
 
       deleteDebtPayment: (id) =>
         set((state) => ({
@@ -441,6 +478,52 @@ export const useFinanceStore = create<FinanceStore>()(
       },
 
       setFinancialGoalsNotes: (notes) => set({ financialGoalsNotes: notes }),
+
+      addGoal: (input) => {
+        const id = generateId()
+        const iso = new Date().toISOString()
+        set((state) => {
+          const row: Goal = {
+            ...input,
+            id,
+            createdAt: iso,
+            achievedAt: null,
+            manualCurrentAmount: input.manualCurrentAmount ?? 0,
+            linkedSavingsAccountIds: input.linkedSavingsAccountIds ?? [],
+            linkedDebtIds: input.linkedDebtIds ?? [],
+            monthlySpendingLimit: input.monthlySpendingLimit ?? null,
+            notes: input.notes ?? null,
+            targetDate: input.targetDate ?? null,
+            monthlyContribution: input.monthlyContribution ?? null,
+            priority: input.priority ?? state.goals.length,
+          }
+          const nextGoals = [...state.goals, row]
+          const nextState: FinanceStore = { ...state, goals: nextGoals }
+          return { goals: reconcileGoalsForState(nextState) }
+        })
+        return id
+      },
+
+      updateGoal: (id, updates) =>
+        set((state) => {
+          const nextGoals = state.goals.map((g) => (g.id === id ? { ...g, ...updates } : g))
+          const nextState: FinanceStore = { ...state, goals: nextGoals }
+          return { goals: reconcileGoalsForState(nextState) }
+        }),
+
+      deleteGoal: (id) =>
+        set((state) => ({
+          goals: state.goals.filter((g) => g.id !== id),
+        })),
+
+      achieveGoal: (id) =>
+        set((state) => ({
+          goals: state.goals.map((g) =>
+            g.id === id
+              ? { ...g, status: 'achieved', achievedAt: new Date().toISOString() }
+              : g
+          ),
+        })),
 
       deleteBudgetPlan: (planId) =>
         set((state) => {
@@ -669,11 +752,24 @@ export const useFinanceStore = create<FinanceStore>()(
         })),
 
       deleteSavingsAccount: (id) =>
-        set((state) => ({
-          savingsAccounts: state.savingsAccounts.filter((a) => a.id !== id),
-          savingsTransactions: state.savingsTransactions.filter((t) => t.accountId !== id),
-          recurringSavingsDeposits: state.recurringSavingsDeposits.filter((r) => r.accountId !== id),
-        })),
+        set((state) => {
+          const nextState: FinanceStore = {
+            ...state,
+            savingsAccounts: state.savingsAccounts.filter((a) => a.id !== id),
+            savingsTransactions: state.savingsTransactions.filter((t) => t.accountId !== id),
+            recurringSavingsDeposits: state.recurringSavingsDeposits.filter((r) => r.accountId !== id),
+            goals: state.goals.map((g) => ({
+              ...g,
+              linkedSavingsAccountIds: g.linkedSavingsAccountIds.filter((x) => x !== id),
+            })),
+          }
+          return {
+            savingsAccounts: nextState.savingsAccounts,
+            savingsTransactions: nextState.savingsTransactions,
+            recurringSavingsDeposits: nextState.recurringSavingsDeposits,
+            goals: reconcileGoalsForState(nextState),
+          }
+        }),
 
       addRecurringSavingsDeposit: (r) =>
         set((state) => {
@@ -720,11 +816,16 @@ export const useFinanceStore = create<FinanceStore>()(
             source: opts?.source,
             isAutoSave: opts?.isAutoSave,
           }
-          return {
+          const nextState: FinanceStore = {
+            ...state,
             savingsTransactions: [...state.savingsTransactions, tx],
             savingsAccounts: state.savingsAccounts.map((a) =>
               a.id === accountId ? { ...a, currentBalance: a.currentBalance + amt } : a
             ),
+          }
+          return {
+            ...nextState,
+            goals: reconcileGoalsForState(nextState),
           }
         })
       },
@@ -762,13 +863,18 @@ export const useFinanceStore = create<FinanceStore>()(
             notes: notes?.trim() || undefined,
             createdAt: new Date().toISOString(),
           }
-          return {
+          const nextState: FinanceStore = {
+            ...state,
             savingsTransactions: [...state.savingsTransactions, tx],
             savingsAccounts: state.savingsAccounts.map((a) =>
               a.id === accountId ? { ...a, currentBalance: Math.max(0, a.currentBalance - amt) } : a
             ),
             incomeSources: [...state.incomeSources, incomeEntry],
             settings: { ...state.settings, noIncomeDeclared: false },
+          }
+          return {
+            ...nextState,
+            goals: reconcileGoalsForState(nextState),
           }
         })
       },
@@ -790,11 +896,16 @@ export const useFinanceStore = create<FinanceStore>()(
             date: new Date().toISOString().slice(0, 10),
             notes: notes?.trim() || 'Manual balance correction',
           }
-          return {
+          const nextState: FinanceStore = {
+            ...state,
             savingsTransactions: [...state.savingsTransactions, tx],
             savingsAccounts: state.savingsAccounts.map((a) =>
               a.id === accountId ? { ...a, currentBalance: nb } : a
             ),
+          }
+          return {
+            ...nextState,
+            goals: reconcileGoalsForState(nextState),
           }
         })
       },
@@ -870,25 +981,32 @@ export const useFinanceStore = create<FinanceStore>()(
           savingsTransactions = migrated.transactions
           savingsHoldingsOut = []
         }
-        set((state) => ({
-          ...state,
-          ...data,
-          budgetPlans: data.budgetPlans ?? state.budgetPlans,
-          activeBudgetPlanId:
-            data.activeBudgetPlanId !== undefined ? data.activeBudgetPlanId : state.activeBudgetPlanId,
-          financialGoalsNotes:
-            data.financialGoalsNotes !== undefined ? data.financialGoalsNotes : state.financialGoalsNotes,
-          savingsHoldings: data.savingsHoldings !== undefined ? savingsHoldingsOut : state.savingsHoldings,
-          savingsAccounts,
-          savingsTransactions,
-          recurringSavingsDeposits: data.recurringSavingsDeposits ?? state.recurringSavingsDeposits,
-          settings: data.settings
-            ? { ...state.settings, ...data.settings }
-            : state.settings,
-          onboardingState: data.onboardingState
-            ? { ...defaultOnboardingState(), ...data.onboardingState }
-            : state.onboardingState,
-        }))
+        set((state) => {
+          const merged: FinanceStore = {
+            ...state,
+            ...data,
+            budgetPlans: data.budgetPlans ?? state.budgetPlans,
+            activeBudgetPlanId:
+              data.activeBudgetPlanId !== undefined ? data.activeBudgetPlanId : state.activeBudgetPlanId,
+            financialGoalsNotes:
+              data.financialGoalsNotes !== undefined ? data.financialGoalsNotes : state.financialGoalsNotes,
+            savingsHoldings: data.savingsHoldings !== undefined ? savingsHoldingsOut : state.savingsHoldings,
+            savingsAccounts,
+            savingsTransactions,
+            recurringSavingsDeposits: data.recurringSavingsDeposits ?? state.recurringSavingsDeposits,
+            settings: data.settings
+              ? { ...state.settings, ...data.settings }
+              : state.settings,
+            onboardingState: data.onboardingState
+              ? { ...defaultOnboardingState(), ...data.onboardingState }
+              : state.onboardingState,
+            goals: data.goals ?? state.goals,
+          }
+          return {
+            ...merged,
+            goals: reconcileGoalsForState(merged),
+          }
+        })
       },
 
       exportData: () => {
@@ -912,6 +1030,7 @@ export const useFinanceStore = create<FinanceStore>()(
           debts: state.debts,
           debtPayments: state.debtPayments,
           recurringDebtPayments: state.recurringDebtPayments,
+          goals: state.goals,
         }
         return JSON.stringify(data, null, 2)
       },
@@ -936,6 +1055,7 @@ export const useFinanceStore = create<FinanceStore>()(
           debts: DEFAULT_DEBTS,
           debtPayments: [],
           recurringDebtPayments: [],
+          goals: [],
           exchangeRates: { ...DEFAULT_MARKET_RATES },
           goldPricePerGram: DEFAULT_GOLD_PRICE_PER_GRAM,
           lastGoldFetch: null,
@@ -974,6 +1094,12 @@ export const useFinanceStore = create<FinanceStore>()(
                 (d.receivedVia as DebtReceivedVia | undefined) ??
                 ((d.isGold as boolean | undefined) ? 'gold' : 'cash'),
             })),
+          }
+        }
+        if (fromVersion < 14) {
+          p = {
+            ...p,
+            goals: Array.isArray(p.goals) ? (p.goals as Goal[]) : [],
           }
         }
         if (fromVersion >= 6) {
@@ -1112,6 +1238,7 @@ export const useFinanceStore = create<FinanceStore>()(
           debts: [],
           debtPayments: [],
           recurringDebtPayments: [],
+          goals: [],
           exchangeRates: { ...DEFAULT_MARKET_RATES },
           goldPricePerGram: DEFAULT_GOLD_PRICE_PER_GRAM,
           lastGoldFetch: null,
@@ -1125,6 +1252,7 @@ export const useFinanceStore = create<FinanceStore>()(
         return {
           ...current,
           ...p,
+          goals: p.goals ?? current.goals,
           lastGoldFetch: p.lastGoldFetch ?? current.lastGoldFetch,
           goldPriceAvailable: p.goldPriceAvailable ?? current.goldPriceAvailable,
           financialGoalsNotes: p.financialGoalsNotes ?? current.financialGoalsNotes,

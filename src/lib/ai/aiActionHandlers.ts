@@ -12,6 +12,9 @@ import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { SAVINGS_TYPE_ICONS } from '@/lib/constants/savingsIcons'
 import { defaultCategoryForSavingsType } from '@/lib/constants/savingsTypes'
 import { normalizeDebtIncoming } from '@/lib/debt/normalizeDebt'
+import { GOAL_CATEGORIES } from '@/lib/constants/goalCategories'
+import { defaultGoalName } from '@/lib/goals/defaultGoalCopy'
+import { coerceGoalCategory } from '@/lib/goals/coerceGoalCategory'
 import type {
   BudgetPlanCategory,
   Currency,
@@ -23,6 +26,7 @@ import type {
   Debt,
   DebtPayment,
   Expense,
+  Goal,
   IncomeSource,
   IncomeSourceType,
   PaymentMethod,
@@ -195,6 +199,7 @@ export function buildAIActionHandlerContext(store: FinanceStore): AIActionHandle
     debtPayments: store.debtPayments,
     incomeSources: store.incomeSources,
     savingsAccounts: store.savingsAccounts,
+    goals: store.goals,
     settings: store.settings,
     exchangeRates: store.exchangeRates,
     goldPricePerGram: store.goldPricePerGram,
@@ -220,6 +225,8 @@ export function buildAIActionHandlerContext(store: FinanceStore): AIActionHandle
     updateBudgetPlan: store.updateBudgetPlan,
     updateProfile: store.updateProfile,
     setFinancialGoalsNotes: store.setFinancialGoalsNotes,
+    addGoal: store.addGoal,
+    updateGoal: store.updateGoal,
   }
 }
 
@@ -231,6 +238,7 @@ export interface AIActionHandlerContext {
   debtPayments: DebtPayment[]
   incomeSources: IncomeSource[]
   savingsAccounts: SavingsAccount[]
+  goals: Goal[]
   settings: AppSettings
   exchangeRates: Record<string, number>
   goldPricePerGram: number
@@ -256,6 +264,8 @@ export interface AIActionHandlerContext {
   updateBudgetPlan: FinanceStore['updateBudgetPlan']
   updateProfile: FinanceStore['updateProfile']
   setFinancialGoalsNotes: FinanceStore['setFinancialGoalsNotes']
+  addGoal: FinanceStore['addGoal']
+  updateGoal: FinanceStore['updateGoal']
 }
 
 export function findPaymentMethod(
@@ -430,6 +440,12 @@ export function validateActionItem(
   }
   if (action === 'delete_payment_method') {
     if (!String(getField(d, 'name') || '').trim()) return 'delete_payment_method needs data.name.'
+    return null
+  }
+  if (action === 'update_goal') {
+    if (!String(getField(d, 'name', 'goalName') || '').trim()) {
+      return 'update_goal needs data.name to match a goal.'
+    }
     return null
   }
   return null
@@ -808,6 +824,71 @@ export function executeActionItem(
         if (patch.name) void pushProfileFieldsToSupabase({ name: patch.name })
       }
     }
+    return
+  }
+  if (action === 'add_goal') {
+    const cat = coerceGoalCategory(getField(d, 'category'))
+    const currency = clampFiatToAllowed(
+      ctx.settings,
+      String(getField(d, 'currency') || ctx.settings.baseCurrency) as Currency
+    )
+    const taRaw = getField(d, 'targetAmount')
+    const ta = taRaw !== undefined && taRaw !== null && taRaw !== '' ? Number(taRaw) : NaN
+    const nameTrim = String(getField(d, 'name') || '').trim() || defaultGoalName(cat)
+    const emoji = GOAL_CATEGORIES.find((x) => x.value === cat)?.emoji ?? '✏️'
+    ctx.addGoal({
+      name: nameTrim,
+      emoji,
+      category: cat,
+      targetAmount: Number.isFinite(ta) && ta >= 0 ? ta : null,
+      currency,
+      targetDate: String(getField(d, 'targetDate') || '').trim() || null,
+      monthlyContribution: (() => {
+        const m = Number(getField(d, 'monthlyContribution'))
+        return Number.isFinite(m) && m > 0 ? m : null
+      })(),
+      monthlySpendingLimit: null,
+      linkedSavingsAccountIds: [],
+      linkedDebtIds: [],
+      manualCurrentAmount: 0,
+      priority: ctx.goals.length,
+      status: 'active',
+      notes: null,
+    })
+    return
+  }
+  if (action === 'update_goal') {
+    const hint = String(getField(d, 'name', 'goalName') || '')
+      .trim()
+      .toLowerCase()
+    const g = ctx.goals.find(
+      (x) =>
+        x.name.toLowerCase().includes(hint) ||
+        (hint.length > 0 && hint.includes(x.name.toLowerCase()))
+    )
+    if (!g) return
+    const patch: Partial<Goal> = {}
+    const ta = getField(d, 'targetAmount')
+    if (ta !== undefined && ta !== null && ta !== '') {
+      const n = Number(ta)
+      if (Number.isFinite(n) && n >= 0) patch.targetAmount = n
+    }
+    const td = getField(d, 'targetDate')
+    if (td !== undefined && td !== null) patch.targetDate = String(td).trim() || null
+    const mc = getField(d, 'monthlyContribution')
+    if (mc !== undefined && mc !== null && mc !== '') {
+      const n = Number(mc)
+      patch.monthlyContribution = Number.isFinite(n) && n > 0 ? n : null
+    }
+    const st = getField(d, 'status')
+    if (st != null && st !== '') {
+      const s = String(st).toLowerCase()
+      if (s === 'active' || s === 'paused' || s === 'achieved' || s === 'cancelled') {
+        patch.status = s
+        if (s === 'achieved') patch.achievedAt = new Date().toISOString()
+      }
+    }
+    ctx.updateGoal(g.id, patch)
     return
   }
 }

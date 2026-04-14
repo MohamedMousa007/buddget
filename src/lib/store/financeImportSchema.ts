@@ -379,6 +379,46 @@ export const importDataSchema = z.object({
     )
     .optional(),
   financialGoalsNotes: z.string().optional(),
+  goals: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        emoji: z.string(),
+        category: z.enum([
+          'emergency_fund',
+          'house',
+          'car',
+          'vacation',
+          'education',
+          'wedding',
+          'phone_device',
+          'family_support',
+          'sadaqah_charity',
+          'gift',
+          'investment',
+          'debt_freedom',
+          'quality_of_life',
+          'spending_control',
+          'retirement',
+          'custom',
+        ]),
+        targetAmount: z.number().nullable(),
+        currency: savingsCurrencySchema,
+        manualCurrentAmount: z.number(),
+        targetDate: z.string().nullable(),
+        linkedSavingsAccountIds: z.array(z.string()),
+        linkedDebtIds: z.array(z.string()),
+        monthlySpendingLimit: z.number().nullable(),
+        priority: z.number(),
+        status: z.enum(['active', 'achieved', 'paused', 'cancelled']),
+        monthlyContribution: z.number().nullable(),
+        notes: z.string().nullable(),
+        createdAt: z.string(),
+        achievedAt: z.string().nullable(),
+      })
+    )
+    .optional(),
   onboardingState: z
     .object({
       flowVersion: z.number(),

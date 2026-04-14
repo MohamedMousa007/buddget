@@ -8,6 +8,7 @@ import {
   LogOut,
   LogIn,
   UserPlus,
+  Target,
 } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -150,6 +151,10 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
       <button type="button" onClick={() => navigate('/profile')} className={itemClass} role="menuitem">
         <User className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.yourProfile}</span>
+      </button>
+      <button type="button" onClick={() => navigate('/goals')} className={itemClass} role="menuitem">
+        <Target className="w-4 h-4 shrink-0" />
+        <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.goals}</span>
       </button>
       <button type="button" onClick={() => navigate('/settings')} className={itemClass} role="menuitem">
         <Settings className="w-4 h-4 shrink-0" />

@@ -7,6 +7,7 @@ import { KPICard } from '@/components/dashboard/KPICard'
 import { BudgetRing } from '@/components/dashboard/BudgetRing'
 import { CategoryBar } from '@/components/dashboard/CategoryBar'
 import { RecentExpenses } from '@/components/dashboard/RecentExpenses'
+import { GoalsWidget } from '@/components/dashboard/GoalsWidget'
 import { SavingsCard } from '@/components/dashboard/SavingsCard'
 import { DebtSnapshot } from '@/components/dashboard/DebtSnapshot'
 import { useRouter } from 'next/navigation'
@@ -102,15 +103,18 @@ export default function DashboardPage() {
 
         {/* Savings + Recent */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <SavingsCard
-            savingsTotal={stats.savingsTotal}
-            savingsAccountsTotal={stats.savingsAccountsTotal}
-            savingsHoldingsTotal={stats.savingsHoldingsTotal}
-            savingsFromExpenses={stats.savingsFromExpenses}
-            netSavingsTransfersThisMonth={stats.netSavingsTransfersThisMonth}
-            savingsBudget={stats.plannedSavingsBudget}
-            currency={stats.baseCurrency}
-          />
+          <div className="space-y-6">
+            <SavingsCard
+              savingsTotal={stats.savingsTotal}
+              savingsAccountsTotal={stats.savingsAccountsTotal}
+              savingsHoldingsTotal={stats.savingsHoldingsTotal}
+              savingsFromExpenses={stats.savingsFromExpenses}
+              netSavingsTransfersThisMonth={stats.netSavingsTransfersThisMonth}
+              savingsBudget={stats.plannedSavingsBudget}
+              currency={stats.baseCurrency}
+            />
+            <GoalsWidget />
+          </div>
           <RecentExpenses expenses={stats.monthlyExpenses} />
         </div>
 
