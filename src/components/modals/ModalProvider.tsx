@@ -11,6 +11,7 @@ import { EditDebtSheet } from './EditDebtSheet'
 import { AIChat } from '@/components/features/ai-chat/AIChat'
 import { AIChatBubble } from '@/components/ai/AIChatBubble'
 import { QuickAddFAB } from '@/components/modals/QuickAddFAB'
+import { GoalAchievementListener } from '@/components/features/goals/GoalAchievementListener'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT } from '@/lib/i18n'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
@@ -36,6 +37,7 @@ export function ModalProvider() {
       <EditDebtSheet />
       <AIChat />
       <QuickAddFAB />
+      <GoalAchievementListener />
       <AIChatBubble
         onClick={() =>
           requireAuth(() => setActiveModal('aiChat'), t.modals.fabRequireAuthAi)

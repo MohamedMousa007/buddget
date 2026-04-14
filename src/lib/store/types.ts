@@ -433,6 +433,48 @@ export interface OnboardingState {
   lastValidationNotes: string[] | null
 }
 
+export type GoalStatus = 'active' | 'achieved' | 'paused' | 'cancelled'
+
+export type GoalCategory =
+  | 'emergency_fund'
+  | 'house'
+  | 'car'
+  | 'vacation'
+  | 'education'
+  | 'wedding'
+  | 'phone_device'
+  | 'family_support'
+  | 'sadaqah_charity'
+  | 'gift'
+  | 'investment'
+  | 'debt_freedom'
+  | 'quality_of_life'
+  | 'spending_control'
+  | 'retirement'
+  | 'custom'
+
+export interface Goal {
+  id: string
+  name: string
+  emoji: string
+  category: GoalCategory
+  /** Target amount to save/accumulate (null for non-monetary goals like spending_control). */
+  targetAmount: number | null
+  currency: Currency
+  /** Only used when not linked to savings or debts — for externally tracked goals. */
+  manualCurrentAmount: number
+  targetDate: string | null
+  linkedSavingsAccountIds: string[]
+  linkedDebtIds: string[]
+  monthlySpendingLimit: number | null
+  priority: number
+  status: GoalStatus
+  monthlyContribution: number | null
+  notes: string | null
+  createdAt: string
+  achievedAt: string | null
+}
+
 export interface FinanceStore {
   profile: UserProfile
   settings: AppSettings
@@ -458,6 +500,7 @@ export interface FinanceStore {
   debts: Debt[]
   debtPayments: DebtPayment[]
   recurringDebtPayments: RecurringDebtPayment[]
+  goals: Goal[]
   exchangeRates: Record<string, number>
   goldPricePerGram: number
   /** ISO time of last successful `/api/gold` fetch (client). */
@@ -555,6 +598,14 @@ export interface FinanceStore {
   updateSettings: (updates: Partial<AppSettings>) => void
   updateProfile: (updates: Partial<UserProfile>) => void
   setFinancialGoalsNotes: (notes: string) => void
+  addGoal: (
+    goal: Omit<Goal, 'id' | 'createdAt' | 'achievedAt' | 'manualCurrentAmount'> & {
+      manualCurrentAmount?: number
+    }
+  ) => string
+  updateGoal: (id: string, updates: Partial<Goal>) => void
+  deleteGoal: (id: string) => void
+  achieveGoal: (id: string) => void
   setOnboardingState: (updates: Partial<OnboardingState> | ((prev: OnboardingState) => OnboardingState)) => void
   updateRates: (rates: Record<string, number>) => void
   updateGoldPrice: (price: number) => void

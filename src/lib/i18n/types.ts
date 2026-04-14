@@ -1226,6 +1226,64 @@ export interface Dictionary {
     yourProfile: string
     budgetSetup: string
     settings: string
+    goals: string
+  }
+
+  goals: {
+    pageTitle: string
+    addGoal: string
+    editGoal: string
+    emptyState: string
+    emptyStateHint: string
+    active: string
+    achieved: string
+    achievedSection: string
+    paused: string
+    targetAmount: string
+    currentProgress: string
+    monthlyContribution: string
+    targetDate: string
+    linkedAccounts: string
+    linkedDebts: string
+    monthsRemaining: string
+    achievedOn: string
+    seeAll: string
+    dashboardEmpty: string
+    profileSummaryLine: (active: number, achieved: number) => string
+    nextMilestone: string
+    manage: string
+    category: string
+    goalName: string
+    currency: string
+    monthlyLimit: string
+    nextStep: string
+    createAccountHint: string
+    createAccountPlaceholder: string
+    manualProgress: string
+    manualProgressHint: string
+    notes: string
+    monthsOfExpenses: string
+    debtRemaining: string
+    thisMonth: string
+    confirmDelete: string
+    deleteGoal: string
+    celebration: (name: string) => string
+    categoryEmergencyFund: string
+    categoryHouse: string
+    categoryCar: string
+    categoryVacation: string
+    categoryEducation: string
+    categoryWedding: string
+    categoryPhoneDevice: string
+    categoryFamilySupport: string
+    categorySadaqahCharity: string
+    categoryGift: string
+    categoryInvestment: string
+    categoryDebtFreedom: string
+    categoryQualityOfLife: string
+    categorySpendingControl: string
+    categoryRetirement: string
+    categoryCustom: string
   }
 }
 
