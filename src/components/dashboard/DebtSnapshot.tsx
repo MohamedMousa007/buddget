@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useMemo } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -24,17 +25,22 @@ export function DebtSnapshot() {
   const t = useT()
   const { session } = useAuth()
   const hideFinance = supabaseAuthConfigured() && session == null
-  const { debts, debtPayments, settings, exchangeRates, goldPricePerGram, goldPriceAvailable } =
+  const { debts, debtPayments, expenses, settings, exchangeRates, goldPricePerGram, goldPriceAvailable } =
     useFinanceStore(
       useShallow((s) => ({
         debts: s.debts,
         debtPayments: s.debtPayments,
+        expenses: s.expenses,
         settings: s.settings,
         exchangeRates: s.exchangeRates,
         goldPricePerGram: s.goldPricePerGram,
         goldPriceAvailable: s.goldPriceAvailable,
       }))
     )
+  const balanceCtx = useMemo(
+    () => ({ expenses, exchangeRates, allDebts: debts }),
+    [expenses, exchangeRates, debts]
+  )
   const base = settings.baseCurrency
   const goldOk = goldPriceAvailable !== false
 
@@ -48,7 +54,7 @@ export function DebtSnapshot() {
       </h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {debts.map((debt) => {
-          const remainingRaw = calculateDebtRemaining(debt, debtPayments)
+          const remainingRaw = calculateDebtRemaining(debt, debtPayments, balanceCtx)
           const remainingInBase =
             debt.isGold && !goldOk
               ? null
@@ -57,22 +63,35 @@ export function DebtSnapshot() {
                 : convertCurrency(remainingRaw, debt.currency, base, exchangeRates)
 
           const paymentsCount = debtPayments.filter((p) => p.debtId === debt.id).length
-          const progressPercent = debt.startingBalance > 0
-            ? ((debt.startingBalance - remainingRaw) / debt.startingBalance) * 100
-            : 0
+          const progressPercent =
+            debt.debtType === 'credit_card' && debt.creditLimit && debt.creditLimit > 0
+              ? Math.min(100, (remainingRaw / debt.creditLimit) * 100)
+              : debt.startingBalance > 0
+                ? ((debt.startingBalance - remainingRaw) / debt.startingBalance) * 100
+                : 0
+
+          const rowIcon = debt.debtType === 'credit_card' ? '💳' : debt.isGold ? '🪙' : '💵'
+          const rowBadge =
+            debt.debtType === 'credit_card'
+              ? t.debts.debtTypeCreditCard
+              : debt.isGold
+                ? `${debt.goldKarat || 24}K`
+                : t.dashboard.debtBadgeCash
+          const badgeClass =
+            debt.debtType === 'credit_card'
+              ? 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
+              : debt.isGold
+                ? 'bg-[var(--color-brand-gold)]/20 text-[var(--color-brand-gold)]'
+                : 'bg-[var(--color-brand-green)]/20 text-[var(--color-brand-green)]'
 
           return (
             <Link href="/debts" key={debt.id}>
               <div className="glass-card rounded-2xl p-4 hover:bg-[var(--color-brand-elevated)] transition-colors cursor-pointer">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-base">{debt.isGold ? '🪙' : '💵'}</span>
+                  <span className="text-base">{rowIcon}</span>
                   <h4 className="text-sm font-medium text-[var(--color-brand-text-primary)]">{debt.name}</h4>
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase ${
-                    debt.isGold
-                      ? 'bg-[var(--color-brand-gold)]/20 text-[var(--color-brand-gold)]'
-                      : 'bg-[var(--color-brand-green)]/20 text-[var(--color-brand-green)]'
-                  }`}>
-                    {debt.isGold ? `${debt.goldKarat || 24}K` : t.dashboard.debtBadgeCash}
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase ${badgeClass}`}>
+                    {rowBadge}
                   </span>
                 </div>
 

@@ -15,6 +15,7 @@ import type {
   Currency,
   Debt,
   DebtPayment,
+  Expense,
   Goal,
   GoalCategory,
   IncomeSource,
@@ -32,6 +33,7 @@ type StoreSlice = {
   incomeSources: IncomeSource[]
   debts: Debt[]
   debtPayments: DebtPayment[]
+  expenses: Expense[]
   goldPricePerGram: number
   goldPriceAvailable: boolean
 }
@@ -109,6 +111,7 @@ export function useAddGoalForm(editingGoal: Goal | null, onDone: () => void) {
     savingsAccounts,
     debts,
     debtPayments,
+    expenses,
     goldPricePerGram,
     goldPriceAvailable,
     addGoal,
@@ -122,6 +125,7 @@ export function useAddGoalForm(editingGoal: Goal | null, onDone: () => void) {
       savingsAccounts: st.savingsAccounts,
       debts: st.debts,
       debtPayments: st.debtPayments,
+      expenses: st.expenses,
       goldPricePerGram: st.goldPricePerGram,
       goldPriceAvailable: st.goldPriceAvailable,
       addGoal: st.addGoal,
@@ -136,6 +140,7 @@ export function useAddGoalForm(editingGoal: Goal | null, onDone: () => void) {
     incomeSources,
     debts,
     debtPayments,
+    expenses,
     goldPricePerGram,
     goldPriceAvailable,
   }
@@ -172,9 +177,10 @@ export function useAddGoalForm(editingGoal: Goal | null, onDone: () => void) {
       } else if (cat === 'debt_freedom') {
         const active = debts.filter((d) => d.status !== 'cleared')
         setLinkedDebtIds(active.map((d) => d.id))
+        const balanceCtx = { expenses, exchangeRates, allDebts: debts }
         let sumBase = 0
         for (const d of active) {
-          const rem = calculateDebtRemaining(d, debtPayments)
+          const rem = calculateDebtRemaining(d, debtPayments, balanceCtx)
           sumBase += calculateDebtRemainingInBaseCurrency(
             rem,
             d,
@@ -190,7 +196,7 @@ export function useAddGoalForm(editingGoal: Goal | null, onDone: () => void) {
         setTargetAmount('')
       }
     },
-    [debts, debtPayments, exchangeRates, goldPriceAvailable, goldPricePerGram, incomeSources, settings]
+    [debts, debtPayments, expenses, exchangeRates, goldPriceAvailable, goldPricePerGram, incomeSources, settings]
   )
 
   const savingsOptions = useMemo(

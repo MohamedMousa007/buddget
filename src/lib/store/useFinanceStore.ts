@@ -15,18 +15,27 @@ import {
 } from './defaultFinanceData'
 import type {
   BudgetPlanCategory,
+  Currency,
+  DebtCurrency,
   DebtReceivedVia,
   FinanceStore,
   Goal,
   IncomeSource,
   IncomeSourceType,
   OnboardingState,
+  PaymentMethod,
   RecurringSavingsDeposit,
   SavingsAccount,
   SavingsHolding,
   SavingsTransaction,
   SavingsType,
+  Subscription,
 } from './types'
+import { computeNextBillingDate } from '@/lib/subscriptions/subscriptionDates'
+import {
+  buildRecurringExpenseFromSubscription,
+  patchRecurringFromSubscription,
+} from '@/lib/subscriptions/subscriptionRecurring'
 import { normalizeDebtIncoming } from '@/lib/debt/normalizeDebt'
 import { defaultOnboardingState } from '@/lib/onboarding/onboardingTypes'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
@@ -37,7 +46,7 @@ import { createSafeLocalStorage } from '@/lib/store/safeLocalStorage'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { buildGoalProgressContext } from '@/lib/goals/computeGoalProgress'
 import { reconcileAchievedGoals } from '@/lib/goals/reconcileAchievedGoals'
-const PERSIST_VERSION = 14
+const PERSIST_VERSION = 16
 
 function reconcileGoalsForState(state: FinanceStore): Goal[] {
   const ctx = buildGoalProgressContext(state, useSettingsStore.getState().monthFilter)
@@ -117,6 +126,7 @@ export const useFinanceStore = create<FinanceStore>()(
       incomeSources: DEFAULT_INCOME,
       expenses: [],
       recurringExpenses: [],
+      subscriptions: [],
       budgetCategories: DEFAULT_BUDGET,
       budgetPlans: [],
       activeBudgetPlanId: null,
@@ -227,18 +237,42 @@ export const useFinanceStore = create<FinanceStore>()(
           incomeSources: state.incomeSources.filter((s) => s.id !== id),
         })),
 
-      addPaymentMethod: (method) =>
-        set((state) => ({
-          paymentMethods: method.isDefault
-            ? [
-                ...state.paymentMethods.map((m) => ({ ...m, isDefault: false })),
-                { ...method, id: generateId() },
-              ]
-            : [
-                ...state.paymentMethods,
-                { ...method, id: generateId() },
-              ],
-        })),
+      addPaymentMethod: (method) => {
+        const pmId = generateId()
+        const newMethod: PaymentMethod = { ...method, id: pmId }
+        set((state) => {
+          const paymentMethods = method.isDefault
+            ? [...state.paymentMethods.map((m) => ({ ...m, isDefault: false })), newMethod]
+            : [...state.paymentMethods, newMethod]
+          if (method.type !== 'card_credit') {
+            return { paymentMethods }
+          }
+          const hasDebtForPm = state.debts.some(
+            (d) => d.debtType === 'credit_card' && d.linkedPaymentMethodId === pmId
+          )
+          if (hasDebtForPm) return { paymentMethods }
+          const debtId = generateId()
+          const ccRow = normalizeDebtIncoming({
+            name: method.name,
+            person: '',
+            startingBalance: 0,
+            currency: method.currency as DebtCurrency,
+            isGold: false,
+            receivedVia: 'card',
+            debtType: 'credit_card',
+            direction: 'i_owe',
+            status: 'active',
+            linkedPaymentMethodId: pmId,
+            gracePeriodDays: 55,
+            minimumPaymentPercent: 5,
+            notes: undefined,
+          })
+          return {
+            paymentMethods,
+            debts: [...state.debts, { ...ccRow, id: debtId, createdAt: new Date().toISOString() }],
+          }
+        })
+      },
 
       updatePaymentMethod: (id, updates) =>
         set((state) => ({
@@ -266,6 +300,90 @@ export const useFinanceStore = create<FinanceStore>()(
           ],
         }))
         return id
+      },
+
+      addCreditCardDebt: (debtInput, paymentMethodInfo) => {
+        const st = get()
+        const matchPm = (pm: PaymentMethod) =>
+          pm.type === 'card_credit' &&
+          (pm.name.toLowerCase() === paymentMethodInfo.name.trim().toLowerCase() ||
+            (!!paymentMethodInfo.last4 && pm.last4 === paymentMethodInfo.last4))
+
+        const existingPm = st.paymentMethods.find(matchPm)
+        const pmId = existingPm?.id ?? generateId()
+
+        const existingDebt = st.debts.find(
+          (d) => d.debtType === 'credit_card' && d.linkedPaymentMethodId === pmId
+        )
+
+        const merged = normalizeDebtIncoming({
+          ...debtInput,
+          debtType: 'credit_card',
+          direction: 'i_owe',
+          status: 'active',
+          linkedPaymentMethodId: pmId,
+          receivedVia: 'card',
+          person: debtInput.person?.trim() || '',
+        })
+
+        if (existingDebt) {
+          set((state) => ({
+            debts: state.debts.map((d) =>
+              d.id === existingDebt.id
+                ? {
+                    ...d,
+                    ...merged,
+                    id: d.id,
+                    createdAt: d.createdAt,
+                    linkedPaymentMethodId: pmId,
+                  }
+                : d
+            ),
+            paymentMethods: existingPm
+              ? state.paymentMethods
+              : [
+                  ...state.paymentMethods,
+                  {
+                    id: pmId,
+                    name: paymentMethodInfo.name.trim(),
+                    type: 'card_credit',
+                    currency: merged.currency as Currency,
+                    last4: paymentMethodInfo.last4,
+                    isDefault: false,
+                    color: paymentMethodInfo.color,
+                  },
+                ],
+          }))
+          return existingDebt.id
+        }
+
+        const debtId = generateId()
+        set((state) => ({
+          debts: [
+            ...state.debts,
+            {
+              ...merged,
+              id: debtId,
+              createdAt: new Date().toISOString(),
+              linkedPaymentMethodId: pmId,
+            },
+          ],
+          paymentMethods: existingPm
+            ? state.paymentMethods
+            : [
+                ...state.paymentMethods,
+                {
+                  id: pmId,
+                  name: paymentMethodInfo.name.trim(),
+                  type: 'card_credit',
+                  currency: merged.currency as Currency,
+                  last4: paymentMethodInfo.last4,
+                  isDefault: false,
+                  color: paymentMethodInfo.color,
+                },
+              ],
+        }))
+        return debtId
       },
 
       updateDebt: (id, updates) =>
@@ -403,6 +521,117 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => ({
           recurringExpenses: state.recurringExpenses.filter((e) => e.id !== id),
         })),
+
+      addSubscription: (input) => {
+        const subId = generateId()
+        const recurringExpenseId = generateId()
+        const st = get()
+        const nextBilling =
+          input.nextBillingDate ??
+          computeNextBillingDate(input.startDate, input.billingDay, input.billingCycle)
+        const sub: Subscription = {
+          ...input,
+          id: subId,
+          linkedRecurringExpenseId: recurringExpenseId,
+          nextBillingDate: nextBilling,
+          createdAt: new Date().toISOString(),
+          cancelledAt: null,
+        }
+        const fallbackPm =
+          st.paymentMethods.find((m) => m.isDefault)?.id || st.paymentMethods[0]?.id || ''
+        const re = buildRecurringExpenseFromSubscription(sub, recurringExpenseId, fallbackPm)
+        set((state) => ({
+          subscriptions: [...state.subscriptions, sub],
+          recurringExpenses: [...state.recurringExpenses, re],
+        }))
+        return subId
+      },
+
+      updateSubscription: (id, updates) =>
+        set((state) => {
+          const sub = state.subscriptions.find((s) => s.id === id)
+          if (!sub) return state
+          const merged: Subscription = { ...sub, ...updates }
+          let nextBilling = merged.nextBillingDate
+          if (
+            updates.startDate !== undefined ||
+            updates.billingDay !== undefined ||
+            updates.billingCycle !== undefined
+          ) {
+            nextBilling = computeNextBillingDate(
+              merged.startDate,
+              merged.billingDay,
+              merged.billingCycle
+            )
+          }
+          const merged2: Subscription = { ...merged, nextBillingDate: nextBilling ?? merged.nextBillingDate }
+          const updatedSubs = state.subscriptions.map((s) => (s.id === id ? merged2 : s))
+          const fallbackPm =
+            state.paymentMethods.find((m) => m.isDefault)?.id || state.paymentMethods[0]?.id || ''
+          let recurring = state.recurringExpenses
+          if (sub.linkedRecurringExpenseId) {
+            recurring = state.recurringExpenses.map((re) =>
+              re.id === sub.linkedRecurringExpenseId
+                ? patchRecurringFromSubscription(re, merged2, fallbackPm)
+                : re
+            )
+          }
+          return { subscriptions: updatedSubs, recurringExpenses: recurring }
+        }),
+
+      cancelSubscription: (id) =>
+        set((state) => {
+          const sub = state.subscriptions.find((s) => s.id === id)
+          const cancelledAt = new Date().toISOString()
+          const subs = state.subscriptions.map((s) =>
+            s.id === id ? { ...s, status: 'cancelled' as const, cancelledAt } : s
+          )
+          let recurring = state.recurringExpenses
+          if (sub?.linkedRecurringExpenseId) {
+            recurring = state.recurringExpenses.map((re) =>
+              re.id === sub.linkedRecurringExpenseId ? { ...re, isActive: false } : re
+            )
+          }
+          return { subscriptions: subs, recurringExpenses: recurring }
+        }),
+
+      deleteSubscription: (id) =>
+        set((state) => {
+          const sub = state.subscriptions.find((s) => s.id === id)
+          return {
+            subscriptions: state.subscriptions.filter((s) => s.id !== id),
+            recurringExpenses: sub?.linkedRecurringExpenseId
+              ? state.recurringExpenses.filter((re) => re.id !== sub.linkedRecurringExpenseId)
+              : state.recurringExpenses,
+          }
+        }),
+
+      reactivateSubscription: (id) =>
+        set((state) => {
+          const sub = state.subscriptions.find((s) => s.id === id)
+          if (!sub) return state
+          const merged: Subscription = {
+            ...sub,
+            status: 'active',
+            cancelledAt: null,
+          }
+          const nextBilling =
+            computeNextBillingDate(merged.startDate, merged.billingDay, merged.billingCycle) ??
+            merged.nextBillingDate
+          const merged2 = { ...merged, nextBillingDate: nextBilling ?? merged.nextBillingDate }
+          const subs = state.subscriptions.map((s) => (s.id === id ? merged2 : s))
+          const fallbackPm =
+            state.paymentMethods.find((m) => m.isDefault)?.id || state.paymentMethods[0]?.id || ''
+          let recurring = state.recurringExpenses
+          if (sub.linkedRecurringExpenseId) {
+            recurring = state.recurringExpenses.map((re) =>
+              re.id === sub.linkedRecurringExpenseId
+                ? patchRecurringFromSubscription(re, merged2, fallbackPm)
+                : re
+            )
+          }
+          return { subscriptions: subs, recurringExpenses: recurring }
+        }),
 
       updateBudgetCategory: (category, amount, percentOfIncome) =>
         set((state) => ({
@@ -1001,6 +1230,7 @@ export const useFinanceStore = create<FinanceStore>()(
               ? { ...defaultOnboardingState(), ...data.onboardingState }
               : state.onboardingState,
             goals: data.goals ?? state.goals,
+            subscriptions: data.subscriptions ?? state.subscriptions,
           }
           return {
             ...merged,
@@ -1018,6 +1248,7 @@ export const useFinanceStore = create<FinanceStore>()(
           incomeSources: state.incomeSources,
           expenses: state.expenses,
           recurringExpenses: state.recurringExpenses,
+          subscriptions: state.subscriptions,
           budgetCategories: state.budgetCategories,
           budgetPlans: state.budgetPlans,
           activeBudgetPlanId: state.activeBudgetPlanId,
@@ -1056,6 +1287,7 @@ export const useFinanceStore = create<FinanceStore>()(
           debtPayments: [],
           recurringDebtPayments: [],
           goals: [],
+          subscriptions: [],
           exchangeRates: { ...DEFAULT_MARKET_RATES },
           goldPricePerGram: DEFAULT_GOLD_PRICE_PER_GRAM,
           lastGoldFetch: null,
@@ -1100,6 +1332,14 @@ export const useFinanceStore = create<FinanceStore>()(
           p = {
             ...p,
             goals: Array.isArray(p.goals) ? (p.goals as Goal[]) : [],
+          }
+        }
+        if (fromVersion < 15) {
+          p = {
+            ...p,
+            subscriptions: Array.isArray((p as Record<string, unknown>).subscriptions)
+              ? ((p as { subscriptions: Subscription[] }).subscriptions)
+              : [],
           }
         }
         if (fromVersion >= 6) {
@@ -1239,6 +1479,7 @@ export const useFinanceStore = create<FinanceStore>()(
           debtPayments: [],
           recurringDebtPayments: [],
           goals: [],
+          subscriptions: [],
           exchangeRates: { ...DEFAULT_MARKET_RATES },
           goldPricePerGram: DEFAULT_GOLD_PRICE_PER_GRAM,
           lastGoldFetch: null,
@@ -1253,6 +1494,7 @@ export const useFinanceStore = create<FinanceStore>()(
           ...current,
           ...p,
           goals: p.goals ?? current.goals,
+          subscriptions: p.subscriptions ?? current.subscriptions,
           lastGoldFetch: p.lastGoldFetch ?? current.lastGoldFetch,
           goldPriceAvailable: p.goldPriceAvailable ?? current.goldPriceAvailable,
           financialGoalsNotes: p.financialGoalsNotes ?? current.financialGoalsNotes,

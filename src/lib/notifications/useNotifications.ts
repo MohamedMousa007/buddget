@@ -66,14 +66,17 @@ export function useNotifications() {
   const stats = useMonthlyStats()
   const t = useT()
   const { monthFilter } = useSettingsStore()
-  const { debts, debtPayments, budgetCategories, recurringDebtPayments } = useFinanceStore(
-    useShallow((s) => ({
-      debts: s.debts,
-      debtPayments: s.debtPayments,
-      budgetCategories: s.budgetCategories,
-      recurringDebtPayments: s.recurringDebtPayments,
-    }))
-  )
+  const { debts, debtPayments, budgetCategories, recurringDebtPayments, expenses, exchangeRates } =
+    useFinanceStore(
+      useShallow((s) => ({
+        debts: s.debts,
+        debtPayments: s.debtPayments,
+        budgetCategories: s.budgetCategories,
+        recurringDebtPayments: s.recurringDebtPayments,
+        expenses: s.expenses,
+        exchangeRates: s.exchangeRates,
+      }))
+    )
 
   const [readIds, setReadIds] = useState<Set<string>>(() => loadReadIds())
   const [serverNotifications, setServerNotifications] = useState<ServerNotificationRow[]>([])
@@ -137,11 +140,12 @@ export function useNotifications() {
 
     const todayYmd = format(new Date(), 'yyyy-MM-dd')
     const tomorrowYmd = format(addDays(new Date(), 1), 'yyyy-MM-dd')
+    const debtCtx = { expenses, exchangeRates, allDebts: debts }
 
     for (const r of recurringDebtPayments) {
       if (!r.isActive) continue
       const debt = debts.find((d) => d.id === r.debtId)
-      if (!debt || isDebtFullyPaid(debt, debtPayments)) continue
+      if (!debt || isDebtFullyPaid(debt, debtPayments, debtCtx)) continue
 
       if (r.nextDueDate === tomorrowYmd) {
         list.push({
@@ -200,7 +204,17 @@ export function useNotifications() {
     }
 
     return list
-  }, [budgetCategories, debts, debtPayments, monthFilter, recurringDebtPayments, stats, t])
+  }, [
+    budgetCategories,
+    debts,
+    debtPayments,
+    expenses,
+    exchangeRates,
+    monthFilter,
+    recurringDebtPayments,
+    stats,
+    t,
+  ])
 
   const localUnread = useMemo(
     () => notifications.filter((n) => !readIds.has(n.id)).length,

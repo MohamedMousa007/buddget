@@ -29,7 +29,11 @@ export default function ExpensesPage() {
 
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string>('All')
-  const [methodFilter, setMethodFilter] = useState('All')
+  const [methodFilter, setMethodFilter] = useState(() => {
+    if (typeof window === 'undefined') return 'All'
+    const q = new URLSearchParams(window.location.search).get('pm')
+    return q || 'All'
+  })
 
   const filteredExpenses = useMemo(() => {
     let result = filterExpensesByMonth(expenses, monthFilter, settings.monthStartDay)

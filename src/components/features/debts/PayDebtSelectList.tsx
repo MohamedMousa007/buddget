@@ -1,7 +1,9 @@
 'use client'
 
+import { useMemo } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { calculateDebtRemaining } from '@/lib/utils/calculations'
+import { calculateDebtRemaining, type DebtBalanceContext } from '@/lib/utils/calculations'
 import { formatCurrency } from '@/lib/utils/formatters'
 import type { Debt } from '@/lib/store/types'
 import { useT } from '@/lib/i18n'
@@ -16,7 +18,18 @@ interface PayDebtSelectListProps {
  */
 export function PayDebtSelectList({ debts, onSelect }: PayDebtSelectListProps) {
   const t = useT()
-  const debtPayments = useFinanceStore((s) => s.debtPayments)
+  const { debtPayments, expenses, exchangeRates, allDebts } = useFinanceStore(
+    useShallow((s) => ({
+      debtPayments: s.debtPayments,
+      expenses: s.expenses,
+      exchangeRates: s.exchangeRates,
+      allDebts: s.debts,
+    }))
+  )
+  const balanceCtx: DebtBalanceContext | undefined = useMemo(
+    () => ({ expenses, exchangeRates, allDebts }),
+    [expenses, exchangeRates, allDebts]
+  )
 
   if (debts.length === 0) {
     return (
@@ -28,7 +41,7 @@ export function PayDebtSelectList({ debts, onSelect }: PayDebtSelectListProps) {
     <ul className="space-y-2">
       {debts.map((d) => {
         const pays = debtPayments.filter((p) => p.debtId === d.id)
-        const rem = calculateDebtRemaining(d, pays)
+        const rem = calculateDebtRemaining(d, pays, balanceCtx)
         const emoji = d.emoji || (d.isGold ? '🪙' : '💵')
         return (
           <li key={d.id}>

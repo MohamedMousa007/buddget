@@ -6,7 +6,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { clampDebtFiatToAllowed, clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { useT } from '@/lib/i18n'
-import { calculateDebtRemaining } from '@/lib/utils/calculations'
+import { calculateDebtRemaining, isDebtFullyPaid, type DebtBalanceContext } from '@/lib/utils/calculations'
 import type { Currency, Debt, DebtCurrency, DebtGoal, GoldKarat } from '@/lib/store/types'
 
 function goalFrequencyToRecurring(
@@ -22,6 +22,9 @@ export function useEditDebtForm(debt: Debt | undefined, isOpen: boolean) {
     deleteDebt,
     settings,
     debtPayments,
+    expenses,
+    debts,
+    exchangeRates,
     recurringDebtPayments,
     paymentMethods,
     addRecurringDebtPayment,
@@ -33,6 +36,9 @@ export function useEditDebtForm(debt: Debt | undefined, isOpen: boolean) {
       deleteDebt: s.deleteDebt,
       settings: s.settings,
       debtPayments: s.debtPayments,
+      expenses: s.expenses,
+      debts: s.debts,
+      exchangeRates: s.exchangeRates,
       recurringDebtPayments: s.recurringDebtPayments,
       paymentMethods: s.paymentMethods,
       addRecurringDebtPayment: s.addRecurringDebtPayment,
@@ -70,10 +76,20 @@ export function useEditDebtForm(debt: Debt | undefined, isOpen: boolean) {
     [debt, debtPayments]
   )
 
+  const debtBalanceCtx: DebtBalanceContext | undefined = useMemo(
+    () => ({ expenses, exchangeRates, allDebts: debts }),
+    [expenses, exchangeRates, debts]
+  )
+
   const remainingForGoal = useMemo(() => {
     if (!debt) return 0
-    return calculateDebtRemaining(debt, paymentsForDebt)
-  }, [debt, paymentsForDebt])
+    return calculateDebtRemaining(debt, paymentsForDebt, debtBalanceCtx)
+  }, [debt, paymentsForDebt, debtBalanceCtx])
+
+  const paidOff = useMemo(
+    () => (debt ? isDebtFullyPaid(debt, paymentsForDebt, debtBalanceCtx) : false),
+    [debt, paymentsForDebt, debtBalanceCtx]
+  )
 
   const recurringForDebt = useMemo(
     () => (debt ? recurringDebtPayments.find((r) => r.debtId === debt.id) : undefined),
@@ -187,5 +203,6 @@ export function useEditDebtForm(debt: Debt | undefined, isOpen: boolean) {
     recurringForDebt,
     handleGoalSave,
     handleRemoveGoal,
+    paidOff,
   }
 }

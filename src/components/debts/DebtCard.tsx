@@ -2,12 +2,13 @@
 
 import { motion } from 'framer-motion'
 import { Check, Pencil } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { formatCurrency } from '@/lib/utils/formatters'
 import {
   calculateDebtRemaining,
   goldGramsToMoney,
   isDebtFullyPaid,
+  type DebtBalanceContext,
 } from '@/lib/utils/calculations'
 import { convertCurrency } from '@/lib/utils/currency'
 import { useShallow } from 'zustand/react/shallow'
@@ -27,22 +28,30 @@ interface DebtCardProps {
 export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardProps) {
   const t = useT()
   const clearDebt = useFinanceStore((s) => s.clearDebt)
-  const { settings, exchangeRates, goldPricePerGram, goldPriceAvailable } = useFinanceStore(
-    useShallow((s) => ({
-      settings: s.settings,
-      exchangeRates: s.exchangeRates,
-      goldPricePerGram: s.goldPricePerGram,
-      goldPriceAvailable: s.goldPriceAvailable,
-    }))
-  )
+  const { settings, exchangeRates, goldPricePerGram, goldPriceAvailable, expenses, debts } =
+    useFinanceStore(
+      useShallow((s) => ({
+        settings: s.settings,
+        exchangeRates: s.exchangeRates,
+        goldPricePerGram: s.goldPricePerGram,
+        goldPriceAvailable: s.goldPriceAvailable,
+        expenses: s.expenses,
+        debts: s.debts,
+      }))
+    )
   const base = settings.baseCurrency
+
+  const balanceCtx: DebtBalanceContext | undefined = useMemo(
+    () => ({ expenses, exchangeRates, allDebts: debts }),
+    [expenses, exchangeRates, debts]
+  )
 
   const [celebrating, setCelebrating] = useState(false)
   const celebrateTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevPaidOff = useRef<boolean | null>(null)
 
-  const paidOff = isDebtFullyPaid(debt, payments)
-  const remainingRaw = calculateDebtRemaining(debt, payments)
+  const paidOff = isDebtFullyPaid(debt, payments, balanceCtx)
+  const remainingRaw = calculateDebtRemaining(debt, payments, balanceCtx)
 
   const goldOk = goldPriceAvailable !== false
   const startingInBase = debt.isGold
@@ -58,9 +67,17 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
     : convertCurrency(remainingRaw, debt.currency, base, exchangeRates)
 
   const paidPercent =
-    debt.startingBalance > 0 ? ((debt.startingBalance - remainingRaw) / debt.startingBalance) * 100 : 0
+    debt.debtType === 'credit_card' && debt.creditLimit && debt.creditLimit > 0
+      ? Math.min(100, (remainingRaw / debt.creditLimit) * 100)
+      : debt.startingBalance > 0
+        ? ((debt.startingBalance - remainingRaw) / debt.startingBalance) * 100
+        : 0
 
   useEffect(() => {
+    if (debt.debtType === 'credit_card') {
+      prevPaidOff.current = paidOff
+      return
+    }
     if (debt.status === 'cleared') {
       prevPaidOff.current = paidOff
       return
@@ -95,7 +112,7 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
     }
     prevPaidOff.current = paidOff
     return undefined
-  }, [paidOff, debt.status, debt.id, clearDebt])
+  }, [paidOff, debt.status, debt.id, debt.debtType, clearDebt])
 
   const dismissCelebration = () => {
     if (celebrateTimer.current) {
@@ -174,7 +191,7 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
         </button>
       </div>
 
-      <DebtCardPlanMeta debt={debt} payments={payments} paidOff={paidOff} />
+      <DebtCardPlanMeta debt={debt} payments={payments} paidOff={paidOff} balanceCtx={balanceCtx} />
 
       <div className="space-y-3">
         <div className="flex justify-between text-sm">

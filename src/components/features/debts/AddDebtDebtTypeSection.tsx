@@ -2,7 +2,8 @@
 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import type { DebtKind } from '@/lib/store/types'
+import type { DebtKind, InstallmentProvider } from '@/lib/store/types'
+import { InstallmentProviderPicker } from '@/components/features/debts/InstallmentProviderPicker'
 import { useT } from '@/lib/i18n'
 
 interface AddDebtDebtTypeSectionProps {
@@ -17,6 +18,11 @@ interface AddDebtDebtTypeSectionProps {
   setInstallmentFrequency: (v: 'weekly' | 'monthly' | 'quarterly' | 'annually') => void
   installmentStartDate: string
   setInstallmentStartDate: (v: string) => void
+  installmentProvider: InstallmentProvider
+  setInstallmentProvider: (k: InstallmentProvider) => void
+  linkedCreditCardDebtId: string
+  setLinkedCreditCardDebtId: (id: string) => void
+  creditCardDebts: { id: string; name: string }[]
   relationship: string
   setRelationship: (v: string) => void
   direction: 'i_owe' | 'they_owe'
@@ -41,6 +47,11 @@ export function AddDebtDebtTypeSection({
   setInstallmentFrequency,
   installmentStartDate,
   setInstallmentStartDate,
+  installmentProvider,
+  setInstallmentProvider,
+  linkedCreditCardDebtId,
+  setLinkedCreditCardDebtId,
+  creditCardDebts,
   relationship,
   setRelationship,
   direction,
@@ -61,6 +72,7 @@ export function AddDebtDebtTypeSection({
               ['personal', t.addDebt.debtTypePersonal],
               ['installment', t.addDebt.debtTypeInstallment],
               ['general', t.addDebt.debtTypeGeneral],
+              ['credit_card', t.addDebt.debtTypeCreditCard],
             ] as const
           ).map(([value, label]) => (
             <button
@@ -111,6 +123,24 @@ export function AddDebtDebtTypeSection({
 
       {debtType === 'installment' ? (
         <>
+          <InstallmentProviderPicker value={installmentProvider} onChange={setInstallmentProvider} />
+          {installmentProvider === 'credit_card' ? (
+            <div>
+              <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.whichCreditCard}</Label>
+              <select
+                value={linkedCreditCardDebtId}
+                onChange={(e) => setLinkedCreditCardDebtId(e.target.value)}
+                className="mt-1 w-full h-9 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
+              >
+                <option value="">{t.addDebt.whichCreditCardPlaceholder}</option>
+                {creditCardDebts.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
           <div>
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelItemName}</Label>
             <Input

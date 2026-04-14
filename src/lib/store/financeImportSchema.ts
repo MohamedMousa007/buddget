@@ -322,7 +322,14 @@ export const importDataSchema = z.object({
         status: z.enum(['active', 'cleared']).optional(),
         clearedAt: z.string().optional(),
         emoji: z.string().optional(),
-        debtType: z.enum(['personal', 'installment', 'general']).optional(),
+        debtType: z.enum(['personal', 'installment', 'general', 'credit_card']).optional(),
+        creditLimit: z.number().optional(),
+        paymentDueDay: z.number().optional(),
+        gracePeriodDays: z.number().optional(),
+        linkedPaymentMethodId: z.string().optional(),
+        minimumPaymentPercent: z.number().optional(),
+        installmentProvider: z.enum(['credit_card', 'tabby', 'tamara', 'other']).optional(),
+        linkedCreditCardDebtId: z.string().optional(),
         personName: z.string().optional(),
         relationship: z.string().optional(),
         direction: z.enum(['i_owe', 'they_owe']).optional(),
@@ -379,6 +386,29 @@ export const importDataSchema = z.object({
     )
     .optional(),
   financialGoalsNotes: z.string().optional(),
+  subscriptions: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        brandKey: z.string().nullable(),
+        planName: z.string().nullable(),
+        amount: z.number(),
+        currency: fiatCurrencySchema,
+        billingCycle: z.enum(['monthly', 'quarterly', 'yearly', 'weekly']),
+        billingDay: z.number().int().min(1).max(31),
+        startDate: z.string(),
+        nextBillingDate: z.string().nullable(),
+        paymentMethodId: z.string().nullable(),
+        expenseCategory: z.string(),
+        linkedRecurringExpenseId: z.string().nullable(),
+        status: z.enum(['active', 'cancelled', 'paused', 'trial']),
+        notes: z.string().nullable(),
+        createdAt: z.string(),
+        cancelledAt: z.string().nullable(),
+      })
+    )
+    .optional(),
   goals: z
     .array(
       z.object({

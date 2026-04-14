@@ -121,6 +121,52 @@ export interface RecurringExpense {
   sharedPlanId?: string | null
 }
 
+export type SubscriptionBillingCycle = 'monthly' | 'quarterly' | 'yearly' | 'weekly'
+
+export type SubscriptionStatus = 'active' | 'cancelled' | 'paused' | 'trial'
+
+export interface Subscription {
+  id: string
+
+  /** Service name (e.g., "Netflix", "iCloud+", custom) */
+  name: string
+
+  /** Brand key from catalog, or null for custom subscriptions */
+  brandKey: string | null
+
+  /** Selected plan name (e.g., "Premium", "200GB") */
+  planName: string | null
+
+  amount: number
+  currency: Currency
+
+  billingCycle: SubscriptionBillingCycle
+
+  /** Day of month the charge happens (1–31); for weekly, ignored for scheduling math but still shown */
+  billingDay: number
+
+  /** Date user started this subscription (YYYY-MM-DD) */
+  startDate: string
+
+  /** Next renewal / charge date (YYYY-MM-DD) */
+  nextBillingDate: string | null
+
+  /** Which payment method is charged */
+  paymentMethodId: string | null
+
+  /** Category for the auto-generated recurring expense */
+  expenseCategory: string
+
+  /** ID of the auto-created RecurringExpense (for sync) */
+  linkedRecurringExpenseId: string | null
+
+  status: SubscriptionStatus
+
+  notes: string | null
+  createdAt: string
+  cancelledAt: string | null
+}
+
 export interface BudgetCategory {
   category: string
   budgetedAmount: number
@@ -276,7 +322,10 @@ export type DebtCurrency = 'EGP' | 'XAU' | Currency
 export type GoldKarat = 24 | 22 | 21 | 18
 
 /** High-level debt category for UI and fields (optional on legacy rows). */
-export type DebtKind = 'personal' | 'installment' | 'general'
+export type DebtKind = 'personal' | 'installment' | 'general' | 'credit_card'
+
+/** BNPL or bank installment brand for installment-type debts. */
+export type InstallmentProvider = 'credit_card' | 'tabby' | 'tamara' | 'other'
 
 export type DebtLifecycleStatus = 'active' | 'cleared'
 
@@ -321,6 +370,18 @@ export interface Debt {
   interestFree?: boolean
   creditor?: string
   goal?: DebtGoal
+
+  /** Credit card revolving line — use with `debtType: 'credit_card'`. */
+  creditLimit?: number
+  paymentDueDay?: number
+  gracePeriodDays?: number
+  linkedPaymentMethodId?: string
+  minimumPaymentPercent?: number
+
+  /** Installment / BNPL provider (Tabby, Tamara, bank card plan, etc.). */
+  installmentProvider?: InstallmentProvider
+  /** When provider is `credit_card`, links to the card debt row. */
+  linkedCreditCardDebtId?: string
 }
 
 export interface DebtPayment {
@@ -485,6 +546,7 @@ export interface FinanceStore {
   incomeSources: IncomeSource[]
   expenses: Expense[]
   recurringExpenses: RecurringExpense[]
+  subscriptions: Subscription[]
   budgetCategories: BudgetCategory[]
   /** Optional multi-plan budget planner; when empty, dashboard uses `budgetCategories`. */
   budgetPlans: BudgetPlan[]
@@ -527,6 +589,13 @@ export interface FinanceStore {
   updatePaymentMethod: (id: string, updates: Partial<PaymentMethod>) => void
   deletePaymentMethod: (id: string) => void
   addDebt: (debt: Omit<Debt, 'id' | 'createdAt'>) => string
+  /**
+   * Creates or updates a credit card debt and links a `card_credit` payment method (or reuses an existing match).
+   */
+  addCreditCardDebt: (
+    debt: Omit<Debt, 'id' | 'createdAt' | 'debtType' | 'linkedPaymentMethodId'>,
+    paymentMethodInfo: { name: string; last4?: string; color?: string }
+  ) => string
   updateDebt: (id: string, updates: Partial<Debt>) => void
   /** Marks a debt cleared (history); does not remove payments. */
   clearDebt: (id: string, clearedAtIsoDate?: string) => void
@@ -547,6 +616,13 @@ export interface FinanceStore {
   addRecurringExpense: (expense: Omit<RecurringExpense, 'id'>) => void
   updateRecurringExpense: (id: string, updates: Partial<RecurringExpense>) => void
   deleteRecurringExpense: (id: string) => void
+  addSubscription: (
+    sub: Omit<Subscription, 'id' | 'createdAt' | 'cancelledAt' | 'linkedRecurringExpenseId'>
+  ) => string
+  updateSubscription: (id: string, updates: Partial<Subscription>) => void
+  cancelSubscription: (id: string) => void
+  deleteSubscription: (id: string) => void
+  reactivateSubscription: (id: string) => void
   updateBudgetCategory: (category: string, amount: number, percentOfIncome?: number | null) => void
   /** Replace all budget rows (e.g. onboarding preset). */
   setBudgetCategories: (categories: BudgetCategory[]) => void

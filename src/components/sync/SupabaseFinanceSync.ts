@@ -27,6 +27,8 @@ function buildFinancePayload() {
     debts: state.debts,
     debtPayments: state.debtPayments,
     recurringDebtPayments: state.recurringDebtPayments,
+    goals: state.goals,
+    subscriptions: state.subscriptions,
   }
 }
 

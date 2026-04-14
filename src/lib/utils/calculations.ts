@@ -22,7 +22,15 @@ import type {
   SavingsAccount,
   SavingsTransaction,
 } from '@/lib/store/types'
+import { computeCreditCardOutstanding } from '@/lib/debt/computeCreditCardBalance'
 import { convertCurrency, tryConvertCurrency } from './currency'
+
+/** When set, credit card outstanding is derived from expenses + payments. */
+export type DebtBalanceContext = {
+  expenses: Expense[]
+  exchangeRates: Record<string, number>
+  allDebts?: Debt[]
+}
 
 /**
  * Expense total in the user's current primary currency, derived from the stored original
@@ -321,11 +329,14 @@ export function totalDebtRemainingInBase(
   baseCurrency: Currency,
   rates: Record<string, number>,
   goldPricePerGram: number,
-  goldPriceAvailable: boolean
+  goldPriceAvailable: boolean,
+  expenses?: Expense[]
 ): number {
+  const balanceCtx: DebtBalanceContext | undefined =
+    expenses !== undefined ? { expenses, exchangeRates: rates, allDebts: debts } : undefined
   let total = 0
   for (const debt of debts) {
-    const remaining = calculateDebtRemaining(debt, debtPayments)
+    const remaining = calculateDebtRemaining(debt, debtPayments, balanceCtx)
     total += calculateDebtRemainingInBaseCurrency(
       remaining,
       debt,
@@ -403,15 +414,25 @@ export function totalPaidTowardDebt(debtId: string, payments: DebtPayment[]): nu
 }
 
 /** Unclamped balance (can be negative if overpaid). */
-export function calculateDebtRemainingRaw(debt: Debt, payments: DebtPayment[]): number {
+export function calculateDebtRemainingRaw(
+  debt: Debt,
+  payments: DebtPayment[],
+  ctx?: DebtBalanceContext
+): number {
+  if (debt.debtType === 'credit_card') {
+    if (ctx?.expenses) {
+      return computeCreditCardOutstanding(debt, ctx.expenses, payments, ctx.exchangeRates)
+    }
+    return Math.max(0, debt.startingBalance - totalPaidTowardDebt(debt.id, payments))
+  }
   return debt.startingBalance - totalPaidTowardDebt(debt.id, payments)
 }
 
 const DEBT_PAID_EPS = 1e-6
 
-export function isDebtFullyPaid(debt: Debt, payments: DebtPayment[]): boolean {
+export function isDebtFullyPaid(debt: Debt, payments: DebtPayment[], ctx?: DebtBalanceContext): boolean {
   if (debt.status === 'cleared') return true
-  return calculateDebtRemainingRaw(debt, payments) <= DEBT_PAID_EPS
+  return calculateDebtRemainingRaw(debt, payments, ctx) <= DEBT_PAID_EPS
 }
 
 export type DebtPaymentComputeResult =
@@ -428,13 +449,14 @@ export function computeDebtPaymentRecord(
   baseCurrency: Currency,
   exchangeRates: Record<string, number>,
   goldPricePerGram: number,
-  debtPayments: DebtPayment[]
+  debtPayments: DebtPayment[],
+  balanceCtx?: DebtBalanceContext
 ): DebtPaymentComputeResult {
   if (Number.isNaN(amount) || amount <= 0) {
     return { ok: false, error: 'Invalid payment amount.' }
   }
 
-  if (isDebtFullyPaid(debt, debtPayments)) {
+  if (isDebtFullyPaid(debt, debtPayments, balanceCtx)) {
     return { ok: false, error: 'This debt is already fully paid.' }
   }
 
@@ -469,7 +491,7 @@ export function computeDebtPaymentRecord(
   }
 
   const rateAtEntry = amount > 0 ? amountInBase / amount : 1
-  const remainingRaw = calculateDebtRemainingRaw(debt, debtPayments)
+  const remainingRaw = calculateDebtRemainingRaw(debt, debtPayments, balanceCtx)
   if (amountInDebtUnit > remainingRaw + 1e-6) {
     const unit = debt.isGold ? 'g' : debt.currency
     return {
@@ -482,8 +504,12 @@ export function computeDebtPaymentRecord(
 }
 
 /** Display / aggregates: never show negative remaining after full payoff. */
-export function calculateDebtRemaining(debt: Debt, payments: DebtPayment[]): number {
-  return Math.max(0, calculateDebtRemainingRaw(debt, payments))
+export function calculateDebtRemaining(
+  debt: Debt,
+  payments: DebtPayment[],
+  ctx?: DebtBalanceContext
+): number {
+  return Math.max(0, calculateDebtRemainingRaw(debt, payments, ctx))
 }
 
 export function calculateDebtRemainingInBaseCurrency(

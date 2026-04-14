@@ -33,6 +33,8 @@ export interface AddExpenseFormProps {
   submitError: string
   setSubmitError: (v: string) => void
   paymentMethods: { id: string; name: string }[]
+  /** Shown when a credit card payment method is selected. */
+  creditCardOutstandingHint: { cardName: string; amountLabel: string } | null
   onCancel: () => void
   onSubmit: () => void
 }
@@ -60,6 +62,7 @@ export function AddExpenseForm({
   submitError,
   setSubmitError,
   paymentMethods,
+  creditCardOutstandingHint,
   onCancel,
   onSubmit,
 }: AddExpenseFormProps) {
@@ -128,6 +131,13 @@ export function AddExpenseForm({
         paymentMethodId={paymentMethodId}
         onChange={setPaymentMethodId}
       />
+
+      {creditCardOutstandingHint ? (
+        <p className="text-[11px] text-[var(--color-brand-text-muted)] leading-snug" role="status">
+          ⓘ{' '}
+          {t.addExpense.creditCardOutstandingHint(creditCardOutstandingHint.cardName, creditCardOutstandingHint.amountLabel)}
+        </p>
+      ) : null}
 
       <div className="flex items-center justify-between">
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addExpense.labelRepeats}</Label>

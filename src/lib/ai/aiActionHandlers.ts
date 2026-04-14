@@ -41,6 +41,10 @@ function generateActionId(): string {
   return `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
 }
 
+function aiDebtBalanceCtx(ctx: AIActionHandlerContext) {
+  return { expenses: ctx.expenses, exchangeRates: ctx.exchangeRates, allDebts: ctx.debts }
+}
+
 export function getField(d: Record<string, unknown>, ...keys: string[]): unknown {
   for (const key of keys) {
     if (d[key] !== undefined && d[key] !== null && d[key] !== '') return d[key]
@@ -316,7 +320,7 @@ export function validateActionItem(
         searchTerm.includes(x.name.toLowerCase())
     )
     if (!debt) return `No debt matched for "${personOrName}". Check Debts or spelling.`
-    if (isDebtFullyPaid(debt, ctx.debtPayments)) {
+    if (isDebtFullyPaid(debt, ctx.debtPayments, aiDebtBalanceCtx(ctx))) {
       return `The debt "${debt.name}" is already paid off.`
     }
     const rawCurrency = String(getField(d, 'currency') || ctx.settings.baseCurrency)
@@ -345,7 +349,7 @@ export function validateActionItem(
       }
       amountInDebtUnit = inDebtUnit
     }
-    const remaining = calculateDebtRemainingRaw(debt, ctx.debtPayments)
+    const remaining = calculateDebtRemainingRaw(debt, ctx.debtPayments, aiDebtBalanceCtx(ctx))
     if (amountInDebtUnit > remaining + 1e-6) {
       return `That payment is more than the remaining balance.`
     }
@@ -534,8 +538,9 @@ export function executeActionItem(
         ctx.exchangeRates
       )!
     }
-    if (isDebtFullyPaid(debt, ctx.debtPayments)) return
-    const remainingExec = calculateDebtRemainingRaw(debt, ctx.debtPayments)
+    const bctx = aiDebtBalanceCtx(ctx)
+    if (isDebtFullyPaid(debt, ctx.debtPayments, bctx)) return
+    const remainingExec = calculateDebtRemainingRaw(debt, ctx.debtPayments, bctx)
     if (amountInDebtUnit > remainingExec + 1e-6) return
     ctx.addDebtPayment({
       debtId: debt.id,
@@ -547,6 +552,7 @@ export function executeActionItem(
       rateAtEntry,
       notes: getField(d, 'notes') as string | undefined,
     })
+    if (debt.debtType === 'credit_card') return
     const pm = findPaymentMethod(ctx, getField(d, 'paymentMethod', 'payment_method'))
     ctx.addExpense({
       date: dateStr,

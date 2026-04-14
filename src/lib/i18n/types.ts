@@ -66,6 +66,7 @@ export interface Dictionary {
     savings: string
     debts: string
     reports: string
+    subscriptions: string
     home: string
     more: string
     quickAdd: string
@@ -189,6 +190,7 @@ export interface Dictionary {
     placeholderNotes: string
     buttonSubmit: string
     buttonSave: string
+    creditCardOutstandingHint: (cardName: string, amountLabel: string) => string
   }
 
   income: {
@@ -439,6 +441,18 @@ export interface Dictionary {
     installmentNextDue: (date: string) => string
     goalPayoffLine: string
     goalTargetPassed: string
+    debtTypeCreditCard: string
+    outstandingBalance: string
+    availableLimit: string
+    creditLimit: string
+    utilization: string
+    dueDate: string
+    daysUntilDue: string
+    minimumPayment: string
+    thisMonthCharges: string
+    payNow: string
+    viewCharges: string
+    creditCardSetupHint: string
   }
 
   addDebt: {
@@ -461,10 +475,29 @@ export interface Dictionary {
     labelGoldPurity: string
     labelNotes: string
     buttonSubmit: string
+    buttonSubmitCreditCard: string
     debtTypeLabel: string
     debtTypePersonal: string
     debtTypeInstallment: string
     debtTypeGeneral: string
+    debtTypeCreditCard: string
+    placeholderCardName: string
+    creditLimitLabel: string
+    currentOutstandingLabel: string
+    currentOutstandingHint: string
+    paymentDueDayLabel: string
+    gracePeriodLabel: string
+    gracePeriodDays: string
+    minPaymentLabel: string
+    installmentProviderLabel: string
+    providerCreditCard: string
+    providerTabby: string
+    providerTamara: string
+    providerOther: string
+    whichCreditCard: string
+    whichCreditCardPlaceholder: string
+    last4Label: string
+    last4Placeholder: string
     labelRelationship: string
     labelDirection: string
     directionIOwe: string
@@ -1227,6 +1260,59 @@ export interface Dictionary {
     budgetSetup: string
     settings: string
     goals: string
+    subscriptions: string
+  }
+
+  subscriptions: {
+    pageTitle: string
+    addSubscription: string
+    totalMonthly: string
+    perMonth: string
+    perYear: string
+    perWeek: string
+    perQuarter: string
+    renewsOn: string
+    cancelledOn: string
+    active: string
+    cancelled: string
+    paused: string
+    trial: string
+    searchPlaceholder: string
+    customSubscription: string
+    selectPlan: string
+    adjustPriceHint: string
+    priceEstimateNote: string
+    billingCycle: string
+    billingDay: string
+    startedOn: string
+    confirmCancel: string
+    cancelSubscriptionAction: string
+    cancelHint: string
+    reactivate: string
+    deleteSubscription: string
+    confirmDeleteSubscription: string
+    amountLabel: string
+    serviceName: string
+    billingWeekly: string
+    billingMonthly: string
+    billingQuarterly: string
+    billingYearly: string
+    profileSummary: (count: number, totalFormatted: string) => string
+    emptyTitle: string
+    emptyHint: string
+    paymentMethod: string
+    saveAdd: string
+    saveEdit: string
+    editSubscription: string
+    manage: string
+    activeSection: (n: number) => string
+    cancelledSection: string
+    catStreaming: string
+    catMusic: string
+    catCloudAi: string
+    catGaming: string
+    catFitness: string
+    catOther: string
   }
 
   goals: {
