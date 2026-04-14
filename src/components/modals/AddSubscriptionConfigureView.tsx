@@ -83,15 +83,13 @@ export function AddSubscriptionConfigureView({
         </div>
       </div>
 
-      <p className="text-[10px] text-[var(--color-brand-text-muted)]">{t.subscriptions.priceEstimateNote}</p>
-
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.subscriptions.billingCycle}</Label>
           <select
             value={form.billingCycle}
             onChange={(e) => form.setBillingCycle(e.target.value as SubscriptionBillingCycle)}
-            className={cn('mt-1 w-full py-2 px-3', inputClass)}
+            className={cn('mt-1 w-full h-8 px-3', inputClass)}
           >
             {cycleOptions.map((o) => (
               <option key={o.v} value={o.v}>
@@ -114,21 +112,11 @@ export function AddSubscriptionConfigureView({
       </div>
 
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.subscriptions.startedOn}</Label>
-        <Input
-          type="date"
-          value={form.startDate}
-          onChange={(e) => form.setStartDate(e.target.value)}
-          className={cn('mt-1', inputClass)}
-        />
-      </div>
-
-      <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.subscriptions.paymentMethod}</Label>
         <select
           value={form.paymentMethodId}
           onChange={(e) => form.setPaymentMethodId(e.target.value)}
-          className={cn('mt-1 w-full py-2 px-3', inputClass)}
+          className={cn('mt-1 w-full h-8 px-3', inputClass)}
         >
           {form.paymentMethods.map((m) => (
             <option key={m.id} value={m.id}>
