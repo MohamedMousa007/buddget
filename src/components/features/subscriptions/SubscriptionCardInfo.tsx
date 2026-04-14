@@ -28,6 +28,7 @@ export function SubscriptionCardInfo({
   return (
     <>
       <SubscriptionBrandIcon
+        brandKey={sub.brandKey}
         color={brand?.color ?? '#64748b'}
         emoji={brand?.emoji ?? '📋'}
         initial={brand?.initial ?? sub.name.slice(0, 2)}

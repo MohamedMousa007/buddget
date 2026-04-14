@@ -1,35 +1,57 @@
 'use client'
 
+import { BRAND_ICONS } from '@/lib/constants/subscriptionIcons'
 import { cn } from '@/lib/utils'
 
 /**
- * Colored circle with emoji or short initial — avoids fetching trademark logos.
+ * Branded inline SVG when `brandKey` maps in `BRAND_ICONS`; otherwise a rounded-square
+ * tile (iOS-style) with emoji or initial — not a circle.
  */
 export function SubscriptionBrandIcon({
+  brandKey,
   color,
   emoji,
   initial,
   size = 'md',
   className,
 }: {
+  brandKey?: string | null
   color: string
   emoji: string
   initial: string
   size?: 'sm' | 'md' | 'lg'
   className?: string
 }) {
-  const dim = size === 'lg' ? 'h-12 w-12 text-lg' : size === 'sm' ? 'h-9 w-9 text-xs' : 'h-11 w-11 text-sm'
+  const px = size === 'lg' ? 48 : size === 'sm' ? 32 : 40
+
+  if (brandKey && BRAND_ICONS[brandKey]) {
+    return <div className={cn('shrink-0', className)}>{BRAND_ICONS[brandKey].icon(px)}</div>
+  }
+
+  const r = px * 0.22
+  const label = emoji || initial
   return (
-    <div
-      className={cn(
-        'rounded-full flex items-center justify-center shrink-0 font-semibold text-white shadow-inner',
-        dim,
-        className
-      )}
-      style={{ backgroundColor: color }}
+    <svg
+      width={px}
+      height={px}
+      viewBox={`0 0 ${px} ${px}`}
+      fill="none"
+      className={cn('shrink-0', className)}
       aria-hidden
     >
-      <span className="leading-none">{emoji || initial}</span>
-    </div>
+      <rect width={px} height={px} rx={r} fill={color} />
+      <text
+        x="50%"
+        y="54%"
+        dominantBaseline="central"
+        textAnchor="middle"
+        fill="white"
+        fontSize={px * 0.32}
+        fontWeight="600"
+        fontFamily="system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
+      >
+        {label}
+      </text>
+    </svg>
   )
 }

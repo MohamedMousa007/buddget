@@ -1307,12 +1307,19 @@ export interface Dictionary {
     manage: string
     activeSection: (n: number) => string
     cancelledSection: string
+    catPopular: string
+    catAiProductivity: string
     catStreaming: string
     catMusic: string
-    catCloudAi: string
+    catCloudStorage: string
     catGaming: string
+    catVpn: string
     catFitness: string
+    catReading: string
+    catCommunication: string
+    catTelecom: string
     catOther: string
+    customSubscriptionHint: string
   }
 
   goals: {
