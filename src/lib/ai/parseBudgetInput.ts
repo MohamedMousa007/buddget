@@ -116,7 +116,7 @@ export async function parseBudgetInput(
   const text: string = result.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
 
   if (process.env.NODE_ENV === 'development') {
-    console.log('[parseBudgetInput] raw model text:', text)
+    console.debug('[parseBudgetInput] raw model text:', text)
   }
 
   const jsonStr = stripJsonFromMarkdown(text)

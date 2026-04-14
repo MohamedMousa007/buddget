@@ -5,7 +5,7 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const denied = verifyAdminPin(body?.pin)
+    const denied = verifyAdminPin(body?.pin, req)
     if (denied) return denied
 
     const days = Math.min(Math.max(Number(body?.days) || 7, 1), 90)

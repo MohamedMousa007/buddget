@@ -70,7 +70,7 @@ export async function PATCH(request: Request) {
       .eq('read', false)
 
     if (error) {
-      console.error('[notifications PATCH all]', error.message)
+      console.warn('[notifications PATCH all]', error.message)
       return NextResponse.json({ ok: true })
     }
     return NextResponse.json({ ok: true })
@@ -88,7 +88,7 @@ export async function PATCH(request: Request) {
     .in('id', ids)
 
   if (error) {
-    console.error('[notifications PATCH]', error.message)
+    console.warn('[notifications PATCH]', error.message)
     return NextResponse.json({ ok: true })
   }
 

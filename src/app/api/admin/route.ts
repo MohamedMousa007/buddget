@@ -42,7 +42,7 @@ function buildAdminConfig() {
 export async function POST(req: Request) {
   try {
     const { pin } = await req.json()
-    const denied = verifyAdminPin(pin)
+    const denied = verifyAdminPin(pin, req)
     if (denied) return denied
 
     return NextResponse.json({
@@ -62,7 +62,7 @@ export async function PATCH(req: Request) {
   try {
     const body = await req.json()
     const { pin, aiRuntime } = body ?? {}
-    const denied = verifyAdminPin(pin)
+    const denied = verifyAdminPin(pin, req)
     if (denied) return denied
 
     if (!aiRuntime || typeof aiRuntime !== 'object') {

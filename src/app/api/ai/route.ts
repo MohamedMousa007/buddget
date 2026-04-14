@@ -39,7 +39,11 @@ const hitTimestamps = new Map<string, number[]>()
 function clientKey(req: Request): string {
   const forwarded = req.headers.get('x-forwarded-for')
   const first = forwarded?.split(',')[0]?.trim()
-  return first || req.headers.get('x-real-ip') || 'unknown'
+  if (first) return first
+  const realIp = req.headers.get('x-real-ip')
+  if (realIp) return realIp
+  const ua = req.headers.get('user-agent') || ''
+  return `anon-${ua.slice(0, 50)}`
 }
 
 function isRateLimited(key: string, max: number, windowMs: number): boolean {
