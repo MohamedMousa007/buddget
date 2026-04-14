@@ -97,7 +97,7 @@ export type AddSubscriptionSheetProps = {
 }
 
 /**
- * Two-step catalog → details sheet, or details-only when no catalog region. Supports edit.
+ * Catalog → configure sheet for new subscriptions; edit opens configure only.
  */
 export function AddSubscriptionSheet({ open, onClose, editing, instanceKey }: AddSubscriptionSheetProps) {
   if (!open) return null

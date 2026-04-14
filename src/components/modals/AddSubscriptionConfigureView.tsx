@@ -49,6 +49,15 @@ export function AddSubscriptionConfigureView({
               selectedIndex={form.planIndex}
               onSelect={form.onPlanIndexChange}
               currency={form.currency}
+              brandColor={
+                form.pickedBrand && form.pickedBrand !== 'custom' ? form.pickedBrand.color : '#64748b'
+              }
+              cycleLabels={{
+                mo: t.subscriptions.perMonth,
+                yr: t.subscriptions.perYear,
+                wk: t.subscriptions.perWeek,
+                qtr: t.subscriptions.perQuarter,
+              }}
             />
           </div>
         </div>

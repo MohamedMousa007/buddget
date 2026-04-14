@@ -5,6 +5,7 @@ import { format } from 'date-fns'
 import { useShallow } from 'zustand/react/shallow'
 import {
   detectCatalogRegion,
+  filterVisibleBrands,
   findBrandByKey,
   REGION_CURRENCY,
   SUBSCRIPTION_CATALOG,
@@ -20,7 +21,8 @@ function defaultPmId(pms: { id: string; isDefault: boolean }[]): string {
 }
 
 /**
- * Two-step add flow (catalog → configure) or configure-only when no catalog region. Supports edit via `editing`.
+ * Add flow: catalog (always for new subs) → configure. Regional catalog prices apply when profile
+ * maps to UAE/Egypt; otherwise the user enters amount manually. Edit opens configure directly.
  */
 export function useAddSubscriptionForm(editing: Subscription | null, onClose: () => void) {
   const { profile, settings, exchangeRates, paymentMethods, addSubscription, updateSubscription } =
@@ -36,9 +38,9 @@ export function useAddSubscriptionForm(editing: Subscription | null, onClose: ()
     )
 
   const region = useMemo(() => detectCatalogRegion(profile), [profile])
-  const showCatalog = region !== null
+  const showCatalog = !editing
 
-  const [step, setStep] = useState(() => (editing ? 2 : showCatalog ? 1 : 2))
+  const [step, setStep] = useState(() => (editing ? 2 : 1))
   const [search, setSearch] = useState('')
   const [pickedBrand, setPickedBrand] = useState<SubscriptionBrand | 'custom' | null>(() => {
     if (!editing) return null
@@ -64,25 +66,23 @@ export function useAddSubscriptionForm(editing: Subscription | null, onClose: ()
   const [planIndex, setPlanIndex] = useState(0)
 
   const availableBrands = useMemo(() => {
-    if (!region) return []
+    const visible = filterVisibleBrands(SUBSCRIPTION_CATALOG, region)
     const q = search.trim().toLowerCase()
-    return SUBSCRIPTION_CATALOG.filter(
-      (b) =>
-        b.availability.includes(region) &&
-        b.plans[region].length > 0 &&
-        (q === '' || b.name.toLowerCase().includes(q) || b.key.includes(q))
+    return visible.filter(
+      (b) => q === '' || b.name.toLowerCase().includes(q) || b.key.toLowerCase().includes(q)
     )
   }, [region, search])
 
   const applyPlan = useCallback(
     (brand: SubscriptionBrand, idx: number, targetCur: Currency) => {
-      const plan = brand.plans[region!][idx]
+      if (!region) return
+      const plan = brand.plans[region][idx]
       if (!plan) return
       setPlanIndex(idx)
       setPlanName(plan.name)
       setBillingCycle(plan.cycle)
       const raw = plan.amount
-      const catCur = REGION_CURRENCY[region!] as Currency
+      const catCur = REGION_CURRENCY[region] as Currency
       const converted =
         catCur === targetCur ? raw : convertCurrency(raw, catCur, targetCur, exchangeRates)
       setAmountStr(String(Math.round(converted * 100) / 100))
@@ -97,8 +97,11 @@ export function useAddSubscriptionForm(editing: Subscription | null, onClose: ()
         setCustomMode(true)
         setName('')
         setPlanName(null)
+        setPlanIndex(0)
+        setAmountStr('')
+        setBillingCycle('monthly')
         setExpenseCategory('Enjoyment')
-        setCurrency(settings.baseCurrency)
+        setCurrency(clampFiatToAllowed(settings, settings.baseCurrency))
         setStep(2)
         return
       }
@@ -107,9 +110,16 @@ export function useAddSubscriptionForm(editing: Subscription | null, onClose: ()
       setName(b.name)
       setExpenseCategory(b.defaultCategory)
       setPlanIndex(0)
-      const cur = clampFiatToAllowed(settings, REGION_CURRENCY[region!] as Currency)
-      setCurrency(cur)
-      applyPlan(b, 0, cur)
+      if (region && b.plans[region].length > 0) {
+        const cur = clampFiatToAllowed(settings, REGION_CURRENCY[region] as Currency)
+        setCurrency(cur)
+        applyPlan(b, 0, cur)
+      } else {
+        setPlanName(null)
+        setAmountStr('')
+        setBillingCycle('monthly')
+        setCurrency(clampFiatToAllowed(settings, settings.baseCurrency))
+      }
       setStep(2)
     },
     [applyPlan, region, settings]
@@ -171,7 +181,9 @@ export function useAddSubscriptionForm(editing: Subscription | null, onClose: ()
   ])
 
   const plansForPicker =
-    pickedBrand && pickedBrand !== 'custom' && region ? pickedBrand.plans[region] : []
+    pickedBrand && pickedBrand !== 'custom' && region && pickedBrand.plans[region].length > 0
+      ? pickedBrand.plans[region]
+      : []
 
   return {
     region,
