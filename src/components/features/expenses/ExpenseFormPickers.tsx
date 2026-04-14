@@ -89,14 +89,17 @@ export function PaymentMethodChips({
   methods,
   paymentMethodId,
   onChange,
+  label = 'Payment Method',
 }: {
   methods: { id: string; name: string }[]
   paymentMethodId: string
   onChange: (id: string) => void
+  /** Override label (e.g. i18n for income vs expense). */
+  label?: string
 }) {
   return (
     <div>
-      <Label className="text-xs text-[var(--color-brand-text-secondary)] mb-2 block">Payment Method</Label>
+      <Label className="text-xs text-[var(--color-brand-text-secondary)] mb-2 block">{label}</Label>
       <div className="flex flex-wrap gap-2">
         {methods.map((method) => (
           <button

@@ -23,6 +23,8 @@ interface AddDebtDebtTypeSectionProps {
   setDirection: (v: 'i_owe' | 'they_owe') => void
   creditor: string
   setCreditor: (v: string) => void
+  /** Hide direction selector (e.g. income-from-debt flow is always i_owe). */
+  hidePersonalDirection?: boolean
 }
 
 /**
@@ -45,6 +47,7 @@ export function AddDebtDebtTypeSection({
   setDirection,
   creditor,
   setCreditor,
+  hidePersonalDirection,
 }: AddDebtDebtTypeSectionProps) {
   const t = useT()
 
@@ -77,19 +80,25 @@ export function AddDebtDebtTypeSection({
       </div>
 
       {debtType === 'personal' ? (
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelDirection}</Label>
-            <select
-              value={direction}
-              onChange={(e) => setDirection(e.target.value as 'i_owe' | 'they_owe')}
-              className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
-            >
-              <option value="i_owe">{t.addDebt.directionIOwe}</option>
-              <option value="they_owe">{t.addDebt.directionTheyOwe}</option>
-            </select>
-          </div>
-          <div>
+        <div
+          className={
+            hidePersonalDirection ? 'space-y-3' : 'grid grid-cols-2 gap-3'
+          }
+        >
+          {!hidePersonalDirection ? (
+            <div>
+              <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelDirection}</Label>
+              <select
+                value={direction}
+                onChange={(e) => setDirection(e.target.value as 'i_owe' | 'they_owe')}
+                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
+              >
+                <option value="i_owe">{t.addDebt.directionIOwe}</option>
+                <option value="they_owe">{t.addDebt.directionTheyOwe}</option>
+              </select>
+            </div>
+          ) : null}
+          <div className={hidePersonalDirection ? '' : ''}>
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelRelationship}</Label>
             <Input
               value={relationship}

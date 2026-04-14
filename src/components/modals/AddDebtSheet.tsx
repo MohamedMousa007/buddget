@@ -80,7 +80,6 @@ export function AddDebtSheet() {
             <AddDebtPaymentForm {...paymentFormProps} />
           ) : (
             <AddDebtNewForm
-              settings={d.settings}
               debtType={d.debtType}
               setDebtType={d.setDebtType}
               name={d.name}
@@ -89,8 +88,8 @@ export function AddDebtSheet() {
               setPerson={d.setPerson}
               description={d.description}
               setDescription={d.setDescription}
-              isGold={d.isGold}
-              setIsGold={d.setIsGold}
+              receivedVia={d.receivedVia}
+              onReceivedViaChange={d.applyDebtReceivedVia}
               startingBalance={d.startingBalance}
               setStartingBalance={d.setStartingBalance}
               currency={d.currency}

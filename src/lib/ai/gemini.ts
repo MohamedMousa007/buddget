@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { Currency, PaymentMethod, Debt } from '@/lib/store/types'
+import type { Currency, PaymentMethod, Debt, IncomeSource, SavingsAccount } from '@/lib/store/types'
 import {
   generateWithFallback,
   throwIfAiProxyNotOk,
@@ -7,9 +7,20 @@ import {
 
 export type AIAction =
   | 'add_expense'
+  | 'update_expense'
+  | 'delete_expense'
   | 'add_debt_payment'
+  | 'add_debt'
+  | 'delete_debt'
+  | 'clear_debt'
   | 'add_income'
+  | 'update_income'
+  | 'delete_income'
   | 'add_payment_method'
+  | 'delete_payment_method'
+  | 'add_savings_account'
+  | 'deposit_savings'
+  | 'withdraw_savings'
   | 'add_savings_holding'
   | 'update_budget_category'
   | 'update_budget_plan_row'
@@ -32,9 +43,20 @@ export interface AIResponse {
 
 const AI_ACTIONS: AIAction[] = [
   'add_expense',
+  'update_expense',
+  'delete_expense',
   'add_debt_payment',
+  'add_debt',
+  'delete_debt',
+  'clear_debt',
   'add_income',
+  'update_income',
+  'delete_income',
   'add_payment_method',
+  'delete_payment_method',
+  'add_savings_account',
+  'deposit_savings',
+  'withdraw_savings',
   'add_savings_holding',
   'update_budget_category',
   'update_budget_plan_row',
@@ -124,14 +146,26 @@ export function buildSystemPrompt(
   paymentMethods: PaymentMethod[],
   debts: Debt[],
   liveDataBlock?: string,
-  budgetPlanContext?: { planId: string; planName: string; categoryRows: string }
+  budgetPlanContext?: { planId: string; planName: string; categoryRows: string },
+  incomeSources: IncomeSource[] = [],
+  savingsAccounts: SavingsAccount[] = []
 ): string {
   const methodList = paymentMethods.map((m) => `"${m.name}" (id: ${m.id})`).join(', ')
   const debtList = debts
+    .map((d) => {
+      const goldish = d.receivedVia === 'gold' || d.isGold
+      const typeStr = goldish ? `gold ${d.goldKarat || 24}K, ${d.startingBalance}g` : `${d.currency} ${d.startingBalance}`
+      return `"${d.name}" (person: ${d.person}, ${typeStr})`
+    })
+    .join(', ')
+  const incomeList = incomeSources
     .map(
-      (d) =>
-        `"${d.name}" (person: ${d.person}, type: ${d.isGold ? `gold ${d.goldKarat || 24}K, ${d.startingBalance}g` : `cash, ${d.currency} ${d.startingBalance}`})`
+      (i) =>
+        `"${i.name}" (${i.currency} ${i.amount}${i.isRecurring ? '/mo equiv' : ' one-time'})`
     )
+    .join(', ')
+  const savingsAccountList = savingsAccounts
+    .map((a) => `"${a.name}" (${a.currency} ${a.currentBalance})`)
     .join(', ')
   const today = new Date().toISOString().slice(0, 10)
 
@@ -145,7 +179,9 @@ CONTEXT:
 - Base currency: ${baseCurrency}
 - Today's date: ${today}
 - Payment methods: ${methodList}
-- Expense categories (for add_expense): Rent, Transport, Food, Enjoyment, Debt, Remittance, Other — NOT Savings (use add_savings_holding for money set aside)
+- Income sources: ${incomeList || '(none)'}
+- Savings accounts: ${savingsAccountList || '(none)'}
+- Expense categories (for add_expense): Rent, Transport, Food, Enjoyment, Debt, Remittance, Other — NOT Savings (use add_savings_holding or deposit_savings for money set aside)
 - Budget updates may still use Savings as a category for allocation targets
 - Active debts: ${debtList}
 ${live}
@@ -165,6 +201,16 @@ RULES:
 
 12. For "update_budget_plan_row", include data.planId, data.categoryId, data.newAmount (number in base currency). Use this to adjust a single category's budget amount in the active plan.
 13. For "replace_budget_plan", include data.planId, data.categories (array of {name, emoji, amount, currency, isSavings?: boolean}). Set isSavings: true only on the savings allocation row; omit or false on expense rows. Use this to completely rebuild the user's budget plan. Only use when the user asks for a full plan rebuild.
+14. For "add_debt", include data.name, data.amount, data.currency, data.person (who you owe / who owes you), data.direction ("i_owe" or "they_owe"). Use when the user says they borrowed money or someone owes them.
+15. For "delete_expense", include data.description (matches against existing expenses by description text).
+16. For "update_expense", include data.description (to find the expense) and data.newAmount, data.newCategory, and/or data.newDescription for changes.
+17. For "update_income", include data.name (to find the income source) and data.amount for the new amount (optional: data.currency).
+18. For "delete_income", include data.name (to find and remove the income source).
+19. For "clear_debt", include data.name or data.person to identify the debt to mark as fully paid.
+20. For "deposit_savings", include data.account (savings account name), data.amount, data.currency (optional).
+21. For "withdraw_savings", include data.account, data.amount, data.currency (optional).
+22. For "add_savings_account", include data.name, data.category ("savings" or "investment"), data.type ("bank", "cash", "gold", "stablecoin", "crypto", "stocks", "real_estate", "other"), data.currency, data.openingBalance (optional).
+23. For "delete_payment_method", include data.name to identify the payment method.
 ${budgetPlanContext ? `
 ACTIVE_BUDGET_PLAN:
 - Plan ID: ${budgetPlanContext.planId}
@@ -185,8 +231,8 @@ RESPONSE FORMAT for add_debt_payment:
 {"action":"add_debt_payment","data":{"debtName":"Mom's Debt","person":"Mom","amount":number,"currency":"EGP","date":"${today}","paymentMethod":"Bank Transfer"},"confidence":1,"clarificationNeeded":null,"message":"short friendly confirmation"}
 
 RESPONSE FORMAT for add_income:
-{"action":"add_income","data":{"name":"string","amount":number,"currency":"${baseCurrency}","isRecurring":true,"recurringFrequency":"monthly"|"biweekly"|"weekly","dayOfMonth":1},"confidence":1,"clarificationNeeded":null,"message":"short friendly confirmation"}
-Note: dayOfMonth only when recurringFrequency is monthly; amount is per month, per paycheck, or per week matching recurringFrequency.
+{"action":"add_income","data":{"name":"string","amount":number,"currency":"${baseCurrency}","sourceType":"salary"|"bonus"|"side_hustle"|"investment"|"savings"|"debt"|"gift"|"refund"|"other","isRecurring":true,"recurringFrequency":"monthly"|"biweekly"|"weekly","dayOfMonth":1,"paymentMethod":"optional name from list","person":"when sourceType is debt — who lent the money"},"confidence":1,"clarificationNeeded":null,"message":"short friendly confirmation"}
+Note: dayOfMonth only when recurringFrequency is monthly; amount is per month, per paycheck, or per week matching recurringFrequency. When sourceType is "debt", include person — the app creates income and a linked debt.
 
 RESPONSE FORMAT for add_payment_method:
 {"action":"add_payment_method","data":{"name":"ADCB Visa","type":"card_credit"},"confidence":1,"clarificationNeeded":null,"message":"short friendly confirmation"}
@@ -270,11 +316,30 @@ function friendlyLineForActionItem(action: AIAction, d: Record<string, unknown>)
       const cur = d.currency || ''
       return `${cur} ${amt} — ${desc}`
     }
+    case 'update_expense': {
+      const desc = d.description || 'expense'
+      return `Update expense matching "${desc}"`
+    }
+    case 'delete_expense': {
+      const desc = d.description || 'expense'
+      return `Delete expense matching "${desc}"`
+    }
     case 'add_debt_payment': {
       const person = d.person || d.debtName || 'debt'
       const amt = d.amount || 0
       const cur = d.currency || ''
       return `Debt payment ${cur} ${amt} to ${person}`
+    }
+    case 'add_debt': {
+      const name = d.name || 'debt'
+      const amt = d.amount || 0
+      return `Add debt "${name}" (${amt})`
+    }
+    case 'delete_debt': {
+      return `Remove debt "${d.name || d.person || ''}"`
+    }
+    case 'clear_debt': {
+      return `Mark debt "${d.name || d.person || ''}" as paid off`
     }
     case 'add_income': {
       const name = d.name || 'income'
@@ -282,15 +347,33 @@ function friendlyLineForActionItem(action: AIAction, d: Record<string, unknown>)
       const cur = d.currency || ''
       return `Income ${cur} ${amt} from ${name}`
     }
+    case 'update_income': {
+      return `Update income "${d.name || ''}"`
+    }
+    case 'delete_income': {
+      return `Remove income "${d.name || ''}"`
+    }
     case 'add_payment_method': {
       const name = d.name || 'payment method'
       return `Add payment method "${name}"`
+    }
+    case 'delete_payment_method': {
+      return `Remove payment method "${d.name || ''}"`
     }
     case 'add_savings_holding': {
       const name = d.name || 'holding'
       const amt = d.amount || 0
       const cur = d.currency || ''
       return `Savings "${name}": ${cur} ${amt}`
+    }
+    case 'add_savings_account': {
+      return `Create savings account "${d.name || ''}"`
+    }
+    case 'deposit_savings': {
+      return `Deposit to "${d.account || d.name || ''}"`
+    }
+    case 'withdraw_savings': {
+      return `Withdraw from "${d.account || d.name || ''}"`
     }
     case 'update_budget_category': {
       const cat = d.category || 'category'

@@ -260,6 +260,8 @@ export const ar: Dictionary = {
     salaryRecurringHint: 'الراتب يُضبط افتراضياً كمتكرر شهري؛ يمكنك إيقاف ذلك.',
     debtDescriptionLabel: 'وصف (اختياري)',
     debtDescriptionPlaceholder: 'ملاحظات عن هذا القرض',
+    labelPaymentMethod: 'يُستلم في',
+    debtUsesIncomeAmount: 'المبلغ والعملة يطابقان الدخل أعلاه.',
   },
 
   savings: {
@@ -493,6 +495,13 @@ export const ar: Dictionary = {
     goalRemindCheckbox: 'ذكّرني بمواعيد الدفع',
     goalSetButton: 'تعيين الهدف',
     goalIncomeWarning: (pct) => `تنبيه — هذا تقريباً ${pct}% من دخلك الشهري.`,
+    receivedViaLabel: 'استُلم عبر',
+    receivedViaCash: 'نقد',
+    receivedViaBank: 'تحويل بنكي',
+    receivedViaCard: 'بطاقة',
+    receivedViaCrypto: 'عملات رقمية',
+    receivedViaGold: 'ذهب',
+    receivedViaOther: 'أخرى',
   },
 
   addDebtPayment: {

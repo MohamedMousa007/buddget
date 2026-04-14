@@ -4,8 +4,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
 import { IncomeSourceTypePicker } from '@/components/features/income/IncomeSourceTypePicker'
+import { PaymentMethodChips } from '@/components/features/expenses/ExpenseFormPickers'
 import type { Dictionary } from '@/lib/i18n/types'
-import type { Currency, IncomeSourceType } from '@/lib/store/types'
+import type { Currency, IncomeSourceType, PaymentMethod } from '@/lib/store/types'
 
 type Props = {
   t: Dictionary
@@ -15,6 +16,9 @@ type Props = {
   setAmount: (v: string) => void
   currency: Currency
   setCurrency: (v: Currency) => void
+  paymentMethods: PaymentMethod[]
+  paymentMethodId: string
+  setPaymentMethodId: (id: string) => void
   sourceType: IncomeSourceType
   onSourceTypeChange: (st: IncomeSourceType) => void
 }
@@ -28,6 +32,9 @@ export function AddIncomeTypeAndAmount({
   setAmount,
   currency,
   setCurrency,
+  paymentMethods,
+  paymentMethodId,
+  setPaymentMethodId,
   sourceType,
   onSourceTypeChange,
 }: Props) {
@@ -57,6 +64,13 @@ export function AddIncomeTypeAndAmount({
           className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)]"
         />
       </div>
+
+      <PaymentMethodChips
+        label={t.addIncome.labelPaymentMethod}
+        methods={paymentMethods}
+        paymentMethodId={paymentMethodId}
+        onChange={setPaymentMethodId}
+      />
 
       <div className="grid grid-cols-2 gap-3">
         <div>

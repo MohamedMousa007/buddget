@@ -117,6 +117,7 @@ export const importDataSchema = z.object({
           .optional(),
         linkedSavingsAccountId: z.string().optional(),
         linkedDebtId: z.string().optional(),
+        paymentMethodId: z.string().optional(),
       })
     )
     .optional(),
@@ -331,6 +332,9 @@ export const importDataSchema = z.object({
         startDate: z.string().optional(),
         interestFree: z.boolean().optional(),
         creditor: z.string().optional(),
+        receivedVia: z
+          .enum(['cash', 'bank_transfer', 'card', 'crypto', 'gold', 'other'])
+          .optional(),
         goal: z
           .object({
             targetDate: z.string(),

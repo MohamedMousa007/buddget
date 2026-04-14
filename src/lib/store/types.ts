@@ -76,6 +76,8 @@ export interface IncomeSource {
   linkedSavingsAccountId?: string
   /** When `sourceType` is debt, links to the auto-created debt row. */
   linkedDebtId?: string
+  /** Which of the user's payment methods received this income (optional). */
+  paymentMethodId?: string
 }
 
 export interface Expense {
@@ -278,6 +280,9 @@ export type DebtKind = 'personal' | 'installment' | 'general'
 
 export type DebtLifecycleStatus = 'active' | 'cleared'
 
+/** How borrowed money was received (replaces relying on `isGold` alone for channel). */
+export type DebtReceivedVia = 'cash' | 'bank_transfer' | 'card' | 'crypto' | 'gold' | 'other'
+
 export interface DebtGoal {
   targetDate: string
   paymentFrequency: 'weekly' | 'monthly' | 'quarterly' | 'annually'
@@ -292,6 +297,8 @@ export interface Debt {
   startingBalance: number
   currency: DebtCurrency
   isGold: boolean
+  /** Receipt channel; kept in sync with `isGold` (gold ⇒ receivedVia gold). */
+  receivedVia?: DebtReceivedVia
   goldKarat?: GoldKarat
   notes?: string
   sharedPlanId?: string | null
@@ -469,7 +476,7 @@ export interface FinanceStore {
    */
   addIncomeWithDebt: (
     income: Omit<IncomeSource, 'id' | 'createdAt' | 'linkedDebtId' | 'linkedSavingsAccountId' | 'sourceType'>,
-    debtInfo: { personName?: string; description?: string }
+    debt: Omit<Debt, 'id' | 'createdAt'>
   ) => void
   updateIncomeSource: (id: string, updates: Partial<IncomeSource>) => void
   deleteIncomeSource: (id: string) => void

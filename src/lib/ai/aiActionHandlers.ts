@@ -11,6 +11,7 @@ import { pushProfileFieldsToSupabase } from '@/lib/profile/pushProfileFieldsToSu
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { SAVINGS_TYPE_ICONS } from '@/lib/constants/savingsIcons'
 import { defaultCategoryForSavingsType } from '@/lib/constants/savingsTypes'
+import { normalizeDebtIncoming } from '@/lib/debt/normalizeDebt'
 import type {
   BudgetPlanCategory,
   Currency,
@@ -21,10 +22,14 @@ import type {
   SavingsType,
   Debt,
   DebtPayment,
+  Expense,
   IncomeSource,
+  IncomeSourceType,
   PaymentMethod,
   AppSettings,
   FinanceStore,
+  SavingsAccount,
+  SavingsAccountCategory,
   UserProfile,
 } from '@/lib/store/types'
 
@@ -91,22 +96,125 @@ export function coerceSavingsSubtype(raw: unknown): SavingsSubtype {
   return 'other'
 }
 
+function coerceIncomeSourceType(raw: unknown): IncomeSourceType {
+  const x = String(raw || 'other')
+    .toLowerCase()
+    .trim()
+    .replace(/-/g, '_')
+  const allowed: IncomeSourceType[] = [
+    'salary',
+    'bonus',
+    'side_hustle',
+    'investment',
+    'savings',
+    'debt',
+    'gift',
+    'refund',
+    'other',
+  ]
+  if (allowed.includes(x as IncomeSourceType)) return x as IncomeSourceType
+  if (x.includes('salary')) return 'salary'
+  if (x.includes('bonus')) return 'bonus'
+  if (x.includes('side')) return 'side_hustle'
+  if (x.includes('invest')) return 'investment'
+  if (x.includes('saving')) return 'savings'
+  if (x.includes('debt') || x.includes('borrow') || x.includes('loan')) return 'debt'
+  if (x.includes('gift')) return 'gift'
+  if (x.includes('refund')) return 'refund'
+  return 'other'
+}
+
+function coerceAISavingsType(raw: unknown): SavingsType {
+  const x = String(raw || 'bank').toLowerCase()
+  if (x === 'stablecoin' || x === 'usdt' || x === 'usdc') return 'stablecoin'
+  if (x.includes('stock') || x === 'fund') return 'stocks'
+  if (x.includes('crypto') && !x.includes('stable')) return 'crypto'
+  if (x.includes('real')) return 'real_estate'
+  if (x.includes('gold')) return 'gold'
+  if (x.includes('cash')) return 'cash'
+  if (x.includes('bank')) return 'bank'
+  const allowed: SavingsType[] = [
+    'bank',
+    'cash',
+    'gold',
+    'stablecoin',
+    'crypto',
+    'stocks',
+    'real_estate',
+    'other',
+  ]
+  if (allowed.includes(x as SavingsType)) return x as SavingsType
+  return 'other'
+}
+
+function findExpenseByHint(ctx: AIActionHandlerContext, hint: string): Expense | undefined {
+  const t = hint.trim().toLowerCase()
+  if (!t) return undefined
+  const sorted = [...ctx.expenses].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  return sorted.find(
+    (e) => e.description.toLowerCase().includes(t) || t.includes(e.description.toLowerCase())
+  )
+}
+
+function findIncomeByHint(ctx: AIActionHandlerContext, hint: string): IncomeSource | undefined {
+  const t = hint.trim().toLowerCase()
+  if (!t) return undefined
+  return ctx.incomeSources.find(
+    (i) => i.name.toLowerCase().includes(t) || t.includes(i.name.toLowerCase())
+  )
+}
+
+function findDebtByHint(ctx: AIActionHandlerContext, hint: string): Debt | undefined {
+  const t = hint.trim().toLowerCase()
+  if (!t) return undefined
+  return ctx.debts.find(
+    (x) =>
+      x.name.toLowerCase().includes(t) ||
+      (x.person && x.person.toLowerCase().includes(t)) ||
+      t.includes(x.name.toLowerCase()) ||
+      (x.person ? t.includes(x.person.toLowerCase()) : false)
+  )
+}
+
+function findSavingsAccountByHint(
+  ctx: AIActionHandlerContext,
+  hint: string
+): SavingsAccount | undefined {
+  const t = hint.trim().toLowerCase()
+  if (!t) return undefined
+  return ctx.savingsAccounts.find(
+    (a) => a.name.toLowerCase().includes(t) || t.includes(a.name.toLowerCase())
+  )
+}
+
 export function buildAIActionHandlerContext(store: FinanceStore): AIActionHandlerContext {
   return {
     paymentMethods: store.paymentMethods,
+    expenses: store.expenses,
     debts: store.debts,
     debtPayments: store.debtPayments,
     incomeSources: store.incomeSources,
+    savingsAccounts: store.savingsAccounts,
     settings: store.settings,
     exchangeRates: store.exchangeRates,
     goldPricePerGram: store.goldPricePerGram,
     addExpense: store.addExpense,
+    updateExpense: store.updateExpense,
+    deleteExpense: store.deleteExpense,
     addDebtPayment: store.addDebtPayment,
+    addDebt: store.addDebt,
+    deleteDebt: store.deleteDebt,
+    clearDebt: store.clearDebt,
     addIncomeSource: store.addIncomeSource,
+    addIncomeWithDebt: store.addIncomeWithDebt,
+    updateIncomeSource: store.updateIncomeSource,
+    deleteIncomeSource: store.deleteIncomeSource,
     addPaymentMethod: store.addPaymentMethod,
+    deletePaymentMethod: store.deletePaymentMethod,
     addSavingsHolding: store.addSavingsHolding,
     addSavingsAccount: store.addSavingsAccount,
     depositToSavings: store.depositToSavings,
+    withdrawFromSavings: store.withdrawFromSavings,
     updateBudgetCategory: store.updateBudgetCategory,
     updatePlanCategory: store.updatePlanCategory,
     updateBudgetPlan: store.updateBudgetPlan,
@@ -118,19 +226,31 @@ export function buildAIActionHandlerContext(store: FinanceStore): AIActionHandle
 /** Context needed to validate/execute AI actions (mirrors finance store slices + actions). */
 export interface AIActionHandlerContext {
   paymentMethods: PaymentMethod[]
+  expenses: Expense[]
   debts: Debt[]
   debtPayments: DebtPayment[]
   incomeSources: IncomeSource[]
+  savingsAccounts: SavingsAccount[]
   settings: AppSettings
   exchangeRates: Record<string, number>
   goldPricePerGram: number
   addExpense: FinanceStore['addExpense']
+  updateExpense: FinanceStore['updateExpense']
+  deleteExpense: FinanceStore['deleteExpense']
   addDebtPayment: FinanceStore['addDebtPayment']
+  addDebt: FinanceStore['addDebt']
+  deleteDebt: FinanceStore['deleteDebt']
+  clearDebt: FinanceStore['clearDebt']
   addIncomeSource: FinanceStore['addIncomeSource']
+  addIncomeWithDebt: FinanceStore['addIncomeWithDebt']
+  updateIncomeSource: FinanceStore['updateIncomeSource']
+  deleteIncomeSource: FinanceStore['deleteIncomeSource']
   addPaymentMethod: FinanceStore['addPaymentMethod']
+  deletePaymentMethod: FinanceStore['deletePaymentMethod']
   addSavingsHolding: FinanceStore['addSavingsHolding']
   addSavingsAccount: FinanceStore['addSavingsAccount']
   depositToSavings: FinanceStore['depositToSavings']
+  withdrawFromSavings: FinanceStore['withdrawFromSavings']
   updateBudgetCategory: FinanceStore['updateBudgetCategory']
   updatePlanCategory: FinanceStore['updatePlanCategory']
   updateBudgetPlan: FinanceStore['updateBudgetPlan']
@@ -267,6 +387,51 @@ export function validateActionItem(
     }
     return null
   }
+  if (action === 'delete_expense' || action === 'update_expense') {
+    if (!String(getField(d, 'description') || '').trim()) {
+      return `${action} needs data.description to find the expense.`
+    }
+    return null
+  }
+  if (action === 'add_debt') {
+    if ((Number(getField(d, 'amount', 'startingBalance')) || 0) <= 0) return 'Debt needs a positive amount.'
+    return null
+  }
+  if (action === 'delete_debt' || action === 'clear_debt') {
+    if (!String(getField(d, 'name', 'person', 'debtName') || '').trim()) {
+      return `${action} needs data.name or data.person to match a debt.`
+    }
+    return null
+  }
+  if (action === 'update_income') {
+    if (!String(getField(d, 'name') || '').trim()) return 'update_income needs data.name.'
+    if (
+      getField(d, 'amount', 'newAmount') === undefined &&
+      getField(d, 'currency') === undefined
+    ) {
+      return 'update_income needs data.amount or data.currency.'
+    }
+    return null
+  }
+  if (action === 'delete_income') {
+    if (!String(getField(d, 'name') || '').trim()) return 'delete_income needs data.name.'
+    return null
+  }
+  if (action === 'deposit_savings' || action === 'withdraw_savings') {
+    if (!String(getField(d, 'account', 'name') || '').trim()) {
+      return `${action} needs data.account (savings account name).`
+    }
+    if ((Number(getField(d, 'amount')) || 0) <= 0) return `${action} needs a positive data.amount.`
+    return null
+  }
+  if (action === 'add_savings_account') {
+    if (!String(getField(d, 'name') || '').trim()) return 'add_savings_account needs data.name.'
+    return null
+  }
+  if (action === 'delete_payment_method') {
+    if (!String(getField(d, 'name') || '').trim()) return 'delete_payment_method needs data.name.'
+    return null
+  }
   return null
 }
 
@@ -293,6 +458,31 @@ export function executeActionItem(
       paymentMethodId: pm?.id || '',
       isRecurring: Boolean(getField(d, 'isRecurring', 'is_recurring')),
     })
+    return
+  }
+  if (action === 'delete_expense') {
+    const exp = findExpenseByHint(ctx, String(getField(d, 'description') || ''))
+    if (exp) ctx.deleteExpense(exp.id)
+    return
+  }
+  if (action === 'update_expense') {
+    const exp = findExpenseByHint(ctx, String(getField(d, 'description') || ''))
+    if (!exp) return
+    const nextAmount = getField(d, 'newAmount', 'amount')
+    const nextCat = getField(d, 'newCategory', 'category')
+    const nextDesc = getField(d, 'newDescription', 'description')
+    const patch: Partial<Expense> = {}
+    if (nextDesc != null && String(nextDesc).trim()) patch.description = String(nextDesc).trim()
+    if (nextCat != null && String(nextCat).trim()) patch.category = String(nextCat).trim()
+    if (nextAmount !== undefined) {
+      const na = Number(nextAmount)
+      const ccy = String(getField(d, 'currency') || exp.currency) as Currency
+      patch.amount = na
+      patch.currency = ccy
+      const cvt = tryConvertCurrency(na, ccy, ctx.settings.baseCurrency, ctx.exchangeRates)
+      if (cvt != null) patch.amountInBaseCurrency = cvt
+    }
+    ctx.updateExpense(exp.id, patch)
     return
   }
   if (action === 'add_debt_payment') {
@@ -353,11 +543,80 @@ export function executeActionItem(
     })
     return
   }
+  if (action === 'add_debt') {
+    const amount = Number(getField(d, 'amount', 'startingBalance')) || 0
+    const currency = clampFiatToAllowed(
+      ctx.settings,
+      String(getField(d, 'currency') || ctx.settings.baseCurrency) as Currency
+    )
+    const person = String(getField(d, 'person', 'personName', 'from') || '')
+    const direction = String(getField(d, 'direction') || 'i_owe') === 'they_owe' ? 'they_owe' : 'i_owe'
+    ctx.addDebt(
+      normalizeDebtIncoming({
+        name: String(getField(d, 'name') || 'Debt'),
+        person: person || '—',
+        startingBalance: amount,
+        currency,
+        description: String(getField(d, 'description', 'notes') || ''),
+        debtType: 'personal',
+        direction,
+        status: 'active',
+        isGold: false,
+        receivedVia: 'cash',
+      })
+    )
+    return
+  }
+  if (action === 'delete_debt') {
+    const debt = findDebtByHint(ctx, String(getField(d, 'name', 'person', 'debtName') || ''))
+    if (debt) ctx.deleteDebt(debt.id)
+    return
+  }
+  if (action === 'clear_debt') {
+    const debt = findDebtByHint(ctx, String(getField(d, 'name', 'person', 'debtName') || ''))
+    if (debt) ctx.clearDebt(debt.id)
+    return
+  }
   if (action === 'add_income') {
+    const sourceType = coerceIncomeSourceType(getField(d, 'sourceType', 'source_type', 'type'))
+    const amount = Number(getField(d, 'amount')) || 0
+    const currency = clampFiatToAllowed(
+      ctx.settings,
+      String(getField(d, 'currency') || ctx.settings.baseCurrency) as Currency
+    )
+    const pmId = findPaymentMethod(ctx, getField(d, 'paymentMethod', 'payment_method'))?.id
+
+    if (sourceType === 'debt') {
+      const person = String(getField(d, 'person', 'from', 'personName') || '').trim()
+      ctx.addIncomeWithDebt(
+        {
+          name: String(getField(d, 'name') || 'Income'),
+          amount,
+          currency,
+          isRecurring: false,
+          notes: getField(d, 'notes') as string | undefined,
+          paymentMethodId: pmId,
+        },
+        normalizeDebtIncoming({
+          name: String(getField(d, 'name') || 'Debt'),
+          person: person || String(getField(d, 'name') || 'Unknown'),
+          startingBalance: amount,
+          currency,
+          description: getField(d, 'description', 'notes') as string | undefined,
+          debtType: 'personal',
+          direction: 'i_owe',
+          status: 'active',
+          receivedVia: 'cash',
+          isGold: false,
+        })
+      )
+      return
+    }
+
     const isRecurring =
-      getField(d, 'isRecurring', 'is_recurring') === undefined
-        ? true
-        : Boolean(getField(d, 'isRecurring', 'is_recurring'))
+      getField(d, 'isRecurring', 'is_recurring') === undefined ?
+        sourceType === 'salary'
+      : Boolean(getField(d, 'isRecurring', 'is_recurring'))
     const rawFreq = String(getField(d, 'recurringFrequency', 'recurring_frequency') || 'monthly')
     const recurringFrequency =
       rawFreq === 'weekly' || rawFreq === 'biweekly' ? rawFreq : 'monthly'
@@ -368,13 +627,31 @@ export function executeActionItem(
         : 1
     ctx.addIncomeSource({
       name: String(getField(d, 'name') || 'Income'),
-      amount: Number(getField(d, 'amount')) || 0,
-      currency: String(getField(d, 'currency') || ctx.settings.baseCurrency) as Currency,
+      amount,
+      currency,
       isRecurring,
       recurringFrequency: isRecurring ? recurringFrequency : undefined,
       dayOfMonth: isRecurring && recurringFrequency === 'monthly' ? dayOfMonth : undefined,
       notes: getField(d, 'notes') as string | undefined,
+      sourceType,
+      paymentMethodId: pmId,
     })
+    return
+  }
+  if (action === 'update_income') {
+    const inc = findIncomeByHint(ctx, String(getField(d, 'name') || ''))
+    if (!inc) return
+    const patch: Partial<IncomeSource> = {}
+    const newAmt = getField(d, 'amount', 'newAmount')
+    if (newAmt !== undefined) patch.amount = Number(newAmt)
+    const newCur = getField(d, 'currency')
+    if (newCur) patch.currency = String(newCur) as Currency
+    ctx.updateIncomeSource(inc.id, patch)
+    return
+  }
+  if (action === 'delete_income') {
+    const inc = findIncomeByHint(ctx, String(getField(d, 'name') || ''))
+    if (inc) ctx.deleteIncomeSource(inc.id)
     return
   }
   if (action === 'add_payment_method') {
@@ -385,6 +662,12 @@ export function executeActionItem(
       color: '#C0C0C0',
       isDefault: false,
     })
+    return
+  }
+  if (action === 'delete_payment_method') {
+    const name = String(getField(d, 'name') || '').trim().toLowerCase()
+    const pm = ctx.paymentMethods.find((m) => m.name.toLowerCase() === name || m.name.toLowerCase().includes(name))
+    if (pm) ctx.deletePaymentMethod(pm.id)
     return
   }
   if (action === 'add_savings_holding') {
@@ -407,6 +690,49 @@ export function executeActionItem(
     if (amount > 0) {
       ctx.depositToSavings(id, amount, currency, getField(d, 'notes') as string | undefined)
     }
+    return
+  }
+  if (action === 'add_savings_account') {
+    const name = String(getField(d, 'name') || '').trim() || 'Savings'
+    const catRaw = String(getField(d, 'category') || 'savings').toLowerCase()
+    const category: SavingsAccountCategory = catRaw === 'investment' ? 'investment' : 'savings'
+    const st = coerceAISavingsType(getField(d, 'type', 'subtype'))
+    const currency = clampFiatToAllowed(
+      ctx.settings,
+      String(getField(d, 'currency') || ctx.settings.baseCurrency) as Currency
+    )
+    const opening = Number(getField(d, 'openingBalance', 'amount')) || 0
+    ctx.addSavingsAccount({
+      name,
+      category,
+      type: st,
+      icon: SAVINGS_TYPE_ICONS[st],
+      currency,
+      openingBalance: opening,
+      notes: getField(d, 'notes') as string | undefined,
+    })
+    return
+  }
+  if (action === 'deposit_savings') {
+    const acc = findSavingsAccountByHint(ctx, String(getField(d, 'account', 'name') || ''))
+    if (!acc) return
+    const amount = Number(getField(d, 'amount')) || 0
+    const currency = clampFiatToAllowed(
+      ctx.settings,
+      String(getField(d, 'currency') || acc.currency) as Currency
+    )
+    ctx.depositToSavings(acc.id, amount, currency, String(getField(d, 'notes') || ''))
+    return
+  }
+  if (action === 'withdraw_savings') {
+    const acc = findSavingsAccountByHint(ctx, String(getField(d, 'account', 'name') || ''))
+    if (!acc) return
+    const amount = Number(getField(d, 'amount')) || 0
+    const currency = clampFiatToAllowed(
+      ctx.settings,
+      String(getField(d, 'currency') || acc.currency) as Currency
+    )
+    ctx.withdrawFromSavings(acc.id, amount, currency, String(getField(d, 'notes') || ''))
     return
   }
   if (action === 'update_budget_category') {
@@ -482,6 +808,7 @@ export function executeActionItem(
         if (patch.name) void pushProfileFieldsToSupabase({ name: patch.name })
       }
     }
+    return
   }
 }
 

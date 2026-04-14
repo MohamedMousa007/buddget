@@ -17,6 +17,7 @@ import type {
   DebtCurrency,
   DebtGoal,
   DebtKind,
+  DebtReceivedVia,
   DebtRecurringFrequency,
   GoldKarat,
 } from '@/lib/store/types'
@@ -71,7 +72,8 @@ export function useAddDebtSheet() {
   const [currency, setCurrency] = useState<DebtCurrency>(
     () => useFinanceStore.getState().settings.baseCurrency as DebtCurrency
   )
-  const [isGold, setIsGold] = useState(false)
+  const [receivedVia, setReceivedVia] = useState<DebtReceivedVia>('cash')
+  const isGold = receivedVia === 'gold'
   const [goldKarat, setGoldKarat] = useState<GoldKarat>(24)
   const [notes, setNotes] = useState('')
   const [relationship, setRelationship] = useState('')
@@ -131,13 +133,13 @@ export function useAddDebtSheet() {
 
   useEffect(() => {
     if (!isOpen) return
-    if (debtType === 'installment' && isGold) {
+    if (debtType === 'installment' && receivedVia === 'gold') {
       /* eslint-disable react-hooks/set-state-in-effect -- installment plans are fiat-only in this flow */
-      setIsGold(false)
+      setReceivedVia('cash')
       setCurrency(settings.baseCurrency as DebtCurrency)
       /* eslint-enable react-hooks/set-state-in-effect */
     }
-  }, [debtType, isGold, isOpen, settings.baseCurrency])
+  }, [debtType, receivedVia, isOpen, settings.baseCurrency])
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- keep payment target on a payable debt while sheet open */
@@ -155,14 +157,14 @@ export function useAddDebtSheet() {
     /* eslint-disable react-hooks/set-state-in-effect -- reset currency when sheet opens */
     if (isOpen && !prevIsOpen.current) {
       setPaymentCurrency(settings.baseCurrency)
-      if (!isGold) setCurrency(settings.baseCurrency as DebtCurrency)
+      if (receivedVia !== 'gold') setCurrency(settings.baseCurrency as DebtCurrency)
       if (isPayDebtFlow) {
         setPayDebtStep('select')
       }
     }
     prevIsOpen.current = isOpen
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [isOpen, settings.baseCurrency, isGold, isPayDebtFlow])
+  }, [isOpen, settings.baseCurrency, receivedVia, isPayDebtFlow])
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- apply payment-only intent and defaults when sheet opens */
@@ -194,7 +196,7 @@ export function useAddDebtSheet() {
     setDescription('')
     setStartingBalance('')
     setCurrency(settings.baseCurrency as DebtCurrency)
-    setIsGold(false)
+    setReceivedVia('cash')
     setNotes('')
     setRelationship('')
     setDirection('i_owe')
@@ -256,6 +258,7 @@ export function useAddDebtSheet() {
       debtType,
       emoji: baseEmoji,
       status: 'active',
+      receivedVia,
     }
 
     if (debtType === 'personal') {
@@ -317,6 +320,7 @@ export function useAddDebtSheet() {
     installmentStartDate,
     interestFree,
     isGold,
+    receivedVia,
     name,
     notes,
     paymentMethods,
@@ -424,6 +428,15 @@ export function useAddDebtSheet() {
     tI18n,
   ])
 
+  const applyDebtReceivedVia = useCallback(
+    (rv: DebtReceivedVia) => {
+      setReceivedVia(rv)
+      if (rv === 'gold') setCurrency('XAU')
+      else setCurrency(settings.baseCurrency as DebtCurrency)
+    },
+    [settings.baseCurrency]
+  )
+
   const selectDebtForPayFlow = useCallback((id: string) => {
     setSelectedDebtId(id)
     setPayDebtStep('form')
@@ -501,8 +514,8 @@ export function useAddDebtSheet() {
     setStartingBalance,
     currency,
     setCurrency,
-    isGold,
-    setIsGold,
+    receivedVia,
+    applyDebtReceivedVia,
     goldKarat,
     setGoldKarat,
     notes,

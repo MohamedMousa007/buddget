@@ -263,6 +263,8 @@ export interface Dictionary {
     salaryRecurringHint: string
     debtDescriptionLabel: string
     debtDescriptionPlaceholder: string
+    labelPaymentMethod: string
+    debtUsesIncomeAmount: string
   }
 
   savings: {
@@ -495,6 +497,13 @@ export interface Dictionary {
     goalRemindCheckbox: string
     goalSetButton: string
     goalIncomeWarning: (pct: string) => string
+    receivedViaLabel: string
+    receivedViaCash: string
+    receivedViaBank: string
+    receivedViaCard: string
+    receivedViaCrypto: string
+    receivedViaGold: string
+    receivedViaOther: string
   }
 
   addDebtPayment: {
