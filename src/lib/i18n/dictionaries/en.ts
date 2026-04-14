@@ -206,6 +206,23 @@ export const en: Dictionary = {
     perWeek: (amount) => `${amount}/wk`,
     monthlyEquiv: (amount) => `\u2248 ${amount}/mo for budgets (monthly equivalent)`,
     confirmDelete: 'Remove this income source? This will be gone for good.',
+    sourceTypeSalary: 'Salary',
+    sourceTypeBonus: 'Bonus',
+    sourceTypeSideHustle: 'Side hustle',
+    sourceTypeInvestment: 'Investment',
+    sourceTypeSavings: 'Savings',
+    sourceTypeDebt: 'Debt',
+    sourceTypeGift: 'Gift',
+    sourceTypeRefund: 'Refund',
+    sourceTypeOther: 'Other',
+    sourceTypeLabel: 'Source type',
+    debtPersonLabel: 'Who is this from?',
+    debtPersonPlaceholder: 'e.g., Mom, ADCB Credit Card',
+    linkedDebtNote: 'Added to your debts',
+    linkedSavingsNote: 'From savings withdrawal',
+    linkedInvestmentNote: 'From investment return',
+    linkedToDebt: (name) => `\u2192 Linked to debt: ${name}`,
+    linkedAccountName: (name) => `\u2192 From account: ${name}`,
   },
 
   editIncome: {
@@ -220,6 +237,10 @@ export const en: Dictionary = {
     freqHint: ' Budgets use a monthly equivalent (e.g. weekly \u00D7 52\u00F712).',
     budgetNote: (currency) => `Budgets in "\u0025 of income" use recurring income converted to ${currency}.`,
     buttonSave: 'Save changes',
+    labelSourceType: 'Source type',
+    salaryRecurringHint: 'Salary defaults to recurring monthly; you can turn it off.',
+    debtDescriptionLabel: 'Description (optional)',
+    debtDescriptionPlaceholder: 'Notes about this loan',
   },
 
   addIncome: {
@@ -235,6 +256,10 @@ export const en: Dictionary = {
     labelNotes: 'Notes (optional)',
     placeholderNotes: 'Any extra details...',
     buttonSubmit: 'Add a Source \u2192',
+    labelSourceType: 'Source type',
+    salaryRecurringHint: 'Salary defaults to recurring monthly; you can turn it off.',
+    debtDescriptionLabel: 'Description (optional)',
+    debtDescriptionPlaceholder: 'Notes about this loan',
   },
 
   savings: {

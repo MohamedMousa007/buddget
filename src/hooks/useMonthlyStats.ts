@@ -126,7 +126,9 @@ export function useMonthlyStats() {
     const rawMonthlyIncome = calculateMonthlyIncome(
       incomeSources,
       settings.baseCurrency,
-      exchangeRates
+      exchangeRates,
+      monthFilter,
+      settings.monthStartDay
     )
     const incomeBlocked =
       settings.noIncomeDeclared === true && incomeSources.length === 0
