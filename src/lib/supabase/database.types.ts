@@ -1311,9 +1311,68 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_debt_payment_with_expense: {
+        Args: { p_expense: Json; p_payment: Json }
+        Returns: Json
+      }
+      add_income_with_debt: {
+        Args: { p_debt: Json; p_income: Json }
+        Returns: Json
+      }
+      add_subscription_with_recurring_expense: {
+        Args: { p_recurring_expense: Json; p_subscription: Json }
+        Returns: Json
+      }
       backfill_from_user_finance: { Args: { p_user_id: string }; Returns: Json }
+      cancel_subscription: {
+        Args: { p_subscription_id: string }
+        Returns: undefined
+      }
+      correct_savings_balance: {
+        Args: {
+          p_account_id: string
+          p_new_balance: number
+          p_notes?: string
+          p_transaction_id?: string
+        }
+        Returns: string
+      }
+      deposit_to_savings: {
+        Args: {
+          p_account_id: string
+          p_amount: number
+          p_currency: Database["public"]["Enums"]["currency_code"]
+          p_date?: string
+          p_notes?: string
+          p_transaction_id?: string
+        }
+        Returns: string
+      }
+      reactivate_subscription: {
+        Args: { p_subscription_id: string }
+        Returns: undefined
+      }
       stable_uuid: {
         Args: { p_legacy: string; p_user_id: string }
+        Returns: string
+      }
+      update_subscription_and_re: {
+        Args: {
+          p_recurring_expense_updates: Json
+          p_subscription_id: string
+          p_subscription_updates: Json
+        }
+        Returns: undefined
+      }
+      withdraw_from_savings: {
+        Args: {
+          p_account_id: string
+          p_amount: number
+          p_currency: Database["public"]["Enums"]["currency_code"]
+          p_date?: string
+          p_notes?: string
+          p_transaction_id?: string
+        }
         Returns: string
       }
     }
