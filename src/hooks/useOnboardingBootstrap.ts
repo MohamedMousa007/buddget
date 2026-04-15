@@ -5,10 +5,12 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { expertSurveyStepCount } from '@/lib/onboarding/onboardingProgress'
 import { mergeOnboardingAnswers, deriveAnswersFromFinanceStore } from '@/lib/onboarding/onboardingPrefill'
 
+export type OnboardingPhase = 'survey' | 'buddgy'
+
 export function useOnboardingBootstrap(redo: boolean) {
   const [answers, setAnswers] = useState<Record<string, unknown>>({})
   const [index, setIndex] = useState(0)
-  const [phase, setPhase] = useState<'survey' | 'plans'>('survey')
+  const [phase, setPhase] = useState<OnboardingPhase>('survey')
   const [answersReady, setAnswersReady] = useState(false)
 
   useEffect(() => {
@@ -19,9 +21,6 @@ export function useOnboardingBootstrap(redo: boolean) {
     setAnswers(merged)
     const maxI = Math.min(full.onboardingState.currentStepIndex, expertSurveyStepCount() - 1)
     setIndex(Number.isFinite(maxI) && maxI >= 0 ? maxI : 0)
-    if (full.onboardingState.aiPlans && full.onboardingState.aiPlans.length >= 1 && !full.onboardingState.planAccepted) {
-      setPhase('plans')
-    }
     setAnswersReady(true)
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [redo])
