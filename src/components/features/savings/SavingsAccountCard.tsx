@@ -87,7 +87,7 @@ export function SavingsAccountCard({
         <button
           type="button"
           onClick={onAdd}
-          className="inline-flex flex-1 min-w-[5rem] items-center justify-center gap-1 rounded-xl border border-[var(--color-brand-border)] py-2 text-xs font-medium text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)]"
+          className="inline-flex flex-1 min-w-[5rem] items-center justify-center gap-1 rounded-xl bg-[var(--color-brand-green)] py-2 text-xs font-semibold text-white hover:bg-[var(--color-brand-green-hover)] transition-colors"
         >
           <Plus className="h-3.5 w-3.5" />
           {t.savings.addToSavings}
