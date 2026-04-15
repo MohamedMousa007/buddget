@@ -984,6 +984,7 @@ export interface Dictionary {
     subtitleDefault: string
     skipButton: string
     backToProfile: string
+    backStep: string
     plansLoadError: string
     continueWithoutPlanBusy: string
     continueWithoutPlan: string

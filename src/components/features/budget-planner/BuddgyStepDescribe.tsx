@@ -3,21 +3,25 @@
 import { ArrowRight } from 'lucide-react'
 import type { BuddgyBuilderApi } from '@/hooks/useBuddgyBuilderFlow'
 import { BuddgyLoadingState } from '@/components/features/budget-planner/BuddgyLoadingState'
-
-const PARSE_MESSAGES = [
-  'Reading your details…',
-  'Checking Dubai costs…',
-  'Crunching numbers…',
-]
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 
 /**
  * Step 0: Free-text input — the only typing step.
  */
 export function BuddgyStepDescribe({ flow }: { flow: BuddgyBuilderApi }) {
+  const profileCity = useFinanceStore((s) => s.profile.city?.trim() || '')
+  const profileCountry = useFinanceStore((s) => s.profile.country?.trim() || '')
   const canSubmit = flow.describeText.trim().length > 10 && !flow.loading
 
+  const locationLabel = profileCity || profileCountry || 'local'
+  const parseMessages = [
+    'Reading your details…',
+    `Checking ${locationLabel} costs…`,
+    'Crunching numbers…',
+  ]
+
   if (flow.loading && flow.loadingKind === 'parse') {
-    return <BuddgyLoadingState messages={PARSE_MESSAGES} intervalMs={2000} />
+    return <BuddgyLoadingState messages={parseMessages} intervalMs={2000} />
   }
 
   return (

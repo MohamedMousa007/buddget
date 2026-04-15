@@ -11,6 +11,7 @@ import type {
 } from '@/lib/store/types'
 import type { DebtOnboardingPayload } from '@/components/onboarding/DebtOnboardingPanel'
 import { calculateMonthlyIncome } from '@/lib/utils/calculations'
+import { defaultCurrencyForCountry } from '@/lib/profile/countryToCurrency'
 
 export function applyMapsTo(
   mapsTo: string,
@@ -43,6 +44,43 @@ export function applyMapsTo(
         showSecondaryCurrency: true,
       })
     }
+  }
+}
+
+/**
+ * When the user picks / updates their country or city in onboarding, cascade a
+ * best-guess `baseCurrency` into settings AND retarget the pristine seed defaults
+ * (cash payment method currency + empty budget category currency) so every post-
+ * onboarding Add sheet defaults to the right currency without further clicks.
+ *
+ * Safe to call whenever `profile.country` or `profile.city` changes — it only rewrites
+ * fields that are still at their pristine/empty state.
+ */
+export function applyLocaleFromProfile() {
+  const st = useFinanceStore.getState()
+  const { profile, settings, paymentMethods, budgetCategories } = st
+  const derived = defaultCurrencyForCountry(profile.country, profile.city)
+  if (!derived || derived === settings.baseCurrency) return
+
+  const previousBase = settings.baseCurrency
+  st.updateSettings({ baseCurrency: derived })
+
+  // Retarget the default "Cash" payment method if still at the previous baseCurrency.
+  const defaultCash = paymentMethods.find(
+    (m) => m.type === 'cash' && m.currency === previousBase
+  )
+  if (defaultCash) {
+    st.updatePaymentMethod(defaultCash.id, { currency: derived })
+  }
+
+  // Retarget any budget categories still at zero (pristine seed) to the new currency.
+  const reseededBudget = budgetCategories.map((row) =>
+    row.budgetedAmount === 0 && row.currency === previousBase
+      ? { ...row, currency: derived }
+      : row
+  )
+  if (reseededBudget.some((row, i) => row.currency !== budgetCategories[i].currency)) {
+    st.setBudgetCategories(reseededBudget)
   }
 }
 
