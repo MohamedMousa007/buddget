@@ -119,6 +119,7 @@ export function useBuddgyBuilderFlow(
     return computeBudgetFromChoices({
       income: basics.income,
       currency: basics.currency,
+      country: basics.country || null,
       household: basics.household,
       rent: basics.rent,
       rentIncludesUtilities: basics.rentIncludesUtilities,
@@ -396,7 +397,8 @@ export function useBuddgyBuilderFlow(
           categories: baseRows,
           income: basics.income,
           currency: basics.currency,
-          city: basics.city || 'Unknown',
+          city: basics.city || '',
+          country: basics.country || null,
           household: basics.household,
           feedback,
         })

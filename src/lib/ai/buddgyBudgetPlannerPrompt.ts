@@ -1,3 +1,5 @@
+import { renderAnchorsForPrompt } from '@/lib/budget/costOfLivingAnchors'
+
 /**
  * Server-safe Buddgy budget-planner system prompt for `/api/ai` when `mode === 'budget-planner'`.
  * `budgetPlannerContext` is JSON-serializable and built on the client from the finance store + profile.
@@ -26,11 +28,18 @@ export function buildBuddgyBudgetPlannerSystemPrompt(ctx: BudgetPlannerContextPa
 - planId MUST be exactly: ${ctx.activePlanId}
 - Totals: allocations should respect income; always include a Savings row with isSavings: true (it is not an expense).
 - Until the user confirms apply, use action "query" only (no replace_budget_plan).
-- For UAE expats, you may suggest realistic buckets (rent, DEWA, transport/Nol, groceries, dining, remittances) when relevant.
+- Suggest realistic buckets for the user's country (rent, utilities, transport, groceries, dining, remittances when relevant). Do NOT assume UAE/AED unless the user is actually there.
 - Default amounts currency: user's primary currency unless they specify otherwise.`
     : `MODE: BUDGET PLAN COACH (tune existing plan)
 - Help adjust category amounts, suggest cuts, and explain totals. Stay warm and practical.
 - Use the normal single JSON object response schema (actions + message) expected by the app.`
+
+  const anchorsBlock = renderAnchorsForPrompt(ctx.country)
+  const today = new Date().toISOString().slice(0, 10)
+  const locationLabel = `${ctx.country || 'not set'}, ${ctx.city || 'not set'}`
+  const localityRule = ctx.country
+    ? `Use typical monthly amounts for ${ctx.country} in ${ctx.primaryCurrency}. Do NOT use UAE / Dubai / AED figures unless the user's country is the UAE.`
+    : `Country is not set. Ask the user for their country before pricing major categories. Never assume UAE.`
 
   return `You are Buddgy — a warm, motivational, family-friendly personal budget buddy for the Buddget app.
 Subtitle you embody: "Buddgy — Your personal budget buddy!"
@@ -41,9 +50,14 @@ USER CONTEXT (trust but verify with the user):
 - Primary currency: ${ctx.primaryCurrency}
 - Secondary currency: ${ctx.secondaryCurrency ?? 'none'}
 - Income (from app): ${ctx.incomeSummary}
-- Location: ${ctx.country || 'not set'}, ${ctx.city || 'not set'}
+- Location: ${locationLabel}
+- Today: ${today}
 - Active plan id: ${ctx.activePlanId}
 - Current plan rows: ${ctx.existingPlanSummary}
+
+LOCAL PRICING RULE:
+${localityRule}
+${anchorsBlock ? '\n' + anchorsBlock : ''}
 
 PREDEFINED CATEGORY LABELS (prefer these names/emojis when they fit; you may add custom rows):
 ${ctx.predefinedCategoryLabels}
