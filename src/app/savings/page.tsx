@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { HandCoins, Plus, Minus } from 'lucide-react'
+import { HandCoins, PieChart, Plus, Minus } from 'lucide-react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { formatCurrency } from '@/lib/utils/formatters'
 import {
@@ -25,6 +25,8 @@ import { convertCurrency } from '@/lib/utils/currency'
 
 const headerWithdrawClass =
   'inline-flex items-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)] transition-colors'
+const headerAddClass =
+  'inline-flex items-center gap-1.5 rounded-xl bg-[var(--color-brand-green)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-green-hover)] transition-colors'
 
 /**
  * Savings buckets, transfer sheets, and ledger history (not expenses).
@@ -166,7 +168,7 @@ export default function SavingsPage() {
               <Minus className="h-4 w-4" />
               {t.savings.withdraw}
             </button>
-            <button type="button" onClick={() => guard(() => setAddOpen(true))} className={headerWithdrawClass}>
+            <button type="button" onClick={() => guard(() => setAddOpen(true))} className={headerAddClass}>
               <Plus className="h-4 w-4" />
               {t.savings.addToSavings}
             </button>
@@ -175,45 +177,79 @@ export default function SavingsPage() {
       </PageHeader>
 
       <div className="px-4 py-6 lg:px-8 max-w-3xl mx-auto space-y-6">
-        <button
-          type="button"
-          onClick={() => guard(() => setNewAccountOpen(true))}
-          className="w-full py-3 rounded-xl border-2 border-dashed border-[var(--color-brand-border)] text-sm font-medium text-[var(--color-brand-text-secondary)] hover:border-[var(--color-brand-red)] hover:text-[var(--color-brand-red)] transition-colors"
-        >
-          + {t.savings.addAccount}
-        </button>
+        <section className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-brand-elevated)]">
+              <PieChart className="h-4 w-4 text-[var(--color-brand-red)]" aria-hidden />
+            </span>
+            <h2 className="text-sm font-semibold text-[var(--color-brand-text-primary)]">
+              {t.savings.breakdownTitle}
+            </h2>
+          </div>
 
-        <section className="rounded-2xl border border-[var(--color-brand-border)]/80 bg-[var(--color-brand-elevated)]/40 p-4 space-y-2 text-xs">
-          <p className="font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
-            {t.savings.breakdownTitle}
-          </p>
-          <div className="grid gap-1 font-mono-numbers text-[var(--color-brand-text-secondary)]">
-            <div className="flex justify-between">
-              <span>{t.savings.breakdownRowSavings}</span>
-              <span className="text-[var(--color-brand-green)]">+ {formatCurrency(nw.totalSavings, settings.baseCurrency)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>{t.savings.breakdownRowInvestments}</span>
-              <span className="text-[var(--color-brand-green)]">+ {formatCurrency(nw.totalInvestments, settings.baseCurrency)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>{t.savings.breakdownRowMonth}</span>
-              <span className={nw.monthlyFlow >= 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red)]'}>
-                {nw.monthlyFlow >= 0 ? '+ ' : '− '}
+          <div className="space-y-1">
+            <p className="text-xs uppercase tracking-wider text-[var(--color-brand-text-muted)]">
+              {t.savings.breakdownRowTotal}
+            </p>
+            <p
+              className={`text-3xl font-mono-numbers font-bold ${
+                nw.netWorth >= 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red)]'
+              }`}
+            >
+              {formatCurrency(nw.netWorth, settings.baseCurrency)}
+            </p>
+          </div>
+
+          <div className="h-px bg-[var(--color-brand-border)]" />
+
+          <ul className="grid gap-2 text-sm">
+            <li className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-[var(--color-brand-text-secondary)]">
+                <span className="h-2 w-2 rounded-full bg-[var(--color-brand-green)]" aria-hidden />
+                {t.savings.breakdownRowSavings}
+              </span>
+              <span className="font-mono-numbers text-[var(--color-brand-text-primary)]">
+                {formatCurrency(nw.totalSavings, settings.baseCurrency)}
+              </span>
+            </li>
+            <li className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-[var(--color-brand-text-secondary)]">
+                <span className="h-2 w-2 rounded-full bg-[var(--color-brand-green)]/60" aria-hidden />
+                {t.savings.breakdownRowInvestments}
+              </span>
+              <span className="font-mono-numbers text-[var(--color-brand-text-primary)]">
+                {formatCurrency(nw.totalInvestments, settings.baseCurrency)}
+              </span>
+            </li>
+            <li className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-[var(--color-brand-text-secondary)]">
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    nw.monthlyFlow >= 0 ? 'bg-[var(--color-brand-green)]/80' : 'bg-[var(--color-brand-red)]/80'
+                  }`}
+                  aria-hidden
+                />
+                {t.savings.breakdownRowMonth}
+              </span>
+              <span
+                className={`font-mono-numbers ${
+                  nw.monthlyFlow >= 0 ? 'text-[var(--color-brand-text-primary)]' : 'text-[var(--color-brand-red)]'
+                }`}
+              >
+                {nw.monthlyFlow < 0 ? '− ' : ''}
                 {formatCurrency(Math.abs(nw.monthlyFlow), settings.baseCurrency)}
               </span>
-            </div>
-            <div className="flex justify-between">
-              <span>{t.savings.breakdownRowDebt}</span>
-              <span className="text-[var(--color-brand-red)]">− {formatCurrency(nw.totalDebt, settings.baseCurrency)}</span>
-            </div>
-            <div className="flex justify-between border-t border-[var(--color-brand-border)]/60 pt-2 mt-1 font-semibold text-[var(--color-brand-text-primary)]">
-              <span>{t.savings.breakdownRowTotal}</span>
-              <span className={nw.netWorth >= 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red)]'}>
-                {formatCurrency(nw.netWorth, settings.baseCurrency)}
+            </li>
+            <li className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-[var(--color-brand-text-secondary)]">
+                <span className="h-2 w-2 rounded-full bg-[var(--color-brand-red)]" aria-hidden />
+                {t.savings.breakdownRowDebt}
               </span>
-            </div>
-          </div>
+              <span className="font-mono-numbers text-[var(--color-brand-red)]">
+                − {formatCurrency(nw.totalDebt, settings.baseCurrency)}
+              </span>
+            </li>
+          </ul>
         </section>
 
         {savingsAccounts.length === 0 ? (

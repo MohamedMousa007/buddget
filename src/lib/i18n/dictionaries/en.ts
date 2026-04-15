@@ -309,6 +309,8 @@ export const en: Dictionary = {
     withdrawal: 'Withdrawal',
     sheetAddTitle: 'Add to savings',
     sheetAddNewTitle: 'Add new savings',
+    tabDeposit: 'Deposit',
+    tabAddAccount: 'Add Account',
     sheetEditTitle: 'Edit savings',
     sheetWithdrawTitle: 'Withdraw from savings',
     sheetUpdateTitle: 'Update balance',

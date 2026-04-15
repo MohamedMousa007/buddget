@@ -309,6 +309,8 @@ export const ar: Dictionary = {
     withdrawal: 'سحب',
     sheetAddTitle: 'إضافة للمدخرات',
     sheetAddNewTitle: 'إضافة مدخرات جديدة',
+    tabDeposit: 'إيداع',
+    tabAddAccount: 'إضافة حساب',
     sheetEditTitle: 'تعديل المدخرات',
     sheetWithdrawTitle: 'سحب من المدخرات',
     sheetUpdateTitle: 'تحديث الرصيد',

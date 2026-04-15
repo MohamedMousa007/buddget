@@ -311,6 +311,8 @@ export interface Dictionary {
     withdrawal: string
     sheetAddTitle: string
     sheetAddNewTitle: string
+    tabDeposit: string
+    tabAddAccount: string
     sheetEditTitle: string
     sheetWithdrawTitle: string
     sheetUpdateTitle: string
