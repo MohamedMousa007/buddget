@@ -3,7 +3,15 @@
 import { useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { pullCore, flushDiff, snapshot, emptySnapshot } from '@/lib/supabase/remote'
+import {
+  pullCore,
+  pullAll,
+  flushDiff,
+  snapshot,
+  emptySnapshot,
+  mergeSnapshots,
+  hasMeaningfulLocalState,
+} from '@/lib/supabase/remote'
 import type { Snapshot } from '@/lib/supabase/remote'
 
 const DEBOUNCE_MS = 1600
@@ -57,9 +65,49 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
 
     async function pull() {
       try {
+        // Snapshot whatever the Zustand `persist` middleware already hydrated from
+        // localStorage — for a guest session this is the user's local edits we need
+        // to preserve when they sign in.
+        const localSnap = snapshot(useFinanceStore.getState())
+        const localHasData = hasMeaningfulLocalState(localSnap)
+
+        if (localHasData) {
+          // Guest was actively using the app; fetch the full server state and merge
+          // so neither side loses data. One-shot cost on sign-in only.
+          const server = await pullAll(supabase, userId)
+          if (server) {
+            const merged = mergeSnapshots(localSnap, server)
+            useFinanceStore.setState({
+              profile: merged.profile,
+              settings: merged.settings,
+              onboardingState: merged.onboardingState,
+              financialGoalsNotes: merged.financialGoalsNotes,
+              activeBudgetPlanId: merged.activeBudgetPlanId,
+              paymentMethods: merged.paymentMethods,
+              incomeSources: merged.incomeSources,
+              expenses: merged.expenses,
+              recurringExpenses: merged.recurringExpenses,
+              subscriptions: merged.subscriptions,
+              debts: merged.debts,
+              debtPayments: merged.debtPayments,
+              recurringDebtPayments: merged.recurringDebtPayments,
+              savingsAccounts: merged.savingsAccounts,
+              savingsHoldings: merged.savingsHoldings,
+              savingsTransactions: merged.savingsTransactions,
+              recurringSavingsDeposits: merged.recurringSavingsDeposits,
+              goals: merged.goals,
+              budgetPlans: merged.budgetPlans,
+            })
+            return // prevSnap set in finally{}
+          }
+          // No server profile yet (new auth account): keep the guest data as-is;
+          // the debounced flush will push it up.
+          return
+        }
+
+        // Standard logged-in flow: pull core only. Per-page hooks fetch the rest.
         const core = await pullCore(supabase, userId)
         if (core) {
-          // Patch only the core slices; per-page hooks hydrate the rest when their page mounts.
           useFinanceStore.setState({
             profile: core.profile,
             settings: core.settings,
