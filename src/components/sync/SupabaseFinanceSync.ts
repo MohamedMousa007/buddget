@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { pullAll, flushDiff, snapshot, emptySnapshot } from '@/lib/supabase/remote'
+import { pullCore, flushDiff, snapshot, emptySnapshot } from '@/lib/supabase/remote'
 import type { Snapshot } from '@/lib/supabase/remote'
 
 const DEBOUNCE_MS = 1600
@@ -57,10 +57,17 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
 
     async function pull() {
       try {
-        const state = await pullAll(supabase, userId)
-        if (state) {
-          // Serialise to the legacy blob shape so `importData` can hydrate Zustand.
-          useFinanceStore.getState().importData(JSON.stringify(state))
+        const core = await pullCore(supabase, userId)
+        if (core) {
+          // Patch only the core slices; per-page hooks hydrate the rest when their page mounts.
+          useFinanceStore.setState({
+            profile: core.profile,
+            settings: core.settings,
+            onboardingState: core.onboardingState,
+            financialGoalsNotes: core.financialGoalsNotes,
+            activeBudgetPlanId: core.activeBudgetPlanId,
+            paymentMethods: core.paymentMethods,
+          })
         } else {
           // Fall back to legacy blob (pre-migration users).
           const { data, error } = await supabase

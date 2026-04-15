@@ -12,8 +12,11 @@ import { useSubscriptionsMonthlyBaseTotal } from '@/hooks/useSubscriptionsMonthl
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import type { Subscription } from '@/lib/store/types'
+import { useHydrateSubscriptions, useHydrateExpenses } from '@/hooks/remote'
 
 export default function SubscriptionsPage() {
+  useHydrateSubscriptions()
+  useHydrateExpenses()
   const t = useT()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<Subscription | null>(null)

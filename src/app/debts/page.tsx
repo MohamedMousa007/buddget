@@ -13,8 +13,11 @@ import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { Landmark } from 'lucide-react'
 import { useT } from '@/lib/i18n'
+import { useHydrateDebts, useHydrateGoals } from '@/hooks/remote'
 
 export default function DebtsPage() {
+  useHydrateDebts()
+  useHydrateGoals()
   const { debts, debtPayments } = useFinanceStore(
     useShallow((s) => ({
       debts: s.debts,
