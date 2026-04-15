@@ -54,7 +54,7 @@ export function BudgetPlannerCategoryRowHeader({
       <button
         type="button"
         onClick={onToggleOpen}
-        className="cursor-pointer inline-flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]"
+        className="cursor-pointer inline-flex shrink-0 items-center justify-center min-w-[44px] min-h-[44px] rounded-lg text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]"
         aria-expanded={open}
         aria-label={labels.expandCategory}
       >
@@ -71,22 +71,24 @@ export function BudgetPlannerCategoryRowHeader({
           {savingsAllocationBadge}
         </span>
       ) : null}
-      <BudgetPlannerCategoryCurrencyAmountField
-        category={category}
-        settings={settings}
-        hasSubs={hasSubs}
-        amountLabel={labels.amount}
-        amountPlaceholder={labels.amountPlaceholder}
-        categoryAmountInputValue={categoryAmountInputValue}
-        onAmountChange={onAmountChange}
-        onAmountFocus={onAmountFocus}
-        onAmountBlur={onAmountBlur}
-        onCurrencyChange={(currency) => onUpdateCategory({ currency })}
-      />
+      <div className="order-last flex basis-full items-center justify-end gap-1 sm:order-none sm:ms-auto sm:basis-auto">
+        <BudgetPlannerCategoryCurrencyAmountField
+          category={category}
+          settings={settings}
+          hasSubs={hasSubs}
+          amountLabel={labels.amount}
+          amountPlaceholder={labels.amountPlaceholder}
+          categoryAmountInputValue={categoryAmountInputValue}
+          onAmountChange={onAmountChange}
+          onAmountFocus={onAmountFocus}
+          onAmountBlur={onAmountBlur}
+          onCurrencyChange={(currency) => onUpdateCategory({ currency })}
+        />
+      </div>
       <button
         type="button"
         onClick={onDeleteCategory}
-        className="cursor-pointer inline-flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-red)]"
+        className="cursor-pointer inline-flex shrink-0 items-center justify-center min-w-[44px] min-h-[44px] rounded-lg text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-red)]"
         aria-label={labels.delete}
       >
         <Trash2 className="h-4 w-4" />
