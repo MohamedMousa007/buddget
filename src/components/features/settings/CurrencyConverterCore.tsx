@@ -16,9 +16,12 @@ type SettingsCopy = Dictionary['settings']
 export function CurrencyConverterCore({ store, t }: { store: FinanceStore; t: SettingsCopy }) {
   const tc = useT()
   const [fromCurrency, setFromCurrency] = useState<string>(store.settings.baseCurrency)
-  const [toCurrency, setToCurrency] = useState<string>(
-    store.settings.secondaryCurrency || (store.settings.baseCurrency === 'AED' ? 'EGP' : 'AED')
-  )
+  const [toCurrency, setToCurrency] = useState<string>(() => {
+    if (store.settings.secondaryCurrency) return store.settings.secondaryCurrency
+    // Pick the first CONVERTER_CODES entry that differs from the base currency.
+    const fallback = CONVERTER_CODES.find((c) => c !== store.settings.baseCurrency)
+    return fallback ?? 'USD'
+  })
   const [amount, setAmount] = useState<string>('1')
 
   const rate = useMemo(() => {

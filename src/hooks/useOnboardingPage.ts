@@ -7,6 +7,7 @@ import { expertSurveyStepCount } from '@/lib/onboarding/onboardingProgress'
 import {
   applyDebtFromOnboarding,
   applyIncomeFromOnboarding,
+  applyLocaleFromProfile,
   applyMapsTo,
 } from '@/lib/onboarding/onboardingPageHelpers'
 import type { StepContinuePayload } from '@/components/onboarding/OnboardingStepForm'
@@ -86,6 +87,10 @@ export function useOnboardingPage() {
 
       if (step.type === 'text' && typeof rawAnswer === 'string') {
         applyMapsTo(step.mapsTo, rawAnswer, updateProfile, updateSettings)
+        // Cascade baseCurrency + pristine defaults when country/city land.
+        if (step.mapsTo === 'profile.country' || step.mapsTo === 'profile.city') {
+          applyLocaleFromProfile()
+        }
       }
       if (step.type === 'single_select' && typeof rawAnswer === 'string') {
         applyMapsTo(step.mapsTo, rawAnswer, updateProfile, updateSettings)
@@ -110,6 +115,16 @@ export function useOnboardingPage() {
 
   const storeSnap = useFinanceStore.getState
 
+  const goBack = useCallback(() => {
+    if (phase !== 'survey') return
+    if (index <= 0) return
+    const prev = index - 1
+    setIndex(prev)
+    setOnboardingState({ currentStepIndex: prev })
+  }, [phase, index, setIndex, setOnboardingState])
+
+  const canGoBack = phase === 'survey' && index > 0
+
   return {
     answersReady,
     step,
@@ -130,5 +145,7 @@ export function useOnboardingPage() {
     answers,
     redo,
     router,
+    goBack,
+    canGoBack,
   }
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { AnimatePresence, motion } from 'framer-motion'
-import { ClipboardList } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ClipboardList } from 'lucide-react'
 import { PAGE_HEADER_BARE_CLASS } from '@/components/layout/PageHeader'
 import { OnboardingJourneyProgress } from '@/components/onboarding/OnboardingJourneyProgress'
 import { OnboardingStepForm, type StepContinuePayload } from '@/components/onboarding/OnboardingStepForm'
@@ -42,6 +42,8 @@ export interface OnboardingPageViewProps {
   answers: Record<string, unknown>
   redo: boolean
   router: { push: (href: string) => void; refresh: () => void; replace: (href: string) => void }
+  goBack: () => void
+  canGoBack: boolean
 }
 
 export function OnboardingPageView({
@@ -64,10 +66,13 @@ export function OnboardingPageView({
   answers,
   redo,
   router,
+  goBack,
+  canGoBack,
 }: OnboardingPageViewProps) {
   const t = useT()
   const { locale } = useLocale()
   const o = t.onboarding
+  const BackIcon = locale === 'ar' ? ChevronRight : ChevronLeft
 
   if (!answersReady || !step) {
     return (
@@ -83,7 +88,18 @@ export function OnboardingPageView({
         <div className="flex flex-col gap-2 px-4 py-3 lg:px-8">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-2 min-w-0">
-              <ClipboardList className="w-5 h-5 text-[var(--color-brand-red)] shrink-0 mt-0.5" aria-hidden />
+              {canGoBack ? (
+                <button
+                  type="button"
+                  onClick={goBack}
+                  aria-label={o.backStep}
+                  className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] -ms-2 -mt-1 rounded-lg text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
+                >
+                  <BackIcon className="w-5 h-5" aria-hidden />
+                </button>
+              ) : (
+                <ClipboardList className="w-5 h-5 text-[var(--color-brand-red)] shrink-0 mt-0.5" aria-hidden />
+              )}
               <div className={cn('min-w-0', locale === 'ar' && 'text-end')}>
                 <h1 className="text-lg font-bold text-[var(--color-brand-text-primary)] font-heading">{o.pageTitle}</h1>
                 <p className="text-[11px] text-[var(--color-brand-text-muted)] leading-snug">

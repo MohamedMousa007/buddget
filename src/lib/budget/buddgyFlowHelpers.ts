@@ -45,11 +45,17 @@ export function formatMoneyAmount(amount: number, currency: string): string {
 }
 
 export function cityCountryFromProfile(profile: { city?: string; country?: string }): {
-  city: string
-  country: string
+  city: string | null
+  country: string | null
 } {
   return {
-    city: profile.city?.trim() || 'Dubai',
-    country: profile.country?.trim() || 'UAE',
+    city: profile.city?.trim() || null,
+    country: profile.country?.trim() || null,
   }
+}
+
+/** True when the profile has enough location info for Buddgy to produce a targeted plan. */
+export function hasLocationForBuddgy(profile: { city?: string; country?: string }): boolean {
+  const { country } = cityCountryFromProfile(profile)
+  return !!country
 }

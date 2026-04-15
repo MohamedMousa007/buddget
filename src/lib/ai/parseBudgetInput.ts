@@ -32,19 +32,22 @@ Return ONLY valid JSON, no explanation:
 
 Use "transportMode" for how they commute: map to one of "public"|"car"|"walk"|"mixed" (lowercase). If unclear, null.
 
-Examples:
-Input: "I live in Dubai with my wife, earning 17000 AED, rent 5000 including utilities"
-Output: {"income":{"amount":17000,"currency":"AED"},"city":"Dubai","country":"UAE","household":"couple","rent":{"amount":5000,"includesUtilities":true},"transportMode":null,"savingsGoal":null,"lifestyleNotes":null,"missingFields":[]}
+Examples (representative — do NOT bias toward any particular city/currency):
+Input: "I live in Cairo with my wife, earning 18000 EGP, rent 4500 including utilities"
+Output: {"income":{"amount":18000,"currency":"EGP"},"city":"Cairo","country":"Egypt","household":"couple","rent":{"amount":4500,"includesUtilities":true},"transportMode":null,"savingsGoal":null,"lifestyleNotes":null,"missingFields":[]}
 
-Input: "Single in Abu Dhabi, 12k salary, studio 3500, want to save max"
-Output: {"income":{"amount":12000,"currency":"AED"},"city":"Abu Dhabi","country":"UAE","household":"solo","rent":{"amount":3500,"includesUtilities":null},"transportMode":null,"savingsGoal":"maximum","lifestyleNotes":"want to save maximum","missingFields":[]}
+Input: "Single in Riyadh, 9k salary, studio 2800, want to save max"
+Output: {"income":{"amount":9000,"currency":"SAR"},"city":"Riyadh","country":"Saudi Arabia","household":"solo","rent":{"amount":2800,"includesUtilities":null},"transportMode":null,"savingsGoal":"maximum","lifestyleNotes":"want to save maximum","missingFields":[]}
+
+Input: "I live in Dubai with my wife, 17000 AED, rent 5000 including utilities"
+Output: {"income":{"amount":17000,"currency":"AED"},"city":"Dubai","country":"UAE","household":"couple","rent":{"amount":5000,"includesUtilities":true},"transportMode":null,"savingsGoal":null,"lifestyleNotes":null,"missingFields":[]}
 
 Input: "I earn $4500 a month, rent is $1200, I want to save for an emergency fund and pay off a $200/month loan"
 Output: {"income":{"amount":4500,"currency":"USD"},"city":null,"country":null,"household":"solo","rent":{"amount":1200,"includesUtilities":null},"transportMode":null,"savingsGoal":"moderate","lifestyleNotes":"wants emergency fund, has $200/month loan to pay off","missingFields":["city"]}
 
 Rules:
 - If CONTEXT says the app already knows monthly income, keep that amount unless the user clearly overrides it in their message.
-- Default currency to AED when the city is in the UAE and no currency was stated.
+- If the user did NOT state a currency, infer it from their city/country (e.g. Cairo→EGP, Riyadh→SAR, Dubai→AED, Amman→JOD). Do NOT default to AED/UAE unless the location actually matches.
 - "missingFields" should list critical gaps (e.g. ["income"] if income is still unknown after applying CONTEXT).
 - "includesUtilities": true only if they say utilities are included; false if explicitly excluded; null if not said.`
 
