@@ -1,5 +1,6 @@
 import { generateWithFallback, throwIfAiProxyNotOk } from '@/lib/ai/generateWithFallback'
 import { isSavingsCategoryRow, type BudgetCategoryRow } from '@/lib/budget/lifestyleMappings'
+import { renderAnchorsForPrompt } from '@/lib/budget/costOfLivingAnchors'
 
 export interface GeneratedPlan {
   categories: BudgetCategoryRow[]
@@ -108,6 +109,7 @@ export async function regenerateBudgetPlanWithAi(params: {
   income: number
   currency: string
   city: string
+  country?: string | null
   household: string
   feedback: string
 }): Promise<BudgetCategoryRow[]> {
@@ -121,18 +123,31 @@ export async function regenerateBudgetPlanWithAi(params: {
     }))
   )
 
+  const today = new Date().toISOString().slice(0, 10)
+  const anchorsBlock = renderAnchorsForPrompt(params.country)
+  const localityRule = params.country
+    ? `Use typical monthly amounts for ${params.country} in ${params.currency}. Do NOT use UAE / Dubai / AED values unless the user is in the UAE.`
+    : `Country not set — use the user's city (${params.city || 'unknown'}) and currency (${params.currency}) as the locality signal. Never default to UAE/AED.`
+
   const systemPrompt = `You are adjusting a budget plan based on user feedback.
+
+Return EXACTLY ONE refined plan that reflects the feedback. Do not propose alternatives or "options A/B/C".
 
 Current plan (expense categories only — never add a "Savings" row):
 ${planJson}
 
 User income: ${params.income} ${params.currency}/month
-City: ${params.city}
+Location: ${params.city || 'unknown'}${params.country ? `, ${params.country}` : ''}
 Household: ${params.household}
+Today: ${today}
+
+LOCAL PRICING RULE:
+${localityRule}
+${anchorsBlock ? '\n' + anchorsBlock : ''}
 
 User feedback: "${params.feedback}"
 
-Adjust amounts to reflect the feedback. Keep the same category names and order where possible; you may tweak emojis slightly. Total expenses should not exceed income. If feedback asks for lower rent, note that rent is fixed from user input — still return Rent with the same amount unless feedback explicitly asks to reduce rent number.
+Adjust amounts to reflect the feedback using realistic current-month prices for the user's country. Keep the same category names and order where possible; you may tweak emojis slightly. Total expenses should not exceed income. If feedback asks for lower rent, note that rent is fixed from user input — still return Rent with the same amount unless feedback explicitly asks to reduce the rent number.
 
 Respond with ONLY a JSON array, no markdown:
 [{"name":"Rent","emoji":"🏠","amount":5000,"currency":"${params.currency}"},...]
