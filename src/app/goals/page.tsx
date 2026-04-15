@@ -10,8 +10,12 @@ import { AddGoalSheet } from '@/components/modals/AddGoalSheet'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import type { Goal } from '@/lib/store/types'
+import { useHydrateGoals, useHydrateSavings, useHydrateDebts } from '@/hooks/remote'
 
 export default function GoalsPage() {
+  useHydrateGoals()
+  useHydrateSavings()
+  useHydrateDebts()
   const t = useT()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<Goal | null>(null)

@@ -14,8 +14,10 @@ import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { Receipt } from 'lucide-react'
 import { useT } from '@/lib/i18n'
+import { useHydrateExpenses } from '@/hooks/remote'
 
 export default function ExpensesPage() {
+  useHydrateExpenses()
   const { expenses, settings, exchangeRates } = useFinanceStore(
     useShallow((s) => ({
       expenses: s.expenses,

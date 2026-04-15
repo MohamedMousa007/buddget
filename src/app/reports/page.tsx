@@ -16,6 +16,7 @@ import { ReportsNetWorthPanel } from '@/components/reports/ReportsNetWorthPanel'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { BarChart3 } from 'lucide-react'
 import { useT } from '@/lib/i18n'
+import { useHydrateExpenses, useHydrateIncome, useHydrateDebts, useHydrateSavings } from '@/hooks/remote'
 
 const MonthlyChart = dynamic(
   () => import('@/components/reports/MonthlyChart').then((m) => ({ default: m.MonthlyChart })),
@@ -28,6 +29,10 @@ const CategoryPieChart = dynamic(
 )
 
 export default function ReportsPage() {
+  useHydrateExpenses()
+  useHydrateIncome()
+  useHydrateDebts()
+  useHydrateSavings()
   const r = useReportsPage()
   const stats = useMonthlyStats()
   const t = useT()

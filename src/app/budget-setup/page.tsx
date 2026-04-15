@@ -10,11 +10,15 @@ import { BudgetSetupPlanToolbar } from '@/components/features/budget-planner/Bud
 import { AddIncomeSheet } from '@/components/modals/AddIncomeSheet'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useBudgetSetupPage } from '@/hooks/useBudgetSetupPage'
+import { useHydrateBudget, useHydrateIncome, useHydrateExpenses } from '@/hooks/remote'
 
 /**
  * Multi-plan budget editor with manual edits and Buddgy guided setup.
  */
 export default function BudgetSetupPage() {
+  useHydrateBudget()
+  useHydrateIncome()
+  useHydrateExpenses()
   const p = useBudgetSetupPage()
   const { t } = p
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)

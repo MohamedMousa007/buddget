@@ -175,6 +175,80 @@ function flushBudgetPlans(runner: OpRunner, userId: string, prev: Snapshot, next
 }
 
 /**
+ * Minimal "always needed" hydration: profiles + user_settings + onboarding_state +
+ * payment_methods. All per-page hooks add the heavier domains (expenses, debts, etc.)
+ * on demand.
+ *
+ * Returns partial snapshot (array slices default to []) — use as the baseline for
+ * the sync-layer diff; per-page hooks can update Zustand independently.
+ */
+export async function pullCore(client: Client, userId: string): Promise<Snapshot | null> {
+  const [profileR, settingsR, onboardingR, pmR] = await Promise.all([
+    client.from('profiles').select('*').eq('id', userId).maybeSingle(),
+    client.from('user_settings').select('*').eq('user_id', userId).maybeSingle(),
+    client.from('onboarding_state').select('*').eq('user_id', userId).maybeSingle(),
+    client.from('payment_methods').select('*').eq('user_id', userId),
+  ])
+
+  if (!profileR.data) return null
+
+  const { profile, extras } = profileFromRow(profileR.data)
+  const secondary = (profileR.data.secondary_currency ?? null) as Currency | null
+  const settings = settingsR.data
+    ? settingsFromRow(settingsR.data, { baseCurrency: profile.baseCurrency, secondaryCurrency: secondary })
+    : {
+        baseCurrency: profile.baseCurrency,
+        secondaryCurrency: secondary,
+        showSecondaryCurrency: false,
+        theme: 'dark' as const,
+        language: 'en' as const,
+        showCentsInDashboard: true,
+        monthStartDay: 1,
+        budgetEntryMode: 'amount' as const,
+        enableAI: false,
+        aiProvider: 'gemini' as const,
+        noIncomeDeclared: false,
+        showAllCurrenciesInForms: true,
+        dismissOnboardingBanner: false,
+      }
+
+  const onboardingState = onboardingR.data
+    ? onboardingFromRow(onboardingR.data)
+    : {
+        flowVersion: 2,
+        answers: {},
+        currentStepIndex: 0,
+        planAccepted: false,
+        selectedPlanIndex: null,
+        aiPlans: null,
+        aiGeneratedAt: null,
+        lastValidationNotes: null,
+      }
+
+  return {
+    profile,
+    settings,
+    onboardingState,
+    financialGoalsNotes: extras.financialGoalsNotes,
+    activeBudgetPlanId: extras.activeBudgetPlanId,
+    paymentMethods: (pmR.data ?? []).map(paymentMethodFromRow),
+    incomeSources: [],
+    expenses: [],
+    recurringExpenses: [],
+    subscriptions: [],
+    debts: [],
+    debtPayments: [],
+    recurringDebtPayments: [],
+    savingsAccounts: [],
+    savingsHoldings: [],
+    savingsTransactions: [],
+    recurringSavingsDeposits: [],
+    goals: [],
+    budgetPlans: [],
+  }
+}
+
+/**
  * Fetch every user-owned table in parallel and assemble a Snapshot.
  * Returns null if the user has no `profiles` row yet (unauthenticated race).
  */

@@ -9,8 +9,12 @@ import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { Wallet } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { IncomeSourceRow } from '@/components/features/income/IncomeSourceRow'
+import { useHydrateIncome, useHydrateDebts, useHydrateSavings } from '@/hooks/remote'
 
 export default function IncomePage() {
+  useHydrateIncome()
+  useHydrateDebts()
+  useHydrateSavings()
   const { incomeSources, deleteIncomeSource, savingsAccounts, debts, paymentMethods } = useFinanceStore(
     useShallow((s) => ({
       incomeSources: s.incomeSources,

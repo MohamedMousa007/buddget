@@ -12,10 +12,29 @@ import { SavingsCard } from '@/components/dashboard/SavingsCard'
 import { DebtSnapshot } from '@/components/dashboard/DebtSnapshot'
 import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
+import {
+  useHydrateBudget,
+  useHydrateDebts,
+  useHydrateExpenses,
+  useHydrateGoals,
+  useHydrateIncome,
+  useHydrateSavings,
+  useHydrateSubscriptions,
+} from '@/hooks/remote'
 
 export default function DashboardPage() {
   const router = useRouter()
   const t = useT()
+  // Dashboard touches nearly every domain. Each hook runs in parallel and
+  // hydrates its Zustand slice from Supabase (in addition to the cached
+  // localStorage copy hydrated synchronously on mount).
+  useHydrateExpenses()
+  useHydrateIncome()
+  useHydrateDebts()
+  useHydrateSavings()
+  useHydrateGoals()
+  useHydrateBudget()
+  useHydrateSubscriptions()
 
   const stats = useMonthlyStats()
   const nw = useNetWorth()
