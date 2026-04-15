@@ -3,16 +3,15 @@
 import { Input } from '@/components/ui/input'
 import { useT } from '@/lib/i18n'
 import type { SurveyStep } from '@/lib/onboarding/surveyConfig'
-import type { Currency, OnboardingPaymentDraft } from '@/lib/store/types'
+import type { OnboardingPaymentDraft } from '@/lib/store/types'
 import {
   IncomeOnboardingPanel,
   type IncomeOnboardingPayload,
 } from '@/components/onboarding/IncomeOnboardingPanel'
 import { DebtOnboardingPanel, type DebtOnboardingPayload } from '@/components/onboarding/DebtOnboardingPanel'
-import {
-  SubscriptionsOnboardingPanel,
-  type SubscriptionsOnboardingPayload,
-} from '@/components/onboarding/SubscriptionsOnboardingPanel'
+import { SubscriptionsOnboardingPanel } from '@/components/onboarding/SubscriptionsOnboardingPanel'
+import { GoalsOnboardingPanel } from '@/components/onboarding/GoalsOnboardingPanel'
+import { SavingsOnboardingPanel } from '@/components/onboarding/SavingsOnboardingPanel'
 import { OnboardingPaymentMethodsBody } from '@/components/features/onboarding/OnboardingPaymentMethodsBody'
 
 export interface OnboardingSurveyStepInputsProps {
@@ -29,9 +28,6 @@ export interface OnboardingSurveyStepInputsProps {
   setIncomePayload: (p: IncomeOnboardingPayload) => void
   debtPayload: DebtOnboardingPayload
   setDebtPayload: (p: DebtOnboardingPayload) => void
-  subscriptionsPayload: SubscriptionsOnboardingPayload
-  setSubscriptionsPayload: (p: SubscriptionsOnboardingPayload) => void
-  baseCurrency: Currency
 }
 
 /**
@@ -51,9 +47,6 @@ export function OnboardingSurveyStepInputs({
   setIncomePayload,
   debtPayload,
   setDebtPayload,
-  subscriptionsPayload,
-  setSubscriptionsPayload,
-  baseCurrency,
 }: OnboardingSurveyStepInputsProps) {
   const t = useT()
 
@@ -143,13 +136,13 @@ export function OnboardingSurveyStepInputs({
     return <DebtOnboardingPanel entries={debtPayload.entries} onChange={setDebtPayload} />
   }
   if (step.type === 'subscriptions_detail') {
-    return (
-      <SubscriptionsOnboardingPanel
-        lines={subscriptionsPayload.lines}
-        baseCurrency={baseCurrency}
-        onChange={setSubscriptionsPayload}
-      />
-    )
+    return <SubscriptionsOnboardingPanel />
+  }
+  if (step.type === 'goals_detail') {
+    return <GoalsOnboardingPanel />
+  }
+  if (step.type === 'savings_detail') {
+    return <SavingsOnboardingPanel />
   }
   return null
 }

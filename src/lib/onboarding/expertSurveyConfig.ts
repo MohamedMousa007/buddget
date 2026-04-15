@@ -250,6 +250,20 @@ export function getExpertSurveyConfig(t: Dictionary): SurveyConfig {
         helpText: o.subscriptionsHelp,
       },
       {
+        id: 'goals_detail',
+        type: 'goals_detail',
+        title: o.goalsDetailTitle,
+        mapsTo: 'onboarding.goalsDetail',
+        helpText: o.goalsDetailHelp,
+      },
+      {
+        id: 'savings_detail',
+        type: 'savings_detail',
+        title: o.savingsDetailTitle,
+        mapsTo: 'onboarding.savingsDetail',
+        helpText: o.savingsDetailHelp,
+      },
+      {
         id: 'savings_orientation',
         type: 'single_select',
         title: o.savingsOrientationTitle,

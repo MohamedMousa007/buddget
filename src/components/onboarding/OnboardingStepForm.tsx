@@ -4,11 +4,7 @@ import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useT } from '@/lib/i18n'
 import type { SurveyStep } from '@/lib/onboarding/surveyConfig'
-import type { Currency, IncomeSource, OnboardingPaymentDraft } from '@/lib/store/types'
-import {
-  subscriptionLinesFromSaved,
-  type SubscriptionsOnboardingPayload,
-} from '@/components/onboarding/SubscriptionsOnboardingPanel'
+import type { IncomeSource, OnboardingPaymentDraft } from '@/lib/store/types'
 import type { IncomeOnboardingPayload } from '@/components/onboarding/IncomeOnboardingPanel'
 import type { DebtOnboardingPayload } from '@/components/onboarding/DebtOnboardingPanel'
 import { OnboardingSurveyStepHeader } from '@/components/features/onboarding/OnboardingSurveyStepHeader'
@@ -18,6 +14,14 @@ import type { StepContinuePayload } from '@/lib/onboarding/onboardingStepPayload
 
 export type { StepContinuePayload }
 
+const WIDE_STEPS = new Set<SurveyStep['type']>([
+  'income_entry',
+  'debt_entry',
+  'subscriptions_detail',
+  'goals_detail',
+  'savings_detail',
+])
+
 export function OnboardingStepForm({
   step,
   initialText,
@@ -26,8 +30,6 @@ export function OnboardingStepForm({
   initialPaymentDrafts,
   initialIncomeEntries,
   initialDebtEntries,
-  initialSubscriptionRaw,
-  baseCurrency,
   loadError,
   isLastSurveyStep,
   finishing,
@@ -41,8 +43,6 @@ export function OnboardingStepForm({
   initialPaymentDrafts: OnboardingPaymentDraft[]
   initialIncomeEntries: Omit<IncomeSource, 'id' | 'createdAt'>[]
   initialDebtEntries: DebtOnboardingPayload['entries']
-  initialSubscriptionRaw: unknown
-  baseCurrency: Currency
   loadError: string | null
   isLastSurveyStep: boolean
   finishing: boolean
@@ -59,9 +59,6 @@ export function OnboardingStepForm({
   }))
   const [debtPayload, setDebtPayload] = useState<DebtOnboardingPayload>(() => ({
     entries: initialDebtEntries,
-  }))
-  const [subscriptionsPayload, setSubscriptionsPayload] = useState<SubscriptionsOnboardingPayload>(() => ({
-    lines: subscriptionLinesFromSaved(initialSubscriptionRaw, baseCurrency, t),
   }))
 
   const canContinue = useMemo(() => {
@@ -85,7 +82,13 @@ export function OnboardingStepForm({
     if (step.type === 'payment_methods') {
       return paymentDrafts.length > 0 && paymentDrafts.every((d) => d.nickname.trim().length > 0)
     }
-    if (step.type === 'income_entry' || step.type === 'debt_entry' || step.type === 'subscriptions_detail') {
+    if (
+      step.type === 'income_entry' ||
+      step.type === 'debt_entry' ||
+      step.type === 'subscriptions_detail' ||
+      step.type === 'goals_detail' ||
+      step.type === 'savings_detail'
+    ) {
       return true
     }
     return false
@@ -107,9 +110,7 @@ export function OnboardingStepForm({
       exit={{ opacity: 0, x: -24 }}
       transition={{ duration: 0.2 }}
       className={`glass-card rounded-2xl p-6 w-full flex flex-col gap-5 self-center ${
-        step.type === 'income_entry' || step.type === 'debt_entry' || step.type === 'subscriptions_detail'
-          ? 'max-w-2xl'
-          : 'max-w-lg'
+        WIDE_STEPS.has(step.type) ? 'max-w-2xl' : 'max-w-lg'
       }`}
     >
       <OnboardingSurveyStepHeader step={step} loadError={loadError} />
@@ -127,9 +128,6 @@ export function OnboardingStepForm({
         setIncomePayload={setIncomePayload}
         debtPayload={debtPayload}
         setDebtPayload={setDebtPayload}
-        subscriptionsPayload={subscriptionsPayload}
-        setSubscriptionsPayload={setSubscriptionsPayload}
-        baseCurrency={baseCurrency}
       />
       <OnboardingSurveyContinueButton
         step={step}
@@ -144,7 +142,6 @@ export function OnboardingStepForm({
         paymentDrafts={paymentDrafts}
         incomePayload={incomePayload}
         debtPayload={debtPayload}
-        subscriptionsPayload={subscriptionsPayload}
       />
     </motion.div>
   )

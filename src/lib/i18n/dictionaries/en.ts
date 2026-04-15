@@ -1141,6 +1141,11 @@ export const en: Dictionary = {
     subscriptionsTitle: 'Your subscriptions & recurring costs',
     subscriptionsHelp: 'Toggle the services you pay for, set your monthly cost, or add your own.',
 
+    goalsDetailTitle: 'Your financial goals',
+    goalsDetailHelp: 'Add the goals you want Buddgy to build your plan around — we\u2019ll use them when we propose amounts.',
+    savingsDetailTitle: 'Your current savings',
+    savingsDetailHelp: 'List any accounts or buckets you already have. These feed straight into your /savings page.',
+
     savingsOrientationTitle: 'How do you feel about saving right now?',
     savingsAlready: "I\u2019m already saving regularly",
     savingsWantToStart: 'I want to start saving (or save more)',

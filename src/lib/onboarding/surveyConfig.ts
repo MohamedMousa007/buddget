@@ -103,6 +103,22 @@ export const surveyStepSchema = z.discriminatedUnion('type', [
     subtitle: z.string().optional(),
     helpText: z.string().optional(),
   }),
+  z.object({
+    id: z.string(),
+    type: z.literal('goals_detail'),
+    title: z.string(),
+    mapsTo: z.string(),
+    subtitle: z.string().optional(),
+    helpText: z.string().optional(),
+  }),
+  z.object({
+    id: z.string(),
+    type: z.literal('savings_detail'),
+    title: z.string(),
+    mapsTo: z.string(),
+    subtitle: z.string().optional(),
+    helpText: z.string().optional(),
+  }),
 ])
 
 export const surveyConfigRootSchema = z.object({
