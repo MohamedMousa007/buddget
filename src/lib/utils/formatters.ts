@@ -1,13 +1,26 @@
 import { format, formatDistanceToNow, isToday, isYesterday, parseISO } from 'date-fns'
 import type { Currency } from '@/lib/store/types'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
 
+/**
+ * Numeric formatting always uses `en-US` so digits render as 0-9 and separators as `,` / `.`
+ * in every UI language. Arabic month/weekday *names* still come from the active locale —
+ * see `useLocalizedFormatters` and `toLatinDigits` for date strings.
+ */
 function numberLocale(): string {
-  try {
-    return useFinanceStore.getState().settings.language === 'ar' ? 'ar-EG' : 'en-US'
-  } catch {
-    return 'en-US'
-  }
+  return 'en-US'
+}
+
+/**
+ * Replace Arabic-Indic (٠-٩) and Extended Arabic-Indic (۰-۹) digits with Western 0-9.
+ * Use on date strings formatted with an Arabic locale to keep the names (e.g. "أبريل")
+ * but render numbers in Latin digits.
+ */
+export function toLatinDigits(input: string): string {
+  return input.replace(/[\u0660-\u0669\u06F0-\u06F9]/g, (d) => {
+    const code = d.charCodeAt(0)
+    const base = code >= 0x06f0 ? 0x06f0 : 0x0660
+    return String(code - base)
+  })
 }
 
 const CURRENCY_SYMBOLS: Record<string, string> = {

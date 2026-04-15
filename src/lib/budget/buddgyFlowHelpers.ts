@@ -38,7 +38,7 @@ export function remainingForAiSlice(
 }
 
 export function formatMoneyAmount(amount: number, currency: string): string {
-  const formatted = new Intl.NumberFormat(undefined, {
+  const formatted = new Intl.NumberFormat('en-US', {
     maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
   }).format(amount)
   return `${formatted} ${currency}`
