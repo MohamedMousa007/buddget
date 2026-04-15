@@ -1,0 +1,6 @@
+export type { Snapshot } from './snapshot'
+export { snapshot, emptySnapshot } from './snapshot'
+export { diffLists, diffSingleton, deepEqual } from './diff'
+export type { DiffResult } from './diff'
+export { pullAll, flushDiff } from './sync'
+export type { FlushResult } from './sync'
