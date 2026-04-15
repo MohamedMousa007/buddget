@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -8,32 +8,35 @@ import { expenseFromRow } from '@/lib/supabase/remote/mappers/expenseMapper'
 import { recurringExpenseFromRow } from '@/lib/supabase/remote/mappers/recurringExpenseMapper'
 
 /**
- * Hydrates `expenses` + `recurringExpenses` slices from Supabase.
- * Zustand cache (via persist middleware) renders instantly with whatever was last
- * cached locally; this hook overlays the authoritative server data once it arrives.
+ * Hydrates `expenses` + `recurringExpenses` slices from Supabase. Side-effect only.
  */
-export function useHydrateExpenses(): { loading: boolean } {
+export function useHydrateExpenses(): void {
   const { user } = useAuth()
-  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     const uid = user?.id
     if (!uid) return
-    setLoading(true)
+    let cancelled = false
     const supabase = createClient()
-    void Promise.all([
-      supabase.from('expenses').select('*').eq('user_id', uid),
-      supabase.from('recurring_expenses').select('*').eq('user_id', uid),
-    ])
-      .then(([expR, recR]) => {
+
+    ;(async () => {
+      try {
+        const [expR, recR] = await Promise.all([
+          supabase.from('expenses').select('*').eq('user_id', uid),
+          supabase.from('recurring_expenses').select('*').eq('user_id', uid),
+        ])
+        if (cancelled) return
         const patch: Partial<ReturnType<typeof useFinanceStore.getState>> = {}
         if (expR.data) patch.expenses = expR.data.map(expenseFromRow)
         if (recR.data) patch.recurringExpenses = recR.data.map(recurringExpenseFromRow)
         if (Object.keys(patch).length > 0) useFinanceStore.setState(patch)
-      })
-      .catch((e) => console.error('[useHydrateExpenses]', e))
-      .finally(() => setLoading(false))
-  }, [user?.id])
+      } catch (e) {
+        if (!cancelled) console.error('[useHydrateExpenses]', e)
+      }
+    })()
 
-  return { loading }
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id])
 }

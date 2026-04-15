@@ -1,26 +1,28 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { assembleBudgetPlan } from '@/lib/supabase/remote/mappers/budgetPlanMapper'
 
-export function useHydrateBudget(): { loading: boolean } {
+export function useHydrateBudget(): void {
   const { user } = useAuth()
-  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     const uid = user?.id
     if (!uid) return
-    setLoading(true)
+    let cancelled = false
     const supabase = createClient()
-    void Promise.all([
-      supabase.from('budget_plans').select('*').eq('user_id', uid),
-      supabase.from('budget_categories').select('*').eq('user_id', uid),
-      supabase.from('budget_subcategories').select('*').eq('user_id', uid),
-    ])
-      .then(([pR, cR, scR]) => {
+
+    ;(async () => {
+      try {
+        const [pR, cR, scR] = await Promise.all([
+          supabase.from('budget_plans').select('*').eq('user_id', uid),
+          supabase.from('budget_categories').select('*').eq('user_id', uid),
+          supabase.from('budget_subcategories').select('*').eq('user_id', uid),
+        ])
+        if (cancelled) return
         if (!pR.data) return
         const plans = pR.data.map((plan) =>
           assembleBudgetPlan({
@@ -30,10 +32,13 @@ export function useHydrateBudget(): { loading: boolean } {
           })
         )
         useFinanceStore.setState({ budgetPlans: plans })
-      })
-      .catch((e) => console.error('[useHydrateBudget]', e))
-      .finally(() => setLoading(false))
-  }, [user?.id])
+      } catch (e) {
+        if (!cancelled) console.error('[useHydrateBudget]', e)
+      }
+    })()
 
-  return { loading }
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id])
 }

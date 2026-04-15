@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { useT } from '@/lib/i18n'
 import type { SurveyStep } from '@/lib/onboarding/surveyConfig'
 import type { IncomeSource, OnboardingPaymentDraft } from '@/lib/store/types'
 import type { IncomeOnboardingPayload } from '@/components/onboarding/IncomeOnboardingPanel'
@@ -49,7 +48,6 @@ export function OnboardingStepForm({
   planLoading: boolean
   onContinue: (payload: StepContinuePayload) => void | Promise<void>
 }) {
-  const t = useT()
   const [textValue, setTextValue] = useState(initialText)
   const [selected, setSelected] = useState<string | null>(initialSelected)
   const [multi, setMulti] = useState<string[]>(initialMulti)
