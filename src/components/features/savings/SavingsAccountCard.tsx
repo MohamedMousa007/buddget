@@ -18,7 +18,7 @@ export interface SavingsAccountCardProps {
 }
 
 const withdrawBtnClass =
-  'inline-flex flex-1 min-w-[5rem] items-center justify-center gap-1 rounded-xl bg-[#E50914] py-2 text-xs font-semibold text-white hover:bg-[var(--color-brand-red-hover)] transition-colors'
+  'inline-flex flex-1 min-w-[5rem] items-center justify-center gap-1 rounded-xl bg-[var(--color-brand-red)] py-2 text-xs font-semibold text-white hover:bg-[var(--color-brand-red-hover)] transition-colors'
 
 /**
  * Single savings bucket with balance, FX sublines, and transfer actions.
@@ -67,7 +67,7 @@ export function SavingsAccountCard({
             onClick={onEdit}
             title={t.common.edit}
             aria-label={t.common.edit}
-            className="rounded-lg p-1.5 text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)] hover:text-[var(--color-brand-text-primary)]"
+            className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)] hover:text-[var(--color-brand-text-primary)]"
           >
             <Pencil className="h-4 w-4" aria-hidden />
           </button>
@@ -76,7 +76,7 @@ export function SavingsAccountCard({
             onClick={onDelete}
             title={t.common.delete}
             aria-label={t.common.delete}
-            className="rounded-lg p-1.5 text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)] hover:text-[var(--color-brand-red)]"
+            className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)] hover:text-[var(--color-brand-red)]"
           >
             <Trash2 className="h-4 w-4" aria-hidden />
           </button>

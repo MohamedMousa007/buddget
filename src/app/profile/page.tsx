@@ -50,7 +50,7 @@ export default function ProfilePage() {
                     className="absolute bottom-0 end-0 w-7 h-7 rounded-full bg-[var(--color-brand-red)] flex items-center justify-center cursor-pointer hover:bg-[var(--color-brand-red-hover)] transition-colors"
                     aria-label={t.profile.changeAvatar}
                   >
-                    <Pencil className="w-3.5 h-3.5 text-[var(--color-brand-text-primary)]" />
+                    <Pencil className="w-3.5 h-3.5 text-white" />
                   </button>
                 )}
               </div>

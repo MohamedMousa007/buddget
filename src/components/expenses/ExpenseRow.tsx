@@ -134,14 +134,14 @@ export function ExpenseRow({ expense, isMobile = false }: ExpenseRowProps) {
       </div>
       <button
         onClick={handleEdit}
-        className="p-1.5 rounded-lg hover:bg-[var(--color-brand-border)] transition-colors"
+        className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg hover:bg-[var(--color-brand-border)] transition-colors"
         aria-label={t.expenses.editPurchase}
       >
         <Pencil className="w-4 h-4 text-[var(--color-brand-text-muted)]" />
       </button>
       <button
         onClick={handleDelete}
-        className="p-1.5 rounded-lg hover:bg-red-900/30 transition-colors"
+        className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg hover:bg-red-900/30 transition-colors"
         aria-label={t.expenses.removePurchase}
       >
         <Trash2 className="w-4 h-4 text-[var(--color-brand-text-muted)]" />

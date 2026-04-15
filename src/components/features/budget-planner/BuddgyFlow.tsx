@@ -48,7 +48,7 @@ export function BuddgyFlow({ planId, mode = 'resume', onClose, onRestartWizard }
         <button
           type="button"
           onClick={onClose}
-          className="shrink-0 rounded-lg p-1.5 text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
+          className="shrink-0 inline-flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
           aria-label="Close"
         >
           <X className="h-4 w-4" />

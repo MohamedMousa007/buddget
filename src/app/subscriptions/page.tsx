@@ -57,7 +57,7 @@ export default function SubscriptionsPage() {
             <button
               type="button"
               onClick={openAdd}
-              className="shrink-0 px-4 py-2 rounded-xl bg-[var(--color-brand-red)] text-sm font-medium text-[var(--color-brand-text-primary)]"
+              className="shrink-0 px-4 py-2 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-sm font-semibold text-white transition-colors"
             >
               {t.subscriptions.addSubscription}
             </button>
@@ -86,7 +86,7 @@ export default function SubscriptionsPage() {
               <button
                 type="button"
                 onClick={openAdd}
-                className="px-5 py-2.5 rounded-xl bg-[var(--color-brand-red)] text-sm font-medium text-[var(--color-brand-text-primary)]"
+                className="px-5 py-2.5 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-sm font-semibold text-white transition-colors"
               >
                 {t.subscriptions.addSubscription}
               </button>

@@ -50,7 +50,7 @@ function AddGoalSheetForm({ editingGoal, onClose, title, selectClass, t }: Inner
             </div>
             <button
               type="button"
-              className="w-full py-3 rounded-xl bg-[var(--color-brand-red)] text-[var(--color-brand-text-primary)] font-medium"
+              className="w-full py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
               onClick={() => form.setStep(2)}
             >
               {t.goals.nextStep}
@@ -199,7 +199,7 @@ function AddGoalSheetForm({ editingGoal, onClose, title, selectClass, t }: Inner
               <button
                 type="button"
                 onClick={form.submit}
-                className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] text-[var(--color-brand-text-primary)] font-medium"
+                className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
               >
                 {t.common.save}
               </button>
