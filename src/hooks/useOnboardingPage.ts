@@ -27,7 +27,6 @@ export function useOnboardingPage() {
   const updateSettings = useFinanceStore((s) => s.updateSettings)
   const setOnboardingState = useFinanceStore((s) => s.setOnboardingState)
   const profile = useFinanceStore((s) => s.profile)
-  const settings = useFinanceStore((s) => s.settings)
   const budgetPlans = useFinanceStore((s) => s.budgetPlans)
   const activeBudgetPlanId = useFinanceStore((s) => s.activeBudgetPlanId)
   const addBudgetPlan = useFinanceStore((s) => s.addBudgetPlan)
@@ -144,7 +143,6 @@ export function useOnboardingPage() {
     finishOnboarding,
     storeSnap,
     profile,
-    settings,
     answers,
     redo,
     router,

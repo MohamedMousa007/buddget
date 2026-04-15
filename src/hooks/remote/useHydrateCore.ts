@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -12,25 +12,28 @@ import type { Currency } from '@/lib/store/types'
 
 /**
  * Core hydration needed by every page: profiles, user_settings, onboarding_state,
- * payment_methods. Called alongside any page-specific hydrate hooks.
+ * payment_methods. Called alongside any page-specific hydrate hooks. Side-effect only
+ * — pages read the store via `useFinanceStore` selectors.
  */
-export function useHydrateCore(): { loading: boolean } {
+export function useHydrateCore(): void {
   const { user } = useAuth()
-  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     const uid = user?.id
     if (!uid) return
-    setLoading(true)
+    let cancelled = false
     const supabase = createClient()
 
-    void Promise.all([
-      supabase.from('profiles').select('*').eq('id', uid).maybeSingle(),
-      supabase.from('user_settings').select('*').eq('user_id', uid).maybeSingle(),
-      supabase.from('onboarding_state').select('*').eq('user_id', uid).maybeSingle(),
-      supabase.from('payment_methods').select('*').eq('user_id', uid),
-    ])
-      .then(([profileR, settingsR, onboardingR, pmR]) => {
+    ;(async () => {
+      try {
+        const [profileR, settingsR, onboardingR, pmR] = await Promise.all([
+          supabase.from('profiles').select('*').eq('id', uid).maybeSingle(),
+          supabase.from('user_settings').select('*').eq('user_id', uid).maybeSingle(),
+          supabase.from('onboarding_state').select('*').eq('user_id', uid).maybeSingle(),
+          supabase.from('payment_methods').select('*').eq('user_id', uid),
+        ])
+        if (cancelled) return
+
         const patch: Partial<ReturnType<typeof useFinanceStore.getState>> = {}
         if (profileR.data) {
           const { profile, extras } = profileFromRow(profileR.data)
@@ -48,10 +51,13 @@ export function useHydrateCore(): { loading: boolean } {
         if (onboardingR.data) patch.onboardingState = onboardingFromRow(onboardingR.data)
         if (pmR.data) patch.paymentMethods = pmR.data.map(paymentMethodFromRow)
         if (Object.keys(patch).length > 0) useFinanceStore.setState(patch)
-      })
-      .catch((e) => console.error('[useHydrateCore]', e))
-      .finally(() => setLoading(false))
-  }, [user?.id])
+      } catch (e) {
+        if (!cancelled) console.error('[useHydrateCore]', e)
+      }
+    })()
 
-  return { loading }
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id])
 }

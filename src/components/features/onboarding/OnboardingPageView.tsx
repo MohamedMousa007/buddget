@@ -8,7 +8,7 @@ import { OnboardingJourneyProgress } from '@/components/onboarding/OnboardingJou
 import { OnboardingStepForm, type StepContinuePayload } from '@/components/onboarding/OnboardingStepForm'
 import { BuddgyBuilderFlow } from '@/components/features/budget-planner/BuddgyBuilderFlow'
 import type { SurveyStep } from '@/lib/onboarding/surveyConfig'
-import type { AppSettings, UserProfile } from '@/lib/store/types'
+import type { UserProfile } from '@/lib/store/types'
 import {
   parseDebtEntriesAnswer,
   parseIncomeEntriesAnswer,
@@ -36,7 +36,6 @@ export interface OnboardingPageViewProps {
   finishOnboarding: () => void | Promise<void>
   storeSnap: typeof useFinanceStore.getState
   profile: UserProfile
-  settings: AppSettings
   answers: Record<string, unknown>
   redo: boolean
   router: { push: (href: string) => void; refresh: () => void; replace: (href: string) => void }
@@ -58,7 +57,6 @@ export function OnboardingPageView({
   finishOnboarding,
   storeSnap,
   profile,
-  settings,
   answers,
   redo,
   router,
