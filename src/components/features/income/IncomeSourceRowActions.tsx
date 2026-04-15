@@ -17,7 +17,7 @@ export function IncomeSourceRowActions({ amountLine, editLabel, deleteLabel, onE
       <button
         type="button"
         onClick={onEdit}
-        className="p-1.5 rounded-lg hover:bg-[var(--color-brand-elevated)] opacity-70 group-hover:opacity-100"
+        className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg hover:bg-[var(--color-brand-elevated)] md:opacity-70 md:group-hover:opacity-100"
         aria-label={editLabel}
       >
         <Pencil className="w-4 h-4 text-[var(--color-brand-text-muted)]" aria-hidden />
@@ -25,7 +25,7 @@ export function IncomeSourceRowActions({ amountLine, editLabel, deleteLabel, onE
       <button
         type="button"
         onClick={onDelete}
-        className="p-1.5 rounded-lg hover:bg-red-900/30 opacity-70 group-hover:opacity-100"
+        className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg hover:bg-red-900/30 md:opacity-70 md:group-hover:opacity-100"
         aria-label={deleteLabel}
       >
         <Trash2 className="w-4 h-4 text-[var(--color-brand-red)]" aria-hidden />

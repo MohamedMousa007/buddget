@@ -16,7 +16,7 @@ export function AdminDashboardHeader({ onLock }: AdminDashboardHeaderProps) {
     <header className={PAGE_HEADER_SURFACE_CLASS}>
       <div className="flex items-center justify-between px-4 py-3 lg:px-8">
         <div className="flex items-center gap-3">
-          <Link href="/settings" className="p-1.5 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors">
+          <Link href="/settings" className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors">
             <ArrowLeft className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
           </Link>
           <div className="flex items-center gap-2">

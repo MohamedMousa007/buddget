@@ -74,7 +74,7 @@ export function CreditCardDebtCard({ debt, payments, onRecordPayment, onEdit }: 
         <button
           type="button"
           onClick={onEdit}
-          className="p-1.5 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors shrink-0"
+          className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors shrink-0"
           aria-label={t.common.edit}
         >
           <Pencil className="w-3.5 h-3.5 text-[var(--color-brand-text-muted)]" aria-hidden />

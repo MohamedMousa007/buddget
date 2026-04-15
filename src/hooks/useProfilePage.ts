@@ -10,7 +10,7 @@ import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 
 const INPUT_CLASS =
-  'bg-[#1A1A24] border border-[#2A2A38] focus:border-[#E50914] rounded-xl px-3 py-2 text-white text-sm w-full outline-none transition-colors'
+  'bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] focus:border-[var(--color-brand-red)] rounded-xl px-3 py-2 text-[var(--color-brand-text-primary)] text-sm w-full outline-none transition-colors'
 
 type ProfileForm = { name: string; email: string; phone: string; country: string; city: string }
 

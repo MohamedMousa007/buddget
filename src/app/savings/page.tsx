@@ -24,7 +24,7 @@ import { useT } from '@/lib/i18n'
 import { convertCurrency } from '@/lib/utils/currency'
 
 const headerWithdrawClass =
-  'inline-flex items-center gap-1.5 rounded-xl bg-[#E50914] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)] transition-colors'
+  'inline-flex items-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)] transition-colors'
 
 /**
  * Savings buckets, transfer sheets, and ledger history (not expenses).

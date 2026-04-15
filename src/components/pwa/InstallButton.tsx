@@ -100,7 +100,7 @@ export function InstallButton({ variant, className }: InstallButtonProps) {
           <button
             type="button"
             onClick={handleDismissBanner}
-            className="shrink-0 p-1.5 rounded-lg text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+            className="shrink-0 inline-flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
             aria-label="Dismiss install prompt"
           >
             <X className="w-4 h-4" />
