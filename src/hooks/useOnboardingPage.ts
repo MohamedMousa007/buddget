@@ -81,9 +81,14 @@ export function useOnboardingPage() {
       else if (payload.kind === 'payment') rawAnswer = payload.drafts
       else if (payload.kind === 'income') rawAnswer = payload.payload
       else if (payload.kind === 'debt') rawAnswer = payload.payload
-      else if (payload.kind === 'subscriptions') rawAnswer = payload.payload
+      // kind === 'live' stores no answer; the panel already persisted via the store.
 
-      const nextAnswers = step.type === 'static' ? answers : { ...answers, [step.id]: rawAnswer }
+      const isLiveStep =
+        step.type === 'subscriptions_detail' ||
+        step.type === 'goals_detail' ||
+        step.type === 'savings_detail'
+      const nextAnswers =
+        step.type === 'static' || isLiveStep ? answers : { ...answers, [step.id]: rawAnswer }
 
       if (step.type === 'text' && typeof rawAnswer === 'string') {
         applyMapsTo(step.mapsTo, rawAnswer, updateProfile, updateSettings)

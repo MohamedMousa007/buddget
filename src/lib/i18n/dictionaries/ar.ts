@@ -1139,6 +1139,11 @@ export const ar: Dictionary = {
     subscriptionsTitle: 'اشتراكاتك وتكاليفك المتكررة',
     subscriptionsHelp: 'فعّل الخدمات التي تدفع لها، حدد التكلفة الشهرية، أو أضف خدمتك الخاصة.',
 
+    goalsDetailTitle: 'أهدافك المالية',
+    goalsDetailHelp: 'أضف الأهداف التي تريد من بَدجي أن يبني خطته حولها — سنستخدمها عند اقتراح المبالغ.',
+    savingsDetailTitle: 'مدخراتك الحالية',
+    savingsDetailHelp: 'أدرج أي حسابات أو سلال لديك حالياً. تظهر مباشرة في صفحة المدخرات.',
+
     savingsOrientationTitle: 'كيف تشعر تجاه الادخار حالياً؟',
     savingsAlready: 'أدخر بانتظام فعلاً',
     savingsWantToStart: 'أريد أن أبدأ بالادخار (أو أدخر أكثر)',

@@ -1135,6 +1135,11 @@ export interface Dictionary {
     subscriptionsTitle: string
     subscriptionsHelp: string
 
+    goalsDetailTitle: string
+    goalsDetailHelp: string
+    savingsDetailTitle: string
+    savingsDetailHelp: string
+
     savingsOrientationTitle: string
     savingsAlready: string
     savingsWantToStart: string

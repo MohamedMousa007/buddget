@@ -1,224 +1,103 @@
 'use client'
 
-import { useMemo } from 'react'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
+import { useMemo, useState } from 'react'
+import { Plus } from 'lucide-react'
+import { useShallow } from 'zustand/react/shallow'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
-import type { Dictionary } from '@/lib/i18n/types'
-import type { Currency } from '@/lib/store/types'
+import { SubscriptionCard } from '@/components/features/subscriptions/SubscriptionCard'
+import { AddSubscriptionSheet } from '@/components/modals/AddSubscriptionSheet'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { formatCurrency } from '@/lib/utils/formatters'
+import type { Subscription } from '@/lib/store/types'
 
-export type SubscriptionLine = {
-  id: string
-  label: string
-  amount: number
-  currency: Currency
-  enabled: boolean
-}
-
-export type SubscriptionsOnboardingPayload = {
-  lines: SubscriptionLine[]
-}
-
-export function subscriptionPresetsFromDictionary(t: Dictionary): { id: string; label: string }[] {
-  const o = t.onboarding
-  return [
-    { id: 'netflix', label: o.subscriptionNetflix },
-    { id: 'spotify', label: o.subscriptionSpotify },
-    { id: 'icloud', label: o.subscriptionIcloud },
-    { id: 'youtube', label: o.subscriptionYoutube },
-    { id: 'disney', label: o.subscriptionDisney },
-    { id: 'gym', label: o.subscriptionGym },
-    { id: 'sports', label: o.subscriptionSports },
-    { id: 'gaming', label: o.subscriptionGaming },
-  ]
-}
-
-function defaultLines(baseCurrency: Currency, t: Dictionary): SubscriptionLine[] {
-  return subscriptionPresetsFromDictionary(t).map((p) => ({
-    id: p.id,
-    label: p.label,
-    amount: 0,
-    currency: baseCurrency,
-    enabled: false,
-  }))
-}
-
-/** Build lines from saved answers or defaults (presets + any custom rows). */
-export function subscriptionLinesFromSaved(
-  raw: unknown,
-  baseCurrency: Currency,
-  t: Dictionary
-): SubscriptionLine[] {
-  const presets = subscriptionPresetsFromDictionary(t)
-  let initial: SubscriptionLine[] | undefined
-  if (raw && typeof raw === 'object' && 'lines' in raw && Array.isArray((raw as { lines: unknown }).lines)) {
-    initial = (raw as { lines: SubscriptionLine[] }).lines
-  }
-  if (!initial?.length) return defaultLines(baseCurrency, t)
-  const byId = new Map(initial.map((l) => [l.id, l]))
-  const merged = presets.map((p) => {
-    const hit = byId.get(p.id)
-    return hit
-      ? { ...hit, label: p.label }
-      : { id: p.id, label: p.label, amount: 0, currency: baseCurrency, enabled: false }
-  })
-  const presetIds = new Set(presets.map((x) => x.id))
-  const customs = initial.filter((l) => !presetIds.has(l.id))
-  return [...merged, ...customs]
-}
-
-export function SubscriptionsOnboardingPanel({
-  lines,
-  baseCurrency,
-  onChange,
-}: {
-  lines: SubscriptionLine[]
-  baseCurrency: Currency
-  onChange: (p: SubscriptionsOnboardingPayload) => void
-}) {
+/**
+ * Bidirectional onboarding panel: reads & writes the live `subscriptions` store.
+ * Any subscription the user adds here appears on /subscriptions immediately, and
+ * vice-versa — no staging, no separate "commit on finish" step.
+ */
+export function SubscriptionsOnboardingPanel() {
   const t = useT()
-  const o = t.onboarding
-  const presets = useMemo(() => subscriptionPresetsFromDictionary(t), [t])
+  const { subscriptions, settings } = useFinanceStore(
+    useShallow((s) => ({ subscriptions: s.subscriptions, settings: s.settings }))
+  )
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [editing, setEditing] = useState<Subscription | null>(null)
+  const [instanceKey, setInstanceKey] = useState(0)
 
-  const emit = (next: SubscriptionLine[]) => {
-    onChange({ lines: next })
-  }
-
-  const addCustom = () => {
-    emit([
-      ...lines,
-      {
-        id: `custom_${Date.now()}`,
-        label: '',
-        amount: 0,
-        currency: baseCurrency,
-        enabled: true,
-      },
-    ])
-  }
-
-  const updateLine = (id: string, patch: Partial<SubscriptionLine>) => {
-    emit(lines.map((l) => (l.id === id ? { ...l, ...patch } : l)))
-  }
-
-  const removeCustom = (id: string) => {
-    emit(lines.filter((l) => l.id !== id))
-  }
-
-  const enabledTotal = useMemo(
+  const active = useMemo(
+    () => subscriptions.filter((s) => s.status !== 'cancelled'),
+    [subscriptions]
+  )
+  const monthlyTotal = useMemo(
     () =>
-      lines
-        .filter((l) => l.enabled && l.amount > 0)
-        .reduce((s, l) => s + l.amount, 0),
-    [lines]
+      active.reduce((sum, s) => {
+        const perMonth =
+          s.billingCycle === 'yearly'
+            ? s.amount / 12
+            : s.billingCycle === 'quarterly'
+              ? s.amount / 3
+              : s.billingCycle === 'weekly'
+                ? s.amount * 4.345
+                : s.amount
+        return sum + perMonth
+      }, 0),
+    [active]
   )
 
-  const presetIdSet = useMemo(() => new Set(presets.map((p) => p.id)), [presets])
+  const openAdd = () => {
+    setEditing(null)
+    setInstanceKey((k) => k + 1)
+    setSheetOpen(true)
+  }
+  const openEdit = (s: Subscription) => {
+    setEditing(s)
+    setSheetOpen(true)
+  }
+  const closeSheet = () => {
+    setSheetOpen(false)
+    setEditing(null)
+  }
 
   return (
-    <div className="space-y-4 text-start w-full max-w-lg">
-      <p className="text-[11px] text-[var(--color-brand-text-muted)]">{o.subscriptionIntro}</p>
+    <div className="w-full space-y-3 text-start">
+      {active.length > 0 ? (
+        <div className="rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-3">
+          <p className="text-[10px] uppercase tracking-wider text-[var(--color-brand-text-muted)]">
+            {t.subscriptions.totalMonthly}
+          </p>
+          <p className="mt-1 text-lg font-bold font-mono-numbers text-[var(--color-brand-text-primary)]">
+            {formatCurrency(monthlyTotal, settings.baseCurrency)}
+          </p>
+        </div>
+      ) : (
+        <EmptyState
+          title={t.subscriptions.emptyTitle}
+          description={t.subscriptions.emptyHint}
+        />
+      )}
 
-      <div className="grid gap-3">
-        {lines
-          .filter((l) => presetIdSet.has(l.id))
-          .map((line) => (
-            <div
-              key={line.id}
-              className="rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/40 p-3 space-y-2"
-            >
-              <label className="flex items-center gap-2 text-sm text-[var(--color-brand-text-primary)] cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={line.enabled}
-                  onChange={(e) => updateLine(line.id, { enabled: e.target.checked })}
-                  className="rounded border-[var(--color-brand-border)]"
-                />
-                <span>{line.label}</span>
-              </label>
-              {line.enabled ? (
-                <div className="grid grid-cols-2 gap-2 ps-6">
-                  <div>
-                    <Label className="text-[10px] text-[var(--color-brand-text-muted)]">
-                      {o.subscriptionMonthlyCost}
-                    </Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min={0}
-                      value={line.amount || ''}
-                      onChange={(e) => updateLine(line.id, { amount: parseFloat(e.target.value) || 0 })}
-                      className="mt-0.5 h-9 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers text-sm"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-[10px] text-[var(--color-brand-text-muted)]">
-                      {o.subscriptionCurrency}
-                    </Label>
-                    <FiatCurrencySelect
-                      value={line.currency}
-                      onChange={(c) => updateLine(line.id, { currency: c })}
-                      className="mt-0.5 w-full h-9 px-2 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
-                    />
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          ))}
-      </div>
-
-      {lines
-        .filter((l) => !presetIdSet.has(l.id))
-        .map((line) => (
-          <div
-            key={line.id}
-            className="rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/30 p-3 space-y-2"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <Input
-                placeholder={o.subscriptionCustomPlaceholder}
-                value={line.label}
-                onChange={(e) => updateLine(line.id, { label: e.target.value.trimStart() })}
-                className="flex-1 h-9 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
-              />
-              <button
-                type="button"
-                onClick={() => removeCustom(line.id)}
-                className="text-xs text-[var(--color-brand-text-muted)] shrink-0"
-              >
-                {t.common.remove}
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Input
-                type="number"
-                step="0.01"
-                placeholder={o.subscriptionAmountPlaceholder}
-                value={line.amount || ''}
-                onChange={(e) => updateLine(line.id, { amount: parseFloat(e.target.value) || 0 })}
-                className="h-9 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers text-sm"
-              />
-              <FiatCurrencySelect
-                value={line.currency}
-                onChange={(c) => updateLine(line.id, { currency: c })}
-                className="h-9 px-2 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
-              />
-            </div>
-          </div>
+      <div className="space-y-2">
+        {active.map((s) => (
+          <SubscriptionCard key={s.id} sub={s} onEdit={() => openEdit(s)} />
         ))}
+      </div>
 
       <button
         type="button"
-        onClick={addCustom}
-        className="text-xs text-[var(--color-brand-red)] hover:underline"
+        onClick={openAdd}
+        className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--color-brand-border)] px-4 py-3 text-sm font-medium text-[var(--color-brand-text-secondary)] hover:border-[var(--color-brand-red)] hover:text-[var(--color-brand-red)] transition-colors"
       >
-        {o.subscriptionAddAnother}
+        <Plus className="w-4 h-4" aria-hidden />
+        {t.subscriptions.addSubscription}
       </button>
 
-      <p className="text-[10px] text-[var(--color-brand-text-muted)]">
-        {o.subscriptionTotal(enabledTotal.toFixed(2))}
-      </p>
+      <AddSubscriptionSheet
+        open={sheetOpen}
+        onClose={closeSheet}
+        editing={editing}
+        instanceKey={instanceKey}
+      />
     </div>
   )
 }

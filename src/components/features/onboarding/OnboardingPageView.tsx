@@ -154,8 +154,6 @@ export function OnboardingPageView({
               initialPaymentDrafts={valueForPaymentStep(answers)}
               initialIncomeEntries={parseIncomeEntriesAnswer(answers.income_entries)}
               initialDebtEntries={parseDebtEntriesAnswer(answers.debt_entries)}
-              initialSubscriptionRaw={answers.subscriptions_detail}
-              baseCurrency={settings.baseCurrency}
               loadError={loadError}
               isLastSurveyStep={isLastSurveyStep}
               finishing={finishing}

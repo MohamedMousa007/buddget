@@ -7,7 +7,6 @@ import type { StepContinuePayload } from '@/lib/onboarding/onboardingStepPayload
 import type { OnboardingPaymentDraft } from '@/lib/store/types'
 import type { IncomeOnboardingPayload } from '@/components/onboarding/IncomeOnboardingPanel'
 import type { DebtOnboardingPayload } from '@/components/onboarding/DebtOnboardingPanel'
-import type { SubscriptionsOnboardingPayload } from '@/components/onboarding/SubscriptionsOnboardingPanel'
 
 export interface OnboardingSurveyContinueButtonProps {
   step: SurveyStep
@@ -22,7 +21,6 @@ export interface OnboardingSurveyContinueButtonProps {
   paymentDrafts: OnboardingPaymentDraft[]
   incomePayload: IncomeOnboardingPayload
   debtPayload: DebtOnboardingPayload
-  subscriptionsPayload: SubscriptionsOnboardingPayload
 }
 
 /**
@@ -41,7 +39,6 @@ export function OnboardingSurveyContinueButton({
   paymentDrafts,
   incomePayload,
   debtPayload,
-  subscriptionsPayload,
 }: OnboardingSurveyContinueButtonProps) {
   const t = useT()
   const o = t.onboarding
@@ -60,8 +57,13 @@ export function OnboardingSurveyContinueButton({
         else if (step.type === 'payment_methods') void onContinue({ kind: 'payment', drafts: paymentDrafts })
         else if (step.type === 'income_entry') void onContinue({ kind: 'income', payload: incomePayload })
         else if (step.type === 'debt_entry') void onContinue({ kind: 'debt', payload: debtPayload })
-        else if (step.type === 'subscriptions_detail')
-          void onContinue({ kind: 'subscriptions', payload: subscriptionsPayload })
+        else if (
+          step.type === 'subscriptions_detail' ||
+          step.type === 'goals_detail' ||
+          step.type === 'savings_detail'
+        ) {
+          void onContinue({ kind: 'live' })
+        }
       }}
       className="w-full py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
     >
