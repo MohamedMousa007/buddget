@@ -13,7 +13,6 @@ import {
 import type { StepContinuePayload } from '@/components/onboarding/OnboardingStepForm'
 import { useOnboardingSurveyConfig } from '@/hooks/useOnboardingSurveyConfig'
 import { useOnboardingBootstrap } from '@/hooks/useOnboardingBootstrap'
-import { useOnboardingPlansRequest } from '@/hooks/useOnboardingPlansRequest'
 import { useFinishOnboarding } from '@/hooks/useFinishOnboarding'
 
 export function useOnboardingPage() {
@@ -29,16 +28,9 @@ export function useOnboardingPage() {
   const setOnboardingState = useFinanceStore((s) => s.setOnboardingState)
   const profile = useFinanceStore((s) => s.profile)
   const settings = useFinanceStore((s) => s.settings)
-  const plans = useFinanceStore((s) => s.onboardingState.aiPlans)
-  const valNotes = useFinanceStore((s) => s.onboardingState.lastValidationNotes)
-
-  const { requestPlans, planLoading } = useOnboardingPlansRequest({
-    profileCountry: profile.country,
-    profileCity: profile.city,
-    baseCurrency: settings.baseCurrency,
-    setOnboardingState,
-    setPhase,
-  })
+  const budgetPlans = useFinanceStore((s) => s.budgetPlans)
+  const activeBudgetPlanId = useFinanceStore((s) => s.activeBudgetPlanId)
+  const addBudgetPlan = useFinanceStore((s) => s.addBudgetPlan)
 
   const steps = config.steps
   const step = steps[index]
@@ -92,7 +84,6 @@ export function useOnboardingPage() {
 
       if (step.type === 'text' && typeof rawAnswer === 'string') {
         applyMapsTo(step.mapsTo, rawAnswer, updateProfile, updateSettings)
-        // Cascade baseCurrency + pristine defaults when country/city land.
         if (step.mapsTo === 'profile.country' || step.mapsTo === 'profile.city') {
           applyLocaleFromProfile()
         }
@@ -104,31 +95,41 @@ export function useOnboardingPage() {
         /* stored in answers only */
       }
 
-      const nextIndex = index + 1
-
+      // Final survey step → hand off to Buddgy.
       if (step.id === 'pre_plan') {
         persistAnswers(nextAnswers, index)
-        await requestPlans(nextAnswers)
+        setPhase('buddgy')
         return
       }
 
+      const nextIndex = index + 1
       persistAnswers(nextAnswers, nextIndex)
       setIndex(nextIndex)
     },
-    [answers, index, persistAnswers, requestPlans, setIndex, step, updateProfile, updateSettings]
+    [answers, index, persistAnswers, setIndex, setPhase, step, updateProfile, updateSettings]
   )
 
   const storeSnap = useFinanceStore.getState
 
   const goBack = useCallback(() => {
-    if (phase !== 'survey') return
+    if (phase === 'buddgy') {
+      setPhase('survey')
+      return
+    }
     if (index <= 0) return
     const prev = index - 1
     setIndex(prev)
     setOnboardingState({ currentStepIndex: prev })
-  }, [phase, index, setIndex, setOnboardingState])
+  }, [phase, index, setIndex, setOnboardingState, setPhase])
 
-  const canGoBack = phase === 'survey' && index > 0
+  const canGoBack = phase === 'buddgy' || (phase === 'survey' && index > 0)
+
+  /** Ensure there's a plan row Buddgy can write to before mounting BuddgyBuilderFlow. */
+  const ensureBuddgyPlanId = useCallback((): string => {
+    if (activeBudgetPlanId) return activeBudgetPlanId
+    if (budgetPlans.length > 0) return budgetPlans[0].id
+    return addBudgetPlan('Primary plan')
+  }, [activeBudgetPlanId, budgetPlans, addBudgetPlan])
 
   return {
     answersReady,
@@ -138,12 +139,9 @@ export function useOnboardingPage() {
     surveyTotal,
     isLastSurveyStep,
     finishing,
-    planLoading,
     loadError,
     handleStepContinue,
     finishOnboarding,
-    plans,
-    valNotes,
     storeSnap,
     profile,
     settings,
@@ -152,5 +150,6 @@ export function useOnboardingPage() {
     router,
     goBack,
     canGoBack,
+    ensureBuddgyPlanId,
   }
 }

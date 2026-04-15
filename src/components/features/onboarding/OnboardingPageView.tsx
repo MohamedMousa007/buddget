@@ -1,13 +1,14 @@
 'use client'
 
+import { useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, ClipboardList } from 'lucide-react'
 import { PAGE_HEADER_BARE_CLASS } from '@/components/layout/PageHeader'
 import { OnboardingJourneyProgress } from '@/components/onboarding/OnboardingJourneyProgress'
 import { OnboardingStepForm, type StepContinuePayload } from '@/components/onboarding/OnboardingStepForm'
-import { OnboardingPlanPicker } from '@/components/onboarding/OnboardingPlanPicker'
+import { BuddgyBuilderFlow } from '@/components/features/budget-planner/BuddgyBuilderFlow'
 import type { SurveyStep } from '@/lib/onboarding/surveyConfig'
-import type { AppSettings, OnboardingAiPlan, UserProfile } from '@/lib/store/types'
+import type { AppSettings, UserProfile } from '@/lib/store/types'
 import {
   parseDebtEntriesAnswer,
   parseIncomeEntriesAnswer,
@@ -25,17 +26,14 @@ import { LanguageToggle } from '@/components/ui/LanguageToggle'
 export interface OnboardingPageViewProps {
   answersReady: boolean
   step: SurveyStep | undefined
-  phase: 'survey' | 'plans'
+  phase: 'survey' | 'buddgy'
   index: number
   surveyTotal: number
   isLastSurveyStep: boolean
   finishing: boolean
-  planLoading: boolean
   loadError: string | null
   handleStepContinue: (payload: StepContinuePayload) => void | Promise<void>
-  finishOnboarding: (plan: OnboardingAiPlan | null) => void | Promise<void>
-  plans: OnboardingAiPlan[] | null
-  valNotes: string[] | null | undefined
+  finishOnboarding: () => void | Promise<void>
   storeSnap: typeof useFinanceStore.getState
   profile: UserProfile
   settings: AppSettings
@@ -44,6 +42,7 @@ export interface OnboardingPageViewProps {
   router: { push: (href: string) => void; refresh: () => void; replace: (href: string) => void }
   goBack: () => void
   canGoBack: boolean
+  ensureBuddgyPlanId: () => string
 }
 
 export function OnboardingPageView({
@@ -54,12 +53,9 @@ export function OnboardingPageView({
   surveyTotal,
   isLastSurveyStep,
   finishing,
-  planLoading,
   loadError,
   handleStepContinue,
   finishOnboarding,
-  plans,
-  valNotes,
   storeSnap,
   profile,
   settings,
@@ -68,11 +64,18 @@ export function OnboardingPageView({
   router,
   goBack,
   canGoBack,
+  ensureBuddgyPlanId,
 }: OnboardingPageViewProps) {
   const t = useT()
   const { locale } = useLocale()
   const o = t.onboarding
   const BackIcon = locale === 'ar' ? ChevronRight : ChevronLeft
+
+  // Stable plan id for Buddgy once the user enters the buddgy phase.
+  const buddgyPlanId = useMemo(() => {
+    if (phase !== 'buddgy') return null
+    return ensureBuddgyPlanId()
+  }, [phase, ensureBuddgyPlanId])
 
   if (!answersReady || !step) {
     return (
@@ -81,6 +84,9 @@ export function OnboardingPageView({
       </div>
     )
   }
+
+  const currentProgressIndex = phase === 'buddgy' ? surveyTotal - 1 : index
+  const progressPhase: 'survey' | 'plans' = phase === 'buddgy' ? 'plans' : 'survey'
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -103,7 +109,7 @@ export function OnboardingPageView({
               <div className={cn('min-w-0', locale === 'ar' && 'text-end')}>
                 <h1 className="text-lg font-bold text-[var(--color-brand-text-primary)] font-heading">{o.pageTitle}</h1>
                 <p className="text-[11px] text-[var(--color-brand-text-muted)] leading-snug">
-                  {phase === 'plans' ? o.subtitlePlans : redo ? o.subtitleRedo : o.subtitleDefault}
+                  {phase === 'buddgy' ? o.subtitlePlans : redo ? o.subtitleRedo : o.subtitleDefault}
                 </p>
               </div>
             </div>
@@ -112,8 +118,8 @@ export function OnboardingPageView({
               {phase === 'survey' ? (
                 <button
                   type="button"
-                  disabled={finishing || planLoading}
-                  onClick={() => void finishOnboarding(null)}
+                  disabled={finishing}
+                  onClick={() => void finishOnboarding()}
                   className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] disabled:opacity-40 transition-colors"
                 >
                   {o.skipButton}
@@ -130,11 +136,11 @@ export function OnboardingPageView({
               ) : null}
             </div>
           </div>
-          {phase === 'survey' ? (
-            <OnboardingJourneyProgress totalSteps={surveyTotal} currentIndex={index} phase="survey" />
-          ) : (
-            <OnboardingJourneyProgress totalSteps={surveyTotal} currentIndex={surveyTotal - 1} phase="plans" />
-          )}
+          <OnboardingJourneyProgress
+            totalSteps={surveyTotal}
+            currentIndex={currentProgressIndex}
+            phase={progressPhase}
+          />
         </div>
       </header>
 
@@ -157,36 +163,23 @@ export function OnboardingPageView({
               loadError={loadError}
               isLastSurveyStep={isLastSurveyStep}
               finishing={finishing}
-              planLoading={planLoading}
+              planLoading={false}
               onContinue={handleStepContinue}
             />
-          ) : plans && plans.length > 0 ? (
-            <motion.div key="plans" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full flex justify-center">
-              <OnboardingPlanPicker
-                plans={plans}
-                validationNotes={valNotes ?? []}
-                busy={finishing}
-                onAccept={(p) => void finishOnboarding(p)}
-              />
-            </motion.div>
-          ) : (
+          ) : buddgyPlanId ? (
             <motion.div
-              key="fallback"
+              key="buddgy"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="glass-card rounded-2xl p-6 max-w-md text-center space-y-4"
+              exit={{ opacity: 0 }}
+              className="w-full max-w-2xl self-center"
             >
-              <p className="text-sm text-[var(--color-brand-text-secondary)]">{o.plansLoadError}</p>
-              <button
-                type="button"
-                onClick={() => void finishOnboarding(null)}
-                disabled={finishing}
-                className="px-4 py-2 rounded-xl bg-[var(--color-brand-red)] text-white text-sm font-semibold disabled:opacity-50"
-              >
-                {finishing ? o.continueWithoutPlanBusy : o.continueWithoutPlan}
-              </button>
+              <BuddgyBuilderFlow
+                planId={buddgyPlanId}
+                onClose={() => void finishOnboarding()}
+              />
             </motion.div>
-          )}
+          ) : null}
         </AnimatePresence>
       </div>
     </div>
