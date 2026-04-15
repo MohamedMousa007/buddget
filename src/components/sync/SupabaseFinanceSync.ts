@@ -3,9 +3,12 @@
 import { useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { pullAll, flushDiff, snapshot, emptySnapshot } from '@/lib/supabase/remote'
+import type { Snapshot } from '@/lib/supabase/remote'
 
 const DEBOUNCE_MS = 1600
 
+/** Legacy blob payload — kept during the dual-write safety window. */
 function buildFinancePayload() {
   const state = useFinanceStore.getState()
   return {
@@ -32,36 +35,53 @@ function buildFinancePayload() {
   }
 }
 
+/**
+ * Supabase persistence layer.
+ *
+ * Hydrate: prefer normalised tables (pullAll); fall back to the legacy user_finance.payload
+ * blob when the user has no profiles row yet (pre-DB-migration users in a race window).
+ *
+ * Flush: per-table diffs via `flushDiff` (sends only what changed) PLUS a dual-write to
+ * user_finance.payload during the stability window so we can roll back the frontend
+ * without losing data. Dual-write is removed in Phase 5.
+ */
 export function SupabaseFinanceSync({ userId }: { userId: string }) {
   const hydrated = useRef(false)
+  const prevSnap = useRef<Snapshot | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     hydrated.current = false
+    prevSnap.current = null
     const supabase = createClient()
 
     async function pull() {
-      const { data, error } = await supabase
-        .from('user_finance')
-        .select('payload, updated_at')
-        .eq('user_id', userId)
-        .maybeSingle()
-
-      if (error) {
-        console.error('[finance sync] load failed', error.message)
-        hydrated.current = true
-        return
-      }
-
-      if (data?.payload && typeof data.payload === 'object') {
-        try {
-          useFinanceStore.getState().importData(JSON.stringify(data.payload))
-        } catch (e) {
-          console.error('[finance sync] import failed', e)
+      try {
+        const state = await pullAll(supabase, userId)
+        if (state) {
+          // Serialise to the legacy blob shape so `importData` can hydrate Zustand.
+          useFinanceStore.getState().importData(JSON.stringify(state))
+        } else {
+          // Fall back to legacy blob (pre-migration users).
+          const { data, error } = await supabase
+            .from('user_finance')
+            .select('payload, updated_at')
+            .eq('user_id', userId)
+            .maybeSingle()
+          if (error) {
+            console.error('[finance sync] legacy pull failed', error.message)
+          } else if (data?.payload && typeof data.payload === 'object') {
+            useFinanceStore.getState().importData(JSON.stringify(data.payload))
+          }
         }
+      } catch (e) {
+        console.error('[finance sync] pull failed', e)
+      } finally {
+        // Capture the now-hydrated state as the diff baseline so the first flush only
+        // emits genuine user mutations, not a no-op re-sync.
+        prevSnap.current = snapshot(useFinanceStore.getState())
+        hydrated.current = true
       }
-
-      hydrated.current = true
     }
 
     void pull()
@@ -74,29 +94,39 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
   useEffect(() => {
     const supabase = createClient()
 
-    const flush = () => {
+    const flush = async () => {
       if (!hydrated.current) return
       timer.current = null
-      const payload = buildFinancePayload()
-      void supabase
-        .from('user_finance')
-        .upsert(
-          {
-            user_id: userId,
-            payload,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'user_id' }
-        )
-        .then((res: { error: { message: string } | null }) => {
-          if (res.error) console.error('[finance sync] upsert failed', res.error.message)
-        })
+
+      const next = snapshot(useFinanceStore.getState())
+      const prev = prevSnap.current ?? emptySnapshot()
+
+      try {
+        const result = await flushDiff(supabase, userId, prev, next)
+        if (!result.anyError) {
+          prevSnap.current = next
+        } else {
+          console.error('[finance sync] per-table flush errors:', result.errors)
+        }
+        // Dual-write the legacy blob as a safety net. Remove in Phase 5.
+        const { error } = await supabase
+          .from('user_finance')
+          .upsert(
+            { user_id: userId, payload: buildFinancePayload(), updated_at: new Date().toISOString() },
+            { onConflict: 'user_id' }
+          )
+        if (error) console.error('[finance sync] legacy blob upsert failed', error.message)
+      } catch (e) {
+        console.error('[finance sync] flush threw', e)
+      }
     }
 
     const unsub = useFinanceStore.subscribe(() => {
       if (!hydrated.current) return
       if (timer.current) clearTimeout(timer.current)
-      timer.current = setTimeout(flush, DEBOUNCE_MS)
+      timer.current = setTimeout(() => {
+        void flush()
+      }, DEBOUNCE_MS)
     })
 
     return () => {
