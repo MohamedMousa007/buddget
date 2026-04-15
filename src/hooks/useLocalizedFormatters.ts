@@ -5,47 +5,48 @@ import { format, formatDistanceToNow, isToday, isYesterday, parseISO } from 'dat
 import { arEG } from 'date-fns/locale/ar-EG'
 import { enUS } from 'date-fns/locale/en-US'
 import { useLocale, useT } from '@/lib/i18n'
+import { toLatinDigits } from '@/lib/utils/formatters'
 
 /**
- * Date/time helpers that follow the active app locale (EN / AR) for copy and month names.
- * Amounts: `formatCurrency` uses `en-US` or `ar-EG` numerals from active settings language.
+ * Date/time helpers that follow the active app locale (EN / AR) for month and weekday names.
+ * Digits are always rendered as Western 0-9 — see `toLatinDigits`.
  */
 export function useLocalizedFormatters() {
   const { locale } = useLocale()
   const t = useT()
   const dfLocale = locale === 'ar' ? arEG : enUS
 
-  return useMemo(
-    () => ({
+  return useMemo(() => {
+    const digits = locale === 'ar' ? toLatinDigits : (s: string) => s
+    return {
       formatDate(dateStr: string) {
         const date = parseISO(dateStr)
         if (isToday(date)) return t.common.today
         if (isYesterday(date)) return t.common.yesterday
-        return format(date, 'd MMM yyyy', { locale: dfLocale })
+        return digits(format(date, 'd MMM yyyy', { locale: dfLocale }))
       },
       formatDateShort(dateStr: string) {
-        return format(parseISO(dateStr), 'd MMM', { locale: dfLocale })
+        return digits(format(parseISO(dateStr), 'd MMM', { locale: dfLocale }))
       },
       groupByDate(dateStr: string) {
         const date = parseISO(dateStr)
         if (isToday(date)) return t.common.today
         if (isYesterday(date)) return t.common.yesterday
-        return format(date, 'EEEE, d MMMM', { locale: dfLocale })
+        return digits(format(date, 'EEEE, d MMMM', { locale: dfLocale }))
       },
       formatMonth(yyyyMm: string) {
-        return format(parseISO(`${yyyyMm}-01`), 'MMMM yyyy', { locale: dfLocale })
+        return digits(format(parseISO(`${yyyyMm}-01`), 'MMMM yyyy', { locale: dfLocale }))
       },
       formatMonthShort(yyyyMm: string) {
-        return format(parseISO(`${yyyyMm}-01`), 'MMM yyyy', { locale: dfLocale })
+        return digits(format(parseISO(`${yyyyMm}-01`), 'MMM yyyy', { locale: dfLocale }))
       },
       formatRelativeTime(dateStr: string) {
-        return formatDistanceToNow(parseISO(dateStr), { addSuffix: true, locale: dfLocale })
+        return digits(formatDistanceToNow(parseISO(dateStr), { addSuffix: true, locale: dfLocale }))
       },
       /** Short month name for calendar grid buttons (Jan / يناير, …). */
       monthButtonLabel(month1to12: number) {
-        return format(new Date(2024, month1to12 - 1, 1), 'MMM', { locale: dfLocale })
+        return digits(format(new Date(2024, month1to12 - 1, 1), 'MMM', { locale: dfLocale }))
       },
-    }),
-    [dfLocale, t],
-  )
+    }
+  }, [dfLocale, t, locale])
 }

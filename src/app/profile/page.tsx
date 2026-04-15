@@ -185,7 +185,7 @@ export default function ProfilePage() {
                 value={
                   p.store.profile.createdAt
                     ? new Date(p.store.profile.createdAt).toLocaleDateString(
-                        p.locale === 'ar' ? 'ar-EG' : 'en-US',
+                        p.locale === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US',
                         { month: 'long', year: 'numeric' }
                       )
                     : ''

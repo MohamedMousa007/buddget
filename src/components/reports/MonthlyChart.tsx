@@ -53,7 +53,7 @@ export function MonthlyChart({ data, currency }: MonthlyChartProps) {
                   borderRadius: '12px',
                   color: '#fff',
                 }}
-                formatter={(value) => [`${currency} ${Number(value).toLocaleString()}`, undefined]}
+                formatter={(value) => [`${currency} ${Number(value).toLocaleString('en-US')}`, undefined]}
               />
               <Legend
                 wrapperStyle={{ color: 'var(--color-brand-text-secondary)', fontSize: 12 }}
