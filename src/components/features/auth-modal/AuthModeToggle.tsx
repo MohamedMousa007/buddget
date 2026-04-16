@@ -25,7 +25,7 @@ export function AuthModeToggle({ formMode, onModeChange, onClearError }: AuthMod
         }}
         className={cn(
           'flex-1 py-2 rounded-lg text-sm font-semibold transition-colors',
-          formMode === 'signin' ? 'text-[var(--color-brand-text-primary)]' : 'text-[var(--color-brand-text-muted)]'
+          formMode === 'signin' ? 'text-white' : 'text-[var(--color-brand-text-muted)]'
         )}
         style={formMode === 'signin' ? { background: 'var(--color-brand-red)' } : {}}
       >
@@ -39,7 +39,7 @@ export function AuthModeToggle({ formMode, onModeChange, onClearError }: AuthMod
         }}
         className={cn(
           'flex-1 py-2 rounded-lg text-sm font-semibold transition-colors',
-          formMode === 'signup' ? 'text-[var(--color-brand-text-primary)]' : 'text-[var(--color-brand-text-muted)]'
+          formMode === 'signup' ? 'text-white' : 'text-[var(--color-brand-text-muted)]'
         )}
         style={formMode === 'signup' ? { background: 'var(--color-brand-red)' } : {}}
       >
