@@ -45,7 +45,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   baseCurrency: 'AED',
   secondaryCurrency: null,
   showSecondaryCurrency: false,
-  theme: 'dark',
+  theme: 'light',
   language: 'en',
   showCentsInDashboard: true,
   monthStartDay: 1,
