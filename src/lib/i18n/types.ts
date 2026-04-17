@@ -937,6 +937,8 @@ export interface Dictionary {
     twoFaVerifyTitle: string
     twoFaCodeSent: (email: string) => string
     emailAlreadyRegistered: string
+    emailPendingVerification: string
+    resendCode: string
     emailCheckInFlight: string
     showPassword: string
     hidePassword: string

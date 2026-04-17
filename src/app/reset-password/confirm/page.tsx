@@ -106,14 +106,24 @@ export default function ResetPasswordConfirmPage() {
     } catch (e) {
       console.error('[reset-password] clearBudgetData failed', e)
     }
-    const { error: signOutError } = await supabase.auth.signOut()
+    // Use scope: 'global' — the password may have been reset BECAUSE another
+    // device was compromised. Revoke every active refresh token so the attacker
+    // can't continue their session.
+    const { error: signOutError } = await supabase.auth.signOut({ scope: 'global' })
     setLoading(false)
     if (signOutError) {
       setError(t.resetPassword.errorUpdateFailed)
       return
     }
-    // AuthProvider listens for ?passwordUpdated=1 and opens the sign-in modal.
-    router.replace('/?passwordUpdated=1')
+    // Set an HttpOnly signal cookie so AuthProvider can open the sign-in modal
+    // with a success message. Forgery-resistant vs the old ?passwordUpdated=1
+    // query param (which any visitor could construct).
+    try {
+      await fetch('/api/auth/password-updated', { method: 'POST' })
+    } catch (e) {
+      console.error('[reset-password] password-updated cookie failed', e)
+    }
+    router.replace('/')
     router.refresh()
   }
 

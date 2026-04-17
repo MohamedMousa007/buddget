@@ -109,6 +109,14 @@ export function AuthModal() {
                 switchToSignIn={a.switchToSignIn}
                 emailCheckState={a.emailCheckState}
                 checkEmailOnBlur={a.checkEmailOnBlur}
+                onResendPendingCode={() => {
+                  // Treat as re-verification: pop the user into the verify step
+                  // for this email. Supabase's signup OTP flow already wants
+                  // verifyPurpose='signup'; kick it by setting state + resending.
+                  a.setStep('verify')
+                  a.setOtp('')
+                  void a.resendCode()
+                }}
               />
             )}
           </motion.div>

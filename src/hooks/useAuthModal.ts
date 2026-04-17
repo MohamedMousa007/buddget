@@ -70,10 +70,10 @@ export function useAuthModal() {
    * derives back to 'idle' without needing a setState-in-effect to reset.
    */
   const [emailCheck, setEmailCheck] = useState<{
-    state: 'idle' | 'checking' | 'taken' | 'free'
+    state: 'idle' | 'checking' | 'taken' | 'pending' | 'free'
     email: string
   }>({ state: 'idle', email: '' })
-  const emailCheckState: 'idle' | 'checking' | 'taken' | 'free' =
+  const emailCheckState: 'idle' | 'checking' | 'taken' | 'pending' | 'free' =
     emailCheck.state !== 'idle' &&
     emailCheck.state !== 'checking' &&
     emailCheck.email !== email.trim().toLowerCase()
@@ -113,8 +113,13 @@ export function useAuthModal() {
         setEmailCheck({ state: 'idle', email: '' })
         return
       }
-      const body = (await res.json()) as { exists?: boolean }
-      setEmailCheck({ state: body.exists ? 'taken' : 'free', email: key })
+      const body = (await res.json()) as { exists?: boolean; verified?: boolean }
+      const nextState: 'taken' | 'pending' | 'free' = body.exists
+        ? body.verified
+          ? 'taken'
+          : 'pending'
+        : 'free'
+      setEmailCheck({ state: nextState, email: key })
     } catch {
       setEmailCheck({ state: 'idle', email: '' })
     }
@@ -204,7 +209,7 @@ export function useAuthModal() {
     }
     // If the onBlur check already flagged this email, bail immediately — the
     // inline hint is showing, no need to surface another alert.
-    if (emailCheckState === 'taken') {
+    if (emailCheckState === 'taken' || emailCheckState === 'pending') {
       return
     }
     setLoading(true)
@@ -218,10 +223,13 @@ export function useAuthModal() {
           body: JSON.stringify({ email: email.trim() }),
         })
         if (res.ok) {
-          const body = (await res.json()) as { exists?: boolean }
+          const body = (await res.json()) as { exists?: boolean; verified?: boolean }
           if (body.exists === true) {
             setLoading(false)
-            setEmailCheck({ state: 'taken', email: email.trim().toLowerCase() })
+            setEmailCheck({
+              state: body.verified ? 'taken' : 'pending',
+              email: email.trim().toLowerCase(),
+            })
             return
           }
         }
