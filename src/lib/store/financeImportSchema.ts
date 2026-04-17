@@ -68,6 +68,7 @@ export const importDataSchema = z.object({
       country: z.string().optional(),
       city: z.string().optional(),
       phone: z.string().optional(),
+      gender: z.enum(['male', 'female', 'prefer_not_to_say']).nullable().optional(),
       baseCurrency: currencySchema,
       createdAt: z.string(),
     })

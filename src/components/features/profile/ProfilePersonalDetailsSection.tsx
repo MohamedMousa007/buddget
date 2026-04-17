@@ -74,6 +74,25 @@ export function ProfilePersonalDetailsSection({ store, user }: ProfilePersonalDe
             className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
           />
         </div>
+        <div>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.profile.labelGender}</Label>
+          <select
+            value={store.profile.gender ?? ''}
+            onChange={(e) => {
+              const v = e.target.value
+              store.updateProfile({
+                gender:
+                  v === 'male' || v === 'female' || v === 'prefer_not_to_say' ? v : null,
+              })
+            }}
+            className={inputClass}
+          >
+            <option value="">{t.profile.genderUnset}</option>
+            <option value="male">{t.profile.genderMale}</option>
+            <option value="female">{t.profile.genderFemale}</option>
+            <option value="prefer_not_to_say">{t.profile.genderPreferNot}</option>
+          </select>
+        </div>
       </div>
     </section>
   )

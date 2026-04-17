@@ -62,6 +62,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
 export const DEFAULT_PROFILE: UserProfile = {
   id: 'local',
   name: '',
+  gender: null,
   baseCurrency: 'AED',
   createdAt: new Date().toISOString(),
 }

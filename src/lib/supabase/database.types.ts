@@ -748,6 +748,7 @@ export type Database = {
           display_name: string | null
           email: string | null
           financial_goals_notes: string
+          gender: string | null
           id: string
           name: string
           onboarding_completed: boolean
@@ -770,6 +771,7 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           financial_goals_notes?: string
+          gender?: string | null
           id: string
           name?: string
           onboarding_completed?: boolean
@@ -792,6 +794,7 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           financial_goals_notes?: string
+          gender?: string | null
           id?: string
           name?: string
           onboarding_completed?: boolean

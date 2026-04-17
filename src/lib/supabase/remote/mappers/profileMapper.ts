@@ -26,6 +26,7 @@ export function profileToRow(
     secondary_currency: null,
     avatar_emoji: p.avatarPresetId ?? null,
     avatar_image_path: p.avatar ?? null,
+    gender: p.gender ?? null,
     financial_goals_notes: extras.financialGoalsNotes ?? '',
     active_budget_plan_id: extras.activeBudgetPlanId ?? null,
     active_shared_budget_id: null,
@@ -52,6 +53,7 @@ export function profileFromRow(row: ProfileRow): ProfileFromRowResult {
     baseCurrency: row.base_currency as Currency,
     avatar: row.avatar_image_path ?? undefined,
     avatarPresetId: row.avatar_emoji ?? undefined,
+    gender: (row.gender ?? null) as UserProfile['gender'],
     createdAt: row.created_at,
   }
   const extras: ProfileExtras = {

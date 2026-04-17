@@ -431,6 +431,8 @@ export interface UserProfile {
   country?: string
   city?: string
   phone?: string
+  /** Optional self-selected gender. Null (or missing) when unset. */
+  gender?: 'male' | 'female' | 'prefer_not_to_say' | null
   baseCurrency: Currency
   createdAt: string
 }
