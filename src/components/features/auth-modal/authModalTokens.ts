@@ -19,7 +19,18 @@ export const inputStyle: CSSProperties = {
   borderColor: 'var(--color-brand-border)',
 }
 
-export const inputFocus = 'focus:border-[var(--color-brand-red)] focus:ring-1 focus:ring-[var(--color-brand-red)]'
+/**
+ * Default (neutral) focus ring. Red is reserved for validation errors, green for
+ * successful validation. See `inputFocusError` / `inputFocusValid` below.
+ */
+export const inputFocus =
+  'focus:border-[var(--color-brand-text-secondary)] focus:ring-1 focus:ring-[var(--color-brand-text-secondary)]/30'
+
+export const inputFocusError =
+  'border-[var(--color-brand-red)] focus:border-[var(--color-brand-red)] focus:ring-1 focus:ring-[var(--color-brand-red)]/40'
+
+export const inputFocusValid =
+  'border-[var(--color-brand-green)] focus:border-[var(--color-brand-green)] focus:ring-1 focus:ring-[var(--color-brand-green)]/40'
 
 export const primaryBtn =
   'w-full h-12 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
