@@ -467,6 +467,12 @@ export interface AppSettings {
    * Cleared automatically once the timestamp passes; null when no snooze is active.
    */
   onboardingBannerRemindAt: string | null
+  /**
+   * When true, sign-in on an untrusted device requires an email OTP step even after the password is
+   * correct. Trusted devices (verified via OTP previously) skip the challenge until the HttpOnly
+   * `buddget_device_id` cookie expires or is cleared.
+   */
+  twoFactorEmailEnabled: boolean
 }
 
 /** Draft payment row from onboarding (applied to store on finish). */

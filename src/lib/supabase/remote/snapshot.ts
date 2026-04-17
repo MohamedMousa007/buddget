@@ -75,6 +75,7 @@ export function emptySnapshot(): Snapshot {
       showAllCurrenciesInForms: true,
       dismissOnboardingBanner: false,
       onboardingBannerRemindAt: null,
+      twoFactorEmailEnabled: false,
     },
     onboardingState: {
       flowVersion: 2,

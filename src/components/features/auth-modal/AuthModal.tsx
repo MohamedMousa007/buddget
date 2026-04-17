@@ -75,11 +75,12 @@ export function AuthModal() {
                 onOtpChange={a.setOtp}
                 loading={a.loading}
                 resendCooldown={a.resendCooldown}
+                purpose={a.verifyPurpose}
                 onVerify={() => void a.verifySignupOtp()}
                 onResend={() => void a.resendCode()}
                 onUseDifferentEmail={() => {
                   a.setStep('form')
-                  a.setFormMode('signup')
+                  a.setFormMode(a.verifyPurpose === '2fa' ? 'signin' : 'signup')
                   a.setOtp('')
                   a.setError('')
                 }}

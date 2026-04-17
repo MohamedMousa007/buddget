@@ -17,6 +17,7 @@ export function settingsToRow(s: AppSettings, userId: string): UserSettingsInser
     no_income_declared: s.noIncomeDeclared,
     dismiss_onboarding_banner: s.dismissOnboardingBanner,
     onboarding_banner_remind_at: s.onboardingBannerRemindAt,
+    two_factor_email_enabled: s.twoFactorEmailEnabled,
   }
 }
 
@@ -43,6 +44,7 @@ export function settingsFromRow(row: UserSettingsRow, opts: SettingsFromRowOptio
     noIncomeDeclared: row.no_income_declared,
     dismissOnboardingBanner: row.dismiss_onboarding_banner,
     onboardingBannerRemindAt: row.onboarding_banner_remind_at,
+    twoFactorEmailEnabled: row.two_factor_email_enabled,
     baseCurrency: opts.baseCurrency,
     secondaryCurrency: opts.secondaryCurrency,
   }

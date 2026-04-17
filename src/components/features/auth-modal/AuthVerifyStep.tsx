@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-react'
 import { AuthOtpRow } from '@/components/features/auth-modal/AuthOtpRow'
 import { AuthPrimaryButton } from '@/components/features/auth-modal/AuthPrimaryButton'
 import { useT } from '@/lib/i18n'
+import type { AuthVerifyPurpose } from '@/hooks/useAuthModal'
 
 export interface AuthVerifyStepProps {
   email: string
@@ -11,13 +12,15 @@ export interface AuthVerifyStepProps {
   onOtpChange: (v: string) => void
   loading: boolean
   resendCooldown: number
+  purpose?: AuthVerifyPurpose
   onVerify: () => void
   onResend: () => void
   onUseDifferentEmail: () => void
 }
 
 /**
- * Post-signup email OTP verification.
+ * Shared email-OTP screen. Used for both post-signup email confirmation and
+ * the 2FA challenge when signing in on a new device.
  */
 export function AuthVerifyStep({
   email,
@@ -25,17 +28,21 @@ export function AuthVerifyStep({
   onOtpChange,
   loading,
   resendCooldown,
+  purpose = 'signup',
   onVerify,
   onResend,
   onUseDifferentEmail,
 }: AuthVerifyStepProps) {
   const t = useT()
+  const is2fa = purpose === '2fa'
   return (
     <div className="space-y-5">
       <div className="text-center">
-        <h2 className="text-lg font-semibold text-[var(--color-brand-text-primary)]">{t.auth.verifyTitle}</h2>
+        <h2 className="text-lg font-semibold text-[var(--color-brand-text-primary)]">
+          {is2fa ? t.auth.twoFaVerifyTitle : t.auth.verifyTitle}
+        </h2>
         <p className="text-sm text-[var(--color-brand-text-muted)] mt-1">
-          {t.auth.verifyCodeSent(email)}
+          {is2fa ? t.auth.twoFaCodeSent(email) : t.auth.verifyCodeSent(email)}
         </p>
       </div>
       <AuthOtpRow value={otp} onChange={onOtpChange} disabled={loading} />

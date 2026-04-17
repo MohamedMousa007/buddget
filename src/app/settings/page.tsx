@@ -10,6 +10,7 @@ import { SettingsSignedInAccountCard } from '@/components/features/settings/Sett
 import { SettingsCurrencySection } from '@/components/features/settings/SettingsCurrencySection'
 import { SettingsDataManagementSection } from '@/components/features/settings/SettingsDataManagementSection'
 import { SettingsAppPreferencesSection } from '@/components/features/settings/SettingsAppPreferencesSection'
+import { SettingsSecuritySection } from '@/components/features/settings/SettingsSecuritySection'
 
 export default function SettingsPage() {
   const t = useT()
@@ -36,6 +37,8 @@ export default function SettingsPage() {
         ) : null}
 
         {s.user ? <SettingsSignedInAccountCard user={s.user} onSignOut={s.signOutAndHome} /> : null}
+
+        {s.user ? <SettingsSecuritySection store={store} /> : null}
 
         <SettingsCurrencySection store={store} />
         <SettingsDataManagementSection
