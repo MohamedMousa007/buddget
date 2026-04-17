@@ -7,9 +7,19 @@ import type { AuthChangeEvent, Session } from '@supabase/supabase-js'
 import { SupabaseFinanceSync } from '@/components/sync/SupabaseFinanceSync'
 import { AnalyticsHeartbeat } from '@/components/sync/AnalyticsHeartbeat'
 import { AuthModal } from '@/components/auth/AuthModal'
-import { AuthContext, type AuthContextValue, useAuth } from '@/components/auth/auth-context'
+import { AuthContext, type AuthContextValue, type AuthMode, useAuth } from '@/components/auth/auth-context'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 import { useT } from '@/lib/i18n'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { generateGuestNickname } from '@/lib/guest/nicknameGenerator'
+import {
+  getGuestFlag,
+  setGuestFlag,
+  getGuestNickname,
+  setGuestNickname,
+  setStorageMode,
+} from '@/lib/guest/guestSession'
 
 /**
  * After a successful password reset, `/reset-password/confirm` signs the user out
@@ -73,6 +83,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authModalMessage, setAuthModalMessage] = useState<string | null>(null)
   const [authModalInitialMode, setAuthModalInitialMode] = useState<'signin' | 'signup'>('signin')
+  // Lazy init reads sessionStorage synchronously on client mount — no flash of
+  // landing before a guest session is detected. SSR sees `false` which is fine:
+  // gate logic treats `loading` as the first frame anyway.
+  const [isGuest, setIsGuest] = useState<boolean>(() => getGuestFlag())
+  const [guestNickname, setGuestNicknameState] = useState<string | null>(() =>
+    getGuestNickname(),
+  )
 
   const configured = useMemo(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
@@ -97,6 +114,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthModalMessage(null)
   }, [])
 
+  const startGuest = useCallback(() => {
+    // Order matters: reset in-memory state BEFORE flipping the storage mode so
+    // any leftover localStorage data doesn't bleed into the guest session.
+    try {
+      useFinanceStore.getState().reset()
+      useSettingsStore.getState().reset()
+    } catch (e) {
+      console.error('[auth] guest reset failed', e)
+    }
+    setStorageMode('guest')
+    const nickname = generateGuestNickname()
+    try {
+      useFinanceStore.getState().updateProfile({ name: nickname })
+    } catch (e) {
+      console.error('[auth] guest updateProfile failed', e)
+    }
+    setGuestFlag(true)
+    setGuestNickname(nickname)
+    setGuestNicknameState(nickname)
+    setIsGuest(true)
+  }, [])
+
+  const endGuest = useCallback(async () => {
+    // clearBudgetData is dual-storage and wipes the guest keys too.
+    try {
+      clearBudgetData()
+    } catch (e) {
+      console.error('[auth] endGuest clearBudgetData failed', e)
+    }
+    setStorageMode(null)
+    setIsGuest(false)
+    setGuestNicknameState(null)
+    router.replace('/')
+  }, [router])
+
   useEffect(() => {
     if (!configured) {
       const id = globalThis.setTimeout(() => setLoading(false), 0)
@@ -113,6 +165,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (e) {
           console.error('[auth] clearBudgetData on SIGNED_OUT failed', e)
         }
+        setStorageMode(null)
+        setIsGuest(false)
+        setGuestNicknameState(null)
+      } else if (_event === 'SIGNED_IN' && nextSession?.user) {
+        // A signed-in user supersedes any guest session — flip the storage mode
+        // to localStorage and drop the session-storage markers. SupabaseFinanceSync
+        // handles merging guest data that's still in Zustand memory.
+        setStorageMode('auth')
+        setGuestFlag(false)
+        setGuestNickname(null)
+        setIsGuest(false)
+        setGuestNicknameState(null)
       }
       setSession(nextSession)
       setUser(nextSession?.user ?? null)
@@ -137,6 +201,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       console.error('[auth] clearBudgetData before signOut failed', e)
     }
+    setStorageMode(null)
+    setIsGuest(false)
+    setGuestNicknameState(null)
     const supabase = createClient()
     try {
       await supabase.auth.signOut()
@@ -149,7 +216,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const noopSignOut = useCallback(async () => {}, [])
 
-  const value = useMemo(
+  const mode: AuthMode = !configured
+    ? 'landing'
+    : loading
+      ? 'loading'
+      : user
+        ? 'authenticated'
+        : isGuest
+          ? 'guest'
+          : 'landing'
+
+  const value = useMemo<AuthContextValue>(
     () =>
       configured
         ? {
@@ -163,6 +240,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             authModalInitialMode,
             openAuthModal,
             closeAuthModal,
+            mode,
+            guestNickname,
+            startGuest,
+            endGuest,
           }
         : {
             user: null,
@@ -175,6 +256,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             authModalInitialMode: 'signin' as const,
             openAuthModal,
             closeAuthModal,
+            mode: 'landing',
+            guestNickname: null,
+            startGuest,
+            endGuest,
           },
     [
       configured,
@@ -188,6 +273,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authModalInitialMode,
       openAuthModal,
       closeAuthModal,
+      mode,
+      guestNickname,
+      startGuest,
+      endGuest,
     ]
   )
 
