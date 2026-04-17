@@ -16,6 +16,7 @@ export function settingsToRow(s: AppSettings, userId: string): UserSettingsInser
     show_all_currencies_in_forms: s.showAllCurrenciesInForms,
     no_income_declared: s.noIncomeDeclared,
     dismiss_onboarding_banner: s.dismissOnboardingBanner,
+    onboarding_banner_remind_at: s.onboardingBannerRemindAt,
   }
 }
 
@@ -41,6 +42,7 @@ export function settingsFromRow(row: UserSettingsRow, opts: SettingsFromRowOptio
     showAllCurrenciesInForms: row.show_all_currencies_in_forms,
     noIncomeDeclared: row.no_income_declared,
     dismissOnboardingBanner: row.dismiss_onboarding_banner,
+    onboardingBannerRemindAt: row.onboarding_banner_remind_at,
     baseCurrency: opts.baseCurrency,
     secondaryCurrency: opts.secondaryCurrency,
   }

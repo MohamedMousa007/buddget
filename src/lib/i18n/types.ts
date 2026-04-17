@@ -732,7 +732,6 @@ export interface Dictionary {
     budgetMonthStarts: string
     budgetSave: string
 
-    setupTitle: string
     setupStepIncome: string
     setupStepBudget: string
     setupStepPayment: string
@@ -770,6 +769,19 @@ export interface Dictionary {
     onboardingContinue: string
     onboardingSignInHint: string
     onboardingPctComplete: (pct: number) => string
+    setupTitle: string
+    setupComplete: string
+    deleteAccountTitle: string
+    deleteAccountBody: string
+    deleteAccountButton: string
+    deleteAccountConfirmTitle: string
+    deleteAccountConfirmBody: string
+    deleteAccountConfirmPrompt: string
+    deleteAccountConfirmWord: string
+    deleteAccountConfirmButton: string
+    deleteAccountCancel: string
+    deleteAccountInProgress: string
+    deleteAccountError: string
 
     photoTitle: string
     photoDesc: string
@@ -992,6 +1004,9 @@ export interface Dictionary {
     bannerTagline: string
     bannerDismiss: string
     bannerCta: string
+    bannerRemindLater: string
+    bannerRemindLaterConfirm: string
+    bannerFinishShort: string
 
     continueButton: string
     planLoading: string

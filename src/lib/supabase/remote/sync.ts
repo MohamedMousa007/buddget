@@ -205,11 +205,12 @@ export async function pullCore(client: Client, userId: string): Promise<Snapshot
         showCentsInDashboard: true,
         monthStartDay: 1,
         budgetEntryMode: 'amount' as const,
-        enableAI: false,
+        enableAI: true,
         aiProvider: 'gemini' as const,
         noIncomeDeclared: false,
         showAllCurrenciesInForms: true,
         dismissOnboardingBanner: false,
+        onboardingBannerRemindAt: null,
       }
 
   const onboardingState = onboardingR.data
@@ -296,11 +297,12 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
         showCentsInDashboard: true,
         monthStartDay: 1,
         budgetEntryMode: 'amount' as const,
-        enableAI: false,
+        enableAI: true,
         aiProvider: 'gemini' as const,
         noIncomeDeclared: false,
         showAllCurrenciesInForms: true,
         dismissOnboardingBanner: false,
+        onboardingBannerRemindAt: null,
       }
 
   const onboardingState = onboardingR.data

@@ -50,11 +50,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
   showCentsInDashboard: true,
   monthStartDay: 1,
   budgetEntryMode: 'amount',
-  enableAI: false,
+  enableAI: true,
   aiProvider: 'gemini',
   noIncomeDeclared: false,
   showAllCurrenciesInForms: true,
   dismissOnboardingBanner: false,
+  onboardingBannerRemindAt: null,
 }
 
 export const DEFAULT_PROFILE: UserProfile = {

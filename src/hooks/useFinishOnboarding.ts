@@ -37,7 +37,7 @@ export function useFinishOnboarding({
     setFinishing(true)
     try {
       const base = useFinanceStore.getState().settings.baseCurrency
-      updateSettings({ dismissOnboardingBanner: false })
+      updateSettings({ dismissOnboardingBanner: false, onboardingBannerRemindAt: null })
 
       const drafts = valueForPaymentStep(answers)
       if (drafts.length > 0) {

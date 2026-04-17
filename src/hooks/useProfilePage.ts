@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -8,6 +8,12 @@ import { useLocale, useT } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/client'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
+import {
+  getOnboardingCompletionPercent,
+  isExpertOnboardingComplete,
+  getOnboardingStageRows,
+  onboardingProgressSnapshotFromStore,
+} from '@/lib/onboarding/onboardingProgress'
 
 const INPUT_CLASS =
   'bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] focus:border-[var(--color-brand-red)] rounded-xl px-3 py-2 text-[var(--color-brand-text-primary)] text-sm w-full outline-none transition-colors'
@@ -94,6 +100,62 @@ export function useProfilePage() {
     router.push('/')
   }, [router, signOut])
 
+  const redoOnboarding = useCallback(() => {
+    router.push('/onboarding?redo=1')
+  }, [router])
+
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  const openDeleteDialog = useCallback(() => {
+    setDeleteError(null)
+    setDeleteOpen(true)
+  }, [])
+  const closeDeleteDialog = useCallback(() => {
+    if (deleting) return
+    setDeleteOpen(false)
+    setDeleteError(null)
+  }, [deleting])
+
+  const confirmDelete = useCallback(async () => {
+    setDeleting(true)
+    setDeleteError(null)
+    try {
+      const res = await fetch('/api/account/delete', { method: 'POST' })
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null
+        throw new Error(body?.error || t.profile.deleteAccountError)
+      }
+      // Clear local state, sign out server-side, and land the user on the marketing home.
+      clearBudgetData()
+      try {
+        await signOut()
+      } catch {
+        // ignore sign-out failure — the auth user is already deleted
+      }
+      // Hard navigation so the middleware + Supabase client re-initialise cleanly.
+      if (typeof window !== 'undefined') {
+        window.location.assign('/')
+      } else {
+        router.replace('/')
+      }
+    } catch (e) {
+      setDeleteError(e instanceof Error ? e.message : t.profile.deleteAccountError)
+      setDeleting(false)
+    }
+  }, [router, signOut, t.profile.deleteAccountError])
+
+  const supabaseConfigured = useMemo(
+    () =>
+      !!(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()),
+    []
+  )
+
+  const onboardingPct = getOnboardingCompletionPercent(store, t)
+  const onboardingStages = getOnboardingStageRows(onboardingProgressSnapshotFromStore(store), t)
+  const onboardingDone = isExpertOnboardingComplete(store.onboardingState)
+
   return {
     t,
     locale,
@@ -114,5 +176,16 @@ export function useProfilePage() {
     updateField,
     handlePasswordReset,
     handleSignOut,
+    redoOnboarding,
+    supabaseConfigured,
+    onboardingPct,
+    onboardingStages,
+    onboardingDone,
+    deleteOpen,
+    deleting,
+    deleteError,
+    openDeleteDialog,
+    closeDeleteDialog,
+    confirmDelete,
   }
 }
