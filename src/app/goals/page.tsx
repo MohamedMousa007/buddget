@@ -69,7 +69,7 @@ export default function GoalsPage() {
         </PageHeaderContent>
       </PageHeader>
 
-      <div className="px-4 py-6 lg:px-8 max-w-2xl mx-auto space-y-6">
+      <div className="px-4 py-4 lg:px-6 max-w-2xl mx-auto space-y-4">
         {goals.length === 0 ? (
           <EmptyState
             title={t.goals.emptyState}

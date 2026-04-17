@@ -40,7 +40,7 @@ export default function BudgetSetupPage() {
         </PageHeaderContent>
       </PageHeader>
 
-      <div className="px-4 py-6 lg:px-8 max-w-3xl mx-auto space-y-6">
+      <div className="px-4 py-4 lg:px-6 max-w-3xl mx-auto space-y-4">
         {!p.supabaseConfigured || p.user ?
           <>
             {p.budgetPlans.length > 0 ?

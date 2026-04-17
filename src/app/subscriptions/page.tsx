@@ -68,7 +68,7 @@ export default function SubscriptionsPage() {
         </PageHeaderContent>
       </PageHeader>
 
-      <div className="px-4 py-6 lg:px-8 max-w-2xl mx-auto space-y-6">
+      <div className="px-4 py-4 lg:px-6 max-w-2xl mx-auto space-y-4">
         <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
           <p className="text-xs uppercase tracking-wider text-[var(--color-brand-text-muted)]">
             {t.subscriptions.totalMonthly}
@@ -96,7 +96,7 @@ export default function SubscriptionsPage() {
             }
           />
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)] mb-2">
                 {t.subscriptions.activeSection(active.length)}

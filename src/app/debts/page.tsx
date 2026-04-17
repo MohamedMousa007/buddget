@@ -82,7 +82,7 @@ export default function DebtsPage() {
         </PageHeaderContent>
       </PageHeader>
 
-      <div className="px-4 py-6 lg:px-8 space-y-8 max-w-5xl mx-auto">
+      <div className="px-4 py-4 lg:px-6 space-y-5 max-w-6xl mx-auto">
         {debts.length === 0 ? (
           <EmptyState
             icon={t.debts.emptyIcon}
@@ -101,12 +101,12 @@ export default function DebtsPage() {
         ) : (
           <>
             {activeDebts.length === 0 ? (
-              <div className="glass-card rounded-2xl p-8 text-center space-y-2">
+              <div className="glass-card rounded-2xl p-5 text-center space-y-2">
                 <p className="text-lg font-semibold text-[var(--color-brand-text-primary)]">{t.debts.emptyActiveTitle}</p>
                 <p className="text-sm text-[var(--color-brand-text-muted)]">{t.debts.emptyActiveDesc}</p>
               </div>
             ) : (
-              <div className={`grid gap-6 ${activeDebts.length === 1 ? 'grid-cols-1 max-w-lg mx-auto' : 'grid-cols-1 lg:grid-cols-2'}`}>
+              <div className={`grid gap-4 ${activeDebts.length === 1 ? 'grid-cols-1 max-w-lg mx-auto' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'}`}>
                 {activeDebts.map((debt) => {
                   const payments = debtPayments.filter((p) => p.debtId === debt.id)
                   if (debt.debtType === 'credit_card') {

@@ -48,7 +48,7 @@ export default function ReportsPage() {
         </PageHeaderContent>
       </PageHeader>
 
-      <div className="px-4 py-6 lg:px-8 space-y-6 max-w-5xl mx-auto">
+      <div className="px-4 py-4 lg:px-6 space-y-4 max-w-6xl mx-auto">
         <ReportFilters selected={r.dateRange} onSelect={r.setDateRange} />
 
         <ReportExpenseDebtFilter value={r.expenseDebtFilter} onChange={r.setExpenseDebtFilter} />
@@ -89,7 +89,7 @@ export default function ReportsPage() {
           exchangeRates={r.exchangeRates}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <MonthlyChart data={r.monthlyData} currency={r.settings.baseCurrency} />
           <CategoryPieChart data={r.categoryData} currency={r.settings.baseCurrency} />
         </div>

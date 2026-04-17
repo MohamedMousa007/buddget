@@ -82,17 +82,17 @@ export function KPICard({
       transition={{ duration: 0.2 }}
       onClick={onClick}
       className={cn(
-        'glass-card rounded-2xl p-5 min-w-[180px] hover:shadow-lg hover:shadow-black/20 transition-shadow duration-200',
+        'glass-card rounded-2xl p-3 sm:p-4 hover:shadow-lg hover:shadow-black/20 transition-shadow duration-200',
         onClick ? 'cursor-pointer' : 'cursor-default'
       )}
     >
-      <div className="flex items-center gap-2 mb-3">
-        {icon && <span className="text-lg">{icon}</span>}
-        <p className="text-xs font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
+      <div className="flex items-center gap-1.5 mb-2">
+        {icon && <span className="text-sm">{icon}</span>}
+        <p className="text-[10px] font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
           {title}
         </p>
       </div>
-      <p className={cn('text-2xl font-bold font-mono-numbers', COLOR_MAP[color])}>
+      <p className={cn('text-lg sm:text-xl font-bold font-mono-numbers', COLOR_MAP[color])}>
         <span ref={displayRef} />
       </p>
       {secondaryValue != null && (
