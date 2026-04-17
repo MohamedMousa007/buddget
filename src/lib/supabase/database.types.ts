@@ -1327,6 +1327,10 @@ export type Database = {
         Returns: Json
       }
       backfill_from_user_finance: { Args: { p_user_id: string }; Returns: Json }
+      check_email_exists: {
+        Args: { p_email: string }
+        Returns: boolean
+      }
       cancel_subscription: {
         Args: { p_subscription_id: string }
         Returns: undefined

@@ -95,11 +95,36 @@ export function useAuthModal() {
       setError(t.auth.errorPasswordShort)
       return
     }
+    if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+      setError(t.auth.errorPasswordWeakComposition)
+      return
+    }
     if (password !== confirmPassword) {
       setError(t.auth.errorPasswordMismatch)
       return
     }
+    // Hard-block sign-up when the email is already registered.
     setLoading(true)
+    try {
+      const res = await fetch('/api/auth/check-email', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      })
+      if (res.ok) {
+        const body = (await res.json()) as { exists?: boolean }
+        if (body.exists === true) {
+          setLoading(false)
+          setError(t.auth.errorAccountExists)
+          return
+        }
+      }
+      // If the check fails (rate limit, network, etc.) we fall through — Supabase
+      // will still reject the duplicate on the server side, just with a less
+      // specific message.
+    } catch {
+      // ignore — Supabase remains the source of truth
+    }
     const { data, error: e } = await supabase.auth.signUp({
       email: email.trim(),
       password,
@@ -175,6 +200,26 @@ export function useAuthModal() {
     setError('')
     if (!validateEmailField()) return
     setLoading(true)
+
+    // First: does an account exist for this email? If not, tell the user.
+    try {
+      const res = await fetch('/api/auth/check-email', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      })
+      if (res.ok) {
+        const body = (await res.json()) as { exists?: boolean }
+        if (body.exists === false) {
+          setLoading(false)
+          setError(t.auth.errorNoAccountForEmail)
+          return
+        }
+      }
+    } catch {
+      // fall through and let Supabase handle the send
+    }
+
     const origin =
       typeof window !== 'undefined' ? window.location.origin : APP_CONFIG.url.replace(/\/$/, '')
     const { error: e } = await supabase.auth.resetPasswordForEmail(email.trim(), {

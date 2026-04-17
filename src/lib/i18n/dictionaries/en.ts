@@ -894,8 +894,18 @@ export const en: Dictionary = {
     errorPasswordShort: 'Password needs to be at least 8 characters.',
     errorPasswordMismatch: "Those passwords don\u2019t match. Try again.",
     errorAccountExists: 'Looks like you already have an account. Sign in instead?',
+    errorNoAccountForEmail: "We couldn\u2019t find an account with that email. Check the spelling or create a new account.",
+    errorPasswordWeakComposition: 'Your password needs at least one letter and one number.',
     errorSignUpGeneric: "Something didn\u2019t work. Give it another try.",
     errorOtpIncomplete: 'Enter all 6 digits to continue.',
+    passwordStrengthLabel: 'Password strength',
+    passwordStrengthWeak: 'Weak',
+    passwordStrengthFair: 'Fair',
+    passwordStrengthGood: 'Good',
+    passwordStrengthStrong: 'Strong',
+    passwordRuleLength: (n) => `At least ${n} characters`,
+    passwordRuleLetter: 'At least one letter',
+    passwordRuleNumber: 'At least one number',
   },
 
   resetPassword: {
