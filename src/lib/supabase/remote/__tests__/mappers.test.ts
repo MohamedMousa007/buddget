@@ -129,6 +129,7 @@ describe('settings mapper', () => {
       noIncomeDeclared: false,
       showAllCurrenciesInForms: true,
       dismissOnboardingBanner: false,
+      onboardingBannerRemindAt: null,
     }
     const row = settingsToRow(s, UID)
     const back = settingsFromRow({ ...row, updated_at: '' } as never, {

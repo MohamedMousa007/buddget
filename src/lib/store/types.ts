@@ -462,6 +462,11 @@ export interface AppSettings {
   showAllCurrenciesInForms: boolean
   /** When true, the dashboard onboarding banner stays hidden until reset (e.g. after completing onboarding). */
   dismissOnboardingBanner: boolean
+  /**
+   * ISO timestamp: "Remind me later" snooze on the onboarding banner. Banner is hidden while `now < remindAt`.
+   * Cleared automatically once the timestamp passes; null when no snooze is active.
+   */
+  onboardingBannerRemindAt: string | null
 }
 
 /** Draft payment row from onboarding (applied to store on finish). */

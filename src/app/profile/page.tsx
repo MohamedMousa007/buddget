@@ -1,6 +1,6 @@
 'use client'
 
-import { User, Pencil, LogOut, Lock } from 'lucide-react'
+import { User, Pencil, LogOut, Lock, Trash2 } from 'lucide-react'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { AvatarPickerModal } from '@/components/profile/AvatarPickerModal'
 import { CountrySelect } from '@/components/ui/CountrySelect'
@@ -9,6 +9,8 @@ import { getProfileCountryDisplayLabel } from '@/lib/profile/countryOptions'
 import { SettingsPaymentMethodsSection } from '@/components/features/settings/SettingsPaymentMethodsSection'
 import { ProfileGoalsSummary } from '@/components/features/profile/ProfileGoalsSummary'
 import { ProfileSubscriptionsSummary } from '@/components/features/profile/ProfileSubscriptionsSummary'
+import { ProfileOnboardingSection } from '@/components/features/profile/ProfileOnboardingSection'
+import { DeleteAccountDialog } from '@/components/features/profile/DeleteAccountDialog'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useProfilePage } from '@/hooks/useProfilePage'
@@ -159,6 +161,15 @@ export default function ProfilePage() {
           )}
         </div>
 
+        <ProfileOnboardingSection
+          expertDone={p.onboardingDone}
+          pct={p.onboardingPct}
+          stages={p.onboardingStages}
+          supabaseConfigured={p.supabaseConfigured}
+          user={p.user}
+          onRedoOnboarding={p.redoOnboarding}
+        />
+
         <ProfileGoalsSummary />
 
         <ProfileSubscriptionsSummary />
@@ -210,6 +221,23 @@ export default function ProfilePage() {
                 {t.common.signOut}
               </button>
             </div>
+
+            <div className="mt-6 pt-4 border-t border-[var(--color-brand-border)]">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-brand-red)] mb-1">
+                {t.profile.deleteAccountTitle}
+              </h3>
+              <p className="text-xs text-[var(--color-brand-text-muted)] leading-relaxed mb-3">
+                {t.profile.deleteAccountBody}
+              </p>
+              <button
+                type="button"
+                onClick={p.openDeleteDialog}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                {t.profile.deleteAccountButton}
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -218,6 +246,13 @@ export default function ProfilePage() {
         open={p.avatarModalOpen}
         onClose={() => p.setAvatarModalOpen(false)}
         store={p.store}
+      />
+      <DeleteAccountDialog
+        open={p.deleteOpen}
+        onClose={p.closeDeleteDialog}
+        onConfirm={p.confirmDelete}
+        inProgress={p.deleting}
+        error={p.deleteError}
       />
     </div>
   )

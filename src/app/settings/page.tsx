@@ -8,7 +8,6 @@ import { SettingsImportBanner } from '@/components/features/settings/SettingsImp
 import { SettingsGuestAccountCard } from '@/components/features/settings/SettingsGuestAccountCard'
 import { SettingsSignedInAccountCard } from '@/components/features/settings/SettingsSignedInAccountCard'
 import { SettingsCurrencySection } from '@/components/features/settings/SettingsCurrencySection'
-import { SettingsAiAssistantSection } from '@/components/features/settings/SettingsAiAssistantSection'
 import { SettingsDataManagementSection } from '@/components/features/settings/SettingsDataManagementSection'
 import { SettingsAppPreferencesSection } from '@/components/features/settings/SettingsAppPreferencesSection'
 
@@ -39,7 +38,6 @@ export default function SettingsPage() {
         {s.user ? <SettingsSignedInAccountCard user={s.user} onSignOut={s.signOutAndHome} /> : null}
 
         <SettingsCurrencySection store={store} />
-        <SettingsAiAssistantSection store={store} aiStatus={s.aiStatus} />
         <SettingsDataManagementSection
           store={store}
           fileInputRef={s.fileInputRef}

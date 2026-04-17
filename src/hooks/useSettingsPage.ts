@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { checkAIStatus } from '@/lib/ai/gemini'
 import { useT } from '@/lib/i18n'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 
@@ -30,12 +29,7 @@ export function useSettingsPage() {
   )
 
   const [showResetConfirm, setShowResetConfirm] = useState(false)
-  const [aiStatus, setAiStatus] = useState<{ enabled: boolean; model: string }>({ enabled: false, model: '' })
   const [importBanner, setImportBanner] = useState<SettingsImportBannerState | null>(null)
-
-  useEffect(() => {
-    checkAIStatus().then(setAiStatus)
-  }, [])
 
   useEffect(() => {
     if (user?.email) {
@@ -98,7 +92,6 @@ export function useSettingsPage() {
     fileInputRef,
     showResetConfirm,
     setShowResetConfirm,
-    aiStatus,
     importBanner,
     handleExport,
     handleImport,
