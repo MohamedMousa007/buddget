@@ -404,7 +404,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       {showLoadingSplash ? (
         <AuthLoadingSplash />
       ) : showLandingGate ? (
-        <LandingGate />
+        <Suspense fallback={null}>
+          <LandingGate />
+        </Suspense>
       ) : (
         <>
           {showGuestBanner ? <GuestSaveProgressBanner /> : null}
