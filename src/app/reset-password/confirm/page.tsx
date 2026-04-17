@@ -6,8 +6,26 @@ import { Loader2, Lock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 import { useT } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
+import {
+  inputClass,
+  inputFocus,
+  inputFocusError,
+  inputFocusValid,
+  inputStyle,
+  MIN_PASSWORD_LEN,
+} from '@/components/features/auth-modal/authModalTokens'
+import { PasswordStrengthMeter } from '@/components/features/auth-modal/PasswordStrengthMeter'
+import { PasswordVisibilityToggle } from '@/components/features/auth-modal/PasswordVisibilityToggle'
+import { AuthPrimaryButton } from '@/components/features/auth-modal/AuthPrimaryButton'
 
-const MIN = 8
+type ValidationTone = 'neutral' | 'valid' | 'error'
+
+function toneClass(tone: ValidationTone): string {
+  if (tone === 'error') return inputFocusError
+  if (tone === 'valid') return inputFocusValid
+  return inputFocus
+}
 
 export default function ResetPasswordConfirmPage() {
   const router = useRouter()
@@ -15,6 +33,8 @@ export default function ResetPasswordConfirmPage() {
   const supabase = useMemo(() => createClient(), [])
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
+  const [showNew, setShowNew] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
   const [loading, setLoading] = useState(false)
   const [checking, setChecking] = useState(true)
   const [error, setError] = useState('')
@@ -48,10 +68,26 @@ export default function ResetPasswordConfirmPage() {
     }
   }, [supabase, router])
 
+  // Mirror the auth modal's signup rules so the reset flow enforces the same bar.
+  const passwordPasses =
+    password.length >= MIN_PASSWORD_LEN && /[A-Za-z]/.test(password) && /\d/.test(password)
+  const passwordTone: ValidationTone =
+    password.length > 0 && passwordPasses ? 'valid' : 'neutral'
+  const confirmTone: ValidationTone =
+    confirm.length > 0 && password.length > 0
+      ? confirm === password
+        ? 'valid'
+        : 'error'
+      : 'neutral'
+
   const submit = async () => {
     setError('')
-    if (password.length < MIN) {
-      setError(t.resetPassword.errorMinLength(MIN))
+    if (password.length < MIN_PASSWORD_LEN) {
+      setError(t.resetPassword.errorMinLength(MIN_PASSWORD_LEN))
+      return
+    }
+    if (!passwordPasses) {
+      setError(t.resetPassword.errorWeakPassword)
       return
     }
     if (password !== confirm) {
@@ -76,6 +112,7 @@ export default function ResetPasswordConfirmPage() {
       setError(t.resetPassword.errorUpdateFailed)
       return
     }
+    // AuthProvider listens for ?passwordUpdated=1 and opens the sign-in modal.
     router.replace('/?passwordUpdated=1')
     router.refresh()
   }
@@ -94,45 +131,69 @@ export default function ResetPasswordConfirmPage() {
         className="w-full max-w-md border p-8 rounded-2xl space-y-4"
         style={{ background: 'var(--color-brand-card)', borderColor: 'var(--color-brand-border)' }}
       >
-        <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)] text-center">{t.resetPassword.title}</h1>
-        <p className="text-sm text-[var(--color-brand-text-muted)] text-center">{t.resetPassword.subtitle}</p>
-        <div className="space-y-2">
-          <label className="text-xs text-[var(--color-brand-text-muted)]">{t.resetPassword.labelNew}</label>
+        <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)] text-center">
+          {t.resetPassword.title}
+        </h1>
+        <p className="text-sm text-[var(--color-brand-text-muted)] text-center">
+          {t.resetPassword.subtitle}
+        </p>
+
+        <div>
+          <label className="text-xs text-[var(--color-brand-text-muted)] mb-1 block">
+            {t.resetPassword.labelNew}
+          </label>
           <div className="relative">
             <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
             <input
-              type="password"
+              type={showNew ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={t.resetPassword.placeholderNew}
-              className="w-full h-12 ps-10 pe-3 rounded-[10px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)] outline-none focus:border-[var(--color-brand-red)]"
+              className={cn(inputClass, toneClass(passwordTone), 'ps-10 pe-10')}
+              style={inputStyle}
+            />
+            <PasswordVisibilityToggle
+              visible={showNew}
+              onToggle={() => setShowNew((v) => !v)}
+              label={showNew ? t.auth.hidePassword : t.auth.showPassword}
             />
           </div>
+          <PasswordStrengthMeter password={password} />
         </div>
-        <div className="space-y-2">
-          <label className="text-xs text-[var(--color-brand-text-muted)]">{t.resetPassword.labelConfirm}</label>
+
+        <div>
+          <label className="text-xs text-[var(--color-brand-text-muted)] mb-1 block">
+            {t.resetPassword.labelConfirm}
+          </label>
           <div className="relative">
             <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
             <input
-              type="password"
+              type={showConfirm ? 'text' : 'password'}
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && void submit()}
               placeholder={t.resetPassword.placeholderConfirm}
-              className="w-full h-12 ps-10 pe-3 rounded-[10px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)] outline-none focus:border-[var(--color-brand-red)]"
+              className={cn(inputClass, toneClass(confirmTone), 'ps-10 pe-10')}
+              style={inputStyle}
+              aria-invalid={confirmTone === 'error'}
+            />
+            <PasswordVisibilityToggle
+              visible={showConfirm}
+              onToggle={() => setShowConfirm((v) => !v)}
+              label={showConfirm ? t.auth.hidePassword : t.auth.showPassword}
             />
           </div>
         </div>
+
         {error ? <p className="text-sm text-[var(--color-brand-red)]">{error}</p> : null}
-        <button
-          type="button"
-          onClick={() => void submit()}
-          disabled={loading}
-          className="w-full h-12 rounded-xl font-semibold text-[var(--color-brand-text-primary)] flex items-center justify-center gap-2 disabled:opacity-50"
-          style={{ background: 'var(--color-brand-red)' }}
-        >
-          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : t.resetPassword.buttonSubmit}
-        </button>
+
+        <AuthPrimaryButton disabled={loading} onClick={() => void submit()}>
+          {loading ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            t.resetPassword.buttonSubmit
+          )}
+        </AuthPrimaryButton>
       </div>
     </div>
   )

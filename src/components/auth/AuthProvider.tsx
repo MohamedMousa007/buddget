@@ -9,6 +9,36 @@ import { AnalyticsHeartbeat } from '@/components/sync/AnalyticsHeartbeat'
 import { AuthModal } from '@/components/auth/AuthModal'
 import { AuthContext, type AuthContextValue, useAuth } from '@/components/auth/auth-context'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
+import { useT } from '@/lib/i18n'
+
+/**
+ * After a successful password reset, `/reset-password/confirm` signs the user out
+ * and redirects to `/?passwordUpdated=1`. We watch for that flag here (rather than
+ * inside AppShell, which won't mount for unauthenticated users) and open the
+ * sign-in modal with a success message so the user can log in with their new
+ * password. Strips the query param so a refresh doesn't re-trigger.
+ */
+function PasswordUpdatedQuerySync() {
+  const searchParams = useSearchParams()
+  const pathname = usePathname()
+  const router = useRouter()
+  const { openAuthModal } = useAuth()
+  const t = useT()
+  const handled = useRef(false)
+
+  useEffect(() => {
+    if (handled.current) return
+    if (searchParams.get('passwordUpdated') !== '1') return
+    handled.current = true
+    openAuthModal('/', t.resetPassword.successSignInPrompt, 'signin')
+    const qs = new URLSearchParams(searchParams.toString())
+    qs.delete('passwordUpdated')
+    const q = qs.toString()
+    router.replace(q ? `${pathname}?${q}` : pathname)
+  }, [searchParams, pathname, router, openAuthModal, t.resetPassword.successSignInPrompt])
+
+  return null
+}
 
 /** Opens the auth modal when `?next=` is present (e.g. middleware redirect from /admin). */
 function AuthNextQuerySync({ configured }: { configured: boolean }) {
@@ -168,6 +198,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider value={value}>
       <Suspense fallback={null}>
         <AuthNextQuerySync configured={configured} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <PasswordUpdatedQuerySync />
       </Suspense>
       {children}
       {configured && !loading && user ? (

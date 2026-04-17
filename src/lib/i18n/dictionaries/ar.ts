@@ -929,6 +929,7 @@ export const ar: Dictionary = {
     errorMinLength: (min) => `كلمة المرور يجب أن تكون ${min} أحرف على الأقل.`,
     errorMismatch: 'كلمتا المرور غير متطابقتين. حاول مرة أخرى.',
     errorUpdateFailed: 'عذراً، حدث خطأ ما. هيا نحاول مرة أخرى.',
+    errorWeakPassword: 'استخدم حرفاً واحداً على الأقل ورقماً واحداً.',
     buttonSubmit: 'تحديث كلمة المرور',
     successSignInPrompt: 'تم تحديث كلمة المرور. سجّل الدخول بكلمة المرور الجديدة للمتابعة.',
   },

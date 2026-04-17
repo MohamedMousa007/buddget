@@ -7,7 +7,6 @@ import { ModalProvider } from '@/components/modals/ModalProvider'
 import { OnboardingBanner } from '@/components/layout/OnboardingBanner'
 import { DesktopHeaderBar } from '@/components/layout/DesktopHeaderBar'
 import { InstallButton } from '@/components/pwa/InstallButton'
-import { PasswordUpdatedBanner } from '@/components/auth/PasswordUpdatedBanner'
 import { useThemeSync } from '@/hooks/useThemeSync'
 import { useRates } from '@/hooks/useRates'
 import { useGoldPrice } from '@/hooks/useGoldPrice'
@@ -50,7 +49,6 @@ export function AppShell({ children }: AppShellProps) {
       <Sidebar />
       <DesktopHeaderBar />
       <main className="pt-[calc(3.5rem+env(safe-area-inset-top,0px))] lg:pt-14 lg:ms-[200px] pb-20 lg:pb-0 min-h-screen">
-        <PasswordUpdatedBanner />
         <OnboardingBanner />
         {children}
       </main>
