@@ -62,14 +62,14 @@ export function PasswordStrengthMeter({ password }: PasswordStrengthMeterProps) 
   ]
 
   return (
-    <div className="mt-2 space-y-2">
+    <div className="mt-1.5 space-y-1.5">
       <div className="flex items-center gap-2">
         <div className="flex-1 flex gap-1" aria-hidden>
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
               className={
-                'h-1 flex-1 rounded-full transition-colors ' +
+                'h-0.5 flex-1 rounded-full transition-colors ' +
                 (i <= score ? colors[score] : 'bg-[var(--color-brand-border)]')
               }
             />

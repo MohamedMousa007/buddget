@@ -104,9 +104,9 @@ export function AuthCredentialFields({
       : 'neutral'
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2.5">
       <div>
-        <label className="text-xs text-[var(--color-brand-text-muted)] mb-1 block">{t.auth.labelEmail}</label>
+        <label className="text-[11px] text-[var(--color-brand-text-muted)] mb-1 block">{t.auth.labelEmail}</label>
         <div className="relative">
           <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
           <input
@@ -125,7 +125,7 @@ export function AuthCredentialFields({
           />
         </div>
         {isSignup && emailCheckState === 'checking' ? (
-          <p className="mt-1.5 text-[11px] text-[var(--color-brand-text-muted)] flex items-center gap-1.5">
+          <p className="mt-1 text-[11px] text-[var(--color-brand-text-muted)] flex items-center gap-1.5">
             <Loader2 className="w-3 h-3 animate-spin" aria-hidden />
             {t.auth.emailCheckInFlight}
           </p>
@@ -133,7 +133,7 @@ export function AuthCredentialFields({
         {isSignup && emailCheckState === 'taken' ? (
           <p
             id="signup-email-taken"
-            className="mt-1.5 text-[12px] text-[var(--color-brand-red)] flex items-start gap-1.5"
+            className="mt-1 text-[11px] text-[var(--color-brand-red)] flex items-start gap-1.5"
             role="alert"
           >
             <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden />
@@ -157,7 +157,7 @@ export function AuthCredentialFields({
         {!isSignup && signinEmailCheckState === 'missing' ? (
           <p
             id="signin-no-account"
-            className="mt-1.5 text-[12px] text-[var(--color-brand-amber)] flex items-start gap-1.5"
+            className="mt-1 text-[11px] text-[var(--color-brand-amber)] flex items-start gap-1.5"
             role="alert"
           >
             <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden />
@@ -181,7 +181,7 @@ export function AuthCredentialFields({
         {isSignup && emailCheckState === 'pending' ? (
           <p
             id="signup-email-pending"
-            className="mt-1.5 text-[12px] text-[var(--color-brand-amber)] flex items-start gap-1.5"
+            className="mt-1 text-[11px] text-[var(--color-brand-amber)] flex items-start gap-1.5"
             role="alert"
           >
             <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden />
@@ -204,7 +204,7 @@ export function AuthCredentialFields({
         ) : null}
       </div>
       <div>
-        <label className="text-xs text-[var(--color-brand-text-muted)] mb-1 block">{t.auth.labelPassword}</label>
+        <label className="text-[11px] text-[var(--color-brand-text-muted)] mb-1 block">{t.auth.labelPassword}</label>
         <div className="relative">
           <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
           <input
@@ -234,7 +234,7 @@ export function AuthCredentialFields({
       </div>
       {isSignup ? (
         <div>
-          <label className="text-xs text-[var(--color-brand-text-muted)] mb-1 block">{t.auth.labelConfirm}</label>
+          <label className="text-[11px] text-[var(--color-brand-text-muted)] mb-1 block">{t.auth.labelConfirm}</label>
           <div className="relative">
             <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
             <input
