@@ -31,6 +31,8 @@ export interface AuthSignInUpStepProps {
   emailCheckState: 'idle' | 'checking' | 'taken' | 'pending' | 'free'
   checkEmailOnBlur: () => void
   onResendPendingCode: () => void
+  rememberMe: boolean
+  setRememberMe: (v: boolean) => void
 }
 
 /**
@@ -57,6 +59,8 @@ export function AuthSignInUpStep({
   emailCheckState,
   checkEmailOnBlur,
   onResendPendingCode,
+  rememberMe,
+  setRememberMe,
 }: AuthSignInUpStepProps) {
   const t = useT()
   const { pendingNext } = useAuth()
@@ -102,6 +106,18 @@ export function AuthSignInUpStep({
         }}
         onResendPendingCode={onResendPendingCode}
       />
+
+      {formMode === 'signin' ? (
+        <label className="flex items-center gap-2 text-sm text-[var(--color-brand-text-secondary)] cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+            className="w-4 h-4 rounded border-[var(--color-brand-border)] accent-[var(--color-brand-red)]"
+          />
+          <span>{t.auth.rememberMe}</span>
+        </label>
+      ) : null}
 
       <AuthFormErrorAlert
         error={error}

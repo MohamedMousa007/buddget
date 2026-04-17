@@ -12,6 +12,7 @@ import { MIN_PASSWORD_LEN } from '@/components/features/auth-modal/authModalToke
 import { getGuestFlag } from '@/lib/guest/guestSession'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { isPlanStageComplete } from '@/lib/onboarding/onboardingStages'
+import { markSessionEphemeral } from '@/hooks/useEphemeralSessionGuard'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/database.types'
 
@@ -65,6 +66,10 @@ export function useAuthModal() {
   const [forgotSuccess, setForgotSuccess] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
   const [verifyPurpose, setVerifyPurpose] = useState<AuthVerifyPurpose>('signup')
+  // Defaults to true — match the standard consumer-app expectation that users
+  // stay signed in across browser restarts. When unchecked on sign-in we set
+  // an ephemeral flag; `useEphemeralSessionGuard` will signOut on tab close.
+  const [rememberMe, setRememberMe] = useState(true)
   /**
    * Result of the "is this email already registered?" lookup triggered on email
    * blur during sign-up. Drives the inline hint under the email field.
@@ -184,6 +189,8 @@ export function useAuthModal() {
       setError(mapAuthError(e, 'signin', t))
       return
     }
+    // Flag the session as ephemeral so the pagehide guard signs out on tab close.
+    markSessionEphemeral(!rememberMe)
 
     // Password is correct. If the user has email 2FA on and this browser isn't
     // a trusted device, we sign them back out and force an email OTP challenge.
@@ -221,7 +228,7 @@ export function useAuthModal() {
     const { data: userData } = await supabase.auth.getUser()
     router.refresh()
     router.replace(routeAfterAuth(userData.user, safeNext))
-  }, [email, password, promoteGuestIfNeeded, router, safeNext, startResendCooldown, supabase, t, validateEmailField])
+  }, [email, password, promoteGuestIfNeeded, rememberMe, router, safeNext, startResendCooldown, supabase, t, validateEmailField])
 
   const signUp = useCallback(async () => {
     setError('')
@@ -441,6 +448,8 @@ export function useAuthModal() {
     verifyPurpose,
     emailCheckState,
     checkEmailOnBlur,
+    rememberMe,
+    setRememberMe,
     // Animate only between auth steps (form ↔ verify ↔ forgot). The sign-in/sign-up
     // toggle is handled inside the form via conditional rendering, so including
     // formMode here would remount the whole form on every tab click.
