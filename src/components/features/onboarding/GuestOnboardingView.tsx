@@ -7,7 +7,7 @@ import { OnboardingStepForm, type StepContinuePayload } from '@/components/onboa
 import { useAuth } from '@/components/auth/auth-context'
 import { useT, useLocale } from '@/lib/i18n'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { getGuestNickname } from '@/lib/guest/guestSession'
+import { getGuestNext, getGuestNickname, setGuestNext } from '@/lib/guest/guestSession'
 import { getGuestSurveyConfig } from '@/lib/onboarding/guestSurveyConfig'
 import {
   applyLocaleFromProfile,
@@ -96,7 +96,10 @@ export function GuestOnboardingView() {
       flowVersion: ONBOARDING_FLOW_VERSION,
       planAccepted: true,
     })
-    router.replace('/')
+    // Route to the deep-link the guest was originally trying to reach, if any.
+    const next = getGuestNext()
+    setGuestNext(null)
+    router.replace(next || '/')
   }, [onboardingState, router, setOnboardingState])
 
   const handleContinue = useCallback(

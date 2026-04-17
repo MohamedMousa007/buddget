@@ -116,7 +116,7 @@ export function LandingGate() {
           <div className="space-y-1.5 text-center">
             <button
               type="button"
-              onClick={() => startGuest()}
+              onClick={() => startGuest(nextPath)}
               className="w-full h-11 rounded-xl font-medium text-sm transition-colors text-[var(--color-brand-text-primary)] bg-[var(--color-brand-elevated)] hover:bg-[var(--color-brand-border)]"
             >
               {t.landing.ctaGuest}
