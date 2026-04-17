@@ -7,7 +7,29 @@ import { OnboardingStepForm, type StepContinuePayload } from '@/components/onboa
 import { useAuth } from '@/components/auth/auth-context'
 import { useT, useLocale } from '@/lib/i18n'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { getGuestNext, getGuestNickname, setGuestNext } from '@/lib/guest/guestSession'
+/**
+ * With anonymous auth the guest nickname + deep-link target live in
+ * localStorage (not sessionStorage) because the session itself is Supabase-
+ * owned and persists across tabs.
+ */
+function readGuestNickname(): string | null {
+  if (typeof window === 'undefined') return null
+  try {
+    return window.localStorage.getItem('buddget_guest_nickname')
+  } catch {
+    return null
+  }
+}
+function readAndClearGuestNext(): string | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const v = window.localStorage.getItem('buddget_guest_next')
+    window.localStorage.removeItem('buddget_guest_next')
+    return v && v.startsWith('/') && !v.startsWith('//') ? v : null
+  } catch {
+    return null
+  }
+}
 import { getGuestSurveyConfig } from '@/lib/onboarding/guestSurveyConfig'
 import {
   applyLocaleFromProfile,
@@ -39,7 +61,7 @@ export function GuestOnboardingView() {
   const onboardingState = useFinanceStore((s) => s.onboardingState)
 
   const config = useMemo(
-    () => getGuestSurveyConfig(t, profile.name || getGuestNickname() || 'Friend'),
+    () => getGuestSurveyConfig(t, profile.name || readGuestNickname() || 'Friend'),
     [t, profile.name],
   )
   const steps = config.steps
@@ -97,8 +119,7 @@ export function GuestOnboardingView() {
       planAccepted: true,
     })
     // Route to the deep-link the guest was originally trying to reach, if any.
-    const next = getGuestNext()
-    setGuestNext(null)
+    const next = readAndClearGuestNext()
     router.replace(next || '/')
   }, [onboardingState, router, setOnboardingState])
 

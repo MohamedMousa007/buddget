@@ -42,7 +42,7 @@ import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { SAVINGS_TYPE_ICONS } from '@/lib/constants/savingsIcons'
 import { normalizeSavingsAccountsList } from '@/lib/savings/normalizeSavingsAccount'
 import { defaultCategoryForSavingsType } from '@/lib/constants/savingsTypes'
-import { createModeAwareStorage } from '@/lib/store/safeLocalStorage'
+import { createSafeLocalStorage } from '@/lib/store/safeLocalStorage'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { buildGoalProgressContext } from '@/lib/goals/computeGoalProgress'
 import { reconcileAchievedGoals } from '@/lib/goals/reconcileAchievedGoals'
@@ -1487,9 +1487,9 @@ export const useFinanceStore = create<FinanceStore>()(
           lastRatesFetch: null,
         } as never
       },
-      // Dispatches to localStorage for authed users and sessionStorage for guests,
-      // so guest state evaporates on tab close. See `createModeAwareStorage` docs.
-      storage: createJSONStorage(() => createModeAwareStorage()),
+      // All users (anon + real) persist to localStorage — guest sessions now
+      // live in Supabase so cross-tab consistency is handled server-side.
+      storage: createJSONStorage(() => createSafeLocalStorage()),
       merge: (persisted, current) => {
         const p = persisted as Partial<typeof current>
         return {

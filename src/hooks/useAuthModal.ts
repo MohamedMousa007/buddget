@@ -9,7 +9,6 @@ import { useT } from '@/lib/i18n'
 import { APP_CONFIG } from '@/lib/config'
 import { routeAfterAuth } from '@/lib/auth/postAuthRedirect'
 import { MIN_PASSWORD_LEN } from '@/components/features/auth-modal/authModalTokens'
-import { getGuestFlag } from '@/lib/guest/guestSession'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { isPlanStageComplete } from '@/lib/onboarding/onboardingStages'
 import { markSessionEphemeral } from '@/hooks/useEphemeralSessionGuard'
@@ -116,9 +115,13 @@ export function useAuthModal() {
    */
   const promoteGuestIfNeeded = useCallback(
     async (client: SupabaseClient<Database>) => {
-      const wasGuest =
-        getGuestFlag() && isPlanStageComplete(useFinanceStore.getState().onboardingState)
-      if (!wasGuest) return
+      // Post-promotion: if the user has just finished the 6-step guest
+      // onboarding, flip their onboarding_completed metadata so middleware
+      // doesn't force them through the 27-step expert flow. We check
+      // `isPlanStageComplete` as the signal that the guest completed their
+      // flow — if they jumped straight to signup without finishing it, they
+      // still go through expert onboarding (haven't earned the skip).
+      if (!isPlanStageComplete(useFinanceStore.getState().onboardingState)) return
       try {
         const res = await fetch('/api/auth/complete-guest-onboarding', { method: 'POST' })
         if (!res.ok) return
@@ -290,6 +293,30 @@ export function useAuthModal() {
         // ignore — Supabase remains the source of truth
       }
     }
+    // If the current session is anonymous, promote it in-place via
+    // `updateUser({ email, password })`. Same user_id, all RLS-scoped data
+    // preserved. Supabase sends an OTP to the email; verifySignupOtp below
+    // handles the `type: 'email_change'` path.
+    const { data: currentUserData } = await supabase.auth.getUser()
+    const isAnonPromotion = currentUserData.user?.is_anonymous === true
+
+    if (isAnonPromotion) {
+      const { error: updateErr } = await supabase.auth.updateUser({
+        email: email.trim(),
+        password,
+      })
+      setLoading(false)
+      if (updateErr) {
+        setError(mapAuthError(updateErr, 'signup', t))
+        return
+      }
+      setVerifyPurpose('signup')
+      setStep('verify')
+      setOtp('')
+      startResendCooldown()
+      return
+    }
+
     const { data, error: e } = await supabase.auth.signUp({
       email: email.trim(),
       password,
@@ -334,8 +361,18 @@ export function useAuthModal() {
       return
     }
     setLoading(true)
-    // Supabase expects different `type` values for the two OTP flows.
-    const otpType = verifyPurpose === 'signup' ? 'signup' : 'email'
+    // Dispatch by purpose:
+    //   - 'signup' when a brand-new user was created via supabase.auth.signUp
+    //   - 'email_change' when an anonymous user set their email via updateUser
+    //   - '2fa' (email) when challenging an existing account on a new device
+    const { data: currentUserData } = await supabase.auth.getUser()
+    const isAnonPromotion =
+      verifyPurpose === 'signup' && currentUserData.user?.is_anonymous === true
+    const otpType: 'signup' | 'email' | 'email_change' = isAnonPromotion
+      ? 'email_change'
+      : verifyPurpose === 'signup'
+        ? 'signup'
+        : 'email'
     const { error: e } = await supabase.auth.verifyOtp({
       email: email.trim(),
       token,
@@ -365,10 +402,16 @@ export function useAuthModal() {
     if (resendCooldown > 0) return
     setError('')
     setLoading(true)
-    // Signup flow uses `resend` with type='signup'; the 2FA challenge reissues via
-    // `signInWithOtp` (Supabase doesn't expose a 'resend' variant for sign-in OTP).
-    const { error: e } =
-      verifyPurpose === 'signup'
+    // Three reissue paths depending on what the pending OTP is for:
+    //   - Anonymous promotion (email_change): re-call updateUser to re-send.
+    //   - Brand-new signup: supabase.auth.resend with type='signup'.
+    //   - 2FA challenge: reuse signInWithOtp (no native resend for sign-in OTP).
+    const { data: currentUserData } = await supabase.auth.getUser()
+    const isAnonPromotion =
+      verifyPurpose === 'signup' && currentUserData.user?.is_anonymous === true
+    const { error: e } = isAnonPromotion
+      ? await supabase.auth.updateUser({ email: email.trim() })
+      : verifyPurpose === 'signup'
         ? await supabase.auth.resend({ type: 'signup', email: email.trim() })
         : await supabase.auth.signInWithOtp({
             email: email.trim(),

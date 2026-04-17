@@ -1,15 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { Sparkles } from 'lucide-react'
 import { useAuth } from '@/components/auth/auth-context'
 import { LanguageToggle } from '@/components/ui/LanguageToggle'
 import { useT } from '@/lib/i18n'
-import { getGuestFlag } from '@/lib/guest/guestSession'
-import { onGuestMessage } from '@/lib/guest/guestBroadcast'
-import { isPlanStageComplete } from '@/lib/onboarding/onboardingStages'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
 
 /**
  * Pre-auth landing screen. Replaces the dashboard for unauthenticated users
@@ -24,9 +20,7 @@ export function LandingGate() {
   const t = useT()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const router = useRouter()
   const { openAuthModal, startGuest } = useAuth()
-  const onboardingState = useFinanceStore((s) => s.onboardingState)
   // Detect PWA standalone mode so we can nudge users away from guest when they
   // installed the app — closing a PWA window wipes sessionStorage same as a tab.
   // Lazy init reads the match synchronously; the listener handles orientation /
@@ -43,27 +37,9 @@ export function LandingGate() {
     return () => mql.removeEventListener('change', handler)
   }, [])
 
-  // If the browser already has a guest session (user hit Back from guest
-  // onboarding, or we reached this component before AuthProvider's redirect
-  // fired), route them back into their flow instead of showing a fresh landing.
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    if (!getGuestFlag()) return
-    const onboardingDone = isPlanStageComplete(onboardingState)
-    router.replace(onboardingDone ? '/' : '/guest-onboarding')
-  }, [onboardingState, router])
-
-  // Listen for "another tab started a guest session" broadcasts. Since
-  // sessionStorage is per-tab we don't get the flag here, but we can show a
-  // gentle hint that another window already has one going. Re-broadcasts are
-  // debounced by the message kind — just the latest wins.
-  const [siblingGuestNickname, setSiblingGuestNickname] = useState<string | null>(null)
-  useEffect(() => {
-    return onGuestMessage((msg) => {
-      if (msg.kind === 'guest-started') setSiblingGuestNickname(msg.nickname)
-      else if (msg.kind === 'guest-ended') setSiblingGuestNickname(null)
-    })
-  }, [])
+  // (Sibling-tab hint + guest-reentry redirect are no longer needed — guest
+  // sessions live in Supabase now, so they persist automatically across tabs
+  // and AuthProvider's mode derivation + middleware handle redirects.)
 
   // Preserve the full deep-link destination for sign-in / sign-up so bookmarked
   // routes and referral query params (?ref=…) survive the auth round-trip.
@@ -142,17 +118,9 @@ export function LandingGate() {
           </div>
 
           <div className="space-y-1.5 text-center">
-            {siblingGuestNickname ? (
-              <p
-                role="status"
-                className="text-[11px] text-[var(--color-brand-amber)] leading-relaxed"
-              >
-                {t.landing.siblingTabGuestActive(siblingGuestNickname)}
-              </p>
-            ) : null}
             <button
               type="button"
-              onClick={() => startGuest(nextPath)}
+              onClick={() => void startGuest(nextPath)}
               className="w-full h-11 rounded-xl font-medium text-sm transition-colors text-[var(--color-brand-text-primary)] bg-[var(--color-brand-elevated)] hover:bg-[var(--color-brand-border)]"
             >
               {t.landing.ctaGuest}
