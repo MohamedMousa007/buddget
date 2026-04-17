@@ -947,6 +947,7 @@ export interface Dictionary {
     orContinueWithEmail: string
     oauthUnavailable: string
     sessionExpired: string
+    rememberMe: string
     emailCheckInFlight: string
     showPassword: string
     hidePassword: string

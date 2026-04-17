@@ -109,6 +109,8 @@ export function AuthModal() {
                 switchToSignIn={a.switchToSignIn}
                 emailCheckState={a.emailCheckState}
                 checkEmailOnBlur={a.checkEmailOnBlur}
+                rememberMe={a.rememberMe}
+                setRememberMe={a.setRememberMe}
                 onResendPendingCode={() => {
                   // Treat as re-verification: pop the user into the verify step
                   // for this email. Supabase's signup OTP flow already wants

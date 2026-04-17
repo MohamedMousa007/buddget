@@ -952,6 +952,7 @@ export const ar: Dictionary = {
     orContinueWithEmail: 'أو تابع بالبريد الإلكتروني',
     oauthUnavailable: 'لم نتمكن من الوصول للموفّر. حاول مرة أخرى أو استخدم البريد الإلكتروني.',
     sessionExpired: 'انتهت جلستك. سجّل دخولك مرة أخرى للمتابعة.',
+    rememberMe: 'أبقني مسجّلاً',
     emailCheckInFlight: 'جارٍ التحقق…',
     showPassword: 'إظهار كلمة المرور',
     hidePassword: 'إخفاء كلمة المرور',

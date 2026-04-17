@@ -26,6 +26,7 @@ import { isPlanStageComplete } from '@/lib/onboarding/onboardingStages'
 import { LandingGate } from '@/components/auth/LandingGate'
 import { GuestSaveProgressBanner } from '@/components/auth/GuestSaveProgressBanner'
 import { useGuestBeforeUnloadWarning } from '@/hooks/useGuestBeforeUnloadWarning'
+import { useEphemeralSessionGuard } from '@/hooks/useEphemeralSessionGuard'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { snapshot } from '@/lib/supabase/remote/snapshot'
 import { hasMeaningfulLocalState } from '@/lib/supabase/remote/merge'
@@ -382,6 +383,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Warn guests before tab close / reload regardless of whether they finished
   // onboarding — losing 4 steps of typing is as painful as losing 3 expenses.
   useGuestBeforeUnloadWarning(mode === 'guest')
+  // For users who signed in without ticking "Remember me": sign them out on
+  // tab close so they hit the landing gate again next session.
+  useEphemeralSessionGuard(mode === 'authenticated')
 
   const showLandingGate = mode === 'landing' && !isBypassRoute
   const showLoadingSplash = mode === 'loading' && !isBypassRoute

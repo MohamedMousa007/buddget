@@ -953,6 +953,7 @@ export const en: Dictionary = {
     orContinueWithEmail: 'or continue with email',
     oauthUnavailable: "Couldn\u2019t reach that provider. Try again or use email.",
     sessionExpired: 'Your session expired. Sign in again to continue where you left off.',
+    rememberMe: 'Keep me signed in',
     emailCheckInFlight: 'Checking availability\u2026',
     showPassword: 'Show password',
     hidePassword: 'Hide password',
