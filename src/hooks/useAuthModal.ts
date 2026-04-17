@@ -24,7 +24,13 @@ export type AuthVerifyPurpose = 'signup' | '2fa'
 export function useAuthModal() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { pendingNext, setPendingNext, closeAuthModal, authModalMessage } = useAuth()
+  const {
+    pendingNext,
+    setPendingNext,
+    closeAuthModal,
+    authModalMessage,
+    authModalInitialMode,
+  } = useAuth()
   const t = useT()
   const supabase = useMemo(() => createClient(), [])
 
@@ -40,7 +46,10 @@ export function useAuthModal() {
     return n.startsWith('/') && !n.startsWith('//') ? n : '/'
   }, [pendingNext, nextFromUrl])
 
-  const [formMode, setFormMode] = useState<AuthFormMode>('signin')
+  // Seeded on first mount from the caller-provided initial mode (e.g. the top-bar
+  // "Sign up" button passes 'signup'). The modal re-mounts on every open, so this
+  // picks up the latest `authModalInitialMode` without needing a sync effect.
+  const [formMode, setFormMode] = useState<AuthFormMode>(authModalInitialMode)
   const [step, setStep] = useState<AuthStep>('form')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
