@@ -5,6 +5,8 @@ import { AuthModeToggle } from '@/components/features/auth-modal/AuthModeToggle'
 import { AuthCredentialFields } from '@/components/features/auth-modal/AuthCredentialFields'
 import { AuthFormErrorAlert } from '@/components/features/auth-modal/AuthFormErrorAlert'
 import { AuthPrimaryButton } from '@/components/features/auth-modal/AuthPrimaryButton'
+import { AuthOAuthButtons } from '@/components/features/auth-modal/AuthOAuthButtons'
+import { useAuth } from '@/components/auth/auth-context'
 import { useT } from '@/lib/i18n'
 import type { AuthFormMode } from '@/hooks/useAuthModal'
 
@@ -57,6 +59,7 @@ export function AuthSignInUpStep({
   onResendPendingCode,
 }: AuthSignInUpStepProps) {
   const t = useT()
+  const { pendingNext } = useAuth()
   const submit = () => void (formMode === 'signin' ? signIn() : signUp())
 
   return (
@@ -66,6 +69,16 @@ export function AuthSignInUpStep({
         onModeChange={setFormMode}
         onClearError={() => setError('')}
       />
+
+      <AuthOAuthButtons nextPath={pendingNext || '/'} />
+
+      <div className="relative flex items-center gap-3">
+        <span className="flex-1 h-px bg-[var(--color-brand-border)]" />
+        <span className="text-[10px] uppercase tracking-wider text-[var(--color-brand-text-muted)]">
+          {t.auth.orContinueWithEmail}
+        </span>
+        <span className="flex-1 h-px bg-[var(--color-brand-border)]" />
+      </div>
 
       <AuthCredentialFields
         formMode={formMode}
