@@ -6,9 +6,9 @@ export const PAGE_HEADER_SURFACE_BASE =
 
 /**
  * Sticky app bar inside main + sidebar layout.
- * `top-14` (56px) clears the fixed app header (DesktopHeaderBar h-14).
+ * `top-12` (48px) clears the fixed app header (DesktopHeaderBar h-12).
  */
-export const PAGE_HEADER_SURFACE_CLASS = `sticky top-14 z-30 ${PAGE_HEADER_SURFACE_BASE}`
+export const PAGE_HEADER_SURFACE_CLASS = `sticky top-12 z-30 ${PAGE_HEADER_SURFACE_BASE}`
 
 /** Full-width routes without DesktopHeaderBar (onboarding, reset-password, etc.). */
 export const PAGE_HEADER_BARE_CLASS = `sticky top-0 z-30 ${PAGE_HEADER_SURFACE_BASE}`
@@ -25,5 +25,5 @@ export function PageHeaderContent({
   children: React.ReactNode
   className?: string
 }) {
-  return <div className={cn('px-4 py-3 lg:px-8', className)}>{children}</div>
+  return <div className={cn('px-4 py-2.5 lg:px-6', className)}>{children}</div>
 }
