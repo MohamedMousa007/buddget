@@ -32,7 +32,8 @@ export type AuthContextValue = {
    * is the path the user was trying to reach before hitting the landing gate;
    * we route them there once guest onboarding completes.
    */
-  startGuest: (nextAfterOnboarding?: string) => void
+  startGuest: (nextAfterOnboarding?: string) => Promise<void>
+
   /** Exit guest mode back to the landing page. Wipes sessionStorage state. */
   endGuest: () => Promise<void>
 }

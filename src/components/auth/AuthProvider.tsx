@@ -13,23 +13,11 @@ import { useT } from '@/lib/i18n'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { generateGuestNickname } from '@/lib/guest/nicknameGenerator'
-import {
-  getGuestFlag,
-  setGuestFlag,
-  getGuestNickname,
-  setGuestNickname,
-  setGuestNext,
-  setStorageMode,
-} from '@/lib/guest/guestSession'
-import { postGuestMessage } from '@/lib/guest/guestBroadcast'
 import { isPlanStageComplete } from '@/lib/onboarding/onboardingStages'
 import { LandingGate } from '@/components/auth/LandingGate'
 import { GuestSaveProgressBanner } from '@/components/auth/GuestSaveProgressBanner'
-import { useGuestBeforeUnloadWarning } from '@/hooks/useGuestBeforeUnloadWarning'
 import { useEphemeralSessionGuard } from '@/hooks/useEphemeralSessionGuard'
 import { useActionToast } from '@/components/ui/ActionToast'
-import { snapshot } from '@/lib/supabase/remote/snapshot'
-import { hasMeaningfulLocalState } from '@/lib/supabase/remote/merge'
 
 /**
  * Minimal centered splash rendered while the initial auth check is in flight.
@@ -118,11 +106,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authModalInitialMode, setAuthModalInitialMode] = useState<'signin' | 'signup'>('signin')
   // Lazy init reads sessionStorage synchronously on client mount — no flash of
   // landing before a guest session is detected. SSR sees `false` which is fine:
-  // gate logic treats `loading` as the first frame anyway.
-  const [isGuest, setIsGuest] = useState<boolean>(() => getGuestFlag())
-  const [guestNickname, setGuestNicknameState] = useState<string | null>(() =>
-    getGuestNickname(),
-  )
+  // `mode` is now derived from `user.is_anonymous`. We keep a local nickname
+  // so the banner can greet the user without refetching profile.name.
+  const [guestNickname, setGuestNicknameState] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null
+    try {
+      return window.localStorage.getItem('buddget_guest_nickname')
+    } catch {
+      return null
+    }
+  })
   // Read the onboarding state for gate decisions; cheap selector, updates when the
   // guest completes their flow so the gate releases them onto the real app.
   const onboardingState = useFinanceStore((s) => s.onboardingState)
@@ -151,52 +144,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const startGuest = useCallback(
-    (nextAfterOnboarding?: string) => {
-      // Order matters: reset in-memory state BEFORE flipping the storage mode so
-      // any leftover localStorage data doesn't bleed into the guest session.
+    async (nextAfterOnboarding?: string) => {
+      if (!configured) return
+      // Reset in-memory state first so any leftover localStorage from a prior
+      // session doesn't bleed into the new anonymous identity.
       try {
         useFinanceStore.getState().reset()
         useSettingsStore.getState().reset()
       } catch (e) {
         console.error('[auth] guest reset failed', e)
       }
-      setStorageMode('guest')
+      const supabase = createClient()
+      const { data, error } = await supabase.auth.signInAnonymously()
+      if (error || !data.user) {
+        console.error('[auth] signInAnonymously failed', error?.message)
+        return
+      }
       const nickname = generateGuestNickname()
       try {
         useFinanceStore.getState().updateProfile({ name: nickname })
       } catch (e) {
         console.error('[auth] guest updateProfile failed', e)
       }
-      setGuestFlag(true)
-      setGuestNickname(nickname)
+      // Persist nickname + optional deep-link target in localStorage now that
+      // the session itself is owned by Supabase. Accessible across tabs.
+      try {
+        window.localStorage.setItem('buddget_guest_nickname', nickname)
+        if (nextAfterOnboarding && nextAfterOnboarding.startsWith('/')) {
+          window.localStorage.setItem('buddget_guest_next', nextAfterOnboarding)
+        }
+      } catch {
+        /* private mode / quota */
+      }
       setGuestNicknameState(nickname)
-      setGuestNext(nextAfterOnboarding ?? null)
-      setIsGuest(true)
-      postGuestMessage({
-        kind: 'guest-started',
-        nickname,
-        next: nextAfterOnboarding ?? null,
-      })
-      // Navigate immediately so there's no render frame of landing → dashboard →
-      // onboarding. The AuthProvider mode-derived redirect still runs as a fallback.
+      // `onAuthStateChange SIGNED_IN` will flip the mode; we just navigate.
       router.replace('/guest-onboarding')
     },
-    [router],
+    [configured, router],
   )
 
   const endGuest = useCallback(async () => {
-    // clearBudgetData is dual-storage and wipes the guest keys too.
+    if (!configured) return
+    const supabase = createClient()
     try {
-      clearBudgetData()
+      await supabase.auth.signOut({ scope: 'local' })
     } catch (e) {
-      console.error('[auth] endGuest clearBudgetData failed', e)
+      console.error('[auth] endGuest signOut failed', e)
     }
-    setStorageMode(null)
-    setIsGuest(false)
+    try {
+      window.localStorage.removeItem('buddget_guest_nickname')
+      window.localStorage.removeItem('buddget_guest_next')
+    } catch {
+      /* private mode */
+    }
     setGuestNicknameState(null)
-    postGuestMessage({ kind: 'guest-ended' })
     router.replace('/')
-  }, [router])
+  }, [configured, router])
 
   const t = useT()
   const wasAuthedRef = useRef(false)
@@ -212,15 +215,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, nextSession: Session | null) => {
+      const incomingUser = nextSession?.user ?? null
+      const incomingIsAnon = incomingUser?.is_anonymous === true
       if (_event === 'SIGNED_OUT') {
         try {
           clearBudgetData()
         } catch (e) {
           console.error('[auth] clearBudgetData on SIGNED_OUT failed', e)
         }
-        setStorageMode(null)
-        setIsGuest(false)
         setGuestNicknameState(null)
+        try {
+          window.localStorage.removeItem('buddget_guest_nickname')
+          window.localStorage.removeItem('buddget_guest_next')
+        } catch {
+          /* private mode */
+        }
         // If we were previously signed in AND the user is still on an in-app
         // route (not a deliberate sign-out from the profile page), assume the
         // session expired and re-open the auth modal with an explanation
@@ -231,43 +240,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setAuthModalInitialMode('signin')
           setAuthModalOpen(true)
         }
-      } else if (_event === 'SIGNED_IN' && nextSession?.user) {
-        // A signed-in user supersedes any guest session — flip the storage mode
-        // to localStorage and drop the session-storage markers. SupabaseFinanceSync
-        // handles merging guest data that's still in Zustand memory.
-        // NOTE: promotion of guest → skip-expert-onboarding runs in the auth
-        // handlers themselves (useAuthModal) so the redirect can await it.
-        const comingFromGuest = getGuestFlag()
-        const hadGuestData = comingFromGuest
-          ? hasMeaningfulLocalState(snapshot(useFinanceStore.getState()))
-          : false
-        setStorageMode('auth')
-        setGuestFlag(false)
-        setGuestNickname(null)
-        setIsGuest(false)
-        setGuestNicknameState(null)
-        wasAuthedRef.current = true
-        if (hadGuestData) {
-          // Confirm-on-merge toast — user keeps their guest entries now that
-          // they have a real account. Strictly informational; the actual merge
-          // is handled by SupabaseFinanceSync (mergeSnapshots union-by-id).
-          try {
-            showToast(t.guest.mergedToast)
-          } catch {
-            /* toast provider not mounted — fine */
-          }
+      } else if (_event === 'SIGNED_IN' && incomingUser) {
+        if (incomingIsAnon) {
+          // Anonymous (guest) session just started. The nickname was written
+          // by `startGuest`; mode derivation picks up `is_anonymous` below.
+        } else {
+          wasAuthedRef.current = true
         }
+      } else if (_event === 'USER_UPDATED' && incomingUser && !incomingIsAnon) {
+        // Anonymous → real account promotion (updateUser with email + OTP
+        // verified). Show the merge-confirmation toast since the guest's data
+        // just became permanent on the same user_id.
+        try {
+          showToast(t.guest.mergedToast)
+        } catch {
+          /* toast not mounted */
+        }
+        wasAuthedRef.current = true
       }
       setSession(nextSession)
-      setUser(nextSession?.user ?? null)
-      if (nextSession?.user) setAuthModalOpen(false)
+      setUser(incomingUser)
+      if (incomingUser && !incomingIsAnon) setAuthModalOpen(false)
     })
 
     void supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
       const s = data.session
       setSession(s)
       setUser(s?.user ?? null)
-      if (s?.user) {
+      if (s?.user && !s.user.is_anonymous) {
         setAuthModalOpen(false)
         wasAuthedRef.current = true
       }
@@ -284,9 +284,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       console.error('[auth] clearBudgetData before signOut failed', e)
     }
-    setStorageMode(null)
-    setIsGuest(false)
     setGuestNicknameState(null)
+    try {
+      window.localStorage.removeItem('buddget_guest_nickname')
+      window.localStorage.removeItem('buddget_guest_next')
+    } catch {
+      /* private mode */
+    }
     const supabase = createClient()
     try {
       await supabase.auth.signOut()
@@ -304,10 +308,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     : loading
       ? 'loading'
       : user
-        ? 'authenticated'
-        : isGuest
+        ? user.is_anonymous
           ? 'guest'
-          : 'landing'
+          : 'authenticated'
+        : 'landing'
 
   const value = useMemo<AuthContextValue>(
     () =>
@@ -380,12 +384,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (shouldRedirectGuestToOnboarding) router.replace('/guest-onboarding')
   }, [shouldRedirectGuestToOnboarding, router])
 
-  // Warn guests before tab close / reload regardless of whether they finished
-  // onboarding — losing 4 steps of typing is as painful as losing 3 expenses.
-  useGuestBeforeUnloadWarning(mode === 'guest')
   // For users who signed in without ticking "Remember me": sign them out on
   // tab close so they hit the landing gate again next session.
   useEphemeralSessionGuard(mode === 'authenticated')
+  // NB: `useGuestBeforeUnloadWarning` is retired — guest sessions now persist
+  // server-side via Supabase anonymous auth, so tab close doesn't lose data.
 
   const showLandingGate = mode === 'landing' && !isBypassRoute
   const showLoadingSplash = mode === 'loading' && !isBypassRoute

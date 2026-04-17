@@ -622,11 +622,10 @@ export const en: Dictionary = {
     ctaSignIn: 'Sign in',
     ctaSignUp: 'Create a free account',
     ctaGuest: 'Continue as guest',
-    guestHelp: "No email needed. Your session won\u2019t be saved once you close the tab.",
+    guestHelp:
+      "No email needed. Your data\u2019s saved while you explore \u2014 add an email later to keep it forever.",
     guestHelpStandalone:
-      "No email needed. Heads up: since you installed Buddget, closing the app will wipe guest data \u2014 create an account to keep it.",
-    siblingTabGuestActive: (nickname) =>
-      `Another tab is signed in as ${nickname}. Starting guest here creates a separate session.`,
+      "No email needed. Add an email later to lock it in and recover your data on new devices.",
   },
 
   guest: {
