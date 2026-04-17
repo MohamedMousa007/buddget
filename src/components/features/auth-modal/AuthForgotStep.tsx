@@ -40,6 +40,9 @@ export function AuthForgotStep({
               <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
               <input
                 type="email"
+                dir="ltr"
+                autoComplete="email"
+                inputMode="email"
                 value={email}
                 onChange={(e) => onEmailChange(e.target.value)}
                 className={cn(inputClass, inputFocus, 'ps-10')}

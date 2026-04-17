@@ -614,7 +614,7 @@ export const en: Dictionary = {
 
   landing: {
     heroTitle: 'Take charge of your money',
-    heroSubtitle: 'Plan your month, track every dirham, and hit your goals. Yours in 5 minutes.',
+    heroSubtitle: 'Plan your month, track every transaction, and hit your goals. Yours in 5 minutes.',
     feature1: 'Pick a currency, plan a budget, stay ahead of debt.',
     feature2: 'Works offline — your data stays on your device.',
     feature3: 'Buddgy, the built-in AI coach, tailors everything to you.',
@@ -887,7 +887,7 @@ export const en: Dictionary = {
     loadingSignUp: 'Setting up your account...',
     submitSignIn: 'Sign me in',
     submitSignUp: 'Create my account',
-    footerNewHere: 'New here? Create a free account \u2192',
+    footerNewHere: 'New here? Sign up \u2192',
     footerAlreadyHave: 'Already have an account? Sign in \u2192',
 
     labelEmail: 'Email',

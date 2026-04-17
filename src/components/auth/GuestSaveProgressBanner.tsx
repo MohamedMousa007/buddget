@@ -26,22 +26,22 @@ export function GuestSaveProgressBanner() {
   return (
     <div
       role="status"
-      className="flex items-start gap-3 px-4 py-2.5 text-sm border-b"
-      style={{
-        background: 'color-mix(in oklab, var(--color-brand-amber) 8%, transparent)',
-        borderColor: 'color-mix(in oklab, var(--color-brand-amber) 24%, transparent)',
-        color: 'var(--color-brand-text-primary)',
-      }}
+      className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 text-sm border-b bg-[var(--color-brand-amber)]/10 border-[var(--color-brand-amber)]/25 text-[var(--color-brand-text-primary)]"
     >
-      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-[var(--color-brand-amber)]" aria-hidden />
-      <div className="flex-1 min-w-0 leading-snug">
-        <span className="font-medium">{hello}</span>{' '}
-        <span className="text-[var(--color-brand-text-secondary)]">{t.guest.saveProgressMessage}</span>
+      <div className="flex items-start gap-2 flex-1 min-w-0">
+        <AlertTriangle
+          className="w-4 h-4 shrink-0 mt-0.5 text-[var(--color-brand-amber)]"
+          aria-hidden
+        />
+        <div className="flex-1 min-w-0 leading-snug">
+          <span className="font-medium">{hello}</span>{' '}
+          <span className="text-[var(--color-brand-text-secondary)]">{t.guest.saveProgressMessage}</span>
+        </div>
       </div>
       <button
         type="button"
         onClick={() => openAuthModal('/', null, 'signup')}
-        className="shrink-0 inline-flex items-center h-8 px-3 rounded-lg text-xs font-semibold text-white bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] transition-colors"
+        className="shrink-0 inline-flex items-center justify-center w-full sm:w-auto h-10 sm:h-8 px-4 sm:px-3 rounded-lg text-sm sm:text-xs font-semibold text-white bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] transition-colors"
       >
         {t.guest.saveProgressCta}
       </button>
