@@ -228,7 +228,10 @@ export function useAuthModal() {
     forgotSuccess,
     setForgotSuccess,
     resendCooldown,
-    contentKey: `${step}-${formMode}`,
+    // Animate only between auth steps (form ↔ verify ↔ forgot). The sign-in/sign-up
+    // toggle is handled inside the form via conditional rendering, so including
+    // formMode here would remount the whole form on every tab click.
+    contentKey: step,
     signIn,
     signUp,
     verifySignupOtp,
