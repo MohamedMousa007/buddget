@@ -60,6 +60,25 @@ export function useAuthModal() {
   const [forgotSuccess, setForgotSuccess] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
   const [verifyPurpose, setVerifyPurpose] = useState<AuthVerifyPurpose>('signup')
+  /**
+   * Result of the "is this email already registered?" lookup triggered on email
+   * blur during sign-up. Drives the inline hint under the email field.
+   * 'idle' — not checked yet (or signin mode); 'checking' — request in flight;
+   * 'taken' — account exists, block submit; 'free' — safe to proceed.
+   *
+   * Stored alongside the email value that was checked so any subsequent edit
+   * derives back to 'idle' without needing a setState-in-effect to reset.
+   */
+  const [emailCheck, setEmailCheck] = useState<{
+    state: 'idle' | 'checking' | 'taken' | 'free'
+    email: string
+  }>({ state: 'idle', email: '' })
+  const emailCheckState: 'idle' | 'checking' | 'taken' | 'free' =
+    emailCheck.state !== 'idle' &&
+    emailCheck.state !== 'checking' &&
+    emailCheck.email !== email.trim().toLowerCase()
+      ? 'idle'
+      : emailCheck.state
 
   useEffect(() => {
     if (resendCooldown <= 0) return
@@ -68,6 +87,38 @@ export function useAuthModal() {
   }, [resendCooldown])
 
   const startResendCooldown = useCallback(() => setResendCooldown(60), [])
+
+  /**
+   * Fire an existence check when the email field loses focus in signup mode.
+   * Cheap UX win: the user finds out the email is taken before they've filled
+   * the rest of the form, and we don't pile up a big submit-time error.
+   */
+  const checkEmailOnBlur = useCallback(async () => {
+    if (formMode !== 'signup') return
+    const trimmed = email.trim()
+    const key = trimmed.toLowerCase()
+    if (!trimmed || !isValidEmailFormat(trimmed)) {
+      setEmailCheck({ state: 'idle', email: '' })
+      return
+    }
+    setEmailCheck({ state: 'checking', email: key })
+    try {
+      const res = await fetch('/api/auth/check-email', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: trimmed }),
+      })
+      if (!res.ok) {
+        // Rate-limit / server hiccup — drop back to idle so the submit path still gates.
+        setEmailCheck({ state: 'idle', email: '' })
+        return
+      }
+      const body = (await res.json()) as { exists?: boolean }
+      setEmailCheck({ state: body.exists ? 'taken' : 'free', email: key })
+    } catch {
+      setEmailCheck({ state: 'idle', email: '' })
+    }
+  }, [email, formMode])
 
   const validateEmailField = useCallback(() => {
     if (!email.trim()) {
@@ -151,27 +202,33 @@ export function useAuthModal() {
       setError(t.auth.errorPasswordMismatch)
       return
     }
-    // Hard-block sign-up when the email is already registered.
+    // If the onBlur check already flagged this email, bail immediately — the
+    // inline hint is showing, no need to surface another alert.
+    if (emailCheckState === 'taken') {
+      return
+    }
     setLoading(true)
-    try {
-      const res = await fetch('/api/auth/check-email', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() }),
-      })
-      if (res.ok) {
-        const body = (await res.json()) as { exists?: boolean }
-        if (body.exists === true) {
-          setLoading(false)
-          setError(t.auth.errorAccountExists)
-          return
+    // Defence-in-depth: user may have submitted before the onBlur check fired
+    // (e.g. Enter in the confirm field). Re-run the lookup inline.
+    if (emailCheckState !== 'free') {
+      try {
+        const res = await fetch('/api/auth/check-email', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ email: email.trim() }),
+        })
+        if (res.ok) {
+          const body = (await res.json()) as { exists?: boolean }
+          if (body.exists === true) {
+            setLoading(false)
+            setEmailCheck({ state: 'taken', email: email.trim().toLowerCase() })
+            return
+          }
         }
+        // Rate-limit / network error: fall through; Supabase will still block.
+      } catch {
+        // ignore — Supabase remains the source of truth
       }
-      // If the check fails (rate limit, network, etc.) we fall through — Supabase
-      // will still reject the duplicate on the server side, just with a less
-      // specific message.
-    } catch {
-      // ignore — Supabase remains the source of truth
     }
     const { data, error: e } = await supabase.auth.signUp({
       email: email.trim(),
@@ -184,7 +241,9 @@ export function useAuthModal() {
     if (e) {
       const mapped = mapAuthError(e, 'signup', t)
       if (mapped === 'EMAIL_EXISTS') {
-        setError(t.auth.errorAccountExists)
+        // Route duplicate-email feedback through the same inline hint as the
+        // onBlur check — one canonical place for that message.
+        setEmailCheck({ state: 'taken', email: email.trim().toLowerCase() })
         return
       }
       setError(mapped)
@@ -204,7 +263,7 @@ export function useAuthModal() {
       return
     }
     setError(t.auth.errorSignUpGeneric)
-  }, [confirmPassword, email, password, router, safeNext, startResendCooldown, supabase, t, validateEmailField])
+  }, [confirmPassword, email, emailCheckState, password, router, safeNext, startResendCooldown, supabase, t, validateEmailField])
 
   const verifySignupOtp = useCallback(async () => {
     setError('')
@@ -338,6 +397,8 @@ export function useAuthModal() {
     setForgotSuccess,
     resendCooldown,
     verifyPurpose,
+    emailCheckState,
+    checkEmailOnBlur,
     // Animate only between auth steps (form ↔ verify ↔ forgot). The sign-in/sign-up
     // toggle is handled inside the form via conditional rendering, so including
     // formMode here would remount the whole form on every tab click.

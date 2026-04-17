@@ -913,6 +913,10 @@ export const ar: Dictionary = {
     passwordRuleNumber: 'رقم واحد على الأقل',
     twoFaVerifyTitle: 'خطوة أخيرة 🔐',
     twoFaCodeSent: (email) => `هذا المتصفح ليس ضمن أجهزتك الموثوقة. أرسلنا رمزاً من 6 أرقام إلى ${email} للتحقق من هويتك.`,
+    emailAlreadyRegistered: 'هذا البريد الإلكتروني مسجّل بالفعل.',
+    emailCheckInFlight: 'جارٍ التحقق…',
+    showPassword: 'إظهار كلمة المرور',
+    hidePassword: 'إخفاء كلمة المرور',
   },
 
   resetPassword: {
