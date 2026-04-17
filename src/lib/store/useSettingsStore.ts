@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
+import { createModeAwareStorage } from '@/lib/store/safeLocalStorage'
 
 export interface ExpensePrefill {
   date?: string
@@ -105,7 +106,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'buddget-ui-settings',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => createModeAwareStorage()),
       partialize: (state) => ({ monthFilter: state.monthFilter }),
     }
   )

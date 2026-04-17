@@ -1,13 +1,22 @@
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 
-/** Persisted localStorage keys used by Zustand and related client caches. */
+/**
+ * Persisted storage keys used by Zustand and related client caches, plus the
+ * guest-session markers written by `AuthProvider.startGuest`. We sweep the list
+ * across BOTH localStorage and sessionStorage so sign-out / guest-end leaves no
+ * trace regardless of which backend was active.
+ */
 const STORAGE_KEYS = [
   'buddget-storage',
   'buddget-ui-settings',
   'buddget-notifications-read',
   'buddget-pwa-install-banner-dismissed-at',
   'pwa-install-dismissed',
+  // Guest session markers — mirror the names used in src/lib/guest/guestSession.ts.
+  'buddget_guest',
+  'buddget_guest_nickname',
+  'buddget_storage_mode',
 ] as const
 
 /**
@@ -16,11 +25,15 @@ const STORAGE_KEYS = [
  * Call before `supabase.auth.signOut()` when possible; still sign out if this throws.
  */
 export function clearBudgetData(): void {
-  for (const key of STORAGE_KEYS) {
-    try {
-      localStorage.removeItem(key)
-    } catch {
-      /* SSR or restricted storage */
+  if (typeof window !== 'undefined') {
+    for (const storage of [window.localStorage, window.sessionStorage]) {
+      for (const key of STORAGE_KEYS) {
+        try {
+          storage.removeItem(key)
+        } catch {
+          /* SSR or restricted storage */
+        }
+      }
     }
   }
 
