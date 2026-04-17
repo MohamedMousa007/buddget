@@ -1,26 +1,33 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { usePathname, useSearchParams } from 'next/navigation'
-import { Sparkles } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { useAuth } from '@/components/auth/auth-context'
-import { LanguageToggle } from '@/components/ui/LanguageToggle'
+import { AuthModalBody } from '@/components/features/auth-modal/AuthModalBody'
 import { useT } from '@/lib/i18n'
 
 /**
- * Pre-auth landing screen. Replaces the dashboard for unauthenticated users
- * who haven't started a guest session. Three choices: sign in, sign up, or
- * continue as a guest (tab-scoped, no account).
+ * Pre-auth landing screen, rebuilt per user feedback. Mobile-first:
  *
- * Deep links are preserved via the current pathname → `next` param for
- * sign-in / sign-up flows. Guest choice always routes to
- * /guest-onboarding → / (by design — guests forfeit the bookmarked target).
+ *  - Big branded logo at the top (the same "Buddget" wordmark used everywhere,
+ *    just scaled up) with the tagline.
+ *  - The regular sign-in / sign-up form rendered inline via the shared
+ *    `AuthModalBody` — same component the overlay modal uses, so parity is
+ *    automatic. Covers Google / Apple OAuth, password signin/up, OTP verify,
+ *    forgot-password, strength meter, remember-me, 2FA.
+ *  - A single "Continue as guest" CTA at the bottom for users who want to
+ *    explore without committing an email.
+ *
+ * The overlay AuthModal is NOT rendered here — `AuthProvider` suppresses it
+ * while mode === 'landing' because `showAuthModal` requires `authModalOpen`
+ * which the landing never sets. Users who want OAuth or signup just tap the
+ * inline form.
  */
 export function LandingGate() {
   const t = useT()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const { openAuthModal, startGuest } = useAuth()
+  const { startGuest } = useAuth()
+  const [guestPending, setGuestPending] = useState(false)
+
   // Detect PWA standalone mode so we can nudge users away from guest when they
   // installed the app — closing a PWA window wipes sessionStorage same as a tab.
   // Lazy init reads the match synchronously; the listener handles orientation /
@@ -37,98 +44,67 @@ export function LandingGate() {
     return () => mql.removeEventListener('change', handler)
   }, [])
 
-  // (Sibling-tab hint + guest-reentry redirect are no longer needed — guest
-  // sessions live in Supabase now, so they persist automatically across tabs
-  // and AuthProvider's mode derivation + middleware handle redirects.)
-
-  // Preserve the full deep-link destination for sign-in / sign-up so bookmarked
-  // routes and referral query params (?ref=…) survive the auth round-trip.
-  const qs = searchParams.toString()
-  const nextPath =
-    pathname && pathname !== '/' ? (qs ? `${pathname}?${qs}` : pathname) : '/'
+  const handleGuest = async () => {
+    if (guestPending) return
+    setGuestPending(true)
+    try {
+      await startGuest()
+    } finally {
+      setGuestPending(false)
+    }
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--color-brand-bg)]">
-      <header className="flex items-center justify-between px-4 py-3">
-        <h1
-          className="text-xl font-extrabold tracking-tight"
-          style={{ fontFamily: 'var(--font-heading), var(--font-sans)' }}
-        >
-          <span className="text-[var(--color-brand-text-primary)]">Bud</span>
-          <span className="text-[var(--color-brand-red)]">d</span>
-          <span className="text-[var(--color-brand-text-primary)]">get</span>
-        </h1>
-        <LanguageToggle size="sm" />
-      </header>
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8 sm:py-12">
+        {/* Big logo + tagline block. Sized generously on mobile (5xl) and even
+            bigger on desktop so it owns the page. Mirrors the in-app wordmark. */}
+        <div className="text-center mb-8 sm:mb-10">
+          <h1
+            className="text-5xl sm:text-6xl font-extrabold tracking-tight"
+            style={{ fontFamily: 'var(--font-heading), var(--font-sans)' }}
+          >
+            <span className="text-[var(--color-brand-text-primary)]">Bud</span>
+            <span className="text-[var(--color-brand-red)]">d</span>
+            <span className="text-[var(--color-brand-text-primary)]">get</span>
+          </h1>
+          <p className="mt-3 text-sm sm:text-base text-[var(--color-brand-text-muted)]">
+            {t.brand.tagline}
+          </p>
+        </div>
 
-      <main className="flex-1 flex items-center justify-center px-4 pb-10">
+        {/* Sign-in / sign-up card — same body the overlay modal uses. */}
         <div
-          className="w-full max-w-md border rounded-2xl p-8 space-y-6 shadow-xl"
+          className="w-full max-w-md border rounded-2xl p-6 sm:p-8 shadow-xl"
           style={{
             background: 'var(--color-brand-card)',
             borderColor: 'var(--color-brand-border)',
           }}
         >
-          <div className="space-y-2 text-center">
-            <div className="flex items-center justify-center gap-2">
-              <Sparkles className="w-5 h-5 text-[var(--color-brand-red)]" />
-              <h2 className="text-2xl font-bold text-[var(--color-brand-text-primary)]">
-                {t.landing.heroTitle}
-              </h2>
-            </div>
-            <p className="text-sm text-[var(--color-brand-text-muted)] leading-relaxed">
-              {t.landing.heroSubtitle}
-            </p>
-          </div>
+          <AuthModalBody showBranding={false} />
+        </div>
 
-          <ul role="list" className="space-y-2 text-sm text-[var(--color-brand-text-secondary)]">
-            {[t.landing.feature1, t.landing.feature2, t.landing.feature3].map((feat) => (
-              <li key={feat} className="flex items-start gap-2">
-                <span aria-hidden className="text-[var(--color-brand-green)] mt-0.5">
-                  ✓
-                </span>
-                <span>{feat}</span>
-              </li>
-            ))}
-          </ul>
-
-          <div className="space-y-2">
-            <button
-              type="button"
-              onClick={() => openAuthModal(nextPath, null, 'signup')}
-              className="w-full h-12 rounded-xl font-semibold text-white transition-colors bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)]"
-            >
-              {t.landing.ctaSignUp}
-            </button>
-            <button
-              type="button"
-              onClick={() => openAuthModal(nextPath, null, 'signin')}
-              className="w-full h-12 rounded-xl font-semibold border transition-colors text-[var(--color-brand-text-primary)] border-[var(--color-brand-border)] hover:bg-[var(--color-brand-elevated)]"
-            >
-              {t.landing.ctaSignIn}
-            </button>
-          </div>
-
+        {/* Guest CTA below the card. Divider + short helper text + button. */}
+        <div className="w-full max-w-md mt-6 space-y-2">
           <div className="relative flex items-center gap-3">
             <span className="flex-1 h-px bg-[var(--color-brand-border)]" />
-            <span className="text-[11px] uppercase tracking-wider text-[var(--color-brand-text-muted)]">
+            <span className="text-[10px] uppercase tracking-wider text-[var(--color-brand-text-muted)]">
               {t.landing.or}
             </span>
             <span className="flex-1 h-px bg-[var(--color-brand-border)]" />
           </div>
-
-          <div className="space-y-1.5 text-center">
-            <button
-              type="button"
-              onClick={() => void startGuest(nextPath)}
-              className="w-full h-11 rounded-xl font-medium text-sm transition-colors text-[var(--color-brand-text-primary)] bg-[var(--color-brand-elevated)] hover:bg-[var(--color-brand-border)]"
-            >
-              {t.landing.ctaGuest}
-            </button>
-            <p className="text-[11px] text-[var(--color-brand-text-muted)] leading-relaxed">
-              {isStandalone ? t.landing.guestHelpStandalone : t.landing.guestHelp}
-            </p>
-          </div>
+          <button
+            type="button"
+            onClick={() => void handleGuest()}
+            disabled={guestPending}
+            className="w-full h-11 rounded-xl font-medium text-sm transition-colors text-[var(--color-brand-text-primary)] bg-[var(--color-brand-elevated)] hover:bg-[var(--color-brand-border)] disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            {guestPending ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : null}
+            {t.landing.ctaGuest}
+          </button>
+          <p className="text-[11px] text-[var(--color-brand-text-muted)] leading-relaxed text-center">
+            {isStandalone ? t.landing.guestHelpStandalone : t.landing.guestHelp}
+          </p>
         </div>
       </main>
     </div>

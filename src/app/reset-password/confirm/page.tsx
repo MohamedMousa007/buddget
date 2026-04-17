@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Lock } from 'lucide-react'
+import { Loader2, Lock, AlertTriangle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 import { useT } from '@/lib/i18n'
@@ -27,6 +27,21 @@ function toneClass(tone: ValidationTone): string {
   return inputFocus
 }
 
+/**
+ * Read Supabase error's `code` when available (preferred), falling back to
+ * keyword matching against the localised message string. Different Supabase
+ * versions surface the code in different places.
+ */
+function errorCode(e: { code?: string; message?: string } | null | undefined): string | null {
+  if (!e) return null
+  if (e.code) return e.code
+  const msg = (e.message || '').toLowerCase()
+  if (msg.includes('same') && msg.includes('password')) return 'same_password'
+  if (msg.includes('expired') || msg.includes('invalid token') || msg.includes('jwt')) return 'token_expired'
+  if (msg.includes('not found')) return 'token_expired'
+  return null
+}
+
 export default function ResetPasswordConfirmPage() {
   const router = useRouter()
   const t = useT()
@@ -38,6 +53,10 @@ export default function ResetPasswordConfirmPage() {
   const [loading, setLoading] = useState(false)
   const [checking, setChecking] = useState(true)
   const [error, setError] = useState('')
+  // Terminal state when we've confirmed the link is unusable (timed out, or
+  // updateUser rejected with a token-expired error). Shown as a friendly error
+  // screen with a "Request a new link" CTA instead of a silent redirect.
+  const [linkExpired, setLinkExpired] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -50,12 +69,16 @@ export default function ResetPasswordConfirmPage() {
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY' || session) setChecking(false)
     })
-    const t = window.setTimeout(() => {
+    const timeoutId = window.setTimeout(() => {
       void (async () => {
         if (cancelled) return
         const { data } = await supabase.auth.getSession()
         if (!data.session) {
-          router.replace('/?error=reset')
+          // Used to redirect silently to `/?error=reset`. Now surface the
+          // expired-link state in-place so the user understands what happened
+          // and can request a new link without hunting for the sign-in form.
+          setChecking(false)
+          setLinkExpired(true)
           return
         }
         setChecking(false)
@@ -64,7 +87,7 @@ export default function ResetPasswordConfirmPage() {
     return () => {
       cancelled = true
       subscription.unsubscribe()
-      window.clearTimeout(t)
+      window.clearTimeout(timeoutId)
     }
   }, [supabase, router])
 
@@ -79,6 +102,17 @@ export default function ResetPasswordConfirmPage() {
         ? 'valid'
         : 'error'
       : 'neutral'
+
+  const requestNewLink = () => {
+    // Drop the user back on `/` with the sign-in modal auto-opened in the
+    // forgot-password step. AuthProvider routes the message through.
+    try {
+      clearBudgetData()
+    } catch {
+      /* ignore */
+    }
+    router.replace('/?requestReset=1')
+  }
 
   const submit = async () => {
     setError('')
@@ -98,17 +132,16 @@ export default function ResetPasswordConfirmPage() {
     const { error: e } = await supabase.auth.updateUser({ password })
     if (e) {
       setLoading(false)
-      // Distinguish an expired reset link (needs a fresh email) from a generic
-      // failure (probably transient network) so the user knows what to do.
-      const msg = (e.message || '').toLowerCase()
-      const looksExpired =
-        msg.includes('expired') ||
-        msg.includes('invalid token') ||
-        msg.includes('not found') ||
-        msg.includes('jwt')
-      setError(
-        looksExpired ? t.resetPassword.errorLinkExpired : t.resetPassword.errorUpdateFailed,
-      )
+      const code = errorCode(e)
+      if (code === 'same_password') {
+        setError(t.resetPassword.errorSamePassword)
+        return
+      }
+      if (code === 'token_expired') {
+        setLinkExpired(true)
+        return
+      }
+      setError(t.resetPassword.errorUpdateFailed)
       return
     }
     try {
@@ -116,18 +149,12 @@ export default function ResetPasswordConfirmPage() {
     } catch (e) {
       console.error('[reset-password] clearBudgetData failed', e)
     }
-    // Use scope: 'global' — the password may have been reset BECAUSE another
-    // device was compromised. Revoke every active refresh token so the attacker
-    // can't continue their session.
     const { error: signOutError } = await supabase.auth.signOut({ scope: 'global' })
     setLoading(false)
     if (signOutError) {
       setError(t.resetPassword.errorUpdateFailed)
       return
     }
-    // Set an HttpOnly signal cookie so AuthProvider can open the sign-in modal
-    // with a success message. Forgery-resistant vs the old ?passwordUpdated=1
-    // query param (which any visitor could construct).
     try {
       await fetch('/api/auth/password-updated', { method: 'POST' })
     } catch (e) {
@@ -141,6 +168,31 @@ export default function ResetPasswordConfirmPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--color-brand-bg)]">
         <Loader2 className="w-8 h-8 animate-spin text-[var(--color-brand-red)]" />
+      </div>
+    )
+  }
+
+  if (linkExpired) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--color-brand-bg)]">
+        <div
+          role="alert"
+          className="w-full max-w-md border p-8 rounded-2xl space-y-4 text-center"
+          style={{ background: 'var(--color-brand-card)', borderColor: 'var(--color-brand-border)' }}
+        >
+          <div className="mx-auto w-12 h-12 rounded-full bg-[var(--color-brand-red)]/10 flex items-center justify-center">
+            <AlertTriangle className="w-6 h-6 text-[var(--color-brand-red)]" aria-hidden />
+          </div>
+          <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)]">
+            {t.resetPassword.errorLinkExpiredTitle}
+          </h1>
+          <p className="text-sm text-[var(--color-brand-text-muted)] leading-relaxed">
+            {t.resetPassword.errorLinkExpired}
+          </p>
+          <AuthPrimaryButton onClick={requestNewLink}>
+            {t.resetPassword.requestNewLink}
+          </AuthPrimaryButton>
+        </div>
       </div>
     )
   }

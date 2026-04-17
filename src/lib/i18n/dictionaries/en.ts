@@ -970,8 +970,11 @@ export const en: Dictionary = {
     errorMinLength: (min) => `Password needs to be at least ${min} characters.`,
     errorMismatch: "Those passwords don\u2019t match. Try again.",
     errorUpdateFailed: "Oops, something went wrong. Let\u2019s try again.",
-    errorLinkExpired: 'That reset link has expired. Request a fresh one from the sign-in screen.',
+    errorLinkExpired: 'That reset link has expired or already been used. Request a fresh one and we\u2019ll email it to you.',
+    errorLinkExpiredTitle: 'Reset link expired',
+    errorSamePassword: 'That\u2019s the same password you already have. Choose a different one.',
     errorWeakPassword: 'Use at least one letter and one number.',
+    requestNewLink: 'Request a new link',
     buttonSubmit: 'Update my password',
     successSignInPrompt:
       'Your password is updated. Sign in with your new password to continue.',
