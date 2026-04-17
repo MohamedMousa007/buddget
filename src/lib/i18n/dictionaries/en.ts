@@ -612,6 +612,27 @@ export const en: Dictionary = {
     netWorthGoldIncomplete: 'Net worth may be incomplete — gold price unavailable.',
   },
 
+  landing: {
+    heroTitle: 'Take charge of your money',
+    heroSubtitle: 'Plan your month, track every dirham, and hit your goals. Yours in 5 minutes.',
+    feature1: 'Pick a currency, plan a budget, stay ahead of debt.',
+    feature2: 'Works offline — your data stays on your device.',
+    feature3: 'Buddgy, the built-in AI coach, tailors everything to you.',
+    or: 'or',
+    ctaSignIn: 'Sign in',
+    ctaSignUp: 'Create a free account',
+    ctaGuest: 'Continue as guest',
+    guestHelp: "No email needed. Your session won\u2019t be saved once you close the tab.",
+  },
+
+  guest: {
+    bannerHello: (nickname) => `Hey ${nickname}!`,
+    bannerHelloFallback: "You\u2019re exploring as a guest.",
+    saveProgressMessage: 'Create an account to save your progress.',
+    saveProgressCta: 'Create account',
+    exitGuest: 'Exit guest',
+  },
+
   settings: {
     pageTitle: 'Your Preferences',
     pageSubtitle: 'Manage your currencies, payments, and data. Budget settings live in your Profile.',
@@ -1031,6 +1052,7 @@ export const en: Dictionary = {
     skipButton: "I\u2019ll set it up myself",
     backToProfile: 'Back to profile',
     backStep: 'Back to previous step',
+    stepOfTotal: (current, total) => `Step ${current} of ${total}`,
     plansLoadError: "We couldn\u2019t load plans right now. No worries \u2014 you can set budgets anytime from your Profile.",
     continueWithoutPlanBusy: 'Saving your setup\u2026',
     continueWithoutPlan: 'Continue without a plan',

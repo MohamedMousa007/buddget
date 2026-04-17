@@ -612,6 +612,27 @@ export interface Dictionary {
     netWorthGoldIncomplete: string
   }
 
+  landing: {
+    heroTitle: string
+    heroSubtitle: string
+    feature1: string
+    feature2: string
+    feature3: string
+    or: string
+    ctaSignIn: string
+    ctaSignUp: string
+    ctaGuest: string
+    guestHelp: string
+  }
+
+  guest: {
+    bannerHello: (nickname: string) => string
+    bannerHelloFallback: string
+    saveProgressMessage: string
+    saveProgressCta: string
+    exitGuest: string
+  }
+
   settings: {
     pageTitle: string
     pageSubtitle: string
@@ -1023,6 +1044,7 @@ export interface Dictionary {
     skipButton: string
     backToProfile: string
     backStep: string
+    stepOfTotal: (current: number, total: number) => string
     plansLoadError: string
     continueWithoutPlanBusy: string
     continueWithoutPlan: string

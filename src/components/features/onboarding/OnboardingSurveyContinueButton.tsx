@@ -50,6 +50,7 @@ export function OnboardingSurveyContinueButton({
       onClick={() => {
         if (step.type === 'static') void onContinue({ kind: 'static' })
         else if (step.type === 'text') void onContinue({ kind: 'text', textValue })
+        else if (step.type === 'country_select') void onContinue({ kind: 'text', textValue })
         else if (step.type === 'number') void onContinue({ kind: 'number', textValue })
         else if (step.type === 'single_select') {
           if (selected) void onContinue({ kind: 'single', selected })

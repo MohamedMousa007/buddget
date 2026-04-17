@@ -612,6 +612,27 @@ export const ar: Dictionary = {
     netWorthGoldIncomplete: 'صافي الثروة قد يكون غير مكتمل — سعر الذهب غير متاح.',
   },
 
+  landing: {
+    heroTitle: 'تحكّم في أموالك',
+    heroSubtitle: 'خطّط شهرك، تابع كل درهم، وحقّق أهدافك. في 5 دقائق.',
+    feature1: 'اختر العملة، خطّط الميزانية، وابقَ متقدّماً على ديونك.',
+    feature2: 'يعمل بدون إنترنت — بياناتك تبقى على جهازك.',
+    feature3: 'Buddgy، المساعد الذكي، يخصّص كل شيء لك.',
+    or: 'أو',
+    ctaSignIn: 'تسجيل الدخول',
+    ctaSignUp: 'أنشئ حساباً مجانياً',
+    ctaGuest: 'المتابعة كضيف',
+    guestHelp: 'بدون بريد إلكتروني. جلستك لن تُحفظ بعد إغلاق التبويب.',
+  },
+
+  guest: {
+    bannerHello: (nickname) => `أهلاً ${nickname}!`,
+    bannerHelloFallback: 'أنت تستكشف كضيف.',
+    saveProgressMessage: 'أنشئ حساباً لحفظ تقدّمك.',
+    saveProgressCta: 'إنشاء حساب',
+    exitGuest: 'الخروج من الضيف',
+  },
+
   settings: {
     pageTitle: 'تفضيلاتك',
     pageSubtitle: 'إدارة العملات وطرق الدفع والبيانات. إعدادات الميزانية موجودة في ملفك الشخصي.',
@@ -1029,6 +1050,7 @@ export const ar: Dictionary = {
     skipButton: 'سأعده بنفسي',
     backToProfile: 'رجوع للملف الشخصي',
     backStep: 'العودة للخطوة السابقة',
+    stepOfTotal: (current, total) => `الخطوة ${current} من ${total}`,
     plansLoadError: 'لم نتمكن من تحميل الخطط الآن. لا تقلق — يمكنك إعداد الميزانية في أي وقت من ملفك الشخصي.',
     continueWithoutPlanBusy: 'جارٍ حفظ إعدادك…',
     continueWithoutPlan: 'متابعة بدون خطة',
