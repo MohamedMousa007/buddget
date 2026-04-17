@@ -893,8 +893,18 @@ export const ar: Dictionary = {
     errorPasswordShort: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.',
     errorPasswordMismatch: 'كلمتا المرور غير متطابقتين. حاول مرة أخرى.',
     errorAccountExists: 'يبدو أن لديك حساباً بالفعل. سجل دخولك بدلاً من ذلك؟',
+    errorNoAccountForEmail: 'لم نجد حساباً بهذا البريد الإلكتروني. تحقق من الإملاء أو أنشئ حساباً جديداً.',
+    errorPasswordWeakComposition: 'يجب أن تحتوي كلمة المرور على حرف ورقم واحد على الأقل.',
     errorSignUpGeneric: 'حدث خطأ. حاول مرة أخرى.',
     errorOtpIncomplete: 'أدخل كل الأرقام الستة للمتابعة.',
+    passwordStrengthLabel: 'قوة كلمة المرور',
+    passwordStrengthWeak: 'ضعيفة',
+    passwordStrengthFair: 'متوسطة',
+    passwordStrengthGood: 'جيدة',
+    passwordStrengthStrong: 'قوية',
+    passwordRuleLength: (n) => `لا تقل عن ${n} أحرف`,
+    passwordRuleLetter: 'حرف واحد على الأقل',
+    passwordRuleNumber: 'رقم واحد على الأقل',
   },
 
   resetPassword: {

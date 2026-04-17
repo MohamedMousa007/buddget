@@ -3,6 +3,7 @@
 import { Lock, Mail } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { inputClass, inputFocus, inputStyle } from '@/components/features/auth-modal/authModalTokens'
+import { PasswordStrengthMeter } from '@/components/features/auth-modal/PasswordStrengthMeter'
 import { useT } from '@/lib/i18n'
 import type { AuthFormMode } from '@/hooks/useAuthModal'
 
@@ -67,7 +68,9 @@ export function AuthCredentialFields({
           <button type="button" onClick={onForgotClick} className="mt-2 text-xs text-[var(--color-brand-red)] hover:underline">
             {t.auth.forgotPassword}
           </button>
-        ) : null}
+        ) : (
+          <PasswordStrengthMeter password={password} />
+        )}
       </div>
       {formMode === 'signup' ? (
         <div>

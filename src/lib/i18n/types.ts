@@ -892,8 +892,18 @@ export interface Dictionary {
     errorPasswordShort: string
     errorPasswordMismatch: string
     errorAccountExists: string
+    errorNoAccountForEmail: string
+    errorPasswordWeakComposition: string
     errorSignUpGeneric: string
     errorOtpIncomplete: string
+    passwordStrengthLabel: string
+    passwordStrengthWeak: string
+    passwordStrengthFair: string
+    passwordStrengthGood: string
+    passwordStrengthStrong: string
+    passwordRuleLength: (n: number) => string
+    passwordRuleLetter: string
+    passwordRuleNumber: string
   }
 
   resetPassword: {
