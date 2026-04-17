@@ -43,9 +43,9 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen">
       <DashboardSearchParamsSync />
-      <div className="px-4 pt-8 pb-6 lg:pt-6 lg:px-8 space-y-6 max-w-5xl mx-auto">
-        {/* KPI Strip */}
-        <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-1">
+      <div className="px-4 pt-4 pb-5 lg:pt-4 lg:px-6 space-y-4 max-w-6xl mx-auto">
+        {/* KPI grid — no horizontal scroll; reflows 2 → 3 → 6 cols. */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2">
           <KPICard
             title={t.dashboard.kpiNetWorth}
             value={nw.netWorth}
@@ -98,7 +98,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Budget Ring + Category */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <BudgetRing
             percent={stats.budgetUsedPercent}
             remaining={stats.remaining}
@@ -121,8 +121,8 @@ export default function DashboardPage() {
         </div>
 
         {/* Savings + Recent */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-4">
             <SavingsCard
               savingsTotal={stats.savingsTotal}
               savingsAccountsTotal={stats.savingsAccountsTotal}

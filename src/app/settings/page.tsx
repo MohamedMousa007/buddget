@@ -29,7 +29,7 @@ export default function SettingsPage() {
         </PageHeaderContent>
       </PageHeader>
 
-      <div className="px-4 py-6 lg:px-8 space-y-6 max-w-3xl mx-auto">
+      <div className="px-4 py-4 lg:px-6 space-y-4 max-w-3xl mx-auto">
         <SettingsImportBanner banner={s.importBanner} />
 
         {!s.user && s.supabaseConfigured ? (

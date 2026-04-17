@@ -179,8 +179,8 @@ export default function SavingsPage() {
         </PageHeaderContent>
       </PageHeader>
 
-      <div className="px-4 py-6 lg:px-8 max-w-3xl mx-auto space-y-6">
-        <section className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-5 space-y-4">
+      <div className="px-4 py-4 lg:px-6 max-w-3xl mx-auto space-y-4">
+        <section className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4 sm:p-5 space-y-3">
           <div className="flex items-center gap-2">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-brand-elevated)]">
               <PieChart className="h-4 w-4 text-[var(--color-brand-red)]" aria-hidden />
@@ -195,7 +195,7 @@ export default function SavingsPage() {
               {t.savings.breakdownRowTotal}
             </p>
             <p
-              className={`text-3xl font-mono-numbers font-bold ${
+              className={`text-xl sm:text-2xl font-mono-numbers font-bold ${
                 nw.netWorth >= 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red)]'
               }`}
             >
@@ -256,7 +256,7 @@ export default function SavingsPage() {
         </section>
 
         {savingsAccounts.length === 0 ? (
-          <div className="glass-card rounded-2xl p-8 text-center space-y-3">
+          <div className="glass-card rounded-2xl p-5 text-center space-y-3">
             <p className="text-sm text-[var(--color-brand-text-secondary)]">{t.savings.emptyAccounts}</p>
             <button
               type="button"
