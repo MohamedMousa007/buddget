@@ -625,6 +625,8 @@ export const en: Dictionary = {
     guestHelp: "No email needed. Your session won\u2019t be saved once you close the tab.",
     guestHelpStandalone:
       "No email needed. Heads up: since you installed Buddget, closing the app will wipe guest data \u2014 create an account to keep it.",
+    siblingTabGuestActive: (nickname) =>
+      `Another tab is signed in as ${nickname}. Starting guest here creates a separate session.`,
   },
 
   guest: {

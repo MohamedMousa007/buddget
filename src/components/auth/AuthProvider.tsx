@@ -21,6 +21,7 @@ import {
   setGuestNext,
   setStorageMode,
 } from '@/lib/guest/guestSession'
+import { postGuestMessage } from '@/lib/guest/guestBroadcast'
 import { isPlanStageComplete } from '@/lib/onboarding/onboardingStages'
 import { LandingGate } from '@/components/auth/LandingGate'
 import { GuestSaveProgressBanner } from '@/components/auth/GuestSaveProgressBanner'
@@ -170,6 +171,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setGuestNicknameState(nickname)
       setGuestNext(nextAfterOnboarding ?? null)
       setIsGuest(true)
+      postGuestMessage({
+        kind: 'guest-started',
+        nickname,
+        next: nextAfterOnboarding ?? null,
+      })
       // Navigate immediately so there's no render frame of landing → dashboard →
       // onboarding. The AuthProvider mode-derived redirect still runs as a fallback.
       router.replace('/guest-onboarding')
@@ -187,6 +193,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setStorageMode(null)
     setIsGuest(false)
     setGuestNicknameState(null)
+    postGuestMessage({ kind: 'guest-ended' })
     router.replace('/')
   }, [router])
 

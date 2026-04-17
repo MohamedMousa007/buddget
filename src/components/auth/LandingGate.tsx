@@ -7,6 +7,7 @@ import { useAuth } from '@/components/auth/auth-context'
 import { LanguageToggle } from '@/components/ui/LanguageToggle'
 import { useT } from '@/lib/i18n'
 import { getGuestFlag } from '@/lib/guest/guestSession'
+import { onGuestMessage } from '@/lib/guest/guestBroadcast'
 import { isPlanStageComplete } from '@/lib/onboarding/onboardingStages'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 
@@ -51,6 +52,18 @@ export function LandingGate() {
     const onboardingDone = isPlanStageComplete(onboardingState)
     router.replace(onboardingDone ? '/' : '/guest-onboarding')
   }, [onboardingState, router])
+
+  // Listen for "another tab started a guest session" broadcasts. Since
+  // sessionStorage is per-tab we don't get the flag here, but we can show a
+  // gentle hint that another window already has one going. Re-broadcasts are
+  // debounced by the message kind — just the latest wins.
+  const [siblingGuestNickname, setSiblingGuestNickname] = useState<string | null>(null)
+  useEffect(() => {
+    return onGuestMessage((msg) => {
+      if (msg.kind === 'guest-started') setSiblingGuestNickname(msg.nickname)
+      else if (msg.kind === 'guest-ended') setSiblingGuestNickname(null)
+    })
+  }, [])
 
   // Preserve the full deep-link destination for sign-in / sign-up so bookmarked
   // routes and referral query params (?ref=…) survive the auth round-trip.
@@ -129,6 +142,14 @@ export function LandingGate() {
           </div>
 
           <div className="space-y-1.5 text-center">
+            {siblingGuestNickname ? (
+              <p
+                role="status"
+                className="text-[11px] text-[var(--color-brand-amber)] leading-relaxed"
+              >
+                {t.landing.siblingTabGuestActive(siblingGuestNickname)}
+              </p>
+            ) : null}
             <button
               type="button"
               onClick={() => startGuest(nextPath)}
