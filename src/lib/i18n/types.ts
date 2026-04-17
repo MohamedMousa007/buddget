@@ -939,6 +939,10 @@ export interface Dictionary {
     emailAlreadyRegistered: string
     emailPendingVerification: string
     resendCode: string
+    continueWithGoogle: string
+    continueWithApple: string
+    orContinueWithEmail: string
+    oauthUnavailable: string
     emailCheckInFlight: string
     showPassword: string
     hidePassword: string
