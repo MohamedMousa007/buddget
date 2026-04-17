@@ -623,6 +623,7 @@ export interface Dictionary {
     ctaSignUp: string
     ctaGuest: string
     guestHelp: string
+    guestHelpStandalone: string
   }
 
   guest: {
@@ -631,6 +632,7 @@ export interface Dictionary {
     saveProgressMessage: string
     saveProgressCta: string
     exitGuest: string
+    mergedToast: string
   }
 
   settings: {
@@ -943,6 +945,7 @@ export interface Dictionary {
     continueWithApple: string
     orContinueWithEmail: string
     oauthUnavailable: string
+    sessionExpired: string
     emailCheckInFlight: string
     showPassword: string
     hidePassword: string
@@ -958,6 +961,7 @@ export interface Dictionary {
     errorMinLength: (min: number) => string
     errorMismatch: string
     errorUpdateFailed: string
+    errorLinkExpired: string
     errorWeakPassword: string
     buttonSubmit: string
     successSignInPrompt: string

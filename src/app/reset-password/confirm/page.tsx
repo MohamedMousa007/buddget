@@ -98,7 +98,17 @@ export default function ResetPasswordConfirmPage() {
     const { error: e } = await supabase.auth.updateUser({ password })
     if (e) {
       setLoading(false)
-      setError(t.resetPassword.errorUpdateFailed)
+      // Distinguish an expired reset link (needs a fresh email) from a generic
+      // failure (probably transient network) so the user knows what to do.
+      const msg = (e.message || '').toLowerCase()
+      const looksExpired =
+        msg.includes('expired') ||
+        msg.includes('invalid token') ||
+        msg.includes('not found') ||
+        msg.includes('jwt')
+      setError(
+        looksExpired ? t.resetPassword.errorLinkExpired : t.resetPassword.errorUpdateFailed,
+      )
       return
     }
     try {

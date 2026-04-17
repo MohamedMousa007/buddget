@@ -623,6 +623,8 @@ export const en: Dictionary = {
     ctaSignUp: 'Create a free account',
     ctaGuest: 'Continue as guest',
     guestHelp: "No email needed. Your session won\u2019t be saved once you close the tab.",
+    guestHelpStandalone:
+      "No email needed. Heads up: since you installed Buddget, closing the app will wipe guest data \u2014 create an account to keep it.",
   },
 
   guest: {
@@ -631,6 +633,7 @@ export const en: Dictionary = {
     saveProgressMessage: 'Create an account to save your progress.',
     saveProgressCta: 'Create account',
     exitGuest: 'Exit guest',
+    mergedToast: 'Your guest data is now saved to your account',
   },
 
   settings: {
@@ -947,6 +950,7 @@ export const en: Dictionary = {
     continueWithApple: 'Continue with Apple',
     orContinueWithEmail: 'or continue with email',
     oauthUnavailable: "Couldn\u2019t reach that provider. Try again or use email.",
+    sessionExpired: 'Your session expired. Sign in again to continue where you left off.',
     emailCheckInFlight: 'Checking availability\u2026',
     showPassword: 'Show password',
     hidePassword: 'Hide password',
@@ -962,6 +966,7 @@ export const en: Dictionary = {
     errorMinLength: (min) => `Password needs to be at least ${min} characters.`,
     errorMismatch: "Those passwords don\u2019t match. Try again.",
     errorUpdateFailed: "Oops, something went wrong. Let\u2019s try again.",
+    errorLinkExpired: 'That reset link has expired. Request a fresh one from the sign-in screen.',
     errorWeakPassword: 'Use at least one letter and one number.',
     buttonSubmit: 'Update my password',
     successSignInPrompt:

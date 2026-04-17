@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Sparkles } from 'lucide-react'
 import { useAuth } from '@/components/auth/auth-context'
@@ -26,6 +26,21 @@ export function LandingGate() {
   const router = useRouter()
   const { openAuthModal, startGuest } = useAuth()
   const onboardingState = useFinanceStore((s) => s.onboardingState)
+  // Detect PWA standalone mode so we can nudge users away from guest when they
+  // installed the app — closing a PWA window wipes sessionStorage same as a tab.
+  // Lazy init reads the match synchronously; the listener handles orientation /
+  // display-mode changes that happen while the page is open.
+  const [isStandalone, setIsStandalone] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false
+    return window.matchMedia('(display-mode: standalone)').matches
+  })
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mql = window.matchMedia('(display-mode: standalone)')
+    const handler = (e: MediaQueryListEvent) => setIsStandalone(e.matches)
+    mql.addEventListener('change', handler)
+    return () => mql.removeEventListener('change', handler)
+  }, [])
 
   // If the browser already has a guest session (user hit Back from guest
   // onboarding, or we reached this component before AuthProvider's redirect
@@ -122,7 +137,7 @@ export function LandingGate() {
               {t.landing.ctaGuest}
             </button>
             <p className="text-[11px] text-[var(--color-brand-text-muted)] leading-relaxed">
-              {t.landing.guestHelp}
+              {isStandalone ? t.landing.guestHelpStandalone : t.landing.guestHelp}
             </p>
           </div>
         </div>
