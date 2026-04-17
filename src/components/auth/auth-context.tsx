@@ -27,8 +27,12 @@ export type AuthContextValue = {
   mode: AuthMode
   /** Display name for the active guest, surfaced in banners / onboarding. Null for non-guests. */
   guestNickname: string | null
-  /** Transition into guest mode. No-op if already guest/authed. */
-  startGuest: () => void
+  /**
+   * Transition into guest mode. No-op if already guest/authed. `nextAfterOnboarding`
+   * is the path the user was trying to reach before hitting the landing gate;
+   * we route them there once guest onboarding completes.
+   */
+  startGuest: (nextAfterOnboarding?: string) => void
   /** Exit guest mode back to the landing page. Wipes sessionStorage state. */
   endGuest: () => Promise<void>
 }

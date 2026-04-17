@@ -16,6 +16,7 @@ const STORAGE_KEYS = [
   // Guest session markers — mirror the names used in src/lib/guest/guestSession.ts.
   'buddget_guest',
   'buddget_guest_nickname',
+  'buddget_guest_next',
   'buddget_storage_mode',
 ] as const
 

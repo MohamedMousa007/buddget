@@ -18,6 +18,7 @@ import {
   setGuestFlag,
   getGuestNickname,
   setGuestNickname,
+  setGuestNext,
   setStorageMode,
 } from '@/lib/guest/guestSession'
 import { isPlanStageComplete } from '@/lib/onboarding/onboardingStages'
@@ -137,30 +138,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthModalMessage(null)
   }, [])
 
-  const startGuest = useCallback(() => {
-    // Order matters: reset in-memory state BEFORE flipping the storage mode so
-    // any leftover localStorage data doesn't bleed into the guest session.
-    try {
-      useFinanceStore.getState().reset()
-      useSettingsStore.getState().reset()
-    } catch (e) {
-      console.error('[auth] guest reset failed', e)
-    }
-    setStorageMode('guest')
-    const nickname = generateGuestNickname()
-    try {
-      useFinanceStore.getState().updateProfile({ name: nickname })
-    } catch (e) {
-      console.error('[auth] guest updateProfile failed', e)
-    }
-    setGuestFlag(true)
-    setGuestNickname(nickname)
-    setGuestNicknameState(nickname)
-    setIsGuest(true)
-    // Navigate immediately so there's no render frame of landing → dashboard →
-    // onboarding. The AuthProvider mode-derived redirect still runs as a fallback.
-    router.replace('/guest-onboarding')
-  }, [router])
+  const startGuest = useCallback(
+    (nextAfterOnboarding?: string) => {
+      // Order matters: reset in-memory state BEFORE flipping the storage mode so
+      // any leftover localStorage data doesn't bleed into the guest session.
+      try {
+        useFinanceStore.getState().reset()
+        useSettingsStore.getState().reset()
+      } catch (e) {
+        console.error('[auth] guest reset failed', e)
+      }
+      setStorageMode('guest')
+      const nickname = generateGuestNickname()
+      try {
+        useFinanceStore.getState().updateProfile({ name: nickname })
+      } catch (e) {
+        console.error('[auth] guest updateProfile failed', e)
+      }
+      setGuestFlag(true)
+      setGuestNickname(nickname)
+      setGuestNicknameState(nickname)
+      setGuestNext(nextAfterOnboarding ?? null)
+      setIsGuest(true)
+      // Navigate immediately so there's no render frame of landing → dashboard →
+      // onboarding. The AuthProvider mode-derived redirect still runs as a fallback.
+      router.replace('/guest-onboarding')
+    },
+    [router],
+  )
 
   const endGuest = useCallback(async () => {
     // clearBudgetData is dual-storage and wipes the guest keys too.
@@ -323,7 +328,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (shouldRedirectGuestToOnboarding) router.replace('/guest-onboarding')
   }, [shouldRedirectGuestToOnboarding, router])
 
-  useGuestBeforeUnloadWarning(mode === 'guest' && guestOnboardingDone)
+  // Warn guests before tab close / reload regardless of whether they finished
+  // onboarding — losing 4 steps of typing is as painful as losing 3 expenses.
+  useGuestBeforeUnloadWarning(mode === 'guest')
 
   const showLandingGate = mode === 'landing' && !isBypassRoute
   const showLoadingSplash = mode === 'loading' && !isBypassRoute
