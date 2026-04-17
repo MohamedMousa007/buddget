@@ -3,10 +3,25 @@
 import { useState } from 'react'
 import { AlertCircle, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { inputClass, inputFocus, inputStyle } from '@/components/features/auth-modal/authModalTokens'
+import {
+  inputClass,
+  inputFocus,
+  inputFocusError,
+  inputFocusValid,
+  inputStyle,
+  MIN_PASSWORD_LEN,
+} from '@/components/features/auth-modal/authModalTokens'
 import { PasswordStrengthMeter } from '@/components/features/auth-modal/PasswordStrengthMeter'
 import { useT } from '@/lib/i18n'
 import type { AuthFormMode } from '@/hooks/useAuthModal'
+
+type ValidationTone = 'neutral' | 'valid' | 'error'
+
+function toneClass(tone: ValidationTone): string {
+  if (tone === 'error') return inputFocusError
+  if (tone === 'valid') return inputFocusValid
+  return inputFocus
+}
 
 export interface AuthCredentialFieldsProps {
   formMode: AuthFormMode
@@ -74,6 +89,27 @@ export function AuthCredentialFields({
   const [showConfirm, setShowConfirm] = useState(false)
   const isSignup = formMode === 'signup'
 
+  // Per-field validation tones. Only signup fields ever go non-neutral — on the
+  // sign-in screen we can't tell what's "valid" without hitting the server, so
+  // we keep everything neutral until the form is submitted.
+  const passwordPassesRules =
+    password.length >= MIN_PASSWORD_LEN && /[A-Za-z]/.test(password) && /\d/.test(password)
+  const emailTone: ValidationTone = isSignup
+    ? emailCheckState === 'taken'
+      ? 'error'
+      : emailCheckState === 'free'
+        ? 'valid'
+        : 'neutral'
+    : 'neutral'
+  const passwordTone: ValidationTone =
+    isSignup && password.length > 0 && passwordPassesRules ? 'valid' : 'neutral'
+  const confirmTone: ValidationTone =
+    isSignup && confirmPassword.length > 0 && password.length > 0
+      ? confirmPassword === password
+        ? 'valid'
+        : 'error'
+      : 'neutral'
+
   return (
     <div className="space-y-3">
       <div>
@@ -85,7 +121,7 @@ export function AuthCredentialFields({
             value={email}
             onChange={(e) => onEmailChange(e.target.value)}
             onBlur={() => onEmailBlur?.()}
-            className={cn(inputClass, inputFocus, 'ps-10')}
+            className={cn(inputClass, toneClass(emailTone), 'ps-10')}
             style={inputStyle}
             placeholder={t.auth.placeholderEmail}
             aria-invalid={isSignup && emailCheckState === 'taken'}
@@ -132,7 +168,7 @@ export function AuthCredentialFields({
             value={password}
             onChange={(e) => onPasswordChange(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && void onSubmitPrimary()}
-            className={cn(inputClass, inputFocus, 'ps-10 pe-10')}
+            className={cn(inputClass, toneClass(passwordTone), 'ps-10 pe-10')}
             style={inputStyle}
             placeholder={t.auth.placeholderPassword}
           />
@@ -160,9 +196,10 @@ export function AuthCredentialFields({
               value={confirmPassword}
               onChange={(e) => onConfirmPasswordChange(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && void onSubmitPrimary()}
-              className={cn(inputClass, inputFocus, 'ps-10 pe-10')}
+              className={cn(inputClass, toneClass(confirmTone), 'ps-10 pe-10')}
               style={inputStyle}
               placeholder={t.auth.placeholderConfirm}
+              aria-invalid={confirmTone === 'error'}
             />
             <PasswordVisibilityToggle
               visible={showConfirm}
