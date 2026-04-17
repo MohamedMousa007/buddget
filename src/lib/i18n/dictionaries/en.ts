@@ -947,6 +947,8 @@ export const en: Dictionary = {
     twoFaCodeSent: (email) => `This browser isn\u2019t recognised yet. We sent a 6-digit code to ${email} to verify it\u2019s you.`,
     emailAlreadyRegistered: 'This email is already registered.',
     emailPendingVerification: 'We already sent a code to this email — finish verifying.',
+    noAccountForEmail: "We couldn\u2019t find an account with that email.",
+    createAccountInstead: 'Create one',
     resendCode: 'Resend code',
     continueWithGoogle: 'Continue with Google',
     continueWithApple: 'Continue with Apple',

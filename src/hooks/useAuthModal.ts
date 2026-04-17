@@ -80,15 +80,24 @@ export function useAuthModal() {
    * derives back to 'idle' without needing a setState-in-effect to reset.
    */
   const [emailCheck, setEmailCheck] = useState<{
-    state: 'idle' | 'checking' | 'taken' | 'pending' | 'free'
+    state: 'idle' | 'checking' | 'taken' | 'pending' | 'free' | 'missing' | 'exists'
     email: string
   }>({ state: 'idle', email: '' })
-  const emailCheckState: 'idle' | 'checking' | 'taken' | 'pending' | 'free' =
-    emailCheck.state !== 'idle' &&
-    emailCheck.state !== 'checking' &&
+  const rawState = emailCheck.state
+  const staleForCurrentEmail =
+    rawState !== 'idle' &&
+    rawState !== 'checking' &&
     emailCheck.email !== email.trim().toLowerCase()
+  const emailCheckState: 'idle' | 'checking' | 'taken' | 'pending' | 'free' = staleForCurrentEmail
+    ? 'idle'
+    : rawState === 'missing' || rawState === 'exists'
       ? 'idle'
-      : emailCheck.state
+      : (rawState as 'idle' | 'checking' | 'taken' | 'pending' | 'free')
+  const signinEmailCheckState: 'idle' | 'checking' | 'missing' | 'exists' = staleForCurrentEmail
+    ? 'idle'
+    : rawState === 'missing' || rawState === 'exists' || rawState === 'checking'
+      ? (rawState as 'checking' | 'missing' | 'exists')
+      : 'idle'
 
   useEffect(() => {
     if (resendCooldown <= 0) return
@@ -129,7 +138,6 @@ export function useAuthModal() {
    * the rest of the form, and we don't pile up a big submit-time error.
    */
   const checkEmailOnBlur = useCallback(async () => {
-    if (formMode !== 'signup') return
     const trimmed = email.trim()
     const key = trimmed.toLowerCase()
     if (!trimmed || !isValidEmailFormat(trimmed)) {
@@ -149,12 +157,18 @@ export function useAuthModal() {
         return
       }
       const body = (await res.json()) as { exists?: boolean; verified?: boolean }
-      const nextState: 'taken' | 'pending' | 'free' = body.exists
-        ? body.verified
-          ? 'taken'
-          : 'pending'
-        : 'free'
-      setEmailCheck({ state: nextState, email: key })
+      if (formMode === 'signup') {
+        const nextState: 'taken' | 'pending' | 'free' = body.exists
+          ? body.verified
+            ? 'taken'
+            : 'pending'
+          : 'free'
+        setEmailCheck({ state: nextState, email: key })
+      } else {
+        // Sign-in mode: flag "no account for this email" so we can offer to
+        // switch to signup, or confirm "account exists" for a gentle valid tone.
+        setEmailCheck({ state: body.exists ? 'exists' : 'missing', email: key })
+      }
     } catch {
       setEmailCheck({ state: 'idle', email: '' })
     }
@@ -447,6 +461,7 @@ export function useAuthModal() {
     resendCooldown,
     verifyPurpose,
     emailCheckState,
+    signinEmailCheckState,
     checkEmailOnBlur,
     rememberMe,
     setRememberMe,

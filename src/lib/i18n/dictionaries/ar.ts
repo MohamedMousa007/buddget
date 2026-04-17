@@ -946,6 +946,8 @@ export const ar: Dictionary = {
     twoFaCodeSent: (email) => `هذا المتصفح ليس ضمن أجهزتك الموثوقة. أرسلنا رمزاً من 6 أرقام إلى ${email} للتحقق من هويتك.`,
     emailAlreadyRegistered: 'هذا البريد الإلكتروني مسجّل بالفعل.',
     emailPendingVerification: 'أرسلنا رمزاً إلى هذا البريد من قبل — أكمل التحقق.',
+    noAccountForEmail: 'لم نعثر على حساب بهذا البريد الإلكتروني.',
+    createAccountInstead: 'أنشئ حساباً',
     resendCode: 'إعادة إرسال الرمز',
     continueWithGoogle: 'المتابعة مع Google',
     continueWithApple: 'المتابعة مع Apple',

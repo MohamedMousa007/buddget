@@ -108,6 +108,7 @@ export function AuthModal() {
                 resendCode={a.resendCode}
                 switchToSignIn={a.switchToSignIn}
                 emailCheckState={a.emailCheckState}
+                signinEmailCheckState={a.signinEmailCheckState}
                 checkEmailOnBlur={a.checkEmailOnBlur}
                 rememberMe={a.rememberMe}
                 setRememberMe={a.setRememberMe}
