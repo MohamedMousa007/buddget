@@ -42,6 +42,13 @@ export interface AuthCredentialFieldsProps {
   onResendPendingCode?: () => void
   /** Signup-only: CTA that flips the form to sign-in when the email is already registered. */
   onSwitchToSignIn?: () => void
+  /** Sign-in-only: CTA that flips to signup when no account is found for the email. */
+  onSwitchToSignUp?: () => void
+  /**
+   * Sign-in-only: email blur lookup state. Parallels `emailCheckState` but fires
+   * even on sign-in mode so we can nudge "no account found — create one?".
+   */
+  signinEmailCheckState?: 'idle' | 'checking' | 'missing' | 'exists'
 }
 
 /**
@@ -62,6 +69,8 @@ export function AuthCredentialFields({
   onEmailBlur,
   emailCheckState = 'idle',
   onSwitchToSignIn,
+  onSwitchToSignUp,
+  signinEmailCheckState = 'idle',
   onResendPendingCode,
 }: AuthCredentialFieldsProps) {
   const t = useT()
@@ -80,7 +89,11 @@ export function AuthCredentialFields({
       : emailCheckState === 'free'
         ? 'valid'
         : 'neutral'
-    : 'neutral'
+    : signinEmailCheckState === 'missing'
+      ? 'error'
+      : signinEmailCheckState === 'exists'
+        ? 'valid'
+        : 'neutral'
   const passwordTone: ValidationTone =
     isSignup && password.length > 0 && passwordPassesRules ? 'valid' : 'neutral'
   const confirmTone: ValidationTone =
@@ -135,6 +148,30 @@ export function AuthCredentialFields({
                     className="underline font-medium hover:no-underline"
                   >
                     {t.auth.signInInstead}
+                  </button>
+                </>
+              ) : null}
+            </span>
+          </p>
+        ) : null}
+        {!isSignup && signinEmailCheckState === 'missing' ? (
+          <p
+            id="signin-no-account"
+            className="mt-1.5 text-[12px] text-[var(--color-brand-amber)] flex items-start gap-1.5"
+            role="alert"
+          >
+            <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden />
+            <span>
+              {t.auth.noAccountForEmail}
+              {onSwitchToSignUp ? (
+                <>
+                  {' '}
+                  <button
+                    type="button"
+                    onClick={onSwitchToSignUp}
+                    className="underline font-medium hover:no-underline"
+                  >
+                    {t.auth.createAccountInstead}
                   </button>
                 </>
               ) : null}

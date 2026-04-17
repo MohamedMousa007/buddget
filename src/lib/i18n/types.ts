@@ -941,6 +941,8 @@ export interface Dictionary {
     twoFaCodeSent: (email: string) => string
     emailAlreadyRegistered: string
     emailPendingVerification: string
+    noAccountForEmail: string
+    createAccountInstead: string
     resendCode: string
     continueWithGoogle: string
     continueWithApple: string
