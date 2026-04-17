@@ -22,7 +22,7 @@ export function AdminLoginScreen({ pin, onPinChange, error, loading, onLogin }: 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="glass-card rounded-2xl p-8 w-full max-w-sm"
+        className="glass-card rounded-2xl p-5 w-full max-w-sm"
       >
         <div className="flex flex-col items-center mb-6">
           <div className="w-16 h-16 rounded-2xl bg-[var(--color-brand-elevated)] flex items-center justify-center mb-4">

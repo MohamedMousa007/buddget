@@ -64,7 +64,7 @@ export function AddDebtSheet() {
   return (
     <>
       <ModalShell open={d.isOpen} onBackdropClick={d.closeSheet}>
-        <div className="p-6">
+        <div className="p-5">
           <AddDebtSheetHeader title={title} onClose={d.closeSheet} />
           {d.isPayDebtFlow ? (
             d.payDebtStep === 'select' ? (

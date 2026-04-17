@@ -22,17 +22,17 @@ export interface ModalSheetHeaderProps {
   titleRowClassName?: string
 }
 
-export function ModalSheetHeader({ title, onClose, titleRowClassName = 'mb-6' }: ModalSheetHeaderProps) {
+export function ModalSheetHeader({ title, onClose, titleRowClassName = 'mb-4' }: ModalSheetHeaderProps) {
   const t = useT()
   return (
     <>
       <ModalSheetDragHandle />
       <div className={cn('flex items-center justify-between', titleRowClassName)}>
-        <h3 className="text-lg font-semibold text-[var(--color-brand-text-primary)]">{title}</h3>
+        <h3 className="text-base font-semibold text-[var(--color-brand-text-primary)]">{title}</h3>
         <button
           type="button"
           onClick={onClose}
-          className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors"
+          className="inline-flex items-center justify-center min-w-[40px] min-h-[40px] rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors"
           aria-label={t.common.close}
         >
           <X className="w-5 h-5 text-[var(--color-brand-text-muted)]" aria-hidden />

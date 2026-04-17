@@ -149,7 +149,7 @@ export function BudgetPlannerCategories({
   const showRebuild = !flowOpen && categories.length > 0
 
   return (
-    <div className="bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl p-6 space-y-4">
+    <div className="bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl p-4 sm:p-5 space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1 space-y-2">
           <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">

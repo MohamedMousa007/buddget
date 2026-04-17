@@ -19,7 +19,7 @@ export function BudgetSetupNoPlansEmpty({
   onCreate,
 }: BudgetSetupNoPlansEmptyProps) {
   return (
-    <div className="bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl p-6">
+    <div className="bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl p-4 sm:p-5">
       <EmptyState
         icon="🎯"
         title={title}
