@@ -965,7 +965,10 @@ export interface Dictionary {
     errorMismatch: string
     errorUpdateFailed: string
     errorLinkExpired: string
+    errorLinkExpiredTitle: string
+    errorSamePassword: string
     errorWeakPassword: string
+    requestNewLink: string
     buttonSubmit: string
     successSignInPrompt: string
   }

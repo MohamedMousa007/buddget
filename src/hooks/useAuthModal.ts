@@ -35,6 +35,7 @@ export function useAuthModal() {
     closeAuthModal,
     authModalMessage,
     authModalInitialMode,
+    authModalInitialStep,
   } = useAuth()
   const t = useT()
   const supabase = useMemo(() => createClient(), [])
@@ -55,7 +56,9 @@ export function useAuthModal() {
   // "Sign up" button passes 'signup'). The modal re-mounts on every open, so this
   // picks up the latest `authModalInitialMode` without needing a sync effect.
   const [formMode, setFormMode] = useState<AuthFormMode>(authModalInitialMode)
-  const [step, setStep] = useState<AuthStep>('form')
+  const [step, setStep] = useState<AuthStep>(
+    authModalInitialStep === 'forgot' ? 'forgot' : 'form',
+  )
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')

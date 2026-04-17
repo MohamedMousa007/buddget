@@ -71,6 +71,37 @@ function PasswordUpdatedCookieSync() {
   return null
 }
 
+/**
+ * After an expired reset link, `/reset-password/confirm` redirects to
+ * `/?requestReset=1`. We pick that up here and route the user straight to
+ * the forgot-password step so they can request a new email without hunting.
+ */
+function RequestResetQuerySync() {
+  const searchParams = useSearchParams()
+  const pathname = usePathname()
+  const router = useRouter()
+  const handled = useRef(false)
+  // We don't use useAuth here because the forgot step needs to be opened
+  // with a specific `step: 'forgot'` default. Easiest: set the flag via the
+  // same openAuthModal API but then flip step via a follow-up. The auth
+  // modal hook supports `step` via its own setStep; we simulate that by
+  // using the message as the trigger for the modal.
+  const { openAuthModal } = useAuth()
+
+  useEffect(() => {
+    if (handled.current) return
+    if (searchParams.get('requestReset') !== '1') return
+    handled.current = true
+    openAuthModal('/', null, 'signin', 'forgot')
+    const qs = new URLSearchParams(searchParams.toString())
+    qs.delete('requestReset')
+    const q = qs.toString()
+    router.replace(q ? `${pathname}?${q}` : pathname)
+  }, [searchParams, pathname, router, openAuthModal])
+
+  return null
+}
+
 /** Opens the auth modal when `?next=` is present (e.g. middleware redirect from /admin). */
 function AuthNextQuerySync({ configured }: { configured: boolean }) {
   const searchParams = useSearchParams()
@@ -104,6 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authModalMessage, setAuthModalMessage] = useState<string | null>(null)
   const [authModalInitialMode, setAuthModalInitialMode] = useState<'signin' | 'signup'>('signin')
+  const [authModalInitialStep, setAuthModalInitialStep] = useState<'form' | 'forgot'>('form')
   // Lazy init reads sessionStorage synchronously on client mount — no flash of
   // landing before a guest session is detected. SSR sees `false` which is fine:
   // `mode` is now derived from `user.is_anonymous`. We keep a local nickname
@@ -127,12 +159,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const openAuthModal = useCallback(
-    (next?: string, message?: string | null, initialMode?: 'signin' | 'signup') => {
+    (
+      next?: string,
+      message?: string | null,
+      initialMode?: 'signin' | 'signup',
+      initialStep?: 'form' | 'forgot',
+    ) => {
       if (next && next.startsWith('/') && !next.startsWith('//')) {
         setPendingNext(next)
       }
       setAuthModalMessage(message ?? null)
       setAuthModalInitialMode(initialMode ?? 'signin')
+      setAuthModalInitialStep(initialStep ?? 'form')
       setAuthModalOpen(true)
     },
     [],
@@ -325,6 +363,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setPendingNext,
             authModalMessage,
             authModalInitialMode,
+            authModalInitialStep,
             openAuthModal,
             closeAuthModal,
             mode,
@@ -341,6 +380,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setPendingNext,
             authModalMessage: null,
             authModalInitialMode: 'signin' as const,
+            authModalInitialStep: 'form' as const,
             openAuthModal,
             closeAuthModal,
             mode: 'landing',
@@ -358,6 +398,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       pendingNext,
       authModalMessage,
       authModalInitialMode,
+      authModalInitialStep,
       openAuthModal,
       closeAuthModal,
       mode,
@@ -404,6 +445,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         <AuthNextQuerySync configured={configured} />
       </Suspense>
       <PasswordUpdatedCookieSync />
+      <Suspense fallback={null}>
+        <RequestResetQuerySync />
+      </Suspense>
       {showLoadingSplash ? (
         <AuthLoadingSplash />
       ) : showLandingGate ? (

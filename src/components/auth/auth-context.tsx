@@ -16,7 +16,14 @@ export type AuthContextValue = {
   authModalMessage: string | null
   /** Which tab the modal should open on ('signin' by default). Callers override via `openAuthModal`. */
   authModalInitialMode: 'signin' | 'signup'
-  openAuthModal: (next?: string, message?: string | null, initialMode?: 'signin' | 'signup') => void
+  /** Which step the modal should open on ('form' by default). Callers override via `openAuthModal`. */
+  authModalInitialStep: 'form' | 'forgot'
+  openAuthModal: (
+    next?: string,
+    message?: string | null,
+    initialMode?: 'signin' | 'signup',
+    initialStep?: 'form' | 'forgot',
+  ) => void
   closeAuthModal: () => void
   /**
    * 'loading'       — initial auth fetch in flight; no gate decision yet.
