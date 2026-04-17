@@ -623,6 +623,8 @@ export const ar: Dictionary = {
     ctaSignUp: 'أنشئ حساباً مجانياً',
     ctaGuest: 'المتابعة كضيف',
     guestHelp: 'بدون بريد إلكتروني. جلستك لن تُحفظ بعد إغلاق التبويب.',
+    guestHelpStandalone:
+      'بدون بريد إلكتروني. ملاحظة: بعد تثبيت Buddget، إغلاق التطبيق سيمسح بيانات الضيف — أنشئ حساباً للاحتفاظ بها.',
   },
 
   guest: {
@@ -631,6 +633,7 @@ export const ar: Dictionary = {
     saveProgressMessage: 'أنشئ حساباً لحفظ تقدّمك.',
     saveProgressCta: 'إنشاء حساب',
     exitGuest: 'الخروج من الضيف',
+    mergedToast: 'تم حفظ بيانات الضيف في حسابك',
   },
 
   settings: {
@@ -946,6 +949,7 @@ export const ar: Dictionary = {
     continueWithApple: 'المتابعة مع Apple',
     orContinueWithEmail: 'أو تابع بالبريد الإلكتروني',
     oauthUnavailable: 'لم نتمكن من الوصول للموفّر. حاول مرة أخرى أو استخدم البريد الإلكتروني.',
+    sessionExpired: 'انتهت جلستك. سجّل دخولك مرة أخرى للمتابعة.',
     emailCheckInFlight: 'جارٍ التحقق…',
     showPassword: 'إظهار كلمة المرور',
     hidePassword: 'إخفاء كلمة المرور',
@@ -961,6 +965,7 @@ export const ar: Dictionary = {
     errorMinLength: (min) => `كلمة المرور يجب أن تكون ${min} أحرف على الأقل.`,
     errorMismatch: 'كلمتا المرور غير متطابقتين. حاول مرة أخرى.',
     errorUpdateFailed: 'عذراً، حدث خطأ ما. هيا نحاول مرة أخرى.',
+    errorLinkExpired: 'انتهت صلاحية رابط الإعادة. اطلب رابطاً جديداً من شاشة تسجيل الدخول.',
     errorWeakPassword: 'استخدم حرفاً واحداً على الأقل ورقماً واحداً.',
     buttonSubmit: 'تحديث كلمة المرور',
     successSignInPrompt: 'تم تحديث كلمة المرور. سجّل الدخول بكلمة المرور الجديدة للمتابعة.',

@@ -25,6 +25,9 @@ import { isPlanStageComplete } from '@/lib/onboarding/onboardingStages'
 import { LandingGate } from '@/components/auth/LandingGate'
 import { GuestSaveProgressBanner } from '@/components/auth/GuestSaveProgressBanner'
 import { useGuestBeforeUnloadWarning } from '@/hooks/useGuestBeforeUnloadWarning'
+import { useActionToast } from '@/components/ui/ActionToast'
+import { snapshot } from '@/lib/supabase/remote/snapshot'
+import { hasMeaningfulLocalState } from '@/lib/supabase/remote/merge'
 
 /**
  * Minimal centered splash rendered while the initial auth check is in flight.
@@ -187,6 +190,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.replace('/')
   }, [router])
 
+  const t = useT()
+  const wasAuthedRef = useRef(false)
+  const showToast = useActionToast()
+
   useEffect(() => {
     if (!configured) {
       const id = globalThis.setTimeout(() => setLoading(false), 0)
@@ -206,17 +213,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setStorageMode(null)
         setIsGuest(false)
         setGuestNicknameState(null)
+        // If we were previously signed in AND the user is still on an in-app
+        // route (not a deliberate sign-out from the profile page), assume the
+        // session expired and re-open the auth modal with an explanation
+        // instead of silently dropping them on the landing.
+        if (wasAuthedRef.current && !pathname.startsWith('/reset-password')) {
+          wasAuthedRef.current = false
+          setAuthModalMessage(t.auth.sessionExpired)
+          setAuthModalInitialMode('signin')
+          setAuthModalOpen(true)
+        }
       } else if (_event === 'SIGNED_IN' && nextSession?.user) {
         // A signed-in user supersedes any guest session — flip the storage mode
         // to localStorage and drop the session-storage markers. SupabaseFinanceSync
         // handles merging guest data that's still in Zustand memory.
         // NOTE: promotion of guest → skip-expert-onboarding runs in the auth
         // handlers themselves (useAuthModal) so the redirect can await it.
+        const comingFromGuest = getGuestFlag()
+        const hadGuestData = comingFromGuest
+          ? hasMeaningfulLocalState(snapshot(useFinanceStore.getState()))
+          : false
         setStorageMode('auth')
         setGuestFlag(false)
         setGuestNickname(null)
         setIsGuest(false)
         setGuestNicknameState(null)
+        wasAuthedRef.current = true
+        if (hadGuestData) {
+          // Confirm-on-merge toast — user keeps their guest entries now that
+          // they have a real account. Strictly informational; the actual merge
+          // is handled by SupabaseFinanceSync (mergeSnapshots union-by-id).
+          try {
+            showToast(t.guest.mergedToast)
+          } catch {
+            /* toast provider not mounted — fine */
+          }
+        }
       }
       setSession(nextSession)
       setUser(nextSession?.user ?? null)
@@ -227,12 +259,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const s = data.session
       setSession(s)
       setUser(s?.user ?? null)
-      if (s?.user) setAuthModalOpen(false)
+      if (s?.user) {
+        setAuthModalOpen(false)
+        wasAuthedRef.current = true
+      }
       setLoading(false)
     })
 
     return () => subscription.unsubscribe()
-  }, [configured])
+  }, [configured, pathname, showToast, t.auth.sessionExpired, t.guest.mergedToast])
 
   const signOut = useCallback(async () => {
     if (!configured) return
