@@ -624,6 +624,7 @@ export interface Dictionary {
     ctaGuest: string
     guestHelp: string
     guestHelpStandalone: string
+    siblingTabGuestActive: (nickname: string) => string
   }
 
   guest: {

@@ -625,6 +625,8 @@ export const ar: Dictionary = {
     guestHelp: 'بدون بريد إلكتروني. جلستك لن تُحفظ بعد إغلاق التبويب.',
     guestHelpStandalone:
       'بدون بريد إلكتروني. ملاحظة: بعد تثبيت Buddget، إغلاق التطبيق سيمسح بيانات الضيف — أنشئ حساباً للاحتفاظ بها.',
+    siblingTabGuestActive: (nickname) =>
+      `تبويب آخر مفتوح باسم ${nickname}. البدء كضيف هنا ينشئ جلسة منفصلة.`,
   },
 
   guest: {
