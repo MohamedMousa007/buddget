@@ -1,10 +1,14 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
+import { useEffect } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Sparkles } from 'lucide-react'
 import { useAuth } from '@/components/auth/auth-context'
 import { LanguageToggle } from '@/components/ui/LanguageToggle'
 import { useT } from '@/lib/i18n'
+import { getGuestFlag } from '@/lib/guest/guestSession'
+import { isPlanStageComplete } from '@/lib/onboarding/onboardingStages'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 
 /**
  * Pre-auth landing screen. Replaces the dashboard for unauthenticated users
@@ -18,9 +22,26 @@ import { useT } from '@/lib/i18n'
 export function LandingGate() {
   const t = useT()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const router = useRouter()
   const { openAuthModal, startGuest } = useAuth()
+  const onboardingState = useFinanceStore((s) => s.onboardingState)
 
-  const nextPath = pathname && pathname !== '/' ? pathname : '/'
+  // If the browser already has a guest session (user hit Back from guest
+  // onboarding, or we reached this component before AuthProvider's redirect
+  // fired), route them back into their flow instead of showing a fresh landing.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (!getGuestFlag()) return
+    const onboardingDone = isPlanStageComplete(onboardingState)
+    router.replace(onboardingDone ? '/' : '/guest-onboarding')
+  }, [onboardingState, router])
+
+  // Preserve the full deep-link destination for sign-in / sign-up so bookmarked
+  // routes and referral query params (?ref=…) survive the auth round-trip.
+  const qs = searchParams.toString()
+  const nextPath =
+    pathname && pathname !== '/' ? (qs ? `${pathname}?${qs}` : pathname) : '/'
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--color-brand-bg)]">
@@ -56,19 +77,15 @@ export function LandingGate() {
             </p>
           </div>
 
-          <ul className="space-y-2 text-sm text-[var(--color-brand-text-secondary)]">
-            <li className="flex items-start gap-2">
-              <span className="text-[var(--color-brand-green)] mt-0.5">✓</span>
-              <span>{t.landing.feature1}</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-[var(--color-brand-green)] mt-0.5">✓</span>
-              <span>{t.landing.feature2}</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-[var(--color-brand-green)] mt-0.5">✓</span>
-              <span>{t.landing.feature3}</span>
-            </li>
+          <ul role="list" className="space-y-2 text-sm text-[var(--color-brand-text-secondary)]">
+            {[t.landing.feature1, t.landing.feature2, t.landing.feature3].map((feat) => (
+              <li key={feat} className="flex items-start gap-2">
+                <span aria-hidden className="text-[var(--color-brand-green)] mt-0.5">
+                  ✓
+                </span>
+                <span>{feat}</span>
+              </li>
+            ))}
           </ul>
 
           <div className="space-y-2">

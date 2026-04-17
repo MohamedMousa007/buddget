@@ -26,6 +26,22 @@ import { GuestSaveProgressBanner } from '@/components/auth/GuestSaveProgressBann
 import { useGuestBeforeUnloadWarning } from '@/hooks/useGuestBeforeUnloadWarning'
 
 /**
+ * Minimal centered splash rendered while the initial auth check is in flight.
+ * Keeps the tree unmounted (no flicker of dashboard → landing for authed users
+ * on reload) and matches the reset-password page's own loading treatment.
+ */
+function AuthLoadingSplash() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[var(--color-brand-bg)]">
+      <div
+        aria-label="Loading"
+        className="w-8 h-8 border-2 border-[var(--color-brand-border)] border-t-[var(--color-brand-red)] rounded-full animate-spin"
+      />
+    </div>
+  )
+}
+
+/**
  * After a successful password reset, `/reset-password/confirm` signs the user out
  * and redirects to `/?passwordUpdated=1`. We watch for that flag here (rather than
  * inside AppShell, which won't mount for unauthenticated users) and open the
@@ -141,7 +157,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setGuestNickname(nickname)
     setGuestNicknameState(nickname)
     setIsGuest(true)
-  }, [])
+    // Navigate immediately so there's no render frame of landing → dashboard →
+    // onboarding. The AuthProvider mode-derived redirect still runs as a fallback.
+    router.replace('/guest-onboarding')
+  }, [router])
 
   const endGuest = useCallback(async () => {
     // clearBudgetData is dual-storage and wipes the guest keys too.
@@ -307,6 +326,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useGuestBeforeUnloadWarning(mode === 'guest' && guestOnboardingDone)
 
   const showLandingGate = mode === 'landing' && !isBypassRoute
+  const showLoadingSplash = mode === 'loading' && !isBypassRoute
   const showGuestBanner =
     mode === 'guest' &&
     guestOnboardingDone &&
@@ -321,7 +341,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       <Suspense fallback={null}>
         <PasswordUpdatedQuerySync />
       </Suspense>
-      {showLandingGate ? (
+      {showLoadingSplash ? (
+        <AuthLoadingSplash />
+      ) : showLandingGate ? (
         <LandingGate />
       ) : (
         <>

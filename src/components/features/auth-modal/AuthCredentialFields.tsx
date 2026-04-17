@@ -95,6 +95,9 @@ export function AuthCredentialFields({
           <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
           <input
             type="email"
+            dir="ltr"
+            autoComplete={isSignup ? 'email' : 'email'}
+            inputMode="email"
             value={email}
             onChange={(e) => onEmailChange(e.target.value)}
             onBlur={() => onEmailBlur?.()}
@@ -142,6 +145,8 @@ export function AuthCredentialFields({
           <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
           <input
             type={showPassword ? 'text' : 'password'}
+            dir="ltr"
+            autoComplete={isSignup ? 'new-password' : 'current-password'}
             value={password}
             onChange={(e) => onPasswordChange(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && void onSubmitPrimary()}
@@ -170,6 +175,8 @@ export function AuthCredentialFields({
             <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
             <input
               type={showConfirm ? 'text' : 'password'}
+              dir="ltr"
+              autoComplete="new-password"
               value={confirmPassword}
               onChange={(e) => onConfirmPasswordChange(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && void onSubmitPrimary()}

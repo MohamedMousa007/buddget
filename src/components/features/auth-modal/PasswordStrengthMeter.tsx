@@ -36,13 +36,15 @@ export function PasswordStrengthMeter({ password }: PasswordStrengthMeterProps) 
   const hasSymbol = /[^A-Za-z0-9]/.test(password)
   const isLong = password.length >= 12
 
-  // 0 empty, 1 weak, 2 fair, 3 good, 4 strong
+  // 0 empty · 1 weak (missing a rule) · 2 fair (rules met) · 3 good (+symbol OR long)
+  // · 4 strong (+symbol AND long). Cascading ladder — first match wins.
+  const passesRules = hasLength && hasLetter && hasNumber
   let score = 0
   if (password.length === 0) score = 0
-  else if (!hasLength || !hasLetter || !hasNumber) score = 1
-  else if (hasLength && hasLetter && hasNumber && !hasSymbol && !isLong) score = 2
-  else if (hasLength && hasLetter && hasNumber && (hasSymbol || isLong)) score = 3
-  if (hasLength && hasLetter && hasNumber && hasSymbol && isLong) score = 4
+  else if (!passesRules) score = 1
+  else if (passesRules && hasSymbol && isLong) score = 4
+  else if (passesRules && (hasSymbol || isLong)) score = 3
+  else score = 2
 
   const labels = [
     '',

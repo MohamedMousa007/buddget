@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useCallback } from 'react'
+import { useMemo, useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { OnboardingStepForm, type StepContinuePayload } from '@/components/onboarding/OnboardingStepForm'
@@ -48,6 +48,12 @@ export function GuestOnboardingView() {
 
   const step = steps[index] as SurveyStep | undefined
   const isLast = index === steps.length - 1
+
+  // Guard: authenticated / landing-mode users who hit this URL directly get
+  // kicked back to root. AuthProvider handles the redirect for legitimate guests.
+  useEffect(() => {
+    if (mode !== 'guest' && mode !== 'loading') router.replace('/')
+  }, [mode, router])
 
   const initialTextForStep = useCallback(
     (s: SurveyStep): string => {

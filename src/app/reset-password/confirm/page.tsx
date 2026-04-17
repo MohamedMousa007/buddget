@@ -146,6 +146,8 @@ export default function ResetPasswordConfirmPage() {
             <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
             <input
               type={showNew ? 'text' : 'password'}
+              dir="ltr"
+              autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={t.resetPassword.placeholderNew}
@@ -169,6 +171,8 @@ export default function ResetPasswordConfirmPage() {
             <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
             <input
               type={showConfirm ? 'text' : 'password'}
+              dir="ltr"
+              autoComplete="new-password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && void submit()}
