@@ -48,7 +48,7 @@ export function AppShell({ children }: AppShellProps) {
       <MarketRatesSync />
       <Sidebar />
       <DesktopHeaderBar />
-      <main className="pt-[calc(3.5rem+env(safe-area-inset-top,0px))] lg:pt-14 lg:ms-[200px] pb-20 lg:pb-0 min-h-screen">
+      <main className="pt-[calc(3rem+env(safe-area-inset-top,0px))] lg:pt-12 lg:ms-[176px] pb-16 lg:pb-0 min-h-screen">
         <OnboardingBanner />
         {children}
       </main>

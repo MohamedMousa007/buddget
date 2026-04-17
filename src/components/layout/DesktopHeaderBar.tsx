@@ -17,7 +17,7 @@ export function DesktopHeaderBar() {
   return (
     <>
       {/* ─── Desktop header (lg+) ─── */}
-      <header className="hidden lg:flex fixed top-0 start-[200px] end-0 z-40 h-14 items-center justify-between px-8 bg-[var(--color-brand-card)]/90 border-b border-[var(--color-brand-border)] backdrop-blur-xl">
+      <header className="hidden lg:flex fixed top-0 start-[176px] end-0 z-40 h-12 items-center justify-between px-6 bg-[var(--color-brand-card)]/90 border-b border-[var(--color-brand-border)] backdrop-blur-xl">
         <div className="flex items-center shrink-0">
           {pathname === '/' && (
             <Link
@@ -42,8 +42,8 @@ export function DesktopHeaderBar() {
       </header>
 
       {/* ─── Mobile header (<lg) ─── */}
-      <header className="flex lg:hidden fixed top-0 start-0 end-0 z-40 min-h-[calc(3.5rem+env(safe-area-inset-top,0px))] flex-col bg-[var(--color-brand-card)]/90 border-b border-[var(--color-brand-border)] backdrop-blur-xl safe-area-top">
-        <div className="flex h-14 shrink-0 items-center px-4">
+      <header className="flex lg:hidden fixed top-0 start-0 end-0 z-40 min-h-[calc(3rem+env(safe-area-inset-top,0px))] flex-col bg-[var(--color-brand-card)]/90 border-b border-[var(--color-brand-border)] backdrop-blur-xl safe-area-top">
+        <div className="flex h-12 shrink-0 items-center px-4">
           <div className="flex flex-1 min-w-0 justify-start items-center">
             <Link
               href="/"

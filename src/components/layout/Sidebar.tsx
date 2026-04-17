@@ -37,16 +37,16 @@ export function Sidebar() {
   )
 
   return (
-    <aside className="hidden lg:flex flex-col w-[200px] h-screen bg-[var(--color-brand-card)] border-e border-[var(--color-brand-border)] fixed start-0 top-0 z-40 overflow-hidden">
-      <div className="p-6">
+    <aside className="hidden lg:flex flex-col w-[176px] h-screen bg-[var(--color-brand-card)] border-e border-[var(--color-brand-border)] fixed start-0 top-0 z-40 overflow-hidden">
+      <div className="p-4">
         <Link href="/" className="flex items-center gap-2">
-          <span className="text-2xl font-bold font-heading tracking-tight">
+          <span className="text-xl font-bold font-heading tracking-tight">
             Bud<span className="text-[var(--color-brand-red)]">d</span>get
           </span>
         </Link>
       </div>
 
-      <div className="px-3 mb-4">
+      <div className="px-3 mb-3">
         <select
           value={settings.baseCurrency}
           onChange={(e) => updateSettings({ baseCurrency: e.target.value as Currency })}
@@ -66,7 +66,7 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+                'flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200',
                 locale === 'ar' && 'flex-row-reverse',
                 isActive
                   ? 'bg-[var(--color-brand-red)] text-white'
