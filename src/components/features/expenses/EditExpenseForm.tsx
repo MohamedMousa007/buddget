@@ -18,7 +18,7 @@ export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClos
   const t = useT()
 
   return (
-    <div className="p-6">
+    <div className="p-5">
       <ModalSheetHeader title={t.addExpense.editTitle} onClose={onClose} />
 
       <div className="space-y-4">

@@ -109,7 +109,7 @@ export function DebtGoalSheet({
 
   return (
     <ModalShell open={open} onBackdropClick={onClose} zIndexClassName="z-[110]">
-      <div className="p-6 max-h-[85vh] overflow-y-auto">
+      <div className="p-5 max-h-[85vh] overflow-y-auto">
         <ModalSheetHeader title={t.addDebt.goalSheetTitle} onClose={onClose} />
         <p className="text-sm text-[var(--color-brand-text-muted)] mt-1 mb-4">
           {debtTitle} —{' '}

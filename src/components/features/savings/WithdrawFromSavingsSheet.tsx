@@ -46,7 +46,7 @@ export function WithdrawFromSavingsSheet({
 
   return (
     <ModalShell open={open} onBackdropClick={onClose}>
-      <div className="p-6 max-h-[90vh] overflow-y-auto">
+      <div className="p-5 max-h-[90vh] overflow-y-auto">
         <ModalSheetHeader title={t.savings.sheetWithdrawTitle} onClose={onClose} />
         <div className="mt-4 space-y-3">
           <div>

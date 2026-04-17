@@ -90,7 +90,7 @@ export function AddToSavingsSheet({
 
   return (
     <ModalShell open={open} onBackdropClick={onClose}>
-      <div className="p-6 max-h-[90vh] overflow-y-auto">
+      <div className="p-5 max-h-[90vh] overflow-y-auto">
         <ModalSheetHeader
           title={mode === 'deposit' ? t.savings.sheetAddTitle : t.savings.sheetAddNewTitle}
           onClose={onClose}

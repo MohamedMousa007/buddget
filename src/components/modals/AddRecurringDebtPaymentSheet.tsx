@@ -14,7 +14,7 @@ export function AddRecurringDebtPaymentSheet() {
 
   return (
     <ModalShell open={sheet.isOpen} onBackdropClick={sheet.close}>
-      <div className="p-6">
+      <div className="p-5">
         <ModalSheetHeader title={t.recurringDebt.sheetTitle} onClose={sheet.close} />
 
         <p className="text-xs text-[var(--color-brand-text-muted)] mb-4">

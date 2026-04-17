@@ -89,7 +89,7 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
 
   return (
     <ModalShell open onBackdropClick={onClose}>
-      <div className="p-6 max-h-[90vh] overflow-y-auto">
+      <div className="p-5 max-h-[90vh] overflow-y-auto">
         <ModalSheetHeader title={t.savings.sheetEditTitle} onClose={onClose} />
         <div className="mt-4 space-y-4">
           <div>

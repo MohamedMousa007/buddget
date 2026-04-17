@@ -71,7 +71,7 @@ export function AddPaymentMethodSheet() {
 
   return (
     <ModalShell open={isOpen} onBackdropClick={handleClose}>
-            <div className="p-6">
+            <div className="p-5">
               <ModalSheetHeader title={t.modals.addPaymentTitle} onClose={handleClose} />
 
               <div className="space-y-4">

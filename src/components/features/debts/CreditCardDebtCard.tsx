@@ -60,7 +60,7 @@ export function CreditCardDebtCard({ debt, payments, onRecordPayment, onEdit }: 
   const showSetupBanner = debt.creditLimit == null || debt.paymentDueDay == null
 
   return (
-    <div className="glass-card rounded-2xl p-6 relative overflow-hidden border border-[var(--color-brand-border)]/80">
+    <div className="glass-card rounded-2xl p-4 sm:p-5 relative overflow-hidden border border-[var(--color-brand-border)]/80">
       <div className="flex items-start gap-3 mb-4">
         <span className="text-2xl">💳</span>
         <div className="flex-1 min-w-0">

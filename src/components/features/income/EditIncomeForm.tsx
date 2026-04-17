@@ -30,7 +30,7 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
     source.linkedDebtId != null ? debts.find((d) => d.id === source.linkedDebtId) : undefined
 
   return (
-    <div className="p-6">
+    <div className="p-5">
       <ModalSheetHeader title={t.editIncome.title} onClose={onClose} />
 
       <div className="space-y-4">

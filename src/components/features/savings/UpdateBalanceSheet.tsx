@@ -34,7 +34,7 @@ export function UpdateBalanceSheet({ open, onClose, account, onCorrect }: Update
 
   return (
     <ModalShell open={open} onBackdropClick={onClose}>
-      <div className="p-6 max-h-[90vh] overflow-y-auto">
+      <div className="p-5 max-h-[90vh] overflow-y-auto">
         <ModalSheetHeader title={t.savings.sheetUpdateTitle} onClose={onClose} />
         <p className="mt-2 flex items-center gap-2 text-sm text-[var(--color-brand-text-primary)]">
           <SavingsAccountIcon account={account} className="h-5 w-5 shrink-0" />

@@ -76,7 +76,7 @@ export function ModalShell({
   }, [open])
 
   const panelStaticClasses =
-    'fixed bottom-0 start-0 end-0 bg-[var(--color-brand-card)] rounded-t-3xl border-t border-[var(--color-brand-border)] max-h-[85vh] lg:bottom-auto lg:top-1/2 lg:start-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[480px] lg:rounded-2xl lg:border lg:max-h-[90vh]'
+    'fixed bottom-0 start-0 end-0 bg-[var(--color-brand-card)] rounded-t-3xl border-t border-[var(--color-brand-border)] max-h-[88vh] lg:bottom-auto lg:top-1/2 lg:start-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[440px] lg:rounded-2xl lg:border lg:max-h-[92vh]'
 
   return (
     <AnimatePresence>
@@ -128,7 +128,7 @@ export function ModalShell({
                 >
                   <div className="w-10 h-1 rounded-full bg-[var(--color-brand-border)]" />
                 </div>
-                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain touch-pan-y px-6 pb-6">
+                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain touch-pan-y px-5 pb-5">
                   {children}
                 </div>
               </>

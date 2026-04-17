@@ -34,7 +34,7 @@ export function EditDebtForm({
 
   return (
     <Fragment>
-      <div className="p-6">
+      <div className="p-5">
         <ModalSheetHeader title={t.debts.editSheetTitle} onClose={onClose} />
 
         <div className="space-y-4">
