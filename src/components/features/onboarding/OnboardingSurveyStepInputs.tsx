@@ -1,7 +1,8 @@
 'use client'
 
 import { Input } from '@/components/ui/input'
-import { useT } from '@/lib/i18n'
+import { CountrySelect } from '@/components/ui/CountrySelect'
+import { useLocale, useT } from '@/lib/i18n'
 import type { SurveyStep } from '@/lib/onboarding/surveyConfig'
 import type { OnboardingPaymentDraft } from '@/lib/store/types'
 import {
@@ -49,6 +50,7 @@ export function OnboardingSurveyStepInputs({
   setDebtPayload,
 }: OnboardingSurveyStepInputsProps) {
   const t = useT()
+  const { locale } = useLocale()
 
   if (step.type === 'static') {
     return <p className="text-sm text-[var(--color-brand-text-secondary)] leading-relaxed">{step.body}</p>
@@ -61,6 +63,17 @@ export function OnboardingSurveyStepInputs({
         placeholder={step.placeholder ?? ''}
         onChange={(e) => setTextValue(e.target.value)}
         className="bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
+      />
+    )
+  }
+  if (step.type === 'country_select') {
+    return (
+      <CountrySelect
+        value={textValue}
+        onChange={(v) => setTextValue(v)}
+        locale={locale}
+        placeholder={step.placeholder ?? ''}
+        className="w-full h-11 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-[var(--color-brand-text-primary)] outline-none focus:border-[var(--color-brand-text-secondary)] focus:ring-1 focus:ring-[var(--color-brand-text-secondary)]/30"
       />
     )
   }

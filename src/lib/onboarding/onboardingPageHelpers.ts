@@ -31,6 +31,12 @@ export function applyMapsTo(
     updateProfile({ city: value.slice(0, 120) })
     return
   }
+  if (mapsTo === 'profile.gender') {
+    if (value === 'male' || value === 'female' || value === 'prefer_not_to_say') {
+      updateProfile({ gender: value })
+    }
+    return
+  }
   if (mapsTo === 'settings.baseCurrency') {
     updateSettings({ baseCurrency: value as Currency })
     return
@@ -182,6 +188,7 @@ export function valueForSingleStep(
   if (stepId === 'secondary_currency') {
     return store.settings.secondaryCurrency ?? 'none'
   }
+  if (stepId === 'gender') return store.profile.gender ?? null
   return null
 }
 

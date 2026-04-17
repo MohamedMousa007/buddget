@@ -721,6 +721,11 @@ export interface Dictionary {
     placeholderCountrySelect: string
     labelCity: string
     placeholderCity: string
+    labelGender: string
+    genderUnset: string
+    genderMale: string
+    genderFemale: string
+    genderPreferNot: string
     /** Friendly copy when a read-only field has no value (e.g. country / city). */
     readOnlyFieldEmptyHint: string
     emptyField: string
@@ -1068,6 +1073,12 @@ export interface Dictionary {
     cityTitle: string
     cityPlaceholder: string
     cityHelp: string
+
+    genderTitle: string
+    genderHelp: string
+    genderMale: string
+    genderFemale: string
+    genderPreferNot: string
 
     livingTitle: string
     livingHelp: string

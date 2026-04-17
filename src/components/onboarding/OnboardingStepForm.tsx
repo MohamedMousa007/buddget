@@ -62,6 +62,7 @@ export function OnboardingStepForm({
   const canContinue = useMemo(() => {
     if (step.type === 'static') return true
     if (step.type === 'text') return textValue.trim().length > 0
+    if (step.type === 'country_select') return textValue.trim().length > 0
     if (step.type === 'number') {
       const raw = textValue.replace(/,/g, '.').replace(/\.(?=.*\.)/g, '')
       const n = parseFloat(raw)

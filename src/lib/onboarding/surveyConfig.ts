@@ -36,8 +36,19 @@ export const surveyStepSchema = z.discriminatedUnion('type', [
     placeholder: z.string().optional(),
     mapsTo: z.string(),
     maxLength: z.number().optional(),
+    /** Pre-fills the input on first render. Caller supplies; the user can edit. */
+    defaultValue: z.string().optional(),
     subtitle: z.string().optional(),
     helpText: z.string().optional(),
+  }),
+  z.object({
+    id: z.string(),
+    type: z.literal('country_select'),
+    title: z.string(),
+    mapsTo: z.string(),
+    subtitle: z.string().optional(),
+    helpText: z.string().optional(),
+    placeholder: z.string().optional(),
   }),
   z.object({
     id: z.string(),

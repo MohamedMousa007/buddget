@@ -111,6 +111,23 @@ describe('profile mapper', () => {
     expect(back.profile.city).toBe('Cairo')
     expect(back.extras.financialGoalsNotes).toBe('save more')
   })
+
+  it.each<UserProfile['gender']>(['male', 'female', 'prefer_not_to_say', null])(
+    'round-trips gender %s',
+    (gender) => {
+      const p: UserProfile = {
+        id: 'local',
+        name: 'Alice',
+        baseCurrency: 'EGP',
+        createdAt: '2026-04-01T00:00:00.000Z',
+        gender,
+      }
+      const row = profileToRow(p, { financialGoalsNotes: '', activeBudgetPlanId: null }, UID)
+      expect(row.gender).toBe(gender ?? null)
+      const back = profileFromRow({ ...row, updated_at: row.created_at ?? '' } as never)
+      expect(back.profile.gender).toBe(gender ?? null)
+    }
+  )
 })
 
 describe('settings mapper', () => {

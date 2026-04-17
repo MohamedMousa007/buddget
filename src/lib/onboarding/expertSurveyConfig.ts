@@ -28,11 +28,10 @@ export function getExpertSurveyConfig(t: Dictionary): SurveyConfig {
       },
       {
         id: 'country',
-        type: 'text',
+        type: 'country_select',
         title: o.countryTitle,
         placeholder: o.countryPlaceholder,
         mapsTo: 'profile.country',
-        maxLength: 80,
         helpText: o.countryHelp,
       },
       {
