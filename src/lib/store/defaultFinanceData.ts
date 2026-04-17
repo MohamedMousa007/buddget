@@ -56,6 +56,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   showAllCurrenciesInForms: true,
   dismissOnboardingBanner: false,
   onboardingBannerRemindAt: null,
+  twoFactorEmailEnabled: false,
 }
 
 export const DEFAULT_PROFILE: UserProfile = {

@@ -616,6 +616,12 @@ export const en: Dictionary = {
     pageTitle: 'Your Preferences',
     pageSubtitle: 'Manage your currencies, payments, and data. Budget settings live in your Profile.',
     footer: 'Buddget v1.0 \u2014 Your money, your way.',
+    securityTitle: 'Security',
+    twoFaToggle: 'Two-factor authentication',
+    twoFaToggleHint:
+      "When on, signing in on a new browser or device requires a 6-digit code we email you. Your usual devices stay signed in normally.",
+    twoFaFooter:
+      "Once you verify a device, Buddget remembers it for 180 days. Clearing cookies, using a private window, or signing in from a new machine will prompt the code again.",
 
     guestTitle: 'Welcome to Buddget',
     guestBody: 'Right now your data lives on this device. Create an account to keep your budget safe, synced, and accessible from anywhere.',
@@ -906,6 +912,8 @@ export const en: Dictionary = {
     passwordRuleLength: (n) => `At least ${n} characters`,
     passwordRuleLetter: 'At least one letter',
     passwordRuleNumber: 'At least one number',
+    twoFaVerifyTitle: "One more step \uD83D\uDD10",
+    twoFaCodeSent: (email) => `This browser isn\u2019t recognised yet. We sent a 6-digit code to ${email} to verify it\u2019s you.`,
   },
 
   resetPassword: {

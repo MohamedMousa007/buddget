@@ -88,6 +88,7 @@ export const importDataSchema = z.object({
       showAllCurrenciesInForms: z.boolean().optional(),
       dismissOnboardingBanner: z.boolean().optional(),
       onboardingBannerRemindAt: z.string().nullable().optional(),
+      twoFactorEmailEnabled: z.boolean().optional(),
     })
     .optional(),
   incomeSources: z

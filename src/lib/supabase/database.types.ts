@@ -1272,6 +1272,7 @@ export type Database = {
           show_cents_in_dashboard: boolean
           show_secondary_currency: boolean
           theme: Database["public"]["Enums"]["theme_mode"]
+          two_factor_email_enabled: boolean
           updated_at: string
           user_id: string
         }
@@ -1288,6 +1289,7 @@ export type Database = {
           show_cents_in_dashboard?: boolean
           show_secondary_currency?: boolean
           theme?: Database["public"]["Enums"]["theme_mode"]
+          two_factor_email_enabled?: boolean
           updated_at?: string
           user_id: string
         }
@@ -1304,8 +1306,33 @@ export type Database = {
           show_cents_in_dashboard?: boolean
           show_secondary_currency?: boolean
           theme?: Database["public"]["Enums"]["theme_mode"]
+          two_factor_email_enabled?: boolean
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      trusted_devices: {
+        Row: {
+          user_id: string
+          device_id: string
+          user_agent: string | null
+          created_at: string
+          last_used_at: string
+        }
+        Insert: {
+          user_id: string
+          device_id: string
+          user_agent?: string | null
+          created_at?: string
+          last_used_at?: string
+        }
+        Update: {
+          user_id?: string
+          device_id?: string
+          user_agent?: string | null
+          created_at?: string
+          last_used_at?: string
         }
         Relationships: []
       }

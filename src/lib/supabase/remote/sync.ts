@@ -211,6 +211,7 @@ export async function pullCore(client: Client, userId: string): Promise<Snapshot
         showAllCurrenciesInForms: true,
         dismissOnboardingBanner: false,
         onboardingBannerRemindAt: null,
+        twoFactorEmailEnabled: false,
       }
 
   const onboardingState = onboardingR.data
@@ -303,6 +304,7 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
         showAllCurrenciesInForms: true,
         dismissOnboardingBanner: false,
         onboardingBannerRemindAt: null,
+        twoFactorEmailEnabled: false,
       }
 
   const onboardingState = onboardingR.data

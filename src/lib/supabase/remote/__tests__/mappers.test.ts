@@ -130,6 +130,7 @@ describe('settings mapper', () => {
       showAllCurrenciesInForms: true,
       dismissOnboardingBanner: false,
       onboardingBannerRemindAt: null,
+      twoFactorEmailEnabled: false,
     }
     const row = settingsToRow(s, UID)
     const back = settingsFromRow({ ...row, updated_at: '' } as never, {

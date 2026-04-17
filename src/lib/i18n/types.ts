@@ -616,6 +616,10 @@ export interface Dictionary {
     pageTitle: string
     pageSubtitle: string
     footer: string
+    securityTitle: string
+    twoFaToggle: string
+    twoFaToggleHint: string
+    twoFaFooter: string
 
     guestTitle: string
     guestBody: string
@@ -904,6 +908,8 @@ export interface Dictionary {
     passwordRuleLength: (n: number) => string
     passwordRuleLetter: string
     passwordRuleNumber: string
+    twoFaVerifyTitle: string
+    twoFaCodeSent: (email: string) => string
   }
 
   resetPassword: {

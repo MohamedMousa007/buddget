@@ -12,6 +12,11 @@ import { MIN_PASSWORD_LEN } from '@/components/features/auth-modal/authModalToke
 
 export type AuthFormMode = 'signin' | 'signup'
 export type AuthStep = 'form' | 'verify' | 'forgot'
+/**
+ * 'signup' — verifying the email-confirmation OTP right after creating the account.
+ * '2fa'    — verifying the email-OTP challenge that gates sign-in on a new device.
+ */
+export type AuthVerifyPurpose = 'signup' | '2fa'
 
 /**
  * Supabase email/password + OTP + forgot-password flow for the global auth modal.
@@ -45,6 +50,7 @@ export function useAuthModal() {
   const [error, setError] = useState('')
   const [forgotSuccess, setForgotSuccess] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
+  const [verifyPurpose, setVerifyPurpose] = useState<AuthVerifyPurpose>('signup')
 
   useEffect(() => {
     if (resendCooldown <= 0) return
@@ -78,15 +84,48 @@ export function useAuthModal() {
       email: email.trim(),
       password,
     })
-    setLoading(false)
     if (e) {
+      setLoading(false)
       setError(mapAuthError(e, 'signin', t))
       return
     }
+
+    // Password is correct. If the user has email 2FA on and this browser isn't
+    // a trusted device, we sign them back out and force an email OTP challenge.
+    // Trusted devices / 2FA-off users continue straight into the app.
+    try {
+      const deviceRes = await fetch('/api/auth/device/check', { method: 'POST' })
+      if (deviceRes.ok) {
+        const body = (await deviceRes.json()) as { required?: boolean }
+        if (body.required === true) {
+          // Sign out the password session so nothing mounts before OTP completes.
+          await supabase.auth.signOut()
+          const { error: otpErr } = await supabase.auth.signInWithOtp({
+            email: email.trim(),
+            options: { shouldCreateUser: false },
+          })
+          setLoading(false)
+          if (otpErr) {
+            setError(mapAuthError(otpErr, 'resend', t))
+            return
+          }
+          setVerifyPurpose('2fa')
+          setStep('verify')
+          setOtp('')
+          startResendCooldown()
+          return
+        }
+      }
+    } catch {
+      // Device-check failure shouldn't lock the user out — fall through to the
+      // normal signed-in redirect. If 2FA is on the next sign-in will try again.
+    }
+
+    setLoading(false)
     const { data: userData } = await supabase.auth.getUser()
     router.refresh()
     router.replace(routeAfterAuth(userData.user, safeNext))
-  }, [email, password, router, safeNext, supabase, t, validateEmailField])
+  }, [email, password, router, safeNext, startResendCooldown, supabase, t, validateEmailField])
 
   const signUp = useCallback(async () => {
     setError('')
@@ -149,6 +188,7 @@ export function useAuthModal() {
       return
     }
     if (data.user) {
+      setVerifyPurpose('signup')
       setStep('verify')
       setOtp('')
       startResendCooldown()
@@ -165,36 +205,51 @@ export function useAuthModal() {
       return
     }
     setLoading(true)
+    // Supabase expects different `type` values for the two OTP flows.
+    const otpType = verifyPurpose === 'signup' ? 'signup' : 'email'
     const { error: e } = await supabase.auth.verifyOtp({
       email: email.trim(),
       token,
-      type: 'signup',
+      type: otpType,
     })
-    setLoading(false)
     if (e) {
+      setLoading(false)
       setError(mapAuthError(e, 'otp', t))
       return
     }
+    // The browser has now proven it controls the email — trust it so future
+    // sign-ins skip the OTP gate.
+    try {
+      await fetch('/api/auth/device/trust', { method: 'POST' })
+    } catch {
+      // Non-fatal: worst case we re-prompt next login.
+    }
+    setLoading(false)
     const { data: userData } = await supabase.auth.getUser()
     router.refresh()
     router.replace(routeAfterAuth(userData.user, safeNext))
-  }, [email, otp, router, safeNext, supabase, t])
+  }, [email, otp, router, safeNext, supabase, t, verifyPurpose])
 
   const resendCode = useCallback(async () => {
     if (resendCooldown > 0) return
     setError('')
     setLoading(true)
-    const { error: e } = await supabase.auth.resend({
-      type: 'signup',
-      email: email.trim(),
-    })
+    // Signup flow uses `resend` with type='signup'; the 2FA challenge reissues via
+    // `signInWithOtp` (Supabase doesn't expose a 'resend' variant for sign-in OTP).
+    const { error: e } =
+      verifyPurpose === 'signup'
+        ? await supabase.auth.resend({ type: 'signup', email: email.trim() })
+        : await supabase.auth.signInWithOtp({
+            email: email.trim(),
+            options: { shouldCreateUser: false },
+          })
     setLoading(false)
     if (e) {
       setError(mapAuthError(e, 'resend', t))
       return
     }
     startResendCooldown()
-  }, [email, resendCooldown, startResendCooldown, supabase, t])
+  }, [email, resendCooldown, startResendCooldown, supabase, t, verifyPurpose])
 
   const sendForgot = useCallback(async () => {
     setError('')
@@ -273,6 +328,7 @@ export function useAuthModal() {
     forgotSuccess,
     setForgotSuccess,
     resendCooldown,
+    verifyPurpose,
     // Animate only between auth steps (form ↔ verify ↔ forgot). The sign-in/sign-up
     // toggle is handled inside the form via conditional rendering, so including
     // formMode here would remount the whole form on every tab click.
