@@ -117,12 +117,16 @@ export function AuthNavButtons({
     <div className={cn('flex flex-nowrap items-center gap-1.5 sm:gap-2', className)}>
       {!user ? (
         <>
-          <button type="button" onClick={() => openAuthModal(nextPath)} className={btnClass}>
+          <button
+            type="button"
+            onClick={() => openAuthModal(nextPath, null, 'signin')}
+            className={btnClass}
+          >
             {t.common.signIn}
           </button>
           <button
             type="button"
-            onClick={() => openAuthModal(nextPath)}
+            onClick={() => openAuthModal(nextPath, null, 'signup')}
             className="inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white transition-colors sm:px-3"
           >
             {t.common.signUp}

@@ -42,6 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [pendingNext, setPendingNext] = useState('/')
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authModalMessage, setAuthModalMessage] = useState<string | null>(null)
+  const [authModalInitialMode, setAuthModalInitialMode] = useState<'signin' | 'signup'>('signin')
 
   const configured = useMemo(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
@@ -49,13 +50,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return !!(url && key)
   }, [])
 
-  const openAuthModal = useCallback((next?: string, message?: string | null) => {
-    if (next && next.startsWith('/') && !next.startsWith('//')) {
-      setPendingNext(next)
-    }
-    setAuthModalMessage(message ?? null)
-    setAuthModalOpen(true)
-  }, [])
+  const openAuthModal = useCallback(
+    (next?: string, message?: string | null, initialMode?: 'signin' | 'signup') => {
+      if (next && next.startsWith('/') && !next.startsWith('//')) {
+        setPendingNext(next)
+      }
+      setAuthModalMessage(message ?? null)
+      setAuthModalInitialMode(initialMode ?? 'signin')
+      setAuthModalOpen(true)
+    },
+    [],
+  )
 
   const closeAuthModal = useCallback(() => {
     setAuthModalOpen(false)
@@ -125,6 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             pendingNext,
             setPendingNext,
             authModalMessage,
+            authModalInitialMode,
             openAuthModal,
             closeAuthModal,
           }
@@ -136,6 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             pendingNext: '/',
             setPendingNext,
             authModalMessage: null,
+            authModalInitialMode: 'signin' as const,
             openAuthModal,
             closeAuthModal,
           },
@@ -148,6 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       noopSignOut,
       pendingNext,
       authModalMessage,
+      authModalInitialMode,
       openAuthModal,
       closeAuthModal,
     ]

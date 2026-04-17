@@ -12,7 +12,9 @@ export type AuthContextValue = {
   setPendingNext: (path: string) => void
   /** Optional message shown above the sign-in form (e.g. “Sign in to add an expense”). */
   authModalMessage: string | null
-  openAuthModal: (next?: string, message?: string | null) => void
+  /** Which tab the modal should open on ('signin' by default). Callers override via `openAuthModal`. */
+  authModalInitialMode: 'signin' | 'signup'
+  openAuthModal: (next?: string, message?: string | null, initialMode?: 'signin' | 'signup') => void
   closeAuthModal: () => void
 }
 
