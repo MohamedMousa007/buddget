@@ -31,7 +31,7 @@ export function AuthModal() {
         initial={{ opacity: 0, y: 12, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.2, ease: 'easeOut' }}
-        className="relative z-10 w-full my-4 sm:my-0 border p-6 sm:p-8 shadow-2xl"
+        className="relative z-10 w-full my-4 sm:my-0 border p-5 sm:p-6 shadow-2xl"
         style={cardStyle}
         role="dialog"
         aria-modal="true"

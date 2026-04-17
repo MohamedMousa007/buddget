@@ -20,7 +20,7 @@ export function AuthPrimaryButton({ children, disabled, onClick }: AuthPrimaryBu
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="w-full h-12 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      className="w-full h-11 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       style={{ background: BG }}
       onMouseEnter={(e) => {
         if (!disabled) (e.target as HTMLButtonElement).style.background = BG_HOVER

@@ -56,26 +56,25 @@ export function LandingGate() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--color-brand-bg)]">
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8 sm:py-12">
-        {/* Big logo + tagline block. Sized generously on mobile (5xl) and even
-            bigger on desktop so it owns the page. Mirrors the in-app wordmark. */}
-        <div className="text-center mb-8 sm:mb-10">
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-5 sm:py-8">
+        {/* Big logo + tagline block. Mobile-first: starts compact, ramps up at sm. */}
+        <div className="text-center mb-5 sm:mb-6">
           <h1
-            className="text-5xl sm:text-6xl font-extrabold tracking-tight"
+            className="text-3xl sm:text-4xl font-extrabold tracking-tight"
             style={{ fontFamily: 'var(--font-heading), var(--font-sans)' }}
           >
             <span className="text-[var(--color-brand-text-primary)]">Bud</span>
             <span className="text-[var(--color-brand-red)]">d</span>
             <span className="text-[var(--color-brand-text-primary)]">get</span>
           </h1>
-          <p className="mt-3 text-sm sm:text-base text-[var(--color-brand-text-muted)]">
+          <p className="mt-2 text-xs sm:text-sm text-[var(--color-brand-text-muted)]">
             {t.brand.tagline}
           </p>
         </div>
 
         {/* Sign-in / sign-up card — same body the overlay modal uses. */}
         <div
-          className="w-full max-w-md border rounded-2xl p-6 sm:p-8 shadow-xl"
+          className="w-full max-w-md border rounded-2xl p-5 sm:p-6 shadow-xl"
           style={{
             background: 'var(--color-brand-card)',
             borderColor: 'var(--color-brand-border)',
@@ -85,7 +84,7 @@ export function LandingGate() {
         </div>
 
         {/* Guest CTA below the card. Divider + short helper text + button. */}
-        <div className="w-full max-w-md mt-6 space-y-2">
+        <div className="w-full max-w-md mt-4 space-y-1.5">
           <div className="relative flex items-center gap-3">
             <span className="flex-1 h-px bg-[var(--color-brand-border)]" />
             <span className="text-[10px] uppercase tracking-wider text-[var(--color-brand-text-muted)]">
@@ -97,7 +96,7 @@ export function LandingGate() {
             type="button"
             onClick={() => void handleGuest()}
             disabled={guestPending}
-            className="w-full h-11 rounded-xl font-medium text-sm transition-colors text-[var(--color-brand-text-primary)] bg-[var(--color-brand-elevated)] hover:bg-[var(--color-brand-border)] disabled:opacity-60 flex items-center justify-center gap-2"
+            className="w-full h-10 sm:h-11 rounded-xl font-medium text-sm transition-colors text-[var(--color-brand-text-primary)] bg-[var(--color-brand-elevated)] hover:bg-[var(--color-brand-border)] disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {guestPending ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : null}
             {t.landing.ctaGuest}

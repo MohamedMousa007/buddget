@@ -58,7 +58,7 @@ export function AuthOAuthButtons({ nextPath }: { nextPath: string }) {
         type="button"
         disabled={pending !== null}
         onClick={() => void sign('google')}
-        className="w-full h-11 rounded-xl border text-sm font-medium flex items-center justify-center gap-2 transition-colors text-[var(--color-brand-text-primary)] border-[var(--color-brand-border)] bg-[var(--color-brand-card)] hover:bg-[var(--color-brand-elevated)] disabled:opacity-60"
+        className="w-full h-10 sm:h-11 rounded-xl border text-sm font-medium flex items-center justify-center gap-2 transition-colors text-[var(--color-brand-text-primary)] border-[var(--color-brand-border)] bg-[var(--color-brand-card)] hover:bg-[var(--color-brand-elevated)] disabled:opacity-60"
         aria-label={t.auth.continueWithGoogle}
       >
         {pending === 'google' ? (
@@ -72,7 +72,7 @@ export function AuthOAuthButtons({ nextPath }: { nextPath: string }) {
         type="button"
         disabled={pending !== null}
         onClick={() => void sign('apple')}
-        className="w-full h-11 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors text-white bg-black hover:bg-black/90 disabled:opacity-60"
+        className="w-full h-10 sm:h-11 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors text-white bg-black hover:bg-black/90 disabled:opacity-60"
         aria-label={t.auth.continueWithApple}
       >
         {pending === 'apple' ? (

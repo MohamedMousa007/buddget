@@ -177,7 +177,7 @@ export default function ResetPasswordConfirmPage() {
       <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--color-brand-bg)]">
         <div
           role="alert"
-          className="w-full max-w-md border p-8 rounded-2xl space-y-4 text-center"
+          className="w-full max-w-md border p-5 sm:p-6 rounded-2xl space-y-3 text-center"
           style={{ background: 'var(--color-brand-card)', borderColor: 'var(--color-brand-border)' }}
         >
           <div className="mx-auto w-12 h-12 rounded-full bg-[var(--color-brand-red)]/10 flex items-center justify-center">
@@ -200,7 +200,7 @@ export default function ResetPasswordConfirmPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--color-brand-bg)]">
       <div
-        className="w-full max-w-md border p-8 rounded-2xl space-y-4"
+        className="w-full max-w-md border p-5 sm:p-6 rounded-2xl space-y-3"
         style={{ background: 'var(--color-brand-card)', borderColor: 'var(--color-brand-border)' }}
       >
         <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)] text-center">
