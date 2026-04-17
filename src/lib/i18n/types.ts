@@ -910,6 +910,10 @@ export interface Dictionary {
     passwordRuleNumber: string
     twoFaVerifyTitle: string
     twoFaCodeSent: (email: string) => string
+    emailAlreadyRegistered: string
+    emailCheckInFlight: string
+    showPassword: string
+    hidePassword: string
   }
 
   resetPassword: {

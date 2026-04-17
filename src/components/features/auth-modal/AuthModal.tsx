@@ -104,6 +104,8 @@ export function AuthModal() {
                 signUp={a.signUp}
                 resendCode={a.resendCode}
                 switchToSignIn={a.switchToSignIn}
+                emailCheckState={a.emailCheckState}
+                checkEmailOnBlur={a.checkEmailOnBlur}
               />
             )}
           </motion.div>
