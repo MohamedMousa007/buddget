@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { AlertCircle, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react'
+import { AlertCircle, Loader2, Lock, Mail } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   inputClass,
@@ -12,6 +12,7 @@ import {
   MIN_PASSWORD_LEN,
 } from '@/components/features/auth-modal/authModalTokens'
 import { PasswordStrengthMeter } from '@/components/features/auth-modal/PasswordStrengthMeter'
+import { PasswordVisibilityToggle } from '@/components/features/auth-modal/PasswordVisibilityToggle'
 import { useT } from '@/lib/i18n'
 import type { AuthFormMode } from '@/hooks/useAuthModal'
 
@@ -39,30 +40,6 @@ export interface AuthCredentialFieldsProps {
   emailCheckState?: 'idle' | 'checking' | 'taken' | 'free'
   /** Signup-only: CTA that flips the form to sign-in when the email is already registered. */
   onSwitchToSignIn?: () => void
-}
-
-/** Eye-toggle button positioned at the end edge of a password input. */
-function PasswordVisibilityToggle({
-  visible,
-  onToggle,
-  label,
-}: {
-  visible: boolean
-  onToggle: () => void
-  label: string
-}) {
-  const Icon = visible ? EyeOff : Eye
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-label={label}
-      aria-pressed={visible}
-      className="absolute end-3 top-1/2 -translate-y-1/2 text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)] transition-colors p-1 -m-1"
-    >
-      <Icon className="w-4 h-4" />
-    </button>
-  )
 }
 
 /**

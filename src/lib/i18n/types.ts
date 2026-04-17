@@ -926,6 +926,7 @@ export interface Dictionary {
     errorMinLength: (min: number) => string
     errorMismatch: string
     errorUpdateFailed: string
+    errorWeakPassword: string
     buttonSubmit: string
     successSignInPrompt: string
   }

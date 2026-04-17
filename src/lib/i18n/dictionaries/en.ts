@@ -930,6 +930,7 @@ export const en: Dictionary = {
     errorMinLength: (min) => `Password needs to be at least ${min} characters.`,
     errorMismatch: "Those passwords don\u2019t match. Try again.",
     errorUpdateFailed: "Oops, something went wrong. Let\u2019s try again.",
+    errorWeakPassword: 'Use at least one letter and one number.',
     buttonSubmit: 'Update my password',
     successSignInPrompt:
       'Your password is updated. Sign in with your new password to continue.',
