@@ -940,6 +940,8 @@ export const ar: Dictionary = {
     twoFaVerifyTitle: 'خطوة أخيرة 🔐',
     twoFaCodeSent: (email) => `هذا المتصفح ليس ضمن أجهزتك الموثوقة. أرسلنا رمزاً من 6 أرقام إلى ${email} للتحقق من هويتك.`,
     emailAlreadyRegistered: 'هذا البريد الإلكتروني مسجّل بالفعل.',
+    emailPendingVerification: 'أرسلنا رمزاً إلى هذا البريد من قبل — أكمل التحقق.',
+    resendCode: 'إعادة إرسال الرمز',
     emailCheckInFlight: 'جارٍ التحقق…',
     showPassword: 'إظهار كلمة المرور',
     hidePassword: 'إخفاء كلمة المرور',

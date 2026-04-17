@@ -37,7 +37,9 @@ export interface AuthCredentialFieldsProps {
   /** Signup-only: fired when the email field loses focus so we can pre-check registration. */
   onEmailBlur?: () => void
   /** Signup-only: lookup state from useAuthModal — surfaces an inline hint under the email. */
-  emailCheckState?: 'idle' | 'checking' | 'taken' | 'free'
+  emailCheckState?: 'idle' | 'checking' | 'taken' | 'pending' | 'free'
+  /** Signup-only: CTA shown alongside pending-verification hint that re-sends the code. */
+  onResendPendingCode?: () => void
   /** Signup-only: CTA that flips the form to sign-in when the email is already registered. */
   onSwitchToSignIn?: () => void
 }
@@ -60,6 +62,7 @@ export function AuthCredentialFields({
   onEmailBlur,
   emailCheckState = 'idle',
   onSwitchToSignIn,
+  onResendPendingCode,
 }: AuthCredentialFieldsProps) {
   const t = useT()
   const [showPassword, setShowPassword] = useState(false)
@@ -72,7 +75,7 @@ export function AuthCredentialFields({
   const passwordPassesRules =
     password.length >= MIN_PASSWORD_LEN && /[A-Za-z]/.test(password) && /\d/.test(password)
   const emailTone: ValidationTone = isSignup
-    ? emailCheckState === 'taken'
+    ? emailCheckState === 'taken' || emailCheckState === 'pending'
       ? 'error'
       : emailCheckState === 'free'
         ? 'valid'
@@ -132,6 +135,30 @@ export function AuthCredentialFields({
                     className="underline font-medium hover:no-underline"
                   >
                     {t.auth.signInInstead}
+                  </button>
+                </>
+              ) : null}
+            </span>
+          </p>
+        ) : null}
+        {isSignup && emailCheckState === 'pending' ? (
+          <p
+            id="signup-email-pending"
+            className="mt-1.5 text-[12px] text-[var(--color-brand-amber)] flex items-start gap-1.5"
+            role="alert"
+          >
+            <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden />
+            <span>
+              {t.auth.emailPendingVerification}
+              {onResendPendingCode ? (
+                <>
+                  {' '}
+                  <button
+                    type="button"
+                    onClick={onResendPendingCode}
+                    className="underline font-medium hover:no-underline"
+                  >
+                    {t.auth.resendCode}
                   </button>
                 </>
               ) : null}

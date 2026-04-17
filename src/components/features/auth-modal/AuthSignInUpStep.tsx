@@ -26,8 +26,9 @@ export interface AuthSignInUpStepProps {
   signUp: () => Promise<void>
   resendCode: () => Promise<void>
   switchToSignIn: () => void
-  emailCheckState: 'idle' | 'checking' | 'taken' | 'free'
+  emailCheckState: 'idle' | 'checking' | 'taken' | 'pending' | 'free'
   checkEmailOnBlur: () => void
+  onResendPendingCode: () => void
 }
 
 /**
@@ -53,6 +54,7 @@ export function AuthSignInUpStep({
   switchToSignIn,
   emailCheckState,
   checkEmailOnBlur,
+  onResendPendingCode,
 }: AuthSignInUpStepProps) {
   const t = useT()
   const submit = () => void (formMode === 'signin' ? signIn() : signUp())
@@ -85,6 +87,7 @@ export function AuthSignInUpStep({
           switchToSignIn()
           setError('')
         }}
+        onResendPendingCode={onResendPendingCode}
       />
 
       <AuthFormErrorAlert

@@ -941,6 +941,8 @@ export const en: Dictionary = {
     twoFaVerifyTitle: "One more step \uD83D\uDD10",
     twoFaCodeSent: (email) => `This browser isn\u2019t recognised yet. We sent a 6-digit code to ${email} to verify it\u2019s you.`,
     emailAlreadyRegistered: 'This email is already registered.',
+    emailPendingVerification: 'We already sent a code to this email — finish verifying.',
+    resendCode: 'Resend code',
     emailCheckInFlight: 'Checking availability\u2026',
     showPassword: 'Show password',
     hidePassword: 'Hide password',

@@ -1357,9 +1357,21 @@ export type Database = {
         Returns: Json
       }
       backfill_from_user_finance: { Args: { p_user_id: string }; Returns: Json }
+      api_rate_hit: {
+        Args: { p_key: string; p_window_seconds: number; p_max_hits: number }
+        Returns: boolean
+      }
       check_email_exists: {
         Args: { p_email: string }
         Returns: boolean
+      }
+      check_email_status: {
+        Args: { p_email: string }
+        Returns: Json
+      }
+      cleanup_expired_trusted_devices: {
+        Args: Record<string, never>
+        Returns: number
       }
       cancel_subscription: {
         Args: { p_subscription_id: string }

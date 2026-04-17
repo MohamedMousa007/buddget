@@ -43,30 +43,37 @@ function AuthLoadingSplash() {
 }
 
 /**
- * After a successful password reset, `/reset-password/confirm` signs the user out
- * and redirects to `/?passwordUpdated=1`. We watch for that flag here (rather than
- * inside AppShell, which won't mount for unauthenticated users) and open the
- * sign-in modal with a success message so the user can log in with their new
- * password. Strips the query param so a refresh doesn't re-trigger.
+ * After a successful password reset, `/reset-password/confirm` sets an
+ * HttpOnly `buddget_password_updated` cookie (via POST /api/auth/password-updated)
+ * and redirects to `/`. On the next mount we ask the server whether the cookie
+ * is present; if so, open the sign-in modal with the success message and let
+ * the server clear the cookie in the same GET. One-shot per reset.
+ *
+ * The cookie is HttpOnly and set by the server, so unlike the old
+ * `?passwordUpdated=1` query param it can't be forged by a random visitor
+ * typing a URL.
  */
-function PasswordUpdatedQuerySync() {
-  const searchParams = useSearchParams()
-  const pathname = usePathname()
-  const router = useRouter()
+function PasswordUpdatedCookieSync() {
   const { openAuthModal } = useAuth()
   const t = useT()
   const handled = useRef(false)
 
   useEffect(() => {
     if (handled.current) return
-    if (searchParams.get('passwordUpdated') !== '1') return
     handled.current = true
-    openAuthModal('/', t.resetPassword.successSignInPrompt, 'signin')
-    const qs = new URLSearchParams(searchParams.toString())
-    qs.delete('passwordUpdated')
-    const q = qs.toString()
-    router.replace(q ? `${pathname}?${q}` : pathname)
-  }, [searchParams, pathname, router, openAuthModal, t.resetPassword.successSignInPrompt])
+    void (async () => {
+      try {
+        const res = await fetch('/api/auth/password-updated', { method: 'GET' })
+        if (!res.ok) return
+        const body = (await res.json()) as { pending?: boolean }
+        if (body.pending === true) {
+          openAuthModal('/', t.resetPassword.successSignInPrompt, 'signin')
+        }
+      } catch {
+        /* silent — worst case the user just sees the landing without the toast */
+      }
+    })()
+  }, [openAuthModal, t.resetPassword.successSignInPrompt])
 
   return null
 }
@@ -345,9 +352,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       <Suspense fallback={null}>
         <AuthNextQuerySync configured={configured} />
       </Suspense>
-      <Suspense fallback={null}>
-        <PasswordUpdatedQuerySync />
-      </Suspense>
+      <PasswordUpdatedCookieSync />
       {showLoadingSplash ? (
         <AuthLoadingSplash />
       ) : showLandingGate ? (
