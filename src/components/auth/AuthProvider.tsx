@@ -210,6 +210,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // A signed-in user supersedes any guest session — flip the storage mode
         // to localStorage and drop the session-storage markers. SupabaseFinanceSync
         // handles merging guest data that's still in Zustand memory.
+        // NOTE: promotion of guest → skip-expert-onboarding runs in the auth
+        // handlers themselves (useAuthModal) so the redirect can await it.
         setStorageMode('auth')
         setGuestFlag(false)
         setGuestNickname(null)

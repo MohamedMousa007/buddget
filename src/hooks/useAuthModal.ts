@@ -9,6 +9,11 @@ import { useT } from '@/lib/i18n'
 import { APP_CONFIG } from '@/lib/config'
 import { routeAfterAuth } from '@/lib/auth/postAuthRedirect'
 import { MIN_PASSWORD_LEN } from '@/components/features/auth-modal/authModalTokens'
+import { getGuestFlag } from '@/lib/guest/guestSession'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { isPlanStageComplete } from '@/lib/onboarding/onboardingStages'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/supabase/database.types'
 
 export type AuthFormMode = 'signin' | 'signup'
 export type AuthStep = 'form' | 'verify' | 'forgot'
@@ -87,6 +92,31 @@ export function useAuthModal() {
   }, [resendCooldown])
 
   const startResendCooldown = useCallback(() => setResendCooldown(60), [])
+
+  /**
+   * When a guest finishes their 6-step onboarding and then signs up, we flip
+   * `user_metadata.onboarding_completed = true` via the service-role route so
+   * middleware doesn't force them through the 27-step expert flow. Awaited so
+   * the caller can refresh its session and `routeAfterAuth` sees the new
+   * metadata before redirecting.
+   */
+  const promoteGuestIfNeeded = useCallback(
+    async (client: SupabaseClient<Database>) => {
+      const wasGuest =
+        getGuestFlag() && isPlanStageComplete(useFinanceStore.getState().onboardingState)
+      if (!wasGuest) return
+      try {
+        const res = await fetch('/api/auth/complete-guest-onboarding', { method: 'POST' })
+        if (!res.ok) return
+        // Refresh the session so the next `getUser()` returns the new metadata
+        // and `routeAfterAuth` doesn't send us through expert onboarding.
+        await client.auth.refreshSession()
+      } catch (e) {
+        console.error('[auth] promoteGuestIfNeeded failed', e)
+      }
+    },
+    [],
+  )
 
   /**
    * Fire an existence check when the email field loses focus in signup mode.
@@ -186,11 +216,12 @@ export function useAuthModal() {
       // normal signed-in redirect. If 2FA is on the next sign-in will try again.
     }
 
+    await promoteGuestIfNeeded(supabase)
     setLoading(false)
     const { data: userData } = await supabase.auth.getUser()
     router.refresh()
     router.replace(routeAfterAuth(userData.user, safeNext))
-  }, [email, password, router, safeNext, startResendCooldown, supabase, t, validateEmailField])
+  }, [email, password, promoteGuestIfNeeded, router, safeNext, startResendCooldown, supabase, t, validateEmailField])
 
   const signUp = useCallback(async () => {
     setError('')
@@ -258,6 +289,7 @@ export function useAuthModal() {
       return
     }
     if (data.session) {
+      await promoteGuestIfNeeded(supabase)
       const { data: userData } = await supabase.auth.getUser()
       router.refresh()
       router.replace(routeAfterAuth(userData.user, safeNext))
@@ -271,7 +303,7 @@ export function useAuthModal() {
       return
     }
     setError(t.auth.errorSignUpGeneric)
-  }, [confirmPassword, email, emailCheckState, password, router, safeNext, startResendCooldown, supabase, t, validateEmailField])
+  }, [confirmPassword, email, emailCheckState, password, promoteGuestIfNeeded, router, safeNext, startResendCooldown, supabase, t, validateEmailField])
 
   const verifySignupOtp = useCallback(async () => {
     setError('')
@@ -300,11 +332,13 @@ export function useAuthModal() {
     } catch {
       // Non-fatal: worst case we re-prompt next login.
     }
+    // Skip expert onboarding when this verification completes a guest→signup.
+    await promoteGuestIfNeeded(supabase)
     setLoading(false)
     const { data: userData } = await supabase.auth.getUser()
     router.refresh()
     router.replace(routeAfterAuth(userData.user, safeNext))
-  }, [email, otp, router, safeNext, supabase, t, verifyPurpose])
+  }, [email, otp, promoteGuestIfNeeded, router, safeNext, supabase, t, verifyPurpose])
 
   const resendCode = useCallback(async () => {
     if (resendCooldown > 0) return
