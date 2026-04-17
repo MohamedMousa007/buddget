@@ -20,6 +20,10 @@ import {
   setGuestNickname,
   setStorageMode,
 } from '@/lib/guest/guestSession'
+import { isPlanStageComplete } from '@/lib/onboarding/onboardingStages'
+import { LandingGate } from '@/components/auth/LandingGate'
+import { GuestSaveProgressBanner } from '@/components/auth/GuestSaveProgressBanner'
+import { useGuestBeforeUnloadWarning } from '@/hooks/useGuestBeforeUnloadWarning'
 
 /**
  * After a successful password reset, `/reset-password/confirm` signs the user out
@@ -90,6 +94,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [guestNickname, setGuestNicknameState] = useState<string | null>(() =>
     getGuestNickname(),
   )
+  // Read the onboarding state for gate decisions; cheap selector, updates when the
+  // guest completes their flow so the gate releases them onto the real app.
+  const onboardingState = useFinanceStore((s) => s.onboardingState)
 
   const configured = useMemo(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
@@ -280,8 +287,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ]
   )
 
+  // Reset-password + auth-callback routes must be reachable for unauthenticated
+  // users — they're part of the inbound auth flow. The gate bypasses them and
+  // renders children directly.
+  const isBypassRoute =
+    pathname.startsWith('/reset-password') || pathname.startsWith('/auth/callback')
+
   const skipAuthModal = pathname.startsWith('/reset-password')
   const showAuthModal = configured && !loading && authModalOpen && !user && !skipAuthModal
+
+  const guestOnboardingDone = isPlanStageComplete(onboardingState)
+  const shouldRedirectGuestToOnboarding =
+    mode === 'guest' && !guestOnboardingDone && pathname !== '/guest-onboarding' && !isBypassRoute
+
+  useEffect(() => {
+    if (shouldRedirectGuestToOnboarding) router.replace('/guest-onboarding')
+  }, [shouldRedirectGuestToOnboarding, router])
+
+  useGuestBeforeUnloadWarning(mode === 'guest' && guestOnboardingDone)
+
+  const showLandingGate = mode === 'landing' && !isBypassRoute
+  const showGuestBanner =
+    mode === 'guest' &&
+    guestOnboardingDone &&
+    pathname !== '/guest-onboarding' &&
+    !isBypassRoute
 
   return (
     <AuthContext.Provider value={value}>
@@ -291,7 +321,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       <Suspense fallback={null}>
         <PasswordUpdatedQuerySync />
       </Suspense>
-      {children}
+      {showLandingGate ? (
+        <LandingGate />
+      ) : (
+        <>
+          {showGuestBanner ? <GuestSaveProgressBanner /> : null}
+          {children}
+        </>
+      )}
       {configured && !loading && user ? (
         <>
           <SupabaseFinanceSync userId={user.id} />
