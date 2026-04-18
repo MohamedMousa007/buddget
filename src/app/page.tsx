@@ -27,9 +27,8 @@ import {
 
 export default function DashboardPage() {
   const t = useT()
-  // Dashboard touches nearly every domain. Each hook runs in parallel and
-  // hydrates its Zustand slice from Supabase (in addition to the cached
-  // localStorage copy hydrated synchronously on mount).
+  // Each hook runs in parallel and hydrates its Zustand slice from Supabase
+  // (in addition to the localStorage copy hydrated synchronously on mount).
   useHydrateExpenses()
   useHydrateIncome()
   useHydrateDebts()
@@ -49,7 +48,6 @@ export default function DashboardPage() {
   // before the next checklist snapshot rolls in.
   const [justBuilt, setJustBuilt] = useState(false)
   const showChecklist = !checklist.hidden && !checklist.allDone && !justBuilt
-  const suppressData = showChecklist
 
   // Celebrate the first time all six cards flip to done.
   const wasAllDoneRef = useRef<boolean | null>(null)
@@ -76,23 +74,23 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen">
       <DashboardSearchParamsSync />
-      <DashboardHero
-        stats={{
-          leftToSpend: stats.leftToSpend,
-          budgetUsedPercent: stats.budgetUsedPercent,
-          totalIncome: stats.totalIncome,
-          totalSpent: stats.totalSpent,
-          savingsTotal: stats.savingsTotal,
-          netSavingsTransfersThisMonth: stats.netSavingsTransfersThisMonth,
-          dailyRate: stats.dailyRate,
-          paceStatus: stats.paceStatus,
-          daysLeft: stats.daysLeft,
-          baseCurrency: stats.baseCurrency,
-        }}
-        suppressNumbers={suppressData}
-      />
+      <div className="max-w-2xl lg:max-w-3xl mx-auto px-4 pt-4 pb-8 space-y-4">
+        <DashboardHero
+          stats={{
+            leftToSpend: stats.leftToSpend,
+            budgetUsedPercent: stats.budgetUsedPercent,
+            totalIncome: stats.totalIncome,
+            totalSpent: stats.totalSpent,
+            savingsTotal: stats.savingsTotal,
+            netSavingsTransfersThisMonth: stats.netSavingsTransfersThisMonth,
+            dailyRate: stats.dailyRate,
+            paceStatus: stats.paceStatus,
+            daysLeft: stats.daysLeft,
+            baseCurrency: stats.baseCurrency,
+          }}
+          suppressNumbers={showChecklist}
+        />
 
-      <div className="max-w-2xl mx-auto px-4 pt-4 pb-8 space-y-4">
         {showChecklist ? (
           <>
             <DashboardFirstRunChecklist snapshot={checklist} />

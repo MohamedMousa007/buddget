@@ -1,5 +1,6 @@
 import type { RecurringExpense, Currency, ExpenseCategory } from '@/lib/store/types'
 import type { RecurringExpenseRow, RecurringExpenseInsert } from '@/lib/supabase/remote/types'
+import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
 
 const VALID_CATEGORIES: readonly ExpenseCategory[] = [
   'Rent',
@@ -33,7 +34,8 @@ export function recurringExpenseToRow(
     day_of_month: r.dayOfMonth,
     next_due_date: null,
     is_active: r.isActive,
-    payment_method_id: r.paymentMethodId || null,
+    payment_method_id:
+      r.paymentMethodId && r.paymentMethodId !== DEFAULT_CASH_ID ? r.paymentMethodId : null,
     linked_subscription_id: null,
     notes: r.notes ?? null,
   }

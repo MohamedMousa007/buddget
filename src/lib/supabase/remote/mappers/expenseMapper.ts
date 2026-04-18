@@ -1,5 +1,6 @@
 import type { Expense, Currency, ExpenseCategory } from '@/lib/store/types'
 import type { ExpenseRow, ExpenseInsert } from '@/lib/supabase/remote/types'
+import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
 
 const VALID_CATEGORIES: readonly ExpenseCategory[] = [
   'Rent',
@@ -27,7 +28,8 @@ export function expenseToRow(e: Expense, userId: string): ExpenseInsert {
     amount: e.amount,
     currency: e.currency,
     expense_date: e.date,
-    payment_method_id: e.paymentMethodId || null,
+    payment_method_id:
+      e.paymentMethodId && e.paymentMethodId !== DEFAULT_CASH_ID ? e.paymentMethodId : null,
     linked_subscription_id: null,
     linked_debt_payment_id: null,
     is_debt_payment: !!e.isDebtPayment,

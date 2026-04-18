@@ -26,6 +26,7 @@ import {
   assembleBudgetPlan,
 } from './mappers/budgetPlanMapper'
 import type { Currency } from '@/lib/store/types'
+import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
 
 type Client = SupabaseClient<Database>
 type TableName = keyof Database['public']['Tables']
@@ -121,8 +122,13 @@ export async function flushDiff(
     runner.upsert('onboarding_state', [onboardingToRow(next.onboardingState, userId)], 'onboarding_state.upsert')
   }
 
-  // Array slices
-  emitList(runner, 'payment_methods', next.paymentMethods, prev.paymentMethods, paymentMethodToRow, userId)
+  // Array slices — the built-in `pm_default_cash` sentinel is kept in-store
+  // for a frictionless add-expense UX but never synced: its non-UUID id
+  // would be rejected by the `payment_methods.id uuid` column, and FKs that
+  // pointed at it are null-emitted by the expense / debt-payment mappers.
+  const nextPayments = next.paymentMethods.filter((pm) => pm.id !== DEFAULT_CASH_ID)
+  const prevPayments = prev.paymentMethods.filter((pm) => pm.id !== DEFAULT_CASH_ID)
+  emitList(runner, 'payment_methods', nextPayments, prevPayments, paymentMethodToRow, userId)
   emitList(runner, 'income_sources', next.incomeSources, prev.incomeSources, incomeSourceToRow, userId)
   emitList(runner, 'expenses', next.expenses, prev.expenses, expenseToRow, userId)
   emitList(runner, 'recurring_expenses', next.recurringExpenses, prev.recurringExpenses, recurringExpenseToRow, userId)
