@@ -45,7 +45,7 @@ export function DashboardTransactions({ expenses }: DashboardTransactionsProps) 
       .slice(0, MAX_ROWS)
   }, [expenses])
 
-  if (rows.length === 0) return null
+  const hasRows = rows.length > 0
 
   return (
     <section className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
@@ -53,22 +53,35 @@ export function DashboardTransactions({ expenses }: DashboardTransactionsProps) 
         <h2 className="text-[11px] uppercase tracking-[0.3px] text-[var(--color-brand-text-secondary)] font-semibold">
           {t.dashboard.sectionTxTitle}
         </h2>
-        <Link
-          href="/expenses"
-          className="text-[11px] text-[var(--color-brand-red)] hover:underline"
-        >
-          {t.dashboard.sectionSeeAll}
-        </Link>
+        {hasRows ? (
+          <Link
+            href="/expenses"
+            className="text-[11px] text-[var(--color-brand-red)] hover:underline"
+          >
+            {t.dashboard.sectionSeeAll}
+          </Link>
+        ) : null}
       </div>
-      <ul className="space-y-3">
-        {rows.map((expense) => (
-          <TxRow
-            key={expense.id}
-            expense={expense}
-            methodName={paymentMethodNameById[expense.paymentMethodId] ?? ''}
-          />
-        ))}
-      </ul>
+      {hasRows ? (
+        <ul className="space-y-3">
+          {rows.map((expense) => (
+            <TxRow
+              key={expense.id}
+              expense={expense}
+              methodName={paymentMethodNameById[expense.paymentMethodId] ?? ''}
+            />
+          ))}
+        </ul>
+      ) : (
+        <div className="py-6 text-center space-y-1">
+          <p className="text-xs text-[var(--color-brand-text-secondary)]">
+            {t.dashboard.recentEmpty}
+          </p>
+          <p className="text-[11px] text-[var(--color-brand-text-muted)]">
+            {t.dashboard.recentEmptyDesc}
+          </p>
+        </div>
+      )}
     </section>
   )
 }

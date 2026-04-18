@@ -5,6 +5,12 @@ import { formatCompact } from '@/components/dashboard/categoryVisuals'
 import { cn } from '@/lib/utils'
 import type { PaceStatus } from '@/lib/utils/spendingPace'
 
+/** Full-number formatter for the hero — commas, no decimals ("17,000"). */
+function formatFull(n: number): string {
+  if (!Number.isFinite(n)) return '0'
+  return Math.round(n).toLocaleString('en-US')
+}
+
 export interface DashboardHeroStats {
   leftToSpend: number
   budgetUsedPercent: number
@@ -59,15 +65,15 @@ export function DashboardHero({ stats, suppressNumbers }: DashboardHeroProps) {
                   {t.dashboard.heroLeftToSpend}
                 </p>
                 <p className="mt-1 font-mono font-bold text-white text-[32px] leading-none truncate">
-                  {stats.baseCurrency} {formatCompact(Math.max(0, stats.leftToSpend))}
+                  {stats.baseCurrency} {formatFull(Math.max(0, stats.leftToSpend))}
                 </p>
               </div>
               <HeroRing percent={stats.budgetUsedPercent} usedLabel={t.dashboard.heroUsedSuffix} />
             </div>
 
-            {/* Stats row */}
+            {/* Stats row — three centred columns on the dark surface */}
             <div className="mt-5 pt-4 grid grid-cols-3 gap-2 border-t border-white/[0.06]">
-              <Stat label={t.dashboard.heroStatIncome} value={stats.totalIncome} color="text-white" />
+              <Stat label={t.dashboard.heroStatIncome} value={stats.totalIncome} color="text-white/85" />
               <Stat label={t.dashboard.heroStatSpent} value={stats.totalSpent} color="text-[#FCA5A5]" />
               <Stat
                 label={t.dashboard.heroStatSaved}
@@ -102,11 +108,11 @@ export function DashboardHero({ stats, suppressNumbers }: DashboardHeroProps) {
 
 function Stat({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <div className="min-w-0">
-      <div className={cn('font-mono font-bold text-[14px] truncate', color)}>
-        {formatCompact(Math.max(0, value))}
+    <div className="min-w-0 text-center">
+      <div className={cn('font-mono font-semibold text-[14px] truncate', color)}>
+        {formatFull(Math.max(0, value))}
       </div>
-      <div className="text-[10px] text-white/30 truncate mt-0.5">{label}</div>
+      <div className="text-[9px] text-white/30 truncate mt-0.5">{label}</div>
     </div>
   )
 }
@@ -127,7 +133,7 @@ function HeroRing({ percent, usedLabel }: { percent: number; usedLabel: string }
           cy={size / 2}
           r={r}
           fill="none"
-          stroke="rgba(255,255,255,0.08)"
+          stroke="rgba(255,255,255,0.06)"
           strokeWidth={stroke}
         />
         <circle
@@ -144,8 +150,8 @@ function HeroRing({ percent, usedLabel }: { percent: number; usedLabel: string }
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
-        <span className="text-white text-[14px] font-bold">{clamped}%</span>
-        <span className="text-white/50 text-[8px] mt-0.5">{usedLabel}</span>
+        <span className="text-white text-[15px] font-semibold">{clamped}%</span>
+        <span className="text-white/35 text-[8px] mt-0.5">{usedLabel}</span>
       </div>
     </div>
   )

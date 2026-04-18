@@ -166,6 +166,7 @@ export interface Dictionary {
     summaryDebtLabel: string
     summarySavedThisMonth: (amount: string) => string
     summaryDebtActive: (count: number) => string
+    summaryDebtActiveNone: string
   }
 
   expenses: {

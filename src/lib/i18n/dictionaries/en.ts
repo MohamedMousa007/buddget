@@ -161,6 +161,7 @@ export const en: Dictionary = {
     summaryDebtLabel: 'DEBT',
     summarySavedThisMonth: (amount) => `+${amount} this month`,
     summaryDebtActive: (count) => (count === 1 ? '1 active' : `${count} active`),
+    summaryDebtActiveNone: 'No active debts',
   },
 
   expenses: {
