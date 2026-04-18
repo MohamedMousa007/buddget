@@ -1166,6 +1166,12 @@ export const en: Dictionary = {
     householdRentPlaceholder: '0 if none',
     householdUtilitiesIncluded: 'Utilities included in rent',
     householdSave: 'Save household',
+    buildBudgetCta: 'Build my budget',
+    buildBudgetPendingCta: 'Building your budget\u2026',
+    buildBudgetHint: "Finish every card above and we\u2019ll craft your plan.",
+    buildBudgetSuccessToast: 'Your budget is ready \u2014 welcome to Buddget!',
+    buildBudgetFallbackToast: 'Used a quick local plan \u2014 you can refine it later.',
+    buildBudgetErrorToast: "Couldn\u2019t build your plan right now. Try again.",
 
     planPickerSection: 'How do you want to plan your spending?',
     planPickerFooter: 'Set a monthly limit for each category. Buddget will track how you\u2019re doing in real time.',

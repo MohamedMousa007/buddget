@@ -1162,6 +1162,14 @@ export interface Dictionary {
     householdUtilitiesIncluded: string
     householdSave: string
 
+    // Build-My-Budget CTA + post-build feedback.
+    buildBudgetCta: string
+    buildBudgetPendingCta: string
+    buildBudgetHint: string
+    buildBudgetSuccessToast: string
+    buildBudgetFallbackToast: string
+    buildBudgetErrorToast: string
+
     planPickerSection: string
     planPickerFooter: string
     planPickerPlaceholderNoIncome: string

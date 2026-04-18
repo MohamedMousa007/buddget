@@ -1163,6 +1163,12 @@ export const ar: Dictionary = {
     householdRentPlaceholder: '0 إذا لا يوجد',
     householdUtilitiesIncluded: 'المرافق مشمولة في الإيجار',
     householdSave: 'احفظ بيانات المنزل',
+    buildBudgetCta: 'اصنع ميزانيتي',
+    buildBudgetPendingCta: 'جارٍ بناء ميزانيتك…',
+    buildBudgetHint: 'أكمل كل البطاقات أعلاه لنصنع خطتك.',
+    buildBudgetSuccessToast: 'ميزانيتك جاهزة — أهلاً بك في Buddget!',
+    buildBudgetFallbackToast: 'طبّقنا خطة محلية سريعة — يمكنك تعديلها لاحقاً.',
+    buildBudgetErrorToast: 'تعذّر بناء خطتك الآن. حاول مرة أخرى.',
 
     planPickerSection: 'كيف تريد تخطيط إنفاقك؟',
     planPickerFooter: 'حدد حداً شهرياً لكل فئة. Buddget سيتابع تقدمك لحظة بلحظة.',

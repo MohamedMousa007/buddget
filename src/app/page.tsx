@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { DashboardSearchParamsSync } from '@/components/dashboard/DashboardSearchParamsSync'
 import { DashboardFirstRunChecklist } from '@/components/dashboard/DashboardFirstRunChecklist'
+import { BuildBudgetCta } from '@/components/dashboard/BuildBudgetCta'
 import { useFirstRunChecklist } from '@/lib/onboarding/firstRunChecklist'
 import { useLegacyOnboardingMigrator } from '@/lib/onboarding/migrateLegacyOnboarding'
 import { ONBOARDING_EVENTS, track } from '@/lib/analytics/events'
@@ -51,8 +52,12 @@ export default function DashboardPage() {
 
   // Show the checklist card above the dashboard — and suppress the data
   // widgets underneath — until the user either finishes setup or hides the
-  // checklist. One rule: visible AND not all-done.
-  const showChecklist = !checklist.hidden && !checklist.allDone
+  // checklist. Once the user clicks "Build My Budget" we flip the local
+  // `justBuilt` ref so KPIs reveal immediately even though the checklist
+  // snapshot still reports allDone=false for the one or two beats before
+  // the plan write propagates.
+  const [justBuilt, setJustBuilt] = useState(false)
+  const showChecklist = !checklist.hidden && !checklist.allDone && !justBuilt
   const suppressData = showChecklist
 
   // Celebrate when the 4-item checklist flips to 100%. Only fires on the
@@ -83,7 +88,12 @@ export default function DashboardPage() {
     <div className="min-h-screen">
       <DashboardSearchParamsSync />
       <div className="px-4 pt-4 pb-5 lg:pt-4 lg:px-6 space-y-4 max-w-6xl mx-auto">
-        {showChecklist ? <DashboardFirstRunChecklist snapshot={checklist} /> : null}
+        {showChecklist ? (
+          <>
+            <DashboardFirstRunChecklist snapshot={checklist} />
+            <BuildBudgetCta onBuilt={() => setJustBuilt(true)} />
+          </>
+        ) : null}
         {suppressData ? null : (
         <>
         {/* KPI grid — no horizontal scroll; reflows 2 → 3 → 6 cols. */}
