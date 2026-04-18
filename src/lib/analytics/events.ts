@@ -23,6 +23,9 @@ export const ONBOARDING_EVENTS = {
   checklistItemCompleted: 'onboarding.checklist_item_completed',
   checklistAllCompleted: 'onboarding.checklist_all_completed',
   checklistHidden: 'onboarding.checklist_hidden',
+  budgetAutoBuildStarted: 'onboarding.budget_auto_build_started',
+  budgetAutoBuilt: 'onboarding.budget_auto_built',
+  budgetAutoBuildFallback: 'onboarding.budget_auto_build_fallback',
 } as const
 
 type EventName =
