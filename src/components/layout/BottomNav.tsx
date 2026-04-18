@@ -33,6 +33,7 @@ export function BottomNav() {
               <motion.button
                 key="fab"
                 type="button"
+                data-tutorial-id="fab-root"
                 onClick={() => {
                   closeMore()
                   setActiveModal('quickAdd')
@@ -87,6 +88,7 @@ export function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
+              data-tutorial-id={`nav-${item.label}`}
               onClick={closeMore}
               className={cn(
                 'flex flex-col items-center gap-1 py-1 px-3 transition-colors duration-200',
