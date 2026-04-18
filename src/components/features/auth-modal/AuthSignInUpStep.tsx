@@ -148,7 +148,7 @@ export function AuthSignInUpStep({
         )}
       </AuthPrimaryButton>
 
-      <p className="text-center text-sm text-[var(--color-brand-text-muted)]">
+      <p className="text-center text-xs text-[var(--color-brand-text-muted)]">
         {formMode === 'signin' ? (
           <button
             type="button"

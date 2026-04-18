@@ -106,7 +106,7 @@ export function AuthCredentialFields({
   return (
     <div className="space-y-2.5">
       <div>
-        <label className="text-[11px] text-[var(--color-brand-text-muted)] mb-1 block">{t.auth.labelEmail}</label>
+        <label className="text-[11px] text-[var(--color-brand-text-muted)] mb-0.5 block">{t.auth.labelEmail}</label>
         <div className="relative">
           <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
           <input
@@ -204,7 +204,7 @@ export function AuthCredentialFields({
         ) : null}
       </div>
       <div>
-        <label className="text-[11px] text-[var(--color-brand-text-muted)] mb-1 block">{t.auth.labelPassword}</label>
+        <label className="text-[11px] text-[var(--color-brand-text-muted)] mb-0.5 block">{t.auth.labelPassword}</label>
         <div className="relative">
           <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
           <input
@@ -234,7 +234,7 @@ export function AuthCredentialFields({
       </div>
       {isSignup ? (
         <div>
-          <label className="text-[11px] text-[var(--color-brand-text-muted)] mb-1 block">{t.auth.labelConfirm}</label>
+          <label className="text-[11px] text-[var(--color-brand-text-muted)] mb-0.5 block">{t.auth.labelConfirm}</label>
           <div className="relative">
             <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
             <input
