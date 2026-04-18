@@ -55,6 +55,42 @@ export function formatCurrency(amount: number, currency: Currency | string, show
 }
 
 /**
+ * Currency-attached formatter for dense hero / card surfaces. Emits `"$1,234"`
+ * or `"AED 1.2M"` depending on width. Use for per-column stats where the full
+ * number sometimes doesn't fit a 3-col mobile grid — pass `compact: 'auto'`
+ * to let the helper decide, or `'on'` / `'off'` to force.
+ */
+export function formatMoneyHero(
+  amount: number,
+  currency: Currency | string,
+  options: { compact?: 'auto' | 'on' | 'off'; fullMaxChars?: number } = {},
+): string {
+  const { compact = 'auto', fullMaxChars = 9 } = options
+  if (currency === 'XAU') return `${amount.toFixed(2)}g`
+
+  const symbol = CURRENCY_SYMBOLS[currency] || currency
+  const loc = numberLocale()
+  const rounded = Math.round(amount)
+
+  const fullNumber = rounded.toLocaleString(loc, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })
+  const compactNumber = new Intl.NumberFormat(loc, {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(rounded)
+
+  const stick = ['$', '€', '£'].includes(symbol)
+  const join = (n: string) => (stick ? `${symbol}${n}` : `${symbol} ${n}`)
+  const full = join(fullNumber)
+
+  if (compact === 'off') return full
+  if (compact === 'on') return join(compactNumber)
+  return full.length > fullMaxChars ? join(compactNumber) : full
+}
+
+/**
  * English-only relative labels. For UI that follows the app language, use `useLocalizedFormatters` from `@/hooks/useLocalizedFormatters`.
  */
 export function formatDate(dateStr: string): string {
