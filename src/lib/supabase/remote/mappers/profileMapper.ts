@@ -34,6 +34,13 @@ export function profileToRow(
     onboarding_completed: extras.onboardingCompleted ?? false,
     display_name: extras.displayName ?? null,
     no_debts_declared: p.noDebtsDeclared ?? false,
+    no_goals_declared: p.noGoalsDeclared ?? false,
+    household: p.household ?? null,
+    lifestyle_tier: p.lifestyleTier ?? null,
+    food_frequency: p.foodFrequency ?? null,
+    transport_mode: p.transportMode ?? null,
+    monthly_rent: p.monthlyRent ?? null,
+    rent_includes_utilities: p.rentIncludesUtilities ?? false,
   }
 }
 
@@ -56,6 +63,13 @@ export function profileFromRow(row: ProfileRow): ProfileFromRowResult {
     avatarPresetId: row.avatar_emoji ?? undefined,
     gender: (row.gender ?? null) as UserProfile['gender'],
     noDebtsDeclared: row.no_debts_declared,
+    noGoalsDeclared: row.no_goals_declared,
+    household: (row.household ?? null) as UserProfile['household'],
+    lifestyleTier: (row.lifestyle_tier ?? null) as UserProfile['lifestyleTier'],
+    foodFrequency: (row.food_frequency ?? null) as UserProfile['foodFrequency'],
+    transportMode: (row.transport_mode ?? null) as UserProfile['transportMode'],
+    monthlyRent: row.monthly_rent,
+    rentIncludesUtilities: row.rent_includes_utilities,
     createdAt: row.created_at,
   }
   const extras: ProfileExtras = {

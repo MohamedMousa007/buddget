@@ -71,6 +71,13 @@ export const importDataSchema = z.object({
       gender: z.enum(['male', 'female', 'prefer_not_to_say']).nullable().optional(),
       baseCurrency: currencySchema,
       noDebtsDeclared: z.boolean().optional(),
+      noGoalsDeclared: z.boolean().optional(),
+      household: z.enum(['solo', 'couple', 'family']).nullable().optional(),
+      lifestyleTier: z.enum(['minimal', 'balanced', 'comfortable']).nullable().optional(),
+      foodFrequency: z.enum(['everyday', 'mostdays', 'sometimes', 'rarely']).nullable().optional(),
+      transportMode: z.enum(['public', 'car', 'taxi', 'walk']).nullable().optional(),
+      monthlyRent: z.number().nullable().optional(),
+      rentIncludesUtilities: z.boolean().optional(),
       createdAt: z.string(),
     })
     .optional(),
