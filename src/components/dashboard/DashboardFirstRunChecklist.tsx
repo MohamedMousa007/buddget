@@ -1,8 +1,18 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { ArrowRight, Check, Wallet, Target, AlertCircle, CreditCard, Lock, Plus } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import {
+  ArrowRight,
+  Check,
+  Wallet,
+  Target,
+  AlertCircle,
+  CreditCard,
+  Lock,
+  Plus,
+  Utensils,
+  Home,
+} from 'lucide-react'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
@@ -25,7 +35,6 @@ type Item = FirstRunChecklistItem
  */
 export function DashboardFirstRunChecklist({ snapshot }: DashboardFirstRunChecklistProps) {
   const t = useT()
-  const router = useRouter()
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
   const updateSettings = useFinanceStore((s) => s.updateSettings)
   const updateProfile = useFinanceStore((s) => s.updateProfile)
@@ -59,27 +68,23 @@ export function DashboardFirstRunChecklist({ snapshot }: DashboardFirstRunCheckl
 
   const handleRowClick = (item: Item) => {
     if (!item.enabled) return
-    if (item.id === 'income') {
-      setActiveModal('addIncome')
-      return
-    }
-    if (item.id === 'budget') {
-      router.push('/budget-setup')
-      return
-    }
-    if (item.id === 'debts') {
-      setActiveModal('addDebt')
-      return
-    }
-    if (item.id === 'payments') {
-      setActiveModal('addPaymentMethod')
-    }
+    if (item.id === 'income') return setActiveModal('addIncome')
+    if (item.id === 'payments') return setActiveModal('addPaymentMethod')
+    if (item.id === 'debts') return setActiveModal('addDebt')
+    if (item.id === 'goals') return setActiveModal('addGoal')
+    if (item.id === 'lifestyle') return setActiveModal('lifestyle')
+    if (item.id === 'household') return setActiveModal('householdRent')
   }
 
   const handleOptOut = (item: Item) => {
     if (item.id === 'debts') {
       updateProfile({ noDebtsDeclared: true })
       track(ONBOARDING_EVENTS.checklistItemCompleted, { id: 'debts', via: 'opt_out' })
+      return
+    }
+    if (item.id === 'goals') {
+      updateProfile({ noGoalsDeclared: true })
+      track(ONBOARDING_EVENTS.checklistItemCompleted, { id: 'goals', via: 'opt_out' })
     }
   }
 
@@ -113,12 +118,8 @@ export function DashboardFirstRunChecklist({ snapshot }: DashboardFirstRunCheckl
             key={item.id}
             item={item}
             label={labelFor(item.id, t)}
-            disabledLabel={
-              item.id === 'budget' ? t.onboarding.checklistDisabledBudget : null
-            }
-            optOutLabel={
-              item.id === 'debts' ? t.onboarding.checklistOptOutDebts : null
-            }
+            disabledLabel={null}
+            optOutLabel={optOutLabelFor(item.id, t)}
             addMoreLabel={t.onboarding.checklistTapToAddMore}
             addedLabel={t.onboarding.checklistAddedAgain(item.count)}
             onClick={() => handleRowClick(item)}
@@ -145,16 +146,26 @@ export function DashboardFirstRunChecklist({ snapshot }: DashboardFirstRunCheckl
 
 function labelFor(id: Item['id'], t: ReturnType<typeof useT>): string {
   if (id === 'income') return t.onboarding.checklistItemIncome
-  if (id === 'budget') return t.onboarding.checklistItemBudget
   if (id === 'debts') return t.onboarding.checklistItemDebts
-  return t.onboarding.checklistItemPayments
+  if (id === 'payments') return t.onboarding.checklistItemPayments
+  if (id === 'goals') return t.onboarding.checklistItemGoals
+  if (id === 'lifestyle') return t.onboarding.checklistItemLifestyle
+  return t.onboarding.checklistItemHousehold
+}
+
+function optOutLabelFor(id: Item['id'], t: ReturnType<typeof useT>): string | null {
+  if (id === 'debts') return t.onboarding.checklistOptOutDebts
+  if (id === 'goals') return t.onboarding.checklistOptOutGoals
+  return null
 }
 
 function toastTextFor(id: Item['id'], t: ReturnType<typeof useT>): string | null {
   if (id === 'income') return t.common.toastIncomeAdded
   if (id === 'debts') return t.common.toastDebtAdded
   if (id === 'payments') return t.onboarding.toastPaymentAdded
-  // budget is a one-shot; no toast needed (plan-applied flow toasts itself).
+  if (id === 'goals') return t.onboarding.toastGoalAdded
+  if (id === 'lifestyle') return t.onboarding.toastLifestyleSaved
+  if (id === 'household') return t.onboarding.toastHouseholdSaved
   return null
 }
 
@@ -210,12 +221,16 @@ function ChecklistRow({
             <Check className="w-4 h-4 text-[var(--color-brand-green)]" aria-hidden />
           ) : icon === 'income' ? (
             <Wallet className="w-4 h-4 text-[var(--color-brand-text-secondary)]" aria-hidden />
-          ) : icon === 'budget' ? (
-            <Target className="w-4 h-4 text-[var(--color-brand-text-secondary)]" aria-hidden />
           ) : icon === 'debts' ? (
             <AlertCircle className="w-4 h-4 text-[var(--color-brand-text-secondary)]" aria-hidden />
-          ) : (
+          ) : icon === 'payments' ? (
             <CreditCard className="w-4 h-4 text-[var(--color-brand-text-secondary)]" aria-hidden />
+          ) : icon === 'goals' ? (
+            <Target className="w-4 h-4 text-[var(--color-brand-text-secondary)]" aria-hidden />
+          ) : icon === 'lifestyle' ? (
+            <Utensils className="w-4 h-4 text-[var(--color-brand-text-secondary)]" aria-hidden />
+          ) : (
+            <Home className="w-4 h-4 text-[var(--color-brand-text-secondary)]" aria-hidden />
           )}
         </span>
 
