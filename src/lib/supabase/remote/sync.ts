@@ -212,6 +212,8 @@ export async function pullCore(client: Client, userId: string): Promise<Snapshot
         dismissOnboardingBanner: false,
         onboardingBannerRemindAt: null,
         twoFactorEmailEnabled: false,
+        onboardingChecklistHidden: false,
+        legacyOnboardingMigratedAt: null,
       }
 
   const onboardingState = onboardingR.data
@@ -305,6 +307,8 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
         dismissOnboardingBanner: false,
         onboardingBannerRemindAt: null,
         twoFactorEmailEnabled: false,
+        onboardingChecklistHidden: false,
+        legacyOnboardingMigratedAt: null,
       }
 
   const onboardingState = onboardingR.data

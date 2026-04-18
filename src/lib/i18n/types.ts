@@ -1109,6 +1109,20 @@ export interface Dictionary {
     coreGateFinishCta: string
     coreGateFinishingCta: string
 
+    // First-run checklist shown on the dashboard until the user finishes setup.
+    checklistTitle: string
+    checklistProgress: (done: number, total: number) => string
+    checklistItemIncome: string
+    checklistItemBudget: string
+    checklistItemDebts: string
+    checklistItemPayments: string
+    checklistDisabledBudget: string
+    checklistOptOutDebts: string
+    checklistHideCta: string
+    checklistEmptyHint: string
+    checklistCompleteToast: string
+    checklistResumeCta: string
+
     planPickerSection: string
     planPickerFooter: string
     planPickerPlaceholderNoIncome: string

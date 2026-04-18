@@ -434,6 +434,12 @@ export interface UserProfile {
   /** Optional self-selected gender. Null (or missing) when unset. */
   gender?: 'male' | 'female' | 'prefer_not_to_say' | null
   baseCurrency: Currency
+  /**
+   * Set when the user ticks "I have no debts" on the first-run checklist so
+   * the debt item flips to done without forcing them to add a fake entry.
+   * Synced via `profiles.no_debts_declared`.
+   */
+  noDebtsDeclared?: boolean
   createdAt: string
 }
 
@@ -475,6 +481,17 @@ export interface AppSettings {
    * `buddget_device_id` cookie expires or is cleared.
    */
   twoFactorEmailEnabled: boolean
+  /**
+   * When true, the dashboard first-run checklist is hidden even if not yet
+   * 100% complete. Re-enabled via the profile dropdown "Finish setup" entry.
+   * Synced across devices via `user_settings.onboarding_checklist_hidden`.
+   */
+  onboardingChecklistHidden: boolean
+  /**
+   * ISO timestamp: set once the legacy-onboarding migrator has run (idempotent).
+   * Client-only flag — excluded from Supabase round-trip on purpose.
+   */
+  legacyOnboardingMigratedAt: string | null
 }
 
 /** Draft payment row from onboarding (applied to store on finish). */

@@ -33,6 +33,7 @@ export function profileToRow(
     default_shared_budget_plan_id: null,
     onboarding_completed: extras.onboardingCompleted ?? false,
     display_name: extras.displayName ?? null,
+    no_debts_declared: p.noDebtsDeclared ?? false,
   }
 }
 
@@ -54,6 +55,7 @@ export function profileFromRow(row: ProfileRow): ProfileFromRowResult {
     avatar: row.avatar_image_path ?? undefined,
     avatarPresetId: row.avatar_emoji ?? undefined,
     gender: (row.gender ?? null) as UserProfile['gender'],
+    noDebtsDeclared: row.no_debts_declared,
     createdAt: row.created_at,
   }
   const extras: ProfileExtras = {

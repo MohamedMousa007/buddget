@@ -76,6 +76,8 @@ export function emptySnapshot(): Snapshot {
       dismissOnboardingBanner: false,
       onboardingBannerRemindAt: null,
       twoFactorEmailEnabled: false,
+      onboardingChecklistHidden: false,
+      legacyOnboardingMigratedAt: null,
     },
     onboardingState: {
       flowVersion: 2,
