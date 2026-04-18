@@ -34,10 +34,13 @@ export interface FirstRunChecklistSnapshot {
  *   - income    → at least one `IncomeSource`
  *   - budget    → active plan (or any plan) has ≥1 category. Requires income.
  *   - debts     → `debts.length > 0` OR `profile.noDebtsDeclared`. Always enabled.
- *   - payments  → user has a non-Cash payment method. The default Cash row
- *                 doesn't count — otherwise every fresh install would start
- *                 pre-ticked.
+ *   - payments  → user added their own payment method (anything whose id isn't
+ *                 the bundled default `pm_default_cash`). Cash-only users can
+ *                 still tick it by renaming or re-adding the default with a
+ *                 custom name; we don't force anyone to invent a card.
  */
+
+const DEFAULT_CASH_ID = 'pm_default_cash'
 export function useFirstRunChecklist(): FirstRunChecklistSnapshot {
   const {
     incomeSources,
@@ -61,7 +64,7 @@ export function useFirstRunChecklist(): FirstRunChecklistSnapshot {
     const hasIncome = incomeSources.length > 0
     const hasAnyPlan = budgetPlans.some((p) => p.categories.length > 0)
     const hasDebtsHandled = debts.length > 0 || noDebtsDeclared
-    const hasRealPayment = paymentMethods.some((pm) => pm.type !== 'cash')
+    const hasRealPayment = paymentMethods.some((pm) => pm.id !== DEFAULT_CASH_ID)
 
     const items: FirstRunChecklistItem[] = [
       { id: 'income', done: hasIncome, enabled: true, hasOptOut: false },
