@@ -24,7 +24,7 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
 
 const MIN_LATENCY_MS = 450
 const RATE_WINDOW_SECONDS = 60
-const RATE_MAX_HITS = 10
+const RATE_MAX_HITS = 30
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)

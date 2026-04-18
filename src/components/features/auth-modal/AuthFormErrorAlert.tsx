@@ -6,7 +6,7 @@ import { useT } from '@/lib/i18n'
 
 export interface AuthFormErrorAlertProps {
   error: string
-  onSignInInstead: () => void
+  onSignInInstead?: () => void
   onResendCode: () => void
 }
 
@@ -27,7 +27,7 @@ export function AuthFormErrorAlert({ error, onSignInInstead, onResendCode }: Aut
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>
             {error}
-            {error === t.auth.errorAccountExists ? (
+            {error === t.auth.errorAccountExists && onSignInInstead ? (
               <>
                 {' '}
                 <button type="button" className="underline font-medium" onClick={onSignInInstead}>

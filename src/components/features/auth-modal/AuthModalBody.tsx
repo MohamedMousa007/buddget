@@ -12,12 +12,6 @@ import { LanguageToggle } from '@/components/ui/LanguageToggle'
  * The inner content of the auth surface — branding + step switching + language
  * toggle. Used by both `AuthModal` (wrapped in a fixed overlay) and the landing
  * page (rendered inline without any overlay chrome).
- *
- * `showBranding` controls the "Buddget" logo row. Set false on the landing
- * page where a bigger logo sits above the form.
- *
- * Every bit of auth state lives in the shared `useAuthModal` hook so the two
- * render sites are always in sync on form state, OTP step, etc.
  */
 export function AuthModalBody({ showBranding = true }: { showBranding?: boolean }) {
   const a = useAuthModal()
@@ -59,40 +53,37 @@ export function AuthModalBody({ showBranding = true }: { showBranding?: boolean 
               onResend={() => void a.resendCode()}
               onUseDifferentEmail={() => {
                 a.setStep('form')
-                a.setFormMode(a.verifyPurpose === '2fa' ? 'signin' : 'signup')
+                a.backToEmail()
                 a.setOtp('')
                 a.setError('')
               }}
             />
           ) : (
             <AuthSignInUpStep
-              formMode={a.formMode}
-              setFormMode={a.setFormMode}
+              emailStep={a.emailStep}
+              passwordIntent={a.passwordIntent}
+              emailAdvancePending={a.emailAdvancePending}
+              advanceAfterEmail={() => void a.advanceAfterEmail()}
+              backToEmail={a.backToEmail}
+              abandonVerifyPending={a.abandonVerifyPending}
+              continueVerifyPending={() => void a.continueVerifyPending()}
+              submitPassword={a.submitPassword}
               email={a.email}
               setEmail={a.setEmail}
               password={a.password}
               setPassword={a.setPassword}
-              confirmPassword={a.confirmPassword}
-              setConfirmPassword={a.setConfirmPassword}
               error={a.error}
               setError={a.setError}
               loading={a.loading}
-              setStep={a.setStep}
-              setForgotSuccess={a.setForgotSuccess}
-              signIn={a.signIn}
-              signUp={a.signUp}
+              onForgotClick={() => {
+                a.setStep('forgot')
+                a.setForgotSuccess(false)
+                a.setError('')
+              }}
               resendCode={a.resendCode}
-              switchToSignIn={a.switchToSignIn}
-              emailCheckState={a.emailCheckState}
-              signinEmailCheckState={a.signinEmailCheckState}
-              checkEmailOnBlur={a.checkEmailOnBlur}
               rememberMe={a.rememberMe}
               setRememberMe={a.setRememberMe}
-              onResendPendingCode={() => {
-                a.setStep('verify')
-                a.setOtp('')
-                void a.resendCode()
-              }}
+              mode={a.mode}
             />
           )}
         </motion.div>
