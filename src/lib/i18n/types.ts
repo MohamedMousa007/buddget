@@ -1092,6 +1092,23 @@ export interface Dictionary {
     finishing: string
     lastStep: string
 
+    // Progressive-onboarding core gate (4 essentials).
+    coreGateTitle: string
+    coreGateSubtitle: string
+    coreGateStepName: string
+    coreGateStepNameHelp: string
+    coreGateStepNamePlaceholder: string
+    coreGateStepCountry: string
+    coreGateStepCountryHelp: string
+    coreGateStepCity: string
+    coreGateStepCityHelp: string
+    coreGateStepCityPlaceholder: string
+    coreGateStepCurrency: string
+    coreGateStepCurrencyHelp: string
+    coreGateNextCta: string
+    coreGateFinishCta: string
+    coreGateFinishingCta: string
+
     planPickerSection: string
     planPickerFooter: string
     planPickerPlaceholderNoIncome: string
