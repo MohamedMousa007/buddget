@@ -21,7 +21,7 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: 'https://buddget.online/sitemap.xml',
-    host: 'https://buddget.online',
+    sitemap: 'https://buddget.app/sitemap.xml',
+    host: 'https://buddget.app',
   }
 }

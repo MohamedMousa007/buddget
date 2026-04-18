@@ -37,7 +37,7 @@ const ibmPlexArabic = IBM_Plex_Sans_Arabic({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://buddget.online'),
+  metadataBase: new URL('https://buddget.app'),
   title: {
     default: 'Buddget — Personal Finance Tracker & Budget Planner',
     template: '%s | Buddget',
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     'budget planner Dubai',
     'expense manager',
   ],
-  authors: [{ name: 'Buddget', url: 'https://buddget.online' }],
+  authors: [{ name: 'Buddget', url: 'https://buddget.app' }],
   creator: 'Buddget',
   robots: {
     index: true,
@@ -75,7 +75,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://buddget.online',
+    url: 'https://buddget.app',
     siteName: 'Buddget',
     title: 'Buddget — Personal Finance Tracker & Budget Planner',
     description: 'Track expenses, manage budgets, monitor debts. Free with Buddgy.',
@@ -94,7 +94,7 @@ export const metadata: Metadata = {
     description: 'Track expenses, manage budgets, monitor debts. Free with Buddgy.',
     images: ['/opengraph-image'],
   },
-  alternates: { canonical: 'https://buddget.online' },
+  alternates: { canonical: 'https://buddget.app' },
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
