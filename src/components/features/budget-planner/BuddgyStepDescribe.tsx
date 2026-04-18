@@ -45,7 +45,15 @@ export function BuddgyStepDescribe({ flow }: { flow: BuddgyBuilderApi }) {
 
       {flow.error && <p className="text-xs text-[var(--color-brand-red)]">{flow.error}</p>}
 
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between">
+        <button
+          type="button"
+          onClick={flow.skipDescribe}
+          disabled={flow.loading}
+          className="text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)] disabled:opacity-40"
+        >
+          Skip
+        </button>
         <button
           type="button"
           onClick={() => void flow.submitDescription(flow.describeText.trim())}

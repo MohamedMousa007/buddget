@@ -6,7 +6,7 @@ import type { BuddgyBuilderOpenOptions } from '@/hooks/useBuddgyBuilderFlow'
 import { useBuddgyBuilderFlow } from '@/hooks/useBuddgyBuilderFlow'
 import { BuddgyProgressDots } from '@/components/features/budget-planner/BuddgyProgressDots'
 import { BuddgyStepDescribe } from '@/components/features/budget-planner/BuddgyStepDescribe'
-import { BuddgyStepConfirm } from '@/components/features/budget-planner/BuddgyStepConfirm'
+import { BuddgyStepReview } from '@/components/features/budget-planner/BuddgyStepReview'
 import { BuddgyStepLifestyle } from '@/components/features/budget-planner/BuddgyStepLifestyle'
 import { BuddgyStepPlan } from '@/components/features/budget-planner/BuddgyStepPlan'
 import { BuddgyStepApplied } from '@/components/features/budget-planner/BuddgyStepApplied'
@@ -62,7 +62,7 @@ export function BuddgyBuilderFlow({ planId, onClose, builderOptions }: BuddgyBui
         <AnimatePresence mode="wait">
           <motion.div key={flow.step} {...slide}>
             {flow.step === 'describe' && <BuddgyStepDescribe flow={flow} />}
-            {flow.step === 'confirm' && <BuddgyStepConfirm flow={flow} />}
+            {flow.step === 'confirm' && <BuddgyStepReview flow={flow} />}
             {flow.step === 'lifestyle' && <BuddgyStepLifestyle flow={flow} />}
             {flow.step === 'plan' && <BuddgyStepPlan flow={flow} />}
             {flow.step === 'applied' && <BuddgyStepApplied flow={flow} />}

@@ -250,6 +250,26 @@ export function useBuddgyBuilderFlow(
     setStep('lifestyle')
   }, [basics.income])
 
+  /**
+   * Skip the free-text describe step: pre-fill `basics` from whatever the user
+   * already entered in the app (primary income source, profile, settings) and
+   * jump straight to the review step. Safe to call on an empty store — the
+   * review step will ask for anything we don't know yet.
+   */
+  const skipDescribe = useCallback(() => {
+    const state = useFinanceStore.getState()
+    const primary = state.incomeSources[0]
+    setBasics((prev) => ({
+      ...prev,
+      income: primary?.amount ?? prev.income,
+      currency: (primary?.currency as Currency) ?? state.settings.baseCurrency ?? prev.currency,
+      city: state.profile.city || prev.city,
+      country: state.profile.country || prev.country,
+    }))
+    setParsed(null)
+    setStep('confirm')
+  }, [])
+
   const confirmLifestyle = useCallback(() => {
     if (!lifestyle.food || !lifestyle.transport || !lifestyle.tier) return
     setStep('plan')
@@ -440,6 +460,7 @@ export function useBuddgyBuilderFlow(
     initialDescribeText: options?.initialDescribeText ?? '',
     knownIncome: options?.knownIncome,
     submitDescription,
+    skipDescribe,
     confirmBasics,
     confirmLifestyle,
     confirmAndApplyPlan,
