@@ -1,9 +1,12 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { DashboardSearchParamsSync } from '@/components/dashboard/DashboardSearchParamsSync'
 import { DashboardFirstRunChecklist } from '@/components/dashboard/DashboardFirstRunChecklist'
 import { useFirstRunChecklist } from '@/lib/onboarding/firstRunChecklist'
 import { useLegacyOnboardingMigrator } from '@/lib/onboarding/migrateLegacyOnboarding'
+import { ONBOARDING_EVENTS, track } from '@/lib/analytics/events'
+import { useActionToast } from '@/components/ui/ActionToast'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useNetWorth } from '@/hooks/useNetWorth'
 import { KPICard } from '@/components/dashboard/KPICard'
@@ -44,12 +47,37 @@ export default function DashboardPage() {
   const nw = useNetWorth()
   const checklist = useFirstRunChecklist()
   const incomeNote = stats.incomeBlocked ? t.dashboard.incomeBlockedHint : undefined
+  const showToast = useActionToast()
 
   // Show the checklist card above the dashboard — and suppress the data
   // widgets underneath — until the user either finishes setup or hides the
   // checklist. One rule: visible AND not all-done.
   const showChecklist = !checklist.hidden && !checklist.allDone
   const suppressData = showChecklist
+
+  // Celebrate when the 4-item checklist flips to 100%. Only fires on the
+  // transition so returning users who land with allDone already true don't
+  // get a spurious toast.
+  const wasAllDoneRef = useRef<boolean | null>(null)
+  useEffect(() => {
+    if (checklist.hidden) {
+      wasAllDoneRef.current = null
+      return
+    }
+    if (wasAllDoneRef.current === null) {
+      wasAllDoneRef.current = checklist.allDone
+      return
+    }
+    if (!wasAllDoneRef.current && checklist.allDone) {
+      try {
+        showToast(t.onboarding.checklistCompleteToast)
+      } catch {
+        /* toast provider not mounted in tests */
+      }
+      track(ONBOARDING_EVENTS.checklistAllCompleted)
+    }
+    wasAllDoneRef.current = checklist.allDone
+  }, [checklist.allDone, checklist.hidden, showToast, t.onboarding.checklistCompleteToast])
 
   return (
     <div className="min-h-screen">
