@@ -1,15 +1,9 @@
 'use client'
 
 import { useT } from '@/lib/i18n'
-import { formatCompact } from '@/components/dashboard/categoryVisuals'
+import { formatMoneyHero } from '@/lib/utils/formatters'
 import { cn } from '@/lib/utils'
 import type { PaceStatus } from '@/lib/utils/spendingPace'
-
-/** Full-number formatter for the hero — commas, no decimals ("17,000"). */
-function formatFull(n: number): string {
-  if (!Number.isFinite(n)) return '0'
-  return Math.round(n).toLocaleString('en-US')
-}
 
 export interface DashboardHeroStats {
   leftToSpend: number
@@ -32,14 +26,12 @@ export interface DashboardHeroProps {
 }
 
 /**
- * Standalone navy "summary" card — the dashboard's first visual. Absorbs the
- * former 6-col KPI grid into a single block: left-to-spend + 60×60 budget
- * ring + three-way stats row + pace line. Rendered inside the regular
- * content column (the AppShell top bar stays above it), so the card has all
- * four corners rounded and sits inset like any other card on the page.
- *
- * All dark-surface colours are hardcoded per spec — this block stays navy
- * regardless of the user's light/dark preference.
+ * Standalone navy "summary" card — the dashboard's first visual.
+ * - Left-to-spend big number + 60×60 budget ring on the first row.
+ * - Three-column In / Out / Saved stats row with hairline dividers, each
+ *   value coloured (green / red / gold) and carrying its currency symbol.
+ * - Pace info is promoted to `<DashboardPaceBadge>` underneath so it can
+ *   actually stand out instead of hiding as muted text at the hero's foot.
  */
 export function DashboardHero({ stats, suppressNumbers }: DashboardHeroProps) {
   const t = useT()
@@ -65,40 +57,36 @@ export function DashboardHero({ stats, suppressNumbers }: DashboardHeroProps) {
                   {t.dashboard.heroLeftToSpend}
                 </p>
                 <p className="mt-1 font-mono font-bold text-white text-[32px] leading-none truncate">
-                  {stats.baseCurrency} {formatFull(Math.max(0, stats.leftToSpend))}
+                  {formatMoneyHero(Math.max(0, stats.leftToSpend), stats.baseCurrency, {
+                    compact: 'auto',
+                    fullMaxChars: 11,
+                  })}
                 </p>
               </div>
               <HeroRing percent={stats.budgetUsedPercent} usedLabel={t.dashboard.heroUsedSuffix} />
             </div>
 
-            {/* Stats row — three centred columns on the dark surface */}
-            <div className="mt-5 pt-4 grid grid-cols-3 gap-2 border-t border-white/[0.06]">
-              <Stat label={t.dashboard.heroStatIncome} value={stats.totalIncome} color="text-white/85" />
-              <Stat label={t.dashboard.heroStatSpent} value={stats.totalSpent} color="text-[#FCA5A5]" />
+            {/* Stats row — In / Out / Saved with hairline dividers + currency */}
+            <div className="mt-5 pt-4 border-t border-white/[0.06] grid grid-cols-3 divide-x divide-white/[0.06]">
+              <Stat
+                label={t.dashboard.heroStatIn}
+                amount={stats.totalIncome}
+                currency={stats.baseCurrency}
+                color="text-[#22C55E]"
+              />
+              <Stat
+                label={t.dashboard.heroStatOut}
+                amount={stats.totalSpent}
+                currency={stats.baseCurrency}
+                color="text-[#EF4444]"
+              />
               <Stat
                 label={t.dashboard.heroStatSaved}
-                value={stats.savingsTotal}
-                color="text-[#86EFAC]"
+                amount={stats.savingsTotal}
+                currency={stats.baseCurrency}
+                color="text-[#FACC15]"
               />
             </div>
-
-            {/* Pace line */}
-            {stats.daysLeft >= 0 ? (
-              <div className="mt-3 flex items-center gap-1.5 text-[10px] text-white/40">
-                <span
-                  className="w-[5px] h-[5px] rounded-full shrink-0"
-                  style={{ background: paceDotColor(stats.paceStatus) }}
-                  aria-hidden
-                />
-                <span className="truncate">
-                  {t.dashboard.heroPace(
-                    `${stats.baseCurrency} ${formatCompact(stats.dailyRate)}`,
-                    paceLabel(stats.paceStatus, t),
-                    stats.daysLeft,
-                  )}
-                </span>
-              </div>
-            ) : null}
           </>
         )}
       </div>
@@ -106,13 +94,29 @@ export function DashboardHero({ stats, suppressNumbers }: DashboardHeroProps) {
   )
 }
 
-function Stat({ label, value, color }: { label: string; value: number; color: string }) {
+function Stat({
+  label,
+  amount,
+  currency,
+  color,
+}: {
+  label: string
+  amount: number
+  currency: string
+  color: string
+}) {
+  const value = formatMoneyHero(Math.max(0, amount), currency, {
+    compact: 'auto',
+    fullMaxChars: 9,
+  })
   return (
-    <div className="min-w-0 text-center">
-      <div className={cn('font-mono font-semibold text-[14px] truncate', color)}>
-        {formatFull(Math.max(0, value))}
+    <div className="min-w-0 text-center px-2">
+      <div className={cn('font-mono font-bold text-[18px] leading-none truncate', color)}>
+        {value}
       </div>
-      <div className="text-[9px] text-white/30 truncate mt-0.5">{label}</div>
+      <div className="text-[9px] text-white/40 truncate mt-1 uppercase tracking-wider">
+        {label}
+      </div>
     </div>
   )
 }
@@ -155,16 +159,4 @@ function HeroRing({ percent, usedLabel }: { percent: number; usedLabel: string }
       </div>
     </div>
   )
-}
-
-function paceDotColor(status: PaceStatus): string {
-  if (status === 'over') return '#FCA5A5'
-  if (status === 'warning') return '#FCD34D'
-  return '#86EFAC'
-}
-
-function paceLabel(status: PaceStatus, t: ReturnType<typeof useT>): string {
-  if (status === 'over') return t.dashboard.paceOver
-  if (status === 'warning') return t.dashboard.paceWarning
-  return t.dashboard.paceOnTrack
 }

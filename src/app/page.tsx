@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { DashboardSearchParamsSync } from '@/components/dashboard/DashboardSearchParamsSync'
 import { DashboardHero } from '@/components/dashboard/DashboardHero'
+import { DashboardPaceBadge } from '@/components/dashboard/DashboardPaceBadge'
 import { DashboardCategoryBars } from '@/components/dashboard/DashboardCategoryBars'
 import { DashboardTransactions } from '@/components/dashboard/DashboardTransactions'
 import { DashboardSummaryCards } from '@/components/dashboard/DashboardSummaryCards'
@@ -96,7 +97,16 @@ export default function DashboardPage() {
             <DashboardFirstRunChecklist snapshot={checklist} />
             <BuildBudgetCta onBuilt={() => setJustBuilt(true)} />
           </>
-        ) : null}
+        ) : (
+          <DashboardPaceBadge
+            paceStatus={stats.paceStatus}
+            dailyRate={stats.dailyRate}
+            suggestedDaily={stats.suggestedDaily}
+            daysLeft={stats.daysLeft}
+            baseCurrency={stats.baseCurrency}
+            overBudgetCategories={stats.overBudgetCategories}
+          />
+        )}
 
         <DashboardCategoryBars
           budgetCategories={stats.dashboardBudgetCategories}

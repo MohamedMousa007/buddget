@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useMemo } from 'react'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, AlertTriangle, Check } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import {
   getCategoryPalette,
@@ -27,18 +27,21 @@ interface RowDatum {
 const GREEN = '#18A349'
 const AMBER = '#D4A017'
 const RED = '#E50914'
+const TRACK = '#F0F0F0'
 
-function fillColor(pct: number): string {
-  if (pct > 100) return RED
-  if (pct >= 75) return AMBER
+function ringColor(pct: number): string {
+  if (pct > 80) return RED
+  if (pct > 60) return AMBER
   return GREEN
 }
 
 /**
- * Compact "Spending by category" card. One row per budgeted category with a
- * thin progress bar, a vertical budget-cap marker, and a "spent/cap" compact
- * label. Only categories with a positive cap are shown — the dashboard stays
- * clean while budget-setup remains the place to edit them.
+ * "Spending by category" compact card. Renders every budgeted category as a
+ * circular wheel — icon inside, colour-coded progress ring around — so the
+ * user can scan the whole budget at a glance instead of reading a stack of
+ * linear bars. Horizontally scrollable on mobile; wraps into a grid on
+ * larger screens. A coloured status chip at the top announces the overall
+ * budget health.
  */
 export function DashboardCategoryBars({
   budgetCategories,
@@ -59,17 +62,45 @@ export function DashboardCategoryBars({
       .sort((a, b) => b.pct - a.pct)
   }, [budgetCategories, categoryBudgetCaps, categorySpending])
 
+  const status = useMemo(() => {
+    if (rows.length === 0) return null
+    const over = rows.filter((r) => r.pct > 100)
+    if (over.length > 0) {
+      return {
+        tone: 'over' as const,
+        text: t.dashboard.categoryStatusOver(
+          over.slice(0, 2).map((r) => r.category).join(', '),
+        ),
+      }
+    }
+    const near = rows.find((r) => r.pct > 80)
+    if (near) {
+      return {
+        tone: 'near' as const,
+        text: t.dashboard.categoryStatusNearLimit(near.category),
+      }
+    }
+    return { tone: 'ok' as const, text: t.dashboard.categoryStatusAllWithin }
+  }, [rows, t])
+
   return (
     <section className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
-      <h2 className="text-[11px] uppercase tracking-[0.3px] text-[var(--color-brand-text-secondary)] font-semibold mb-3">
-        {t.dashboard.sectionCategoriesTitle}
-      </h2>
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <h2 className="text-[11px] uppercase tracking-[0.3px] text-[var(--color-brand-text-secondary)] font-semibold shrink-0">
+          {t.dashboard.sectionCategoriesTitle}
+        </h2>
+        {status ? <StatusChip tone={status.tone} text={status.text} /> : null}
+      </div>
+
       {rows.length > 0 ? (
-        <ul className="space-y-2.5">
+        <div
+          className="flex gap-3 overflow-x-auto sm:grid sm:grid-cols-6 lg:grid-cols-8 sm:gap-3 sm:overflow-visible pb-1 scrollbar-none"
+          style={{ scrollbarWidth: 'none' }}
+        >
           {rows.map((r) => (
-            <CategoryRow key={r.category} row={r} />
+            <CategoryWheel key={r.category} row={r} />
           ))}
-        </ul>
+        </div>
       ) : (
         <div className="py-4 flex flex-col items-start gap-2">
           <p className="text-xs text-[var(--color-brand-text-muted)]">
@@ -88,50 +119,89 @@ export function DashboardCategoryBars({
   )
 }
 
-function CategoryRow({ row }: { row: RowDatum }) {
-  const { bg, text } = getCategoryPalette(row.category)
-  const fill = fillColor(row.pct)
+function StatusChip({ tone, text }: { tone: 'ok' | 'near' | 'over'; text: string }) {
+  const styles =
+    tone === 'over'
+      ? 'bg-[#FCE7E7] text-[#9B1C1C]'
+      : tone === 'near'
+        ? 'bg-[#FEF3C7] text-[#8A5A0F]'
+        : 'bg-[#E6F9EF] text-[#0F6B4C]'
+  return (
+    <span
+      className={
+        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium max-w-[55%] truncate ' +
+        styles
+      }
+      title={text}
+    >
+      {tone === 'ok' ? (
+        <Check className="w-3 h-3 shrink-0" aria-hidden />
+      ) : (
+        <AlertTriangle className="w-3 h-3 shrink-0" aria-hidden />
+      )}
+      <span className="truncate">{text}</span>
+    </span>
+  )
+}
+
+function CategoryWheel({ row }: { row: RowDatum }) {
+  const palette = getCategoryPalette(row.category)
+  const pct = Math.max(0, Math.min(100, row.pct))
+  const ringFill = ringColor(row.pct)
   const overBudget = row.pct > 100
-  // Visual width caps at ~113% so the bar slightly bleeds past the marker.
-  const visibleWidth = Math.max(0, Math.min(113, row.pct))
+
+  // SVG ring geometry — 52×52 wheel with 3.5px stroke.
+  const size = 52
+  const stroke = 3.5
+  const r = (size - stroke) / 2
+  const c = 2 * Math.PI * r
+  const offset = c * (1 - pct / 100)
 
   return (
-    <li className="flex items-center gap-2">
-      <span
+    <div className="flex flex-col items-center gap-1 shrink-0 w-[64px] sm:w-auto">
+      <div
+        className="relative flex items-center justify-center rounded-full"
+        style={{ width: size, height: size, background: palette.bg }}
         aria-hidden
-        className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
-        style={{ background: bg, color: text }}
       >
-        <CategoryIcon category={row.category} className="w-3 h-3" />
-      </span>
+        <svg
+          width={size}
+          height={size}
+          viewBox={`0 0 ${size} ${size}`}
+          className="absolute inset-0"
+        >
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={TRACK} strokeWidth={stroke} />
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={r}
+            fill="none"
+            stroke={ringFill}
+            strokeWidth={stroke}
+            strokeDasharray={c}
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+            transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          />
+        </svg>
+        {/* Wrapper sets `color` so the lucide icon (which uses currentColor)
+            picks up the palette's darker ink on the pastel circle. */}
+        <span className="relative flex" style={{ color: palette.text }}>
+          <CategoryIcon category={row.category} className="w-[22px] h-[22px]" />
+        </span>
+      </div>
       <span
-        className="text-[11px] font-medium text-[var(--color-brand-text-primary)] shrink-0"
-        style={{ width: 58 }}
+        className="text-[10px] text-[var(--color-brand-text-secondary)] truncate max-w-full"
         title={row.category}
       >
         {row.category}
       </span>
-
-      {/* progress bar + marker */}
-      <div className="relative flex-1 h-[5px] bg-[#F0F0F0] rounded-full overflow-visible">
-        <div
-          className="absolute inset-y-0 start-0 rounded-full"
-          style={{ width: `${visibleWidth}%`, background: fill, transition: 'width 300ms ease' }}
-        />
-        {/* budget-cap marker at 100% */}
-        <span
-          aria-hidden
-          className="absolute top-[-2px] bottom-[-2px] w-[1.5px]"
-          style={{ insetInlineStart: '100%', background: 'rgba(0,0,0,0.2)' }}
-        />
-      </div>
-
       <span
-        className="text-[10px] font-mono shrink-0"
-        style={{ color: overBudget ? RED : 'var(--color-brand-text-secondary)' }}
+        className="text-[9px] font-mono tabular-nums"
+        style={{ color: overBudget ? RED : 'var(--color-brand-text-muted)' }}
       >
         {formatCompact(row.spent)}/{formatCompact(row.cap)}
       </span>
-    </li>
+    </div>
   )
 }

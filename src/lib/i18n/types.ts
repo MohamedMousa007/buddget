@@ -157,6 +157,16 @@ export interface Dictionary {
     heroStatIncome: string
     heroStatSpent: string
     heroStatSaved: string
+    heroStatIn: string
+    heroStatOut: string
+    paceBadgeOnTrackTitle: string
+    paceBadgeSlowDownTitle: string
+    paceBadgeOverTitle: string
+    paceBadgeSubtitle: (paceLabel: string, targetLabel: string, daysLeft: number) => string
+    paceBadgeCutBack: (names: string) => string
+    categoryStatusAllWithin: string
+    categoryStatusNearLimit: (name: string) => string
+    categoryStatusOver: (names: string) => string
     heroSetupGreeting: string
     heroPace: (perDay: string, status: string, daysLeft: number) => string
     sectionCategoriesTitle: string
