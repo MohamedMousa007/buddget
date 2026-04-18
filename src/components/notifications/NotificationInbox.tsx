@@ -16,10 +16,21 @@ const SEVERITY_DOT: Record<'warning' | 'info' | 'critical', string> = {
   info: 'var(--color-brand-green)',
 }
 
+export type NotificationInboxVariant = 'default' | 'dark'
+
 /**
- * Bell + dropdown: local nudges.
+ * Bell + dropdown: local nudges. `variant="dark"` re-paints just the trigger
+ * button so it sits naturally on a dark hero; the dropdown panel keeps its
+ * normal light styling so it reads as a light card popping out of the dark
+ * surface. All other call sites keep the default light trigger.
  */
-export function NotificationInbox({ className }: { className?: string }) {
+export function NotificationInbox({
+  className,
+  variant = 'default',
+}: {
+  className?: string
+  variant?: NotificationInboxVariant
+}) {
   const t = useT()
   const wrapRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
@@ -51,7 +62,12 @@ export function NotificationInbox({ className }: { className?: string }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="relative cursor-pointer inline-flex items-center justify-center rounded-lg border border-[var(--color-brand-border)] p-2 text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)]"
+        className={cn(
+          'relative cursor-pointer inline-flex items-center justify-center rounded-lg p-2',
+          variant === 'dark'
+            ? 'border border-white/15 bg-white/10 text-white hover:bg-white/15'
+            : 'border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)]',
+        )}
         aria-label={t.notifications.title}
         aria-expanded={open}
       >
