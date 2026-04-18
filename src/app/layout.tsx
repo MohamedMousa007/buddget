@@ -8,6 +8,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { UpdateToast } from '@/components/ui/UpdateToast'
 import { OfflineBanner } from '@/components/ui/OfflineBanner'
 import { ActionToastProvider } from '@/components/ui/ActionToast'
+import { TutorialProvider } from '@/components/tutorial/TutorialAnchor'
 import { MotionConfigRoot } from '@/components/layout/MotionConfigRoot'
 import { THEME_INIT_SCRIPT } from '@/lib/theme/applyTheme'
 
@@ -146,11 +147,13 @@ export default function RootLayout({
           <LocaleProvider>
             <AuthProvider>
               <ActionToastProvider>
-                <MotionConfigRoot>
-                  <AppShell>{children}</AppShell>
-                  <UpdateToast />
-                  <OfflineBanner />
-                </MotionConfigRoot>
+                <TutorialProvider>
+                  <MotionConfigRoot>
+                    <AppShell>{children}</AppShell>
+                    <UpdateToast />
+                    <OfflineBanner />
+                  </MotionConfigRoot>
+                </TutorialProvider>
               </ActionToastProvider>
             </AuthProvider>
           </LocaleProvider>

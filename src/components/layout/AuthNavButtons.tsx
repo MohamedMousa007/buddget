@@ -34,6 +34,7 @@ function ProfileAvatarWithMenu({ className }: { className?: string }) {
     <div ref={containerRef} className="relative">
       <button
         type="button"
+        data-tutorial-id="profile-menu-trigger"
         onClick={() => setOpen((v) => !v)}
         className={cn(
           'rounded-full overflow-hidden border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] flex items-center justify-center shrink-0 w-9 h-9 hover:ring-2 hover:ring-[var(--color-brand-red)]/40 transition-all cursor-pointer',

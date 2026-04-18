@@ -97,7 +97,7 @@ export default function DashboardPage() {
         {suppressData ? null : (
         <>
         {/* KPI grid — no horizontal scroll; reflows 2 → 3 → 6 cols. */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2">
+        <div data-tutorial-id="kpi-grid" className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2">
           <KPICard
             title={t.dashboard.kpiNetWorth}
             value={nw.netWorth}

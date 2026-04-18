@@ -48,6 +48,7 @@ export function BuildBudgetCta({ onBuilt }: BuildBudgetCtaProps) {
     <div className="flex flex-col items-stretch gap-2">
       <button
         type="button"
+        data-tutorial-id="build-budget-cta"
         onClick={handleClick}
         disabled={!canBuild}
         className="h-12 rounded-2xl bg-[var(--color-brand-red)] text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--color-brand-red-hover)] transition-colors"
