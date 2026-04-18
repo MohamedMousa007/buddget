@@ -134,7 +134,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [pendingNext, setPendingNext] = useState('/')
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authModalMessage, setAuthModalMessage] = useState<string | null>(null)
-  const [authModalInitialMode, setAuthModalInitialMode] = useState<'signin' | 'signup'>('signin')
   const [authModalInitialStep, setAuthModalInitialStep] = useState<'form' | 'forgot'>('form')
   // Lazy init reads sessionStorage synchronously on client mount — no flash of
   // landing before a guest session is detected. SSR sees `false` which is fine:
@@ -162,14 +161,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     (
       next?: string,
       message?: string | null,
-      initialMode?: 'signin' | 'signup',
+      _initialMode?: 'signin' | 'signup',
       initialStep?: 'form' | 'forgot',
     ) => {
+      void _initialMode // legacy arg kept for call-site compatibility; morph form is email-first.
       if (next && next.startsWith('/') && !next.startsWith('//')) {
         setPendingNext(next)
       }
       setAuthModalMessage(message ?? null)
-      setAuthModalInitialMode(initialMode ?? 'signin')
       setAuthModalInitialStep(initialStep ?? 'form')
       setAuthModalOpen(true)
     },
@@ -275,7 +274,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (wasAuthedRef.current && !pathname.startsWith('/reset-password')) {
           wasAuthedRef.current = false
           setAuthModalMessage(t.auth.sessionExpired)
-          setAuthModalInitialMode('signin')
           setAuthModalOpen(true)
         }
       } else if (_event === 'SIGNED_IN' && incomingUser) {
@@ -362,7 +360,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             pendingNext,
             setPendingNext,
             authModalMessage,
-            authModalInitialMode,
             authModalInitialStep,
             openAuthModal,
             closeAuthModal,
@@ -379,7 +376,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             pendingNext: '/',
             setPendingNext,
             authModalMessage: null,
-            authModalInitialMode: 'signin' as const,
             authModalInitialStep: 'form' as const,
             openAuthModal,
             closeAuthModal,
@@ -397,7 +393,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       noopSignOut,
       pendingNext,
       authModalMessage,
-      authModalInitialMode,
       authModalInitialStep,
       openAuthModal,
       closeAuthModal,

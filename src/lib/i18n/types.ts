@@ -952,6 +952,21 @@ export interface Dictionary {
     emailCheckInFlight: string
     showPassword: string
     hidePassword: string
+    // Morph form (email-first)
+    morphTitle: string
+    welcomeBack: (email: string) => string
+    createAccountFor: (email: string) => string
+    backToEmail: string
+    continueAriaLabel: string
+    anonOverwriteWarning: string
+    createDifferentAccount: string
+    pendingVerificationTitle: string
+    pendingVerificationHelp: string
+    pendingContinueCta: string
+    pendingUseDifferentEmail: string
+    srEnterPasswordFor: (email: string) => string
+    srCreateAccountFor: (email: string) => string
+    srFinishVerifying: string
   }
 
   resetPassword: {

@@ -1,178 +1,306 @@
 'use client'
 
-import { Loader2 } from 'lucide-react'
-import { AuthModeToggle } from '@/components/features/auth-modal/AuthModeToggle'
-import { AuthCredentialFields } from '@/components/features/auth-modal/AuthCredentialFields'
+import { useEffect, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ArrowLeft, Loader2 } from 'lucide-react'
+import { AuthEmailField } from '@/components/features/auth-modal/AuthEmailField'
+import { AuthPasswordField } from '@/components/features/auth-modal/AuthPasswordField'
 import { AuthFormErrorAlert } from '@/components/features/auth-modal/AuthFormErrorAlert'
 import { AuthPrimaryButton } from '@/components/features/auth-modal/AuthPrimaryButton'
 import { AuthOAuthButtons } from '@/components/features/auth-modal/AuthOAuthButtons'
+import { PasswordStrengthMeter } from '@/components/features/auth-modal/PasswordStrengthMeter'
 import { useAuth } from '@/components/auth/auth-context'
 import { useT } from '@/lib/i18n'
-import type { AuthFormMode } from '@/hooks/useAuthModal'
+import type { AuthEmailStep, AuthPasswordIntent } from '@/hooks/useAuthModal'
 
 export interface AuthSignInUpStepProps {
-  formMode: AuthFormMode
-  setFormMode: (m: AuthFormMode) => void
+  emailStep: AuthEmailStep
+  passwordIntent: AuthPasswordIntent
+  emailAdvancePending: boolean
+  advanceAfterEmail: () => void
+  backToEmail: () => void
+  abandonVerifyPending: () => void
+  continueVerifyPending: () => void
+  submitPassword: () => void
   email: string
   setEmail: (v: string) => void
   password: string
   setPassword: (v: string) => void
-  confirmPassword: string
-  setConfirmPassword: (v: string) => void
   error: string
   setError: (v: string) => void
   loading: boolean
-  setStep: (s: 'form' | 'verify' | 'forgot') => void
-  setForgotSuccess: (v: boolean) => void
-  signIn: () => Promise<void>
-  signUp: () => Promise<void>
+  onForgotClick: () => void
   resendCode: () => Promise<void>
-  switchToSignIn: () => void
-  emailCheckState: 'idle' | 'checking' | 'taken' | 'pending' | 'free'
-  signinEmailCheckState: 'idle' | 'checking' | 'missing' | 'exists'
-  checkEmailOnBlur: () => void
-  onResendPendingCode: () => void
   rememberMe: boolean
   setRememberMe: (v: boolean) => void
+  /** Auth mode — used to warn anon/guest users their guest data will be lost on sign-in. */
+  mode: 'loading' | 'landing' | 'guest' | 'authenticated'
+}
+
+function maskEmail(email: string): string {
+  const at = email.indexOf('@')
+  if (at <= 0) return email
+  const local = email.slice(0, at)
+  const domain = email.slice(at)
+  if (local.length <= 2) return `${local[0] ?? ''}***${domain}`
+  return `${local[0]}${'*'.repeat(Math.max(1, local.length - 2))}${local[local.length - 1]}${domain}`
 }
 
 /**
- * Combined sign-in / sign-up form with mode toggle and footer link.
+ * Three-state morph auth form (email-first):
+ *  - `emailStep === 'collect'`      — email input + OAuth buttons.
+ *  - `emailStep === 'password'`     — password for the resolved email; intent
+ *                                     (signin vs signup) comes from check-email.
+ *  - `emailStep === 'verify-pending'` — existing unverified email; prompts the
+ *                                       user to continue into the OTP step.
  */
 export function AuthSignInUpStep({
-  formMode,
-  setFormMode,
+  emailStep,
+  passwordIntent,
+  emailAdvancePending,
+  advanceAfterEmail,
+  backToEmail,
+  abandonVerifyPending,
+  continueVerifyPending,
+  submitPassword,
   email,
   setEmail,
   password,
   setPassword,
-  confirmPassword,
-  setConfirmPassword,
   error,
   setError,
   loading,
-  setStep,
-  setForgotSuccess,
-  signIn,
-  signUp,
+  onForgotClick,
   resendCode,
-  switchToSignIn,
-  emailCheckState,
-  signinEmailCheckState,
-  checkEmailOnBlur,
-  onResendPendingCode,
   rememberMe,
   setRememberMe,
+  mode,
 }: AuthSignInUpStepProps) {
   const t = useT()
   const { pendingNext } = useAuth()
-  const submit = () => void (formMode === 'signin' ? signIn() : signUp())
+
+  const emailRef = useRef<HTMLInputElement>(null)
+  const passwordRef = useRef<HTMLInputElement>(null)
+  const submitBtnWrapRef = useRef<HTMLDivElement>(null)
+
+  // Focus management on state transitions.
+  useEffect(() => {
+    if (emailStep === 'collect') emailRef.current?.focus()
+    else if (emailStep === 'password') passwordRef.current?.focus()
+  }, [emailStep])
+
+  // iOS keyboard ergonomics: on small viewports when the password field gains
+  // focus, scroll the submit button into view so it isn't hidden behind the
+  // software keyboard.
+  useEffect(() => {
+    if (emailStep !== 'password') return
+    if (typeof window === 'undefined') return
+    const vv = window.visualViewport
+    if (!vv) return
+    const onResize = () => {
+      if (vv.height < 500) {
+        submitBtnWrapRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
+      }
+    }
+    vv.addEventListener('resize', onResize)
+    return () => vv.removeEventListener('resize', onResize)
+  }, [emailStep])
+
+  const maskedEmail = maskEmail(email.trim())
+  const isSignin = passwordIntent === 'signin'
+  const isGuest = mode === 'guest'
+
+  // Screen-reader announcement text for each state.
+  const srAnnouncement =
+    emailStep === 'password'
+      ? isSignin
+        ? t.auth.srEnterPasswordFor(maskedEmail)
+        : t.auth.srCreateAccountFor(maskedEmail)
+      : emailStep === 'verify-pending'
+        ? t.auth.srFinishVerifying
+        : ''
 
   return (
-    <div className="space-y-3">
-      <AuthModeToggle
-        formMode={formMode}
-        onModeChange={setFormMode}
-        onClearError={() => setError('')}
-      />
+    <div role="region" aria-live="polite">
+      <span className="sr-only">{srAnnouncement}</span>
 
-      <AuthOAuthButtons nextPath={pendingNext || '/'} />
-
-      <div className="relative flex items-center gap-3">
-        <span className="flex-1 h-px bg-[var(--color-brand-border)]" />
-        <span className="text-[10px] uppercase tracking-wider text-[var(--color-brand-text-muted)]">
-          {t.auth.orContinueWithEmail}
-        </span>
-        <span className="flex-1 h-px bg-[var(--color-brand-border)]" />
-      </div>
-
-      <AuthCredentialFields
-        formMode={formMode}
-        email={email}
-        password={password}
-        confirmPassword={confirmPassword}
-        onEmailChange={setEmail}
-        onPasswordChange={setPassword}
-        onConfirmPasswordChange={setConfirmPassword}
-        onForgotClick={() => {
-          setStep('forgot')
-          setForgotSuccess(false)
-          setError('')
-        }}
-        onSubmitPrimary={submit}
-        onEmailBlur={checkEmailOnBlur}
-        emailCheckState={emailCheckState}
-        signinEmailCheckState={signinEmailCheckState}
-        onSwitchToSignIn={() => {
-          switchToSignIn()
-          setError('')
-        }}
-        onSwitchToSignUp={() => {
-          setFormMode('signup')
-          setError('')
-        }}
-        onResendPendingCode={onResendPendingCode}
-      />
-
-      {formMode === 'signin' ? (
-        <label className="flex items-center gap-2 text-sm text-[var(--color-brand-text-secondary)] cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={rememberMe}
-            onChange={(e) => setRememberMe(e.target.checked)}
-            className="w-4 h-4 rounded border-[var(--color-brand-border)] accent-[var(--color-brand-red)]"
-          />
-          <span>{t.auth.rememberMe}</span>
-        </label>
-      ) : null}
-
-      <AuthFormErrorAlert
-        error={error}
-        onSignInInstead={() => {
-          switchToSignIn()
-          setError('')
-        }}
-        onResendCode={resendCode}
-      />
-
-      <AuthPrimaryButton disabled={loading} onClick={submit}>
-        {loading ? (
-          <>
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span>{formMode === 'signin' ? t.auth.loadingSignIn : t.auth.loadingSignUp}</span>
-          </>
-        ) : formMode === 'signin' ? (
-          t.auth.submitSignIn
-        ) : (
-          t.auth.submitSignUp
-        )}
-      </AuthPrimaryButton>
-
-      <p className="text-center text-xs text-[var(--color-brand-text-muted)]">
-        {formMode === 'signin' ? (
-          <button
-            type="button"
-            className="text-[var(--color-brand-red)] font-medium hover:underline"
-            onClick={() => {
-              setFormMode('signup')
-              setError('')
-            }}
+      <AnimatePresence mode="wait" initial={false}>
+        {emailStep === 'collect' ? (
+          <motion.div
+            key="collect"
+            initial={{ opacity: 0, x: 12 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -12 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="space-y-3"
           >
-            {t.auth.footerNewHere}
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="text-[var(--color-brand-red)] font-medium hover:underline"
-            onClick={() => {
-              setFormMode('signin')
-              setError('')
-            }}
+            <p className="text-center text-sm text-[var(--color-brand-text-secondary)]">
+              {t.auth.morphTitle}
+            </p>
+
+            <AuthOAuthButtons nextPath={pendingNext || '/'} />
+
+            <div className="relative flex items-center gap-3">
+              <span className="flex-1 h-px bg-[var(--color-brand-border)]" />
+              <span className="text-[10px] uppercase tracking-wider text-[var(--color-brand-text-muted)]">
+                {t.auth.orContinueWithEmail}
+              </span>
+              <span className="flex-1 h-px bg-[var(--color-brand-border)]" />
+            </div>
+
+            <AuthEmailField
+              ref={emailRef}
+              value={email}
+              onChange={(v) => {
+                setEmail(v)
+                if (error) setError('')
+              }}
+              onAdvance={advanceAfterEmail}
+              pending={emailAdvancePending}
+              showAdvanceButton
+            />
+
+            <AuthFormErrorAlert error={error} onResendCode={resendCode} />
+          </motion.div>
+        ) : emailStep === 'password' ? (
+          <motion.div
+            key="password"
+            initial={{ opacity: 0, x: 12 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -12 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="space-y-3"
           >
-            {t.auth.footerAlreadyHave}
-          </button>
+            <button
+              type="button"
+              onClick={backToEmail}
+              className="-mt-1 -ms-1 flex items-center gap-1.5 text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)] h-8 px-1 rounded-md"
+            >
+              <ArrowLeft className="w-4 h-4 rtl:rotate-180" aria-hidden />
+              <span>{t.auth.backToEmail}</span>
+            </button>
+
+            <p className="text-sm text-[var(--color-brand-text-primary)]">
+              {isSignin
+                ? t.auth.welcomeBack(maskedEmail)
+                : t.auth.createAccountFor(maskedEmail)}
+            </p>
+
+            {isSignin && isGuest ? (
+              <div
+                role="alert"
+                className="flex flex-col gap-1 rounded-lg border border-[var(--color-brand-amber)]/40 bg-[var(--color-brand-amber)]/10 px-3 py-2 text-[11px] text-[var(--color-brand-text-primary)]"
+              >
+                <span>{t.auth.anonOverwriteWarning}</span>
+                <button
+                  type="button"
+                  onClick={backToEmail}
+                  className="self-start text-[var(--color-brand-red)] font-medium hover:underline"
+                >
+                  {t.auth.createDifferentAccount}
+                </button>
+              </div>
+            ) : null}
+
+            <AuthPasswordField
+              ref={passwordRef}
+              value={password}
+              onChange={(v) => {
+                setPassword(v)
+                if (error) setError('')
+              }}
+              onSubmit={submitPassword}
+              label={t.auth.labelPassword}
+              autoComplete={isSignin ? 'current-password webauthn' : 'new-password webauthn'}
+              disabled={loading}
+            />
+
+            {isSignin ? (
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 text-xs text-[var(--color-brand-text-secondary)] cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 rounded border-[var(--color-brand-border)] accent-[var(--color-brand-red)]"
+                  />
+                  <span>{t.auth.rememberMe}</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={onForgotClick}
+                  className="text-xs text-[var(--color-brand-red)] hover:underline"
+                >
+                  {t.auth.forgotPassword}
+                </button>
+              </div>
+            ) : (
+              <PasswordStrengthMeter password={password} />
+            )}
+
+            <AuthFormErrorAlert error={error} onResendCode={resendCode} />
+
+            <div ref={submitBtnWrapRef}>
+              <AuthPrimaryButton disabled={loading} onClick={submitPassword}>
+                {loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>{isSignin ? t.auth.loadingSignIn : t.auth.loadingSignUp}</span>
+                  </>
+                ) : isSignin ? (
+                  t.auth.submitSignIn
+                ) : (
+                  t.auth.submitSignUp
+                )}
+              </AuthPrimaryButton>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="verify-pending"
+            initial={{ opacity: 0, x: 12 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -12 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="space-y-3"
+          >
+            <button
+              type="button"
+              onClick={abandonVerifyPending}
+              className="-mt-1 -ms-1 flex items-center gap-1.5 text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)] h-8 px-1 rounded-md"
+            >
+              <ArrowLeft className="w-4 h-4 rtl:rotate-180" aria-hidden />
+              <span>{t.auth.backToEmail}</span>
+            </button>
+
+            <p className="text-sm text-[var(--color-brand-text-primary)]">
+              {t.auth.pendingVerificationTitle}
+            </p>
+            <p className="text-xs text-[var(--color-brand-text-muted)]">
+              {t.auth.pendingVerificationHelp}
+            </p>
+
+            <AuthFormErrorAlert error={error} onResendCode={resendCode} />
+
+            <AuthPrimaryButton disabled={loading} onClick={continueVerifyPending}>
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                t.auth.pendingContinueCta
+              )}
+            </AuthPrimaryButton>
+
+            <button
+              type="button"
+              onClick={abandonVerifyPending}
+              className="w-full text-center text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]"
+            >
+              {t.auth.pendingUseDifferentEmail}
+            </button>
+          </motion.div>
         )}
-      </p>
+      </AnimatePresence>
     </div>
   )
 }
+
