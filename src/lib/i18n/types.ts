@@ -1126,6 +1126,42 @@ export interface Dictionary {
     checklistTapToAddMore: string
     toastPaymentAdded: string
 
+    // Expanded checklist (goals / lifestyle / household) + new sheets.
+    checklistItemGoals: string
+    checklistItemLifestyle: string
+    checklistItemHousehold: string
+    checklistOptOutGoals: string
+    toastLifestyleSaved: string
+    toastHouseholdSaved: string
+    toastGoalAdded: string
+    lifestyleTitle: string
+    lifestyleSubtitle: string
+    lifestyleLabelFood: string
+    lifestyleFoodEveryday: string
+    lifestyleFoodMostdays: string
+    lifestyleFoodSometimes: string
+    lifestyleFoodRarely: string
+    lifestyleLabelTransport: string
+    lifestyleTransportPublic: string
+    lifestyleTransportCar: string
+    lifestyleTransportTaxi: string
+    lifestyleTransportWalk: string
+    lifestyleLabelTier: string
+    lifestyleTierMinimal: string
+    lifestyleTierBalanced: string
+    lifestyleTierComfortable: string
+    lifestyleSave: string
+    householdTitle: string
+    householdSubtitle: string
+    householdLabelSize: string
+    householdSolo: string
+    householdCouple: string
+    householdFamily: string
+    householdLabelRent: string
+    householdRentPlaceholder: string
+    householdUtilitiesIncluded: string
+    householdSave: string
+
     planPickerSection: string
     planPickerFooter: string
     planPickerPlaceholderNoIncome: string
