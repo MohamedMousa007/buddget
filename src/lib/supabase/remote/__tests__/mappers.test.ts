@@ -148,6 +148,8 @@ describe('settings mapper', () => {
       dismissOnboardingBanner: false,
       onboardingBannerRemindAt: null,
       twoFactorEmailEnabled: false,
+      onboardingChecklistHidden: false,
+      legacyOnboardingMigratedAt: null,
     }
     const row = settingsToRow(s, UID)
     const back = settingsFromRow({ ...row, updated_at: '' } as never, {

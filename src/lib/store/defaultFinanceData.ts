@@ -57,6 +57,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   dismissOnboardingBanner: false,
   onboardingBannerRemindAt: null,
   twoFactorEmailEnabled: false,
+  onboardingChecklistHidden: false,
+  legacyOnboardingMigratedAt: null,
 }
 
 export const DEFAULT_PROFILE: UserProfile = {

@@ -10,6 +10,7 @@ import {
   UserPlus,
   Target,
   RefreshCw,
+  ListChecks,
 } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -35,7 +36,13 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
   const t = useT()
   const { locale } = useLocale()
   const { user, signOut, openAuthModal } = useAuth()
-  const profile = useFinanceStore(useShallow((s) => s.profile))
+  const { profile, checklistHidden, updateSettings } = useFinanceStore(
+    useShallow((s) => ({
+      profile: s.profile,
+      checklistHidden: s.settings.onboardingChecklistHidden,
+      updateSettings: s.updateSettings,
+    })),
+  )
   const prevPathname = useRef(pathname)
 
   const configured = useMemo(() => {
@@ -165,6 +172,20 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
         <Settings className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.settings}</span>
       </button>
+      {checklistHidden ? (
+        <button
+          type="button"
+          onClick={() => {
+            updateSettings({ onboardingChecklistHidden: false })
+            navigate('/')
+          }}
+          className={itemClass}
+          role="menuitem"
+        >
+          <ListChecks className="w-4 h-4 shrink-0" />
+          <span className={localeInlineLabelClass(locale)}>{t.onboarding.checklistResumeCta}</span>
+        </button>
+      ) : null}
 
       {configured ? (
         <>

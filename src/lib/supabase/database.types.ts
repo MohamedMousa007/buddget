@@ -751,6 +751,7 @@ export type Database = {
           gender: string | null
           id: string
           name: string
+          no_debts_declared: boolean
           onboarding_completed: boolean
           phone: string | null
           secondary_currency:
@@ -774,6 +775,7 @@ export type Database = {
           gender?: string | null
           id: string
           name?: string
+          no_debts_declared?: boolean
           onboarding_completed?: boolean
           phone?: string | null
           secondary_currency?:
@@ -797,6 +799,7 @@ export type Database = {
           gender?: string | null
           id?: string
           name?: string
+          no_debts_declared?: boolean
           onboarding_completed?: boolean
           phone?: string | null
           secondary_currency?:
@@ -1271,6 +1274,7 @@ export type Database = {
           month_start_day: number
           no_income_declared: boolean
           onboarding_banner_remind_at: string | null
+          onboarding_checklist_hidden: boolean
           show_all_currencies_in_forms: boolean
           show_cents_in_dashboard: boolean
           show_secondary_currency: boolean
@@ -1288,6 +1292,7 @@ export type Database = {
           month_start_day?: number
           no_income_declared?: boolean
           onboarding_banner_remind_at?: string | null
+          onboarding_checklist_hidden?: boolean
           show_all_currencies_in_forms?: boolean
           show_cents_in_dashboard?: boolean
           show_secondary_currency?: boolean
@@ -1305,6 +1310,7 @@ export type Database = {
           month_start_day?: number
           no_income_declared?: boolean
           onboarding_banner_remind_at?: string | null
+          onboarding_checklist_hidden?: boolean
           show_all_currencies_in_forms?: boolean
           show_cents_in_dashboard?: boolean
           show_secondary_currency?: boolean

@@ -70,6 +70,7 @@ export const importDataSchema = z.object({
       phone: z.string().optional(),
       gender: z.enum(['male', 'female', 'prefer_not_to_say']).nullable().optional(),
       baseCurrency: currencySchema,
+      noDebtsDeclared: z.boolean().optional(),
       createdAt: z.string(),
     })
     .optional(),
@@ -90,6 +91,8 @@ export const importDataSchema = z.object({
       dismissOnboardingBanner: z.boolean().optional(),
       onboardingBannerRemindAt: z.string().nullable().optional(),
       twoFactorEmailEnabled: z.boolean().optional(),
+      onboardingChecklistHidden: z.boolean().optional(),
+      legacyOnboardingMigratedAt: z.string().nullable().optional(),
     })
     .optional(),
   incomeSources: z

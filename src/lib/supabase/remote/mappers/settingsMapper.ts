@@ -18,6 +18,7 @@ export function settingsToRow(s: AppSettings, userId: string): UserSettingsInser
     dismiss_onboarding_banner: s.dismissOnboardingBanner,
     onboarding_banner_remind_at: s.onboardingBannerRemindAt,
     two_factor_email_enabled: s.twoFactorEmailEnabled,
+    onboarding_checklist_hidden: s.onboardingChecklistHidden,
   }
 }
 
@@ -45,6 +46,9 @@ export function settingsFromRow(row: UserSettingsRow, opts: SettingsFromRowOptio
     dismissOnboardingBanner: row.dismiss_onboarding_banner,
     onboardingBannerRemindAt: row.onboarding_banner_remind_at,
     twoFactorEmailEnabled: row.two_factor_email_enabled,
+    onboardingChecklistHidden: row.onboarding_checklist_hidden,
+    // Client-only; never synced.
+    legacyOnboardingMigratedAt: null,
     baseCurrency: opts.baseCurrency,
     secondaryCurrency: opts.secondaryCurrency,
   }

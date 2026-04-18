@@ -1,6 +1,9 @@
 'use client'
 
 import { DashboardSearchParamsSync } from '@/components/dashboard/DashboardSearchParamsSync'
+import { DashboardFirstRunChecklist } from '@/components/dashboard/DashboardFirstRunChecklist'
+import { useFirstRunChecklist } from '@/lib/onboarding/firstRunChecklist'
+import { useLegacyOnboardingMigrator } from '@/lib/onboarding/migrateLegacyOnboarding'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useNetWorth } from '@/hooks/useNetWorth'
 import { KPICard } from '@/components/dashboard/KPICard'
@@ -35,15 +38,26 @@ export default function DashboardPage() {
   useHydrateGoals()
   useHydrateBudget()
   useHydrateSubscriptions()
+  useLegacyOnboardingMigrator()
 
   const stats = useMonthlyStats()
   const nw = useNetWorth()
+  const checklist = useFirstRunChecklist()
   const incomeNote = stats.incomeBlocked ? t.dashboard.incomeBlockedHint : undefined
+
+  // Show the checklist card above the dashboard — and suppress the data
+  // widgets underneath — until the user either finishes setup or hides the
+  // checklist. One rule: visible AND not all-done.
+  const showChecklist = !checklist.hidden && !checklist.allDone
+  const suppressData = showChecklist
 
   return (
     <div className="min-h-screen">
       <DashboardSearchParamsSync />
       <div className="px-4 pt-4 pb-5 lg:pt-4 lg:px-6 space-y-4 max-w-6xl mx-auto">
+        {showChecklist ? <DashboardFirstRunChecklist snapshot={checklist} /> : null}
+        {suppressData ? null : (
+        <>
         {/* KPI grid — no horizontal scroll; reflows 2 → 3 → 6 cols. */}
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2">
           <KPICard
@@ -139,6 +153,8 @@ export default function DashboardPage() {
 
         {/* Debt Snapshot */}
         <DebtSnapshot />
+        </>
+        )}
       </div>
     </div>
   )
