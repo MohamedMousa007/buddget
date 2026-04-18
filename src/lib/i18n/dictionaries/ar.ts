@@ -1126,6 +1126,9 @@ export const ar: Dictionary = {
     checklistEmptyHint: 'لوحتك ستنبض بالحياة بمجرد إضافة بياناتك.',
     checklistCompleteToast: 'اكتمل الإعداد — أهلاً بك في Buddget!',
     checklistResumeCta: 'أكمل الإعداد',
+    checklistAddedAgain: (count) => (count === 1 ? 'تمت الإضافة' : `${count} مضافة`),
+    checklistTapToAddMore: 'اضغط للإضافة',
+    toastPaymentAdded: 'تمت إضافة وسيلة الدفع',
 
     planPickerSection: 'كيف تريد تخطيط إنفاقك؟',
     planPickerFooter: 'حدد حداً شهرياً لكل فئة. Buddget سيتابع تقدمك لحظة بلحظة.',

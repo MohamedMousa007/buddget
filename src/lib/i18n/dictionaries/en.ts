@@ -1129,6 +1129,9 @@ export const en: Dictionary = {
     checklistEmptyHint: 'Your dashboard comes alive after you add data.',
     checklistCompleteToast: 'Setup complete \u2014 welcome to Buddget!',
     checklistResumeCta: 'Finish setup',
+    checklistAddedAgain: (count) => (count === 1 ? '1 added' : `${count} added`),
+    checklistTapToAddMore: 'Tap to add more',
+    toastPaymentAdded: 'Payment method added',
 
     planPickerSection: 'How do you want to plan your spending?',
     planPickerFooter: 'Set a monthly limit for each category. Buddget will track how you\u2019re doing in real time.',

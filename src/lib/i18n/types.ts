@@ -1122,6 +1122,9 @@ export interface Dictionary {
     checklistEmptyHint: string
     checklistCompleteToast: string
     checklistResumeCta: string
+    checklistAddedAgain: (count: number) => string
+    checklistTapToAddMore: string
+    toastPaymentAdded: string
 
     planPickerSection: string
     planPickerFooter: string
