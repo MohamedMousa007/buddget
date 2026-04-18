@@ -33,6 +33,11 @@ export function AppShell({ children }: AppShellProps) {
   useThemeSync()
   const pathname = usePathname()
   const bare = isBareAuthRoute(pathname)
+  // The dashboard absorbs the header (logo + month + bell + avatar) into its
+  // own dark hero block, so we suppress the regular top bar + its offset on
+  // `/` to avoid visual duplication. Every other route keeps the existing
+  // sticky header.
+  const isDashboard = pathname === '/'
 
   if (bare) {
     return (
@@ -47,8 +52,14 @@ export function AppShell({ children }: AppShellProps) {
     <div className="min-h-screen bg-[var(--color-brand-bg)]">
       <MarketRatesSync />
       <Sidebar />
-      <DesktopHeaderBar />
-      <main className="pt-[calc(3rem+env(safe-area-inset-top,0px))] lg:pt-12 lg:ms-[176px] pb-16 lg:pb-0 min-h-screen">
+      {isDashboard ? null : <DesktopHeaderBar />}
+      <main
+        className={
+          isDashboard
+            ? 'pt-0 lg:ms-[176px] pb-16 lg:pb-0 min-h-screen'
+            : 'pt-[calc(3rem+env(safe-area-inset-top,0px))] lg:pt-12 lg:ms-[176px] pb-16 lg:pb-0 min-h-screen'
+        }
+      >
         <OnboardingBanner />
         {children}
       </main>

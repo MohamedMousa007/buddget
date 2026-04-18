@@ -150,6 +150,22 @@ export interface Dictionary {
     paceWarning: string
     paceOver: string
     cutBackHint: string
+
+    // 2026-04 dashboard redesign: blended dark hero + compact card stack.
+    heroLeftToSpend: string
+    heroUsedSuffix: string
+    heroStatIncome: string
+    heroStatSpent: string
+    heroStatSaved: string
+    heroSetupGreeting: string
+    heroPace: (perDay: string, status: string, daysLeft: number) => string
+    sectionCategoriesTitle: string
+    sectionTxTitle: string
+    sectionSeeAll: string
+    summarySavingsLabel: string
+    summaryDebtLabel: string
+    summarySavedThisMonth: (amount: string) => string
+    summaryDebtActive: (count: number) => string
   }
 
   expenses: {
