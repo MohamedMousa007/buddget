@@ -6,8 +6,8 @@ alwaysApply: true
 
 # Deployment Protocol
 
-- **`dev`:** Staging / testing environment (`dev.buddget.online`).
-- **`main`:** Production (`buddget.online` / primary Vercel production branch).
+- **`dev`:** Staging / testing environment (`dev.buddget.app`).
+- **`main`:** Production (`buddget.app` / primary Vercel production branch).
 
 ## Branch rules
 

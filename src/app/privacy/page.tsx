@@ -62,8 +62,8 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-semibold text-[var(--color-brand-text-secondary)]">Contact</h2>
           <p className="text-sm text-[var(--color-brand-text-secondary)] leading-relaxed">
             Questions about this policy:{' '}
-            <a href="mailto:hello@buddget.online" className="text-[var(--color-brand-red)] hover:underline">
-              hello@buddget.online
+            <a href="mailto:hello@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
+              hello@buddget.app
             </a>
           </p>
         </section>
