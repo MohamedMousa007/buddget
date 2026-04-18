@@ -10,13 +10,17 @@ export interface PasswordStrengthMeterProps {
 
 function Rule({ ok, label }: { ok: boolean; label: string }) {
   return (
-    <li className="flex items-center gap-1.5 text-[11px]">
+    <li className="flex items-center gap-1 text-[10px] min-w-0">
       {ok ? (
-        <CheckCircle2 className="w-3.5 h-3.5 text-[var(--color-brand-green)] shrink-0" aria-hidden />
+        <CheckCircle2 className="w-3 h-3 text-[var(--color-brand-green)] shrink-0" aria-hidden />
       ) : (
-        <Circle className="w-3.5 h-3.5 text-[var(--color-brand-text-muted)] shrink-0" aria-hidden />
+        <Circle className="w-3 h-3 text-[var(--color-brand-text-muted)] shrink-0" aria-hidden />
       )}
-      <span className={ok ? 'text-[var(--color-brand-text-secondary)]' : 'text-[var(--color-brand-text-muted)]'}>
+      <span
+        className={`truncate ${
+          ok ? 'text-[var(--color-brand-text-secondary)]' : 'text-[var(--color-brand-text-muted)]'
+        }`}
+      >
         {label}
       </span>
     </li>
@@ -62,7 +66,7 @@ export function PasswordStrengthMeter({ password }: PasswordStrengthMeterProps) 
   ]
 
   return (
-    <div className="mt-1.5 space-y-1.5">
+    <div className="mt-1 space-y-1">
       <div className="flex items-center gap-2">
         <div className="flex-1 flex gap-1" aria-hidden>
           {[1, 2, 3, 4].map((i) => (
@@ -79,7 +83,8 @@ export function PasswordStrengthMeter({ password }: PasswordStrengthMeterProps) 
           {password.length === 0 ? t.auth.passwordStrengthLabel : labels[score]}
         </span>
       </div>
-      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 gap-x-4">
+      {/* All three rules on one row — saves ~40 px vs the stacked layout. */}
+      <ul className="flex items-center gap-3 flex-wrap">
         <Rule ok={hasLength} label={t.auth.passwordRuleLength(MIN_PASSWORD_LEN)} />
         <Rule ok={hasLetter} label={t.auth.passwordRuleLetter} />
         <Rule ok={hasNumber} label={t.auth.passwordRuleNumber} />
