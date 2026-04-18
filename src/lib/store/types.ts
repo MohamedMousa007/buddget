@@ -440,6 +440,26 @@ export interface UserProfile {
    * Synced via `profiles.no_debts_declared`.
    */
   noDebtsDeclared?: boolean
+  /**
+   * Parallels `noDebtsDeclared` for the goals checklist row. Cross-device via
+   * `profiles.no_goals_declared`.
+   */
+  noGoalsDeclared?: boolean
+  /**
+   * Household composition used by the budget-build AI (drives rent / food /
+   * transport scaling factors). Synced via `profiles.household`.
+   */
+  household?: 'solo' | 'couple' | 'family' | null
+  /** Lifestyle tier used by the budget-build AI. Synced via `profiles.lifestyle_tier`. */
+  lifestyleTier?: 'minimal' | 'balanced' | 'comfortable' | null
+  /** Food-out frequency signal for the AI. Synced via `profiles.food_frequency`. */
+  foodFrequency?: 'everyday' | 'mostdays' | 'sometimes' | 'rarely' | null
+  /** Primary commute mode for the AI. Synced via `profiles.transport_mode`. */
+  transportMode?: 'public' | 'car' | 'taxi' | 'walk' | null
+  /** Monthly rent in base currency. Synced via `profiles.monthly_rent`. */
+  monthlyRent?: number | null
+  /** Whether utilities are bundled into rent. Synced via `profiles.rent_includes_utilities`. */
+  rentIncludesUtilities?: boolean
   createdAt: string
 }
 

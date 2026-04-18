@@ -749,14 +749,21 @@ export type Database = {
           email: string | null
           financial_goals_notes: string
           gender: string | null
+          food_frequency: string | null
+          household: string | null
           id: string
+          lifestyle_tier: string | null
+          monthly_rent: number | null
           name: string
           no_debts_declared: boolean
+          no_goals_declared: boolean
           onboarding_completed: boolean
           phone: string | null
+          rent_includes_utilities: boolean
           secondary_currency:
             | Database["public"]["Enums"]["currency_code"]
             | null
+          transport_mode: string | null
           updated_at: string
         }
         Insert: {
@@ -772,15 +779,22 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           financial_goals_notes?: string
+          food_frequency?: string | null
           gender?: string | null
+          household?: string | null
           id: string
+          lifestyle_tier?: string | null
+          monthly_rent?: number | null
           name?: string
           no_debts_declared?: boolean
+          no_goals_declared?: boolean
           onboarding_completed?: boolean
           phone?: string | null
+          rent_includes_utilities?: boolean
           secondary_currency?:
             | Database["public"]["Enums"]["currency_code"]
             | null
+          transport_mode?: string | null
           updated_at?: string
         }
         Update: {
@@ -796,15 +810,22 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           financial_goals_notes?: string
+          food_frequency?: string | null
           gender?: string | null
+          household?: string | null
           id?: string
+          lifestyle_tier?: string | null
+          monthly_rent?: number | null
           name?: string
           no_debts_declared?: boolean
+          no_goals_declared?: boolean
           onboarding_completed?: boolean
           phone?: string | null
+          rent_includes_utilities?: boolean
           secondary_currency?:
             | Database["public"]["Enums"]["currency_code"]
             | null
+          transport_mode?: string | null
           updated_at?: string
         }
         Relationships: []
