@@ -26,6 +26,14 @@ export function DashboardSummaryCards({
   const t = useT()
   const activeDebtCount = useFinanceStore(useShallow((s) => s.debts.length))
 
+  // Debt card colour stays neutral at zero so empty-state dashboards don't
+  // look alarming; flips to brand red only when the user actually has debt.
+  const hasDebt = debtTotal > 0 || activeDebtCount > 0
+  const debtColor = hasDebt ? '#E50914' : 'var(--color-brand-text-primary)'
+  const debtSubtext = hasDebt
+    ? t.dashboard.summaryDebtActive(activeDebtCount)
+    : t.dashboard.summaryDebtActiveNone
+
   return (
     <div className="flex gap-3">
       <SummaryCard
@@ -39,8 +47,8 @@ export function DashboardSummaryCards({
       <SummaryCard
         label={t.dashboard.summaryDebtLabel}
         amount={`${baseCurrency} ${formatCompact(debtTotal)}`}
-        amountColor="#E50914"
-        subtext={t.dashboard.summaryDebtActive(activeDebtCount)}
+        amountColor={debtColor}
+        subtext={debtSubtext}
       />
     </div>
   )

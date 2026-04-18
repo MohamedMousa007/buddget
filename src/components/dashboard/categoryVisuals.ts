@@ -13,25 +13,32 @@ export interface CategoryPalette {
 
 const DEFAULT_PALETTE: CategoryPalette = { bg: '#F1EFE8', text: '#5A5A52' }
 
-/** Case-insensitive category-name → palette mapping. First match wins. */
+/** Case-insensitive category-name → palette mapping. First match wins.
+ *  Keys are normalised (spaces + hyphens → underscores) before matching so
+ *  UI labels like "Dining Out" resolve the same way as `dining_out`. */
 const PALETTE_RULES: ReadonlyArray<{
   match: (k: string) => boolean
   palette: CategoryPalette
 }> = [
   { match: (k) => k === 'rent' || k === 'housing' || k === 'home', palette: { bg: '#FCEBEB', text: '#9B1C1C' } },
-  { match: (k) => k === 'food' || k === 'groceries' || k === 'dining', palette: { bg: '#FAEEDA', text: '#B8710A' } },
+  { match: (k) => k === 'groceries', palette: { bg: '#FAEEDA', text: '#B8710A' } },
+  { match: (k) => k === 'dining' || k === 'dining_out' || k === 'restaurants' || k === 'food', palette: { bg: '#FAEEDA', text: '#B8710A' } },
   { match: (k) => k === 'transport' || k === 'transportation' || k === 'commute', palette: { bg: '#E6F1FB', text: '#1E5A9E' } },
-  { match: (k) => k === 'enjoy' || k === 'enjoyment' || k === 'entertainment' || k === 'subscription' || k === 'subscriptions', palette: { bg: '#EEEDFE', text: '#5240A8' } },
+  { match: (k) => k === 'entertainment' || k === 'enjoy' || k === 'enjoyment', palette: { bg: '#EEEDFE', text: '#5240A8' } },
+  { match: (k) => k === 'personal' || k === 'personal_care' || k === 'self_care', palette: { bg: '#FDE7E7', text: '#9B2C2C' } },
+  { match: (k) => k === 'phone' || k === 'internet' || k === 'phone_internet', palette: { bg: '#E6F1FB', text: '#1E5A9E' } },
+  { match: (k) => k === 'subscription' || k === 'subscriptions', palette: { bg: '#EEEDFE', text: '#5240A8' } },
   { match: (k) => k === 'shopping' || k === 'shop', palette: { bg: '#FEE6F1', text: '#A3165D' } },
   { match: (k) => k === 'health' || k === 'healthcare' || k === 'medical', palette: { bg: '#E1F5EE', text: '#0F6B4C' } },
   { match: (k) => k === 'education' || k === 'school', palette: { bg: '#FEF4D7', text: '#8A5A0F' } },
   { match: (k) => k === 'savings' || k === 'saving' || k === 'investment', palette: { bg: '#E1F5EE', text: '#0F6B4C' } },
   { match: (k) => k === 'debt' || k === 'loan' || k === 'credit', palette: { bg: '#FCE7E7', text: '#9B1C1C' } },
   { match: (k) => k === 'remittance' || k === 'transfer', palette: { bg: '#E6F1FB', text: '#1E5A9E' } },
+  { match: (k) => k === 'other', palette: { bg: '#ECECEC', text: '#4A4A4A' } },
 ]
 
 export function getCategoryPalette(category: string): CategoryPalette {
-  const key = (category || '').trim().toLowerCase()
+  const key = (category || '').trim().toLowerCase().replace(/[\s-]+/g, '_')
   if (!key) return DEFAULT_PALETTE
   const match = PALETTE_RULES.find((v) => v.match(key))
   return match?.palette ?? DEFAULT_PALETTE

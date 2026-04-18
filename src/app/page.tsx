@@ -96,23 +96,21 @@ export default function DashboardPage() {
             <DashboardFirstRunChecklist snapshot={checklist} />
             <BuildBudgetCta onBuilt={() => setJustBuilt(true)} />
           </>
-        ) : (
-          <>
-            <DashboardCategoryBars
-              budgetCategories={stats.dashboardBudgetCategories}
-              categorySpending={stats.categorySpending}
-              categoryBudgetCaps={stats.categoryBudgetCaps}
-            />
-            <DashboardTransactions expenses={stats.monthlyExpenses} />
-            <DashboardSummaryCards
-              savingsTotal={stats.savingsTotal}
-              netSavingsThisMonth={stats.netSavingsTransfersThisMonth}
-              debtTotal={stats.debtRemainingTotal}
-              baseCurrency={stats.baseCurrency}
-            />
-            <DashboardGoalsStrip />
-          </>
-        )}
+        ) : null}
+
+        <DashboardCategoryBars
+          budgetCategories={stats.dashboardBudgetCategories}
+          categorySpending={stats.categorySpending}
+          categoryBudgetCaps={stats.categoryBudgetCaps}
+        />
+        <DashboardTransactions expenses={stats.monthlyExpenses} />
+        <DashboardSummaryCards
+          savingsTotal={stats.savingsTotal}
+          netSavingsThisMonth={stats.netSavingsTransfersThisMonth}
+          debtTotal={stats.debtRemainingTotal}
+          baseCurrency={stats.baseCurrency}
+        />
+        <DashboardGoalsStrip />
       </div>
     </div>
   )

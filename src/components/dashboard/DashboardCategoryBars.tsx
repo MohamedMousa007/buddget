@@ -1,6 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import { useMemo } from 'react'
+import { ArrowRight } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import {
   getCategoryPalette,
@@ -57,18 +59,31 @@ export function DashboardCategoryBars({
       .sort((a, b) => b.pct - a.pct)
   }, [budgetCategories, categoryBudgetCaps, categorySpending])
 
-  if (rows.length === 0) return null
-
   return (
     <section className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
       <h2 className="text-[11px] uppercase tracking-[0.3px] text-[var(--color-brand-text-secondary)] font-semibold mb-3">
         {t.dashboard.sectionCategoriesTitle}
       </h2>
-      <ul className="space-y-2.5">
-        {rows.map((r) => (
-          <CategoryRow key={r.category} row={r} />
-        ))}
-      </ul>
+      {rows.length > 0 ? (
+        <ul className="space-y-2.5">
+          {rows.map((r) => (
+            <CategoryRow key={r.category} row={r} />
+          ))}
+        </ul>
+      ) : (
+        <div className="py-4 flex flex-col items-start gap-2">
+          <p className="text-xs text-[var(--color-brand-text-muted)]">
+            {t.dashboard.categoryEmptyTitle}
+          </p>
+          <Link
+            href="/budget-setup"
+            className="inline-flex items-center gap-1 text-sm text-[var(--color-brand-red)] font-medium hover:underline"
+          >
+            {t.dashboard.categoryEmptyCta}
+            <ArrowRight className="w-4 h-4 rtl:rotate-180" aria-hidden />
+          </Link>
+        </div>
+      )}
     </section>
   )
 }

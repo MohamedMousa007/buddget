@@ -161,6 +161,7 @@ export const ar: Dictionary = {
     summaryDebtLabel: 'الديون',
     summarySavedThisMonth: (amount) => `+${amount} هذا الشهر`,
     summaryDebtActive: (count) => (count === 1 ? 'دين نشط' : `${count} نشطة`),
+    summaryDebtActiveNone: 'لا ديون نشطة',
   },
 
   expenses: {
