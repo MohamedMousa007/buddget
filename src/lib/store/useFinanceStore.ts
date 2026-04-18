@@ -46,7 +46,8 @@ import { createSafeLocalStorage } from '@/lib/store/safeLocalStorage'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { buildGoalProgressContext } from '@/lib/goals/computeGoalProgress'
 import { reconcileAchievedGoals } from '@/lib/goals/reconcileAchievedGoals'
-const PERSIST_VERSION = 16
+import { migrateIdsToUuid } from '@/lib/store/migrations/v17_uuid_remap'
+const PERSIST_VERSION = 17
 
 function reconcileGoalsForState(state: FinanceStore): Goal[] {
   const ctx = buildGoalProgressContext(state, useSettingsStore.getState().monthFilter)
@@ -100,9 +101,22 @@ function migrateSavingsHoldingsToLedger(
   return { accounts, transactions }
 }
 
+/**
+ * Every client-side id must be a valid v4 UUID so Supabase can accept it into
+ * the `uuid`-typed primary-key columns (`income_sources.id`,
+ * `payment_methods.id`, `debts.id`, `goals.id`, `expenses.id`, etc.). Prior to
+ * this change we emitted `${Date.now()}_${rand}` strings which every list-
+ * sync upsert silently rejected, leaving data only in the legacy JSONB blob.
+ */
 function generateId(): string {
-  return `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID()
+  }
+  // Polyfill — vanishingly-rare older runtimes (Node < 14.17 / very old Safari).
+  const rand = () => Math.floor(Math.random() * 0x10000).toString(16).padStart(4, '0')
+  return `${rand()}${rand()}-${rand()}-4${rand().slice(1)}-${((8 + Math.floor(Math.random() * 4)).toString(16)) + rand().slice(1)}-${rand()}${rand()}${rand()}`
 }
+
 
 function migrateShowAllCurrenciesInForms(prevSettings: Record<string, unknown>): boolean {
   if (typeof prevSettings.showAllCurrenciesInForms === 'boolean') return prevSettings.showAllCurrenciesInForms
@@ -1197,7 +1211,12 @@ export const useFinanceStore = create<FinanceStore>()(
           )
         }
 
-        const data = result.data
+        // Imports may carry legacy `${ts}_${rand}` ids from pre-v17 backups
+        // or the legacy `user_finance` JSONB blob. Rewrite them to UUIDs so
+        // every subsequent flush lands in the normalized tables.
+        const data = migrateIdsToUuid(
+          result.data as unknown as Record<string, unknown>,
+        ) as unknown as typeof result.data
         const holdings = data.savingsHoldings ?? []
         let savingsAccounts: SavingsAccount[] = normalizeSavingsAccountsList(
           (data.savingsAccounts ?? []) as unknown[]
@@ -1307,16 +1326,21 @@ export const useFinanceStore = create<FinanceStore>()(
           persistedState && typeof persistedState === 'object'
             ? (persistedState as Record<string, unknown>)
             : {}
+        // v17: all client-side row ids must be valid UUIDs so Supabase's
+        // uuid-typed PK columns accept them on sync. Runs first so the rest
+        // of the migration chain already sees UUID ids.
+        const uuidFixed =
+          fromVersion < 17 ? migrateIdsToUuid(base) : base
         let p: Record<string, unknown> =
-          fromVersion < 12 && Array.isArray(base.incomeSources)
+          fromVersion < 12 && Array.isArray(uuidFixed.incomeSources)
             ? {
-                ...base,
-                incomeSources: (base.incomeSources as Record<string, unknown>[]).map((s) => ({
+                ...uuidFixed,
+                incomeSources: (uuidFixed.incomeSources as Record<string, unknown>[]).map((s) => ({
                   ...s,
                   sourceType: (s.sourceType as IncomeSourceType | undefined) ?? 'other',
                 })),
               }
-            : base
+            : uuidFixed
         if (fromVersion < 13 && Array.isArray(p.debts)) {
           p = {
             ...p,

@@ -1,5 +1,6 @@
 import type { Subscription, Currency, SubscriptionStatus, SubscriptionBillingCycle, ExpenseCategory } from '@/lib/store/types'
 import type { SubscriptionRow, SubscriptionInsert } from '@/lib/supabase/remote/types'
+import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
 
 const VALID_CATEGORIES: readonly ExpenseCategory[] = [
   'Rent',
@@ -31,7 +32,8 @@ export function subscriptionToRow(s: Subscription, userId: string): Subscription
     billing_day: s.billingDay,
     start_date: s.startDate,
     next_billing_date: s.nextBillingDate,
-    payment_method_id: s.paymentMethodId,
+    payment_method_id:
+      s.paymentMethodId && s.paymentMethodId !== DEFAULT_CASH_ID ? s.paymentMethodId : null,
     expense_category: toDbCategory(s.expenseCategory),
     linked_recurring_expense_id: s.linkedRecurringExpenseId,
     status: s.status,

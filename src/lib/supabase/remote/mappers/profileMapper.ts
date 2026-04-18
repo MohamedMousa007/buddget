@@ -4,17 +4,31 @@ import type { ProfileRow, ProfileInsert } from '@/lib/supabase/remote/types'
 export interface ProfileExtras {
   financialGoalsNotes: string
   activeBudgetPlanId: string | null
-  /** New users always have this mirrored from user_profiles; true once onboarding finishes. */
+  /** Present on READ; preserved via round-trip test so the value stays in the
+   *  store when we re-hydrate a freshly-flipped onboarding flag. */
   onboardingCompleted?: boolean
   displayName?: string | null
 }
 
-/** Zustand `profile` + a few top-level fields → profiles row. */
+/**
+ * Zustand `profile` + a few top-level fields → profiles row.
+ *
+ * Important: `onboarding_completed` and `display_name` are NEVER written from
+ * the client. They are authoritatively set server-side by the service-role
+ * routes (`/api/auth/complete-core-onboarding` and
+ * `/api/auth/complete-guest-onboarding`). The sync upsert used to clobber
+ * them with `false`/`null` every debounce tick — onboarding-state could not
+ * persist. Leaving those fields off the insert means PostgREST keeps the
+ * existing server value on upsert-conflict.
+ */
 export function profileToRow(
   p: UserProfile,
   extras: ProfileExtras,
   userId: string
 ): ProfileInsert {
+  // `ProfileInsert` marks `onboarding_completed` + `display_name` as optional,
+  // so omitting them here is a valid partial upsert. Cast documented for the
+  // reader; no behaviour change beyond dropping the two fields.
   return {
     id: userId,
     name: p.name ?? '',
@@ -31,8 +45,6 @@ export function profileToRow(
     active_budget_plan_id: extras.activeBudgetPlanId ?? null,
     active_shared_budget_id: null,
     default_shared_budget_plan_id: null,
-    onboarding_completed: extras.onboardingCompleted ?? false,
-    display_name: extras.displayName ?? null,
     no_debts_declared: p.noDebtsDeclared ?? false,
     no_goals_declared: p.noGoalsDeclared ?? false,
     household: p.household ?? null,

@@ -1,5 +1,6 @@
 import type { RecurringDebtPayment, Currency, DebtRecurringFrequency } from '@/lib/store/types'
 import type { RecurringDebtPaymentRow, RecurringDebtPaymentInsert } from '@/lib/supabase/remote/types'
+import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
 
 function toDbFrequency(f: DebtRecurringFrequency): RecurringDebtPaymentInsert['frequency'] {
   // DB enum: weekly | biweekly | monthly | quarterly | annually — all match.
@@ -14,7 +15,8 @@ export function recurringDebtPaymentToRow(
     id: r.id,
     user_id: userId,
     debt_id: r.debtId,
-    payment_method_id: r.paymentMethodId || null,
+    payment_method_id:
+      r.paymentMethodId && r.paymentMethodId !== DEFAULT_CASH_ID ? r.paymentMethodId : null,
     amount: r.amount,
     currency: r.currency,
     frequency: toDbFrequency(r.frequency),

@@ -1,5 +1,6 @@
 import type { IncomeSource, Currency, IncomeSourceType, IncomeRecurringFrequency } from '@/lib/store/types'
 import type { IncomeSourceRow, IncomeSourceInsert } from '@/lib/supabase/remote/types'
+import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
 
 /** Zustand IncomeSourceType is wider than the DB enum; map 1:1 for the overlapping values. */
 function toDbSourceType(s: IncomeSourceType | undefined): IncomeSourceInsert['source_type'] {
@@ -44,7 +45,8 @@ export function incomeSourceToRow(i: IncomeSource, userId: string): IncomeSource
       i.isRecurring && i.recurringFrequency ? (i.recurringFrequency as IncomeSourceInsert['recurring_frequency']) : null,
     day_of_month: i.dayOfMonth ?? null,
     notes: i.notes ?? null,
-    payment_method_id: i.paymentMethodId ?? null,
+    payment_method_id:
+      i.paymentMethodId && i.paymentMethodId !== DEFAULT_CASH_ID ? i.paymentMethodId : null,
     created_at: i.createdAt,
   }
 }
