@@ -14,6 +14,12 @@ export interface FirstRunChecklistItem {
   enabled: boolean
   /** Present only for items that support "I have none" / explicit opt-out. */
   hasOptOut: boolean
+  /**
+   * How many entries back this item. Used by the dashboard card to show
+   * "N added · tap to add more" under a done row so users know the data
+   * landed and they can still extend it. 0 before any add; budget is 0|1.
+   */
+  count: number
 }
 
 export interface FirstRunChecklistSnapshot {
@@ -64,13 +70,31 @@ export function useFirstRunChecklist(): FirstRunChecklistSnapshot {
     const hasIncome = incomeSources.length > 0
     const hasAnyPlan = budgetPlans.some((p) => p.categories.length > 0)
     const hasDebtsHandled = debts.length > 0 || noDebtsDeclared
-    const hasRealPayment = paymentMethods.some((pm) => pm.id !== DEFAULT_CASH_ID)
+    const userPayments = paymentMethods.filter((pm) => pm.id !== DEFAULT_CASH_ID)
 
     const items: FirstRunChecklistItem[] = [
-      { id: 'income', done: hasIncome, enabled: true, hasOptOut: false },
-      { id: 'budget', done: hasAnyPlan, enabled: hasIncome, hasOptOut: false },
-      { id: 'debts', done: hasDebtsHandled, enabled: true, hasOptOut: true },
-      { id: 'payments', done: hasRealPayment, enabled: true, hasOptOut: false },
+      { id: 'income', done: hasIncome, enabled: true, hasOptOut: false, count: incomeSources.length },
+      {
+        id: 'budget',
+        done: hasAnyPlan,
+        enabled: hasIncome,
+        hasOptOut: false,
+        count: hasAnyPlan ? 1 : 0,
+      },
+      {
+        id: 'debts',
+        done: hasDebtsHandled,
+        enabled: true,
+        hasOptOut: true,
+        count: debts.length,
+      },
+      {
+        id: 'payments',
+        done: userPayments.length > 0,
+        enabled: true,
+        hasOptOut: false,
+        count: userPayments.length,
+      },
     ]
     const doneCount = items.filter((i) => i.done).length
     return {
