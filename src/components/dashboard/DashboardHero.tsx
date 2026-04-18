@@ -105,13 +105,16 @@ function Stat({
   currency: string
   color: string
 }) {
+  // Compact threshold tuned for a 3-column grid on ~375px mobile: with multi-
+  // char currency symbols ("د.إ", "E£") any value above mid-thousands needs
+  // compact notation to avoid truncation.
   const value = formatMoneyHero(Math.max(0, amount), currency, {
     compact: 'auto',
-    fullMaxChars: 9,
+    fullMaxChars: 8,
   })
   return (
-    <div className="min-w-0 text-center px-2">
-      <div className={cn('font-mono font-bold text-[18px] leading-none truncate', color)}>
+    <div className="min-w-0 text-center px-1.5">
+      <div className={cn('font-mono font-bold text-[15px] leading-none truncate', color)}>
         {value}
       </div>
       <div className="text-[9px] text-white/40 truncate mt-1 uppercase tracking-wider">

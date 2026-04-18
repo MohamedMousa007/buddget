@@ -23,18 +23,36 @@ export function toLatinDigits(input: string): string {
   })
 }
 
+/**
+ * Proper currency signs per ISO 4217 / common Unicode. Single-char glyphs
+ * stick to the digits ("$1,234"); multi-char glyphs — mostly the Arabic
+ * dotted abbreviations — get a space ("د.إ 1,234") so Latin digits + RTL
+ * marks don't fuse visually.
+ *
+ * `XAU` stays as `g` (grams) — it's weight, not currency, and gets special-
+ * cased in `formatCurrency`. Stablecoins use their native Unicode where one
+ * exists (₮), otherwise a close-enough sign ($ for USDC since it's USD-
+ * pegged).
+ */
 const CURRENCY_SYMBOLS: Record<string, string> = {
-  AED: 'AED',
+  AED: 'د.إ',
   USD: '$',
-  EGP: 'EGP',
+  EGP: 'E£',
   EUR: '€',
   GBP: '£',
-  SAR: 'SAR',
+  SAR: '﷼',
+  KWD: 'د.ك',
+  QAR: 'ر.ق',
+  BHD: 'د.ب',
+  OMR: 'ر.ع',
+  MAD: 'د.م',
+  TND: 'د.ت',
+  JOD: 'د.أ',
   XAU: 'g',
-  USDT: 'USDT',
-  USDC: 'USDC',
-  BTC: 'BTC',
-  ETH: 'ETH',
+  USDT: '₮',
+  USDC: '$',
+  BTC: '₿',
+  ETH: 'Ξ',
 }
 
 export function formatCurrency(amount: number, currency: Currency | string, showCents = true): string {
@@ -48,7 +66,9 @@ export function formatCurrency(amount: number, currency: Currency | string, show
     ? amount.toLocaleString(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     : amount.toLocaleString(loc, { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 
-  if (['$', '€', '£'].includes(symbol)) {
+  // Single-char sign → stick (e.g. `$1,234`, `﷼500`, `₿0.01`).
+  // Multi-char abbrev → space (e.g. `د.إ 1,234`, `E£ 500`).
+  if (Array.from(symbol).length === 1) {
     return `${symbol}${formatted}`
   }
   return `${symbol} ${formatted}`
@@ -81,7 +101,7 @@ export function formatMoneyHero(
     maximumFractionDigits: 1,
   }).format(rounded)
 
-  const stick = ['$', '€', '£'].includes(symbol)
+  const stick = Array.from(symbol).length === 1
   const join = (n: string) => (stick ? `${symbol}${n}` : `${symbol} ${n}`)
   const full = join(fullNumber)
 
