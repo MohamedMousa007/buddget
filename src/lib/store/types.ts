@@ -512,6 +512,14 @@ export interface AppSettings {
    * Client-only flag — excluded from Supabase round-trip on purpose.
    */
   legacyOnboardingMigratedAt: string | null
+  /**
+   * Which dashboard layout to render on `/`. `'standard'` = the navy-hero +
+   * multi-card stack; `'minimal'` = the centred single-column stack shipped
+   * alongside the "Minimal" theme option in Settings. Client-only for this
+   * round to avoid a DB enum migration — promoted to a persisted column
+   * once the layout is validated in real usage.
+   */
+  dashboardLayout?: 'standard' | 'minimal'
 }
 
 /** Draft payment row from onboarding (applied to store on finish). */
