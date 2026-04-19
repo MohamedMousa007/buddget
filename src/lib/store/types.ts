@@ -515,9 +515,8 @@ export interface AppSettings {
   /**
    * Which dashboard layout to render on `/`. `'standard'` = the navy-hero +
    * multi-card stack; `'minimal'` = the centred single-column stack shipped
-   * alongside the "Minimal" theme option in Settings. Client-only for this
-   * round to avoid a DB enum migration — promoted to a persisted column
-   * once the layout is validated in real usage.
+   * alongside the "Minimal" theme option in Settings. Persisted in
+   * `user_settings.dashboard_layout` so the choice survives sign-out.
    */
   dashboardLayout?: 'standard' | 'minimal'
 }

@@ -150,7 +150,7 @@ describe('settings mapper', () => {
       twoFactorEmailEnabled: false,
       onboardingChecklistHidden: false,
       legacyOnboardingMigratedAt: null,
-      dashboardLayout: 'standard' as const,
+      dashboardLayout: 'minimal' as const,
     }
     const row = settingsToRow(s, UID)
     const back = settingsFromRow({ ...row, updated_at: '' } as never, {

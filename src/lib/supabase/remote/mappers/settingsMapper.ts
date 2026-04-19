@@ -19,6 +19,7 @@ export function settingsToRow(s: AppSettings, userId: string): UserSettingsInser
     onboarding_banner_remind_at: s.onboardingBannerRemindAt,
     two_factor_email_enabled: s.twoFactorEmailEnabled,
     onboarding_checklist_hidden: s.onboardingChecklistHidden,
+    dashboard_layout: s.dashboardLayout ?? 'standard',
   }
 }
 
@@ -49,7 +50,7 @@ export function settingsFromRow(row: UserSettingsRow, opts: SettingsFromRowOptio
     onboardingChecklistHidden: row.onboarding_checklist_hidden,
     // Client-only; never synced.
     legacyOnboardingMigratedAt: null,
-    dashboardLayout: 'standard',
+    dashboardLayout: row.dashboard_layout,
     baseCurrency: opts.baseCurrency,
     secondaryCurrency: opts.secondaryCurrency,
   }
