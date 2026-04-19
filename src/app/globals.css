@@ -131,8 +131,11 @@
   --color-brand-border: #2A2A38;
   --color-brand-text: #FFFFFF;
   --color-brand-text-primary: #FFFFFF;
-  --color-brand-text-secondary: #A0A0B8;
-  --color-brand-text-muted: #5A5A72;
+  /* Bumped up from #A0A0B8/#5A5A72 — the old values failed WCAG AA against
+     the dark card surfaces, leaving section labels + muted subtext barely
+     readable in dark mode. */
+  --color-brand-text-secondary: #CFCFE0;
+  --color-brand-text-muted: #9898B0;
 
   --background: #0A0A0F;
   --foreground: #FFFFFF;
@@ -145,7 +148,7 @@
   --secondary: #1A1A24;
   --secondary-foreground: #FFFFFF;
   --muted: #1A1A24;
-  --muted-foreground: #A0A0B8;
+  --muted-foreground: #CFCFE0;
   --accent: #1A1A24;
   --accent-foreground: #FFFFFF;
   --destructive: #E50914;

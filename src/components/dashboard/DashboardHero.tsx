@@ -1,7 +1,7 @@
 'use client'
 
 import { useT } from '@/lib/i18n'
-import { formatMoneyHero } from '@/lib/utils/formatters'
+import { CurrencyLabel } from '@/components/ui/CurrencyLabel'
 import { cn } from '@/lib/utils'
 import type { PaceStatus } from '@/lib/utils/spendingPace'
 
@@ -53,14 +53,16 @@ export function DashboardHero({ stats, suppressNumbers }: DashboardHeroProps) {
             {/* Left-to-spend + ring */}
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0 flex-1">
-                <p className="text-[10px] uppercase tracking-wider text-white/40 font-medium">
+                <p className="text-[10px] uppercase tracking-wider text-white/60 font-medium">
                   {t.dashboard.heroLeftToSpend}
                 </p>
                 <p className="mt-1 font-mono font-bold text-white text-[32px] leading-none truncate">
-                  {formatMoneyHero(Math.max(0, stats.leftToSpend), stats.baseCurrency, {
-                    compact: 'auto',
-                    fullMaxChars: 11,
-                  })}
+                  <CurrencyLabel
+                    amount={Math.max(0, stats.leftToSpend)}
+                    currency={stats.baseCurrency}
+                    compact="auto"
+                    fullMaxChars={11}
+                  />
                 </p>
               </div>
               <HeroRing percent={stats.budgetUsedPercent} usedLabel={t.dashboard.heroUsedSuffix} />
@@ -105,19 +107,17 @@ function Stat({
   currency: string
   color: string
 }) {
-  // Compact threshold tuned for a 3-column grid on ~375px mobile: with multi-
-  // char currency symbols ("د.إ", "E£") any value above mid-thousands needs
-  // compact notation to avoid truncation.
-  const value = formatMoneyHero(Math.max(0, amount), currency, {
-    compact: 'auto',
-    fullMaxChars: 8,
-  })
   return (
     <div className="min-w-0 text-center px-1.5">
       <div className={cn('font-mono font-bold text-[15px] leading-none truncate', color)}>
-        {value}
+        <CurrencyLabel
+          amount={Math.max(0, amount)}
+          currency={currency}
+          compact="auto"
+          fullMaxChars={8}
+        />
       </div>
-      <div className="text-[9px] text-white/40 truncate mt-1 uppercase tracking-wider">
+      <div className="text-[10px] text-white/70 truncate mt-1 uppercase tracking-wider">
         {label}
       </div>
     </div>
@@ -158,7 +158,7 @@ function HeroRing({ percent, usedLabel }: { percent: number; usedLabel: string }
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
         <span className="text-white text-[15px] font-semibold">{clamped}%</span>
-        <span className="text-white/35 text-[8px] mt-0.5">{usedLabel}</span>
+        <span className="text-white/55 text-[8px] mt-0.5">{usedLabel}</span>
       </div>
     </div>
   )

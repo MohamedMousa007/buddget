@@ -36,12 +36,18 @@ export function toLatinDigits(input: string): string {
  * pegged).
  */
 const CURRENCY_SYMBOLS: Record<string, string> = {
+  // AED uses the Central Bank of the UAE's March-2025 dirham mark, rendered
+  // via inline SVG in `CurrencyLabel` since font support is still rare.
+  // The string form "Dh" below is the plain-text fallback used anywhere
+  // string formatting is required (exports, toasts, notifications).
   AED: 'Dh',
   USD: '$',
   EGP: 'E£',
   EUR: '€',
   GBP: '£',
-  SAR: 'SR',
+  // U+20C0 Saudi Riyal Sign — added to Unicode 13 (2020), well-supported by
+  // modern system fonts. Single codepoint so it sticks to digits.
+  SAR: '⃀',
   KWD: 'KD',
   QAR: 'QR',
   BHD: 'BD',
