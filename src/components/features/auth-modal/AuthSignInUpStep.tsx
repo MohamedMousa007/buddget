@@ -144,17 +144,41 @@ export function AuthSignInUpStep({
               <span className="flex-1 h-px bg-[var(--color-brand-border)]" />
             </div>
 
-            <AuthEmailField
-              ref={emailRef}
-              value={email}
-              onChange={(v) => {
-                setEmail(v)
-                if (error) setError('')
+            {/* Wrap email + hidden password in a single <form> so browsers /
+                password managers recognise the sign-in pair and offer saved
+                credentials when the email field is focused. When the user
+                picks a saved login, both fields get filled at once; the
+                password carries through via shared state so the password
+                step is pre-populated after advance. */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (!emailAdvancePending) advanceAfterEmail()
               }}
-              onAdvance={advanceAfterEmail}
-              pending={emailAdvancePending}
-              showAdvanceButton
-            />
+              className="space-y-3"
+            >
+              <AuthEmailField
+                ref={emailRef}
+                value={email}
+                onChange={(v) => {
+                  setEmail(v)
+                  if (error) setError('')
+                }}
+                onAdvance={advanceAfterEmail}
+                pending={emailAdvancePending}
+                showAdvanceButton
+              />
+              <input
+                type="password"
+                name="password"
+                autoComplete="current-password"
+                tabIndex={-1}
+                aria-hidden="true"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="absolute h-0 w-0 opacity-0 pointer-events-none"
+              />
+            </form>
 
             <AuthFormErrorAlert error={error} onResendCode={resendCode} />
           </motion.div>

@@ -155,6 +155,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const t = useT()
   const wasAuthedRef = useRef(false)
+  /** Set by `signOut()` just before telling Supabase to end the session.
+   *  The SIGNED_OUT handler consumes it to tell "user clicked sign out"
+   *  apart from "session expired server-side" — we only want to pop the
+   *  auth modal with an expiry message in the latter case. */
+  const userInitiatedSignOutRef = useRef(false)
 
   useEffect(() => {
     if (!configured) {
@@ -173,14 +178,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (e) {
           console.error('[auth] clearBudgetData on SIGNED_OUT failed', e)
         }
-        // If we were previously signed in AND the user is still on an in-app
-        // route (not a deliberate sign-out from the profile page), assume the
-        // session expired and re-open the auth modal with an explanation
-        // instead of silently dropping them on the landing.
-        if (wasAuthedRef.current && !pathname.startsWith('/reset-password')) {
+        const intentional = userInitiatedSignOutRef.current
+        userInitiatedSignOutRef.current = false
+        // Only flag "session expired" when we were authed AND this wasn't
+        // the user clicking Sign Out themselves. Deliberate sign-outs drop
+        // to the clean landing gate.
+        if (
+          !intentional &&
+          wasAuthedRef.current &&
+          !pathname.startsWith('/reset-password')
+        ) {
           wasAuthedRef.current = false
           setAuthModalMessage(t.auth.sessionExpired)
           setAuthModalOpen(true)
+        } else {
+          wasAuthedRef.current = false
         }
       } else if (_event === 'SIGNED_IN' && incomingUser) {
         wasAuthedRef.current = true
@@ -206,6 +218,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     if (!configured) return
+    // Mark this sign-out as user-initiated so the onAuthStateChange SIGNED_OUT
+    // handler skips the "session expired" modal and lands the user cleanly
+    // on the landing gate.
+    userInitiatedSignOutRef.current = true
     // Drain any debounced flush (expense just added, settings just toggled)
     // BEFORE we wipe localStorage, otherwise those writes die with the tab
     // session and never reach the server.
