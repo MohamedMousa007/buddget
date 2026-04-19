@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { DashboardSearchParamsSync } from '@/components/dashboard/DashboardSearchParamsSync'
 import { DashboardHero } from '@/components/dashboard/DashboardHero'
+import { DashboardNetWorthHero } from '@/components/dashboard/DashboardNetWorthHero'
 import { DashboardPaceBadge } from '@/components/dashboard/DashboardPaceBadge'
 import { DashboardCategoryBars } from '@/components/dashboard/DashboardCategoryBars'
 import { DashboardTransactions } from '@/components/dashboard/DashboardTransactions'
@@ -15,6 +16,7 @@ import { useLegacyOnboardingMigrator } from '@/lib/onboarding/migrateLegacyOnboa
 import { ONBOARDING_EVENTS, track } from '@/lib/analytics/events'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
+import { useNetWorth } from '@/hooks/useNetWorth'
 import { useT } from '@/lib/i18n'
 import {
   useHydrateBudget,
@@ -40,6 +42,7 @@ export default function DashboardPage() {
   useLegacyOnboardingMigrator()
 
   const stats = useMonthlyStats()
+  const netWorth = useNetWorth()
   const checklist = useFirstRunChecklist()
   const showToast = useActionToast()
 
@@ -91,6 +94,15 @@ export default function DashboardPage() {
           }}
           suppressNumbers={showChecklist}
         />
+
+        {showChecklist ? null : (
+          <DashboardNetWorthHero
+            netWorth={netWorth.netWorth}
+            totalSavings={netWorth.totalSavings}
+            totalDebt={netWorth.totalDebt}
+            baseCurrency={stats.baseCurrency}
+          />
+        )}
 
         {showChecklist ? (
           <>

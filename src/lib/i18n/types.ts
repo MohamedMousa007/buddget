@@ -159,6 +159,9 @@ export interface Dictionary {
     heroStatSaved: string
     heroStatIn: string
     heroStatOut: string
+    heroNetWorthLabel: string
+    heroStatSavings: string
+    heroStatDebt: string
     paceBadgeOnTrackTitle: string
     paceBadgeSlowDownTitle: string
     paceBadgeOverTitle: string
@@ -735,6 +738,9 @@ export interface Dictionary {
     themeDark: string
     themeLight: string
     themeSystem: string
+    themeNameMidnight: string
+    themeNamePaper: string
+    themePickerHint: string
     showCents: string
     desktopApp: string
     appInstalled: string
