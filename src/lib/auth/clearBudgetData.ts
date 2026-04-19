@@ -1,5 +1,6 @@
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { resetHydrationGuard } from '@/hooks/remote/hydrateGuard'
 
 /**
  * Persisted localStorage keys used by Zustand + guest-nickname + misc client
@@ -41,5 +42,13 @@ export function clearBudgetData(): void {
     useSettingsStore.getState().reset()
   } catch (e) {
     console.error('[clearBudgetData] settings reset failed', e)
+  }
+
+  // Clear the per-userId hydrate dedup guard so the next sign-in hydrates
+  // from scratch (rather than short-circuiting based on stale memory).
+  try {
+    resetHydrationGuard()
+  } catch {
+    /* no-op */
   }
 }

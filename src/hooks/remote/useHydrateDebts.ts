@@ -7,6 +7,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { debtFromRow } from '@/lib/supabase/remote/mappers/debtMapper'
 import { debtPaymentFromRow } from '@/lib/supabase/remote/mappers/debtPaymentMapper'
 import { recurringDebtPaymentFromRow } from '@/lib/supabase/remote/mappers/recurringDebtPaymentMapper'
+import { hasHydrated, markHydrated } from '@/hooks/remote/hydrateGuard'
 
 export function useHydrateDebts(): void {
   const { user } = useAuth()
@@ -14,6 +15,7 @@ export function useHydrateDebts(): void {
   useEffect(() => {
     const uid = user?.id
     if (!uid) return
+    if (hasHydrated(uid, 'debts')) return
     let cancelled = false
     const supabase = createClient()
 
@@ -30,6 +32,7 @@ export function useHydrateDebts(): void {
         if (pR.data) patch.debtPayments = pR.data.map(debtPaymentFromRow)
         if (rR.data) patch.recurringDebtPayments = rR.data.map(recurringDebtPaymentFromRow)
         if (Object.keys(patch).length > 0) useFinanceStore.setState(patch)
+        markHydrated(uid, 'debts')
       } catch (e) {
         if (!cancelled) console.error('[useHydrateDebts]', e)
       }
