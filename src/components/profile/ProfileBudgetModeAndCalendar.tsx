@@ -1,8 +1,14 @@
 'use client'
 
+import { useMemo } from 'react'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { Label } from '@/components/ui/label'
+import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import type { Dictionary } from '@/lib/i18n/types'
+
+function ordinalSuffix(d: number): string {
+  return d === 1 ? 'st' : d === 2 ? 'nd' : d === 3 ? 'rd' : 'th'
+}
 
 export interface ProfileBudgetModeAndCalendarProps {
   t: Dictionary['profile']
@@ -26,6 +32,15 @@ export function ProfileBudgetModeAndCalendar({
   onModePercent,
   onMonthStartDay,
 }: ProfileBudgetModeAndCalendarProps) {
+  const dayItems = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () =>
+      Array.from({ length: 28 }, (_, i) => i + 1).map((d) => ({
+        value: String(d),
+        label: `${d}${ordinalSuffix(d)}`,
+      })),
+    [],
+  )
+
   return (
     <>
       <p className="text-[10px] text-[var(--color-brand-text-muted)]">
@@ -64,18 +79,14 @@ export function ProfileBudgetModeAndCalendar({
       )}
       <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.budgetMonthStarts}</Label>
-        <select
-          value={monthStartDay}
-          onChange={(e) => onMonthStartDay(parseInt(e.target.value))}
-          className="mt-1 w-24 h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
-        >
-          {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
-            <option key={d} value={d}>
-              {d}
-              {d === 1 ? 'st' : d === 2 ? 'nd' : d === 3 ? 'rd' : 'th'}
-            </option>
-          ))}
-        </select>
+        <div className="mt-1 w-32">
+          <SelectField
+            value={String(monthStartDay)}
+            onChange={(v) => onMonthStartDay(parseInt(v, 10))}
+            items={dayItems}
+            aria-label={t.budgetMonthStarts}
+          />
+        </div>
       </div>
     </>
   )

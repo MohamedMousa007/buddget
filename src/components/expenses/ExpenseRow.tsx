@@ -8,6 +8,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { MoneyDisplay } from '@/components/ui/MoneyDisplay'
 import type { Expense } from '@/lib/store/types'
 import { useT } from '@/lib/i18n'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 
 const CATEGORY_ICONS: Record<string, string> = {
   Rent: '🏠',
@@ -32,13 +33,14 @@ export function ExpenseRow({ expense, isMobile = false }: ExpenseRowProps) {
     useShallow((s) => ({ deleteExpense: s.deleteExpense, paymentMethods: s.paymentMethods }))
   )
   const { setActiveModal, setEditingExpenseId } = useSettingsStore()
+  const confirm = useConfirm()
   const method = paymentMethods.find((m) => m.id === expense.paymentMethodId)
   const handleEdit = () => {
     setEditingExpenseId(expense.id)
     setActiveModal('editExpense')
   }
-  const handleDelete = () => {
-    if (window.confirm(t.expenses.confirmDelete)) {
+  const handleDelete = async () => {
+    if (await confirm({ title: t.expenses.confirmDelete, destructive: true })) {
       deleteExpense(expense.id)
     }
   }

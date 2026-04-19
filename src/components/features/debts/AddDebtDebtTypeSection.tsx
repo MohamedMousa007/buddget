@@ -1,7 +1,9 @@
 'use client'
 
+import { useMemo } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import type { DebtKind, InstallmentProvider } from '@/lib/store/types'
 import { InstallmentProviderPicker } from '@/components/features/debts/InstallmentProviderPicker'
 import { useT } from '@/lib/i18n'
@@ -62,6 +64,30 @@ export function AddDebtDebtTypeSection({
 }: AddDebtDebtTypeSectionProps) {
   const t = useT()
 
+  const directionItems = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () => [
+      { value: 'i_owe', label: t.addDebt.directionIOwe },
+      { value: 'they_owe', label: t.addDebt.directionTheyOwe },
+    ],
+    [t.addDebt],
+  )
+  const creditCardItems = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () => [
+      { value: '', label: t.addDebt.whichCreditCardPlaceholder },
+      ...creditCardDebts.map((d) => ({ value: d.id, label: d.name })),
+    ],
+    [creditCardDebts, t.addDebt.whichCreditCardPlaceholder],
+  )
+  const installmentFreqItems = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () => [
+      { value: 'weekly', label: t.addDebt.freqWeekly },
+      { value: 'monthly', label: t.addDebt.freqMonthly },
+      { value: 'quarterly', label: t.addDebt.freqQuarterly },
+      { value: 'annually', label: t.addDebt.freqAnnually },
+    ],
+    [t.addDebt],
+  )
+
   return (
     <div className="space-y-3">
       <div>
@@ -100,14 +126,13 @@ export function AddDebtDebtTypeSection({
           {!hidePersonalDirection ? (
             <div>
               <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelDirection}</Label>
-              <select
+              <SelectField
                 value={direction}
-                onChange={(e) => setDirection(e.target.value as 'i_owe' | 'they_owe')}
-                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
-              >
-                <option value="i_owe">{t.addDebt.directionIOwe}</option>
-                <option value="they_owe">{t.addDebt.directionTheyOwe}</option>
-              </select>
+                onChange={(v) => setDirection(v as 'i_owe' | 'they_owe')}
+                items={directionItems}
+                className="mt-1"
+                aria-label={t.addDebt.labelDirection}
+              />
             </div>
           ) : null}
           <div className={hidePersonalDirection ? '' : ''}>
@@ -127,18 +152,13 @@ export function AddDebtDebtTypeSection({
           {installmentProvider === 'credit_card' ? (
             <div>
               <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.whichCreditCard}</Label>
-              <select
+              <SelectField
                 value={linkedCreditCardDebtId}
-                onChange={(e) => setLinkedCreditCardDebtId(e.target.value)}
-                className="mt-1 w-full h-9 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
-              >
-                <option value="">{t.addDebt.whichCreditCardPlaceholder}</option>
-                {creditCardDebts.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setLinkedCreditCardDebtId}
+                items={creditCardItems}
+                className="mt-1"
+                aria-label={t.addDebt.whichCreditCard}
+              />
             </div>
           ) : null}
           <div>
@@ -162,18 +182,15 @@ export function AddDebtDebtTypeSection({
             </div>
             <div>
               <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelInstallmentFreq}</Label>
-              <select
+              <SelectField
                 value={installmentFrequency}
-                onChange={(e) =>
-                  setInstallmentFrequency(e.target.value as 'weekly' | 'monthly' | 'quarterly' | 'annually')
+                onChange={(v) =>
+                  setInstallmentFrequency(v as 'weekly' | 'monthly' | 'quarterly' | 'annually')
                 }
-                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
-              >
-                <option value="weekly">{t.addDebt.freqWeekly}</option>
-                <option value="monthly">{t.addDebt.freqMonthly}</option>
-                <option value="quarterly">{t.addDebt.freqQuarterly}</option>
-                <option value="annually">{t.addDebt.freqAnnually}</option>
-              </select>
+                items={installmentFreqItems}
+                className="mt-1"
+                aria-label={t.addDebt.labelInstallmentFreq}
+              />
             </div>
           </div>
           <div className="max-w-[180px]">

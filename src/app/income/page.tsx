@@ -10,6 +10,7 @@ import { Wallet } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { IncomeSourceRow } from '@/components/features/income/IncomeSourceRow'
 import { useHydrateIncome, useHydrateDebts, useHydrateSavings } from '@/hooks/remote'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 
 export default function IncomePage() {
   useHydrateIncome()
@@ -26,6 +27,7 @@ export default function IncomePage() {
   )
   const { setActiveModal, setEditingIncomeId } = useSettingsStore()
   const requireAuth = useRequireAuthAction()
+  const confirm = useConfirm()
   const t = useT()
 
   const openAddIncome = () =>
@@ -87,8 +89,10 @@ export default function IncomePage() {
                 setEditingIncomeId(source.id)
                 setActiveModal('editIncome')
               }}
-              onDelete={() => {
-                if (window.confirm(t.income.confirmDelete)) deleteIncomeSource(source.id)
+              onDelete={async () => {
+                if (await confirm({ title: t.income.confirmDelete, destructive: true })) {
+                  deleteIncomeSource(source.id)
+                }
               }}
             />
           ))

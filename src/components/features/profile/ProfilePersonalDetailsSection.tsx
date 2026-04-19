@@ -1,10 +1,12 @@
 'use client'
 
+import { useMemo } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useT, useLocale } from '@/lib/i18n'
 import { CountrySelect } from '@/components/ui/CountrySelect'
+import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import type { FinanceStore } from '@/lib/store/types'
 
 export interface ProfilePersonalDetailsSectionProps {
@@ -20,6 +22,16 @@ export function ProfilePersonalDetailsSection({ store, user }: ProfilePersonalDe
   const { locale } = useLocale()
   const inputClass =
     'mt-1 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-sm text-[var(--color-brand-text-primary)] outline-none transition-colors focus:border-[var(--color-brand-red)]'
+
+  const genderItems = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () => [
+      { value: '', label: t.profile.genderUnset },
+      { value: 'male', label: t.profile.genderMale },
+      { value: 'female', label: t.profile.genderFemale },
+      { value: 'prefer_not_to_say', label: t.profile.genderPreferNot },
+    ],
+    [t.profile],
+  )
 
   return (
     <section className="glass-card rounded-2xl p-5 space-y-4">
@@ -76,22 +88,18 @@ export function ProfilePersonalDetailsSection({ store, user }: ProfilePersonalDe
         </div>
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.profile.labelGender}</Label>
-          <select
+          <SelectField
             value={store.profile.gender ?? ''}
-            onChange={(e) => {
-              const v = e.target.value
+            onChange={(v) => {
               store.updateProfile({
                 gender:
                   v === 'male' || v === 'female' || v === 'prefer_not_to_say' ? v : null,
               })
             }}
-            className={inputClass}
-          >
-            <option value="">{t.profile.genderUnset}</option>
-            <option value="male">{t.profile.genderMale}</option>
-            <option value="female">{t.profile.genderFemale}</option>
-            <option value="prefer_not_to_say">{t.profile.genderPreferNot}</option>
-          </select>
+            items={genderItems}
+            className="mt-1"
+            aria-label={t.profile.labelGender}
+          />
         </div>
       </div>
     </section>

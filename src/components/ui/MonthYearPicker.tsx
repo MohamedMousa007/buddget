@@ -10,6 +10,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 
 interface MonthYearPickerProps {
   monthFilter: string
@@ -62,21 +63,19 @@ export function MonthYearPicker({ monthFilter, onChange, className, compact }: M
         className="w-auto min-w-[260px] bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] p-3"
         align="center"
       >
-        <div className="flex gap-2 mb-3">
-          <label className="text-xs text-[var(--color-brand-text-muted)] shrink-0 self-center">{t.common.yearLabel}</label>
-          <select
-            value={parsed.year}
-            onChange={(e) => {
-              const y = parseInt(e.target.value, 10)
-              const mm = String(parsed.month).padStart(2, '0')
-              onChange(`${y}-${mm}`)
-            }}
-            className="flex-1 h-9 px-2 rounded-md bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
-          >
-            {years.map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
+        <div className="flex items-center gap-2 mb-3">
+          <label className="text-xs text-[var(--color-brand-text-muted)] shrink-0">{t.common.yearLabel}</label>
+          <div className="flex-1">
+            <SelectField
+              value={String(parsed.year)}
+              onChange={(v) => {
+                const mm = String(parsed.month).padStart(2, '0')
+                onChange(`${v}-${mm}`)
+              }}
+              items={years.map<SelectFieldOption>((y) => ({ value: String(y), label: String(y) }))}
+              aria-label={t.common.yearLabel}
+            />
+          </div>
         </div>
         <div className="grid grid-cols-3 gap-1.5">
           {Array.from({ length: 12 }, (_, i) => {

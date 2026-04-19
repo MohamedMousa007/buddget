@@ -1,9 +1,11 @@
 'use client'
 
+import { useMemo } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
+import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import type { Debt, DebtRecurringFrequency } from '@/lib/store/types'
 import { RECURRING_DEBT_FREQUENCIES } from '@/lib/constants/debtRecurring'
 import { useT } from '@/lib/i18n'
@@ -63,6 +65,29 @@ export function RecurringDebtPaymentForm({
 }: RecurringDebtPaymentFormProps) {
   const t = useT()
 
+  const debtItems = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () =>
+      payableDebts.map((d) => ({
+        value: d.id,
+        label: `${d.name} (${d.isGold ? `${d.goldKarat}K gold` : d.currency})`,
+      })),
+    [payableDebts],
+  )
+  const currencyItems = useMemo<ReadonlyArray<SelectFieldOption>>(() => {
+    const base = fiatOptions.map<SelectFieldOption>((o) => ({
+      value: o.value,
+      label: o.value,
+      disabled: o.disabled,
+    }))
+    return selectedDebt?.isGold
+      ? [...base, { value: 'XAU', label: t.addDebtPayment.optionGoldGrams }]
+      : base
+  }, [fiatOptions, selectedDebt?.isGold, t.addDebtPayment.optionGoldGrams])
+  const freqItems = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () => RECURRING_DEBT_FREQUENCIES.map((f) => ({ value: f.value, label: f.label })),
+    [],
+  )
+
   if (payableDebts.length === 0) {
     return (
       <p className="text-sm text-[var(--color-brand-text-muted)]">
@@ -75,17 +100,13 @@ export function RecurringDebtPaymentForm({
     <div className="space-y-4">
       <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.recurringDebt.labelBalance}</Label>
-        <select
+        <SelectField
           value={selectDebtValue}
-          onChange={(e) => onDebtChange(e.target.value)}
-          className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
-        >
-          {payableDebts.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.name} ({d.isGold ? `${d.goldKarat}K gold` : d.currency})
-            </option>
-          ))}
-        </select>
+          onChange={onDebtChange}
+          items={debtItems}
+          className="mt-1"
+          aria-label={t.recurringDebt.labelBalance}
+        />
       </div>
 
       <div>
@@ -99,18 +120,12 @@ export function RecurringDebtPaymentForm({
             onChange={(e) => onAmountChange(e.target.value)}
             className="bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers"
           />
-          <select
+          <SelectField
             value={paymentCurrency}
-            onChange={(e) => onPaymentCurrencyChange(e.target.value)}
-            className="w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
-          >
-            {fiatOptions.map((o) => (
-              <option key={o.value} value={o.value} disabled={o.disabled}>
-                {o.value}
-              </option>
-            ))}
-            {selectedDebt?.isGold ? <option value="XAU">{t.addDebtPayment.optionGoldGrams}</option> : null}
-          </select>
+            onChange={onPaymentCurrencyChange}
+            items={currencyItems}
+            aria-label={t.recurringDebt.labelAmount}
+          />
         </div>
       </div>
 
@@ -119,17 +134,13 @@ export function RecurringDebtPaymentForm({
 
       <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.recurringDebt.labelFrequency}</Label>
-        <select
+        <SelectField
           value={frequency}
-          onChange={(e) => onFrequencyChange(e.target.value as DebtRecurringFrequency)}
-          className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
-        >
-          {RECURRING_DEBT_FREQUENCIES.map((f) => (
-            <option key={f.value} value={f.value}>
-              {f.label}
-            </option>
-          ))}
-        </select>
+          onChange={(v) => onFrequencyChange(v as DebtRecurringFrequency)}
+          items={freqItems}
+          className="mt-1"
+          aria-label={t.recurringDebt.labelFrequency}
+        />
       </div>
 
       <div>

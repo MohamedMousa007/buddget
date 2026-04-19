@@ -2,6 +2,7 @@
 
 import { CreditCard, Trash2 } from 'lucide-react'
 import { useT } from '@/lib/i18n'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import type { FinanceStore } from '@/lib/store/types'
 
 export interface SettingsPaymentMethodsSectionProps {
@@ -14,6 +15,7 @@ export interface SettingsPaymentMethodsSectionProps {
  */
 export function SettingsPaymentMethodsSection({ store, onAddClick }: SettingsPaymentMethodsSectionProps) {
   const t = useT()
+  const confirm = useConfirm()
 
   return (
     <section className="glass-card rounded-2xl p-5 space-y-4">
@@ -49,8 +51,13 @@ export function SettingsPaymentMethodsSection({ store, onAddClick }: SettingsPay
             </div>
             <button
               type="button"
-              onClick={() => {
-                if (window.confirm(t.settings.paymentMethodsRemoveConfirm)) {
+              onClick={async () => {
+                if (
+                  await confirm({
+                    title: t.settings.paymentMethodsRemoveConfirm,
+                    destructive: true,
+                  })
+                ) {
                   store.deletePaymentMethod(method.id)
                 }
               }}

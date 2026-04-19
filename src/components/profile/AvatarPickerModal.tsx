@@ -7,6 +7,7 @@ import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 import { isValidImageDataUrl } from '@/lib/profile/validImageDataUrl'
 import { cn } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
+import { useAlert } from '@/components/ui/dialog/DialogProvider'
 import type { FinanceStore } from '@/lib/store/types'
 
 type Tab = 'choose' | 'upload' | 'remove'
@@ -21,6 +22,7 @@ interface AvatarPickerModalProps {
 
 export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalProps) {
   const t = useT()
+  const alert = useAlert()
   const [tab, setTab] = useState<Tab>('choose')
   const [selectedPreset, setSelectedPreset] = useState<string | undefined>(store.profile.avatarPresetId)
   const [uploadPreview, setUploadPreview] = useState<string | null>(null)
@@ -33,27 +35,27 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
     e.target.value = ''
     if (!file || !file.type.startsWith('image/')) return
     if (file.size > AVATAR_FILE_MAX_BYTES) {
-      window.alert(t.profile.avatarTooLarge)
+      void alert({ title: t.profile.avatarTooLarge })
       return
     }
     const reader = new FileReader()
     reader.onload = () => {
       if (typeof reader.result !== 'string') return
       if (!isValidImageDataUrl(reader.result)) {
-        window.alert(t.profile.avatarInvalidFormat)
+        void alert({ title: t.profile.avatarInvalidFormat })
         return
       }
       setUploadPreview(reader.result)
     }
     reader.readAsDataURL(file)
-  }, [t.profile.avatarTooLarge, t.profile.avatarInvalidFormat])
+  }, [alert, t.profile.avatarTooLarge, t.profile.avatarInvalidFormat])
 
   const handleSave = () => {
     if (tab === 'choose' && selectedPreset) {
       store.updateProfile({ avatarPresetId: selectedPreset, avatar: undefined })
     } else if (tab === 'upload' && uploadPreview) {
       if (!isValidImageDataUrl(uploadPreview)) {
-        window.alert(t.profile.avatarInvalidFormat)
+        void alert({ title: t.profile.avatarInvalidFormat })
         return
       }
       store.updateProfile({ avatar: uploadPreview, avatarPresetId: undefined })

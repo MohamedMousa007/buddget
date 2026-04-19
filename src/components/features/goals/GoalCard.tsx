@@ -11,6 +11,7 @@ import { GoalCardMetaRows } from '@/components/features/goals/GoalCardMetaRows'
 import { GoalCardTop } from '@/components/features/goals/GoalCardTop'
 import { GoalCardFooter } from '@/components/features/goals/GoalCardFooter'
 import { cn } from '@/lib/utils'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 
 export type GoalCardProps = {
   goal: Goal
@@ -26,6 +27,7 @@ export function GoalCard({ goal, t, onEdit, onDelete, compact }: GoalCardProps) 
   const avgMonthlySpendBase = useAverageMonthlySpendBase()
   const debtRemainingDisplay = useDebtRemainingForGoal(goal)
   const pct = percent ?? 0
+  const confirm = useConfirm()
 
   return (
     <div
@@ -44,8 +46,8 @@ export function GoalCard({ goal, t, onEdit, onDelete, compact }: GoalCardProps) 
         open={open}
         onToggleOpen={() => setOpen((o) => !o)}
         onEdit={() => onEdit(goal)}
-        onDelete={() => {
-          if (typeof window !== 'undefined' && window.confirm(t.confirmDelete)) onDelete(goal.id)
+        onDelete={async () => {
+          if (await confirm({ title: t.confirmDelete, destructive: true })) onDelete(goal.id)
         }}
       />
 

@@ -5,6 +5,7 @@ import { SavingsProductTypePicker } from '@/components/modals/SavingsProductType
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import { OTHER_SAVINGS_ICON_KEYS, SAVINGS_TYPE_ICONS } from '@/lib/constants/savingsIcons'
 import { INVESTMENT_PRODUCT_TYPES, SAVINGS_PRODUCT_TYPES } from '@/lib/constants/savingsTypes'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -158,17 +159,14 @@ export function AddSavingsAccountForm({ onDone }: AddSavingsAccountFormProps) {
       <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelCurrentBalance}</Label>
         <div className="mt-1 flex gap-2 items-stretch">
-          <select
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value as Currency)}
-            className={cn('h-10 min-w-[5.5rem] shrink-0 rounded-xl border px-2 text-sm', inputClass)}
-          >
-            {currencyOptions.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+          <div className="w-28 shrink-0">
+            <SelectField
+              value={currency}
+              onChange={(v) => setCurrency(v as Currency)}
+              items={currencyOptions as ReadonlyArray<SelectFieldOption>}
+              aria-label={t.savings.labelCurrency}
+            />
+          </div>
           <Input
             type="number"
             step="0.01"

@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
+import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import type { Currency, IncomeRecurringFrequency, IncomeSource } from '@/lib/store/types'
 
@@ -141,17 +142,13 @@ export function IncomeOnboardingPanel({
           <>
             <div>
               <Label className="text-xs text-[var(--color-brand-text-secondary)]">{o.incomePayFrequency}</Label>
-              <select
+              <SelectField
                 value={recurringFrequency}
-                onChange={(e) => setRecurringFrequency(e.target.value as IncomeRecurringFrequency)}
-                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
-              >
-                {freqOpts.map((f) => (
-                  <option key={f.value} value={f.value}>
-                    {f.label}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setRecurringFrequency(v as IncomeRecurringFrequency)}
+                items={freqOpts.map<SelectFieldOption>((f) => ({ value: f.value, label: f.label }))}
+                className="mt-1"
+                aria-label={o.incomePayFrequency}
+              />
               <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-1">
                 {freqOpts.find((f) => f.value === recurringFrequency)?.amountHint}
               </p>

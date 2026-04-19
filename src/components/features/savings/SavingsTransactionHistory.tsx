@@ -6,6 +6,7 @@ import type { SavingsAccount, SavingsTransaction } from '@/lib/store/types'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
+import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 
 export interface SavingsTransactionHistoryProps {
   transactions: SavingsTransaction[]
@@ -18,6 +19,13 @@ export interface SavingsTransactionHistoryProps {
 export function SavingsTransactionHistory({ transactions, accounts }: SavingsTransactionHistoryProps) {
   const t = useT()
   const [filterId, setFilterId] = useState<string>('all')
+  const filterItems = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () => [
+      { value: 'all', label: t.savings.filterAllSavings },
+      ...accounts.map((a) => ({ value: a.id, label: a.name })),
+    ],
+    [accounts, t.savings.filterAllSavings],
+  )
 
   const sorted = useMemo(() => {
     const rows = [...transactions]
@@ -33,18 +41,14 @@ export function SavingsTransactionHistory({ transactions, accounts }: SavingsTra
         <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
           {t.savings.historyTitle}
         </h2>
-        <select
-          value={filterId}
-          onChange={(e) => setFilterId(e.target.value)}
-          className="h-9 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-xs text-[var(--color-brand-text-primary)]"
-        >
-          <option value="all">{t.savings.filterAllSavings}</option>
-          {accounts.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name}
-            </option>
-          ))}
-        </select>
+        <div className="w-full sm:w-56">
+          <SelectField
+            value={filterId}
+            onChange={setFilterId}
+            items={filterItems}
+            aria-label={t.savings.historyTitle}
+          />
+        </div>
       </div>
       {sorted.length === 0 ? (
         <p className="text-sm text-[var(--color-brand-text-muted)] py-6 text-center">—</p>

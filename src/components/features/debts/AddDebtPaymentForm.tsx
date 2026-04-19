@@ -1,8 +1,10 @@
 'use client'
 
+import { useMemo } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import { buildFiatCurrencyPickerOptions } from '@/lib/utils/currencyPickerOptions'
 import { RECURRING_DEBT_FREQUENCIES } from '@/lib/constants/debtRecurring'
 import type { AppSettings, Debt, DebtRecurringFrequency, PaymentMethod } from '@/lib/store/types'
@@ -73,6 +75,33 @@ export function AddDebtPaymentForm({
 }: AddDebtPaymentFormProps) {
   const t = useT()
 
+  const debtItems = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () =>
+      payableDebts.map((d) => ({
+        value: d.id,
+        label: `${d.name} ${d.isGold ? `(${d.goldKarat}K Gold)` : `(${d.currency})`}`,
+      })),
+    [payableDebts],
+  )
+  const freqItems = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () =>
+      RECURRING_DEBT_FREQUENCIES.filter((f) => f.value !== 'biweekly').map((f) => ({
+        value: f.value,
+        label: f.label,
+      })),
+    [],
+  )
+  const currencyItems = useMemo<ReadonlyArray<SelectFieldOption>>(() => {
+    const base = buildFiatCurrencyPickerOptions(settings).map<SelectFieldOption>((o) => ({
+      value: o.value,
+      label: o.value,
+      disabled: o.disabled,
+    }))
+    return selectedDebt?.isGold
+      ? [...base, { value: 'XAU', label: t.addDebtPayment.optionGoldGrams }]
+      : base
+  }, [settings, selectedDebt?.isGold, t.addDebtPayment.optionGoldGrams])
+
   if (payableDebts.length === 0) {
     return (
       <p className="text-sm text-[var(--color-brand-text-muted)] py-2">
@@ -102,17 +131,13 @@ export function AddDebtPaymentForm({
       ) : (
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebtPayment.labelDebt}</Label>
-          <select
+          <SelectField
             value={selectedPayable ? selectedDebtId : payableDebts[0]?.id ?? ''}
-            onChange={(e) => setSelectedDebtId(e.target.value)}
-            className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
-          >
-            {payableDebts.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name} {d.isGold ? `(${d.goldKarat}K Gold)` : `(${d.currency})`}
-              </option>
-            ))}
-          </select>
+            onChange={setSelectedDebtId}
+            items={debtItems}
+            className="mt-1"
+            aria-label={t.addDebtPayment.labelDebt}
+          />
         </div>
       )}
       <div className="flex rounded-xl border border-[var(--color-brand-border)] p-1 gap-1">
@@ -155,17 +180,13 @@ export function AddDebtPaymentForm({
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">
             {t.addDebtPayment.labelRecurringFrequency}
           </Label>
-          <select
+          <SelectField
             value={recurringFrequency}
-            onChange={(e) => setRecurringFrequency(e.target.value as DebtRecurringFrequency)}
-            className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
-          >
-            {RECURRING_DEBT_FREQUENCIES.filter((f) => f.value !== 'biweekly').map((f) => (
-              <option key={f.value} value={f.value}>
-                {f.label}
-              </option>
-            ))}
-          </select>
+            onChange={(v) => setRecurringFrequency(v as DebtRecurringFrequency)}
+            items={freqItems}
+            className="mt-1"
+            aria-label={t.addDebtPayment.labelRecurringFrequency}
+          />
         </div>
       ) : null}
 
@@ -185,18 +206,13 @@ export function AddDebtPaymentForm({
         </div>
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebtPayment.labelPaymentCurrency}</Label>
-          <select
+          <SelectField
             value={paymentCurrency}
-            onChange={(e) => setPaymentCurrency(e.target.value)}
-            className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
-          >
-            {buildFiatCurrencyPickerOptions(settings).map((o) => (
-              <option key={o.value} value={o.value} disabled={o.disabled}>
-                {o.value}
-              </option>
-            ))}
-            {selectedDebt?.isGold ? <option value="XAU">{t.addDebtPayment.optionGoldGrams}</option> : null}
-          </select>
+            onChange={setPaymentCurrency}
+            items={currencyItems}
+            className="mt-1"
+            aria-label={t.addDebtPayment.labelPaymentCurrency}
+          />
         </div>
       </div>
       {paymentRateError ? <p className="text-xs text-[var(--color-brand-red)] px-1">{paymentRateError}</p> : null}

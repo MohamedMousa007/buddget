@@ -1,7 +1,9 @@
 'use client'
 
+import { useMemo } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import { INCOME_RECURRING_FREQ_OPTIONS } from '@/lib/constants/incomeRecurring'
 import type { Dictionary } from '@/lib/i18n/types'
 import type { IncomeRecurringFrequency } from '@/lib/store/types'
@@ -22,21 +24,22 @@ export function EditIncomeRecurringBlock({
   dayOfMonth,
   setDayOfMonth,
 }: Props) {
+  const freqItems = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () => INCOME_RECURRING_FREQ_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label })),
+    [],
+  )
+
   return (
     <>
       <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.editIncome.labelFrequency}</Label>
-        <select
+        <SelectField
           value={recurringFrequency}
-          onChange={(e) => setRecurringFrequency(e.target.value as IncomeRecurringFrequency)}
-          className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
-        >
-          {INCOME_RECURRING_FREQ_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+          onChange={(v) => setRecurringFrequency(v as IncomeRecurringFrequency)}
+          items={freqItems}
+          className="mt-1"
+          aria-label={t.editIncome.labelFrequency}
+        />
         <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-1">
           {INCOME_RECURRING_FREQ_OPTIONS.find((x) => x.value === recurringFrequency)?.amountHint}
           {' '}

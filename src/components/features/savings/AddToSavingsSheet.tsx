@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import { AddSavingsAccountForm } from '@/components/features/savings/AddSavingsAccountForm'
 import type { Currency, SavingsAccount } from '@/lib/store/types'
 import { formatCurrency } from '@/lib/utils/formatters'
@@ -62,6 +63,22 @@ export function AddToSavingsSheet({
   const [recurring, setRecurring] = useState(false)
   const [dayOfMonth, setDayOfMonth] = useState(1)
   const acc = accounts.find((a) => a.id === accountId)
+  const accountItems = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () =>
+      accounts.map((a) => ({
+        value: a.id,
+        label: `${a.name} (${formatCurrency(a.currentBalance, a.currency)})`,
+      })),
+    [accounts],
+  )
+  const dayOfMonthItems = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () =>
+      Array.from({ length: 28 }, (_, i) => i + 1).map((d) => ({
+        value: String(d),
+        label: String(d),
+      })),
+    [],
+  )
 
   if (!open) return null
 
@@ -128,17 +145,13 @@ export function AddToSavingsSheet({
               <Label className="text-xs text-[var(--color-brand-text-secondary)]">
                 {t.savings.labelWhichSavings}
               </Label>
-              <select
+              <SelectField
                 value={accountId}
-                onChange={(e) => setAccountId(e.target.value)}
-                className={cn('mt-1 w-full h-10 px-3 text-sm', inputClass)}
-              >
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name} ({formatCurrency(a.currentBalance, a.currency)})
-                  </option>
-                ))}
-              </select>
+                onChange={setAccountId}
+                items={accountItems}
+                className="mt-1"
+                aria-label={t.savings.labelWhichSavings}
+              />
             </div>
             <div>
               <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelAmount}</Label>
@@ -176,17 +189,13 @@ export function AddToSavingsSheet({
                   <Label className="text-xs text-[var(--color-brand-text-secondary)]">
                     {t.savings.labelDayOfMonth}
                   </Label>
-                  <select
-                    value={dayOfMonth}
-                    onChange={(e) => setDayOfMonth(Number(e.target.value))}
-                    className={cn('mt-1 w-full h-10 px-3 text-sm', inputClass)}
-                  >
-                    {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
-                      <option key={d} value={d}>
-                        {d}
-                      </option>
-                    ))}
-                  </select>
+                  <SelectField
+                    value={String(dayOfMonth)}
+                    onChange={(v) => setDayOfMonth(Number(v))}
+                    items={dayOfMonthItems}
+                    className="mt-1"
+                    aria-label={t.savings.labelDayOfMonth}
+                  />
                 </div>
               </div>
             )}
