@@ -1591,4 +1591,20 @@ export const en: Dictionary = {
     categoryRetirement: 'Retirement',
     categoryCustom: 'Custom goal',
   },
+
+  ui: {
+    select: {
+      placeholder: 'Select\u2026',
+      search: 'Search\u2026',
+      empty: 'No matches',
+    },
+    confirm: {
+      confirm: 'Confirm',
+      cancel: 'Cancel',
+      destructiveConfirm: 'Delete',
+    },
+    alert: {
+      ok: 'OK',
+    },
+  },
 }

@@ -1588,4 +1588,20 @@ export const ar: Dictionary = {
     categoryRetirement: 'التقاعد',
     categoryCustom: 'هدف مخصص',
   },
+
+  ui: {
+    select: {
+      placeholder: 'اختر\u2026',
+      search: 'ابحث\u2026',
+      empty: 'لا توجد نتائج',
+    },
+    confirm: {
+      confirm: 'تأكيد',
+      cancel: 'إلغاء',
+      destructiveConfirm: 'حذف',
+    },
+    alert: {
+      ok: 'حسناً',
+    },
+  },
 }

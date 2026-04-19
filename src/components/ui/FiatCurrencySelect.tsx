@@ -6,6 +6,7 @@ import {
   buildFiatCurrencyPickerOptions,
   clampFiatToAllowed,
 } from '@/lib/utils/currencyPickerOptions'
+import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import type { Currency } from '@/lib/store/types'
 
 type Props = {
@@ -19,6 +20,16 @@ export function FiatCurrencySelect({ value, onChange, className, id }: Props) {
   const settings = useFinanceStore((s) => s.settings)
   const options = useMemo(() => buildFiatCurrencyPickerOptions(settings), [settings])
 
+  const items = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () =>
+      options.map((o) => ({
+        value: o.value,
+        label: o.value,
+        disabled: o.disabled,
+      })),
+    [options],
+  )
+
   useEffect(() => {
     const next = clampFiatToAllowed(settings, value)
     if (next === value) return
@@ -26,17 +37,12 @@ export function FiatCurrencySelect({ value, onChange, className, id }: Props) {
   }, [settings, value, onChange])
 
   return (
-    <select
+    <SelectField
       id={id}
       value={value}
-      onChange={(e) => onChange(e.target.value as Currency)}
+      onChange={(next) => onChange(next as Currency)}
+      items={items}
       className={className}
-    >
-      {options.map((o) => (
-        <option key={o.value} value={o.value} disabled={o.disabled}>
-          {o.value}
-        </option>
-      ))}
-    </select>
+    />
   )
 }

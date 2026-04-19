@@ -16,6 +16,7 @@ import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 import { useT } from '@/lib/i18n'
 import { LandingGate } from '@/components/auth/LandingGate'
 import { useEphemeralSessionGuard } from '@/hooks/useEphemeralSessionGuard'
+import { DialogProvider } from '@/components/ui/dialog/DialogProvider'
 
 /**
  * Minimal centered splash rendered while the initial auth check is in flight.
@@ -343,33 +344,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={value}>
-      <Suspense fallback={null}>
-        <AuthNextQuerySync configured={configured} />
-      </Suspense>
-      <PasswordUpdatedCookieSync />
-      <Suspense fallback={null}>
-        <RequestResetQuerySync />
-      </Suspense>
-      {showLoadingSplash ? (
-        <AuthLoadingSplash />
-      ) : showLandingGate ? (
+      <DialogProvider>
         <Suspense fallback={null}>
-          <LandingGate />
+          <AuthNextQuerySync configured={configured} />
         </Suspense>
-      ) : (
-        children
-      )}
-      {configured && !loading && user ? (
-        <>
-          <SupabaseFinanceSync userId={user.id} />
-          <AnalyticsHeartbeat userId={user.id} />
-        </>
-      ) : null}
-      {showAuthModal ? (
+        <PasswordUpdatedCookieSync />
         <Suspense fallback={null}>
-          <AuthModal />
+          <RequestResetQuerySync />
         </Suspense>
-      ) : null}
+        {showLoadingSplash ? (
+          <AuthLoadingSplash />
+        ) : showLandingGate ? (
+          <Suspense fallback={null}>
+            <LandingGate />
+          </Suspense>
+        ) : (
+          children
+        )}
+        {configured && !loading && user ? (
+          <>
+            <SupabaseFinanceSync userId={user.id} />
+            <AnalyticsHeartbeat userId={user.id} />
+          </>
+        ) : null}
+        {showAuthModal ? (
+          <Suspense fallback={null}>
+            <AuthModal />
+          </Suspense>
+        ) : null}
+      </DialogProvider>
     </AuthContext.Provider>
   )
 }
