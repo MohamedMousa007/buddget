@@ -1580,6 +1580,22 @@ export interface Dictionary {
     categoryRetirement: string
     categoryCustom: string
   }
+
+  ui: {
+    select: {
+      placeholder: string
+      search: string
+      empty: string
+    }
+    confirm: {
+      confirm: string
+      cancel: string
+      destructiveConfirm: string
+    }
+    alert: {
+      ok: string
+    }
+  }
 }
 
 export type Locale = 'en' | 'ar'
