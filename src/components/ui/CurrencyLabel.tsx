@@ -2,7 +2,6 @@
 
 import { cn } from '@/lib/utils'
 import { AedSymbol } from '@/components/ui/icons/AedSymbol'
-import { EgpSymbol } from '@/components/ui/icons/EgpSymbol'
 import { SarSymbol } from '@/components/ui/icons/SarSymbol'
 import { formatMoneyHero } from '@/lib/utils/formatters'
 import type { Currency } from '@/lib/store/types'
@@ -65,6 +64,5 @@ const SVG_CURRENCIES: Record<
   { Icon: (props: { className?: string }) => React.ReactElement; prefixRegex: RegExp }
 > = {
   AED: { Icon: AedSymbol, prefixRegex: /^Dh\s?/ },
-  EGP: { Icon: EgpSymbol, prefixRegex: /^E£\s?/ },
   SAR: { Icon: SarSymbol, prefixRegex: /^⃀\s?|^SR\s?/ },
 }
