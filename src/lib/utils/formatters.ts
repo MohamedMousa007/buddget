@@ -24,30 +24,31 @@ export function toLatinDigits(input: string): string {
 }
 
 /**
- * Proper currency signs per ISO 4217 / common Unicode. Single-char glyphs
- * stick to the digits ("$1,234"); multi-char glyphs — mostly the Arabic
- * dotted abbreviations — get a space ("د.إ 1,234") so Latin digits + RTL
- * marks don't fuse visually.
+ * Compact currency signs. Most Middle-East currencies have no dedicated
+ * Unicode symbol — banks / ATMs / price tags use short Latin abbreviations
+ * (Dh, SR, KD, QR, BD, JD …) which read cleanly in LTR UIs without mixing
+ * in Arabic glyphs. Single-char glyphs stick to the digits ("$1,234");
+ * 2-char abbreviations get a space ("Dh 1,234").
  *
- * `XAU` stays as `g` (grams) — it's weight, not currency, and gets special-
- * cased in `formatCurrency`. Stablecoins use their native Unicode where one
+ * `XAU` stays as `g` — it's weight, not currency, and gets special-cased
+ * in `formatCurrency`. Stablecoins use their native Unicode where one
  * exists (₮), otherwise a close-enough sign ($ for USDC since it's USD-
  * pegged).
  */
 const CURRENCY_SYMBOLS: Record<string, string> = {
-  AED: 'د.إ',
+  AED: 'Dh',
   USD: '$',
   EGP: 'E£',
   EUR: '€',
   GBP: '£',
-  SAR: '﷼',
-  KWD: 'د.ك',
-  QAR: 'ر.ق',
-  BHD: 'د.ب',
-  OMR: 'ر.ع',
-  MAD: 'د.م',
-  TND: 'د.ت',
-  JOD: 'د.أ',
+  SAR: 'SR',
+  KWD: 'KD',
+  QAR: 'QR',
+  BHD: 'BD',
+  OMR: 'OR',
+  MAD: 'DH',
+  TND: 'DT',
+  JOD: 'JD',
   XAU: 'g',
   USDT: '₮',
   USDC: '$',
