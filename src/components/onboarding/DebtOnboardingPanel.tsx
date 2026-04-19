@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { Input } from '@/components/ui/input'
@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { DebtFiatCurrencySelect } from '@/components/ui/DebtFiatCurrencySelect'
+import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import { clampDebtFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import type { DebtCurrency, GoldKarat } from '@/lib/store/types'
 
@@ -34,6 +35,15 @@ export function DebtOnboardingPanel({
 }) {
   const t = useT()
   const o = t.onboarding
+  const karatItems = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () => [
+      { value: '24', label: t.goldPurity.k24 },
+      { value: '22', label: t.goldPurity.k22 },
+      { value: '21', label: t.goldPurity.k21 },
+      { value: '18', label: t.goldPurity.k18 },
+    ],
+    [t.goldPurity],
+  )
   const settings = useFinanceStore((s) => s.settings)
 
   const [name, setName] = useState('')
@@ -166,16 +176,13 @@ export function DebtOnboardingPanel({
           ) : (
             <div>
               <Label className="text-xs text-[var(--color-brand-text-secondary)]">{o.debtKarat}</Label>
-              <select
-                value={goldKarat}
-                onChange={(e) => setGoldKarat(parseInt(e.target.value, 10) as GoldKarat)}
-                className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
-              >
-                <option value={24}>{t.goldPurity.k24}</option>
-                <option value={22}>{t.goldPurity.k22}</option>
-                <option value={21}>{t.goldPurity.k21}</option>
-                <option value={18}>{t.goldPurity.k18}</option>
-              </select>
+              <SelectField
+                value={String(goldKarat)}
+                onChange={(v) => setGoldKarat(parseInt(v, 10) as GoldKarat)}
+                items={karatItems}
+                className="mt-1"
+                aria-label={o.debtKarat}
+              />
             </div>
           )}
         </div>

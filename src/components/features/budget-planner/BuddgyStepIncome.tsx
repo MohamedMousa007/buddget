@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { buildFiatCurrencyPickerOptions } from '@/lib/utils/currencyPickerOptions'
 import { formatMoneyAmount } from '@/lib/budget/buddgyFlowHelpers'
 import {
@@ -9,9 +10,14 @@ import {
 } from '@/lib/budget/buddgyAmountInput'
 import type { BuddgyFlowApi } from '@/hooks/useBuddgyFlow'
 import { BuddgyStepBack } from '@/components/features/budget-planner/BuddgyStepBack'
+import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 
 export function BuddgyStepIncome({ flow }: { flow: BuddgyFlowApi }) {
   const opts = buildFiatCurrencyPickerOptions(flow.settings)
+  const items = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () => opts.map((o) => ({ value: o.value, label: o.value, disabled: o.disabled })),
+    [opts],
+  )
   const restartNote =
     flow.flowMode === 'restart' &&
     flow.primaryIncomePreview &&
@@ -28,17 +34,13 @@ export function BuddgyStepIncome({ flow }: { flow: BuddgyFlowApi }) {
         </p>
       : null}
       <div className="flex flex-wrap gap-2 items-center">
-        <select
-          value={flow.incomeCurrency}
-          onChange={(e) => flow.setIncomeCurrency(e.target.value as typeof flow.incomeCurrency)}
-          className="cursor-pointer rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-2 text-sm text-[var(--color-brand-text-primary)]"
-        >
-          {opts.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.value}
-            </option>
-          ))}
-        </select>
+        <div className="w-[6.5rem]">
+          <SelectField
+            value={flow.incomeCurrency}
+            onChange={(v) => flow.setIncomeCurrency(v as typeof flow.incomeCurrency)}
+            items={items}
+          />
+        </div>
         <input
           type="text"
           inputMode="decimal"

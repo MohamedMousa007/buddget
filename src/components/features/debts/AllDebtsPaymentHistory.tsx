@@ -7,6 +7,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useDebtPaymentHistoryRows } from '@/hooks/useDebtPaymentHistoryRows'
 import { useLocalizedFormatters } from '@/hooks/useLocalizedFormatters'
 import { AllDebtsPaymentHistoryTable } from '@/components/features/debts/AllDebtsPaymentHistoryTable'
+import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import type { Debt, DebtPayment } from '@/lib/store/types'
 import { useT } from '@/lib/i18n'
 
@@ -27,6 +28,13 @@ export function AllDebtsPaymentHistory({ debts, debtPayments }: AllDebtsPaymentH
   const goldOk = goldPriceAvailable !== false
   const allRows = useDebtPaymentHistoryRows(debts, debtPayments)
   const [filterDebtId, setFilterDebtId] = useState<string>('all')
+  const filterItems = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () => [
+      { value: 'all', label: t.debts.allDebtsFilter },
+      ...debts.map((d) => ({ value: d.id, label: d.name })),
+    ],
+    [debts, t.debts.allDebtsFilter],
+  )
 
   const rows = useMemo(
     () =>
@@ -48,23 +56,17 @@ export function AllDebtsPaymentHistory({ debts, debtPayments }: AllDebtsPaymentH
         <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
           {t.debts.paymentHistorySectionTitle}
         </h2>
-        <label className="flex flex-col gap-1.5 sm:min-w-[min(100%,220px)]">
+        <div className="flex flex-col gap-1.5 sm:min-w-[min(100%,220px)]">
           <span className="text-[10px] font-medium uppercase tracking-wider text-[var(--color-brand-text-muted)]">
             {t.debts.filterByDebt}
           </span>
-          <select
+          <SelectField
             value={filterDebtId}
-            onChange={(e) => setFilterDebtId(e.target.value)}
-            className="w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/40 px-3 py-2.5 text-sm text-[var(--color-brand-text-primary)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-red)]/40 transition-colors"
-          >
-            <option value="all">{t.debts.allDebtsFilter}</option>
-            {debts.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-          </select>
-        </label>
+            onChange={setFilterDebtId}
+            items={filterItems}
+            aria-label={t.debts.filterByDebt}
+          />
+        </div>
       </div>
 
       {rows.length === 0 ? (

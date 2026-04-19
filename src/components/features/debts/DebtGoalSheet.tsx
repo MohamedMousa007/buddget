@@ -6,6 +6,7 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import { calculateGoalPayment } from '@/lib/debts/calculateGoalPayment'
 import type { Currency, DebtGoal } from '@/lib/store/types'
 import { formatCurrency } from '@/lib/utils/formatters'
@@ -45,6 +46,15 @@ export function DebtGoalSheet({
   const [monthValue, setMonthValue] = useState(() => format(endOfMonth(new Date()), 'yyyy-MM'))
   const [frequency, setFrequency] = useState<GoalFreq>('monthly')
   const [remind, setRemind] = useState(false)
+  const freqItems = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () => [
+      { value: 'weekly', label: t.addDebt.goalFreqWeekly },
+      { value: 'monthly', label: t.addDebt.goalFreqMonthly },
+      { value: 'quarterly', label: t.addDebt.goalFreqQuarterly },
+      { value: 'annually', label: t.addDebt.goalFreqAnnually },
+    ],
+    [t.addDebt],
+  )
 
   useEffect(() => {
     if (!open) return
@@ -129,16 +139,13 @@ export function DebtGoalSheet({
           </div>
           <div className="max-w-[180px]">
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.goalPaying}</Label>
-            <select
+            <SelectField
               value={frequency}
-              onChange={(e) => setFrequency(e.target.value as GoalFreq)}
-              className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
-            >
-              <option value="weekly">{t.addDebt.goalFreqWeekly}</option>
-              <option value="monthly">{t.addDebt.goalFreqMonthly}</option>
-              <option value="quarterly">{t.addDebt.goalFreqQuarterly}</option>
-              <option value="annually">{t.addDebt.goalFreqAnnually}</option>
-            </select>
+              onChange={(v) => setFrequency(v as GoalFreq)}
+              items={freqItems}
+              className="mt-1"
+              aria-label={t.addDebt.goalPaying}
+            />
           </div>
           <div className="rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/40 p-4 space-y-1">
             <p className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.goalYouNeed}</p>

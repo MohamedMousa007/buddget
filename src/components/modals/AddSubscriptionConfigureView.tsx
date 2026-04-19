@@ -1,8 +1,10 @@
 'use client'
 
+import { useMemo } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
+import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import { SubscriptionPlanPicker } from '@/components/features/subscriptions/SubscriptionPlanPicker'
 import type { AddSubscriptionFormReturn } from '@/hooks/useAddSubscriptionForm'
 import type { Dictionary } from '@/lib/i18n/types'
@@ -24,12 +26,24 @@ export function AddSubscriptionConfigureView({
   t: Pick<Dictionary, 'subscriptions' | 'goals'>
   selectClass: string
 }) {
-  const cycleOptions: { v: SubscriptionBillingCycle; label: string }[] = [
-    { v: 'weekly', label: t.subscriptions.billingWeekly },
-    { v: 'monthly', label: t.subscriptions.billingMonthly },
-    { v: 'quarterly', label: t.subscriptions.billingQuarterly },
-    { v: 'yearly', label: t.subscriptions.billingYearly },
-  ]
+  const cycleItems = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () => [
+      { value: 'weekly', label: t.subscriptions.billingWeekly },
+      { value: 'monthly', label: t.subscriptions.billingMonthly },
+      { value: 'quarterly', label: t.subscriptions.billingQuarterly },
+      { value: 'yearly', label: t.subscriptions.billingYearly },
+    ],
+    [t.subscriptions],
+  )
+
+  const paymentMethodItems = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () =>
+      form.paymentMethods.map((m) => ({
+        value: m.id,
+        label: m.last4 ? `${m.name} ••${m.last4}` : m.name,
+      })),
+    [form.paymentMethods],
+  )
 
   return (
     <div className="space-y-4 px-6 pb-6">
@@ -86,17 +100,13 @@ export function AddSubscriptionConfigureView({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.subscriptions.billingCycle}</Label>
-          <select
+          <SelectField
             value={form.billingCycle}
-            onChange={(e) => form.setBillingCycle(e.target.value as SubscriptionBillingCycle)}
-            className={cn('mt-1 w-full h-8 px-3', inputClass)}
-          >
-            {cycleOptions.map((o) => (
-              <option key={o.v} value={o.v}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+            onChange={(v) => form.setBillingCycle(v as SubscriptionBillingCycle)}
+            items={cycleItems}
+            className="mt-1"
+            aria-label={t.subscriptions.billingCycle}
+          />
         </div>
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.subscriptions.billingDay}</Label>
@@ -113,18 +123,13 @@ export function AddSubscriptionConfigureView({
 
       <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.subscriptions.paymentMethod}</Label>
-        <select
+        <SelectField
           value={form.paymentMethodId}
-          onChange={(e) => form.setPaymentMethodId(e.target.value)}
-          className={cn('mt-1 w-full h-8 px-3', inputClass)}
-        >
-          {form.paymentMethods.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.name}
-              {m.last4 ? ` ••${m.last4}` : ''}
-            </option>
-          ))}
-        </select>
+          onChange={form.setPaymentMethodId}
+          items={paymentMethodItems}
+          className="mt-1"
+          aria-label={t.subscriptions.paymentMethod}
+        />
       </div>
 
       <div>

@@ -6,8 +6,8 @@ import { ChevronDown, Check, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
 
-export interface SelectFieldOption<V extends string = string> {
-  value: V
+export interface SelectFieldOption {
+  value: string
   label: string
   /** Optional leading glyph (emoji, symbol, or lucide icon). */
   glyph?: React.ReactNode
@@ -16,11 +16,11 @@ export interface SelectFieldOption<V extends string = string> {
   disabled?: boolean
 }
 
-export interface SelectFieldProps<V extends string = string> {
-  /** The currently selected value. */
-  value: V
-  onChange: (next: V) => void
-  items: ReadonlyArray<SelectFieldOption<V>>
+export interface SelectFieldProps {
+  /** The currently selected value (stringified — callers cast back on change). */
+  value: string
+  onChange: (next: string) => void
+  items: ReadonlyArray<SelectFieldOption>
   /** Shown in the trigger when no option is selected. Optional — most call
    *  sites require a value so the trigger always renders the selected label. */
   placeholder?: string
@@ -33,7 +33,7 @@ export interface SelectFieldProps<V extends string = string> {
   disabled?: boolean
   /** Custom content inside the trigger — overrides the default selected-label
    *  render when you need a glyph prefix or a currency symbol. */
-  renderTrigger?: (selected: SelectFieldOption<V> | null) => React.ReactNode
+  renderTrigger?: (selected: SelectFieldOption | null) => React.ReactNode
   /** Extra classes for the trigger button (e.g., width, padding tweaks). */
   className?: string
   /** Forwarded to the native trigger for accessibility tools. */
@@ -84,7 +84,7 @@ export const SelectField = forwardRef<HTMLButtonElement, SelectFieldProps>(
         value={selected as unknown as Record<string, unknown>}
         onValueChange={(next) => {
           const picked = next as unknown as SelectFieldOption | null
-          if (picked && !picked.disabled) onChange(picked.value as never)
+          if (picked && !picked.disabled) onChange(picked.value)
         }}
         disabled={disabled}
       >
@@ -194,6 +194,4 @@ export const SelectField = forwardRef<HTMLButtonElement, SelectFieldProps>(
       </Combobox.Root>
     )
   },
-) as <V extends string = string>(
-  props: SelectFieldProps<V> & { ref?: React.Ref<HTMLButtonElement> },
-) => React.ReactElement
+)

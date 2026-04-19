@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useT } from '@/lib/i18n'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 
 const CATEGORY_ICONS: Record<string, string> = {
   Rent: '🏠',
@@ -39,8 +40,9 @@ export function RecentExpenses({ expenses }: RecentExpensesProps) {
     useShallow((s) => ({ deleteExpense: s.deleteExpense, paymentMethods: s.paymentMethods }))
   )
   const { setActiveModal, setEditingExpenseId } = useSettingsStore()
-  const handleDelete = (expenseId: string) => {
-    if (window.confirm(t.dashboard.confirmDeleteExpense)) {
+  const confirm = useConfirm()
+  const handleDelete = async (expenseId: string) => {
+    if (await confirm({ title: t.dashboard.confirmDeleteExpense, destructive: true })) {
       deleteExpense(expenseId)
     }
   }

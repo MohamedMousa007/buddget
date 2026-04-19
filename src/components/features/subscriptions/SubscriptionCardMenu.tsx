@@ -2,6 +2,7 @@
 
 import { Pencil, RotateCcw, Trash2, XCircle } from 'lucide-react'
 import { useT } from '@/lib/i18n'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import type { Subscription } from '@/lib/store/types'
 
 export function SubscriptionCardMenu({
@@ -20,6 +21,7 @@ export function SubscriptionCardMenu({
   reactivateSubscription: (id: string) => void
 }) {
   const t = useT()
+  const confirm = useConfirm()
   return (
     <div
       className="absolute end-2 top-10 z-10 min-w-[10rem] rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] shadow-lg py-1 text-sm"
@@ -39,8 +41,8 @@ export function SubscriptionCardMenu({
         <button
           type="button"
           className="flex items-center gap-2 w-full px-3 py-2 hover:bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]"
-          onClick={() => {
-            if (window.confirm(t.subscriptions.confirmCancel)) {
+          onClick={async () => {
+            if (await confirm({ title: t.subscriptions.confirmCancel, destructive: true })) {
               cancelSubscription(sub.id)
             }
             onClose()
@@ -63,8 +65,8 @@ export function SubscriptionCardMenu({
       <button
         type="button"
         className="flex items-center gap-2 w-full px-3 py-2 hover:bg-[var(--color-brand-elevated)] text-[var(--color-brand-red)]"
-        onClick={() => {
-          if (window.confirm(t.subscriptions.confirmDeleteSubscription)) {
+        onClick={async () => {
+          if (await confirm({ title: t.subscriptions.confirmDeleteSubscription, destructive: true })) {
             deleteSubscription(sub.id)
           }
           onClose()

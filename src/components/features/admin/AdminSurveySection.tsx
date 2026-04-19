@@ -1,7 +1,9 @@
 'use client'
 
+import { useMemo } from 'react'
 import { ClipboardList } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
+import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import type { AdminPanelModel } from '@/hooks/useAdminPanel'
 
 export interface AdminSurveySectionProps {
@@ -12,6 +14,15 @@ export interface AdminSurveySectionProps {
  * JSON editor for onboarding survey rows + publish.
  */
 export function AdminSurveySection({ admin }: AdminSurveySectionProps) {
+  const rowItems = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () =>
+      admin.surveyRows.map((r) => ({
+        value: r.id,
+        label: `v${r.version}${r.published ? ' (published)' : ''}`,
+      })),
+    [admin.surveyRows],
+  )
+
   return (
     <section className="glass-card rounded-2xl p-5 space-y-4">
       <div className="flex items-center gap-2 mb-2">
@@ -34,25 +45,21 @@ export function AdminSurveySection({ admin }: AdminSurveySectionProps) {
           {admin.surveyLoading ? 'Loading…' : 'Load survey rows'}
         </button>
         {admin.surveyRows.length > 0 ? (
-          <label className="text-[11px] text-[var(--color-brand-text-secondary)] flex items-center gap-2">
-            Row
-            <select
-              className="bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] rounded-lg px-2 py-1 text-[var(--color-brand-text-primary)]"
-              value={admin.surveyEditId ?? ''}
-              onChange={(e) => {
-                const id = e.target.value
-                admin.setSurveyEditId(id)
-                const row = admin.surveyRows.find((r) => r.id === id)
-                if (row) admin.setSurveyJson(JSON.stringify(row.config ?? { steps: [] }, null, 2))
-              }}
-            >
-              {admin.surveyRows.map((r) => (
-                <option key={r.id} value={r.id}>
-                  v{r.version} {r.published ? '(published)' : ''}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="flex items-center gap-2 text-[11px] text-[var(--color-brand-text-secondary)]">
+            <span>Row</span>
+            <div className="w-48">
+              <SelectField
+                value={admin.surveyEditId ?? ''}
+                onChange={(id) => {
+                  admin.setSurveyEditId(id)
+                  const row = admin.surveyRows.find((r) => r.id === id)
+                  if (row) admin.setSurveyJson(JSON.stringify(row.config ?? { steps: [] }, null, 2))
+                }}
+                items={rowItems}
+                aria-label="Survey row"
+              />
+            </div>
+          </div>
         ) : null}
       </div>
       <Textarea

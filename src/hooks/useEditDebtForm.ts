@@ -7,6 +7,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { clampDebtFiatToAllowed, clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { useT } from '@/lib/i18n'
 import { calculateDebtRemaining, isDebtFullyPaid, type DebtBalanceContext } from '@/lib/utils/calculations'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import type { Currency, Debt, DebtCurrency, DebtGoal, GoldKarat } from '@/lib/store/types'
 
 function goalFrequencyToRecurring(
@@ -17,6 +18,7 @@ function goalFrequencyToRecurring(
 
 export function useEditDebtForm(debt: Debt | undefined, isOpen: boolean) {
   const t = useT()
+  const confirm = useConfirm()
   const {
     updateDebt,
     deleteDebt,
@@ -140,15 +142,15 @@ export function useEditDebtForm(debt: Debt | undefined, isOpen: boolean) {
     ]
   )
 
-  const handleRemoveGoal = useCallback(() => {
+  const handleRemoveGoal = useCallback(async () => {
     if (!debt) return
-    if (!window.confirm(t.debts.confirmRemoveGoal)) return
+    if (!(await confirm({ title: t.debts.confirmRemoveGoal, destructive: true }))) return
     updateDebt(debt.id, { goal: undefined })
     const existing = useFinanceStore.getState().recurringDebtPayments.find((r) => r.debtId === debt.id)
     if (existing) {
       deleteRecurringDebtPayment(existing.id)
     }
-  }, [debt, deleteRecurringDebtPayment, t.debts.confirmRemoveGoal, updateDebt])
+  }, [confirm, debt, deleteRecurringDebtPayment, t.debts.confirmRemoveGoal, updateDebt])
 
   const handleSave = useCallback(
     (onAfter: () => void) => {
@@ -170,14 +172,14 @@ export function useEditDebtForm(debt: Debt | undefined, isOpen: boolean) {
   )
 
   const handleDelete = useCallback(
-    (onAfter: () => void) => {
+    async (onAfter: () => void) => {
       if (!debt) return
-      if (window.confirm(t.common.confirmDeleteGeneric)) {
+      if (await confirm({ title: t.common.confirmDeleteGeneric, destructive: true })) {
         deleteDebt(debt.id)
         onAfter()
       }
     },
-    [debt, deleteDebt, t]
+    [confirm, debt, deleteDebt, t]
   )
 
   return {

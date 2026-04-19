@@ -5,6 +5,7 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import type { DebtPaymentHistoryRow } from '@/hooks/useDebtPaymentHistoryRows'
 import type { Debt } from '@/lib/store/types'
 import type { Dictionary } from '@/lib/i18n/types'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 
 type DebtsCopy = Dictionary['debts']
 
@@ -29,6 +30,8 @@ export function AllDebtsPaymentHistoryTable({
   deleteDebtPayment,
   t,
 }: AllDebtsPaymentHistoryTableProps) {
+  const confirm = useConfirm()
+
   return (
     <div className="overflow-x-auto -mx-1 px-1">
       <table className="w-full min-w-[min(100%,640px)]">
@@ -117,8 +120,8 @@ export function AllDebtsPaymentHistoryTable({
                 <td className="py-2.5 px-2 sm:px-3">
                   <button
                     type="button"
-                    onClick={() => {
-                      if (window.confirm(t.confirmDeletePayment)) {
+                    onClick={async () => {
+                      if (await confirm({ title: t.confirmDeletePayment, destructive: true })) {
                         deleteDebtPayment(payment.id)
                       }
                     }}

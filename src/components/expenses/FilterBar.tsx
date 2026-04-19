@@ -1,7 +1,9 @@
 'use client'
 
+import { useMemo } from 'react'
 import { Search, Download } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import { EXPENSE_FILTER_CATEGORIES } from '@/lib/constants/finance'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -38,31 +40,37 @@ export function FilterBar({
         label: t.categories[c as keyof typeof t.categories] ?? c,
       }))
 
+  const categoryItems = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () => [{ value: 'All', label: t.expenses.filterAllCategories }, ...filterOptions],
+    [filterOptions, t.expenses.filterAllCategories],
+  )
+  const methodItems = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () => [
+      { value: 'All', label: t.expenses.filterAllMethods },
+      ...paymentMethods.map((m) => ({ value: m.id, label: m.name })),
+    ],
+    [paymentMethods, t.expenses.filterAllMethods],
+  )
+
   return (
     <div className="flex flex-wrap items-center gap-3 px-4 py-3 bg-[var(--color-brand-card)]/90 backdrop-blur-xl border-b border-[var(--color-brand-border)] sticky top-[57px] z-20">
-      <select
-        value={categoryFilter}
-        onChange={(e) => onCategoryChange(e.target.value)}
-        className="h-9 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
-      >
-        <option value="All">{t.expenses.filterAllCategories}</option>
-        {filterOptions.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
+      <div className="w-44">
+        <SelectField
+          value={categoryFilter}
+          onChange={onCategoryChange}
+          items={categoryItems}
+          aria-label={t.expenses.filterAllCategories}
+        />
+      </div>
 
-      <select
-        value={methodFilter}
-        onChange={(e) => onMethodChange(e.target.value)}
-        className="h-9 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
-      >
-        <option value="All">{t.expenses.filterAllMethods}</option>
-        {paymentMethods.map((m) => (
-          <option key={m.id} value={m.id}>{m.name}</option>
-        ))}
-      </select>
+      <div className="w-44">
+        <SelectField
+          value={methodFilter}
+          onChange={onMethodChange}
+          items={methodItems}
+          aria-label={t.expenses.filterAllMethods}
+        />
+      </div>
 
       <div className="relative flex-1 min-w-[150px]">
         <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />

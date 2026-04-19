@@ -6,6 +6,7 @@ import {
   buildDebtFiatPickerOptions,
   clampDebtFiatToAllowed,
 } from '@/lib/utils/currencyPickerOptions'
+import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import type { DebtCurrency } from '@/lib/store/types'
 
 type Props = {
@@ -19,6 +20,11 @@ export function DebtFiatCurrencySelect({ value, onChange, className, id }: Props
   const settings = useFinanceStore((s) => s.settings)
   const options = useMemo(() => buildDebtFiatPickerOptions(settings), [settings])
 
+  const items = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () => options.map((o) => ({ value: o.value, label: o.value, disabled: o.disabled })),
+    [options],
+  )
+
   useEffect(() => {
     const next = clampDebtFiatToAllowed(settings, value)
     if (next === value) return
@@ -26,17 +32,12 @@ export function DebtFiatCurrencySelect({ value, onChange, className, id }: Props
   }, [settings, value, onChange])
 
   return (
-    <select
+    <SelectField
       id={id}
       value={value}
-      onChange={(e) => onChange(e.target.value as DebtCurrency)}
+      onChange={(next) => onChange(next as DebtCurrency)}
+      items={items}
       className={className}
-    >
-      {options.map((o) => (
-        <option key={o.value} value={o.value} disabled={o.disabled}>
-          {o.value}
-        </option>
-      ))}
-    </select>
+    />
   )
 }

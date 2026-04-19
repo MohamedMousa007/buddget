@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import type { Currency, SavingsAccount } from '@/lib/store/types'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
@@ -32,6 +33,14 @@ export function WithdrawFromSavingsSheet({
   const [amount, setAmount] = useState('')
   const [notes, setNotes] = useState('')
   const acc = accounts.find((a) => a.id === accountId)
+  const accountItems = useMemo<ReadonlyArray<SelectFieldOption>>(
+    () =>
+      accounts.map((a) => ({
+        value: a.id,
+        label: `${a.name} (${formatCurrency(a.currentBalance, a.currency)})`,
+      })),
+    [accounts],
+  )
 
   if (!open) return null
 
@@ -53,17 +62,13 @@ export function WithdrawFromSavingsSheet({
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">
               {t.savings.labelWhichSavings}
             </Label>
-            <select
+            <SelectField
               value={accountId}
-              onChange={(e) => setAccountId(e.target.value)}
-              className="mt-1 w-full h-10 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-sm"
-            >
-              {accounts.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name} ({formatCurrency(a.currentBalance, a.currency)})
-                </option>
-              ))}
-            </select>
+              onChange={setAccountId}
+              items={accountItems}
+              className="mt-1"
+              aria-label={t.savings.labelWhichSavings}
+            />
           </div>
           <p className="text-xs text-[var(--color-brand-text-muted)]">
             {t.savings.available}{' '}

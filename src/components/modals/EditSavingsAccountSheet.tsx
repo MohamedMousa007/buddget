@@ -7,6 +7,7 @@ import { SavingsProductTypePicker } from '@/components/modals/SavingsProductType
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import { OTHER_SAVINGS_ICON_KEYS, SAVINGS_TYPE_ICONS } from '@/lib/constants/savingsIcons'
 import { INVESTMENT_PRODUCT_TYPES, SAVINGS_PRODUCT_TYPES } from '@/lib/constants/savingsTypes'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -155,17 +156,13 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
 
           <div>
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelCurrency}</Label>
-            <select
+            <SelectField
               value={currency}
-              onChange={(e) => setCurrency(e.target.value as Currency)}
-              className={cn('mt-1 w-full h-10 px-3 text-sm', inputClass)}
-            >
-              {currencyOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setCurrency(v as Currency)}
+              items={currencyOptions as ReadonlyArray<SelectFieldOption>}
+              className="mt-1"
+              aria-label={t.savings.labelCurrency}
+            />
           </div>
 
           <div>
