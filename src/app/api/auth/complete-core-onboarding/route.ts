@@ -4,11 +4,8 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
 
 /**
  * Flip `user_metadata.onboarding_completed = true` after the 4-step core gate.
- *
- * Mirrors `/api/auth/complete-guest-onboarding` but tags the source so we can
- * tell progressive-onboarding users apart from guest-promoted users in admin
- * analytics. Middleware's onboarding redirect checks the metadata key, so
- * flipping it is what releases the user to the real app.
+ * Middleware's onboarding redirect checks the metadata key, so flipping it
+ * is what releases the user to the real app.
  */
 export async function POST() {
   try {

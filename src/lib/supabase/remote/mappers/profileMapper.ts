@@ -15,8 +15,7 @@ export interface ProfileExtras {
  *
  * Important: `onboarding_completed` and `display_name` are NEVER written from
  * the client. They are authoritatively set server-side by the service-role
- * routes (`/api/auth/complete-core-onboarding` and
- * `/api/auth/complete-guest-onboarding`). The sync upsert used to clobber
+ * route `/api/auth/complete-core-onboarding`. The sync upsert used to clobber
  * them with `false`/`null` every debounce tick — onboarding-state could not
  * persist. Leaving those fields off the insert means PostgREST keeps the
  * existing server value on upsert-conflict.

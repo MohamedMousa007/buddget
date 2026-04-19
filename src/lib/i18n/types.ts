@@ -650,21 +650,8 @@ export interface Dictionary {
     feature1: string
     feature2: string
     feature3: string
-    or: string
     ctaSignIn: string
     ctaSignUp: string
-    ctaGuest: string
-    guestHelp: string
-    guestHelpStandalone: string
-  }
-
-  guest: {
-    bannerHello: (nickname: string) => string
-    bannerHelloFallback: string
-    saveProgressMessage: string
-    saveProgressCta: string
-    exitGuest: string
-    mergedToast: string
   }
 
   settings: {
@@ -675,11 +662,6 @@ export interface Dictionary {
     twoFaToggle: string
     twoFaToggleHint: string
     twoFaFooter: string
-
-    guestTitle: string
-    guestBody: string
-    guestCta: string
-    guestSignIn: string
 
     accountTitle: string
     accountSignedIn: (email: string) => string
@@ -994,8 +976,6 @@ export interface Dictionary {
     createAccountFor: (email: string) => string
     backToEmail: string
     continueAriaLabel: string
-    anonOverwriteWarning: string
-    createDifferentAccount: string
     pendingVerificationTitle: string
     pendingVerificationHelp: string
     pendingContinueCta: string

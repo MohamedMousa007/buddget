@@ -83,7 +83,6 @@ export function AuthModalBody({ showBranding = true }: { showBranding?: boolean 
               resendCode={a.resendCode}
               rememberMe={a.rememberMe}
               setRememberMe={a.setRememberMe}
-              mode={a.mode}
             />
           )}
         </motion.div>

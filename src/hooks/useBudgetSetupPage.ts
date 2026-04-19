@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -9,11 +9,11 @@ import { calculateMonthlyIncome } from '@/lib/utils/calculations'
 import { totalPlannedExpensesForPlan } from '@/lib/budget/budgetPlans'
 
 /**
- * Budget setup route: plans, income/planned totals, guest auth gating.
+ * Budget setup route: plans, income/planned totals.
  */
 export function useBudgetSetupPage() {
   const t = useT()
-  const { user, loading: authLoading, openAuthModal } = useAuth()
+  const { user } = useAuth()
   const supabaseConfigured = useMemo(
     () =>
       !!(
@@ -22,19 +22,6 @@ export function useBudgetSetupPage() {
       ),
     []
   )
-  const isGuest = supabaseConfigured && !user
-  const guestAuthPromptedRef = useRef(false)
-
-  useEffect(() => {
-    if (!supabaseConfigured || authLoading) return
-    if (user) {
-      guestAuthPromptedRef.current = false
-      return
-    }
-    if (guestAuthPromptedRef.current) return
-    guestAuthPromptedRef.current = true
-    openAuthModal('/budget-setup', t.modals.requireAuthBudgetSetup)
-  }, [supabaseConfigured, authLoading, user, openAuthModal, t.modals.requireAuthBudgetSetup])
 
   const {
     budgetPlans,
@@ -105,13 +92,9 @@ export function useBudgetSetupPage() {
   const [newPlanName, setNewPlanName] = useState('')
 
   const handleAddPlan = useCallback(() => {
-    if (isGuest) {
-      openAuthModal('/budget-setup', t.modals.requireAuthBudgetSetup)
-      return
-    }
     setNewPlanName(t.budgetPlanner.defaultPlanName)
     setNewPlanDialogOpen(true)
-  }, [isGuest, openAuthModal, t.budgetPlanner.defaultPlanName, t.modals.requireAuthBudgetSetup])
+  }, [t.budgetPlanner.defaultPlanName])
 
   const commitNewPlan = useCallback(() => {
     addBudgetPlan(newPlanName.trim() || t.budgetPlanner.defaultPlanName)

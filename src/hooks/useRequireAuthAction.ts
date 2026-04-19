@@ -6,7 +6,8 @@ import { useAuth } from '@/components/auth/auth-context'
 
 /**
  * When Supabase is configured, mutating actions require a signed-in user.
- * Guests see the auth modal with `message` instead of running `action`.
+ * If the session has lapsed, the auth modal opens with `message` instead
+ * of running `action`.
  */
 export function useRequireAuthAction() {
   const pathname = usePathname()

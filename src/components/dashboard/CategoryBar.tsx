@@ -1,8 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo } from 'react'
-import { useAuth } from '@/components/auth/auth-context'
 import { useT } from '@/lib/i18n'
 import type { BudgetCategory } from '@/lib/store/types'
 import { CategoryBarSpendingBlock } from '@/components/dashboard/CategoryBarSpendingBlock'
@@ -27,18 +25,6 @@ export function CategoryBar({
   incomeBlockedNote,
 }: CategoryBarProps) {
   const t = useT()
-  const { user, openAuthModal } = useAuth()
-
-  const supabaseConfigured = useMemo(
-    () =>
-      !!(
-        process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() &&
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
-      ),
-    []
-  )
-
-  const isGuest = supabaseConfigured && !user
 
   return (
     <div className="glass-card rounded-2xl p-5 space-y-4">
@@ -56,22 +42,12 @@ export function CategoryBar({
           description={t.dashboard.categoryEmptyDesc}
           className="py-10"
           action={
-            isGuest ? (
-              <button
-                type="button"
-                onClick={() => openAuthModal('/budget-setup', t.modals.requireAuthBudgetSetup)}
-                className="inline-flex items-center justify-center rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] px-4 py-2.5 text-sm font-semibold text-white transition-colors"
-              >
-                {t.dashboard.categoryEmptyCta}
-              </button>
-            ) : (
-              <Link
-                href="/budget-setup"
-                className="inline-flex items-center justify-center rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] px-4 py-2.5 text-sm font-semibold text-white transition-colors"
-              >
-                {t.dashboard.categoryEmptyCta}
-              </Link>
-            )
+            <Link
+              href="/budget-setup"
+              className="inline-flex items-center justify-center rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] px-4 py-2.5 text-sm font-semibold text-white transition-colors"
+            >
+              {t.dashboard.categoryEmptyCta}
+            </Link>
           }
         />
       ) : (

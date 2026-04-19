@@ -9,12 +9,8 @@ import { useT } from '@/lib/i18n'
 import { APP_CONFIG } from '@/lib/config'
 import { routeAfterAuth } from '@/lib/auth/postAuthRedirect'
 import { MIN_PASSWORD_LEN } from '@/components/features/auth-modal/authModalTokens'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { isPlanStageComplete } from '@/lib/onboarding/onboardingStages'
 import { markSessionEphemeral } from '@/hooks/useEphemeralSessionGuard'
 import { AUTH_EVENTS, track } from '@/lib/analytics/events'
-import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '@/lib/supabase/database.types'
 
 export type AuthStep = 'form' | 'verify' | 'forgot'
 /**
@@ -55,7 +51,6 @@ export function useAuthModal() {
     closeAuthModal,
     authModalMessage,
     authModalInitialStep,
-    mode,
   } = useAuth()
   const t = useT()
   const supabase = useMemo(() => createClient(), [])
@@ -105,25 +100,6 @@ export function useAuthModal() {
   }, [resendCooldown])
 
   const startResendCooldown = useCallback(() => setResendCooldown(60), [])
-
-  /**
-   * When a guest finishes their 6-step onboarding and then signs up, we flip
-   * `user_metadata.onboarding_completed = true` via the service-role route so
-   * middleware doesn't force them through the 27-step expert flow.
-   */
-  const promoteGuestIfNeeded = useCallback(
-    async (client: SupabaseClient<Database>) => {
-      if (!isPlanStageComplete(useFinanceStore.getState().onboardingState)) return
-      try {
-        const res = await fetch('/api/auth/complete-guest-onboarding', { method: 'POST' })
-        if (!res.ok) return
-        await client.auth.refreshSession()
-      } catch (e) {
-        console.error('[auth] promoteGuestIfNeeded failed', e)
-      }
-    },
-    [],
-  )
 
   const validateEmailField = useCallback(() => {
     if (!email.trim()) {
@@ -309,7 +285,6 @@ export function useAuthModal() {
       // Device-check failure shouldn't lock users out — proceed.
     }
 
-    await promoteGuestIfNeeded(supabase)
     setLoading(false)
     const { data: userData } = await supabase.auth.getUser()
     router.refresh()
@@ -317,7 +292,6 @@ export function useAuthModal() {
   }, [
     email,
     password,
-    promoteGuestIfNeeded,
     rememberMe,
     router,
     safeNext,
@@ -340,27 +314,6 @@ export function useAuthModal() {
     }
     setLoading(true)
     track(AUTH_EVENTS.passwordSubmitted, { intent: 'signup' })
-
-    // If the current session is anonymous, promote in-place via updateUser.
-    const { data: currentUserData } = await supabase.auth.getUser()
-    const isAnonPromotion = currentUserData.user?.is_anonymous === true
-
-    if (isAnonPromotion) {
-      const { error: updateErr } = await supabase.auth.updateUser({
-        email: email.trim(),
-        password,
-      })
-      setLoading(false)
-      if (updateErr) {
-        setError(mapAuthError(updateErr, 'signup', t))
-        return
-      }
-      setVerifyPurpose('signup')
-      setStep('verify')
-      setOtp('')
-      startResendCooldown()
-      return
-    }
 
     const { data, error: e } = await supabase.auth.signUp({
       email: email.trim(),
@@ -387,7 +340,6 @@ export function useAuthModal() {
       return
     }
     if (data.session) {
-      await promoteGuestIfNeeded(supabase)
       const { data: userData } = await supabase.auth.getUser()
       router.refresh()
       router.replace(routeAfterAuth(userData.user, safeNext))
@@ -404,7 +356,6 @@ export function useAuthModal() {
   }, [
     email,
     password,
-    promoteGuestIfNeeded,
     router,
     safeNext,
     startResendCooldown,
@@ -430,14 +381,7 @@ export function useAuthModal() {
       return
     }
     setLoading(true)
-    const { data: currentUserData } = await supabase.auth.getUser()
-    const isAnonPromotion =
-      verifyPurpose === 'signup' && currentUserData.user?.is_anonymous === true
-    const otpType: 'signup' | 'email' | 'email_change' = isAnonPromotion
-      ? 'email_change'
-      : verifyPurpose === 'signup'
-        ? 'signup'
-        : 'email'
+    const otpType: 'signup' | 'email' = verifyPurpose === 'signup' ? 'signup' : 'email'
     const { error: e } = await supabase.auth.verifyOtp({
       email: email.trim(),
       token,
@@ -453,23 +397,18 @@ export function useAuthModal() {
     } catch {
       /* non-fatal */
     }
-    await promoteGuestIfNeeded(supabase)
     setLoading(false)
     const { data: userData } = await supabase.auth.getUser()
     router.refresh()
     router.replace(routeAfterAuth(userData.user, safeNext))
-  }, [email, otp, promoteGuestIfNeeded, router, safeNext, supabase, t, verifyPurpose])
+  }, [email, otp, router, safeNext, supabase, t, verifyPurpose])
 
   const resendCode = useCallback(async () => {
     if (resendCooldown > 0) return
     setError('')
     setLoading(true)
-    const { data: currentUserData } = await supabase.auth.getUser()
-    const isAnonPromotion =
-      verifyPurpose === 'signup' && currentUserData.user?.is_anonymous === true
-    const { error: e } = isAnonPromotion
-      ? await supabase.auth.updateUser({ email: email.trim() })
-      : verifyPurpose === 'signup'
+    const { error: e } =
+      verifyPurpose === 'signup'
         ? await supabase.auth.resend({ type: 'signup', email: email.trim() })
         : await supabase.auth.signInWithOtp({
             email: email.trim(),
@@ -566,8 +505,6 @@ export function useAuthModal() {
     verifyPurpose,
     rememberMe,
     setRememberMe,
-    // Contextual
-    mode,
     // Legacy handlers (still used by verify/forgot steps)
     signIn,
     signUp,

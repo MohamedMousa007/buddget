@@ -3,7 +3,7 @@
 import { createContext, useContext } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 
-export type AuthMode = 'loading' | 'landing' | 'guest' | 'authenticated'
+export type AuthMode = 'loading' | 'landing' | 'authenticated'
 
 export type AuthContextValue = {
   user: User | null
@@ -12,7 +12,7 @@ export type AuthContextValue = {
   signOut: () => Promise<void>
   pendingNext: string
   setPendingNext: (path: string) => void
-  /** Optional message shown above the sign-in form (e.g. “Sign in to add an expense”). */
+  /** Optional message shown above the sign-in form (e.g. "Sign in to add an expense"). */
   authModalMessage: string | null
   /** Which step the modal should open on ('form' by default). Callers override via `openAuthModal`. */
   authModalInitialStep: 'form' | 'forgot'
@@ -31,22 +31,10 @@ export type AuthContextValue = {
   closeAuthModal: () => void
   /**
    * 'loading'       — initial auth fetch in flight; no gate decision yet.
-   * 'landing'       — unauth + no guest session. Landing page renders.
-   * 'guest'         — explicit guest session; sessionStorage-backed state.
+   * 'landing'       — unauthenticated. Landing page renders.
    * 'authenticated' — real Supabase user; standard app flow.
    */
   mode: AuthMode
-  /** Display name for the active guest, surfaced in banners / onboarding. Null for non-guests. */
-  guestNickname: string | null
-  /**
-   * Transition into guest mode. No-op if already guest/authed. `nextAfterOnboarding`
-   * is the path the user was trying to reach before hitting the landing gate;
-   * we route them there once guest onboarding completes.
-   */
-  startGuest: (nextAfterOnboarding?: string) => Promise<void>
-
-  /** Exit guest mode back to the landing page. Wipes sessionStorage state. */
-  endGuest: () => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined)

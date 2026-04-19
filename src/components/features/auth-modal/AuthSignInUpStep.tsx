@@ -33,8 +33,6 @@ export interface AuthSignInUpStepProps {
   resendCode: () => Promise<void>
   rememberMe: boolean
   setRememberMe: (v: boolean) => void
-  /** Auth mode — used to warn anon/guest users their guest data will be lost on sign-in. */
-  mode: 'loading' | 'landing' | 'guest' | 'authenticated'
 }
 
 function maskEmail(email: string): string {
@@ -74,7 +72,6 @@ export function AuthSignInUpStep({
   resendCode,
   rememberMe,
   setRememberMe,
-  mode,
 }: AuthSignInUpStepProps) {
   const t = useT()
   const { pendingNext } = useAuth()
@@ -108,7 +105,6 @@ export function AuthSignInUpStep({
 
   const maskedEmail = maskEmail(email.trim())
   const isSignin = passwordIntent === 'signin'
-  const isGuest = mode === 'guest'
 
   // Screen-reader announcement text for each state.
   const srAnnouncement =
@@ -185,22 +181,6 @@ export function AuthSignInUpStep({
                 ? t.auth.welcomeBack(maskedEmail)
                 : t.auth.createAccountFor(maskedEmail)}
             </p>
-
-            {isSignin && isGuest ? (
-              <div
-                role="alert"
-                className="flex flex-col gap-1 rounded-lg border border-[var(--color-brand-amber)]/40 bg-[var(--color-brand-amber)]/10 px-3 py-2 text-[11px] text-[var(--color-brand-text-primary)]"
-              >
-                <span>{t.auth.anonOverwriteWarning}</span>
-                <button
-                  type="button"
-                  onClick={backToEmail}
-                  className="self-start text-[var(--color-brand-red)] font-medium hover:underline"
-                >
-                  {t.auth.createDifferentAccount}
-                </button>
-              </div>
-            ) : null}
 
             <AuthPasswordField
               ref={passwordRef}
