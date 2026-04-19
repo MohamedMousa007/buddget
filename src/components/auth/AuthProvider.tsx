@@ -7,6 +7,7 @@ import type { AuthChangeEvent, Session } from '@supabase/supabase-js'
 import {
   SupabaseFinanceSync,
   flushFinanceNow,
+  suspendFinanceSync,
 } from '@/components/sync/SupabaseFinanceSync'
 import { AnalyticsHeartbeat } from '@/components/sync/AnalyticsHeartbeat'
 import { AuthModal } from '@/components/auth/AuthModal'
@@ -119,6 +120,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthContextValue['user']>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  /** Cover the sign-out transition with the splash so the dashboard doesn't
+   *  visibly flash back to default theme/data while `clearBudgetData` +
+   *  `supabase.auth.signOut` complete. Cleared when `user` becomes null. */
+  const [signingOut, setSigningOut] = useState(false)
   const [pendingNext, setPendingNext] = useState('/')
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authModalMessage, setAuthModalMessage] = useState<string | null>(null)
@@ -173,6 +178,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, nextSession: Session | null) => {
       const incomingUser = nextSession?.user ?? null
       if (_event === 'SIGNED_OUT') {
+        // Stop the finance sync BEFORE wiping the store, otherwise the
+        // reset-to-defaults fires the subscribe listener and overwrites
+        // the user's server-side settings/profile with defaults.
+        try {
+          suspendFinanceSync()
+        } catch {
+          /* no-op */
+        }
         try {
           clearBudgetData()
         } catch (e) {
@@ -222,6 +235,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // handler skips the "session expired" modal and lands the user cleanly
     // on the landing gate.
     userInitiatedSignOutRef.current = true
+    // Cover the transition with the splash so the dashboard doesn't flash
+    // back to defaults while flush/clear/signOut complete.
+    setSigningOut(true)
     // Drain any debounced flush (expense just added, settings just toggled)
     // BEFORE we wipe localStorage, otherwise those writes die with the tab
     // session and never reach the server.
@@ -229,6 +245,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await flushFinanceNow()
     } catch (e) {
       console.error('[auth] flushFinanceNow before signOut failed', e)
+    }
+    // Now suspend the subscribe listener so the upcoming reset-to-defaults
+    // doesn't trigger an instant flush that would overwrite the user's
+    // theme / currency / profile on the server with defaults.
+    try {
+      suspendFinanceSync()
+    } catch {
+      /* no-op */
     }
     try {
       clearBudgetData()
@@ -241,6 +265,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setUser(null)
       setSession(null)
+      setSigningOut(false)
       router.refresh()
     }
   }, [configured, router])
@@ -313,8 +338,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // tab close so they hit the landing gate again next session.
   useEphemeralSessionGuard(mode === 'authenticated')
 
-  const showLandingGate = mode === 'landing' && !isBypassRoute
-  const showLoadingSplash = mode === 'loading' && !isBypassRoute
+  const showLandingGate = mode === 'landing' && !isBypassRoute && !signingOut
+  const showLoadingSplash = (mode === 'loading' || signingOut) && !isBypassRoute
 
   return (
     <AuthContext.Provider value={value}>
