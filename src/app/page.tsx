@@ -98,6 +98,7 @@ export default function DashboardPage() {
         {showChecklist ? null : (
           <DashboardNetWorthHero
             netWorth={netWorth.netWorth}
+            monthlyFlow={netWorth.monthlyFlow}
             totalSavings={netWorth.totalSavings}
             totalDebt={netWorth.totalDebt}
             baseCurrency={stats.baseCurrency}

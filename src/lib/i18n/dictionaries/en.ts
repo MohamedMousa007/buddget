@@ -157,6 +157,7 @@ export const en: Dictionary = {
     heroNetWorthLabel: 'NET WORTH',
     heroStatSavings: 'Savings',
     heroStatDebt: 'Debt',
+    netWorthThisMonth: 'this month',
     paceBadgeOnTrackTitle: 'Nice pace',
     paceBadgeSlowDownTitle: 'Slow down a bit',
     paceBadgeOverTitle: 'Over pace \u2014 reel it in',
