@@ -45,9 +45,10 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   EGP: 'E£',
   EUR: '€',
   GBP: '£',
-  // U+20C0 Saudi Riyal Sign — added to Unicode 13 (2020), well-supported by
-  // modern system fonts. Single codepoint so it sticks to digits.
-  SAR: '⃀',
+  // Text-context fallback. In the UI we render an SVG via `CurrencyLabel`
+  // (see `SarSymbol`) because the Unicode codepoint U+20C0 is supported
+  // unevenly across fonts. "SR" stays for CSV/emails/toasts.
+  SAR: 'SR',
   KWD: 'KD',
   QAR: 'QR',
   BHD: 'BD',
