@@ -26,6 +26,21 @@ export function flushFinanceNow(): Promise<void> {
 }
 
 /**
+ * Global "stop talking to the server" switch. The subscribe listener bails
+ * out when this is true, which matters during sign-out: `clearBudgetData()`
+ * calls `useFinanceStore.reset()`, and without this flag the reset would
+ * fire the subscribe listener and push the DEFAULT settings back to the
+ * server — overwriting whatever the user just saved. Call
+ * `suspendFinanceSync()` immediately before any reset-and-clear path, and
+ * it auto-unsuspends on the next `SupabaseFinanceSync` mount (i.e. the
+ * user's next sign-in).
+ */
+let syncSuspended = false
+export function suspendFinanceSync(): void {
+  syncSuspended = true
+}
+
+/**
  * Every data-bearing snapshot slice the flush cares about. Subscribing
  * without a selector fires on every `set()` — even FX-rate ticks — which
  * resets the debounce timer and can starve real user writes for minutes
@@ -102,6 +117,9 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     hydrated.current = false
     prevSnap.current = null
     lastScheduleSnap.current = null
+    // Fresh session: clear any suspend flag left behind by a previous
+    // sign-out so this user's edits start flowing to the server again.
+    syncSuspended = false
     if (!supabaseRef.current) supabaseRef.current = createClient()
     const supabase = supabaseRef.current
 
@@ -237,6 +255,10 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
 
     const unsub = useFinanceStore.subscribe(() => {
       if (!hydrated.current) return
+      // Sign-out in progress: the store is being reset to defaults. Ignore
+      // every ping until the next mount — otherwise we'd overwrite the
+      // user's saved settings / profile on the server with defaults.
+      if (syncSuspended) return
       const next = sliceRefs(useFinanceStore.getState())
       const prev = lastScheduleSnap.current
       if (prev && sliceRefsEqual(prev, next)) {
