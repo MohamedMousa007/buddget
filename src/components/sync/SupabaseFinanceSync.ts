@@ -88,8 +88,20 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
 
     async function pull() {
       try {
-        const localSnap = snapshot(useFinanceStore.getState())
+        const initial = useFinanceStore.getState()
+        const localSnap = snapshot(initial)
         const localHasData = hasMeaningfulLocalState(localSnap)
+
+        // If localStorage already has this user's state (profile.id matches),
+        // skip the pullCore overwrite. Otherwise reloading within the flush
+        // window reverts recent edits (theme, currency, etc.) to whatever was
+        // last on the server. Transactional slices (expenses / debts / …) are
+        // still refreshed by the per-slice useHydrate* hooks, which is the
+        // intended cross-device path.
+        const alreadyHydratedForUser = initial.profile.id === userId
+        if (alreadyHydratedForUser && !localHasData) {
+          return
+        }
 
         if (localHasData) {
           const server = await pullAll(supabase, userId)
@@ -100,10 +112,19 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
             // Merging against the latest local state preserves them.
             const latestLocal = snapshot(useFinanceStore.getState())
             const merged = mergeSnapshots(latestLocal, server)
+            // `mergeSnapshots` prefers server for the singleton slices
+            // (profile / settings / onboardingState / …) — correct for
+            // guest→auth promotion but WRONG for returning users whose local
+            // state is already this user's data. For the latter, keep the
+            // local copies so a reload within the flush window doesn't revert
+            // a just-changed theme / currency / onboarding flag.
+            const trustLocalSingletons = alreadyHydratedForUser
             useFinanceStore.setState({
-              profile: merged.profile,
-              settings: merged.settings,
-              onboardingState: merged.onboardingState,
+              profile: trustLocalSingletons ? latestLocal.profile : merged.profile,
+              settings: trustLocalSingletons ? latestLocal.settings : merged.settings,
+              onboardingState: trustLocalSingletons
+                ? latestLocal.onboardingState
+                : merged.onboardingState,
               financialGoalsNotes: merged.financialGoalsNotes,
               activeBudgetPlanId: merged.activeBudgetPlanId,
               paymentMethods: merged.paymentMethods,
