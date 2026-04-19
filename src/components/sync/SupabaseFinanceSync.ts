@@ -14,7 +14,16 @@ import {
 } from '@/lib/supabase/remote'
 import type { Snapshot } from '@/lib/supabase/remote'
 
-const DEBOUNCE_MS = 1600
+const DEBOUNCE_MS = 500
+
+/** Imperative flush handle set by the mounted `SupabaseFinanceSync`. Other
+ *  modules (e.g. AuthProvider.signOut) call `flushFinanceNow()` to drain any
+ *  pending debounced write before they wipe localStorage. Returns a promise
+ *  so callers can await the round-trip. */
+let pendingFlush: (() => Promise<void>) | null = null
+export function flushFinanceNow(): Promise<void> {
+  return pendingFlush ? pendingFlush() : Promise.resolve()
+}
 
 /** Legacy blob payload — kept during the dual-write safety window. */
 function buildFinancePayload() {
@@ -44,36 +53,67 @@ function buildFinancePayload() {
 }
 
 /**
+ * Every data-bearing snapshot slice the flush cares about. Subscribing
+ * without a selector fires on every `set()` — even FX-rate ticks — which
+ * resets the debounce timer and can starve real user writes for minutes
+ * at a time. We shallow-compare these slice references (Zustand updates
+ * always produce new references for the mutated slice) to decide whether
+ * a re-schedule is warranted.
+ */
+type TrackedSliceKey =
+  | 'profile' | 'settings' | 'onboardingState' | 'financialGoalsNotes'
+  | 'activeBudgetPlanId' | 'paymentMethods' | 'incomeSources' | 'expenses'
+  | 'recurringExpenses' | 'subscriptions' | 'debts' | 'debtPayments'
+  | 'recurringDebtPayments' | 'savingsAccounts' | 'savingsHoldings'
+  | 'savingsTransactions' | 'recurringSavingsDeposits' | 'goals' | 'budgetPlans'
+
+const TRACKED_SLICES: readonly TrackedSliceKey[] = [
+  'profile', 'settings', 'onboardingState', 'financialGoalsNotes',
+  'activeBudgetPlanId', 'paymentMethods', 'incomeSources', 'expenses',
+  'recurringExpenses', 'subscriptions', 'debts', 'debtPayments',
+  'recurringDebtPayments', 'savingsAccounts', 'savingsHoldings',
+  'savingsTransactions', 'recurringSavingsDeposits', 'goals', 'budgetPlans',
+]
+
+/**
  * Supabase persistence layer.
  *
- * Hydrate: prefer normalised tables (pullAll); fall back to the legacy user_finance.payload
- * blob when the user has no profiles row yet (pre-DB-migration users in a race window).
+ * Hydrate: prefer normalised tables (pullAll); fall back to the legacy
+ * user_finance.payload blob when the user has no profiles row yet.
  *
- * Flush: per-table diffs via `flushDiff` (sends only what changed) PLUS a dual-write to
- * user_finance.payload during the stability window so we can roll back the frontend
- * without losing data. Dual-write is removed in Phase 5.
+ * Flush: per-table diffs via `flushDiff` (sends only what changed) PLUS a
+ * dual-write to user_finance.payload during the stability window.
+ *
+ * Data-loss hardening:
+ *  - Debounce cut from 1.6 s → 500 ms.
+ *  - `visibilitychange` (→ hidden) + `pagehide` listeners force-flush any
+ *    pending write so closing / reloading / backgrounding the tab never
+ *    drops a write.
+ *  - The subscribe-driven reschedule only fires when a tracked-data slice
+ *    actually changed — FX / gold ticks no longer reset the timer.
+ *  - `flushFinanceNow()` lets signOut await the round-trip before
+ *    `clearBudgetData` wipes localStorage.
  */
 export function SupabaseFinanceSync({ userId }: { userId: string }) {
   const hydrated = useRef(false)
   const prevSnap = useRef<Snapshot | null>(null)
+  const lastScheduleSnap = useRef<ReturnType<typeof sliceRefs> | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null)
 
   useEffect(() => {
     hydrated.current = false
     prevSnap.current = null
-    const supabase = createClient()
+    lastScheduleSnap.current = null
+    if (!supabaseRef.current) supabaseRef.current = createClient()
+    const supabase = supabaseRef.current
 
     async function pull() {
       try {
-        // Snapshot whatever the Zustand `persist` middleware already hydrated from
-        // localStorage — for a guest session this is the user's local edits we need
-        // to preserve when they sign in.
         const localSnap = snapshot(useFinanceStore.getState())
         const localHasData = hasMeaningfulLocalState(localSnap)
 
         if (localHasData) {
-          // Guest was actively using the app; fetch the full server state and merge
-          // so neither side loses data. One-shot cost on sign-in only.
           const server = await pullAll(supabase, userId)
           if (server) {
             const merged = mergeSnapshots(localSnap, server)
@@ -98,14 +138,11 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
               goals: merged.goals,
               budgetPlans: merged.budgetPlans,
             })
-            return // prevSnap set in finally{}
+            return
           }
-          // No server profile yet (new auth account): keep the guest data as-is;
-          // the debounced flush will push it up.
           return
         }
 
-        // Standard logged-in flow: pull core only. Per-page hooks fetch the rest.
         const core = await pullCore(supabase, userId)
         if (core) {
           useFinanceStore.setState({
@@ -117,7 +154,6 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
             paymentMethods: core.paymentMethods,
           })
         } else {
-          // Fall back to legacy blob (pre-migration users).
           const { data, error } = await supabase
             .from('user_finance')
             .select('payload, updated_at')
@@ -132,9 +168,8 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       } catch (e) {
         console.error('[finance sync] pull failed', e)
       } finally {
-        // Capture the now-hydrated state as the diff baseline so the first flush only
-        // emits genuine user mutations, not a no-op re-sync.
         prevSnap.current = snapshot(useFinanceStore.getState())
+        lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
         hydrated.current = true
       }
     }
@@ -147,11 +182,15 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
   }, [userId])
 
   useEffect(() => {
-    const supabase = createClient()
+    if (!supabaseRef.current) supabaseRef.current = createClient()
+    const supabase = supabaseRef.current
 
     const flush = async () => {
       if (!hydrated.current) return
-      timer.current = null
+      if (timer.current) {
+        clearTimeout(timer.current)
+        timer.current = null
+      }
 
       const next = snapshot(useFinanceStore.getState())
       const prev = prevSnap.current ?? emptySnapshot()
@@ -163,12 +202,15 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         } else {
           console.error('[finance sync] per-table flush errors:', result.errors)
         }
-        // Dual-write the legacy blob as a safety net. Remove in Phase 5.
         const { error } = await supabase
           .from('user_finance')
           .upsert(
-            { user_id: userId, payload: buildFinancePayload(), updated_at: new Date().toISOString() },
-            { onConflict: 'user_id' }
+            {
+              user_id: userId,
+              payload: buildFinancePayload(),
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'user_id' },
           )
         if (error) console.error('[finance sync] legacy blob upsert failed', error.message)
       } catch (e) {
@@ -176,19 +218,70 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       }
     }
 
+    // Expose for imperative callers (signOut).
+    pendingFlush = flush
+
     const unsub = useFinanceStore.subscribe(() => {
       if (!hydrated.current) return
+      const next = sliceRefs(useFinanceStore.getState())
+      const prev = lastScheduleSnap.current
+      if (prev && sliceRefsEqual(prev, next)) {
+        // Store changed but not in a tracked slice (e.g. FX-rate tick). Do
+        // not touch the debounce timer — that would starve user writes.
+        return
+      }
+      lastScheduleSnap.current = next
       if (timer.current) clearTimeout(timer.current)
       timer.current = setTimeout(() => {
         void flush()
       }, DEBOUNCE_MS)
     })
 
+    // Force-flush when the tab is about to be hidden / unloaded. Covers
+    // desktop reload, mobile background, iOS app-switch. `visibilitychange`
+    // fires BEFORE unload so fetches have a chance to complete.
+    const onHide = () => {
+      if (timer.current) {
+        clearTimeout(timer.current)
+        timer.current = null
+        void flush()
+      }
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') onHide()
+    }
+    window.addEventListener('pagehide', onHide)
+    document.addEventListener('visibilitychange', onVisibility)
+
     return () => {
       unsub()
+      window.removeEventListener('pagehide', onHide)
+      document.removeEventListener('visibilitychange', onVisibility)
       if (timer.current) clearTimeout(timer.current)
+      if (pendingFlush === flush) pendingFlush = null
     }
   }, [userId])
 
   return null
+}
+
+// ─── Slice-change detection ──────────────────────────────────────────────
+
+/** Grab the object reference for every tracked slice. Zustand mutates by
+ *  producing a new reference, so `===` on these is sufficient to know if
+ *  the data changed. */
+function sliceRefs(state: ReturnType<typeof useFinanceStore.getState>) {
+  const out: Record<string, unknown> = {}
+  for (const key of TRACKED_SLICES) out[key] = state[key]
+  return out as Record<TrackedSliceKey, unknown>
+}
+
+function sliceRefsEqual(
+  a: Record<TrackedSliceKey, unknown>,
+  b: Record<TrackedSliceKey, unknown>,
+): boolean {
+  for (const key of TRACKED_SLICES) {
+    if (a[key] !== b[key]) return false
+  }
+  return true
 }
