@@ -59,6 +59,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   twoFactorEmailEnabled: false,
   onboardingChecklistHidden: false,
   legacyOnboardingMigratedAt: null,
+  dashboardLayout: 'standard',
 }
 
 export const DEFAULT_PROFILE: UserProfile = {

@@ -163,6 +163,7 @@ export const ar: Dictionary = {
     paceBadgeOverTitle: 'تجاوزت الوتيرة — هدّئ الإنفاق',
     paceBadgeSubtitle: (paceLabel, targetLabel, daysLeft) =>
       `${paceLabel}/يوم · الهدف ${targetLabel} · ${daysLeft} يوم متبقي`,
+    heroPaceDaysLeft: (daysLeft) => `${daysLeft} يوم متبقي`,
     paceBadgeCutBack: (names) => `قلّل من ${names}`,
     categoryStatusAllWithin: 'الكل ضمن الميزانية',
     categoryStatusNearLimit: (name) => `قريب من الحد: ${name}`,
@@ -744,6 +745,7 @@ export const ar: Dictionary = {
     themeSystem: 'تلقائي',
     themeNameMidnight: 'منتصف الليل',
     themeNamePaper: 'ورقي',
+    themeNameMinimal: 'مبسّط',
     themePickerHint: 'اختر الشكل. المزيد قادم.',
     showCents: 'إظهار الفلوس/القروش في لوحة التحكم',
     desktopApp: 'تثبيت Buddget',

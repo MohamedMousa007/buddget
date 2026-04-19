@@ -163,6 +163,7 @@ export const en: Dictionary = {
     paceBadgeOverTitle: 'Over pace \u2014 reel it in',
     paceBadgeSubtitle: (paceLabel, targetLabel, daysLeft) =>
       `${paceLabel}/day pace \u00b7 ${targetLabel} target \u00b7 ${daysLeft} days left`,
+    heroPaceDaysLeft: (daysLeft) => (daysLeft === 1 ? '1 day left' : `${daysLeft} days left`),
     paceBadgeCutBack: (names) => `Cut back on ${names}`,
     categoryStatusAllWithin: 'All within budget',
     categoryStatusNearLimit: (name) => `Close to limit: ${name}`,
@@ -745,6 +746,7 @@ export const en: Dictionary = {
     themeSystem: 'System',
     themeNameMidnight: 'Midnight',
     themeNamePaper: 'Paper',
+    themeNameMinimal: 'Minimal',
     themePickerHint: 'Pick a look. More coming soon.',
     showCents: 'Show cents on the dashboard',
     desktopApp: 'Install Buddget',

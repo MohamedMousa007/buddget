@@ -220,6 +220,7 @@ export async function pullCore(client: Client, userId: string): Promise<Snapshot
         twoFactorEmailEnabled: false,
         onboardingChecklistHidden: false,
         legacyOnboardingMigratedAt: null,
+        dashboardLayout: 'standard' as const,
       }
 
   const onboardingState = onboardingR.data
@@ -315,6 +316,7 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
         twoFactorEmailEnabled: false,
         onboardingChecklistHidden: false,
         legacyOnboardingMigratedAt: null,
+        dashboardLayout: 'standard' as const,
       }
 
   const onboardingState = onboardingR.data

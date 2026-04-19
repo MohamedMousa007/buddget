@@ -14,6 +14,10 @@ import type { Expense } from '@/lib/store/types'
 
 export interface DashboardTransactionsProps {
   expenses: Expense[]
+  /** `'minimal'` swaps row spacing for border-top separators + a slightly
+   *  larger type scale to match the Minimal theme's mockup. Defaults to
+   *  `'standard'` which keeps today's styling. */
+  variant?: 'standard' | 'minimal'
 }
 
 const MAX_ROWS = 5
@@ -29,7 +33,10 @@ const INCOME_COLOR = '#18A349'
  * The store provides `monthlyExpenses` pre-scoped to the current month, so
  * this component doesn't fetch or filter by date; it just slices.
  */
-export function DashboardTransactions({ expenses }: DashboardTransactionsProps) {
+export function DashboardTransactions({
+  expenses,
+  variant = 'standard',
+}: DashboardTransactionsProps) {
   const t = useT()
   const paymentMethodNameById = useFinanceStore(
     useShallow((s) => {
@@ -63,12 +70,13 @@ export function DashboardTransactions({ expenses }: DashboardTransactionsProps) 
         ) : null}
       </div>
       {hasRows ? (
-        <ul className="space-y-3">
+        <ul className={variant === 'minimal' ? 'divide-y divide-black/[0.04]' : 'space-y-3'}>
           {rows.map((expense) => (
             <TxRow
               key={expense.id}
               expense={expense}
               methodName={paymentMethodNameById[expense.paymentMethodId] ?? ''}
+              variant={variant}
             />
           ))}
         </ul>
@@ -97,7 +105,15 @@ function relativeDate(dateStr: string, t: ReturnType<typeof useT>): string {
   }
 }
 
-function TxRow({ expense, methodName }: { expense: Expense; methodName: string }) {
+function TxRow({
+  expense,
+  methodName,
+  variant,
+}: {
+  expense: Expense
+  methodName: string
+  variant: 'standard' | 'minimal'
+}) {
   const t = useT()
   const palette = getCategoryPalette(expense.category)
   const initial = (expense.description || expense.category || '?').charAt(0).toUpperCase()
@@ -106,8 +122,14 @@ function TxRow({ expense, methodName }: { expense: Expense; methodName: string }
   const amountColor = expense.category.toLowerCase() === 'savings' ? INCOME_COLOR : EXPENSE_COLOR
   const sign = expense.category.toLowerCase() === 'savings' ? '+' : '-'
 
+  // Minimal variant: 13px text + border-separated rows (spacing comes from
+  // the parent's `divide-y`). Standard: 12px text + `space-y-3` gap.
+  const nameSize = variant === 'minimal' ? 'text-[13px]' : 'text-[12px]'
+  const amountSize = variant === 'minimal' ? 'text-[13px]' : 'text-[12px]'
+  const rowPad = variant === 'minimal' ? 'py-2.5' : ''
+
   return (
-    <li className="flex items-center gap-3">
+    <li className={`flex items-center gap-3 ${rowPad}`}>
       <span
         aria-hidden
         className="w-[30px] h-[30px] rounded-lg flex items-center justify-center text-[12px] font-semibold shrink-0"
@@ -116,7 +138,7 @@ function TxRow({ expense, methodName }: { expense: Expense; methodName: string }
         {initial}
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-[12px] font-medium text-[var(--color-brand-text-primary)] truncate">
+        <p className={`${nameSize} font-medium text-[var(--color-brand-text-primary)] truncate`}>
           {expense.description || expense.category}
         </p>
         <p className="text-[10px] text-[var(--color-brand-text-secondary)] truncate">
@@ -126,7 +148,7 @@ function TxRow({ expense, methodName }: { expense: Expense; methodName: string }
       </div>
       <div className="text-end shrink-0">
         <div
-          className="text-[12px] font-mono font-medium tabular-nums"
+          className={`${amountSize} font-mono font-medium tabular-nums`}
           style={{ color: amountColor }}
         >
           {sign}

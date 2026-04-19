@@ -49,6 +49,7 @@ export function settingsFromRow(row: UserSettingsRow, opts: SettingsFromRowOptio
     onboardingChecklistHidden: row.onboarding_checklist_hidden,
     // Client-only; never synced.
     legacyOnboardingMigratedAt: null,
+    dashboardLayout: 'standard',
     baseCurrency: opts.baseCurrency,
     secondaryCurrency: opts.secondaryCurrency,
   }

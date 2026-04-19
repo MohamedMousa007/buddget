@@ -167,6 +167,7 @@ export interface Dictionary {
     paceBadgeSlowDownTitle: string
     paceBadgeOverTitle: string
     paceBadgeSubtitle: (paceLabel: string, targetLabel: string, daysLeft: number) => string
+    heroPaceDaysLeft: (daysLeft: number) => string
     paceBadgeCutBack: (names: string) => string
     categoryStatusAllWithin: string
     categoryStatusNearLimit: (name: string) => string
@@ -741,6 +742,7 @@ export interface Dictionary {
     themeSystem: string
     themeNameMidnight: string
     themeNamePaper: string
+    themeNameMinimal: string
     themePickerHint: string
     showCents: string
     desktopApp: string
