@@ -4,7 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'rea
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js'
-import { SupabaseFinanceSync } from '@/components/sync/SupabaseFinanceSync'
+import {
+  SupabaseFinanceSync,
+  flushFinanceNow,
+} from '@/components/sync/SupabaseFinanceSync'
 import { AnalyticsHeartbeat } from '@/components/sync/AnalyticsHeartbeat'
 import { AuthModal } from '@/components/auth/AuthModal'
 import { AuthContext, type AuthContextValue, type AuthMode, useAuth } from '@/components/auth/auth-context'
@@ -315,6 +318,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     if (!configured) return
+    // Drain any debounced flush (expense just added, settings just toggled)
+    // BEFORE we wipe localStorage, otherwise those writes die with the tab
+    // session and never reach the server.
+    try {
+      await flushFinanceNow()
+    } catch (e) {
+      console.error('[auth] flushFinanceNow before signOut failed', e)
+    }
     try {
       clearBudgetData()
     } catch (e) {
