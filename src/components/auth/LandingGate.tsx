@@ -12,9 +12,15 @@ import { useT } from '@/lib/i18n'
 export function LandingGate() {
   const t = useT()
 
+  // Layout note: on phones (< sm) we pin content to the top with a comfortable
+  // safe-area padding instead of vertical-centering. Centering on mobile means
+  // the soft-keyboard push scrolls the wordmark off the top of the viewport
+  // when an input is focused. Top-aligned keeps Buddget + card fully in view
+  // as the keyboard rises, while `sm:items-center` restores the centered look
+  // on tablets/desktop where there's no keyboard reflow problem.
   return (
-    <div className="min-h-screen bg-[var(--color-brand-bg)] flex items-center justify-center">
-      <main className="mx-auto w-full max-w-md px-4 py-8">
+    <div className="min-h-[100svh] bg-[var(--color-brand-bg)] flex items-start justify-center pt-[max(env(safe-area-inset-top),2rem)] pb-8 sm:items-center sm:pt-0 sm:pb-0">
+      <main className="mx-auto w-full max-w-md px-4 py-4 sm:py-8">
         {/* Large centred wordmark. */}
         <div className="text-center mb-6 sm:mb-8">
           <h1
