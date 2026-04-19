@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { ArrowRight } from 'lucide-react'
 import type { BuddgyBuilderApi } from '@/hooks/useBuddgyBuilderFlow'
 import { BuddgyLoadingState } from '@/components/features/budget-planner/BuddgyLoadingState'
@@ -9,11 +10,16 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
  * Step 0: Free-text input — the only typing step.
  */
 export function BuddgyStepDescribe({ flow }: { flow: BuddgyBuilderApi }) {
-  const profileCity = useFinanceStore((s) => s.profile.city?.trim() || '')
-  const profileCountry = useFinanceStore((s) => s.profile.country?.trim() || '')
+  // Pull raw strings straight from the store so the selector returns the
+  // same reference on unrelated state changes (FX ticks, other edits);
+  // trimming happens in a downstream useMemo so no wasted renders.
+  const city = useFinanceStore((s) => s.profile.city)
+  const country = useFinanceStore((s) => s.profile.country)
+  const locationLabel = useMemo(
+    () => city?.trim() || country?.trim() || 'local',
+    [city, country],
+  )
   const canSubmit = flow.describeText.trim().length > 10 && !flow.loading
-
-  const locationLabel = profileCity || profileCountry || 'local'
   const parseMessages = [
     'Reading your details…',
     `Checking ${locationLabel} costs…`,
