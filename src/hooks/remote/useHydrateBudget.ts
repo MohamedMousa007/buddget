@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { assembleBudgetPlan } from '@/lib/supabase/remote/mappers/budgetPlanMapper'
+import { hasHydrated, markHydrated } from '@/hooks/remote/hydrateGuard'
 
 export function useHydrateBudget(): void {
   const { user } = useAuth()
@@ -12,6 +13,7 @@ export function useHydrateBudget(): void {
   useEffect(() => {
     const uid = user?.id
     if (!uid) return
+    if (hasHydrated(uid, 'budget')) return
     let cancelled = false
     const supabase = createClient()
 
@@ -32,6 +34,7 @@ export function useHydrateBudget(): void {
           })
         )
         useFinanceStore.setState({ budgetPlans: plans })
+        markHydrated(uid, 'budget')
       } catch (e) {
         if (!cancelled) console.error('[useHydrateBudget]', e)
       }

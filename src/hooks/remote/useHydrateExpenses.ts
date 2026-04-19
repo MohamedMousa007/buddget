@@ -6,9 +6,12 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { expenseFromRow } from '@/lib/supabase/remote/mappers/expenseMapper'
 import { recurringExpenseFromRow } from '@/lib/supabase/remote/mappers/recurringExpenseMapper'
+import { hasHydrated, markHydrated } from '@/hooks/remote/hydrateGuard'
 
 /**
- * Hydrates `expenses` + `recurringExpenses` slices from Supabase. Side-effect only.
+ * Hydrates `expenses` + `recurringExpenses` slices from Supabase. Runs at
+ * most once per sign-in (tracked by the session guard) so page navigation
+ * doesn't re-fetch and overwrite pending local edits.
  */
 export function useHydrateExpenses(): void {
   const { user } = useAuth()
@@ -16,6 +19,7 @@ export function useHydrateExpenses(): void {
   useEffect(() => {
     const uid = user?.id
     if (!uid) return
+    if (hasHydrated(uid, 'expenses')) return
     let cancelled = false
     const supabase = createClient()
 
@@ -30,6 +34,7 @@ export function useHydrateExpenses(): void {
         if (expR.data) patch.expenses = expR.data.map(expenseFromRow)
         if (recR.data) patch.recurringExpenses = recR.data.map(recurringExpenseFromRow)
         if (Object.keys(patch).length > 0) useFinanceStore.setState(patch)
+        markHydrated(uid, 'expenses')
       } catch (e) {
         if (!cancelled) console.error('[useHydrateExpenses]', e)
       }
