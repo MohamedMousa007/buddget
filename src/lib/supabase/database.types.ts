@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_rate_limits: {
+        Row: {
+          hits: number
+          key: string
+          window_start: string
+        }
+        Insert: {
+          hits?: number
+          key: string
+          window_start: string
+        }
+        Update: {
+          hits?: number
+          key?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       app_analytics_events: {
         Row: {
           created_at: string
@@ -748,8 +766,8 @@ export type Database = {
           display_name: string | null
           email: string | null
           financial_goals_notes: string
-          gender: string | null
           food_frequency: string | null
+          gender: string | null
           household: string | null
           id: string
           lifestyle_tier: string | null
@@ -1243,6 +1261,30 @@ export type Database = {
           },
         ]
       }
+      trusted_devices: {
+        Row: {
+          created_at: string
+          device_id: string
+          last_used_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          last_used_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          last_used_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_finance: {
         Row: {
           payload: Json
@@ -1289,6 +1331,7 @@ export type Database = {
         Row: {
           ai_provider: string
           budget_entry_mode: Database["public"]["Enums"]["budget_entry_mode"]
+          dashboard_layout: Database["public"]["Enums"]["dashboard_layout"]
           dismiss_onboarding_banner: boolean
           enable_ai: boolean
           language: Database["public"]["Enums"]["locale_code"]
@@ -1307,6 +1350,7 @@ export type Database = {
         Insert: {
           ai_provider?: string
           budget_entry_mode?: Database["public"]["Enums"]["budget_entry_mode"]
+          dashboard_layout?: Database["public"]["Enums"]["dashboard_layout"]
           dismiss_onboarding_banner?: boolean
           enable_ai?: boolean
           language?: Database["public"]["Enums"]["locale_code"]
@@ -1325,6 +1369,7 @@ export type Database = {
         Update: {
           ai_provider?: string
           budget_entry_mode?: Database["public"]["Enums"]["budget_entry_mode"]
+          dashboard_layout?: Database["public"]["Enums"]["dashboard_layout"]
           dismiss_onboarding_banner?: boolean
           enable_ai?: boolean
           language?: Database["public"]["Enums"]["locale_code"]
@@ -1339,30 +1384,6 @@ export type Database = {
           two_factor_email_enabled?: boolean
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      trusted_devices: {
-        Row: {
-          user_id: string
-          device_id: string
-          user_agent: string | null
-          created_at: string
-          last_used_at: string
-        }
-        Insert: {
-          user_id: string
-          device_id: string
-          user_agent?: string | null
-          created_at?: string
-          last_used_at?: string
-        }
-        Update: {
-          user_id?: string
-          device_id?: string
-          user_agent?: string | null
-          created_at?: string
-          last_used_at?: string
         }
         Relationships: []
       }
@@ -1383,27 +1404,19 @@ export type Database = {
         Args: { p_recurring_expense: Json; p_subscription: Json }
         Returns: Json
       }
-      backfill_from_user_finance: { Args: { p_user_id: string }; Returns: Json }
       api_rate_hit: {
-        Args: { p_key: string; p_window_seconds: number; p_max_hits: number }
+        Args: { p_key: string; p_max_hits: number; p_window_seconds: number }
         Returns: boolean
       }
-      check_email_exists: {
-        Args: { p_email: string }
-        Returns: boolean
-      }
-      check_email_status: {
-        Args: { p_email: string }
-        Returns: Json
-      }
-      cleanup_expired_trusted_devices: {
-        Args: Record<string, never>
-        Returns: number
-      }
+      backfill_from_user_finance: { Args: { p_user_id: string }; Returns: Json }
       cancel_subscription: {
         Args: { p_subscription_id: string }
         Returns: undefined
       }
+      check_email_exists: { Args: { p_email: string }; Returns: boolean }
+      check_email_status: { Args: { p_email: string }; Returns: Json }
+      cleanup_abandoned_anon_users: { Args: never; Returns: number }
+      cleanup_expired_trusted_devices: { Args: never; Returns: number }
       correct_savings_balance: {
         Args: {
           p_account_id: string
@@ -1474,6 +1487,7 @@ export type Database = {
         | "USDC"
         | "BTC"
         | "ETH"
+      dashboard_layout: "standard" | "minimal"
       debt_direction: "i_owe" | "they_owe"
       debt_kind:
         | "personal"
@@ -1706,6 +1720,7 @@ export const Constants = {
         "BTC",
         "ETH",
       ],
+      dashboard_layout: ["standard", "minimal"],
       debt_direction: ["i_owe", "they_owe"],
       debt_kind: [
         "personal",
@@ -1801,4 +1816,3 @@ export const Constants = {
     },
   },
 } as const
-
