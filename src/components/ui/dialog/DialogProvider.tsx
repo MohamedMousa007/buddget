@@ -167,7 +167,6 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
                   <button
                     type="button"
                     onClick={() => resolveCurrent(true)}
-                    autoFocus
                     className={cn(
                       'h-9 rounded-lg px-4 text-sm font-semibold text-white transition-colors',
                       destructive
