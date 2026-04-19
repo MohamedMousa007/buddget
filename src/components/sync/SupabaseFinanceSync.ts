@@ -49,6 +49,21 @@ const TRACKED_SLICES: readonly TrackedSliceKey[] = [
 ]
 
 /**
+ * Singleton slices (not array-of-rows) that never fire rapidly — toggling a
+ * theme, flipping a currency, marking onboarding done. These flush with no
+ * debounce so the DB reflects the change before the user can reload. Bulk
+ * list slices (expenses, debts, …) still get the 500 ms coalesce to batch
+ * rapid keystrokes during form entry.
+ */
+const INSTANT_SLICE_KEYS: ReadonlySet<TrackedSliceKey> = new Set<TrackedSliceKey>([
+  'profile',
+  'settings',
+  'onboardingState',
+  'activeBudgetPlanId',
+  'financialGoalsNotes',
+])
+
+/**
  * Supabase persistence layer.
  *
  * Hydrate: prefer normalised tables (pullAll); fall back to the legacy
@@ -60,7 +75,11 @@ const TRACKED_SLICES: readonly TrackedSliceKey[] = [
  * tables stabilised; saves ~50% of the write volume per flush.
  *
  * Data-loss hardening:
- *  - Debounce 500 ms (down from 1.6 s).
+ *  - Singleton-slice writes (profile / settings / onboardingState /
+ *    activeBudgetPlanId / financialGoalsNotes) flush with no debounce —
+ *    theme / currency / onboarding toggles never fire rapidly, so there is
+ *    nothing to batch and zero reason to delay. List slices still use a
+ *    500 ms coalesce to batch rapid keystrokes during form entry.
  *  - `visibilitychange` (→ hidden) + `pagehide` listeners force-flush any
  *    pending write so closing / reloading / backgrounding the tab never
  *    drops a write.
@@ -112,12 +131,14 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
             // Merging against the latest local state preserves them.
             const latestLocal = snapshot(useFinanceStore.getState())
             const merged = mergeSnapshots(latestLocal, server)
-            // `mergeSnapshots` prefers server for the singleton slices
-            // (profile / settings / onboardingState / …) — correct for
-            // guest→auth promotion but WRONG for returning users whose local
-            // state is already this user's data. For the latter, keep the
-            // local copies so a reload within the flush window doesn't revert
-            // a just-changed theme / currency / onboarding flag.
+            // Belt-and-suspenders: even though singleton slices now flush
+            // instantly (so the server should already hold the latest value
+            // by the time this pull completes), keep the local copy on a
+            // reload of an already-hydrated user. Protects against the edge
+            // case where the instant flush is still in-flight while this
+            // pull resolves, and `mergeSnapshots` would otherwise prefer
+            // server — which is correct for guest→auth promotion but wrong
+            // here.
             const trustLocalSingletons = alreadyHydratedForUser
             useFinanceStore.setState({
               profile: trustLocalSingletons ? latestLocal.profile : merged.profile,
@@ -223,8 +244,19 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         // not touch the debounce timer — that would starve user writes.
         return
       }
+      const instantDirty = !prev || anyInstantSliceChanged(prev, next)
       lastScheduleSnap.current = next
-      if (timer.current) clearTimeout(timer.current)
+      if (timer.current) {
+        clearTimeout(timer.current)
+        timer.current = null
+      }
+      if (instantDirty) {
+        // Singleton toggle (theme / currency / onboarding / …) — flush now.
+        // The in-flight promise settles before any visible reload, so the DB
+        // is always at least as fresh as the UI for these fields.
+        void flush()
+        return
+      }
       timer.current = setTimeout(() => {
         void flush()
       }, DEBOUNCE_MS)
@@ -277,4 +309,14 @@ function sliceRefsEqual(
     if (a[key] !== b[key]) return false
   }
   return true
+}
+
+function anyInstantSliceChanged(
+  prev: Record<TrackedSliceKey, unknown>,
+  next: Record<TrackedSliceKey, unknown>,
+): boolean {
+  for (const key of INSTANT_SLICE_KEYS) {
+    if (prev[key] !== next[key]) return true
+  }
+  return false
 }
