@@ -162,6 +162,7 @@ export interface Dictionary {
     heroNetWorthLabel: string
     heroStatSavings: string
     heroStatDebt: string
+    netWorthThisMonth: string
     paceBadgeOnTrackTitle: string
     paceBadgeSlowDownTitle: string
     paceBadgeOverTitle: string

@@ -6,66 +6,79 @@ import { useT } from '@/lib/i18n'
 
 export interface DashboardNetWorthHeroProps {
   netWorth: number
+  monthlyFlow: number
   totalSavings: number
   totalDebt: number
   baseCurrency: string
 }
 
 /**
- * Secondary dark hero that sits under the primary left-to-spend card. Shows
- * the three balance-sheet aggregates (net worth, savings, debt) as a big
- * headline number + two coloured stats under a hairline divider. Reuses the
- * same navy gradient + typography as `DashboardHero` so the two cards feel
- * like a pair.
+ * Secondary summary card — NET WORTH headline on the left, SAVINGS + DEBT
+ * as smaller stacked stats on the right. Uses the standard dashboard card
+ * tokens (`--color-brand-card` + border) so it visually sits with the other
+ * sections; the primary hero keeps its distinct navy gradient.
  */
 export function DashboardNetWorthHero({
   netWorth,
+  monthlyFlow,
   totalSavings,
   totalDebt,
   baseCurrency,
 }: DashboardNetWorthHeroProps) {
   const t = useT()
+  const flowSign = monthlyFlow >= 0 ? '+' : '\u2212' // unicode minus for alignment
 
   return (
     <section
       aria-label="Net worth summary"
-      className="rounded-3xl text-white overflow-hidden shadow-[0_10px_30px_-12px_rgba(15,23,42,0.25)]"
-      style={{ background: 'linear-gradient(180deg,#0F172A 0%,#1E293B 100%)' }}
+      className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-5"
     >
-      <div className="px-5 py-5">
-        {/* Net-worth headline */}
-        <div className="min-w-0">
-          <p className="text-[10px] uppercase tracking-wider text-white/60 font-medium">
+      <div className="flex items-start justify-between gap-4">
+        {/* Net worth headline */}
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] uppercase tracking-wider text-[var(--color-brand-text-secondary)] font-medium">
             {t.dashboard.heroNetWorthLabel}
           </p>
           <p
             className={cn(
-              'mt-1 font-mono font-bold text-[28px] leading-none truncate',
-              netWorth >= 0 ? 'text-[#86EFAC]' : 'text-[#FCA5A5]',
+              'mt-1 font-mono font-bold text-[26px] leading-none truncate',
+              netWorth >= 0
+                ? 'text-[var(--color-brand-text-primary)]'
+                : 'text-[#EF4444]',
             )}
           >
             <CurrencyLabel
               amount={netWorth}
               currency={baseCurrency}
               compact="auto"
-              fullMaxChars={12}
+              fullMaxChars={11}
             />
+          </p>
+          <p className="mt-1 text-[10px] text-[var(--color-brand-text-muted)]">
+            {flowSign}
+            <CurrencyLabel
+              amount={Math.abs(monthlyFlow)}
+              currency={baseCurrency}
+              compact="auto"
+              fullMaxChars={9}
+            />
+            <span className="ms-1">{t.dashboard.netWorthThisMonth}</span>
           </p>
         </div>
 
-        {/* Two-column breakdown row */}
-        <div className="mt-4 pt-4 grid grid-cols-2 divide-x divide-white/[0.06] border-t border-white/[0.06]">
-          <SecondaryStat
+        {/* Side stats: SAVINGS + DEBT */}
+        <div className="flex items-start gap-6 shrink-0">
+          <SideStat
             label={t.dashboard.heroStatSavings}
             amount={totalSavings}
             currency={baseCurrency}
             color="text-[#22C55E]"
           />
-          <SecondaryStat
+          <SideStat
             label={t.dashboard.heroStatDebt}
             amount={totalDebt}
             currency={baseCurrency}
-            color="text-[#EF4444]"
+            color="text-[#FACC15]"
           />
         </div>
       </div>
@@ -73,7 +86,7 @@ export function DashboardNetWorthHero({
   )
 }
 
-function SecondaryStat({
+function SideStat({
   label,
   amount,
   currency,
@@ -85,18 +98,18 @@ function SecondaryStat({
   color: string
 }) {
   return (
-    <div className="min-w-0 text-center px-2">
-      <div className={cn('font-mono font-bold text-[16px] leading-none truncate', color)}>
+    <div className="min-w-0">
+      <p className="text-[10px] uppercase tracking-wider text-[var(--color-brand-text-secondary)] font-medium">
+        {label}
+      </p>
+      <p className={cn('mt-1 font-mono font-bold text-[18px] leading-none truncate', color)}>
         <CurrencyLabel
           amount={Math.max(0, amount)}
           currency={currency}
           compact="auto"
-          fullMaxChars={10}
+          fullMaxChars={9}
         />
-      </div>
-      <div className="text-[10px] text-white/70 truncate mt-1 uppercase tracking-wider">
-        {label}
-      </div>
+      </p>
     </div>
   )
 }

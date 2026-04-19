@@ -157,6 +157,7 @@ export const ar: Dictionary = {
     heroNetWorthLabel: 'صافي الثروة',
     heroStatSavings: 'المدخرات',
     heroStatDebt: 'الديون',
+    netWorthThisMonth: 'هذا الشهر',
     paceBadgeOnTrackTitle: 'وتيرة جيدة',
     paceBadgeSlowDownTitle: 'تمهّل قليلاً',
     paceBadgeOverTitle: 'تجاوزت الوتيرة — هدّئ الإنفاق',
