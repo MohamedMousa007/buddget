@@ -1,13 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useRef, type RefObject } from 'react'
+import { useEffect, useRef, type RefObject } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import {
   User,
   Settings,
   LogOut,
-  LogIn,
-  UserPlus,
   Target,
   RefreshCw,
   ListChecks,
@@ -35,7 +33,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
   const pathname = usePathname()
   const t = useT()
   const { locale } = useLocale()
-  const { user, signOut, openAuthModal } = useAuth()
+  const { user, signOut } = useAuth()
   const { profile, checklistHidden, updateSettings } = useFinanceStore(
     useShallow((s) => ({
       profile: s.profile,
@@ -44,14 +42,6 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
     })),
   )
   const prevPathname = useRef(pathname)
-
-  const configured = useMemo(() => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
-    return !!(url && key)
-  }, [])
-
-  const isGuest = configured && !user
 
   useEffect(() => {
     if (!open) return
@@ -82,7 +72,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
 
   if (!open) return null
 
-  const avatarSrc = isGuest ? null : resolveProfileAvatarSrc(profile)
+  const avatarSrc = resolveProfileAvatarSrc(profile)
   const displayName = profile.name || t.common.user
   const displayEmail = user?.email || profile.email || ''
 
@@ -96,40 +86,6 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
     await signOut()
     onClose()
     router.push('/')
-  }
-
-  if (isGuest) {
-    return (
-      <div
-        className="absolute top-full end-0 mt-2 z-50 w-56 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl shadow-2xl overflow-hidden"
-        role="menu"
-      >
-        <button
-          type="button"
-          onClick={() => {
-            openAuthModal()
-            onClose()
-          }}
-          className={cn(itemClass, 'rounded-t-2xl')}
-          role="menuitem"
-        >
-          <LogIn className="w-4 h-4 shrink-0" />
-          <span className={localeInlineLabelClass(locale)}>{t.common.signIn}</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            openAuthModal()
-            onClose()
-          }}
-          className={cn(itemClass, 'rounded-b-2xl')}
-          role="menuitem"
-        >
-          <UserPlus className="w-4 h-4 shrink-0" />
-          <span className={localeInlineLabelClass(locale)}>{t.common.signUp}</span>
-        </button>
-      </div>
-    )
   }
 
   return (
@@ -187,20 +143,16 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
         </button>
       ) : null}
 
-      {configured ? (
-        <>
-          <div className="border-t border-[var(--color-brand-border)]" />
-          <button
-            type="button"
-            onClick={handleSignOut}
-            className={cn(itemClass, 'text-[var(--color-brand-red)] hover:text-[var(--color-brand-red)]')}
-            role="menuitem"
-          >
-            <LogOut className="w-4 h-4 shrink-0" />
-            <span className={localeInlineLabelClass(locale)}>{t.common.signOut}</span>
-          </button>
-        </>
-      ) : null}
+      <div className="border-t border-[var(--color-brand-border)]" />
+      <button
+        type="button"
+        onClick={handleSignOut}
+        className={cn(itemClass, 'text-[var(--color-brand-red)] hover:text-[var(--color-brand-red)]')}
+        role="menuitem"
+      >
+        <LogOut className="w-4 h-4 shrink-0" />
+        <span className={localeInlineLabelClass(locale)}>{t.common.signOut}</span>
+      </button>
     </div>
   )
 }

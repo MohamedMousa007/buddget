@@ -5,9 +5,6 @@ const memory = new Map<string, string>()
 
 /**
  * Zustand `persist` storage that survives Safari private browsing / quota errors.
- * Both authenticated and anonymous-guest users persist here — guest identity
- * itself lives in Supabase via `signInAnonymously`, so localStorage is fine for
- * everyone.
  */
 export function createSafeLocalStorage(): StateStorage {
   if (typeof window === 'undefined') {

@@ -1511,8 +1511,6 @@ export const useFinanceStore = create<FinanceStore>()(
           lastRatesFetch: null,
         } as never
       },
-      // All users (anon + real) persist to localStorage — guest sessions now
-      // live in Supabase so cross-tab consistency is handled server-side.
       storage: createJSONStorage(() => createSafeLocalStorage()),
       merge: (persisted, current) => {
         const p = persisted as Partial<typeof current>

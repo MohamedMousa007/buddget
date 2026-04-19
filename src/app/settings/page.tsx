@@ -5,7 +5,6 @@ import { useSettingsPage } from '@/hooks/useSettingsPage'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { SettingsImportBanner } from '@/components/features/settings/SettingsImportBanner'
-import { SettingsGuestAccountCard } from '@/components/features/settings/SettingsGuestAccountCard'
 import { SettingsSignedInAccountCard } from '@/components/features/settings/SettingsSignedInAccountCard'
 import { SettingsCurrencySection } from '@/components/features/settings/SettingsCurrencySection'
 import { SettingsDataManagementSection } from '@/components/features/settings/SettingsDataManagementSection'
@@ -31,10 +30,6 @@ export default function SettingsPage() {
 
       <div className="px-4 py-4 lg:px-6 space-y-4 max-w-3xl mx-auto">
         <SettingsImportBanner banner={s.importBanner} />
-
-        {!s.user && s.supabaseConfigured ? (
-          <SettingsGuestAccountCard onOpenAuth={() => s.openAuthModal('/settings')} />
-        ) : null}
 
         {s.user ? <SettingsSignedInAccountCard user={s.user} onSignOut={s.signOutAndHome} /> : null}
 

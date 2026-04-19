@@ -3,8 +3,9 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { resetHydrationGuard } from '@/hooks/remote/hydrateGuard'
 
 /**
- * Persisted localStorage keys used by Zustand + guest-nickname + misc client
- * caches. Wiped on sign-out so the next visitor doesn't inherit anything.
+ * Persisted localStorage keys used by Zustand + misc client caches. Wiped on
+ * sign-out so the next visitor doesn't inherit anything. Legacy guest-session
+ * keys are included so existing clients clean them up on next sign-out.
  */
 const STORAGE_KEYS = [
   'buddget-storage',

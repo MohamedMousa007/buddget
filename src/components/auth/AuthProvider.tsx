@@ -13,14 +13,8 @@ import { AuthModal } from '@/components/auth/AuthModal'
 import { AuthContext, type AuthContextValue, type AuthMode, useAuth } from '@/components/auth/auth-context'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 import { useT } from '@/lib/i18n'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { generateGuestNickname } from '@/lib/guest/nicknameGenerator'
-import { isPlanStageComplete } from '@/lib/onboarding/onboardingStages'
 import { LandingGate } from '@/components/auth/LandingGate'
-import { GuestSaveProgressBanner } from '@/components/auth/GuestSaveProgressBanner'
 import { useEphemeralSessionGuard } from '@/hooks/useEphemeralSessionGuard'
-import { useActionToast } from '@/components/ui/ActionToast'
 
 /**
  * Minimal centered splash rendered while the initial auth check is in flight.
@@ -44,10 +38,6 @@ function AuthLoadingSplash() {
  * and redirects to `/`. On the next mount we ask the server whether the cookie
  * is present; if so, open the sign-in modal with the success message and let
  * the server clear the cookie in the same GET. One-shot per reset.
- *
- * The cookie is HttpOnly and set by the server, so unlike the old
- * `?passwordUpdated=1` query param it can't be forged by a random visitor
- * typing a URL.
  */
 function PasswordUpdatedCookieSync() {
   const { openAuthModal } = useAuth()
@@ -84,11 +74,6 @@ function RequestResetQuerySync() {
   const pathname = usePathname()
   const router = useRouter()
   const handled = useRef(false)
-  // We don't use useAuth here because the forgot step needs to be opened
-  // with a specific `step: 'forgot'` default. Easiest: set the flag via the
-  // same openAuthModal API but then flip step via a follow-up. The auth
-  // modal hook supports `step` via its own setStep; we simulate that by
-  // using the message as the trigger for the modal.
   const { openAuthModal } = useAuth()
 
   useEffect(() => {
@@ -138,21 +123,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authModalMessage, setAuthModalMessage] = useState<string | null>(null)
   const [authModalInitialStep, setAuthModalInitialStep] = useState<'form' | 'forgot'>('form')
-  // Lazy init reads sessionStorage synchronously on client mount — no flash of
-  // landing before a guest session is detected. SSR sees `false` which is fine:
-  // `mode` is now derived from `user.is_anonymous`. We keep a local nickname
-  // so the banner can greet the user without refetching profile.name.
-  const [guestNickname, setGuestNicknameState] = useState<string | null>(() => {
-    if (typeof window === 'undefined') return null
-    try {
-      return window.localStorage.getItem('buddget_guest_nickname')
-    } catch {
-      return null
-    }
-  })
-  // Read the onboarding state for gate decisions; cheap selector, updates when the
-  // guest completes their flow so the gate releases them onto the real app.
-  const onboardingState = useFinanceStore((s) => s.onboardingState)
 
   const configured = useMemo(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
@@ -183,67 +153,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthModalMessage(null)
   }, [])
 
-  const startGuest = useCallback(
-    async (nextAfterOnboarding?: string) => {
-      if (!configured) return
-      // Reset in-memory state first so any leftover localStorage from a prior
-      // session doesn't bleed into the new anonymous identity.
-      try {
-        useFinanceStore.getState().reset()
-        useSettingsStore.getState().reset()
-      } catch (e) {
-        console.error('[auth] guest reset failed', e)
-      }
-      const supabase = createClient()
-      const { data, error } = await supabase.auth.signInAnonymously()
-      if (error || !data.user) {
-        console.error('[auth] signInAnonymously failed', error?.message)
-        return
-      }
-      const nickname = generateGuestNickname()
-      try {
-        useFinanceStore.getState().updateProfile({ name: nickname })
-      } catch (e) {
-        console.error('[auth] guest updateProfile failed', e)
-      }
-      // Persist nickname + optional deep-link target in localStorage now that
-      // the session itself is owned by Supabase. Accessible across tabs.
-      try {
-        window.localStorage.setItem('buddget_guest_nickname', nickname)
-        if (nextAfterOnboarding && nextAfterOnboarding.startsWith('/')) {
-          window.localStorage.setItem('buddget_guest_next', nextAfterOnboarding)
-        }
-      } catch {
-        /* private mode / quota */
-      }
-      setGuestNicknameState(nickname)
-      // `onAuthStateChange SIGNED_IN` will flip the mode; we just navigate.
-      router.replace('/guest-onboarding')
-    },
-    [configured, router],
-  )
-
-  const endGuest = useCallback(async () => {
-    if (!configured) return
-    const supabase = createClient()
-    try {
-      await supabase.auth.signOut({ scope: 'local' })
-    } catch (e) {
-      console.error('[auth] endGuest signOut failed', e)
-    }
-    try {
-      window.localStorage.removeItem('buddget_guest_nickname')
-      window.localStorage.removeItem('buddget_guest_next')
-    } catch {
-      /* private mode */
-    }
-    setGuestNicknameState(null)
-    router.replace('/')
-  }, [configured, router])
-
   const t = useT()
   const wasAuthedRef = useRef(false)
-  const showToast = useActionToast()
 
   useEffect(() => {
     if (!configured) {
@@ -256,19 +167,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, nextSession: Session | null) => {
       const incomingUser = nextSession?.user ?? null
-      const incomingIsAnon = incomingUser?.is_anonymous === true
       if (_event === 'SIGNED_OUT') {
         try {
           clearBudgetData()
         } catch (e) {
           console.error('[auth] clearBudgetData on SIGNED_OUT failed', e)
-        }
-        setGuestNicknameState(null)
-        try {
-          window.localStorage.removeItem('buddget_guest_nickname')
-          window.localStorage.removeItem('buddget_guest_next')
-        } catch {
-          /* private mode */
         }
         // If we were previously signed in AND the user is still on an in-app
         // route (not a deliberate sign-out from the profile page), assume the
@@ -280,33 +183,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setAuthModalOpen(true)
         }
       } else if (_event === 'SIGNED_IN' && incomingUser) {
-        if (incomingIsAnon) {
-          // Anonymous (guest) session just started. The nickname was written
-          // by `startGuest`; mode derivation picks up `is_anonymous` below.
-        } else {
-          wasAuthedRef.current = true
-        }
-      } else if (_event === 'USER_UPDATED' && incomingUser && !incomingIsAnon) {
-        // Anonymous → real account promotion (updateUser with email + OTP
-        // verified). Show the merge-confirmation toast since the guest's data
-        // just became permanent on the same user_id.
-        try {
-          showToast(t.guest.mergedToast)
-        } catch {
-          /* toast not mounted */
-        }
         wasAuthedRef.current = true
       }
       setSession(nextSession)
       setUser(incomingUser)
-      if (incomingUser && !incomingIsAnon) setAuthModalOpen(false)
+      if (incomingUser) setAuthModalOpen(false)
     })
 
     void supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
       const s = data.session
       setSession(s)
       setUser(s?.user ?? null)
-      if (s?.user && !s.user.is_anonymous) {
+      if (s?.user) {
         setAuthModalOpen(false)
         wasAuthedRef.current = true
       }
@@ -314,7 +202,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
 
     return () => subscription.unsubscribe()
-  }, [configured, pathname, showToast, t.auth.sessionExpired, t.guest.mergedToast])
+  }, [configured, pathname, t.auth.sessionExpired])
 
   const signOut = useCallback(async () => {
     if (!configured) return
@@ -330,13 +218,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearBudgetData()
     } catch (e) {
       console.error('[auth] clearBudgetData before signOut failed', e)
-    }
-    setGuestNicknameState(null)
-    try {
-      window.localStorage.removeItem('buddget_guest_nickname')
-      window.localStorage.removeItem('buddget_guest_next')
-    } catch {
-      /* private mode */
     }
     const supabase = createClient()
     try {
@@ -355,9 +236,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     : loading
       ? 'loading'
       : user
-        ? user.is_anonymous
-          ? 'guest'
-          : 'authenticated'
+        ? 'authenticated'
         : 'landing'
 
   const value = useMemo<AuthContextValue>(
@@ -375,9 +254,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             openAuthModal,
             closeAuthModal,
             mode,
-            guestNickname,
-            startGuest,
-            endGuest,
           }
         : {
             user: null,
@@ -391,9 +267,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             openAuthModal,
             closeAuthModal,
             mode: 'landing',
-            guestNickname: null,
-            startGuest,
-            endGuest,
           },
     [
       configured,
@@ -408,10 +281,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       openAuthModal,
       closeAuthModal,
       mode,
-      guestNickname,
-      startGuest,
-      endGuest,
-    ]
+    ],
   )
 
   // Reset-password + auth-callback routes must be reachable for unauthenticated
@@ -423,27 +293,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const skipAuthModal = pathname.startsWith('/reset-password')
   const showAuthModal = configured && !loading && authModalOpen && !user && !skipAuthModal
 
-  const guestOnboardingDone = isPlanStageComplete(onboardingState)
-  const shouldRedirectGuestToOnboarding =
-    mode === 'guest' && !guestOnboardingDone && pathname !== '/guest-onboarding' && !isBypassRoute
-
-  useEffect(() => {
-    if (shouldRedirectGuestToOnboarding) router.replace('/guest-onboarding')
-  }, [shouldRedirectGuestToOnboarding, router])
-
   // For users who signed in without ticking "Remember me": sign them out on
   // tab close so they hit the landing gate again next session.
   useEphemeralSessionGuard(mode === 'authenticated')
-  // NB: `useGuestBeforeUnloadWarning` is retired — guest sessions now persist
-  // server-side via Supabase anonymous auth, so tab close doesn't lose data.
 
   const showLandingGate = mode === 'landing' && !isBypassRoute
   const showLoadingSplash = mode === 'loading' && !isBypassRoute
-  const showGuestBanner =
-    mode === 'guest' &&
-    guestOnboardingDone &&
-    pathname !== '/guest-onboarding' &&
-    !isBypassRoute
 
   return (
     <AuthContext.Provider value={value}>
@@ -461,10 +316,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           <LandingGate />
         </Suspense>
       ) : (
-        <>
-          {showGuestBanner ? <GuestSaveProgressBanner /> : null}
-          {children}
-        </>
+        children
       )}
       {configured && !loading && user ? (
         <>

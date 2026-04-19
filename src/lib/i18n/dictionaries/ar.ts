@@ -649,22 +649,8 @@ export const ar: Dictionary = {
     feature1: 'اختر العملة، خطّط الميزانية، وابقَ متقدّماً على ديونك.',
     feature2: 'يعمل بدون إنترنت — بياناتك تبقى على جهازك.',
     feature3: 'Buddgy، المساعد الذكي، يخصّص كل شيء لك.',
-    or: 'أو',
     ctaSignIn: 'تسجيل الدخول',
     ctaSignUp: 'أنشئ حساباً مجانياً',
-    ctaGuest: 'المتابعة كضيف',
-    guestHelp: 'بدون بريد إلكتروني. بياناتك محفوظة خلال التصفح — أضف بريداً لاحقاً للاحتفاظ بها دائماً.',
-    guestHelpStandalone:
-      'بدون بريد إلكتروني. أضف بريداً إلكترونياً لاحقاً لتثبيتها واستعادتها من أجهزة أخرى.',
-  },
-
-  guest: {
-    bannerHello: (nickname) => `أهلاً ${nickname}!`,
-    bannerHelloFallback: 'أنت تستكشف كضيف.',
-    saveProgressMessage: 'أنشئ حساباً لحفظ تقدّمك.',
-    saveProgressCta: 'إنشاء حساب',
-    exitGuest: 'الخروج من الضيف',
-    mergedToast: 'تم حفظ بيانات الضيف في حسابك',
   },
 
   settings: {
@@ -677,11 +663,6 @@ export const ar: Dictionary = {
       'عند التفعيل، يتطلب تسجيل الدخول من متصفح أو جهاز جديد إدخال رمز من 6 أرقام نرسله إلى بريدك. أجهزتك المعتادة تبقى مسجلة كالمعتاد.',
     twoFaFooter:
       'بعد التحقق من الجهاز، يتذكره Buddget لمدة 180 يوماً. مسح ملفات تعريف الارتباط، أو استخدام وضع التصفح الخاص، أو تسجيل الدخول من جهاز جديد سيطلب الرمز مرة أخرى.',
-
-    guestTitle: 'أهلاً وسهلاً في Buddget',
-    guestBody: 'بياناتك حالياً على هذا الجهاز فقط. أنشئ حساباً لحفظ ميزانيتك ومزامنتها والوصول إليها من أي مكان.',
-    guestCta: 'ابدأ الآن',
-    guestSignIn: 'عندي حساب',
 
     accountTitle: 'حسابك',
     accountSignedIn: (email) => `أنت مسجل بـ ${email}. ميزانيتك محفوظة ومتزامنة.`,
@@ -996,8 +977,6 @@ export const ar: Dictionary = {
     createAccountFor: (email) => `أنشئ حسابك · ${email}`,
     backToEmail: 'تغيير البريد',
     continueAriaLabel: 'متابعة',
-    anonOverwriteWarning: 'تسجيل الدخول سينقلك إلى ذلك الحساب. لن تتمكن من استعادة بيانات جلستك الحالية.',
-    createDifferentAccount: 'جرّب بريداً مختلفاً',
     pendingVerificationTitle: 'أكمل التحقق من بريدك',
     pendingVerificationHelp: 'أرسلنا لك رمزاً بالفعل. اضغط متابعة لإدخاله وإكمال التسجيل.',
     pendingContinueCta: 'أدخل الرمز',

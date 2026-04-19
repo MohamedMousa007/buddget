@@ -649,23 +649,8 @@ export const en: Dictionary = {
     feature1: 'Pick a currency, plan a budget, stay ahead of debt.',
     feature2: 'Works offline — your data stays on your device.',
     feature3: 'Buddgy, the built-in AI coach, tailors everything to you.',
-    or: 'or',
     ctaSignIn: 'Sign in',
     ctaSignUp: 'Create a free account',
-    ctaGuest: 'Continue as guest',
-    guestHelp:
-      "No email needed. Your data\u2019s saved while you explore \u2014 add an email later to keep it forever.",
-    guestHelpStandalone:
-      "No email needed. Add an email later to lock it in and recover your data on new devices.",
-  },
-
-  guest: {
-    bannerHello: (nickname) => `Hey ${nickname}!`,
-    bannerHelloFallback: "You\u2019re exploring as a guest.",
-    saveProgressMessage: 'Create an account to save your progress.',
-    saveProgressCta: 'Create account',
-    exitGuest: 'Exit guest',
-    mergedToast: 'Your guest data is now saved to your account',
   },
 
   settings: {
@@ -678,11 +663,6 @@ export const en: Dictionary = {
       "When on, signing in on a new browser or device requires a 6-digit code we email you. Your usual devices stay signed in normally.",
     twoFaFooter:
       "Once you verify a device, Buddget remembers it for 180 days. Clearing cookies, using a private window, or signing in from a new machine will prompt the code again.",
-
-    guestTitle: 'Welcome to Buddget',
-    guestBody: 'Right now your data lives on this device. Create an account to keep your budget safe, synced, and accessible from anywhere.',
-    guestCta: 'Get started',
-    guestSignIn: 'I have an account',
 
     accountTitle: 'Your Account',
     accountSignedIn: (email) => `You\u2019re signed in as ${email}. Your budget is synced and safe.`,
@@ -998,8 +978,6 @@ export const en: Dictionary = {
     createAccountFor: (email) => `Create your account · ${email}`,
     backToEmail: 'Change email',
     continueAriaLabel: 'Continue',
-    anonOverwriteWarning: "Signing in will switch to that account. You won\u2019t be able to recover your guest entries.",
-    createDifferentAccount: 'Try a different email',
     pendingVerificationTitle: 'Finish verifying your email',
     pendingVerificationHelp: 'We already sent you a code. Tap continue to enter it and finish signing up.',
     pendingContinueCta: 'Enter code',
