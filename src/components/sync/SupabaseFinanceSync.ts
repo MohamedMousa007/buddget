@@ -25,33 +25,6 @@ export function flushFinanceNow(): Promise<void> {
   return pendingFlush ? pendingFlush() : Promise.resolve()
 }
 
-/** Legacy blob payload — kept during the dual-write safety window. */
-function buildFinancePayload() {
-  const state = useFinanceStore.getState()
-  return {
-    profile: state.profile,
-    settings: state.settings,
-    financialGoalsNotes: state.financialGoalsNotes,
-    onboardingState: state.onboardingState,
-    incomeSources: state.incomeSources,
-    expenses: state.expenses,
-    recurringExpenses: state.recurringExpenses,
-    budgetCategories: state.budgetCategories,
-    budgetPlans: state.budgetPlans,
-    activeBudgetPlanId: state.activeBudgetPlanId,
-    savingsHoldings: state.savingsHoldings,
-    savingsAccounts: state.savingsAccounts,
-    savingsTransactions: state.savingsTransactions,
-    recurringSavingsDeposits: state.recurringSavingsDeposits,
-    paymentMethods: state.paymentMethods,
-    debts: state.debts,
-    debtPayments: state.debtPayments,
-    recurringDebtPayments: state.recurringDebtPayments,
-    goals: state.goals,
-    subscriptions: state.subscriptions,
-  }
-}
-
 /**
  * Every data-bearing snapshot slice the flush cares about. Subscribing
  * without a selector fires on every `set()` — even FX-rate ticks — which
@@ -79,20 +52,25 @@ const TRACKED_SLICES: readonly TrackedSliceKey[] = [
  * Supabase persistence layer.
  *
  * Hydrate: prefer normalised tables (pullAll); fall back to the legacy
- * user_finance.payload blob when the user has no profiles row yet.
+ * user_finance.payload JSONB blob read-only when the user has no profiles
+ * row yet (covers a small set of migration-era accounts).
  *
- * Flush: per-table diffs via `flushDiff` (sends only what changed) PLUS a
- * dual-write to user_finance.payload during the stability window.
+ * Flush: per-table diffs via `flushDiff` — sends only what changed. The
+ * legacy dual-write to `user_finance.payload` was retired once normalised
+ * tables stabilised; saves ~50% of the write volume per flush.
  *
  * Data-loss hardening:
- *  - Debounce cut from 1.6 s → 500 ms.
+ *  - Debounce 500 ms (down from 1.6 s).
  *  - `visibilitychange` (→ hidden) + `pagehide` listeners force-flush any
  *    pending write so closing / reloading / backgrounding the tab never
  *    drops a write.
- *  - The subscribe-driven reschedule only fires when a tracked-data slice
- *    actually changed — FX / gold ticks no longer reset the timer.
+ *  - Subscribe-driven reschedule only fires when a tracked-data slice
+ *    reference actually changed — FX / gold ticks no longer reset the
+ *    timer.
  *  - `flushFinanceNow()` lets signOut await the round-trip before
  *    `clearBudgetData` wipes localStorage.
+ *  - Guest-merge path re-snapshots from the LIVE store right before
+ *    applying the merge so edits made during `pullAll` aren't clobbered.
  */
 export function SupabaseFinanceSync({ userId }: { userId: string }) {
   const hydrated = useRef(false)
@@ -116,7 +94,12 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         if (localHasData) {
           const server = await pullAll(supabase, userId)
           if (server) {
-            const merged = mergeSnapshots(localSnap, server)
+            // Re-snapshot right before the merge. The user may have edited
+            // rows DURING the pullAll round-trip — those edits live in the
+            // live store but not in the initial `localSnap` captured above.
+            // Merging against the latest local state preserves them.
+            const latestLocal = snapshot(useFinanceStore.getState())
+            const merged = mergeSnapshots(latestLocal, server)
             useFinanceStore.setState({
               profile: merged.profile,
               settings: merged.settings,
@@ -202,17 +185,6 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         } else {
           console.error('[finance sync] per-table flush errors:', result.errors)
         }
-        const { error } = await supabase
-          .from('user_finance')
-          .upsert(
-            {
-              user_id: userId,
-              payload: buildFinancePayload(),
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: 'user_id' },
-          )
-        if (error) console.error('[finance sync] legacy blob upsert failed', error.message)
       } catch (e) {
         console.error('[finance sync] flush threw', e)
       }
