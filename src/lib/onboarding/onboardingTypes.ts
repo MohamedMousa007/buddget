@@ -12,5 +12,6 @@ export function defaultOnboardingState(): OnboardingState {
     aiPlans: null,
     aiGeneratedAt: null,
     lastValidationNotes: null,
+    draftEntries: {},
   }
 }

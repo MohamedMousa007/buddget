@@ -657,6 +657,7 @@ export type Database = {
         Row: {
           answers: Json
           current_step_index: number
+          draft_entries: Json
           flow_version: number
           phase: Database["public"]["Enums"]["onboarding_phase"]
           plan_accepted: boolean
@@ -666,6 +667,7 @@ export type Database = {
         Insert: {
           answers?: Json
           current_step_index?: number
+          draft_entries?: Json
           flow_version?: number
           phase?: Database["public"]["Enums"]["onboarding_phase"]
           plan_accepted?: boolean
@@ -675,6 +677,7 @@ export type Database = {
         Update: {
           answers?: Json
           current_step_index?: number
+          draft_entries?: Json
           flow_version?: number
           phase?: Database["public"]["Enums"]["onboarding_phase"]
           plan_accepted?: boolean
@@ -1343,6 +1346,8 @@ export type Database = {
           show_cents_in_dashboard: boolean
           show_secondary_currency: boolean
           theme: Database["public"]["Enums"]["theme_mode"]
+          tutorial_current_step: string | null
+          tutorials_completed: string[]
           two_factor_email_enabled: boolean
           updated_at: string
           user_id: string
@@ -1362,6 +1367,8 @@ export type Database = {
           show_cents_in_dashboard?: boolean
           show_secondary_currency?: boolean
           theme?: Database["public"]["Enums"]["theme_mode"]
+          tutorial_current_step?: string | null
+          tutorials_completed?: string[]
           two_factor_email_enabled?: boolean
           updated_at?: string
           user_id: string
@@ -1381,6 +1388,8 @@ export type Database = {
           show_cents_in_dashboard?: boolean
           show_secondary_currency?: boolean
           theme?: Database["public"]["Enums"]["theme_mode"]
+          tutorial_current_step?: string | null
+          tutorials_completed?: string[]
           two_factor_email_enabled?: boolean
           updated_at?: string
           user_id?: string

@@ -221,6 +221,8 @@ export async function pullCore(client: Client, userId: string): Promise<Snapshot
         onboardingChecklistHidden: false,
         legacyOnboardingMigratedAt: null,
         dashboardLayout: 'standard' as const,
+        tutorialsCompleted: [] as string[],
+        tutorialCurrentStep: null as string | null,
       }
 
   const onboardingState = onboardingR.data
@@ -234,6 +236,7 @@ export async function pullCore(client: Client, userId: string): Promise<Snapshot
         aiPlans: null,
         aiGeneratedAt: null,
         lastValidationNotes: null,
+        draftEntries: {},
       }
 
   return {
@@ -317,6 +320,8 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
         onboardingChecklistHidden: false,
         legacyOnboardingMigratedAt: null,
         dashboardLayout: 'standard' as const,
+        tutorialsCompleted: [] as string[],
+        tutorialCurrentStep: null as string | null,
       }
 
   const onboardingState = onboardingR.data
@@ -330,6 +335,7 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
         aiPlans: null,
         aiGeneratedAt: null,
         lastValidationNotes: null,
+        draftEntries: {},
       }
 
   const plans = (planR.data ?? []).map((plan) =>

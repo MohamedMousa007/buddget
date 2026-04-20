@@ -519,6 +519,19 @@ export interface AppSettings {
    * `user_settings.dashboard_layout` so the choice survives sign-out.
    */
   dashboardLayout?: 'standard' | 'minimal'
+  /**
+   * Tours the user has finished, stored as versioned ids
+   * (e.g. `'postOnboardingTour:v1'`). Re-firing a tour for every existing
+   * user just requires bumping its version. Synced via
+   * `user_settings.tutorials_completed`.
+   */
+  tutorialsCompleted: string[]
+  /**
+   * Resume marker if the user closed the app mid-tour. Format:
+   * `<tourId>:<version>:<stepIndex>`. Null when no tour is in flight.
+   * Synced via `user_settings.tutorial_current_step`.
+   */
+  tutorialCurrentStep: string | null
 }
 
 /** Draft payment row from onboarding (applied to store on finish). */
@@ -549,6 +562,14 @@ export interface OnboardingState {
   aiPlans: OnboardingAiPlan[] | null
   aiGeneratedAt: string | null
   lastValidationNotes: string[] | null
+  /**
+   * Half-filled modal drafts during onboarding, keyed by modal id
+   * (e.g. `incomeDraft`, `pmDraft`). Debounced-written from the client;
+   * cleared on successful save. Lets a mid-modal tab-close resume with
+   * the in-progress entry instead of a blank form. Synced via
+   * `onboarding_state.draft_entries`.
+   */
+  draftEntries: Record<string, unknown>
 }
 
 export type GoalStatus = 'active' | 'achieved' | 'paused' | 'cancelled'

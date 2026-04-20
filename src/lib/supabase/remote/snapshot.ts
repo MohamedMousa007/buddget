@@ -79,6 +79,8 @@ export function emptySnapshot(): Snapshot {
       onboardingChecklistHidden: false,
       legacyOnboardingMigratedAt: null,
       dashboardLayout: 'standard' as const,
+      tutorialsCompleted: [] as string[],
+      tutorialCurrentStep: null as string | null,
     },
     onboardingState: {
       flowVersion: 2,
@@ -89,6 +91,7 @@ export function emptySnapshot(): Snapshot {
       aiPlans: null,
       aiGeneratedAt: null,
       lastValidationNotes: null,
+      draftEntries: {},
     },
     financialGoalsNotes: '',
     activeBudgetPlanId: null,
