@@ -116,4 +116,34 @@ export const JOURNEY_CARDS: ReadonlyArray<JourneyCard> = [
       ],
     },
   },
+
+  // ── Phase 3 — Money In (PMs first, then income) ─────────────────────
+  // Phase 2 (AI describe) ships in PR2; phase 3 lives here now so the
+  // money-in dependency graph (PM → income) is captured in this PR's
+  // shippable surface.
+  {
+    id: 'money.pm.intro',
+    phase: 'moneyIn',
+    kind: 'info',
+    titleKey: 'onboarding.journey.moneyIn.pmIntro.title',
+    bodyKey: 'onboarding.journey.moneyIn.pmIntro.body',
+  },
+  {
+    id: 'money.pm.list',
+    phase: 'moneyIn',
+    kind: 'multi',
+    writeKey: 'moneyIn.paymentMethods',
+    entity: 'paymentMethods',
+    minEntries: 1,
+    maxEntries: 20,
+  },
+  {
+    id: 'money.income.list',
+    phase: 'moneyIn',
+    kind: 'multi',
+    writeKey: 'moneyIn.incomeSources',
+    entity: 'incomeSources',
+    minEntries: 1,
+    maxEntries: 20,
+  },
 ]

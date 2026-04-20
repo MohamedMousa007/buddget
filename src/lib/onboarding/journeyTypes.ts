@@ -129,7 +129,14 @@ export type PaymentMethodDraft = BaseDraft &
   }
 
 export type IncomeSourceDraft = BaseDraft &
-  Omit<IncomeSource, 'id' | 'createdAt' | 'updatedAt'>
+  Omit<IncomeSource, 'id' | 'createdAt' | 'updatedAt' | 'paymentMethodId'> & {
+    /** PM the user picked in the previous card, keyed by draft id. The apply
+     *  playbook resolves this to a real `paymentMethodId` after
+     *  `addPaymentMethod` returns. `paymentMethodId` on the server type is
+     *  nullable, so omitting it (or leaving the draft id unresolved) is
+     *  tolerated. */
+    paymentMethodClientDraftId?: string
+  }
 
 export type DebtDraft = BaseDraft &
   Omit<Debt, 'id' | 'createdAt' | 'updatedAt'> & {

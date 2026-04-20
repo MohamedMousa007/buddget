@@ -1158,6 +1158,58 @@ export interface Dictionary {
           familyLabel: string
         }
       }
+      moneyIn: {
+        pmIntro: { title: string; body: string }
+      }
+      multi: {
+        add: {
+          paymentMethods: string
+          incomeSources: string
+          debts: string
+          subscriptions: string
+          savingsAccounts: string
+          goals: string
+        }
+        empty: {
+          paymentMethods: string
+          incomeSources: string
+          debts: string
+          subscriptions: string
+          savingsAccounts: string
+          goals: string
+        }
+      }
+      pmTypes: {
+        cash: string
+        bank_transfer: string
+        card_debit: string
+        card_credit: string
+        other: string
+      }
+      freq: {
+        monthly: string
+        biweekly: string
+        weekly: string
+      }
+      pmEditor: {
+        nameLabel: string
+        namePlaceholder: string
+        typeLabel: string
+        currencyLabel: string
+        defaultCheck: string
+        openingOwedLabel: string
+        openingOwedHint: string
+      }
+      incomeEditor: {
+        nameLabel: string
+        namePlaceholder: string
+        amountLabel: string
+        currencyLabel: string
+        recurringLabel: string
+        frequencyLabel: string
+        paymentMethodLabel: string
+        paymentMethodHint: string
+      }
     }
 
     // First-run checklist shown on the dashboard until the user finishes setup.
