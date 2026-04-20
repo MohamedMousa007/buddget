@@ -124,7 +124,13 @@ export const SelectField = forwardRef<HTMLButtonElement, SelectFieldProps>(
         <Combobox.Portal>
           <Combobox.Positioner
             sideOffset={6}
-            className="z-[60] outline-none"
+            // z must sit above ModalShell's z-[100] backdrop+panel so the
+            // dropdown stays anchored to its trigger inside modals. Without
+            // this the popup renders behind the modal panel and ends up
+            // visible only through the transparent journey-chrome strip at
+            // the top of the viewport — which is how users saw the list
+            // floating at the top-left corner during onboarding (SP14).
+            className="z-[120] outline-none"
             align="start"
           >
             <Combobox.Popup

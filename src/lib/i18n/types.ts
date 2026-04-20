@@ -71,6 +71,14 @@ export interface TourDictionary {
 
 export interface Dictionary {
   tour: TourDictionary
+  tutorialSkipConfirm: {
+    /** Title shown when the user taps the header "Skip" button; prompts
+     *  them to choose between skipping the current step and skipping
+     *  the whole tour. */
+    prompt: string
+    skipStep: string
+    skipAll: string
+  }
   /** Document layout direction; kept `ltr` for Arabic so chrome matches English. */
   dir: 'ltr' | 'rtl'
   locale: string

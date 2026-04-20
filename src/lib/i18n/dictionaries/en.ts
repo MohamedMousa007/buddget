@@ -177,6 +177,12 @@ export const en: Dictionary = {
     },
   },
 
+  tutorialSkipConfirm: {
+    prompt: 'Skip what?',
+    skipStep: 'Skip this step',
+    skipAll: 'Skip whole tutorial',
+  },
+
   common: {
     save: 'Save',
     cancel: 'Cancel',

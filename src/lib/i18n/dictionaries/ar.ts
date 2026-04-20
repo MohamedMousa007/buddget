@@ -178,6 +178,12 @@ export const ar: Dictionary = {
     },
   },
 
+  tutorialSkipConfirm: {
+    prompt: 'ماذا تريد تخطّيه؟',
+    skipStep: 'تخطّى هذه الخطوة',
+    skipAll: 'تخطّى كامل الجولة',
+  },
+
   common: {
     save: 'حفظ',
     cancel: 'إلغاء',

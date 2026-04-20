@@ -250,8 +250,10 @@ export function TutorialControllerRoot({ children }: { children: React.ReactNode
             next: t.onboarding.journey.common.next,
             done: t.onboarding.journey.common.finish,
             back: t.onboarding.journey.common.back,
-            skipStep: t.onboarding.journey.common.skip,
-            skipAll: t.onboarding.journey.common.skip,
+            skipStep: t.tutorialSkipConfirm.skipStep,
+            skipAll: t.tutorialSkipConfirm.skipAll,
+            cancel: t.common.cancel,
+            skipConfirmPrompt: t.tutorialSkipConfirm.prompt,
             progress: (current, total) =>
               t.onboarding.stepOfTotal(current, total),
           }}

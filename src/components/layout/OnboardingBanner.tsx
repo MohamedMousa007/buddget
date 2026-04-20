@@ -3,36 +3,45 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ArrowRight } from 'lucide-react'
+import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { useFirstRunChecklist } from '@/lib/onboarding/firstRunChecklist'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { JOURNEY_CARDS } from '@/lib/onboarding/journeyConfig'
 import { useT } from '@/lib/i18n'
 
 /**
- * Slim one-line banner shown on every main-app page except the dashboard
- * (the dashboard has its own checklist card) and `/onboarding` itself. Feeds
- * off the same `useFirstRunChecklist` snapshot as the dashboard so counts
- * never drift. Tap → navigate to the dashboard where the full checklist
- * lives. Hidden once `allDone` or the user opted out via "Not now".
+ * Persistent CTA that nudges the user to finish onboarding. Visible on
+ * every authed surface except `/onboarding` itself so a user who closes
+ * the journey mid-flow always sees a path back.
+ *
+ * Source of truth: `user.user_metadata.onboarding_completed` (flipped by
+ * `/api/auth/complete-journey`). When true, the banner never renders.
+ *
+ * Progress is derived from the Journey state (`currentStepIndex` over
+ * `JOURNEY_CARDS.length`) so the bar tracks actual journey completion
+ * rather than the legacy 6-item first-run checklist. Tapping the banner
+ * navigates to `/onboarding`, which resumes at the card the user left.
  */
 export function OnboardingBanner() {
   const pathname = usePathname()
   const t = useT()
   const { user, loading } = useAuth()
-  const checklist = useFirstRunChecklist()
+  const currentStepIndex = useFinanceStore(
+    useShallow((s) => s.onboardingState.currentStepIndex ?? 0),
+  )
 
   if (loading || !user) return null
-  if (checklist.allDone || checklist.hidden) return null
-  // Dashboard surfaces the full card; also skip the onboarding + profile routes.
+  if (user.user_metadata?.onboarding_completed === true) return null
   if (!pathname) return null
-  if (pathname === '/') return null
   if (pathname.startsWith('/onboarding')) return null
-  if (pathname.startsWith('/profile')) return null
 
-  const pct = Math.round((checklist.doneCount / checklist.totalCount) * 100)
+  const totalCards = JOURNEY_CARDS.length
+  const doneCount = Math.max(0, Math.min(currentStepIndex, totalCards))
+  const pct = totalCards > 0 ? Math.round((doneCount / totalCards) * 100) : 0
 
   return (
     <Link
-      href="/"
+      href="/onboarding"
       className="block px-4 py-1.5 border-b border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/60 hover:bg-[var(--color-brand-elevated)] transition-colors"
     >
       <div className="max-w-3xl mx-auto flex items-center gap-3">
@@ -46,7 +55,7 @@ export function OnboardingBanner() {
           />
         </div>
         <span className="text-[11px] tabular-nums text-[var(--color-brand-text-muted)] shrink-0">
-          {t.onboarding.checklistProgress(checklist.doneCount, checklist.totalCount)}
+          {t.onboarding.checklistProgress(doneCount, totalCards)}
         </span>
         <ArrowRight className="w-3.5 h-3.5 text-[var(--color-brand-text-muted)] rtl:rotate-180 shrink-0" aria-hidden />
       </div>

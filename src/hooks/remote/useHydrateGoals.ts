@@ -6,6 +6,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { goalFromRow } from '@/lib/supabase/remote/mappers/goalMapper'
 import { hasHydrated, markHydrated } from '@/hooks/remote/hydrateGuard'
+import { mergeById } from '@/hooks/remote/mergeById'
 
 export function useHydrateGoals(): void {
   const { user } = useAuth()
@@ -21,7 +22,11 @@ export function useHydrateGoals(): void {
       try {
         const res = await supabase.from('goals').select('*').eq('user_id', uid)
         if (cancelled) return
-        if (res.data) useFinanceStore.setState({ goals: res.data.map(goalFromRow) })
+        if (res.data) {
+          const server = res.data.map(goalFromRow)
+          const local = useFinanceStore.getState().goals
+          useFinanceStore.setState({ goals: mergeById(local, server) })
+        }
         markHydrated(uid, 'goals')
       } catch (e) {
         if (!cancelled) console.error('[useHydrateGoals]', e)

@@ -6,6 +6,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { subscriptionFromRow } from '@/lib/supabase/remote/mappers/subscriptionMapper'
 import { hasHydrated, markHydrated } from '@/hooks/remote/hydrateGuard'
+import { mergeById, type MergableRow } from '@/hooks/remote/mergeById'
 
 export function useHydrateSubscriptions(): void {
   const { user } = useAuth()
@@ -21,7 +22,13 @@ export function useHydrateSubscriptions(): void {
       try {
         const res = await supabase.from('subscriptions').select('*').eq('user_id', uid)
         if (cancelled) return
-        if (res.data) useFinanceStore.setState({ subscriptions: res.data.map(subscriptionFromRow) })
+        if (res.data) {
+          const server = res.data.map(subscriptionFromRow)
+          const local = useFinanceStore.getState().subscriptions
+          useFinanceStore.setState({
+            subscriptions: mergeById(local as unknown as MergableRow[], server as unknown as MergableRow[]) as typeof local,
+          })
+        }
         markHydrated(uid, 'subscriptions')
       } catch (e) {
         if (!cancelled) console.error('[useHydrateSubscriptions]', e)
