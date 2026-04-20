@@ -163,14 +163,19 @@ export default function ProfilePage() {
           )}
         </div>
 
-        <ProfileOnboardingSection
-          expertDone={p.onboardingDone}
-          pct={p.onboardingPct}
-          stages={p.onboardingStages}
-          supabaseConfigured={p.supabaseConfigured}
-          user={p.user}
-          onRedoOnboarding={p.redoOnboarding}
-        />
+        {/* Setup progress — hidden once onboarding is 100% complete so
+            the profile page doesn't carry a stale "you're done!" tile
+            forever. Re-runnable from Settings → "Show me around". */}
+        {p.onboardingDone ? null : (
+          <ProfileOnboardingSection
+            expertDone={p.onboardingDone}
+            pct={p.onboardingPct}
+            stages={p.onboardingStages}
+            supabaseConfigured={p.supabaseConfigured}
+            user={p.user}
+            onRedoOnboarding={p.redoOnboarding}
+          />
+        )}
 
         <ProfileGoalsSummary />
 

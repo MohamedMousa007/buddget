@@ -154,7 +154,14 @@ export function useProfilePage() {
 
   const onboardingPct = getOnboardingCompletionPercent(store, t)
   const onboardingStages = getOnboardingStageRows(onboardingProgressSnapshotFromStore(store), t)
-  const onboardingDone = isExpertOnboardingComplete(store.onboardingState)
+  // Source of truth for "is this user done with onboarding?" is the
+  // Supabase `user_metadata.onboarding_completed` flag — flipped by
+  // `/api/auth/complete-journey`. Falling back to the legacy
+  // `isExpertOnboardingComplete(...)` check for guest mode + users who
+  // completed via the legacy core-gate path.
+  const onboardingDone =
+    user?.user_metadata?.onboarding_completed === true ||
+    isExpertOnboardingComplete(store.onboardingState)
 
   return {
     t,

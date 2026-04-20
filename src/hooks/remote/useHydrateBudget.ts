@@ -6,6 +6,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { assembleBudgetPlan } from '@/lib/supabase/remote/mappers/budgetPlanMapper'
 import { hasHydrated, markHydrated } from '@/hooks/remote/hydrateGuard'
+import { mergeById, type MergableRow } from '@/hooks/remote/mergeById'
 
 export function useHydrateBudget(): void {
   const { user } = useAuth()
@@ -33,7 +34,10 @@ export function useHydrateBudget(): void {
             subcategories: scR.data ?? [],
           })
         )
-        useFinanceStore.setState({ budgetPlans: plans })
+        const local = useFinanceStore.getState().budgetPlans
+        useFinanceStore.setState({
+          budgetPlans: mergeById(local as unknown as MergableRow[], plans as unknown as MergableRow[]) as typeof local,
+        })
         markHydrated(uid, 'budget')
       } catch (e) {
         if (!cancelled) console.error('[useHydrateBudget]', e)

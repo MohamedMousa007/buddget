@@ -68,6 +68,8 @@ export interface TutorialOverlayProps {
     back: string
     skipStep: string
     skipAll: string
+    cancel: string
+    skipConfirmPrompt: string
     progress: (current: number, total: number) => string
   }
 }
@@ -106,6 +108,12 @@ export function TutorialOverlay({
 }: TutorialOverlayProps) {
   const [mounted, setMounted] = useState(false)
   const [cutout, setCutout] = useState<CutoutRect | null>(null)
+  /**
+   * SP14: tapping the header "Skip" swaps the popover body to a
+   * two-choice confirmation ("Skip this step" vs "Skip tutorial") so
+   * users don't accidentally abandon the whole tour with one tap.
+   */
+  const [skipConfirm, setSkipConfirm] = useState(false)
   const [viewport, setViewport] = useState<{ w: number; h: number }>(() => ({
     w: typeof window === 'undefined' ? 1024 : window.innerWidth,
     h: typeof window === 'undefined' ? 768 : window.innerHeight,
@@ -317,42 +325,80 @@ export function TutorialOverlay({
           <span>{labels.progress(stepNumber, totalSteps)}</span>
           <button
             type="button"
-            onClick={onSkipAll}
+            onClick={() => setSkipConfirm(true)}
             className="rounded px-1.5 py-0.5 text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)]"
           >
             {labels.skipAll}
           </button>
         </div>
-        <div className="px-4 pb-4 pt-2">
-          <h3 id="tutorial-title" className="text-base font-semibold">
-            {title}
-          </h3>
-          <p
-            id="tutorial-body"
-            className="mt-2 text-sm leading-relaxed text-[var(--color-brand-text-secondary)] whitespace-pre-line"
-          >
-            {body}
-          </p>
-          <div className="mt-4 flex items-center justify-end gap-2">
-            {canGoBack ? (
+        {skipConfirm ? (
+          <div className="px-4 pb-4 pt-2">
+            <h3 id="tutorial-title" className="text-base font-semibold">
+              {labels.skipConfirmPrompt}
+            </h3>
+            <div className="mt-4 flex flex-col gap-2">
               <button
                 type="button"
-                onClick={onBack}
-                className="h-9 rounded-lg px-3 text-sm font-medium text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
+                ref={firstFocusableRef}
+                onClick={() => {
+                  setSkipConfirm(false)
+                  onSkipStep()
+                }}
+                className="h-10 rounded-lg px-4 text-sm font-semibold text-white bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)]"
               >
-                {labels.back}
+                {labels.skipStep}
               </button>
-            ) : null}
-            <button
-              ref={firstFocusableRef}
-              type="button"
-              onClick={onNext}
-              className="h-9 rounded-lg px-4 text-sm font-semibold text-white bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)]"
-            >
-              {isLastStep ? labels.done : labels.next}
-            </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSkipConfirm(false)
+                  onSkipAll()
+                }}
+                className="h-10 rounded-lg px-4 text-sm font-medium border border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
+              >
+                {labels.skipAll}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSkipConfirm(false)}
+                className="h-9 rounded-lg px-3 text-sm text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+              >
+                {labels.cancel}
+              </button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="px-4 pb-4 pt-2">
+            <h3 id="tutorial-title" className="text-base font-semibold">
+              {title}
+            </h3>
+            <p
+              id="tutorial-body"
+              className="mt-2 text-sm leading-relaxed text-[var(--color-brand-text-secondary)] whitespace-pre-line"
+            >
+              {body}
+            </p>
+            <div className="mt-4 flex items-center justify-end gap-2">
+              {canGoBack ? (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="h-9 rounded-lg px-3 text-sm font-medium text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
+                >
+                  {labels.back}
+                </button>
+              ) : null}
+              <button
+                ref={firstFocusableRef}
+                type="button"
+                onClick={onNext}
+                className="h-9 rounded-lg px-4 text-sm font-semibold text-white bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)]"
+              >
+                {isLastStep ? labels.done : labels.next}
+              </button>
+            </div>
+          </div>
+        )}
       </motion.div>
     </div>,
     document.body,
