@@ -11,6 +11,8 @@ import { AddIncomeSheet } from '@/components/modals/AddIncomeSheet'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useBudgetSetupPage } from '@/hooks/useBudgetSetupPage'
 import { useHydrateBudget, useHydrateIncome, useHydrateExpenses } from '@/hooks/remote'
+import { useTutorialAnchor } from '@/components/tutorial/TutorialAnchor'
+import { PostOnboardingTourBoot } from '@/components/tutorial/PostOnboardingTourBoot'
 
 /**
  * Multi-plan budget editor with manual edits and Buddgy guided setup.
@@ -24,6 +26,7 @@ export default function BudgetSetupPage() {
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
   const planNameInputRef = useRef<HTMLInputElement>(null)
   const hasIncome = p.totalIncome > 0
+  const planRootAnchor = useTutorialAnchor<HTMLDivElement>('postOnboard:plan-root')
 
   useEffect(() => {
     if (p.newPlanDialogOpen) planNameInputRef.current?.select()
@@ -40,7 +43,11 @@ export default function BudgetSetupPage() {
         </PageHeaderContent>
       </PageHeader>
 
-      <div className="px-4 py-4 lg:px-6 max-w-3xl mx-auto space-y-4">
+      <PostOnboardingTourBoot />
+      <div
+        className="px-4 py-4 lg:px-6 max-w-3xl mx-auto space-y-4"
+        {...planRootAnchor.anchorProps}
+      >
         {!p.supabaseConfigured || p.user ?
           <>
             {p.budgetPlans.length > 0 ?

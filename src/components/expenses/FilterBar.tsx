@@ -9,6 +9,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { usePlanCategories } from '@/hooks/usePlanCategories'
 import { useT } from '@/lib/i18n'
+import { useTutorialAnchor } from '@/components/tutorial/TutorialAnchor'
 
 interface FilterBarProps {
   search: string
@@ -52,8 +53,13 @@ export function FilterBar({
     [paymentMethods, t.expenses.filterAllMethods],
   )
 
+  const filterAnchor = useTutorialAnchor<HTMLDivElement>('postOnboard:expenses-filter')
+
   return (
-    <div className="flex flex-wrap items-center gap-3 px-4 py-3 bg-[var(--color-brand-card)]/90 backdrop-blur-xl border-b border-[var(--color-brand-border)] sticky top-[57px] z-20">
+    <div
+      className="flex flex-wrap items-center gap-3 px-4 py-3 bg-[var(--color-brand-card)]/90 backdrop-blur-xl border-b border-[var(--color-brand-border)] sticky top-[57px] z-20"
+      {...filterAnchor.anchorProps}
+    >
       <div className="w-44">
         <SelectField
           value={categoryFilter}

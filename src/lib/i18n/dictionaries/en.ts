@@ -61,6 +61,40 @@ export const en: Dictionary = {
         },
       },
     },
+    postOnboard: {
+      planRoot: {
+        title: 'Your plan is ready',
+        body: 'Buddgy built this from what you told me. Nothing\u2019s locked \u2014 every number is editable.',
+      },
+      categoryRow: {
+        title: 'Tap any category',
+        body: 'Change amounts, rename, or add subcategories. Your real spend flows against these targets.',
+      },
+      rebuild: {
+        title: 'Refine with Buddgy',
+        body: 'Want less dining, more savings, or a fresh plan after a life change? Rebuild anytime from here.',
+      },
+      dashboard: {
+        title: 'Your money at a glance',
+        body: 'In, out, saved \u2014 all updating as you log. This is where you\u2019ll land every day.',
+      },
+      fab: {
+        title: 'Quick add',
+        body: 'Tap + anywhere to log an expense, payment, or savings move in seconds.',
+      },
+      savings: {
+        title: 'Track your savings',
+        body: 'Watch every account grow, add deposits and withdrawals, and keep your goals on pace.',
+      },
+      expenses: {
+        title: 'Filter your spending',
+        body: 'Slice by month, category, or payment method \u2014 useful when you\u2019re hunting leaks.',
+      },
+      profile: {
+        title: 'Profile & settings',
+        body: 'Currencies, themes, export, and help live here. Come back for the tour anytime from Settings.',
+      },
+    },
   },
 
   common: {
@@ -744,6 +778,8 @@ export const en: Dictionary = {
     currencyConverterNoRate: 'Rate not available for this pair',
     goldPriceUnavailable: 'Unavailable — retrying…',
     ratesAttribution: 'Rates by Exchange Rate API',
+    showMeAround: 'Show me around',
+    showMeAroundDesc: 'Replay the guided tour over your plan and the app.',
 
     pageLinksIncomeTitle: 'Your Income',
     pageLinksIncomeDesc: 'Add, edit, or remove salary and other income sources on the Income page.',

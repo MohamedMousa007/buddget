@@ -15,6 +15,7 @@ import { DashboardSummaryTrio } from '@/components/dashboard/DashboardSummaryTri
 import { DashboardGoalsStrip } from '@/components/dashboard/DashboardGoalsStrip'
 import { DashboardFirstRunChecklist } from '@/components/dashboard/DashboardFirstRunChecklist'
 import { BuildBudgetCta } from '@/components/dashboard/BuildBudgetCta'
+import { useTutorialAnchor } from '@/components/tutorial/TutorialAnchor'
 import { useFirstRunChecklist } from '@/lib/onboarding/firstRunChecklist'
 import { useLegacyOnboardingMigrator } from '@/lib/onboarding/migrateLegacyOnboarding'
 import { ONBOARDING_EVENTS, track } from '@/lib/analytics/events'
@@ -57,6 +58,7 @@ export default function DashboardPage() {
 
   const [justBuilt, setJustBuilt] = useState(false)
   const showChecklist = !checklist.hidden && !checklist.allDone && !justBuilt
+  const dashboardAnchor = useTutorialAnchor<HTMLDivElement>('postOnboard:dashboard-main')
 
   const wasAllDoneRef = useRef<boolean | null>(null)
   useEffect(() => {
@@ -82,7 +84,10 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen">
       <DashboardSearchParamsSync />
-      <div className="max-w-2xl lg:max-w-3xl mx-auto px-4 pt-4 pb-8 space-y-4">
+      <div
+        className="max-w-2xl lg:max-w-3xl mx-auto px-4 pt-4 pb-8 space-y-4"
+        {...dashboardAnchor.anchorProps}
+      >
         {isMinimal ? (
           <DashboardHeroMinimal
             stats={{
