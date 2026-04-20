@@ -125,7 +125,17 @@ describe('anchor manifest sync', () => {
 
   it('every manifest entry is referenced somewhere in src/', () => {
     const referenced = new Set(hits.map((h) => h.value))
-    const deadEntries = Object.keys(ANCHORS).filter((id) => !referenced.has(id))
+    const deadEntries = Object.keys(ANCHORS).filter((id) => {
+      if (referenced.has(id)) return false
+      // Allow manifest entries whose concrete id matches a registered
+      // dynamic prefix — they're referenced via a template in JSX
+      // (e.g. `data-tutorial-id={`nav-${label}`}` → ANCHORS['nav-home']
+      // is considered referenced).
+      if (DYNAMIC_ANCHOR_PATTERNS.some(({ prefix }) => id.startsWith(prefix))) {
+        return false
+      }
+      return true
+    })
     expect(
       deadEntries,
       'these manifest entries have no matching data-tutorial-id in src/ — remove them or wire them in',

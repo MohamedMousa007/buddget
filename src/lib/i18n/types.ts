@@ -52,6 +52,20 @@ export interface TourDictionary {
     savings: { title: string; body: string }
     expenses: { title: string; body: string }
     profile: { title: string; body: string }
+    navHome: { title: string; body: string }
+    navExpenses: { title: string; body: string }
+    navDebts: { title: string; body: string }
+    navMore: { title: string; body: string }
+    firstDebt: {
+      title: string
+      body: (name: string) => string
+      fallbackName: string
+    }
+    firstGoal: {
+      title: string
+      body: (name: string) => string
+      fallbackName: string
+    }
   }
 }
 

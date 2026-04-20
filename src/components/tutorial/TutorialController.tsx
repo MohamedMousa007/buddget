@@ -82,7 +82,6 @@ export function TutorialControllerRoot({ children }: { children: React.ReactNode
     if (!resume) return
     if (isTourCompleted(resume.tourId, tutorialsCompleted)) return
     const fresh = createSession(resume.tourId, resume.stepIndex)
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- persisted resume
     setSession(fresh)
     setStatus('running')
   }, [tutorialCurrentStep, tutorialsCompleted])
@@ -132,6 +131,7 @@ export function TutorialControllerRoot({ children }: { children: React.ReactNode
 
   const onNext = useCallback(() => {
     if (!session) return
+    const currentEntry = currentStep(session)?.entry
     const nextSession = advance(session)
     if (isAtEnd(nextSession)) {
       completeTour(nextSession)
@@ -140,9 +140,11 @@ export function TutorialControllerRoot({ children }: { children: React.ReactNode
     setSession(nextSession)
     persistMarker(nextSession)
 
-    // If the next step targets a different route, navigate there; the
-    // overlay will re-resolve once the page mounts and registers its
-    // anchor.
+    // If the current step had `waitForTargetClick` (SP13), the user's
+    // click on the target is already navigating them — don't double
+    // up with router.push. For all other transitions, navigate if the
+    // next step targets a different route.
+    if (currentEntry?.waitForTargetClick) return
     const step = currentStep(nextSession)
     if (step?.entry.route && step.entry.route !== pathname) {
       router.push(step.entry.route)
@@ -184,18 +186,60 @@ export function TutorialControllerRoot({ children }: { children: React.ReactNode
     return ref ?? { current: null as HTMLElement | null }
   }, [activeStep, registry])
 
+  // SP13: if the active step has `waitForTargetClick`, the tour advances
+  // on the user's tap of the target instead of the Next button. Attach a
+  // one-shot capture-phase click listener so it fires before any nested
+  // handlers; the link's own navigation still runs and lands the user on
+  // the right route, and onNext advances the tour in parallel.
+  useEffect(() => {
+    if (!activeStep || !activeStep.entry.waitForTargetClick) return
+    const target = targetRef.current
+    if (!target) return
+    const handler = () => onNext()
+    target.addEventListener('click', handler, { once: true, capture: true })
+    return () => {
+      target.removeEventListener('click', handler, true)
+    }
+  }, [activeStep, targetRef, onNext])
+
+  // SP13: if the active step has a `copyResolver` that returns null, the
+  // step is silently skipped. Schedule onNext in a microtask so we don't
+  // re-render mid-mount.
+  const resolvedCopy = useMemo<{ title: string; body: string } | null>(() => {
+    if (!activeStep) return null
+    const resolver = activeStep.entry.copyResolver
+    if (resolver) {
+      const storeSnapshot = useFinanceStore.getState()
+      return resolver({ store: storeSnapshot, t })
+    }
+    const key = activeStep.entry.copyKey ?? 'tour.missing'
+    return {
+      title: readI18n(t, `${key}.title`),
+      body: readI18n(t, `${key}.body`),
+    }
+  }, [activeStep, t])
+
+  useEffect(() => {
+    if (activeStep && activeStep.entry.copyResolver && resolvedCopy === null) {
+      // Resolver returned null → user doesn't have the data this step
+      // references (e.g. no debts). Skip to the next step.
+      const id = window.setTimeout(() => onNext(), 0)
+      return () => window.clearTimeout(id)
+    }
+  }, [activeStep, resolvedCopy, onNext])
+
   return (
     <TutorialControllerContext.Provider value={contextValue}>
       {children}
-      {session && activeStep && status === 'running' ? (
+      {session && activeStep && status === 'running' && resolvedCopy !== null ? (
         <TutorialOverlay
           targetRef={targetRef}
-          title={readI18n(t, `${activeStep.entry.copyKey ?? 'tour.missing'}.title`)}
-          body={readI18n(t, `${activeStep.entry.copyKey ?? 'tour.missing'}.body`)}
+          title={resolvedCopy.title}
+          body={resolvedCopy.body}
           stepNumber={session.stepIndex + 1}
           totalSteps={session.steps.length}
           placement={activeStep.entry.placement ?? 'auto'}
-          interactive={activeStep.entry.interactive ?? false}
+          interactive={(activeStep.entry.interactive ?? false) || !!activeStep.entry.waitForTargetClick}
           isLastStep={session.stepIndex === session.steps.length - 1}
           canGoBack={session.stepIndex > 0}
           onNext={onNext}
