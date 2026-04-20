@@ -60,6 +60,58 @@ export const en: Dictionary = {
           body: 'Save and Buddgy starts tracking. You can come back later to add another source.',
         },
       },
+      debt: {
+        type: {
+          title: 'What kind of debt?',
+          body: 'Personal loan, installment plan, general debt, or a credit card? Buddgy tracks each differently.',
+        },
+        balance: {
+          title: 'How much is left?',
+          body: 'The remaining balance you still owe \u2014 not the original amount.',
+        },
+        save: {
+          title: 'Save it',
+          body: 'Once saved, Buddgy will help you size the "Debt" slice of your budget plan.',
+        },
+      },
+      savings: {
+        name: {
+          title: 'Name the account',
+          body: 'Pick something recognisable \u2014 "Emergency fund" or "Dubai bank savings".',
+        },
+        balance: {
+          title: 'Current balance',
+          body: 'The amount already sitting in this account. Leave 0 if you\u2019re starting fresh.',
+        },
+        save: {
+          title: 'Save it',
+          body: 'Deposits and withdrawals later feed straight into your progress chart.',
+        },
+      },
+      subscription: {
+        amount: {
+          title: 'How much per charge?',
+          body: 'The amount billed each cycle \u2014 Buddgy rolls it into your monthly spend automatically.',
+        },
+        cycle: {
+          title: 'How often?',
+          body: 'Monthly, yearly, or anything in between. Buddgy normalises to monthly for your budget.',
+        },
+        save: {
+          title: 'Save it',
+          body: 'Once saved, this subscription shows up in your recurring spend view.',
+        },
+      },
+      goal: {
+        name: {
+          title: 'Name the goal',
+          body: 'A concrete name makes it easier to stay motivated \u2014 "Dubai apartment deposit" beats "Savings."',
+        },
+        save: {
+          title: 'Lock it in',
+          body: 'Buddgy uses your goals to weight the Savings slice in your plan.',
+        },
+      },
     },
     postOnboard: {
       planRoot: {

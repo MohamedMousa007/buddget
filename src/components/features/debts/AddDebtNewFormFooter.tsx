@@ -27,6 +27,7 @@ export function AddDebtNewFormFooter({
         type="button"
         onClick={onSubmit}
         disabled={!canSubmit}
+        data-tutorial-id="debt-modal:save"
         className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50"
       >
         {isCreditCard ? t.addDebt.buttonSubmitCreditCard : t.addDebt.buttonSubmit}

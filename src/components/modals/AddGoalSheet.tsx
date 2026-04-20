@@ -58,7 +58,7 @@ function AddGoalSheetForm({ editingGoal, onClose, title, selectClass, t }: Inner
           </>
         ) : (
           <>
-            <div>
+            <div data-tutorial-id="goal-modal:name">
               <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.goals.goalName}</Label>
               <Input
                 value={form.name}
@@ -199,6 +199,7 @@ function AddGoalSheetForm({ editingGoal, onClose, title, selectClass, t }: Inner
               <button
                 type="button"
                 onClick={form.submit}
+                data-tutorial-id="goal-modal:save"
                 className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
               >
                 {t.common.save}

@@ -89,6 +89,7 @@ function AddSubscriptionSheetInner({
               type="button"
               onClick={form.submit}
               disabled={!form.canSubmit}
+              data-tutorial-id="subscription-modal:save"
               className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {form.isEdit ? t.subscriptions.saveEdit : t.subscriptions.saveAdd}

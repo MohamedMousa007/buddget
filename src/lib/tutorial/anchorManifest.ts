@@ -190,6 +190,84 @@ export const ANCHORS: Record<string, AnchorEntry> = {
     interactive: true,
   },
 
+  // ── AddDebt modal tour (SP8) ──────────────────────────────────────
+  'debt-modal:type': {
+    tour: 'addDebtTour',
+    order: 1,
+    copyKey: 'tour.modal.debt.type',
+    placement: 'bottom',
+  },
+  'debt-modal:balance': {
+    tour: 'addDebtTour',
+    order: 2,
+    copyKey: 'tour.modal.debt.balance',
+    placement: 'bottom',
+  },
+  'debt-modal:save': {
+    tour: 'addDebtTour',
+    order: 3,
+    copyKey: 'tour.modal.debt.save',
+    placement: 'top',
+    interactive: true,
+  },
+
+  // ── AddSavingsAccount modal tour (SP8) ────────────────────────────
+  'savings-modal:name': {
+    tour: 'addSavingsTour',
+    order: 1,
+    copyKey: 'tour.modal.savings.name',
+    placement: 'bottom',
+  },
+  'savings-modal:balance': {
+    tour: 'addSavingsTour',
+    order: 2,
+    copyKey: 'tour.modal.savings.balance',
+    placement: 'bottom',
+  },
+  'savings-modal:save': {
+    tour: 'addSavingsTour',
+    order: 3,
+    copyKey: 'tour.modal.savings.save',
+    placement: 'top',
+    interactive: true,
+  },
+
+  // ── AddSubscription modal tour (SP8) ──────────────────────────────
+  'subscription-modal:amount': {
+    tour: 'addSubscriptionTour',
+    order: 1,
+    copyKey: 'tour.modal.subscription.amount',
+    placement: 'bottom',
+  },
+  'subscription-modal:cycle': {
+    tour: 'addSubscriptionTour',
+    order: 2,
+    copyKey: 'tour.modal.subscription.cycle',
+    placement: 'bottom',
+  },
+  'subscription-modal:save': {
+    tour: 'addSubscriptionTour',
+    order: 3,
+    copyKey: 'tour.modal.subscription.save',
+    placement: 'top',
+    interactive: true,
+  },
+
+  // ── AddGoal modal tour (SP8) ──────────────────────────────────────
+  'goal-modal:name': {
+    tour: 'addGoalTour',
+    order: 1,
+    copyKey: 'tour.modal.goal.name',
+    placement: 'bottom',
+  },
+  'goal-modal:save': {
+    tour: 'addGoalTour',
+    order: 2,
+    copyKey: 'tour.modal.goal.save',
+    placement: 'top',
+    interactive: true,
+  },
+
   // ── AddIncome modal tour (SP2) ────────────────────────────────────
   'income-modal:name': {
     tour: 'addIncomeTour',

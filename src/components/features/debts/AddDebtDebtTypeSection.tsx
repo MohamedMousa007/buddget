@@ -90,7 +90,7 @@ export function AddDebtDebtTypeSection({
 
   return (
     <div className="space-y-3">
-      <div>
+      <div data-tutorial-id="debt-modal:type">
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.debtTypeLabel}</Label>
         <div className="mt-2 flex flex-wrap gap-2">
           {(
