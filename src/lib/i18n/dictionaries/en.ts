@@ -4,6 +4,27 @@ export const en: Dictionary = {
   dir: 'ltr',
   locale: 'en-US',
 
+  tour: {
+    debug: {
+      fab: {
+        title: 'Quick add',
+        body: 'Tap this button anywhere in the app to log expenses, payments, or savings.',
+      },
+      checklist: {
+        title: 'First-run checklist',
+        body: 'This tracks your setup progress. It fades away as you complete each step.',
+      },
+      navHome: {
+        title: 'Dashboard',
+        body: 'The home for your stats \u2014 In, Out, Saved, net worth, category breakdowns.',
+      },
+    },
+    missing: {
+      title: 'Missing copy',
+      body: 'This step has no i18n key configured. Check the anchor manifest.',
+    },
+  },
+
   common: {
     save: 'Save',
     cancel: 'Cancel',
