@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowLeft } from 'lucide-react'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { useJourneyRunner } from '@/hooks/useJourneyRunner'
@@ -10,6 +10,7 @@ import { JOURNEY_CARDS } from '@/lib/onboarding/journeyConfig'
 import { JOURNEY_PHASES } from '@/lib/onboarding/journeyTypes'
 import { InfoCard } from '@/components/features/onboarding/journey/cards/InfoCard'
 import { FieldCard } from '@/components/features/onboarding/journey/cards/FieldCard'
+import { defaultCurrencyForCountry } from '@/lib/profile/countryToCurrency'
 
 /**
  * Top-level onboarding Journey orchestrator. Composes:
@@ -27,6 +28,25 @@ export function JourneyRunner() {
 
   const { currentCard, visibleIndex, progress, answers, canGoBack, advance, back, setAnswer } =
     runner
+
+  // When the currency card opens, seed it from the user's country if they
+  // haven't explicitly picked one yet. Shows the currency as a
+  // pre-filled, confirmable choice rather than an empty field.
+  useEffect(() => {
+    if (currentCard?.id !== 'identity.currency') return
+    if (answers.identity.baseCurrency) return
+    if (!answers.identity.country) return
+    const derived = defaultCurrencyForCountry(answers.identity.country, answers.identity.city)
+    if (derived) setAnswer('identity.baseCurrency', derived)
+    // Only re-run when the card or the inputs change — never loops because
+    // the guard above short-circuits once a currency is set.
+  }, [
+    currentCard?.id,
+    answers.identity.country,
+    answers.identity.city,
+    answers.identity.baseCurrency,
+    setAnswer,
+  ])
 
   // The Field cards read + write through `setAnswer(path, value)`; for
   // other cards we derive a no-op.

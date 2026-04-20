@@ -1153,6 +1153,30 @@ export const en: Dictionary = {
             'The essentials only. A sensible default plan now; refine later from the dashboard.',
         },
       },
+      identity: {
+        intro: {
+          title: 'First, a quick introduction.',
+          body:
+            'A few basics about where you are. These shape the currencies, tips, and cost anchors Buddgy uses later.',
+        },
+        name: { placeholder: 'Your name' },
+        country: {
+          hint: 'We\u2019ll set your main currency from this \u2014 you can change it on the next card.',
+        },
+        city: {
+          hint: 'Optional. Helps Buddgy calibrate rent and groceries.',
+          placeholder: 'City (optional)',
+        },
+        currency: {
+          hint: 'Your primary currency. Budgets and totals show in this.',
+        },
+        household: {
+          hint: 'So rent and groceries are sized right.',
+          soloLabel: 'Just me',
+          coupleLabel: 'Me + partner',
+          familyLabel: 'Family',
+        },
+      },
     },
 
     checklistTitle: 'Finish setting up Buddget',

@@ -1145,6 +1145,19 @@ export interface Dictionary {
           quickDescription: string
         }
       }
+      identity: {
+        intro: { title: string; body: string }
+        name: { placeholder: string }
+        country: { hint: string }
+        city: { hint: string; placeholder: string }
+        currency: { hint: string }
+        household: {
+          hint: string
+          soloLabel: string
+          coupleLabel: string
+          familyLabel: string
+        }
+      }
     }
 
     // First-run checklist shown on the dashboard until the user finishes setup.
