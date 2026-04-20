@@ -1286,6 +1286,19 @@ export const ar: Dictionary = {
           default: 'حصلت على كل ما أحتاج. أبني خطتك الآن — بضع ثوانٍ فقط.',
         },
       },
+      modalGate: {
+        emptyHint: 'اضغط أدناه للبدء — يمكنك إضافة المزيد لاحقاً.',
+        savedSummary: (count, lastName) =>
+          count === 1
+            ? `تم حفظ ${lastName}. أضِف المزيد إن أردت.`
+            : `تم حفظ ${count} — آخرها: ${lastName}.`,
+        addFirst: 'أضِف أول واحد',
+        addAnother: 'أضِف آخر',
+        continue: 'متابعة',
+      },
+      loading: {
+        placeholder: 'اقتربنا — صانع الخطة قادم في الخطوة التالية.',
+      },
       moneyIn: {
         pmIntro: {
           title: 'أين تصل أموالك؟',

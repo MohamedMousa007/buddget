@@ -1223,6 +1223,20 @@ export interface Dictionary {
       moneyIn: {
         pmIntro: { title: string; body: string }
       }
+      /** Copy rendered by `OnboardingModalGate` (the Add another /
+       *  Continue / summary chrome around a reused app modal). */
+      modalGate: {
+        emptyHint: string
+        savedSummary: (count: number, lastName: string) => string
+        addFirst: string
+        addAnother: string
+        continue: string
+      }
+      /** Copy for the terminal loading card (SP5 replaces with the
+       *  real plan-building screen). */
+      loading: {
+        placeholder: string
+      }
       multi: {
         add: {
           paymentMethods: string

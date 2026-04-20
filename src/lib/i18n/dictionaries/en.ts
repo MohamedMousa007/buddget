@@ -1296,6 +1296,19 @@ export const en: Dictionary = {
             'Add the accounts and cards you use. We start here because the next step \u2014 your income \u2014 lands on one of them.',
         },
       },
+      modalGate: {
+        emptyHint: 'Tap below to get started \u2014 you can always add more later.',
+        savedSummary: (count, lastName) =>
+          count === 1
+            ? `${lastName} saved. Add more if you like.`
+            : `${count} saved \u2014 latest: ${lastName}.`,
+        addFirst: 'Add your first',
+        addAnother: 'Add another',
+        continue: 'Continue',
+      },
+      loading: {
+        placeholder: 'Almost there \u2014 the plan builder lands next.',
+      },
       multi: {
         add: {
           paymentMethods: 'Add a payment method',
