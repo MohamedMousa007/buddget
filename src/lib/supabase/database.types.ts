@@ -56,36 +56,6 @@ export type Database = {
         }
         Relationships: []
       }
-      backfill_issues: {
-        Row: {
-          created_at: string
-          entity: string
-          id: number
-          legacy_id: string | null
-          payload: Json | null
-          reason: string
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          entity: string
-          id?: number
-          legacy_id?: string | null
-          payload?: Json | null
-          reason: string
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          entity?: string
-          id?: number
-          legacy_id?: string | null
-          payload?: Json | null
-          reason?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       budget_categories: {
         Row: {
           amount: number
@@ -1825,3 +1795,4 @@ export const Constants = {
     },
   },
 } as const
+
