@@ -46,6 +46,16 @@ export const TOUR_VERSIONS = {
 
 export type TourId = keyof typeof TOUR_VERSIONS
 
+/**
+ * Context passed to `AnchorEntry.copyResolver`. Kept minimal: the
+ * finance store (for user-data lookups) + the i18n dictionary (for
+ * translated fragments the resolver stitches together).
+ */
+export interface TutorialCopyContext {
+  store: import('@/lib/store/types').FinanceStore
+  t: import('@/lib/i18n').Dictionary
+}
+
 export interface AnchorEntry {
   /** Tour this anchor belongs to. `null` = the anchor exists for other
    *  reasons (analytics, testing) and isn't part of any tour. */
@@ -59,8 +69,22 @@ export interface AnchorEntry {
    *  (e.g. a "Tap Tune" step). The tour pauses and resumes when the user
    *  interacts. Default false. */
   interactive?: boolean
+  /** When true, the controller listens for a click on the target and
+   *  advances on click (instead of requiring the Next button). Used for
+   *  nav-tab spotlights like "Tap Savings to visit your savings page".
+   *  Implies `interactive: true` (clicks must reach the target). */
+  waitForTargetClick?: boolean
+  /** Produces title/body copy at render time from the current finance
+   *  store + i18n dictionary. Lets steps reference the user's real
+   *  data ("Here's the {name} debt you added"). Returning `null`
+   *  skips the step (e.g. user has no debts → skip debt-spotlight).
+   *  Takes precedence over `copyKey`. */
+  copyResolver?: (ctx: TutorialCopyContext) => { title: string; body: string } | null
   /** When the target is on a specific route, set this so the controller
-   *  can navigate before spotlighting. Default: current route. */
+   *  can navigate before spotlighting. Default: current route. When the
+   *  *previous* step has `waitForTargetClick: true`, the controller
+   *  suppresses its own `router.push` — the user's tap lands them on
+   *  the new route. */
   route?: string
   /** Popover placement hint — `auto` lets the overlay decide based on
    *  available space. */
@@ -103,7 +127,7 @@ export const ANCHORS: Record<string, AnchorEntry> = {
   // that renders bottom-nav; the tour step pins it to the dashboard.
   'fab-root': {
     tour: 'postOnboardingTour',
-    order: 5,
+    order: 6,
     copyKey: 'tour.postOnboard.fab',
     route: '/',
     placement: 'top',
@@ -136,31 +160,97 @@ export const ANCHORS: Record<string, AnchorEntry> = {
   },
   'postOnboard:dashboard-main': {
     tour: 'postOnboardingTour',
-    order: 4,
+    order: 5,
     copyKey: 'tour.postOnboard.dashboard',
     route: '/',
     placement: 'bottom',
   },
   'postOnboard:savings-root': {
     tour: 'postOnboardingTour',
-    order: 6,
+    order: 13,
     copyKey: 'tour.postOnboard.savings',
     route: '/savings',
     placement: 'bottom',
   },
   'postOnboard:expenses-filter': {
     tour: 'postOnboardingTour',
-    order: 7,
+    order: 8,
     copyKey: 'tour.postOnboard.expenses',
     route: '/expenses',
     placement: 'bottom',
   },
   'postOnboard:profile-root': {
     tour: 'postOnboardingTour',
-    order: 8,
+    order: 14,
     copyKey: 'tour.postOnboard.profile',
     route: '/profile',
     placement: 'bottom',
+  },
+
+  // ── Nav-tab spotlights (SP13) — teach bottom nav by asking the user
+  //    to tap each one, then advance on the actual click. Referenced
+  //    via the `nav-${label}` template in BottomNav.tsx, so test 3's
+  //    dynamic-prefix allowance covers them as "referenced."
+  'nav-home': {
+    tour: 'postOnboardingTour',
+    order: 4,
+    copyKey: 'tour.postOnboard.navHome',
+    placement: 'top',
+    waitForTargetClick: true,
+  },
+  'nav-expenses': {
+    tour: 'postOnboardingTour',
+    order: 7,
+    copyKey: 'tour.postOnboard.navExpenses',
+    placement: 'top',
+    waitForTargetClick: true,
+  },
+  'nav-debts': {
+    tour: 'postOnboardingTour',
+    order: 9,
+    copyKey: 'tour.postOnboard.navDebts',
+    placement: 'top',
+    waitForTargetClick: true,
+  },
+  'nav-more': {
+    tour: 'postOnboardingTour',
+    order: 12,
+    copyKey: 'tour.postOnboard.navMore',
+    placement: 'top',
+    waitForTargetClick: true,
+  },
+
+  // ── User-data spotlights (SP13) — the tour references the user's
+  //    first debt/goal so the walkthrough feels personal. The
+  //    `copyResolver` returns null when the user has no rows of that
+  //    entity → step is silently skipped.
+  'postOnboard:first-debt': {
+    tour: 'postOnboardingTour',
+    order: 10,
+    route: '/debts',
+    placement: 'top',
+    copyResolver: ({ store, t }) => {
+      const first = store.debts[0]
+      if (!first) return null
+      return {
+        title: t.tour.postOnboard.firstDebt.title,
+        body: t.tour.postOnboard.firstDebt.body(first.name || t.tour.postOnboard.firstDebt.fallbackName),
+      }
+    },
+  },
+  'postOnboard:first-goal': {
+    tour: 'postOnboardingTour',
+    order: 11,
+    route: '/goals',
+    placement: 'top',
+    copyResolver: ({ store, t }) => {
+      const first = store.goals[0]
+      if (!first) return null
+      return {
+        title: t.tour.postOnboard.firstGoal.title,
+        body: t.tour.postOnboard.firstGoal.body(first.name || t.tour.postOnboard.firstGoal.fallbackName),
+      }
+    },
   },
 
   // ── AddPaymentMethod modal tour (SP2) ─────────────────────────────
@@ -313,8 +403,8 @@ export interface DynamicAnchorPattern {
 }
 
 export const DYNAMIC_ANCHOR_PATTERNS: DynamicAnchorPattern[] = [
-  // Bottom-nav items: produces nav-Home, nav-Expenses, nav-Debts, nav-More.
-  { prefix: 'nav-', match: /^nav-[A-Z][a-zA-Z\s]+$/, tour: null },
+  // Bottom-nav items: produces nav-home, nav-expenses, nav-debts, nav-more.
+  { prefix: 'nav-', match: /^nav-[a-z][a-zA-Z\s-]+$/, tour: null },
   // First-run checklist rows: produces checklist-row-income, etc.
   { prefix: 'checklist-row-', match: /^checklist-row-[a-z0-9_-]+$/, tour: null },
 ]

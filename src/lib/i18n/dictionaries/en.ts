@@ -146,6 +146,34 @@ export const en: Dictionary = {
         title: 'Profile & settings',
         body: 'Currencies, themes, export, and help live here. Come back for the tour anytime from Settings.',
       },
+      navHome: {
+        title: 'Your dashboard',
+        body: 'Tap Home to see your daily money view \u2014 in, out, saved at a glance.',
+      },
+      navExpenses: {
+        title: 'Where your money goes',
+        body: 'Tap Expenses to see every transaction you\u2019ve logged, filterable by month and category.',
+      },
+      navDebts: {
+        title: 'Your debts',
+        body: 'Tap Debts to see what you owe, track payments, and watch balances fall.',
+      },
+      navMore: {
+        title: 'Everything else',
+        body: 'Tap More to reach your plan, savings, income, reports, and profile.',
+      },
+      firstDebt: {
+        title: 'You added this',
+        body: (name) =>
+          `Here\u2019s the "${name}" debt you set up during onboarding. Tap it anytime to edit the balance or log a payment.`,
+        fallbackName: 'debt',
+      },
+      firstGoal: {
+        title: 'Your first goal',
+        body: (name) =>
+          `"${name}" is live. Tap to edit the target, link a savings account, or check progress.`,
+        fallbackName: 'goal',
+      },
     },
   },
 

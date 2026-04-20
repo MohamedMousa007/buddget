@@ -107,27 +107,30 @@ export default function DebtsPage() {
               </div>
             ) : (
               <div className={`grid gap-4 ${activeDebts.length === 1 ? 'grid-cols-1 max-w-lg mx-auto' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'}`}>
-                {activeDebts.map((debt) => {
+                {activeDebts.map((debt, idx) => {
                   const payments = debtPayments.filter((p) => p.debtId === debt.id)
+                  const tourAnchor = idx === 0 ? { 'data-tutorial-id': 'postOnboard:first-debt' } : {}
                   if (debt.debtType === 'credit_card') {
                     return (
-                      <CreditCardDebtCard
-                        key={debt.id}
+                      <div key={debt.id} {...tourAnchor}>
+                        <CreditCardDebtCard
+                          debt={debt}
+                          payments={payments}
+                          onRecordPayment={() => guardedRecordPayment(debt.id)}
+                          onEdit={() => handleEditDebt(debt.id)}
+                        />
+                      </div>
+                    )
+                  }
+                  return (
+                    <div key={debt.id} {...tourAnchor}>
+                      <DebtCard
                         debt={debt}
                         payments={payments}
                         onRecordPayment={() => guardedRecordPayment(debt.id)}
                         onEdit={() => handleEditDebt(debt.id)}
                       />
-                    )
-                  }
-                  return (
-                    <DebtCard
-                      key={debt.id}
-                      debt={debt}
-                      payments={payments}
-                      onRecordPayment={() => guardedRecordPayment(debt.id)}
-                      onEdit={() => handleEditDebt(debt.id)}
-                    />
+                    </div>
                   )
                 })}
               </div>
