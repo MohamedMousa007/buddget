@@ -14,7 +14,7 @@ import { ensureBudgetPlanId } from '@/lib/budget/ensureBudgetPlanId'
 import { applyBudgetPlan } from '@/lib/budget/applyBudgetPlan'
 import { flushFinanceNow } from '@/components/sync/SupabaseFinanceSync'
 import { buildAiPlanContext } from '@/lib/onboarding/buildAiPlanContext'
-import { generateJourneyPlan } from '@/lib/onboarding/generateJourneyPlan'
+import { generateJourneyPlan, type JourneyPlanResult } from '@/lib/onboarding/generateJourneyPlan'
 import type { JourneyAnswers } from '@/lib/onboarding/journeyTypes'
 import { JOURNEY_EVENTS, track } from '@/lib/analytics/events'
 
@@ -29,12 +29,14 @@ import { JOURNEY_EVENTS, track } from '@/lib/analytics/events'
  * atomically and `/api/auth/complete-journey` short-circuits when the
  * flag is already set.
  *
- * Theatrical minimum of 2.5 s so the transition doesn't feel jarring,
- * capped at 10 s before we show a soft fallback notice (still lets the
- * user continue — the plan is applied either way).
+ * Theatrical minimum of 2.5 s so the transition doesn't feel jarring.
+ * After 10 s we surface a soft status message; at 18 s we abandon the
+ * AI call and apply the preset seed so users can never be stuck on
+ * this screen.
  */
 const MIN_DISPLAY_MS = 2500
 const SOFT_TIMEOUT_MS = 10_000
+const HARD_TIMEOUT_MS = 18_000
 
 type Phase = 'working' | 'succeeded' | 'softTimeout' | 'failed'
 
@@ -111,7 +113,20 @@ export function BuildingPlanScreen() {
         if (!cancelled) setPhase((p) => (p === 'working' ? 'softTimeout' : p))
       }, SOFT_TIMEOUT_MS)
 
-      const result = await generateJourneyPlan(context)
+      // Hard-timeout wrapper: if Gemini hangs past HARD_TIMEOUT_MS we
+      // swap to the preset seed so the user is never stranded. The
+      // preset is already what `generateJourneyPlan` would fall back
+      // to on error — racing the promise just lets us fail faster.
+      const hardTimeout = new Promise<JourneyPlanResult>((resolve) => {
+        window.setTimeout(() => {
+          resolve({
+            categories: context.initialCategories,
+            source: 'preset',
+            error: 'hard_timeout',
+          })
+        }, HARD_TIMEOUT_MS)
+      })
+      const result = await Promise.race([generateJourneyPlan(context), hardTimeout])
 
       const planId = ensureBudgetPlanId(() => useFinanceStore.getState())
       try {
@@ -125,16 +140,22 @@ export function BuildingPlanScreen() {
         console.error('[BuildingPlanScreen] applyBudgetPlan failed', e)
       }
 
-      // Ensure a minimum theatrical display so the user sees the beats.
-      const elapsed = Date.now() - startedAt
-      if (elapsed < MIN_DISPLAY_MS) {
-        await new Promise((r) => window.setTimeout(r, MIN_DISPLAY_MS - elapsed))
-      }
-
+      // Flush to Supabase immediately after the local apply so a
+      // tab-close during the theatrical min-display doesn't leave the
+      // plan only in localStorage. Do this BEFORE the min-display
+      // wait — durability > theatre.
       try {
         await flushFinanceNow()
       } catch (e) {
         console.warn('[BuildingPlanScreen] flushFinanceNow failed', e)
+      }
+
+      // Theatrical minimum: hold the bullets on screen a beat longer
+      // if the AI came back fast. Purely cosmetic now that data is
+      // already durable.
+      const elapsed = Date.now() - startedAt
+      if (elapsed < MIN_DISPLAY_MS) {
+        await new Promise((r) => window.setTimeout(r, MIN_DISPLAY_MS - elapsed))
       }
 
       // Flip the auth flag. Failure here is recoverable — the next app

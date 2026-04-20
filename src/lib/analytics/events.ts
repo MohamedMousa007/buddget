@@ -48,6 +48,7 @@ export const JOURNEY_EVENTS = {
   aiParseCalled: 'journey.ai.parse_called',
   aiParseFailed: 'journey.ai.parse_failed',
   aiPlanCalled: 'journey.ai.plan_called',
+  aiPlanSucceeded: 'journey.ai.plan_succeeded',
   aiPlanFailed: 'journey.ai.plan_failed',
   fallbackPresetUsed: 'journey.fallback_preset_used',
   completed: 'journey.completed',

@@ -43,9 +43,8 @@ export async function generateJourneyPlan(
     if (!Array.isArray(refined) || refined.length === 0) {
       throw new Error('AI returned empty plan')
     }
-    track(JOURNEY_EVENTS.completed, {
+    track(JOURNEY_EVENTS.aiPlanSucceeded, {
       durationMs: Date.now() - startedAt,
-      source: 'ai',
     })
     return { categories: refined, source: 'ai' }
   } catch (err) {
