@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Check, Loader2, Sparkles } from 'lucide-react'
+import { Check, Loader2 } from 'lucide-react'
+import { BuddgyAvatar } from '@/components/illustrations/BuddgyAvatar'
 import { useRouter } from 'next/navigation'
 import { useShallow } from 'zustand/react/shallow'
 
@@ -206,22 +207,28 @@ export function BuildingPlanScreen() {
     <div className="flex flex-col items-center justify-center gap-6 py-12 text-center">
       <div
         className={cn(
-          'h-16 w-16 rounded-full flex items-center justify-center',
-          'bg-[var(--color-brand-elevated)] text-[var(--color-brand-red)]',
-          'shadow-[0_0_40px_rgba(255,91,91,0.25)]',
+          'relative flex items-center justify-center',
+          'rounded-full',
+          'shadow-[0_0_60px_rgba(255,91,91,0.28)]',
         )}
         aria-hidden
       >
         {phase === 'succeeded' ? (
-          <Check className="h-7 w-7" />
+          <>
+            <BuddgyAvatar pose="celebrating" size="lg" />
+            <motion.span
+              className="absolute inset-0 flex items-center justify-center pointer-events-none"
+              initial={{ opacity: 0, scale: 0.6 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: 'spring', damping: 16, stiffness: 280 }}
+            >
+              <div className="rounded-full bg-[var(--color-brand-green)] p-1.5 translate-x-[48px] translate-y-[-40px]">
+                <Check className="h-4 w-4 text-white" />
+              </div>
+            </motion.span>
+          </>
         ) : (
-          <motion.span
-            animate={{ rotate: 360 }}
-            transition={{ duration: 2.4, repeat: Infinity, ease: 'linear' }}
-            className="inline-flex"
-          >
-            <Sparkles className="h-7 w-7" />
-          </motion.span>
+          <BuddgyAvatar pose="thinking" size="lg" />
         )}
       </div>
 
