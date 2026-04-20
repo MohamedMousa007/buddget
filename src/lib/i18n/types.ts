@@ -1185,6 +1185,41 @@ export interface Dictionary {
           familyLabel: string
         }
       }
+      /**
+       * Scripted Buddgy dialogue. Keyed by `BuddgyCardId`, then by
+       * variant (`default`, `uae`, `egypt`, …). Picked at runtime by
+       * `buildBuddgyMessage`. Slot tokens in templates (`{name}`,
+       * `{country}`, `{currency}`, `{firstPaymentMethodName}`, …) are
+       * interpolated against `BuddgyAnswers`.
+       */
+      buddgy: {
+        welcomeIntro: { default: string }
+        identityName: { default: string }
+        identityCountry: { default: string }
+        identityCity: {
+          default: string
+          uae: string
+          egypt: string
+          saudi: string
+          jordan: string
+        }
+        identityCurrency: { default: string }
+        identitySecondaryCurrency: {
+          default: string
+          remittance: string
+        }
+        identityHousehold: { default: string }
+        moneyInPmIntro: { default: string }
+        moneyInIncomeIntro: {
+          default: string
+          afterPm: string
+        }
+        gateSavings: { default: string }
+        gateDebts: { default: string }
+        gateSubscriptions: { default: string }
+        goalsIntro: { default: string }
+        generateIntro: { default: string }
+      }
       moneyIn: {
         pmIntro: { title: string; body: string }
       }

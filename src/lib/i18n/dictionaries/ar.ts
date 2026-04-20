@@ -1234,6 +1234,58 @@ export const ar: Dictionary = {
           familyLabel: 'عائلة',
         },
       },
+      buddgy: {
+        welcomeIntro: {
+          default: 'أهلاً — أنا Buddgy، رفيقك المالي. خلّينا نبدأ.',
+        },
+        identityName: {
+          default: 'ماذا نناديك؟',
+        },
+        identityCountry: {
+          default: 'وين أنت في هذا العالم، {name}؟',
+        },
+        identityCity: {
+          uae: 'في أي إمارة، {name}؟ دبي، أبوظبي، أم في مكان أهدأ؟',
+          egypt: 'في أي مدينة في مصر، {name}؟ القاهرة، الإسكندرية، البحر الأحمر؟',
+          saudi: 'في أي مدينة في السعودية، {name}؟ الرياض، جدة، أم مكان آخر؟',
+          jordan: 'في أي مدينة في الأردن، {name}؟ عمّان؟',
+          default: 'في أي مدينة، {name}؟',
+        },
+        identityCurrency: {
+          default: 'عملتك الأساسية {baseCurrency} — صحيح؟',
+        },
+        identitySecondaryCurrency: {
+          default: 'هل تتعامل بعملة أخرى بشكل متكرر؟',
+          remittance:
+            'ترسل تحويلات للأهل، أو تتعامل بالدولار؟ اختر عملة ثانوية لنعرض التحويلات في كل مكان يهمّك.',
+        },
+        identityHousehold: {
+          default: 'حتى أضبط الإيجار والمصاريف بشكل مناسب — من يشاركك البيت؟',
+        },
+        moneyInPmIntro: {
+          default:
+            'الآن الجزء العملي. كل {baseCurrency} تكسبه يصل إلى مكان ما. لنجهّز تلك الحسابات أولاً.',
+        },
+        moneyInIncomeIntro: {
+          default: 'ممتاز. الآن لنسجّل ما يدخل.',
+          afterPm: 'رائع. لنعرف كيف يصل المال إلى {firstPaymentMethodName}.',
+        },
+        gateSavings: {
+          default: 'هل لديك حسابات ادخار مسبقاً؟',
+        },
+        gateDebts: {
+          default: 'هل من ديون أو قروض نخطّط لها؟',
+        },
+        gateSubscriptions: {
+          default: 'هل من اشتراكات متكررة — نتفليكس، نادي، أي شيء من هذا النوع؟',
+        },
+        goalsIntro: {
+          default: 'الخطوة الأخيرة يا {name} — لأيّ هدف تدّخر؟',
+        },
+        generateIntro: {
+          default: 'حصلت على كل ما أحتاج. أبني خطتك الآن — بضع ثوانٍ فقط.',
+        },
+      },
       moneyIn: {
         pmIntro: {
           title: 'أين تصل أموالك؟',
