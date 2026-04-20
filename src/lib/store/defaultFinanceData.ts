@@ -60,6 +60,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   onboardingChecklistHidden: false,
   legacyOnboardingMigratedAt: null,
   dashboardLayout: 'standard',
+  tutorialsCompleted: [],
+  tutorialCurrentStep: null,
 }
 
 export const DEFAULT_PROFILE: UserProfile = {

@@ -20,6 +20,8 @@ export function settingsToRow(s: AppSettings, userId: string): UserSettingsInser
     two_factor_email_enabled: s.twoFactorEmailEnabled,
     onboarding_checklist_hidden: s.onboardingChecklistHidden,
     dashboard_layout: s.dashboardLayout ?? 'standard',
+    tutorials_completed: s.tutorialsCompleted,
+    tutorial_current_step: s.tutorialCurrentStep,
   }
 }
 
@@ -51,6 +53,8 @@ export function settingsFromRow(row: UserSettingsRow, opts: SettingsFromRowOptio
     // Client-only; never synced.
     legacyOnboardingMigratedAt: null,
     dashboardLayout: row.dashboard_layout,
+    tutorialsCompleted: row.tutorials_completed ?? [],
+    tutorialCurrentStep: row.tutorial_current_step ?? null,
     baseCurrency: opts.baseCurrency,
     secondaryCurrency: opts.secondaryCurrency,
   }

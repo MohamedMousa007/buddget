@@ -151,6 +151,8 @@ describe('settings mapper', () => {
       onboardingChecklistHidden: false,
       legacyOnboardingMigratedAt: null,
       dashboardLayout: 'minimal' as const,
+      tutorialsCompleted: ['postOnboardingTour:v1', 'addIncomeTour:v1'],
+      tutorialCurrentStep: 'dashboardTour:v1:3',
     }
     const row = settingsToRow(s, UID)
     const back = settingsFromRow({ ...row, updated_at: '' } as never, {
@@ -162,7 +164,7 @@ describe('settings mapper', () => {
 })
 
 describe('onboarding mapper', () => {
-  it('round-trips answers + step index, drops deprecated fields', () => {
+  it('round-trips answers + step index + draft entries, drops deprecated fields', () => {
     const o = {
       flowVersion: 2,
       answers: { country: 'Egypt', foo: ['bar'] },
@@ -172,12 +174,14 @@ describe('onboarding mapper', () => {
       aiPlans: null,
       aiGeneratedAt: null,
       lastValidationNotes: null,
+      draftEntries: { incomeDraft: { name: 'Salary', amount: 15000 } },
     }
     const row = onboardingToRow(o, UID)
     const back = onboardingFromRow({ ...row, updated_at: '' } as never)
     expect(back.currentStepIndex).toBe(5)
     expect(back.planAccepted).toBe(true)
     expect(back.answers).toEqual(o.answers)
+    expect(back.draftEntries).toEqual(o.draftEntries)
   })
 })
 

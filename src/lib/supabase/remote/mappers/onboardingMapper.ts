@@ -17,6 +17,7 @@ export function onboardingToRow(
     current_step_index: o.currentStepIndex ?? 0,
     flow_version: o.flowVersion ?? 1,
     plan_accepted: o.planAccepted ?? false,
+    draft_entries: (o.draftEntries ?? {}) as Json,
   }
 }
 
@@ -26,6 +27,7 @@ export function onboardingFromRow(row: OnboardingStateRow): OnboardingState {
     answers: (row.answers as Record<string, unknown>) ?? {},
     currentStepIndex: row.current_step_index,
     planAccepted: row.plan_accepted,
+    draftEntries: (row.draft_entries as Record<string, unknown>) ?? {},
     // Deprecated fields — kept for backward compat with the Zustand type.
     selectedPlanIndex: null,
     aiPlans: null,
