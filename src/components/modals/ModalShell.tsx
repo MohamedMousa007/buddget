@@ -21,6 +21,13 @@ interface ModalShellProps {
    * Bottom sheet: drag handle at top pulls down to dismiss; inner area scrolls independently (mobile-friendly).
    */
   dragToClose?: boolean
+  /**
+   * Fires once the open animation finishes (spring settles at y=0). Used by
+   * onboarding's tutorial system to start the tutorial *after* the modal is
+   * fully on-screen instead of during the spring animation. Called at most
+   * once per open cycle; safe to omit outside onboarding.
+   */
+  onOpenAnimationComplete?: () => void
 }
 
 /**
@@ -33,6 +40,7 @@ export function ModalShell({
   zIndexClassName,
   panelClassName = '',
   dragToClose = false,
+  onOpenAnimationComplete,
 }: ModalShellProps) {
   const dragControls = useDragControls()
   const zStack = zIndexClassName ?? OVERLAY_Z
@@ -100,6 +108,26 @@ export function ModalShell({
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            onAnimationComplete={(definition) => {
+              // Framer fires onAnimationComplete for both enter + exit. Only
+              // signal the "open done" callback when the animated state is
+              // the open target (`y: 0`). Dispatches both the direct
+              // callback (prop-driven modals) and a `modal-opened` custom
+              // event (so store-driven modals can be listened to by
+              // anything — notably OnboardingModalGate — without threading
+              // the prop through ModalProvider).
+              if (
+                typeof definition === 'object' &&
+                definition !== null &&
+                'y' in definition &&
+                (definition as { y: number | string }).y === 0
+              ) {
+                onOpenAnimationComplete?.()
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('buddget:modal-opened'))
+                }
+              }
+            }}
             drag={dragToClose ? 'y' : false}
             dragListener={false}
             dragControls={dragToClose ? dragControls : undefined}

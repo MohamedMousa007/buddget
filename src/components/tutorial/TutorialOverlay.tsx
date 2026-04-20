@@ -1,5 +1,6 @@
 'use client'
 
+import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
@@ -18,10 +19,14 @@ import { cn } from '@/lib/utils'
  * - **Reposition on every frame the target might move** (resize, scroll,
  *   page-layout shift). A `ResizeObserver` + `scroll`/`resize` listeners
  *   keep the cutout in sync.
- * - **Collision-aware popover**: picks the side with most space (bottom by
- *   default; flips to top if blocked; falls back to center if target is
- *   off-screen).
- * - **`prefers-reduced-motion`**: removes fade/scale transitions.
+ * - **Animated pulse ring + pointer arrow** (SP10) make the highlight
+ *   feel alive and explicitly connect popover ↔ target.
+ * - **Mobile bottom-sheet fallback** (SP10) at viewport width < 480px
+ *   so the popover doesn't collide with the cutout on narrow phones.
+ * - **Collision-aware popover** on wider screens: picks the side with
+ *   most space, falls back to center when target is off-screen.
+ * - **`prefers-reduced-motion`**: removes scale/pulse animations; the
+ *   static ring + arrow still render.
  *
  * Keyboard:
  *   - `Escape`        → skip this step (`onSkipStep`)
@@ -74,10 +79,14 @@ interface CutoutRect {
   height: number
 }
 
+type ResolvedSide = 'top' | 'bottom' | 'left' | 'right' | 'sheet'
+
 const PADDING = 8 // breathing room around the target inside the cutout
-const POPOVER_GAP = 12 // distance between target and popover
+const POPOVER_GAP = 14 // distance between target and popover (room for arrow)
 const POPOVER_MAX_WIDTH = 340
 const POPOVER_MARGIN = 12 // min distance to the viewport edge
+const ARROW_SIZE = 10 // SVG arrow triangle half-width
+const SHEET_BREAKPOINT = 480 // below this, pin popover as a bottom sheet
 
 export function TutorialOverlay({
   targetRef,
@@ -97,12 +106,24 @@ export function TutorialOverlay({
 }: TutorialOverlayProps) {
   const [mounted, setMounted] = useState(false)
   const [cutout, setCutout] = useState<CutoutRect | null>(null)
+  const [viewport, setViewport] = useState<{ w: number; h: number }>(() => ({
+    w: typeof window === 'undefined' ? 1024 : window.innerWidth,
+    h: typeof window === 'undefined' ? 768 : window.innerHeight,
+  }))
   const popoverRef = useRef<HTMLDivElement>(null)
   const firstFocusableRef = useRef<HTMLButtonElement>(null)
 
   // Portal is only meaningful client-side.
   // eslint-disable-next-line react-hooks/set-state-in-effect -- did-mount marker
   useEffect(() => setMounted(true), [])
+
+  // Track viewport size so the bottom-sheet breakpoint stays accurate on
+  // rotate/resize.
+  useEffect(() => {
+    const sync = () => setViewport({ w: window.innerWidth, h: window.innerHeight })
+    window.addEventListener('resize', sync)
+    return () => window.removeEventListener('resize', sync)
+  }, [])
 
   // Keep the cutout in sync with the target's bounding box. The
   // measurements can only be read after layout commits, so setting state
@@ -118,8 +139,6 @@ export function TutorialOverlay({
 
     const update = () => {
       const rect = target.getBoundingClientRect()
-      // Guard against detached/invisible targets (width === 0 means the
-      // element isn't in layout).
       if (rect.width === 0 && rect.height === 0) {
         setCutout(null)
         return
@@ -177,8 +196,6 @@ export function TutorialOverlay({
         return
       }
       if (e.key === 'Tab') {
-        // Simple focus trap: if focus is about to leave the popover, snap
-        // it back to the first focusable button.
         const popover = popoverRef.current
         if (!popover) return
         const focusables = Array.from(
@@ -201,9 +218,7 @@ export function TutorialOverlay({
   }, [canGoBack, onBack, onNext, onSkipAll, onSkipStep])
 
   // Popover size changes with copy length + responsive width. Track it so
-  // positioning is accurate. Reading refs during render violates the
-  // `react-hooks/refs` rule, so we measure via a ResizeObserver in an
-  // effect and feed the sizes back into memoised position state.
+  // positioning is accurate.
   const [popoverSize, setPopoverSize] = useState<{ w: number; h: number }>({
     w: POPOVER_MAX_WIDTH,
     h: 180,
@@ -218,20 +233,33 @@ export function TutorialOverlay({
     return () => ro.disconnect()
   }, [])
 
+  const useBottomSheet = viewport.w < SHEET_BREAKPOINT
+
   const popoverPosition = useMemo(
-    () => computePopoverPosition(cutout, placement, popoverSize.w, popoverSize.h),
-    [cutout, placement, popoverSize.w, popoverSize.h],
+    () =>
+      computePopoverPosition(
+        cutout,
+        placement,
+        popoverSize.w,
+        popoverSize.h,
+        viewport.w,
+        viewport.h,
+        useBottomSheet,
+      ),
+    [cutout, placement, popoverSize.w, popoverSize.h, viewport.w, viewport.h, useBottomSheet],
   )
 
   if (!mounted) return null
+
+  // Spring-based entrance offset depends on the resolved side so the
+  // popover appears to "come from" the target.
+  const entranceOffset = entranceOffsetForSide(popoverPosition.side)
 
   return createPortal(
     <div
       aria-live="polite"
       role="region"
       className="fixed inset-0 z-[70]"
-      // The four-rectangle backdrop sits beneath; the popover renders on
-      // top via normal stacking. Pointer events on backdrop only.
       style={{ pointerEvents: 'none' }}
     >
       {/* Darkened backdrop — 4 rectangles around the cutout so the target
@@ -239,27 +267,52 @@ export function TutorialOverlay({
           fall back to a single full-screen rectangle. */}
       <BackdropFrame cutout={cutout} allowClickThrough={interactive} />
 
-      {/* Popover */}
-      <div
+      {/* Animated pulse ring around the target (SP10). Rides on cutout
+          state so it tracks target movement alongside the backdrop. */}
+      <AnimatePresence>
+        {cutout ? <TargetPulseRing key={`${cutout.top}-${cutout.left}`} cutout={cutout} /> : null}
+      </AnimatePresence>
+
+      {/* Popover + arrow */}
+      <motion.div
         ref={popoverRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="tutorial-title"
         aria-describedby="tutorial-body"
+        key={stepNumber}
+        initial={{ opacity: 0, scale: 0.96, x: entranceOffset.x, y: entranceOffset.y }}
+        animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
+        transition={{ type: 'spring', damping: 22, stiffness: 280 }}
         className={cn(
-          'fixed w-[min(var(--popover-max-w),calc(100vw-var(--popover-margin)*2))] rounded-2xl border shadow-2xl',
+          'fixed rounded-2xl border shadow-2xl',
           'bg-[var(--color-brand-card)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]',
-          'motion-safe:transition-[top,left,opacity] motion-safe:duration-200',
+          useBottomSheet
+            ? 'w-full rounded-b-none'
+            : 'w-[min(var(--popover-max-w),calc(100vw-var(--popover-margin)*2))]',
         )}
         style={{
           top: popoverPosition.top,
           left: popoverPosition.left,
+          ...(useBottomSheet ? { right: 0 } : null),
           pointerEvents: 'auto',
-          // CSS variables so the media-aware width math stays declarative.
           ['--popover-max-w' as never]: `${POPOVER_MAX_WIDTH}px`,
           ['--popover-margin' as never]: `${POPOVER_MARGIN}px`,
         }}
       >
+        {/* SVG pointer arrow — only when the popover isn't the full-width
+            bottom sheet (arrow doesn't make sense there). */}
+        {!useBottomSheet && cutout && popoverPosition.side !== 'sheet' ? (
+          <PopoverArrow
+            side={popoverPosition.side}
+            popoverLeft={popoverPosition.left}
+            popoverTop={popoverPosition.top}
+            popoverWidth={popoverSize.w}
+            popoverHeight={popoverSize.h}
+            cutout={cutout}
+          />
+        ) : null}
+
         <div className="flex items-center justify-between px-4 pt-3 text-[11px] text-[var(--color-brand-text-muted)] tabular-nums">
           <span>{labels.progress(stepNumber, totalSteps)}</span>
           <button
@@ -300,13 +353,40 @@ export function TutorialOverlay({
             </button>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>,
     document.body,
   )
 }
 
-// ─── Helpers ────────────────────────────────────────────────────────────
+// ─── Animated pulse ring ────────────────────────────────────────────────
+
+function TargetPulseRing({ cutout }: { cutout: CutoutRect }) {
+  return (
+    <motion.div
+      className="fixed rounded-xl pointer-events-none"
+      style={{
+        top: cutout.top,
+        left: cutout.left,
+        width: cutout.width,
+        height: cutout.height,
+        boxShadow: '0 0 0 2px var(--color-brand-red), 0 0 0 6px rgba(229, 9, 20, 0.22)',
+      }}
+      initial={{ opacity: 0, scale: 0.94 }}
+      animate={{
+        opacity: [0.85, 1, 0.85],
+        scale: [1, 1.035, 1],
+      }}
+      exit={{ opacity: 0 }}
+      transition={{
+        opacity: { duration: 1.8, repeat: Infinity, ease: 'easeInOut' },
+        scale: { duration: 1.8, repeat: Infinity, ease: 'easeInOut' },
+      }}
+    />
+  )
+}
+
+// ─── Backdrop frame ─────────────────────────────────────────────────────
 
 function BackdropFrame({
   cutout,
@@ -315,8 +395,6 @@ function BackdropFrame({
   cutout: CutoutRect | null
   allowClickThrough: boolean
 }) {
-  // When there is no cutout (target not resolved yet), render a single
-  // full-viewport dimmer so the user knows the tour is active.
   if (!cutout) {
     return (
       <div
@@ -335,17 +413,14 @@ function BackdropFrame({
 
   return (
     <>
-      {/* Top */}
       <div
         className="fixed"
         style={{ top: 0, left: 0, right: 0, height: Math.max(0, cutout.top), ...dimmerStyle }}
       />
-      {/* Bottom */}
       <div
         className="fixed"
         style={{ top: bottom, left: 0, right: 0, bottom: 0, ...dimmerStyle }}
       />
-      {/* Left */}
       <div
         className="fixed"
         style={{
@@ -356,7 +431,6 @@ function BackdropFrame({
           ...dimmerStyle,
         }}
       />
-      {/* Right */}
       <div
         className="fixed"
         style={{
@@ -367,36 +441,123 @@ function BackdropFrame({
           ...dimmerStyle,
         }}
       />
-      {/* Outline on the target to emphasise focus. Uses box-shadow so it
-          never blocks clicks. */}
-      <div
-        className="fixed rounded-xl pointer-events-none motion-safe:transition-[top,left,width,height] motion-safe:duration-200"
-        style={{
-          top: cutout.top,
-          left: cutout.left,
-          width: cutout.width,
-          height: cutout.height,
-          boxShadow: '0 0 0 2px var(--color-brand-red), 0 0 0 6px rgba(229, 9, 20, 0.25)',
-        }}
-      />
     </>
   )
 }
+
+// ─── Pointer arrow ──────────────────────────────────────────────────────
+
+function PopoverArrow({
+  side,
+  popoverLeft,
+  popoverTop,
+  popoverWidth,
+  popoverHeight,
+  cutout,
+}: {
+  side: ResolvedSide
+  popoverLeft: number
+  popoverTop: number
+  popoverWidth: number
+  popoverHeight: number
+  cutout: CutoutRect
+}) {
+  if (side === 'sheet') return null
+
+  const targetCenterX = cutout.left + cutout.width / 2
+  const targetCenterY = cutout.top + cutout.height / 2
+
+  // The arrow sits flush with whichever popover edge faces the target,
+  // tip pointing at the target centre projected onto that edge.
+  const stroke = 'var(--color-brand-border)'
+  const fill = 'var(--color-brand-card)'
+
+  if (side === 'top') {
+    // Popover above target → arrow on popover's bottom edge, tip down.
+    const tipX = Math.max(
+      ARROW_SIZE,
+      Math.min(popoverWidth - ARROW_SIZE, targetCenterX - popoverLeft),
+    )
+    return (
+      <svg
+        width={ARROW_SIZE * 2}
+        height={ARROW_SIZE}
+        style={{ position: 'absolute', left: tipX - ARROW_SIZE, bottom: -ARROW_SIZE + 1 }}
+        aria-hidden
+      >
+        <polygon points={`0,0 ${ARROW_SIZE * 2},0 ${ARROW_SIZE},${ARROW_SIZE}`} fill={fill} stroke={stroke} strokeWidth={1} />
+      </svg>
+    )
+  }
+  if (side === 'bottom') {
+    // Popover below target → arrow on popover's top edge, tip up.
+    const tipX = Math.max(
+      ARROW_SIZE,
+      Math.min(popoverWidth - ARROW_SIZE, targetCenterX - popoverLeft),
+    )
+    return (
+      <svg
+        width={ARROW_SIZE * 2}
+        height={ARROW_SIZE}
+        style={{ position: 'absolute', left: tipX - ARROW_SIZE, top: -ARROW_SIZE + 1 }}
+        aria-hidden
+      >
+        <polygon points={`0,${ARROW_SIZE} ${ARROW_SIZE * 2},${ARROW_SIZE} ${ARROW_SIZE},0`} fill={fill} stroke={stroke} strokeWidth={1} />
+      </svg>
+    )
+  }
+  if (side === 'right') {
+    // Popover right of target → arrow on popover's left edge, tip left.
+    const tipY = Math.max(
+      ARROW_SIZE,
+      Math.min(popoverHeight - ARROW_SIZE, targetCenterY - popoverTop),
+    )
+    return (
+      <svg
+        width={ARROW_SIZE}
+        height={ARROW_SIZE * 2}
+        style={{ position: 'absolute', top: tipY - ARROW_SIZE, left: -ARROW_SIZE + 1 }}
+        aria-hidden
+      >
+        <polygon points={`${ARROW_SIZE},0 ${ARROW_SIZE},${ARROW_SIZE * 2} 0,${ARROW_SIZE}`} fill={fill} stroke={stroke} strokeWidth={1} />
+      </svg>
+    )
+  }
+  // side === 'left' → popover left of target → arrow on popover's right edge, tip right.
+  const tipY = Math.max(ARROW_SIZE, Math.min(popoverHeight - ARROW_SIZE, targetCenterY - popoverTop))
+  return (
+    <svg
+      width={ARROW_SIZE}
+      height={ARROW_SIZE * 2}
+      style={{ position: 'absolute', top: tipY - ARROW_SIZE, right: -ARROW_SIZE + 1 }}
+      aria-hidden
+    >
+      <polygon points={`0,0 0,${ARROW_SIZE * 2} ${ARROW_SIZE},${ARROW_SIZE}`} fill={fill} stroke={stroke} strokeWidth={1} />
+    </svg>
+  )
+}
+
+// ─── Positioning ────────────────────────────────────────────────────────
 
 function computePopoverPosition(
   cutout: CutoutRect | null,
   placement: 'auto' | 'top' | 'bottom' | 'left' | 'right',
   popWidth: number,
   popHeight: number,
-): { top: number; left: number } {
-  // Default: centered viewport, used when no cutout is available.
-  const vw = typeof window === 'undefined' ? 1024 : window.innerWidth
-  const vh = typeof window === 'undefined' ? 768 : window.innerHeight
+  vw: number,
+  vh: number,
+  useBottomSheet: boolean,
+): { top: number; left: number; side: ResolvedSide } {
+  // Mobile bottom-sheet mode — pin to viewport bottom, full-width.
+  if (useBottomSheet) {
+    return { top: vh - popHeight, left: 0, side: 'sheet' }
+  }
 
   if (!cutout) {
     return {
       top: Math.max(POPOVER_MARGIN, (vh - popHeight) / 2),
       left: Math.max(POPOVER_MARGIN, (vw - popWidth) / 2),
+      side: 'bottom',
     }
   }
 
@@ -423,10 +584,9 @@ function computePopoverPosition(
       break
   }
 
-  // Clamp to viewport with a margin.
   top = Math.min(Math.max(POPOVER_MARGIN, top), vh - popHeight - POPOVER_MARGIN)
   left = Math.min(Math.max(POPOVER_MARGIN, left), vw - popWidth - POPOVER_MARGIN)
-  return { top, left }
+  return { top, left, side: preferred }
 }
 
 function preferSide(
@@ -444,6 +604,20 @@ function preferSide(
   if (spaceAbove >= popHeight + POPOVER_GAP + POPOVER_MARGIN) return 'top'
   if (spaceRight >= popWidth + POPOVER_GAP + POPOVER_MARGIN) return 'right'
   if (spaceLeft >= popWidth + POPOVER_GAP + POPOVER_MARGIN) return 'left'
-  // Default to below when nothing fits — clamp logic will keep it in view.
   return 'bottom'
+}
+
+function entranceOffsetForSide(side: ResolvedSide): { x: number; y: number } {
+  switch (side) {
+    case 'top':
+      return { x: 0, y: 8 }
+    case 'bottom':
+      return { x: 0, y: -8 }
+    case 'left':
+      return { x: 8, y: 0 }
+    case 'right':
+      return { x: -8, y: 0 }
+    case 'sheet':
+      return { x: 0, y: 12 }
+  }
 }
