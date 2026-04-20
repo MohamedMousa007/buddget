@@ -47,10 +47,11 @@ export function ModalShell({
   const zStack = zIndexClassName ?? OVERLAY_Z
   const panelRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
-  // During the Journey we keep the top chrome visible (header + Buddgy
-  // bubble) so the user never loses the "I'm in onboarding" context.
-  // Softer backdrop + no blur + top offset so the first ~112 px of the
-  // viewport (safe-area + header + progress bar) render through.
+  // During the Journey we dim the backdrop less (bg-black/35) and drop
+  // the blur so the modal reads as "on top of" the flow rather than
+  // "replacing" it. The Journey header is fixed at z-[130] — above
+  // the modal's z-[100] — so the progress bar + back button remain
+  // visible and interactable throughout.
   const journeyChrome = pathname?.startsWith('/onboarding') ?? false
 
   useEffect(() => {
@@ -104,16 +105,10 @@ export function ModalShell({
             exit={{ opacity: 0 }}
             onClick={onBackdropClick}
             className={cn(
-              'fixed start-0 end-0 bottom-0',
-              journeyChrome ? 'bg-black/30' : 'bg-black/60 backdrop-blur-sm',
+              'fixed inset-0',
+              journeyChrome ? 'bg-black/35' : 'bg-black/60 backdrop-blur-sm',
               zStack,
             )}
-            style={{
-              // In journey mode, leave the top ~112 px uncovered so the
-              // progress bar + Buddgy bubble remain visible behind the
-              // modal. Outside onboarding, cover the full viewport.
-              top: journeyChrome ? 'calc(max(env(safe-area-inset-top),1rem) + 96px)' : 0,
-            }}
           />
           <motion.div
             ref={panelRef}

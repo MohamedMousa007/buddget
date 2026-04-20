@@ -169,8 +169,19 @@ export function JourneyRunner() {
 
   return (
     <div className="min-h-[100svh] bg-[var(--color-brand-bg)] flex flex-col">
-      {/* Header */}
-      <header className="flex items-center gap-3 px-4 pt-[max(env(safe-area-inset-top),1rem)] pb-2">
+      {/* Header — fixed + z-[130] so it stays visible above ModalShell's
+          z-[100] backdrop + panel when a Journey modal opens. That way
+          the user always sees the progress bar (and the back button
+          works) even while the Add Income / Payment Method / etc sheet
+          is up. Pair with `pt-[calc(header-height)]` on <main> below
+          so the main flow doesn't slide under the fixed header. */}
+      <header
+        className={cn(
+          'fixed top-0 start-0 end-0 z-[130]',
+          'flex items-center gap-3 px-4 pt-[max(env(safe-area-inset-top),1rem)] pb-3',
+          'bg-[var(--color-brand-bg)]/95 backdrop-blur-sm border-b border-[var(--color-brand-border)]/50',
+        )}
+      >
         <button
           type="button"
           onClick={back}
@@ -188,6 +199,9 @@ export function JourneyRunner() {
           <PhaseProgressBar progress={progress} phaseIndex={JOURNEY_PHASES.indexOf(currentCard.phase)} />
         </div>
       </header>
+      {/* Spacer that reserves the height of the fixed header so the
+          `<main>` scroll area starts below it, not beneath it. */}
+      <div className="h-[calc(max(env(safe-area-inset-top),1rem)+3.25rem)] shrink-0" aria-hidden />
 
       {/* Buddgy bubble + active card body */}
       <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 sm:py-8">
