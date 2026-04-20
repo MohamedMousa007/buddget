@@ -341,13 +341,12 @@ export function useAuthModal() {
     }
     if (data.session) {
       const { data: userData } = await supabase.auth.getUser()
-      // Replace first (navigates away from whatever landing route served
-      // the auth modal), refresh second so server components on the new
-      // route see the fresh cookies. Doing refresh() before replace()
-      // causes the old route to re-render briefly — the post-signup
-      // dashboard flash.
+      // Direct replace — no router.refresh() afterwards. The refresh
+      // forces a full server revalidation that stalls the splash
+      // transition for ~500-1000 ms on top of the natural navigation.
+      // Server components on the new route pick up the fresh session
+      // cookies at the next navigation/mount naturally.
       router.replace(routeAfterAuth(userData.user, safeNext))
-      router.refresh()
       return
     }
     if (data.user) {

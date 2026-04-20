@@ -39,6 +39,31 @@ const MIN_DISPLAY_MS = 2500
 const SOFT_TIMEOUT_MS = 10_000
 const HARD_TIMEOUT_MS = 18_000
 
+/**
+ * Race a promise against a timeout. Used to guard every network-bound
+ * await in the pipeline so a single stalled request can't strand the
+ * user on the loading screen forever. Rejects with a descriptive
+ * Error when the timeout fires; the caller logs and moves on.
+ */
+function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = window.setTimeout(
+      () => reject(new Error(`${label} timed out after ${ms}ms`)),
+      ms,
+    )
+    p.then(
+      (v) => {
+        window.clearTimeout(t)
+        resolve(v)
+      },
+      (e) => {
+        window.clearTimeout(t)
+        reject(e)
+      },
+    )
+  })
+}
+
 type Phase = 'working' | 'succeeded' | 'softTimeout' | 'failed'
 
 export function BuildingPlanScreen() {
@@ -83,6 +108,16 @@ export function BuildingPlanScreen() {
     const startedAt = Date.now()
     let softTimer: number | null = null
     let cancelled = false
+    // Absolute ceiling: even if every inner timeout somehow misses,
+    // 30 s after mount we just redirect. Being on `/budget-setup`
+    // with or without `onboarding_completed` is recoverable —
+    // middleware pushes back to `/onboarding` if the flag is still
+    // false, and the pipeline reruns idempotently.
+    const hardCeiling = window.setTimeout(() => {
+      if (cancelled) return
+      console.warn('[BuildingPlanScreen] hard ceiling hit — forcing redirect')
+      router.replace('/budget-setup?tour=1&freshPlan=1')
+    }, 30_000)
 
     async function run() {
       const state = useFinanceStore.getState()
@@ -141,14 +176,14 @@ export function BuildingPlanScreen() {
         console.error('[BuildingPlanScreen] applyBudgetPlan failed', e)
       }
 
-      // Flush to Supabase immediately after the local apply so a
-      // tab-close during the theatrical min-display doesn't leave the
-      // plan only in localStorage. Do this BEFORE the min-display
-      // wait — durability > theatre.
+      // Flush to Supabase with a hard timeout so a network stall or a
+      // single-table deadlock can't strand the user on the loading
+      // screen. Plan data is already local, so worst case is the
+      // next app open re-runs flushFinanceNow via the normal sync.
       try {
-        await flushFinanceNow()
+        await withTimeout(flushFinanceNow(), 8_000, 'flushFinanceNow')
       } catch (e) {
-        console.warn('[BuildingPlanScreen] flushFinanceNow failed', e)
+        console.warn('[BuildingPlanScreen] flushFinanceNow skipped', e)
       }
 
       // Theatrical minimum: hold the bullets on screen a beat longer
@@ -159,15 +194,26 @@ export function BuildingPlanScreen() {
         await new Promise((r) => window.setTimeout(r, MIN_DISPLAY_MS - elapsed))
       }
 
-      // Flip the auth flag. Failure here is recoverable — the next app
-      // open re-runs this screen since `onboarding_completed` is still
-      // false, and the idempotent API + applyBudgetPlan won't duplicate.
+      // Flip the auth flag with a timeout. Failure here is recoverable
+      // — the next app open re-runs this screen since
+      // `onboarding_completed` is still false, and the idempotent API
+      // + applyBudgetPlan won't duplicate. CRITICAL: do NOT leave the
+      // user on the loading screen if this hangs. We always redirect.
       let completed = false
       try {
-        const res = await fetch('/api/auth/complete-journey', { method: 'POST' })
-        completed = res.ok
-        if (!res.ok) {
-          console.error('[BuildingPlanScreen] complete-journey', await res.text())
+        const controller = new AbortController()
+        const abortTimer = window.setTimeout(() => controller.abort(), 6_000)
+        try {
+          const res = await fetch('/api/auth/complete-journey', {
+            method: 'POST',
+            signal: controller.signal,
+          })
+          completed = res.ok
+          if (!res.ok) {
+            console.error('[BuildingPlanScreen] complete-journey', await res.text())
+          }
+        } finally {
+          window.clearTimeout(abortTimer)
         }
       } catch (e) {
         console.error('[BuildingPlanScreen] complete-journey network', e)
@@ -176,19 +222,18 @@ export function BuildingPlanScreen() {
       if (cancelled) return
 
       if (softTimer) window.clearTimeout(softTimer)
-
-      if (!completed) {
-        setPhase('failed')
-        return
-      }
+      window.clearTimeout(hardCeiling)
 
       track(JOURNEY_EVENTS.completed, {
         source: result.source,
         durationMs: Date.now() - startedAt,
+        completed,
       })
       setPhase('succeeded')
-      // Hand off. `freshPlan=1` tells budget-setup to welcome with the
-      // plan already applied; `tour=1` will trigger SP6's guided tour.
+      // Hand off regardless of `completed`. If the flag flip failed,
+      // middleware will route the user back to `/onboarding` and the
+      // pipeline reruns idempotently — still better than a permanent
+      // loading screen.
       router.replace('/budget-setup?tour=1&freshPlan=1')
     }
 
@@ -200,6 +245,7 @@ export function BuildingPlanScreen() {
     return () => {
       cancelled = true
       if (softTimer) window.clearTimeout(softTimer)
+      window.clearTimeout(hardCeiling)
     }
   }, [answers, router])
 
