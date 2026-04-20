@@ -94,13 +94,67 @@ export const ANCHORS: Record<string, AnchorEntry> = {
     copyKey: 'tour.debug.navHome',
   },
 
-  // ── Pre-existing app anchors (not yet in any tour; SP2/SP6 wire them
-  //    in). Declared `tour: null` so sync tests pass. Add new ones here
-  //    the same day you add the `data-tutorial-id` attribute to JSX. ─
+  // ── Pre-existing app anchors (not yet in any tour; SP6 wires them
+  //    into the post-onboarding tour). Declared `tour: null` so sync
+  //    tests pass. ────────────────────────────────────────────────
   'checklist-root': { tour: null },
   'build-budget-cta': { tour: null },
   'fab-root': { tour: null },
   'profile-menu-trigger': { tour: null },
+
+  // ── AddPaymentMethod modal tour (SP2) ─────────────────────────────
+  'pm-modal:name': {
+    tour: 'addPmTour',
+    order: 1,
+    copyKey: 'tour.modal.pm.name',
+    placement: 'bottom',
+  },
+  'pm-modal:type': {
+    tour: 'addPmTour',
+    order: 2,
+    copyKey: 'tour.modal.pm.type',
+    placement: 'bottom',
+  },
+  'pm-modal:currency': {
+    tour: 'addPmTour',
+    order: 3,
+    copyKey: 'tour.modal.pm.currency',
+    placement: 'bottom',
+  },
+  'pm-modal:save': {
+    tour: 'addPmTour',
+    order: 4,
+    copyKey: 'tour.modal.pm.save',
+    placement: 'top',
+    interactive: true,
+  },
+
+  // ── AddIncome modal tour (SP2) ────────────────────────────────────
+  'income-modal:name': {
+    tour: 'addIncomeTour',
+    order: 1,
+    copyKey: 'tour.modal.income.name',
+    placement: 'bottom',
+  },
+  'income-modal:payment-method': {
+    tour: 'addIncomeTour',
+    order: 2,
+    copyKey: 'tour.modal.income.paymentMethod',
+    placement: 'bottom',
+  },
+  'income-modal:amount': {
+    tour: 'addIncomeTour',
+    order: 3,
+    copyKey: 'tour.modal.income.amount',
+    placement: 'top',
+  },
+  'income-modal:save': {
+    tour: 'addIncomeTour',
+    order: 4,
+    copyKey: 'tour.modal.income.save',
+    placement: 'top',
+    interactive: true,
+  },
 }
 
 /**

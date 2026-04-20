@@ -55,7 +55,7 @@ export function AddIncomeTypeAndAmount({
         ) : null}
       </div>
 
-      <div>
+      <div data-tutorial-id="income-modal:name">
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addIncome.labelSource}</Label>
         <Input
           placeholder={t.addIncome.placeholderSource}
@@ -65,15 +65,17 @@ export function AddIncomeTypeAndAmount({
         />
       </div>
 
-      <PaymentMethodChips
-        label={t.addIncome.labelPaymentMethod}
-        methods={paymentMethods}
-        paymentMethodId={paymentMethodId}
-        onChange={setPaymentMethodId}
-      />
+      <div data-tutorial-id="income-modal:payment-method">
+        <PaymentMethodChips
+          label={t.addIncome.labelPaymentMethod}
+          methods={paymentMethods}
+          paymentMethodId={paymentMethodId}
+          onChange={setPaymentMethodId}
+        />
+      </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div>
+        <div data-tutorial-id="income-modal:amount">
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addIncome.labelAmount}</Label>
           <Input
             type="number"
