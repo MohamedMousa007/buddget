@@ -12,6 +12,7 @@ import { calculateMonthlyIncome } from '@/lib/utils/calculations'
 import { BudgetPlannerCategoryRow } from '@/components/features/budget-planner/BudgetPlannerCategoryRow'
 import { BudgetPlannerAddCategoryMenu } from '@/components/features/budget-planner/BudgetPlannerAddCategoryMenu'
 import { BuddgyBuilderFlow } from '@/components/features/budget-planner/BuddgyBuilderFlow'
+import { useTutorialAnchor } from '@/components/tutorial/TutorialAnchor'
 
 export interface BudgetPlannerCategoriesLabels {
   categoriesTitle: string
@@ -147,6 +148,8 @@ export function BudgetPlannerCategories({
   }, [supabaseConfigured, user, openAuthModal, t.modals.requireAuthBudgetSetup])
 
   const showRebuild = !flowOpen && categories.length > 0
+  const categoryListAnchor = useTutorialAnchor<HTMLDivElement>('postOnboard:category-row')
+  const rebuildAnchor = useTutorialAnchor<HTMLButtonElement>('postOnboard:rebuild-cta')
 
   return (
     <div className="bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl p-4 sm:p-5 space-y-4">
@@ -211,7 +214,7 @@ export function BudgetPlannerCategories({
           </div>
         </div>
       : <>
-          <div className="space-y-2">
+          <div className="space-y-2" {...categoryListAnchor.anchorProps}>
             {categories.map((c) => (
               <BudgetPlannerCategoryRow
                 key={c.id}
@@ -234,6 +237,7 @@ export function BudgetPlannerCategories({
                 type="button"
                 onClick={startBuddgy}
                 className="inline-flex items-center gap-1.5 text-sm text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-secondary)] transition-colors"
+                {...rebuildAnchor.anchorProps}
               >
                 <Sparkles className="h-3.5 w-3.5 text-[var(--color-brand-amber)]" />
                 Rebuild with Buddgy

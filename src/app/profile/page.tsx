@@ -14,15 +14,17 @@ import { DeleteAccountDialog } from '@/components/features/profile/DeleteAccount
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useProfilePage } from '@/hooks/useProfilePage'
+import { useTutorialAnchor } from '@/components/tutorial/TutorialAnchor'
 
 export default function ProfilePage() {
   const p = useProfilePage()
   const { t } = p
   const { setActiveModal } = useSettingsStore()
   const requireAuth = useRequireAuthAction()
+  const profileAnchor = useTutorialAnchor<HTMLDivElement>('postOnboard:profile-root')
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen" {...profileAnchor.anchorProps}>
       <PageHeader>
         <PageHeaderContent>
           <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)] flex items-center gap-2">

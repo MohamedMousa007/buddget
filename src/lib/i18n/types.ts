@@ -24,6 +24,16 @@ export interface TourDictionary {
       save: { title: string; body: string }
     }
   }
+  postOnboard: {
+    planRoot: { title: string; body: string }
+    categoryRow: { title: string; body: string }
+    rebuild: { title: string; body: string }
+    dashboard: { title: string; body: string }
+    fab: { title: string; body: string }
+    savings: { title: string; body: string }
+    expenses: { title: string; body: string }
+    profile: { title: string; body: string }
+  }
 }
 
 export interface Dictionary {
@@ -711,6 +721,8 @@ export interface Dictionary {
     currencyConverterNoRate: string
     goldPriceUnavailable: string
     ratesAttribution: string
+    showMeAround: string
+    showMeAroundDesc: string
 
     pageLinksIncomeTitle: string
     pageLinksIncomeDesc: string

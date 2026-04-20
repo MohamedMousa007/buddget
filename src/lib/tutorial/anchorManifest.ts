@@ -94,13 +94,74 @@ export const ANCHORS: Record<string, AnchorEntry> = {
     copyKey: 'tour.debug.navHome',
   },
 
-  // ── Pre-existing app anchors (not yet in any tour; SP6 wires them
-  //    into the post-onboarding tour). Declared `tour: null` so sync
-  //    tests pass. ────────────────────────────────────────────────
+  // ── Pre-existing app anchors ─────────────────────────────────────
   'checklist-root': { tour: null },
   'build-budget-cta': { tour: null },
-  'fab-root': { tour: null },
   'profile-menu-trigger': { tour: null },
+  // Reused by the post-onboarding tour as the "Quick add" step. The
+  // anchor element (BottomNav FAB button) lives on every authed route
+  // that renders bottom-nav; the tour step pins it to the dashboard.
+  'fab-root': {
+    tour: 'postOnboardingTour',
+    order: 5,
+    copyKey: 'tour.postOnboard.fab',
+    route: '/',
+    placement: 'top',
+  },
+
+  // ── Post-onboarding guided tour (SP6) ────────────────────────────
+  // Fires automatically when the user lands on /budget-setup?tour=1
+  // right after finishing the Journey; re-runnable from Settings →
+  // "Show me around".
+  'postOnboard:plan-root': {
+    tour: 'postOnboardingTour',
+    order: 1,
+    copyKey: 'tour.postOnboard.planRoot',
+    route: '/budget-setup',
+    placement: 'bottom',
+  },
+  'postOnboard:category-row': {
+    tour: 'postOnboardingTour',
+    order: 2,
+    copyKey: 'tour.postOnboard.categoryRow',
+    route: '/budget-setup',
+    placement: 'bottom',
+  },
+  'postOnboard:rebuild-cta': {
+    tour: 'postOnboardingTour',
+    order: 3,
+    copyKey: 'tour.postOnboard.rebuild',
+    route: '/budget-setup',
+    placement: 'top',
+  },
+  'postOnboard:dashboard-main': {
+    tour: 'postOnboardingTour',
+    order: 4,
+    copyKey: 'tour.postOnboard.dashboard',
+    route: '/',
+    placement: 'bottom',
+  },
+  'postOnboard:savings-root': {
+    tour: 'postOnboardingTour',
+    order: 6,
+    copyKey: 'tour.postOnboard.savings',
+    route: '/savings',
+    placement: 'bottom',
+  },
+  'postOnboard:expenses-filter': {
+    tour: 'postOnboardingTour',
+    order: 7,
+    copyKey: 'tour.postOnboard.expenses',
+    route: '/expenses',
+    placement: 'bottom',
+  },
+  'postOnboard:profile-root': {
+    tour: 'postOnboardingTour',
+    order: 8,
+    copyKey: 'tour.postOnboard.profile',
+    route: '/profile',
+    placement: 'bottom',
+  },
 
   // ── AddPaymentMethod modal tour (SP2) ─────────────────────────────
   'pm-modal:name': {
