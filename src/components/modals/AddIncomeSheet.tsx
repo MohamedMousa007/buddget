@@ -382,6 +382,7 @@ export function AddIncomeSheet() {
             </button>
             <button
               type="button"
+              data-tutorial-id="income-modal:save"
               onClick={handleSubmit}
               disabled={!name || !amount || !debtOk}
               className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

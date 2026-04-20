@@ -75,7 +75,7 @@ export function AddPaymentMethodSheet() {
               <ModalSheetHeader title={t.modals.addPaymentTitle} onClose={handleClose} />
 
               <div className="space-y-4">
-                <div>
+                <div data-tutorial-id="pm-modal:name">
                   <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.modals.addPaymentLabelName}</Label>
                   <Input
                     placeholder={t.modals.addPaymentPlaceholderName}
@@ -85,7 +85,7 @@ export function AddPaymentMethodSheet() {
                   />
                 </div>
 
-                <div>
+                <div data-tutorial-id="pm-modal:type">
                   <Label className="text-xs text-[var(--color-brand-text-secondary)] mb-2 block">{t.modals.addPaymentLabelType}</Label>
                   <div className="flex flex-wrap gap-2">
                     {PAYMENT_METHOD_TYPE_OPTIONS.map((t) => (
@@ -104,7 +104,7 @@ export function AddPaymentMethodSheet() {
                   </div>
                 </div>
 
-                <div>
+                <div data-tutorial-id="pm-modal:currency">
                   <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.modals.addPaymentLabelCurrency}</Label>
                   <FiatCurrencySelect
                     value={currency}
@@ -142,6 +142,7 @@ export function AddPaymentMethodSheet() {
                     {t.common.neverMind}
                   </button>
                   <button
+                    data-tutorial-id="pm-modal:save"
                     onClick={handleSubmit}
                     disabled={!name}
                     className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50"

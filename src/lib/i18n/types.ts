@@ -10,6 +10,20 @@ export interface TourDictionary {
     navHome: { title: string; body: string }
   }
   missing: { title: string; body: string }
+  modal: {
+    pm: {
+      name: { title: string; body: string }
+      type: { title: string; body: string }
+      currency: { title: string; body: string }
+      save: { title: string; body: string }
+    }
+    income: {
+      name: { title: string; body: string }
+      paymentMethod: { title: string; body: string }
+      amount: { title: string; body: string }
+      save: { title: string; body: string }
+    }
+  }
 }
 
 export interface Dictionary {

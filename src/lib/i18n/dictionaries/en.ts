@@ -23,6 +23,44 @@ export const en: Dictionary = {
       title: 'Missing copy',
       body: 'This step has no i18n key configured. Check the anchor manifest.',
     },
+    modal: {
+      pm: {
+        name: {
+          title: 'What should we call it?',
+          body: 'Give your payment method a nickname you\u2019ll recognise later \u2014 e.g. "Emirates NBD checking" or "Apple Pay."',
+        },
+        type: {
+          title: 'Pick a type',
+          body: 'Cash, bank transfer, a debit or credit card? This shapes how Buddgy tracks the money flow.',
+        },
+        currency: {
+          title: 'Which currency?',
+          body: 'The account\u2019s native currency. Don\u2019t worry \u2014 Buddget converts to your main currency automatically in reports.',
+        },
+        save: {
+          title: 'Save and carry on',
+          body: 'Tap save when you\u2019re happy. You can always edit or add more later.',
+        },
+      },
+      income: {
+        name: {
+          title: 'Name the source',
+          body: 'Salary, side hustle, rent collected \u2014 a short label Buddgy can reference.',
+        },
+        paymentMethod: {
+          title: 'Where does it land?',
+          body: 'Pick the account this income hits. This links your inflow to a real payment method so cash flow stays accurate.',
+        },
+        amount: {
+          title: 'How much?',
+          body: 'A single paycheck\u2019s amount. If it\u2019s recurring you\u2019ll pick the cadence next \u2014 monthly, bi-weekly, or weekly.',
+        },
+        save: {
+          title: 'Add it',
+          body: 'Save and Buddgy starts tracking. You can come back later to add another source.',
+        },
+      },
+    },
   },
 
   common: {
