@@ -61,18 +61,35 @@ export function OnboardingModalGate({ card, onContinueRequested }: OnboardingMod
   // matching tour if not yet completed. Re-mounts (after user clicks
   // Back then forward) don't re-auto-open — the user explicitly taps
   // Add another.
+  //
+  // The tutorial start is deferred until the modal's open spring
+  // settles: ModalShell dispatches a `buddget:modal-opened` event on
+  // `onAnimationComplete`. A 700 ms fallback fires the tour if the
+  // event never arrives (user dismisses mid-animation, etc.).
   const autoOpened = useRef(false)
   useEffect(() => {
     if (autoOpened.current) return
     autoOpened.current = true
 
-    if (card.tutorialTourId && !tutorial.isCompleted(card.tutorialTourId)) {
-      // Start the tour slightly AFTER the modal opens so its anchors
-      // are mounted + measurable.
-      setTimeout(() => tutorial.start(card.tutorialTourId!), 150)
-    }
-
     openTargetModal()
+
+    const tourId = card.tutorialTourId
+    if (!tourId || tutorial.isCompleted(tourId)) return
+
+    let fired = false
+    const fire = () => {
+      if (fired) return
+      fired = true
+      tutorial.start(tourId)
+      window.removeEventListener('buddget:modal-opened', fire)
+    }
+    window.addEventListener('buddget:modal-opened', fire, { once: true })
+    const fallback = window.setTimeout(fire, 700)
+
+    return () => {
+      window.removeEventListener('buddget:modal-opened', fire)
+      window.clearTimeout(fallback)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- first-mount only
   }, [])
 
