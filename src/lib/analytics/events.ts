@@ -39,6 +39,12 @@ export const JOURNEY_EVENTS = {
   cardCompleted: 'journey.card_completed',
   cardSkipped: 'journey.card_skipped',
   backPressed: 'journey.back_pressed',
+  // Modal + gate card events (SP4) ----------------------------------
+  modalOpened: 'journey.modal_opened',
+  modalSaved: 'journey.modal_saved',
+  modalClosedEmpty: 'journey.modal_closed_empty',
+  gateAnswered: 'journey.gate_answered',
+  // AI + completion --------------------------------------------------
   aiParseCalled: 'journey.ai.parse_called',
   aiParseFailed: 'journey.ai.parse_failed',
   aiPlanCalled: 'journey.ai.plan_called',

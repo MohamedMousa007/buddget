@@ -76,16 +76,55 @@ export interface FieldCard<TValue = unknown> extends BaseCard {
   prefill?: (answers: JourneyAnswers) => TValue | undefined
 }
 
-export interface MultiCard extends BaseCard {
-  kind: 'multi'
-  writeKey: JourneyAnswerPath
-  /** Which entity the entries represent; runner routes to the right row editor. */
-  entity: 'paymentMethods' | 'incomeSources' | 'debts' | 'subscriptions' | 'savingsAccounts' | 'goals'
-  /** Minimum number of entries required to advance. 0 = can be empty. */
+/** A card that opens the real app modal for the given entity, then shows
+ *  an "Add another / Continue" footer. Rows save into the actual store
+ *  slices — no draft list — so "Add another" is truly the same modal. */
+export interface ModalCard extends BaseCard {
+  kind: 'modal'
+  /** Which entity the modal captures; runner maps this to the right
+   *  app modal (AddPaymentMethodSheet, AddIncomeSheet, etc.). */
+  entity:
+    | 'paymentMethods'
+    | 'incomeSources'
+    | 'debts'
+    | 'subscriptions'
+    | 'savingsAccounts'
+    | 'goals'
+  /** Minimum number of rows (of this entity) the user must have saved
+   *  before the card can advance. 0 = skippable. */
   minEntries: number
-  /** Upper bound on row count, defensive (default 20). */
+  /** Upper bound on rows captured in one go. Default 20 (defensive). */
   maxEntries?: number
-  prefill?: (answers: JourneyAnswers) => unknown[] | undefined
+  /** The tour id to auto-fire the first time this modal opens for the
+   *  user (read from the anchor manifest). */
+  tutorialTourId?:
+    | 'addPmTour'
+    | 'addIncomeTour'
+    | 'addDebtTour'
+    | 'addSubscriptionTour'
+    | 'addSavingsTour'
+    | 'addGoalTour'
+  /** Buddgy message id shown above the card. */
+  buddgyKey?: import('@/lib/onboarding/buddgyScript').BuddgyCardId
+}
+
+/** A binary question whose answer either skips the next card or lets it
+ *  run. Example: "Any debts?" — "No" sets `moneyOut.hasDebts='no'` and the
+ *  subsequent ModalCard's `condition` returns false. */
+export interface GateCard extends BaseCard {
+  kind: 'gate'
+  writeKey: JourneyAnswerPath
+  buddgyKey?: import('@/lib/onboarding/buddgyScript').BuddgyCardId
+  /** Optional hint line under the Yes/No buttons. */
+  hintKey?: string
+}
+
+/** A full-screen placeholder while an async action runs — typically the
+ *  AI plan generation in SP5. Advances via the runner's external
+ *  `advance()` once the action resolves; the card itself is inert. */
+export interface LoadingCard extends BaseCard {
+  kind: 'loading'
+  buddgyKey?: import('@/lib/onboarding/buddgyScript').BuddgyCardId
 }
 
 /** Cards that talk to Gemini. Rate-limit-aware; runner enforces a useRef
@@ -108,7 +147,9 @@ export interface TerminalCard extends BaseCard {
 export type JourneyCard =
   | InfoCard
   | FieldCard
-  | MultiCard
+  | ModalCard
+  | GateCard
+  | LoadingCard
   | AiCard
   | ReviewCard
   | TerminalCard
@@ -204,6 +245,8 @@ export interface JourneyAnswers {
   moneyOut: {
     /** Explicit gate answer ('no' → skip debt list entirely). */
     hasDebts?: 'yes' | 'no'
+    /** Explicit gate answer ('no' → skip subscription list entirely). */
+    hasSubscriptions?: 'yes' | 'no'
     debts: DebtDraft[]
     subscriptions: SubscriptionDraft[]
   }
@@ -246,6 +289,7 @@ export type JourneyAnswerPath =
   | 'moneyIn.paymentMethods'
   | 'moneyIn.incomeSources'
   | 'moneyOut.hasDebts'
+  | 'moneyOut.hasSubscriptions'
   | 'moneyOut.debts'
   | 'moneyOut.subscriptions'
   | 'future.hasSavings'

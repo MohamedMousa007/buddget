@@ -1,13 +1,20 @@
 /**
- * Ordered list of cards that make up the onboarding Journey.
+ * The full conversational onboarding sequence (flow v3).
  *
- * This file is additive — subsequent commits append phases (identity,
- * describe, moneyIn, moneyOut, future, generate). The runner reads the
- * array top-to-bottom, filtered by each card's optional `condition`.
+ * Topological ordering per the master plan (§5):
+ *   0. Welcome → 1. Identity → 3. Money In (PMs then Income) →
+ *   4. Money Out (Debts / Subs via gates) →
+ *   5. Future (Savings via gate / Goals — mandatory) →
+ *   6. Generate (SP5 wires the AI call)
  *
- * Keep cards declarative (id, phase, writeKey, hints). UI widgets live
- * in `components/features/onboarding/journey/cards/*` and are selected
- * by the card's `kind`.
+ * Phase 2 (AI describe) is deliberately absent — the user's decision
+ * was "zero AI calls during cards; AI only runs once at the end for
+ * plan generation." Buddgy's variable-interpolation script (SP3) handles
+ * the "feels alive" goal without any AI calls mid-flow.
+ *
+ * Each `modal` card reuses the real app modal via `OnboardingModalGate`.
+ * `gate` cards set a yes/no answer that the next card's `condition`
+ * predicate reads.
  */
 
 import type { JourneyCard } from '@/lib/onboarding/journeyTypes'
@@ -20,28 +27,6 @@ export const JOURNEY_CARDS: ReadonlyArray<JourneyCard> = [
     kind: 'info',
     titleKey: 'onboarding.journey.welcome.intro.title',
     bodyKey: 'onboarding.journey.welcome.intro.body',
-  },
-  {
-    id: 'welcome.path-fork',
-    phase: 'welcome',
-    kind: 'field',
-    writeKey: 'journeyMode',
-    hintKey: 'onboarding.journey.welcome.fork.hint',
-    input: {
-      type: 'single-select',
-      options: [
-        {
-          value: 'guided',
-          labelKey: 'onboarding.journey.welcome.fork.guidedLabel',
-          descriptionKey: 'onboarding.journey.welcome.fork.guidedDescription',
-        },
-        {
-          value: 'quick',
-          labelKey: 'onboarding.journey.welcome.fork.quickLabel',
-          descriptionKey: 'onboarding.journey.welcome.fork.quickDescription',
-        },
-      ],
-    },
   },
 
   // ── Phase 1 — Identity ────────────────────────────────────────────
@@ -101,26 +86,14 @@ export const JOURNEY_CARDS: ReadonlyArray<JourneyCard> = [
     input: {
       type: 'single-select',
       options: [
-        {
-          value: 'solo',
-          labelKey: 'onboarding.journey.identity.household.soloLabel',
-        },
-        {
-          value: 'couple',
-          labelKey: 'onboarding.journey.identity.household.coupleLabel',
-        },
-        {
-          value: 'family',
-          labelKey: 'onboarding.journey.identity.household.familyLabel',
-        },
+        { value: 'solo', labelKey: 'onboarding.journey.identity.household.soloLabel' },
+        { value: 'couple', labelKey: 'onboarding.journey.identity.household.coupleLabel' },
+        { value: 'family', labelKey: 'onboarding.journey.identity.household.familyLabel' },
       ],
     },
   },
 
-  // ── Phase 3 — Money In (PMs first, then income) ─────────────────────
-  // Phase 2 (AI describe) ships in PR2; phase 3 lives here now so the
-  // money-in dependency graph (PM → income) is captured in this PR's
-  // shippable surface.
+  // ── Phase 3 — Money In (PMs, then Income) ────────────────────────
   {
     id: 'money.pm.intro',
     phase: 'moneyIn',
@@ -129,21 +102,92 @@ export const JOURNEY_CARDS: ReadonlyArray<JourneyCard> = [
     bodyKey: 'onboarding.journey.moneyIn.pmIntro.body',
   },
   {
-    id: 'money.pm.list',
+    id: 'money.pm.modal',
     phase: 'moneyIn',
-    kind: 'multi',
-    writeKey: 'moneyIn.paymentMethods',
+    kind: 'modal',
     entity: 'paymentMethods',
     minEntries: 1,
     maxEntries: 20,
+    tutorialTourId: 'addPmTour',
+    buddgyKey: 'moneyInPmIntro',
   },
   {
-    id: 'money.income.list',
+    id: 'money.income.modal',
     phase: 'moneyIn',
-    kind: 'multi',
-    writeKey: 'moneyIn.incomeSources',
+    kind: 'modal',
     entity: 'incomeSources',
     minEntries: 1,
     maxEntries: 20,
+    tutorialTourId: 'addIncomeTour',
+    buddgyKey: 'moneyInIncomeIntro',
+  },
+
+  // ── Phase 4 — Money Out (optional via gates) ─────────────────────
+  {
+    id: 'out.debts.gate',
+    phase: 'moneyOut',
+    kind: 'gate',
+    writeKey: 'moneyOut.hasDebts',
+    buddgyKey: 'gateDebts',
+  },
+  {
+    id: 'out.debts.modal',
+    phase: 'moneyOut',
+    kind: 'modal',
+    entity: 'debts',
+    minEntries: 0,
+    maxEntries: 20,
+    condition: (a) => a.moneyOut.hasDebts === 'yes',
+  },
+  {
+    id: 'out.subs.gate',
+    phase: 'moneyOut',
+    kind: 'gate',
+    writeKey: 'moneyOut.hasSubscriptions',
+    buddgyKey: 'gateSubscriptions',
+  },
+  {
+    id: 'out.subs.modal',
+    phase: 'moneyOut',
+    kind: 'modal',
+    entity: 'subscriptions',
+    minEntries: 0,
+    maxEntries: 20,
+    condition: (a) => a.moneyOut.hasSubscriptions === 'yes',
+  },
+
+  // ── Phase 5 — Future (savings optional, goals mandatory) ─────────
+  {
+    id: 'future.savings.gate',
+    phase: 'future',
+    kind: 'gate',
+    writeKey: 'future.hasSavings',
+    buddgyKey: 'gateSavings',
+  },
+  {
+    id: 'future.savings.modal',
+    phase: 'future',
+    kind: 'modal',
+    entity: 'savingsAccounts',
+    minEntries: 0,
+    maxEntries: 20,
+    condition: (a) => a.future.hasSavings === 'yes',
+  },
+  {
+    id: 'future.goals.modal',
+    phase: 'future',
+    kind: 'modal',
+    entity: 'goals',
+    minEntries: 1, // mandatory per master plan
+    maxEntries: 20,
+    buddgyKey: 'goalsIntro',
+  },
+
+  // ── Phase 6 — Generate (SP5 implements the AI call here) ─────────
+  {
+    id: 'generate.loading',
+    phase: 'generate',
+    kind: 'loading',
+    buddgyKey: 'generateIntro',
   },
 ]
