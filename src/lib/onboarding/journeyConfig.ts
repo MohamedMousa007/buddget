@@ -43,4 +43,77 @@ export const JOURNEY_CARDS: ReadonlyArray<JourneyCard> = [
       ],
     },
   },
+
+  // ── Phase 1 — Identity ────────────────────────────────────────────
+  {
+    id: 'identity.intro',
+    phase: 'identity',
+    kind: 'info',
+    titleKey: 'onboarding.journey.identity.intro.title',
+    bodyKey: 'onboarding.journey.identity.intro.body',
+  },
+  {
+    id: 'identity.name',
+    phase: 'identity',
+    kind: 'field',
+    writeKey: 'identity.displayName',
+    input: {
+      type: 'text',
+      placeholderKey: 'onboarding.journey.identity.name.placeholder',
+      maxLength: 60,
+    },
+  },
+  {
+    id: 'identity.country',
+    phase: 'identity',
+    kind: 'field',
+    writeKey: 'identity.country',
+    hintKey: 'onboarding.journey.identity.country.hint',
+    input: { type: 'country' },
+  },
+  {
+    id: 'identity.city',
+    phase: 'identity',
+    kind: 'field',
+    writeKey: 'identity.city',
+    hintKey: 'onboarding.journey.identity.city.hint',
+    optional: true,
+    input: {
+      type: 'text',
+      placeholderKey: 'onboarding.journey.identity.city.placeholder',
+      maxLength: 60,
+    },
+  },
+  {
+    id: 'identity.currency',
+    phase: 'identity',
+    kind: 'field',
+    writeKey: 'identity.baseCurrency',
+    hintKey: 'onboarding.journey.identity.currency.hint',
+    input: { type: 'currency' },
+  },
+  {
+    id: 'identity.household',
+    phase: 'identity',
+    kind: 'field',
+    writeKey: 'identity.household',
+    hintKey: 'onboarding.journey.identity.household.hint',
+    input: {
+      type: 'single-select',
+      options: [
+        {
+          value: 'solo',
+          labelKey: 'onboarding.journey.identity.household.soloLabel',
+        },
+        {
+          value: 'couple',
+          labelKey: 'onboarding.journey.identity.household.coupleLabel',
+        },
+        {
+          value: 'family',
+          labelKey: 'onboarding.journey.identity.household.familyLabel',
+        },
+      ],
+    },
+  },
 ]
