@@ -1130,6 +1130,31 @@ export const en: Dictionary = {
     coreGateFinishCta: 'Finish setup',
     coreGateFinishingCta: 'Finishing\u2026',
 
+    journey: {
+      common: {
+        next: 'Next',
+        back: 'Back',
+        skip: 'Skip',
+        finish: 'Finish',
+      },
+      welcome: {
+        intro: {
+          title: 'Let\u2019s build your money system.',
+          body:
+            'In a few minutes, Buddgy will set up everything \u2014 payment methods, income, budget, goals \u2014 so you leave with a plan, not an empty app.',
+        },
+        fork: {
+          hint: 'You can switch paths any time.',
+          guidedLabel: 'Guided journey \u2014 ~4 min',
+          guidedDescription:
+            'Tell Buddgy about your money life once, answer a few follow-ups, and we\u2019ll generate a tailored plan.',
+          quickLabel: 'Quick start \u2014 ~90 s',
+          quickDescription:
+            'The essentials only. A sensible default plan now; refine later from the dashboard.',
+        },
+      },
+    },
+
     checklistTitle: 'Finish setting up Buddget',
     checklistProgress: (done, total) => `${done} of ${total} done`,
     checklistItemIncome: 'Add your income',
