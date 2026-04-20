@@ -79,6 +79,14 @@ export interface Dictionary {
     skipStep: string
     skipAll: string
   }
+  syncFailures: {
+    oneDidntSync: string
+    manyDidntSync: (count: number) => string
+    autoRetryNote: string
+    expand: string
+    collapse: string
+    dismiss: string
+  }
   /** Document layout direction; kept `ltr` for Arabic so chrome matches English. */
   dir: 'ltr' | 'rtl'
   locale: string

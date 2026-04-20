@@ -183,6 +183,15 @@ export const en: Dictionary = {
     skipAll: 'Skip whole tutorial',
   },
 
+  syncFailures: {
+    oneDidntSync: '1 change didn\u2019t sync',
+    manyDidntSync: (count) => `${count} changes didn\u2019t sync`,
+    autoRetryNote: 'We\u2019ll keep trying automatically in the background.',
+    expand: 'Show details',
+    collapse: 'Hide details',
+    dismiss: 'Dismiss',
+  },
+
   common: {
     save: 'Save',
     cancel: 'Cancel',
