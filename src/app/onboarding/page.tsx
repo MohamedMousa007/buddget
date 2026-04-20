@@ -4,20 +4,17 @@ import { CoreOnboardingView } from '@/components/features/onboarding/CoreOnboard
 import { JourneyRunner } from '@/components/features/onboarding/journey/JourneyRunner'
 
 /**
- * Onboarding entry point. Default is the 4-step Core Gate (the legacy
- * 27-step expert survey was retired). When the `NEXT_PUBLIC_ONBOARDING_V3`
- * env var is set to `"1"`, the new AI-driven Journey (flow v3) is
- * rendered instead. Gate is build-time so the Core Gate path is
- * tree-shaken out of production bundles that opt into v3, and vice
- * versa.
+ * Onboarding entry point. Default is the conversational Journey (flow
+ * v3). Setting `NEXT_PUBLIC_ONBOARDING_V3="0"` renders the legacy Core
+ * Gate as an emergency fallback — used only if a regression is spotted
+ * in the Journey pipeline and we need to revert without a code push.
  *
- * Flag lifetime: enabled in dev for internal QA. PR3 (after the Journey
- * is validated) removes the flag and deletes `CoreOnboardingView` along
- * with its supporting files.
+ * The flag + `CoreOnboardingView` live on for one release as an escape
+ * hatch; SP8 deletes them once the Journey has proven stable.
  */
 export default function OnboardingPage() {
-  if (process.env.NEXT_PUBLIC_ONBOARDING_V3 === '1') {
-    return <JourneyRunner />
+  if (process.env.NEXT_PUBLIC_ONBOARDING_V3 === '0') {
+    return <CoreOnboardingView />
   }
-  return <CoreOnboardingView />
+  return <JourneyRunner />
 }
