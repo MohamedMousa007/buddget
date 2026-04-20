@@ -1308,6 +1308,19 @@ export const en: Dictionary = {
       },
       loading: {
         placeholder: 'Almost there \u2014 the plan builder lands next.',
+        title: 'Building your plan\u2026',
+        bullets: {
+          income: 'Analysing your income',
+          debts: 'Mapping your debts',
+          anchors: (country) =>
+            country && country !== '\u2014'
+              ? `Accounting for ${country} costs`
+              : 'Accounting for local costs',
+          drafting: 'Drafting your plan\u2026',
+        },
+        softTimeout: 'Still working on it \u2014 real plans take a moment.',
+        failed: "Couldn't finalise just yet. Your data is safe \u2014 tap retry.",
+        retry: 'Try again',
       },
       multi: {
         add: {

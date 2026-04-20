@@ -1232,10 +1232,19 @@ export interface Dictionary {
         addAnother: string
         continue: string
       }
-      /** Copy for the terminal loading card (SP5 replaces with the
-       *  real plan-building screen). */
+      /** Copy for the terminal `BuildingPlanScreen` (SP5). */
       loading: {
         placeholder: string
+        title: string
+        bullets: {
+          income: string
+          debts: string
+          anchors: (country: string) => string
+          drafting: string
+        }
+        softTimeout: string
+        failed: string
+        retry: string
       }
       multi: {
         add: {
