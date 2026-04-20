@@ -1,7 +1,6 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { Sparkles } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import {
@@ -9,6 +8,7 @@ import {
   type BuddgyAnswers,
   type BuddgyCardId,
 } from '@/lib/onboarding/buddgyScript'
+import { BuddgyAvatar, type BuddgyPose } from '@/components/illustrations/BuddgyAvatar'
 
 /**
  * Buddgy's chat-style message bubble above an onboarding card.
@@ -29,6 +29,8 @@ export function BuddgyBubble({ cardId, answers, className }: BuddgyBubbleProps) 
   const message = buildBuddgyMessage(cardId, answers, t)
   if (!message) return null
 
+  const pose = poseForCard(cardId)
+
   return (
     <AnimatePresence mode="wait">
       <motion.div
@@ -39,9 +41,7 @@ export function BuddgyBubble({ cardId, answers, className }: BuddgyBubbleProps) 
         transition={{ duration: 0.22, ease: 'easeOut' }}
         className={cn('flex items-start gap-3', className)}
       >
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-red)]/15 text-[var(--color-brand-red)]">
-          <Sparkles className="h-4 w-4" aria-hidden />
-        </div>
+        <BuddgyAvatar pose={pose} size="sm" />
         <div
           className={cn(
             'relative rounded-2xl rounded-tl-sm border px-4 py-3 text-sm',
@@ -53,4 +53,27 @@ export function BuddgyBubble({ cardId, answers, className }: BuddgyBubbleProps) 
       </motion.div>
     </AnimatePresence>
   )
+}
+
+/**
+ * Map a card id to a Buddgy pose so the avatar's expression tracks
+ * what Buddgy is saying. Falls back to `greeting` for anything
+ * unspecified.
+ */
+function poseForCard(cardId: BuddgyCardId): BuddgyPose {
+  switch (cardId) {
+    case 'welcomeIntro':
+    case 'identityName':
+      return 'greeting'
+    case 'generateIntro':
+      return 'thinking'
+    case 'gateDebts':
+    case 'gateSubscriptions':
+    case 'gateSavings':
+      return 'pointing'
+    case 'goalsIntro':
+      return 'celebrating'
+    default:
+      return 'greeting'
+  }
 }
