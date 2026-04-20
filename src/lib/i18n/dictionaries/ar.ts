@@ -184,6 +184,15 @@ export const ar: Dictionary = {
     skipAll: 'تخطّى كامل الجولة',
   },
 
+  syncFailures: {
+    oneDidntSync: 'تغيير واحد لم يُحفظ سحابياً',
+    manyDidntSync: (count) => `${count} تغييرات لم تُحفظ سحابياً`,
+    autoRetryNote: 'سنتابع المحاولة تلقائياً في الخلفية.',
+    expand: 'عرض التفاصيل',
+    collapse: 'إخفاء التفاصيل',
+    dismiss: 'إخفاء',
+  },
+
   common: {
     save: 'حفظ',
     cancel: 'إلغاء',

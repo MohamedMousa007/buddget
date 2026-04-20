@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useSyncFailures } from '@/lib/store/useSyncFailures'
 import {
   pullCore,
   pullAll,
@@ -240,12 +241,20 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
 
       try {
         const result = await flushDiff(supabase, userId, prev, next)
+        // Always feed the result (empty on success, non-empty on
+        // error) into the failures store — a successful flush
+        // clears any previously-displayed banner.
+        useSyncFailures.getState().recordFailures(result.anyError ? result.errors : [])
         if (!result.anyError) {
           prevSnap.current = next
         } else {
           console.error('[finance sync] per-table flush errors:', result.errors)
         }
       } catch (e) {
+        const message = e instanceof Error ? e.message : String(e)
+        useSyncFailures
+          .getState()
+          .recordFailures([`sync.flush: ${message.slice(0, 200)}`])
         console.error('[finance sync] flush threw', e)
       }
     }

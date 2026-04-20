@@ -342,6 +342,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const showLandingGate = mode === 'landing' && !isBypassRoute && !signingOut
   const showLoadingSplash = (mode === 'loading' || signingOut) && !isBypassRoute
 
+  /**
+   * Post-signup flash guard: a freshly signed-up user briefly renders
+   * whatever route the auth modal was opened from (usually `/`) before
+   * the client-side `router.replace('/onboarding')` in useAuthModal
+   * completes. Middleware redirects server-side, but that's a separate
+   * request — the SPA render happens first.
+   *
+   * Block children until one of:
+   *   - the user is already on `/onboarding`
+   *   - `user_metadata.onboarding_completed === true`
+   *
+   * Bypass routes (reset-password, auth callback) always render.
+   */
+  const onboardingDoneMeta = user?.user_metadata?.onboarding_completed === true
+  const onOnboardingRoute = pathname.startsWith('/onboarding')
+  const showOnboardingRedirectSplash =
+    mode === 'authenticated' &&
+    !onboardingDoneMeta &&
+    !onOnboardingRoute &&
+    !isBypassRoute
+
   return (
     <AuthContext.Provider value={value}>
       <DialogProvider>
@@ -352,7 +373,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         <Suspense fallback={null}>
           <RequestResetQuerySync />
         </Suspense>
-        {showLoadingSplash ? (
+        {showLoadingSplash || showOnboardingRedirectSplash ? (
           <AuthLoadingSplash />
         ) : showLandingGate ? (
           <Suspense fallback={null}>

@@ -60,6 +60,11 @@ export function useBuddgyBuilderFlow(
   const {
     settings,
     incomeSources,
+    profileCity,
+    profileCountry,
+    profileFoodFrequency,
+    profileTransportMode,
+    profileLifestyleTier,
     addIncomeSource,
     updateIncomeSource,
     updateSettings,
@@ -70,6 +75,11 @@ export function useBuddgyBuilderFlow(
     useShallow((s) => ({
       settings: s.settings,
       incomeSources: s.incomeSources,
+      profileCity: s.profile.city ?? '',
+      profileCountry: s.profile.country ?? '',
+      profileFoodFrequency: s.profile.foodFrequency,
+      profileTransportMode: s.profile.transportMode,
+      profileLifestyleTier: s.profile.lifestyleTier,
       addIncomeSource: s.addIncomeSource,
       updateIncomeSource: s.updateIncomeSource,
       updateSettings: s.updateSettings,
@@ -77,6 +87,30 @@ export function useBuddgyBuilderFlow(
       setFinancialGoalsNotes: s.setFinancialGoalsNotes,
       updateBudgetPlan: s.updateBudgetPlan,
     }))
+  )
+
+  /**
+   * True when the user already told us enough during onboarding that
+   * the describe step's free-text input is redundant: primary income
+   * amount > 0 AND city AND country. The describe UI uses this to
+   * surface a "Use my info" CTA that routes straight to `skipDescribe`.
+   */
+  const hasKnownContext = useMemo(() => {
+    const primary = incomeSources[0]
+    const incomeKnown = !!primary && primary.amount > 0
+    return incomeKnown && !!profileCity && !!profileCountry
+  }, [incomeSources, profileCity, profileCountry])
+
+  /**
+   * True when the lifestyle step (food / transport / tier) can be
+   * auto-skipped because the user already set all three on their
+   * profile. Evaluated at the confirm step before deciding the next
+   * step. Uses profile state, not local `lifestyle`, so it stays
+   * accurate even if the user reopens the flow mid-session.
+   */
+  const lifestylePrefilled = useMemo(
+    () => !!profileFoodFrequency && !!profileTransportMode && !!profileLifestyleTier,
+    [profileFoodFrequency, profileTransportMode, profileLifestyleTier],
   )
 
   const [step, setStep] = useState<BuilderStep>('describe')
@@ -247,14 +281,31 @@ export function useBuddgyBuilderFlow(
 
   const confirmBasics = useCallback(() => {
     if (basics.income <= 0) return
-    setStep('lifestyle')
-  }, [basics.income])
+    // Auto-skip the lifestyle step when the user already answered it
+    // during onboarding. We check BOTH the local `lifestyle` (populated
+    // by `skipDescribe` from profile) and the profile-level
+    // `lifestylePrefilled` signal — if any field is missing, the
+    // lifestyle step still runs normally.
+    const canSkip =
+      lifestylePrefilled ||
+      (lifestyle.food && lifestyle.transport && lifestyle.tier)
+    if (canSkip) {
+      setStep('plan')
+    } else {
+      setStep('lifestyle')
+    }
+  }, [basics.income, lifestyle, lifestylePrefilled])
 
   /**
-   * Skip the free-text describe step: pre-fill `basics` from whatever the user
-   * already entered in the app (primary income source, profile, settings) and
-   * jump straight to the review step. Safe to call on an empty store — the
-   * review step will ask for anything we don't know yet.
+   * Skip the free-text describe step: pre-fill every slot from whatever
+   * the user already entered in the app (primary income source, profile
+   * identity, profile lifestyle, profile rent, settings) and jump to
+   * the review step. Journey v3 users land on /budget-setup with most
+   * of this already populated, so the conversational rebuild shouldn't
+   * re-ask them.
+   *
+   * Safe to call on an empty store — the review step will ask for
+   * anything we don't know yet.
    */
   const skipDescribe = useCallback(() => {
     const state = useFinanceStore.getState()
@@ -265,6 +316,14 @@ export function useBuddgyBuilderFlow(
       currency: (primary?.currency as Currency) ?? state.settings.baseCurrency ?? prev.currency,
       city: state.profile.city || prev.city,
       country: state.profile.country || prev.country,
+      household: state.profile.household ?? prev.household,
+      rent: state.profile.monthlyRent ?? prev.rent,
+      rentIncludesUtilities: state.profile.rentIncludesUtilities ?? prev.rentIncludesUtilities,
+    }))
+    setLifestyle((prev) => ({
+      food: state.profile.foodFrequency ?? prev.food,
+      transport: state.profile.transportMode ?? prev.transport,
+      tier: state.profile.lifestyleTier ?? prev.tier,
     }))
     setParsed(null)
     setStep('confirm')
@@ -461,6 +520,7 @@ export function useBuddgyBuilderFlow(
     knownIncome: options?.knownIncome,
     submitDescription,
     skipDescribe,
+    hasKnownContext,
     confirmBasics,
     confirmLifestyle,
     confirmAndApplyPlan,

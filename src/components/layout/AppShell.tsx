@@ -5,6 +5,7 @@ import { Sidebar } from './Sidebar'
 import { BottomNav } from './BottomNav'
 import { ModalProvider } from '@/components/modals/ModalProvider'
 import { OnboardingBanner } from '@/components/layout/OnboardingBanner'
+import { SyncFailureBanner } from '@/components/layout/SyncFailureBanner'
 import { DesktopHeaderBar } from '@/components/layout/DesktopHeaderBar'
 import { InstallButton } from '@/components/pwa/InstallButton'
 import { useThemeSync } from '@/hooks/useThemeSync'
@@ -50,6 +51,7 @@ export function AppShell({ children }: AppShellProps) {
       <DesktopHeaderBar />
       <main className="pt-[calc(3rem+env(safe-area-inset-top,0px))] lg:pt-12 lg:ms-[176px] pb-16 lg:pb-0 min-h-screen">
         <OnboardingBanner />
+        <SyncFailureBanner />
         {children}
       </main>
       <InstallButton variant="banner" />
