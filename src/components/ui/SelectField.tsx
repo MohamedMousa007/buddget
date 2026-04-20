@@ -152,16 +152,23 @@ export const SelectField = forwardRef<HTMLButtonElement, SelectFieldProps>(
                 </div>
               ) : null}
 
+              {/* Base UI keeps the Empty wrapper mounted for a11y live-region
+                  announcements — its children are null when the list has
+                  items but the div itself still reserves vertical space
+                  from its padding. `empty:hidden` collapses it back out
+                  whenever there is no text content inside. */}
+              <Combobox.Empty className="empty:hidden px-3 py-6 text-center text-xs text-[var(--color-brand-text-muted)]">
+                {t.ui.select.empty}
+              </Combobox.Empty>
+              {/*
+                Render items via a List render-function, NOT a plain `.map()`.
+                Base UI filters `Combobox.Root`'s `items` on every input
+                change and only the function-child rendering path receives
+                the filtered subset — a manual `items.map()` would bypass
+                the filter and the list would stay static as the user types.
+              */}
               <Combobox.List className="max-h-[min(70svh,22rem)] overflow-y-auto p-1">
-                {/* Base UI keeps the Empty wrapper mounted for a11y live-region
-                    announcements — its children are null when the list has
-                    items but the div itself still reserves vertical space
-                    from its padding. `empty:hidden` collapses it back out
-                    whenever there is no text content inside. */}
-                <Combobox.Empty className="empty:hidden px-3 py-6 text-center text-xs text-[var(--color-brand-text-muted)]">
-                  {t.ui.select.empty}
-                </Combobox.Empty>
-                {items.map((opt) => (
+                {(opt: SelectFieldOption) => (
                   <Combobox.Item
                     key={opt.value}
                     value={opt as unknown as never}
@@ -186,7 +193,7 @@ export const SelectField = forwardRef<HTMLButtonElement, SelectFieldProps>(
                       <Check className="h-4 w-4" aria-hidden />
                     </Combobox.ItemIndicator>
                   </Combobox.Item>
-                ))}
+                )}
               </Combobox.List>
             </Combobox.Popup>
           </Combobox.Positioner>
