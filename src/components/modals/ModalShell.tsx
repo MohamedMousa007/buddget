@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from 'react'
 import { AnimatePresence, motion, useDragControls } from 'framer-motion'
+import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
 const OVERLAY_Z = 'z-[100]'
@@ -45,6 +46,12 @@ export function ModalShell({
   const dragControls = useDragControls()
   const zStack = zIndexClassName ?? OVERLAY_Z
   const panelRef = useRef<HTMLDivElement>(null)
+  const pathname = usePathname()
+  // During the Journey we keep the top chrome visible (header + Buddgy
+  // bubble) so the user never loses the "I'm in onboarding" context.
+  // Softer backdrop + no blur + top offset so the first ~112 px of the
+  // viewport (safe-area + header + progress bar) render through.
+  const journeyChrome = pathname?.startsWith('/onboarding') ?? false
 
   useEffect(() => {
     if (!open) return
@@ -96,7 +103,17 @@ export function ModalShell({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onBackdropClick}
-            className={cn('fixed inset-0 bg-black/60 backdrop-blur-sm', zStack)}
+            className={cn(
+              'fixed start-0 end-0 bottom-0',
+              journeyChrome ? 'bg-black/30' : 'bg-black/60 backdrop-blur-sm',
+              zStack,
+            )}
+            style={{
+              // In journey mode, leave the top ~112 px uncovered so the
+              // progress bar + Buddgy bubble remain visible behind the
+              // modal. Outside onboarding, cover the full viewport.
+              top: journeyChrome ? 'calc(max(env(safe-area-inset-top),1rem) + 96px)' : 0,
+            }}
           />
           <motion.div
             ref={panelRef}
