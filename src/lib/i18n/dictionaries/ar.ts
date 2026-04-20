@@ -1175,6 +1175,63 @@ export const ar: Dictionary = {
           familyLabel: 'عائلة',
         },
       },
+      moneyIn: {
+        pmIntro: {
+          title: 'أين تصل أموالك؟',
+          body:
+            'أضِف الحسابات والبطاقات التي تستخدمها. نبدأ هنا لأن الخطوة التالية — دخلك — يصل إلى إحداها.',
+        },
+      },
+      multi: {
+        add: {
+          paymentMethods: 'أضِف طريقة دفع',
+          incomeSources: 'أضِف مصدر دخل',
+          debts: 'أضِف ديناً',
+          subscriptions: 'أضِف اشتراكاً',
+          savingsAccounts: 'أضِف حساب ادخار',
+          goals: 'أضِف هدفاً',
+        },
+        empty: {
+          paymentMethods: 'لا توجد طرق دفع بعد.',
+          incomeSources: 'لا توجد مصادر دخل بعد.',
+          debts: 'لا توجد ديون بعد.',
+          subscriptions: 'لا توجد اشتراكات بعد.',
+          savingsAccounts: 'لا توجد حسابات ادخار بعد.',
+          goals: 'لا توجد أهداف بعد.',
+        },
+      },
+      pmTypes: {
+        cash: 'نقد',
+        bank_transfer: 'تحويل بنكي',
+        card_debit: 'بطاقة خصم',
+        card_credit: 'بطاقة ائتمان',
+        other: 'أخرى',
+      },
+      freq: {
+        monthly: 'شهرياً',
+        biweekly: 'كل أسبوعين',
+        weekly: 'أسبوعياً',
+      },
+      pmEditor: {
+        nameLabel: 'الاسم',
+        namePlaceholder: 'مثال: حساب بنك الإمارات',
+        typeLabel: 'النوع',
+        currencyLabel: 'العملة',
+        defaultCheck: 'استخدمها كافتراضي',
+        openingOwedLabel: 'الرصيد المستحق',
+        openingOwedHint:
+          'رصيد بطاقة الائتمان المستحق حالياً. يتابعه Buddget تلقائياً كدين.',
+      },
+      incomeEditor: {
+        nameLabel: 'الاسم',
+        namePlaceholder: 'مثال: راتب — شركة Acme',
+        amountLabel: 'المبلغ',
+        currencyLabel: 'العملة',
+        recurringLabel: 'متكرر',
+        frequencyLabel: 'التكرار',
+        paymentMethodLabel: 'يصل إلى',
+        paymentMethodHint: 'أيّ من طرق الدفع يستلم هذا الدخل.',
+      },
     },
 
     checklistTitle: 'أكمل إعداد Buddget',

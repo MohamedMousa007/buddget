@@ -1177,6 +1177,63 @@ export const en: Dictionary = {
           familyLabel: 'Family',
         },
       },
+      moneyIn: {
+        pmIntro: {
+          title: 'Where does your money land?',
+          body:
+            'Add the accounts and cards you use. We start here because the next step \u2014 your income \u2014 lands on one of them.',
+        },
+      },
+      multi: {
+        add: {
+          paymentMethods: 'Add a payment method',
+          incomeSources: 'Add an income source',
+          debts: 'Add a debt',
+          subscriptions: 'Add a subscription',
+          savingsAccounts: 'Add a savings account',
+          goals: 'Add a goal',
+        },
+        empty: {
+          paymentMethods: 'No payment methods yet.',
+          incomeSources: 'No income sources yet.',
+          debts: 'No debts yet.',
+          subscriptions: 'No subscriptions yet.',
+          savingsAccounts: 'No savings accounts yet.',
+          goals: 'No goals yet.',
+        },
+      },
+      pmTypes: {
+        cash: 'Cash',
+        bank_transfer: 'Bank transfer',
+        card_debit: 'Debit card',
+        card_credit: 'Credit card',
+        other: 'Other',
+      },
+      freq: {
+        monthly: 'Monthly',
+        biweekly: 'Bi-weekly',
+        weekly: 'Weekly',
+      },
+      pmEditor: {
+        nameLabel: 'Name',
+        namePlaceholder: 'e.g. Emirates NBD account',
+        typeLabel: 'Type',
+        currencyLabel: 'Currency',
+        defaultCheck: 'Use as default',
+        openingOwedLabel: 'Outstanding balance',
+        openingOwedHint:
+          'Credit card balance you currently owe. Buddget tracks this as a debt automatically.',
+      },
+      incomeEditor: {
+        nameLabel: 'Name',
+        namePlaceholder: 'e.g. Salary \u2014 Acme Co.',
+        amountLabel: 'Amount',
+        currencyLabel: 'Currency',
+        recurringLabel: 'Recurring',
+        frequencyLabel: 'Frequency',
+        paymentMethodLabel: 'Lands on',
+        paymentMethodHint: 'Which of your payment methods receives this income.',
+      },
     },
 
     checklistTitle: 'Finish setting up Buddget',

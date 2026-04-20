@@ -10,6 +10,7 @@ import { JOURNEY_CARDS } from '@/lib/onboarding/journeyConfig'
 import { JOURNEY_PHASES } from '@/lib/onboarding/journeyTypes'
 import { InfoCard } from '@/components/features/onboarding/journey/cards/InfoCard'
 import { FieldCard } from '@/components/features/onboarding/journey/cards/FieldCard'
+import { MultiEntryCard } from '@/components/features/onboarding/journey/cards/MultiEntryCard'
 import { defaultCurrencyForCountry } from '@/lib/profile/countryToCurrency'
 
 /**
@@ -26,8 +27,17 @@ export function JourneyRunner() {
   const t = useT()
   const runner = useJourneyRunner({ cards: JOURNEY_CARDS })
 
-  const { currentCard, visibleIndex, progress, answers, canGoBack, advance, back, setAnswer } =
-    runner
+  const {
+    currentCard,
+    visibleIndex,
+    progress,
+    answers,
+    canGoBack,
+    advance,
+    back,
+    setAnswer,
+    replaceEntries,
+  } = runner
 
   // When the currency card opens, seed it from the user's country if they
   // haven't explicitly picked one yet. Shows the currency as a
@@ -63,6 +73,12 @@ export function JourneyRunner() {
     [currentCard, setAnswer],
   )
 
+  const currentMultiEntries = useMemo(() => {
+    if (!currentCard || currentCard.kind !== 'multi') return [] as unknown[]
+    const raw = readByPath(answers, currentCard.writeKey)
+    return Array.isArray(raw) ? (raw as unknown[]) : []
+  }, [currentCard, answers])
+
   const isCurrentComplete = useMemo(() => {
     if (!currentCard) return false
     switch (currentCard.kind) {
@@ -70,11 +86,13 @@ export function JourneyRunner() {
         return true
       case 'field':
         return currentCard.optional === true || isFieldValuePresent(currentValue)
-      // Other kinds (multi, ai, review, terminal) ship in later commits.
+      case 'multi':
+        return currentMultiEntries.length >= currentCard.minEntries
+      // Other kinds (ai, review, terminal) ship in later commits.
       default:
         return true
     }
-  }, [currentCard, currentValue])
+  }, [currentCard, currentValue, currentMultiEntries])
 
   if (!currentCard) {
     // End of journey — PR2 will replace this with the terminal apply
@@ -121,6 +139,12 @@ export function JourneyRunner() {
                 card: currentCard,
                 value: currentValue,
                 onFieldChange: handleFieldChange,
+                multiEntries: currentMultiEntries,
+                onMultiChange: (next) => {
+                  if (currentCard.kind !== 'multi') return
+                  replaceEntries(currentCard.writeKey, next)
+                },
+                answers,
               })}
             </motion.div>
           </AnimatePresence>
@@ -188,20 +212,35 @@ function renderCardBody({
   card,
   value,
   onFieldChange,
+  multiEntries,
+  onMultiChange,
+  answers,
 }: {
-  card: ReturnType<typeof useJourneyRunner>['currentCard'] & object
+  card: NonNullable<ReturnType<typeof useJourneyRunner>['currentCard']>
   value: unknown
   onFieldChange: (next: unknown) => void
+  multiEntries: unknown[]
+  onMultiChange: (next: unknown[]) => void
+  answers: ReturnType<typeof useJourneyRunner>['answers']
 }) {
   switch (card.kind) {
     case 'info':
       return <InfoCard card={card} />
     case 'field':
       return <FieldCard card={card} value={value} onChange={onFieldChange} />
-    // Remaining kinds (multi, ai, review, terminal) are placeholders in
-    // later commits. Rendering null here is safe because
-    // `isCurrentComplete` defaults to true for unknown kinds — so the
-    // Next button advances past unrendered cards rather than stranding.
+    case 'multi':
+      return (
+        <MultiEntryCard
+          card={card}
+          entries={multiEntries}
+          onChange={onMultiChange}
+          answers={answers}
+        />
+      )
+    // Remaining kinds (ai, review, terminal) are placeholders in later
+    // commits. Rendering null here is safe because `isCurrentComplete`
+    // defaults to true for unknown kinds — so the Next button advances
+    // past unrendered cards rather than stranding.
     default:
       return null
   }
