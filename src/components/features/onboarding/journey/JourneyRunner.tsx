@@ -18,9 +18,9 @@ import { FieldCard } from '@/components/features/onboarding/journey/cards/FieldC
 import { OnboardingModalGate } from '@/components/features/onboarding/OnboardingModalGate'
 import { OnboardingGateCard } from '@/components/features/onboarding/OnboardingGateCard'
 import { BuddgyBubble } from '@/components/features/onboarding/BuddgyBubble'
+import { BuildingPlanScreen } from '@/components/features/onboarding/BuildingPlanScreen'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useShallow } from 'zustand/react/shallow'
-import { Loader2 } from 'lucide-react'
 
 /**
  * The conversational onboarding surface. Composes:
@@ -287,29 +287,13 @@ function renderCardBody({
     case 'modal':
       return <OnboardingModalGate card={card} onContinueRequested={onContinueRequested} />
     case 'loading':
-      // SP5 replaces this placeholder with the real `BuildingPlanScreen`
-      // that fires `generateBudgetPlan` and applies the result.
-      return <LoadingPlaceholder />
+      return <BuildingPlanScreen />
+
     case 'ai':
     case 'review':
     case 'terminal':
       return null
   }
-}
-
-function LoadingPlaceholder() {
-  const t = useT()
-  return (
-    <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
-      <Loader2
-        className="h-10 w-10 animate-spin text-[var(--color-brand-red)]"
-        aria-hidden
-      />
-      <p className="text-sm text-[var(--color-brand-text-secondary)]">
-        {t.onboarding.journey.loading.placeholder}
-      </p>
-    </div>
-  )
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────

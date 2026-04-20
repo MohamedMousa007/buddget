@@ -1298,6 +1298,19 @@ export const ar: Dictionary = {
       },
       loading: {
         placeholder: 'اقتربنا — صانع الخطة قادم في الخطوة التالية.',
+        title: 'نُعدّ خطتك\u2026',
+        bullets: {
+          income: 'نحلّل دخلك',
+          debts: 'نرتّب ديونك',
+          anchors: (country) =>
+            country && country !== '\u2014'
+              ? `نراعي تكاليف ${country}`
+              : 'نراعي التكاليف المحلية',
+          drafting: 'نصيغ الخطة\u2026',
+        },
+        softTimeout: 'ما زلنا نعمل — الخطط الحقيقية تحتاج لحظة.',
+        failed: 'تعذّر إنهاء الخطة الآن. بياناتك محفوظة — اضغط إعادة المحاولة.',
+        retry: 'إعادة المحاولة',
       },
       moneyIn: {
         pmIntro: {
