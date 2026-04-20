@@ -28,9 +28,30 @@ export const ONBOARDING_EVENTS = {
   budgetAutoBuildFallback: 'onboarding.budget_auto_build_fallback',
 } as const
 
+/**
+ * Events for the Journey (flow v3). Kept as a separate namespace so Core
+ * Gate metrics don't mix with Journey metrics during the A/B period.
+ */
+export const JOURNEY_EVENTS = {
+  started: 'journey.started',
+  pathChosen: 'journey.path_chosen',
+  phaseEntered: 'journey.phase_entered',
+  cardCompleted: 'journey.card_completed',
+  cardSkipped: 'journey.card_skipped',
+  backPressed: 'journey.back_pressed',
+  aiParseCalled: 'journey.ai.parse_called',
+  aiParseFailed: 'journey.ai.parse_failed',
+  aiPlanCalled: 'journey.ai.plan_called',
+  aiPlanFailed: 'journey.ai.plan_failed',
+  fallbackPresetUsed: 'journey.fallback_preset_used',
+  completed: 'journey.completed',
+  abandonedAt: 'journey.abandoned_at',
+} as const
+
 type EventName =
   | (typeof AUTH_EVENTS)[keyof typeof AUTH_EVENTS]
   | (typeof ONBOARDING_EVENTS)[keyof typeof ONBOARDING_EVENTS]
+  | (typeof JOURNEY_EVENTS)[keyof typeof JOURNEY_EVENTS]
   | (string & {})
 
 type EventProps = Record<string, string | number | boolean | null | undefined>
