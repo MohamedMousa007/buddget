@@ -24,6 +24,19 @@ import { AddIncomeFormFields } from '@/components/modals/AddIncomeFormFields'
 import { IncomeDebtEmbed } from '@/components/features/income/IncomeDebtEmbed'
 import { DebtGoalSheet } from '@/components/features/debts/DebtGoalSheet'
 import { buildDebtFromIncomeFlow } from '@/lib/debt/buildDebtFromIncomeFlow'
+import { useDraftEntry } from '@/lib/onboarding/draftEntry'
+
+interface IncomeDraftShape {
+  name: string
+  amount: string
+  currency: Currency
+  paymentMethodId: string
+  sourceType: IncomeSourceType
+  isRecurring: boolean
+  recurringFrequency: IncomeRecurringFrequency
+  dayOfMonth: string
+  notes: string
+}
 
 function canSubmitIncomeDebt(
   name: string,
@@ -64,17 +77,33 @@ export function AddIncomeSheet() {
   const t = useT()
   const isOpen = activeModal === 'addIncome'
 
-  const [name, setName] = useState('')
-  const [amount, setAmount] = useState('')
-  const [currency, setCurrency] = useState<Currency>(settings.baseCurrency)
-  const [paymentMethodId, setPaymentMethodId] = useState(
-    () => paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || ''
+  // Journey-mode draft resume: no-op outside /onboarding. On first
+  // mount inside the Journey, seed from any half-filled draft so a
+  // mid-modal tab close doesn't lose typed values. Only covers core
+  // income fields; the debt-embed branch resets to defaults.
+  const draft = useDraftEntry<IncomeDraftShape>('incomeSources')
+
+  const [name, setName] = useState(draft.initial?.name ?? '')
+  const [amount, setAmount] = useState(draft.initial?.amount ?? '')
+  const [currency, setCurrency] = useState<Currency>(
+    draft.initial?.currency ?? settings.baseCurrency,
   )
-  const [sourceType, setSourceType] = useState<IncomeSourceType>('salary')
-  const [isRecurring, setIsRecurring] = useState(true)
-  const [recurringFrequency, setRecurringFrequency] = useState<IncomeRecurringFrequency>('monthly')
-  const [dayOfMonth, setDayOfMonth] = useState('1')
-  const [notes, setNotes] = useState('')
+  const [paymentMethodId, setPaymentMethodId] = useState(
+    () =>
+      draft.initial?.paymentMethodId ||
+      paymentMethods.find((m) => m.isDefault)?.id ||
+      paymentMethods[0]?.id ||
+      '',
+  )
+  const [sourceType, setSourceType] = useState<IncomeSourceType>(
+    draft.initial?.sourceType ?? 'salary',
+  )
+  const [isRecurring, setIsRecurring] = useState(draft.initial?.isRecurring ?? true)
+  const [recurringFrequency, setRecurringFrequency] = useState<IncomeRecurringFrequency>(
+    draft.initial?.recurringFrequency ?? 'monthly',
+  )
+  const [dayOfMonth, setDayOfMonth] = useState(draft.initial?.dayOfMonth ?? '1')
+  const [notes, setNotes] = useState(draft.initial?.notes ?? '')
 
   const [debtType, setDebtType] = useState<DebtKind>('personal')
   const [debtPerson, setDebtPerson] = useState('')
@@ -127,12 +156,46 @@ export function AddIncomeSheet() {
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- sync default currency when sheet opens */
     if (isOpen && !prevIsOpen.current) {
-      setCurrency(settings.baseCurrency)
-      setPaymentMethodId(paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || '')
+      // Don't clobber resumed draft values when the user re-opens the
+      // modal mid-journey.
+      if (!draft.active || !draft.initial?.currency) {
+        setCurrency(settings.baseCurrency)
+      }
+      if (!draft.active || !draft.initial?.paymentMethodId) {
+        setPaymentMethodId(paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || '')
+      }
     }
     prevIsOpen.current = isOpen
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [isOpen, settings.baseCurrency, paymentMethods])
+  }, [isOpen, settings.baseCurrency, paymentMethods, draft.active, draft.initial])
+
+  // Keep the persisted draft in sync with live form edits (debounced).
+  useEffect(() => {
+    if (!isOpen || !draft.active) return
+    draft.update({
+      name,
+      amount,
+      currency,
+      paymentMethodId,
+      sourceType,
+      isRecurring,
+      recurringFrequency,
+      dayOfMonth,
+      notes,
+    })
+  }, [
+    isOpen,
+    draft,
+    name,
+    amount,
+    currency,
+    paymentMethodId,
+    sourceType,
+    isRecurring,
+    recurringFrequency,
+    dayOfMonth,
+    notes,
+  ])
 
   const resetDebtFields = useCallback(() => {
     setDebtType('personal')
@@ -270,12 +333,15 @@ export function AddIncomeSheet() {
     }
 
     showToast(t.common.toastIncomeAdded)
+    draft.clear()
     resetForm()
     setActiveModal(null)
   }
 
   const handleClose = () => {
-    resetForm()
+    // Inside the Journey, keep the draft so a plain-close resumes the
+    // typed values. Outside onboarding, reset as before.
+    if (!draft.active) resetForm()
     setActiveModal(null)
   }
 

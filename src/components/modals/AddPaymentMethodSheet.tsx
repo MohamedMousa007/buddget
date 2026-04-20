@@ -13,7 +13,16 @@ import { PAYMENT_METHOD_TYPE_OPTIONS } from '@/lib/constants/finance'
 import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { useT } from '@/lib/i18n'
+import { useDraftEntry } from '@/lib/onboarding/draftEntry'
 import type { Currency, PaymentMethodType } from '@/lib/store/types'
+
+interface PaymentMethodDraftShape {
+  name: string
+  type: PaymentMethodType
+  currency: Currency
+  color: string
+  isDefault: boolean
+}
 
 const COLORS = ['#C0C0C0', '#F5C842', '#1DB954', '#E50914', '#3B82F6', '#A855F7', '#EC4899', '#FFFFFF']
 
@@ -23,21 +32,38 @@ export function AddPaymentMethodSheet() {
   const t = useT()
   const isOpen = activeModal === 'addPaymentMethod'
 
-  const [name, setName] = useState('')
-  const [type, setType] = useState<PaymentMethodType>('cash')
-  const [currency, setCurrency] = useState<Currency>(settings.baseCurrency)
-  const [color, setColor] = useState('#C0C0C0')
-  const [isDefault, setIsDefault] = useState(false)
+  // Journey-mode draft resume: no-op when the PM modal is opened from
+  // regular app routes. On first mount inside /onboarding, seed from
+  // any half-filled draft so a mid-modal tab close doesn't lose work.
+  const draft = useDraftEntry<PaymentMethodDraftShape>('paymentMethods')
+
+  const [name, setName] = useState(draft.initial?.name ?? '')
+  const [type, setType] = useState<PaymentMethodType>(draft.initial?.type ?? 'cash')
+  const [currency, setCurrency] = useState<Currency>(
+    draft.initial?.currency ?? settings.baseCurrency,
+  )
+  const [color, setColor] = useState(draft.initial?.color ?? '#C0C0C0')
+  const [isDefault, setIsDefault] = useState(draft.initial?.isDefault ?? false)
   const prevIsOpen = useRef(false)
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- sync default currency when sheet opens */
     if (isOpen && !prevIsOpen.current) {
-      setCurrency(settings.baseCurrency)
+      // Don't clobber a resumed draft currency when the user re-opens
+      // the modal mid-journey.
+      if (!draft.active || !draft.initial?.currency) {
+        setCurrency(settings.baseCurrency)
+      }
     }
     prevIsOpen.current = isOpen
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [isOpen, settings.baseCurrency])
+  }, [isOpen, settings.baseCurrency, draft.active, draft.initial])
+
+  // Keep the persisted draft in sync with live form edits (debounced).
+  useEffect(() => {
+    if (!isOpen || !draft.active) return
+    draft.update({ name, type, currency, color, isDefault })
+  }, [isOpen, draft, name, type, currency, color, isDefault])
 
   const resetForm = () => {
     setName('')
@@ -58,12 +84,17 @@ export function AddPaymentMethodSheet() {
       isDefault,
     })
 
+    draft.clear()
     resetForm()
     setActiveModal(null)
   }
 
   const handleClose = () => {
-    resetForm()
+    // Don't reset or clear the draft on plain close — the user may be
+    // stepping away mid-edit. The draft persists until save or next
+    // successful completion. Fresh `?isDefault=false` etc. will be
+    // restored from the draft on re-open.
+    if (!draft.active) resetForm()
     setActiveModal(null)
   }
 
