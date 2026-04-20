@@ -1236,6 +1236,59 @@ export const en: Dictionary = {
           familyLabel: 'Family',
         },
       },
+      buddgy: {
+        welcomeIntro: {
+          default: "Hey \u2014 I\u2019m Buddgy, your money buddy. Let\u2019s get you set up.",
+        },
+        identityName: {
+          default: 'What should I call you?',
+        },
+        identityCountry: {
+          default: 'Where in the world are you, {name}?',
+        },
+        identityCity: {
+          uae: 'Which part of the UAE, {name}? Dubai, Abu Dhabi, somewhere quieter?',
+          egypt: 'Which part of Egypt, {name}? Cairo, Alex, the Red Sea?',
+          saudi: 'Which part of Saudi, {name}? Riyadh, Jeddah, somewhere else?',
+          jordan: 'Which part of Jordan, {name}? Amman?',
+          default: 'Which city, {name}?',
+        },
+        identityCurrency: {
+          default: 'Your main currency is {baseCurrency} \u2014 sound right?',
+        },
+        identitySecondaryCurrency: {
+          default: 'Any other currency you deal with often?',
+          remittance:
+            'Sending money home, or dealing in USD? Pick a secondary currency \u2014 we\u2019ll show conversions everywhere that matters.',
+        },
+        identityHousehold: {
+          default: 'So I size things like rent and groceries right \u2014 who shares your home?',
+        },
+        moneyInPmIntro: {
+          default:
+            'Now the practical part. Every {baseCurrency} you earn lands somewhere. Let\u2019s set those up first.',
+        },
+        moneyInIncomeIntro: {
+          default: "Great. Now let\u2019s log what comes in.",
+          afterPm: "Nice. Now let\u2019s tell me where money flows into {firstPaymentMethodName}.",
+        },
+        gateSavings: {
+          default: 'Got any savings accounts already?',
+        },
+        gateDebts: {
+          default: 'Any debts or loans we should plan around?',
+        },
+        gateSubscriptions: {
+          default: 'Any recurring subscriptions \u2014 Netflix, gym, that kind of thing?',
+        },
+        goalsIntro: {
+          default: 'Last stretch, {name} \u2014 what are you saving for?',
+        },
+        generateIntro: {
+          default:
+            'Got everything I need. Building your plan now \u2014 this takes a few seconds.',
+        },
+      },
       moneyIn: {
         pmIntro: {
           title: 'Where does your money land?',
