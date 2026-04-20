@@ -1125,6 +1125,28 @@ export interface Dictionary {
     coreGateFinishCta: string
     coreGateFinishingCta: string
 
+    // Journey (flow v3) — AI-driven onboarding. Keys live under a nested
+    // `journey` sub-namespace so the new strings don't intermix with the
+    // legacy Core Gate keys during the A/B period.
+    journey: {
+      common: {
+        next: string
+        back: string
+        skip: string
+        finish: string
+      }
+      welcome: {
+        intro: { title: string; body: string }
+        fork: {
+          hint: string
+          guidedLabel: string
+          guidedDescription: string
+          quickLabel: string
+          quickDescription: string
+        }
+      }
+    }
+
     // First-run checklist shown on the dashboard until the user finishes setup.
     checklistTitle: string
     checklistProgress: (done: number, total: number) => string

@@ -1128,6 +1128,31 @@ export const ar: Dictionary = {
     coreGateFinishCta: 'إنهاء الإعداد',
     coreGateFinishingCta: 'جارٍ الإنهاء…',
 
+    journey: {
+      common: {
+        next: 'التالي',
+        back: 'رجوع',
+        skip: 'تخطّي',
+        finish: 'إنهاء',
+      },
+      welcome: {
+        intro: {
+          title: 'لنبنِ نظامك المالي.',
+          body:
+            'خلال دقائق، سيجهّز لك Buddgy كل شيء — طرق الدفع، الدخل، الميزانية، الأهداف — لتخرج بخطة جاهزة لا بتطبيق فارغ.',
+        },
+        fork: {
+          hint: 'يمكنك تبديل المسار في أي وقت.',
+          guidedLabel: 'رحلة موجَّهة — ~4 دقائق',
+          guidedDescription:
+            'أخبر Buddgy عن حياتك المالية مرة واحدة، أجب عن بضعة أسئلة، وسننشئ لك خطة مخصّصة.',
+          quickLabel: 'بداية سريعة — ~90 ثانية',
+          quickDescription:
+            'الأساسيات فقط. خطة افتراضية ذكية الآن، ويمكنك تحسينها لاحقاً من لوحة التحكم.',
+        },
+      },
+    },
+
     checklistTitle: 'أكمل إعداد Buddget',
     checklistProgress: (done, total) => `${done} من ${total} تم`,
     checklistItemIncome: 'أضف دخلك',
