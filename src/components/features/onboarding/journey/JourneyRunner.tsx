@@ -2,8 +2,9 @@
 
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowLeft } from 'lucide-react'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useT } from '@/lib/i18n'
+import { JOURNEY_EVENTS, track } from '@/lib/analytics/events'
 import { cn } from '@/lib/utils'
 import { useJourneyRunner } from '@/hooks/useJourneyRunner'
 import { JOURNEY_CARDS } from '@/lib/onboarding/journeyConfig'
@@ -52,6 +53,31 @@ export function JourneyRunner() {
   // Bridge JourneyAnswers → BuddgyAnswers (subset the dialogue engine
   // needs). Keeps Buddgy decoupled from the wider answer schema.
   const buddgyAnswers = useMemo(() => buildBuddgyAnswers(answers), [answers])
+
+  // Fire journey.abandoned_at on pagehide if the user leaves before the
+  // terminal loading card. `pagehide` is the modern `unload` replacement
+  // that also fires on mobile bfcache eviction. One-shot via ref so
+  // React StrictMode can't double-emit.
+  const abandonFiredRef = useRef(false)
+  const journeyStartedAtRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (journeyStartedAtRef.current === null) {
+      journeyStartedAtRef.current = Date.now()
+    }
+    const handler = () => {
+      if (abandonFiredRef.current) return
+      if (!currentCard) return
+      if (currentCard.kind === 'loading') return // terminal card = not abandoned
+      abandonFiredRef.current = true
+      const startedAt = journeyStartedAtRef.current ?? Date.now()
+      track(JOURNEY_EVENTS.abandonedAt, {
+        cardId: currentCard.id,
+        totalDurationMs: Date.now() - startedAt,
+      })
+    }
+    window.addEventListener('pagehide', handler)
+    return () => window.removeEventListener('pagehide', handler)
+  }, [currentCard])
 
   // The Field cards read + write through `setAnswer(path, value)`; for
   // other kinds we derive a no-op.
