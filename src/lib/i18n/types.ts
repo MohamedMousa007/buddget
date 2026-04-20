@@ -23,6 +23,25 @@ export interface TourDictionary {
       amount: { title: string; body: string }
       save: { title: string; body: string }
     }
+    debt: {
+      type: { title: string; body: string }
+      balance: { title: string; body: string }
+      save: { title: string; body: string }
+    }
+    savings: {
+      name: { title: string; body: string }
+      balance: { title: string; body: string }
+      save: { title: string; body: string }
+    }
+    subscription: {
+      amount: { title: string; body: string }
+      cycle: { title: string; body: string }
+      save: { title: string; body: string }
+    }
+    goal: {
+      name: { title: string; body: string }
+      save: { title: string; body: string }
+    }
   }
   postOnboard: {
     planRoot: { title: string; body: string }

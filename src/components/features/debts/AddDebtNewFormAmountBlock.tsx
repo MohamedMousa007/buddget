@@ -53,7 +53,7 @@ export function AddDebtNewFormAmountBlock({
     <>
       {showGold ? <DebtReceivedViaPills value={receivedVia} onChange={onReceivedViaChange} /> : null}
       <div className="grid grid-cols-2 gap-3">
-        <div>
+        <div data-tutorial-id="debt-modal:balance">
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">
             {isGold ? t.addDebt.labelTotalGrams : t.addDebt.labelTotalAmount}
           </Label>

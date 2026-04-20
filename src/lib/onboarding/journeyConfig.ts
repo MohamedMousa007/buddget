@@ -137,6 +137,7 @@ export const JOURNEY_CARDS: ReadonlyArray<JourneyCard> = [
     entity: 'debts',
     minEntries: 0,
     maxEntries: 20,
+    tutorialTourId: 'addDebtTour',
     condition: (a) => a.moneyOut.hasDebts === 'yes',
   },
   {
@@ -153,6 +154,7 @@ export const JOURNEY_CARDS: ReadonlyArray<JourneyCard> = [
     entity: 'subscriptions',
     minEntries: 0,
     maxEntries: 20,
+    tutorialTourId: 'addSubscriptionTour',
     condition: (a) => a.moneyOut.hasSubscriptions === 'yes',
   },
 
@@ -171,6 +173,7 @@ export const JOURNEY_CARDS: ReadonlyArray<JourneyCard> = [
     entity: 'savingsAccounts',
     minEntries: 0,
     maxEntries: 20,
+    tutorialTourId: 'addSavingsTour',
     condition: (a) => a.future.hasSavings === 'yes',
   },
   {
@@ -180,6 +183,7 @@ export const JOURNEY_CARDS: ReadonlyArray<JourneyCard> = [
     entity: 'goals',
     minEntries: 1, // mandatory per master plan
     maxEntries: 20,
+    tutorialTourId: 'addGoalTour',
     buddgyKey: 'goalsIntro',
   },
 
