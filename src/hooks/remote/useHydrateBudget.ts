@@ -21,9 +21,9 @@ export function useHydrateBudget(): void {
     ;(async () => {
       try {
         const [pR, cR, scR] = await Promise.all([
-          supabase.from('budget_plans').select('*').eq('user_id', uid),
-          supabase.from('budget_categories').select('*').eq('user_id', uid),
-          supabase.from('budget_subcategories').select('*').eq('user_id', uid),
+          supabase.from('budget_plans').select('*').eq('user_id', uid).is('deleted_at', null),
+          supabase.from('budget_categories').select('*').eq('user_id', uid).is('deleted_at', null),
+          supabase.from('budget_subcategories').select('*').eq('user_id', uid).is('deleted_at', null),
         ])
         if (cancelled) return
         if (!pR.data) return

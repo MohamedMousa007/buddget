@@ -18,7 +18,6 @@ import {
   applyRegenerateTweak,
   type RegenerateTweak,
 } from '@/lib/budget/buddgyBuilderRedistribution'
-import { pushProfileFieldsToSupabase } from '@/lib/profile/pushProfileFieldsToSupabase'
 import type { Currency } from '@/lib/store/types'
 
 export type BuilderStep = 'describe' | 'confirm' | 'lifestyle' | 'plan' | 'applied'
@@ -391,12 +390,9 @@ export function useBuddgyBuilderFlow(
         if (note.trim()) setFinancialGoalsNotes(note.trim())
       }
 
-      if (basics.city || basics.country) {
-        void pushProfileFieldsToSupabase({
-          city: basics.city || undefined,
-          country: basics.country || undefined,
-        })
-      }
+      // basics.city / basics.country flow into the profile via
+      // `updateProfile` elsewhere in this callback, and reach Supabase
+      // through the normal flushDiff sync.
     },
     [
       basics,

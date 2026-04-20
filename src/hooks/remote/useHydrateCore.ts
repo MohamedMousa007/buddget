@@ -30,7 +30,7 @@ export function useHydrateCore(): void {
           supabase.from('profiles').select('*').eq('id', uid).maybeSingle(),
           supabase.from('user_settings').select('*').eq('user_id', uid).maybeSingle(),
           supabase.from('onboarding_state').select('*').eq('user_id', uid).maybeSingle(),
-          supabase.from('payment_methods').select('*').eq('user_id', uid),
+          supabase.from('payment_methods').select('*').eq('user_id', uid).is('deleted_at', null),
         ])
         if (cancelled) return
 

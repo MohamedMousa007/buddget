@@ -74,6 +74,30 @@ class OpRunner {
     )
   }
 
+  /**
+   * Soft-delete variant: stamps `deleted_at = now()` instead of
+   * removing the row. User-owned array tables route through this path
+   * (see `emitList`) so deletions stay reconcilable across devices.
+   * Hydrate hooks filter `deleted_at IS NULL` so the UI keeps behaving
+   * as if the row is gone.
+   */
+  tombstone(table: TableName, ids: readonly string[], label: string) {
+    if (ids.length === 0) return
+    const promise = (this.client.from(table) as never as {
+      update: (patch: { deleted_at: string }) => {
+        in: (col: string, vals: readonly string[]) => Promise<{ error: { message: string } | null }>
+      }
+    })
+      .update({ deleted_at: new Date().toISOString() })
+      .in('id', ids)
+    this.ops.push(
+      promise.then((res) => {
+        this.writes++
+        if (res.error) this.errors.push(`${label}: ${res.error.message}`)
+      })
+    )
+  }
+
   async drain(): Promise<FlushResult> {
     await Promise.all(this.ops)
     return { anyError: this.errors.length > 0, errors: this.errors, writes: this.writes }
@@ -91,7 +115,10 @@ function emitList<T extends HasId, TN extends TableName>(
   const diff = diffLists(next, prev)
   const writes = [...diff.inserts, ...diff.updates].map((x) => toRow(x, userId))
   runner.upsert(table, writes, `${String(table)}.upsert`)
-  runner.delete(table, diff.deletes, `${String(table)}.delete`)
+  // User-owned tables soft-delete: stamp `deleted_at = now()` so the
+  // deletion is reconcilable across devices. Hydrate filters
+  // `deleted_at IS NULL` so the UI still treats the row as gone.
+  runner.tombstone(table, diff.deletes, `${String(table)}.tombstone`)
 }
 
 /**
@@ -151,7 +178,7 @@ function flushBudgetPlans(runner: OpRunner, userId: string, prev: Snapshot, next
   const planDiff = diffLists(next.budgetPlans, prev.budgetPlans)
   const planRows = [...planDiff.inserts, ...planDiff.updates].map((p) => budgetPlanToRow(p, userId))
   runner.upsert('budget_plans', planRows, 'budget_plans.upsert')
-  runner.delete('budget_plans', planDiff.deletes, 'budget_plans.delete')
+  runner.tombstone('budget_plans', planDiff.deletes, 'budget_plans.tombstone')
 
   const nextCats = next.budgetPlans.flatMap((p) =>
     p.categories.map((c, idx) => ({ ...c, _planId: p.id, _sortOrder: idx }))
@@ -164,7 +191,7 @@ function flushBudgetPlans(runner: OpRunner, userId: string, prev: Snapshot, next
     budgetCategoryToRow(c, c._planId, userId, c._sortOrder, baseCurrency)
   )
   runner.upsert('budget_categories', catRows, 'budget_categories.upsert')
-  runner.delete('budget_categories', catDiff.deletes, 'budget_categories.delete')
+  runner.tombstone('budget_categories', catDiff.deletes, 'budget_categories.tombstone')
 
   const nextSubs = next.budgetPlans.flatMap((p) =>
     p.categories.flatMap((c) => c.subcategories.map((s, idx) => ({ ...s, _catId: c.id, _sortOrder: idx })))
@@ -177,7 +204,7 @@ function flushBudgetPlans(runner: OpRunner, userId: string, prev: Snapshot, next
     budgetSubcategoryToRow(s, s._catId, userId, s._sortOrder)
   )
   runner.upsert('budget_subcategories', subRows, 'budget_subcategories.upsert')
-  runner.delete('budget_subcategories', subDiff.deletes, 'budget_subcategories.delete')
+  runner.tombstone('budget_subcategories', subDiff.deletes, 'budget_subcategories.tombstone')
 }
 
 /**
@@ -193,7 +220,7 @@ export async function pullCore(client: Client, userId: string): Promise<Snapshot
     client.from('profiles').select('*').eq('id', userId).maybeSingle(),
     client.from('user_settings').select('*').eq('user_id', userId).maybeSingle(),
     client.from('onboarding_state').select('*').eq('user_id', userId).maybeSingle(),
-    client.from('payment_methods').select('*').eq('user_id', userId),
+    client.from('payment_methods').select('*').eq('user_id', userId).is('deleted_at', null),
   ])
 
   if (!profileR.data) return null
@@ -277,22 +304,22 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
     client.from('profiles').select('*').eq('id', userId).maybeSingle(),
     client.from('user_settings').select('*').eq('user_id', userId).maybeSingle(),
     client.from('onboarding_state').select('*').eq('user_id', userId).maybeSingle(),
-    client.from('payment_methods').select('*').eq('user_id', userId),
-    client.from('income_sources').select('*').eq('user_id', userId),
-    client.from('expenses').select('*').eq('user_id', userId),
-    client.from('recurring_expenses').select('*').eq('user_id', userId),
-    client.from('subscriptions').select('*').eq('user_id', userId),
-    client.from('debts').select('*').eq('user_id', userId),
-    client.from('debt_payments').select('*').eq('user_id', userId),
-    client.from('recurring_debt_payments').select('*').eq('user_id', userId),
-    client.from('savings_accounts').select('*').eq('user_id', userId),
-    client.from('savings_holdings').select('*').eq('user_id', userId),
-    client.from('savings_transactions').select('*').eq('user_id', userId),
-    client.from('recurring_savings_deposits').select('*').eq('user_id', userId),
-    client.from('goals').select('*').eq('user_id', userId),
-    client.from('budget_plans').select('*').eq('user_id', userId),
-    client.from('budget_categories').select('*').eq('user_id', userId),
-    client.from('budget_subcategories').select('*').eq('user_id', userId),
+    client.from('payment_methods').select('*').eq('user_id', userId).is('deleted_at', null),
+    client.from('income_sources').select('*').eq('user_id', userId).is('deleted_at', null),
+    client.from('expenses').select('*').eq('user_id', userId).is('deleted_at', null),
+    client.from('recurring_expenses').select('*').eq('user_id', userId).is('deleted_at', null),
+    client.from('subscriptions').select('*').eq('user_id', userId).is('deleted_at', null),
+    client.from('debts').select('*').eq('user_id', userId).is('deleted_at', null),
+    client.from('debt_payments').select('*').eq('user_id', userId).is('deleted_at', null),
+    client.from('recurring_debt_payments').select('*').eq('user_id', userId).is('deleted_at', null),
+    client.from('savings_accounts').select('*').eq('user_id', userId).is('deleted_at', null),
+    client.from('savings_holdings').select('*').eq('user_id', userId).is('deleted_at', null),
+    client.from('savings_transactions').select('*').eq('user_id', userId).is('deleted_at', null),
+    client.from('recurring_savings_deposits').select('*').eq('user_id', userId).is('deleted_at', null),
+    client.from('goals').select('*').eq('user_id', userId).is('deleted_at', null),
+    client.from('budget_plans').select('*').eq('user_id', userId).is('deleted_at', null),
+    client.from('budget_categories').select('*').eq('user_id', userId).is('deleted_at', null),
+    client.from('budget_subcategories').select('*').eq('user_id', userId).is('deleted_at', null),
   ])
 
   if (!profileR.data) return null

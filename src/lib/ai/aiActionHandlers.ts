@@ -7,7 +7,6 @@ import {
   isDebtFullyPaid,
 } from '@/lib/utils/calculations'
 import { EXPENSE_CATEGORIES, EXPENSE_ENTRY_CATEGORIES, PAYMENT_METHOD_TYPES } from '@/lib/constants/finance'
-import { pushProfileFieldsToSupabase } from '@/lib/profile/pushProfileFieldsToSupabase'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { SAVINGS_TYPE_ICONS } from '@/lib/constants/savingsIcons'
 import { defaultCategoryForSavingsType } from '@/lib/constants/savingsTypes'
@@ -827,7 +826,6 @@ export function executeActionItem(
       if (country) patch.country = country
       if (Object.keys(patch).length > 0) {
         ctx.updateProfile(patch)
-        if (patch.name) void pushProfileFieldsToSupabase({ name: patch.name })
       }
     }
     return

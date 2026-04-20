@@ -22,9 +22,9 @@ export function useHydrateDebts(): void {
     ;(async () => {
       try {
         const [dR, pR, rR] = await Promise.all([
-          supabase.from('debts').select('*').eq('user_id', uid),
-          supabase.from('debt_payments').select('*').eq('user_id', uid),
-          supabase.from('recurring_debt_payments').select('*').eq('user_id', uid),
+          supabase.from('debts').select('*').eq('user_id', uid).is('deleted_at', null),
+          supabase.from('debt_payments').select('*').eq('user_id', uid).is('deleted_at', null),
+          supabase.from('recurring_debt_payments').select('*').eq('user_id', uid).is('deleted_at', null),
         ])
         if (cancelled) return
         const patch: Partial<ReturnType<typeof useFinanceStore.getState>> = {}

@@ -38,12 +38,9 @@ const USER_ID_TABLES = [
   'payment_methods',
   'notifications',
   'app_analytics_events',
-  'backfill_issues',
   // Singletons
   'onboarding_state',
   'user_settings',
-  'user_finance',
-  'user_profiles',
 ] as const
 
 export async function POST() {
