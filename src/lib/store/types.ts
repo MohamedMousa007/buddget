@@ -619,7 +619,8 @@ export interface FinanceStore {
   settings: AppSettings
   /** Free-text financial goals from Buddgy plan builder; synced in finance payload. */
   financialGoalsNotes: string
-  /** Expert onboarding progress, answers, and cached AI plans (synced in user_finance payload). */
+  /** Journey progress, answers, and cached AI plans. Synced to
+   *  `public.onboarding_state` via `flushDiff`. */
   onboardingState: OnboardingState
   incomeSources: IncomeSource[]
   expenses: Expense[]

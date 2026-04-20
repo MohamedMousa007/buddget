@@ -197,18 +197,11 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
             activeBudgetPlanId: core.activeBudgetPlanId,
             paymentMethods: core.paymentMethods,
           })
-        } else {
-          const { data, error } = await supabase
-            .from('user_finance')
-            .select('payload, updated_at')
-            .eq('user_id', userId)
-            .maybeSingle()
-          if (error) {
-            console.error('[finance sync] legacy pull failed', error.message)
-          } else if (data?.payload && typeof data.payload === 'object') {
-            useFinanceStore.getState().importData(JSON.stringify(data.payload))
-          }
         }
+        // Historical note: a legacy `user_finance.payload` JSONB fallback
+        // branch lived here for pre-v17 users without a profiles row.
+        // DB-5 retired that table + its read path after verifying zero
+        // orphans (see supabase/migrations/0033...sql).
       } catch (e) {
         console.error('[finance sync] pull failed', e)
       } finally {

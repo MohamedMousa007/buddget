@@ -7,7 +7,6 @@ import type { BudgetHousehold, BudgetPlan, Currency, IncomeSource } from '@/lib/
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { calculateMonthlyIncome } from '@/lib/utils/calculations'
 import { findCategoryByName } from '@/lib/budget/buddgyFlowHelpers'
-import { pushProfileFieldsToSupabase } from '@/lib/profile/pushProfileFieldsToSupabase'
 import { parseBuddgyAmountInput } from '@/lib/budget/buddgyAmountInput'
 
 export type BuddgyFlowStep =
@@ -263,12 +262,9 @@ export function useBuddgyFlow(planId: string | null, options?: UseBuddgyFlowOpti
       }
       updateSettings({ noIncomeDeclared: false })
       triggerFlash()
-      const p = useFinanceStore.getState().profile
-      void pushProfileFieldsToSupabase({
-        name: p.name?.trim() || undefined,
-        city: p.city?.trim() || undefined,
-        country: p.country?.trim() || undefined,
-      })
+      // profile fields (name/city/country) flow to Supabase via the
+      // normal flushDiff path in SupabaseFinanceSync; no manual mirror
+      // needed.
     },
     [addIncomeSource, incomeSources, updateIncomeSource, updateSettings, settings, triggerFlash]
   )

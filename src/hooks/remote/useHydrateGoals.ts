@@ -20,7 +20,7 @@ export function useHydrateGoals(): void {
 
     ;(async () => {
       try {
-        const res = await supabase.from('goals').select('*').eq('user_id', uid)
+        const res = await supabase.from('goals').select('*').eq('user_id', uid).is('deleted_at', null)
         if (cancelled) return
         if (res.data) {
           const server = res.data.map(goalFromRow)

@@ -61,6 +61,7 @@ export type Database = {
           amount: number
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
+          deleted_at: string | null
           icon: string
           id: string
           is_savings: boolean
@@ -74,6 +75,7 @@ export type Database = {
           amount?: number
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
+          deleted_at?: string | null
           icon?: string
           id?: string
           is_savings?: boolean
@@ -87,6 +89,7 @@ export type Database = {
           amount?: number
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
+          deleted_at?: string | null
           icon?: string
           id?: string
           is_savings?: boolean
@@ -111,6 +114,7 @@ export type Database = {
           buddgy_flow: Json | null
           buddgy_guided_complete: boolean
           created_at: string
+          deleted_at: string | null
           household: Database["public"]["Enums"]["budget_household"] | null
           id: string
           name: string
@@ -121,6 +125,7 @@ export type Database = {
           buddgy_flow?: Json | null
           buddgy_guided_complete?: boolean
           created_at?: string
+          deleted_at?: string | null
           household?: Database["public"]["Enums"]["budget_household"] | null
           id?: string
           name: string
@@ -131,6 +136,7 @@ export type Database = {
           buddgy_flow?: Json | null
           buddgy_guided_complete?: boolean
           created_at?: string
+          deleted_at?: string | null
           household?: Database["public"]["Enums"]["budget_household"] | null
           id?: string
           name?: string
@@ -144,6 +150,7 @@ export type Database = {
           amount: number
           category_id: string
           created_at: string
+          deleted_at: string | null
           icon: string
           id: string
           name: string
@@ -155,6 +162,7 @@ export type Database = {
           amount?: number
           category_id: string
           created_at?: string
+          deleted_at?: string | null
           icon?: string
           id?: string
           name: string
@@ -166,6 +174,7 @@ export type Database = {
           amount?: number
           category_id?: string
           created_at?: string
+          deleted_at?: string | null
           icon?: string
           id?: string
           name?: string
@@ -189,6 +198,7 @@ export type Database = {
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
           debt_id: string
+          deleted_at: string | null
           id: string
           notes: string | null
           payment_date: string
@@ -201,6 +211,7 @@ export type Database = {
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           debt_id: string
+          deleted_at?: string | null
           id?: string
           notes?: string | null
           payment_date?: string
@@ -213,6 +224,7 @@ export type Database = {
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           debt_id?: string
+          deleted_at?: string | null
           id?: string
           notes?: string | null
           payment_date?: string
@@ -244,6 +256,7 @@ export type Database = {
           creditor: string | null
           currency: Database["public"]["Enums"]["currency_code"]
           debt_type: Database["public"]["Enums"]["debt_kind"]
+          deleted_at: string | null
           description: string | null
           direction: Database["public"]["Enums"]["debt_direction"]
           due_date: string | null
@@ -279,6 +292,7 @@ export type Database = {
           creditor?: string | null
           currency?: Database["public"]["Enums"]["currency_code"]
           debt_type?: Database["public"]["Enums"]["debt_kind"]
+          deleted_at?: string | null
           description?: string | null
           direction?: Database["public"]["Enums"]["debt_direction"]
           due_date?: string | null
@@ -314,6 +328,7 @@ export type Database = {
           creditor?: string | null
           currency?: Database["public"]["Enums"]["currency_code"]
           debt_type?: Database["public"]["Enums"]["debt_kind"]
+          deleted_at?: string | null
           description?: string | null
           direction?: Database["public"]["Enums"]["debt_direction"]
           due_date?: string | null
@@ -359,6 +374,7 @@ export type Database = {
           category: Database["public"]["Enums"]["expense_category"]
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
+          deleted_at: string | null
           description: string | null
           expense_date: string
           id: string
@@ -375,6 +391,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["expense_category"]
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
+          deleted_at?: string | null
           description?: string | null
           expense_date?: string
           id?: string
@@ -391,6 +408,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["expense_category"]
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
+          deleted_at?: string | null
           description?: string | null
           expense_date?: string
           id?: string
@@ -432,6 +450,7 @@ export type Database = {
           category: Database["public"]["Enums"]["goal_category"]
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
+          deleted_at: string | null
           emoji: string
           id: string
           linked_debt_ids: string[]
@@ -453,6 +472,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["goal_category"]
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
+          deleted_at?: string | null
           emoji?: string
           id?: string
           linked_debt_ids?: string[]
@@ -474,6 +494,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["goal_category"]
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
+          deleted_at?: string | null
           emoji?: string
           id?: string
           linked_debt_ids?: string[]
@@ -498,6 +519,7 @@ export type Database = {
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
           day_of_month: number | null
+          deleted_at: string | null
           id: string
           is_recurring: boolean
           name: string
@@ -515,6 +537,7 @@ export type Database = {
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           day_of_month?: number | null
+          deleted_at?: string | null
           id?: string
           is_recurring?: boolean
           name: string
@@ -532,6 +555,7 @@ export type Database = {
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           day_of_month?: number | null
+          deleted_at?: string | null
           id?: string
           is_recurring?: boolean
           name?: string
@@ -656,36 +680,13 @@ export type Database = {
         }
         Relationships: []
       }
-      onboarding_survey_config: {
-        Row: {
-          config: Json
-          id: string
-          published: boolean
-          updated_at: string
-          version: number
-        }
-        Insert: {
-          config?: Json
-          id?: string
-          published?: boolean
-          updated_at?: string
-          version?: number
-        }
-        Update: {
-          config?: Json
-          id?: string
-          published?: boolean
-          updated_at?: string
-          version?: number
-        }
-        Relationships: []
-      }
       payment_methods: {
         Row: {
           balance: number
           color: string
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
+          deleted_at: string | null
           id: string
           is_default: boolean
           last4: string | null
@@ -700,6 +701,7 @@ export type Database = {
           color?: string
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
+          deleted_at?: string | null
           id?: string
           is_default?: boolean
           last4?: string | null
@@ -714,6 +716,7 @@ export type Database = {
           color?: string
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
+          deleted_at?: string | null
           id?: string
           is_default?: boolean
           last4?: string | null
@@ -828,6 +831,7 @@ export type Database = {
           currency: Database["public"]["Enums"]["currency_code"]
           day_of_month: number | null
           debt_id: string
+          deleted_at: string | null
           frequency: Database["public"]["Enums"]["recurring_frequency"]
           id: string
           is_active: boolean
@@ -843,6 +847,7 @@ export type Database = {
           currency?: Database["public"]["Enums"]["currency_code"]
           day_of_month?: number | null
           debt_id: string
+          deleted_at?: string | null
           frequency?: Database["public"]["Enums"]["recurring_frequency"]
           id?: string
           is_active?: boolean
@@ -858,6 +863,7 @@ export type Database = {
           currency?: Database["public"]["Enums"]["currency_code"]
           day_of_month?: number | null
           debt_id?: string
+          deleted_at?: string | null
           frequency?: Database["public"]["Enums"]["recurring_frequency"]
           id?: string
           is_active?: boolean
@@ -891,6 +897,7 @@ export type Database = {
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
           day_of_month: number | null
+          deleted_at: string | null
           description: string | null
           frequency: Database["public"]["Enums"]["recurring_frequency"]
           id: string
@@ -908,6 +915,7 @@ export type Database = {
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           day_of_month?: number | null
+          deleted_at?: string | null
           description?: string | null
           frequency?: Database["public"]["Enums"]["recurring_frequency"]
           id?: string
@@ -925,6 +933,7 @@ export type Database = {
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           day_of_month?: number | null
+          deleted_at?: string | null
           description?: string | null
           frequency?: Database["public"]["Enums"]["recurring_frequency"]
           id?: string
@@ -960,6 +969,7 @@ export type Database = {
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
           day_of_month: number | null
+          deleted_at: string | null
           frequency: Database["public"]["Enums"]["recurring_frequency"]
           id: string
           is_active: boolean
@@ -974,6 +984,7 @@ export type Database = {
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           day_of_month?: number | null
+          deleted_at?: string | null
           frequency?: Database["public"]["Enums"]["recurring_frequency"]
           id?: string
           is_active?: boolean
@@ -988,6 +999,7 @@ export type Database = {
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           day_of_month?: number | null
+          deleted_at?: string | null
           frequency?: Database["public"]["Enums"]["recurring_frequency"]
           id?: string
           is_active?: boolean
@@ -1012,6 +1024,7 @@ export type Database = {
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
           current_balance: number
+          deleted_at: string | null
           icon: string | null
           id: string
           name: string
@@ -1026,6 +1039,7 @@ export type Database = {
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           current_balance?: number
+          deleted_at?: string | null
           icon?: string | null
           id?: string
           name: string
@@ -1040,6 +1054,7 @@ export type Database = {
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           current_balance?: number
+          deleted_at?: string | null
           icon?: string | null
           id?: string
           name?: string
@@ -1060,6 +1075,7 @@ export type Database = {
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
           current_value: number | null
+          deleted_at: string | null
           id: string
           initial_amount: number | null
           notes: string | null
@@ -1076,6 +1092,7 @@ export type Database = {
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           current_value?: number | null
+          deleted_at?: string | null
           id?: string
           initial_amount?: number | null
           notes?: string | null
@@ -1092,6 +1109,7 @@ export type Database = {
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           current_value?: number | null
+          deleted_at?: string | null
           id?: string
           initial_amount?: number | null
           notes?: string | null
@@ -1117,6 +1135,7 @@ export type Database = {
           balance_after: number | null
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
+          deleted_at: string | null
           id: string
           kind: Database["public"]["Enums"]["savings_transaction_kind"]
           notes: string | null
@@ -1130,6 +1149,7 @@ export type Database = {
           balance_after?: number | null
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
+          deleted_at?: string | null
           id?: string
           kind: Database["public"]["Enums"]["savings_transaction_kind"]
           notes?: string | null
@@ -1143,6 +1163,7 @@ export type Database = {
           balance_after?: number | null
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
+          deleted_at?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["savings_transaction_kind"]
           notes?: string | null
@@ -1169,6 +1190,7 @@ export type Database = {
           cancelled_at: string | null
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
+          deleted_at: string | null
           expense_category: Database["public"]["Enums"]["expense_category"]
           id: string
           linked_recurring_expense_id: string | null
@@ -1190,6 +1212,7 @@ export type Database = {
           cancelled_at?: string | null
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
+          deleted_at?: string | null
           expense_category?: Database["public"]["Enums"]["expense_category"]
           id?: string
           linked_recurring_expense_id?: string | null
@@ -1211,6 +1234,7 @@ export type Database = {
           cancelled_at?: string | null
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
+          deleted_at?: string | null
           expense_category?: Database["public"]["Enums"]["expense_category"]
           id?: string
           linked_recurring_expense_id?: string | null
@@ -1254,48 +1278,6 @@ export type Database = {
           device_id?: string
           last_used_at?: string
           user_agent?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      user_finance: {
-        Row: {
-          payload: Json
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          payload?: Json
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          payload?: Json
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      user_profiles: {
-        Row: {
-          created_at: string
-          display_name: string | null
-          onboarding_completed: boolean
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          display_name?: string | null
-          onboarding_completed?: boolean
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          display_name?: string | null
-          onboarding_completed?: boolean
-          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -1387,7 +1369,6 @@ export type Database = {
         Args: { p_key: string; p_max_hits: number; p_window_seconds: number }
         Returns: boolean
       }
-      backfill_from_user_finance: { Args: { p_user_id: string }; Returns: Json }
       cancel_subscription: {
         Args: { p_subscription_id: string }
         Returns: undefined

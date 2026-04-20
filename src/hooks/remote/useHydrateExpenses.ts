@@ -26,8 +26,8 @@ export function useHydrateExpenses(): void {
     ;(async () => {
       try {
         const [expR, recR] = await Promise.all([
-          supabase.from('expenses').select('*').eq('user_id', uid),
-          supabase.from('recurring_expenses').select('*').eq('user_id', uid),
+          supabase.from('expenses').select('*').eq('user_id', uid).is('deleted_at', null),
+          supabase.from('recurring_expenses').select('*').eq('user_id', uid).is('deleted_at', null),
         ])
         if (cancelled) return
         const patch: Partial<ReturnType<typeof useFinanceStore.getState>> = {}
