@@ -43,6 +43,13 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   return <TutorialContext.Provider value={registry}>{children}</TutorialContext.Provider>
 }
 
+/** Access the shared anchor registry. Used by the TutorialController to
+ *  resolve anchor ids → DOM nodes when a tour step fires. Returns null if
+ *  called outside a `TutorialProvider`. */
+export function useAnchorRegistry(): AnchorRegistry | null {
+  return useContext(TutorialContext)
+}
+
 export interface TutorialAnchorHandle<T extends HTMLElement = HTMLElement> {
   ref: RefObject<T | null>
   anchorProps: {

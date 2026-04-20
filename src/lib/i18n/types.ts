@@ -1,6 +1,19 @@
 /** Buddget i18n dictionary shape — every key in ar.ts must match en.ts exactly. */
 
+/** Tutorial tour copy. Top-level so copyKeys in the manifest stay short
+ *  (`tour.debug.fab.title`). Tours tied to onboarding modals still use
+ *  this namespace — the modal tutorials aren't onboarding-exclusive. */
+export interface TourDictionary {
+  debug: {
+    fab: { title: string; body: string }
+    checklist: { title: string; body: string }
+    navHome: { title: string; body: string }
+  }
+  missing: { title: string; body: string }
+}
+
 export interface Dictionary {
+  tour: TourDictionary
   /** Document layout direction; kept `ltr` for Arabic so chrome matches English. */
   dir: 'ltr' | 'rtl'
   locale: string

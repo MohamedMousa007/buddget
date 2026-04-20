@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import { Suspense } from 'react'
 import { DM_Sans, JetBrains_Mono, IBM_Plex_Sans_Arabic } from 'next/font/google'
 import './globals.css'
 import { AppShell } from '@/components/layout/AppShell'
@@ -9,6 +10,9 @@ import { UpdateToast } from '@/components/ui/UpdateToast'
 import { OfflineBanner } from '@/components/ui/OfflineBanner'
 import { ActionToastProvider } from '@/components/ui/ActionToast'
 import { TutorialProvider } from '@/components/tutorial/TutorialAnchor'
+import { TutorialControllerRoot } from '@/components/tutorial/TutorialController'
+import { DebugTourAnchors } from '@/components/tutorial/DebugTourAnchors'
+import { DebugTourTrigger } from '@/components/tutorial/DebugTourTrigger'
 import { MotionConfigRoot } from '@/components/layout/MotionConfigRoot'
 import { THEME_INIT_SCRIPT } from '@/lib/theme/applyTheme'
 
@@ -148,11 +152,21 @@ export default function RootLayout({
             <AuthProvider>
               <ActionToastProvider>
                 <TutorialProvider>
-                  <MotionConfigRoot>
-                    <AppShell>{children}</AppShell>
-                    <UpdateToast />
-                    <OfflineBanner />
-                  </MotionConfigRoot>
+                  <TutorialControllerRoot>
+                    <MotionConfigRoot>
+                      <AppShell>{children}</AppShell>
+                      <UpdateToast />
+                      <OfflineBanner />
+                      {process.env.NODE_ENV !== 'production' ? (
+                        <>
+                          <DebugTourAnchors />
+                          <Suspense fallback={null}>
+                            <DebugTourTrigger />
+                          </Suspense>
+                        </>
+                      ) : null}
+                    </MotionConfigRoot>
+                  </TutorialControllerRoot>
                 </TutorialProvider>
               </ActionToastProvider>
             </AuthProvider>
