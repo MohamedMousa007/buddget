@@ -245,15 +245,11 @@ export function TutorialControllerRoot({ children }: { children: React.ReactNode
           onNext={onNext}
           onBack={onBack}
           onSkipStep={onSkipStep}
-          onSkipAll={skipAll}
           labels={{
             next: t.onboarding.journey.common.next,
             done: t.onboarding.journey.common.finish,
             back: t.onboarding.journey.common.back,
             skipStep: t.tutorialSkipConfirm.skipStep,
-            skipAll: t.tutorialSkipConfirm.skipAll,
-            cancel: t.common.cancel,
-            skipConfirmPrompt: t.tutorialSkipConfirm.prompt,
             progress: (current, total) =>
               t.onboarding.stepOfTotal(current, total),
           }}

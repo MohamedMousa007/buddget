@@ -60,16 +60,12 @@ export interface TutorialOverlayProps {
   onNext: () => void
   onBack: () => void
   onSkipStep: () => void
-  onSkipAll: () => void
   /** i18n copy for the buttons. */
   labels: {
     next: string
     done: string
     back: string
     skipStep: string
-    skipAll: string
-    cancel: string
-    skipConfirmPrompt: string
     progress: (current: number, total: number) => string
   }
 }
@@ -103,17 +99,10 @@ export function TutorialOverlay({
   onNext,
   onBack,
   onSkipStep,
-  onSkipAll,
   labels,
 }: TutorialOverlayProps) {
   const [mounted, setMounted] = useState(false)
   const [cutout, setCutout] = useState<CutoutRect | null>(null)
-  /**
-   * SP14: tapping the header "Skip" swaps the popover body to a
-   * two-choice confirmation ("Skip this step" vs "Skip tutorial") so
-   * users don't accidentally abandon the whole tour with one tap.
-   */
-  const [skipConfirm, setSkipConfirm] = useState(false)
   const [viewport, setViewport] = useState<{ w: number; h: number }>(() => ({
     w: typeof window === 'undefined' ? 1024 : window.innerWidth,
     h: typeof window === 'undefined' ? 768 : window.innerHeight,
@@ -145,7 +134,8 @@ export function TutorialOverlay({
       return
     }
 
-    const update = () => {
+    let rafId = 0
+    const measure = () => {
       const rect = target.getBoundingClientRect()
       if (rect.width === 0 && rect.height === 0) {
         setCutout(null)
@@ -158,14 +148,24 @@ export function TutorialOverlay({
         height: rect.height + PADDING * 2,
       })
     }
+    // Coalesce scroll/resize bursts into one rAF tick so the highlight
+    // tracks the target without thrashing layout on every event.
+    const update = () => {
+      if (rafId) return
+      rafId = window.requestAnimationFrame(() => {
+        rafId = 0
+        measure()
+      })
+    }
 
-    update()
+    measure()
 
     const ro = new ResizeObserver(update)
     ro.observe(target)
     window.addEventListener('resize', update)
-    window.addEventListener('scroll', update, true)
+    window.addEventListener('scroll', update, { capture: true, passive: true })
     return () => {
+      if (rafId) window.cancelAnimationFrame(rafId)
       ro.disconnect()
       window.removeEventListener('resize', update)
       window.removeEventListener('scroll', update, true)
@@ -181,11 +181,6 @@ export function TutorialOverlay({
   // Global keyboard shortcuts.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && e.shiftKey) {
-        e.preventDefault()
-        onSkipAll()
-        return
-      }
       if (e.key === 'Escape') {
         e.preventDefault()
         onSkipStep()
@@ -223,7 +218,7 @@ export function TutorialOverlay({
     }
     document.addEventListener('keydown', onKey, true)
     return () => document.removeEventListener('keydown', onKey, true)
-  }, [canGoBack, onBack, onNext, onSkipAll, onSkipStep])
+  }, [canGoBack, onBack, onNext, onSkipStep])
 
   // Popover size changes with copy length + responsive width. Track it so
   // positioning is accurate.
@@ -267,7 +262,7 @@ export function TutorialOverlay({
     <div
       aria-live="polite"
       role="region"
-      className="fixed inset-0 z-[70]"
+      className="fixed inset-0 z-[200]"
       style={{ pointerEvents: 'none' }}
     >
       {/* Darkened backdrop — 4 rectangles around the cutout so the target
@@ -325,60 +320,31 @@ export function TutorialOverlay({
           <span>{labels.progress(stepNumber, totalSteps)}</span>
           <button
             type="button"
-            onClick={() => setSkipConfirm(true)}
+            onClick={onSkipStep}
             className="rounded px-1.5 py-0.5 text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)]"
           >
-            {labels.skipAll}
+            {labels.skipStep}
           </button>
         </div>
-        {skipConfirm ? (
-          <div className="px-4 pb-4 pt-2">
-            <h3 id="tutorial-title" className="text-base font-semibold">
-              {labels.skipConfirmPrompt}
-            </h3>
-            <div className="mt-4 flex flex-col gap-2">
-              <button
-                type="button"
-                ref={firstFocusableRef}
-                onClick={() => {
-                  setSkipConfirm(false)
-                  onSkipStep()
-                }}
-                className="h-10 rounded-lg px-4 text-sm font-semibold text-white bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)]"
-              >
-                {labels.skipStep}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSkipConfirm(false)
-                  onSkipAll()
-                }}
-                className="h-10 rounded-lg px-4 text-sm font-medium border border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
-              >
-                {labels.skipAll}
-              </button>
-              <button
-                type="button"
-                onClick={() => setSkipConfirm(false)}
-                className="h-9 rounded-lg px-3 text-sm text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
-              >
-                {labels.cancel}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="px-4 pb-4 pt-2">
-            <h3 id="tutorial-title" className="text-base font-semibold">
-              {title}
-            </h3>
-            <p
-              id="tutorial-body"
-              className="mt-2 text-sm leading-relaxed text-[var(--color-brand-text-secondary)] whitespace-pre-line"
+        <div className="px-4 pb-4 pt-2">
+          <h3 id="tutorial-title" className="text-base font-semibold">
+            {title}
+          </h3>
+          <p
+            id="tutorial-body"
+            className="mt-2 text-sm leading-relaxed text-[var(--color-brand-text-secondary)] whitespace-pre-line"
+          >
+            {body}
+          </p>
+          <div className="mt-4 flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={onSkipStep}
+              className="h-9 rounded-lg px-3 text-sm font-medium text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)]"
             >
-              {body}
-            </p>
-            <div className="mt-4 flex items-center justify-end gap-2">
+              {labels.skipStep}
+            </button>
+            <div className="flex items-center gap-2">
               {canGoBack ? (
                 <button
                   type="button"
@@ -392,13 +358,13 @@ export function TutorialOverlay({
                 ref={firstFocusableRef}
                 type="button"
                 onClick={onNext}
-                className="h-9 rounded-lg px-4 text-sm font-semibold text-white bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)]"
+                className="h-9 rounded-lg px-4 text-sm font-semibold text-white bg-[var(--color-tutorial-accent,#3b82f6)] hover:opacity-90"
               >
                 {isLastStep ? labels.done : labels.next}
               </button>
             </div>
           </div>
-        )}
+        </div>
       </motion.div>
     </div>,
     document.body,
@@ -416,7 +382,8 @@ function TargetPulseRing({ cutout }: { cutout: CutoutRect }) {
         left: cutout.left,
         width: cutout.width,
         height: cutout.height,
-        boxShadow: '0 0 0 2px var(--color-brand-red), 0 0 0 6px rgba(229, 9, 20, 0.22)',
+        boxShadow:
+          '0 0 0 2px rgba(99, 165, 255, 0.85), 0 0 0 8px rgba(99, 165, 255, 0.18), 0 0 18px rgba(99, 165, 255, 0.35)',
       }}
       initial={{ opacity: 0, scale: 0.94 }}
       animate={{

@@ -46,6 +46,14 @@ export function applyBudgetPlan(
     buddgyFlow: null,
   })
 
+  // Pin this plan as active so the homepage's `useMonthlyStats` resolves
+  // it as `activePlan` and "left to spend" / category bars reflect the
+  // freshly-applied categories. Without this, a stale `activeBudgetPlanId`
+  // hydrated from Supabase keeps homepage stuck on an old plan.
+  if (state.activeBudgetPlanId !== input.planId) {
+    state.setActiveBudgetPlanId(input.planId)
+  }
+
   if (input.financialGoalsNotes && input.financialGoalsNotes.trim()) {
     state.setFinancialGoalsNotes(input.financialGoalsNotes.trim())
   }
