@@ -172,6 +172,8 @@ export default function DashboardPage() {
             <DashboardSummaryCards
               savingsTotal={stats.savingsTotal}
               netSavingsThisMonth={stats.netSavingsTransfersThisMonth}
+              savingsThisMonth={stats.savingsThisMonth}
+              monthClosed={stats.monthClosed}
               debtTotal={stats.debtRemainingTotal}
               baseCurrency={stats.baseCurrency}
             />

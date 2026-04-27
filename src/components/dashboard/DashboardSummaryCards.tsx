@@ -6,8 +6,14 @@ import { useT } from '@/lib/i18n'
 import { formatCompact } from '@/components/dashboard/categoryVisuals'
 
 export interface DashboardSummaryCardsProps {
+  /** Lifetime cumulative savings — kept for non-summary breakdowns. */
   savingsTotal: number
+  /** Net ledger transfers in the active month — secondary line. */
   netSavingsThisMonth: number
+  /** Active month savings figure: projected during month, realized after close. */
+  savingsThisMonth: number
+  /** True once the active month is in the past (monthFilter < current). */
+  monthClosed: boolean
   debtTotal: number
   baseCurrency: string
 }
@@ -20,11 +26,14 @@ export interface DashboardSummaryCardsProps {
 export function DashboardSummaryCards({
   savingsTotal,
   netSavingsThisMonth,
+  savingsThisMonth,
+  monthClosed,
   debtTotal,
   baseCurrency,
 }: DashboardSummaryCardsProps) {
   const t = useT()
   const activeDebtCount = useFinanceStore(useShallow((s) => s.debts.length))
+  void savingsTotal // lifetime figure is shown elsewhere; props kept for compat.
 
   // Debt card colour stays neutral at zero so empty-state dashboards don't
   // look alarming; flips to brand red only when the user actually has debt.
@@ -37,12 +46,20 @@ export function DashboardSummaryCards({
   return (
     <div className="flex gap-3">
       <SummaryCard
-        label={t.dashboard.summarySavingsLabel}
-        amount={`${baseCurrency} ${formatCompact(savingsTotal)}`}
+        label={
+          monthClosed
+            ? t.dashboard.summarySavedLabel
+            : t.dashboard.summaryProjectedSavingsLabel
+        }
+        amount={`${baseCurrency} ${formatCompact(savingsThisMonth)}`}
         amountColor="#18A349"
-        subtext={t.dashboard.summarySavedThisMonth(
-          `${baseCurrency} ${formatCompact(Math.max(0, netSavingsThisMonth))}`,
-        )}
+        subtext={
+          monthClosed
+            ? t.dashboard.summarySavedActualSubtext
+            : t.dashboard.summaryProjectedSavingsSubtext(
+                `${baseCurrency} ${formatCompact(Math.max(0, netSavingsThisMonth))}`,
+              )
+        }
       />
       <SummaryCard
         label={t.dashboard.summaryDebtLabel}

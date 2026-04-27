@@ -91,8 +91,13 @@ export function ModalShell({
     }
   }, [open])
 
-  const panelStaticClasses =
-    'fixed bottom-0 start-0 end-0 bg-[var(--color-brand-card)] rounded-t-3xl border-t border-[var(--color-brand-border)] max-h-[88vh] lg:bottom-auto lg:top-1/2 lg:start-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[440px] lg:rounded-2xl lg:border lg:max-h-[92vh]'
+  // During onboarding, blend the modal in (centered cross-fade + slight
+  // scale lift) instead of sliding it from the bottom — the bottom-up
+  // slide reads as an interruption inside a journey card; a centered
+  // blend feels like the modal belongs to the same surface.
+  const panelStaticClasses = journeyChrome
+    ? 'fixed start-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(92vw,440px)] max-h-[88vh] bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)]'
+    : 'fixed bottom-0 start-0 end-0 bg-[var(--color-brand-card)] rounded-t-3xl border-t border-[var(--color-brand-border)] max-h-[88vh] lg:bottom-auto lg:top-1/2 lg:start-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[440px] lg:rounded-2xl lg:border lg:max-h-[92vh]'
 
   return (
     <AnimatePresence>
@@ -116,31 +121,46 @@ export function ModalShell({
             role="dialog"
             aria-modal="true"
             tabIndex={-1}
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            initial={
+              journeyChrome
+                ? { opacity: 0, scale: 0.96 }
+                : { y: '100%' }
+            }
+            animate={
+              journeyChrome
+                ? { opacity: 1, scale: 1 }
+                : { y: 0 }
+            }
+            exit={
+              journeyChrome
+                ? { opacity: 0, scale: 0.97 }
+                : { y: '100%' }
+            }
+            transition={
+              journeyChrome
+                ? { duration: 0.24, ease: [0.32, 0.72, 0.34, 1] }
+                : { type: 'spring', damping: 25, stiffness: 300 }
+            }
             onAnimationComplete={(definition) => {
-              // Framer fires onAnimationComplete for both enter + exit. Only
-              // signal the "open done" callback when the animated state is
-              // the open target (`y: 0`). Dispatches both the direct
-              // callback (prop-driven modals) and a `modal-opened` custom
-              // event (so store-driven modals can be listened to by
-              // anything — notably OnboardingModalGate — without threading
-              // the prop through ModalProvider).
-              if (
+              // Framer fires onAnimationComplete for both enter + exit.
+              // For the journey blend variant, the open target is
+              // `opacity: 1`; for the bottom-sheet variant it's `y: 0`.
+              // Dispatches both the direct callback and a
+              // `modal-opened` custom event consumed by
+              // OnboardingModalGate.
+              const isOpenTarget =
                 typeof definition === 'object' &&
                 definition !== null &&
-                'y' in definition &&
-                (definition as { y: number | string }).y === 0
-              ) {
+                ((journeyChrome && 'opacity' in definition && (definition as { opacity: number }).opacity === 1) ||
+                  (!journeyChrome && 'y' in definition && (definition as { y: number | string }).y === 0))
+              if (isOpenTarget) {
                 onOpenAnimationComplete?.()
                 if (typeof window !== 'undefined') {
                   window.dispatchEvent(new CustomEvent('buddget:modal-opened'))
                 }
               }
             }}
-            drag={dragToClose ? 'y' : false}
+            drag={dragToClose && !journeyChrome ? 'y' : false}
             dragListener={false}
             dragControls={dragToClose ? dragControls : undefined}
             dragConstraints={{ top: 0 }}

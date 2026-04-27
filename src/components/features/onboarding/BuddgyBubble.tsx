@@ -35,21 +35,19 @@ export function BuddgyBubble({ cardId, answers, className }: BuddgyBubbleProps) 
     <AnimatePresence mode="wait">
       <motion.div
         key={cardId}
-        initial={{ opacity: 0, y: -8 }}
+        initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -4 }}
-        transition={{ duration: 0.22, ease: 'easeOut' }}
-        className={cn('flex items-start gap-3', className)}
+        transition={{ duration: 0.24, ease: 'easeOut' }}
+        className={cn(
+          'flex flex-col items-center text-center gap-3 sm:gap-4',
+          className,
+        )}
       >
-        <BuddgyAvatar pose={pose} size="sm" />
-        <div
-          className={cn(
-            'relative rounded-2xl rounded-tl-sm border px-4 py-3 text-sm',
-            'bg-[var(--color-brand-card)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]',
-          )}
-        >
+        <BuddgyAvatar pose={pose} size="md" />
+        <p className="max-w-md text-base sm:text-lg leading-relaxed text-[var(--color-brand-text-primary)]">
           {message}
-        </div>
+        </p>
       </motion.div>
     </AnimatePresence>
   )

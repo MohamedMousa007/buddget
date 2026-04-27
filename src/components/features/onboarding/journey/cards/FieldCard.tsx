@@ -1,6 +1,5 @@
 'use client'
 
-import { Input } from '@/components/ui/input'
 import { CountrySelect } from '@/components/ui/CountrySelect'
 import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
 import { useLocale, useT } from '@/lib/i18n'
@@ -121,15 +120,24 @@ function TextField({
 }) {
   const t = useT()
   const placeholder = placeholderKey ? readI18n(t, placeholderKey) : ''
+  // Borderless typographic input — no boxy textbox, no chat-message feel.
+  // Reads as an answer the user is writing on a page, not a reply they're
+  // sending in a chat.
   return (
-    <Input
+    <input
       type="text"
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       maxLength={maxLength}
       autoFocus
-      className="h-12 text-base"
+      className={cn(
+        'block w-full bg-transparent border-0 outline-none px-0 py-2 text-center sm:text-start',
+        'text-2xl sm:text-3xl font-semibold tracking-tight',
+        'text-[var(--color-brand-text-primary)]',
+        'placeholder:text-[var(--color-brand-text-muted)] placeholder:font-normal',
+        'border-b border-[var(--color-brand-border)] focus:border-[var(--color-brand-text-primary)] transition-colors',
+      )}
     />
   )
 }

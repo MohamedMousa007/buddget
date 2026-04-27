@@ -42,6 +42,12 @@ import {
   type OverspentCategory,
 } from '@/lib/utils/spendingPace'
 
+/** YYYY-MM string for the current calendar month (UTC-local-aligned). */
+function currentMonthString(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
 function supabaseAuthConfigured(): boolean {
   return Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
@@ -108,6 +114,10 @@ export function useMonthlyStats() {
         savingsAccountsTotal: 0,
         savingsFromExpenses: 0,
         netSavingsTransfersThisMonth: 0,
+        monthClosed: false,
+        projectedMonthSavings: 0,
+        realizedMonthSavings: 0,
+        savingsThisMonth: 0,
         leftToSpend: 0,
         categoryBudgetCaps: {} as Record<string, number>,
         debtRemainingTotal: 0,
@@ -198,6 +208,17 @@ export function useMonthlyStats() {
       exchangeRates
     )
 
+    // Month-scoped savings semantics. While the user is inside the
+    // current cycle the dashboard shows what they're *projected* to save
+    // based on the active plan (income − planned expense budget). Once
+    // the cycle has closed (a past `monthFilter`), we surface what they
+    // *actually* saved (income − actual spend). Both clamp at zero so a
+    // shortfall reads as zero saved rather than a negative figure.
+    const monthClosed = monthFilter < currentMonthString()
+    const projectedMonthSavings = Math.max(0, totalIncome - totalExpenseBudget)
+    const realizedMonthSavings = Math.max(0, totalIncome - totalSpentForExpenseBudget)
+    const savingsThisMonth = monthClosed ? realizedMonthSavings : projectedMonthSavings
+
     const leftToSpend = calculateLeftToSpendCashFlow({
       monthStr: monthFilter,
       monthStartDay: settings.monthStartDay,
@@ -265,6 +286,10 @@ export function useMonthlyStats() {
       savingsAccountsTotal,
       savingsFromExpenses,
       netSavingsTransfersThisMonth,
+      monthClosed,
+      projectedMonthSavings,
+      realizedMonthSavings,
+      savingsThisMonth,
       leftToSpend,
       categoryBudgetCaps,
       debtRemainingTotal,
