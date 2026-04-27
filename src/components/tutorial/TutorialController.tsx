@@ -71,19 +71,16 @@ export function TutorialControllerRoot({ children }: { children: React.ReactNode
   const [status, setStatus] = useState<TourStatus>('idle')
   const autoResumed = useRef(false)
 
-  // Auto-resume any in-progress tour on first mount. Only tries once per
-  // session so we don't fight the user if they Escape away. Setting state
-  // inside this effect is intentional — we're restoring persisted tour
-  // state from user_settings, which is inherently post-mount.
+  // Auto-resume disabled while the tutorial system is paused — see the
+  // no-op `start()` below. Persisted resume markers are simply ignored;
+  // they'll be cleared the next time we run the tour to completion.
   useEffect(() => {
     if (autoResumed.current) return
     autoResumed.current = true
-    const resume = parseResumeMarker(tutorialCurrentStep)
-    if (!resume) return
-    if (isTourCompleted(resume.tourId, tutorialsCompleted)) return
-    const fresh = createSession(resume.tourId, resume.stepIndex)
-    setSession(fresh)
-    setStatus('running')
+    void parseResumeMarker
+    void isTourCompleted
+    void tutorialCurrentStep
+    void tutorialsCompleted
   }, [tutorialCurrentStep, tutorialsCompleted])
 
   const persistMarker = useCallback(
@@ -97,10 +94,14 @@ export function TutorialControllerRoot({ children }: { children: React.ReactNode
 
   const start = useCallback(
     (tourId: TourId) => {
-      const fresh = createSession(tourId)
-      setSession(fresh)
-      setStatus('running')
-      persistMarker(fresh)
+      // Tutorial system is disabled while we rework it. All start() calls
+      // become no-ops; existing call sites (PostOnboardingTourBoot, modal
+      // gates) keep working without changes. Re-enable by restoring the
+      // implementation below once the overlay/anchor regressions are
+      // addressed in a future sprint.
+      void tourId
+      void persistMarker
+      void createSession
     },
     [persistMarker],
   )

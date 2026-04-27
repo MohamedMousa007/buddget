@@ -78,6 +78,15 @@ export const JOURNEY_CARDS: ReadonlyArray<JourneyCard> = [
     input: { type: 'currency' },
   },
   {
+    id: 'identity.secondaryCurrency',
+    phase: 'identity',
+    kind: 'field',
+    writeKey: 'identity.secondaryCurrency',
+    hintKey: 'onboarding.journey.identity.secondaryCurrency.hint',
+    optional: true,
+    input: { type: 'currency-optional' },
+  },
+  {
     id: 'identity.household',
     phase: 'identity',
     kind: 'field',

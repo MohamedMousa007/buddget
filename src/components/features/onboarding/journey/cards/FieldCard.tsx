@@ -49,6 +49,11 @@ export function FieldCard({ card, value, onChange }: FieldCardProps) {
         <CountryField value={typeof value === 'string' ? value : ''} onChange={onChange} />
       ) : card.input.type === 'currency' ? (
         <CurrencyField value={typeof value === 'string' ? value : 'USD'} onChange={onChange} />
+      ) : card.input.type === 'currency-optional' ? (
+        <CurrencyOptionalField
+          value={typeof value === 'string' ? value : null}
+          onChange={onChange}
+        />
       ) : card.input.type === 'yes-no' ? (
         <YesNoField value={typeof value === 'string' ? value : ''} onChange={onChange} />
       ) : null}
@@ -171,6 +176,41 @@ function CurrencyField({
       value={value as Currency}
       onChange={(next) => onChange(next)}
     />
+  )
+}
+
+// ─── optional currency widget ───────────────────────────────────────────
+
+function CurrencyOptionalField({
+  value,
+  onChange,
+}: {
+  value: string | null
+  onChange: (next: string | null) => void
+}) {
+  const t = useT()
+  const isNone = value === null
+  return (
+    <div className="space-y-3">
+      <FiatCurrencySelect
+        value={(value ?? 'USD') as Currency}
+        onChange={(next) => onChange(next)}
+      />
+      <button
+        type="button"
+        onClick={() => onChange(isNone ? 'USD' : null)}
+        aria-pressed={isNone}
+        className={cn(
+          'w-full rounded-2xl border px-4 py-3 text-sm font-medium transition-colors',
+          'bg-[var(--color-brand-card)]',
+          isNone
+            ? 'border-[var(--color-brand-text-primary)] text-[var(--color-brand-text-primary)]'
+            : 'border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:border-[var(--color-brand-text-muted)]',
+        )}
+      >
+        {t.onboarding.journey.identity.secondaryCurrency.noneLabel}
+      </button>
+    </div>
   )
 }
 

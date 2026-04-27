@@ -6,17 +6,13 @@ import { cn } from '@/lib/utils'
 /**
  * Buddgy — the app's AI guide character.
  *
- * Cartoonized robot face rendered via DiceBear's `bottts-neutral` style
- * (same family as the user profile avatars at `cartoonAvatars.ts`). A
- * fixed seed keeps the character identity stable across the app; the
- * `pose` prop layers a small mood badge so Buddgy can react without
- * the underlying face swapping out.
+ * Pixel-art helmeted robot with the brand "B" mark on the visor — the
+ * canonical Buddgy design. Loaded as a static SVG from `/buddgy.svg`
+ * (scales crisply at any size thanks to `shape-rendering: crispEdges`).
  *
- * Why DiceBear over a hand-drawn SVG: the user wants something with a
- * face, in the same family as the cartoon profile avatars, with an AI
- * (robot) feel rather than a generic mascot. `bottts-neutral` is the
- * DiceBear robot collection — friendly, readable at any size, and
- * fetched once per session (cached by the browser).
+ * The `pose` prop tweaks a small mood badge that overlays the avatar's
+ * lower-right corner so Buddgy can react (greeting / thinking /
+ * celebrating / pointing) without the underlying face changing.
  */
 export type BuddgyPose = 'greeting' | 'thinking' | 'celebrating' | 'pointing'
 export type BuddgySize = 'xs' | 'sm' | 'md' | 'lg'
@@ -38,10 +34,6 @@ const SIZE_PX: Record<BuddgySize, number> = {
   md: 72,
   lg: 128,
 }
-
-const BUDDGY_SEED = 'buddgy-pal'
-const BUDDGY_BG = 'fee2e2'
-const BUDDGY_AVATAR_URL = `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${BUDDGY_SEED}&backgroundColor=${BUDDGY_BG}&radius=50`
 
 const POSE_BADGE: Record<BuddgyPose, string | null> = {
   greeting: null,
@@ -80,15 +72,15 @@ export function BuddgyAvatar({
       }
       aria-hidden
     >
-      {/* eslint-disable-next-line @next/next/no-img-element -- DiceBear returns SVG; next/image optimization is unnecessary and would require remote-pattern config. */}
+      {/* eslint-disable-next-line @next/next/no-img-element -- static local SVG, next/image optimization adds nothing. */}
       <img
-        src={BUDDGY_AVATAR_URL}
+        src="/buddgy.svg"
         alt=""
         width={px}
         height={px}
-        loading="lazy"
         decoding="async"
-        className="block rounded-full"
+        className="block"
+        style={{ imageRendering: 'pixelated' }}
       />
       {badge ? (
         <span

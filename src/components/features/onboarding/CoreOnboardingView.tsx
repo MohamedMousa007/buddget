@@ -45,7 +45,7 @@ export function CoreOnboardingView() {
     display_name: profile.name || '',
     country: profile.country || '',
     city: profile.city || '',
-    base_currency: (settings.baseCurrency as Currency) || 'AED',
+    base_currency: (settings.baseCurrency as Currency) || 'USD',
   }))
   const [index, setIndex] = useState(0)
   const [finishing, setFinishing] = useState(false)

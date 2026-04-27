@@ -42,7 +42,7 @@ export const DEFAULT_INCOME: IncomeSource[] = []
 export const DEFAULT_DEBTS: Debt[] = []
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  baseCurrency: 'AED',
+  baseCurrency: 'USD',
   secondaryCurrency: null,
   showSecondaryCurrency: false,
   theme: 'light',
@@ -68,7 +68,7 @@ export const DEFAULT_PROFILE: UserProfile = {
   id: 'local',
   name: '',
   gender: null,
-  baseCurrency: 'AED',
+  baseCurrency: 'USD',
   createdAt: new Date().toISOString(),
 }
 
@@ -77,7 +77,7 @@ export function createFreshDefaultProfile(): UserProfile {
   return {
     id: 'local',
     name: '',
-    baseCurrency: 'AED',
+    baseCurrency: 'USD',
     createdAt: new Date().toISOString(),
   }
 }

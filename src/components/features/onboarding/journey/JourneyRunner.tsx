@@ -123,6 +123,37 @@ export function JourneyRunner() {
     setAnswer,
   ])
 
+  // Auto-mirror identity answers into the live profile + settings store
+  // as the user fills them. Without this, the currency / name / country
+  // pick from the journey never reaches the dashboard — the dashboard
+  // ends up rendering with the default `USD` (or worse, the legacy
+  // `AED`) regardless of what the user chose. Doing the mirror here also
+  // means the AI-plan generator sees the right currency by the time
+  // BuildingPlanScreen runs (it reads `state.settings.baseCurrency`).
+  const updateProfile = useFinanceStore((s) => s.updateProfile)
+  const updateSettings = useFinanceStore((s) => s.updateSettings)
+  useEffect(() => {
+    const id = answers.identity
+    const profilePatch: Parameters<typeof updateProfile>[0] = {}
+    if (id.displayName != null) profilePatch.name = id.displayName.trim()
+    if (id.country != null) profilePatch.country = id.country.trim()
+    if (id.city != null) profilePatch.city = id.city.trim()
+    if (id.baseCurrency) profilePatch.baseCurrency = id.baseCurrency
+    if (Object.keys(profilePatch).length > 0) updateProfile(profilePatch)
+
+    const settingsPatch: Parameters<typeof updateSettings>[0] = {}
+    if (id.baseCurrency) settingsPatch.baseCurrency = id.baseCurrency
+    if (id.secondaryCurrency !== undefined) {
+      settingsPatch.secondaryCurrency = id.secondaryCurrency
+      settingsPatch.showSecondaryCurrency = id.secondaryCurrency != null
+    }
+    if (Object.keys(settingsPatch).length > 0) updateSettings(settingsPatch)
+  }, [
+    answers.identity,
+    updateProfile,
+    updateSettings,
+  ])
+
   // Modal cards consult the live Zustand store to know how many rows of
   // the entity exist — that's the completion gate (not a field value).
   const modalEntityCount = useFinanceStore(

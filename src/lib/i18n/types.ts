@@ -1243,6 +1243,7 @@ export interface Dictionary {
         country: { hint: string }
         city: { hint: string; placeholder: string }
         currency: { hint: string }
+        secondaryCurrency: { hint: string; noneLabel: string }
         household: {
           hint: string
           soloLabel: string

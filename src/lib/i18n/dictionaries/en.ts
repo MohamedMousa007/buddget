@@ -1364,6 +1364,10 @@ export const en: Dictionary = {
         currency: {
           hint: 'Your primary currency. Budgets and totals show in this.',
         },
+        secondaryCurrency: {
+          hint: 'Optional. Pick a second currency to see conversions everywhere that matters — useful if you earn or remit in another currency.',
+          noneLabel: 'No secondary currency',
+        },
         household: {
           hint: 'So rent and groceries are sized right.',
           soloLabel: 'Just me',

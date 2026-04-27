@@ -62,6 +62,7 @@ export interface FieldCard<TValue = unknown> extends BaseCard {
     | { type: 'text'; placeholderKey?: string; maxLength?: number }
     | { type: 'country' }
     | { type: 'currency' }
+    | { type: 'currency-optional' }
     | {
         type: 'single-select'
         options: Array<{ value: string; labelKey: string; descriptionKey?: string }>
@@ -234,6 +235,10 @@ export interface JourneyAnswers {
     country?: string
     city?: string
     baseCurrency?: Currency
+    /** Optional dual-currency display. `null` after the user explicitly
+     *  picks "no secondary"; `undefined` while the card hasn't been
+     *  visited yet. */
+    secondaryCurrency?: Currency | null
     household?: 'solo' | 'couple' | 'family'
   }
   /** Populated by the AI describe card at the end of phase 2. */
@@ -284,6 +289,7 @@ export type JourneyAnswerPath =
   | 'identity.country'
   | 'identity.city'
   | 'identity.baseCurrency'
+  | 'identity.secondaryCurrency'
   | 'identity.household'
   | 'aiSeed'
   | 'moneyIn.paymentMethods'
