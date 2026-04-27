@@ -14,6 +14,7 @@ import { calculateMonthlyIncome } from '@/lib/utils/calculations'
 import { ensureBudgetPlanId } from '@/lib/budget/ensureBudgetPlanId'
 import { applyBudgetPlan } from '@/lib/budget/applyBudgetPlan'
 import { flushFinanceNow } from '@/components/sync/SupabaseFinanceSync'
+import { createClient } from '@/lib/supabase/client'
 import { buildAiPlanContext } from '@/lib/onboarding/buildAiPlanContext'
 import { generateJourneyPlan, type JourneyPlanResult } from '@/lib/onboarding/generateJourneyPlan'
 import type { JourneyAnswers } from '@/lib/onboarding/journeyTypes'
@@ -38,6 +39,8 @@ import { JOURNEY_EVENTS, track } from '@/lib/analytics/events'
 const MIN_DISPLAY_MS = 2500
 const SOFT_TIMEOUT_MS = 10_000
 const HARD_TIMEOUT_MS = 18_000
+const REFRESH_RETRY_BUDGET = 4
+const REFRESH_RETRY_DELAY_MS = 250
 
 /**
  * Race a promise against a timeout. Used to guard every network-bound
@@ -220,6 +223,27 @@ export function BuildingPlanScreen() {
       }
 
       if (cancelled) return
+
+      // Pull fresh user_metadata into the client-side Supabase cache so
+      // AuthProvider's onboarding-redirect splash clears before we
+      // navigate. Without this the cached `user` still has
+      // `onboarding_completed` undefined and the splash renders forever.
+      // refreshSession() emits TOKEN_REFRESHED → AuthProvider updates.
+      if (completed) {
+        const supabase = createClient()
+        for (let attempt = 0; attempt < REFRESH_RETRY_BUDGET; attempt++) {
+          try {
+            const { data, error } = await supabase.auth.refreshSession()
+            if (!error && data.user?.user_metadata?.onboarding_completed === true) break
+          } catch (e) {
+            console.error('[BuildingPlanScreen] refreshSession failed', e)
+          }
+          if (attempt < REFRESH_RETRY_BUDGET - 1) {
+            await new Promise((r) => window.setTimeout(r, REFRESH_RETRY_DELAY_MS))
+          }
+        }
+        if (cancelled) return
+      }
 
       if (softTimer) window.clearTimeout(softTimer)
       window.clearTimeout(hardCeiling)
