@@ -1,14 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveAiRuntimeConfig } from '@/lib/server/aiRuntimeConfig'
-import {
-  buildBuddgyBudgetPlannerSystemPrompt,
-  type BudgetPlannerContextPayload,
-} from '@/lib/ai/buddgyBudgetPlannerPrompt'
-import {
-  buildBuddgyFillSystemPrompt,
-  type BuddgyFillContextPayload,
-} from '@/lib/ai/buddgyFillPrompt'
 
 function supabaseAuthConfigured(): boolean {
   return !!(
@@ -90,34 +82,18 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
-    const { contents, generationConfig, mode, budgetPlannerContext, buddgyFillContext } = body as {
+    const { contents, generationConfig } = body as {
       contents?: unknown[]
       generationConfig?: Record<string, unknown>
-      mode?: string
-      budgetPlannerContext?: BudgetPlannerContextPayload
-      buddgyFillContext?: BuddgyFillContextPayload
     }
 
     if (!Array.isArray(contents) || contents.length === 0) {
-      return NextResponse.json(
-        { error: 'Invalid request payload' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid request payload' }, { status: 400 })
     }
 
     const geminiBody: Record<string, unknown> = { contents }
     if (generationConfig && typeof generationConfig === 'object') {
       geminiBody.generationConfig = generationConfig
-    }
-
-    if (mode === 'budget-planner' && budgetPlannerContext && typeof budgetPlannerContext === 'object') {
-      const sys = buildBuddgyBudgetPlannerSystemPrompt(budgetPlannerContext)
-      geminiBody.systemInstruction = { parts: [{ text: sys }] }
-    }
-
-    if (mode === 'buddgy-fill' && buddgyFillContext && typeof buddgyFillContext === 'object') {
-      const sys = buildBuddgyFillSystemPrompt(buddgyFillContext)
-      geminiBody.systemInstruction = { parts: [{ text: sys }] }
     }
 
     const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
@@ -131,19 +107,13 @@ export async function POST(req: Request) {
     if (!response.ok) {
       const errorMsg = payload?.error?.message || `Gemini API returned ${response.status}`
       console.error('[AI Route] Gemini error:', errorMsg)
-      return NextResponse.json(
-        { error: errorMsg },
-        { status: response.status }
-      )
+      return NextResponse.json({ error: errorMsg }, { status: response.status })
     }
 
     return NextResponse.json(payload)
   } catch (err) {
     console.error('[AI Route] Unexpected error:', err)
-    return NextResponse.json(
-      { error: 'Failed to process AI request' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to process AI request' }, { status: 500 })
   }
 }
 

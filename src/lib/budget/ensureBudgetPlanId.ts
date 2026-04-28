@@ -2,9 +2,8 @@ import type { FinanceStore } from '@/lib/store/types'
 
 /**
  * Return the id of the plan the user is currently editing, or create a fresh
- * "Primary plan" if none exists. Shared between the onboarding Buddgy flow
- * (`useOnboardingPage`) and the dashboard Build-My-Budget action
- * (`useAutoBudgetBuild`) so both refer to the same plan.
+ * "Primary plan" if none exists. Shared with onboarding completion, the budget
+ * editor, and the dashboard auto-build action (`useAutoBudgetBuild`).
  *
  * Caller passes the store getter + mutators so the helper stays pure and
  * testable without React hooks.

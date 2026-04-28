@@ -32,7 +32,7 @@ export const ar: Dictionary = {
         },
         type: {
           title: 'اختر النوع',
-          body: 'نقد، تحويل بنكي، بطاقة خصم أو بطاقة ائتمان؟ هذا يحدّد كيف يتابع Buddgy تدفق الأموال.',
+          body: 'نقد، تحويل بنكي، بطاقة خصم أو بطاقة ائتمان؟ هذا يحدّد كيف يتابع Buddget تدفق الأموال.',
         },
         currency: {
           title: 'ما العملة؟',
@@ -46,25 +46,25 @@ export const ar: Dictionary = {
       income: {
         name: {
           title: 'سمِّ المصدر',
-          body: 'راتب، دخل جانبي، إيجار محصَّل — عنوان قصير يفهمه Buddgy.',
-        },
-        paymentMethod: {
-          title: 'إلى أين يصل؟',
-          body: 'اختر الحساب الذي يستقبل هذا الدخل. يربط التدفّق بطريقة دفع حقيقية ليبقى التدفّق النقدي دقيقاً.',
+          body: 'راتب، دخل جانبي، إيجار محصَّل — عنوان قصير يفهمه Buddget.',
         },
         amount: {
           title: 'كم المبلغ؟',
-          body: 'مبلغ الدفعة الواحدة. إن كان متكرّراً ستختار التكرار بعد قليل — شهرياً، كل أسبوعين، أو أسبوعياً.',
+          body: 'أدخل المبلغ بالعملة المعروضة. فعّل «متكرر» إن كان الدخل يتكرر.',
+        },
+        recurring: {
+          title: 'هل يتكرر؟',
+          body: 'فعّله للراتب أو الدخل المنتظم؛ أبقه مغلقاً للدفعات لمرة واحدة. عند التفعيل يُستخدم النمط الشهري.',
         },
         save: {
           title: 'أضفه',
-          body: 'احفظ ليبدأ Buddgy بالتتبّع. يمكنك العودة لاحقاً لإضافة مصدر آخر.',
+          body: 'احفظ ليبدأ Buddget بالتتبّع. يمكنك العودة لاحقاً لإضافة مصدر آخر.',
         },
       },
       debt: {
         type: {
           title: 'ما نوع الدين؟',
-          body: 'قرض شخصي، أقساط، دين عام، أم بطاقة ائتمان؟ يتعامل Buddgy مع كل نوع بشكل مختلف.',
+          body: 'قرض شخصي، أقساط، دين عام، أم بطاقة ائتمان؟ يتعامل Buddget مع كل نوع بشكل مختلف.',
         },
         balance: {
           title: 'كم المتبقّي؟',
@@ -72,7 +72,7 @@ export const ar: Dictionary = {
         },
         save: {
           title: 'احفظه',
-          body: 'بعد الحفظ، سيساعدك Buddgy في تحديد حصة "الديون" ضمن خطتك.',
+          body: 'بعد الحفظ، سيساعدك Buddget في تحديد حصة "الديون" ضمن خطتك.',
         },
       },
       savings: {
@@ -92,11 +92,11 @@ export const ar: Dictionary = {
       subscription: {
         amount: {
           title: 'كم سعر الاشتراك؟',
-          body: 'المبلغ المُحتسب كل دورة — سيضمّه Buddgy لمصروفك الشهري تلقائياً.',
+          body: 'المبلغ المُحتسب كل دورة — سيضمّه Buddget لمصروفك الشهري تلقائياً.',
         },
         cycle: {
           title: 'ما الوتيرة؟',
-          body: 'شهري، سنوي، أو بينهما. يوحّد Buddgy الحساب شهرياً في ميزانيتك.',
+          body: 'شهري، سنوي، أو بينهما. يوحّد Buddget الحساب شهرياً في ميزانيتك.',
         },
         save: {
           title: 'احفظه',
@@ -110,21 +110,21 @@ export const ar: Dictionary = {
         },
         save: {
           title: 'ثبّته',
-          body: 'يستخدم Buddgy أهدافك لموازنة حصة الادخار في خطتك.',
+          body: 'يستخدم Buddget أهدافك لموازنة حصة الادخار في خطتك.',
         },
       },
     },
     postOnboard: {
       planRoot: {
         title: 'خطتك جاهزة',
-        body: 'أعدّها Buddgy بناءً على ما قلته. لا شيء ثابت — كل رقم قابل للتعديل.',
+        body: 'أعدّها Buddget بناءً على ما قلته. لا شيء ثابت — كل رقم قابل للتعديل.',
       },
       categoryRow: {
         title: 'اضغط أي فئة',
         body: 'عدّل المبالغ، أعد التسمية، أو أضف فئات فرعية. يُحسب صرفك الفعلي مقابل هذه الأهداف.',
       },
       rebuild: {
-        title: 'حسّنها مع Buddgy',
+        title: 'حسّنها مع Buddget',
         body: 'تريد تقليل الطعام، زيادة الادخار، أو خطة جديدة بعد تغيّر ظروفك؟ أعد البناء من هنا متى شئت.',
       },
       dashboard: {
@@ -200,6 +200,7 @@ export const ar: Dictionary = {
     edit: 'تعديل',
     back: 'رجوع',
     close: 'إغلاق',
+    next: 'التالي',
     confirm: 'تأكيد',
     remove: 'إزالة',
     loading: 'جارٍ التحميل…',
@@ -405,6 +406,9 @@ export const ar: Dictionary = {
     labelAmount: 'كم المبلغ؟',
     placeholderAmount: '0.00',
     labelCurrency: 'العملة',
+    labelCategory: 'التصنيف',
+    labelSubcategory: 'تصنيف فرعي',
+    labelPaymentMethod: 'طريقة الدفع',
     labelRepeats: 'هل يتكرر؟',
     labelNotes: 'ملاحظات إضافية؟',
     placeholderNotes: 'ملاحظة اختيارية عن هذا المصروف',
@@ -840,7 +844,7 @@ export const ar: Dictionary = {
     heroSubtitle: 'خطّط شهرك، تابع كل عملية، وحقّق أهدافك. في 5 دقائق.',
     feature1: 'اختر العملة، خطّط الميزانية، وابقَ متقدّماً على ديونك.',
     feature2: 'يعمل بدون إنترنت — بياناتك تبقى على جهازك.',
-    feature3: 'Buddgy، المساعد الذكي، يخصّص كل شيء لك.',
+    feature3: 'Buddget، المساعد الذكي، يخصّص كل شيء لك.',
     ctaSignIn: 'تسجيل الدخول',
     ctaSignUp: 'أنشئ حساباً مجانياً',
   },
@@ -891,15 +895,15 @@ export const ar: Dictionary = {
     paymentMethodsAdd: '+ أضف طريقة',
     paymentMethodsRemoveConfirm: 'حذف طريقة الدفع هذه؟ مصروفاتك الحالية لن تتأثر.',
 
-    aiTitle: 'مساعد Buddgy',
-    aiToggle: 'تشغيل مساعد Buddgy',
+    aiTitle: 'مساعد Buddget',
+    aiToggle: 'تشغيل مساعد Buddget',
     aiToggleHint: 'تفضيلك — الخادم يحتاج مفتاح Gemini API للعمل',
     aiConnection: 'الاتصال',
     aiConnectionSub: 'Google Gemini · من الخادم',
     aiReady: 'جاهز',
     aiNotSetUp: 'لم يُعد بعد',
     aiModel: 'النموذج',
-    aiFooter1: 'المسؤول يدير إعداد Buddgy. اضغط على فقاعة المحادثة في الزاوية للدردشة مع Buddgy.',
+    aiFooter1: 'المسؤول يدير إعداد Buddget. اضغط على فقاعة المحادثة في الزاوية للدردشة مع Buddget.',
     aiFooter2: 'مفتاح Gemini API له حصة Google خاصة (~20 طلب/دقيقة). إعداد المسؤول "حد الجهاز" يضيف حداً إضافياً داخل Buddget — لا يغير حد Google. إذا رأيت أخطاء حصة، انتظر لحظة أو أرسل رسائل أقل.',
 
     dataTitle: 'بياناتك',
@@ -936,7 +940,7 @@ export const ar: Dictionary = {
     languageAr: 'AR',
 
     adminTitle: 'لوحة الإدارة',
-    adminSubtitle: 'إدارة إعدادات Buddgy والخادم والمزيد',
+    adminSubtitle: 'إدارة إعدادات Buddget والخادم والمزيد',
     adminLink: 'الذهاب للإدارة ←',
 
     importSuccess: 'بياناتك جاهزة — اكتمل الاستيراد!',
@@ -1047,7 +1051,7 @@ export const ar: Dictionary = {
     projectedSavingsLine: (amount, savingsRatePercent) =>
       `إذا التزمت بهذه الخطة، ستدخر ${amount} هذا الشهر (${savingsRatePercent}% من الدخل)`,
     savingsAllocationBadge: 'مدخرات',
-    aiEvalTitle: 'رأي Buddgy',
+    aiEvalTitle: 'رأي Buddget',
     aiEvalLoading: 'جارٍ مراجعة خطتك…',
     aiEvalError: 'تعذر تقييم الخطة الآن.',
     aiEvalStatusGood: 'جيد',
@@ -1056,10 +1060,10 @@ export const ar: Dictionary = {
     aiEvalTipGood: 'راقب الإنفاق الفعلي للبقاء ضمن هذه الخطة.',
     aiEvalTipTight: 'أضف هامشاً صغيراً أو قلّل فئة ترفيهية واحدة.',
     aiEvalTipUnrealistic: 'خفّض بعض الفئات الكبيرة أو راجع الدخل حتى تتناسب المصروفات.',
-    aiEvalExpandAria: 'إظهار أو إخفاء ملاحظات Buddgy بالكامل',
+    aiEvalExpandAria: 'إظهار أو إخفاء ملاحظات Buddget بالكامل',
     aiEvalSuggestionLabel: 'نصيحة:',
-    aiChatTitle: 'اسأل Buddgy',
-    aiChatPlaceholder: 'اطلب من Buddgy تخفيضات أو واقعية أو مبالغ جديدة…',
+    aiChatTitle: 'اسأل Buddget',
+    aiChatPlaceholder: 'اطلب من Buddget تخفيضات أو واقعية أو مبالغ جديدة…',
     aiSend: 'إرسال',
     applySuggestion: 'تطبيق',
     applied: 'تم التطبيق',
@@ -1084,10 +1088,10 @@ export const ar: Dictionary = {
     noPlansEmptyTitle: 'لا توجد خطط ميزانية بعد',
     noPlansEmptyDesc: 'أنشئ خطتك الأولى لتبدأ تتبع أين تذهب أموالك كل شهر',
     noPlansCreateFirst: '+ أنشئ خطتك الأولى',
-    buddgyTagline: 'Buddgy — رفيقك الشخصي للميزانية!',
+    buddgyTagline: 'Buddget — رفيقك الشخصي للميزانية!',
     buddgyBuilderOpening:
-      'أهلًا! 👋 أنا Buddgy، رفيقك الشخصي للميزانية. سأساعدك على بناء خطة تناسب حياتك.\n\nلنبدأ بسؤال بسيط: ما إجمالي دخلك الشهري وبأي عملة؟ إذا كان الرقم في التطبيق صحيحًا، قل «نعم» أو أخبرني بالمبلغ المحدث.',
-    buddgyChatSubtitle: 'Buddgy — رفيقك الشخصي للميزانية!',
+      'أهلًا! 👋 أنا Buddget، رفيقك الشخصي للميزانية. سأساعدك على بناء خطة تناسب حياتك.\n\nلنبدأ بسؤال بسيط: ما إجمالي دخلك الشهري وبأي عملة؟ إذا كان الرقم في التطبيق صحيحًا، قل «نعم» أو أخبرني بالمبلغ المحدث.',
+    buddgyChatSubtitle: 'Buddget — رفيقك الشخصي للميزانية!',
     buddgyBuilderBadge: 'بناء الخطة',
   },
 
@@ -1228,7 +1232,7 @@ export const ar: Dictionary = {
     fabAddIncome: 'أضف مصدر دخل',
     fabAddPayment: 'أضف طريقة دفع',
     fabTrackDebt: 'تتبع أو سدد رصيداً',
-    fabAskAi: 'ابنِ الميزانية مع Buddgy',
+    fabAskAi: 'ابنِ الميزانية مع Buddget',
     fabRequireAuth: 'سجل دخولك لبدء تتبع أموالك ومزامنتها عبر الأجهزة 🔐',
     fabRequireAuthAi: 'سجل دخولك لفتح إعداد الميزانية 🤖',
     requireAuthBudgetSetup: 'سجل دخولك أو أنشئ حساباً لإعداد خطط ميزانيتك.',
@@ -1243,12 +1247,12 @@ export const ar: Dictionary = {
   },
 
   ai: {
-    headerTitle: 'Buddgy',
-    headerSubtitle: 'Buddgy — رفيقك الشخصي للميزانية!',
+    headerTitle: 'Buddget',
+    headerSubtitle: 'Buddget — رفيقك الشخصي للميزانية!',
     composerPlaceholder: 'أخبرني عن معاملة...',
     sendMessage: 'إرسال',
     emptyIntro:
-      'أهلاً! أنا Buddgy 🤖 — رفيقك الشخصي للميزانية!\nأخبرني بما صرفت أو كسبت أو تريد تتبعه وأنا أتولى الباقي.',
+      'أهلاً! أنا Buddget 🤖 — رفيقك الشخصي للميزانية!\nأخبرني بما صرفت أو كسبت أو تريد تتبعه وأنا أتولى الباقي.',
     suggestion1: "جرّب: 'صرفت 45 على الغداء ببطاقة النول'",
     suggestion2: "جرّب: 'دفعت 2000 جنيه من رصيد أمي'",
     suggestion3: "جرّب: 'كم صرفت على الأكل هذا الشهر؟'",
@@ -1257,7 +1261,7 @@ export const ar: Dictionary = {
     multiIntentHint: 'يبدو أنك ذكرت أكثر من شيء. إذا نقص شيء بعد الحفظ، جرب إرسال عنصر واحد لكل رسالة.',
     confirmedLabel: 'تم! ✓',
     systemResting: 'استراحة قصيرة — حاول مرة أخرى بعد لحظة 😊',
-    guardSignIn: 'سجل دخولك لحفظ ما يجده Buddgy 🔐',
+    guardSignIn: 'سجل دخولك لحفظ ما يجده Buddget 🔐',
     categoryLabel: '📂 الفئة: ',
     balancePaymentTo: '🏦 دفعة رصيد لـ ',
     balanceExpenseNote: 'مسجل أيضاً كمصروف رصيد',
@@ -1304,7 +1308,23 @@ export const ar: Dictionary = {
     continueButton: 'متابعة',
     planLoading: 'جارٍ بناء خططك…',
     finishing: 'جارٍ الإنهاء…',
-    lastStep: 'أنشئ خططي',
+    lastStep: 'متابعة لمعاينة الميزانية',
+
+    preview: {
+      subtitle: 'راجع خطتك الأولى. حسّنها بالذكاء الاصطناعي ثم تابع.',
+      presetBlurb: 'المبالغ مبنية على دخلك وأهدافك. عدّل بالذكاء الاصطناعي أو طبّقها.',
+      feedbackLabel: 'ماذا تريد تغييره؟',
+      feedbackPlaceholder: 'مثلاً: تقليل المطاعم، زيادة الإيجار، المزيد للادخار…',
+      regenerate: 'إعادة توليد بالذكاء الاصطناعي',
+      regenerating: 'جارٍ التحسين…',
+      sourceAi: 'اقتراح بالذكاء الاصطناعي — يمكنك الإعادة أو المتابعة.',
+      sourcePreset: 'إعداد افتراضي ذكي — اضغط إعادة التوليد للتخصيص.',
+      continueCta: 'تطبيق ومتابعة',
+      applying: 'جارٍ الحفظ…',
+      monthlyIncome: (amount, currency) => `مبني على ~${amount} ${currency} شهرياً`,
+      feedbackSaveFailed: 'تعذر حفظ ملاحظتك — سيستمر الذكاء الاصطناعي.',
+      aiFailed: 'الذكاء الاصطناعي غير متاح — أعد المحاولة أو تابع بالإعداد الافتراضي.',
+    },
 
     coreGateTitle: 'هيا نجهز حسابك',
     coreGateSubtitle: 'أربعة أساسيات سريعة حتى يساعدك Buddget.',
@@ -1333,13 +1353,13 @@ export const ar: Dictionary = {
         intro: {
           title: 'لنبنِ نظامك المالي.',
           body:
-            'خلال دقائق، سيجهّز لك Buddgy كل شيء — طرق الدفع، الدخل، الميزانية، الأهداف — لتخرج بخطة جاهزة لا بتطبيق فارغ.',
+            'خلال دقائق، سيجهّز لك Buddget كل شيء — طرق الدفع، الدخل، الميزانية، الأهداف — لتخرج بخطة جاهزة لا بتطبيق فارغ.',
         },
         fork: {
           hint: 'يمكنك تبديل المسار في أي وقت.',
           guidedLabel: 'رحلة موجَّهة — ~4 دقائق',
           guidedDescription:
-            'أخبر Buddgy عن حياتك المالية مرة واحدة، أجب عن بضعة أسئلة، وسننشئ لك خطة مخصّصة.',
+            'أخبر Buddget عن حياتك المالية مرة واحدة، أجب عن بضعة أسئلة، وسننشئ لك خطة مخصّصة.',
           quickLabel: 'بداية سريعة — ~90 ثانية',
           quickDescription:
             'الأساسيات فقط. خطة افتراضية ذكية الآن، ويمكنك تحسينها لاحقاً من لوحة التحكم.',
@@ -1349,14 +1369,14 @@ export const ar: Dictionary = {
         intro: {
           title: 'أولاً، تعارف سريع.',
           body:
-            'بعض الأساسيات عن موقعك. تستخدمها Buddgy لاحقاً لاختيار العملات، ونصائح التكلفة، والمراجع المحلية.',
+            'بعض الأساسيات عن موقعك. تستخدمها Buddget لاحقاً لاختيار العملات، ونصائح التكلفة، والمراجع المحلية.',
         },
         name: { placeholder: 'اسمك' },
         country: {
           hint: 'سنحدّد عملتك الأساسية بناءً على ذلك — يمكنك تغييرها في البطاقة التالية.',
         },
         city: {
-          hint: 'اختياري. يساعد Buddgy في ضبط الإيجار والمصاريف اليومية.',
+          hint: 'اختياري. يساعد Buddget في ضبط الإيجار والمصاريف اليومية.',
           placeholder: 'المدينة (اختياري)',
         },
         currency: {
@@ -1375,7 +1395,7 @@ export const ar: Dictionary = {
       },
       buddgy: {
         welcomeIntro: {
-          default: 'أهلاً — أنا Buddgy، رفيقك المالي. خلّينا نبدأ.',
+          default: 'أهلاً — أنا Buddget، رفيقك المالي. خلّينا نبدأ.',
         },
         identityName: {
           default: 'ماذا نناديك؟',
@@ -1533,7 +1553,7 @@ export const ar: Dictionary = {
     toastHouseholdSaved: 'تم حفظ بيانات المنزل',
     toastGoalAdded: 'تمت إضافة الهدف',
     lifestyleTitle: 'نمط حياتك في جملة',
-    lifestyleSubtitle: 'يساعد Buddgy على تشكيل الخطة وفق إنفاقك الفعلي.',
+    lifestyleSubtitle: 'يساعد Buddget على تشكيل الخطة وفق إنفاقك الفعلي.',
     lifestyleLabelFood: 'كم مرة تأكل خارج البيت أو تطلب؟',
     lifestyleFoodEveryday: 'تقريباً كل يوم',
     lifestyleFoodMostdays: 'معظم الأيام',
@@ -1550,7 +1570,7 @@ export const ar: Dictionary = {
     lifestyleTierComfortable: 'مريحة — استمتع أكثر',
     lifestyleSave: 'احفظ نمط الحياة',
     householdTitle: 'المنزل والإيجار',
-    householdSubtitle: 'يعطي Buddgy التكلفة الثابتة للبناء حولها.',
+    householdSubtitle: 'يعطي Buddget التكلفة الثابتة للبناء حولها.',
     householdLabelSize: 'من في المنزل؟',
     householdSolo: 'أنا فقط',
     householdCouple: 'زوجان',
@@ -1729,6 +1749,30 @@ export const ar: Dictionary = {
     paymentTransit: 'بطاقة مواصلات / نول',
     paymentOther: 'شيء آخر (سمّه أنت!)',
 
+    stackProfileTitle: 'أنت ومكانك',
+    stackProfileSubtitle: 'ثلاث حقول سريعة — نستخدمها للعملة والصياغة.',
+    stackProfileHelp: '',
+
+    stackLifeMoneyTitle: 'الأسرة والمال',
+    stackLifeMoneySubtitle: 'كيف تعيش وتعمل وأي عملات تهمك.',
+    stackLifeMoneyHelp: '',
+
+    stackHousingDebtTitle: 'السكن والديون',
+    stackHousingDebtSubtitle: 'تقريباً كلفة السكن شهرياً وكيف تشعر تجاه الديون.',
+    stackHousingDebtHelp: '',
+
+    goalsCombinedTitle: 'الأهداف والتفاصيل',
+    goalsCombinedSubtitle: 'اختر الاتجاهات، ثم أضف تفاصيل أي أهداف تعرفها.',
+    goalsCombinedHelp: '',
+
+    dualLiveTitle: 'الاشتراكات والمدخرات',
+    dualLiveSubtitle: 'قوائم مباشرة — يُحفظ أثناء الكتابة.',
+    dualLiveHelp: '',
+
+    stackLifestyleTitle: 'إيقاع يومك',
+    stackLifestyleSubtitle: 'أنماط الإنفاق والتنقل والأكل وما تريد تحسينه.',
+    stackLifestyleHelp: '',
+
     prePlanTitle: 'جاهز! هيا ننطلق 🚀',
     prePlanBody: 'لوحتك جاهزة. ابدأ بتسجيل أول مصروف — يأخذ 5 ثوانٍ فقط.',
     prePlanHelp: 'يأخذ ثوانٍ قليلة. سنبني ثلاث خطط مخصصة لك.',
@@ -1817,6 +1861,86 @@ export const ar: Dictionary = {
     subscriptionGym: 'نادي رياضي / لياقة',
     subscriptionSports: 'تطبيقات رياضة / ترفيه',
     subscriptionGaming: 'ألعاب / اشتراكات أونلاين',
+  },
+
+  onboardingV2: {
+    welcomeIntro: 'لنضبط ميزانيتك في خطوات سريعة.',
+    nameQuestion: 'كيف نناديك؟',
+    namePlaceholder: 'اسمك',
+    countryHint: 'نستخدمها لتعيين عملتك الأساسية.',
+    countryPlaceholder: 'أين أنت؟',
+    incomeIntro: 'كم تكسب شهرياً؟',
+    incomeSourcePlaceholder: 'اسم المصدر',
+    amountPlaceholder: 'المبلغ',
+    addIncomeRow: '+ إضافة مصدر',
+    fixedIntro: 'ما تكاليفك الثابتة الشهرية؟',
+    subscriptionsIntro: 'هل لديك اشتراكات؟',
+    subscriptionAmounts: 'مبالغ شهرية (العملة الأساسية)',
+    payIntro: 'كيف تدفع عادةً؟',
+    customPayLines: 'طرق أخرى (سطر لكل طريقة)',
+    customPayPlaceholder: 'مثال: Apple Pay',
+    savingsIntro: 'هل لديك هدف ادخار؟',
+    monthOptional: 'الشهر اختياري',
+    savingsSkipHint: 'اتركه فارغاً أو صفراً للتخطي — يمكنك الإضافة لاحقاً.',
+    debtsQuestion: 'هل تسدد شيئاً؟',
+    yes: 'نعم',
+    no: 'لا',
+    personaIntro: 'كيف تريد إدارة الإنفاق؟',
+    personaBalancedTitle: 'متوازن',
+    personaBalancedBody: 'توزيع معقول بين الأساسيات والترفيه والادخار.',
+    personaSaverTitle: 'ادخار مكثف',
+    personaSaverBody: 'أولوية للادخار وسداد الديون.',
+    personaTrackTitle: 'تتبع فقط',
+    personaTrackBody: 'ميزانيات خفيفة — رؤية أكثر من قيود.',
+    reviewIntro: 'هل يبدو هذا صحيحاً؟',
+    reviewName: 'الاسم:',
+    reviewCountry: 'الموقع:',
+    reviewIncome: 'الدخل الشهري:',
+    reviewFixed: 'تكاليف ثابتة:',
+    reviewSubs: 'الاشتراكات:',
+    reviewPay: 'طرق الدفع:',
+    reviewSavings: 'هدف الادخار:',
+    reviewDebts: 'الديون:',
+    reviewStyle: 'أسلوب الميزانية:',
+    reviewEditHint: 'اضغط خطوة أدناه للتعديل.',
+    editStep: (n) => `تعديل الخطوة ${n}`,
+    titleWelcome: 'مرحباً',
+    titleCountry: 'الموقع والعملة',
+    titleIncome: 'الدخل',
+    titleFixed: 'مصاريف ثابتة',
+    titleSubs: 'الاشتراكات',
+    titlePay: 'طرق الدفع',
+    titleSavings: 'هدف الادخار',
+    titleDebts: 'الديون',
+    titleStyle: 'أسلوب الإنفاق',
+    titleReview: 'مراجعة',
+    looksGood: 'يبدو جيداً',
+  },
+
+  budgetPreview: {
+    pageTitle: 'ميزانيتك الأولى',
+    pageSubtitle: 'بناءً على ما أخبرتنا.\nيمكنك تعديل أي شيء.',
+    sectionIncome: 'ملخص الدخل',
+    sectionFixed: 'تكاليف ثابتة',
+    sectionBudget: 'الميزانية حسب الفئة',
+    sectionProjectedSavings: 'الادخار المتوقع هذا الشهر',
+    fixedEmpty: 'لا تكاليف ثابتة في الإعداد — يمكنك إضافتها لاحقاً.',
+    editPlan: 'تعديل الخطة',
+    doneEditing: 'إنهاء التعديل',
+    regenerate: 'إعادة توليد ↺',
+    regenerateHide: 'إخفاء إعادة التوليد',
+    regeneratePrompt: 'ماذا تريد أن يتغير؟',
+    regeneratePlaceholder: 'مثال: زيادة المواصلات، تقليل المطاعم…',
+    regenerateSubmit: 'توليد خطة جديدة',
+    regenerateCancel: 'إلغاء',
+    regenerating: 'جاري التوليد…',
+    looksGood: 'يبدو جيداً ←',
+    applying: 'جاري الحفظ…',
+    sourceAi: 'مخصص بالذكاء الاصطناعي من إجاباتك.',
+    sourcePreset: 'نقطة انطلاق ذكية — أعد التوليد للتخصيص.',
+    feedbackSaveFailed: 'تعذر حفظ ملاحظتك. قد تُحدَّث الخطة مع ذلك.',
+    aiFailed: 'تعذر الاتصال بالمخطط. يُعرض الخطة السابقة.',
+    statedSavingsTarget: (amount) => `هدف الادخار الشهري المذكور: ${amount}`,
   },
 
   categories: {

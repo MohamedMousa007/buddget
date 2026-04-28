@@ -3,13 +3,12 @@ import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
 /**
- * Terminal handoff from the Journey (v3). Flips
+ * Terminal handoff from onboarding. Flips
  * `user_metadata.onboarding_completed = true` with `onboarding_source =
- * 'journey_v3'` so middleware lets the user through and we can tell
- * journey-completers apart from legacy core-gate users in analytics.
+ * 'survey_flow'` so middleware lets the user through.
  *
  * Idempotent: returns early when the flag is already set so replays
- * (from SP5's BuildingPlanScreen retry, or a mid-navigation bounce) are
+ * (from the terminal plan screen retry, or a mid-navigation bounce) are
  * safe.
  */
 export async function POST() {
@@ -31,7 +30,7 @@ export async function POST() {
       user_metadata: {
         ...user.user_metadata,
         onboarding_completed: true,
-        onboarding_source: 'journey_v3',
+        onboarding_source: 'survey_flow',
         onboarding_completed_at: new Date().toISOString(),
       },
     })
@@ -39,6 +38,12 @@ export async function POST() {
       console.error('[auth/complete-journey] updateUserById failed', error.message)
       return NextResponse.json({ error: 'Update failed' }, { status: 500 })
     }
+
+    const { error: profileErr } = await admin.from('profiles').update({ onboarding_completed: true }).eq('id', user.id)
+    if (profileErr) {
+      console.error('[auth/complete-journey] profiles update failed', profileErr.message)
+    }
+
     return NextResponse.json({ ok: true })
   } catch (e) {
     console.error('[auth/complete-journey] unexpected', e)

@@ -5,8 +5,7 @@
  * back silently to the preset seed if the AI call fails for any reason
  * (rate limit, timeout, invalid shape, network).
  *
- * No other AI calls happen during the Journey — mid-flow Buddgy copy is
- * deterministic (see `buildBuddgyMessage`).
+ * No other AI calls during the survey — mid-flow microcopy is static.
  */
 
 import { regenerateBudgetPlanWithAi } from '@/lib/ai/generateBudgetPlan'
@@ -17,7 +16,7 @@ import { JOURNEY_EVENTS, track } from '@/lib/analytics/events'
 export interface JourneyPlanResult {
   categories: BudgetCategoryRow[]
   /** Where the categories came from — UI can surface a subtle banner
-   *  ("Smart default applied — ask Buddgy to regenerate anytime") when
+   *  ("Smart default applied — regenerate with AI anytime") when
    *  the AI call failed. */
   source: 'ai' | 'preset'
   /** Raw error string if the AI call failed, for debugging. Never
@@ -27,12 +26,14 @@ export interface JourneyPlanResult {
 
 export async function generateJourneyPlan(
   context: JourneyPlanContext,
+  options?: { seedCategories?: BudgetCategoryRow[] },
 ): Promise<JourneyPlanResult> {
+  const seed = options?.seedCategories ?? context.initialCategories
   track(JOURNEY_EVENTS.aiPlanCalled)
   const startedAt = Date.now()
   try {
     const refined = await regenerateBudgetPlanWithAi({
-      categories: context.initialCategories,
+      categories: seed,
       income: context.income,
       currency: context.currency,
       city: context.city,
@@ -53,7 +54,7 @@ export async function generateJourneyPlan(
     })
     track(JOURNEY_EVENTS.fallbackPresetUsed)
     return {
-      categories: context.initialCategories,
+      categories: seed,
       source: 'preset',
       error: err instanceof Error ? err.message : String(err),
     }

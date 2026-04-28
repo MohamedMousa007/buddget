@@ -42,7 +42,6 @@ export function useAddExpenseSheet() {
   const [paymentMethodId, setPaymentMethodId] = useState(
     paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || ''
   )
-  const [isRecurring, setIsRecurring] = useState(false)
   const [notes, setNotes] = useState('')
   const [submitError, setSubmitError] = useState('')
   const skipNextDefaultCurrencySync = useRef(false)
@@ -98,7 +97,6 @@ export function useAddExpenseSheet() {
     setCategory(defaultCategory)
     setSubcategory(undefined)
     setPaymentMethodId(paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || '')
-    setIsRecurring(false)
     setNotes('')
     setSubmitError('')
   }, [paymentMethods, settings.baseCurrency, defaultCategory])
@@ -123,7 +121,7 @@ export function useAddExpenseSheet() {
       amount: parsedAmount,
       currency: cur,
       paymentMethodId,
-      isRecurring,
+      isRecurring: false,
       notes: notes || undefined,
     })
     showToast(t.common.toastExpenseLogged)
@@ -136,7 +134,6 @@ export function useAddExpenseSheet() {
     subcategory,
     date,
     description,
-    isRecurring,
     notes,
     paymentMethodId,
     resetForm,
@@ -164,8 +161,6 @@ export function useAddExpenseSheet() {
     setSubcategory,
     paymentMethodId,
     setPaymentMethodId,
-    isRecurring,
-    setIsRecurring,
     notes,
     setNotes,
     submitError,

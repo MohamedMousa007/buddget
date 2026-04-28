@@ -6,21 +6,12 @@ import { ArrowRight } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { JOURNEY_CARDS } from '@/lib/onboarding/journeyConfig'
+import { ONBOARDING_V2_STEP_COUNT } from '@/lib/onboarding/v2/constants'
 import { useT } from '@/lib/i18n'
 
 /**
- * Persistent CTA that nudges the user to finish onboarding. Visible on
- * every authed surface except `/onboarding` itself so a user who closes
- * the journey mid-flow always sees a path back.
- *
- * Source of truth: `user.user_metadata.onboarding_completed` (flipped by
- * `/api/auth/complete-journey`). When true, the banner never renders.
- *
- * Progress is derived from the Journey state (`currentStepIndex` over
- * `JOURNEY_CARDS.length`) so the bar tracks actual journey completion
- * rather than the legacy 6-item first-run checklist. Tapping the banner
- * navigates to `/onboarding`, which resumes at the card the user left.
+ * Persistent CTA while `onboarding_completed` is false. Progress follows
+ * `onboardingState.currentStepIndex` against the V2 onboarding step count.
  */
 export function OnboardingBanner() {
   const pathname = usePathname()
@@ -33,9 +24,9 @@ export function OnboardingBanner() {
   if (loading || !user) return null
   if (user.user_metadata?.onboarding_completed === true) return null
   if (!pathname) return null
-  if (pathname.startsWith('/onboarding')) return null
+  if (pathname.startsWith('/onboarding') || pathname === '/budget-preview') return null
 
-  const totalCards = JOURNEY_CARDS.length
+  const totalCards = ONBOARDING_V2_STEP_COUNT
   const doneCount = Math.max(0, Math.min(currentStepIndex, totalCards))
   const pct = totalCards > 0 ? Math.round((doneCount / totalCards) * 100) : 0
 

@@ -135,7 +135,7 @@ export const ANCHORS: Record<string, AnchorEntry> = {
 
   // ── Post-onboarding guided tour (SP6) ────────────────────────────
   // Fires automatically when the user lands on /budget-setup?tour=1
-  // right after finishing the Journey; re-runnable from Settings →
+  // right after finishing onboarding; re-runnable from Settings →
   // "Show me around".
   'postOnboard:plan-root': {
     tour: 'postOnboardingTour',
@@ -150,13 +150,6 @@ export const ANCHORS: Record<string, AnchorEntry> = {
     copyKey: 'tour.postOnboard.categoryRow',
     route: '/budget-setup',
     placement: 'bottom',
-  },
-  'postOnboard:rebuild-cta': {
-    tour: 'postOnboardingTour',
-    order: 3,
-    copyKey: 'tour.postOnboard.rebuild',
-    route: '/budget-setup',
-    placement: 'top',
   },
   'postOnboard:dashboard-main': {
     tour: 'postOnboardingTour',
@@ -365,16 +358,16 @@ export const ANCHORS: Record<string, AnchorEntry> = {
     copyKey: 'tour.modal.income.name',
     placement: 'bottom',
   },
-  'income-modal:payment-method': {
-    tour: 'addIncomeTour',
-    order: 2,
-    copyKey: 'tour.modal.income.paymentMethod',
-    placement: 'bottom',
-  },
   'income-modal:amount': {
     tour: 'addIncomeTour',
-    order: 3,
+    order: 2,
     copyKey: 'tour.modal.income.amount',
+    placement: 'top',
+  },
+  'income-modal:recurring': {
+    tour: 'addIncomeTour',
+    order: 3,
+    copyKey: 'tour.modal.income.recurring',
     placement: 'top',
   },
   'income-modal:save': {

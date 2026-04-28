@@ -93,9 +93,7 @@ export interface Expense {
   amountInBaseCurrency: number
   paymentMethodId: string
   isRecurring: boolean
-  recurringId?: string
   notes?: string
-  tags?: string[]
   /** When set, this expense belongs to a shared household budget plan (`shared_budget_plans.id`). */
   sharedPlanId?: string | null
   /** When set, this expense was created from a debt payment flow. */
@@ -200,10 +198,10 @@ export interface BudgetPlanCategory {
   subcategories: BudgetPlanSubcategory[]
 }
 
-/** Who the budget is for (Buddgy Flow). */
+/** Who the budget is for (planner / household). */
 export type BudgetHousehold = 'solo' | 'partner' | 'family'
 
-/** Draft fields while running Buddgy Flow (persisted on the plan). */
+/** Draft fields during guided budget setup (persisted on the plan). */
 export interface BuddgyFlowDraft {
   rentIncludesUtilities?: boolean
   dewaMonthly?: number
@@ -225,10 +223,10 @@ export interface BudgetPlan {
   name: string
   categories: BudgetPlanCategory[]
   createdAt: string
-  /** Buddgy Flow: household size for AI and sliders. */
+  /** Guided setup: household size for AI and sliders. */
   household?: BudgetHousehold | null
   buddgyFlow?: BuddgyFlowDraft | null
-  /** User finished Buddgy guided flow (Done). Cleared when rebuilding. */
+  /** User finished guided plan builder (Done). Cleared when rebuilding. */
   buddgyGuidedComplete?: boolean
 }
 
@@ -617,7 +615,7 @@ export interface Goal {
 export interface FinanceStore {
   profile: UserProfile
   settings: AppSettings
-  /** Free-text financial goals from Buddgy plan builder; synced in finance payload. */
+  /** Free-text financial goals from the plan builder; synced in finance payload. */
   financialGoalsNotes: string
   /** Journey progress, answers, and cached AI plans. Synced to
    *  `public.onboarding_state` via `flushDiff`. */
@@ -710,7 +708,7 @@ export interface FinanceStore {
     planId: string,
     updates: Partial<Pick<BudgetPlan, 'name' | 'categories' | 'household' | 'buddgyFlow' | 'buddgyGuidedComplete'>>
   ) => void
-  /** Merge household / buddgyFlow into the active plan (Buddgy Flow). */
+    /** Merge household / buddgyFlow into the active plan (guided setup). */
   updateBudgetMeta: (
     planId: string,
     updates: Partial<Pick<BudgetPlan, 'household' | 'buddgyFlow'>>

@@ -19,8 +19,8 @@ export interface TourDictionary {
     }
     income: {
       name: { title: string; body: string }
-      paymentMethod: { title: string; body: string }
       amount: { title: string; body: string }
+      recurring: { title: string; body: string }
       save: { title: string; body: string }
     }
     debt: {
@@ -98,6 +98,8 @@ export interface Dictionary {
     edit: string
     back: string
     close: string
+    /** Walkthrough / tutorial primary action */
+    next: string
     confirm: string
     remove: string
     loading: string
@@ -307,6 +309,9 @@ export interface Dictionary {
     labelAmount: string
     placeholderAmount: string
     labelCurrency: string
+    labelCategory: string
+    labelSubcategory: string
+    labelPaymentMethod: string
     labelRepeats: string
     labelNotes: string
     placeholderNotes: string
@@ -1200,6 +1205,22 @@ export interface Dictionary {
     finishing: string
     lastStep: string
 
+    preview: {
+      subtitle: string
+      presetBlurb: string
+      feedbackLabel: string
+      feedbackPlaceholder: string
+      regenerate: string
+      regenerating: string
+      sourceAi: string
+      sourcePreset: string
+      continueCta: string
+      applying: string
+      monthlyIncome: (amount: string, currency: string) => string
+      feedbackSaveFailed: string
+      aiFailed: string
+    }
+
     // Progressive-onboarding core gate (4 essentials).
     coreGateTitle: string
     coreGateSubtitle: string
@@ -1252,11 +1273,8 @@ export interface Dictionary {
         }
       }
       /**
-       * Scripted Buddgy dialogue. Keyed by `BuddgyCardId`, then by
-       * variant (`default`, `uae`, `egypt`, …). Picked at runtime by
-       * `buildBuddgyMessage`. Slot tokens in templates (`{name}`,
-       * `{country}`, `{currency}`, `{firstPaymentMethodName}`, …) are
-       * interpolated against `BuddgyAnswers`.
+       * Legacy scripted onboarding dialogue (keyed by card id and locale variant).
+       * Slot tokens in templates (`{name}`, `{currency}`, …) are interpolated at runtime.
        */
       buddgy: {
         welcomeIntro: { default: string }
@@ -1298,7 +1316,7 @@ export interface Dictionary {
         addAnother: string
         continue: string
       }
-      /** Copy for the terminal `BuildingPlanScreen` (SP5). */
+      /** Copy for the terminal plan-building loading state (SP5). */
       loading: {
         placeholder: string
         title: string
@@ -1591,6 +1609,25 @@ export interface Dictionary {
     prePlanBody: string
     prePlanHelp: string
 
+    stackProfileTitle: string
+    stackProfileSubtitle: string
+    stackProfileHelp: string
+    stackLifeMoneyTitle: string
+    stackLifeMoneySubtitle: string
+    stackLifeMoneyHelp: string
+    stackHousingDebtTitle: string
+    stackHousingDebtSubtitle: string
+    stackHousingDebtHelp: string
+    goalsCombinedTitle: string
+    goalsCombinedSubtitle: string
+    goalsCombinedHelp: string
+    dualLiveTitle: string
+    dualLiveSubtitle: string
+    dualLiveHelp: string
+    stackLifestyleTitle: string
+    stackLifestyleSubtitle: string
+    stackLifestyleHelp: string
+
     incomeIntro: string
     incomeRemove: string
     incomeSourceName: string
@@ -1675,6 +1712,86 @@ export interface Dictionary {
     subscriptionGym: string
     subscriptionSports: string
     subscriptionGaming: string
+  }
+
+  onboardingV2: {
+    welcomeIntro: string
+    nameQuestion: string
+    namePlaceholder: string
+    countryHint: string
+    countryPlaceholder: string
+    incomeIntro: string
+    incomeSourcePlaceholder: string
+    amountPlaceholder: string
+    addIncomeRow: string
+    fixedIntro: string
+    subscriptionsIntro: string
+    subscriptionAmounts: string
+    payIntro: string
+    customPayLines: string
+    customPayPlaceholder: string
+    savingsIntro: string
+    monthOptional: string
+    savingsSkipHint: string
+    debtsQuestion: string
+    yes: string
+    no: string
+    personaIntro: string
+    personaBalancedTitle: string
+    personaBalancedBody: string
+    personaSaverTitle: string
+    personaSaverBody: string
+    personaTrackTitle: string
+    personaTrackBody: string
+    reviewIntro: string
+    reviewName: string
+    reviewCountry: string
+    reviewIncome: string
+    reviewFixed: string
+    reviewSubs: string
+    reviewPay: string
+    reviewSavings: string
+    reviewDebts: string
+    reviewStyle: string
+    reviewEditHint: string
+    editStep: (stepNumber: number) => string
+    titleWelcome: string
+    titleCountry: string
+    titleIncome: string
+    titleFixed: string
+    titleSubs: string
+    titlePay: string
+    titleSavings: string
+    titleDebts: string
+    titleStyle: string
+    titleReview: string
+    looksGood: string
+  }
+
+  budgetPreview: {
+    pageTitle: string
+    pageSubtitle: string
+    sectionIncome: string
+    sectionFixed: string
+    sectionBudget: string
+    sectionProjectedSavings: string
+    fixedEmpty: string
+    editPlan: string
+    doneEditing: string
+    regenerate: string
+    regenerateHide: string
+    regeneratePrompt: string
+    regeneratePlaceholder: string
+    regenerateSubmit: string
+    regenerateCancel: string
+    regenerating: string
+    looksGood: string
+    applying: string
+    sourceAi: string
+    sourcePreset: string
+    feedbackSaveFailed: string
+    aiFailed: string
+    statedSavingsTarget: (amount: string) => string
   }
 
   categories: Record<string, string>

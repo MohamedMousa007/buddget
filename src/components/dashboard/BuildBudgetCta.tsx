@@ -13,7 +13,7 @@ export interface BuildBudgetCtaProps {
 /**
  * Primary call-to-action shown below the first-run checklist. Enabled once
  * all six cards are done; fires `useAutoBudgetBuild` which runs the AI
- * pipeline silently in the background (no interactive Buddgy steps) and
+ * pipeline silently in the background (no interactive wizard) and
  * applies the resulting plan in a single transaction. Toasts success or
  * the local-fallback message depending on whether AI succeeded.
  */

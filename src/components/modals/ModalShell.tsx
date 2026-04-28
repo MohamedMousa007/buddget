@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion, useDragControls } from 'framer-motion'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -96,8 +96,20 @@ export function ModalShell({
   // slide reads as an interruption inside a journey card; a centered
   // blend feels like the modal belongs to the same surface.
   const panelStaticClasses = journeyChrome
-    ? 'fixed start-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(92vw,440px)] max-h-[88vh] bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)]'
-    : 'fixed bottom-0 start-0 end-0 bg-[var(--color-brand-card)] rounded-t-3xl border-t border-[var(--color-brand-border)] max-h-[88vh] lg:bottom-auto lg:top-1/2 lg:start-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[440px] lg:rounded-2xl lg:border lg:max-h-[92vh]'
+    ? 'fixed start-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(92vw,440px)] max-h-[90vh] bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)]'
+    : 'fixed bottom-0 start-0 end-0 bg-[var(--color-brand-card)] rounded-t-3xl border-t border-[var(--color-brand-border)] max-h-[90vh] lg:bottom-auto lg:top-1/2 lg:start-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[440px] lg:rounded-2xl lg:border lg:max-h-[90vh]'
+
+  const [lgMotion, setLgMotion] = useState(false)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mq = window.matchMedia('(min-width: 1024px)')
+    const apply = () => setLgMotion(mq.matches)
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
+
+  const desktopFadePanel = !journeyChrome && lgMotion
 
   return (
     <AnimatePresence>
@@ -124,22 +136,30 @@ export function ModalShell({
             initial={
               journeyChrome
                 ? { opacity: 0, scale: 0.96 }
-                : { y: '100%' }
+                : desktopFadePanel
+                  ? { opacity: 0, scale: 0.98 }
+                  : { y: '100%' }
             }
             animate={
               journeyChrome
                 ? { opacity: 1, scale: 1 }
-                : { y: 0 }
+                : desktopFadePanel
+                  ? { opacity: 1, scale: 1 }
+                  : { y: 0 }
             }
             exit={
               journeyChrome
                 ? { opacity: 0, scale: 0.97 }
-                : { y: '100%' }
+                : desktopFadePanel
+                  ? { opacity: 0, scale: 0.97 }
+                  : { y: '100%' }
             }
             transition={
               journeyChrome
                 ? { duration: 0.24, ease: [0.32, 0.72, 0.34, 1] }
-                : { type: 'spring', damping: 25, stiffness: 300 }
+                : desktopFadePanel
+                  ? { duration: 0.22, ease: [0.32, 0.72, 0.34, 1] }
+                  : { type: 'spring', damping: 25, stiffness: 300 }
             }
             onAnimationComplete={(definition) => {
               // Framer fires onAnimationComplete for both enter + exit.
@@ -152,7 +172,10 @@ export function ModalShell({
                 typeof definition === 'object' &&
                 definition !== null &&
                 ((journeyChrome && 'opacity' in definition && (definition as { opacity: number }).opacity === 1) ||
-                  (!journeyChrome && 'y' in definition && (definition as { y: number | string }).y === 0))
+                  (desktopFadePanel &&
+                    'opacity' in definition &&
+                    (definition as { opacity: number }).opacity === 1) ||
+                  (!journeyChrome && !desktopFadePanel && 'y' in definition && (definition as { y: number | string }).y === 0))
               if (isOpenTarget) {
                 onOpenAnimationComplete?.()
                 if (typeof window !== 'undefined') {
@@ -160,7 +183,7 @@ export function ModalShell({
                 }
               }
             }}
-            drag={dragToClose && !journeyChrome ? 'y' : false}
+            drag={dragToClose && !journeyChrome && !desktopFadePanel ? 'y' : false}
             dragListener={false}
             dragControls={dragToClose ? dragControls : undefined}
             dragConstraints={{ top: 0 }}

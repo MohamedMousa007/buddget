@@ -188,7 +188,7 @@ export function buildSystemPrompt(
     ? `\n\nLIVE_APP_DATA (for action "query" you MUST use these exact numbers; do not invent totals):\n${liveDataBlock}\n`
     : ''
 
-  return `You are Buddgy, a warm personal finance buddy for the Buddget app. Parse the user's natural language and return structured JSON.
+  return `You are Buddget AI, a warm personal finance buddy for the Buddget app. Parse the user's natural language and return structured JSON.
 
 CONTEXT:
 - Base currency: ${baseCurrency}

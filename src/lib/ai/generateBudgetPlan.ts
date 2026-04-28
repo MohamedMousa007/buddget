@@ -41,7 +41,7 @@ export async function generateBudgetPlan(params: {
   const savingsRate =
     params.income > 0 ? Math.round((Math.max(0, projectedSavings) / params.income) * 100) : 0
 
-  const systemPrompt = `You are Buddgy, a financial advisor for the Buddget app.
+  const systemPrompt = `You are Buddget AI, a financial advisor for the Buddget app.
 Generate one short motivational tip. The plan has ONLY expense categories — no Savings category row.
 Projected savings = income minus those expenses (${projectedSavings} ${params.currency}/month, ~${savingsRate}% of income).
 
@@ -112,6 +112,8 @@ export async function regenerateBudgetPlanWithAi(params: {
   country?: string | null
   household: string
   feedback: string
+  /** Prepended context (e.g. prior feedback + onboarding JSON) before the feedback line. */
+  contextAppendix?: string
 }): Promise<BudgetCategoryRow[]> {
   const expenseOnly = params.categories.filter((c) => !isSavingsCategoryRow(c))
   const planJson = JSON.stringify(
@@ -136,7 +138,7 @@ Return EXACTLY ONE refined plan that reflects the feedback. Do not propose alter
 Current plan (expense categories only — never add a "Savings" row):
 ${planJson}
 
-User income: ${params.income} ${params.currency}/month
+${params.contextAppendix ? `${params.contextAppendix}\n\n` : ''}User income: ${params.income} ${params.currency}/month
 Location: ${params.city || 'unknown'}${params.country ? `, ${params.country}` : ''}
 Household: ${params.household}
 Today: ${today}

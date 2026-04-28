@@ -2,18 +2,17 @@
 
 import { AddDebtDebtTypeSection } from '@/components/features/debts/AddDebtDebtTypeSection'
 import { AddDebtNewFormAmountBlock } from '@/components/features/debts/AddDebtNewFormAmountBlock'
-import { AddDebtNewFormGoalBlock } from '@/components/features/debts/AddDebtNewFormGoalBlock'
 import { AddDebtNewFormPersonDesc } from '@/components/features/debts/AddDebtNewFormPersonDesc'
-import { AddDebtNewFormFooter } from '@/components/features/debts/AddDebtNewFormFooter'
 import { CreditCardForm } from '@/components/features/debts/CreditCardForm'
 import type { AddDebtNewFormProps } from '@/components/features/debts/addDebtNewForm.types'
 export type { AddDebtNewFormProps } from '@/components/features/debts/addDebtNewForm.types'
+
 /** Fields for creating a new debt (fiat or gold) with debt-type sections. */
 export function AddDebtNewForm(props: AddDebtNewFormProps) {
   const isCreditCard = props.debtType === 'credit_card'
 
   return (
-    <div className="space-y-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto">
       <AddDebtDebtTypeSection
         debtType={props.debtType}
         setDebtType={props.setDebtType}
@@ -65,8 +64,6 @@ export function AddDebtNewForm(props: AddDebtNewFormProps) {
         setName={props.setName}
         person={props.person}
         setPerson={props.setPerson}
-        description={props.description}
-        setDescription={props.setDescription}
       />
 
       <AddDebtNewFormAmountBlock
@@ -80,21 +77,6 @@ export function AddDebtNewForm(props: AddDebtNewFormProps) {
         goldKarat={props.goldKarat}
         setGoldKarat={props.setGoldKarat}
         installmentPreview={props.installmentPreview}
-      />
-
-      <AddDebtNewFormGoalBlock
-        debtType={props.debtType}
-        currency={props.currency}
-        goalDraft={props.goalDraft}
-        onOpenGoal={props.onOpenGoal}
-        onClearGoal={props.onClearGoal}
-      />
-
-      <AddDebtNewFormFooter
-        isCreditCard={isCreditCard}
-        canSubmit={props.canSubmit}
-        onCancel={props.onCancel}
-        onSubmit={props.onSubmit}
       />
     </div>
   )

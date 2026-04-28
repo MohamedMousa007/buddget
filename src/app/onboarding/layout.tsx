@@ -5,5 +5,5 @@
 export const dynamic = 'force-dynamic'
 
 export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
-  return children
+  return <div className="min-h-screen bg-[#0A0A0F] flex flex-col">{children}</div>
 }

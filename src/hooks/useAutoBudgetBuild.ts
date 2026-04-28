@@ -25,7 +25,7 @@ export interface AutoBudgetBuildResult {
  * income from `incomeSources`, lifestyle + household + rent from `profile` —
  * runs the AI generator, applies the plan via `applyBudgetPlan`, and falls
  * back to the deterministic `computeBudgetFromChoices` seed if the AI fails
- * or times out. Users never see the interactive Buddgy flow.
+ * or times out. Users never see an interactive wizard here.
  */
 export function useAutoBudgetBuild() {
   const checklist = useFirstRunChecklist()

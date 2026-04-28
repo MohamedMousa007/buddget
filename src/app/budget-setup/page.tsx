@@ -15,7 +15,7 @@ import { useTutorialAnchor } from '@/components/tutorial/TutorialAnchor'
 import { PostOnboardingTourBoot } from '@/components/tutorial/PostOnboardingTourBoot'
 
 /**
- * Multi-plan budget editor with manual edits and Buddgy guided setup.
+ * Multi-plan budget editor with manual edits and optional guided setup.
  */
 export default function BudgetSetupPage() {
   useHydrateBudget()

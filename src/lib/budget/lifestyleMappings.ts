@@ -67,7 +67,7 @@ export interface BudgetCategoryRow {
   emoji: string
   amount: number
   currency: string
-  /** True for the savings allocation row from Buddgy Builder (not an expense category). */
+  /** True for the savings allocation row from the plan builder (not an expense category). */
   isSavings?: boolean
 }
 

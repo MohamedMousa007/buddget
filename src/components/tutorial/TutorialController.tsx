@@ -20,7 +20,7 @@ import {
   type TourStatus,
 } from '@/lib/tutorial/tourRunner'
 import { tourStorageKey, type TourId } from '@/lib/tutorial/anchorManifest'
-import { readI18n } from '@/components/features/onboarding/journey/cards/InfoCard'
+import { readI18n } from '@/lib/i18n/readI18n'
 
 /**
  * Runtime orchestration for the tutorial system.
@@ -247,9 +247,9 @@ export function TutorialControllerRoot({ children }: { children: React.ReactNode
           onBack={onBack}
           onSkipStep={onSkipStep}
           labels={{
-            next: t.onboarding.journey.common.next,
-            done: t.onboarding.journey.common.finish,
-            back: t.onboarding.journey.common.back,
+            next: t.common.next,
+            done: t.common.done,
+            back: t.common.back,
             skipStep: t.tutorialSkipConfirm.skipStep,
             progress: (current, total) =>
               t.onboarding.stepOfTotal(current, total),

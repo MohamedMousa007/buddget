@@ -109,6 +109,33 @@ export type Database = {
           },
         ]
       }
+      budget_feedback: {
+        Row: {
+          budget_after: Json | null
+          budget_before: Json | null
+          created_at: string
+          feedback_text: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          budget_after?: Json | null
+          budget_before?: Json | null
+          created_at?: string
+          feedback_text: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          budget_after?: Json | null
+          budget_before?: Json | null
+          created_at?: string
+          feedback_text?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       budget_plans: {
         Row: {
           buddgy_flow: Json | null
@@ -643,6 +670,33 @@ export type Database = {
           title?: string
           type?: Database["public"]["Enums"]["notification_type"]
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      onboarding_feedback: {
+        Row: {
+          body: string
+          context: string
+          created_at: string
+          id: string
+          metadata: Json
+          user_id: string
+        }
+        Insert: {
+          body: string
+          context: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          user_id: string
+        }
+        Update: {
+          body?: string
+          context?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
           user_id?: string
         }
         Relationships: []

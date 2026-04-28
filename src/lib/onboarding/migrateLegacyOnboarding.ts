@@ -4,6 +4,10 @@ import { useEffect, useRef } from 'react'
 import { useAuth } from '@/components/auth/auth-context'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { valueForPaymentStep } from '@/lib/onboarding/onboardingPageHelpers'
+import {
+  defaultColorForPaymentMethodType,
+  defaultIconEmojiForPaymentMethodType,
+} from '@/lib/payment/paymentMethodDefaults'
 
 /**
  * One-shot idempotent migrator for legacy-onboarding state.
@@ -48,10 +52,13 @@ export function useLegacyOnboardingMigrator() {
       const parsed = valueForPaymentStep(state.onboardingState.answers)
       if (parsed.length > 0) {
         for (const d of parsed) {
+          const pmName = d.nickname || d.preset
           state.addPaymentMethod({
-            name: d.nickname || d.preset,
+            name: pmName,
             type: d.type,
             currency: state.settings.baseCurrency,
+            color: defaultColorForPaymentMethodType(d.type, pmName),
+            icon: defaultIconEmojiForPaymentMethodType(d.type),
             isDefault: false,
           })
         }

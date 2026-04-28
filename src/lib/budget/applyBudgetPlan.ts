@@ -8,16 +8,14 @@ export interface ApplyBudgetPlanInput {
   categories: BudgetCategoryRow[]
   /** Currency to stamp on the written BudgetPlanCategory rows. */
   currency: Currency
-  /** Optional summary blob for Buddgy prompt context. */
+  /** Optional summary blob for AI / planner context. */
   financialGoalsNotes?: string | null
 }
 
 /**
- * Shared write-path used by both the interactive Buddgy flow
- * (`useBuddgyBuilderFlow.applyCategoriesToStore`) and the dashboard's
- * single-shot AI action (`useAutoBudgetBuild`). Keeps the plan-category
- * replacement + completion markers in one place so the two code paths can't
- * drift.
+ * Shared write-path used by onboarding completion, manual edits,
+ * and the dashboard single-shot AI action (`useAutoBudgetBuild`). Keeps the
+ * plan-category replacement + completion markers in one place so paths can't drift.
  *
  * Pure-ish — takes the store getter so it can be called from React hooks
  * without a re-render dependency on the store slice.

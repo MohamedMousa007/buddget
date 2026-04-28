@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
-import { format } from 'date-fns'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import {
@@ -16,7 +15,6 @@ import type {
   Currency,
   Debt,
   DebtCurrency,
-  DebtGoal,
   DebtKind,
   DebtReceivedVia,
   DebtRecurringFrequency,
@@ -30,10 +28,6 @@ type NewDebtPayload = Omit<Debt, 'id' | 'createdAt'>
 
 function isDebtListedAsActive(d: { status?: 'active' | 'cleared' }): boolean {
   return d.status !== 'cleared'
-}
-
-function mapGoalFreqToRecurring(f: DebtGoal['paymentFrequency']): DebtRecurringFrequency {
-  return f
 }
 
 /**
@@ -72,7 +66,6 @@ export function useAddDebtSheet() {
   const [debtType, setDebtType] = useState<DebtKind>('personal')
   const [name, setName] = useState('')
   const [person, setPerson] = useState('')
-  const [description, setDescription] = useState('')
   const [startingBalance, setStartingBalance] = useState('')
   const [currency, setCurrency] = useState<DebtCurrency>(
     () => useFinanceStore.getState().settings.baseCurrency as DebtCurrency
@@ -80,7 +73,6 @@ export function useAddDebtSheet() {
   const [receivedVia, setReceivedVia] = useState<DebtReceivedVia>('cash')
   const isGold = receivedVia === 'gold'
   const [goldKarat, setGoldKarat] = useState<GoldKarat>(24)
-  const [notes, setNotes] = useState('')
   const [relationship, setRelationship] = useState('')
   const [direction, setDirection] = useState<'i_owe' | 'they_owe'>('i_owe')
   const [creditor, setCreditor] = useState('')
@@ -93,10 +85,6 @@ export function useAddDebtSheet() {
     new Date().toISOString().slice(0, 10)
   )
   const [interestFree, setInterestFree] = useState(true)
-  const [goalDraft, setGoalDraft] = useState<DebtGoal | null>(null)
-  const [goalRemindRecurring, setGoalRemindRecurring] = useState(false)
-  const [goalSheetOpen, setGoalSheetOpen] = useState(false)
-
   const [ccLast4, setCcLast4] = useState('')
   const [ccCreditLimit, setCcCreditLimit] = useState('')
   const [ccPaymentDueDay, setCcPaymentDueDay] = useState('15')
@@ -138,7 +126,6 @@ export function useAddDebtSheet() {
     resetDebtSheetIntent()
     setActiveModal(null)
     setPayDebtStep('select')
-    setGoalSheetOpen(false)
   }, [resetDebtSheetIntent, setActiveModal])
 
   useEffect(() => {
@@ -245,11 +232,9 @@ export function useAddDebtSheet() {
     setDebtType('personal')
     setName('')
     setPerson('')
-    setDescription('')
     setStartingBalance('')
     setCurrency(settings.baseCurrency as DebtCurrency)
     setReceivedVia('cash')
-    setNotes('')
     setRelationship('')
     setDirection('i_owe')
     setCreditor('')
@@ -258,9 +243,6 @@ export function useAddDebtSheet() {
     setInstallmentFrequency('monthly')
     setInstallmentStartDate(new Date().toISOString().slice(0, 10))
     setInterestFree(true)
-    setGoalDraft(null)
-    setGoalRemindRecurring(false)
-    setGoalSheetOpen(false)
     setPaymentAmount('')
     setPaymentCurrency(settings.baseCurrency)
     setPaymentDate(new Date().toISOString().slice(0, 10))
@@ -315,11 +297,11 @@ export function useAddDebtSheet() {
         {
           name: name.trim(),
           person: '',
-          description: description || undefined,
+          description: undefined,
           startingBalance: out,
           currency: clampDebtFiatToAllowed(settings, currency),
           isGold: false,
-          notes: notes || undefined,
+          notes: undefined,
           emoji: '💳',
           creditLimit: ccCreditLimit.trim() ? parseFloat(ccCreditLimit) : undefined,
           paymentDueDay: ccPaymentDueDay.trim() ? parseInt(ccPaymentDueDay, 10) : undefined,
@@ -342,12 +324,12 @@ export function useAddDebtSheet() {
           : debtType === 'general'
             ? person.trim() || creditor.trim() || 'General'
             : person.trim(),
-      description: description || undefined,
+      description: undefined,
       startingBalance: total,
       currency: isGold ? 'XAU' : clampDebtFiatToAllowed(settings, currency),
       isGold,
       goldKarat: isGold ? goldKarat : undefined,
-      notes: notes || undefined,
+      notes: undefined,
       debtType,
       emoji: baseEmoji,
       status: 'active',
@@ -375,26 +357,8 @@ export function useAddDebtSheet() {
     if (debtType === 'general') {
       payload.creditor = creditor.trim() || undefined
     }
-    if (goalDraft) {
-      payload.goal = goalDraft
-    }
 
-    const id = addDebt(payload)
-
-    if (goalDraft && goalRemindRecurring) {
-      const pmId =
-        paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || ''
-      addRecurringDebtPayment({
-        debtId: id,
-        amount: goalDraft.calculatedAmount,
-        currency: isGold ? 'XAU' : clampFiatToAllowed(settings, currency as Currency),
-        frequency: mapGoalFreqToRecurring(goalDraft.paymentFrequency),
-        nextDueDate: format(new Date(), 'yyyy-MM-dd'),
-        paymentMethodId: pmId,
-        isActive: true,
-        notes: 'Payoff goal',
-      })
-    }
+    addDebt(payload)
 
     showToast(tI18n.common.toastDebtAdded)
     resetForm()
@@ -402,7 +366,6 @@ export function useAddDebtSheet() {
   }, [
     addCreditCardDebt,
     addDebt,
-    addRecurringDebtPayment,
     canSubmitNewDebt,
     ccCreditLimit,
     ccGraceDays,
@@ -413,10 +376,7 @@ export function useAddDebtSheet() {
     creditor,
     currency,
     debtType,
-    description,
     direction,
-    goalDraft,
-    goalRemindRecurring,
     installmentCount,
     installmentFrequency,
     installmentItemName,
@@ -427,8 +387,6 @@ export function useAddDebtSheet() {
     linkedCreditCardDebtId,
     receivedVia,
     name,
-    notes,
-    paymentMethods,
     person,
     relationship,
     resetForm,
@@ -634,8 +592,6 @@ export function useAddDebtSheet() {
     setName,
     person,
     setPerson,
-    description,
-    setDescription,
     startingBalance,
     setStartingBalance,
     currency,
@@ -644,8 +600,6 @@ export function useAddDebtSheet() {
     applyDebtReceivedVia,
     goldKarat,
     setGoldKarat,
-    notes,
-    setNotes,
     relationship,
     setRelationship,
     direction,
@@ -675,12 +629,6 @@ export function useAddDebtSheet() {
     setInstallmentFrequency,
     installmentStartDate,
     setInstallmentStartDate,
-    goalDraft,
-    setGoalDraft,
-    goalRemindRecurring,
-    setGoalRemindRecurring,
-    goalSheetOpen,
-    setGoalSheetOpen,
     installmentPreview,
     canSubmitNewDebt,
     selectedDebtId,

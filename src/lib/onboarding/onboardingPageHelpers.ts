@@ -1,6 +1,6 @@
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Dictionary } from '@/lib/i18n/types'
-import { parseSurveyConfig, type SurveyConfig } from '@/lib/onboarding/surveyConfig'
+import { parseSurveyConfig, type SurveyConfig, type SurveyStep } from '@/lib/onboarding/surveyConfig'
 import { getExpertSurveyConfig } from '@/lib/onboarding/expertSurveyConfig'
 import type {
   AppSettings,
@@ -9,9 +9,13 @@ import type {
   OnboardingPaymentDraft,
   UserProfile,
 } from '@/lib/store/types'
-import type { DebtOnboardingPayload } from '@/components/onboarding/DebtOnboardingPanel'
+import type { DebtOnboardingPayload } from '@/lib/onboarding/debtOnboardingTypes'
 import { calculateMonthlyIncome } from '@/lib/utils/calculations'
 import { defaultCurrencyForCountry } from '@/lib/profile/countryToCurrency'
+import {
+  defaultColorForPaymentMethodType,
+  defaultIconEmojiForPaymentMethodType,
+} from '@/lib/payment/paymentMethodDefaults'
 
 export function applyMapsTo(
   mapsTo: string,
@@ -122,7 +126,6 @@ export function applyDebtFromOnboarding(entries: DebtOnboardingPayload['entries'
 }
 
 export function applyPaymentDrafts(redo: boolean, drafts: OnboardingPaymentDraft[], base: Currency) {
-  const colors = ['#f87171', '#94a3b8', '#34d399', '#a78bfa', '#fbbf24', '#fb923c']
   const { paymentMethods, addPaymentMethod } = useFinanceStore.getState()
   const existing = new Set(paymentMethods.map((m) => m.name.toLowerCase().trim()))
   drafts.forEach((d, idx) => {
@@ -134,7 +137,8 @@ export function applyPaymentDrafts(redo: boolean, drafts: OnboardingPaymentDraft
       name,
       type: d.type,
       currency: base,
-      color: colors[idx % colors.length],
+      color: defaultColorForPaymentMethodType(d.type, name),
+      icon: defaultIconEmojiForPaymentMethodType(d.type),
       isDefault: !redo && idx === 0,
     })
     existing.add(key)
@@ -143,7 +147,7 @@ export function applyPaymentDrafts(redo: boolean, drafts: OnboardingPaymentDraft
 
 export function pickSurveyConfig(remote: unknown, t: Dictionary): SurveyConfig {
   const parsed = parseSurveyConfig(remote)
-  if (parsed?.steps?.some((s) => s.id === 'pre_plan')) return parsed
+  if (parsed?.steps?.some((s) => s.type === 'payment_methods')) return parsed
   return getExpertSurveyConfig(t)
 }
 
@@ -192,10 +196,29 @@ export function valueForSingleStep(
   return null
 }
 
-export function valueForMultiStep(stepId: string, answers: Record<string, unknown>): string[] {
-  const a = answers[stepId]
+export function valueForMultiStep(multiKey: string, answers: Record<string, unknown>): string[] {
+  const a = answers[multiKey]
   if (Array.isArray(a) && a.every((x) => typeof x === 'string')) return a as string[]
   return []
+}
+
+export function initialFieldStackValues(
+  step: Extract<SurveyStep, { type: 'field_stack' }>,
+  answers: Record<string, unknown>,
+  profile: UserProfile,
+  store: ReturnType<typeof useFinanceStore.getState>,
+): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const f of step.fields) {
+    if (f.kind === 'text' || f.kind === 'country_select') {
+      out[f.id] = valueForTextStep(f.id, answers, profile)
+    } else if (f.kind === 'number') {
+      out[f.id] = valueForNumberStep(f.id, answers)
+    } else {
+      out[f.id] = valueForSingleStep(f.id, answers, store) ?? ''
+    }
+  }
+  return out
 }
 
 export function valueForPaymentStep(answers: Record<string, unknown>): OnboardingPaymentDraft[] {

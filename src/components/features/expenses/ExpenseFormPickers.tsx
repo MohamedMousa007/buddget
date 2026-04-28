@@ -1,8 +1,17 @@
 'use client'
 
-import { Label } from '@/components/ui/label'
+import { MODAL_LABEL_CLASS } from '@/lib/modals/modalFormClasses'
 import { EXPENSE_ENTRY_CATEGORIES } from '@/lib/constants/finance'
 import type { CategoryChipOption } from '@/hooks/usePlanCategories'
+import { useT } from '@/lib/i18n'
+
+const chipRowClass = '-mx-1 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+const chipInnerClass = 'flex w-max gap-1.5 px-1'
+const categoryChipBtn =
+  'shrink-0 px-2 py-1 rounded-full text-[11px] font-medium transition-colors leading-tight'
+const categoryChipActive = 'bg-[var(--color-brand-red)] text-white'
+const categoryChipIdle =
+  'bg-[#1A1A24] text-[#A0A0B8] border border-[#2A2A38] hover:border-[#5A5A72]'
 
 export function ExpenseCategoryChips({
   category,
@@ -18,6 +27,7 @@ export function ExpenseCategoryChips({
   subcategory?: string
   onSubcategoryChange?: (s: string | undefined) => void
 }) {
+  const t = useT()
   const chips: CategoryChipOption[] =
     options && options.length > 0
       ? options
@@ -28,59 +38,56 @@ export function ExpenseCategoryChips({
 
   return (
     <div className="space-y-2">
-      <Label className="text-xs text-[var(--color-brand-text-secondary)] mb-1 block">Category</Label>
-      <div className="flex flex-wrap gap-2">
-        {chips.map((chip) => (
-          <button
-            key={chip.id}
-            type="button"
-            onClick={() => {
-              onChange(chip.id)
-              onSubcategoryChange?.(undefined)
-            }}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              category === chip.id
-                ? 'bg-[var(--color-brand-red)] text-white'
-                : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-border)]'
-            }`}
-          >
-            {chip.icon ? `${chip.icon} ${chip.label}` : chip.label}
-          </button>
-        ))}
+      <span className={MODAL_LABEL_CLASS}>{t.addExpense.labelCategory}</span>
+      <div className={chipRowClass}>
+        <div className={chipInnerClass} role="list">
+          {chips.map((chip) => (
+            <button
+              key={chip.id}
+              type="button"
+              role="listitem"
+              onClick={() => {
+                onChange(chip.id)
+                onSubcategoryChange?.(undefined)
+              }}
+              className={`${categoryChipBtn} ${category === chip.id ? categoryChipActive : categoryChipIdle}`}
+            >
+              {chip.icon ? `${chip.icon} ${chip.label}` : chip.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {subs.length > 0 && onSubcategoryChange && (
+      {subs.length > 0 && onSubcategoryChange ?
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-muted)] mb-1 block">Subcategory</Label>
-          <div className="flex flex-wrap gap-1.5">
-            <button
-              type="button"
-              onClick={() => onSubcategoryChange(undefined)}
-              className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
-                !subcategory
-                  ? 'bg-[var(--color-brand-red)]/80 text-white'
-                  : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-border)]'
-              }`}
-            >
-              General
-            </button>
-            {subs.map((sub) => (
+          <span className={`${MODAL_LABEL_CLASS} opacity-90`}>{t.addExpense.labelSubcategory}</span>
+          <div className={`${chipRowClass} mt-1.5`}>
+            <div className={chipInnerClass}>
               <button
-                key={sub.id}
                 type="button"
-                onClick={() => onSubcategoryChange(sub.name)}
-                className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
-                  subcategory === sub.name
-                    ? 'bg-[var(--color-brand-red)]/80 text-white'
-                    : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-border)]'
+                onClick={() => onSubcategoryChange(undefined)}
+                className={`${categoryChipBtn} ${
+                  !subcategory ? categoryChipActive : categoryChipIdle
                 }`}
               >
-                {sub.icon ? `${sub.icon} ${sub.name}` : sub.name}
+                General
               </button>
-            ))}
+              {subs.map((sub) => (
+                <button
+                  key={sub.id}
+                  type="button"
+                  onClick={() => onSubcategoryChange(sub.name)}
+                  className={`${categoryChipBtn} ${
+                    subcategory === sub.name ? categoryChipActive : categoryChipIdle
+                  }`}
+                >
+                  {sub.icon ? `${sub.icon} ${sub.name}` : sub.name}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      )}
+      : null}
     </div>
   )
 }
@@ -89,32 +96,33 @@ export function PaymentMethodChips({
   methods,
   paymentMethodId,
   onChange,
-  label = 'Payment Method',
+  label,
 }: {
   methods: { id: string; name: string }[]
   paymentMethodId: string
   onChange: (id: string) => void
-  /** Override label (e.g. i18n for income vs expense). */
   label?: string
 }) {
+  const t = useT()
+  const heading = label ?? t.addExpense.labelPaymentMethod
   return (
     <div>
-      <Label className="text-xs text-[var(--color-brand-text-secondary)] mb-2 block">{label}</Label>
-      <div className="flex flex-wrap gap-2">
-        {methods.map((method) => (
-          <button
-            key={method.id}
-            type="button"
-            onClick={() => onChange(method.id)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              paymentMethodId === method.id
-                ? 'bg-[var(--color-brand-red)] text-white'
-                : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-border)]'
-            }`}
-          >
-            {method.name}
-          </button>
-        ))}
+      <span className={MODAL_LABEL_CLASS}>{heading}</span>
+      <div className={`${chipRowClass} mt-1.5`}>
+        <div className={chipInnerClass}>
+          {methods.map((method) => (
+            <button
+              key={method.id}
+              type="button"
+              onClick={() => onChange(method.id)}
+              className={`${categoryChipBtn} ${
+                paymentMethodId === method.id ? categoryChipActive : categoryChipIdle
+              }`}
+            >
+              {method.name}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   )

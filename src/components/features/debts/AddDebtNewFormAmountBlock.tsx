@@ -2,13 +2,13 @@
 
 import { useMemo } from 'react'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { DebtReceivedViaPills } from '@/components/features/debts/DebtReceivedViaPills'
 import { DebtFiatCurrencySelect } from '@/components/ui/DebtFiatCurrencySelect'
 import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import type { DebtCurrency, DebtKind, DebtReceivedVia, GoldKarat } from '@/lib/store/types'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
+import { MODAL_CONTROL_CLASS, MODAL_LABEL_CLASS } from '@/lib/modals/modalFormClasses'
 
 export function AddDebtNewFormAmountBlock({
   debtType,
@@ -52,37 +52,37 @@ export function AddDebtNewFormAmountBlock({
   return (
     <>
       {showGold ? <DebtReceivedViaPills value={receivedVia} onChange={onReceivedViaChange} /> : null}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 items-end">
         <div data-tutorial-id="debt-modal:balance">
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">
+          <span className={MODAL_LABEL_CLASS}>
             {isGold ? t.addDebt.labelTotalGrams : t.addDebt.labelTotalAmount}
-          </Label>
+          </span>
           <Input
             type="number"
             step="0.01"
             placeholder={t.addDebt.placeholderAmount}
             value={startingBalance}
             onChange={(e) => setStartingBalance(e.target.value)}
-            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers"
+            className={`mt-1.5 ${MODAL_CONTROL_CLASS} font-mono-numbers`}
           />
         </div>
         {!isGold ? (
           <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelCurrency}</Label>
+            <span className={MODAL_LABEL_CLASS}>{t.addDebt.labelCurrency}</span>
             <DebtFiatCurrencySelect
               value={currency}
               onChange={setCurrency}
-              className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
+              className="mt-1.5 w-full h-12 px-3 rounded-xl border border-[#2A2A38] bg-[#1A1A24] text-white text-sm focus:border-[#E50914]"
             />
           </div>
         ) : (
           <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelGoldPurity}</Label>
+            <span className={MODAL_LABEL_CLASS}>{t.addDebt.labelGoldPurity}</span>
             <SelectField
               value={String(goldKarat)}
               onChange={(v) => setGoldKarat(parseInt(v, 10) as GoldKarat)}
               items={karatItems}
-              className="mt-1"
+              className="mt-1.5"
               aria-label={t.addDebt.labelGoldPurity}
             />
           </div>

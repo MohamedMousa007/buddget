@@ -17,7 +17,7 @@ type LifestyleTier = NonNullable<UserProfile['lifestyleTier']>
 /**
  * Dashboard lifestyle picker. Feeds the AI Build-My-Budget action with the
  * three scaling signals (food frequency, main transport mode, lifestyle tier)
- * that the Buddgy expert flow used to collect ephemerally. Writes straight
+ * that the onboarding questionnaire used to collect ephemerally. Writes straight
  * through to `profile` via `updateProfile` so data persists + syncs.
  */
 export function LifestyleSheet() {

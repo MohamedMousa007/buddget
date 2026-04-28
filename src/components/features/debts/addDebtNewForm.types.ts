@@ -1,4 +1,4 @@
-import type { DebtCurrency, DebtGoal, DebtKind, DebtReceivedVia, GoldKarat, InstallmentProvider } from '@/lib/store/types'
+import type { DebtCurrency, DebtKind, DebtReceivedVia, GoldKarat, InstallmentProvider } from '@/lib/store/types'
 
 export interface AddDebtNewFormProps {
   debtType: DebtKind
@@ -7,8 +7,6 @@ export interface AddDebtNewFormProps {
   setName: (v: string) => void
   person: string
   setPerson: (v: string) => void
-  description: string
-  setDescription: (v: string) => void
   receivedVia: DebtReceivedVia
   onReceivedViaChange: (v: DebtReceivedVia) => void
   startingBalance: string
@@ -47,10 +45,4 @@ export interface AddDebtNewFormProps {
   installmentStartDate: string
   setInstallmentStartDate: (v: string) => void
   installmentPreview: number | null
-  goalDraft: DebtGoal | null
-  onOpenGoal: () => void
-  onClearGoal: () => void
-  onCancel: () => void
-  onSubmit: () => void
-  canSubmit: boolean
 }

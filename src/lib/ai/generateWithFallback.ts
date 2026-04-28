@@ -3,25 +3,17 @@ import {
   isBuddgetServerThrottleMessage,
 } from '@/lib/ai/formatAiProxyError'
 
-import type { BudgetPlannerContextPayload } from '@/lib/ai/buddgyBudgetPlannerPrompt'
-import type { BuddgyFillContextPayload } from '@/lib/ai/buddgyFillPrompt'
-
-/** POST body shape for `/api/ai` (Gemini proxy). */
+/** POST body for `/api/ai` (Gemini proxy). */
 export interface GeminiProxyRequestBody {
   contents: unknown[]
   generationConfig?: Record<string, unknown>
-  /** Switches Gemini systemInstruction for budget planner / Buddgy builder flows. */
-  mode?: 'budget-planner' | 'buddgy-fill'
-  budgetPlannerContext?: BudgetPlannerContextPayload
-  buddgyFillContext?: BuddgyFillContextPayload
 }
 
 const DEFAULT_MAX_ATTEMPTS = 3
 const DEFAULT_BACKOFF_MS = 1800
 
 /** User-facing copy when the app-side throttle or cooldown applies. */
-export const SYSTEM_RESTING_MESSAGE =
-  'Taking a quick breather — try again in a moment 😊'
+export const SYSTEM_RESTING_MESSAGE = 'Taking a quick breather — try again in a moment 😊'
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -52,9 +44,40 @@ export async function generateWithFallback(
   return last as Response
 }
 
+/**
+ * Same retry behavior as {@link generateWithFallback}, for Route Handlers: calls `/api/ai` on the
+ * incoming request origin and forwards the Cookie header so `getUser()` succeeds.
+ */
+export async function generateWithFallbackFromRequest(
+  req: Request,
+  body: GeminiProxyRequestBody,
+  options?: { maxAttempts?: number; backoffMs?: number }
+): Promise<Response> {
+  const origin = new URL(req.url).origin
+  const cookie = req.headers.get('cookie') ?? ''
+  const maxAttempts = Math.max(1, options?.maxAttempts ?? DEFAULT_MAX_ATTEMPTS)
+  const backoffMs = Math.max(0, options?.backoffMs ?? DEFAULT_BACKOFF_MS)
+
+  let last: Response | undefined
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const response = await fetch(`${origin}/api/ai`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(cookie ? { Cookie: cookie } : {}),
+      },
+      body: JSON.stringify(body),
+    })
+    last = response
+    if (response.status !== 429) return response
+    if (attempt < maxAttempts - 1) await sleep(backoffMs * (attempt + 1))
+  }
+  return last as Response
+}
+
 /** Shown when Gemini is not configured server-side (503 from `/api/ai`). */
 export const AI_UNAVAILABLE_MANUAL_SETUP_MESSAGE =
-  'Buddgy AI is currently unavailable. You can still set up your budget manually using the category editor above.'
+  'AI is currently unavailable. You can still set up your budget manually using the category editor above.'
 
 /** Maps failed proxy responses to a single Error for callers (Gemini vs Buddget throttle). */
 export async function throwIfAiProxyNotOk(response: Response): Promise<void> {

@@ -37,6 +37,7 @@ const LIFESTYLE_KEYS = [
   'transport_profile',
   'living_situation',
   'employment_type',
+  'savings_orientation',
 ] as const
 
 function str(a: unknown): string {

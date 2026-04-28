@@ -1,14 +1,13 @@
 'use client'
 
+import { useState } from 'react'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Switch } from '@/components/ui/switch'
 import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
 import type { Currency } from '@/lib/store/types'
 import type { CategoryChipOption } from '@/hooks/usePlanCategories'
 import { ExpenseCategoryChips, PaymentMethodChips } from '@/components/features/expenses/ExpenseFormPickers'
 import { useT } from '@/lib/i18n'
+import { MODAL_BODY_SCROLL_CLASS, MODAL_AMOUNT_CLASS, MODAL_CONTROL_CLASS, MODAL_LABEL_CLASS } from '@/lib/modals/modalFormClasses'
 
 export interface AddExpenseFormProps {
   date: string
@@ -26,8 +25,6 @@ export interface AddExpenseFormProps {
   categoryChipOptions?: CategoryChipOption[]
   paymentMethodId: string
   setPaymentMethodId: (id: string) => void
-  isRecurring: boolean
-  setIsRecurring: (v: boolean) => void
   notes: string
   setNotes: (v: string) => void
   submitError: string
@@ -35,10 +32,11 @@ export interface AddExpenseFormProps {
   paymentMethods: { id: string; name: string }[]
   /** Shown when a credit card payment method is selected. */
   creditCardOutstandingHint: { cardName: string; amountLabel: string } | null
-  onCancel: () => void
-  onSubmit: () => void
 }
 
+/**
+ * Scrollable field stack for the add-expense sheet (submit lives in the sheet shell).
+ */
 export function AddExpenseForm({
   date,
   setDate,
@@ -55,45 +53,54 @@ export function AddExpenseForm({
   categoryChipOptions,
   paymentMethodId,
   setPaymentMethodId,
-  isRecurring,
-  setIsRecurring,
   notes,
   setNotes,
   submitError,
   setSubmitError,
   paymentMethods,
   creditCardOutstandingHint,
-  onCancel,
-  onSubmit,
 }: AddExpenseFormProps) {
   const t = useT()
+  const [notesOpen, setNotesOpen] = useState(false)
+  const showNotes = notesOpen || Boolean(notes.trim())
+
   return (
-    <div className="space-y-4">
+    <div className={MODAL_BODY_SCROLL_CLASS}>
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addExpense.labelWhen}</Label>
+        <label htmlFor="expense-date" className={MODAL_LABEL_CLASS}>
+          {t.addExpense.labelWhen}
+        </label>
         <Input
+          id="expense-date"
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
+          className={`mt-1.5 ${MODAL_CONTROL_CLASS}`}
         />
       </div>
 
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addExpense.labelDescription}</Label>
+        <label htmlFor="expense-desc" className={MODAL_LABEL_CLASS}>
+          {t.addExpense.labelDescription}
+        </label>
         <Input
+          id="expense-desc"
           placeholder={t.addExpense.placeholderDescription}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)]"
+          className={`mt-1.5 ${MODAL_CONTROL_CLASS}`}
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addExpense.labelAmount}</Label>
+      <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
+        <div className="min-w-0">
+          <label htmlFor="expense-amt" className={MODAL_LABEL_CLASS}>
+            {t.addExpense.labelAmount}
+          </label>
           <Input
+            id="expense-amt"
             type="number"
+            inputMode="decimal"
             step="0.01"
             placeholder={t.addExpense.placeholderAmount}
             value={amount}
@@ -101,18 +108,21 @@ export function AddExpenseForm({
               setAmount(e.target.value)
               setSubmitError('')
             }}
-            className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers placeholder:text-[var(--color-brand-text-muted)]"
+            className={`mt-1.5 ${MODAL_AMOUNT_CLASS}`}
           />
         </div>
-        <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addExpense.labelCurrency}</Label>
+        <div className="w-[7.5rem] shrink-0">
+          <label htmlFor="expense-cur" className={MODAL_LABEL_CLASS}>
+            {t.addExpense.labelCurrency}
+          </label>
           <FiatCurrencySelect
+            id="expense-cur"
             value={currency}
             onChange={(c) => {
               setCurrency(c)
               setSubmitError('')
             }}
-            className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"
+            className={`mt-1.5 w-full h-12 px-3 rounded-xl border border-[#2A2A38] bg-[#1A1A24] text-white text-sm focus:border-[#E50914]`}
           />
         </div>
       </div>
@@ -126,6 +136,7 @@ export function AddExpenseForm({
         subcategory={subcategory}
         onSubcategoryChange={setSubcategory}
       />
+
       <PaymentMethodChips
         methods={paymentMethods}
         paymentMethodId={paymentMethodId}
@@ -135,42 +146,33 @@ export function AddExpenseForm({
       {creditCardOutstandingHint ? (
         <p className="text-[11px] text-[var(--color-brand-text-muted)] leading-snug" role="status">
           ⓘ{' '}
-          {t.addExpense.creditCardOutstandingHint(creditCardOutstandingHint.cardName, creditCardOutstandingHint.amountLabel)}
+          {t.addExpense.creditCardOutstandingHint(
+            creditCardOutstandingHint.cardName,
+            creditCardOutstandingHint.amountLabel,
+          )}
         </p>
       ) : null}
 
-      <div className="flex items-center justify-between">
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addExpense.labelRepeats}</Label>
-        <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
-      </div>
-
-      <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addExpense.labelNotes}</Label>
-        <Textarea
-          placeholder={t.addExpense.placeholderNotes}
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] min-h-[60px]"
-        />
-      </div>
-
-      <div className="flex gap-3 pt-2">
-        <button
+      {showNotes ?
+        <div>
+          <label htmlFor="expense-notes" className={MODAL_LABEL_CLASS}>
+            {t.addExpense.labelNotes}
+          </label>
+          <Input
+            id="expense-notes"
+            placeholder={t.addExpense.placeholderNotes}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className={`mt-1.5 ${MODAL_CONTROL_CLASS}`}
+          />
+        </div>
+      : <button
           type="button"
-          onClick={onCancel}
-          className="flex-1 py-3 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
+          onClick={() => setNotesOpen(true)}
+          className="text-left text-sm text-[#E50914]/90 hover:text-[#E50914] py-1"
         >
-          {t.common.neverMind}
-        </button>
-        <button
-          type="button"
-          onClick={onSubmit}
-          disabled={!description || !amount}
-          className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {t.addExpense.buttonSubmit}
-        </button>
-      </div>
+          Add note +
+        </button>}
     </div>
   )
 }

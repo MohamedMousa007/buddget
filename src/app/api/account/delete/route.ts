@@ -18,6 +18,7 @@ const USER_ID_TABLES = [
   // Budget shape
   'budget_subcategories',
   'budget_categories',
+  'budget_feedback',
   'budget_plans',
   // Transactions
   'expenses',
@@ -38,6 +39,7 @@ const USER_ID_TABLES = [
   'payment_methods',
   'notifications',
   'app_analytics_events',
+  'onboarding_feedback',
   // Singletons
   'onboarding_state',
   'user_settings',

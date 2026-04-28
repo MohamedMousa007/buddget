@@ -5,10 +5,11 @@ import { useAddDebtSheet } from '@/hooks/useAddDebtSheet'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { AddDebtSheetHeader } from '@/components/features/debts/AddDebtSheetHeader'
 import { AddDebtNewForm } from '@/components/features/debts/AddDebtNewForm'
+import { AddDebtNewFormFooter } from '@/components/features/debts/AddDebtNewFormFooter'
 import { AddDebtPaymentForm } from '@/components/features/debts/AddDebtPaymentForm'
 import { PayDebtSelectList } from '@/components/features/debts/PayDebtSelectList'
-import { DebtGoalSheet } from '@/components/features/debts/DebtGoalSheet'
 import { useT } from '@/lib/i18n'
+import { MODAL_SHEET_OUTER_CLASS } from '@/lib/modals/modalFormClasses'
 
 /**
  * Bottom sheet: create debt or record payment. Logic in `useAddDebtSheet`.
@@ -58,100 +59,79 @@ export function AddDebtSheet() {
     setRecurringFrequency: d.setRecurringFrequency,
   } as const
 
-  const goalTitle =
-    d.debtType === 'installment' ? d.installmentItemName || t.addDebt.labelItemName : d.name || t.addDebt.labelName
+  const newDebtSharedProps = {
+    debtType: d.debtType,
+    setDebtType: d.setDebtType,
+    name: d.name,
+    setName: d.setName,
+    person: d.person,
+    setPerson: d.setPerson,
+    receivedVia: d.receivedVia,
+    onReceivedViaChange: d.applyDebtReceivedVia,
+    startingBalance: d.startingBalance,
+    setStartingBalance: d.setStartingBalance,
+    currency: d.currency,
+    setCurrency: d.setCurrency,
+    goldKarat: d.goldKarat,
+    setGoldKarat: d.setGoldKarat,
+    relationship: d.relationship,
+    setRelationship: d.setRelationship,
+    direction: d.direction,
+    setDirection: d.setDirection,
+    creditor: d.creditor,
+    setCreditor: d.setCreditor,
+    ccLast4: d.ccLast4,
+    setCcLast4: d.setCcLast4,
+    ccCreditLimit: d.ccCreditLimit,
+    setCcCreditLimit: d.setCcCreditLimit,
+    ccPaymentDueDay: d.ccPaymentDueDay,
+    setCcPaymentDueDay: d.setCcPaymentDueDay,
+    ccGraceDays: d.ccGraceDays,
+    setCcGraceDays: d.setCcGraceDays,
+    ccMinPercent: d.ccMinPercent,
+    setCcMinPercent: d.setCcMinPercent,
+    creditCardDebts: d.creditCardDebts,
+    installmentProvider: d.installmentProvider,
+    setInstallmentProvider: d.setInstallmentProvider,
+    linkedCreditCardDebtId: d.linkedCreditCardDebtId,
+    setLinkedCreditCardDebtId: d.setLinkedCreditCardDebtId,
+    installmentItemName: d.installmentItemName,
+    setInstallmentItemName: d.setInstallmentItemName,
+    installmentCount: d.installmentCount,
+    setInstallmentCount: d.setInstallmentCount,
+    installmentFrequency: d.installmentFrequency,
+    setInstallmentFrequency: d.setInstallmentFrequency,
+    installmentStartDate: d.installmentStartDate,
+    setInstallmentStartDate: d.setInstallmentStartDate,
+    installmentPreview: d.installmentPreview,
+  } as const
 
   return (
-    <>
-      <ModalShell open={d.isOpen} onBackdropClick={d.closeSheet}>
-        <div className="p-5">
+    <ModalShell open={d.isOpen} onBackdropClick={d.closeSheet}>
+      <div className={`${MODAL_SHEET_OUTER_CLASS} p-5`}>
+        <div className="shrink-0">
           <AddDebtSheetHeader title={title} onClose={d.closeSheet} />
-          {d.isPayDebtFlow ? (
-            d.payDebtStep === 'select' ? (
-              <PayDebtSelectList debts={d.payableDebts} onSelect={d.selectDebtForPayFlow} />
-            ) : (
-              <AddDebtPaymentForm
-                {...paymentFormProps}
-                hideDebtSelect
-                onBackToDebtList={d.backToPayDebtList}
-              />
-            )
-          ) : d.debtSheetPaymentOnly ? (
-            <AddDebtPaymentForm {...paymentFormProps} />
-          ) : (
-            <AddDebtNewForm
-              debtType={d.debtType}
-              setDebtType={d.setDebtType}
-              name={d.name}
-              setName={d.setName}
-              person={d.person}
-              setPerson={d.setPerson}
-              description={d.description}
-              setDescription={d.setDescription}
-              receivedVia={d.receivedVia}
-              onReceivedViaChange={d.applyDebtReceivedVia}
-              startingBalance={d.startingBalance}
-              setStartingBalance={d.setStartingBalance}
-              currency={d.currency}
-              setCurrency={d.setCurrency}
-              goldKarat={d.goldKarat}
-              setGoldKarat={d.setGoldKarat}
-              relationship={d.relationship}
-              setRelationship={d.setRelationship}
-              direction={d.direction}
-              setDirection={d.setDirection}
-              creditor={d.creditor}
-              setCreditor={d.setCreditor}
-              ccLast4={d.ccLast4}
-              setCcLast4={d.setCcLast4}
-              ccCreditLimit={d.ccCreditLimit}
-              setCcCreditLimit={d.setCcCreditLimit}
-              ccPaymentDueDay={d.ccPaymentDueDay}
-              setCcPaymentDueDay={d.setCcPaymentDueDay}
-              ccGraceDays={d.ccGraceDays}
-              setCcGraceDays={d.setCcGraceDays}
-              ccMinPercent={d.ccMinPercent}
-              setCcMinPercent={d.setCcMinPercent}
-              creditCardDebts={d.creditCardDebts}
-              installmentProvider={d.installmentProvider}
-              setInstallmentProvider={d.setInstallmentProvider}
-              linkedCreditCardDebtId={d.linkedCreditCardDebtId}
-              setLinkedCreditCardDebtId={d.setLinkedCreditCardDebtId}
-              installmentItemName={d.installmentItemName}
-              setInstallmentItemName={d.setInstallmentItemName}
-              installmentCount={d.installmentCount}
-              setInstallmentCount={d.setInstallmentCount}
-              installmentFrequency={d.installmentFrequency}
-              setInstallmentFrequency={d.setInstallmentFrequency}
-              installmentStartDate={d.installmentStartDate}
-              setInstallmentStartDate={d.setInstallmentStartDate}
-              installmentPreview={d.installmentPreview}
-              goalDraft={d.goalDraft}
-              onOpenGoal={() => d.setGoalSheetOpen(true)}
-              onClearGoal={() => {
-                d.setGoalDraft(null)
-                d.setGoalRemindRecurring(false)
-              }}
-              onCancel={d.closeSheet}
-              onSubmit={d.handleAddDebt}
-              canSubmit={d.canSubmitNewDebt}
-            />
-          )}
         </div>
-      </ModalShell>
-
-      <DebtGoalSheet
-        open={d.goalSheetOpen}
-        onClose={() => d.setGoalSheetOpen(false)}
-        debtTitle={goalTitle}
-        remainingAmount={Math.max(0, parseFloat(d.startingBalance) || 0)}
-        currency={String(d.currency)}
-        initialGoal={d.goalDraft}
-        onSave={(goal, remind) => {
-          d.setGoalDraft(goal)
-          d.setGoalRemindRecurring(remind)
-        }}
-      />
-    </>
+        {d.isPayDebtFlow ?
+          d.payDebtStep === 'select' ?
+            <PayDebtSelectList debts={d.payableDebts} onSelect={d.selectDebtForPayFlow} />
+          : <AddDebtPaymentForm
+              {...paymentFormProps}
+              hideDebtSelect
+              onBackToDebtList={d.backToPayDebtList}
+            />
+        : d.debtSheetPaymentOnly ?
+          <AddDebtPaymentForm {...paymentFormProps} />
+        : <>
+            <AddDebtNewForm {...newDebtSharedProps} />
+            <AddDebtNewFormFooter
+              isCreditCard={d.debtType === 'credit_card'}
+              canSubmit={d.canSubmitNewDebt}
+              onSubmit={d.handleAddDebt}
+            />
+          </>
+        }
+      </div>
+    </ModalShell>
   )
 }

@@ -1,5 +1,5 @@
 /**
- * Buddgy wizard amount fields: digits and at most one decimal point; no negatives.
+ * Plan-builder amount fields: digits and at most one decimal point; no negatives.
  */
 export function sanitizeBuddgyAmountTyping(raw: string): string {
   const noMinus = raw.replace(/-/g, '')

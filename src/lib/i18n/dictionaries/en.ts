@@ -31,7 +31,7 @@ export const en: Dictionary = {
         },
         type: {
           title: 'Pick a type',
-          body: 'Cash, bank transfer, a debit or credit card? This shapes how Buddgy tracks the money flow.',
+          body: 'Cash, bank transfer, a debit or credit card? This shapes how Buddget tracks the money flow.',
         },
         currency: {
           title: 'Which currency?',
@@ -45,25 +45,25 @@ export const en: Dictionary = {
       income: {
         name: {
           title: 'Name the source',
-          body: 'Salary, side hustle, rent collected \u2014 a short label Buddgy can reference.',
-        },
-        paymentMethod: {
-          title: 'Where does it land?',
-          body: 'Pick the account this income hits. This links your inflow to a real payment method so cash flow stays accurate.',
+          body: 'Salary, side hustle, rent collected \u2014 a short label Buddget can reference.',
         },
         amount: {
           title: 'How much?',
-          body: 'A single paycheck\u2019s amount. If it\u2019s recurring you\u2019ll pick the cadence next \u2014 monthly, bi-weekly, or weekly.',
+          body: 'Enter the amount in the currency shown. Toggle recurring if this income repeats.',
+        },
+        recurring: {
+          title: 'Does it repeat?',
+          body: 'Turn on for salary or other steady income; leave off for one-time inflows. Monthly cadence is used when on.',
         },
         save: {
           title: 'Add it',
-          body: 'Save and Buddgy starts tracking. You can come back later to add another source.',
+          body: 'Save and Buddget starts tracking. You can come back later to add another source.',
         },
       },
       debt: {
         type: {
           title: 'What kind of debt?',
-          body: 'Personal loan, installment plan, general debt, or a credit card? Buddgy tracks each differently.',
+          body: 'Personal loan, installment plan, general debt, or a credit card? Buddget tracks each differently.',
         },
         balance: {
           title: 'How much is left?',
@@ -71,7 +71,7 @@ export const en: Dictionary = {
         },
         save: {
           title: 'Save it',
-          body: 'Once saved, Buddgy will help you size the "Debt" slice of your budget plan.',
+          body: 'Once saved, Buddget will help you size the "Debt" slice of your budget plan.',
         },
       },
       savings: {
@@ -91,11 +91,11 @@ export const en: Dictionary = {
       subscription: {
         amount: {
           title: 'How much per charge?',
-          body: 'The amount billed each cycle \u2014 Buddgy rolls it into your monthly spend automatically.',
+          body: 'The amount billed each cycle \u2014 Buddget rolls it into your monthly spend automatically.',
         },
         cycle: {
           title: 'How often?',
-          body: 'Monthly, yearly, or anything in between. Buddgy normalises to monthly for your budget.',
+          body: 'Monthly, yearly, or anything in between. Buddget normalises to monthly for your budget.',
         },
         save: {
           title: 'Save it',
@@ -109,21 +109,21 @@ export const en: Dictionary = {
         },
         save: {
           title: 'Lock it in',
-          body: 'Buddgy uses your goals to weight the Savings slice in your plan.',
+          body: 'Buddget uses your goals to weight the Savings slice in your plan.',
         },
       },
     },
     postOnboard: {
       planRoot: {
         title: 'Your plan is ready',
-        body: 'Buddgy built this from what you told me. Nothing\u2019s locked \u2014 every number is editable.',
+        body: 'Buddget built this from what you told me. Nothing\u2019s locked \u2014 every number is editable.',
       },
       categoryRow: {
         title: 'Tap any category',
         body: 'Change amounts, rename, or add subcategories. Your real spend flows against these targets.',
       },
       rebuild: {
-        title: 'Refine with Buddgy',
+        title: 'Refine with Buddget',
         body: 'Want less dining, more savings, or a fresh plan after a life change? Rebuild anytime from here.',
       },
       dashboard: {
@@ -199,6 +199,7 @@ export const en: Dictionary = {
     edit: 'Edit',
     back: 'Back',
     close: 'Close',
+    next: 'Next',
     confirm: 'Confirm',
     remove: 'Remove',
     loading: 'Loading…',
@@ -405,6 +406,9 @@ export const en: Dictionary = {
     labelAmount: 'How much?',
     placeholderAmount: '0.00',
     labelCurrency: 'Currency',
+    labelCategory: 'Category',
+    labelSubcategory: 'Subcategory',
+    labelPaymentMethod: 'Payment method',
     labelRepeats: 'Does this repeat?',
     labelNotes: 'Anything to add?',
     placeholderNotes: 'Optional note about this purchase',
@@ -840,7 +844,7 @@ export const en: Dictionary = {
     heroSubtitle: 'Plan your month, track every transaction, and hit your goals. Yours in 5 minutes.',
     feature1: 'Pick a currency, plan a budget, stay ahead of debt.',
     feature2: 'Works offline — your data stays on your device.',
-    feature3: 'Buddgy, the built-in AI coach, tailors everything to you.',
+    feature3: 'Buddget, the built-in AI coach, tailors everything to you.',
     ctaSignIn: 'Sign in',
     ctaSignUp: 'Create a free account',
   },
@@ -891,15 +895,15 @@ export const en: Dictionary = {
     paymentMethodsAdd: '+ Add a method',
     paymentMethodsRemoveConfirm: "Remove this payment method? Your existing expenses won\u2019t be affected.",
 
-    aiTitle: 'Buddgy Assistant',
-    aiToggle: 'Turn on Buddgy assistant',
+    aiTitle: 'Buddget Assistant',
+    aiToggle: 'Turn on Buddget assistant',
     aiToggleHint: 'Your preference \u2014 the server still needs a Gemini API key to work',
     aiConnection: 'Connection',
     aiConnectionSub: 'Google Gemini \u00B7 server-side',
     aiReady: 'Ready',
     aiNotSetUp: 'Not set up yet',
     aiModel: 'Model',
-    aiFooter1: 'Your admin manages the Buddgy setup. Tap the chat bubble in the bottom-right corner to chat with Buddgy.',
+    aiFooter1: 'Your admin manages the Buddget setup. Tap the chat bubble in the bottom-right corner to chat with Buddget.',
     aiFooter2: 'Your Gemini API key has its own Google quota (~20 requests/min). The admin "Throttle per device" setting adds an extra cap inside Buddget \u2014 it doesn\u2019t change Google\u2019s limit. If you see quota errors, wait a moment, send fewer messages, or get your free key at Google AI Studio.',
 
     dataTitle: 'Your Data',
@@ -936,7 +940,7 @@ export const en: Dictionary = {
     languageAr: 'AR',
 
     adminTitle: 'Admin Dashboard',
-    adminSubtitle: 'Manage Buddgy settings, server config, and more',
+    adminSubtitle: 'Manage Buddget settings, server config, and more',
     adminLink: 'Go to Admin \u2192',
 
     importSuccess: 'Your data is all set \u2014 import complete!',
@@ -1047,7 +1051,7 @@ export const en: Dictionary = {
     projectedSavingsLine: (amount, savingsRatePercent) =>
       `If you stick to this plan, you'll save ${amount} this month (${savingsRatePercent}% of income)`,
     savingsAllocationBadge: 'Savings',
-    aiEvalTitle: "Buddgy's take",
+    aiEvalTitle: "Buddget's take",
     aiEvalLoading: 'Reviewing your plan…',
     aiEvalError: 'Could not evaluate the plan right now.',
     aiEvalStatusGood: 'Good',
@@ -1056,10 +1060,10 @@ export const en: Dictionary = {
     aiEvalTipGood: 'Keep an eye on actual spending so this plan stays realistic.',
     aiEvalTipTight: 'Build a small buffer or trim one discretionary category for breathing room.',
     aiEvalTipUnrealistic: 'Lower a few top categories or revisit income until planned expenses fit.',
-    aiEvalExpandAria: "Show or hide Buddgy's full plan notes",
+    aiEvalExpandAria: "Show or hide Buddget's full plan notes",
     aiEvalSuggestionLabel: 'Tip:',
-    aiChatTitle: 'Ask Buddgy',
-    aiChatPlaceholder: 'Ask Buddgy for cuts, realism, or new amounts…',
+    aiChatTitle: 'Ask Buddget',
+    aiChatPlaceholder: 'Ask Buddget for cuts, realism, or new amounts…',
     aiSend: 'Send',
     applySuggestion: 'Apply',
     applied: 'Applied',
@@ -1085,10 +1089,10 @@ export const en: Dictionary = {
     noPlansEmptyTitle: 'No budget plans yet',
     noPlansEmptyDesc: 'Create your first plan to start tracking where your money goes each month',
     noPlansCreateFirst: '+ Create your first plan',
-    buddgyTagline: 'Buddgy — Your personal budget buddy!',
+    buddgyTagline: 'Buddget — Your personal budget buddy!',
     buddgyBuilderOpening:
-      "Hey there! 👋 I'm Buddgy, your personal budget buddy. I'm going to help you build a budget plan that actually works for your life.\n\nLet's start simple: what's your total monthly income, and what currency is it in? If it already looks right in your app, just say \"yes\" to confirm or tell me the updated amount.",
-    buddgyChatSubtitle: 'Buddgy — Your personal budget buddy!',
+      "Hey there! 👋 I'm Buddget, your personal budget buddy. I'm going to help you build a budget plan that actually works for your life.\n\nLet's start simple: what's your total monthly income, and what currency is it in? If it already looks right in your app, just say \"yes\" to confirm or tell me the updated amount.",
+    buddgyChatSubtitle: 'Buddget — Your personal budget buddy!',
     buddgyBuilderBadge: 'Plan builder',
   },
 
@@ -1230,7 +1234,7 @@ export const en: Dictionary = {
     fabAddIncome: 'Add income source',
     fabAddPayment: 'Add a payment method',
     fabTrackDebt: 'Track or pay a balance',
-    fabAskAi: 'Build budget with Buddgy',
+    fabAskAi: 'Build budget with Buddget',
     fabRequireAuth: 'Sign in to start tracking your finances and syncing across devices \uD83D\uDD10',
     fabRequireAuthAi: 'Sign in to open Budget Setup \uD83E\uDD16',
     requireAuthBudgetSetup: 'Sign in or create an account to set up your budget plans.',
@@ -1245,12 +1249,12 @@ export const en: Dictionary = {
   },
 
   ai: {
-    headerTitle: 'Buddgy',
-    headerSubtitle: 'Buddgy — Your personal budget buddy!',
+    headerTitle: 'Buddget',
+    headerSubtitle: 'Buddget — Your personal budget buddy!',
     composerPlaceholder: 'Tell me about a transaction...',
     sendMessage: 'Send message',
     emptyIntro:
-      "Hi there! I'm Buddgy \uD83E\uDD16 — your personal budget buddy!\nTell me what you spent, earned, or want to track and I'll take care of the rest.",
+      "Hi there! I'm Buddget \uD83E\uDD16 — your personal budget buddy!\nTell me what you spent, earned, or want to track and I'll take care of the rest.",
     suggestion1: "Try: \u2018Spent 45 on lunch with Silver Nol\u2019",
     suggestion2: "Try: \u2018Paid 2000 EGP toward Mom\u2019s balance\u2019",
     suggestion3: "Try: \u2018How much have I spent on food this month?\u2019",
@@ -1259,7 +1263,7 @@ export const en: Dictionary = {
     multiIntentHint: 'Looks like you mentioned a few things at once. If anything is missing after saving, try sending one item per message or adjust and confirm again.',
     confirmedLabel: 'All set! \u2713',
     systemResting: 'Taking a quick breather \u2014 try again in a moment \uD83D\uDE0A',
-    guardSignIn: 'Sign in to save what Buddgy finds \uD83D\uDD10',
+    guardSignIn: 'Sign in to save what Buddget finds \uD83D\uDD10',
     categoryLabel: '\uD83D\uDCC2 Category: ',
     balancePaymentTo: '\uD83C\uDFE6 Balance payment to ',
     balanceExpenseNote: 'Also tracked as a balance expense',
@@ -1306,7 +1310,24 @@ export const en: Dictionary = {
     continueButton: 'Continue',
     planLoading: 'Building your plans\u2026',
     finishing: 'Wrapping up\u2026',
-    lastStep: 'Generate my plans',
+    lastStep: 'Continue to budget preview',
+
+    preview: {
+      subtitle: 'Review your starting plan. Refine with AI, then continue.',
+      presetBlurb:
+        'These amounts come from your income and goals. Adjust with AI or continue to apply them.',
+      feedbackLabel: 'What should change?',
+      feedbackPlaceholder: 'e.g. less on dining, higher rent, more for savings…',
+      regenerate: 'Regenerate with AI',
+      regenerating: 'Refining…',
+      sourceAi: 'Suggested with AI — you can regenerate again or continue.',
+      sourcePreset: 'Smart preset — tap Regenerate to personalize with AI.',
+      continueCta: 'Apply and continue',
+      applying: 'Saving…',
+      monthlyIncome: (amount, currency) => `Sized to ~${amount} ${currency}/month income`,
+      feedbackSaveFailed: 'Could not save your note — AI will still run.',
+      aiFailed: 'AI was unavailable — you can retry or continue with the preset.',
+    },
 
     coreGateTitle: "Let\u2019s get you set up",
     coreGateSubtitle: 'Four quick essentials so Buddget can help you.',
@@ -1335,13 +1356,13 @@ export const en: Dictionary = {
         intro: {
           title: 'Let\u2019s build your money system.',
           body:
-            'In a few minutes, Buddgy will set up everything \u2014 payment methods, income, budget, goals \u2014 so you leave with a plan, not an empty app.',
+            'In a few minutes, Buddget will set up everything \u2014 payment methods, income, budget, goals \u2014 so you leave with a plan, not an empty app.',
         },
         fork: {
           hint: 'You can switch paths any time.',
           guidedLabel: 'Guided journey \u2014 ~4 min',
           guidedDescription:
-            'Tell Buddgy about your money life once, answer a few follow-ups, and we\u2019ll generate a tailored plan.',
+            'Tell Buddget about your money life once, answer a few follow-ups, and we\u2019ll generate a tailored plan.',
           quickLabel: 'Quick start \u2014 ~90 s',
           quickDescription:
             'The essentials only. A sensible default plan now; refine later from the dashboard.',
@@ -1351,14 +1372,14 @@ export const en: Dictionary = {
         intro: {
           title: 'First, a quick introduction.',
           body:
-            'A few basics about where you are. These shape the currencies, tips, and cost anchors Buddgy uses later.',
+            'A few basics about where you are. These shape the currencies, tips, and cost anchors Buddget uses later.',
         },
         name: { placeholder: 'Your name' },
         country: {
           hint: 'We\u2019ll set your main currency from this \u2014 you can change it on the next card.',
         },
         city: {
-          hint: 'Optional. Helps Buddgy calibrate rent and groceries.',
+          hint: 'Optional. Helps Buddget calibrate rent and groceries.',
           placeholder: 'City (optional)',
         },
         currency: {
@@ -1377,7 +1398,7 @@ export const en: Dictionary = {
       },
       buddgy: {
         welcomeIntro: {
-          default: "Hey \u2014 I\u2019m Buddgy, your money buddy. Let\u2019s get you set up.",
+          default: "Hey \u2014 I\u2019m Buddget, your money buddy. Let\u2019s get you set up.",
         },
         identityName: {
           default: 'What should I call you?',
@@ -1536,7 +1557,7 @@ export const en: Dictionary = {
     toastHouseholdSaved: 'Household saved',
     toastGoalAdded: 'Goal added',
     lifestyleTitle: 'Your lifestyle in a sentence',
-    lifestyleSubtitle: "Helps Buddgy shape the plan to how you actually spend.",
+    lifestyleSubtitle: "Helps Buddget shape the plan to how you actually spend.",
     lifestyleLabelFood: 'How often do you eat out or order in?',
     lifestyleFoodEveryday: 'Almost every day',
     lifestyleFoodMostdays: 'Most days',
@@ -1553,7 +1574,7 @@ export const en: Dictionary = {
     lifestyleTierComfortable: 'Comfortable \u2014 enjoy more',
     lifestyleSave: 'Save lifestyle',
     householdTitle: 'Household & rent',
-    householdSubtitle: 'Gives Buddgy the fixed cost to plan around.',
+    householdSubtitle: 'Gives Buddget the fixed cost to plan around.',
     householdLabelSize: "Who's at home?",
     householdSolo: 'Just me',
     householdCouple: 'Couple',
@@ -1713,7 +1734,7 @@ export const en: Dictionary = {
     subscriptionsHelp: 'Toggle the services you pay for, set your monthly cost, or add your own.',
 
     goalsDetailTitle: 'Your financial goals',
-    goalsDetailHelp: 'Add the goals you want Buddgy to build your plan around — we\u2019ll use them when we propose amounts.',
+    goalsDetailHelp: 'Add the goals you want Buddget to build your plan around — we\u2019ll use them when we propose amounts.',
     savingsDetailTitle: 'Your current savings',
     savingsDetailHelp: 'List any accounts or buckets you already have. These feed straight into your /savings page.',
 
@@ -1731,6 +1752,30 @@ export const en: Dictionary = {
     paymentBankTransfer: 'Bank transfer',
     paymentTransit: 'Transit / NOL-style card',
     paymentOther: 'Something else (you name it!)',
+
+    stackProfileTitle: 'You, your place',
+    stackProfileSubtitle: 'Three quick fields — we use this for currency hints and wording.',
+    stackProfileHelp: '',
+
+    stackLifeMoneyTitle: 'Household and money basics',
+    stackLifeMoneySubtitle: 'How you live, work, and which currencies matter.',
+    stackLifeMoneyHelp: '',
+
+    stackHousingDebtTitle: 'Housing and debt picture',
+    stackHousingDebtSubtitle: 'Rough monthly housing and how debt feels today.',
+    stackHousingDebtHelp: '',
+
+    goalsCombinedTitle: 'Goals and details',
+    goalsCombinedSubtitle: 'Pick directions, then add any goal details you already know.',
+    goalsCombinedHelp: '',
+
+    dualLiveTitle: 'Subscriptions and savings',
+    dualLiveSubtitle: 'Inline lists — everything saves as you type.',
+    dualLiveHelp: '',
+
+    stackLifestyleTitle: 'Day-to-day rhythm',
+    stackLifestyleSubtitle: 'How you spend, move, eat, and what you want to optimise.',
+    stackLifestyleHelp: '',
 
     prePlanTitle: "You\u2019re all set! Let\u2019s go \uD83D\uDE80",
     prePlanBody: 'Your dashboard is ready. Start by logging your first expense \u2014 it takes 5 seconds.',
@@ -1820,6 +1865,86 @@ export const en: Dictionary = {
     subscriptionGym: 'Gym / fitness',
     subscriptionSports: 'Sports / entertainment apps',
     subscriptionGaming: 'Gaming / online subs',
+  },
+
+  onboardingV2: {
+    welcomeIntro: 'Let’s set up your budget in a few quick steps.',
+    nameQuestion: 'What should we call you?',
+    namePlaceholder: 'Your name',
+    countryHint: 'We use this to set your home currency.',
+    countryPlaceholder: 'Where are you based?',
+    incomeIntro: 'How much do you earn each month?',
+    incomeSourcePlaceholder: 'Source name',
+    amountPlaceholder: 'Amount',
+    addIncomeRow: '+ Add another source',
+    fixedIntro: 'What are your monthly fixed costs?',
+    subscriptionsIntro: 'Any subscriptions?',
+    subscriptionAmounts: 'Monthly amounts (base currency)',
+    payIntro: 'How do you usually pay?',
+    customPayLines: 'Other methods (one per line)',
+    customPayPlaceholder: 'e.g. Apple Pay',
+    savingsIntro: 'Do you have a savings target?',
+    monthOptional: 'month optional',
+    savingsSkipHint: 'Leave blank or zero to skip — you can add this later.',
+    debtsQuestion: 'Are you paying off anything?',
+    yes: 'Yes',
+    no: 'No',
+    personaIntro: 'How do you want to manage spending?',
+    personaBalancedTitle: 'Balanced',
+    personaBalancedBody: 'Sensible split between essentials, fun, and savings.',
+    personaSaverTitle: 'Aggressive saver',
+    personaSaverBody: 'Prioritise savings and debt payoff over discretionary spend.',
+    personaTrackTitle: 'Just tracking',
+    personaTrackBody: 'Light budgets — mainly visibility, fewer limits.',
+    reviewIntro: 'Does this look right?',
+    reviewName: 'Name:',
+    reviewCountry: 'Location:',
+    reviewIncome: 'Monthly income:',
+    reviewFixed: 'Fixed costs:',
+    reviewSubs: 'Subscriptions:',
+    reviewPay: 'Payment methods:',
+    reviewSavings: 'Savings target:',
+    reviewDebts: 'Debts:',
+    reviewStyle: 'Budget style:',
+    reviewEditHint: 'Tap a step below to edit.',
+    editStep: (n) => `Edit step ${n}`,
+    titleWelcome: 'Welcome',
+    titleCountry: 'Home & currency',
+    titleIncome: 'Income',
+    titleFixed: 'Fixed expenses',
+    titleSubs: 'Subscriptions',
+    titlePay: 'Payment methods',
+    titleSavings: 'Savings goal',
+    titleDebts: 'Debts',
+    titleStyle: 'Spending style',
+    titleReview: 'Review',
+    looksGood: 'Looks good',
+  },
+
+  budgetPreview: {
+    pageTitle: "Here's your first budget plan",
+    pageSubtitle: 'Based on what you told us.\nYou can adjust anything.',
+    sectionIncome: 'Income summary',
+    sectionFixed: 'Fixed costs',
+    sectionBudget: 'Budget by category',
+    sectionProjectedSavings: 'Projected savings this month',
+    fixedEmpty: 'No fixed costs in your setup — you can add bills anytime in the app.',
+    editPlan: 'Edit this plan',
+    doneEditing: 'Done editing',
+    regenerate: 'Regenerate ↺',
+    regenerateHide: 'Hide regenerate',
+    regeneratePrompt: 'What would you like to change?',
+    regeneratePlaceholder: 'e.g. More for transport, less for dining out…',
+    regenerateSubmit: 'Regenerate plan',
+    regenerateCancel: 'Cancel',
+    regenerating: 'Regenerating…',
+    looksGood: 'This looks good →',
+    applying: 'Saving…',
+    sourceAi: 'Personalised with AI from your answers.',
+    sourcePreset: 'Starting from smart defaults — regenerate to personalise.',
+    feedbackSaveFailed: 'Could not save your note. The plan may still update.',
+    aiFailed: 'Could not reach the AI planner. Showing the previous plan.',
+    statedSavingsTarget: (amount) => `Stated monthly savings goal: ${amount}`,
   },
 
   categories: {

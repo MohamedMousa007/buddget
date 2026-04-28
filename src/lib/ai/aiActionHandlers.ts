@@ -8,6 +8,10 @@ import {
 } from '@/lib/utils/calculations'
 import { EXPENSE_CATEGORIES, EXPENSE_ENTRY_CATEGORIES, PAYMENT_METHOD_TYPES } from '@/lib/constants/finance'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
+import {
+  defaultColorForPaymentMethodType,
+  defaultIconEmojiForPaymentMethodType,
+} from '@/lib/payment/paymentMethodDefaults'
 import { SAVINGS_TYPE_ICONS } from '@/lib/constants/savingsIcons'
 import { defaultCategoryForSavingsType } from '@/lib/constants/savingsTypes'
 import { normalizeDebtIncoming } from '@/lib/debt/normalizeDebt'
@@ -676,11 +680,14 @@ export function executeActionItem(
     return
   }
   if (action === 'add_payment_method') {
+    const typ = coercePaymentMethodType(getField(d, 'type', 'methodType'))
+    const pmName = String(getField(d, 'name') || '').trim()
     ctx.addPaymentMethod({
-      name: String(getField(d, 'name') || '').trim(),
-      type: coercePaymentMethodType(getField(d, 'type', 'methodType')),
+      name: pmName,
+      type: typ,
       currency: ctx.settings.baseCurrency,
-      color: '#C0C0C0',
+      color: defaultColorForPaymentMethodType(typ, pmName),
+      icon: defaultIconEmojiForPaymentMethodType(typ),
       isDefault: false,
     })
     return
