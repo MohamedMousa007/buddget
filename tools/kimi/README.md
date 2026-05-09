@@ -1,6 +1,12 @@
 # Kimi CLI
 
-Cursor / Claude-Code-style coding agent for Buddget, powered by Kimi K2.6.
+One command. Tell it what you want — it picks the workflow.
+
+```bash
+kimi
+```
+
+That's it. The agent reads, edits, runs CI, swarms, looks at screenshots, commits — based on the request. For anything non-trivial it proposes a plan first and waits for your `y / n / edit` decision before doing anything.
 
 ## Install
 
@@ -9,106 +15,89 @@ cd tools/kimi
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
-```
 
-That puts `kimi` on your `PATH` (inside the venv). To use it from anywhere:
-
-```bash
-# add a shim once
+# put `kimi` on your PATH globally (optional)
 mkdir -p ~/.local/bin
 ln -sf "$(pwd)/.venv/bin/kimi" ~/.local/bin/kimi
-# ensure ~/.local/bin is in PATH (most shells already include it)
 ```
 
 ## First run
 
 ```bash
-kimi doctor          # checks API key, ripgrep, git, model reachability
+kimi doctor   # checks API key, ripgrep, git, model reachability
+kimi          # starts chatting
 ```
 
-The API key is read from:
-1. `.env.kimi` at project root (already in place)
-2. macOS Keychain item `kimi-api-key`
+API key resolution: `.env.kimi` at project root (already in place) → macOS Keychain item `kimi-api-key`.
 
-## Cheat sheet
+## Inside chat
 
-```bash
-# chat (Cursor mode)
-kimi chat "what does applyBudgetPlan do?"
-kimi chat --image ~/Desktop/buddgy.png "what's wrong with this design?"
-kimi chat --clip "review this screenshot"
-kimi chat --screenshot "review this region"
+You just type. The agent decides whether the request needs a swarm, a verify loop, a commit, or just a read. For anything beyond a trivial read it shows you a structured plan and asks `proceed? [y / n / edit]` before touching anything.
 
-# autonomous engineer (Claude Code mode)
-kimi engineer "remove the lifetime savingsTotal from DashboardSummaryCards props"
-# → investigates, edits, runs lint+tsc+test+build, retries on failure, commits to current branch
+Slash escapes (rarely needed):
 
-# swarm (parallel multi-agent analysis)
-kimi swarm-list                                              # see all agents
-kimi swarm onboarding-coherence copy-tone --prompt "Audit the onboarding flow for issues"
-kimi swarm budget-sync-checker --prompt "Check homepage budget numbers" --collab
+```
+/attach <path>   attach a file by path
+/clip            attach the clipboard image (macOS)
+/shot            interactive screen-grab → vision
+/clear           clear chat history
+/save            print the session log path
+/cost            session token + dollar summary
+/exit
+```
 
-# pre-merge sweep on the current diff
-kimi review
+## Escape-hatch subcommands
 
-# push (dev-only by default)
-kimi push                                # pushes HEAD to origin/dev
-KIMI_ALLOW_MAIN=1 kimi push --to-main    # pushes to main with confirm prompt
+You almost never need these — describe what you want in chat instead. They exist for scripting / habit:
 
-# memory
+```
+kimi doctor             health-check
+kimi push               push HEAD → origin/dev (refuses main without override)
+KIMI_ALLOW_MAIN=1 kimi push --to-main
+kimi cost               lifetime + last-session token usage
 kimi memory-show
-kimi memory-remember "fact to add"
-
-# cost
-kimi cost
+kimi memory-remember "fact"
+kimi swarm-list         see the named agents the router can spawn
 ```
+
+## What the agent has access to
+
+Tools (the agent picks):
+
+- **read tools**: ripgrep (preferred), read_file (line ranges), glob, list_dir, shell, git_status, git_diff
+- **write tools**: write_file, edit_file, git_add, git_commit, verify (lint + tsc + vitest + next build with dummy Supabase env)
+- **meta tools**: `propose_plan` (always called before non-trivial work), `run_swarm`, `vision_attach`
+
+Swarm catalog (the agent picks the relevant subset):
+
+`onboarding-coherence`, `budget-sync-checker`, `rls-auditor`, `schema-drift`, `i18n-coverage`, `dead-code`, `tutorial-stability`, `prompt-tuner`, `a11y`, `bundle-size`, `copy-tone`, `test-gap`, `secret-scan`, `synthesizer`. Each has its own system prompt under `kimi/prompts/<name>.md` — edit those files to retune any agent.
 
 ## Models (override in `.env.kimi`)
 
 ```
-KIMI_MODEL=kimi-k2.6
-KIMI_VISION_MODEL=moonshot-v1-32k-vision-preview
+KIMI_MODEL=kimi-k2.6                              # text + tool-calling
+KIMI_VISION_MODEL=moonshot-v1-32k-vision-preview  # screenshots / clipboard
 ```
 
-When Moonshot ships a newer text or vision model, just update those two env values.
+Drop newer model names there when Moonshot ships them — no code changes needed.
 
 ## How it stays cheap
 
-- Every "find" routes through `ripgrep`, returning file:line:match — not whole files.
-- Stable system prompt + tool schemas + project memory are sent under one `prompt_cache_key` so Moonshot's prefix cache reuses them across turns.
-- Tool outputs are capped at 8 KB. Long terminal output is truncated, not replayed.
-- Streaming + Esc abort lets you bail early on a wrong direction.
+- ripgrep before reading. Tool outputs capped at 8 KB.
+- Stable system prompt + project memory keyed under `prompt_cache_key` so Moonshot's prefix cache reuses them across turns.
+- Streaming with Esc abort.
+- `reasoning_content` round-tripped automatically (k2.6 is a thinking model and rejects subsequent calls without it).
 
 ## Autonomous error recovery
 
-`kimi engineer` runs `verify` (lint + tsc + vitest + next build with dummy Supabase env) after every edit. If anything fails, the failing step's output is fed back as the next user message, and the agent re-enters its tool loop to fix it. Loops up to 4 attempts before giving up.
+After any edit the agent calls `verify`. On failure the failing CI output is fed back as a tool result and the agent re-enters the loop to fix the cause. Up to 4 attempts.
 
 ## Push policy
 
-`policy.py` enforces:
 - `kimi push` only ever targets `dev`.
-- `kimi push --to-main` requires `KIMI_ALLOW_MAIN=1` in your shell **and** an interactive `y/n` prompt.
-- Secret-regex scan runs over every staged diff before commit.
-- File-edit guards refuse writes inside `node_modules/`, `.next/`, `.git/`, `.kimi/`, or `supabase/migrations/` (the last is overridable via `--allow-migration` in code).
-
-## Swarm catalog
-
-| name | role |
-|---|---|
-| onboarding-coherence | onboarding flow auditor |
-| budget-sync-checker | cross-surface number-consistency auditor |
-| rls-auditor | Supabase RLS auditor |
-| schema-drift | schema-vs-types drift auditor |
-| i18n-coverage | i18n key parity auditor |
-| dead-code | unused code finder |
-| tutorial-stability | tutorial regression scanner |
-| prompt-tuner | AI prompt regression catcher |
-| a11y | accessibility auditor |
-| bundle-size | bundle size auditor |
-| copy-tone | copywriting reviewer |
-| test-gap | missing-test detector |
-| secret-scan | secret detector |
-| synthesizer | ranked-action-list synthesizer (auto-tail unless `--no-synth`) |
+- `kimi push --to-main` requires `KIMI_ALLOW_MAIN=1` in your shell **and** an interactive `y/n` confirm.
+- Secret-regex scan runs over every staged diff before the agent commits.
+- Write guards refuse edits inside `node_modules/`, `.next/`, `.git/`, `.kimi/`, `supabase/migrations/`.
 
 ## Files
 
@@ -117,7 +106,7 @@ tools/kimi/
 ├── pyproject.toml
 ├── README.md
 └── kimi/
-    ├── cli.py            # Typer entrypoint
+    ├── cli.py            # Typer entrypoint — bare `kimi` drops into router-chat
     ├── client.py         # Streaming OpenAI client + usage logging
     ├── config.py         # Models, paths, push policy
     ├── secrets.py        # Keychain → env → .env.kimi
@@ -129,9 +118,10 @@ tools/kimi/
     │   ├── search.py     # ripgrep
     │   ├── shell.py      # bounded subprocess
     │   ├── git.py        # status/diff/add/commit/push
-    │   ├── vision.py     # screenshot / clipboard / path
+    │   ├── meta.py       # propose_plan, run_swarm, vision_attach
+    │   ├── vision.py     # screenshot / clipboard
     │   ├── verify.py     # lint+tsc+vitest+build
     │   └── registry.py   # tool schemas + dispatch
-    ├── agents/           # Loop, chat, engineer, swarm
-    └── prompts/          # System prompts for each named swarm agent
+    ├── agents/           # loop, chat (router), engineer, swarm
+    └── prompts/          # system prompts for each named swarm agent
 ```

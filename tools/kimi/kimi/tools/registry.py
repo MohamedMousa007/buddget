@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 from typing import Any, Callable
 
-from kimi.tools import fs, git, search, shell, verify
+from kimi.tools import fs, git, meta, search, shell, verify
 
 # ─── Schemas ──────────────────────────────────────────────────────────
 
@@ -111,6 +111,69 @@ READ_TOOLS: list[dict[str, Any]] = [
         },
     },
 ]
+
+META_TOOLS: list[dict[str, Any]] = [
+    {
+        "type": "function",
+        "function": {
+            "name": "propose_plan",
+            "description": (
+                "REQUIRED before any non-trivial work (edits, multi-step audits, swarms, commits). "
+                "Show the user a structured plan and wait for their y/n/edit decision. Returns 'approved', "
+                "'rejected[: reason]', or 'revise: <feedback>'. For trivial single-question reads, skip this."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string"},
+                    "summary": {"type": "string", "description": "1-3 sentences on the why."},
+                    "steps": {"type": "array", "items": {"type": "string"}, "description": "Numbered steps you'll take."},
+                    "files_to_touch": {"type": "array", "items": {"type": "string"}},
+                    "needs_swarm": {"type": "boolean", "default": False},
+                    "swarm_agents": {"type": "array", "items": {"type": "string"}, "description": "Named agents from the catalog."},
+                    "will_verify": {"type": "boolean", "default": False, "description": "Will run lint+tsc+test+build."},
+                    "will_commit": {"type": "boolean", "default": False},
+                    "risks": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["title", "summary", "steps"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "run_swarm",
+            "description": (
+                "Spawn a swarm of named agents on a shared prompt. Returns the synthesizer's "
+                "ranked action list. Use for any audit that benefits from multiple perspectives "
+                "(coherence + copy + sync + a11y …). NEVER call without `propose_plan` approval first."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "agents": {"type": "array", "items": {"type": "string"}},
+                    "prompt": {"type": "string"},
+                    "collaborative": {"type": "boolean", "default": False, "description": "Sequential mode where each agent sees prior outputs."},
+                },
+                "required": ["agents", "prompt"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "vision_attach",
+            "description": "Grab a screenshot or the clipboard image and convert it to dense factual text via the VL model.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "source": {"type": "string", "enum": ["clipboard", "screenshot"], "default": "clipboard"},
+                },
+            },
+        },
+    },
+]
+
 
 WRITE_TOOLS: list[dict[str, Any]] = [
     {
@@ -214,6 +277,12 @@ def _dispatch(name: str, args: dict[str, Any]) -> str:
             if code != 0:
                 lines.append(out)
         return "\n".join(lines) + ("\nALL_GREEN" if verify.all_passed(results) else "\nFAILED")
+    if name == "propose_plan":
+        return meta.propose_plan(args)
+    if name == "run_swarm":
+        return meta.run_swarm(args["agents"], args["prompt"], collaborative=args.get("collaborative", False))
+    if name == "vision_attach":
+        return meta.vision_attach(args.get("source", "clipboard"))
     return f"<unknown tool: {name}>"
 
 
@@ -230,4 +299,4 @@ def call(name: str, raw_args: str) -> str:
 
 
 def schemas(*, write: bool = False) -> list[dict[str, Any]]:
-    return READ_TOOLS + (WRITE_TOOLS if write else [])
+    return READ_TOOLS + META_TOOLS + (WRITE_TOOLS if write else [])

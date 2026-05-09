@@ -20,17 +20,28 @@ from kimi.catalog import SWARM_AGENTS, SYNTHESIZER, get as get_agents, list_name
 
 app = typer.Typer(
     add_completion=True,
-    no_args_is_help=True,
-    help="Kimi CLI — Cursor / Claude-Code-style agent for Buddget.",
+    invoke_without_command=True,
+    help="Kimi — one command. Tell it what you want; it picks the workflow.",
     rich_markup_mode="rich",
 )
 console = Console()
 
 
 @app.callback()
-def _main(version: bool = typer.Option(False, "--version", help="Show version and exit.")):
+def _main(
+    ctx: typer.Context,
+    version: bool = typer.Option(False, "--version", help="Show version and exit."),
+):
     if version:
         console.print(f"kimi {__version__} · model {config.MODEL} · vision {config.VISION_MODEL}")
+        raise typer.Exit()
+    # Default behavior: drop into the unified router-chat. Subcommands
+    # (doctor, push, cost, etc.) still work as escape hatches.
+    if ctx.invoked_subcommand is None:
+        memory.bootstrap()
+        from kimi.agents.chat import chat as run_chat
+
+        run_chat()
         raise typer.Exit()
 
 
@@ -94,79 +105,32 @@ def doctor() -> None:
 
 # ─── chat ────────────────────────────────────────────────────────────
 
-@app.command()
-def chat(
-    message: Optional[str] = typer.Argument(None, help="One-shot first message; omit for full interactive."),
-    image: Optional[Path] = typer.Option(None, "--image", "-i", help="Attach an image file (uses VL model)."),
-    clip: bool = typer.Option(False, "--clip", help="Attach the current clipboard image (macOS)."),
-    screenshot: bool = typer.Option(False, "--screenshot", "-s", help="Take an interactive screenshot to attach."),
+@app.command(hidden=True)
+def chat_(
+    message: Optional[str] = typer.Argument(None, help="Optional one-shot message; otherwise interactive."),
 ) -> None:
-    """Cursor-style chat. Streams responses, accepts /file /clear /save /cost /exit."""
+    """Hidden alias kept for back-compat — bare `kimi` already drops into chat."""
     config.ensure_dirs()
     memory.bootstrap()
-
-    image_path: Optional[str] = None
-    if image:
-        image_path = str(image.resolve())
-    elif clip:
-        from kimi.tools.vision import from_clipboard
-
-        image_path = from_clipboard()
-        if not image_path:
-            console.print("[red]no image in clipboard[/red]")
-            raise typer.Exit(code=1)
-    elif screenshot:
-        from kimi.tools.vision import screenshot_interactive
-
-        image_path = screenshot_interactive()
-        if not image_path:
-            console.print("[red]screenshot failed or cancelled[/red]")
-            raise typer.Exit(code=1)
-
-    initial = message
-    if image_path:
-        from kimi.client import vision_describe
-
-        console.print(f"[dim]→ describing image via {config.VISION_MODEL}…[/dim]")
-        desc = vision_describe(image_path, hint=message or "")
-        prefix = f"[image: {Path(image_path).name}]\n{desc}\n\n"
-        initial = prefix + (message or "What should I notice or improve about this image?")
-
-    run_chat(initial)
+    run_chat(message)
 
 
 # ─── engineer ────────────────────────────────────────────────────────
 
-@app.command()
+@app.command(hidden=True)
 def engineer(
     task: str = typer.Argument(..., help="What you want done. Be specific."),
-    auto_approve: bool = typer.Option(True, "--auto-approve/--ask", help="Skip per-commit confirmation."),
-    max_attempts: int = typer.Option(4, "--max-attempts", help="Max verify-fix retries."),
+    auto_approve: bool = typer.Option(True, "--auto-approve/--ask"),
+    max_attempts: int = typer.Option(4, "--max-attempts"),
 ) -> None:
-    """Autonomous engineer mode — plan, edit, verify, commit. Pushes are manual via `kimi push`."""
+    """Hidden — the unified `kimi` chat covers this; kept for scripting."""
     memory.bootstrap()
     run_engineer(task, auto_approve=auto_approve, max_attempts=max_attempts)
 
 
-# ─── swarm ───────────────────────────────────────────────────────────
-
-@app.command()
-def swarm(
-    agents: list[str] = typer.Argument(..., help="Agent names. Use `kimi swarm-list` to see all."),
-    prompt: str = typer.Option(..., "--prompt", "-p", help="The shared prompt for the swarm."),
-    collaborative: bool = typer.Option(False, "--collab", help="Sequential mode where each agent sees prior outputs."),
-    no_synth: bool = typer.Option(False, "--no-synth", help="Skip the final synthesizer pass."),
-) -> None:
-    """Run a swarm of named agents on one prompt. Outputs land in .kimi/sessions/."""
-    memory.bootstrap()
-    selected = get_agents(agents)
-    synth = None if no_synth else SYNTHESIZER
-    run_swarm_orchestrator(selected, prompt, collaborative=collaborative, synthesizer=synth)
-
-
 @app.command("swarm-list")
 def swarm_list() -> None:
-    """List every named swarm agent."""
+    """List every named swarm agent the router can spawn."""
     table = Table(title="Swarm agents")
     table.add_column("name", style="cyan")
     table.add_column("role")
@@ -174,27 +138,6 @@ def swarm_list() -> None:
         table.add_row(n, a.role)
     table.add_row("synthesizer", SYNTHESIZER.role, style="bold")
     console.print(table)
-
-
-# ─── review ──────────────────────────────────────────────────────────
-
-@app.command()
-def review() -> None:
-    """Run the canonical pre-merge sweep on the current diff."""
-    memory.bootstrap()
-    from kimi.tools.git import diff as git_diff
-
-    diff_text = git_diff(staged=False)
-    if not diff_text.strip():
-        console.print("[dim]no working-tree diff[/dim]")
-        return
-    selected = get_agents(["onboarding-coherence", "budget-sync-checker", "copy-tone", "secret-scan"])
-    run_swarm_orchestrator(
-        selected,
-        f"Review this working-tree diff and flag issues:\n\n{diff_text[:30000]}",
-        collaborative=False,
-        synthesizer=SYNTHESIZER,
-    )
 
 
 # ─── push ────────────────────────────────────────────────────────────
