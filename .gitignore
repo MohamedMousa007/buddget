@@ -54,3 +54,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .claude/
+
+# Kimi CLI runtime state + venv (CLI source itself IS tracked)
+.kimi/
+tools/kimi/.venv/
+tools/kimi/*.egg-info/
+tools/kimi/build/
+tools/kimi/dist/
+__pycache__/
