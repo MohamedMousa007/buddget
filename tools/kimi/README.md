@@ -1,10 +1,22 @@
 # Kimi CLI
 
-One command. Tell it what you want — it picks the workflow.
+Two front-ends, same engine.
+
+**TUI (graphical, recommended for daily work)**
+
+```bash
+kimi tui
+```
+
+Buttons, dropdowns, live progress, modal plan-approval, image-attach via clipboard. Launch from your main repo checkout (not a worktree) if you want the branch dropdown to actually `git checkout` for you.
+
+**Plain chat (terminal, scripting-friendly)**
 
 ```bash
 kimi
 ```
+
+Tell it what you want — it picks the workflow.
 
 That's it. The agent reads, edits, runs CI, swarms, looks at screenshots, commits — based on the request. For anything non-trivial it proposes a plan first and waits for your `y / n / edit` decision before doing anything.
 

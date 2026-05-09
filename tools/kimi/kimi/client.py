@@ -122,7 +122,12 @@ def _stream(kwargs: dict[str, Any], model: str) -> dict[str, Any]:
             reasoning_parts.append(rc)
         if delta.content:
             content_parts.append(delta.content)
-            console.print(delta.content, end="", style="white")
+            from kimi.runtime import STREAM_HOOK
+
+            if STREAM_HOOK is not None:
+                STREAM_HOOK(delta.content)
+            else:
+                console.print(delta.content, end="", style="white")
         if delta.tool_calls:
             for tc in delta.tool_calls:
                 idx = tc.index
@@ -136,8 +141,10 @@ def _stream(kwargs: dict[str, Any], model: str) -> dict[str, Any]:
                 if tc.function and tc.function.arguments:
                     slot["function"]["arguments"] += tc.function.arguments
 
-    if content_parts:
-        console.print()  # newline after streamed text
+    from kimi.runtime import STREAM_HOOK
+
+    if content_parts and STREAM_HOOK is None:
+        console.print()  # newline after streamed text (CLI only)
 
     _log_usage(model, prompt_tokens, completion_tokens)
     out: dict[str, Any] = {

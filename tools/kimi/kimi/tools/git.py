@@ -66,6 +66,31 @@ def pull(branch: str | None = None, *, ff_only: bool = True) -> str:
         return f"pull failed: {e.stderr or e}"
 
 
+def is_worktree() -> bool:
+    """True if the current working tree is a git worktree (not the main checkout)."""
+    r = _repo()
+    try:
+        # Worktrees have `.git` as a file pointing to gitdir; main checkouts have a directory.
+        from pathlib import Path
+
+        gitpath = Path(r.working_dir) / ".git"
+        return gitpath.is_file()
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def checkout(branch: str) -> str:
+    """Checkout `branch`. Refuses on worktree (worktree is pinned to its branch)."""
+    if is_worktree():
+        return f"refused: this is a git worktree pinned to {current_branch()}; switch to the main checkout to change branches"
+    r = _repo()
+    try:
+        r.git.checkout(branch)
+        return f"checked out {branch}"
+    except GitCommandError as e:
+        return f"checkout failed: {e.stderr or e}"
+
+
 def push_to(target: str, allow_main: bool = False) -> str:
     """Push current HEAD to a single remote branch with policy checks."""
     r = _repo()

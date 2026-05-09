@@ -48,6 +48,14 @@ def _main(
 # ─── doctor ──────────────────────────────────────────────────────────
 
 @app.command()
+def tui() -> None:
+    """Launch the minimalistic Textual TUI (buttons, dropdowns, live progress)."""
+    from kimi.tui.app import run_tui
+
+    run_tui()
+
+
+@app.command()
 def doctor() -> None:
     """Check API key, ripgrep, git, branches. Returns OK / list of issues."""
     issues: list[str] = []

@@ -23,10 +23,14 @@ console = Console()
 def propose_plan(plan: dict[str, Any]) -> str:
     """Show the plan to the user, ask for approval. Return the user's decision.
 
-    The agent calls this BEFORE doing anything non-trivial. The conversation
-    pauses on stdin until the user answers, then the agent gets the answer
-    as a tool result and proceeds (or revises).
+    If a `PLAN_HOOK` is set (TUI mode), it handles rendering + prompting.
+    Otherwise we fall back to the Rich panel + stdin prompt for plain CLI.
     """
+    from kimi.runtime import PLAN_HOOK
+
+    if PLAN_HOOK is not None:
+        return PLAN_HOOK(plan)
+
     title = plan.get("title", "Plan")
     summary = plan.get("summary", "")
     steps = plan.get("steps", []) or []

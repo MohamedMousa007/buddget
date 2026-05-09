@@ -65,7 +65,13 @@ def run(
         for tc in tool_calls:
             name = tc["function"]["name"]
             raw_args = tc["function"]["arguments"]
-            console.print(f"  [dim]→ {name}({raw_args[:80]}{'…' if len(raw_args) > 80 else ''})[/dim]")
+            from kimi.runtime import TOOL_HOOK
+
+            short_args = raw_args[:80] + ("…" if len(raw_args) > 80 else "")
+            if TOOL_HOOK is not None:
+                TOOL_HOOK(name, short_args)
+            else:
+                console.print(f"  [dim]→ {name}({short_args})[/dim]")
             output = registry.call(name, raw_args)
             if on_tool_call:
                 on_tool_call(name, raw_args, output)
