@@ -144,24 +144,66 @@ def swarm_list() -> None:
 
 @app.command()
 def push(
-    to_main: bool = typer.Option(False, "--to-main", help="Target main instead of dev (requires KIMI_ALLOW_MAIN=1)."),
+    targets: str = typer.Option("dev", "--targets", "-t", help="Comma-separated: dev, main, or dev,main."),
+    to_main: bool = typer.Option(False, "--to-main", help="Shortcut for --targets main (requires KIMI_ALLOW_MAIN=1)."),
 ) -> None:
-    """Push current HEAD. Defaults to dev. Pushing to main requires explicit flag + env."""
+    """Push current HEAD. Defaults to dev. main requires KIMI_ALLOW_MAIN=1 + confirm."""
     from kimi.tools import git
 
+    chosen = [t.strip() for t in (targets or "dev").split(",") if t.strip()]
     if to_main:
-        if not config.ALLOW_MAIN:
-            console.print(
-                "[red]refused: pushing to main requires KIMI_ALLOW_MAIN=1 in your shell.\n"
-                "  KIMI_ALLOW_MAIN=1 kimi push --to-main[/red]"
-            )
-            raise typer.Exit(code=1)
-        if not Confirm.ask(f"push HEAD to origin/{config.MAIN_BRANCH}?"):
-            raise typer.Exit(code=1)
-        out = git.push(config.MAIN_BRANCH, allow_main=True)
+        chosen = ["main"]
+
+    if config.MAIN_BRANCH in chosen and not config.ALLOW_MAIN:
+        console.print(
+            f"[red]refused: pushing to {config.MAIN_BRANCH} requires KIMI_ALLOW_MAIN=1.[/red]"
+        )
+        raise typer.Exit(code=1)
+    if config.MAIN_BRANCH in chosen and not Confirm.ask(f"push HEAD to origin/{config.MAIN_BRANCH}?"):
+        raise typer.Exit(code=1)
+
+    console.print(git.push_many(chosen, allow_main=config.ALLOW_MAIN))
+
+
+@app.command()
+def pull() -> None:
+    """Fast-forward `dev` and `main` to their remotes (no checkout needed)."""
+    from kimi.tools import git
+
+    for branch in (config.DEV_BRANCH, config.MAIN_BRANCH):
+        console.print(git.pull(branch))
+
+
+@app.command()
+def status() -> None:
+    """Show ahead/behind for dev and main, plus the commits-behind summary."""
+    from kimi.ui.statusbar import behind_summary
+
+    behind_summary(console)
+
+
+@app.command()
+def sync(
+    target: str = typer.Option("dev", "--target", "-t", help="Where to push after pulling: dev, main, or both."),
+) -> None:
+    """Pull both branches; then push HEAD to `target`."""
+    from kimi.tools import git
+
+    for branch in (config.DEV_BRANCH, config.MAIN_BRANCH):
+        console.print(git.pull(branch))
+
+    if target == "both":
+        targets = [config.DEV_BRANCH, config.MAIN_BRANCH]
     else:
-        out = git.push(config.DEV_BRANCH, allow_main=False)
-    console.print(out)
+        targets = [target]
+
+    if config.MAIN_BRANCH in targets and not config.ALLOW_MAIN:
+        console.print(
+            f"[yellow]skipping push to {config.MAIN_BRANCH} (set KIMI_ALLOW_MAIN=1)[/yellow]"
+        )
+        targets = [t for t in targets if t != config.MAIN_BRANCH]
+    if targets:
+        console.print(git.push_many(targets, allow_main=config.ALLOW_MAIN))
 
 
 # ─── memory ──────────────────────────────────────────────────────────

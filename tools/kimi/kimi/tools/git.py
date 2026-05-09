@@ -1,8 +1,8 @@
-"""Git tools — status, diff, add, commit, push (with policy)."""
+"""Git tools — status, diff, add, commit, push, fetch, pull, ahead/behind."""
 
 from __future__ import annotations
 
-from git import Repo
+from git import GitCommandError, Repo
 
 from kimi import config
 from kimi.policy import can_push, scan_for_secrets
@@ -10,6 +10,85 @@ from kimi.policy import can_push, scan_for_secrets
 
 def _repo() -> Repo:
     return Repo(config.PROJECT_ROOT, search_parent_directories=True)
+
+
+def fetch_all() -> str:
+    r = _repo()
+    r.git.fetch("--all", "--prune")
+    return "fetched"
+
+
+def ahead_behind(branch: str) -> tuple[int, int]:
+    """Return (ahead, behind) for `branch` vs `origin/<branch>`. Fetches first."""
+    r = _repo()
+    try:
+        out = r.git.rev_list("--left-right", "--count", f"origin/{branch}...{branch}")
+    except GitCommandError:
+        return (0, 0)
+    parts = out.strip().split()
+    if len(parts) != 2:
+        return (0, 0)
+    behind, ahead = int(parts[0]), int(parts[1])
+    return ahead, behind
+
+
+def commits_behind_summary(branch: str, limit: int = 10) -> str:
+    """Short summary of commits in `origin/<branch>` not yet in local `<branch>`."""
+    r = _repo()
+    try:
+        out = r.git.log(f"{branch}..origin/{branch}", "--oneline", f"-{limit}")
+    except GitCommandError as e:
+        return f"(no remote ref or branch missing: {e})"
+    return out.strip() or "(none)"
+
+
+def pull(branch: str | None = None, *, ff_only: bool = True) -> str:
+    """Fast-forward pull. Uses current branch unless `branch` is given.
+
+    For Buddget's two-branch flow: `pull dev` and `pull main` are the common
+    operations. We pull each into its own ref via fetch + merge --ff-only,
+    keeping the working tree clean.
+    """
+    r = _repo()
+    target = branch or r.active_branch.name
+    try:
+        if branch and r.active_branch.name != branch:
+            # Fast-forward the named branch's local ref to its remote without
+            # checking it out (works for both dev and main from any worktree).
+            r.git.fetch("origin", f"{target}:{target}")
+            return f"fast-forwarded local `{target}` → origin/{target}"
+        cmd = ["pull", "origin", target]
+        if ff_only:
+            cmd.append("--ff-only")
+        r.git.execute(["git", *cmd])
+        return f"pulled origin/{target} → {target}"
+    except GitCommandError as e:
+        return f"pull failed: {e.stderr or e}"
+
+
+def push_to(target: str, allow_main: bool = False) -> str:
+    """Push current HEAD to a single remote branch with policy checks."""
+    r = _repo()
+    ok, why = can_push(target, allow_main)
+    if not ok:
+        return why
+    current = r.active_branch.name
+    try:
+        r.git.push("origin", f"{current}:{target}")
+        return f"pushed {current} → origin/{target}"
+    except GitCommandError as e:
+        return f"push failed: {e.stderr or e}"
+
+
+def push_many(targets: list[str], allow_main: bool = False) -> str:
+    """Push to multiple branches in order. First failure short-circuits."""
+    out: list[str] = []
+    for t in targets:
+        result = push_to(t, allow_main=allow_main)
+        out.append(result)
+        if "failed" in result.lower() or "refused" in result.lower():
+            break
+    return "\n".join(out)
 
 
 def status() -> str:
@@ -52,15 +131,7 @@ def commit(message: str) -> str:
 
 
 def push(target_branch: str | None = None, allow_main: bool = False) -> str:
-    r = _repo()
-    target = target_branch or config.DEV_BRANCH
-    ok, why = can_push(target, allow_main)
-    if not ok:
-        return why
-    current = r.active_branch.name
-    # Push current HEAD to <target>.
-    r.git.push("origin", f"{current}:{target}")
-    return f"pushed {current} → origin/{target}"
+    return push_to(target_branch or config.DEV_BRANCH, allow_main=allow_main)
 
 
 def current_branch() -> str:

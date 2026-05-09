@@ -32,12 +32,24 @@ API key resolution: `.env.kimi` at project root (already in place) → macOS Key
 
 ## Inside chat
 
-You just type. The agent decides whether the request needs a swarm, a verify loop, a commit, or just a read. For anything beyond a trivial read it shows you a structured plan and asks `proceed? [y / n / edit]` before touching anything.
+A status bar at the top shows everything at a glance: model · mode · push target · current branch · ahead/behind for `dev` and `main` · session cost. It refreshes after each turn (and on demand via `/refresh`).
 
-Slash escapes (rarely needed):
+You just type. The agent decides whether the request needs a swarm, a verify loop, a commit, or just a read. For anything beyond a trivial read it shows you a structured plan and asks `proceed? [y / n / edit]` before touching anything — UNLESS you've toggled `direct` mode (then it skips the plan for routine work but still confirms before pushes / deletes / migrations).
+
+Slash commands:
 
 ```
-/attach <path>   attach a file by path
+/model [name]    pick a model (interactive picker if no arg)
+/mode plan       always propose plans before non-trivial work (default)
+/mode direct     skip plans for routine edits/audits; still confirms risky actions
+/push dev        push HEAD → origin/dev
+/push main       push HEAD → origin/main (needs KIMI_ALLOW_MAIN=1 + confirm)
+/push both       push HEAD → both
+/pull            fast-forward local dev + main to their remotes
+/status          ahead/behind summary + which commits you're missing
+/sync [target]   pull both branches, then push to target (default dev)
+/refresh         re-fetch and re-render the status bar
+/attach <path>   attach a file by path to the next turn
 /clip            attach the clipboard image (macOS)
 /shot            interactive screen-grab → vision
 /clear           clear chat history
@@ -51,13 +63,17 @@ Slash escapes (rarely needed):
 You almost never need these — describe what you want in chat instead. They exist for scripting / habit:
 
 ```
-kimi doctor             health-check
-kimi push               push HEAD → origin/dev (refuses main without override)
-KIMI_ALLOW_MAIN=1 kimi push --to-main
-kimi cost               lifetime + last-session token usage
+kimi doctor                       health-check
+kimi push                         HEAD → origin/dev
+kimi push --targets dev,main      both branches in one go (needs KIMI_ALLOW_MAIN=1)
+kimi push --to-main               shortcut for main only (needs KIMI_ALLOW_MAIN=1)
+kimi pull                         fast-forward local dev + main to their remotes
+kimi status                       ahead/behind for dev and main, with commit summary
+kimi sync --target dev|main|both  pull both, then push to target
+kimi cost                         lifetime + last-session token usage
 kimi memory-show
 kimi memory-remember "fact"
-kimi swarm-list         see the named agents the router can spawn
+kimi swarm-list                   see the named agents the router can spawn
 ```
 
 ## What the agent has access to
