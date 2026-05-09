@@ -104,7 +104,10 @@ class KimiTUI(App):
             yield Static(self._status_line(), id="status-text", markup=True)
 
         with Horizontal(id="input-bar"):
-            yield Input(placeholder="Tell me what you want…", id="user-input")
+            yield Input(
+                placeholder="ask anything · /attach <path> · /clip · /shot · /help",
+                id="user-input",
+            )
             yield Button("📎", id="attach-btn", classes="icon")
             yield Button("Send", id="send-btn", variant="primary")
 
@@ -119,7 +122,8 @@ class KimiTUI(App):
         self.query_one("#user-input", Input).focus()
         self._fetch_branch_state()
         self._refresh_status_widget()
-        self._log("[dim]Welcome. Pick a model/branch/mode and tell me what to do.[/dim]")
+        self._log("[dim]welcome. pick a model/branch/mode and tell me what to do.[/dim]")
+        self._log("[dim]tip: hold Option (⌥) and drag to select text. type /help for slash commands.[/dim]")
 
     def on_unmount(self) -> None:
         runtime.set_plan_hook(None)
@@ -178,11 +182,48 @@ class KimiTUI(App):
         if not text:
             return
         inp.value = ""
+
+        # Slash commands typed into the input.
+        if text.startswith("/"):
+            self._handle_slash(text)
+            return
+
         self._log(f"[bold cyan]you:[/bold cyan] {text}")
         self.history.append({"role": "user", "content": text})
         self._busy = True
         self._refresh_status_widget()
         self._run_agent_worker(self.history.copy())
+
+    def _handle_slash(self, line: str) -> None:
+        parts = line.strip().split(maxsplit=1)
+        cmd = parts[0]
+        arg = parts[1].strip() if len(parts) > 1 else ""
+
+        if cmd in {"/exit", "/quit"}:
+            self.exit()
+        elif cmd == "/clear":
+            self.action_clear_output()
+        elif cmd == "/clip":
+            self._do_attach_clipboard()
+        elif cmd == "/shot":
+            self._do_attach_screenshot()
+        elif cmd == "/attach":
+            if not arg:
+                self._log("[red]usage: /attach <path>[/red]")
+            else:
+                self._do_attach_path(arg)
+        elif cmd == "/help":
+            self._log(
+                "[dim]"
+                "/attach <path>  attach an image by path\n"
+                "/clip           attach clipboard image\n"
+                "/shot           interactive screen-grab\n"
+                "/clear          clear chat history\n"
+                "/exit           quit\n"
+                "[/dim]"
+            )
+        else:
+            self._log(f"[red]unknown slash: {cmd}[/red]  [dim](type /help)[/dim]")
 
     @work(thread=True, exclusive=True)
     def _run_agent_worker(self, history: list[dict[str, str]]) -> None:
@@ -305,22 +346,62 @@ class KimiTUI(App):
         self.call_from_thread(self._refresh_status_widget)
 
     def _attach_image(self) -> None:
-        self._do_attach()
+        # 📎 button → native macOS file picker by default. For clipboard /
+        # interactive screen-grab, the user can type /clip or /shot in the input.
+        self._do_attach_picker()
 
     @work(thread=True, exclusive=False)
-    def _do_attach(self) -> None:
-        from kimi.client import vision_describe
+    def _do_attach_picker(self) -> None:
+        from kimi.tools.vision import pick_file
+
+        path = pick_file()
+        if not path:
+            self._post_log("[dim]attach cancelled[/dim]")
+            return
+        self._attach_path(path, label="picked")
+
+    @work(thread=True, exclusive=False)
+    def _do_attach_clipboard(self) -> None:
         from kimi.tools.vision import from_clipboard
 
         path = from_clipboard()
         if not path:
-            self._post_log("[red]no image in clipboard[/red]")
+            self._post_log("[red]no image in clipboard. copy a screenshot (Cmd+Shift+Ctrl+4) first, or use 📎 to pick a file.[/red]")
             return
+        self._attach_path(path, label="clipboard")
+
+    @work(thread=True, exclusive=False)
+    def _do_attach_screenshot(self) -> None:
+        from kimi.tools.vision import screenshot_interactive
+
+        path = screenshot_interactive()
+        if not path:
+            self._post_log("[red]screenshot cancelled[/red]")
+            return
+        self._attach_path(path, label="screenshot")
+
+    @work(thread=True, exclusive=False)
+    def _do_attach_path(self, raw_path: str) -> None:
+        # Strip surrounding quotes / drag-and-drop "file://" prefixes.
+        from pathlib import Path
+        from urllib.parse import unquote, urlparse
+
+        cleaned = raw_path.strip().strip('"').strip("'")
+        if cleaned.startswith("file://"):
+            cleaned = unquote(urlparse(cleaned).path)
+        if not Path(cleaned).exists():
+            self._post_log(f"[red]not a file: {cleaned}[/red]")
+            return
+        self._attach_path(cleaned, label="file")
+
+    def _attach_path(self, path: str, *, label: str) -> None:
+        from kimi.client import vision_describe
+
         self._post_log(f"[dim]→ describing image via {config.VISION_MODEL}…[/dim]")
         try:
             desc = vision_describe(path)
-            self.history.append({"role": "user", "content": f"[clipboard image]\n{desc}"})
-            self._post_log(f"[dim]image attached. say what to do with it.[/dim]")
+            self.history.append({"role": "user", "content": f"[{label} image: {path}]\n{desc}"})
+            self._post_log(f"[green]image attached.[/green] [dim]say what to do with it.[/dim]")
         except Exception as e:  # noqa: BLE001
             self._post_log(f"[red]vision failed: {e}[/red]")
 

@@ -19,6 +19,24 @@ def screenshot_interactive() -> str | None:
     return str(out) if out.exists() and out.stat().st_size > 0 else None
 
 
+def pick_file() -> str | None:
+    """macOS native file picker for an image. Returns the chosen POSIX path or None."""
+    script = '''
+    try
+        set f to choose file of type {"public.image", "public.png", "public.jpeg"} with prompt "Choose an image to attach"
+        return POSIX path of f
+    on error
+        return ""
+    end try
+    '''
+    try:
+        r = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=120)
+        path = r.stdout.strip()
+        return path if path and Path(path).exists() else None
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return None
+
+
 def from_clipboard() -> str | None:
     """macOS clipboard → temp PNG via osascript. Returns path or None."""
     out = Path(tempfile.gettempdir()) / f"kimi-clip-{int(time.time())}.png"
