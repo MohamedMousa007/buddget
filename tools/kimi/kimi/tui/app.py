@@ -194,10 +194,11 @@ class KimiTUI(App):
             model=self.state.model,
         )
         try:
-            self._stream_buf.clear()
-            self._post_log("[bold magenta]kimi:[/bold magenta] ")
-            final = run_loop(agent, history)
-            # Persist session
+            # TUI uses non-streaming so the assistant's reply lands as a single
+            # well-wrapped block in RichLog (each write becomes a log line, so
+            # streaming token-by-token would put one word per line).
+            final = run_loop(agent, history, stream=False)
+
             with open(self.session_path, "a") as f:
                 import json
 
@@ -208,7 +209,10 @@ class KimiTUI(App):
                 (m for m in reversed(final) if m.get("role") == "assistant" and m.get("content")), None
             )
             if last_assistant:
-                self.history.append({"role": "assistant", "content": last_assistant["content"]})
+                content = last_assistant.get("content", "")
+                if content:
+                    self._post_log(f"[bold magenta]kimi:[/bold magenta]\n{content}")
+                self.history.append({"role": "assistant", "content": content})
                 usage = last_assistant.get("usage") or {}
                 self.state.session_in += int(usage.get("in", 0))
                 self.state.session_out += int(usage.get("out", 0))
@@ -216,12 +220,13 @@ class KimiTUI(App):
                     self.state.session_in * config.PRICE_INPUT_PER_M / 1_000_000
                     + self.state.session_out * config.PRICE_OUTPUT_PER_M / 1_000_000
                 )
+            else:
+                self._post_log("[dim](no reply)[/dim]")
         except Exception as e:  # noqa: BLE001
-            self._post_log(f"\n[red]error: {e}[/red]")
+            self._post_log(f"[red]error: {e}[/red]")
         finally:
             self._busy = False
             self.call_from_thread(self._refresh_status_widget)
-            self._post_log("\n")
 
     # ─── runtime hooks (called from worker thread) ────────────────
 
