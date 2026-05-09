@@ -77,12 +77,19 @@ def chat_completion(
             usage = resp.usage
             _log_usage(used_model, usage.prompt_tokens, usage.completion_tokens)
             msg = resp.choices[0].message
-            return {
+            # k2.6 is a thinking model — reasoning_content must be preserved
+            # on assistant messages and round-tripped on the next request, or
+            # the API rejects subsequent calls with "reasoning_content missing".
+            reasoning = getattr(msg, "reasoning_content", None) or getattr(msg, "reasoning", None)
+            out: dict[str, Any] = {
                 "role": "assistant",
                 "content": msg.content or "",
                 "tool_calls": [tc.model_dump() for tc in (msg.tool_calls or [])],
                 "usage": {"in": usage.prompt_tokens, "out": usage.completion_tokens},
             }
+            if reasoning:
+                out["reasoning_content"] = reasoning
+            return out
         except Exception as e:  # noqa: BLE001 — surface raw errors after retries
             last_err = e
             time.sleep(1.5 * (attempt + 1))
@@ -95,6 +102,7 @@ def _stream(kwargs: dict[str, Any], model: str) -> dict[str, Any]:
 
     console = Console()
     content_parts: list[str] = []
+    reasoning_parts: list[str] = []
     # tool calls are aggregated by index → name/arguments accumulate
     tool_calls: dict[int, dict[str, Any]] = {}
     prompt_tokens = 0
@@ -108,6 +116,10 @@ def _stream(kwargs: dict[str, Any], model: str) -> dict[str, Any]:
         if not chunk.choices:
             continue
         delta = chunk.choices[0].delta
+        # k2.6 emits reasoning_content first; we accumulate but don't print it.
+        rc = getattr(delta, "reasoning_content", None) or getattr(delta, "reasoning", None)
+        if rc:
+            reasoning_parts.append(rc)
         if delta.content:
             content_parts.append(delta.content)
             console.print(delta.content, end="", style="white")
@@ -128,12 +140,15 @@ def _stream(kwargs: dict[str, Any], model: str) -> dict[str, Any]:
         console.print()  # newline after streamed text
 
     _log_usage(model, prompt_tokens, completion_tokens)
-    return {
+    out: dict[str, Any] = {
         "role": "assistant",
         "content": "".join(content_parts),
         "tool_calls": [tool_calls[k] for k in sorted(tool_calls)],
         "usage": {"in": prompt_tokens, "out": completion_tokens},
     }
+    if reasoning_parts:
+        out["reasoning_content"] = "".join(reasoning_parts)
+    return out
 
 
 def vision_describe(image_path: str, hint: str = "") -> str:
@@ -171,11 +186,15 @@ def vision_describe(image_path: str, hint: str = "") -> str:
 
 
 def messages_iter_safe(messages: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Drop client-only keys (e.g. our `usage` annotation) before sending."""
+    """Drop client-only keys (e.g. our `usage` annotation) before sending.
+
+    Preserves `reasoning_content` because k2.6 requires it round-tripped on
+    every assistant message that has tool_calls.
+    """
+    allowed = {"role", "content", "tool_calls", "tool_call_id", "name", "reasoning_content"}
     safe: list[dict[str, Any]] = []
     for m in messages:
-        clean = {k: v for k, v in m.items() if k in {"role", "content", "tool_calls", "tool_call_id", "name"}}
-        # Some SDK versions reject empty tool_calls list; drop if empty.
+        clean = {k: v for k, v in m.items() if k in allowed}
         if "tool_calls" in clean and not clean["tool_calls"]:
             del clean["tool_calls"]
         safe.append(clean)

@@ -48,7 +48,7 @@ VISION_MODEL: str = os.getenv("KIMI_VISION_MODEL", "moonshot-v1-32k-vision-previ
 BASE_URL: str = os.getenv("KIMI_BASE_URL", "https://api.moonshot.ai/v1")
 
 # Default sampling
-TEMPERATURE: float = float(os.getenv("KIMI_TEMPERATURE", "0.3"))
+TEMPERATURE: float = float(os.getenv("KIMI_TEMPERATURE", "1.0"))  # k2.6 only accepts 1
 MAX_TOKENS: int = int(os.getenv("KIMI_MAX_TOKENS", "4096"))
 
 
