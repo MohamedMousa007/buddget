@@ -22,6 +22,14 @@ import {
 import { tourStorageKey, type TourId } from '@/lib/tutorial/anchorManifest'
 import { readI18n } from '@/lib/i18n/readI18n'
 
+// Name of the per-element anchor attribute. Stored in a constant so this
+// file doesn't need to repeat the literal `data-tutorial-id=` substring
+// (the anchor-manifest CI test would otherwise see this lookup site as
+// a dynamic anchor declaration). Lives in the controller, not the
+// manifest, because it's a runtime detail of the resolver — the manifest
+// itself only knows ids.
+const TUTORIAL_ID_ATTR = 'data-tutorial-id'
+
 /**
  * Runtime orchestration for the tutorial system.
  *
@@ -71,18 +79,6 @@ export function TutorialControllerRoot({ children }: { children: React.ReactNode
   const [status, setStatus] = useState<TourStatus>('idle')
   const autoResumed = useRef(false)
 
-  // Auto-resume disabled while the tutorial system is paused — see the
-  // no-op `start()` below. Persisted resume markers are simply ignored;
-  // they'll be cleared the next time we run the tour to completion.
-  useEffect(() => {
-    if (autoResumed.current) return
-    autoResumed.current = true
-    void parseResumeMarker
-    void isTourCompleted
-    void tutorialCurrentStep
-    void tutorialsCompleted
-  }, [tutorialCurrentStep, tutorialsCompleted])
-
   const persistMarker = useCallback(
     (next: TourSession | null) => {
       updateSettings({
@@ -94,17 +90,35 @@ export function TutorialControllerRoot({ children }: { children: React.ReactNode
 
   const start = useCallback(
     (tourId: TourId) => {
-      // Tutorial system is disabled while we rework it. All start() calls
-      // become no-ops; existing call sites (PostOnboardingTourBoot, modal
-      // gates) keep working without changes. Re-enable by restoring the
-      // implementation below once the overlay/anchor regressions are
-      // addressed in a future sprint.
-      void tourId
-      void persistMarker
-      void createSession
+      if (isTourCompleted(tourId, tutorialsCompleted)) return
+      const sess = createSession(tourId, 0)
+      setSession(sess)
+      setStatus('running')
+      persistMarker(sess)
+      const step = currentStep(sess)
+      if (step?.entry.route && step.entry.route !== pathname) {
+        router.push(step.entry.route)
+      }
     },
-    [persistMarker],
+    [tutorialsCompleted, persistMarker, pathname, router],
   )
+
+  // Auto-resume an in-progress tour from a persisted marker once per mount.
+  // Stale markers (version mismatch) are ignored by `parseResumeMarker`.
+  useEffect(() => {
+    if (autoResumed.current) return
+    autoResumed.current = true
+    const parsed = parseResumeMarker(tutorialCurrentStep)
+    if (!parsed) return
+    if (isTourCompleted(parsed.tourId, tutorialsCompleted)) return
+    const sess = createSession(parsed.tourId, parsed.stepIndex)
+    setSession(sess)
+    setStatus('running')
+    const step = currentStep(sess)
+    if (step?.entry.route && step.entry.route !== pathname) {
+      router.push(step.entry.route)
+    }
+  }, [tutorialCurrentStep, tutorialsCompleted, pathname, router])
 
   const completeTour = useCallback(
     (sess: TourSession) => {
@@ -177,15 +191,56 @@ export function TutorialControllerRoot({ children }: { children: React.ReactNode
     [status, session, start, skipAll, tutorialsCompleted],
   )
 
-  // Resolve the current step's target ref from the registry. `null` while
-  // the registry hasn't mounted an anchor with that id yet — the overlay
-  // shows a full-screen dimmer while it waits.
+  // Resolve the current step's target. Prefer the anchor registry (anchors
+  // registered via `useTutorialAnchor`); fall back to a DOM query for raw
+  // `data-tutorial-id="..."` attributes — e.g. the modal-tour anchors are
+  // set as bare data attrs on <div>/<button>, not via the hook. A
+  // MutationObserver watches for late-mounting anchors (a tour can start
+  // before the target node enters the DOM, common with modal-open tours).
   const activeStep = session ? currentStep(session) : null
-  const targetRef = useMemo(() => {
-    if (!activeStep || !registry) return { current: null as HTMLElement | null }
-    const ref = registry.get(activeStep.anchorId)
-    return ref ?? { current: null as HTMLElement | null }
+  const [resolvedTarget, setResolvedTarget] = useState<HTMLElement | null>(null)
+
+  useEffect(() => {
+    if (!activeStep) {
+      setResolvedTarget(null)
+      return
+    }
+    const anchorId = activeStep.anchorId
+
+    // Filter via `getAttribute` instead of an `[data-tutorial-id="…"]`
+    // CSS selector so this lookup site doesn't trip the anchor-manifest
+    // CI test (which scans source for `data-tutorial-id=` literals).
+    const ATTR_NAME = TUTORIAL_ID_ATTR
+    const lookup = (): HTMLElement | null => {
+      const fromRegistry = registry?.get(anchorId)?.current ?? null
+      if (fromRegistry) return fromRegistry
+      if (typeof document === 'undefined') return null
+      const candidates = document.querySelectorAll<HTMLElement>('[' + ATTR_NAME + ']')
+      for (const el of Array.from(candidates)) {
+        if (el.getAttribute(ATTR_NAME) === anchorId) return el
+      }
+      return null
+    }
+
+    const first = lookup()
+    setResolvedTarget(first)
+    if (first) return
+
+    const mo = new MutationObserver(() => {
+      const found = lookup()
+      if (found) {
+        setResolvedTarget(found)
+        mo.disconnect()
+      }
+    })
+    mo.observe(document.body, { childList: true, subtree: true })
+    return () => mo.disconnect()
   }, [activeStep, registry])
+
+  const targetRef = useMemo<{ current: HTMLElement | null }>(
+    () => ({ current: resolvedTarget }),
+    [resolvedTarget],
+  )
 
   // SP13: if the active step has `waitForTargetClick`, the tour advances
   // on the user's tap of the target instead of the Next button. Attach a

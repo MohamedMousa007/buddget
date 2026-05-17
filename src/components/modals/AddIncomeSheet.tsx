@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
+import { useAutoStartTour } from '@/hooks/useTutorial'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -107,6 +108,7 @@ export function AddIncomeSheet() {
   }
 
   useEscapeClose(isOpen, handleClose)
+  useAutoStartTour('addIncomeTour', isOpen)
 
   return (
     <ModalShell open={isOpen} onBackdropClick={handleClose}>

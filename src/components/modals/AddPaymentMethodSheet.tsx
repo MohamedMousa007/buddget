@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
+import { useAutoStartTour } from '@/hooks/useTutorial'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -96,6 +97,7 @@ export function AddPaymentMethodSheet() {
   }
 
   useEscapeClose(isOpen, handleClose)
+  useAutoStartTour('addPmTour', isOpen)
 
   return (
     <ModalShell open={isOpen} onBackdropClick={handleClose}>
