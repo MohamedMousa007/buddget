@@ -22,6 +22,7 @@ export function settingsToRow(s: AppSettings, userId: string): UserSettingsInser
     dashboard_layout: s.dashboardLayout ?? 'standard',
     tutorials_completed: s.tutorialsCompleted,
     tutorial_current_step: s.tutorialCurrentStep,
+    sms_tracking_enabled: s.smsTrackingEnabled,
   }
 }
 
@@ -55,6 +56,7 @@ export function settingsFromRow(row: UserSettingsRow, opts: SettingsFromRowOptio
     dashboardLayout: row.dashboard_layout,
     tutorialsCompleted: row.tutorials_completed ?? [],
     tutorialCurrentStep: row.tutorial_current_step ?? null,
+    smsTrackingEnabled: row.sms_tracking_enabled ?? false,
     baseCurrency: opts.baseCurrency,
     secondaryCurrency: opts.secondaryCurrency,
   }

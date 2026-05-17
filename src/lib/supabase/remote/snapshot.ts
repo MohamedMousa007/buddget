@@ -81,6 +81,7 @@ export function emptySnapshot(): Snapshot {
       dashboardLayout: 'standard' as const,
       tutorialsCompleted: [] as string[],
       tutorialCurrentStep: null as string | null,
+      smsTrackingEnabled: false,
     },
     onboardingState: {
       flowVersion: 2,

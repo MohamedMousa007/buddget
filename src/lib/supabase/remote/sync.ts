@@ -250,6 +250,7 @@ export async function pullCore(client: Client, userId: string): Promise<Snapshot
         dashboardLayout: 'standard' as const,
         tutorialsCompleted: [] as string[],
         tutorialCurrentStep: null as string | null,
+        smsTrackingEnabled: false,
       }
 
   const onboardingState = onboardingR.data
@@ -349,6 +350,7 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
         dashboardLayout: 'standard' as const,
         tutorialsCompleted: [] as string[],
         tutorialCurrentStep: null as string | null,
+        smsTrackingEnabled: false,
       }
 
   const onboardingState = onboardingR.data
