@@ -223,7 +223,10 @@ export function useBudgetPreviewPage() {
       } catch {
         /* ignore */
       }
-      router.replace('/')
+      // Hand off to /budget-setup with ?tour=1 so PostOnboardingTourBoot
+      // arms the guided tour. The tour's first step lives on this route
+      // and the controller walks the user from there to the dashboard.
+      router.replace('/budget-setup?tour=1')
     } catch (e) {
       console.error('[useBudgetPreviewPage] confirm', e)
     } finally {

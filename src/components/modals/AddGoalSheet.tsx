@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { useAutoStartTour } from '@/hooks/useTutorial'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { GoalCategoryPicker } from '@/components/features/goals/GoalCategoryPicker'
@@ -224,6 +225,8 @@ export function AddGoalSheet({ open, onClose, editingGoal }: AddGoalSheetProps) 
       ),
     []
   )
+
+  useAutoStartTour('addGoalTour', open && !editingGoal)
 
   if (!open) return null
 

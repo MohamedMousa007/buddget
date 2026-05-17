@@ -1,6 +1,7 @@
 'use client'
 
 import { useEscapeClose } from '@/hooks/useEscapeClose'
+import { useAutoStartTour } from '@/hooks/useTutorial'
 import { useAddDebtSheet } from '@/hooks/useAddDebtSheet'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { AddDebtSheetHeader } from '@/components/features/debts/AddDebtSheetHeader'
@@ -18,6 +19,11 @@ export function AddDebtSheet() {
   const d = useAddDebtSheet()
   const t = useT()
   useEscapeClose(d.isOpen, d.closeSheet)
+  // Tour anchors live only on the "new debt" subform; gate accordingly.
+  useAutoStartTour(
+    'addDebtTour',
+    d.isOpen && !d.isPayDebtFlow && !d.debtSheetPaymentOnly,
+  )
 
   const title = d.isPayDebtFlow
     ? t.addDebt.titlePayDebt

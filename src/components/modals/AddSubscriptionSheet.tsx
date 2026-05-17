@@ -1,5 +1,6 @@
 'use client'
 
+import { useAutoStartTour } from '@/hooks/useTutorial'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { Input } from '@/components/ui/input'
@@ -113,6 +114,7 @@ export type AddSubscriptionSheetProps = {
  * Catalog → configure sheet for new subscriptions; edit opens configure only.
  */
 export function AddSubscriptionSheet({ open, onClose, editing, instanceKey }: AddSubscriptionSheetProps) {
+  useAutoStartTour('addSubscriptionTour', open && !editing)
   if (!open) return null
   return (
     <ModalShell open={open} onBackdropClick={onClose} dragToClose>

@@ -3,6 +3,7 @@
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { AddSavingsAccountForm } from '@/components/features/savings/AddSavingsAccountForm'
+import { useAutoStartTour } from '@/hooks/useTutorial'
 import { useT } from '@/lib/i18n'
 
 export interface AddSavingsAccountSheetProps {
@@ -17,6 +18,7 @@ export interface AddSavingsAccountSheetProps {
  */
 export function AddSavingsAccountSheet({ open, onClose }: AddSavingsAccountSheetProps) {
   const t = useT()
+  useAutoStartTour('addSavingsTour', open)
   if (!open) return null
   return (
     <ModalShell open={open} onBackdropClick={onClose}>
