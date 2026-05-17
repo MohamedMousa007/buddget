@@ -530,6 +530,12 @@ export interface AppSettings {
    * Synced via `user_settings.tutorial_current_step`.
    */
   tutorialCurrentStep: string | null
+  /**
+   * When true, the SMS auto-tracking feature is active. The iOS Shortcut / Android Bridge
+   * will forward incoming bank SMS messages to the ingest webhook.
+   * Synced via `user_settings.sms_tracking_enabled`.
+   */
+  smsTrackingEnabled: boolean
 }
 
 /** Draft payment row from onboarding (applied to store on finish). */

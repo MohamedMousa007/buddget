@@ -46,7 +46,7 @@ const nextConfig: NextConfig = {
             "img-src 'self' data: blob: https:",
             "font-src 'self' https://fonts.gstatic.com",
             "worker-src 'self' blob:",
-            "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://generativelanguage.googleapis.com https://open.er-api.com https://api.frankfurter.dev https://api.frankfurter.app https://metals.live https://api.metals.live https://gold-api.com",
+            "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://generativelanguage.googleapis.com https://open.er-api.com https://api.frankfurter.dev https://api.frankfurter.app https://metals.live https://api.metals.live https://gold-api.com https://fcm.googleapis.com https://*.push.services.mozilla.com https://updates.push.services.mozilla.com https://*.notify.windows.com https://web.push.apple.com",
             "frame-ancestors 'none'",
             "base-uri 'self'",
             "form-action 'self'",

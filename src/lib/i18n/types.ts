@@ -1936,6 +1936,45 @@ export interface Dictionary {
     categoryCustom: string
   }
 
+  smsTracking: {
+    sectionTitle: string
+    sectionSubtitle: string
+    toggleLabel: string
+    toggleHint: string
+    statusConnected: (bank: string, time: string) => string
+    statusNeverConnected: string
+    iosCardTitle: string
+    iosCardSubtitle: string
+    iosCardStep1: string
+    iosCardStep2: string
+    iosCardStep3: string
+    iosCardStep4: string
+    iosDownloadButton: string
+    iosDownloading: string
+    androidCardTitle: string
+    androidCardSubtitle: string
+    androidApkTitle: string
+    androidApkDesc: string
+    androidApkButton: string
+    androidApkStep1: string
+    androidApkStep2: string
+    androidManualTitle: string
+    androidManualDesc: string
+    androidWebhookLabel: string
+    androidTokenLabel: string
+    androidCopied: string
+    recentTitle: string
+    recentEmpty: string
+    recentUndo: string
+    recentUndoSuccess: string
+    recentUndoExpired: string
+    recentViewExpense: string
+    supportedBanksTitle: string
+    tokenRotateButton: string
+    tokenRotateConfirm: string
+    tokenRotateSuccess: string
+  }
+
   ui: {
     select: {
       placeholder: string

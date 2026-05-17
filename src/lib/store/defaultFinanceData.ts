@@ -62,6 +62,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   dashboardLayout: 'standard',
   tutorialsCompleted: [],
   tutorialCurrentStep: null,
+  smsTrackingEnabled: false,
 }
 
 export const DEFAULT_PROFILE: UserProfile = {

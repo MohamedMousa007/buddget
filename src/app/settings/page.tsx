@@ -10,6 +10,7 @@ import { SettingsCurrencySection } from '@/components/features/settings/Settings
 import { SettingsDataManagementSection } from '@/components/features/settings/SettingsDataManagementSection'
 import { SettingsAppPreferencesSection } from '@/components/features/settings/SettingsAppPreferencesSection'
 import { SettingsSecuritySection } from '@/components/features/settings/SettingsSecuritySection'
+import { SettingsSmsTrackingSection } from '@/components/features/settings/SettingsSmsTrackingSection'
 import { useRouter } from 'next/navigation'
 import { Compass } from 'lucide-react'
 import { useTutorialController } from '@/components/tutorial/TutorialController'
@@ -60,6 +61,8 @@ export default function SettingsPage() {
           onImportChange={s.handleImport}
         />
         <SettingsAppPreferencesSection store={store} />
+
+        {s.user ? <SettingsSmsTrackingSection /> : null}
 
         <button
           type="button"

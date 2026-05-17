@@ -1351,6 +1351,7 @@ export type Database = {
           show_all_currencies_in_forms: boolean
           show_cents_in_dashboard: boolean
           show_secondary_currency: boolean
+          sms_tracking_enabled: boolean
           theme: Database["public"]["Enums"]["theme_mode"]
           tutorial_current_step: string | null
           tutorials_completed: string[]
@@ -1372,6 +1373,7 @@ export type Database = {
           show_all_currencies_in_forms?: boolean
           show_cents_in_dashboard?: boolean
           show_secondary_currency?: boolean
+          sms_tracking_enabled?: boolean
           theme?: Database["public"]["Enums"]["theme_mode"]
           tutorial_current_step?: string | null
           tutorials_completed?: string[]
@@ -1393,6 +1395,7 @@ export type Database = {
           show_all_currencies_in_forms?: boolean
           show_cents_in_dashboard?: boolean
           show_secondary_currency?: boolean
+          sms_tracking_enabled?: boolean
           theme?: Database["public"]["Enums"]["theme_mode"]
           tutorial_current_step?: string | null
           tutorials_completed?: string[]
