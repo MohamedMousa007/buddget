@@ -1861,6 +1861,28 @@ export const ar: Dictionary = {
     subscriptionGym: 'نادي رياضي / لياقة',
     subscriptionSports: 'تطبيقات رياضة / ترفيه',
     subscriptionGaming: 'ألعاب / اشتراكات أونلاين',
+
+    // New 2-step onboarding flow (v2) keys
+    nameLabel: 'اسمك',
+    namePlaceholder: 'كيف نناديك؟',
+    countryLabel: 'البلد',
+    currencyDetected: (currency: string) => `عملتك: ${currency}`,
+    currencyChange: 'تغيير →',
+    incomeTitle: 'كيف تكسب أموالك؟',
+    incomeSubtitle: 'هذا يساعدنا في بناء ميزانيتك. يمكنك التحديث في أي وقت.',
+    incomeTypeLabel: 'نوع الدخل',
+    incomeTypes: { salary: 'راتب', freelance: 'عمل حر', business: 'أعمال', other: 'أخرى' },
+    liteModeTitle: 'تريد فقط تتبع الإنفاق؟',
+    liteModeDesc: 'تخطَّ الدخل — تتبع النفقات يعمل بدونه. خطط الميزانية والرؤى المالية ستكون محدودة.',
+    useLiteMode: 'استخدم الوضع المبسط',
+    skipForNow: 'تخطَّ الآن',
+    backButton: 'رجوع',
+    completeTitle: 'أنت جاهز!',
+    completeSubtitle: 'جاري الانتقال إلى لوحة التحكم…',
+    checklistIncomePrompt: 'أضف دخلك لفتح رؤى الميزانية',
+    checklistBudgetPrompt: 'أنشئ خطة ميزانية',
+    checklistLiteModeNote: 'أنت في الوضع المبسط — أضف دخلك في أي وقت لفتح الميزات الكاملة',
+    checklistDismiss: 'إغلاق قائمة الإعداد',
   },
 
   onboardingV2: {

@@ -69,6 +69,8 @@ export const DEFAULT_PROFILE: UserProfile = {
   id: 'local',
   name: '',
   gender: null,
+  liteMode: false,
+  onboardingVersion: 0,
   baseCurrency: 'USD',
   createdAt: new Date().toISOString(),
 }
@@ -78,6 +80,8 @@ export function createFreshDefaultProfile(): UserProfile {
   return {
     id: 'local',
     name: '',
+    liteMode: false,
+    onboardingVersion: 0,
     baseCurrency: 'USD',
     createdAt: new Date().toISOString(),
   }

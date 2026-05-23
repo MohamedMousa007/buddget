@@ -1865,6 +1865,28 @@ export const en: Dictionary = {
     subscriptionGym: 'Gym / fitness',
     subscriptionSports: 'Sports / entertainment apps',
     subscriptionGaming: 'Gaming / online subs',
+
+    // New 2-step onboarding flow (v2) keys
+    nameLabel: 'Your name',
+    namePlaceholder: 'What should we call you?',
+    countryLabel: 'Country',
+    currencyDetected: (currency: string) => `Your currency: ${currency}`,
+    currencyChange: 'Change →',
+    incomeTitle: 'How do you earn money?',
+    incomeSubtitle: 'This helps us build your budget. You can update this anytime.',
+    incomeTypeLabel: 'Income type',
+    incomeTypes: { salary: 'Salary', freelance: 'Freelance', business: 'Business', other: 'Other' },
+    liteModeTitle: 'Just want to track spending?',
+    liteModeDesc: 'Skip income — your expense tracking still works. Budget plans and financial insights will be limited.',
+    useLiteMode: 'Use Lite Mode',
+    skipForNow: 'Skip for now',
+    backButton: 'Back',
+    completeTitle: "You're all set!",
+    completeSubtitle: 'Taking you to your dashboard…',
+    checklistIncomePrompt: 'Add your income to unlock budget insights',
+    checklistBudgetPrompt: 'Create a budget plan',
+    checklistLiteModeNote: "You're in Lite Mode — add income anytime to unlock full features",
+    checklistDismiss: 'Dismiss setup checklist',
   },
 
   onboardingV2: {

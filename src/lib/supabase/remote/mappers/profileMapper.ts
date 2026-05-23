@@ -52,6 +52,8 @@ export function profileToRow(
     transport_mode: p.transportMode ?? null,
     monthly_rent: p.monthlyRent ?? null,
     rent_includes_utilities: p.rentIncludesUtilities ?? false,
+    lite_mode: p.liteMode ?? false,
+    // onboarding_version written only by the complete-journey API (service role)
   }
 }
 
@@ -81,6 +83,8 @@ export function profileFromRow(row: ProfileRow): ProfileFromRowResult {
     transportMode: (row.transport_mode ?? null) as UserProfile['transportMode'],
     monthlyRent: row.monthly_rent,
     rentIncludesUtilities: row.rent_includes_utilities,
+    liteMode: row.lite_mode,
+    onboardingVersion: row.onboarding_version,
     createdAt: row.created_at,
   }
   const extras: ProfileExtras = {
