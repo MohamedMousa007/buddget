@@ -1312,6 +1312,164 @@ export type Database = {
           },
         ]
       }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sms_events: {
+        Row: {
+          amount: number | null
+          auto_category: string | null
+          badge_key: string | null
+          bank_name: string | null
+          created_at: string
+          currency: string | null
+          expense_id: string | null
+          id: string
+          is_duplicate: boolean
+          merchant: string | null
+          parse_ok: boolean
+          parsed_at: string | null
+          raw_body: string
+          received_at: string
+          sender: string
+          token_id: string | null
+          transaction_type: string | null
+          undo_expires_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount?: number | null
+          auto_category?: string | null
+          badge_key?: string | null
+          bank_name?: string | null
+          created_at?: string
+          currency?: string | null
+          expense_id?: string | null
+          id?: string
+          is_duplicate?: boolean
+          merchant?: string | null
+          parse_ok?: boolean
+          parsed_at?: string | null
+          raw_body: string
+          received_at: string
+          sender: string
+          token_id?: string | null
+          transaction_type?: string | null
+          undo_expires_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number | null
+          auto_category?: string | null
+          badge_key?: string | null
+          bank_name?: string | null
+          created_at?: string
+          currency?: string | null
+          expense_id?: string | null
+          id?: string
+          is_duplicate?: boolean
+          merchant?: string | null
+          parse_ok?: boolean
+          parsed_at?: string | null
+          raw_body?: string
+          received_at?: string
+          sender?: string
+          token_id?: string | null
+          transaction_type?: string | null
+          undo_expires_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_events_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_events_token_id_fkey"
+            columns: ["token_id"]
+            isOneToOne: false
+            referencedRelation: "sms_ingest_tokens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sms_ingest_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          token?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          token?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_ingest_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trusted_devices: {
         Row: {
           created_at: string
