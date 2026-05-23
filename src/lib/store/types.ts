@@ -443,6 +443,10 @@ export interface UserProfile {
    * `profiles.no_goals_declared`.
    */
   noGoalsDeclared?: boolean
+  /** True when user skipped income during onboarding. Tracking-only mode. */
+  liteMode?: boolean
+  /** 0 = never completed, 1 = old flow, 2 = new 2-step flow */
+  onboardingVersion?: number
   /**
    * Household composition used by the budget-build AI (drives rent / food /
    * transport scaling factors). Synced via `profiles.household`.

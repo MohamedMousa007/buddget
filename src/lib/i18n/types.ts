@@ -1712,6 +1712,28 @@ export interface Dictionary {
     subscriptionGym: string
     subscriptionSports: string
     subscriptionGaming: string
+
+    // New 2-step onboarding flow (v2) keys
+    nameLabel: string
+    namePlaceholder: string
+    countryLabel: string
+    currencyDetected: (currency: string) => string
+    currencyChange: string
+    incomeTitle: string
+    incomeSubtitle: string
+    incomeTypeLabel: string
+    incomeTypes: { salary: string; freelance: string; business: string; other: string }
+    liteModeTitle: string
+    liteModeDesc: string
+    useLiteMode: string
+    skipForNow: string
+    backButton: string
+    completeTitle: string
+    completeSubtitle: string
+    checklistIncomePrompt: string
+    checklistBudgetPrompt: string
+    checklistLiteModeNote: string
+    checklistDismiss: string
   }
 
   onboardingV2: {

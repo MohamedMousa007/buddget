@@ -801,11 +801,13 @@ export type Database = {
           household: string | null
           id: string
           lifestyle_tier: string | null
+          lite_mode: boolean
           monthly_rent: number | null
           name: string
           no_debts_declared: boolean
           no_goals_declared: boolean
           onboarding_completed: boolean
+          onboarding_version: number
           phone: string | null
           rent_includes_utilities: boolean
           secondary_currency:
@@ -832,11 +834,13 @@ export type Database = {
           household?: string | null
           id: string
           lifestyle_tier?: string | null
+          lite_mode?: boolean
           monthly_rent?: number | null
           name?: string
           no_debts_declared?: boolean
           no_goals_declared?: boolean
           onboarding_completed?: boolean
+          onboarding_version?: number
           phone?: string | null
           rent_includes_utilities?: boolean
           secondary_currency?:
@@ -863,11 +867,13 @@ export type Database = {
           household?: string | null
           id?: string
           lifestyle_tier?: string | null
+          lite_mode?: boolean
           monthly_rent?: number | null
           name?: string
           no_debts_declared?: boolean
           no_goals_declared?: boolean
           onboarding_completed?: boolean
+          onboarding_version?: number
           phone?: string | null
           rent_includes_utilities?: boolean
           secondary_currency?:
