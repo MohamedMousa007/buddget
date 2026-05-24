@@ -34,8 +34,8 @@ export function PrivacyRightsSections() {
         <p>
           To request early deletion of your data, use the Delete Account feature in the Profile page, or
           contact{' '}
-          <a href="mailto:hello@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
-            hello@buddget.app
+          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
+            support@buddget.app
           </a>
           .
         </p>
@@ -45,8 +45,8 @@ export function PrivacyRightsSections() {
         <p>
           Buddget does not currently target users in the European Economic Area. If you are located in the
           EEA and use the Service, you may have additional rights under applicable local law; contact us at{' '}
-          <a href="mailto:hello@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
-            hello@buddget.app
+          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
+            support@buddget.app
           </a>
           .
         </p>
@@ -73,8 +73,8 @@ export function PrivacyRightsSections() {
         </ul>
         <p className="mt-3">
           To exercise any of these rights, contact us at{' '}
-          <a href="mailto:hello@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
-            hello@buddget.app
+          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
+            support@buddget.app
           </a>{' '}
           with the subject line &ldquo;Privacy Rights Request.&rdquo; We will respond within 30 days (or as required by
           applicable law).

@@ -40,8 +40,8 @@ export function PrivacyTechSections() {
         <p>
           If you are a parent or guardian and believe that your child has provided us with personal
           information without your consent, please contact us immediately at{' '}
-          <a href="mailto:hello@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
-            hello@buddget.app
+          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
+            support@buddget.app
           </a>
           . Upon verification, we will take steps to promptly delete such information from our systems.
         </p>

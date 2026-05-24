@@ -46,7 +46,7 @@ export default function LegalLayout({ children }: { children: ReactNode }) {
             <Link href="/legal/privacy" className="hover:text-[var(--color-brand-red)] transition-colors">
               Privacy Policy
             </Link>
-            <a href="mailto:hello@buddget.app" className="hover:text-[var(--color-brand-red)] transition-colors">
+            <a href="mailto:support@buddget.app" className="hover:text-[var(--color-brand-red)] transition-colors">
               Contact
             </a>
           </div>

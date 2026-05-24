@@ -36,8 +36,8 @@ export function PrivacyLegalSections() {
       <LegalSection title="11. Contact Us">
         <p>
           Buddget is operated as an independent product. For legal inquiries, contact{' '}
-          <a href="mailto:hello@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
-            hello@buddget.app
+          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
+            support@buddget.app
           </a>
           .
         </p>
@@ -47,8 +47,8 @@ export function PrivacyLegalSections() {
         </p>
         <p>
           <strong className="text-[var(--color-brand-text-primary)]">Email:</strong>{' '}
-          <a href="mailto:hello@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
-            hello@buddget.app
+          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
+            support@buddget.app
           </a>
         </p>
         <p>
