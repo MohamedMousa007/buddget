@@ -11,6 +11,7 @@ import { InstallButton } from '@/components/pwa/InstallButton'
 import { useThemeSync } from '@/hooks/useThemeSync'
 import { useRates } from '@/hooks/useRates'
 import { useGoldPrice } from '@/hooks/useGoldPrice'
+import { WidgetSync } from '@/lib/native/WidgetSync'
 
 /** Keeps FX + gold spot in sync for all main app routes (not auth/onboarding). */
 function MarketRatesSync() {
@@ -45,11 +46,11 @@ export function AppShell({ children }: AppShellProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-brand-bg)]">
+    <div className="min-h-screen bg-[var(--color-brand-bg)] no-tap-highlight">
       <MarketRatesSync />
       <Sidebar />
       <DesktopHeaderBar />
-      <main className="pt-[calc(3rem+env(safe-area-inset-top,0px))] lg:pt-12 lg:ms-[176px] pb-16 lg:pb-0 min-h-screen">
+      <main className="native-scroll pt-[calc(3rem+env(safe-area-inset-top,0px))] lg:pt-12 lg:ms-[176px] pb-16 lg:pb-0 min-h-screen safe-area-x">
         <OnboardingBanner />
         <SyncFailureBanner />
         {children}
@@ -57,6 +58,7 @@ export function AppShell({ children }: AppShellProps) {
       <InstallButton variant="banner" />
       <BottomNav />
       <ModalProvider />
+      <WidgetSync />
     </div>
   )
 }

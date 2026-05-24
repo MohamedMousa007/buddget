@@ -9,6 +9,7 @@ import { AuthFormErrorAlert } from '@/components/features/auth-modal/AuthFormErr
 import { AuthPrimaryButton } from '@/components/features/auth-modal/AuthPrimaryButton'
 import { AuthOAuthButtons } from '@/components/features/auth-modal/AuthOAuthButtons'
 import { PasswordStrengthMeter } from '@/components/features/auth-modal/PasswordStrengthMeter'
+import { BiometricLoginButton } from '@/components/features/auth-modal/BiometricLoginButton'
 import { useAuth } from '@/components/auth/auth-context'
 import { useT } from '@/lib/i18n'
 import type { AuthEmailStep, AuthPasswordIntent } from '@/hooks/useAuthModal'
@@ -133,6 +134,8 @@ export function AuthSignInUpStep({
             <p className="text-center text-sm text-[var(--color-brand-text-secondary)]">
               {t.auth.morphTitle}
             </p>
+
+            <BiometricLoginButton autoPrompt />
 
             <AuthOAuthButtons nextPath={pendingNext || '/'} />
 

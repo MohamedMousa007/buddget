@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus, X, Receipt, DollarSign, CreditCard, FileText, Sparkles } from 'lucide-react'
+import { Plus, X, Receipt, DollarSign, CreditCard, FileText, Sparkles, Mic, Camera } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ModalShell } from '@/components/modals/ModalShell'
@@ -8,6 +8,9 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useT } from '@/lib/i18n'
+import { useLongPress } from '@/hooks/useLongPress'
+import { VoiceRecordSheet } from '@/components/voice/VoiceRecordSheet'
+import { ReceiptScanSheet } from '@/components/receipt/ReceiptScanSheet'
 
 export function QuickAddFAB() {
   const router = useRouter()
@@ -15,8 +18,12 @@ export function QuickAddFAB() {
   const requireAuth = useRequireAuthAction()
   const t = useT()
   const isOpen = activeModal === 'quickAdd'
+  const voiceOpen = activeModal === 'voiceExpense'
+  const scanOpen = activeModal === 'scanReceipt'
 
   const OPTIONS = [
+    { id: 'voiceExpense', label: '🎤 Record expense (voice)', icon: Mic, emoji: '🎤' },
+    { id: 'scanReceipt', label: '📷 Scan a receipt', icon: Camera, emoji: '📷' },
     { id: 'addExpense', label: t.modals.fabLogPurchase, icon: Receipt, emoji: '💸' },
     { id: 'addIncome', label: t.modals.fabAddIncome, icon: DollarSign, emoji: '💵' },
     { id: 'addPaymentMethod', label: t.modals.fabAddPayment, icon: CreditCard, emoji: '💳' },
@@ -24,8 +31,28 @@ export function QuickAddFAB() {
     { id: 'budgetSetup', label: t.modals.fabAskAi, icon: Sparkles, emoji: '✨' },
   ]
 
+  const openVoice = () => {
+    requireAuth(() => {
+      setActiveModal('voiceExpense')
+    }, t.modals.fabRequireAuth)
+  }
+
+  const openScan = () => {
+    requireAuth(() => {
+      setActiveModal('scanReceipt')
+    }, t.modals.fabRequireAuth)
+  }
+
   const runOption = (optionId: string) => {
     const msg = t.modals.fabRequireAuth
+    if (optionId === 'voiceExpense') {
+      openVoice()
+      return
+    }
+    if (optionId === 'scanReceipt') {
+      openScan()
+      return
+    }
     if (optionId === 'addDebt') {
       requireAuth(() => {
         setActiveModal(null)
@@ -48,14 +75,19 @@ export function QuickAddFAB() {
 
   useEscapeClose(isOpen, () => setActiveModal(null))
 
+  const longPress = useLongPress<HTMLButtonElement>(
+    openVoice,
+    () => setActiveModal(isOpen ? null : 'quickAdd'),
+    { delay: 600 },
+  )
+
   return (
     <>
-      {/* Desktop FAB */}
       <button
         type="button"
         data-tutorial-id="fab-root"
-        onClick={() => setActiveModal(isOpen ? null : 'quickAdd')}
-        className="hidden lg:flex fixed bottom-8 end-8 z-50 items-center justify-center w-14 h-14 rounded-full bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white shadow-lg shadow-red-900/30 transition-all duration-200 active:scale-95 cursor-pointer"
+        {...longPress}
+        className="hidden lg:flex fixed bottom-8 end-8 z-50 items-center justify-center w-14 h-14 rounded-full bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white shadow-lg shadow-red-900/30 transition-all duration-200 active:scale-95 cursor-pointer touch-none select-none"
         aria-label={isOpen ? t.common.close : t.nav.quickAdd}
         aria-expanded={isOpen}
       >
@@ -74,6 +106,9 @@ export function QuickAddFAB() {
         panelClassName="!bottom-[max(0.5rem,calc(4rem+env(safe-area-inset-bottom,0px)))] !start-2 !end-2 !max-h-[min(72vh,calc(100dvh-5.5rem))] lg:!bottom-24 lg:!end-8 lg:!start-auto lg:!top-auto lg:!translate-x-0 lg:!translate-y-0 lg:!w-[360px] lg:!max-h-[min(90vh,520px)] lg:!rounded-2xl"
       >
         <h3 className="text-lg font-semibold text-[var(--color-brand-text-primary)] mb-4 pe-2">{t.modals.fabTitle}</h3>
+        <p className="text-xs text-[var(--color-brand-text-muted)] mb-3 pe-2">
+          Tip: long-press the + button to record an expense by voice.
+        </p>
         <div className="space-y-1">
           {OPTIONS.map((option) => (
             <button
@@ -88,6 +123,9 @@ export function QuickAddFAB() {
           ))}
         </div>
       </ModalShell>
+
+      <VoiceRecordSheet open={voiceOpen} onClose={() => setActiveModal(null)} />
+      <ReceiptScanSheet open={scanOpen} onClose={() => setActiveModal(null)} />
     </>
   )
 }

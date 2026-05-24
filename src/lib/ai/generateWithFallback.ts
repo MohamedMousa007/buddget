@@ -2,6 +2,7 @@ import {
   formatProxyAiErrorForUser,
   isBuddgetServerThrottleMessage,
 } from '@/lib/ai/formatAiProxyError'
+import { apiUrl } from '@/lib/apiBase'
 
 /** POST body for `/api/ai` (Gemini proxy). */
 export interface GeminiProxyRequestBody {
@@ -32,7 +33,7 @@ export async function generateWithFallback(
 
   let last: Response | undefined
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const response = await fetch('/api/ai', {
+    const response = await fetch(apiUrl('/api/ai'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

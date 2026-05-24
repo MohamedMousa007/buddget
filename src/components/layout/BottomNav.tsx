@@ -14,6 +14,8 @@ import {
 } from '@/lib/navigation/bottomNavConfig'
 import { useBottomNavMoreSheet } from '@/hooks/useBottomNavMoreSheet'
 import { BottomNavMorePanel } from '@/components/features/layout/BottomNavMorePanel'
+import { useLongPress } from '@/hooks/useLongPress'
+import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 
 export function BottomNav() {
   const pathname = usePathname()
@@ -21,8 +23,23 @@ export function BottomNav() {
   const { setActiveModal } = useSettingsStore()
   const { moreOpen, setMoreOpen, moreWrapRef } = useBottomNavMoreSheet()
   const moreActive = BOTTOM_NAV_MORE_HREFS.has(pathname)
+  const requireAuth = useRequireAuthAction()
 
   const closeMore = () => setMoreOpen(false)
+
+  const fabLongPress = useLongPress<HTMLButtonElement>(
+    () => {
+      requireAuth(() => {
+        closeMore()
+        setActiveModal('voiceExpense')
+      }, t.modals.fabRequireAuth)
+    },
+    () => {
+      closeMore()
+      setActiveModal('quickAdd')
+    },
+    { delay: 600 },
+  )
 
   return (
     <nav className="lg:hidden fixed bottom-0 start-0 end-0 z-50 bg-[var(--color-brand-card)]/95 backdrop-blur-xl border-t border-[var(--color-brand-border)] safe-area-bottom">
@@ -34,13 +51,10 @@ export function BottomNav() {
                 key="fab"
                 type="button"
                 data-tutorial-id="fab-root"
-                onClick={() => {
-                  closeMore()
-                  setActiveModal('quickAdd')
-                }}
+                {...fabLongPress}
                 whileTap={{ scale: 0.92 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 22 }}
-                className="flex items-center justify-center w-12 h-12 -mt-6 rounded-full bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white shadow-lg shadow-red-900/30 transition-colors duration-200"
+                className="flex items-center justify-center w-12 h-12 -mt-6 rounded-full bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white shadow-lg shadow-red-900/30 transition-colors duration-200 touch-none select-none"
                 aria-label={t.nav.quickAdd}
               >
                 <item.icon className="w-6 h-6" />

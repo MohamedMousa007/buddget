@@ -10,6 +10,8 @@ import {
   suspendFinanceSync,
 } from '@/components/sync/SupabaseFinanceSync'
 import { AnalyticsHeartbeat } from '@/components/sync/AnalyticsHeartbeat'
+import { NativeBootstrap } from '@/lib/native/NativeBootstrap'
+import { BiometricSessionPersist } from '@/lib/native/useBiometricSessionPersist'
 import { AuthModal } from '@/components/auth/AuthModal'
 import { AuthContext, type AuthContextValue, type AuthMode, useAuth } from '@/components/auth/auth-context'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
@@ -386,6 +388,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           <>
             <SupabaseFinanceSync userId={user.id} />
             <AnalyticsHeartbeat userId={user.id} />
+            <NativeBootstrap session={session} />
+            <BiometricSessionPersist session={session} />
           </>
         ) : null}
         {showAuthModal ? (

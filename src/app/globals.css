@@ -233,6 +233,58 @@
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
+  .safe-area-start {
+    padding-inline-start: env(safe-area-inset-left, 0px);
+  }
+  .safe-area-end {
+    padding-inline-end: env(safe-area-inset-right, 0px);
+  }
+  .safe-area-x {
+    padding-inline-start: env(safe-area-inset-left, 0px);
+    padding-inline-end: env(safe-area-inset-right, 0px);
+  }
+
+  .native-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    scroll-behavior: smooth;
+  }
+
+  .no-tap-highlight {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* ── Capacitor / native shell tweaks ── */
+body.platform-native {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  overscroll-behavior-y: none;
+}
+body.platform-native input,
+body.platform-native textarea,
+body.platform-native [contenteditable='true'] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/** Push the iOS status bar away from headers when running edge-to-edge. */
+body.platform-ios main {
+  padding-top: max(env(safe-area-inset-top, 0px), 0px);
+}
+body.platform-ios .fixed.top-0 {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/** Android keeps the status bar opaque (#0A0A0F) — no extra inset needed,
+    but bottom-bar gestures need padding so the FAB doesn't sit on the home pill. */
+body.platform-android nav.fixed.bottom-0 {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.25rem);
+}
+body.platform-ios nav.fixed.bottom-0 {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.25rem);
 }
 
 /* ── Arabic typography (layout stays LTR; `dir` on <html> remains ltr) ── */
