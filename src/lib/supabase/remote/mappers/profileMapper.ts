@@ -4,6 +4,8 @@ import type { ProfileRow, ProfileInsert } from '@/lib/supabase/remote/types'
 export interface ProfileExtras {
   financialGoalsNotes: string
   activeBudgetPlanId: string | null
+  /** Secondary display currency (from AppSettings). Written to profiles.secondary_currency. */
+  secondaryCurrency?: Currency | null
   /** Present on READ; preserved via round-trip test so the value stays in the
    *  store when we re-hydrate a freshly-flipped onboarding flag. */
   onboardingCompleted?: boolean
@@ -36,7 +38,7 @@ export function profileToRow(
     city: p.city ?? null,
     country: p.country ?? null,
     base_currency: p.baseCurrency,
-    secondary_currency: null,
+    secondary_currency: (extras.secondaryCurrency ?? null) as string | null,
     avatar_emoji: p.avatarPresetId ?? null,
     avatar_image_path: p.avatar ?? null,
     gender: p.gender ?? null,
