@@ -93,10 +93,10 @@ export default function DashboardPage() {
   }, [checklist.allDone, checklist.hidden, showToast, t.onboarding.checklistCompleteToast])
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <DashboardSearchParamsSync />
       <div
-        className="max-w-2xl lg:max-w-3xl mx-auto px-4 pt-4 pb-8 space-y-4"
+        className="max-w-2xl lg:max-w-3xl mx-auto px-4 pt-4 pb-8 space-y-4 flex-1"
         {...dashboardAnchor.anchorProps}
       >
         <SetupChecklist />
@@ -220,6 +220,17 @@ export default function DashboardPage() {
           </>
         )}
       </div>
+
+      {/* Minimal legal footer — required for Google OAuth brand verification */}
+      <footer className="max-w-2xl lg:max-w-3xl mx-auto px-4 py-4 w-full flex items-center justify-center gap-4 text-[11px] text-[var(--color-brand-text-muted)]">
+        <a href="/legal/privacy" className="hover:text-[var(--color-brand-text-secondary)] transition-colors">
+          Privacy Policy
+        </a>
+        <span aria-hidden>·</span>
+        <a href="/legal/terms" className="hover:text-[var(--color-brand-text-secondary)] transition-colors">
+          Terms of Service
+        </a>
+      </footer>
     </div>
   )
 }
