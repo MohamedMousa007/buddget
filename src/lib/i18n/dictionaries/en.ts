@@ -1146,6 +1146,7 @@ export const en: Dictionary = {
     errorNoAccountForEmail: "We couldn\u2019t find an account with that email. Check the spelling or create a new account.",
     errorPasswordWeakComposition: 'Your password needs at least one letter and one number.',
     errorSignUpGeneric: "Something didn\u2019t work. Give it another try.",
+    errorEmailSendFailed: "We couldn\u2019t send the confirmation email right now. Please try again in a moment.",
     errorOtpIncomplete: 'Enter all 6 digits to continue.',
     passwordStrengthLabel: 'Password strength',
     passwordStrengthWeak: 'Weak',

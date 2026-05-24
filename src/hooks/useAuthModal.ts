@@ -322,6 +322,21 @@ export function useAuthModal() {
     })
     setLoading(false)
     if (e) {
+      const rawMsg = (e.message || '').toLowerCase()
+      const isEmailSendError =
+        rawMsg.includes('sending confirmation email') || rawMsg.includes('error sending')
+
+      if (isEmailSendError && data.user) {
+        // Supabase created the account but failed to deliver the confirmation
+        // email (e.g. no SMTP configured, transient provider error).
+        // Move to the verify step so the user can request a fresh code.
+        setVerifyPurpose('signup')
+        setStep('verify')
+        setOtp('')
+        startResendCooldown()
+        return
+      }
+
       const mapped = mapAuthError(e, 'signup', t)
       if (mapped === 'EMAIL_EXISTS') {
         // Supabase disagreed with our check-email result. Push the user back

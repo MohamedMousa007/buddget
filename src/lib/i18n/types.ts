@@ -1042,6 +1042,7 @@ export interface Dictionary {
     errorNoAccountForEmail: string
     errorPasswordWeakComposition: string
     errorSignUpGeneric: string
+    errorEmailSendFailed: string
     errorOtpIncomplete: string
     passwordStrengthLabel: string
     passwordStrengthWeak: string
