@@ -15,6 +15,7 @@ import { DebugTourAnchors } from '@/components/tutorial/DebugTourAnchors'
 import { DebugTourTrigger } from '@/components/tutorial/DebugTourTrigger'
 import { MotionConfigRoot } from '@/components/layout/MotionConfigRoot'
 import { THEME_INIT_SCRIPT } from '@/lib/theme/applyTheme'
+import { PlatformBodyClass } from '@/lib/native/PlatformBodyClass'
 
 const dmSans = DM_Sans({
   subsets: ['latin'],
@@ -147,6 +148,7 @@ export default function RootLayout({
       <body
         className={`${dmSans.variable} ${dmSansHeading.variable} ${jetbrainsMono.variable} ${ibmPlexArabic.variable} font-sans antialiased`}
       >
+        <PlatformBodyClass />
         <TooltipProvider>
           <LocaleProvider>
             <AuthProvider>

@@ -109,6 +109,28 @@ export function ModalShell({
     return () => mq.removeEventListener('change', apply)
   }, [])
 
+  // Keyboard avoidance for native + iOS Safari: when the soft keyboard rises,
+  // shrink the panel so its content stays scrollable above the keyboard
+  // instead of being clipped behind it.
+  const [keyboardOffset, setKeyboardOffset] = useState(0)
+  useEffect(() => {
+    if (!open) return
+    if (typeof window === 'undefined') return
+    const vv = window.visualViewport
+    if (!vv) return
+    const update = () => {
+      const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
+      setKeyboardOffset(inset)
+    }
+    update()
+    vv.addEventListener('resize', update)
+    vv.addEventListener('scroll', update)
+    return () => {
+      vv.removeEventListener('resize', update)
+      vv.removeEventListener('scroll', update)
+    }
+  }, [open])
+
   const desktopFadePanel = !journeyChrome && lgMotion
 
   return (
@@ -198,8 +220,14 @@ export function ModalShell({
               panelStaticClasses,
               zStack,
               dragToClose ? 'flex flex-col overflow-hidden outline-none' : 'overflow-y-auto outline-none',
+              'native-scroll',
               panelClassName
             )}
+            style={
+              keyboardOffset > 0 && !journeyChrome && !desktopFadePanel
+                ? { paddingBottom: `${keyboardOffset}px` }
+                : undefined
+            }
           >
             {dragToClose ? (
               <>
