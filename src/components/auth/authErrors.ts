@@ -1,5 +1,52 @@
 import type { Dictionary } from '@/lib/i18n'
 
+export type OAuthFailureReason =
+  | 'cancelled'
+  | 'exchange_failed'
+  | 'missing_code'
+  | 'provider_error'
+  | 'unknown'
+
+/** Normalise callback `?reason=` values from `/auth/callback` redirects. */
+export function mapOAuthCallbackReason(reason: string | null | undefined): OAuthFailureReason {
+  if (!reason) return 'unknown'
+  const r = reason.toLowerCase()
+  if (r === 'access_denied' || r.includes('cancel')) return 'cancelled'
+  if (r === 'exchange_failed') return 'exchange_failed'
+  if (r === 'missing_code') return 'missing_code'
+  return 'provider_error'
+}
+
+/** Map OAuth start/callback failures to friendly i18n copy. */
+export function mapOAuthError(
+  err: unknown,
+  reason: OAuthFailureReason | null,
+  t: Dictionary,
+): string {
+  if (reason === 'cancelled') return t.auth.oauthCancelled
+  if (reason === 'exchange_failed' || reason === 'missing_code') return t.auth.oauthFailed
+
+  const raw = err instanceof Error ? err.message : err ? String(err) : ''
+  const m = raw.toLowerCase()
+
+  if (m.includes('fetch') || m.includes('network') || m.includes('failed to fetch')) {
+    return t.auth.errorNetwork
+  }
+  if (
+    m.includes('provider is not enabled') ||
+    m.includes('unsupported provider') ||
+    m.includes('validation failed')
+  ) {
+    return t.auth.oauthUnavailable
+  }
+  if (m.includes('access_denied') || m.includes('cancel')) {
+    return t.auth.oauthCancelled
+  }
+  if (reason === 'provider_error') return t.auth.oauthFailed
+
+  return raw || t.auth.oauthFailed
+}
+
 /** Map Supabase / network errors to user-facing copy (AuthModal). */
 export function mapAuthError(err: unknown, context: 'signin' | 'signup' | 'otp' | 'forgot' | 'resend', t: Dictionary): string {
   const raw = err instanceof Error ? err.message : String(err)

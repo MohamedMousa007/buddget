@@ -1,94 +1,91 @@
 'use client'
 
-import { useCallback, useState } from 'react'
 import { Loader2 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
-import { APP_CONFIG } from '@/lib/config'
+import { useOAuthSignIn } from '@/hooks/useOAuthSignIn'
 import { useT } from '@/lib/i18n'
-import { useAuth } from '@/components/auth/auth-context'
 
 /**
  * Google + Apple sign-in buttons for the auth modal and the landing page.
- *
- * Wires Supabase's `signInWithOAuth` with a redirectTo that matches our
- * `/auth/callback` handler. The handler lives at `src/app/auth/callback/route.ts`
- * and already takes care of exchanging the code for a session + routing the
- * user to `?next=...` when present.
- *
- * Provider setup lives in the Supabase dashboard (Auth → Providers); this
- * component is a no-op when the provider isn't configured (Supabase returns
- * an error which we surface inline).
+ * Unconfigured providers (see `NEXT_PUBLIC_OAUTH_*`) render disabled.
  */
 export function AuthOAuthButtons({ nextPath }: { nextPath: string }) {
   const t = useT()
-  const { authModalMessage } = useAuth()
-  const [pending, setPending] = useState<'google' | 'apple' | null>(null)
-  const [error, setError] = useState<string>('')
-
-  const sign = useCallback(
-    async (provider: 'google' | 'apple') => {
-      setPending(provider)
-      setError('')
-      try {
-        const supabase = createClient()
-        const origin =
-          typeof window !== 'undefined' ? window.location.origin : APP_CONFIG.url.replace(/\/$/, '')
-        const next = nextPath && nextPath.startsWith('/') ? nextPath : '/'
-        const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(next)}`
-        const { error: e } = await supabase.auth.signInWithOAuth({
-          provider,
-          options: { redirectTo },
-        })
-        if (e) {
-          setError(e.message || t.auth.oauthUnavailable)
-          setPending(null)
-        }
-        // On success the browser navigates to the provider; no return here.
-      } catch (e) {
-        setError((e as Error).message || t.auth.oauthUnavailable)
-        setPending(null)
-      }
-    },
-    [nextPath, t.auth.oauthUnavailable],
-  )
+  const { pending, error, signIn, isGoogleEnabled, isAppleEnabled } = useOAuthSignIn(nextPath)
 
   return (
     <div className="space-y-2">
-      <button
-        type="button"
+      <OAuthButton
+        provider="google"
+        enabled={isGoogleEnabled}
+        pending={pending === 'google'}
         disabled={pending !== null}
-        onClick={() => void sign('google')}
-        className="w-full h-10 sm:h-11 rounded-xl border text-sm font-medium flex items-center justify-center gap-2 transition-colors text-[var(--color-brand-text-primary)] border-[var(--color-brand-border)] bg-[var(--color-brand-card)] hover:bg-[var(--color-brand-elevated)] disabled:opacity-60"
-        aria-label={t.auth.continueWithGoogle}
-      >
-        {pending === 'google' ? (
-          <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
-        ) : (
-          <GoogleGlyph />
-        )}
-        <span>{t.auth.continueWithGoogle}</span>
-      </button>
-      <button
-        type="button"
+        label={t.auth.continueWithGoogle}
+        disabledHint={t.auth.oauthProviderDisabled}
+        onClick={() => void signIn('google')}
+        variant="outline"
+      />
+      <OAuthButton
+        provider="apple"
+        enabled={isAppleEnabled}
+        pending={pending === 'apple'}
         disabled={pending !== null}
-        onClick={() => void sign('apple')}
-        className="w-full h-10 sm:h-11 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors text-white bg-black hover:bg-black/90 disabled:opacity-60"
-        aria-label={t.auth.continueWithApple}
-      >
-        {pending === 'apple' ? (
-          <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
-        ) : (
-          <AppleGlyph />
-        )}
-        <span>{t.auth.continueWithApple}</span>
-      </button>
+        label={t.auth.continueWithApple}
+        disabledHint={t.auth.oauthProviderDisabled}
+        onClick={() => void signIn('apple')}
+        variant="apple"
+      />
       {error ? (
         <p className="text-[12px] text-[var(--color-brand-red)] text-center" role="alert">
           {error}
         </p>
       ) : null}
-      {authModalMessage ? null : null /* placeholder to keep message in parent */}
     </div>
+  )
+}
+
+function OAuthButton({
+  provider,
+  enabled,
+  pending,
+  disabled,
+  label,
+  disabledHint,
+  onClick,
+  variant,
+}: {
+  provider: 'google' | 'apple'
+  enabled: boolean
+  pending: boolean
+  disabled: boolean
+  label: string
+  disabledHint: string
+  onClick: () => void
+  variant: 'outline' | 'apple'
+}) {
+  const isDisabled = !enabled || disabled
+  const base =
+    variant === 'apple'
+      ? 'w-full h-10 sm:h-11 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors text-white bg-black hover:bg-black/90 disabled:opacity-60'
+      : 'w-full h-10 sm:h-11 rounded-xl border text-sm font-medium flex items-center justify-center gap-2 transition-colors text-[var(--color-brand-text-primary)] border-[var(--color-brand-border)] bg-[var(--color-brand-card)] hover:bg-[var(--color-brand-elevated)] disabled:opacity-60'
+
+  return (
+    <button
+      type="button"
+      disabled={isDisabled}
+      onClick={onClick}
+      className={`${base} ${!enabled ? 'opacity-45 cursor-not-allowed hover:bg-[var(--color-brand-card)]' : ''}`}
+      aria-label={enabled ? label : `${label} — ${disabledHint}`}
+      title={enabled ? undefined : disabledHint}
+    >
+      {pending ? (
+        <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
+      ) : provider === 'google' ? (
+        <GoogleGlyph />
+      ) : (
+        <AppleGlyph />
+      )}
+      <span>{label}</span>
+    </button>
   )
 }
 

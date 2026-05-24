@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { createClient } from '@/lib/supabase/client'
 import type { Currency, IncomeSourceType } from '@/lib/store/types'
 
 export const ONBOARDING_COUNTRIES: {
@@ -63,20 +64,57 @@ export const ONBOARDING_COUNTRIES: {
   { code: 'UA', name: 'Ukraine', flag: '🇺🇦', currency: 'EUR' },
 ]
 
+export type FinancialGoal =
+  | 'emergency_fund'
+  | 'pay_debt'
+  | 'big_purchase'
+  | 'investments'
+  | 'daily_tracking'
+  | 'reduce_expenses'
+
+export type IncomeRangeKey = 'under_1k' | '1k_3k' | '3k_7k' | '7k_15k' | '15k_plus'
+export type MoneyManagementMethod = 'spreadsheet' | 'another_app' | 'in_my_head' | 'dont_track'
+export type SpendingCategory =
+  | 'food'
+  | 'transport'
+  | 'housing'
+  | 'health'
+  | 'entertainment'
+  | 'shopping'
+  | 'travel'
+  | 'education'
+
+export const TOTAL_ONBOARDING_STEPS = 5
+
 export interface OnboardingState {
-  step: 1 | 2
+  step: 1 | 2 | 3 | 4 | 5
+  // Step 1 — identity
   name: string
   country: string
   currency: Currency
+  secondaryCurrency: Currency | ''
   currencyOverrideOpen: boolean
+  // Step 2 — financial goals
+  financialGoals: FinancialGoal[]
+  // Step 3 — spending profile
+  incomeRange: IncomeRangeKey | ''
+  moneyManagementMethod: MoneyManagementMethod | ''
+  spendingCategories: SpendingCategory[]
+  smsTrackingEnabled: boolean
+  // Step 4 — income (optional)
   incomeAmount: string
-  /** Display label key for income type selection — maps to IncomeSourceType */
   incomeTypeKey: 'salary' | 'freelance' | 'business' | 'other'
   incomeCurrency: Currency
+  // submission
   submitting: boolean
   error: string | null
 }
 
+/**
+ * Drives the 5-step onboarding flow: identity → goals → spending profile →
+ * income → review. Handles completion with session refresh so the middleware
+ * and AuthProvider see the new `onboarding_completed` flag immediately.
+ */
 export function useOnboarding() {
   const router = useRouter()
   const { updateSettings, updateProfile, addIncomeSource, addPaymentMethod } = useFinanceStore()
@@ -86,7 +124,13 @@ export function useOnboarding() {
     name: '',
     country: '',
     currency: 'USD',
+    secondaryCurrency: '',
     currencyOverrideOpen: false,
+    financialGoals: [],
+    incomeRange: '',
+    moneyManagementMethod: '',
+    spendingCategories: [],
+    smsTrackingEnabled: false,
     incomeAmount: '',
     incomeTypeKey: 'salary',
     incomeCurrency: 'USD',
@@ -118,84 +162,134 @@ export function useOnboarding() {
     }))
   }, [])
 
-  const nextStep = useCallback(() => {
-    if (!state.name.trim()) return
-    if (!state.country) return
-    setState((prev) => ({ ...prev, step: 2, error: null }))
-  }, [state.name, state.country])
-
-  const prevStep = useCallback(() => {
-    setState((prev) => ({ ...prev, step: 1, error: null }))
+  const toggleGoal = useCallback((goal: FinancialGoal) => {
+    setState((prev) => ({
+      ...prev,
+      financialGoals: prev.financialGoals.includes(goal)
+        ? prev.financialGoals.filter((g) => g !== goal)
+        : [...prev.financialGoals, goal],
+    }))
   }, [])
 
-  const completeOnboarding = useCallback(async (liteMode: boolean, withIncome: boolean) => {
-    setState((prev) => ({ ...prev, submitting: true, error: null }))
-    try {
-      const country = ONBOARDING_COUNTRIES.find((c) => c.code === state.country)
-      updateSettings({ baseCurrency: state.currency })
-      updateProfile({
-        name: state.name.trim(),
-        country: country?.code ?? state.country,
-        liteMode,
-        onboardingVersion: 2,
-      })
+  const toggleCategory = useCallback((category: SpendingCategory) => {
+    setState((prev) => ({
+      ...prev,
+      spendingCategories: prev.spendingCategories.includes(category)
+        ? prev.spendingCategories.filter((c) => c !== category)
+        : [...prev.spendingCategories, category],
+    }))
+  }, [])
 
-      if (withIncome && state.incomeAmount) {
-        const amount = parseFloat(state.incomeAmount)
-        const typeMap: Record<string, IncomeSourceType> = {
-          salary: 'salary',
-          freelance: 'side_hustle',
-          business: 'other',
-          other: 'other',
+  const nextStep = useCallback(() => {
+    setState((prev) => {
+      if (prev.step === 1 && (!prev.name.trim() || !prev.country)) return prev
+      const next = Math.min(prev.step + 1, TOTAL_ONBOARDING_STEPS) as OnboardingState['step']
+      return { ...prev, step: next, error: null }
+    })
+  }, [])
+
+  const prevStep = useCallback(() => {
+    setState((prev) => ({
+      ...prev,
+      step: Math.max(prev.step - 1, 1) as OnboardingState['step'],
+      error: null,
+    }))
+  }, [])
+
+  const goToStep = useCallback((step: OnboardingState['step']) => {
+    setState((prev) => ({ ...prev, step, error: null }))
+  }, [])
+
+  const completeOnboarding = useCallback(
+    async (liteMode: boolean, withIncome: boolean) => {
+      setState((prev) => ({ ...prev, submitting: true, error: null }))
+      try {
+        const country = ONBOARDING_COUNTRIES.find((c) => c.code === state.country)
+        updateSettings({
+          baseCurrency: state.currency,
+          secondaryCurrency: state.secondaryCurrency || null,
+          smsTrackingEnabled: state.smsTrackingEnabled,
+        })
+        updateProfile({
+          name: state.name.trim(),
+          country: country?.code ?? state.country,
+          liteMode,
+          onboardingVersion: 2,
+        })
+
+        if (withIncome && state.incomeAmount) {
+          const amount = parseFloat(state.incomeAmount)
+          const typeMap: Record<string, IncomeSourceType> = {
+            salary: 'salary',
+            freelance: 'side_hustle',
+            business: 'other',
+            other: 'other',
+          }
+          if (amount > 0) {
+            addIncomeSource({
+              name: 'Primary income',
+              amount,
+              currency: state.incomeCurrency,
+              isRecurring: true,
+              recurringFrequency: 'monthly',
+              sourceType: typeMap[state.incomeTypeKey] ?? 'salary',
+            })
+          }
         }
-        if (amount > 0) {
-          addIncomeSource({
-            name: 'Primary income',
-            amount,
-            currency: state.incomeCurrency,
-            isRecurring: true,
-            recurringFrequency: 'monthly',
-            sourceType: typeMap[state.incomeTypeKey] ?? 'salary',
-          })
-        }
+
+        addPaymentMethod({
+          name: 'Cash',
+          type: 'cash',
+          currency: state.currency,
+          isDefault: true,
+        })
+
+        const res = await fetch('/api/auth/complete-journey', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            financialGoals: state.financialGoals,
+            incomeRange: state.incomeRange,
+            moneyManagementMethod: state.moneyManagementMethod,
+            spendingCategories: state.spendingCategories,
+          }),
+        })
+        if (!res.ok) throw new Error('Failed to complete onboarding')
+
+        // Refresh client session so user_metadata.onboarding_completed=true is
+        // visible to AuthProvider before router.push — without this the
+        // post-completion navigation lands on an indefinite loading splash.
+        const supabase = createClient()
+        await supabase.auth.refreshSession()
+
+        router.push('/')
+      } catch (e) {
+        setState((prev) => ({
+          ...prev,
+          submitting: false,
+          error: e instanceof Error ? e.message : 'Something went wrong',
+        }))
       }
+    },
+    [state, updateSettings, updateProfile, addIncomeSource, addPaymentMethod, router],
+  )
 
-      // Create default Cash payment method
-      addPaymentMethod({
-        name: 'Cash',
-        type: 'cash',
-        currency: state.currency,
-        isDefault: true,
-      })
-
-      const res = await fetch('/api/auth/complete-journey', { method: 'POST' })
-      if (!res.ok) throw new Error('Failed to complete onboarding')
-
-      router.push('/')
-    } catch (e) {
-      setState((prev) => ({
-        ...prev,
-        submitting: false,
-        error: e instanceof Error ? e.message : 'Something went wrong',
-      }))
-    }
-  }, [state, updateSettings, updateProfile, addIncomeSource, addPaymentMethod, router])
-
-  const handleSubmit = useCallback(() => {
-    completeOnboarding(false, true)
-  }, [completeOnboarding])
-
-  const handleSkipIncome = useCallback((liteModeSelected: boolean) => {
-    completeOnboarding(liteModeSelected, false)
-  }, [completeOnboarding])
+  const handleSubmit = useCallback(() => completeOnboarding(false, true), [completeOnboarding])
+  const handleSkipIncome = useCallback(
+    (liteModeSelected: boolean) => completeOnboarding(liteModeSelected, false),
+    [completeOnboarding],
+  )
 
   return {
     state,
     setField,
     selectCountry,
     selectCurrency,
+    toggleGoal,
+    toggleCategory,
     nextStep,
     prevStep,
+    goToStep,
     handleSubmit,
     handleSkipIncome,
   }

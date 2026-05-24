@@ -1,9 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { mapAuthError, isValidEmailFormat } from '@/components/auth/authErrors'
+import { mapAuthError, mapOAuthCallbackReason, mapOAuthError, isValidEmailFormat } from '@/components/auth/authErrors'
 import { useAuth } from '@/components/auth/auth-context'
 import { useT } from '@/lib/i18n'
 import { APP_CONFIG } from '@/lib/config'
@@ -44,6 +44,7 @@ const EMAIL_CACHE_TTL_MS = 10 * 60 * 1000 // 10 min
  */
 export function useAuthModal() {
   const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const {
     pendingNext,
@@ -92,6 +93,23 @@ export function useAuthModal() {
   const abortRef = useRef<AbortController | null>(null)
   /** Per-session cache of check-email results, keyed by lowercased+trimmed email. 10-min TTL. */
   const emailCacheRef = useRef<Map<string, CachedEmailResult>>(new Map())
+  const oauthFailureHandled = useRef(false)
+
+  useEffect(() => {
+    if (oauthFailureHandled.current) return
+    const errParam = searchParams.get('error')
+    if (errParam !== 'oauth' && errParam !== 'auth') return
+    oauthFailureHandled.current = true
+    const reason = mapOAuthCallbackReason(searchParams.get('reason'))
+    setError(mapOAuthError(null, reason, t))
+    setEmailStep('collect')
+    setStep('form')
+    const qs = new URLSearchParams(searchParams.toString())
+    qs.delete('error')
+    qs.delete('reason')
+    const q = qs.toString()
+    router.replace(q ? `${pathname}?${q}` : pathname)
+  }, [pathname, router, searchParams, t])
 
   useEffect(() => {
     if (resendCooldown <= 0) return
