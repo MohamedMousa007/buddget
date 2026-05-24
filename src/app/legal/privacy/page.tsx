@@ -31,7 +31,7 @@ export default function PrivacyPage() {
           Effective date: May 24, 2026 &nbsp;·&nbsp; Last updated: May 24, 2026
         </p>
         <p className="text-sm text-[var(--color-brand-text-secondary)] max-w-xl">
-          This policy explains how Buddget collects, uses, and protects your data. Also see our{' '}
+          This policy explains how Buddget collects, uses, stores, and protects your data. Also see our{' '}
           <Link href="/legal/terms" className="text-[var(--color-brand-red)] hover:underline">
             Terms of Service
           </Link>
