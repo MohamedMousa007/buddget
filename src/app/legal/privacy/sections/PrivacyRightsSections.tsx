@@ -1,39 +1,40 @@
 import { LegalSection } from '@/components/legal/LegalSection'
 
-/** Data Retention and User Rights (GDPR + CCPA) sections. */
+/** Sections 6–7: Data Retention and Your Rights. */
 export function PrivacyRightsSections() {
   return (
     <>
-      <LegalSection title="4. Data Retention">
+      <LegalSection title="6. Data Retention">
         <p>
-          We retain your personal and financial data for as long as your account is active or as necessary
-          to provide the Service. Specifically:
+          <strong className="text-[var(--color-brand-text-primary)]">Active accounts:</strong> Data is
+          retained for as long as your account is active.
         </p>
-        <ul className="list-disc pl-5 space-y-1">
-          <li>
-            <strong className="text-[var(--color-brand-text-primary)]">Active accounts:</strong> Data is
-            retained indefinitely while your account remains active to maintain continuity of your
-            financial history.
-          </li>
-          <li>
-            <strong className="text-[var(--color-brand-text-primary)]">After account deletion:</strong>{' '}
-            Personal data (account details, financial records, SMS events) is deleted within 30 days of
-            your account deletion request. Some data may be retained longer if required by law or for
-            legitimate security purposes (e.g., fraud prevention logs).
-          </li>
-          <li>
-            <strong className="text-[var(--color-brand-text-primary)]">Backup data:</strong> Copies held
-            in database backups may persist for up to 90 days before being overwritten.
-          </li>
-          <li>
-            <strong className="text-[var(--color-brand-text-primary)]">AI query logs:</strong> Conversation
-            history sent to Google Gemini API is governed by Google&apos;s data retention policies. We do
-            not maintain a permanent server-side log of your AI messages beyond the current session.
-          </li>
-        </ul>
         <p>
-          To request early deletion of your data, use the Delete Account feature in the Profile page, or
-          contact{' '}
+          <strong className="text-[var(--color-brand-text-primary)]">After account deletion:</strong>{' '}
+          Personal data is deleted within 30 days of your deletion request. Database backups may retain
+          copies for up to 90 days before being overwritten.
+        </p>
+        <p>
+          <strong className="text-[var(--color-brand-text-primary)]">Voice audio:</strong> Deleted
+          immediately after transcription (not retained).
+        </p>
+        <p>
+          <strong className="text-[var(--color-brand-text-primary)]">Receipt images:</strong> Deleted
+          immediately after expense data is extracted (not retained).
+        </p>
+        <p>
+          <strong className="text-[var(--color-brand-text-primary)]">SMS text:</strong> Not stored
+          after parsing. Only extracted expense data is retained.
+        </p>
+        <p>
+          <strong className="text-[var(--color-brand-text-primary)]">
+            Buddgy conversation history:
+          </strong>{' '}
+          Not permanently logged on our servers beyond the current session. Subject to Google&apos;s API
+          data retention policies.
+        </p>
+        <p>
+          To request deletion, use Delete Account in Profile/Settings or contact{' '}
           <a href="mailto:support@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
             support@buddget.app
           </a>
@@ -41,43 +42,46 @@ export function PrivacyRightsSections() {
         </p>
       </LegalSection>
 
-      <LegalSection title="5. Your Privacy Rights">
+      <LegalSection title="7. Your Rights">
         <p>
-          Buddget does not currently target users in the European Economic Area. If you are located in the
-          EEA and use the Service, you may have additional rights under applicable local law; contact us at{' '}
+          Regardless of your location, you have the following rights regarding your personal data:
+        </p>
+        <p>
+          <strong className="text-[var(--color-brand-text-primary)]">Right of access:</strong> Request
+          a copy of the personal data we hold about you.
+        </p>
+        <p>
+          <strong className="text-[var(--color-brand-text-primary)]">Right to rectification:</strong>{' '}
+          Request correction of inaccurate personal data.
+        </p>
+        <p>
+          <strong className="text-[var(--color-brand-text-primary)]">Right to erasure:</strong> Request
+          deletion of your personal data. You can delete your account directly in the app at any time.
+        </p>
+        <p>
+          <strong className="text-[var(--color-brand-text-primary)]">
+            Right to data portability:
+          </strong>{' '}
+          Export your financial data in JSON format at any time from Settings &rarr; Export Data.
+        </p>
+        <p>
+          <strong className="text-[var(--color-brand-text-primary)]">
+            Right to withdraw consent:
+          </strong>{' '}
+          Withdraw consent for optional features (SMS tracking, push notifications, voice, camera) at
+          any time through Settings or device settings.
+        </p>
+        <p>
+          For residents of the European Economic Area, these rights are also protected under GDPR. For
+          California residents, these rights are protected under CCPA. We do not sell your personal
+          information under either framework.
+        </p>
+        <p>
+          To exercise any right, contact{' '}
           <a href="mailto:support@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
             support@buddget.app
           </a>
-          .
-        </p>
-        <p className="mt-3 font-medium text-[var(--color-brand-text-primary)]">
-          Rights under CCPA (California residents):
-        </p>
-        <ul className="list-disc pl-5 space-y-1">
-          <li>
-            <strong>Right to know:</strong> Know what personal information is collected, used, shared, or
-            sold.
-          </li>
-          <li>
-            <strong>Right to delete:</strong> Request deletion of personal information we have collected
-            from you.
-          </li>
-          <li>
-            <strong>Right to opt out of sale:</strong> We do not sell your personal information. No
-            opt-out action is required.
-          </li>
-          <li>
-            <strong>Right to non-discrimination:</strong> We will not discriminate against you for
-            exercising any of your CCPA rights.
-          </li>
-        </ul>
-        <p className="mt-3">
-          To exercise any of these rights, contact us at{' '}
-          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
-            support@buddget.app
-          </a>{' '}
-          with the subject line &ldquo;Privacy Rights Request.&rdquo; We will respond within 30 days (or as required by
-          applicable law).
+          . We will respond within 30 days.
         </p>
       </LegalSection>
     </>
