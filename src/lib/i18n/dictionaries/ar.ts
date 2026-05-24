@@ -1145,6 +1145,7 @@ export const ar: Dictionary = {
     errorNoAccountForEmail: 'لم نجد حساباً بهذا البريد الإلكتروني. تحقق من الإملاء أو أنشئ حساباً جديداً.',
     errorPasswordWeakComposition: 'يجب أن تحتوي كلمة المرور على حرف ورقم واحد على الأقل.',
     errorSignUpGeneric: 'حدث خطأ. حاول مرة أخرى.',
+    errorEmailSendFailed: 'تعذّر إرسال رسالة التأكيد الآن. حاول مرة أخرى بعد لحظات.',
     errorOtpIncomplete: 'أدخل كل الأرقام الستة للمتابعة.',
     passwordStrengthLabel: 'قوة كلمة المرور',
     passwordStrengthWeak: 'ضعيفة',

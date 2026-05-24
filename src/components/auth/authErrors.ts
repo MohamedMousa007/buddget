@@ -11,6 +11,9 @@ export function mapAuthError(err: unknown, context: 'signin' | 'signup' | 'otp' 
   if (m.includes('rate limit') || m.includes('too many') || m.includes('over_email_send_rate_limit')) {
     return t.auth.errorRateLimit
   }
+  if (m.includes('sending confirmation email') || m.includes('error sending')) {
+    return t.auth.errorEmailSendFailed
+  }
 
   if (context === 'signup') {
     if (m.includes('already registered') || m.includes('user already registered') || m.includes('already been registered')) {
