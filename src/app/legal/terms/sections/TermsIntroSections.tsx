@@ -6,8 +6,8 @@ export function TermsIntroSections() {
     <>
       <LegalSection title="1. Acceptance of Terms">
         <p>
-          By accessing or using Buddget ("Service," "we," "us," or "our"), you confirm that you have read,
-          understood, and agree to be bound by these Terms of Service ("Terms") and our{' '}
+          By accessing or using Buddget (&ldquo;Service,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;), you confirm that you have read,
+          understood, and agree to be bound by these Terms of Service (&ldquo;Terms&rdquo;) and our{' '}
           <a href="/legal/privacy" className="text-[var(--color-brand-red)] hover:underline">
             Privacy Policy
           </a>

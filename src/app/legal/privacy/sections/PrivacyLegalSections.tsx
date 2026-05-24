@@ -24,7 +24,7 @@ export function PrivacyLegalSections() {
         <ul className="list-disc pl-5 space-y-1">
           <li>Posting a prominent notice within the app</li>
           <li>Sending an email to the address associated with your account</li>
-          <li>Updating the "Last updated" date at the top of this page</li>
+          <li>Updating the &ldquo;Last updated&rdquo; date at the top of this page</li>
         </ul>
         <p>
           Your continued use of the Service after the effective date of the revised policy constitutes your
@@ -63,7 +63,7 @@ export function PrivacyLegalSections() {
           </a>
         </p>
         <p className="mt-3 text-xs text-[var(--color-brand-text-muted)]">
-          For CCPA requests, please include "CCPA Request" in your subject line. We will respond within
+          For CCPA requests, please include &ldquo;CCPA Request&rdquo; in your subject line. We will respond within
           the timeframe required by applicable law.
         </p>
       </LegalSection>

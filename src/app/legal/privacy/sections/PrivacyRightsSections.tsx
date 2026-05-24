@@ -76,7 +76,7 @@ export function PrivacyRightsSections() {
           <a href="mailto:hello@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
             hello@buddget.app
           </a>{' '}
-          with the subject line "Privacy Rights Request." We will respond within 30 days (or as required by
+          with the subject line &ldquo;Privacy Rights Request.&rdquo; We will respond within 30 days (or as required by
           applicable law).
         </p>
       </LegalSection>
