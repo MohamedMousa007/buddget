@@ -7,7 +7,7 @@ export function TermsLiabilitySections() {
       <LegalSection title="7. User Data and Content Ownership">
         <p>
           You retain full ownership of all financial data, transactions, and other content you enter into
-          the Service ("User Content"). By using the Service, you grant Buddget a limited, non-exclusive,
+          the Service (&ldquo;User Content&rdquo;). By using the Service, you grant Buddget a limited, non-exclusive,
           worldwide, royalty-free license to store, process, display, and transmit your User Content solely
           as necessary to operate and provide the Service.
         </p>
@@ -24,8 +24,8 @@ export function TermsLiabilitySections() {
       <LegalSection title="8. Intellectual Property">
         <p>
           The Service, including its design, code, branding, features, and original content, is owned by
-          Buddget and protected by copyright, trademark, and other intellectual property laws. "Buddget,"
-          "Buddgy," "budget.ai," and associated logos are trademarks of Buddget.
+          Buddget and protected by copyright, trademark, and other intellectual property laws. &ldquo;Buddget,&rdquo;
+          &ldquo;Buddgy,&rdquo; &ldquo;budget.ai,&rdquo; and associated logos are trademarks of Buddget.
         </p>
         <p>
           You may not copy, reproduce, distribute, modify, create derivative works from, publicly display,
@@ -36,7 +36,7 @@ export function TermsLiabilitySections() {
 
       <LegalSection title="9. Limitation of Liability">
         <p>
-          THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR
+          THE SERVICE IS PROVIDED &ldquo;AS IS&rdquo; AND &ldquo;AS AVAILABLE&rdquo; WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR
           IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
           PURPOSE, AND NON-INFRINGEMENT. WE DO NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED,
           ERROR-FREE, OR FREE OF VIRUSES OR OTHER HARMFUL COMPONENTS.

@@ -24,7 +24,7 @@ export function TermsUsageSections() {
       <LegalSection title="5. AI Features — Not Financial Advice">
         <p>
           Buddget includes AI-assisted features powered by Google Gemini, including budget plan generation,
-          spending analysis, and an AI chat assistant ("Buddgy"). These features are provided for
+          spending analysis, and an AI chat assistant (&ldquo;Buddgy&rdquo;). These features are provided for
           informational and organizational purposes only.
         </p>
         <p className="font-medium text-[var(--color-brand-text-primary)]">
