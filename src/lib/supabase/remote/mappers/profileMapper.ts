@@ -38,7 +38,7 @@ export function profileToRow(
     city: p.city ?? null,
     country: p.country ?? null,
     base_currency: p.baseCurrency,
-    secondary_currency: (extras.secondaryCurrency ?? null) as string | null,
+    secondary_currency: (extras.secondaryCurrency ?? null) as Currency | null,
     avatar_emoji: p.avatarPresetId ?? null,
     avatar_image_path: p.avatar ?? null,
     gender: p.gender ?? null,
