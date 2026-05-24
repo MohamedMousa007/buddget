@@ -46,6 +46,17 @@ export function LandingGate() {
         >
           <AuthModalBody showBranding={false} />
         </div>
+
+        {/* Legal footer — visible to crawlers and unauthenticated visitors */}
+        <p className="mt-6 text-center text-[11px] text-[var(--color-brand-text-muted)]">
+          <a href="/legal/privacy" className="hover:text-[var(--color-brand-text-secondary)] transition-colors">
+            Privacy Policy
+          </a>
+          <span className="mx-2" aria-hidden>·</span>
+          <a href="/legal/terms" className="hover:text-[var(--color-brand-text-secondary)] transition-colors">
+            Terms of Service
+          </a>
+        </p>
       </main>
     </div>
   )
