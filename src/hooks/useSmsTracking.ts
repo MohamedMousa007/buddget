@@ -12,6 +12,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { subscribeToPush, unsubscribeFromPush } from '@/lib/notifications/webPushSubscribe'
 import { requestPushPermission } from '@/lib/notifications/pushNotifications'
@@ -38,10 +39,12 @@ export interface TokenInfo {
 }
 
 export function useSmsTracking() {
-  const { settings, updateSettings } = useFinanceStore((s) => ({
-    settings: s.settings,
-    updateSettings: s.updateSettings,
-  }))
+  const { settings, updateSettings } = useFinanceStore(
+    useShallow((s) => ({
+      settings: s.settings,
+      updateSettings: s.updateSettings,
+    })),
+  )
 
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null)
   const [recentEvents, setRecentEvents] = useState<SmsEvent[]>([])

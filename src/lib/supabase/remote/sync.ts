@@ -136,8 +136,16 @@ export async function flushDiff(
   const profileExtras = {
     financialGoalsNotes: next.financialGoalsNotes,
     activeBudgetPlanId: next.activeBudgetPlanId,
+    secondaryCurrency: next.settings.secondaryCurrency ?? null,
   }
-  const prevProfileSig = { profile: prev.profile, extras: { financialGoalsNotes: prev.financialGoalsNotes, activeBudgetPlanId: prev.activeBudgetPlanId } }
+  const prevProfileSig = {
+    profile: prev.profile,
+    extras: {
+      financialGoalsNotes: prev.financialGoalsNotes,
+      activeBudgetPlanId: prev.activeBudgetPlanId,
+      secondaryCurrency: prev.settings.secondaryCurrency ?? null,
+    },
+  }
   const nextProfileSig = { profile: next.profile, extras: profileExtras }
   if (diffSingleton(nextProfileSig, prevProfileSig) != null) {
     runner.upsert('profiles', [profileToRow(next.profile, profileExtras, userId)], 'profiles.upsert')
