@@ -263,6 +263,8 @@ export const ar: Dictionary = {
   brand: {
     tagline: 'أموالك، أصبحت واضحة بإذن الله',
     footerVersion: 'Buddget الإصدار 1.0 — أموالك، طريقتك.',
+    termsLink: 'شروط الخدمة',
+    privacyLink: 'سياسة الخصوصية',
   },
 
   dashboard: {
@@ -1166,6 +1168,9 @@ export const ar: Dictionary = {
     continueWithApple: 'المتابعة مع Apple',
     orContinueWithEmail: 'أو تابع بالبريد الإلكتروني',
     oauthUnavailable: 'لم نتمكن من الوصول للموفّر. حاول مرة أخرى أو استخدم البريد الإلكتروني.',
+    oauthFailed: 'تعذّر تسجيل الدخول عبر هذا الموفّر. حاول مرة أخرى أو استخدم البريد الإلكتروني.',
+    oauthCancelled: 'تم إلغاء تسجيل الدخول.',
+    oauthProviderDisabled: 'غير متاح حالياً',
     sessionExpired: 'انتهت جلستك. سجّل دخولك مرة أخرى للمتابعة.',
     rememberMe: 'أبقني مسجّلاً',
     emailCheckInFlight: 'جارٍ التحقق…',
@@ -1308,7 +1313,7 @@ export const ar: Dictionary = {
 
     continueButton: 'متابعة',
     planLoading: 'جارٍ بناء خططك…',
-    finishing: 'جارٍ الإنهاء…',
+    finishing: 'جاري إعداد حسابك…',
     lastStep: 'متابعة لمعاينة الميزانية',
 
     preview: {
@@ -1605,8 +1610,8 @@ export const ar: Dictionary = {
 
     surveyLoadError: (error) => `لم نتمكن من تحميل الاستبيان (${error}). لا تقلق — نستخدم النسخة المدمجة.`,
 
-    welcomeTitle: 'أهلاً وسهلاً في Buddget',
-    welcomeSubtitle: 'إعدادك الشخصي',
+    welcomeTitle: 'أموالك، بشكل أبسط',
+    welcomeSubtitle: 'دقيقتان — نتعلم تفاصيلك، وتحصل على خطة تناسبك.',
     welcomeBody: 'هيا نأخذ دقيقتين لإعداد لوحتك. ستصبح مألوفة كأنها بيتك 🏡',
     welcomeHelp: 'يمكنك العودة لهذا في أي وقت من ملفك الشخصي.',
 
@@ -1691,7 +1696,7 @@ export const ar: Dictionary = {
     debtEntriesTitle: 'عندك ديون محددة تريد تتبعها؟',
     debtEntriesHelp: 'أضف ما عليك هنا، أو تخطَّ وعد لاحقاً.',
 
-    goalsTitle: 'ماذا تريد من أموالك هذا العام؟',
+    goalsTitle: 'ما الذي تسعى إليه؟',
     goalsHelp: 'اختر كل ما يهمك — سنبني خطتك حولها.',
     goalEmergency: 'بناء صندوق طوارئ',
     goalDebt: 'سداد الديون أسرع',
@@ -1863,23 +1868,79 @@ export const ar: Dictionary = {
     subscriptionSports: 'تطبيقات رياضة / ترفيه',
     subscriptionGaming: 'ألعاب / اشتراكات أونلاين',
 
-    // New 2-step onboarding flow (v2) keys
+    // Active onboarding flow keys (v2+)
     nameLabel: 'اسمك',
-    namePlaceholder: 'كيف نناديك؟',
-    countryLabel: 'البلد',
-    currencyDetected: (currency: string) => `عملتك: ${currency}`,
-    currencyChange: 'تغيير →',
-    incomeTitle: 'كيف تكسب أموالك؟',
-    incomeSubtitle: 'هذا يساعدنا في بناء ميزانيتك. يمكنك التحديث في أي وقت.',
+    namePlaceholder: 'الاسم الأول يكفي',
+    countryLabel: 'أين أنت؟',
+    currencyDetected: (currency: string) => `${currency} هي عملتك الرئيسية`,
+    currencyChange: 'عملة مختلفة؟',
+    addSecondaryCurrency: '+ إضافة عملة ثانوية',
+    secondaryCurrencySelected: (currency: string) => `ثانوية: ${currency}`,
+    secondaryCurrencyHint: 'اختياري — مفيد إن كنت تكسب أو تنفق بعملة أخرى.',
+    secondaryCurrencyRemove: 'إزالة العملة الثانوية',
+
+    incomeTitle: 'ما مصدر دخلك الرئيسي؟',
+    incomeSubtitle: 'سنبني فئات ميزانيتك بناءً على هذا. يمكنك تخطيه إن أردت.',
     incomeTypeLabel: 'نوع الدخل',
     incomeTypes: { salary: 'راتب', freelance: 'عمل حر', business: 'أعمال', other: 'أخرى' },
-    liteModeTitle: 'تريد فقط تتبع الإنفاق؟',
-    liteModeDesc: 'تخطَّ الدخل — تتبع النفقات يعمل بدونه. خطط الميزانية والرؤى المالية ستكون محدودة.',
-    useLiteMode: 'استخدم الوضع المبسط',
+
     skipForNow: 'تخطَّ الآن',
     backButton: 'رجوع',
-    completeTitle: 'أنت جاهز!',
-    completeSubtitle: 'جاري الانتقال إلى لوحة التحكم…',
+
+    // Step 2 — goals
+    goalsSubtitle: 'اختر كل ما ينطبق — سنخصّص ميزانيتك بناءً عليه.',
+    goalLabels: {
+      emergency_fund: 'صندوق طوارئ',
+      pay_debt: 'سداد الديون',
+      big_purchase: 'الادخار لشراء كبير',
+      investments: 'تنمية الاستثمارات',
+      daily_tracking: 'تتبع الإنفاق اليومي',
+      reduce_expenses: 'تقليل المصاريف غير الضرورية',
+    },
+
+    // Step 3 — spending profile
+    spendingProfileTitle: 'ملفك المالي السريع',
+    spendingProfileSubtitle: 'يساعدنا في تخصيص الفئات والنصائح المالية.',
+    incomeRangeLabel: 'الدخل الشهري التقريبي',
+    incomeRangeLabels: {
+      under_1k: 'أقل من $1,000',
+      '1k_3k': '$1,000 – $3,000',
+      '3k_7k': '$3,000 – $7,000',
+      '7k_15k': '$7,000 – $15,000',
+      '15k_plus': '$15,000+',
+    },
+    moneyManagementLabel: 'كيف تتتبع أموالك حالياً؟',
+    moneyManagementLabels: {
+      spreadsheet: 'جدول بيانات',
+      another_app: 'تطبيق آخر',
+      in_my_head: 'في رأسي',
+      dont_track: 'لا أتتبعها',
+    },
+    categoriesLabel: 'الفئات التي تهمك',
+    categoryLabels: {
+      food: 'طعام',
+      transport: 'مواصلات',
+      housing: 'سكن',
+      health: 'صحة',
+      entertainment: 'ترفيه',
+      shopping: 'تسوق',
+      travel: 'سفر',
+      education: 'تعليم',
+    },
+    smsTrackingLabel: 'تنبيهات المعاملات عبر SMS',
+    smsTrackingHint: 'يمكن لـ Buddget قراءة رسائل البنك تلقائياً لتسجيل المعاملات.',
+
+    // Step 5 — review
+    reviewTitle: 'راجع إعداداتك',
+    reviewSubtitle: 'اضغط على القلم لتعديل أي قسم.',
+    reviewSectionIdentity: 'بياناتك',
+    reviewSectionGoals: 'الأهداف',
+    reviewSectionSpending: 'الملف المالي',
+    reviewSectionIncome: 'الدخل',
+    reviewNoneSelected: 'لم يتم الاختيار',
+    reviewSkipped: 'تم التخطي',
+    reviewFinishButton: 'إنهاء الإعداد',
+
     checklistIncomePrompt: 'أضف دخلك لفتح رؤى الميزانية',
     checklistBudgetPrompt: 'أنشئ خطة ميزانية',
     checklistLiteModeNote: 'أنت في الوضع المبسط — أضف دخلك في أي وقت لفتح الميزات الكاملة',

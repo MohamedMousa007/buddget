@@ -164,6 +164,8 @@ export interface Dictionary {
   brand: {
     tagline: string
     footerVersion: string
+    termsLink: string
+    privacyLink: string
   }
 
   dashboard: {
@@ -1063,6 +1065,9 @@ export interface Dictionary {
     continueWithApple: string
     orContinueWithEmail: string
     oauthUnavailable: string
+    oauthFailed: string
+    oauthCancelled: string
+    oauthProviderDisabled: string
     sessionExpired: string
     rememberMe: string
     emailCheckInFlight: string
@@ -1714,23 +1719,79 @@ export interface Dictionary {
     subscriptionSports: string
     subscriptionGaming: string
 
-    // New 2-step onboarding flow (v2) keys
+    // Active onboarding flow keys (v2+)
     nameLabel: string
     namePlaceholder: string
     countryLabel: string
     currencyDetected: (currency: string) => string
     currencyChange: string
+    addSecondaryCurrency: string
+    secondaryCurrencySelected: (currency: string) => string
+    secondaryCurrencyHint: string
+    secondaryCurrencyRemove: string
+
     incomeTitle: string
     incomeSubtitle: string
     incomeTypeLabel: string
     incomeTypes: { salary: string; freelance: string; business: string; other: string }
-    liteModeTitle: string
-    liteModeDesc: string
-    useLiteMode: string
+
     skipForNow: string
     backButton: string
-    completeTitle: string
-    completeSubtitle: string
+
+    // Step 2 — goals
+    goalsSubtitle: string
+    goalLabels: {
+      emergency_fund: string
+      pay_debt: string
+      big_purchase: string
+      investments: string
+      daily_tracking: string
+      reduce_expenses: string
+    }
+
+    // Step 3 — spending profile
+    spendingProfileTitle: string
+    spendingProfileSubtitle: string
+    incomeRangeLabel: string
+    incomeRangeLabels: {
+      under_1k: string
+      '1k_3k': string
+      '3k_7k': string
+      '7k_15k': string
+      '15k_plus': string
+    }
+    moneyManagementLabel: string
+    moneyManagementLabels: {
+      spreadsheet: string
+      another_app: string
+      in_my_head: string
+      dont_track: string
+    }
+    categoriesLabel: string
+    categoryLabels: {
+      food: string
+      transport: string
+      housing: string
+      health: string
+      entertainment: string
+      shopping: string
+      travel: string
+      education: string
+    }
+    smsTrackingLabel: string
+    smsTrackingHint: string
+
+    // Step 5 — review
+    reviewTitle: string
+    reviewSubtitle: string
+    reviewSectionIdentity: string
+    reviewSectionGoals: string
+    reviewSectionSpending: string
+    reviewSectionIncome: string
+    reviewNoneSelected: string
+    reviewSkipped: string
+    reviewFinishButton: string
+
     checklistIncomePrompt: string
     checklistBudgetPrompt: string
     checklistLiteModeNote: string

@@ -262,6 +262,8 @@ export const en: Dictionary = {
   brand: {
     tagline: 'Your money, finally makes sense',
     footerVersion: 'Buddget v1.0 — Your money, your way.',
+    termsLink: 'Terms of Service',
+    privacyLink: 'Privacy Policy',
   },
 
   dashboard: {
@@ -1167,6 +1169,9 @@ export const en: Dictionary = {
     continueWithApple: 'Continue with Apple',
     orContinueWithEmail: 'or continue with email',
     oauthUnavailable: "Couldn\u2019t reach that provider. Try again or use email.",
+    oauthFailed: "Sign-in with that provider didn\u2019t work. Try again or use email.",
+    oauthCancelled: 'Sign-in was cancelled.',
+    oauthProviderDisabled: 'Not available right now',
     sessionExpired: 'Your session expired. Sign in again to continue where you left off.',
     rememberMe: 'Keep me signed in',
     emailCheckInFlight: 'Checking availability\u2026',
@@ -1310,7 +1315,7 @@ export const en: Dictionary = {
 
     continueButton: 'Continue',
     planLoading: 'Building your plans\u2026',
-    finishing: 'Wrapping up\u2026',
+    finishing: 'Setting up your account\u2026',
     lastStep: 'Continue to budget preview',
 
     preview: {
@@ -1609,8 +1614,8 @@ export const en: Dictionary = {
 
     surveyLoadError: (error) => `We couldn\u2019t load the remote survey (${error}). No worries \u2014 using the built-in flow instead.`,
 
-    welcomeTitle: 'Welcome to Buddget',
-    welcomeSubtitle: 'Your guided setup',
+    welcomeTitle: 'Your money, simplified',
+    welcomeSubtitle: 'Two minutes. We learn your setup, you get a plan that fits.',
     welcomeBody: "Let\u2019s take 2 minutes to set up your dashboard. It\u2019ll feel like home by the end \uD83C\uDFE1",
     welcomeHelp: 'You can revisit this anytime from your Profile.',
 
@@ -1695,7 +1700,7 @@ export const en: Dictionary = {
     debtEntriesTitle: 'Got specific debts to track?',
     debtEntriesHelp: 'Add what you owe here, or skip and come back to it later.',
 
-    goalsTitle: 'What do you want your money to do for you this year?',
+    goalsTitle: 'What are you working toward?',
     goalsHelp: "Pick everything that matters to you \u2014 we\u2019ll shape your plan around these.",
     goalEmergency: 'Build an emergency fund',
     goalDebt: 'Pay down debt faster',
@@ -1867,23 +1872,79 @@ export const en: Dictionary = {
     subscriptionSports: 'Sports / entertainment apps',
     subscriptionGaming: 'Gaming / online subs',
 
-    // New 2-step onboarding flow (v2) keys
+    // Active onboarding flow keys (v2+)
     nameLabel: 'Your name',
-    namePlaceholder: 'What should we call you?',
-    countryLabel: 'Country',
-    currencyDetected: (currency: string) => `Your currency: ${currency}`,
-    currencyChange: 'Change →',
-    incomeTitle: 'How do you earn money?',
-    incomeSubtitle: 'This helps us build your budget. You can update this anytime.',
+    namePlaceholder: 'First name works great',
+    countryLabel: 'Where are you based?',
+    currencyDetected: (currency: string) => `${currency} is your main currency`,
+    currencyChange: 'Different currency?',
+    addSecondaryCurrency: '+ Add a secondary currency',
+    secondaryCurrencySelected: (currency: string) => `Secondary: ${currency}`,
+    secondaryCurrencyHint: 'Optional — useful if you earn, remit, or spend in another currency.',
+    secondaryCurrencyRemove: 'Remove secondary currency',
+
+    incomeTitle: "What's your main income source?",
+    incomeSubtitle: 'Your budget categories will be sized around this. Skip if you prefer.',
     incomeTypeLabel: 'Income type',
     incomeTypes: { salary: 'Salary', freelance: 'Freelance', business: 'Business', other: 'Other' },
-    liteModeTitle: 'Just want to track spending?',
-    liteModeDesc: 'Skip income — your expense tracking still works. Budget plans and financial insights will be limited.',
-    useLiteMode: 'Use Lite Mode',
+
     skipForNow: 'Skip for now',
     backButton: 'Back',
-    completeTitle: "You're all set!",
-    completeSubtitle: 'Taking you to your dashboard…',
+
+    // Step 2 — goals
+    goalsSubtitle: 'Pick everything that applies — we\'ll personalise your budget around it.',
+    goalLabels: {
+      emergency_fund: 'Emergency fund',
+      pay_debt: 'Pay off debt',
+      big_purchase: 'Save for a big purchase',
+      investments: 'Grow investments',
+      daily_tracking: 'Track daily spending',
+      reduce_expenses: 'Reduce unnecessary expenses',
+    },
+
+    // Step 3 — spending profile
+    spendingProfileTitle: 'Quick spending profile',
+    spendingProfileSubtitle: 'Helps us personalise your categories and AI advice.',
+    incomeRangeLabel: 'Approximate monthly income',
+    incomeRangeLabels: {
+      under_1k: 'Under $1,000',
+      '1k_3k': '$1,000 – $3,000',
+      '3k_7k': '$3,000 – $7,000',
+      '7k_15k': '$7,000 – $15,000',
+      '15k_plus': '$15,000+',
+    },
+    moneyManagementLabel: 'How do you currently track money?',
+    moneyManagementLabels: {
+      spreadsheet: 'Spreadsheet',
+      another_app: 'Another app',
+      in_my_head: 'In my head',
+      dont_track: "I don't track it",
+    },
+    categoriesLabel: 'Categories you care about',
+    categoryLabels: {
+      food: 'Food',
+      transport: 'Transport',
+      housing: 'Housing',
+      health: 'Health',
+      entertainment: 'Entertainment',
+      shopping: 'Shopping',
+      travel: 'Travel',
+      education: 'Education',
+    },
+    smsTrackingLabel: 'SMS transaction alerts',
+    smsTrackingHint: 'Buddget can read bank SMS messages to log transactions automatically.',
+
+    // Step 5 — review
+    reviewTitle: 'Review your setup',
+    reviewSubtitle: 'Tap the pencil on any section to edit.',
+    reviewSectionIdentity: 'Your details',
+    reviewSectionGoals: 'Goals',
+    reviewSectionSpending: 'Spending profile',
+    reviewSectionIncome: 'Income',
+    reviewNoneSelected: 'None selected',
+    reviewSkipped: 'Skipped',
+    reviewFinishButton: 'Finish setup',
+
     checklistIncomePrompt: 'Add your income to unlock budget insights',
     checklistBudgetPrompt: 'Create a budget plan',
     checklistLiteModeNote: "You're in Lite Mode — add income anytime to unlock full features",
