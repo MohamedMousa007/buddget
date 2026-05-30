@@ -1,5 +1,6 @@
 'use client'
 
+import type { LucideIcon } from 'lucide-react'
 import { Plus, X, Receipt, DollarSign, CreditCard, FileText, Sparkles, Mic, Camera } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -12,6 +13,12 @@ import { useLongPress } from '@/hooks/useLongPress'
 import { VoiceRecordSheet } from '@/components/voice/VoiceRecordSheet'
 import { ReceiptScanSheet } from '@/components/receipt/ReceiptScanSheet'
 
+type QuickAddOption = {
+  id: string
+  label: string
+  icon: LucideIcon
+}
+
 export function QuickAddFAB() {
   const router = useRouter()
   const { activeModal, setActiveModal, openDebtSheetNew } = useSettingsStore()
@@ -21,14 +28,14 @@ export function QuickAddFAB() {
   const voiceOpen = activeModal === 'voiceExpense'
   const scanOpen = activeModal === 'scanReceipt'
 
-  const OPTIONS = [
-    { id: 'voiceExpense', label: '🎤 Record expense (voice)', icon: Mic, emoji: '🎤' },
-    { id: 'scanReceipt', label: '📷 Scan a receipt', icon: Camera, emoji: '📷' },
-    { id: 'addExpense', label: t.modals.fabLogPurchase, icon: Receipt, emoji: '💸' },
-    { id: 'addIncome', label: t.modals.fabAddIncome, icon: DollarSign, emoji: '💵' },
-    { id: 'addPaymentMethod', label: t.modals.fabAddPayment, icon: CreditCard, emoji: '💳' },
-    { id: 'addDebt', label: t.modals.fabTrackDebt, icon: FileText, emoji: '📋' },
-    { id: 'budgetSetup', label: t.modals.fabAskAi, icon: Sparkles, emoji: '✨' },
+  const options: QuickAddOption[] = [
+    { id: 'voiceExpense', label: t.modals.fabVoiceExpense, icon: Mic },
+    { id: 'scanReceipt', label: t.modals.fabScanReceipt, icon: Camera },
+    { id: 'addExpense', label: t.modals.fabLogPurchase, icon: Receipt },
+    { id: 'addIncome', label: t.modals.fabAddIncome, icon: DollarSign },
+    { id: 'addPaymentMethod', label: t.modals.fabAddPayment, icon: CreditCard },
+    { id: 'addDebt', label: t.modals.fabTrackDebt, icon: FileText },
+    { id: 'budgetSetup', label: t.modals.fabAskAi, icon: Sparkles },
   ]
 
   const openVoice = () => {
@@ -105,22 +112,27 @@ export function QuickAddFAB() {
         dragToClose
         panelClassName="!bottom-[max(0.5rem,calc(4rem+env(safe-area-inset-bottom,0px)))] !start-2 !end-2 !max-h-[min(72vh,calc(100dvh-5.5rem))] lg:!bottom-24 lg:!end-8 lg:!start-auto lg:!top-auto lg:!translate-x-0 lg:!translate-y-0 lg:!w-[360px] lg:!max-h-[min(90vh,520px)] lg:!rounded-2xl"
       >
-        <h3 className="text-lg font-semibold text-[var(--color-brand-text-primary)] mb-4 pe-2">{t.modals.fabTitle}</h3>
+        <h3 className="text-lg font-semibold text-[var(--color-brand-text-primary)] mb-4 pe-2">
+          {t.modals.fabTitle}
+        </h3>
         <p className="text-xs text-[var(--color-brand-text-muted)] mb-3 pe-2">
-          Tip: long-press the + button to record an expense by voice.
+          {t.modals.fabLongPressTip}
         </p>
         <div className="space-y-1">
-          {OPTIONS.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => runOption(option.id)}
-              className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors text-start"
-            >
-              <span className="text-lg shrink-0">{option.emoji}</span>
-              <span>{option.label}</span>
-            </button>
-          ))}
+          {options.map((option) => {
+            const Icon = option.icon
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => runOption(option.id)}
+                className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors text-start"
+              >
+                <Icon className="h-5 w-5 shrink-0 text-[var(--color-brand-text-secondary)]" aria-hidden />
+                <span>{option.label}</span>
+              </button>
+            )
+          })}
         </div>
       </ModalShell>
 

@@ -1130,6 +1130,9 @@ export interface Dictionary {
 
   modals: {
     fabTitle: string
+    fabVoiceExpense: string
+    fabScanReceipt: string
+    fabLongPressTip: string
     fabLogPurchase: string
     fabAddIncome: string
     fabAddPayment: string
