@@ -16,12 +16,12 @@
    npm run build
    ```
 
-3. **Secrets stay out of git** — `.env.local` is gitignored. Never commit API keys.
+3. **Secrets stay out of git** — `.env.local` is gitignored and should contain **native-only** keys (see `.env.example`). All server secrets live in the **Vercel** project. Never commit API keys.
 
-4. **GitHub Actions `npm run build`** needs the same public Supabase vars as the app (so Next can build). In the repo: **Settings → Secrets and variables → Actions → New repository secret**, add:
+4. **GitHub Actions `npm run build`** needs public Supabase vars (same as Vercel). In the repo: **Settings → Secrets and variables → Actions**, add:
    - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`  
-   (Same values as in Vercel / `.env.local`.) The workflow passes them into the build step automatically, along with `NEXT_PUBLIC_APP_URL` for production (`https://buddget.app`).
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (or legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY`)  
+   The workflow passes them into the build step, along with `NEXT_PUBLIC_APP_URL` for production (`https://buddget.app`).
 
 ## 1. Push to GitHub
 

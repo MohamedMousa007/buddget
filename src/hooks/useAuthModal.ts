@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { mapAuthError, mapOAuthCallbackReason, mapOAuthError, isValidEmailFormat } from '@/components/auth/authErrors'
 import { useAuth } from '@/components/auth/auth-context'
 import { useT } from '@/lib/i18n'
@@ -54,7 +55,10 @@ export function useAuthModal() {
     authModalInitialStep,
   } = useAuth()
   const t = useT()
-  const supabase = useMemo(() => createClient(), [])
+  const supabase = useMemo(
+    () => (isSupabaseConfigured() ? createClient() : null),
+    [],
+  )
 
   const nextFromUrl = searchParams.get('next')
   useEffect(() => {
@@ -239,6 +243,10 @@ export function useAuthModal() {
    * into the shared verify step.
    */
   const continueVerifyPending = useCallback(async () => {
+    if (!supabase) {
+      setError(t.auth.errorFallback)
+      return
+    }
     setLoading(true)
     try {
       const { error: e } = await supabase.auth.resend({ type: 'signup', email: email.trim() })
@@ -257,6 +265,10 @@ export function useAuthModal() {
   }, [email, startResendCooldown, supabase, t])
 
   const signIn = useCallback(async () => {
+    if (!supabase) {
+      setError(t.auth.errorFallback)
+      return
+    }
     setError('')
     if (!validateEmailField()) return
     if (!password) {
@@ -320,6 +332,10 @@ export function useAuthModal() {
   ])
 
   const signUp = useCallback(async () => {
+    if (!supabase) {
+      setError(t.auth.errorFallback)
+      return
+    }
     setError('')
     if (!validateEmailField()) return
     if (password.length < MIN_PASSWORD_LEN) {
@@ -411,6 +427,10 @@ export function useAuthModal() {
   }, [passwordIntent, signIn, signUp])
 
   const verifySignupOtp = useCallback(async () => {
+    if (!supabase) {
+      setError(t.auth.errorFallback)
+      return
+    }
     setError('')
     const token = otp.replace(/\D/g, '').slice(0, 6)
     if (token.length !== 6) {
@@ -441,6 +461,10 @@ export function useAuthModal() {
   }, [email, otp, router, safeNext, supabase, t, verifyPurpose])
 
   const resendCode = useCallback(async () => {
+    if (!supabase) {
+      setError(t.auth.errorFallback)
+      return
+    }
     if (resendCooldown > 0) return
     setError('')
     setLoading(true)
@@ -460,6 +484,10 @@ export function useAuthModal() {
   }, [email, resendCooldown, startResendCooldown, supabase, t, verifyPurpose])
 
   const sendForgot = useCallback(async () => {
+    if (!supabase) {
+      setError(t.auth.errorFallback)
+      return
+    }
     setError('')
     if (!validateEmailField()) return
     setLoading(true)

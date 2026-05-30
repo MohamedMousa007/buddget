@@ -6,6 +6,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useLocale, useT } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/client'
+import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 import {
@@ -148,7 +149,7 @@ export function useProfilePage() {
 
   const supabaseConfigured = useMemo(
     () =>
-      !!(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()),
+      isSupabaseConfigured(),
     []
   )
 

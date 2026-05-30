@@ -41,6 +41,7 @@ import {
   type PaceStatus,
   type OverspentCategory,
 } from '@/lib/utils/spendingPace'
+import { isSupabaseConfigured } from '@/lib/supabase/env'
 
 /** YYYY-MM string for the current calendar month (UTC-local-aligned). */
 function currentMonthString(): string {
@@ -50,7 +51,7 @@ function currentMonthString(): string {
 
 function supabaseAuthConfigured(): boolean {
   return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+    isSupabaseConfigured()
   )
 }
 

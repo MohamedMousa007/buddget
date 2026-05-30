@@ -17,6 +17,11 @@ import { execSync } from 'node:child_process'
 import { existsSync, renameSync, mkdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
+import {
+  assertNativeEnv,
+  loadEnvLocalIntoProcess,
+  warnExtraEnvKeys,
+} from './native-env.mjs'
 
 // `fileURLToPath` correctly decodes URL escapes (spaces in the path, etc).
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -79,6 +84,10 @@ process.on('SIGTERM', () => {
   restore()
   process.exit(143)
 })
+
+loadEnvLocalIntoProcess()
+warnExtraEnvKeys()
+assertNativeEnv({ exitOnError: true })
 
 try {
   console.log('[cap-build] stashing /api and /middleware')

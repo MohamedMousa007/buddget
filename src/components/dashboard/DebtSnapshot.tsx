@@ -14,11 +14,10 @@ import { convertCurrency } from '@/lib/utils/currency'
 import { MoneyDisplay } from '@/components/ui/MoneyDisplay'
 import { useT } from '@/lib/i18n'
 import { formatCurrency } from '@/lib/utils/formatters'
+import { isSupabaseConfigured } from '@/lib/supabase/env'
 
 function supabaseAuthConfigured(): boolean {
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
-  )
+  return isSupabaseConfigured()
 }
 
 export function DebtSnapshot() {

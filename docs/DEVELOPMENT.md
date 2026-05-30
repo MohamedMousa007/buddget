@@ -3,7 +3,9 @@
 ## Prerequisites
 
 - Node 20+ (matches [CI](../.github/workflows/ci.yml))
-- Copy [`.env.example`](../.env.example) to `.env.local` and fill values (see [supabase/README.md](../supabase/README.md))
+- **Native (Capacitor):** copy [`.env.example`](../.env.example) → `.env.local` (native keys only). Run `npm run cap:env:check`.
+- **Web + API locally:** use `vercel dev` (env from Vercel). Do not duplicate server secrets in `.env.local`.
+- **Web deploy / CI:** secrets on Vercel and GitHub Actions — see [VERCEL_DEPLOY.md](./VERCEL_DEPLOY.md).
 
 ## Commands
 
@@ -29,7 +31,7 @@ Before merging or deploying, confirm:
 
 ## CI and secrets
 
-GitHub Actions runs `lint`, `test`, and `build`. The build needs `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` as [repository secrets](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions) (same values as Vercel / local).
+GitHub Actions runs `lint`, `test`, and `build`. The build needs `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (or legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY`) as [repository secrets](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions) — same values as Vercel, not your minimal `.env.local`.
 
 ## PWA artifacts
 

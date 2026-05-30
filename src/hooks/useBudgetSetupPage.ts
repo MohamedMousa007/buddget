@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
+import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { calculateMonthlyIncome } from '@/lib/utils/calculations'
@@ -14,14 +15,7 @@ import { totalPlannedExpensesForPlan } from '@/lib/budget/budgetPlans'
 export function useBudgetSetupPage() {
   const t = useT()
   const { user } = useAuth()
-  const supabaseConfigured = useMemo(
-    () =>
-      !!(
-        process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() &&
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
-      ),
-    []
-  )
+  const supabaseConfigured = useMemo(() => isSupabaseConfigured(), [])
 
   const {
     budgetPlans,

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { isSupabaseConfigured } from '@/lib/supabase/env'
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js'
 import {
   SupabaseFinanceSync,
@@ -132,11 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authModalMessage, setAuthModalMessage] = useState<string | null>(null)
   const [authModalInitialStep, setAuthModalInitialStep] = useState<'form' | 'forgot'>('form')
 
-  const configured = useMemo(() => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
-    return !!(url && key)
-  }, [])
+  const configured = useMemo(() => isSupabaseConfigured(), [])
 
   const openAuthModal = useCallback(
     (

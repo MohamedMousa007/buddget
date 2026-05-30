@@ -7,6 +7,7 @@ import { useSettingsStore, type ExpensePrefill } from '@/lib/store/useSettingsSt
 import { buildSystemPrompt, sendToGemini, type AIResponse } from '@/lib/ai/gemini'
 import { buildPlanRowsForPrompt } from '@/lib/ai/budgetPlannerAi'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
+import { isSupabaseConfigured } from '@/lib/supabase/env'
 import {
   buildAIActionHandlerContext,
   executeActionItem,
@@ -34,14 +35,7 @@ export function useAIChat() {
   const { user, openAuthModal } = useAuth()
   const t = useT()
   const pathname = usePathname()
-  const supabaseConfigured = useMemo(
-    () =>
-      !!(
-        process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() &&
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
-      ),
-    []
-  )
+  const supabaseConfigured = useMemo(() => isSupabaseConfigured(), [])
   const isOpen = activeModal === 'aiChat'
 
   const guardMutations = useCallback(() => {

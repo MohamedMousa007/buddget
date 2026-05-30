@@ -66,21 +66,27 @@ npx cap open android
 npx cap open ios
 ```
 
-## 5. Environment variables
+## 5. Environment variables (native only)
 
-Set these in `.env.local` (web dev) and the matching CI secrets:
+Use **one** local file: `.env.local` (copy from [`.env.example`](../.env.example)).  
+Do **not** `vercel env pull .env.local` — server keys stay on Vercel.
 
-| Key | Where | Notes |
-| --- | ----- | ----- |
-| `NEXT_PUBLIC_API_BASE_URL` | Capacitor build only | e.g. `https://buddget.app` |
-| `FIREBASE_SERVICE_ACCOUNT_JSON` | Server (Vercel) | full JSON string |
-| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Web + Capacitor | e.g. `buddget-prod` |
-| `NEXT_PUBLIC_FIREBASE_VAPID_KEY` | Web | optional — for FCM JS in WebView |
-| `GROQ_API_KEY` | Server | enables `/api/voice/transcribe` |
-| `GEMINI_API_KEY` | Server | enables `/api/ai`, `/api/receipt/scan`, `/api/sms/parse` |
-| `NOTIFICATION_LISTENER_SHARED_SECRET` | Optional | per-user fallback when a token isn't issued |
+```bash
+cp .env.example .env.local
+# Fill Supabase URL + publishable key, then:
+npm run cap:env:check
+npm run cap:build
+```
 
-Existing Supabase + VAPID keys are unchanged.
+| Key | Required | Notes |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | yes | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | yes | Supabase → Settings → API (publishable) |
+| `NEXT_PUBLIC_API_BASE_URL` | yes | e.g. `https://buddget.app` |
+| `NEXT_PUBLIC_APP_URL` | optional | Defaults to API base if omitted |
+| `NEXT_PUBLIC_OAUTH_GOOGLE` / `APPLE` | optional | `true` when providers are enabled |
+
+Everything else (`GEMINI_API_KEY`, `SUPABASE_SECRET_KEY`, `FIREBASE_SERVICE_ACCOUNT_JSON`, push admin, etc.) is **Vercel only**. Native shells call your deployed `/api/*` at runtime.
 
 ## 6. Bumping packages
 

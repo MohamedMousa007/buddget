@@ -7,6 +7,7 @@ import { useT } from '@/lib/i18n'
 import { BudgetPlannerCategoryRow } from '@/components/features/budget-planner/BudgetPlannerCategoryRow'
 import { BudgetPlannerAddCategoryMenu } from '@/components/features/budget-planner/BudgetPlannerAddCategoryMenu'
 import { useTutorialAnchor } from '@/components/tutorial/TutorialAnchor'
+import { isSupabaseConfigured } from '@/lib/supabase/env'
 
 export interface BudgetPlannerCategoriesLabels {
   categoriesTitle: string
@@ -68,7 +69,7 @@ export function BudgetPlannerCategories({
   const t = useT()
   const { user, openAuthModal } = useAuth()
   const supabaseConfigured = Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+    isSupabaseConfigured()
   )
 
   const rowLabels = {

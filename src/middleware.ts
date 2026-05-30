@@ -1,6 +1,11 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import type { SupabaseCookieToSet } from '@/lib/supabase/cookieTypes'
+import {
+  isSupabaseConfigured,
+  requireSupabasePublishableKey,
+  requireSupabaseUrl,
+} from '@/lib/supabase/env'
 
 /** Simple in-process limiter for unauthenticated public FX/gold routes (best-effort per isolate). */
 const PUBLIC_API_WINDOW_MS = 60_000
@@ -19,13 +24,6 @@ function publicApiRateLimitOk(ip: string): boolean {
 
 const AUTH_CALLBACK = '/auth/callback'
 const ONBOARDING_PATH = '/onboarding'
-
-function isSupabaseConfigured(): boolean {
-  return !!(
-    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() &&
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
-  )
-}
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
@@ -48,8 +46,8 @@ export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    requireSupabaseUrl(),
+    requireSupabasePublishableKey(),
     {
       cookies: {
         getAll() {

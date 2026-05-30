@@ -1,17 +1,11 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { getEffectiveAiRuntimeConfig } from '@/lib/server/aiRuntimeConfig'
-
-function supabaseAuthConfigured(): boolean {
-  return !!(
-    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() &&
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
-  )
-}
 
 /** When Supabase auth is enabled, AI routes require a logged-in user (quota / abuse protection). */
 async function requireUserOrUnauthorized(): Promise<NextResponse | null> {
-  if (!supabaseAuthConfigured()) return null
+  if (!isSupabaseConfigured()) return null
   const supabase = await createClient()
   const {
     data: { user },

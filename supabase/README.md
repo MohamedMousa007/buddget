@@ -1,7 +1,7 @@
 # Supabase setup (Buddget)
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. In **Project Settings → API**, copy the URL, `anon` key, and `service_role` key into `.env.local` (see `.env.example`).
+2. In **Project Settings → API**, copy the **URL** and **publishable** key into `.env.local` for native builds (see `.env.example`). Put the **secret** key on **Vercel** only (`SUPABASE_SECRET_KEY`), not in `.env.local`.
 3. In the **SQL Editor**, run migrations in order:
 
    1. [`migrations/001_init_auth_finance_analytics.sql`](./migrations/001_init_auth_finance_analytics.sql)  

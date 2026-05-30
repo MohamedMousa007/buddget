@@ -11,8 +11,9 @@ export function AdminHelpSection() {
       </h2>
       <div className="text-xs text-[var(--color-brand-text-muted)] space-y-2">
         <p>
-          All admin configuration is managed via environment variables in{' '}
-          <code className="text-[var(--color-brand-red)]">.env.local</code>:
+          Server admin configuration is on{' '}
+          <code className="text-[var(--color-brand-red)]">Vercel</code> (not native{' '}
+          <code className="text-[var(--color-brand-red)]">.env.local</code>):
         </p>
         <div className="p-3 rounded-lg bg-[var(--color-brand-bg)] font-mono-numbers space-y-1 text-[11px]">
           <p>
@@ -30,10 +31,10 @@ export function AdminHelpSection() {
             <span className="text-[var(--color-brand-text-secondary)]">NEXT_PUBLIC_SUPABASE_URL</span>
           </p>
           <p>
-            <span className="text-[var(--color-brand-text-secondary)]">NEXT_PUBLIC_SUPABASE_ANON_KEY</span>
+            <span className="text-[var(--color-brand-text-secondary)]">NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</span>
           </p>
           <p>
-            <span className="text-[var(--color-brand-text-secondary)]">SUPABASE_SERVICE_ROLE_KEY</span>{' '}
+            <span className="text-[var(--color-brand-text-secondary)]">SUPABASE_SECRET_KEY</span>{' '}
             <span className="text-[var(--color-brand-text-muted)]">(server only)</span>
           </p>
           <p className="text-[var(--color-brand-text-muted)] pt-1 border-t border-[var(--color-brand-border)] mt-2">

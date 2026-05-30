@@ -10,6 +10,7 @@
     "generate-icons": "node scripts/generate-pwa-icons.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
+    "cap:env:check": "node scripts/native-env.mjs check",
     "cap:build": "node scripts/capacitor-build.mjs",
     "cap:android": "npm run cap:build && npx cap open android",
     "cap:ios": "npm run cap:build && npx cap open ios",

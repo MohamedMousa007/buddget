@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Lock, AlertTriangle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -45,7 +46,10 @@ function errorCode(e: { code?: string; message?: string } | null | undefined): s
 export default function ResetPasswordConfirmPage() {
   const router = useRouter()
   const t = useT()
-  const supabase = useMemo(() => createClient(), [])
+  const supabase = useMemo(
+    () => (isSupabaseConfigured() ? createClient() : null),
+    [],
+  )
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [showNew, setShowNew] = useState(false)
@@ -59,6 +63,7 @@ export default function ResetPasswordConfirmPage() {
   const [linkExpired, setLinkExpired] = useState(false)
 
   useEffect(() => {
+    if (!supabase) return
     let cancelled = false
     void (async () => {
       const { data } = await supabase.auth.getSession()
@@ -90,6 +95,14 @@ export default function ResetPasswordConfirmPage() {
       window.clearTimeout(timeoutId)
     }
   }, [supabase, router])
+
+  if (!supabase) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--color-brand-bg)]">
+        <p className="text-sm text-[var(--color-brand-text-muted)]">{t.auth.errorFallback}</p>
+      </div>
+    )
+  }
 
   // Mirror the auth modal's signup rules so the reset flow enforces the same bar.
   const passwordPasses =

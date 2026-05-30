@@ -10,6 +10,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 import { cn } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
+import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { ProfileDropdown } from '@/components/layout/ProfileDropdown'
 import { NotificationInbox } from '@/components/notifications/NotificationInbox'
 
@@ -21,11 +22,7 @@ function ProfileAvatarWithMenu({ className }: { className?: string }) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const { user } = useAuth()
-  const configured = useMemo(() => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
-    return !!(url && key)
-  }, [])
+  const configured = useMemo(() => isSupabaseConfigured(), [])
   const profile = useFinanceStore(useShallow((s) => s.profile))
   const src =
     configured && !user ? null : resolveProfileAvatarSrc(profile)
@@ -73,11 +70,7 @@ export function AuthNavButtons({
   const t = useT()
   const { user, loading, openAuthModal } = useAuth()
 
-  const configured = useMemo(() => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
-    return !!(url && key)
-  }, [])
+  const configured = useMemo(() => isSupabaseConfigured(), [])
 
   const nextPath = pathname || '/'
 

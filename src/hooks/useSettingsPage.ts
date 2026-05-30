@@ -6,6 +6,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useT } from '@/lib/i18n'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
+import { isSupabaseConfigured } from '@/lib/supabase/env'
 
 export interface SettingsImportBannerState {
   variant: 'success' | 'error'
@@ -24,7 +25,7 @@ export function useSettingsPage() {
 
   const supabaseConfigured = useMemo(
     () =>
-      !!(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()),
+      isSupabaseConfigured(),
     []
   )
 

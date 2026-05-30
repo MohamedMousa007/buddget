@@ -40,9 +40,11 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files — commit only `.env.example` (native template); never commit secrets
 .env*
 !.env.example
+# Optional full pull for `vercel dev` (do not use for Capacitor builds)
+.env.vercel
 
 # vercel
 .vercel
