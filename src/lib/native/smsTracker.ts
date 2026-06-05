@@ -6,11 +6,12 @@ import { apiUrl } from '@/lib/apiBase'
 let listenerAttached = false
 
 interface SmsRetrieverPlugin {
-  startWatch(): Promise<{ message?: string }>
+  startSmsReceiver(): Promise<{ isRegistered?: boolean }>
+  removeSmsReceiver(): Promise<void>
   removeAllListeners(): Promise<void>
   addListener(
-    event: 'onSmsReceived',
-    handler: (data: { message: string; sender?: string }) => void,
+    event: 'onSmsReceive',
+    handler: (data: { message?: string; error?: string }) => void,
   ): { remove: () => Promise<void> }
 }
 
@@ -40,15 +41,19 @@ export async function startSMSTracking(accessToken: string): Promise<void> {
       return
     }
 
-    plugin.addListener('onSmsReceived', (payload) => {
+    plugin.addListener('onSmsReceive', (payload) => {
+      if (payload?.error) {
+        console.warn('[sms-tracker] receiver error', payload.error)
+        return
+      }
       const text = payload?.message?.trim()
       if (!text) return
-      void forwardToParser(text, payload?.sender, accessToken)
+      void forwardToParser(text, undefined, accessToken)
     })
 
-    await plugin.startWatch()
+    await plugin.startSmsReceiver()
   } catch (e) {
-    console.warn('[sms-tracker] startWatch failed (likely missing Android permission)', e)
+    console.warn('[sms-tracker] startSmsReceiver failed', e)
     listenerAttached = false
   }
 }
@@ -98,6 +103,7 @@ export async function stopSMSTracking(): Promise<void> {
       default?: SmsRetrieverPlugin
     }
     const plugin = mod.SmsRetriever ?? mod.default
+    await plugin?.removeSmsReceiver()
     await plugin?.removeAllListeners()
     listenerAttached = false
   } catch {
