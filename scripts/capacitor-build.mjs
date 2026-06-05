@@ -100,6 +100,7 @@ try {
   const hasAndroid = existsSync(resolve(ROOT, 'android'))
   const hasIos = existsSync(resolve(ROOT, 'ios'))
   if (hasAndroid || hasIos) {
+    execSync('node scripts/patch-android-plugins.mjs', { stdio: 'inherit', cwd: ROOT })
     console.log('[cap-build] running npx cap sync…')
     execSync('npx cap sync', { stdio: 'inherit', env, cwd: ROOT })
   } else {
