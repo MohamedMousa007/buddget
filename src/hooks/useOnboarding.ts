@@ -244,7 +244,8 @@ export function useOnboarding() {
           isDefault: true,
         })
 
-        const res = await fetch('/api/auth/complete-journey', {
+        const { apiFetchAuth } = await import('@/lib/apiBase')
+        const res = await apiFetchAuth('/api/auth/complete-journey', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

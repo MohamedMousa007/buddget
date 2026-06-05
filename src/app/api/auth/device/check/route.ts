@@ -1,38 +1,24 @@
 import { NextResponse } from 'next/server'
-import { randomUUID } from 'node:crypto'
-import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
-import { readDeviceCookie, setDeviceCookie } from '@/lib/auth/deviceCookie'
+import { resolveDeviceId } from '@/lib/auth/resolveDeviceId'
+import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
 
 /**
  * Decides whether the current browser needs to complete the email-OTP second
  * factor for this user. Returns `{ trusted: true }` when:
  *  - the user has 2FA off, OR
- *  - the user has 2FA on AND the `buddget_device_id` cookie matches a row in
- *    `trusted_devices` for this user.
+ *  - the user has 2FA on AND the device id matches a row in `trusted_devices`.
  *
- * Also ensures the cookie exists (we mint one on first visit) and refreshes
- * `last_used_at` on trusted hits.
- *
- * Called by the client after a successful `signInWithPassword` to gate whether
- * the sign-in continues or is redirected through the OTP step.
+ * Native apps send `X-Buddget-Device-Id`; web uses the HttpOnly cookie.
  */
-export async function POST() {
+export async function POST(request: Request) {
   try {
-    const supabase = await createServerSupabase()
-    const {
-      data: { user },
-      error: authErr,
-    } = await supabase.auth.getUser()
-    if (authErr || !user) {
+    const { user } = await resolveRouteUser(request)
+    if (!user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
-    let deviceId = await readDeviceCookie()
-    if (!deviceId) {
-      deviceId = randomUUID()
-      await setDeviceCookie(deviceId)
-    }
+    const deviceId = await resolveDeviceId(request)
 
     const admin = createServiceRoleClient()
     const { data: settings, error: sErr } = await admin
@@ -42,7 +28,6 @@ export async function POST() {
       .maybeSingle()
     if (sErr) {
       console.error('[auth/device/check] read settings failed', sErr.message)
-      // Fail closed: if we can't tell, ask for OTP. Safer than silently granting.
       return NextResponse.json({ trusted: false, deviceId, required: true })
     }
 
@@ -63,8 +48,7 @@ export async function POST() {
     }
 
     if (match) {
-      // Best-effort bump of last_used_at; don't block on failure.
-      admin
+      void admin
         .from('trusted_devices')
         .update({ last_used_at: new Date().toISOString() })
         .eq('user_id', user.id)

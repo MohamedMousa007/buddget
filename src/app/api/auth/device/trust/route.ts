@@ -1,34 +1,20 @@
 import { NextResponse } from 'next/server'
-import { randomUUID } from 'node:crypto'
-import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
-import { readDeviceCookie, setDeviceCookie } from '@/lib/auth/deviceCookie'
+import { resolveDeviceId } from '@/lib/auth/resolveDeviceId'
+import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
 
 /**
- * Mark the current browser as a trusted device for the authenticated user.
- * Called after a successful email-OTP verification (both the post-signup
- * verification and the post-sign-in 2FA challenge).
- *
- * Mints a device_id cookie if one isn't set, then upserts the row so the user
- * skips the OTP step on subsequent sign-ins from the same browser.
+ * Mark the current device as trusted for the authenticated user.
+ * Called after successful email-OTP verification (signup or 2FA).
  */
 export async function POST(req: Request) {
   try {
-    const supabase = await createServerSupabase()
-    const {
-      data: { user },
-      error: authErr,
-    } = await supabase.auth.getUser()
-    if (authErr || !user) {
+    const { user } = await resolveRouteUser(req)
+    if (!user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
-    let deviceId = await readDeviceCookie()
-    if (!deviceId) {
-      deviceId = randomUUID()
-      await setDeviceCookie(deviceId)
-    }
-
+    const deviceId = await resolveDeviceId(req)
     const ua = (req.headers.get('user-agent') || '').slice(0, 500)
 
     const admin = createServiceRoleClient()
@@ -39,7 +25,7 @@ export async function POST(req: Request) {
         user_agent: ua || null,
         last_used_at: new Date().toISOString(),
       },
-      { onConflict: 'user_id,device_id' }
+      { onConflict: 'user_id,device_id' },
     )
     if (error) {
       console.error('[auth/device/trust] upsert failed', error.message)

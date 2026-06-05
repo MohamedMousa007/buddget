@@ -14,7 +14,8 @@ export function useGoldPrice() {
 
   const fetchGoldPrice = useCallback(async () => {
     try {
-      const res = await fetch('/api/gold')
+      const { apiFetch } = await import('@/lib/apiBase')
+      const res = await apiFetch('/api/gold')
       if (!res.ok) {
         setGoldUnavailable()
         return

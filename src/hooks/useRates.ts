@@ -10,7 +10,8 @@ export function useRates() {
 
   const fetchRates = useCallback(async () => {
     try {
-      const res = await fetch('/api/rates')
+      const { apiFetch } = await import('@/lib/apiBase')
+      const res = await apiFetch('/api/rates')
       if (!res.ok) return
 
       const data = await res.json()

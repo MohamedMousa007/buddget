@@ -8,6 +8,7 @@ import { mapAuthError, mapOAuthCallbackReason, mapOAuthError, isValidEmailFormat
 import { useAuth } from '@/components/auth/auth-context'
 import { useT } from '@/lib/i18n'
 import { APP_CONFIG } from '@/lib/config'
+import { apiFetch, apiFetchAuth } from '@/lib/apiBase'
 import { routeAfterAuth } from '@/lib/auth/postAuthRedirect'
 import { MIN_PASSWORD_LEN } from '@/components/features/auth-modal/authModalTokens'
 import { markSessionEphemeral } from '@/hooks/useEphemeralSessionGuard'
@@ -180,7 +181,7 @@ export function useAuthModal() {
     setEmailAdvancePending(true)
 
     try {
-      const res = await fetch('/api/auth/check-email', {
+      const res = await apiFetch('/api/auth/check-email', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email: trimmed }),
@@ -290,7 +291,7 @@ export function useAuthModal() {
 
     // 2FA device-trust check.
     try {
-      const deviceRes = await fetch('/api/auth/device/check', { method: 'POST' })
+      const deviceRes = await apiFetchAuth('/api/auth/device/check', { method: 'POST' })
       if (deviceRes.ok) {
         const body = (await deviceRes.json()) as { required?: boolean }
         if (body.required === true) {
@@ -450,7 +451,7 @@ export function useAuthModal() {
       return
     }
     try {
-      await fetch('/api/auth/device/trust', { method: 'POST' })
+      await apiFetchAuth('/api/auth/device/trust', { method: 'POST' })
     } catch {
       /* non-fatal */
     }
@@ -493,7 +494,7 @@ export function useAuthModal() {
     setLoading(true)
 
     try {
-      const res = await fetch('/api/auth/check-email', {
+      const res = await apiFetch('/api/auth/check-email', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email: email.trim() }),
@@ -510,8 +511,8 @@ export function useAuthModal() {
       /* fall through */
     }
 
-    const origin =
-      typeof window !== 'undefined' ? window.location.origin : APP_CONFIG.url.replace(/\/$/, '')
+    const { appOrigin } = await import('@/lib/apiBase')
+    const origin = appOrigin() || APP_CONFIG.url.replace(/\/$/, '')
     const { error: e } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: `${origin}/auth/callback?next=/reset-password/confirm`,
     })

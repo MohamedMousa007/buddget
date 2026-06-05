@@ -18,6 +18,57 @@ export function apiUrl(path: string): string {
   return `${base}${path}`
 }
 
+/** True when the static bundle should call the deployed API origin. */
+export function usesRemoteApi(): boolean {
+  return Boolean(process.env.NEXT_PUBLIC_API_BASE_URL?.trim())
+}
+
+/**
+ * Origin used for OAuth / password-reset redirects. In the Capacitor WebView the
+ * page origin is `https://localhost`, so callbacks must target the deployed site.
+ */
+export function appOrigin(): string {
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '')
+  if (apiBase) return apiBase
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/+$/, '')
+  if (appUrl && !appUrl.includes('localhost')) return appUrl
+  if (typeof window !== 'undefined') return window.location.origin
+  return appUrl ?? ''
+}
+
+/**
+ * Builds Authorization (+ native device id) headers for cross-origin API calls.
+ * No-op on web — cookies carry the session on same-origin requests.
+ */
+export async function buildAuthHeaders(init?: HeadersInit): Promise<Headers> {
+  const headers = new Headers(init)
+  if (!usesRemoteApi()) return headers
+
+  const { createClient } = await import('@/lib/supabase/client')
+  const {
+    data: { session },
+  } = await createClient().auth.getSession()
+  if (session?.access_token) {
+    headers.set('Authorization', `Bearer ${session.access_token}`)
+  }
+
+  const { isNative } = await import('@/lib/native/isNative')
+  if (isNative()) {
+    const { getOrCreateDeviceId } = await import('@/lib/native/deviceId')
+    const { DEVICE_ID_HEADER } = await import('@/lib/auth/deviceIdConstants')
+    const deviceId = await getOrCreateDeviceId()
+    if (deviceId) headers.set(DEVICE_ID_HEADER, deviceId)
+  }
+
+  return headers
+}
+
+/** Authenticated fetch — Bearer JWT on Capacitor, cookies on web. */
+export async function apiFetchAuth(input: string, init?: RequestInit): Promise<Response> {
+  const headers = await buildAuthHeaders(init?.headers)
+  return fetch(apiUrl(input), { ...init, headers })
+}
+
 /** Convenience wrapper around `fetch` that prepends the API base when present. */
 export function apiFetch(input: string, init?: RequestInit): Promise<Response> {
   return fetch(apiUrl(input), init)

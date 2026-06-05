@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { APP_CONFIG } from '@/lib/config'
+import { appOrigin } from '@/lib/apiBase'
 import { mapOAuthError } from '@/components/auth/authErrors'
 import { isOAuthProviderEnabled, type OAuthProvider } from '@/lib/auth/oauthProviders'
 import { useT } from '@/lib/i18n'
@@ -23,8 +24,7 @@ export function useOAuthSignIn(nextPath: string) {
       setError('')
       try {
         const supabase = createClient()
-        const origin =
-          typeof window !== 'undefined' ? window.location.origin : APP_CONFIG.url.replace(/\/$/, '')
+        const origin = appOrigin() || APP_CONFIG.url.replace(/\/$/, '')
         const next = nextPath && nextPath.startsWith('/') ? nextPath : '/'
         const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(next)}`
         const { error: e } = await supabase.auth.signInWithOAuth({

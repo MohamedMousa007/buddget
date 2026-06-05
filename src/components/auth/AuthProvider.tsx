@@ -54,7 +54,8 @@ function PasswordUpdatedCookieSync() {
     handled.current = true
     void (async () => {
       try {
-        const res = await fetch('/api/auth/password-updated', { method: 'GET' })
+        const { apiFetch } = await import('@/lib/apiBase')
+        const res = await apiFetch('/api/auth/password-updated', { method: 'GET' })
         if (!res.ok) return
         const body = (await res.json()) as { pending?: boolean }
         if (body.pending === true) {

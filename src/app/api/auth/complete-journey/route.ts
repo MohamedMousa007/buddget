@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
 import type { Json } from '@/lib/supabase/database.types'
 
 interface CompletionPayload {
@@ -22,12 +22,8 @@ interface CompletionPayload {
  */
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createServerSupabase()
-    const {
-      data: { user },
-      error: authErr,
-    } = await supabase.auth.getUser()
-    if (authErr || !user) {
+    const { user } = await resolveRouteUser(req)
+    if (!user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
     if (user.user_metadata?.onboarding_completed === true) {

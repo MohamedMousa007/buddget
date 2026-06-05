@@ -6,6 +6,7 @@ import {
   requireSupabasePublishableKey,
   requireSupabaseUrl,
 } from '@/lib/supabase/env'
+import { nativeApiPreflightResponse, withNativeApiCors } from '@/lib/server/nativeApiCors'
 
 /** Simple in-process limiter for unauthenticated public FX/gold routes (best-effort per isolate). */
 const PUBLIC_API_WINDOW_MS = 60_000
@@ -28,6 +29,11 @@ const ONBOARDING_PATH = '/onboarding'
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
+  if (pathname.startsWith('/api')) {
+    const preflight = nativeApiPreflightResponse(request)
+    if (preflight) return preflight
+  }
+
   if (pathname.startsWith('/api/gold') || pathname.startsWith('/api/rates')) {
     const forwarded = request.headers.get('x-forwarded-for')
     const ip =
@@ -40,6 +46,9 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!isSupabaseConfigured()) {
+    if (pathname.startsWith('/api')) {
+      return withNativeApiCors(request, NextResponse.next())
+    }
     return NextResponse.next()
   }
 
@@ -69,7 +78,7 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   if (pathname.startsWith('/api')) {
-    return supabaseResponse
+    return withNativeApiCors(request, supabaseResponse)
   }
 
   if (
