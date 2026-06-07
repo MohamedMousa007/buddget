@@ -31,6 +31,10 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
     getAmplitude(): number
   } | null>(null)
   const rafRef = useRef<number | null>(null)
+  // When stop() is called before the recorder is ready (user releases the mic
+  // button before startRecording() resolves), this flag causes start() to
+  // cancel immediately after initialisation instead of entering recording state.
+  const stopPendingRef = useRef(false)
 
   const [state, setState] = useState<VoiceState>('idle')
   const [draft, setDraft] = useState<ExtractedExpense | null>(null)
@@ -71,8 +75,17 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
     setError(null)
     setDraft(null)
     setTranscript(null)
+    stopPendingRef.current = false
     try {
       const recorder = await startRecording({ language })
+
+      // User released the mic before the recorder was ready — cancel silently.
+      if (stopPendingRef.current) {
+        stopPendingRef.current = false
+        try { await recorder.cancel() } catch { /* noop */ }
+        return
+      }
+
       recorderRef.current = recorder
       setState('recording')
 
@@ -96,12 +109,30 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
   const stop = useCallback(async () => {
     // Null synchronously to block any concurrent cancel() from re-entering
     const recorder = recorderRef.current
-    if (!recorder) return
+    if (!recorder) {
+      // Recorder not ready yet — flag start() to cancel after initialisation.
+      stopPendingRef.current = true
+      return
+    }
     recorderRef.current = null
     stopRaf()
     setState('processing')
+
+    // 12-second wall-clock guard — the UI must never get permanently stuck.
+    let timeoutHandle: ReturnType<typeof setTimeout> | null = null
+    const withTimeout = <T,>(p: Promise<T>): Promise<T> =>
+      Promise.race([
+        p,
+        new Promise<T>((_, reject) => {
+          timeoutHandle = setTimeout(
+            () => reject(new Error('Transcription took too long. Please try again.')),
+            12_000,
+          )
+        }),
+      ])
+
     try {
-      const { audio, inlineText } = await recorder.stop()
+      const { audio, inlineText } = await withTimeout(recorder.stop())
 
       let text = inlineText?.trim() ?? ''
 
@@ -110,10 +141,9 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
         form.append('audio', audio, `voice-${Date.now()}.webm`)
         form.append('language', language === 'ar' ? 'ar' : 'en')
         const { apiFetchAuth } = await import('@/lib/apiBase')
-        const res = await apiFetchAuth('/api/voice/transcribe', {
-          method: 'POST',
-          body: form,
-        })
+        const res = await withTimeout(
+          apiFetchAuth('/api/voice/transcribe', { method: 'POST', body: form }),
+        )
         if (!res.ok) {
           const err = (await res.json().catch(() => null)) as { error?: string } | null
           throw new Error(err?.error || `Transcription failed (${res.status})`)
@@ -125,18 +155,21 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
       if (!text) throw new Error("Couldn't hear that — try again in a quieter spot.")
       setTranscript(text)
 
-      const extracted = await extractVoiceExpense(text, baseCurrency)
+      const extracted = await withTimeout(extractVoiceExpense(text, baseCurrency))
       setDraft(extracted)
       setState('confirming')
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Something went wrong'
       setError(msg)
       setState('error')
+    } finally {
+      if (timeoutHandle !== null) clearTimeout(timeoutHandle)
     }
   }, [baseCurrency, language, stopRaf])
 
   const cancel = useCallback(async () => {
     // Null synchronously so stop() returns early if called concurrently
+    stopPendingRef.current = false
     const recorder = recorderRef.current
     recorderRef.current = null
     stopRaf()

@@ -14,24 +14,37 @@ export interface CapturedImage {
  * native camera, edge-detect on Android, document mode on iOS); falls back to
  * a hidden `<input type="file" capture="environment">` on the web.
  */
+/** Legacy helper — uses camera on native, file input on web. */
 export async function captureReceiptPhoto(): Promise<CapturedImage> {
-  if (isNative()) {
-    return captureNative()
-  }
+  return capturePhoto('camera')
+}
+
+/** Capture from a specific source — 'camera' or 'gallery'. */
+export async function capturePhoto(source: 'camera' | 'gallery'): Promise<CapturedImage> {
+  if (isNative()) return captureNative(source)
   return captureWeb()
 }
 
-async function captureNative(): Promise<CapturedImage> {
+async function captureNative(source: 'camera' | 'gallery'): Promise<CapturedImage> {
   const cam = await import('@capacitor/camera')
   const { Camera, CameraResultType, CameraSource } = cam
+
+  // Explicit permission request before accessing hardware — avoids silent failure.
+  const permCheck = await Camera.checkPermissions()
+  if (permCheck.camera !== 'granted') {
+    const req = await Camera.requestPermissions({ permissions: ['camera'] })
+    if (req.camera !== 'granted') {
+      throw new Error(
+        'Camera access denied. Please go to Settings → Apps → Buddget → Permissions and enable Camera.'
+      )
+    }
+  }
+
   const photo = await Camera.getPhoto({
     quality: 80,
     allowEditing: false,
     resultType: CameraResultType.DataUrl,
-    source: CameraSource.Prompt,
-    promptLabelHeader: 'Scan receipt',
-    promptLabelPhoto: 'Pick from library',
-    promptLabelPicture: 'Take photo',
+    source: source === 'camera' ? CameraSource.Camera : CameraSource.Photos,
     correctOrientation: true,
     saveToGallery: false,
   })

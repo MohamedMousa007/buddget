@@ -19,7 +19,6 @@ import { LockedFeatureCard } from '@/components/ui/LockedFeatureCard'
 import { SetupChecklist } from '@/components/features/onboarding/SetupChecklist'
 import { useFirstRunChecklist } from '@/lib/onboarding/firstRunChecklist'
 import { useLegacyOnboardingMigrator } from '@/lib/onboarding/migrateLegacyOnboarding'
-import { useDependencyStatus } from '@/hooks/useDependencyStatus'
 import { ONBOARDING_EVENTS, track } from '@/lib/analytics/events'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
@@ -52,21 +51,20 @@ export default function DashboardPage() {
   const stats = useMonthlyStats()
   const netWorth = useNetWorth()
   const checklist = useFirstRunChecklist()
-  const depStatus = useDependencyStatus()
   const showToast = useActionToast()
-  const { dashboardLayout, liteMode } = useFinanceStore(
+  const { dashboardLayout } = useFinanceStore(
     useShallow((s) => ({
       dashboardLayout: s.settings.dashboardLayout ?? 'standard',
-      liteMode: s.profile.liteMode ?? false,
     })),
   )
   const isMinimal = dashboardLayout === 'minimal'
 
   const [justBuilt, setJustBuilt] = useState(false)
   const showChecklist = !checklist.hidden && !checklist.allDone && !justBuilt
-  const incomeIsLocked = !depStatus.income && !liteMode
-  const budgetIsLocked = !depStatus.budget_plan
-  const netWorthIsLocked = !depStatus.income && !depStatus.savings
+  // Locks bypassed for device testing — re-enable when onboarding flow is stable
+  const incomeIsLocked = false
+  const budgetIsLocked = false
+  const netWorthIsLocked = false
 
   const wasAllDoneRef = useRef<boolean | null>(null)
   useEffect(() => {

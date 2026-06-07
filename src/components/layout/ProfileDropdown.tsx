@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useCallback, type RefObject } from 'react'
+import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import {
   User,
@@ -45,13 +46,16 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
 
   useEffect(() => {
     if (!open) return
-    const handler = (e: PointerEvent) => {
+    // Use 'click' (not 'pointerdown') so the outside-click handler fires AFTER
+    // any menu-item onClick has already committed — prevents unmounting the
+    // dropdown before navigation fires on Android WebView.
+    const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         onClose()
       }
     }
-    document.addEventListener('pointerdown', handler)
-    return () => document.removeEventListener('pointerdown', handler)
+    document.addEventListener('click', handler, { capture: true })
+    return () => document.removeEventListener('click', handler, { capture: true })
   }, [open, onClose, containerRef])
 
   useEffect(() => {
@@ -71,18 +75,21 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
   }, [pathname, onClose])
 
   /**
-   * Navigate then close — order matters for Capacitor Android WebView.
-   * Calling onClose() first unmounts the DOM before router.push() fires,
-   * causing the WebView to swallow the navigation event silently.
-   * Push first, close after a microtask so navigation is committed first.
+   * Close the dropdown after navigation starts.
+   * The 100ms delay ensures the Link's native anchor click commits first —
+   * critical on Capacitor Android WebView where React re-renders on state
+   * change can interrupt the navigation event before it registers.
    */
-  const navigateTo = useCallback(
-    (href: string, beforeNavigate?: () => void) => {
-      beforeNavigate?.()
-      router.push(href)
-      setTimeout(onClose, 50)
+  const delayedClose = useCallback(() => {
+    setTimeout(onClose, 100)
+  }, [onClose])
+
+  const navigateWithSideEffect = useCallback(
+    (beforeNavigate: () => void) => {
+      beforeNavigate()
+      delayedClose()
     },
-    [router, onClose],
+    [delayedClose],
   )
 
   const handleSignOut = async () => {
@@ -122,26 +129,26 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
 
       <div className="border-t border-[var(--color-brand-border)]" />
 
-      <button type="button" onClick={() => navigateTo('/profile')} className={itemClass} role="menuitem">
+      <Link href="/profile/" onClick={delayedClose} className={itemClass} role="menuitem">
         <User className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.yourProfile}</span>
-      </button>
-      <button type="button" onClick={() => navigateTo('/goals')} className={itemClass} role="menuitem">
+      </Link>
+      <Link href="/goals/" onClick={delayedClose} className={itemClass} role="menuitem">
         <Target className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.goals}</span>
-      </button>
-      <button type="button" onClick={() => navigateTo('/subscriptions')} className={itemClass} role="menuitem">
+      </Link>
+      <Link href="/subscriptions/" onClick={delayedClose} className={itemClass} role="menuitem">
         <RefreshCw className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.subscriptions}</span>
-      </button>
-      <button type="button" onClick={() => navigateTo('/settings')} className={itemClass} role="menuitem">
+      </Link>
+      <Link href="/settings/" onClick={delayedClose} className={itemClass} role="menuitem">
         <Settings className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.settings}</span>
-      </button>
+      </Link>
       {checklistHidden ? (
         <button
           type="button"
-          onClick={() => navigateTo('/', () => updateSettings({ onboardingChecklistHidden: false }))}
+          onClick={() => navigateWithSideEffect(() => updateSettings({ onboardingChecklistHidden: false }))}
           className={itemClass}
           role="menuitem"
         >

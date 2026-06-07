@@ -7,6 +7,8 @@ interface LongPressOptions {
   delay?: number
   /** Cancel the long-press if pointer moves more than this many pixels. Default 12. */
   moveThreshold?: number
+  /** Called when the pointer is released AFTER `onLongPress` already fired. */
+  onLongPressRelease?: () => void
 }
 
 interface LongPressHandlers<T extends HTMLElement> {
@@ -33,6 +35,7 @@ export function useLongPress<T extends HTMLElement = HTMLElement>(
 ): LongPressHandlers<T> {
   const delay = options?.delay ?? 600
   const moveThreshold = options?.moveThreshold ?? 12
+  const onLongPressRelease = options?.onLongPressRelease
 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const startPos = useRef<{ x: number; y: number } | null>(null)
@@ -62,7 +65,11 @@ export function useLongPress<T extends HTMLElement = HTMLElement>(
   const onPointerUp: React.PointerEventHandler<T> = () => {
     const fired = longFired.current
     cancel()
-    if (!fired) onTap()
+    if (!fired) {
+      onTap()
+    } else {
+      onLongPressRelease?.()
+    }
   }
 
   const onPointerLeave: React.PointerEventHandler<T> = () => {

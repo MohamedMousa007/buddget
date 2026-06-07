@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { MessageSquare, Smartphone, Zap, RotateCcw } from 'lucide-react'
+import { MessageSquare, Smartphone, Zap, RotateCcw, ChevronDown } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { useT } from '@/lib/i18n'
@@ -30,6 +30,7 @@ export function SettingsSmsTrackingSection() {
   } = useSmsTracking()
 
   const [rotateConfirm, setRotateConfirm] = useState(false)
+  const [showBanks, setShowBanks] = useState(false)
 
   const handleRotate = useCallback(async () => {
     if (!rotateConfirm) {
@@ -112,12 +113,23 @@ export function SettingsSmsTrackingSection() {
             />
           </div>
 
-          {/* Supported banks */}
-          <div className="px-4 py-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-brand-text-muted)] mb-3">
-              {t.smsTracking.supportedBanksTitle}
-            </h3>
-            <SmsSupportedBanksList />
+          {/* Supported banks — collapsible */}
+          <div className="px-4 py-3">
+            <button
+              type="button"
+              onClick={() => setShowBanks((v) => !v)}
+              className="flex w-full items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-secondary)] transition-colors"
+            >
+              <span>{t.smsTracking.supportedBanksTitle}</span>
+              <ChevronDown
+                className={`h-3.5 w-3.5 transition-transform duration-200 ${showBanks ? 'rotate-180' : ''}`}
+              />
+            </button>
+            {showBanks && (
+              <div className="mt-3">
+                <SmsSupportedBanksList />
+              </div>
+            )}
           </div>
 
           {/* Token rotation — only relevant on iOS/web (webhook-based flow) */}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { Mic, X, Check, Loader2, AlertTriangle } from 'lucide-react'
 import { motion, useMotionValue, useTransform } from 'framer-motion'
 import { ModalShell } from '@/components/modals/ModalShell'
@@ -68,31 +68,54 @@ export function VoiceRecordSheet({ open, onClose }: VoiceRecordSheetProps) {
   )
 }
 
-// ── Visualizer ──────────────────────────────────────────────────────────────
+// ── Canvas Visualizer ────────────────────────────────────────────────────────
+
+const BARS = 40
+const CANVAS_W = BARS * 5
+const CANVAS_H = 48
 
 function Visualizer({ amplitude, animTime }: { amplitude: number; animTime: number }) {
-  const BARS = 40
-  const t = animTime / 400
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  const draw = useCallback(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    // Read CSS variable once per frame — handles dark/light mode switches
+    const red = getComputedStyle(document.documentElement)
+      .getPropertyValue('--color-brand-red')
+      .trim() || '#e12424'
+
+    const t = animTime / 400
+    const barW = CANVAS_W / BARS
+
+    ctx.clearRect(0, 0, CANVAS_W, CANVAS_H)
+    ctx.fillStyle = red
+
+    for (let i = 0; i < BARS; i++) {
+      const envelope = 0.3 + 0.7 * Math.abs(Math.sin(i * 0.6 + t))
+      const h = Math.max(3, CANVAS_H * (0.08 + amplitude * 0.92 * envelope))
+      const y = (CANVAS_H - h) / 2
+      ctx.globalAlpha = 0.25 + 0.75 * Math.min(amplitude * envelope, 1)
+      ctx.beginPath()
+      ctx.roundRect(i * barW + 1, y, barW - 2, h, 2)
+      ctx.fill()
+    }
+    ctx.globalAlpha = 1
+  }, [amplitude, animTime])
+
+  useEffect(() => { draw() }, [draw])
+
   return (
-    <svg viewBox={`0 0 ${BARS * 4} 48`} width={BARS * 4} height={48} className="mx-auto">
-      {Array.from({ length: BARS }, (_, i) => {
-        const envelope = 0.3 + 0.7 * Math.abs(Math.sin(i * 0.6 + t))
-        const h = Math.max(3, 44 * (0.08 + amplitude * 0.92 * envelope))
-        const y = (48 - h) / 2
-        return (
-          <rect
-            key={i}
-            x={i * 4 + 0.5}
-            y={y}
-            width={3}
-            height={h}
-            rx={1.5}
-            fill="var(--color-brand-red)"
-            opacity={0.25 + 0.75 * Math.min(amplitude * envelope, 1)}
-          />
-        )
-      })}
-    </svg>
+    <canvas
+      ref={canvasRef}
+      width={CANVAS_W}
+      height={CANVAS_H}
+      style={{ width: CANVAS_W, height: CANVAS_H }}
+      className="mx-auto"
+    />
   )
 }
 
@@ -119,8 +142,9 @@ function RecordingView({
   const hintOpacity = useTransform(x, [-80, 0], [0, 1])
   // Prevent stop() from firing if drag-to-cancel was triggered first
   const cancelledRef = useRef(false)
-  // Track if start is in-flight to avoid onPointerUp race (start is async)
-  const startingRef = useRef(false)
+  // Set true on touchstart so touchend can fire stop() regardless of whether
+  // React has flushed the state update from 'idle' → 'recording' yet.
+  const touchActiveRef = useRef(false)
 
   return (
     <>
@@ -150,36 +174,38 @@ function RecordingView({
           className="relative flex items-center justify-center"
           onTouchStart={(e) => {
             e.preventDefault() // bypass Android WebView's 300ms tap delay
-            if (state !== 'idle' || startingRef.current) return
+            if (state !== 'idle' || touchActiveRef.current) return
             cancelledRef.current = false
-            startingRef.current = true
-            void (async () => {
-              try { await onStart() } finally { startingRef.current = false }
-            })()
+            touchActiveRef.current = true
+            void onStart()
           }}
           onTouchEnd={(e) => {
             e.preventDefault()
-            if (!isRecording || cancelledRef.current || startingRef.current) return
+            // Use touchActiveRef (set synchronously) instead of isRecording
+            // (React state) — prevents the race where the user releases before
+            // setState('recording') has flushed but after start() was called.
+            if (!touchActiveRef.current || cancelledRef.current) return
+            touchActiveRef.current = false
             onStop()
           }}
           onPointerDown={(e) => {
             // Pointer fallback for desktop / non-touch environments
             if (e.pointerType === 'touch') return // already handled by onTouchStart
-            if (state !== 'idle' || startingRef.current) return
+            if (state !== 'idle') return
             cancelledRef.current = false
-            startingRef.current = true
-            void (async () => {
-              try { await onStart() } finally { startingRef.current = false }
-            })()
+            touchActiveRef.current = true
+            void onStart()
           }}
           onPointerUp={(e) => {
             if (e.pointerType === 'touch') return
-            if (!isRecording || cancelledRef.current || startingRef.current) return
+            if (!touchActiveRef.current || cancelledRef.current) return
+            touchActiveRef.current = false
             onStop()
           }}
           onDragEnd={(_, info) => {
             if (info.offset.x < -80) {
               cancelledRef.current = true
+              touchActiveRef.current = false
               x.set(0)
               onCancel()
             } else {
