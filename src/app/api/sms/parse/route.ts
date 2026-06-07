@@ -46,7 +46,8 @@ interface ParsedTx {
   bank_name: string | null
   category: string | null
   confidence: number
-  kind: string | null
+  /** "income" = money arriving (credit, inward transfer, deposit). All outbound flows use other values. */
+  kind: 'purchase' | 'withdrawal' | 'transfer' | 'income' | 'refund' | 'fee' | 'other' | null
 }
 
 async function resolveUserId(req: Request): Promise<{ userId: string | null }> {
@@ -164,6 +165,40 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, reason: 'low_confidence', confidence: parsed.confidence })
   }
 
+  // ── 3-minute fuzzy dedup ────────────────────────────────────────────────────
+  // InstaPay and Vodafone Cash fire two SMS within seconds (one from the service,
+  // one from the bank). Same amount + currency within 3 minutes = duplicate.
+  // This runs BEFORE the hash dedup so both SMS from a dual-notification pair are caught.
+  const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000).toISOString()
+  const { data: recentDup } = await service
+    .from('sms_parse_log')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('amount', parsed.amount)
+    .eq('currency', parsed.currency)
+    .eq('parsed_ok', true)
+    .eq('is_duplicate', false)
+    .gte('created_at', threeMinutesAgo)
+    .maybeSingle()
+
+  if (recentDup) {
+    await service.from('sms_parse_log').insert({
+      user_id: userId,
+      source: source ?? 'sms',
+      sender: sender ?? null,
+      raw_body: message,
+      parsed_ok: true,
+      confidence: parsed.confidence,
+      amount: parsed.amount,
+      currency: parsed.currency,
+      merchant: parsed.merchant,
+      bank_name: parsed.bank_name,
+      is_duplicate: true,
+      received_at: receivedAt ?? new Date().toISOString(),
+    })
+    return NextResponse.json({ ok: true, deduped: true, reason: 'time_window' })
+  }
+
   // De-duplicate via stable hash (amount cents + merchant fragment + UTC day).
   const day = new Date(receivedAt ?? Date.now()).toISOString().slice(0, 10)
   const merchantFragment = (parsed.merchant ?? '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 16)
@@ -181,11 +216,38 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, deduped: true, expenseId: existing.expense_id })
   }
 
-  // High-confidence → auto-add expense.
+  // High-confidence → auto-add expense or income.
   const autoAdd = parsed.confidence >= AUTO_CONFIDENCE
+  const isIncome = parsed.kind === 'income' || parsed.kind === 'refund'
   let expenseId: string | null = null
+  let incomeId: string | null = null
+  const bankPrefix = parsed.bank_name ? `${parsed.bank_name}: ` : ''
+  const autoNotes = `[auto from ${source ?? 'sms'}] ${bankPrefix}${message.slice(0, 180)}`
 
-  if (autoAdd) {
+  if (autoAdd && isIncome) {
+    // Credit / inward transfer → income_sources
+    const sourceType = parsed.kind === 'refund' ? 'refund' : 'other'
+    const { data: insertedIncome, error: incomeErr } = await service
+      .from('income_sources')
+      .insert({
+        user_id: userId,
+        name: parsed.merchant ?? parsed.bank_name ?? 'Bank credit',
+        amount: parsed.amount,
+        currency: parsed.currency,
+        is_recurring: false,
+        source_type: sourceType,
+        notes: autoNotes,
+      })
+      .select('id')
+      .single()
+
+    if (incomeErr) {
+      console.error('[sms/parse] insert income failed', incomeErr)
+    } else {
+      incomeId = insertedIncome?.id ?? null
+    }
+  } else if (autoAdd) {
+    // Debit / purchase → expenses
     const { data: pmRow } = await service
       .from('payment_methods')
       .select('id')
@@ -214,7 +276,7 @@ export async function POST(request: Request) {
         amount_in_base_currency: amountInBase,
         payment_method_id: pmRow?.id ?? null,
         is_recurring: false,
-        notes: `[auto from ${source ?? 'sms'}] ${message.slice(0, 180)}`,
+        notes: autoNotes,
       })
       .select('id')
       .single()
@@ -240,11 +302,21 @@ export async function POST(request: Request) {
     category: parsed.category,
     sms_hash: hash,
     expense_id: expenseId,
+    income_id: incomeId,
+    is_duplicate: false,
     awaiting_confirmation: !autoAdd,
     received_at: receivedAt ?? new Date().toISOString(),
   })
 
-  if (autoAdd) {
+  if (autoAdd && isIncome) {
+    void sendNativePush({
+      userId,
+      title: `+${parsed.currency} ${parsed.amount.toLocaleString()} received`,
+      body: `From ${parsed.merchant ?? parsed.bank_name ?? 'sender'}. Tap to view.`,
+      data: { kind: 'sms_income_added', incomeId: incomeId ?? '' },
+      collapseKey: `sms-income-${hash.slice(0, 12)}`,
+    }).catch(() => {})
+  } else if (autoAdd) {
     void sendNativePush({
       userId,
       title: `${parsed.currency} ${parsed.amount.toLocaleString()} at ${parsed.merchant ?? 'merchant'}`,
@@ -265,11 +337,13 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     autoAdded: autoAdd,
+    isIncome,
     confidence: parsed.confidence,
     amount: parsed.amount,
     currency: parsed.currency,
     merchant: parsed.merchant,
     expenseId,
+    incomeId,
   })
 }
 
