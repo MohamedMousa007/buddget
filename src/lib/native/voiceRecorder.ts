@@ -132,7 +132,12 @@ async function startWebRecording(language?: string): Promise<RecorderHandle> {
   }
 
   const mime = pickPreferredMime()
-  const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined)
+  // 16 kbps keeps WebM blobs tiny (<50 KB for a 5-second clip)
+  // so Whisper transcription completes well within the 10-second abort window.
+  const recorder = new MediaRecorder(
+    stream,
+    mime ? { mimeType: mime, audioBitsPerSecond: 16_000 } : { audioBitsPerSecond: 16_000 },
+  )
   const chunks: Blob[] = []
   const startTs = Date.now()
 

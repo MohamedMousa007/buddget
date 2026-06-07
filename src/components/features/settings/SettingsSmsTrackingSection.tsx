@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { MessageSquare, Smartphone, Zap, RotateCcw, ChevronDown } from 'lucide-react'
+import { MessageSquare, ChevronDown, RotateCcw } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { useT } from '@/lib/i18n'
@@ -10,7 +10,7 @@ import { SmsRecentEventsTable } from '@/components/features/settings/SmsRecentEv
 import { SmsIosSetupCard } from '@/components/features/settings/SmsIosSetupCard'
 import { SmsAndroidSetupCard } from '@/components/features/settings/SmsAndroidSetupCard'
 import { SmsSupportedBanksList } from '@/components/features/settings/SmsSupportedBanksList'
-import { isIOS, isAndroid } from '@/lib/native/isNative'
+import { isAndroid } from '@/lib/native/isNative'
 
 /** Top-level section card for the Settings page. */
 export function SettingsSmsTrackingSection() {
@@ -33,20 +33,16 @@ export function SettingsSmsTrackingSection() {
   const [showBanks, setShowBanks] = useState(false)
 
   const handleRotate = useCallback(async () => {
-    if (!rotateConfirm) {
-      setRotateConfirm(true)
-      return
-    }
+    if (!rotateConfirm) { setRotateConfirm(true); return }
     await rotateToken()
     setRotateConfirm(false)
   }, [rotateConfirm, rotateToken])
 
-  const onIOS = isIOS()
   const onAndroid = isAndroid()
 
   return (
     <section className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] divide-y divide-[var(--color-brand-border)]">
-      {/* Header + toggle */}
+      {/* Header + toggle — always visible */}
       <div className="px-4 py-4">
         <div className="flex items-center gap-3 mb-1">
           <span className="h-8 w-8 rounded-xl flex items-center justify-center bg-[var(--color-brand-green)]/10 text-[var(--color-brand-green)]">
@@ -65,38 +61,21 @@ export function SettingsSmsTrackingSection() {
           </Label>
           <Switch checked={isEnabled} onCheckedChange={toggle} disabled={loading} />
         </div>
-        {isEnabled && (
-          <p className="text-xs text-[var(--color-brand-text-muted)] mt-2">
-            {t.smsTracking.toggleHint}
-          </p>
-        )}
       </div>
 
       {isEnabled && (
         <>
-          {/* iOS-only: Shortcut setup guide */}
-          {(onIOS || !onAndroid) && (
+          {/* Android native: active badge + banks accordion + keyword accordion */}
+          {onAndroid && (
             <div className="px-4 py-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Smartphone className="h-4 w-4 text-[var(--color-brand-text-muted)]" />
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-brand-text-muted)]">
-                  {t.smsTracking.iosCardTitle}
-                </h3>
-              </div>
-              <SmsIosSetupCard downloadUrl={iosDownloadUrl} onFetchToken={fetchToken} />
+              <SmsAndroidSetupCard />
             </div>
           )}
 
-          {/* Android-only: Native SMS permission + custom keywords */}
-          {(onAndroid || !onIOS) && (
+          {/* iOS / web: shortcut setup guide */}
+          {!onAndroid && (
             <div className="px-4 py-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Zap className="h-4 w-4 text-[var(--color-brand-text-muted)]" />
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-brand-text-muted)]">
-                  {t.smsTracking.androidCardTitle}
-                </h3>
-              </div>
-              <SmsAndroidSetupCard tokenInfo={tokenInfo} />
+              <SmsIosSetupCard downloadUrl={iosDownloadUrl} onFetchToken={fetchToken} />
             </div>
           )}
 
@@ -113,26 +92,24 @@ export function SettingsSmsTrackingSection() {
             />
           </div>
 
-          {/* Supported banks — collapsible */}
-          <div className="px-4 py-3">
-            <button
-              type="button"
-              onClick={() => setShowBanks((v) => !v)}
-              className="flex w-full items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-secondary)] transition-colors"
-            >
-              <span>{t.smsTracking.supportedBanksTitle}</span>
-              <ChevronDown
-                className={`h-3.5 w-3.5 transition-transform duration-200 ${showBanks ? 'rotate-180' : ''}`}
-              />
-            </button>
-            {showBanks && (
-              <div className="mt-3">
-                <SmsSupportedBanksList />
-              </div>
-            )}
-          </div>
+          {/* Supported banks — iOS / web only (Android shows inline accordion) */}
+          {!onAndroid && (
+            <div className="px-4 py-3">
+              <button
+                type="button"
+                onClick={() => setShowBanks((v) => !v)}
+                className="flex w-full items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-secondary)] transition-colors"
+              >
+                <span>{t.smsTracking.supportedBanksTitle}</span>
+                <ChevronDown
+                  className={`h-3.5 w-3.5 transition-transform duration-200 ${showBanks ? 'rotate-180' : ''}`}
+                />
+              </button>
+              {showBanks && <div className="mt-3"><SmsSupportedBanksList /></div>}
+            </div>
+          )}
 
-          {/* Token rotation — only relevant on iOS/web (webhook-based flow) */}
+          {/* Token rotation — iOS / web only */}
           {tokenInfo && !onAndroid && (
             <div className="px-4 py-3 flex items-center justify-between gap-3">
               <span className="text-xs text-[var(--color-brand-text-muted)]">
@@ -140,7 +117,7 @@ export function SettingsSmsTrackingSection() {
               </span>
               <button
                 type="button"
-                onClick={handleRotate}
+                onClick={() => void handleRotate()}
                 className="flex items-center gap-1.5 text-xs text-[var(--color-brand-red)] hover:opacity-80 transition-opacity"
               >
                 <RotateCcw className="h-3 w-3" />
