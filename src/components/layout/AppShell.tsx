@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { Sidebar } from './Sidebar'
 import { BottomNav } from './BottomNav'
@@ -11,6 +12,38 @@ import { useThemeSync } from '@/hooks/useThemeSync'
 import { useRates } from '@/hooks/useRates'
 import { useGoldPrice } from '@/hooks/useGoldPrice'
 import { WidgetSync } from '@/lib/native/WidgetSync'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { isNative } from '@/lib/native/isNative'
+import { isAndroid } from '@/lib/native/isNative'
+
+/**
+ * Re-registers the Capacitor SMS listener on every app startup.
+ *
+ * Problem: `startSMSTracking()` is normally called from `useSmsTracking.toggle()`,
+ * which only fires when the user changes the switch. After a restart the Zustand
+ * store hydrates with `smsTrackingEnabled: true` but the module-level
+ * `listenerAttached` variable resets to `false`, so no listener is registered and
+ * incoming SMS events go unheard — even with the app in the foreground.
+ *
+ * `startSMSTracking` is idempotent: it returns early if `listenerAttached` is
+ * already true, so it's safe to call on every mount.
+ */
+function SmsStartupSync() {
+  const smsEnabled = useFinanceStore((s) => s.settings.smsTrackingEnabled)
+  useEffect(() => {
+    if (!smsEnabled || !isNative() || !isAndroid()) return
+    void (async () => {
+      const [{ startSMSTracking }, { createClient }] = await Promise.all([
+        import('@/lib/native/smsTracker'),
+        import('@/lib/supabase/client'),
+      ])
+      const { data } = await createClient().auth.getSession()
+      const token = data.session?.access_token ?? ''
+      if (token) await startSMSTracking(token)
+    })()
+  }, [smsEnabled])
+  return null
+}
 
 /** Keeps FX + gold spot in sync for all main app routes (not auth/onboarding). */
 function MarketRatesSync() {
@@ -57,6 +90,7 @@ export function AppShell({ children }: AppShellProps) {
       <BottomNav />
       <ModalProvider />
       <WidgetSync />
+      <SmsStartupSync />
     </div>
   )
 }
