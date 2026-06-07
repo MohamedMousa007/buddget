@@ -10,6 +10,8 @@ let listenerHandle: { remove: () => Promise<void> } | null = null
 interface SmsCapacitorPlugin {
   checkPermission(): Promise<{ granted: boolean }>
   requestPermission(): Promise<{ granted: boolean }>
+  /** Persists token to SharedPreferences so SmsReceiver can use WorkManager when the app is killed. */
+  saveToken(opts: { token: string; apiUrl: string }): Promise<void>
   addListener(
     event: 'onSmsReceive',
     handler: (data: { message?: string; sender?: string }) => void,
@@ -72,6 +74,16 @@ export async function startSMSTracking(accessToken: string): Promise<void> {
   if (!granted) {
     console.warn('[sms-tracker] SMS permission not granted')
     return
+  }
+
+  // Persist token to SharedPreferences so SmsReceiver's WorkManager path works
+  // even when the app is completely killed by Android's memory manager.
+  try {
+    const { apiUrl: buildUrl } = await import('@/lib/apiBase')
+    const base = buildUrl('').replace(/\/$/, '')
+    await _plugin!.saveToken({ token: accessToken, apiUrl: base })
+  } catch {
+    // Non-fatal — JS listener path still works while the app is open.
   }
 
   listenerAttached = true
