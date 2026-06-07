@@ -16,27 +16,22 @@ export interface VoiceRecording {
 interface RecorderHandle {
   stop(): Promise<VoiceRecording>
   cancel(): Promise<void>
+  /** Normalized RMS amplitude 0–1. Returns 0 on native (no PCM access). */
+  getAmplitude(): number
 }
 
-/**
- * Starts a voice recording. Prefers the Capacitor Speech Recognition plugin on
- * native (faster + no audio upload). Falls back to MediaRecorder on web.
- *
- * Always wrap calls in try/catch — the underlying APIs throw when permission
- * is denied.
- */
-export async function startRecording(): Promise<RecorderHandle> {
+export async function startRecording(opts?: { language?: string }): Promise<RecorderHandle> {
   if (isNative()) {
     try {
-      return await startNativeRecording()
+      return await startNativeRecording(opts?.language)
     } catch (e) {
       console.warn('[voice] native recorder failed, falling back to web', e)
     }
   }
-  return startWebRecording()
+  return startWebRecording(opts?.language)
 }
 
-async function startNativeRecording(): Promise<RecorderHandle> {
+async function startNativeRecording(language?: string): Promise<RecorderHandle> {
   const mod = await import('@capacitor-community/speech-recognition')
   const SR = mod.SpeechRecognition
   const start = Date.now()
@@ -55,8 +50,10 @@ async function startNativeRecording(): Promise<RecorderHandle> {
     if (text) transcript[0] = text
   })
 
+  const locale = language === 'ar' ? 'ar-SA' : 'en-US'
+
   await SR.start({
-    language: 'en-US',
+    language: locale,
     maxResults: 1,
     prompt: 'Speak your expense',
     partialResults: true,
@@ -66,19 +63,12 @@ async function startNativeRecording(): Promise<RecorderHandle> {
   let stopped = false
 
   return {
+    getAmplitude: () => 0,
     async stop() {
       if (stopped) return { audio: null, inlineText: transcript[0] ?? null, durationMs: 0, mimeType: null }
       stopped = true
-      try {
-        await SR.stop()
-      } catch {
-        /* noop */
-      }
-      try {
-        await listener.remove()
-      } catch {
-        /* noop */
-      }
+      try { await SR.stop() } catch { /* noop */ }
+      try { await listener.remove() } catch { /* noop */ }
       return {
         audio: null,
         inlineText: transcript[0] ?? null,
@@ -88,21 +78,15 @@ async function startNativeRecording(): Promise<RecorderHandle> {
     },
     async cancel() {
       stopped = true
-      try {
-        await SR.stop()
-      } catch {
-        /* noop */
-      }
-      try {
-        await listener.remove()
-      } catch {
-        /* noop */
-      }
+      try { await SR.stop() } catch { /* noop */ }
+      try { await listener.remove() } catch { /* noop */ }
     },
   }
 }
 
-async function startWebRecording(): Promise<RecorderHandle> {
+async function startWebRecording(language?: string): Promise<RecorderHandle> {
+  void language // Web MediaRecorder doesn't use language; transcription handles it server-side
+
   if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
     throw new Error('Microphone is not available on this device')
   }
@@ -111,10 +95,31 @@ async function startWebRecording(): Promise<RecorderHandle> {
   }
 
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+
+  // Web Audio API — amplitude visualiser
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const AudioCtx: typeof AudioContext = window.AudioContext ?? (window as any).webkitAudioContext
+  const audioCtx = new AudioCtx()
+  const source = audioCtx.createMediaStreamSource(stream)
+  const analyser = audioCtx.createAnalyser()
+  analyser.fftSize = 256
+  source.connect(analyser)
+  const timeDomainData = new Uint8Array(analyser.frequencyBinCount)
+
+  const getAmplitude = (): number => {
+    analyser.getByteTimeDomainData(timeDomainData)
+    let sum = 0
+    for (const v of timeDomainData) {
+      const s = v / 128 - 1 // 0–255 → -1..1
+      sum += s * s
+    }
+    return Math.sqrt(sum / timeDomainData.length) // RMS, 0..1
+  }
+
   const mime = pickPreferredMime()
   const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined)
   const chunks: Blob[] = []
-  const start = Date.now()
+  const startTs = Date.now()
 
   recorder.ondataavailable = (e) => {
     if (e.data && e.data.size > 0) chunks.push(e.data)
@@ -125,37 +130,31 @@ async function startWebRecording(): Promise<RecorderHandle> {
 
   const stopAndCollect = (): Promise<Blob> =>
     new Promise((resolve) => {
-      recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' })
-        resolve(blob)
-      }
+      recorder.onstop = () => resolve(new Blob(chunks, { type: recorder.mimeType || 'audio/webm' }))
       if (recorder.state !== 'inactive') recorder.stop()
       else resolve(new Blob(chunks, { type: recorder.mimeType || 'audio/webm' }))
     })
 
+  const cleanup = async () => {
+    stream.getTracks().forEach((t) => t.stop())
+    try { await audioCtx.close() } catch { /* noop */ }
+  }
+
   return {
+    getAmplitude,
     async stop() {
       if (stopped) {
-        return { audio: new Blob(chunks), inlineText: null, durationMs: Date.now() - start, mimeType: recorder.mimeType }
+        return { audio: new Blob(chunks), inlineText: null, durationMs: Date.now() - startTs, mimeType: recorder.mimeType }
       }
       stopped = true
       const blob = await stopAndCollect()
-      stream.getTracks().forEach((t) => t.stop())
-      return {
-        audio: blob,
-        inlineText: null,
-        durationMs: Date.now() - start,
-        mimeType: blob.type,
-      }
+      await cleanup()
+      return { audio: blob, inlineText: null, durationMs: Date.now() - startTs, mimeType: blob.type }
     },
     async cancel() {
       stopped = true
-      try {
-        if (recorder.state !== 'inactive') recorder.stop()
-      } catch {
-        /* noop */
-      }
-      stream.getTracks().forEach((t) => t.stop())
+      try { if (recorder.state !== 'inactive') recorder.stop() } catch { /* noop */ }
+      await cleanup()
     },
   }
 }

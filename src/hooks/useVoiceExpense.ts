@@ -110,9 +110,9 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
         const form = new FormData()
         form.append('audio', audio, `voice-${Date.now()}.webm`)
         form.append('language', language === 'ar' ? 'ar' : 'en')
-        const res = await fetch(apiUrl('/api/voice/transcribe'), {
+        const { apiFetchAuth } = await import('@/lib/apiBase')
+        const res = await apiFetchAuth('/api/voice/transcribe', {
           method: 'POST',
-          credentials: 'include',
           body: form,
         })
         if (!res.ok) {

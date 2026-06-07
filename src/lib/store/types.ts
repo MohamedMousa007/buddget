@@ -540,6 +540,12 @@ export interface AppSettings {
    * Synced via `user_settings.sms_tracking_enabled`.
    */
   smsTrackingEnabled: boolean
+  /**
+   * User-defined keywords that trigger SMS forwarding (merged with built-in
+   * Egyptian-bank vocabulary in isBankishMessage). Synced via
+   * `user_settings.custom_sms_keywords`.
+   */
+  customSmsKeywords: string[]
 }
 
 /** Draft payment row from onboarding (applied to store on finish). */

@@ -82,7 +82,8 @@ export function ReceiptScanSheet({ open, onClose }: ReceiptScanSheetProps) {
 
       const form = new FormData()
       form.append('image', captured.file)
-      const res = await fetch(apiUrl('/api/receipt/scan'), { method: 'POST', body: form, credentials: 'include' })
+      const { apiFetchAuth } = await import('@/lib/apiBase')
+      const res = await apiFetchAuth('/api/receipt/scan', { method: 'POST', body: form })
       if (!res.ok) {
         if (res.status === 503) {
           throw new Error('AI scanning is temporarily offline. Please set up manually or try again in a moment.')
@@ -99,7 +100,10 @@ export function ReceiptScanSheet({ open, onClose }: ReceiptScanSheetProps) {
         const err = (await res.json().catch(() => null)) as { error?: string } | null
         throw new Error(err?.error || `Scan failed (${res.status})`)
       }
-      const data = (await res.json()) as { receipt: Record<string, unknown> }
+      const data = (await res.json()) as { receipt?: Record<string, unknown> | null }
+      if (!data.receipt) {
+        throw new Error('We had trouble reading this receipt image. Please ensure the total amount and merchant are clearly visible, then try again.')
+      }
       const r = normaliseReceipt(data.receipt, baseCurrency)
       setResult(r)
       setState('result')

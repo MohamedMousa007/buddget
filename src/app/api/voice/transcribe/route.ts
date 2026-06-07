@@ -10,9 +10,9 @@
  *
  * Auth: Supabase session required (matches `/api/ai`).
  */
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import Groq from 'groq-sdk'
-import { createClient } from '@/lib/supabase/server'
+import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
 
 const EGYPT_FIRST_PROMPT = [
   'This is a budgeting voice memo recorded by a user in Egypt or the Gulf.',
@@ -23,14 +23,9 @@ const EGYPT_FIRST_PROMPT = [
   'Formats expected: "spent 250 EGP at Talabat", "دفعت ٥٠ جنيه في كافيه", "120 dirhams at Carrefour", "200 جنيه taxi to office".',
 ].join(' ')
 
-export async function POST(request: Request) {
-  const supabase = await createClient().catch(() => null)
-  if (supabase) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+export async function POST(request: NextRequest) {
+  const { user } = await resolveRouteUser(request)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const apiKey = process.env.GROQ_API_KEY?.trim()
   if (!apiKey) {

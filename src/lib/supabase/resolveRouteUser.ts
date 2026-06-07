@@ -16,8 +16,13 @@ export async function resolveRouteUser(
       const admin = createServiceRoleClient()
       const { data, error } = await admin.auth.getUser(bearer)
       if (!error && data.user) return { user: data.user }
-    } catch {
-      /* fall through to cookies */
+      if (error) {
+        console.warn('[auth] Bearer token validation failed', error.message)
+        return { user: null, error: `token_invalid: ${error.message}` }
+      }
+    } catch (e) {
+      console.warn('[auth] Bearer token verification exception', e)
+      return { user: null, error: 'token_validation_failed' }
     }
   }
   try {

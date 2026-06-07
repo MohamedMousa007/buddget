@@ -111,24 +111,24 @@ export type Database = {
       }
       budget_feedback: {
         Row: {
-          budget_after: Json | null
-          budget_before: Json | null
+          budget_after: Json
+          budget_before: Json
           created_at: string
           feedback_text: string
           id: string
           user_id: string
         }
         Insert: {
-          budget_after?: Json | null
-          budget_before?: Json | null
+          budget_after?: Json
+          budget_before?: Json
           created_at?: string
           feedback_text: string
           id?: string
           user_id: string
         }
         Update: {
-          budget_after?: Json | null
-          budget_before?: Json | null
+          budget_after?: Json
+          budget_before?: Json
           created_at?: string
           feedback_text?: string
           id?: string
@@ -884,6 +884,39 @@ export type Database = {
         }
         Relationships: []
       }
+      push_tokens: {
+        Row: {
+          app_version: string | null
+          device_model: string | null
+          id: string
+          locale: string | null
+          platform: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          app_version?: string | null
+          device_model?: string | null
+          id?: string
+          locale?: string | null
+          platform: string
+          token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          app_version?: string | null
+          device_model?: string | null
+          id?: string
+          locale?: string | null
+          platform?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       recurring_debt_payments: {
         Row: {
           amount: number
@@ -1241,121 +1274,6 @@ export type Database = {
           },
         ]
       }
-      subscriptions: {
-        Row: {
-          amount: number
-          billing_cycle: Database["public"]["Enums"]["subscription_billing_cycle"]
-          billing_day: number
-          brand_key: string | null
-          cancelled_at: string | null
-          created_at: string
-          currency: Database["public"]["Enums"]["currency_code"]
-          deleted_at: string | null
-          expense_category: Database["public"]["Enums"]["expense_category"]
-          id: string
-          linked_recurring_expense_id: string | null
-          name: string
-          next_billing_date: string | null
-          notes: string | null
-          payment_method_id: string | null
-          plan_name: string | null
-          start_date: string
-          status: Database["public"]["Enums"]["subscription_status"]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          amount: number
-          billing_cycle?: Database["public"]["Enums"]["subscription_billing_cycle"]
-          billing_day?: number
-          brand_key?: string | null
-          cancelled_at?: string | null
-          created_at?: string
-          currency?: Database["public"]["Enums"]["currency_code"]
-          deleted_at?: string | null
-          expense_category?: Database["public"]["Enums"]["expense_category"]
-          id?: string
-          linked_recurring_expense_id?: string | null
-          name: string
-          next_billing_date?: string | null
-          notes?: string | null
-          payment_method_id?: string | null
-          plan_name?: string | null
-          start_date?: string
-          status?: Database["public"]["Enums"]["subscription_status"]
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          amount?: number
-          billing_cycle?: Database["public"]["Enums"]["subscription_billing_cycle"]
-          billing_day?: number
-          brand_key?: string | null
-          cancelled_at?: string | null
-          created_at?: string
-          currency?: Database["public"]["Enums"]["currency_code"]
-          deleted_at?: string | null
-          expense_category?: Database["public"]["Enums"]["expense_category"]
-          id?: string
-          linked_recurring_expense_id?: string | null
-          name?: string
-          next_billing_date?: string | null
-          notes?: string | null
-          payment_method_id?: string | null
-          plan_name?: string | null
-          start_date?: string
-          status?: Database["public"]["Enums"]["subscription_status"]
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "subscriptions_payment_method_id_fkey"
-            columns: ["payment_method_id"]
-            isOneToOne: false
-            referencedRelation: "payment_methods"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      push_subscriptions: {
-        Row: {
-          auth: string
-          created_at: string
-          endpoint: string
-          id: string
-          p256dh: string
-          user_agent: string | null
-          user_id: string
-        }
-        Insert: {
-          auth: string
-          created_at?: string
-          endpoint: string
-          id?: string
-          p256dh: string
-          user_agent?: string | null
-          user_id: string
-        }
-        Update: {
-          auth?: string
-          created_at?: string
-          endpoint?: string
-          id?: string
-          p256dh?: string
-          user_agent?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "push_subscriptions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       sms_events: {
         Row: {
           amount: number | null
@@ -1435,13 +1353,6 @@ export type Database = {
             referencedRelation: "sms_ingest_tokens"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "sms_events_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
         ]
       }
       sms_ingest_tokens: {
@@ -1466,12 +1377,149 @@ export type Database = {
           token?: string
           user_id?: string
         }
+        Relationships: []
+      }
+      sms_parse_log: {
+        Row: {
+          amount: number | null
+          awaiting_confirmation: boolean
+          bank_name: string | null
+          category: string | null
+          confidence: number | null
+          created_at: string
+          currency: string | null
+          expense_id: string | null
+          id: string
+          merchant: string | null
+          parsed_ok: boolean
+          raw_body: string
+          received_at: string
+          sender: string | null
+          sms_hash: string | null
+          source: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number | null
+          awaiting_confirmation?: boolean
+          bank_name?: string | null
+          category?: string | null
+          confidence?: number | null
+          created_at?: string
+          currency?: string | null
+          expense_id?: string | null
+          id?: string
+          merchant?: string | null
+          parsed_ok?: boolean
+          raw_body: string
+          received_at?: string
+          sender?: string | null
+          sms_hash?: string | null
+          source: string
+          user_id: string
+        }
+        Update: {
+          amount?: number | null
+          awaiting_confirmation?: boolean
+          bank_name?: string | null
+          category?: string | null
+          confidence?: number | null
+          created_at?: string
+          currency?: string | null
+          expense_id?: string | null
+          id?: string
+          merchant?: string | null
+          parsed_ok?: boolean
+          raw_body?: string
+          received_at?: string
+          sender?: string | null
+          sms_hash?: string | null
+          source?: string
+          user_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "sms_ingest_tokens_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "sms_parse_log_expense_id_fkey"
+            columns: ["expense_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          amount: number
+          billing_cycle: Database["public"]["Enums"]["subscription_billing_cycle"]
+          billing_day: number
+          brand_key: string | null
+          cancelled_at: string | null
+          created_at: string
+          currency: Database["public"]["Enums"]["currency_code"]
+          deleted_at: string | null
+          expense_category: Database["public"]["Enums"]["expense_category"]
+          id: string
+          linked_recurring_expense_id: string | null
+          name: string
+          next_billing_date: string | null
+          notes: string | null
+          payment_method_id: string | null
+          plan_name: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          billing_cycle?: Database["public"]["Enums"]["subscription_billing_cycle"]
+          billing_day?: number
+          brand_key?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          currency?: Database["public"]["Enums"]["currency_code"]
+          deleted_at?: string | null
+          expense_category?: Database["public"]["Enums"]["expense_category"]
+          id?: string
+          linked_recurring_expense_id?: string | null
+          name: string
+          next_billing_date?: string | null
+          notes?: string | null
+          payment_method_id?: string | null
+          plan_name?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          billing_cycle?: Database["public"]["Enums"]["subscription_billing_cycle"]
+          billing_day?: number
+          brand_key?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          currency?: Database["public"]["Enums"]["currency_code"]
+          deleted_at?: string | null
+          expense_category?: Database["public"]["Enums"]["expense_category"]
+          id?: string
+          linked_recurring_expense_id?: string | null
+          name?: string
+          next_billing_date?: string | null
+          notes?: string | null
+          payment_method_id?: string | null
+          plan_name?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
             referencedColumns: ["id"]
           },
         ]
@@ -1504,6 +1552,7 @@ export type Database = {
         Row: {
           ai_provider: string
           budget_entry_mode: Database["public"]["Enums"]["budget_entry_mode"]
+          custom_sms_keywords: string[]
           dashboard_layout: Database["public"]["Enums"]["dashboard_layout"]
           dismiss_onboarding_banner: boolean
           enable_ai: boolean
@@ -1526,6 +1575,7 @@ export type Database = {
         Insert: {
           ai_provider?: string
           budget_entry_mode?: Database["public"]["Enums"]["budget_entry_mode"]
+          custom_sms_keywords?: string[]
           dashboard_layout?: Database["public"]["Enums"]["dashboard_layout"]
           dismiss_onboarding_banner?: boolean
           enable_ai?: boolean
@@ -1548,6 +1598,7 @@ export type Database = {
         Update: {
           ai_provider?: string
           budget_entry_mode?: Database["public"]["Enums"]["budget_entry_mode"]
+          custom_sms_keywords?: string[]
           dashboard_layout?: Database["public"]["Enums"]["dashboard_layout"]
           dismiss_onboarding_banner?: boolean
           enable_ai?: boolean
@@ -1571,7 +1622,13 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      sms_parse_today: {
+        Row: {
+          parsed_count_today: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_debt_payment_with_expense: {
@@ -1997,4 +2054,3 @@ export const Constants = {
     },
   },
 } as const
-

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, type RefObject } from 'react'
+import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import {
   User,
@@ -45,13 +46,13 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
 
   useEffect(() => {
     if (!open) return
-    const handler = (e: MouseEvent) => {
+    const handler = (e: PointerEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         onClose()
       }
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    document.addEventListener('pointerdown', handler)
+    return () => document.removeEventListener('pointerdown', handler)
   }, [open, onClose, containerRef])
 
   useEffect(() => {
@@ -75,11 +76,6 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
   const avatarSrc = resolveProfileAvatarSrc(profile)
   const displayName = profile.name || t.common.user
   const displayEmail = user?.email || profile.email || ''
-
-  const navigate = (href: string) => {
-    router.push(href)
-    onClose()
-  }
 
   const handleSignOut = async () => {
     clearBudgetData()
@@ -112,35 +108,35 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
 
       <div className="border-t border-[var(--color-brand-border)]" />
 
-      <button type="button" onClick={() => navigate('/profile')} className={itemClass} role="menuitem">
+      <Link href="/profile" onClick={onClose} className={itemClass} role="menuitem">
         <User className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.yourProfile}</span>
-      </button>
-      <button type="button" onClick={() => navigate('/goals')} className={itemClass} role="menuitem">
+      </Link>
+      <Link href="/goals" onClick={onClose} className={itemClass} role="menuitem">
         <Target className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.goals}</span>
-      </button>
-      <button type="button" onClick={() => navigate('/subscriptions')} className={itemClass} role="menuitem">
+      </Link>
+      <Link href="/subscriptions" onClick={onClose} className={itemClass} role="menuitem">
         <RefreshCw className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.subscriptions}</span>
-      </button>
-      <button type="button" onClick={() => navigate('/settings')} className={itemClass} role="menuitem">
+      </Link>
+      <Link href="/settings" onClick={onClose} className={itemClass} role="menuitem">
         <Settings className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.settings}</span>
-      </button>
+      </Link>
       {checklistHidden ? (
-        <button
-          type="button"
+        <Link
+          href="/"
           onClick={() => {
             updateSettings({ onboardingChecklistHidden: false })
-            navigate('/')
+            onClose()
           }}
           className={itemClass}
           role="menuitem"
         >
           <ListChecks className="w-4 h-4 shrink-0" />
           <span className={localeInlineLabelClass(locale)}>{t.onboarding.checklistResumeCta}</span>
-        </button>
+        </Link>
       ) : null}
 
       <div className="border-t border-[var(--color-brand-border)]" />

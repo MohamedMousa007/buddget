@@ -11,8 +11,8 @@
  *
  * Auth: Supabase session required.
  */
-import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextResponse, type NextRequest } from 'next/server'
+import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
 
 const GEMINI_MODEL = 'gemini-2.5-flash'
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
@@ -66,14 +66,9 @@ function extractJson(text: string): string | null {
   return null
 }
 
-export async function POST(request: Request) {
-  const supabase = await createClient().catch(() => null)
-  if (supabase) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+export async function POST(request: NextRequest) {
+  const { user } = await resolveRouteUser(request)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const apiKey = process.env.GEMINI_API_KEY?.trim()
   if (!apiKey) {
