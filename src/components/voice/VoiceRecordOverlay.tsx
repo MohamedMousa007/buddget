@@ -62,7 +62,7 @@ export function VoiceRecordOverlay({
               onCancel={onCancel}
             />
           )}
-          {state === 'processing' && <ProcessingPanel onCancel={onClose} />}
+          {state === 'processing' && <ProcessingPanel onCancel={onCancel} />}
           {state === 'error' && (
             <ErrorPanel error={error} onRedo={onRedo} onClose={onClose} />
           )}

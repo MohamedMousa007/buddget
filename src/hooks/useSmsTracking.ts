@@ -16,7 +16,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { subscribeToPush, unsubscribeFromPush } from '@/lib/notifications/webPushSubscribe'
 import { requestPushPermission } from '@/lib/notifications/pushNotifications'
-import { isNative } from '@/lib/native/isNative'
+import { isNative, isAndroid } from '@/lib/native/isNative'
 import { createClient } from '@/lib/supabase/client'
 
 export interface SmsEvent {
@@ -86,8 +86,26 @@ export function useSmsTracking() {
   const toggle = useCallback(async (value: boolean) => {
     setLoading(true)
     try {
+      // Android native: OS permission must be confirmed before enabling.
+      // The switch only flips green after the grant dialog resolves 'granted'.
+      if (isNative() && isAndroid()) {
+        const { checkSmsPermission, requestSmsPermission, startSMSTracking, stopSMSTracking } =
+          await import('@/lib/native/smsTracker')
+        if (value) {
+          const alreadyGranted = await checkSmsPermission()
+          const granted = alreadyGranted || (await requestSmsPermission())
+          if (!granted) return // user denied — leave switch OFF
+          const session = await createClient().auth.getSession()
+          await startSMSTracking(session.data.session?.access_token ?? '')
+        } else {
+          await stopSMSTracking()
+        }
+        updateSettings({ smsTrackingEnabled: value })
+        return
+      }
+
       // Web Push requires Service Workers — not available in Capacitor WebView.
-      // On native, skip push entirely and just flip the Zustand flag.
+      // On iOS native, skip push entirely and just flip the Zustand flag.
       if (!isNative()) {
         if (value) {
           try {

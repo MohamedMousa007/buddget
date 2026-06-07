@@ -48,7 +48,7 @@ export function VoiceRecordSheet({ open, onClose }: VoiceRecordSheetProps) {
           />
         ) : null}
 
-        {state === 'processing' ? <ProcessingView /> : null}
+        {state === 'processing' ? <ProcessingView onCancel={() => void handleCancel()} /> : null}
 
         {state === 'confirming' && draft ? (
           <ConfirmView
@@ -255,11 +255,19 @@ function RecordingView({
 
 // ── Processing ──────────────────────────────────────────────────────────────
 
-function ProcessingView() {
+function ProcessingView({ onCancel }: { onCancel: () => void }) {
   return (
-    <div className="flex flex-col items-center gap-3 py-6">
+    <div className="flex flex-col items-center gap-3 py-6 w-full">
       <Loader2 className="h-8 w-8 animate-spin text-[var(--color-brand-red)]" />
-      <p className="text-sm text-[var(--color-brand-text-secondary)]">Reading the transcript…</p>
+      <p className="text-sm text-[var(--color-brand-text-secondary)]">Transcribing your voice…</p>
+      <button
+        type="button"
+        onClick={onCancel}
+        className="mt-1 inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)] transition-colors"
+        aria-label="Cancel transcription"
+      >
+        <X className="h-4 w-4" /> Cancel
+      </button>
     </div>
   )
 }

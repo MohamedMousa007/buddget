@@ -35,6 +35,8 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
   // button before startRecording() resolves), this flag causes start() to
   // cancel immediately after initialisation instead of entering recording state.
   const stopPendingRef = useRef(false)
+  // AbortController for the in-flight transcribe fetch — aborted by cancel().
+  const abortRef = useRef<AbortController | null>(null)
 
   const [state, setState] = useState<VoiceState>('idle')
   const [draft, setDraft] = useState<ExtractedExpense | null>(null)
@@ -118,15 +120,19 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
     stopRaf()
     setState('processing')
 
-    // 12-second wall-clock guard — the UI must never get permanently stuck.
+    // AbortController lets cancel() abort the in-flight fetch instantly.
+    const abort = new AbortController()
+    abortRef.current = abort
+
+    // 10-second wall-clock guard — timer fires if AbortController doesn't cancel first.
     let timeoutHandle: ReturnType<typeof setTimeout> | null = null
     const withTimeout = <T,>(p: Promise<T>): Promise<T> =>
       Promise.race([
         p,
         new Promise<T>((_, reject) => {
           timeoutHandle = setTimeout(
-            () => reject(new Error('Transcription took too long. Please try again.')),
-            12_000,
+            () => reject(new Error('Transcription took longer than expected. Please try again in a quieter spot.')),
+            10_000,
           )
         }),
       ])
@@ -142,7 +148,7 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
         form.append('language', language === 'ar' ? 'ar' : 'en')
         const { apiFetchAuth } = await import('@/lib/apiBase')
         const res = await withTimeout(
-          apiFetchAuth('/api/voice/transcribe', { method: 'POST', body: form }),
+          apiFetchAuth('/api/voice/transcribe', { method: 'POST', body: form, signal: abort.signal }),
         )
         if (!res.ok) {
           const err = (await res.json().catch(() => null)) as { error?: string } | null
@@ -159,16 +165,22 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
       setDraft(extracted)
       setState('confirming')
     } catch (e) {
+      // AbortError fires when cancel() is called mid-fetch — go silent back to idle.
+      if (e instanceof Error && e.name === 'AbortError') return
       const msg = e instanceof Error ? e.message : 'Something went wrong'
       setError(msg)
       setState('error')
     } finally {
       if (timeoutHandle !== null) clearTimeout(timeoutHandle)
+      abortRef.current = null
     }
   }, [baseCurrency, language, stopRaf])
 
   const cancel = useCallback(async () => {
-    // Null synchronously so stop() returns early if called concurrently
+    // Abort any in-flight transcribe fetch immediately.
+    abortRef.current?.abort()
+    abortRef.current = null
+    // Null synchronously so stop() returns early if called concurrently.
     stopPendingRef.current = false
     const recorder = recorderRef.current
     recorderRef.current = null
