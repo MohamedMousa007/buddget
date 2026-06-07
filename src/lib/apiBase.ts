@@ -36,7 +36,8 @@ export function appOrigin(): string {
   return appUrl ?? ''
 }
 
-let cachedSupabaseClient: unknown | null = null
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let cachedSupabaseClient: any = null
 
 /**
  * Builds Authorization (+ native device id) headers for cross-origin API calls.
@@ -48,7 +49,7 @@ export async function buildAuthHeaders(init?: HeadersInit): Promise<Headers> {
   if (!usesRemoteApi()) return headers
 
   const { createClient } = await import('@/lib/supabase/client')
-  const client = cachedSupabaseClient ?? (cachedSupabaseClient = createClient())
+  const client = cachedSupabaseClient || (cachedSupabaseClient = createClient())
   const {
     data: { session },
   } = await client.auth.getSession()

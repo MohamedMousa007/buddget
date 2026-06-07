@@ -152,9 +152,13 @@ function RecordingView({
             if (state !== 'idle' || startingRef.current) return
             cancelledRef.current = false
             startingRef.current = true
-            void onStart().finally(() => {
-              startingRef.current = false
-            })
+            void (async () => {
+              try {
+                await onStart()
+              } finally {
+                startingRef.current = false
+              }
+            })()
           }}
           onPointerUp={() => {
             if (!isRecording || cancelledRef.current || startingRef.current) return
