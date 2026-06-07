@@ -45,6 +45,27 @@ Rules:
 - "confidence" should reflect how sure you are about merchant + amount.
 - Do NOT wrap the JSON in markdown fences. Output the JSON object only.`
 
+function extractJson(text: string): string | null {
+  const start = text.indexOf('{')
+  if (start === -1) return null
+  let depth = 0
+  let inString = false
+  let escape = false
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i]
+    if (escape) { escape = false; continue }
+    if (ch === '\\' && inString) { escape = true; continue }
+    if (ch === '"') { inString = !inString; continue }
+    if (inString) continue
+    if (ch === '{') depth++
+    else if (ch === '}') {
+      depth--
+      if (depth === 0) return text.slice(start, i + 1)
+    }
+  }
+  return null
+}
+
 export async function POST(request: Request) {
   const supabase = await createClient().catch(() => null)
   if (supabase) {
@@ -132,9 +153,15 @@ export async function POST(request: Request) {
 
   let parsed: Record<string, unknown>
   try {
-    parsed = JSON.parse(raw) as Record<string, unknown>
+    const jsonStr = extractJson(raw)
+    if (!jsonStr) throw new SyntaxError('no JSON object found')
+    parsed = JSON.parse(jsonStr) as Record<string, unknown>
   } catch {
-    return NextResponse.json({ error: 'AI returned invalid JSON', raw }, { status: 502 })
+    console.error('[receipt/scan] failed to parse Gemini response', raw)
+    return NextResponse.json(
+      { error: 'AI returned unreadable response', details: 'Failed to parse receipt structure' },
+      { status: 422 },
+    )
   }
 
   return NextResponse.json({

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { startRecording } from '@/lib/native/voiceRecorder'
@@ -14,6 +14,10 @@ interface UseVoiceExpenseResult {
   draft: ExtractedExpense | null
   transcript: string | null
   error: string | null
+  /** Normalized amplitude 0–1 updated each animation frame while recording. */
+  amplitude: number
+  /** Current animation timestamp (ms) — driven by the recording RAF loop. */
+  animTime: number
   start: () => Promise<void>
   stop: () => Promise<void>
   cancel: () => Promise<void>
@@ -21,20 +25,20 @@ interface UseVoiceExpenseResult {
   reset: () => void
 }
 
-/**
- * Voice → expense state machine. Handles the four phases the
- * `VoiceRecordSheet` UI is designed around:
- *
- *  idle → recording → processing → confirming
- *                                ↘ error (recoverable)
- */
 export function useVoiceExpense(): UseVoiceExpenseResult {
-  const recorderRef = useRef<{ stop(): Promise<{ audio: Blob | null; inlineText: string | null }>; cancel(): Promise<void> } | null>(null)
+  const recorderRef = useRef<{
+    stop(): Promise<{ audio: Blob | null; inlineText: string | null }>
+    cancel(): Promise<void>
+    getAmplitude(): number
+  } | null>(null)
+  const rafRef = useRef<number | null>(null)
 
   const [state, setState] = useState<VoiceState>('idle')
   const [draft, setDraft] = useState<ExtractedExpense | null>(null)
   const [transcript, setTranscript] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [amplitude, setAmplitude] = useState(0)
+  const [animTime, setAnimTime] = useState(0)
 
   const { addExpense, paymentMethods, baseCurrency, language } = useFinanceStore(
     useShallow((s) => ({
@@ -45,33 +49,60 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
     })),
   )
 
+  const stopRaf = useCallback(() => {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current)
+      rafRef.current = null
+    }
+    setAmplitude(0)
+  }, [])
+
+  // Clean up RAF on unmount
+  useEffect(() => () => stopRaf(), [stopRaf])
+
   const reset = useCallback(() => {
     setState('idle')
     setDraft(null)
     setTranscript(null)
     setError(null)
-  }, [])
+    stopRaf()
+  }, [stopRaf])
 
   const start = useCallback(async () => {
     setError(null)
     setDraft(null)
     setTranscript(null)
     try {
-      recorderRef.current = await startRecording()
+      const recorder = await startRecording({ language })
+      recorderRef.current = recorder
       setState('recording')
+
+      // Amplitude polling loop — native returns 0, simulated as gentle pulse
+      const poll = () => {
+        if (!recorderRef.current) return
+        const now = Date.now()
+        const raw = recorderRef.current.getAmplitude()
+        setAmplitude(raw > 0.01 ? raw : 0.12 + 0.08 * Math.sin(now / 400))
+        setAnimTime(now)
+        rafRef.current = requestAnimationFrame(poll)
+      }
+      rafRef.current = requestAnimationFrame(poll)
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Could not access the microphone'
       setError(msg)
       setState('error')
     }
-  }, [])
+  }, [language])
 
   const stop = useCallback(async () => {
-    if (!recorderRef.current) return
+    // Null synchronously to block any concurrent cancel() from re-entering
+    const recorder = recorderRef.current
+    if (!recorder) return
+    recorderRef.current = null
+    stopRaf()
     setState('processing')
     try {
-      const { audio, inlineText } = await recorderRef.current.stop()
-      recorderRef.current = null
+      const { audio, inlineText } = await recorder.stop()
 
       let text = inlineText?.trim() ?? ''
 
@@ -81,6 +112,7 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
         form.append('language', language === 'ar' ? 'ar' : 'en')
         const res = await fetch(apiUrl('/api/voice/transcribe'), {
           method: 'POST',
+          credentials: 'include',
           body: form,
         })
         if (!res.ok) {
@@ -102,17 +134,16 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
       setError(msg)
       setState('error')
     }
-  }, [baseCurrency, language])
+  }, [baseCurrency, language, stopRaf])
 
   const cancel = useCallback(async () => {
-    try {
-      await recorderRef.current?.cancel()
-    } catch {
-      /* noop */
-    }
+    // Null synchronously so stop() returns early if called concurrently
+    const recorder = recorderRef.current
     recorderRef.current = null
+    stopRaf()
+    try { await recorder?.cancel() } catch { /* noop */ }
     reset()
-  }, [reset])
+  }, [reset, stopRaf])
 
   const confirm = useCallback(() => {
     if (!draft) return
@@ -131,5 +162,5 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
     reset()
   }, [addExpense, draft, paymentMethods, reset, transcript])
 
-  return { state, draft, transcript, error, start, stop, cancel, confirm, reset }
+  return { state, draft, transcript, error, amplitude, animTime, start, stop, cancel, confirm, reset }
 }

@@ -82,8 +82,20 @@ export function ReceiptScanSheet({ open, onClose }: ReceiptScanSheetProps) {
 
       const form = new FormData()
       form.append('image', captured.file)
-      const res = await fetch(apiUrl('/api/receipt/scan'), { method: 'POST', body: form })
+      const res = await fetch(apiUrl('/api/receipt/scan'), { method: 'POST', body: form, credentials: 'include' })
       if (!res.ok) {
+        if (res.status === 503) {
+          throw new Error('AI scanning is temporarily offline. Please set up manually or try again in a moment.')
+        }
+        if (res.status === 422) {
+          throw new Error('We had trouble reading this receipt image. Please ensure the total amount and merchant are clearly visible, then try again.')
+        }
+        if (res.status === 429) {
+          throw new Error('Receipt scanning limit reached. Please try again in a moment.')
+        }
+        if (res.status === 401) {
+          throw new Error('Please sign in to use receipt scanning.')
+        }
         const err = (await res.json().catch(() => null)) as { error?: string } | null
         throw new Error(err?.error || `Scan failed (${res.status})`)
       }
@@ -92,7 +104,12 @@ export function ReceiptScanSheet({ open, onClose }: ReceiptScanSheetProps) {
       setResult(r)
       setState('result')
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Could not scan that receipt'
+      const msg =
+        e instanceof TypeError
+          ? 'Network connection lost. Please check your internet and try again.'
+          : e instanceof Error
+            ? e.message
+            : 'Could not scan that receipt'
       setError(msg)
       setState('error')
     }

@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Mic, X, Check, Loader2, AlertTriangle } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { motion, useMotionValue, useTransform } from 'framer-motion'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { useVoiceExpense } from '@/hooks/useVoiceExpense'
 import { isNative } from '@/lib/native/isNative'
@@ -12,25 +12,12 @@ interface VoiceRecordSheetProps {
   onClose: () => void
 }
 
-/**
- * WhatsApp-style bottom sheet that walks the user through the four states of
- * the voice → expense pipeline (idle / recording / processing / confirming /
- * error). Auto-starts recording when opened and posts to `/api/voice/transcribe`
- * + Gemini extraction on stop.
- */
 export function VoiceRecordSheet({ open, onClose }: VoiceRecordSheetProps) {
-  const { state, draft, transcript, error, start, stop, cancel, confirm, reset } = useVoiceExpense()
+  const { state, draft, transcript, error, amplitude, animTime, start, stop, cancel, confirm, reset } =
+    useVoiceExpense()
 
   useEffect(() => {
-    if (!open) return
-    if (state !== 'idle') return
-    void start()
-  }, [open, state, start])
-
-  useEffect(() => {
-    if (!open) {
-      reset()
-    }
+    if (!open) reset()
   }, [open, reset])
 
   const handleCancel = async () => {
@@ -46,10 +33,19 @@ export function VoiceRecordSheet({ open, onClose }: VoiceRecordSheetProps) {
       panelClassName="!max-h-[min(70vh,540px)]"
     >
       <div className="flex flex-col items-center gap-4 pb-2">
-        {state === 'error' ? <ErrorView error={error} onRetry={reset} onClose={() => void handleCancel()} /> : null}
+        {state === 'error' ? (
+          <ErrorView error={error} onRetry={reset} onClose={() => void handleCancel()} />
+        ) : null}
 
         {state === 'idle' || state === 'recording' ? (
-          <RecordingView state={state} onStop={() => void stop()} onCancel={() => void handleCancel()} />
+          <RecordingView
+            state={state}
+            amplitude={amplitude}
+            animTime={animTime}
+            onStart={() => void start()}
+            onStop={() => void stop()}
+            onCancel={() => void handleCancel()}
+          />
         ) : null}
 
         {state === 'processing' ? <ProcessingView /> : null}
@@ -62,14 +58,8 @@ export function VoiceRecordSheet({ open, onClose }: VoiceRecordSheetProps) {
             category={draft.category}
             confidence={draft.confidence}
             transcript={transcript}
-            onConfirm={() => {
-              confirm()
-              onClose()
-            }}
-            onRedo={() => {
-              reset()
-              void start()
-            }}
+            onConfirm={() => { confirm(); onClose() }}
+            onRedo={() => { reset(); void start() }}
             onCancel={() => void handleCancel()}
           />
         ) : null}
@@ -78,52 +68,144 @@ export function VoiceRecordSheet({ open, onClose }: VoiceRecordSheetProps) {
   )
 }
 
+// ── Visualizer ──────────────────────────────────────────────────────────────
+
+function Visualizer({ amplitude, animTime }: { amplitude: number; animTime: number }) {
+  const BARS = 40
+  const t = animTime / 400
+  return (
+    <svg viewBox={`0 0 ${BARS * 4} 48`} width={BARS * 4} height={48} className="mx-auto">
+      {Array.from({ length: BARS }, (_, i) => {
+        const envelope = 0.3 + 0.7 * Math.abs(Math.sin(i * 0.6 + t))
+        const h = Math.max(3, 44 * (0.08 + amplitude * 0.92 * envelope))
+        const y = (48 - h) / 2
+        return (
+          <rect
+            key={i}
+            x={i * 4 + 0.5}
+            y={y}
+            width={3}
+            height={h}
+            rx={1.5}
+            fill="var(--color-brand-red)"
+            opacity={0.25 + 0.75 * Math.min(amplitude * envelope, 1)}
+          />
+        )
+      })}
+    </svg>
+  )
+}
+
+// ── Recording view — hold-to-record + slide-to-cancel ───────────────────────
+
 function RecordingView({
   state,
+  amplitude,
+  animTime,
+  onStart,
   onStop,
   onCancel,
 }: {
   state: 'idle' | 'recording'
+  amplitude: number
+  animTime: number
+  onStart: () => void
   onStop: () => void
   onCancel: () => void
 }) {
   const isRecording = state === 'recording'
+  const x = useMotionValue(0)
+  // Hint fades from full opacity at rest to transparent when dragged -80px
+  const hintOpacity = useTransform(x, [-80, 0], [0, 1])
+  // Prevent stop() from firing if drag-to-cancel was triggered first
+  const cancelledRef = useRef(false)
+
   return (
     <>
       <p className="text-sm text-[var(--color-brand-text-muted)] mt-1">
-        {isRecording ? 'Listening… speak your expense.' : 'Getting ready…'}
+        {isRecording ? 'Listening… speak your expense.' : 'Hold mic to record'}
       </p>
-      <div className="relative my-3 flex items-center justify-center">
+
+      {isRecording ? <Visualizer amplitude={amplitude} animTime={animTime} /> : null}
+
+      <div className="relative flex items-center justify-center gap-3 my-2">
+        {/* Slide-to-cancel hint */}
+        {isRecording ? (
+          <motion.span
+            style={{ opacity: hintOpacity }}
+            className="text-xs text-[var(--color-brand-text-muted)] select-none pointer-events-none"
+          >
+            ← Slide to cancel
+          </motion.span>
+        ) : null}
+
+        {/* Draggable mic button */}
         <motion.div
-          aria-hidden
-          animate={isRecording ? { scale: [1, 1.18, 1] } : { scale: 1 }}
-          transition={isRecording ? { duration: 1.4, repeat: Infinity, ease: 'easeInOut' } : { duration: 0 }}
-          className="absolute inset-0 -m-6 rounded-full bg-[var(--color-brand-red)]/20 blur-2xl"
-        />
+          drag={isRecording ? 'x' : false}
+          dragConstraints={{ left: -120, right: 0 }}
+          dragElastic={0.1}
+          style={{ x }}
+          className="relative flex items-center justify-center touch-none"
+          onPointerDown={() => {
+            if (state !== 'idle') return
+            cancelledRef.current = false
+            onStart()
+          }}
+          onPointerUp={() => {
+            if (!isRecording || cancelledRef.current) return
+            onStop()
+          }}
+          onDragEnd={(_, info) => {
+            if (info.offset.x < -80) {
+              cancelledRef.current = true
+              x.set(0)
+              onCancel()
+            } else {
+              x.set(0)
+            }
+          }}
+        >
+          {/* Pulsing glow ring */}
+          <motion.div
+            aria-hidden
+            animate={isRecording ? { scale: [1, 1.2, 1] } : { scale: 1 }}
+            transition={
+              isRecording
+                ? { duration: 1.4, repeat: Infinity, ease: 'easeInOut' }
+                : { duration: 0 }
+            }
+            className="absolute -inset-6 rounded-full bg-[var(--color-brand-red)]/20 blur-2xl"
+          />
+          <div
+            className="relative flex h-20 w-20 items-center justify-center rounded-full bg-[var(--color-brand-red)] text-white shadow-2xl shadow-red-900/40 select-none"
+            aria-label={isRecording ? 'Release to transcribe' : 'Hold to record'}
+          >
+            <Mic className="h-9 w-9 pointer-events-none" />
+          </div>
+        </motion.div>
+      </div>
+
+      <p className="text-center text-xs text-[var(--color-brand-text-muted)] max-w-[260px]">
+        {isRecording
+          ? 'Release to transcribe · Slide left to cancel'
+          : 'Try "200 جنيه taxi", "90 EGP Talabat", or "120 dirhams Carrefour".' +
+            (!isNative() ? ' (Microphone access required.)' : '')}
+      </p>
+
+      {!isRecording ? (
         <button
           type="button"
-          onClick={onStop}
-          disabled={!isRecording}
-          className="relative flex h-20 w-20 items-center justify-center rounded-full bg-[var(--color-brand-red)] text-white shadow-2xl shadow-red-900/40 transition-transform active:scale-95 disabled:opacity-50"
-          aria-label="Stop and transcribe"
+          onClick={onCancel}
+          className="mt-2 inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
         >
-          <Mic className="h-9 w-9" />
+          <X className="h-4 w-4" /> Cancel
         </button>
-      </div>
-      <p className="text-center text-xs text-[var(--color-brand-text-muted)] max-w-[260px]">
-        Try “200 جنيه taxi to office”, “spent 90 EGP at Talabat”, or “120 dirhams Carrefour”.
-        {!isNative() ? ' (Microphone access required.)' : ''}
-      </p>
-      <button
-        type="button"
-        onClick={onCancel}
-        className="mt-2 inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
-      >
-        <X className="h-4 w-4" /> Cancel
-      </button>
+      ) : null}
     </>
   )
 }
+
+// ── Processing ──────────────────────────────────────────────────────────────
 
 function ProcessingView() {
   return (
@@ -133,6 +215,8 @@ function ProcessingView() {
     </div>
   )
 }
+
+// ── Confirm ─────────────────────────────────────────────────────────────────
 
 function ConfirmView({
   description,
@@ -171,7 +255,7 @@ function ConfirmView({
       </div>
 
       {transcript ? (
-        <p className="mt-3 text-xs italic text-[var(--color-brand-text-muted)]">“{transcript}”</p>
+        <p className="mt-3 text-xs italic text-[var(--color-brand-text-muted)]">&ldquo;{transcript}&rdquo;</p>
       ) : null}
 
       <div className="mt-5 flex gap-2">
@@ -210,6 +294,8 @@ function Row({ label, value }: { label: string; value: string }) {
     </div>
   )
 }
+
+// ── Error ────────────────────────────────────────────────────────────────────
 
 function ErrorView({
   error,
