@@ -17,7 +17,6 @@ import { DashboardFirstRunChecklist } from '@/components/dashboard/DashboardFirs
 import { BuildBudgetCta } from '@/components/dashboard/BuildBudgetCta'
 import { LockedFeatureCard } from '@/components/ui/LockedFeatureCard'
 import { SetupChecklist } from '@/components/features/onboarding/SetupChecklist'
-import { useTutorialAnchor } from '@/components/tutorial/TutorialAnchor'
 import { useFirstRunChecklist } from '@/lib/onboarding/firstRunChecklist'
 import { useLegacyOnboardingMigrator } from '@/lib/onboarding/migrateLegacyOnboarding'
 import { useDependencyStatus } from '@/hooks/useDependencyStatus'
@@ -65,8 +64,6 @@ export default function DashboardPage() {
 
   const [justBuilt, setJustBuilt] = useState(false)
   const showChecklist = !checklist.hidden && !checklist.allDone && !justBuilt
-  const dashboardAnchor = useTutorialAnchor<HTMLDivElement>('postOnboard:dashboard-main')
-
   const incomeIsLocked = !depStatus.income && !liteMode
   const budgetIsLocked = !depStatus.budget_plan
   const netWorthIsLocked = !depStatus.income && !depStatus.savings
@@ -97,7 +94,6 @@ export default function DashboardPage() {
       <DashboardSearchParamsSync />
       <div
         className="max-w-2xl lg:max-w-3xl mx-auto px-4 pt-4 pb-8 space-y-4"
-        {...dashboardAnchor.anchorProps}
       >
         <SetupChecklist />
 

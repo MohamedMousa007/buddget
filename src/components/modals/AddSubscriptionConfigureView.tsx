@@ -78,7 +78,7 @@ export function AddSubscriptionConfigureView({
       ) : null}
 
       <div className="grid grid-cols-2 gap-3">
-        <div data-tutorial-id="subscription-modal:amount">
+        <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.subscriptions.amountLabel}</Label>
           <Input
             type="number"
@@ -98,7 +98,7 @@ export function AddSubscriptionConfigureView({
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div data-tutorial-id="subscription-modal:cycle">
+        <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.subscriptions.billingCycle}</Label>
           <SelectField
             value={form.billingCycle}

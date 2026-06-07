@@ -88,9 +88,8 @@ export default function GoalsPage() {
           <>
             <section className="space-y-3">
               {active.map((g, idx) => {
-                const tourAnchor = idx === 0 ? { 'data-tutorial-id': 'postOnboard:first-goal' } : {}
                 return (
-                  <div key={g.id} {...tourAnchor}>
+                  <div key={g.id}>
                     <GoalCard goal={g} t={t.goals} onEdit={openEdit} onDelete={deleteGoal} />
                   </div>
                 )

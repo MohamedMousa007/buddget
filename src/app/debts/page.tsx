@@ -109,10 +109,9 @@ export default function DebtsPage() {
               <div className={`grid gap-4 ${activeDebts.length === 1 ? 'grid-cols-1 max-w-lg mx-auto' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'}`}>
                 {activeDebts.map((debt, idx) => {
                   const payments = debtPayments.filter((p) => p.debtId === debt.id)
-                  const tourAnchor = idx === 0 ? { 'data-tutorial-id': 'postOnboard:first-debt' } : {}
                   if (debt.debtType === 'credit_card') {
                     return (
-                      <div key={debt.id} {...tourAnchor}>
+                      <div key={debt.id}>
                         <CreditCardDebtCard
                           debt={debt}
                           payments={payments}
@@ -123,7 +122,7 @@ export default function DebtsPage() {
                     )
                   }
                   return (
-                    <div key={debt.id} {...tourAnchor}>
+                    <div key={debt.id}>
                       <DebtCard
                         debt={debt}
                         payments={payments}

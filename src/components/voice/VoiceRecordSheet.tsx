@@ -141,26 +141,39 @@ function RecordingView({
           </motion.span>
         ) : null}
 
-        {/* Draggable mic button */}
+        {/* Draggable mic button — touch-action:none prevents scroll hijack on Android */}
         <motion.div
           drag={isRecording ? 'x' : false}
           dragConstraints={{ left: -120, right: 0 }}
           dragElastic={0.1}
-          style={{ x }}
-          className="relative flex items-center justify-center touch-none"
-          onPointerDown={() => {
+          style={{ x, touchAction: 'none' }}
+          className="relative flex items-center justify-center"
+          onTouchStart={(e) => {
+            e.preventDefault() // bypass Android WebView's 300ms tap delay
             if (state !== 'idle' || startingRef.current) return
             cancelledRef.current = false
             startingRef.current = true
             void (async () => {
-              try {
-                await onStart()
-              } finally {
-                startingRef.current = false
-              }
+              try { await onStart() } finally { startingRef.current = false }
             })()
           }}
-          onPointerUp={() => {
+          onTouchEnd={(e) => {
+            e.preventDefault()
+            if (!isRecording || cancelledRef.current || startingRef.current) return
+            onStop()
+          }}
+          onPointerDown={(e) => {
+            // Pointer fallback for desktop / non-touch environments
+            if (e.pointerType === 'touch') return // already handled by onTouchStart
+            if (state !== 'idle' || startingRef.current) return
+            cancelledRef.current = false
+            startingRef.current = true
+            void (async () => {
+              try { await onStart() } finally { startingRef.current = false }
+            })()
+          }}
+          onPointerUp={(e) => {
+            if (e.pointerType === 'touch') return
             if (!isRecording || cancelledRef.current || startingRef.current) return
             onStop()
           }}

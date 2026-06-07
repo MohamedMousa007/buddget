@@ -1,7 +1,6 @@
 'use client'
 
 import { useMemo } from 'react'
-import { useAutoStartTour } from '@/hooks/useTutorial'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { GoalCategoryPicker } from '@/components/features/goals/GoalCategoryPicker'
@@ -59,7 +58,7 @@ function AddGoalSheetForm({ editingGoal, onClose, title, selectClass, t }: Inner
           </>
         ) : (
           <>
-            <div data-tutorial-id="goal-modal:name">
+            <div>
               <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.goals.goalName}</Label>
               <Input
                 value={form.name}
@@ -200,7 +199,6 @@ function AddGoalSheetForm({ editingGoal, onClose, title, selectClass, t }: Inner
               <button
                 type="button"
                 onClick={form.submit}
-                data-tutorial-id="goal-modal:save"
                 className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
               >
                 {t.common.save}
@@ -226,7 +224,6 @@ export function AddGoalSheet({ open, onClose, editingGoal }: AddGoalSheetProps) 
     []
   )
 
-  useAutoStartTour('addGoalTour', open && !editingGoal)
 
   if (!open) return null
 

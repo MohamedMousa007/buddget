@@ -11,27 +11,12 @@ import { SettingsDataManagementSection } from '@/components/features/settings/Se
 import { SettingsAppPreferencesSection } from '@/components/features/settings/SettingsAppPreferencesSection'
 import { SettingsSecuritySection } from '@/components/features/settings/SettingsSecuritySection'
 import { SettingsSmsTrackingSection } from '@/components/features/settings/SettingsSmsTrackingSection'
-import { useRouter } from 'next/navigation'
-import { Compass } from 'lucide-react'
-import { useTutorialController } from '@/components/tutorial/TutorialController'
 
 export default function SettingsPage() {
   const t = useT()
-  const router = useRouter()
-  const tutorial = useTutorialController()
   // TODO: Settings children accept the full store — refactor to individual selectors per section
   const store = useFinanceStore()
   const s = useSettingsPage()
-
-  const handleShowTour = () => {
-    // Kick off on /budget-setup — the tour's first step lives there and
-    // the controller handles cross-route navigation for subsequent steps.
-    router.push('/budget-setup')
-    // Tiny microtask so the route transition starts before we arm the
-    // tour (the controller navigates per-step, but the first step needs
-    // the anchor to be live).
-    setTimeout(() => tutorial.start('postOnboardingTour'), 50)
-  }
 
   return (
     <div className="min-h-screen">
@@ -63,24 +48,6 @@ export default function SettingsPage() {
         <SettingsAppPreferencesSection store={store} />
 
         {s.user ? <SettingsSmsTrackingSection /> : null}
-
-        <button
-          type="button"
-          onClick={handleShowTour}
-          className="w-full flex items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-3 text-start hover:bg-[var(--color-brand-elevated)] transition-colors"
-        >
-          <span className="h-9 w-9 rounded-full flex items-center justify-center bg-[var(--color-brand-red)]/10 text-[var(--color-brand-red)]">
-            <Compass className="h-4 w-4" aria-hidden />
-          </span>
-          <span className="flex-1 min-w-0">
-            <span className="block text-sm font-semibold text-[var(--color-brand-text-primary)]">
-              {t.settings.showMeAround}
-            </span>
-            <span className="block text-xs text-[var(--color-brand-text-muted)] mt-0.5">
-              {t.settings.showMeAroundDesc}
-            </span>
-          </span>
-        </button>
 
         <div className="text-center text-xs text-[var(--color-brand-text-muted)] pb-8 space-y-2">
           <p>{t.settings.footer}</p>

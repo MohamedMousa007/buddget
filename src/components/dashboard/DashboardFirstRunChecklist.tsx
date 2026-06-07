@@ -95,7 +95,6 @@ export function DashboardFirstRunChecklist({ snapshot }: DashboardFirstRunCheckl
 
   return (
     <section
-      data-tutorial-id="checklist-root"
       className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4 sm:p-5 space-y-3"
     >
       <div className="flex items-center justify-between gap-3">
@@ -201,7 +200,6 @@ function ChecklistRow({
 
   return (
     <li
-      data-tutorial-id={`checklist-row-${item.id}`}
       className={
         'flex items-center gap-3 rounded-xl border px-3 min-h-11 transition-colors ' +
         (locked

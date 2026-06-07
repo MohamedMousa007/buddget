@@ -100,6 +100,11 @@ async function startWebRecording(language?: string): Promise<RecorderHandle> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const AudioCtx: typeof AudioContext = window.AudioContext ?? (window as any).webkitAudioContext
   const audioCtx = new AudioCtx()
+  // Android WebView starts AudioContext in 'suspended' state due to autoplay policy.
+  // resume() is safe here because startWebRecording() is always called from a user gesture.
+  if (audioCtx.state === 'suspended') {
+    try { await audioCtx.resume() } catch { /* noop — visualiser disabled but recording proceeds */ }
+  }
   const source = audioCtx.createMediaStreamSource(stream)
   const analyser = audioCtx.createAnalyser()
   analyser.fftSize = 256

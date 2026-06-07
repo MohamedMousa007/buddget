@@ -10,6 +10,7 @@ import { SmsRecentEventsTable } from '@/components/features/settings/SmsRecentEv
 import { SmsIosSetupCard } from '@/components/features/settings/SmsIosSetupCard'
 import { SmsAndroidSetupCard } from '@/components/features/settings/SmsAndroidSetupCard'
 import { SmsSupportedBanksList } from '@/components/features/settings/SmsSupportedBanksList'
+import { isIOS, isAndroid } from '@/lib/native/isNative'
 
 /** Top-level section card for the Settings page. */
 export function SettingsSmsTrackingSection() {
@@ -38,6 +39,9 @@ export function SettingsSmsTrackingSection() {
     await rotateToken()
     setRotateConfirm(false)
   }, [rotateConfirm, rotateToken])
+
+  const onIOS = isIOS()
+  const onAndroid = isAndroid()
 
   return (
     <section className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] divide-y divide-[var(--color-brand-border)]">
@@ -69,27 +73,31 @@ export function SettingsSmsTrackingSection() {
 
       {isEnabled && (
         <>
-          {/* iOS setup */}
-          <div className="px-4 py-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Smartphone className="h-4 w-4 text-[var(--color-brand-text-muted)]" />
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-brand-text-muted)]">
-                {t.smsTracking.iosCardTitle}
-              </h3>
+          {/* iOS-only: Shortcut setup guide */}
+          {(onIOS || !onAndroid) && (
+            <div className="px-4 py-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Smartphone className="h-4 w-4 text-[var(--color-brand-text-muted)]" />
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-brand-text-muted)]">
+                  {t.smsTracking.iosCardTitle}
+                </h3>
+              </div>
+              <SmsIosSetupCard downloadUrl={iosDownloadUrl} onFetchToken={fetchToken} />
             </div>
-            <SmsIosSetupCard downloadUrl={iosDownloadUrl} onFetchToken={fetchToken} />
-          </div>
+          )}
 
-          {/* Android setup */}
-          <div className="px-4 py-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Zap className="h-4 w-4 text-[var(--color-brand-text-muted)]" />
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-brand-text-muted)]">
-                {t.smsTracking.androidCardTitle}
-              </h3>
+          {/* Android-only: Native SMS permission + custom keywords */}
+          {(onAndroid || !onIOS) && (
+            <div className="px-4 py-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Zap className="h-4 w-4 text-[var(--color-brand-text-muted)]" />
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-brand-text-muted)]">
+                  {t.smsTracking.androidCardTitle}
+                </h3>
+              </div>
+              <SmsAndroidSetupCard tokenInfo={tokenInfo} />
             </div>
-            <SmsAndroidSetupCard tokenInfo={tokenInfo} />
-          </div>
+          )}
 
           {/* Recent auto-tracked transactions */}
           <div className="px-4 py-4">
@@ -112,8 +120,8 @@ export function SettingsSmsTrackingSection() {
             <SmsSupportedBanksList />
           </div>
 
-          {/* Token rotation */}
-          {tokenInfo && (
+          {/* Token rotation — only relevant on iOS/web (webhook-based flow) */}
+          {tokenInfo && !onAndroid && (
             <div className="px-4 py-3 flex items-center justify-between gap-3">
               <span className="text-xs text-[var(--color-brand-text-muted)]">
                 Token: <code className="font-mono text-[10px]">{tokenInfo.token.slice(0, 8)}&hellip;</code>

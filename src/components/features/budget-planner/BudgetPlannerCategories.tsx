@@ -6,7 +6,6 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { useT } from '@/lib/i18n'
 import { BudgetPlannerCategoryRow } from '@/components/features/budget-planner/BudgetPlannerCategoryRow'
 import { BudgetPlannerAddCategoryMenu } from '@/components/features/budget-planner/BudgetPlannerAddCategoryMenu'
-import { useTutorialAnchor } from '@/components/tutorial/TutorialAnchor'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 
 export interface BudgetPlannerCategoriesLabels {
@@ -108,7 +107,6 @@ export function BudgetPlannerCategories({
     menu?.click()
   }
 
-  const categoryListAnchor = useTutorialAnchor<HTMLDivElement>('postOnboard:category-row')
 
   void _planId
 
@@ -142,7 +140,7 @@ export function BudgetPlannerCategories({
             Add category
           </button>
         </div>
-      : <div className="space-y-2" {...categoryListAnchor.anchorProps}>
+      : <div className="space-y-2">
           {categories.map((c) => (
             <BudgetPlannerCategoryRow
               key={c.id}

@@ -1,6 +1,5 @@
 'use client'
 
-import { useAutoStartTour } from '@/hooks/useTutorial'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { Input } from '@/components/ui/input'
@@ -90,7 +89,6 @@ function AddSubscriptionSheetInner({
               type="button"
               onClick={form.submit}
               disabled={!form.canSubmit}
-              data-tutorial-id="subscription-modal:save"
               className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {form.isEdit ? t.subscriptions.saveEdit : t.subscriptions.saveAdd}
@@ -114,7 +112,6 @@ export type AddSubscriptionSheetProps = {
  * Catalog → configure sheet for new subscriptions; edit opens configure only.
  */
 export function AddSubscriptionSheet({ open, onClose, editing, instanceKey }: AddSubscriptionSheetProps) {
-  useAutoStartTour('addSubscriptionTour', open && !editing)
   if (!open) return null
   return (
     <ModalShell open={open} onBackdropClick={onClose} dragToClose>

@@ -7,7 +7,6 @@ import { ModalProvider } from '@/components/modals/ModalProvider'
 import { OnboardingBanner } from '@/components/layout/OnboardingBanner'
 import { SyncFailureBanner } from '@/components/layout/SyncFailureBanner'
 import { DesktopHeaderBar } from '@/components/layout/DesktopHeaderBar'
-import { InstallButton } from '@/components/pwa/InstallButton'
 import { useThemeSync } from '@/hooks/useThemeSync'
 import { useRates } from '@/hooks/useRates'
 import { useGoldPrice } from '@/hooks/useGoldPrice'
@@ -55,7 +54,6 @@ export function AppShell({ children }: AppShellProps) {
         <SyncFailureBanner />
         {children}
       </main>
-      <InstallButton variant="banner" />
       <BottomNav />
       <ModalProvider />
       <WidgetSync />

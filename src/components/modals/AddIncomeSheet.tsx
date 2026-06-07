@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
-import { useAutoStartTour } from '@/hooks/useTutorial'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -108,7 +107,6 @@ export function AddIncomeSheet() {
   }
 
   useEscapeClose(isOpen, handleClose)
-  useAutoStartTour('addIncomeTour', isOpen)
 
   return (
     <ModalShell open={isOpen} onBackdropClick={handleClose}>
@@ -123,7 +121,6 @@ export function AddIncomeSheet() {
             </label>
             <Input
               id="income-name"
-              data-tutorial-id="income-modal:name"
               placeholder={t.addIncome.placeholderSource}
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -137,7 +134,6 @@ export function AddIncomeSheet() {
               </label>
               <Input
                 id="income-amt"
-                data-tutorial-id="income-modal:amount"
                 type="number"
                 inputMode="decimal"
                 step="0.01"
@@ -158,7 +154,6 @@ export function AddIncomeSheet() {
           </div>
           <div
             className="flex items-center justify-between gap-3 py-1"
-            data-tutorial-id="income-modal:recurring"
           >
             <span className={MODAL_LABEL_CLASS}>{t.addIncome.labelRecurring}</span>
             <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
@@ -167,7 +162,6 @@ export function AddIncomeSheet() {
         <div className="shrink-0 pt-4">
           <button
             type="button"
-            data-tutorial-id="income-modal:save"
             onClick={handleSubmit}
             disabled={
               !name.trim() ||

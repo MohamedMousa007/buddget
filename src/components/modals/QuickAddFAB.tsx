@@ -92,7 +92,6 @@ export function QuickAddFAB() {
     <>
       <button
         type="button"
-        data-tutorial-id="fab-root"
         {...longPress}
         className="hidden lg:flex fixed bottom-8 end-8 z-50 items-center justify-center w-14 h-14 rounded-full bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white shadow-lg shadow-red-900/30 transition-all duration-200 active:scale-95 cursor-pointer touch-none select-none"
         aria-label={isOpen ? t.common.close : t.nav.quickAdd}

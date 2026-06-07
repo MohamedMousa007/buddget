@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
-import { useAutoStartTour } from '@/hooks/useTutorial'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -97,7 +96,6 @@ export function AddPaymentMethodSheet() {
   }
 
   useEscapeClose(isOpen, handleClose)
-  useAutoStartTour('addPmTour', isOpen)
 
   return (
     <ModalShell open={isOpen} onBackdropClick={handleClose}>
@@ -106,7 +104,7 @@ export function AddPaymentMethodSheet() {
           <ModalSheetHeader title={t.modals.addPaymentTitle} onClose={handleClose} />
         </div>
         <div className={MODAL_BODY_SCROLL_CLASS}>
-          <div data-tutorial-id="pm-modal:name">
+          <div>
             <label htmlFor="pm-name" className={MODAL_LABEL_CLASS}>
               {t.modals.addPaymentLabelName}
             </label>
@@ -119,7 +117,7 @@ export function AddPaymentMethodSheet() {
             />
           </div>
 
-          <div data-tutorial-id="pm-modal:type">
+          <div>
             <span className={MODAL_LABEL_CLASS}>{t.modals.addPaymentLabelType}</span>
             <div className="-mx-1 mt-1.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <div className="flex w-max gap-1.5 px-1">
@@ -144,7 +142,7 @@ export function AddPaymentMethodSheet() {
             </div>
           </div>
 
-          <div data-tutorial-id="pm-modal:currency">
+          <div>
             <span className={MODAL_LABEL_CLASS}>{t.modals.addPaymentLabelCurrency}</span>
             <FiatCurrencySelect
               value={currency}
@@ -161,7 +159,6 @@ export function AddPaymentMethodSheet() {
         <div className="shrink-0 pt-4">
           <button
             type="button"
-            data-tutorial-id="pm-modal:save"
             onClick={handleSubmit}
             disabled={!name.trim()}
             className="w-full py-3.5 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50"

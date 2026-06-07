@@ -146,7 +146,7 @@ export function AddSavingsAccountForm({ onDone }: AddSavingsAccountFormProps) {
         </div>
       )}
 
-      <div data-tutorial-id="savings-modal:name">
+      <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelName}</Label>
         <Input
           value={name}
@@ -156,7 +156,7 @@ export function AddSavingsAccountForm({ onDone }: AddSavingsAccountFormProps) {
         />
       </div>
 
-      <div data-tutorial-id="savings-modal:balance">
+      <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelCurrentBalance}</Label>
         <div className="mt-1 flex gap-2 items-stretch">
           <div className="w-28 shrink-0">
@@ -197,7 +197,6 @@ export function AddSavingsAccountForm({ onDone }: AddSavingsAccountFormProps) {
       <button
         type="button"
         onClick={submit}
-        data-tutorial-id="savings-modal:save"
         className="w-full rounded-xl bg-[var(--color-brand-red)] py-3 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)] transition-colors"
       >
         {t.savings.createAccountButton}

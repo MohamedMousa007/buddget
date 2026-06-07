@@ -1,7 +1,6 @@
 'use client'
 
-import { useEffect, useRef, type RefObject } from 'react'
-import Link from 'next/link'
+import { useEffect, useRef, useCallback, type RefObject } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import {
   User,
@@ -71,11 +70,20 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
     prevPathname.current = pathname
   }, [pathname, onClose])
 
-  if (!open) return null
-
-  const avatarSrc = resolveProfileAvatarSrc(profile)
-  const displayName = profile.name || t.common.user
-  const displayEmail = user?.email || profile.email || ''
+  /**
+   * Navigate then close — order matters for Capacitor Android WebView.
+   * Calling onClose() first unmounts the DOM before router.push() fires,
+   * causing the WebView to swallow the navigation event silently.
+   * Push first, close after a microtask so navigation is committed first.
+   */
+  const navigateTo = useCallback(
+    (href: string, beforeNavigate?: () => void) => {
+      beforeNavigate?.()
+      router.push(href)
+      setTimeout(onClose, 50)
+    },
+    [router, onClose],
+  )
 
   const handleSignOut = async () => {
     clearBudgetData()
@@ -83,6 +91,12 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
     onClose()
     router.push('/')
   }
+
+  if (!open) return null
+
+  const avatarSrc = resolveProfileAvatarSrc(profile)
+  const displayName = profile.name || t.common.user
+  const displayEmail = user?.email || profile.email || ''
 
   return (
     <div
@@ -108,35 +122,32 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
 
       <div className="border-t border-[var(--color-brand-border)]" />
 
-      <Link href="/profile" onClick={onClose} className={itemClass} role="menuitem">
+      <button type="button" onClick={() => navigateTo('/profile')} className={itemClass} role="menuitem">
         <User className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.yourProfile}</span>
-      </Link>
-      <Link href="/goals" onClick={onClose} className={itemClass} role="menuitem">
+      </button>
+      <button type="button" onClick={() => navigateTo('/goals')} className={itemClass} role="menuitem">
         <Target className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.goals}</span>
-      </Link>
-      <Link href="/subscriptions" onClick={onClose} className={itemClass} role="menuitem">
+      </button>
+      <button type="button" onClick={() => navigateTo('/subscriptions')} className={itemClass} role="menuitem">
         <RefreshCw className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.subscriptions}</span>
-      </Link>
-      <Link href="/settings" onClick={onClose} className={itemClass} role="menuitem">
+      </button>
+      <button type="button" onClick={() => navigateTo('/settings')} className={itemClass} role="menuitem">
         <Settings className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.settings}</span>
-      </Link>
+      </button>
       {checklistHidden ? (
-        <Link
-          href="/"
-          onClick={() => {
-            updateSettings({ onboardingChecklistHidden: false })
-            onClose()
-          }}
+        <button
+          type="button"
+          onClick={() => navigateTo('/', () => updateSettings({ onboardingChecklistHidden: false }))}
           className={itemClass}
           role="menuitem"
         >
           <ListChecks className="w-4 h-4 shrink-0" />
           <span className={localeInlineLabelClass(locale)}>{t.onboarding.checklistResumeCta}</span>
-        </Link>
+        </button>
       ) : null}
 
       <div className="border-t border-[var(--color-brand-border)]" />

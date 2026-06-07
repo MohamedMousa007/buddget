@@ -23,7 +23,6 @@ import type { SavingsAccount } from '@/lib/store/types'
 import { useT } from '@/lib/i18n'
 import { convertCurrency } from '@/lib/utils/currency'
 import { useHydrateSavings, useHydrateGoals } from '@/hooks/remote'
-import { useTutorialAnchor } from '@/components/tutorial/TutorialAnchor'
 
 const headerWithdrawClass =
   'inline-flex items-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)] transition-colors'
@@ -128,10 +127,9 @@ export default function SavingsPage() {
     }
   }
 
-  const savingsAnchor = useTutorialAnchor<HTMLDivElement>('postOnboard:savings-root')
 
   return (
-    <div className="min-h-screen pb-24" {...savingsAnchor.anchorProps}>
+    <div className="min-h-screen pb-24">
       <PageHeader>
         <PageHeaderContent className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
