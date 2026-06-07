@@ -31,6 +31,10 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
     getAmplitude(): number
   } | null>(null)
   const rafRef = useRef<number | null>(null)
+  // When stop() is called before the recorder is ready (user releases the mic
+  // button before startRecording() resolves), this flag causes start() to
+  // cancel immediately after initialisation instead of entering recording state.
+  const stopPendingRef = useRef(false)
 
   const [state, setState] = useState<VoiceState>('idle')
   const [draft, setDraft] = useState<ExtractedExpense | null>(null)
@@ -71,8 +75,17 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
     setError(null)
     setDraft(null)
     setTranscript(null)
+    stopPendingRef.current = false
     try {
       const recorder = await startRecording({ language })
+
+      // User released the mic before the recorder was ready — cancel silently.
+      if (stopPendingRef.current) {
+        stopPendingRef.current = false
+        try { await recorder.cancel() } catch { /* noop */ }
+        return
+      }
+
       recorderRef.current = recorder
       setState('recording')
 
@@ -96,7 +109,11 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
   const stop = useCallback(async () => {
     // Null synchronously to block any concurrent cancel() from re-entering
     const recorder = recorderRef.current
-    if (!recorder) return
+    if (!recorder) {
+      // Recorder not ready yet — flag start() to cancel after initialisation.
+      stopPendingRef.current = true
+      return
+    }
     recorderRef.current = null
     stopRaf()
     setState('processing')
@@ -137,6 +154,7 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
 
   const cancel = useCallback(async () => {
     // Null synchronously so stop() returns early if called concurrently
+    stopPendingRef.current = false
     const recorder = recorderRef.current
     recorderRef.current = null
     stopRaf()

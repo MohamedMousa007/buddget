@@ -82,7 +82,7 @@ export function ReceiptScanSheet({ open, onClose }: ReceiptScanSheetProps) {
       const form = new FormData()
       form.append('image', captured.file)
       const { apiFetchAuth } = await import('@/lib/apiBase')
-      const res = await apiFetchAuth('/api/receipt/scan', { method: 'POST', body: form })
+      const res = await apiFetchAuth('/api/receipt/scan', { method: 'POST', body: form, credentials: 'include' })
       if (!res.ok) {
         if (res.status === 503) {
           throw new Error('AI scanning is temporarily offline. Please set up manually or try again in a moment.')
