@@ -6,7 +6,6 @@ import Image from 'next/image'
 import { useShallow } from 'zustand/react/shallow'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { captureReceiptPhoto } from '@/lib/native/cameraScanner'
-import { apiUrl } from '@/lib/apiBase'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Currency, ExpenseCategory } from '@/lib/store/types'
 

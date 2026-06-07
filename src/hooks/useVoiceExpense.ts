@@ -5,7 +5,6 @@ import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { startRecording } from '@/lib/native/voiceRecorder'
 import { extractVoiceExpense, type ExtractedExpense } from '@/lib/ai/extractVoiceExpense'
-import { apiUrl } from '@/lib/apiBase'
 
 export type VoiceState = 'idle' | 'recording' | 'processing' | 'confirming' | 'error'
 
