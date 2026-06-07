@@ -16,21 +16,33 @@ interface SmsCapacitorPlugin {
   ): { remove: () => Promise<void> }
 }
 
-async function loadPlugin(): Promise<SmsCapacitorPlugin | null> {
-  if (!isNative() || !isAndroid()) return null
+// Module-level cache — registerPlugin() is called exactly once.
+// IMPORTANT: Never return the Capacitor plugin proxy from an async function.
+// JS Promise resolution calls .then() on any returned object to check if it
+// is a thenable. Capacitor proxies forward .then() to native as a method call,
+// causing "SmsCapacitorPlugin.then() is not implemented on android" and
+// silently aborting the entire permission flow.
+let _plugin: SmsCapacitorPlugin | null = null
+let _pluginLoaded = false
+
+async function ensurePlugin(): Promise<boolean> {
+  if (_pluginLoaded) return _plugin !== null
+  _pluginLoaded = true
+  if (!isNative() || !isAndroid()) return false
   try {
     const { registerPlugin } = await import('@capacitor/core')
-    return registerPlugin<SmsCapacitorPlugin>('SmsCapacitorPlugin')
+    // Store in module var — never return the proxy itself from an async function.
+    _plugin = registerPlugin<SmsCapacitorPlugin>('SmsCapacitorPlugin')
+    return true
   } catch {
-    return null
+    return false
   }
 }
 
 export async function checkSmsPermission(): Promise<boolean> {
-  const plugin = await loadPlugin()
-  if (!plugin) return false
+  if (!(await ensurePlugin())) return false
   try {
-    const { granted } = await plugin.checkPermission()
+    const { granted } = await _plugin!.checkPermission()
     return granted
   } catch {
     return false
@@ -38,10 +50,9 @@ export async function checkSmsPermission(): Promise<boolean> {
 }
 
 export async function requestSmsPermission(): Promise<boolean> {
-  const plugin = await loadPlugin()
-  if (!plugin) return false
+  if (!(await ensurePlugin())) return false
   try {
-    const { granted } = await plugin.requestPermission()
+    const { granted } = await _plugin!.requestPermission()
     return granted
   } catch {
     return false
@@ -52,8 +63,7 @@ export async function startSMSTracking(accessToken: string): Promise<void> {
   if (!isNative() || !isAndroid()) return
   if (listenerAttached) return
 
-  const plugin = await loadPlugin()
-  if (!plugin) {
+  if (!(await ensurePlugin()) || !_plugin) {
     console.warn('[sms-tracker] SmsCapacitorPlugin not available')
     return
   }
@@ -65,7 +75,7 @@ export async function startSMSTracking(accessToken: string): Promise<void> {
   }
 
   listenerAttached = true
-  listenerHandle = plugin.addListener('onSmsReceive', (payload) => {
+  listenerHandle = _plugin.addListener('onSmsReceive', (payload) => {
     const text = payload?.message?.trim()
     if (!text) return
     // Read keywords from store snapshot at arrival time — instantly reflects Settings changes.
@@ -78,11 +88,7 @@ export async function startSMSTracking(accessToken: string): Promise<void> {
 export async function stopSMSTracking(): Promise<void> {
   listenerAttached = false
   if (listenerHandle) {
-    try {
-      await listenerHandle.remove()
-    } catch {
-      /* noop */
-    }
+    try { await listenerHandle.remove() } catch { /* noop */ }
     listenerHandle = null
   }
 }
