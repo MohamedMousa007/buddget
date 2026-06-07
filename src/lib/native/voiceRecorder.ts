@@ -94,7 +94,17 @@ async function startWebRecording(language?: string): Promise<RecorderHandle> {
     throw new Error('Recording is not supported in this browser')
   }
 
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+  let stream: MediaStream
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+  } catch (e) {
+    if (e instanceof DOMException && (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError')) {
+      throw new Error(
+        'Microphone access denied. Please go to Settings → Apps → Buddget → Permissions and enable Microphone.'
+      )
+    }
+    throw e
+  }
 
   // Web Audio API — amplitude visualiser
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

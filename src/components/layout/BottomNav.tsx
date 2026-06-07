@@ -1,5 +1,6 @@
 'use client'
 
+import { useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -16,6 +17,8 @@ import { useBottomNavMoreSheet } from '@/hooks/useBottomNavMoreSheet'
 import { BottomNavMorePanel } from '@/components/features/layout/BottomNavMorePanel'
 import { useLongPress } from '@/hooks/useLongPress'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
+import { useVoiceExpense } from '@/hooks/useVoiceExpense'
+import { VoiceRecordOverlay } from '@/components/voice/VoiceRecordOverlay'
 
 export function BottomNav() {
   const pathname = usePathname()
@@ -24,25 +27,46 @@ export function BottomNav() {
   const { moreOpen, setMoreOpen, moreWrapRef } = useBottomNavMoreSheet()
   const moreActive = BOTTOM_NAV_MORE_HREFS.has(pathname)
   const requireAuth = useRequireAuthAction()
+  const voice = useVoiceExpense()
 
   const closeMore = () => setMoreOpen(false)
+
+  const handleVoiceRedo = useCallback(async () => {
+    await voice.cancel()
+    void voice.start()
+  }, [voice])
 
   const fabLongPress = useLongPress<HTMLButtonElement>(
     () => {
       requireAuth(() => {
         closeMore()
-        setActiveModal('voiceExpense')
+        void voice.start()
       }, t.modals.fabRequireAuth)
     },
     () => {
       closeMore()
       setActiveModal('quickAdd')
     },
-    { delay: 600 },
+    {
+      delay: 600,
+      onLongPressRelease: () => { void voice.stop() },
+    },
   )
 
   return (
     <nav className="lg:hidden fixed bottom-0 start-0 end-0 z-50 bg-[var(--color-brand-card)]/95 backdrop-blur-xl border-t border-[var(--color-brand-border)] safe-area-bottom">
+      <VoiceRecordOverlay
+        state={voice.state}
+        amplitude={voice.amplitude}
+        animTime={voice.animTime}
+        draft={voice.draft}
+        error={voice.error}
+        onStop={() => { void voice.stop() }}
+        onCancel={() => { void voice.cancel() }}
+        onConfirm={voice.confirm}
+        onRedo={() => { void handleVoiceRedo() }}
+        onClose={voice.reset}
+      />
       <div className="flex items-center justify-around h-16 px-2">
         {BOTTOM_NAV_ITEMS.map((item) => {
           if (item.kind === 'fab') {
