@@ -119,6 +119,8 @@ function RecordingView({
   const hintOpacity = useTransform(x, [-80, 0], [0, 1])
   // Prevent stop() from firing if drag-to-cancel was triggered first
   const cancelledRef = useRef(false)
+  // Track if start is in-flight to avoid onPointerUp race (start is async)
+  const startingRef = useRef(false)
 
   return (
     <>
@@ -147,12 +149,15 @@ function RecordingView({
           style={{ x }}
           className="relative flex items-center justify-center touch-none"
           onPointerDown={() => {
-            if (state !== 'idle') return
+            if (state !== 'idle' || startingRef.current) return
             cancelledRef.current = false
-            onStart()
+            startingRef.current = true
+            void onStart().finally(() => {
+              startingRef.current = false
+            })
           }}
           onPointerUp={() => {
-            if (!isRecording || cancelledRef.current) return
+            if (!isRecording || cancelledRef.current || startingRef.current) return
             onStop()
           }}
           onDragEnd={(_, info) => {

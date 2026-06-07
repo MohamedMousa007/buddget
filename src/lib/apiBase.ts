@@ -36,18 +36,22 @@ export function appOrigin(): string {
   return appUrl ?? ''
 }
 
+let cachedSupabaseClient: unknown | null = null
+
 /**
  * Builds Authorization (+ native device id) headers for cross-origin API calls.
  * No-op on web — cookies carry the session on same-origin requests.
+ * Caches the Supabase client to avoid leaking autoRefreshToken timers on native.
  */
 export async function buildAuthHeaders(init?: HeadersInit): Promise<Headers> {
   const headers = new Headers(init)
   if (!usesRemoteApi()) return headers
 
   const { createClient } = await import('@/lib/supabase/client')
+  const client = cachedSupabaseClient ?? (cachedSupabaseClient = createClient())
   const {
     data: { session },
-  } = await createClient().auth.getSession()
+  } = await client.auth.getSession()
   if (session?.access_token) {
     headers.set('Authorization', `Bearer ${session.access_token}`)
   }

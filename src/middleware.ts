@@ -11,6 +11,7 @@ import { nativeApiPreflightResponse, withNativeApiCors } from '@/lib/server/nati
 /** Simple in-process limiter for unauthenticated public FX/gold routes (best-effort per isolate). */
 const PUBLIC_API_WINDOW_MS = 60_000
 const PUBLIC_API_MAX = 120
+const MAX_TRACKED_IPS = 10000
 const publicApiHits = new Map<string, number[]>()
 
 function publicApiRateLimitOk(ip: string): boolean {
@@ -20,6 +21,16 @@ function publicApiRateLimitOk(ip: string): boolean {
   const recent = prev.filter((t) => t > windowStart)
   recent.push(now)
   publicApiHits.set(ip, recent)
+
+  // Cleanup: if map grows unbounded, evict IPs with empty hit arrays
+  if (publicApiHits.size > MAX_TRACKED_IPS) {
+    for (const [trackedIp, hits] of publicApiHits.entries()) {
+      if (hits.length === 0) {
+        publicApiHits.delete(trackedIp)
+      }
+    }
+  }
+
   return recent.length <= PUBLIC_API_MAX
 }
 
