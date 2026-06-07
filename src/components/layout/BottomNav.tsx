@@ -1,6 +1,5 @@
 'use client'
 
-import { useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -31,11 +30,6 @@ export function BottomNav() {
 
   const closeMore = () => setMoreOpen(false)
 
-  const handleVoiceRedo = useCallback(async () => {
-    await voice.cancel()
-    void voice.start()
-  }, [voice])
-
   const fabLongPress = useLongPress<HTMLButtonElement>(
     () => {
       requireAuth(() => {
@@ -64,7 +58,7 @@ export function BottomNav() {
         onStop={() => { void voice.stop() }}
         onCancel={() => { void voice.cancel() }}
         onConfirm={voice.confirm}
-        onRedo={() => { void handleVoiceRedo() }}
+        onRedo={() => { voice.reset(); void voice.start() }}
         onClose={voice.reset}
       />
       <div className="flex items-center justify-around h-16 px-2">
