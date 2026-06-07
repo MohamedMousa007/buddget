@@ -21,7 +21,7 @@ Return ONLY a JSON object with this exact schema (no markdown, no commentary):
   "bank_name": string | null,
   "category": "Food" | "Transport" | "Enjoyment" | "Rent" | "Other" | null,
   "confidence": number,
-  "kind": "purchase" | "withdrawal" | "transfer" | "refund" | "fee" | "other" | null
+  "kind": "purchase" | "withdrawal" | "transfer" | "income" | "refund" | "fee" | "other" | null
 }
 
 Bank vocabulary (recognise these names, abbreviations, and SMS senders):
@@ -32,6 +32,11 @@ Bank vocabulary (recognise these names, abbreviations, and SMS senders):
 - Kuwait: NBK, Boubyan.
 - Oman: Bank Muscat.
 - Bahrain: BBK, NBB.
+
+Direction rules:
+- Set kind to "income" when money ARRIVES in the account: "credited with", "inward transfer", "IPN received", "deposit of", "received from", "transferred to your account", "تم إيداع", "تم إضافة مبلغ", "تم استلام".
+- Set kind to "purchase", "withdrawal", "transfer", "fee", or "refund" for all outbound/debit flows.
+- For income, "merchant" should be the sender's name (e.g. the person or service that sent the money), and "bank_name" the receiving bank.
 
 Pattern guidance (Egypt-first):
 - English: "EGP X.XX debited from your account at MERCHANT", "EGP X.XX spent at MERCHANT on DD/MM", "Transaction of EGP X.XX at MERCHANT", "Purchase of EGP X.XX at MERCHANT".
