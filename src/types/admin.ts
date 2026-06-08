@@ -44,6 +44,18 @@ export interface AdminAnalyticsSnapshot {
   >
 }
 
+export interface SmsTemplateRow {
+  id: string
+  sender: string
+  regex_pattern: string
+  template_sample: string
+  mapping_rules: Record<string, unknown>
+  ai_enabled: boolean
+  match_count: number
+  created_at: string
+  updated_at: string
+}
+
 export interface AdminSurveyRow {
   id: string
   version: number

@@ -1379,6 +1379,42 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_tracking_templates_ai: {
+        Row: {
+          ai_enabled: boolean
+          created_at: string
+          id: string
+          mapping_rules: Json
+          match_count: number
+          regex_pattern: string
+          sender: string
+          template_sample: string
+          updated_at: string
+        }
+        Insert: {
+          ai_enabled?: boolean
+          created_at?: string
+          id?: string
+          mapping_rules: Json
+          match_count?: number
+          regex_pattern: string
+          sender: string
+          template_sample: string
+          updated_at?: string
+        }
+        Update: {
+          ai_enabled?: boolean
+          created_at?: string
+          id?: string
+          mapping_rules?: Json
+          match_count?: number
+          regex_pattern?: string
+          sender?: string
+          template_sample?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sms_parse_log: {
         Row: {
           account_last4: string | null
