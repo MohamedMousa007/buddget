@@ -11,7 +11,11 @@ interface Props {
 }
 
 export function AdminSmsTemplatesSection({ admin }: Props) {
-  const { smsTemplates, smsTemplatesLoading, loadSmsTemplates, updateSmsTemplate, deleteSmsTemplate } = admin
+  const { smsTemplates, smsTemplatesLoading, loadSmsTemplates, updateSmsTemplate, deleteSmsTemplate, bulkToggleSmsTemplates } = admin
+
+  const allEnabled  = smsTemplates.length > 0 && smsTemplates.every((t) => t.ai_enabled)
+  const allDisabled = smsTemplates.length > 0 && smsTemplates.every((t) => !t.ai_enabled)
+  const masterLabel = allEnabled ? 'All Active' : allDisabled ? 'All Paused' : smsTemplates.length > 0 ? 'Mixed' : null
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingRegex, setEditingRegex] = useState('')
@@ -67,15 +71,34 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
             Learned regex patterns that bypass Gemini for known bank SMS formats.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void loadSmsTemplates()}
-          disabled={smsTemplatesLoading}
-          className="flex items-center gap-1.5 text-xs rounded-xl border border-[var(--color-brand-border)] px-3 py-1.5 text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] disabled:opacity-50 transition-colors"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${smsTemplatesLoading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          {masterLabel && (
+            <button
+              type="button"
+              onClick={() => void bulkToggleSmsTemplates(!allEnabled)}
+              disabled={smsTemplatesLoading}
+              className={`text-xs rounded-xl px-3 py-1.5 border transition-colors disabled:opacity-50 ${
+                allEnabled
+                  ? 'border-[var(--color-brand-green)]/40 bg-[var(--color-brand-green)]/10 text-[var(--color-brand-green)] hover:bg-[var(--color-brand-green)]/20'
+                  : allDisabled
+                    ? 'border-[var(--color-brand-border)] text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-secondary)]'
+                    : 'border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'
+              }`}
+              title={allEnabled ? 'Click to pause all static bypass templates' : 'Click to activate all static bypass templates'}
+            >
+              Bypass: {masterLabel}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => void loadSmsTemplates()}
+            disabled={smsTemplatesLoading}
+            className="flex items-center gap-1.5 text-xs rounded-xl border border-[var(--color-brand-border)] px-3 py-1.5 text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] disabled:opacity-50 transition-colors"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${smsTemplatesLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {smsTemplatesLoading && smsTemplates.length === 0 && (

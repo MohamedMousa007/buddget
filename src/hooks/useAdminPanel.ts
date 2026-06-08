@@ -326,6 +326,25 @@ export function useAdminPanel() {
     }
   }, [sessionPin])
 
+  const bulkToggleSmsTemplates = useCallback(async (enabled: boolean): Promise<void> => {
+    try {
+      const res = await fetch('/api/admin/sms-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: sessionPin, op: 'bulk_toggle', patch: { ai_enabled: enabled } }),
+      })
+      if (res.ok) {
+        // Re-fetch so local state reflects the server state
+        void loadSmsTemplates()
+      } else {
+        const data = await res.json()
+        setPlatformMessage(data.error || 'Bulk toggle failed')
+      }
+    } catch {
+      setPlatformMessage('Network error')
+    }
+  }, [sessionPin, loadSmsTemplates])
+
   const loadSmsErrors = useCallback(async (append = false) => {
     setSmsErrorsLoading(true)
     try {
@@ -384,6 +403,7 @@ export function useAdminPanel() {
     loadSmsTemplates,
     updateSmsTemplate,
     deleteSmsTemplate,
+    bulkToggleSmsTemplates,
     smsErrors,
     smsErrorsLoading,
     smsErrorsCursor,

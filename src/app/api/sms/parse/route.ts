@@ -66,6 +66,31 @@ interface MappingRules {
 }
 
 // ---------------------------------------------------------------------------
+// JSON extractor — handles Gemini markdown fences and preamble text
+// ---------------------------------------------------------------------------
+
+/**
+ * String-aware bracket extractor: skips { } inside JSON string literals and
+ * handles backslash escapes. Works around Gemini occasionally wrapping output
+ * in ```json fences or prepending explanation text.
+ */
+function extractJson(text: string): string | null {
+  const start = text.indexOf('{')
+  if (start === -1) return null
+  let depth = 0, inString = false, escape = false
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i]
+    if (escape) { escape = false; continue }
+    if (ch === '\\' && inString) { escape = true; continue }
+    if (ch === '"') { inString = !inString; continue }
+    if (inString) continue
+    if (ch === '{') depth++
+    else if (ch === '}') { depth--; if (depth === 0) return text.slice(start, i + 1) }
+  }
+  return null
+}
+
+// ---------------------------------------------------------------------------
 // Static template bypass
 // ---------------------------------------------------------------------------
 
@@ -322,6 +347,7 @@ export async function POST(request: Request) {
         raw_body: message,
         parsed_ok: false,
         failure_code: 'gemini_error',
+        parse_method: 'ai',
         received_at: receivedAt ?? new Date().toISOString(),
       })
       return NextResponse.json({ ok: false, reason: 'ai_failed' }, { status: 502 })
@@ -332,6 +358,9 @@ export async function POST(request: Request) {
       void learnPattern(message, sender, parsed, service, apiKey, userId)
     }
   }
+
+  // Track which path was used — stamped on every sms_parse_log row for admin visibility.
+  const parseMethod: 'static' | 'ai' = staticResult ? 'static' : 'ai'
 
   // --- Everything below is unchanged from before the bypass was added ---
 
@@ -345,6 +374,7 @@ export async function POST(request: Request) {
       confidence: parsed.confidence ?? 0,
       // is_transaction but missing amount/currency → null_amount; otherwise not a transaction
       failure_code: parsed.is_transaction ? 'null_amount' : 'not_transaction',
+      parse_method: parseMethod,
       received_at: receivedAt ?? new Date().toISOString(),
     })
     return NextResponse.json({ ok: false, reason: 'not_transaction' })
@@ -364,6 +394,7 @@ export async function POST(request: Request) {
       bank_name: parsed.bank_name,
       category: parsed.category,
       failure_code: 'low_confidence',
+      parse_method: parseMethod,
       received_at: receivedAt ?? new Date().toISOString(),
     })
     return NextResponse.json({ ok: false, reason: 'low_confidence', confidence: parsed.confidence })
@@ -402,6 +433,7 @@ export async function POST(request: Request) {
       kind: parsed.kind,
       clean_title: parsed.cleanTitle,
       expense_id: existing.expense_id,
+      parse_method: parseMethod,
       received_at: receivedAt ?? new Date().toISOString(),
     })
     return NextResponse.json({ ok: true, deduped: true, expenseId: existing.expense_id })
@@ -438,6 +470,7 @@ export async function POST(request: Request) {
       raw_sms_summary: parsed.rawSmsSummary,
       new_balance: parsed.newBalance ?? null,
       merchant_normalized: parsed.merchantNormalized ?? null,
+      parse_method: parseMethod,
       received_at: receivedAt ?? new Date().toISOString(),
     })
     .select('id')
@@ -580,6 +613,7 @@ export async function POST(request: Request) {
         raw_body: message,
         parsed_ok: false,
         failure_code: 'parse_exception',
+        // parseMethod may not be in scope at the outer catch boundary — unknown path
         received_at: receivedAt ?? new Date().toISOString(),
       })
     } catch { /* best-effort */ }
@@ -622,7 +656,9 @@ async function callGemini(apiKey: string, message: string): Promise<ParsedTx> {
 
   let parsed: Partial<ParsedTx> & { confidence?: number }
   try {
-    parsed = JSON.parse(raw) as Partial<ParsedTx>
+    const jsonStr = extractJson(raw)
+    if (!jsonStr) throw new SyntaxError('no JSON object found')
+    parsed = JSON.parse(jsonStr) as Partial<ParsedTx>
   } catch {
     throw new Error('AI returned invalid JSON')
   }
