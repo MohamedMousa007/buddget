@@ -11,9 +11,14 @@ import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { createClient } from '@/lib/supabase/server'
 
-const bodySchema = z.object({
-  smsEventId: z.string().uuid(),
-})
+const bodySchema = z
+  .object({
+    smsEventId: z.string().uuid().optional(),
+    parseLogId: z.string().uuid().optional(),
+  })
+  .refine((d) => !!d.smsEventId !== !!d.parseLogId, {
+    message: 'Provide exactly one of smsEventId or parseLogId',
+  })
 
 export async function POST(request: Request) {
   // ── Resolve user_id from session OR bearer token ─────────────────────────
@@ -56,9 +61,64 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
   }
 
-  const { smsEventId } = parsed.data
+  const { smsEventId, parseLogId } = parsed.data
 
-  // ── Fetch the SMS event ──────────────────────────────────────────────────
+  // ── sms_parse_log path (Android AI pipeline) ─────────────────────────────
+  // Direct "delete the linked entry" shortcut — no time window (the user can
+  // delete from the ledger anyway). Handles both expense and income links.
+  if (parseLogId) {
+    const { data: logRow, error: logErr } = await serviceClient
+      .from('sms_parse_log')
+      .select('user_id, expense_id, income_id')
+      .eq('id', parseLogId)
+      .single()
+
+    if (logErr || !logRow) {
+      return NextResponse.json({ error: 'Parse log not found' }, { status: 404 })
+    }
+    if (logRow.user_id !== userId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+    if (!logRow.expense_id && !logRow.income_id) {
+      return NextResponse.json({ ok: true, alreadyUndone: true })
+    }
+
+    if (logRow.expense_id) {
+      const { error: delErr } = await serviceClient
+        .from('expenses')
+        .delete()
+        .eq('id', logRow.expense_id)
+        .eq('user_id', userId)
+      if (delErr) {
+        console.error('[sms/undo] expense delete error', delErr.message)
+        return NextResponse.json({ error: 'Failed to undo expense' }, { status: 500 })
+      }
+    }
+    if (logRow.income_id) {
+      const { error: incErr } = await serviceClient
+        .from('income_sources')
+        .delete()
+        .eq('id', logRow.income_id)
+        .eq('user_id', userId)
+      if (incErr) {
+        console.error('[sms/undo] income delete error', incErr.message)
+        return NextResponse.json({ error: 'Failed to undo income' }, { status: 500 })
+      }
+    }
+
+    await serviceClient
+      .from('sms_parse_log')
+      .update({ expense_id: null, income_id: null })
+      .eq('id', parseLogId)
+
+    return NextResponse.json({ ok: true, expired: false })
+  }
+
+  // ── sms_events path (iOS/webhook + push service worker) ──────────────────
+  if (!smsEventId) {
+    return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
+  }
+
   const { data: event, error: fetchError } = await serviceClient
     .from('sms_events')
     .select('user_id, expense_id, undo_expires_at')

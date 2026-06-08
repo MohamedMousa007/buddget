@@ -19,8 +19,11 @@ import { requestPushPermission } from '@/lib/notifications/pushNotifications'
 import { isNative, isAndroid } from '@/lib/native/isNative'
 import { createClient } from '@/lib/supabase/client'
 import { apiFetchAuth } from '@/lib/apiBase'
+import { KIND_TO_BADGE } from '@/lib/sms/transactionTypes'
 
 export interface SmsEvent {
+  /** Which table this row came from — routes undo to the correct endpoint. */
+  source: 'event' | 'log'
   id: string
   sender: string
   bank_name: string | null
@@ -28,11 +31,14 @@ export interface SmsEvent {
   amount: number | null
   currency: string | null
   merchant: string | null
+  clean_title: string | null
   badge_key: string | null
   expense_id: string | null
+  income_id: string | null
   undo_expires_at: string | null
   received_at: string
-  parse_ok: boolean
+  parsed_ok: boolean
+  failure_code: string | null
 }
 
 export interface TokenInfo {
@@ -72,14 +78,64 @@ export function useSmsTracking() {
 
     const fetchEvents = async () => {
       const supabase = createClient()
-      const { data } = await supabase
-        .from('sms_events')
-        .select('id, sender, bank_name, transaction_type, amount, currency, merchant, badge_key, expense_id, undo_expires_at, received_at, parse_ok')
-        .eq('parse_ok', true)
-        .eq('is_duplicate', false)
-        .order('received_at', { ascending: false })
-        .limit(10)
-      setRecentEvents((data as SmsEvent[]) ?? [])
+      // Merge both pipelines: iOS/webhook (sms_events) + Android AI (sms_parse_log).
+      const [eventsRes, logRes] = await Promise.all([
+        supabase
+          .from('sms_events')
+          .select('id, sender, bank_name, transaction_type, amount, currency, merchant, badge_key, expense_id, undo_expires_at, received_at, parse_ok')
+          .eq('parse_ok', true)
+          .eq('is_duplicate', false)
+          .order('received_at', { ascending: false })
+          .limit(15),
+        supabase
+          .from('sms_parse_log')
+          .select('id, sender, bank_name, kind, amount, currency, merchant, clean_title, expense_id, income_id, parsed_ok, failure_code, received_at')
+          .order('received_at', { ascending: false })
+          .limit(15),
+      ])
+
+      const eventRows: SmsEvent[] = (eventsRes.data ?? []).map((e) => ({
+        source: 'event',
+        id: e.id,
+        sender: e.sender,
+        bank_name: e.bank_name,
+        transaction_type: e.transaction_type,
+        amount: e.amount,
+        currency: e.currency,
+        merchant: e.merchant,
+        clean_title: null,
+        badge_key: e.badge_key,
+        expense_id: e.expense_id,
+        income_id: null,
+        undo_expires_at: e.undo_expires_at,
+        received_at: e.received_at,
+        parsed_ok: e.parse_ok,
+        failure_code: null,
+      }))
+
+      const logRows: SmsEvent[] = (logRes.data ?? []).map((l) => ({
+        source: 'log',
+        id: l.id,
+        sender: l.sender ?? '',
+        bank_name: l.bank_name,
+        transaction_type: l.kind,
+        amount: l.amount,
+        currency: l.currency,
+        merchant: l.merchant,
+        clean_title: l.clean_title,
+        badge_key: l.kind ? (KIND_TO_BADGE[l.kind] ?? null) : null,
+        expense_id: l.expense_id,
+        income_id: l.income_id,
+        undo_expires_at: null, // log rows have no artificial expiry
+        received_at: l.received_at,
+        parsed_ok: l.parsed_ok,
+        failure_code: l.failure_code,
+      }))
+
+      const merged = [...eventRows, ...logRows]
+        .sort((a, b) => new Date(b.received_at).getTime() - new Date(a.received_at).getTime())
+        .slice(0, 15)
+      setRecentEvents(merged)
     }
 
     const fetchTodayCount = async () => {
@@ -164,23 +220,27 @@ export function useSmsTracking() {
   }, [])
 
   const undo = useCallback(async (event: SmsEvent) => {
-    if (!event.undo_expires_at || new Date(event.undo_expires_at) < new Date()) {
+    // sms_events rows keep their 5-min window; sms_parse_log rows have no expiry.
+    if (event.source === 'event' && (!event.undo_expires_at || new Date(event.undo_expires_at) < new Date())) {
       setUndoMessage({ id: event.id, text: 'expired' })
       return
     }
     setUndoingId(event.id)
     try {
+      const body = event.source === 'event'
+        ? { smsEventId: event.id }
+        : { parseLogId: event.id }
       const res = await apiFetchAuth('/api/sms/undo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ smsEventId: event.id }),
+        body: JSON.stringify(body),
       })
       const data = await res.json() as { ok: boolean; expired?: boolean }
       if (data.expired) {
         setUndoMessage({ id: event.id, text: 'expired' })
       } else if (data.ok) {
         setUndoMessage({ id: event.id, text: 'success' })
-        setRecentEvents((prev) => prev.map((e) => e.id === event.id ? { ...e, expense_id: null, undo_expires_at: null } : e))
+        setRecentEvents((prev) => prev.map((e) => e.id === event.id ? { ...e, expense_id: null, income_id: null, undo_expires_at: null } : e))
       }
     } finally {
       setUndoingId(null)

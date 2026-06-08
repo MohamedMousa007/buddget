@@ -274,6 +274,7 @@ export async function POST(request: Request) {
   const { message, sender, source, receivedAt } = parsedBody.data
   const service = createServiceRoleClient()
 
+  try {
   // Attempt static template bypass — skips rate limit + Gemini entirely.
   let parsed: ParsedTx
   const staticResult = sender ? await tryStaticParse(message, sender, service) : null
@@ -315,6 +316,7 @@ export async function POST(request: Request) {
         sender: sender ?? null,
         raw_body: message,
         parsed_ok: false,
+        failure_code: 'gemini_error',
         received_at: receivedAt ?? new Date().toISOString(),
       })
       return NextResponse.json({ ok: false, reason: 'ai_failed' }, { status: 502 })
@@ -336,6 +338,8 @@ export async function POST(request: Request) {
       raw_body: message,
       parsed_ok: false,
       confidence: parsed.confidence ?? 0,
+      // is_transaction but missing amount/currency → null_amount; otherwise not a transaction
+      failure_code: parsed.is_transaction ? 'null_amount' : 'not_transaction',
       received_at: receivedAt ?? new Date().toISOString(),
     })
     return NextResponse.json({ ok: false, reason: 'not_transaction' })
@@ -354,6 +358,7 @@ export async function POST(request: Request) {
       merchant: parsed.merchant,
       bank_name: parsed.bank_name,
       category: parsed.category,
+      failure_code: 'low_confidence',
       received_at: receivedAt ?? new Date().toISOString(),
     })
     return NextResponse.json({ ok: false, reason: 'low_confidence', confidence: parsed.confidence })
@@ -373,6 +378,27 @@ export async function POST(request: Request) {
     .maybeSingle()
 
   if (existing) {
+    // Log a diagnostic duplicate row so support (and the user) can see the skip.
+    // is_duplicate=true sidesteps the (user_id, sms_hash) WHERE is_duplicate=false unique index.
+    await service.from('sms_parse_log').insert({
+      user_id: userId,
+      source: source ?? 'sms',
+      sender: sender ?? null,
+      raw_body: message,
+      parsed_ok: false,
+      is_duplicate: true,
+      failure_code: 'duplicate',
+      confidence: parsed.confidence,
+      amount: parsed.amount,
+      currency: parsed.currency,
+      merchant: parsed.merchant,
+      bank_name: parsed.bank_name,
+      category: parsed.category,
+      kind: parsed.kind,
+      clean_title: parsed.cleanTitle,
+      expense_id: existing.expense_id,
+      received_at: receivedAt ?? new Date().toISOString(),
+    })
     return NextResponse.json({ ok: true, deduped: true, expenseId: existing.expense_id })
   }
 
@@ -538,6 +564,22 @@ export async function POST(request: Request) {
     expenseId,
     incomeId,
   })
+  } catch (e) {
+    // Unexpected failure (DB error, etc.) — record a diagnostic row so support can see it.
+    console.error('[sms/parse] unhandled exception', e)
+    try {
+      await service.from('sms_parse_log').insert({
+        user_id: userId,
+        source: source ?? 'sms',
+        sender: sender ?? null,
+        raw_body: message,
+        parsed_ok: false,
+        failure_code: 'parse_exception',
+        received_at: receivedAt ?? new Date().toISOString(),
+      })
+    } catch { /* best-effort */ }
+    return NextResponse.json({ ok: false, reason: 'parse_exception' }, { status: 500 })
+  }
 }
 
 async function callGemini(apiKey: string, message: string): Promise<ParsedTx> {
