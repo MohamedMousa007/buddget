@@ -17,6 +17,7 @@ import { DashboardFirstRunChecklist } from '@/components/dashboard/DashboardFirs
 import { BuildBudgetCta } from '@/components/dashboard/BuildBudgetCta'
 import { LockedFeatureCard } from '@/components/ui/LockedFeatureCard'
 import { SetupChecklist } from '@/components/features/onboarding/SetupChecklist'
+import { SmsAccountDetectionBanner } from '@/components/features/dashboard/SmsAccountDetectionBanner'
 import { useFirstRunChecklist } from '@/lib/onboarding/firstRunChecklist'
 import { useLegacyOnboardingMigrator } from '@/lib/onboarding/migrateLegacyOnboarding'
 import { ONBOARDING_EVENTS, track } from '@/lib/analytics/events'
@@ -94,6 +95,7 @@ export default function DashboardPage() {
         className="max-w-2xl lg:max-w-3xl mx-auto px-4 pt-4 pb-8 space-y-4"
       >
         <SetupChecklist />
+        <SmsAccountDetectionBanner />
 
         {isMinimal ? (
           <DashboardHeroMinimal

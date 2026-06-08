@@ -1381,6 +1381,7 @@ export type Database = {
       }
       sms_parse_log: {
         Row: {
+          account_last4: string | null
           amount: number | null
           awaiting_confirmation: boolean
           bank_name: string | null
@@ -1390,6 +1391,8 @@ export type Database = {
           currency: string | null
           expense_id: string | null
           id: string
+          income_id: string | null
+          is_duplicate: boolean
           merchant: string | null
           parsed_ok: boolean
           raw_body: string
@@ -1400,6 +1403,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          account_last4?: string | null
           amount?: number | null
           awaiting_confirmation?: boolean
           bank_name?: string | null
@@ -1409,6 +1413,8 @@ export type Database = {
           currency?: string | null
           expense_id?: string | null
           id?: string
+          income_id?: string | null
+          is_duplicate?: boolean
           merchant?: string | null
           parsed_ok?: boolean
           raw_body: string
@@ -1419,6 +1425,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          account_last4?: string | null
           amount?: number | null
           awaiting_confirmation?: boolean
           bank_name?: string | null
@@ -1428,6 +1435,8 @@ export type Database = {
           currency?: string | null
           expense_id?: string | null
           id?: string
+          income_id?: string | null
+          is_duplicate?: boolean
           merchant?: string | null
           parsed_ok?: boolean
           raw_body?: string
