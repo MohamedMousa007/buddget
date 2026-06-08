@@ -59,6 +59,11 @@ export function ExpenseRow({ expense, isMobile = false }: ExpenseRowProps) {
                 {t.expenses.badgeDebt}
               </span>
             ) : null}
+            {expense.notes?.includes('[auto from sms]') ? (
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--color-brand-green)]/10 border border-[var(--color-brand-green)]/20 text-[var(--color-brand-green)]">
+                SMS tracked
+              </span>
+            ) : null}
           </div>
         </td>
         <td className="py-3 px-4 text-sm">
@@ -119,6 +124,11 @@ export function ExpenseRow({ expense, isMobile = false }: ExpenseRowProps) {
           {expense.isDebtPayment ? (
             <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] shrink-0">
               {t.expenses.badgeDebt}
+            </span>
+          ) : null}
+          {expense.notes?.includes('[auto from sms]') ? (
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--color-brand-green)]/10 border border-[var(--color-brand-green)]/20 text-[var(--color-brand-green)] shrink-0">
+              SMS tracked
             </span>
           ) : null}
         </div>

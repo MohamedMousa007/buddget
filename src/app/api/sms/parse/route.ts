@@ -12,9 +12,7 @@
  *  - Rate-limited to 100 successful AI calls per user per UTC day.
  *  - Duplicates (same amount + merchant fragment + day) are short-circuited
  *    via `sms_hash`.
- *  - Confidence >= 0.8 → expense auto-added.
- *  - Confidence in [0.6, 0.8) → row stored with `awaiting_confirmation = true`
- *    and a push notification fires for one-tap confirm.
+ *  - Confidence >= 0.6 → expense/income auto-added immediately.
  *  - Confidence < 0.6 → ignored (logged but not stored as an expense).
  */
 import { NextResponse } from 'next/server'
@@ -28,7 +26,6 @@ const GEMINI_MODEL = 'gemini-2.5-flash'
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
 
 const RATE_LIMIT_PER_DAY = 100
-const AUTO_CONFIDENCE = 0.8
 const CONFIRM_CONFIDENCE = 0.6
 
 const bodySchema = z.object({
@@ -190,7 +187,7 @@ export async function POST(request: Request) {
   // Server-side security: strip non-digits and truncate to last 4 — never trust raw Gemini output.
   const cleanLast4 = (parsed.detectedAccountLast4 ?? '').replace(/\D/g, '').slice(-4) || null
 
-  const autoAdd = parsed.confidence >= AUTO_CONFIDENCE
+  const autoAdd = parsed.confidence >= CONFIRM_CONFIDENCE
   const isIncome = ['income', 'refund', 'instant_transfer_in'].includes(parsed.kind ?? '')
 
   // Claim the parse slot atomically — unique index prevents concurrent WorkManager + JS

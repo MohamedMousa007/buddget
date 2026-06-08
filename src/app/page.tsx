@@ -18,7 +18,6 @@ import { BuildBudgetCta } from '@/components/dashboard/BuildBudgetCta'
 import { LockedFeatureCard } from '@/components/ui/LockedFeatureCard'
 import { SetupChecklist } from '@/components/features/onboarding/SetupChecklist'
 import { SmsAccountDetectionBanner } from '@/components/features/dashboard/SmsAccountDetectionBanner'
-import { SmsPendingConfirmationsBanner } from '@/components/features/dashboard/SmsPendingConfirmationsBanner'
 import { SmsActivityMini } from '@/components/features/dashboard/SmsActivityMini'
 import { useFirstRunChecklist } from '@/lib/onboarding/firstRunChecklist'
 import { useLegacyOnboardingMigrator } from '@/lib/onboarding/migrateLegacyOnboarding'
@@ -98,7 +97,6 @@ export default function DashboardPage() {
       >
         <SetupChecklist />
         <SmsAccountDetectionBanner />
-        <SmsPendingConfirmationsBanner />
         <SmsActivityMini />
 
         {isMinimal ? (
