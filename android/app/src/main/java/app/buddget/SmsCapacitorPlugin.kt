@@ -71,6 +71,37 @@ class SmsCapacitorPlugin : Plugin() {
             .edit()
             .putString("access_token", token)
             .putString("api_url", apiUrl)
+            .putBoolean("sms_enabled", true) // saving a token implies tracking is active
+            .apply()
+        call.resolve()
+    }
+
+    /** Gates the native SmsReceiver. When false, all incoming SMS are ignored. */
+    @PluginMethod
+    fun setEnabled(call: PluginCall) {
+        val enabled = call.getBoolean("enabled") ?: false
+        activity.getSharedPreferences("buddget_sms", Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean("sms_enabled", enabled)
+            .apply()
+        call.resolve()
+    }
+
+    /** Persists custom keywords (comma-joined) so the killed-app path honours them. */
+    @PluginMethod
+    fun setKeywords(call: PluginCall) {
+        val arr = call.getArray("keywords")
+        val joined = try {
+            (0 until (arr?.length() ?: 0))
+                .mapNotNull { arr?.getString(it)?.trim() }
+                .filter { it.isNotEmpty() }
+                .joinToString(",")
+        } catch (e: Exception) {
+            ""
+        }
+        activity.getSharedPreferences("buddget_sms", Context.MODE_PRIVATE)
+            .edit()
+            .putString("custom_keywords", joined)
             .apply()
         call.resolve()
     }

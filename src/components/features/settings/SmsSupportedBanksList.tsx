@@ -26,16 +26,16 @@ const SUPPORTED = [
 
 export function SmsSupportedBanksList() {
   return (
-    <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+    <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2">
       {SUPPORTED.map((b) => (
         <li
           key={b.sender}
-          className="flex items-start gap-2 rounded-lg bg-[var(--color-brand-elevated)] px-3 py-2"
+          className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-[var(--color-brand-elevated)] transition-colors"
         >
-          <span className="text-base leading-none mt-0.5">{b.badge}</span>
-          <div className="min-w-0">
+          <span className="text-base leading-none shrink-0">{b.badge}</span>
+          <div className="min-w-0 flex-1">
             <p className="text-xs font-medium text-[var(--color-brand-text-primary)] truncate">{b.name}</p>
-            <p className="text-[10px] text-[var(--color-brand-text-muted)]">{b.types}</p>
+            <p className="text-[10px] text-[var(--color-brand-text-muted)] truncate">{b.types}</p>
           </div>
         </li>
       ))}

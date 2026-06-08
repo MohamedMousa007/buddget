@@ -1427,6 +1427,7 @@ export type Database = {
           created_at: string
           currency: string | null
           expense_id: string | null
+          failure_code: string | null
           id: string
           income_id: string | null
           is_duplicate: boolean
@@ -1454,6 +1455,7 @@ export type Database = {
           created_at?: string
           currency?: string | null
           expense_id?: string | null
+          failure_code?: string | null
           id?: string
           income_id?: string | null
           is_duplicate?: boolean
@@ -1481,6 +1483,7 @@ export type Database = {
           created_at?: string
           currency?: string | null
           expense_id?: string | null
+          failure_code?: string | null
           id?: string
           income_id?: string | null
           is_duplicate?: boolean

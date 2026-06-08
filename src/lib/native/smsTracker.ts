@@ -12,6 +12,10 @@ interface SmsCapacitorPlugin {
   requestPermission(): Promise<{ granted: boolean }>
   /** Persists token to SharedPreferences so SmsReceiver can use WorkManager when the app is killed. */
   saveToken(opts: { token: string; apiUrl: string }): Promise<void>
+  /** Gates the native SmsReceiver — when false it ignores all incoming SMS. */
+  setEnabled(opts: { enabled: boolean }): Promise<void>
+  /** Persists custom keywords so the killed-app WorkManager path honours them. */
+  setKeywords(opts: { keywords: string[] }): Promise<void>
   addListener(
     event: 'onSmsReceive',
     handler: (data: { message?: string; sender?: string }) => void,
@@ -86,6 +90,15 @@ export async function startSMSTracking(accessToken: string): Promise<void> {
     // Non-fatal — JS listener path still works while the app is open.
   }
 
+  // Enable the native receiver and seed its custom-keyword vocabulary so the
+  // killed-app WorkManager path matches the same SMS as the JS listener.
+  try {
+    await _plugin!.setEnabled({ enabled: true })
+    await _plugin!.setKeywords({ keywords: useFinanceStore.getState().settings.customSmsKeywords ?? [] })
+  } catch {
+    // Non-fatal — JS listener path still works while the app is open.
+  }
+
   listenerAttached = true
   listenerHandle = _plugin.addListener('onSmsReceive', (payload) => {
     const text = payload?.message?.trim()
@@ -103,6 +116,20 @@ export async function stopSMSTracking(): Promise<void> {
     try { await listenerHandle.remove() } catch { /* noop */ }
     listenerHandle = null
   }
+  // Fully pause the native receiver (instant notification + WorkManager).
+  if (await ensurePlugin()) {
+    try { await _plugin!.setEnabled({ enabled: false }) } catch { /* noop */ }
+  }
+}
+
+/**
+ * Pushes the current custom keyword list to the native SmsReceiver so the
+ * killed-app path matches the same SMS. Safe to call on every change.
+ */
+export async function syncSmsKeywords(keywords: string[]): Promise<void> {
+  if (!isNative() || !isAndroid()) return
+  if (!(await ensurePlugin()) || !_plugin) return
+  try { await _plugin.setKeywords({ keywords }) } catch { /* non-fatal */ }
 }
 
 /**

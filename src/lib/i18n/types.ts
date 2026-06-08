@@ -2056,6 +2056,16 @@ export interface Dictionary {
     recentUndoSuccess: string
     recentUndoExpired: string
     recentViewExpense: string
+    failure: {
+      gemini_error: string
+      not_transaction: string
+      null_amount: string
+      low_confidence: string
+      duplicate: string
+      log_insert_failed: string
+      parse_exception: string
+      unknown: string
+    }
     supportedBanksTitle: string
     tokenRotateButton: string
     tokenRotateConfirm: string
