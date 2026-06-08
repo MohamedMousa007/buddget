@@ -50,6 +50,7 @@ export function useSmsTracking() {
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null)
   const [recentEvents, setRecentEvents] = useState<SmsEvent[]>([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [undoingId, setUndoingId] = useState<string | null>(null)
   const [undoMessage, setUndoMessage] = useState<{ id: string; text: string } | null>(null)
 
@@ -96,9 +97,16 @@ export function useSmsTracking() {
           const granted = alreadyGranted || (await requestSmsPermission())
           if (!granted) return // user denied — leave switch OFF
           const session = await createClient().auth.getSession()
-          await startSMSTracking(session.data.session?.access_token ?? '')
+          try {
+            await startSMSTracking(session.data.session?.access_token ?? '')
+            setError(null)
+          } catch {
+            setError('SMS tracking failed to start. Please check permissions and try again.')
+            return // do not flip switch on
+          }
         } else {
           await stopSMSTracking()
+          setError(null)
         }
         updateSettings({ smsTrackingEnabled: value })
         return
@@ -172,6 +180,7 @@ export function useSmsTracking() {
     isEnabled,
     toggle,
     loading,
+    error,
     tokenInfo,
     fetchToken,
     rotateToken,

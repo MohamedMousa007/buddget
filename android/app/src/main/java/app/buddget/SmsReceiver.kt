@@ -5,11 +5,14 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.telephony.SmsMessage
+import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import androidx.work.WorkRequest
 import androidx.work.workDataOf
+import java.util.concurrent.TimeUnit
 
 class SmsReceiver : BroadcastReceiver() {
 
@@ -54,6 +57,11 @@ class SmsReceiver : BroadcastReceiver() {
                         Constraints.Builder()
                             .setRequiredNetworkType(NetworkType.CONNECTED)
                             .build()
+                    )
+                    .setBackoffCriteria(
+                        BackoffPolicy.EXPONENTIAL,
+                        WorkRequest.MIN_BACKOFF_MILLIS,
+                        TimeUnit.MILLISECONDS,
                     )
                     .build()
             )

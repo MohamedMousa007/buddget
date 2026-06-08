@@ -17,31 +17,53 @@ import { isNative } from '@/lib/native/isNative'
 import { isAndroid } from '@/lib/native/isNative'
 
 /**
- * Re-registers the Capacitor SMS listener on every app startup.
+ * Re-registers the Capacitor SMS listener on every app startup and on auth changes.
  *
- * Problem: `startSMSTracking()` is normally called from `useSmsTracking.toggle()`,
- * which only fires when the user changes the switch. After a restart the Zustand
- * store hydrates with `smsTrackingEnabled: true` but the module-level
- * `listenerAttached` variable resets to `false`, so no listener is registered and
- * incoming SMS events go unheard — even with the app in the foreground.
- *
- * `startSMSTracking` is idempotent: it returns early if `listenerAttached` is
- * already true, so it's safe to call on every mount.
+ * Two failure modes solved:
+ * 1. Restart: `listenerAttached` resets to false → no listener registered.
+ *    Fixed by running on mount and calling startSMSTracking (idempotent guard inside).
+ * 2. Fresh install / re-login: `smsEnabled` stays true but token never saved
+ *    to SharedPreferences → WorkManager path dead.
+ *    Fixed by listening to SIGNED_IN auth event.
+ * 3. Token expiry (JWT expires in 1h): stored token goes stale.
+ *    Fixed by listening to TOKEN_REFRESHED and calling refreshSmsToken.
  */
 function SmsStartupSync() {
-  const smsEnabled = useFinanceStore((s) => s.settings.smsTrackingEnabled)
   useEffect(() => {
-    if (!smsEnabled || !isNative() || !isAndroid()) return
+    if (!isNative() || !isAndroid()) return
+
+    const smsEnabled = () => useFinanceStore.getState().settings.smsTrackingEnabled
+
+    const tryStart = async (token: string) => {
+      if (!smsEnabled() || !token) return
+      const { startSMSTracking } = await import('@/lib/native/smsTracker')
+      await startSMSTracking(token)
+    }
+
+    const tryRefresh = async (token: string) => {
+      if (!smsEnabled() || !token) return
+      const { refreshSmsToken } = await import('@/lib/native/smsTracker')
+      await refreshSmsToken(token)
+    }
+
+    let unsub: (() => void) | null = null
     void (async () => {
-      const [{ startSMSTracking }, { createClient }] = await Promise.all([
-        import('@/lib/native/smsTracker'),
-        import('@/lib/supabase/client'),
-      ])
-      const { data } = await createClient().auth.getSession()
-      const token = data.session?.access_token ?? ''
-      if (token) await startSMSTracking(token)
+      const { createClient } = await import('@/lib/supabase/client')
+      const client = createClient()
+      // Initial mount — handles re-launch while already logged in
+      const { data } = await client.auth.getSession()
+      void tryStart(data.session?.access_token ?? '')
+      // Auth state changes — handles login after fresh install + token refresh
+      const { data: listener } = client.auth.onAuthStateChange((event, session) => {
+        const token = session?.access_token ?? ''
+        if (event === 'SIGNED_IN') void tryStart(token)
+        if (event === 'TOKEN_REFRESHED') void tryRefresh(token)
+      })
+      unsub = listener.subscription.unsubscribe
     })()
-  }, [smsEnabled])
+
+    return () => { unsub?.() }
+  }, []) // mount only — auth listener covers the rest
   return null
 }
 
