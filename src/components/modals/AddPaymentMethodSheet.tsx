@@ -6,6 +6,7 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import type { PmPrefill } from '@/lib/store/useSettingsStore'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { PAYMENT_METHOD_TYPE_OPTIONS } from '@/lib/constants/finance'
@@ -34,9 +35,11 @@ interface PaymentMethodDraftShape {
   isDefault: boolean
 }
 
+const LAST4_TYPES: PaymentMethodType[] = ['bank_transfer', 'card_credit', 'card_debit']
+
 export function AddPaymentMethodSheet() {
   const { addPaymentMethod, settings } = useFinanceStore()
-  const { activeModal, setActiveModal } = useSettingsStore()
+  const { activeModal, setActiveModal, pmPrefill, clearPmPrefill } = useSettingsStore()
   const t = useT()
   const isOpen = activeModal === 'addPaymentMethod'
 
@@ -48,18 +51,27 @@ export function AddPaymentMethodSheet() {
     draft.initial?.currency ?? settings.baseCurrency,
   )
   const [isDefault, setIsDefault] = useState(draft.initial?.isDefault ?? false)
+  const [last4, setLast4] = useState('')
+  const [last4Error, setLast4Error] = useState<string | null>(null)
   const prevIsOpen = useRef(false)
+  const appliedPrefill = useRef<PmPrefill | null>(null)
 
   useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect -- sync default currency when sheet opens */
+    /* eslint-disable react-hooks/set-state-in-effect -- sync default currency and prefill when sheet opens */
     if (isOpen && !prevIsOpen.current) {
       if (!draft.active || !draft.initial?.currency) {
         setCurrency(settings.baseCurrency)
       }
+      if (pmPrefill && appliedPrefill.current !== pmPrefill) {
+        appliedPrefill.current = pmPrefill
+        setName(pmPrefill.name)
+        setLast4(pmPrefill.last4)
+        setType('bank_transfer')
+      }
     }
     prevIsOpen.current = isOpen
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [isOpen, settings.baseCurrency, draft.active, draft.initial])
+  }, [isOpen, settings.baseCurrency, draft.active, draft.initial, pmPrefill])
 
   useEffect(() => {
     if (!isOpen || !draft.active) return
@@ -71,10 +83,19 @@ export function AddPaymentMethodSheet() {
     setType('cash')
     setCurrency(settings.baseCurrency)
     setIsDefault(false)
+    setLast4('')
+    setLast4Error(null)
+    appliedPrefill.current = null
   }
 
   const handleSubmit = () => {
     if (!name.trim()) return
+    if (last4 && LAST4_TYPES.includes(type)) {
+      if (!/^\d{4}$/.test(last4)) {
+        setLast4Error('Must be exactly 4 digits')
+        return
+      }
+    }
 
     addPaymentMethod({
       name: name.trim(),
@@ -83,15 +104,18 @@ export function AddPaymentMethodSheet() {
       color: defaultColorForPaymentMethodType(type, name.trim()),
       icon: defaultIconEmojiForPaymentMethodType(type),
       isDefault,
+      ...(last4 && LAST4_TYPES.includes(type) ? { last4 } : {}),
     })
 
     draft.clear()
     resetForm()
+    clearPmPrefill()
     setActiveModal(null)
   }
 
   const handleClose = () => {
     if (!draft.active) resetForm()
+    clearPmPrefill()
     setActiveModal(null)
   }
 
@@ -150,6 +174,29 @@ export function AddPaymentMethodSheet() {
               className={`mt-1.5 w-full h-12 px-3 rounded-xl border border-[#2A2A38] bg-[#1A1A24] text-white text-sm focus:border-[#E50914]`}
             />
           </div>
+
+          {LAST4_TYPES.includes(type) && (
+            <div>
+              <label htmlFor="pm-last4" className={MODAL_LABEL_CLASS}>
+                Last 4 digits
+              </label>
+              <Input
+                id="pm-last4"
+                placeholder="e.g. 0001"
+                value={last4}
+                onChange={(e) => {
+                  setLast4(e.target.value.replace(/\D/g, '').slice(0, 4))
+                  setLast4Error(null)
+                }}
+                inputMode="numeric"
+                maxLength={4}
+                className={`mt-1.5 ${MODAL_CONTROL_CLASS}${last4Error ? ' border-red-500' : ''}`}
+              />
+              {last4Error && (
+                <p className="mt-1 text-xs text-red-400">{last4Error}</p>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center justify-between gap-3 py-1">
             <span className={MODAL_LABEL_CLASS}>{t.modals.addPaymentLabelDefault}</span>

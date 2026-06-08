@@ -46,8 +46,11 @@ interface ParsedTx {
   bank_name: string | null
   category: string | null
   confidence: number
-  /** "income" = money arriving (credit, inward transfer, deposit). All outbound flows use other values. */
-  kind: 'purchase' | 'withdrawal' | 'transfer' | 'income' | 'refund' | 'fee' | 'other' | null
+  kind: 'purchase' | 'online_purchase' | 'atm_withdrawal' | 'instant_transfer_out' |
+        'instant_transfer_in' | 'income' | 'refund' | 'fee' | 'other' | null
+  cleanTitle: string | null
+  rawSmsSummary: string | null
+  detectedAccountLast4: string | null
 }
 
 async function resolveUserId(req: Request): Promise<{ userId: string | null }> {
@@ -182,8 +185,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, deduped: true, expenseId: existing.expense_id })
   }
 
+  // Server-side security: strip non-digits and truncate to last 4 — never trust raw Gemini output.
+  const cleanLast4 = (parsed.detectedAccountLast4 ?? '').replace(/\D/g, '').slice(-4) || null
+
   const autoAdd = parsed.confidence >= AUTO_CONFIDENCE
-  const isIncome = parsed.kind === 'income' || parsed.kind === 'refund'
+  const isIncome = ['income', 'refund', 'instant_transfer_in'].includes(parsed.kind ?? '')
 
   // Claim the parse slot atomically — unique index prevents concurrent WorkManager + JS
   // calls from both creating an expense for the same SMS.
@@ -204,6 +210,7 @@ export async function POST(request: Request) {
       sms_hash: hash,
       is_duplicate: false,
       awaiting_confirmation: !autoAdd,
+      account_last4: cleanLast4,
       received_at: receivedAt ?? new Date().toISOString(),
     })
     .select('id')
@@ -221,7 +228,9 @@ export async function POST(request: Request) {
   let expenseId: string | null = null
   let incomeId: string | null = null
   const bankPrefix = parsed.bank_name ? `${parsed.bank_name}: ` : ''
-  const autoNotes = `[auto from ${source ?? 'sms'}] ${bankPrefix}${message.slice(0, 180)}`
+  const autoNotes = parsed.rawSmsSummary
+    ? `${parsed.rawSmsSummary}\n[auto from ${source ?? 'sms'}] ${message.slice(0, 180)}`
+    : `[auto from ${source ?? 'sms'}] ${bankPrefix}${message.slice(0, 180)}`
 
   if (autoAdd && isIncome) {
     // Credit / inward transfer → income_sources
@@ -230,7 +239,7 @@ export async function POST(request: Request) {
       .from('income_sources')
       .insert({
         user_id: userId,
-        name: parsed.merchant ?? parsed.bank_name ?? 'Bank credit',
+        name: parsed.cleanTitle ?? parsed.merchant ?? parsed.bank_name ?? 'Bank credit',
         amount: parsed.amount,
         currency: parsed.currency,
         is_recurring: false,
@@ -254,11 +263,13 @@ export async function POST(request: Request) {
       .eq('is_default', true)
       .maybeSingle()
 
-    // Map Gemini's free-text category to the expense_category enum.
+    // Map kind + free-text category to the expense_category enum.
     // Valid values: Rent, Transport, Food, Enjoyment, Savings, Debt, Remittance, Other
     type ExpenseCategory = 'Rent' | 'Transport' | 'Food' | 'Enjoyment' | 'Savings' | 'Debt' | 'Remittance' | 'Other'
     const rawCat = (parsed.category ?? '').toLowerCase()
     const mappedCategory: ExpenseCategory =
+      parsed.kind === 'atm_withdrawal' ? 'Other' :
+      parsed.kind === 'instant_transfer_out' ? 'Remittance' :
       rawCat.includes('rent') || rawCat.includes('housing') ? 'Rent' :
       rawCat.includes('transport') || rawCat.includes('travel') || rawCat.includes('fuel') || rawCat.includes('uber') ? 'Transport' :
       rawCat.includes('food') || rawCat.includes('restaurant') || rawCat.includes('grocery') || rawCat.includes('dining') ? 'Food' :
@@ -273,7 +284,7 @@ export async function POST(request: Request) {
       .insert({
         user_id: userId,
         expense_date: day,
-        description: parsed.merchant ?? parsed.bank_name ?? 'Bank transaction',
+        description: parsed.cleanTitle ?? parsed.merchant ?? parsed.bank_name ?? 'Bank transaction',
         category: mappedCategory,
         amount: parsed.amount,
         currency: parsed.currency,
@@ -299,24 +310,26 @@ export async function POST(request: Request) {
   if (autoAdd && isIncome) {
     void sendNativePush({
       userId,
-      title: `+${parsed.currency} ${parsed.amount.toLocaleString()} received`,
-      body: `From ${parsed.merchant ?? parsed.bank_name ?? 'sender'}. Tap to view.`,
+      title: `+${parsed.currency} ${parsed.amount.toLocaleString()} — ${parsed.cleanTitle ?? 'Bank credit'}`,
+      body: `Received via ${parsed.bank_name ?? 'bank'}. Tap to view.`,
       data: { kind: 'sms_income_added', incomeId: incomeId ?? '' },
       collapseKey: `sms-income-${hash.slice(0, 12)}`,
     }).catch((e: unknown) => console.error('[sms/parse] push notification failed', e))
   } else if (autoAdd) {
     void sendNativePush({
       userId,
-      title: `${parsed.currency} ${parsed.amount.toLocaleString()} at ${parsed.merchant ?? 'merchant'}`,
-      body: `Auto-tracked from your ${parsed.bank_name ?? 'bank'}. Tap to view.`,
+      title: parsed.cleanTitle
+        ? `${parsed.currency} ${parsed.amount.toLocaleString()} — ${parsed.cleanTitle}`
+        : `${parsed.currency} ${parsed.amount.toLocaleString()} at ${parsed.merchant ?? 'merchant'}`,
+      body: `Tracked by ${parsed.bank_name ?? 'your bank'}. Tap to view.`,
       data: { kind: 'sms_auto_added', expenseId: expenseId ?? '' },
       collapseKey: `sms-${hash.slice(0, 12)}`,
     }).catch((e: unknown) => console.error('[sms/parse] push notification failed', e))
   } else {
     void sendNativePush({
       userId,
-      title: `Confirm ${parsed.currency} ${parsed.amount.toLocaleString()} at ${parsed.merchant ?? 'merchant'}?`,
-      body: 'Tap to add this expense to your tracker.',
+      title: `Confirm: ${parsed.cleanTitle ?? `${parsed.currency} ${parsed.amount.toLocaleString()}`}`,
+      body: `${parsed.currency} ${parsed.amount.toLocaleString()} — tap to add.`,
       data: { kind: 'sms_confirm', hash, amount: String(parsed.amount), currency: parsed.currency },
       collapseKey: `sms-confirm-${hash.slice(0, 12)}`,
     }).catch((e: unknown) => console.error('[sms/parse] push notification failed', e))
@@ -384,5 +397,8 @@ async function callGemini(apiKey: string, message: string): Promise<ParsedTx> {
     category: parsed.category ?? null,
     confidence: typeof parsed.confidence === 'number' ? Math.max(0, Math.min(1, parsed.confidence)) : 0,
     kind: parsed.kind ?? null,
+    cleanTitle: parsed.cleanTitle ?? null,
+    rawSmsSummary: parsed.rawSmsSummary ?? null,
+    detectedAccountLast4: parsed.detectedAccountLast4 ?? null,
   }
 }

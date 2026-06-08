@@ -12,6 +12,11 @@ export interface ExpensePrefill {
   notes?: string
 }
 
+export interface PmPrefill {
+  name: string
+  last4: string
+}
+
 interface SettingsState {
   sidebarOpen: boolean
   activeModal: string | null
@@ -20,6 +25,7 @@ interface SettingsState {
   editingDebtId: string | null
   editingIncomeId: string | null
   expensePrefill: ExpensePrefill | null
+  pmPrefill: PmPrefill | null
   monthFilter: string
   /** When opening add-debt sheet from "Record payment" on a card */
   debtSheetPaymentOnly: boolean
@@ -31,6 +37,8 @@ interface SettingsState {
   setEditingIncomeId: (incomeId: string | null) => void
   setExpensePrefill: (data: ExpensePrefill | null) => void
   openAddExpenseWithPrefill: (data: ExpensePrefill) => void
+  openAddPaymentMethodWithPrefill: (data: PmPrefill) => void
+  clearPmPrefill: () => void
   setMonthFilter: (month: string) => void
   openDebtSheetNew: () => void
   openPayDebtSheet: () => void
@@ -55,6 +63,7 @@ export const useSettingsStore = create<SettingsState>()(
       editingDebtId: null,
       editingIncomeId: null,
       expensePrefill: null,
+      pmPrefill: null,
       monthFilter: getCurrentMonth(),
       debtSheetPaymentOnly: false,
       debtSheetPrefillDebtId: null,
@@ -66,6 +75,9 @@ export const useSettingsStore = create<SettingsState>()(
       setExpensePrefill: (data) => set({ expensePrefill: data }),
       openAddExpenseWithPrefill: (data) =>
         set({ activeModal: 'addExpense', expensePrefill: data }),
+      openAddPaymentMethodWithPrefill: (data) =>
+        set({ activeModal: 'addPaymentMethod', pmPrefill: data }),
+      clearPmPrefill: () => set({ pmPrefill: null }),
       setMonthFilter: (month) => set({ monthFilter: month }),
       openDebtSheetNew: () =>
         set({
@@ -95,6 +107,7 @@ export const useSettingsStore = create<SettingsState>()(
           editingDebtId: null,
           editingIncomeId: null,
           expensePrefill: null,
+          pmPrefill: null,
           monthFilter: getCurrentMonth(),
           debtSheetPaymentOnly: false,
           debtSheetPrefillDebtId: null,
