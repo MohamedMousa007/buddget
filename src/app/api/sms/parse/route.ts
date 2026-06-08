@@ -73,11 +73,13 @@ async function tryStaticParse(
   message: string,
   sender: string,
   service: ReturnType<typeof createServiceRoleClient>,
+  userId: string,
 ): Promise<ParsedTx | null> {
   const { data: templates } = await service
     .from('sms_tracking_templates_ai')
     .select('id, regex_pattern, mapping_rules, match_count')
     .eq('sender', sender)
+    .eq('user_id', userId)
     .eq('ai_enabled', true)
     .order('match_count', { ascending: false })
     .limit(20)
@@ -147,13 +149,15 @@ async function learnPattern(
   parsed: ParsedTx,
   service: ReturnType<typeof createServiceRoleClient>,
   apiKey: string,
+  userId: string,
 ): Promise<void> {
   try {
-    // Cap at 10 templates per sender to prevent runaway growth
+    // Cap at 10 templates per sender per user to prevent runaway growth
     const { count } = await service
       .from('sms_tracking_templates_ai')
       .select('*', { count: 'exact', head: true })
       .eq('sender', sender)
+      .eq('user_id', userId)
     if ((count ?? 0) >= 10) return
 
     const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
@@ -176,8 +180,9 @@ async function learnPattern(
     const re = new RegExp(learned.regex_pattern)
     if (!re.test(message)) return
 
-    // UNIQUE INDEX on (sender, md5(regex_pattern)) silently ignores exact duplicates
+    // UNIQUE INDEX on (user_id, sender, md5(regex_pattern)) silently ignores exact duplicates
     await service.from('sms_tracking_templates_ai').insert({
+      user_id: userId,
       sender,
       regex_pattern: learned.regex_pattern,
       template_sample: message.slice(0, 500),
@@ -277,7 +282,7 @@ export async function POST(request: Request) {
   try {
   // Attempt static template bypass — skips rate limit + Gemini entirely.
   let parsed: ParsedTx
-  const staticResult = sender ? await tryStaticParse(message, sender, service) : null
+  const staticResult = sender ? await tryStaticParse(message, sender, service, userId) : null
 
   if (staticResult) {
     parsed = staticResult
@@ -324,7 +329,7 @@ export async function POST(request: Request) {
 
     // Learn a regex pattern for this sender asynchronously (fire-and-forget).
     if (sender && parsed.confidence >= PATTERN_LEARN_CONFIDENCE && parsed.is_transaction) {
-      void learnPattern(message, sender, parsed, service, apiKey)
+      void learnPattern(message, sender, parsed, service, apiKey, userId)
     }
   }
 

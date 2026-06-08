@@ -1390,6 +1390,7 @@ export type Database = {
           sender: string
           template_sample: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           ai_enabled?: boolean
@@ -1401,6 +1402,7 @@ export type Database = {
           sender: string
           template_sample: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           ai_enabled?: boolean
@@ -1412,6 +1414,7 @@ export type Database = {
           sender?: string
           template_sample?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
