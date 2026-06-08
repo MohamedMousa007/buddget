@@ -4,7 +4,8 @@
  * The shortcut is pre-wired to:
  *  1. Receive a message (trigger: "When I get a message")
  *  2. Extract the sender and body from the Shortcut input
- *  3. POST to the user's ingest webhook with Bearer auth
+ *  3. POST to the user's /api/sms/parse webhook with Bearer auth (the premium
+ *     Gemini + sms_tracking_templates_ai pipeline — identical to Android)
  *
  * The template uses __WEBHOOK_URL__ and __BEARER_TOKEN__ as substitution markers.
  * The /api/sms/shortcut/[token] route replaces these before serving.
@@ -19,12 +20,12 @@
  *   1. Set variable "SenderNumber" = Shortcut Input → Sender
  *   2. Set variable "MessageBody"  = Shortcut Input → Body
  *   3. Get Contents of URL:
- *        URL:    __WEBHOOK_URL__
+ *        URL:    __WEBHOOK_URL__   (the user's /api/sms/parse endpoint)
  *        Method: POST
  *        Headers: Authorization = "Bearer __BEARER_TOKEN__"
  *                 Content-Type = "application/json"
  *        Body (JSON):
- *          { "smsBody": MessageBody, "senderNumber": SenderNumber, "receivedAt": Current Date }
+ *          { "message": MessageBody, "sender": SenderNumber, "source": "sms" }
  * ───────────────────────────────────────────────────────────────────────────
  *
  * NOTE: The base64 below is a valid minimal Apple Shortcuts plist XML (not binary)
@@ -234,7 +235,7 @@ export function generateIosShortcutPlist(webhookUrl: string, bearerToken: string
 									<key>Value</key>
 									<dict>
 										<key>string</key>
-										<string>smsBody</string>
+										<string>message</string>
 									</dict>
 									<key>WFSerializationType</key>
 									<string>WFTextTokenString</string>
@@ -272,7 +273,7 @@ export function generateIosShortcutPlist(webhookUrl: string, bearerToken: string
 									<key>Value</key>
 									<dict>
 										<key>string</key>
-										<string>senderNumber</string>
+										<string>sender</string>
 									</dict>
 									<key>WFSerializationType</key>
 									<string>WFTextTokenString</string>
@@ -302,6 +303,30 @@ export function generateIosShortcutPlist(webhookUrl: string, bearerToken: string
 									<string>WFTextTokenString</string>
 								</dict>
 							</dict>
+								<dict>
+									<key>WFItemType</key>
+									<integer>0</integer>
+									<key>WFKey</key>
+									<dict>
+										<key>Value</key>
+										<dict>
+											<key>string</key>
+											<string>source</string>
+										</dict>
+										<key>WFSerializationType</key>
+										<string>WFTextTokenString</string>
+									</dict>
+									<key>WFValue</key>
+									<dict>
+										<key>Value</key>
+										<dict>
+											<key>string</key>
+											<string>sms</string>
+										</dict>
+										<key>WFSerializationType</key>
+										<string>WFTextTokenString</string>
+									</dict>
+								</dict>
 						</array>
 					</dict>
 					<key>WFSerializationType</key>
