@@ -28,7 +28,6 @@ export function SettingsSmsTrackingSection() {
     undoingId,
     undoMessage,
     iosDownloadUrl,
-    todayCount,
   } = useSmsTracking()
 
   const [rotateConfirm, setRotateConfirm] = useState(false)
@@ -63,11 +62,6 @@ export function SettingsSmsTrackingSection() {
           </Label>
           <Switch checked={isEnabled} onCheckedChange={toggle} disabled={loading} />
         </div>
-        {isEnabled && (
-          <p className={`text-[10px] text-right mt-1.5 ${todayCount >= 80 ? 'text-[var(--color-brand-amber)]' : 'text-[var(--color-brand-text-muted)]'}`}>
-            {todayCount} / 100 SMS parsed today
-          </p>
-        )}
         {error && (
           <div className="flex items-start gap-2 mt-3 rounded-xl bg-amber-500/10 border border-amber-500/20 px-3 py-2.5 text-xs text-amber-400">
             <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
