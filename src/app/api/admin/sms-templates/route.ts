@@ -78,6 +78,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true })
     }
 
+    if (op === 'bulk_toggle' && typeof patch?.ai_enabled === 'boolean') {
+      const { error } = await service
+        .from('sms_tracking_templates_ai')
+        .update({ ai_enabled: patch.ai_enabled, updated_at: new Date().toISOString() })
+        .neq('id', '00000000-0000-0000-0000-000000000000') // Supabase requires a filter for safety
+
+      if (error) {
+        console.error('[admin/sms-templates] bulk_toggle failed', error)
+        return NextResponse.json({ error: 'Bulk update failed' }, { status: 500 })
+      }
+      return NextResponse.json({ ok: true })
+    }
+
     return NextResponse.json({ error: 'Unknown op' }, { status: 400 })
   } catch {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })

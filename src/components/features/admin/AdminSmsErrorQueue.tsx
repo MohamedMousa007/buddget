@@ -101,9 +101,18 @@ export function AdminSmsErrorQueue({ admin }: Props) {
                         : ''}
                       {displayName}
                     </p>
-                    <p className="text-[10px] text-[var(--color-brand-text-muted)]">
+                    <p className="text-[10px] text-[var(--color-brand-text-muted)] flex items-center gap-1.5 flex-wrap">
                       {row.sender ?? 'unknown sender'} · {row.confidence != null ? `${Math.round(row.confidence * 100)}% conf · ` : ''}
                       {new Date(row.received_at).toLocaleString()}
+                      {row.parse_method && (
+                        <span className={`font-mono text-[9px] px-1 py-0.5 rounded border ${
+                          row.parse_method === 'static'
+                            ? 'border-blue-500/20 text-blue-400 bg-blue-500/10'
+                            : 'border-amber-500/20 text-amber-400 bg-amber-500/10'
+                        }`}>
+                          {row.parse_method === 'static' ? 'Static' : 'AI'}
+                        </span>
+                      )}
                     </p>
                   </div>
 

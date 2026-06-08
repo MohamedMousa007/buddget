@@ -1438,6 +1438,7 @@ export type Database = {
           merchant: string | null
           merchant_normalized: string | null
           new_balance: number | null
+          parse_method: string | null
           parsed_ok: boolean
           raw_body: string
           raw_sms_summary: string | null
@@ -1466,6 +1467,7 @@ export type Database = {
           merchant?: string | null
           merchant_normalized?: string | null
           new_balance?: number | null
+          parse_method?: string | null
           parsed_ok?: boolean
           raw_body: string
           raw_sms_summary?: string | null
@@ -1494,6 +1496,7 @@ export type Database = {
           merchant?: string | null
           merchant_normalized?: string | null
           new_balance?: number | null
+          parse_method?: string | null
           parsed_ok?: boolean
           raw_body?: string
           raw_sms_summary?: string | null
