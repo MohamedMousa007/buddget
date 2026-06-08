@@ -6,6 +6,7 @@ import type {
   AdminConfig,
   AdminSurveyRow,
   AdminUserRow,
+  SmsTemplateRow,
 } from '@/types/admin'
 
 export function useAdminPanel() {
@@ -29,6 +30,8 @@ export function useAdminPanel() {
   const [analytics, setAnalytics] = useState<AdminAnalyticsSnapshot | null>(null)
   const [surveyLoading, setSurveyLoading] = useState(false)
   const [surveyRows, setSurveyRows] = useState<AdminSurveyRow[]>([])
+  const [smsTemplates, setSmsTemplates] = useState<SmsTemplateRow[]>([])
+  const [smsTemplatesLoading, setSmsTemplatesLoading] = useState(false)
   const [surveyEditId, setSurveyEditId] = useState<string | null>(null)
   const [surveyJson, setSurveyJson] = useState('')
   const [surveyBusy, setSurveyBusy] = useState(false)
@@ -260,6 +263,65 @@ export function useAdminPanel() {
     }
   }, [sessionPin, surveyEditId])
 
+  const loadSmsTemplates = useCallback(async () => {
+    setSmsTemplatesLoading(true)
+    try {
+      const res = await fetch('/api/admin/sms-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: sessionPin, op: 'list' }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setPlatformMessage(data.error || 'Failed to load templates'); return }
+      setSmsTemplates(data.templates ?? [])
+    } catch {
+      setPlatformMessage('Network error')
+    } finally {
+      setSmsTemplatesLoading(false)
+    }
+  }, [sessionPin])
+
+  const updateSmsTemplate = useCallback(async (
+    id: string,
+    patch: Partial<Pick<SmsTemplateRow, 'ai_enabled' | 'regex_pattern'>>,
+  ): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/admin/sms-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: sessionPin, op: 'update', id, patch }),
+      })
+      const data = await res.json()
+      if (res.ok && data.template) {
+        setSmsTemplates((prev) => prev.map((t) => (t.id === id ? (data.template as SmsTemplateRow) : t)))
+        return true
+      }
+      setPlatformMessage(data.error || 'Update failed')
+      return false
+    } catch {
+      setPlatformMessage('Network error')
+      return false
+    }
+  }, [sessionPin])
+
+  const deleteSmsTemplate = useCallback(async (id: string): Promise<void> => {
+    try {
+      const res = await fetch('/api/admin/sms-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: sessionPin, op: 'delete', id }),
+      })
+      if (res.ok) {
+        setSmsTemplates((prev) => prev.filter((t) => t.id !== id))
+      } else {
+        const data = await res.json()
+        setPlatformMessage(data.error || 'Delete failed')
+      }
+    } catch {
+      setPlatformMessage('Network error')
+    }
+  }, [sessionPin])
+
   const api = {
     pin,
     setPin,
@@ -296,6 +358,11 @@ export function useAdminPanel() {
     loadSurveyRows,
     saveSurveyConfig,
     publishSurvey,
+    smsTemplates,
+    smsTemplatesLoading,
+    loadSmsTemplates,
+    updateSmsTemplate,
+    deleteSmsTemplate,
   }
   return api
 }

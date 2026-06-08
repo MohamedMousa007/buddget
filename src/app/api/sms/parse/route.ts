@@ -1,17 +1,16 @@
 /**
  * POST /api/sms/parse
  *
- * AI-driven parser used by the Capacitor Android SMS retriever and the
- * Notification Listener fallback (and any iOS Shortcut that prefers AI parsing
- * over the regex `/api/sms/ingest` route).
+ * Hybrid AI/Static SMS parsing pipeline.
  *
- * Auth: bearer token from `sms_ingest_tokens` (same surface the existing
- * `/api/sms/ingest` route uses).
+ * Auth: Supabase JWT (mobile) or bearer token from `sms_ingest_tokens`.
  *
  * Behaviour:
- *  - Rate-limited to 100 successful AI calls per user per UTC day.
- *  - Duplicates (same amount + merchant fragment + day) are short-circuited
- *    via `sms_hash`.
+ *  - Sender-keyed regex templates in `sms_tracking_templates_ai` are checked FIRST.
+ *    If a template matches: parse completes in ~10ms with zero AI cost.
+ *  - If no template matches: Gemini AI parses the SMS (rate-limited to 100/day).
+ *    On high confidence (≥ 0.9) the route learns a new regex template asynchronously
+ *    so future SMS from this sender bypass Gemini.
  *  - Confidence >= 0.6 → expense/income auto-added immediately.
  *  - Confidence < 0.6 → ignored (logged but not stored as an expense).
  */
@@ -27,6 +26,7 @@ const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GE
 
 const RATE_LIMIT_PER_DAY = 100
 const CONFIRM_CONFIDENCE = 0.6
+const PATTERN_LEARN_CONFIDENCE = 0.9
 
 const bodySchema = z.object({
   message: z.string().min(1).max(2000),
@@ -52,6 +52,178 @@ interface ParsedTx {
   merchantNormalized: string | null
 }
 
+/**
+ * JSONB schema stored in `sms_tracking_templates_ai.mapping_rules`.
+ * Defines how regex capture groups map to ParsedTx fields.
+ */
+interface MappingRules {
+  amount:    { group: number; removeCommas?: boolean }
+  currency?: { group: number } | { literal: string }
+  merchant?: { group: number }
+  last4?:    { group: number }
+  kind:      string
+  bank_name?:{ literal: string }
+}
+
+// ---------------------------------------------------------------------------
+// Static template bypass
+// ---------------------------------------------------------------------------
+
+async function tryStaticParse(
+  message: string,
+  sender: string,
+  service: ReturnType<typeof createServiceRoleClient>,
+): Promise<ParsedTx | null> {
+  const { data: templates } = await service
+    .from('sms_tracking_templates_ai')
+    .select('id, regex_pattern, mapping_rules, match_count')
+    .eq('sender', sender)
+    .eq('ai_enabled', true)
+    .order('match_count', { ascending: false })
+    .limit(20)
+
+  if (!templates?.length) return null
+
+  for (const tpl of templates) {
+    let re: RegExp
+    try { re = new RegExp(tpl.regex_pattern) } catch { continue }
+
+    const m = re.exec(message)
+    if (!m) continue
+
+    try {
+      const rules = tpl.mapping_rules as MappingRules
+
+      // Amount — required; skip template if extraction fails
+      const rawAmt = m[rules.amount.group] ?? ''
+      const amtStr = rules.amount.removeCommas ? rawAmt.replace(/,/g, '') : rawAmt
+      const amount = parseFloat(amtStr)
+      if (!amount || !Number.isFinite(amount)) continue
+
+      // Currency (literal constant OR capture group)
+      const cRules = rules.currency
+      const currency = !cRules ? null
+        : 'literal' in cRules ? cRules.literal
+        : (m[cRules.group] ?? null)
+
+      // Optional fields
+      const merchant  = rules.merchant ? (m[rules.merchant.group] ?? null) : null
+      const last4Raw  = rules.last4    ? (m[rules.last4.group]    ?? null) : null
+      const cleanLast4 = last4Raw ? last4Raw.replace(/\D/g, '').slice(-4) || null : null
+      const bankName  = rules.bank_name ? rules.bank_name.literal : null
+      const kind      = rules.kind as ParsedTx['kind']
+
+      // Construct a human-readable title so push notifications are meaningful
+      const cleanTitle =
+        kind === 'atm_withdrawal'       ? `ATM Withdrawal${bankName ? ` — ${bankName}` : ''}` :
+        kind === 'instant_transfer_out' ? `Transfer${merchant ? ` to ${merchant}` : ''}` :
+        kind === 'instant_transfer_in'  ? `Transfer${merchant ? ` from ${merchant}` : ''}` :
+        merchant ?? bankName ?? null
+
+      // Atomic counter via DB function — prevents read-then-write race conditions
+      void service.rpc('increment_sms_template_match_count', { p_id: tpl.id })
+
+      return {
+        is_transaction: true, amount,
+        currency: currency as ParsedTx['currency'],
+        merchant, bank_name: bankName,
+        category: null, confidence: 1.0, kind,
+        cleanTitle, rawSmsSummary: null,
+        detectedAccountLast4: cleanLast4,
+        newBalance: null, merchantNormalized: null,
+      }
+    } catch { continue }  // malformed mapping_rules — try next template
+  }
+  return null
+}
+
+// ---------------------------------------------------------------------------
+// Pattern learning (async, never blocks the response)
+// ---------------------------------------------------------------------------
+
+async function learnPattern(
+  message: string,
+  sender: string,
+  parsed: ParsedTx,
+  service: ReturnType<typeof createServiceRoleClient>,
+  apiKey: string,
+): Promise<void> {
+  try {
+    // Cap at 10 templates per sender to prevent runaway growth
+    const { count } = await service
+      .from('sms_tracking_templates_ai')
+      .select('*', { count: 'exact', head: true })
+      .eq('sender', sender)
+    if ((count ?? 0) >= 10) return
+
+    const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(15_000),
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: buildRegexLearningPrompt(message, sender, parsed) }] }],
+        generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
+      }),
+    })
+    if (!res.ok) return
+
+    const raw = (await res.json()) as { candidates?: Array<{ content: { parts: Array<{ text: string }> } }> }
+    const text = raw.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+    const learned = JSON.parse(text) as { regex_pattern?: string; mapping_rules?: MappingRules }
+    if (!learned.regex_pattern || !learned.mapping_rules?.amount) return
+
+    // Validate: must compile AND match the original message
+    const re = new RegExp(learned.regex_pattern)
+    if (!re.test(message)) return
+
+    // UNIQUE INDEX on (sender, md5(regex_pattern)) silently ignores exact duplicates
+    await service.from('sms_tracking_templates_ai').insert({
+      sender,
+      regex_pattern: learned.regex_pattern,
+      template_sample: message.slice(0, 500),
+      mapping_rules: learned.mapping_rules as unknown as Record<string, unknown>,
+      ai_enabled: true,
+      match_count: 0,
+    })
+  } catch {
+    // Pattern learning is best-effort — never propagate errors to the caller
+  }
+}
+
+function buildRegexLearningPrompt(message: string, sender: string, parsed: ParsedTx): string {
+  return `You are a regex engineer. Given a bank SMS and its extracted fields, generate a JavaScript regex to match future SMS from this sender.
+
+SMS: ${JSON.stringify(message)}
+Sender: ${JSON.stringify(sender)}
+Extracted: amount=${parsed.amount}, currency=${parsed.currency}, merchant=${JSON.stringify(parsed.merchant)}, kind=${parsed.kind}, last4=${parsed.detectedAccountLast4}
+
+Rules:
+- Use numbered capture groups (NOT named groups)
+- Escape ALL literal special regex chars: . * ( ) [ ] { } + ? ^ $ |
+- Use [\\d,]+\\.?\\d* for amounts that may contain comma separators
+- Replace transaction-specific values (names, amounts, reference numbers) with flexible patterns like \\S+, .+?, or \\d+
+- The generated regex MUST match the exact SMS shown above when tested with new RegExp(regex_pattern).test(message)
+
+Return JSON only (no markdown fences):
+{
+  "regex_pattern": "<string, no leading or trailing />",
+  "mapping_rules": {
+    "amount": { "group": 1, "removeCommas": true },
+    "currency": { "literal": "${parsed.currency ?? 'EGP'}" },
+    "merchant": { "group": 2 },
+    "last4": { "group": 3 },
+    "kind": "${parsed.kind ?? 'purchase'}",
+    "bank_name": { "literal": "${parsed.bank_name ?? ''}" }
+  }
+}
+
+Omit "merchant" and "last4" from mapping_rules if those fields were null. Only include a "group" reference for values that vary per transaction.`
+}
+
+// ---------------------------------------------------------------------------
+// Auth helpers
+// ---------------------------------------------------------------------------
+
 async function resolveUserId(req: Request): Promise<{ userId: string | null }> {
   const auth = req.headers.get('authorization') ?? ''
   const bearer = auth.startsWith('Bearer ') ? auth.slice(7).trim() : null
@@ -73,20 +245,17 @@ async function resolveUserId(req: Request): Promise<{ userId: string | null }> {
   return { userId: tokenRow?.user_id ?? null }
 }
 
+// ---------------------------------------------------------------------------
+// Route handler
+// ---------------------------------------------------------------------------
+
 export async function POST(request: Request) {
   const { userId } = await resolveUserId(request)
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const apiKey = process.env.GEMINI_API_KEY?.trim()
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: 'AI is not configured. Admin needs to set GEMINI_API_KEY.' },
-      { status: 503 },
-    )
-  }
-
+  // Parse body first — sender is needed for the static template lookup.
   let json: unknown
   try {
     json = await request.json()
@@ -105,36 +274,59 @@ export async function POST(request: Request) {
   const { message, sender, source, receivedAt } = parsedBody.data
   const service = createServiceRoleClient()
 
-  // Rate-limit (per UTC day).
-  const { data: usage } = await service
-    .from('sms_parse_today')
-    .select('parsed_count_today')
-    .eq('user_id', userId)
-    .maybeSingle()
-
-  if ((usage?.parsed_count_today ?? 0) >= RATE_LIMIT_PER_DAY) {
-    return NextResponse.json(
-      { error: 'Daily SMS parse quota reached', limit: RATE_LIMIT_PER_DAY },
-      { status: 429 },
-    )
-  }
-
-  // Call Gemini.
+  // Attempt static template bypass — skips rate limit + Gemini entirely.
   let parsed: ParsedTx
-  try {
-    parsed = await callGemini(apiKey, message)
-  } catch (e) {
-    console.error('[sms/parse] gemini failed', e)
-    await service.from('sms_parse_log').insert({
-      user_id: userId,
-      source: source ?? 'sms',
-      sender: sender ?? null,
-      raw_body: message,
-      parsed_ok: false,
-      received_at: receivedAt ?? new Date().toISOString(),
-    })
-    return NextResponse.json({ ok: false, reason: 'ai_failed' }, { status: 502 })
+  const staticResult = sender ? await tryStaticParse(message, sender, service) : null
+
+  if (staticResult) {
+    parsed = staticResult
+  } else {
+    // Gemini path: API key required, rate-limited.
+    const apiKey = process.env.GEMINI_API_KEY?.trim()
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'AI is not configured. Admin needs to set GEMINI_API_KEY.' },
+        { status: 503 },
+      )
+    }
+
+    // Rate-limit (per UTC day — counts Gemini calls only).
+    const { data: usage } = await service
+      .from('sms_parse_today')
+      .select('parsed_count_today')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    if ((usage?.parsed_count_today ?? 0) >= RATE_LIMIT_PER_DAY) {
+      return NextResponse.json(
+        { error: 'Daily SMS parse quota reached', limit: RATE_LIMIT_PER_DAY },
+        { status: 429 },
+      )
+    }
+
+    // Call Gemini.
+    try {
+      parsed = await callGemini(apiKey, message)
+    } catch (e) {
+      console.error('[sms/parse] gemini failed', e)
+      await service.from('sms_parse_log').insert({
+        user_id: userId,
+        source: source ?? 'sms',
+        sender: sender ?? null,
+        raw_body: message,
+        parsed_ok: false,
+        received_at: receivedAt ?? new Date().toISOString(),
+      })
+      return NextResponse.json({ ok: false, reason: 'ai_failed' }, { status: 502 })
+    }
+
+    // Learn a regex pattern for this sender asynchronously (fire-and-forget).
+    if (sender && parsed.confidence >= PATTERN_LEARN_CONFIDENCE && parsed.is_transaction) {
+      void learnPattern(message, sender, parsed, service, apiKey)
+    }
   }
+
+  // --- Everything below is unchanged from before the bypass was added ---
 
   if (!parsed.is_transaction || !parsed.amount || !parsed.currency) {
     await service.from('sms_parse_log').insert({
@@ -184,7 +376,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, deduped: true, expenseId: existing.expense_id })
   }
 
-  // Server-side security: strip non-digits and truncate to last 4 — never trust raw Gemini output.
+  // Server-side security: strip non-digits and truncate to last 4 — never trust raw output.
   const cleanLast4 = (parsed.detectedAccountLast4 ?? '').replace(/\D/g, '').slice(-4) || null
 
   const autoAdd = parsed.confidence >= CONFIRM_CONFIDENCE
@@ -228,7 +420,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, reason: 'log_insert_failed' }, { status: 500 })
   }
 
-  // High-confidence → auto-add expense or income.
+  // Auto-add expense or income.
   let expenseId: string | null = null
   let incomeId: string | null = null
   const bankPrefix = parsed.bank_name ? `${parsed.bank_name}: ` : ''
@@ -237,7 +429,6 @@ export async function POST(request: Request) {
     : `[auto from ${source ?? 'sms'}] ${bankPrefix}${message.slice(0, 180)}`
 
   if (autoAdd && isIncome) {
-    // Credit / inward transfer → income_sources
     const sourceType = parsed.kind === 'refund' ? 'refund' : 'other'
     const { data: insertedIncome, error: incomeErr } = await service
       .from('income_sources')
@@ -259,7 +450,6 @@ export async function POST(request: Request) {
       incomeId = insertedIncome?.id ?? null
     }
   } else if (autoAdd) {
-    // Debit / purchase → expenses
     const { data: pmRow } = await service
       .from('payment_methods')
       .select('id')
@@ -267,8 +457,6 @@ export async function POST(request: Request) {
       .eq('is_default', true)
       .maybeSingle()
 
-    // Map kind + free-text category to the expense_category enum.
-    // Valid values: Rent, Transport, Food, Enjoyment, Savings, Debt, Remittance, Other
     type ExpenseCategory = 'Rent' | 'Transport' | 'Food' | 'Enjoyment' | 'Savings' | 'Debt' | 'Remittance' | 'Other'
     const rawCat = (parsed.category ?? '').toLowerCase()
     const mappedCategory: ExpenseCategory =
