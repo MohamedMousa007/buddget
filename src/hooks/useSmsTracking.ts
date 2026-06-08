@@ -54,6 +54,7 @@ export function useSmsTracking() {
   const [error, setError] = useState<string | null>(null)
   const [undoingId, setUndoingId] = useState<string | null>(null)
   const [undoMessage, setUndoMessage] = useState<{ id: string; text: string } | null>(null)
+  const [todayCount, setTodayCount] = useState(0)
 
   const isEnabled = settings.smsTrackingEnabled
 
@@ -81,8 +82,21 @@ export function useSmsTracking() {
       setRecentEvents((data as SmsEvent[]) ?? [])
     }
 
+    const fetchTodayCount = async () => {
+      const supabase = createClient()
+      const { data: userRes } = await supabase.auth.getUser()
+      if (!userRes?.user) return
+      const { data } = await supabase
+        .from('sms_parse_today')
+        .select('parsed_count_today')
+        .eq('user_id', userRes.user.id)
+        .maybeSingle()
+      setTodayCount((data as { parsed_count_today?: number } | null)?.parsed_count_today ?? 0)
+    }
+
     fetchToken()
     fetchEvents()
+    void fetchTodayCount()
   }, [isEnabled])
 
   const toggle = useCallback(async (value: boolean) => {
@@ -190,5 +204,6 @@ export function useSmsTracking() {
     undoingId,
     undoMessage,
     iosDownloadUrl,
+    todayCount,
   }
 }

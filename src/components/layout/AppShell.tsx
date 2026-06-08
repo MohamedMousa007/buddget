@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { apiUrl } from '@/lib/apiBase'
 import { Sidebar } from './Sidebar'
 import { BottomNav } from './BottomNav'
 import { ModalProvider } from '@/components/modals/ModalProvider'
@@ -113,6 +114,46 @@ export function AppShell({ children }: AppShellProps) {
       <ModalProvider />
       <WidgetSync />
       <SmsStartupSync />
+      <SmsPushActionHandler />
     </div>
   )
+}
+
+/**
+ * Listens for native FCM push tap events (dispatched by pushNotifications.ts as
+ * `buddget:push-action`) and routes the user to the correct screen.
+ * Renders nothing — side-effect only.
+ */
+function SmsPushActionHandler() {
+  const router = useRouter()
+  useEffect(() => {
+    if (!isNative()) return
+    const handler = (e: Event) => {
+      const data = (
+        ((e as CustomEvent).detail as { notification?: { data?: Record<string, string> } } | undefined)
+          ?.notification?.data ?? {}
+      )
+      const kind = data.kind
+      if (kind === 'sms_confirm' && data.hash) {
+        void fetch(apiUrl('/api/sms/confirm'), {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ hash: data.hash }),
+        })
+          .then((r) => r.json())
+          .then((res: { expenseId?: string }) => {
+            router.push(res.expenseId ? `/expenses?highlight=${res.expenseId}` : '/')
+          })
+          .catch(() => router.push('/'))
+      } else if (kind === 'sms_auto_added' && data.expenseId) {
+        router.push(`/expenses?highlight=${data.expenseId}`)
+      } else if (kind === 'sms_income_added') {
+        router.push('/income')
+      }
+    }
+    window.addEventListener('buddget:push-action', handler)
+    return () => window.removeEventListener('buddget:push-action', handler)
+  }, [router])
+  return null
 }
