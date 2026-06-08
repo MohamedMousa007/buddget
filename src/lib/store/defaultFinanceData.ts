@@ -23,7 +23,7 @@ const BUDGET_CATEGORY_ORDER: ExpenseCategory[] = [
 export const DEFAULT_BUDGET: BudgetCategory[] = BUDGET_CATEGORY_ORDER.map((category) => ({
   category,
   budgetedAmount: 0,
-  currency: 'AED',
+  currency: 'EGP',
 }))
 
 /** One default method so “add expense” always has a valid payment method. */
@@ -32,7 +32,7 @@ export const DEFAULT_PAYMENT_METHODS: PaymentMethod[] = [
     id: 'pm_default_cash',
     name: 'Cash',
     type: 'cash',
-    currency: 'AED',
+    currency: 'EGP',
     color: '#A3A3A3',
     isDefault: true,
   },
@@ -42,7 +42,7 @@ export const DEFAULT_INCOME: IncomeSource[] = []
 export const DEFAULT_DEBTS: Debt[] = []
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  baseCurrency: 'USD',
+  baseCurrency: 'EGP',
   secondaryCurrency: null,
   showSecondaryCurrency: false,
   theme: 'light',
@@ -72,7 +72,7 @@ export const DEFAULT_PROFILE: UserProfile = {
   gender: null,
   liteMode: false,
   onboardingVersion: 0,
-  baseCurrency: 'USD',
+  baseCurrency: 'EGP',
   createdAt: new Date().toISOString(),
 }
 
@@ -83,7 +83,7 @@ export function createFreshDefaultProfile(): UserProfile {
     name: '',
     liteMode: false,
     onboardingVersion: 0,
-    baseCurrency: 'USD',
+    baseCurrency: 'EGP',
     createdAt: new Date().toISOString(),
   }
 }
