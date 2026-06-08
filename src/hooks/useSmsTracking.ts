@@ -18,6 +18,7 @@ import { subscribeToPush, unsubscribeFromPush } from '@/lib/notifications/webPus
 import { requestPushPermission } from '@/lib/notifications/pushNotifications'
 import { isNative, isAndroid } from '@/lib/native/isNative'
 import { createClient } from '@/lib/supabase/client'
+import { apiFetchAuth } from '@/lib/apiBase'
 
 export interface SmsEvent {
   id: string
@@ -61,7 +62,7 @@ export function useSmsTracking() {
     if (!isEnabled) return
 
     const fetchToken = async () => {
-      const res = await fetch('/api/sms/setup-token')
+      const res = await apiFetchAuth('/api/sms/setup-token')
       if (res.ok) {
         const data = await res.json() as TokenInfo
         setTokenInfo(data)
@@ -133,7 +134,7 @@ export function useSmsTracking() {
   }, [updateSettings])
 
   const fetchToken = useCallback(async () => {
-    const res = await fetch('/api/sms/setup-token')
+    const res = await apiFetchAuth('/api/sms/setup-token')
     if (res.ok) {
       const data = await res.json() as TokenInfo
       setTokenInfo(data)
@@ -141,7 +142,7 @@ export function useSmsTracking() {
   }, [])
 
   const rotateToken = useCallback(async () => {
-    const res = await fetch('/api/sms/setup-token', { method: 'DELETE' })
+    const res = await apiFetchAuth('/api/sms/setup-token', { method: 'DELETE' })
     if (res.ok) {
       const data = await res.json() as TokenInfo
       setTokenInfo(data)
@@ -155,7 +156,7 @@ export function useSmsTracking() {
     }
     setUndoingId(event.id)
     try {
-      const res = await fetch('/api/sms/undo', {
+      const res = await apiFetchAuth('/api/sms/undo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ smsEventId: event.id }),
