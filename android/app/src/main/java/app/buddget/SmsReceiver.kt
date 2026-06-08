@@ -1,10 +1,13 @@
 package app.buddget
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.telephony.SmsMessage
+import androidx.core.app.NotificationCompat
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.NetworkType
@@ -38,6 +41,10 @@ class SmsReceiver : BroadcastReceiver() {
 
         if (fullBody.isEmpty() || !isBankishMessage(fullBody)) return
 
+        // Post instant notification before any network call (~0–50 ms after SMS arrives).
+        val notifId = BASE_NOTIF_ID + (fullBody.hashCode() and 0x7FFFFFFF) % 1000
+        postInstantNotification(context, fullBody, notifId)
+
         // ── Layer A: WorkManager (background-safe, survives app kill) ──────────
         val prefs  = context.getSharedPreferences("buddget_sms", Context.MODE_PRIVATE)
         val token  = prefs.getString("access_token", null)
@@ -45,10 +52,11 @@ class SmsReceiver : BroadcastReceiver() {
 
         if (token != null && apiUrl != null) {
             val data = workDataOf(
-                SmsForwardWorker.KEY_MESSAGE to fullBody,
-                SmsForwardWorker.KEY_SENDER  to (sender ?: ""),
-                SmsForwardWorker.KEY_TOKEN   to token,
-                SmsForwardWorker.KEY_API_URL to apiUrl,
+                SmsForwardWorker.KEY_MESSAGE  to fullBody,
+                SmsForwardWorker.KEY_SENDER   to (sender ?: ""),
+                SmsForwardWorker.KEY_TOKEN    to token,
+                SmsForwardWorker.KEY_API_URL  to apiUrl,
+                SmsForwardWorker.KEY_NOTIF_ID to notifId,
             )
             WorkManager.getInstance(context).enqueue(
                 OneTimeWorkRequestBuilder<SmsForwardWorker>()
@@ -72,6 +80,35 @@ class SmsReceiver : BroadcastReceiver() {
         SmsCapacitorPlugin.onSmsReceived(fullBody, sender)
     }
 
+    private fun createChannelIfNeeded(context: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID, "Bank Transactions",
+                NotificationManager.IMPORTANCE_HIGH,
+            ).apply { description = "Instant bank SMS alerts" }
+            (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+                .createNotificationChannel(channel)
+        }
+    }
+
+    private fun extractAmount(text: String): String? =
+        Regex("""(?i)egp\s*([\d,]+\.?\d*)""").find(text)?.groupValues?.get(1)
+
+    private fun postInstantNotification(context: Context, body: String, notifId: Int) {
+        createChannelIfNeeded(context)
+        val amount = extractAmount(body)
+        val title = if (amount != null) "Bank Transaction: EGP $amount" else "Bank Transaction Detected"
+        val notif = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(title)
+            .setContentText("Processing details…")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .build()
+        (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+            .notify(notifId, notif)
+    }
+
     /**
      * Broad keyword filter applied before queuing the WorkManager job.
      * Keeps personal SMS off the API entirely.
@@ -92,5 +129,10 @@ class SmsReceiver : BroadcastReceiver() {
         )
         return englishKeywords.any { lower.contains(it) } ||
                arabicKeywords.any { text.contains(it) }
+    }
+
+    companion object {
+        const val CHANNEL_ID    = "sms_instant"
+        const val BASE_NOTIF_ID = 9001
     }
 }

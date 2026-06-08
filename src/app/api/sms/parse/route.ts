@@ -165,40 +165,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, reason: 'low_confidence', confidence: parsed.confidence })
   }
 
-  // ── 3-minute fuzzy dedup ────────────────────────────────────────────────────
-  // InstaPay and Vodafone Cash fire two SMS within seconds (one from the service,
-  // one from the bank). Same amount + currency within 3 minutes = duplicate.
-  // This runs BEFORE the hash dedup so both SMS from a dual-notification pair are caught.
-  const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000).toISOString()
-  const { data: recentDup } = await service
-    .from('sms_parse_log')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('amount', parsed.amount)
-    .eq('currency', parsed.currency)
-    .eq('parsed_ok', true)
-    .eq('is_duplicate', false)
-    .gte('created_at', threeMinutesAgo)
-    .maybeSingle()
-
-  if (recentDup) {
-    await service.from('sms_parse_log').insert({
-      user_id: userId,
-      source: source ?? 'sms',
-      sender: sender ?? null,
-      raw_body: message,
-      parsed_ok: true,
-      confidence: parsed.confidence,
-      amount: parsed.amount,
-      currency: parsed.currency,
-      merchant: parsed.merchant,
-      bank_name: parsed.bank_name,
-      is_duplicate: true,
-      received_at: receivedAt ?? new Date().toISOString(),
-    })
-    return NextResponse.json({ ok: true, deduped: true, reason: 'time_window' })
-  }
-
   // De-duplicate via stable hash (amount cents + merchant fragment + UTC day).
   const day = new Date(receivedAt ?? Date.now()).toISOString().slice(0, 10)
   const merchantFragment = (parsed.merchant ?? '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 16)
@@ -216,9 +182,42 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, deduped: true, expenseId: existing.expense_id })
   }
 
-  // High-confidence → auto-add expense or income.
   const autoAdd = parsed.confidence >= AUTO_CONFIDENCE
   const isIncome = parsed.kind === 'income' || parsed.kind === 'refund'
+
+  // Claim the parse slot atomically — unique index prevents concurrent WorkManager + JS
+  // calls from both creating an expense for the same SMS.
+  const { data: logRow, error: logConflict } = await service
+    .from('sms_parse_log')
+    .insert({
+      user_id: userId,
+      source: source ?? 'sms',
+      sender: sender ?? null,
+      raw_body: message,
+      parsed_ok: true,
+      confidence: parsed.confidence,
+      amount: parsed.amount,
+      currency: parsed.currency,
+      merchant: parsed.merchant,
+      bank_name: parsed.bank_name,
+      category: parsed.category,
+      sms_hash: hash,
+      is_duplicate: false,
+      awaiting_confirmation: !autoAdd,
+      received_at: receivedAt ?? new Date().toISOString(),
+    })
+    .select('id')
+    .single()
+
+  if (!logRow) {
+    if (logConflict?.code === '23505') {
+      return NextResponse.json({ ok: true, deduped: true, reason: 'hash_race' })
+    }
+    console.error('[sms/parse] log insert failed', logConflict)
+    return NextResponse.json({ ok: false, reason: 'log_insert_failed' }, { status: 500 })
+  }
+
+  // High-confidence → auto-add expense or income.
   let expenseId: string | null = null
   let incomeId: string | null = null
   const bankPrefix = parsed.bank_name ? `${parsed.bank_name}: ` : ''
@@ -291,25 +290,11 @@ export async function POST(request: Request) {
     }
   }
 
-  await service.from('sms_parse_log').insert({
-    user_id: userId,
-    source: source ?? 'sms',
-    sender: sender ?? null,
-    raw_body: message,
-    parsed_ok: true,
-    confidence: parsed.confidence,
-    amount: parsed.amount,
-    currency: parsed.currency,
-    merchant: parsed.merchant,
-    bank_name: parsed.bank_name,
-    category: parsed.category,
-    sms_hash: hash,
-    expense_id: expenseId,
-    income_id: incomeId,
-    is_duplicate: false,
-    awaiting_confirmation: !autoAdd,
-    received_at: receivedAt ?? new Date().toISOString(),
-  })
+  if (expenseId || incomeId) {
+    await service.from('sms_parse_log')
+      .update({ expense_id: expenseId, income_id: incomeId })
+      .eq('id', logRow.id)
+  }
 
   if (autoAdd && isIncome) {
     void sendNativePush({
