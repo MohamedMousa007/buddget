@@ -255,27 +255,30 @@ export async function POST(request: Request) {
       .eq('is_default', true)
       .maybeSingle()
 
-    const { data: profileRow } = await service
-      .from('profiles')
-      .select('base_currency')
-      .eq('id', userId)
-      .maybeSingle()
-
-    const baseCurrency = (profileRow?.base_currency as string | undefined) ?? parsed.currency
-    const amountInBase = baseCurrency === parsed.currency ? parsed.amount : parsed.amount
+    // Map Gemini's free-text category to the expense_category enum.
+    // Valid values: Rent, Transport, Food, Enjoyment, Savings, Debt, Remittance, Other
+    type ExpenseCategory = 'Rent' | 'Transport' | 'Food' | 'Enjoyment' | 'Savings' | 'Debt' | 'Remittance' | 'Other'
+    const rawCat = (parsed.category ?? '').toLowerCase()
+    const mappedCategory: ExpenseCategory =
+      rawCat.includes('rent') || rawCat.includes('housing') ? 'Rent' :
+      rawCat.includes('transport') || rawCat.includes('travel') || rawCat.includes('fuel') || rawCat.includes('uber') ? 'Transport' :
+      rawCat.includes('food') || rawCat.includes('restaurant') || rawCat.includes('grocery') || rawCat.includes('dining') ? 'Food' :
+      rawCat.includes('entertainment') || rawCat.includes('enjoyment') || rawCat.includes('leisure') ? 'Enjoyment' :
+      rawCat.includes('saving') || rawCat.includes('investment') ? 'Savings' :
+      rawCat.includes('debt') || rawCat.includes('loan') || rawCat.includes('instalment') ? 'Debt' :
+      rawCat.includes('transfer') || rawCat.includes('remittance') || rawCat.includes('send') ? 'Remittance' :
+      'Other'
 
     const { data: insertedExpense, error: expenseErr } = await service
       .from('expenses')
       .insert({
         user_id: userId,
-        date: day,
+        expense_date: day,
         description: parsed.merchant ?? parsed.bank_name ?? 'Bank transaction',
-        category: parsed.category ?? 'Other',
+        category: mappedCategory,
         amount: parsed.amount,
         currency: parsed.currency,
-        amount_in_base_currency: amountInBase,
         payment_method_id: pmRow?.id ?? null,
-        is_recurring: false,
         notes: autoNotes,
       })
       .select('id')
