@@ -54,6 +54,24 @@ export interface SmsTemplateRow {
   match_count: number
   created_at: string
   updated_at: string
+  user_id: string | null
+}
+
+export interface SmsErrorRow {
+  id: string
+  user_id: string
+  sender: string | null
+  bank_name: string | null
+  merchant: string | null
+  clean_title: string | null
+  amount: number | null
+  currency: string | null
+  kind: string | null
+  failure_code: string | null
+  confidence: number | null
+  raw_body: string
+  received_at: string
+  is_duplicate: boolean
 }
 
 export interface AdminSurveyRow {

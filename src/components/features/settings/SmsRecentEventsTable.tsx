@@ -30,18 +30,16 @@ export function SmsRecentEventsTable({ events, onUndo, undoingId, undoMessage }:
 
   return (
     <ul className="space-y-2">
-      {events.map((ev) => {
-        const isFailure = !ev.parsed_ok
-        const badge = !isFailure && ev.badge_key ? SMS_BADGES[ev.badge_key as SmsTransactionType] : null
+      {events
+        .filter((ev) => ev.parsed_ok) // User app shows only successful transactions
+        .map((ev) => {
+        const badge = ev.badge_key ? SMS_BADGES[ev.badge_key as SmsTransactionType] : null
         const canUndo =
           ev.source === 'event'
             ? !!ev.expense_id && !!ev.undo_expires_at && new Date(ev.undo_expires_at) > new Date()
             : !!(ev.expense_id || ev.income_id)
         const msg = undoMessage?.id === ev.id ? undoMessage.text : null
         const label = ev.clean_title ?? ev.merchant
-        const failureText = isFailure && ev.failure_code
-          ? (t.smsTracking.failure[ev.failure_code as keyof typeof t.smsTracking.failure] ?? t.smsTracking.failure.unknown)
-          : null
 
         return (
           <li
@@ -54,23 +52,13 @@ export function SmsRecentEventsTable({ events, onUndo, undoingId, undoMessage }:
               </span>
             )}
             <div className="flex-1 min-w-0">
-              {ev.amount != null && (
-                <p className={`text-xs font-semibold truncate ${isFailure ? 'text-[var(--color-brand-text-secondary)]' : 'text-[var(--color-brand-text-primary)]'}`}>
-                  {ev.currency} {ev.amount.toLocaleString()}
-                  {label ? ` · ${label}` : ''}
-                </p>
-              )}
+              <p className="text-xs font-semibold text-[var(--color-brand-text-primary)] truncate">
+                {ev.currency} {ev.amount?.toLocaleString()}
+                {label ? ` · ${label}` : ''}
+              </p>
               <p className="text-[10px] text-[var(--color-brand-text-muted)]">
                 {ev.bank_name ? `${ev.bank_name} · ` : ''}{new Date(ev.received_at).toLocaleString()}
               </p>
-              {failureText && (
-                <div className="flex items-center gap-1.5 mt-1">
-                  <span className="text-[10px] text-[var(--color-brand-text-secondary)]">{failureText}</span>
-                  <span className="text-[9px] font-mono px-1 py-px rounded border border-[var(--color-brand-border)] text-[var(--color-brand-text-muted)]">
-                    {ev.failure_code?.toUpperCase()}
-                  </span>
-                </div>
-              )}
               {msg && (
                 <p className={`text-[10px] mt-0.5 ${msg === 'expired' ? 'text-[var(--color-brand-red)]' : 'text-[var(--color-brand-green)]'}`}>
                   {msg === 'expired' ? t.smsTracking.recentUndoExpired : t.smsTracking.recentUndoSuccess}

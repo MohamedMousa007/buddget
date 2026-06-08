@@ -6,6 +6,7 @@ import type {
   AdminConfig,
   AdminSurveyRow,
   AdminUserRow,
+  SmsErrorRow,
   SmsTemplateRow,
 } from '@/types/admin'
 
@@ -32,6 +33,9 @@ export function useAdminPanel() {
   const [surveyRows, setSurveyRows] = useState<AdminSurveyRow[]>([])
   const [smsTemplates, setSmsTemplates] = useState<SmsTemplateRow[]>([])
   const [smsTemplatesLoading, setSmsTemplatesLoading] = useState(false)
+  const [smsErrors, setSmsErrors] = useState<SmsErrorRow[]>([])
+  const [smsErrorsLoading, setSmsErrorsLoading] = useState(false)
+  const [smsErrorsCursor, setSmsErrorsCursor] = useState<string | null>(null)
   const [surveyEditId, setSurveyEditId] = useState<string | null>(null)
   const [surveyJson, setSurveyJson] = useState('')
   const [surveyBusy, setSurveyBusy] = useState(false)
@@ -322,6 +326,23 @@ export function useAdminPanel() {
     }
   }, [sessionPin])
 
+  const loadSmsErrors = useCallback(async (append = false) => {
+    setSmsErrorsLoading(true)
+    try {
+      const cursor = append ? smsErrorsCursor : undefined
+      const res = await fetch('/api/admin/sms-errors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: sessionPin, op: 'list', cursor, limit: 50 }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setPlatformMessage(data.error || 'Failed'); return }
+      setSmsErrors((prev) => append ? [...prev, ...(data.errors ?? [])] : (data.errors ?? []))
+      setSmsErrorsCursor(data.nextCursor ?? null)
+    } catch { setPlatformMessage('Network error') }
+    finally { setSmsErrorsLoading(false) }
+  }, [sessionPin, smsErrorsCursor])
+
   const api = {
     pin,
     setPin,
@@ -363,6 +384,10 @@ export function useAdminPanel() {
     loadSmsTemplates,
     updateSmsTemplate,
     deleteSmsTemplate,
+    smsErrors,
+    smsErrorsLoading,
+    smsErrorsCursor,
+    loadSmsErrors,
   }
   return api
 }

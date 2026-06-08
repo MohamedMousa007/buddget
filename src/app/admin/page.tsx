@@ -5,6 +5,7 @@ import { AdminLoginScreen } from '@/components/features/admin/AdminLoginScreen'
 import { AdminDashboardHeader } from '@/components/features/admin/AdminDashboardHeader'
 import { AdminAiSection } from '@/components/features/admin/AdminAiSection'
 import { AdminSmsTemplatesSection } from '@/components/features/admin/AdminSmsTemplatesSection'
+import { AdminSmsErrorQueue } from '@/components/features/admin/AdminSmsErrorQueue'
 import { AdminUsersSection } from '@/components/features/admin/AdminUsersSection'
 import { AdminAnalyticsSection } from '@/components/features/admin/AdminAnalyticsSection'
 import { AdminSurveySection } from '@/components/features/admin/AdminSurveySection'
@@ -39,6 +40,7 @@ export default function AdminPage() {
 
         <AdminAiSection admin={admin} />
         <AdminSmsTemplatesSection admin={admin} />
+        <AdminSmsErrorQueue admin={admin} />
         <AdminUsersSection admin={admin} />
         <AdminAnalyticsSection admin={admin} />
         <AdminSurveySection admin={admin} />
