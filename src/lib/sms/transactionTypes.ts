@@ -62,6 +62,22 @@ export interface SmsBadge {
   icon: string
 }
 
+/**
+ * Maps Gemini `kind` values (from aiParserPrompt) to the existing SmsTransactionType
+ * taxonomy, enabling badge rendering for sms_parse_log rows.
+ */
+export const KIND_TO_BADGE: Record<string, SmsTransactionType> = {
+  purchase:             'purchase',
+  online_purchase:      'online_charge',
+  atm_withdrawal:       'atm_withdrawal',
+  instant_transfer_out: 'instapay_out',
+  instant_transfer_in:  'instapay_in',
+  income:               'transfer_in',
+  refund:               'refund',
+  fee:                  'fee',
+  other:                'purchase',
+}
+
 export const SMS_BADGES: Record<SmsTransactionType, SmsBadge> = {
   purchase:        { label: 'Purchase',      color: 'bg-blue-500/20 text-blue-400 border-blue-500/30',      icon: '🛒' },
   atm_withdrawal:  { label: 'ATM',           color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', icon: '🏧' },

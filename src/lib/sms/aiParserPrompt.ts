@@ -24,7 +24,9 @@ Return ONLY a JSON object with this exact schema (no markdown, no commentary):
   "kind": "purchase" | "online_purchase" | "atm_withdrawal" | "instant_transfer_out" | "instant_transfer_in" | "income" | "refund" | "fee" | "other" | null,
   "cleanTitle": string | null,
   "rawSmsSummary": string | null,
-  "detectedAccountLast4": string | null
+  "detectedAccountLast4": string | null,
+  "newBalance": number | null,
+  "merchantNormalized": string | null
 }
 
 Bank vocabulary (recognise these names, abbreviations, and SMS senders):
@@ -73,6 +75,15 @@ Pattern guidance (Egypt-first):
 - UAE: "AED X.XX spent at MERCHANT", "AED X.XX debited from card ending YYYY".
 - Saudi: "SAR X.XX charged at MERCHANT", Arabic equivalents with ريال.
 - Other GCC: QAR / KWD / OMR / BHD with same English/Arabic structure.
+
+newBalance rules:
+- Extract the account balance explicitly stated in the SMS AFTER the transaction (e.g. "Available Balance: EGP 12,450.00", "New Balance: EGP 3,200", "رصيدك: 8,500 جنيه").
+- Return as a plain number (e.g. 12450.00). Return null if no post-transaction balance is stated. Never infer or calculate.
+
+merchantNormalized rules:
+- Return the canonical merchant name without branch, city, or location suffix.
+- Normalize well-known Egyptian chains: "CARREFOUR EGYPT SHERATON" → "Carrefour Egypt"; "Spinneys-Maadi" → "Spinneys"; "TALABAT EG" → "Talabat"; "UBER* TRIP" → "Uber"; "NOON EGYPT" → "Noon".
+- Return null for ATM withdrawals, transfers (instant_transfer_out/in), income, and whenever merchant is null.
 
 Defaults:
 - If currency is implied but not literal, prefer EGP first, then the user's local currency.

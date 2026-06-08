@@ -1386,6 +1386,7 @@ export type Database = {
           awaiting_confirmation: boolean
           bank_name: string | null
           category: string | null
+          clean_title: string | null
           confidence: number | null
           created_at: string
           currency: string | null
@@ -1393,9 +1394,13 @@ export type Database = {
           id: string
           income_id: string | null
           is_duplicate: boolean
+          kind: string | null
           merchant: string | null
+          merchant_normalized: string | null
+          new_balance: number | null
           parsed_ok: boolean
           raw_body: string
+          raw_sms_summary: string | null
           received_at: string
           sender: string | null
           sms_hash: string | null
@@ -1408,6 +1413,7 @@ export type Database = {
           awaiting_confirmation?: boolean
           bank_name?: string | null
           category?: string | null
+          clean_title?: string | null
           confidence?: number | null
           created_at?: string
           currency?: string | null
@@ -1415,9 +1421,13 @@ export type Database = {
           id?: string
           income_id?: string | null
           is_duplicate?: boolean
+          kind?: string | null
           merchant?: string | null
+          merchant_normalized?: string | null
+          new_balance?: number | null
           parsed_ok?: boolean
           raw_body: string
+          raw_sms_summary?: string | null
           received_at?: string
           sender?: string | null
           sms_hash?: string | null
@@ -1430,6 +1440,7 @@ export type Database = {
           awaiting_confirmation?: boolean
           bank_name?: string | null
           category?: string | null
+          clean_title?: string | null
           confidence?: number | null
           created_at?: string
           currency?: string | null
@@ -1437,9 +1448,13 @@ export type Database = {
           id?: string
           income_id?: string | null
           is_duplicate?: boolean
+          kind?: string | null
           merchant?: string | null
+          merchant_normalized?: string | null
+          new_balance?: number | null
           parsed_ok?: boolean
           raw_body?: string
+          raw_sms_summary?: string | null
           received_at?: string
           sender?: string | null
           sms_hash?: string | null

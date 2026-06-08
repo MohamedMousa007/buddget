@@ -51,6 +51,8 @@ interface ParsedTx {
   cleanTitle: string | null
   rawSmsSummary: string | null
   detectedAccountLast4: string | null
+  newBalance: number | null
+  merchantNormalized: string | null
 }
 
 async function resolveUserId(req: Request): Promise<{ userId: string | null }> {
@@ -211,6 +213,11 @@ export async function POST(request: Request) {
       is_duplicate: false,
       awaiting_confirmation: !autoAdd,
       account_last4: cleanLast4,
+      kind: parsed.kind,
+      clean_title: parsed.cleanTitle,
+      raw_sms_summary: parsed.rawSmsSummary,
+      new_balance: parsed.newBalance ?? null,
+      merchant_normalized: parsed.merchantNormalized ?? null,
       received_at: receivedAt ?? new Date().toISOString(),
     })
     .select('id')
@@ -284,7 +291,7 @@ export async function POST(request: Request) {
       .insert({
         user_id: userId,
         expense_date: day,
-        description: parsed.cleanTitle ?? parsed.merchant ?? parsed.bank_name ?? 'Bank transaction',
+        description: parsed.cleanTitle ?? parsed.merchantNormalized ?? parsed.merchant ?? parsed.bank_name ?? 'Bank transaction',
         category: mappedCategory,
         amount: parsed.amount,
         currency: parsed.currency,
@@ -400,5 +407,7 @@ async function callGemini(apiKey: string, message: string): Promise<ParsedTx> {
     cleanTitle: parsed.cleanTitle ?? null,
     rawSmsSummary: parsed.rawSmsSummary ?? null,
     detectedAccountLast4: parsed.detectedAccountLast4 ?? null,
+    newBalance: typeof parsed.newBalance === 'number' ? parsed.newBalance : null,
+    merchantNormalized: parsed.merchantNormalized ?? null,
   }
 }
