@@ -315,7 +315,7 @@ export async function POST(request: Request) {
       body: `From ${parsed.merchant ?? parsed.bank_name ?? 'sender'}. Tap to view.`,
       data: { kind: 'sms_income_added', incomeId: incomeId ?? '' },
       collapseKey: `sms-income-${hash.slice(0, 12)}`,
-    }).catch(() => {})
+    }).catch((e: unknown) => console.error('[sms/parse] push notification failed', e))
   } else if (autoAdd) {
     void sendNativePush({
       userId,
@@ -323,7 +323,7 @@ export async function POST(request: Request) {
       body: `Auto-tracked from your ${parsed.bank_name ?? 'bank'}. Tap to view.`,
       data: { kind: 'sms_auto_added', expenseId: expenseId ?? '' },
       collapseKey: `sms-${hash.slice(0, 12)}`,
-    }).catch(() => {})
+    }).catch((e: unknown) => console.error('[sms/parse] push notification failed', e))
   } else {
     void sendNativePush({
       userId,
@@ -331,7 +331,7 @@ export async function POST(request: Request) {
       body: 'Tap to add this expense to your tracker.',
       data: { kind: 'sms_confirm', hash, amount: String(parsed.amount), currency: parsed.currency },
       collapseKey: `sms-confirm-${hash.slice(0, 12)}`,
-    }).catch(() => {})
+    }).catch((e: unknown) => console.error('[sms/parse] push notification failed', e))
   }
 
   return NextResponse.json({

@@ -105,6 +105,21 @@ export async function stopSMSTracking(): Promise<void> {
   }
 }
 
+/**
+ * Refreshes the access token stored in SharedPreferences without
+ * re-registering the JS listener. Called on Supabase TOKEN_REFRESHED events
+ * so the WorkManager path stays valid after the 1-hour JWT expiry.
+ */
+export async function refreshSmsToken(accessToken: string): Promise<void> {
+  if (!isNative() || !isAndroid()) return
+  if (!(await ensurePlugin()) || !_plugin) return
+  try {
+    const { apiUrl: buildUrl } = await import('@/lib/apiBase')
+    const base = buildUrl('').replace(/\/$/, '')
+    await _plugin!.saveToken({ token: accessToken, apiUrl: base })
+  } catch { /* non-fatal */ }
+}
+
 async function forwardToParser(message: string, sender: string | undefined, accessToken: string) {
   try {
     await fetch(apiUrl('/api/sms/parse'), {

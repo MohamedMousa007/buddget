@@ -23,6 +23,8 @@ import java.util.TimeZone
 class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        if (runAttemptCount >= MAX_ATTEMPTS) return@withContext Result.failure()
+
         val message = inputData.getString(KEY_MESSAGE) ?: return@withContext Result.failure()
         val sender  = inputData.getString(KEY_SENDER) ?: ""
         val token   = inputData.getString(KEY_TOKEN)  ?: return@withContext Result.failure()
@@ -73,9 +75,10 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
     }
 
     companion object {
-        const val KEY_MESSAGE = "message"
-        const val KEY_SENDER  = "sender"
-        const val KEY_TOKEN   = "token"
-        const val KEY_API_URL = "api_url"
+        const val KEY_MESSAGE  = "message"
+        const val KEY_SENDER   = "sender"
+        const val KEY_TOKEN    = "token"
+        const val KEY_API_URL  = "api_url"
+        const val MAX_ATTEMPTS = 5
     }
 }
