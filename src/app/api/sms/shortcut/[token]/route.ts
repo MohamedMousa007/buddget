@@ -36,7 +36,7 @@ export async function GET(
     return NextResponse.json({ error: 'Invalid or expired token' }, { status: 404 })
   }
 
-  const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/sms/ingest`
+  const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/sms/parse`
   const plistContent = generateIosShortcutPlist(webhookUrl, token)
 
   return new NextResponse(plistContent, {

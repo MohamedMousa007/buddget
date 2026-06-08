@@ -18,7 +18,7 @@ import { subscribeToPush, unsubscribeFromPush } from '@/lib/notifications/webPus
 import { requestPushPermission } from '@/lib/notifications/pushNotifications'
 import { isNative, isAndroid } from '@/lib/native/isNative'
 import { createClient } from '@/lib/supabase/client'
-import { apiFetchAuth } from '@/lib/apiBase'
+import { apiFetchAuth, apiUrl } from '@/lib/apiBase'
 import { KIND_TO_BADGE } from '@/lib/sms/transactionTypes'
 
 export interface SmsEvent {
@@ -247,8 +247,11 @@ export function useSmsTracking() {
     }
   }, [])
 
+  // Absolute URL so the download opens against the deployed origin in the
+  // Capacitor iOS WebView (page origin there is https://localhost → relative
+  // paths would 404). apiUrl() returns the path unchanged on web.
   const iosDownloadUrl = tokenInfo
-    ? `/api/sms/shortcut/${tokenInfo.token}`
+    ? apiUrl(`/api/sms/shortcut/${tokenInfo.token}`)
     : null
 
   return {

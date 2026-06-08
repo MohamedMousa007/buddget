@@ -2031,11 +2031,16 @@ export interface Dictionary {
     statusConnected: (bank: string, time: string) => string
     statusNeverConnected: string
     iosCardTitle: string
-    iosCardSubtitle: string
-    iosCardStep1: string
-    iosCardStep2: string
-    iosCardStep3: string
-    iosCardStep4: string
+    iosStatusWaiting: string
+    iosStatusConnected: (time: string) => string
+    iosStepInstallTitle: string
+    iosStepInstallDesc: string
+    iosStepKeywordsTitle: string
+    iosStepKeywordsDesc: string
+    iosCopyKeywords: string
+    iosCopiedKeywords: string
+    iosStepAutomationTitle: string
+    iosStepAutomationDesc: string
     iosDownloadButton: string
     iosDownloading: string
     androidCardTitle: string

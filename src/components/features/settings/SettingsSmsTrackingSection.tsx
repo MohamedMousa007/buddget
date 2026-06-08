@@ -82,7 +82,11 @@ export function SettingsSmsTrackingSection() {
           {/* iOS / web: shortcut setup guide */}
           {!onAndroid && (
             <div className="px-4 py-4">
-              <SmsIosSetupCard downloadUrl={iosDownloadUrl} onFetchToken={fetchToken} />
+              <SmsIosSetupCard
+                downloadUrl={iosDownloadUrl}
+                onFetchToken={fetchToken}
+                lastReceivedAt={recentEvents[0]?.received_at ?? null}
+              />
             </div>
           )}
 
