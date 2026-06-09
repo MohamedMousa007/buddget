@@ -133,6 +133,22 @@ export async function syncSmsKeywords(keywords: string[]): Promise<void> {
 }
 
 /**
+ * Saves the permanent sms_ingest_token (non-expiring) to SharedPreferences so
+ * SmsForwardWorker always has a valid credential regardless of how long the app
+ * has been killed. Called from useSmsTracking whenever the ingest token is
+ * fetched or rotated. resolveUserId in /api/sms/parse accepts this token as Bearer.
+ */
+export async function saveSmsToken(ingestToken: string): Promise<void> {
+  if (!isNative() || !isAndroid()) return
+  if (!(await ensurePlugin()) || !_plugin) return
+  try {
+    const { apiUrl: buildUrl } = await import('@/lib/apiBase')
+    const base = buildUrl('').replace(/\/$/, '')
+    await _plugin.saveToken({ token: ingestToken, apiUrl: base })
+  } catch { /* non-fatal */ }
+}
+
+/**
  * Refreshes the access token stored in SharedPreferences without
  * re-registering the JS listener. Called on Supabase TOKEN_REFRESHED events
  * so the WorkManager path stays valid after the 1-hour JWT expiry.
