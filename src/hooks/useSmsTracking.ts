@@ -20,6 +20,7 @@ import { isNative, isAndroid } from '@/lib/native/isNative'
 import { createClient } from '@/lib/supabase/client'
 import { apiFetchAuth, apiUrl } from '@/lib/apiBase'
 import { KIND_TO_BADGE } from '@/lib/sms/transactionTypes'
+import { saveSmsToken } from '@/lib/native/smsTracker'
 
 export interface SmsEvent {
   /** Which table this row came from — routes undo to the correct endpoint. */
@@ -73,6 +74,9 @@ export function useSmsTracking() {
       if (res.ok) {
         const data = await res.json() as TokenInfo
         setTokenInfo(data)
+        // Save the non-expiring ingest token so SmsForwardWorker always has a valid
+        // credential even after the Supabase JWT expires (1-hour TTL).
+        if (isNative() && isAndroid()) void saveSmsToken(data.token)
       }
     }
 
@@ -208,6 +212,7 @@ export function useSmsTracking() {
     if (res.ok) {
       const data = await res.json() as TokenInfo
       setTokenInfo(data)
+      if (isNative() && isAndroid()) void saveSmsToken(data.token)
     }
   }, [])
 
@@ -216,6 +221,7 @@ export function useSmsTracking() {
     if (res.ok) {
       const data = await res.json() as TokenInfo
       setTokenInfo(data)
+      if (isNative() && isAndroid()) void saveSmsToken(data.token)
     }
   }, [])
 
