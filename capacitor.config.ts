@@ -11,12 +11,12 @@ import type { CapacitorConfig } from '@capacitor/cli'
  * — see `docs/CAPACITOR_BOOTSTRAP.md`.
  */
 const config: CapacitorConfig = {
-  appId: 'online.buddget',
+  appId: 'app.buddget',
   appName: 'Buddget',
   webDir: 'out',
   server: {
     /** allowNavigation lets the WebView talk to the production API origin. */
-    allowNavigation: ['buddget.app', '*.buddget.app', 'buddget.online', '*.buddget.online'],
+    allowNavigation: ['buddget.app', '*.buddget.app'],
     androidScheme: 'https',
     iosScheme: 'https',
   },
@@ -55,7 +55,7 @@ const config: CapacitorConfig = {
       androidScaleType: 'CENTER_CROP',
     },
     Preferences: {
-      group: 'group.online.buddget',
+      group: 'group.app.buddget',
     },
     SpeechRecognition: {
       // Plugin reads at runtime; no static config required.

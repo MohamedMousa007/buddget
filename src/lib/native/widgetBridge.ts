@@ -34,7 +34,7 @@ const SHARED_KEY = 'buddget.widget.snapshot.v1'
  * full WebView. Safe to call on the web — becomes a no-op outside Capacitor.
  *
  * iOS: data is read natively via the App Group declared in `capacitor.config.ts`
- * (`group.online.buddget`).
+ * (`group.app.buddget`).
  * Android: the bridged `BuddgetWidgetUpdater` plugin reads the same JSON and
  * triggers `AppWidgetManager.updateAppWidget`. See `docs/WIDGET_SETUP.md` for
  * the Kotlin implementation.

@@ -62,6 +62,7 @@ export const AuthEmailField = forwardRef<HTMLInputElement, AuthEmailFieldProps>(
           <input
             ref={ref}
             type="email"
+            name="email"
             dir="ltr"
             autoComplete="username webauthn"
             inputMode="email"
