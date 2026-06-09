@@ -14,12 +14,16 @@
  *  - Confidence >= 0.6 → expense/income auto-added immediately.
  *  - Confidence < 0.6 → ignored (logged but not stored as an expense).
  */
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { z } from 'zod'
 import crypto from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { SMS_PARSER_SYSTEM_PROMPT } from '@/lib/sms/aiParserPrompt'
-import { sendNativePush } from '@/lib/server/sendNativePush'
+import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNativePush'
+
+// Gemini takes 5–8 s and after() work (push + 15 s pattern learning) counts
+// toward the function cap — the default would kill learning mid-call.
+export const maxDuration = 60
 
 const GEMINI_MODEL = 'gemini-2.5-flash'
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
@@ -64,6 +68,19 @@ interface MappingRules {
   kind:      string
   bank_name?:{ literal: string }
 }
+
+/**
+ * Dedup hash over the normalized raw SMS body. Computed BEFORE any parsing so
+ * the claim row can gate concurrent/retried requests with zero Gemini cost.
+ */
+function computeSmsHash(message: string): string {
+  const normalized = message.trim().replace(/\s+/g, ' ').toLowerCase()
+  return crypto.createHash('sha256').update(normalized).digest('hex')
+}
+
+/** failure_code values that allow a later request to take over the claim. */
+const RETRYABLE_CODES = ['gemini_error', 'rate_limited', 'not_configured']
+const STALE_PROCESSING_MS = 2 * 60 * 1000
 
 // ---------------------------------------------------------------------------
 // JSON extractor — handles Gemini markdown fences and preamble text
@@ -198,7 +215,9 @@ async function learnPattern(
 
     const raw = (await res.json()) as { candidates?: Array<{ content: { parts: Array<{ text: string }> } }> }
     const text = raw.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-    const learned = JSON.parse(text) as { regex_pattern?: string; mapping_rules?: MappingRules }
+    const jsonStr = extractJson(text)
+    if (!jsonStr) return
+    const learned = JSON.parse(jsonStr) as { regex_pattern?: string; mapping_rules?: MappingRules }
     if (!learned.regex_pattern || !learned.mapping_rules?.amount) return
 
     // Validate: must compile AND match the original message
@@ -215,8 +234,9 @@ async function learnPattern(
       ai_enabled: true,
       match_count: 0,
     })
-  } catch {
-    // Pattern learning is best-effort — never propagate errors to the caller
+  } catch (e) {
+    // Best-effort — never propagate, but keep the failure visible in logs.
+    console.warn('[sms/parse] pattern learning failed', e)
   }
 }
 
@@ -304,6 +324,93 @@ export async function POST(request: Request) {
   const { message, sender, source, receivedAt } = parsedBody.data
   const service = createServiceRoleClient()
 
+  const hash = computeSmsHash(message)
+  const nowIso = receivedAt ?? new Date().toISOString()
+
+  // ---- Atomic claim (before any parsing) ----------------------------------
+  // The partial unique index on (user_id, sms_hash) WHERE is_duplicate=false
+  // makes this insert the dedup gate: a concurrent dual-path request or a
+  // WorkManager retry gets 23505 and returns early with zero Gemini cost.
+  const { data: claimed, error: claimErr } = await service
+    .from('sms_parse_log')
+    .insert({
+      user_id: userId,
+      source: source ?? 'sms',
+      sender: sender ?? null,
+      raw_body: message,
+      parsed_ok: false,
+      failure_code: 'processing',
+      sms_hash: hash,
+      is_duplicate: false,
+      parsed_at: new Date().toISOString(),
+      received_at: nowIso,
+    })
+    .select('id')
+    .single()
+
+  let logId: string
+  if (claimed) {
+    logId = claimed.id
+  } else if (claimErr?.code === '23505') {
+    const { data: existing } = await service
+      .from('sms_parse_log')
+      .select('id, expense_id, income_id, failure_code, parsed_at')
+      .eq('user_id', userId)
+      .eq('sms_hash', hash)
+      .eq('is_duplicate', false)
+      .maybeSingle()
+
+    // Retryable claims (Gemini outage, quota, crashed mid-parse) may be taken
+    // over so the SMS isn't lost; settled claims end the retry chain with 200.
+    const staleProcessing =
+      existing?.failure_code === 'processing' &&
+      Date.now() - new Date(existing.parsed_at ?? 0).getTime() > STALE_PROCESSING_MS
+    const retryable =
+      !!existing &&
+      (RETRYABLE_CODES.includes(existing.failure_code ?? '') || staleProcessing)
+
+    if (!existing || !retryable) {
+      // Diagnostic row so support can see the skipped repost.
+      // is_duplicate=true sidesteps the partial unique index.
+      await service.from('sms_parse_log').insert({
+        user_id: userId,
+        source: source ?? 'sms',
+        sender: sender ?? null,
+        raw_body: message,
+        parsed_ok: false,
+        is_duplicate: true,
+        failure_code: 'duplicate',
+        sms_hash: hash,
+        expense_id: existing?.expense_id ?? null,
+        received_at: nowIso,
+      })
+      return NextResponse.json({
+        ok: true,
+        deduped: true,
+        expenseId: existing?.expense_id ?? null,
+      })
+    }
+
+    // Conditional update is the takeover lock (compare-and-swap on the exact
+    // state we observed) — 0 rows means another request won.
+    let takeoverQuery = service
+      .from('sms_parse_log')
+      .update({ failure_code: 'processing', parsed_at: new Date().toISOString() })
+      .eq('id', existing.id)
+      .eq('failure_code', existing.failure_code)
+    takeoverQuery = existing.parsed_at
+      ? takeoverQuery.eq('parsed_at', existing.parsed_at)
+      : takeoverQuery.is('parsed_at', null)
+    const { data: takeover } = await takeoverQuery.select('id')
+    if (!takeover?.length) {
+      return NextResponse.json({ ok: true, deduped: true })
+    }
+    logId = existing.id
+  } else {
+    console.error('[sms/parse] claim insert failed', claimErr)
+    return NextResponse.json({ ok: false, reason: 'log_insert_failed' }, { status: 500 })
+  }
+
   try {
   // Attempt static template bypass — skips rate limit + Gemini entirely.
   let parsed: ParsedTx
@@ -315,6 +422,9 @@ export async function POST(request: Request) {
     // Gemini path: API key required, rate-limited.
     const apiKey = process.env.GEMINI_API_KEY?.trim()
     if (!apiKey) {
+      await service.from('sms_parse_log')
+        .update({ failure_code: 'not_configured', parse_method: 'ai' })
+        .eq('id', logId)
       return NextResponse.json(
         { error: 'AI is not configured. Admin needs to set GEMINI_API_KEY.' },
         { status: 503 },
@@ -329,6 +439,9 @@ export async function POST(request: Request) {
       .maybeSingle()
 
     if ((usage?.parsed_count_today ?? 0) >= RATE_LIMIT_PER_DAY) {
+      await service.from('sms_parse_log')
+        .update({ failure_code: 'rate_limited', parse_method: 'ai' })
+        .eq('id', logId)
       return NextResponse.json(
         { error: 'Daily SMS parse quota reached', limit: RATE_LIMIT_PER_DAY },
         { status: 429 },
@@ -340,22 +453,20 @@ export async function POST(request: Request) {
       parsed = await callGemini(apiKey, message)
     } catch (e) {
       console.error('[sms/parse] gemini failed', e)
-      await service.from('sms_parse_log').insert({
-        user_id: userId,
-        source: source ?? 'sms',
-        sender: sender ?? null,
-        raw_body: message,
-        parsed_ok: false,
-        failure_code: 'gemini_error',
-        parse_method: 'ai',
-        received_at: receivedAt ?? new Date().toISOString(),
-      })
+      await service.from('sms_parse_log')
+        .update({ failure_code: 'gemini_error', parse_method: 'ai' })
+        .eq('id', logId)
+      // 502 → WorkManager retries; the retry takes over this claim (no new row,
+      // one Gemini call per attempt).
       return NextResponse.json({ ok: false, reason: 'ai_failed' }, { status: 502 })
     }
 
-    // Learn a regex pattern for this sender asynchronously (fire-and-forget).
+    // Learn a regex pattern for this sender after the response is sent.
+    // after() keeps the serverless function alive — a bare void promise is
+    // frozen the moment the response returns and never completes on Vercel.
     if (sender && parsed.confidence >= PATTERN_LEARN_CONFIDENCE && parsed.is_transaction) {
-      void learnPattern(message, sender, parsed, service, apiKey, userId)
+      const learnArgs = [message, sender, parsed, service, apiKey, userId] as const
+      after(() => learnPattern(...learnArgs))
     }
   }
 
@@ -365,78 +476,69 @@ export async function POST(request: Request) {
   // --- Everything below is unchanged from before the bypass was added ---
 
   if (!parsed.is_transaction || !parsed.amount || !parsed.currency) {
-    await service.from('sms_parse_log').insert({
-      user_id: userId,
-      source: source ?? 'sms',
-      sender: sender ?? null,
-      raw_body: message,
-      parsed_ok: false,
-      confidence: parsed.confidence ?? 0,
-      // is_transaction but missing amount/currency → null_amount; otherwise not a transaction
-      failure_code: parsed.is_transaction ? 'null_amount' : 'not_transaction',
-      parse_method: parseMethod,
-      received_at: receivedAt ?? new Date().toISOString(),
-    })
+    await service.from('sms_parse_log')
+      .update({
+        confidence: parsed.confidence ?? 0,
+        // is_transaction but missing amount/currency → null_amount; otherwise not a transaction
+        failure_code: parsed.is_transaction ? 'null_amount' : 'not_transaction',
+        parse_method: parseMethod,
+      })
+      .eq('id', logId)
     return NextResponse.json({ ok: false, reason: 'not_transaction' })
   }
 
   if (parsed.confidence < CONFIRM_CONFIDENCE) {
-    await service.from('sms_parse_log').insert({
-      user_id: userId,
-      source: source ?? 'sms',
-      sender: sender ?? null,
-      raw_body: message,
-      parsed_ok: false,
-      confidence: parsed.confidence,
-      amount: parsed.amount,
-      currency: parsed.currency,
-      merchant: parsed.merchant,
-      bank_name: parsed.bank_name,
-      category: parsed.category,
-      failure_code: 'low_confidence',
-      parse_method: parseMethod,
-      received_at: receivedAt ?? new Date().toISOString(),
-    })
+    await service.from('sms_parse_log')
+      .update({
+        confidence: parsed.confidence,
+        amount: parsed.amount,
+        currency: parsed.currency,
+        merchant: parsed.merchant,
+        bank_name: parsed.bank_name,
+        category: parsed.category,
+        failure_code: 'low_confidence',
+        parse_method: parseMethod,
+      })
+      .eq('id', logId)
     return NextResponse.json({ ok: false, reason: 'low_confidence', confidence: parsed.confidence })
   }
 
-  // De-duplicate via stable hash (amount cents + merchant fragment + UTC day).
-  const day = new Date(receivedAt ?? Date.now()).toISOString().slice(0, 10)
-  const merchantFragment = (parsed.merchant ?? '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 16)
-  const cents = Math.round(parsed.amount * 100)
-  const hash = crypto.createHash('sha256').update(`${cents}:${merchantFragment}:${day}`).digest('hex')
-
-  const { data: existing } = await service
+  // Fuzzy 60s dedup — catches bank + IPN dual SMS announcing the same
+  // transaction with different wording. Legitimate repeat transactions more
+  // than 60s apart pass through (the old day-wide hash blocked them).
+  const receivedMs = new Date(nowIso).getTime()
+  const { data: twin } = await service
     .from('sms_parse_log')
-    .select('id, expense_id')
+    .select('id, expense_id, income_id')
     .eq('user_id', userId)
-    .eq('sms_hash', hash)
+    .eq('parsed_ok', true)
+    .eq('is_duplicate', false)
+    .eq('amount', parsed.amount)
+    .eq('currency', parsed.currency)
+    .neq('id', logId)
+    .gte('received_at', new Date(receivedMs - 60_000).toISOString())
+    .lte('received_at', new Date(receivedMs + 60_000).toISOString())
+    .limit(1)
     .maybeSingle()
 
-  if (existing) {
-    // Log a diagnostic duplicate row so support (and the user) can see the skip.
-    // is_duplicate=true sidesteps the (user_id, sms_hash) WHERE is_duplicate=false unique index.
-    await service.from('sms_parse_log').insert({
-      user_id: userId,
-      source: source ?? 'sms',
-      sender: sender ?? null,
-      raw_body: message,
-      parsed_ok: false,
-      is_duplicate: true,
-      failure_code: 'duplicate',
-      confidence: parsed.confidence,
-      amount: parsed.amount,
-      currency: parsed.currency,
-      merchant: parsed.merchant,
-      bank_name: parsed.bank_name,
-      category: parsed.category,
-      kind: parsed.kind,
-      clean_title: parsed.cleanTitle,
-      expense_id: existing.expense_id,
-      parse_method: parseMethod,
-      received_at: receivedAt ?? new Date().toISOString(),
-    })
-    return NextResponse.json({ ok: true, deduped: true, expenseId: existing.expense_id })
+  if (twin) {
+    await service.from('sms_parse_log')
+      .update({
+        is_duplicate: true,
+        failure_code: 'duplicate',
+        confidence: parsed.confidence,
+        amount: parsed.amount,
+        currency: parsed.currency,
+        merchant: parsed.merchant,
+        bank_name: parsed.bank_name,
+        category: parsed.category,
+        kind: parsed.kind,
+        clean_title: parsed.cleanTitle,
+        expense_id: twin.expense_id,
+        parse_method: parseMethod,
+      })
+      .eq('id', logId)
+    return NextResponse.json({ ok: true, deduped: true, expenseId: twin.expense_id })
   }
 
   // Server-side security: strip non-digits and truncate to last 4 — never trust raw output.
@@ -444,25 +546,20 @@ export async function POST(request: Request) {
 
   const autoAdd = parsed.confidence >= CONFIRM_CONFIDENCE
   const isIncome = ['income', 'refund', 'instant_transfer_in'].includes(parsed.kind ?? '')
+  const day = nowIso.slice(0, 10)
 
-  // Claim the parse slot atomically — unique index prevents concurrent WorkManager + JS
-  // calls from both creating an expense for the same SMS.
-  const { data: logRow, error: logConflict } = await service
+  // Promote the claimed row with the full parse result.
+  const { error: promoteErr } = await service
     .from('sms_parse_log')
-    .insert({
-      user_id: userId,
-      source: source ?? 'sms',
-      sender: sender ?? null,
-      raw_body: message,
+    .update({
       parsed_ok: true,
+      failure_code: null,
       confidence: parsed.confidence,
       amount: parsed.amount,
       currency: parsed.currency,
       merchant: parsed.merchant,
       bank_name: parsed.bank_name,
       category: parsed.category,
-      sms_hash: hash,
-      is_duplicate: false,
       awaiting_confirmation: !autoAdd,
       account_last4: cleanLast4,
       kind: parsed.kind,
@@ -471,16 +568,11 @@ export async function POST(request: Request) {
       new_balance: parsed.newBalance ?? null,
       merchant_normalized: parsed.merchantNormalized ?? null,
       parse_method: parseMethod,
-      received_at: receivedAt ?? new Date().toISOString(),
     })
-    .select('id')
-    .single()
+    .eq('id', logId)
 
-  if (!logRow) {
-    if (logConflict?.code === '23505') {
-      return NextResponse.json({ ok: true, deduped: true, reason: 'hash_race' })
-    }
-    console.error('[sms/parse] log insert failed', logConflict)
+  if (promoteErr) {
+    console.error('[sms/parse] log promote failed', promoteErr)
     return NextResponse.json({ ok: false, reason: 'log_insert_failed' }, { status: 500 })
   }
 
@@ -488,9 +580,9 @@ export async function POST(request: Request) {
   let expenseId: string | null = null
   let incomeId: string | null = null
   const bankPrefix = parsed.bank_name ? `${parsed.bank_name}: ` : ''
+  // Clean one-sentence AI summary when available; raw SMS only as fallback.
   const autoNotes = parsed.rawSmsSummary
-    ? `${parsed.rawSmsSummary}\n[auto from ${source ?? 'sms'}] ${message.slice(0, 180)}`
-    : `[auto from ${source ?? 'sms'}] ${bankPrefix}${message.slice(0, 180)}`
+    ?? `[auto from ${source ?? 'sms'}] ${bankPrefix}${message.slice(0, 180)}`
 
   if (autoAdd && isIncome) {
     const sourceType = parsed.kind === 'refund' ? 'refund' : 'other'
@@ -560,36 +652,51 @@ export async function POST(request: Request) {
   if (expenseId || incomeId) {
     await service.from('sms_parse_log')
       .update({ expense_id: expenseId, income_id: incomeId })
-      .eq('id', logRow.id)
+      .eq('id', logId)
   }
 
-  if (autoAdd && isIncome) {
-    void sendNativePush({
-      userId,
-      title: `+${parsed.currency} ${parsed.amount.toLocaleString()} — ${parsed.cleanTitle ?? 'Bank credit'}`,
-      body: `Received via ${parsed.bank_name ?? 'bank'}. Tap to view.`,
-      data: { kind: 'sms_income_added', incomeId: incomeId ?? '' },
-      collapseKey: `sms-income-${hash.slice(0, 12)}`,
-    }).catch((e: unknown) => console.error('[sms/parse] push notification failed', e))
-  } else if (autoAdd) {
-    void sendNativePush({
-      userId,
-      title: parsed.cleanTitle
-        ? `${parsed.currency} ${parsed.amount.toLocaleString()} — ${parsed.cleanTitle}`
-        : `${parsed.currency} ${parsed.amount.toLocaleString()} at ${parsed.merchant ?? 'merchant'}`,
-      body: `Tracked by ${parsed.bank_name ?? 'your bank'}. Tap to view.`,
-      data: { kind: 'sms_auto_added', expenseId: expenseId ?? '' },
-      collapseKey: `sms-${hash.slice(0, 12)}`,
-    }).catch((e: unknown) => console.error('[sms/parse] push notification failed', e))
-  } else {
-    void sendNativePush({
-      userId,
-      title: `Confirm: ${parsed.cleanTitle ?? `${parsed.currency} ${parsed.amount.toLocaleString()}`}`,
-      body: `${parsed.currency} ${parsed.amount.toLocaleString()} — tap to add.`,
-      data: { kind: 'sms_confirm', hash, amount: String(parsed.amount), currency: parsed.currency },
-      collapseKey: `sms-confirm-${hash.slice(0, 12)}`,
-    }).catch((e: unknown) => console.error('[sms/parse] push notification failed', e))
-  }
+  // Push runs in after() so Vercel keeps the function alive until delivery,
+  // and the result is logged — a missing FIREBASE_SERVICE_ACCOUNT_JSON or an
+  // all-stale token list shows up in the logs instead of failing silently.
+  const pushArgs: SendNativePushArgs =
+    autoAdd && isIncome
+      ? {
+          userId,
+          title: `+${parsed.currency} ${parsed.amount.toLocaleString()} — ${parsed.cleanTitle ?? 'Bank credit'}`,
+          body: `Received via ${parsed.bank_name ?? 'bank'}. Tap to view.`,
+          data: { kind: 'sms_income_added', incomeId: incomeId ?? '' },
+          collapseKey: `sms-income-${hash.slice(0, 12)}`,
+        }
+      : autoAdd
+        ? {
+            userId,
+            title: parsed.cleanTitle
+              ? `${parsed.currency} ${parsed.amount.toLocaleString()} — ${parsed.cleanTitle}`
+              : `${parsed.currency} ${parsed.amount.toLocaleString()} at ${parsed.merchant ?? 'merchant'}`,
+            body: `Tracked by ${parsed.bank_name ?? 'your bank'}. Tap to view.`,
+            data: { kind: 'sms_auto_added', expenseId: expenseId ?? '' },
+            collapseKey: `sms-${hash.slice(0, 12)}`,
+          }
+        : {
+            userId,
+            title: `Confirm: ${parsed.cleanTitle ?? `${parsed.currency} ${parsed.amount.toLocaleString()}`}`,
+            body: `${parsed.currency} ${parsed.amount.toLocaleString()} — tap to add.`,
+            data: { kind: 'sms_confirm', hash, amount: String(parsed.amount), currency: parsed.currency },
+            collapseKey: `sms-confirm-${hash.slice(0, 12)}`,
+          }
+
+  after(async () => {
+    try {
+      const result = await sendNativePush(pushArgs)
+      if (result.ok) {
+        console.log('[sms/parse] push result', result)
+      } else {
+        console.error('[sms/parse] push failed', result)
+      }
+    } catch (e) {
+      console.error('[sms/parse] push notification failed', e)
+    }
+  })
 
   return NextResponse.json({
     ok: true,
@@ -603,19 +710,12 @@ export async function POST(request: Request) {
     incomeId,
   })
   } catch (e) {
-    // Unexpected failure (DB error, etc.) — record a diagnostic row so support can see it.
+    // Unexpected failure (DB error, etc.) — flag the claimed row so support can see it.
     console.error('[sms/parse] unhandled exception', e)
     try {
-      await service.from('sms_parse_log').insert({
-        user_id: userId,
-        source: source ?? 'sms',
-        sender: sender ?? null,
-        raw_body: message,
-        parsed_ok: false,
-        failure_code: 'parse_exception',
-        // parseMethod may not be in scope at the outer catch boundary — unknown path
-        received_at: receivedAt ?? new Date().toISOString(),
-      })
+      await service.from('sms_parse_log')
+        .update({ failure_code: 'parse_exception' })
+        .eq('id', logId)
     } catch { /* best-effort */ }
     return NextResponse.json({ ok: false, reason: 'parse_exception' }, { status: 500 })
   }

@@ -73,6 +73,8 @@ export interface SmsErrorRow {
   received_at: string
   is_duplicate: boolean
   parse_method: string | null
+  source: string | null
+  account_last4: string | null
 }
 
 export interface AdminSurveyRow {
