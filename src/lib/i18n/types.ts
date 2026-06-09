@@ -2069,6 +2069,9 @@ export interface Dictionary {
       duplicate: string
       log_insert_failed: string
       parse_exception: string
+      processing: string
+      rate_limited: string
+      not_configured: string
       unknown: string
     }
     supportedBanksTitle: string

@@ -21,7 +21,7 @@ export async function POST(req: Request) {
       let query = service
         .from('sms_parse_log')
         .select(
-          'id, user_id, sender, bank_name, merchant, clean_title, amount, currency, kind, failure_code, parse_method, confidence, raw_body, received_at, is_duplicate',
+          'id, user_id, sender, bank_name, merchant, clean_title, amount, currency, kind, failure_code, parse_method, confidence, raw_body, received_at, is_duplicate, source, account_last4',
         )
         .eq('parsed_ok', false)
         .order('received_at', { ascending: false })

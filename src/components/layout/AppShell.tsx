@@ -74,50 +74,70 @@ function SmsStartupSync() {
 }
 
 /**
- * Subscribes to Supabase realtime INSERT events on sms_parse_log (filtered to
- * parsed_ok=true). When a new SMS transaction lands — whether the app was in the
- * foreground or WorkManager synced it from the background — the corresponding
- * expense or income is immediately added to the Zustand store so the dashboard
- * updates without any user interaction.
- * RLS on the table scopes events to the authenticated user automatically.
+ * addExpense/addIncomeSource append blindly — these guards make SMS-driven
+ * store updates idempotent across the realtime INSERT+UPDATE pair and the
+ * FCM push handler racing each other for the same row.
+ */
+function addExpenseIfMissing(row: ExpenseRow): void {
+  const store = useFinanceStore.getState()
+  if (store.expenses.some((e) => e.id === row.id)) return
+  store.addExpense(expenseFromRow(row))
+}
+
+function addIncomeIfMissing(row: IncomeSourceRow): void {
+  const store = useFinanceStore.getState()
+  if (store.incomeSources.some((i) => i.id === row.id)) return
+  store.addIncomeSource(incomeSourceFromRow(row))
+}
+
+/**
+ * Subscribes to Supabase realtime events on sms_parse_log. The parse route
+ * claims a row first (parsed_ok=false) and promotes it via UPDATE once the
+ * expense/income exists, so BOTH events are observed and filtered client-side
+ * on the presence of a linked id. RLS scopes events to the authenticated user.
  */
 function SmsRealtimeSync() {
   const smsEnabled = useFinanceStore((s) => s.settings.smsTrackingEnabled)
-  const addExpense = useFinanceStore((s) => s.addExpense)
-  const addIncomeSource = useFinanceStore((s) => s.addIncomeSource)
 
   useEffect(() => {
     if (!smsEnabled) return
     const supabase = createClient()
+    const onRow = async (payload: { new: { expense_id?: string | null; income_id?: string | null } }) => {
+      const row = payload.new
+      if (row.expense_id) {
+        const { data } = await supabase
+          .from('expenses')
+          .select('*')
+          .eq('id', row.expense_id)
+          .single()
+        if (data) addExpenseIfMissing(data as ExpenseRow)
+      }
+      if (row.income_id) {
+        const { data } = await supabase
+          .from('income_sources')
+          .select('*')
+          .eq('id', row.income_id)
+          .single()
+        if (data) addIncomeIfMissing(data as IncomeSourceRow)
+      }
+    }
     const channel = supabase
       .channel('sms-live')
       .on(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         'postgres_changes' as any,
-        { event: 'INSERT', schema: 'public', table: 'sms_parse_log', filter: 'parsed_ok=eq.true' },
-        async (payload: { new: { expense_id?: string | null; income_id?: string | null } }) => {
-          const row = payload.new
-          if (row.expense_id) {
-            const { data } = await supabase
-              .from('expenses')
-              .select('*')
-              .eq('id', row.expense_id)
-              .single()
-            if (data) addExpense(expenseFromRow(data as ExpenseRow))
-          }
-          if (row.income_id) {
-            const { data } = await supabase
-              .from('income_sources')
-              .select('*')
-              .eq('id', row.income_id)
-              .single()
-            if (data) addIncomeSource(incomeSourceFromRow(data as IncomeSourceRow))
-          }
-        },
+        { event: 'INSERT', schema: 'public', table: 'sms_parse_log' },
+        onRow,
+      )
+      .on(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        'postgres_changes' as any,
+        { event: 'UPDATE', schema: 'public', table: 'sms_parse_log' },
+        onRow,
       )
       .subscribe()
     return () => { void supabase.removeChannel(channel) }
-  }, [smsEnabled, addExpense, addIncomeSource])
+  }, [smsEnabled])
 
   return null
 }
@@ -208,14 +228,14 @@ function SmsPushActionHandler() {
         void (async () => {
           const supabase = createClient()
           const { data: row } = await supabase.from('expenses').select('*').eq('id', data.expenseId).single()
-          if (row) useFinanceStore.getState().addExpense(expenseFromRow(row as ExpenseRow))
+          if (row) addExpenseIfMissing(row as ExpenseRow)
           router.push(`/expenses?highlight=${data.expenseId}`)
         })()
       } else if (kind === 'sms_income_added' && data.incomeId) {
         void (async () => {
           const supabase = createClient()
           const { data: row } = await supabase.from('income_sources').select('*').eq('id', data.incomeId).single()
-          if (row) useFinanceStore.getState().addIncomeSource(incomeSourceFromRow(row as IncomeSourceRow))
+          if (row) addIncomeIfMissing(row as IncomeSourceRow)
           router.push('/income')
         })()
       }

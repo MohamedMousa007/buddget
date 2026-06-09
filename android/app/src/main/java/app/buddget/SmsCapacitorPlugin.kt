@@ -20,24 +20,6 @@ import com.getcapacitor.annotation.PermissionCallback
 )
 class SmsCapacitorPlugin : Plugin() {
 
-    companion object {
-        private var instance: SmsCapacitorPlugin? = null
-
-        /** Called by SmsReceiver from the BroadcastReceiver context. */
-        fun onSmsReceived(messageBody: String, sender: String?) {
-            val plugin = instance ?: return
-            val data = JSObject().apply {
-                put("message", messageBody)
-                put("sender", sender ?: "")
-            }
-            plugin.notifyListeners("onSmsReceive", data)
-        }
-    }
-
-    override fun load() {
-        instance = this
-    }
-
     @PluginMethod
     fun checkPermission(call: PluginCall) {
         val granted = getPermissionState("sms")?.name == "GRANTED"

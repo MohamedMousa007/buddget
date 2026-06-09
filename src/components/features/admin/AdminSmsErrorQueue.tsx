@@ -16,6 +16,9 @@ const FAILURE_LABELS: Record<string, string> = {
   duplicate: 'Duplicate',
   log_insert_failed: 'Save failed',
   parse_exception: 'Parse crash',
+  processing: 'Processing',
+  rate_limited: 'Rate limited',
+  not_configured: 'AI not configured',
 }
 
 const FAILURE_COLORS: Record<string, string> = {
@@ -26,6 +29,9 @@ const FAILURE_COLORS: Record<string, string> = {
   duplicate: 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)] border-[var(--color-brand-border)]',
   log_insert_failed: 'bg-red-500/10 text-[var(--color-brand-red)] border-red-500/20',
   parse_exception: 'bg-red-500/10 text-[var(--color-brand-red)] border-red-500/20',
+  processing: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  rate_limited: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  not_configured: 'bg-red-500/10 text-[var(--color-brand-red)] border-red-500/20',
 }
 
 export function AdminSmsErrorQueue({ admin }: Props) {
@@ -131,6 +137,8 @@ export function AdminSmsErrorQueue({ admin }: Props) {
                       User: <span className="font-mono">{row.user_id.slice(0, 8)}…</span>
                       {row.is_duplicate ? ' · Duplicate' : ''}
                       {row.kind ? ` · ${row.kind}` : ''}
+                      {row.source ? ` · via ${row.source}` : ''}
+                      {row.account_last4 ? ` · ••••${row.account_last4}` : ''}
                     </p>
                   </div>
                 )}

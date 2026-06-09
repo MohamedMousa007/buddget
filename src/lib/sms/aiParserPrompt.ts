@@ -58,7 +58,8 @@ cleanTitle rules (short human-readable title for the expense/income record):
 - Fallback chain: merchant → bank_name → null
 
 rawSmsSummary rules (one-sentence plain-English summary for the notes field):
-- Strip all reference numbers, full account numbers, and technical codes.
+- ONE sentence only, max 160 characters. Never quote or repeat the raw SMS text verbatim.
+- Strip all reference numbers, full account numbers, URLs, balance lines, and technical codes.
 - Replace masked account patterns (e.g. ********0001) with "account ending XXXX".
 - Example: "HSBC account ending 0001 debited EGP 2.50 via InstaPay to Salma Samy on 08-Jun-2026."
 - Keep recipient/sender name, amount, currency, bank name, and transaction type.

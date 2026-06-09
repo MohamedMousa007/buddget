@@ -61,9 +61,9 @@ export async function createSmsExpense(
   row: SmsRowData,
 ): Promise<CreateSmsExpenseResult> {
   const bankPrefix = row.bankName ? `${row.bankName}: ` : ''
+  // Clean one-sentence AI summary when available; raw SMS only as fallback.
   const autoNotes = row.rawSmsSummary
-    ? `${row.rawSmsSummary}\n[auto from ${row.source}] ${row.rawBody.slice(0, 180)}`
-    : `[auto from ${row.source}] ${bankPrefix}${row.rawBody.slice(0, 180)}`
+    ?? `[auto from ${row.source}] ${bankPrefix}${row.rawBody.slice(0, 180)}`
 
   const title = row.cleanTitle ?? row.merchantNormalized ?? row.merchant ?? row.bankName
 

@@ -1,6 +1,5 @@
 package app.buddget
 
-import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
 import androidx.work.CoroutineWorker
@@ -34,7 +33,6 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
         val json = buildBody(message, sender)
         val url  = URL("$apiUrl/api/sms/parse")
 
-        val notifId = inputData.getInt(KEY_NOTIF_ID, -1)
         return@withContext try {
             val conn = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
@@ -48,11 +46,6 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
             val code = conn.responseCode
             conn.disconnect()
             if (code in 200..299) {
-                // Cancel the instant notification — FCM push with full details replaces it.
-                if (notifId >= 0) {
-                    (applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
-                        .cancel(notifId)
-                }
                 Result.success()
             } else if (code >= 500) {
                 Result.retry()   // transient server error
@@ -88,7 +81,6 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
         const val KEY_SENDER   = "sender"
         const val KEY_TOKEN    = "token"
         const val KEY_API_URL  = "api_url"
-        const val KEY_NOTIF_ID = "notif_id"
         const val MAX_ATTEMPTS = 5
     }
 }
