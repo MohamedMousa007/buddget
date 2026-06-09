@@ -174,7 +174,7 @@ export function AuthSignInUpStep({
               <input
                 type="password"
                 name="password"
-                autoComplete="current-password"
+                autoComplete="current-password webauthn"
                 tabIndex={-1}
                 aria-hidden="true"
                 value={password}
