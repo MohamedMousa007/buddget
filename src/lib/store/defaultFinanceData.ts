@@ -26,7 +26,7 @@ export const DEFAULT_BUDGET: BudgetCategory[] = BUDGET_CATEGORY_ORDER.map((categ
   currency: 'EGP',
 }))
 
-/** One default method so “add expense” always has a valid payment method. */
+/** One default method so "add expense" always has a valid payment method. */
 export const DEFAULT_PAYMENT_METHODS: PaymentMethod[] = [
   {
     id: 'pm_default_cash',
