@@ -19,6 +19,11 @@ const eslintConfig = defineConfig([
     "public/sw.js",
     "public/sw *.js",
     "public/workbox-*.js",
+    // Capacitor native build artifacts
+    "android/**",
+    "ios/**",
+    // next-pwa worker bundles
+    "public/worker-*.js",
   ]),
 ]);
 

@@ -107,7 +107,7 @@ export default function DebtsPage() {
               </div>
             ) : (
               <div className={`grid gap-4 ${activeDebts.length === 1 ? 'grid-cols-1 max-w-lg mx-auto' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'}`}>
-                {activeDebts.map((debt, idx) => {
+                {activeDebts.map((debt) => {
                   const payments = debtPayments.filter((p) => p.debtId === debt.id)
                   if (debt.debtType === 'credit_card') {
                     return (
