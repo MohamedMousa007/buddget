@@ -1,5 +1,4 @@
 import type { createServiceRoleClient } from '@/lib/supabase/service'
-import { invalidateSenderCache } from './templateCache'
 
 type ServiceClient = ReturnType<typeof createServiceRoleClient>
 
@@ -67,7 +66,6 @@ export async function checkAndAutoPromote(
 
       if (!error) {
         console.log('[promotionChecker] auto-promoted template', { template_id: row.template_id, sender })
-        invalidateSenderCache(sender)
       }
     }
   } catch (e) {

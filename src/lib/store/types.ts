@@ -662,7 +662,16 @@ export interface FinanceStore {
   addExpense: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'amountInBaseCurrency'>) => void
   updateExpense: (id: string, updates: Partial<Expense>) => void
   deleteExpense: (id: string) => void
+  /**
+   * Inserts/replaces an already-persisted server row VERBATIM by its real id —
+   * no id/timestamp regeneration. Used to ingest SMS-created expenses from
+   * realtime/push so the local copy matches the server PK (keeps `flushDiff`
+   * upserts idempotent; prevents duplicates and soft-delete eviction).
+   */
+  upsertServerExpense: (expense: Expense) => void
   addIncomeSource: (source: Omit<IncomeSource, 'id' | 'createdAt'>) => void
+  /** Server-row counterpart of {@link upsertServerExpense} for income. */
+  upsertServerIncome: (source: IncomeSource) => void
   /**
    * Adds income from borrowed money and creates a matching personal debt (`i_owe`) in one update.
    */

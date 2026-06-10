@@ -22,7 +22,7 @@ export async function POST(req: Request) {
       let query = service
         .from('sms_parse_log')
         .select(
-          'id, user_id, sender, bank_name, merchant, clean_title, amount, currency, kind, failure_code, parse_method, confidence, raw_body, received_at, is_duplicate, source, account_last4, parsed_ok, expense_id, income_id, pattern_id, payment_instrument, status, pushed_at, push_result, confirmed_at',
+          'id, user_id, sender, bank_name, merchant, clean_title, amount, currency, kind, failure_code, parse_method, confidence, raw_body, received_at, is_duplicate, source, account_last4, parsed_ok, expense_id, income_id, pattern_id, payment_instrument, status, pushed_at, push_result, confirmed_at, acked_at',
         )
         .order('received_at', { ascending: false })
         .limit(Math.min(limit, 200))

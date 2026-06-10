@@ -91,15 +91,15 @@ function SmsStartupSync() {
  * FCM push handler racing each other for the same row.
  */
 function addExpenseIfMissing(row: ExpenseRow): void {
-  const store = useFinanceStore.getState()
-  if (store.expenses.some((e) => e.id === row.id)) return
-  store.addExpense(expenseFromRow(row))
+  // Ingest the server row VERBATIM (real id, timestamps). Routing through
+  // addExpense would regenerate the id, duplicating the row on the next flush
+  // and breaking dedup. upsertServerExpense keeps the local copy keyed to the
+  // server PK so flushDiff stays idempotent.
+  useFinanceStore.getState().upsertServerExpense(expenseFromRow(row))
 }
 
 function addIncomeIfMissing(row: IncomeSourceRow): void {
-  const store = useFinanceStore.getState()
-  if (store.incomeSources.some((i) => i.id === row.id)) return
-  store.addIncomeSource(incomeSourceFromRow(row))
+  useFinanceStore.getState().upsertServerIncome(incomeSourceFromRow(row))
 }
 
 /**

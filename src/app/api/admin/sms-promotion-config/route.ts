@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { verifyAdminPin } from '@/lib/server/adminAuth'
 import { createServiceRoleClient } from '@/lib/supabase/service'
-import { invalidateSenderCache, invalidateAllCache } from '@/lib/sms/templateCache'
 import { invalidateConfigCache } from '@/lib/sms/promotionChecker'
 
 const DEFAULTS = {
@@ -108,13 +107,8 @@ export async function POST(req: Request) {
           })
           .eq('id', row.template_id)
 
-        if (!error) {
-          promoted++
-          invalidateSenderCache(row.sender)
-        }
+        if (!error) promoted++
       }
-
-      if (promoted > 0) invalidateAllCache()
 
       return NextResponse.json({ ok: true, promoted, eligible: rows.length })
     }
