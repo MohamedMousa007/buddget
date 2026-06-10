@@ -83,18 +83,16 @@ function inAppCell(row: SmsTrackedRow) {
 }
 
 export function AdminSmsTrackedSection({ admin }: Props) {
-  const { smsTracked, smsTrackedLoading, smsTrackedCursor, loadSmsTracked } = admin
+  const { smsTracked, smsTrackedLoading, smsTrackedCursor, loadSmsTracked, pushConfigured, checkPushHealth } = admin
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
   useEffect(() => {
     void loadSmsTracked(false)
+    void checkPushHealth()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Push is globally down if any recent attempt failed with the Firebase-config error.
-  const pushDown = smsTracked.some((r) =>
-    (r.push_result?.error ?? '').includes('FIREBASE_SERVICE_ACCOUNT_JSON'),
-  )
+  const pushDown = pushConfigured === false
 
   return (
     <section className="glass-card rounded-2xl p-5 space-y-4">
