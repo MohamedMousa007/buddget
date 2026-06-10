@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { RefreshCw, Trash2 } from 'lucide-react'
+import { RefreshCw, Trash2, ShieldCheck, ArrowUp, ArrowDown } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import type { AdminPanelModel } from '@/hooks/useAdminPanel'
 import type { SmsTemplateRow } from '@/types/admin'
@@ -11,7 +11,11 @@ interface Props {
 }
 
 export function AdminSmsTemplatesSection({ admin }: Props) {
-  const { smsTemplates, smsTemplatesLoading, loadSmsTemplates, updateSmsTemplate, deleteSmsTemplate, bulkToggleSmsTemplates } = admin
+  const {
+    smsTemplates, smsTemplatesLoading, loadSmsTemplates,
+    updateSmsTemplate, deleteSmsTemplate, bulkToggleSmsTemplates,
+    promoteTemplate, demoteTemplate, eligibleTemplates,
+  } = admin
 
   const allEnabled  = smsTemplates.length > 0 && smsTemplates.every((t) => t.ai_enabled)
   const allDisabled = smsTemplates.length > 0 && smsTemplates.every((t) => !t.ai_enabled)
@@ -21,6 +25,9 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
   const [editingRegex, setEditingRegex] = useState('')
   const [editError, setEditError] = useState('')
   const [savingId, setSavingId] = useState<string | null>(null)
+  const [promotingId, setPromotingId] = useState<string | null>(null)
+
+  const eligibleIds = new Set(eligibleTemplates.map((e) => e.template_id))
 
   useEffect(() => {
     void loadSmsTemplates()
@@ -58,6 +65,18 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
   const handleDelete = async (id: string, sender: string) => {
     if (!window.confirm(`Delete template for sender "${sender}"? This cannot be undone.`)) return
     await deleteSmsTemplate(id)
+  }
+
+  const handlePromote = async (tpl: SmsTemplateRow) => {
+    setPromotingId(tpl.id)
+    await promoteTemplate(tpl.id, tpl.sender)
+    setPromotingId(null)
+  }
+
+  const handleDemote = async (tpl: SmsTemplateRow) => {
+    setPromotingId(tpl.id)
+    await demoteTemplate(tpl.id, tpl.sender)
+    setPromotingId(null)
   }
 
   return (
@@ -120,6 +139,8 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
                 <th className="text-left py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Sample</th>
                 <th className="text-left py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Regex</th>
                 <th className="text-center py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Matches</th>
+                <th className="text-center py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Tier</th>
+                <th className="text-center py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Promote</th>
                 <th className="text-center py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Active</th>
                 <th className="text-center py-2 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Delete</th>
               </tr>
@@ -194,6 +215,51 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
                     }`}>
                       {tpl.match_count}
                     </span>
+                  </td>
+
+                  {/* Tier badge */}
+                  <td className="py-2.5 pr-4 text-center">
+                    {tpl.tier === 'promoted' ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--color-brand-green)]/15 text-[var(--color-brand-green)]">
+                        <ShieldCheck className="h-3 w-3" />
+                        {tpl.auto_promoted ? 'Auto' : 'Promoted'}
+                      </span>
+                    ) : eligibleIds.has(tpl.id) ? (
+                      <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400">
+                        Eligible ↑
+                      </span>
+                    ) : (
+                      <span className="inline-block px-2 py-0.5 rounded-full text-[10px] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]">
+                        Learned
+                      </span>
+                    )}
+                  </td>
+
+                  {/* Promote / Demote */}
+                  <td className="py-2.5 pr-4 text-center">
+                    {tpl.tier === 'promoted' ? (
+                      <button
+                        type="button"
+                        disabled={promotingId === tpl.id}
+                        onClick={() => void handleDemote(tpl)}
+                        title="Demote back to Tier 2"
+                        className="inline-flex items-center gap-1 text-[10px] rounded-lg border border-[var(--color-brand-border)] px-2 py-1 text-amber-400 hover:bg-amber-500/10 disabled:opacity-50 transition-colors"
+                      >
+                        <ArrowDown className="h-3 w-3" />
+                        Demote
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={promotingId === tpl.id}
+                        onClick={() => void handlePromote(tpl)}
+                        title="Promote to Tier 1.5 (cached, high-priority)"
+                        className="inline-flex items-center gap-1 text-[10px] rounded-lg border border-[var(--color-brand-green)]/40 px-2 py-1 text-[var(--color-brand-green)] hover:bg-[var(--color-brand-green)]/10 disabled:opacity-50 transition-colors"
+                      >
+                        <ArrowUp className="h-3 w-3" />
+                        Promote
+                      </button>
+                    )}
                   </td>
 
                   {/* AI Active toggle */}

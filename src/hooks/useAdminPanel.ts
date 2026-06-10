@@ -8,6 +8,8 @@ import type {
   AdminUserRow,
   SmsTrackedRow,
   SmsTemplateRow,
+  SmsPromotionConfig,
+  EligibleTemplate,
 } from '@/types/admin'
 
 export function useAdminPanel() {
@@ -36,6 +38,9 @@ export function useAdminPanel() {
   const [smsTracked, setSmsTracked] = useState<SmsTrackedRow[]>([])
   const [smsTrackedLoading, setSmsTrackedLoading] = useState(false)
   const [smsTrackedCursor, setSmsTrackedCursor] = useState<string | null>(null)
+  const [promotionConfig, setPromotionConfig] = useState<SmsPromotionConfig | null>(null)
+  const [promotionConfigLoading, setPromotionConfigLoading] = useState(false)
+  const [eligibleTemplates, setEligibleTemplates] = useState<EligibleTemplate[]>([])
   const [surveyEditId, setSurveyEditId] = useState<string | null>(null)
   const [surveyJson, setSurveyJson] = useState('')
   const [surveyBusy, setSurveyBusy] = useState(false)
@@ -345,6 +350,120 @@ export function useAdminPanel() {
     }
   }, [sessionPin, loadSmsTemplates])
 
+  const loadPromotionConfig = useCallback(async () => {
+    setPromotionConfigLoading(true)
+    try {
+      const res = await fetch('/api/admin/sms-promotion-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: sessionPin, op: 'get' }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setPlatformMessage(data.error || 'Failed to load promotion config'); return }
+      setPromotionConfig(data.config ?? null)
+    } catch {
+      setPlatformMessage('Network error')
+    } finally {
+      setPromotionConfigLoading(false)
+    }
+  }, [sessionPin])
+
+  const savePromotionConfig = useCallback(async (config: SmsPromotionConfig): Promise<void> => {
+    try {
+      const res = await fetch('/api/admin/sms-promotion-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: sessionPin, op: 'save', config }),
+      })
+      const data = await res.json()
+      if (res.ok && data.config) {
+        setPromotionConfig(data.config as SmsPromotionConfig)
+        setPlatformMessage('Promotion criteria saved.')
+      } else {
+        setPlatformMessage(data.error || 'Save failed')
+      }
+    } catch {
+      setPlatformMessage('Network error')
+    }
+  }, [sessionPin])
+
+  const runAutoPromotion = useCallback(async (): Promise<{ promoted: number; eligible: number }> => {
+    try {
+      const res = await fetch('/api/admin/sms-promotion-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: sessionPin, op: 'run_auto_promote' }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setPlatformMessage(data.error || 'Promotion run failed'); return { promoted: 0, eligible: 0 } }
+      if (data.promoted > 0) void loadSmsTemplates()
+      return { promoted: data.promoted ?? 0, eligible: data.eligible ?? 0 }
+    } catch {
+      setPlatformMessage('Network error')
+      return { promoted: 0, eligible: 0 }
+    }
+  }, [sessionPin, loadSmsTemplates])
+
+  const checkEligibility = useCallback(async (): Promise<EligibleTemplate[]> => {
+    try {
+      const res = await fetch('/api/admin/sms-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: sessionPin, op: 'check_eligibility' }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setPlatformMessage(data.error || 'Eligibility check failed'); return [] }
+      const eligible = (data.eligible ?? []) as EligibleTemplate[]
+      setEligibleTemplates(eligible)
+      return eligible
+    } catch {
+      setPlatformMessage('Network error')
+      return []
+    }
+  }, [sessionPin])
+
+  const promoteTemplate = useCallback(async (id: string, sender: string): Promise<void> => {
+    try {
+      const res = await fetch('/api/admin/sms-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: sessionPin, op: 'promote', id, sender }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setSmsTemplates((prev) => prev.map((t) => t.id === id
+          ? { ...t, tier: 'promoted', promoted_at: new Date().toISOString(), auto_promoted: false }
+          : t
+        ))
+      } else {
+        setPlatformMessage(data.error || 'Promote failed')
+      }
+    } catch {
+      setPlatformMessage('Network error')
+    }
+  }, [sessionPin])
+
+  const demoteTemplate = useCallback(async (id: string, sender: string): Promise<void> => {
+    try {
+      const res = await fetch('/api/admin/sms-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: sessionPin, op: 'demote', id, sender }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setSmsTemplates((prev) => prev.map((t) => t.id === id
+          ? { ...t, tier: 'learned', promoted_at: null, auto_promoted: false }
+          : t
+        ))
+      } else {
+        setPlatformMessage(data.error || 'Demote failed')
+      }
+    } catch {
+      setPlatformMessage('Network error')
+    }
+  }, [sessionPin])
+
   const loadSmsTracked = useCallback(async (append = false) => {
     setSmsTrackedLoading(true)
     try {
@@ -404,6 +523,15 @@ export function useAdminPanel() {
     updateSmsTemplate,
     deleteSmsTemplate,
     bulkToggleSmsTemplates,
+    promotionConfig,
+    promotionConfigLoading,
+    eligibleTemplates,
+    loadPromotionConfig,
+    savePromotionConfig,
+    runAutoPromotion,
+    checkEligibility,
+    promoteTemplate,
+    demoteTemplate,
     smsTracked,
     smsTrackedLoading,
     smsTrackedCursor,

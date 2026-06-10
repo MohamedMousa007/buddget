@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { verifyAdminPin } from '@/lib/server/adminAuth'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import { invalidateSenderCache, invalidateAllCache } from '@/lib/sms/templateCache'
 
 export async function POST(req: Request) {
   try {
@@ -8,9 +9,10 @@ export async function POST(req: Request) {
       pin?: unknown
       op?: string
       id?: string
+      sender?: string
       patch?: { ai_enabled?: boolean; regex_pattern?: string }
     }
-    const { pin, op, id, patch } = body ?? {}
+    const { pin, op, id, sender, patch } = body ?? {}
 
     const denied = verifyAdminPin(pin, req)
     if (denied) return denied
@@ -88,7 +90,45 @@ export async function POST(req: Request) {
         console.error('[admin/sms-templates] bulk_toggle failed', error)
         return NextResponse.json({ error: 'Bulk update failed' }, { status: 500 })
       }
+      invalidateAllCache()
       return NextResponse.json({ ok: true })
+    }
+
+    if (op === 'promote' && typeof id === 'string' && typeof sender === 'string') {
+      const { error } = await service
+        .from('sms_tracking_templates_ai')
+        .update({ tier: 'promoted', promoted_at: new Date().toISOString(), auto_promoted: false, updated_at: new Date().toISOString() })
+        .eq('id', id)
+
+      if (error) {
+        console.error('[admin/sms-templates] promote failed', error)
+        return NextResponse.json({ error: 'Promote failed' }, { status: 500 })
+      }
+      invalidateSenderCache(sender)
+      return NextResponse.json({ ok: true })
+    }
+
+    if (op === 'demote' && typeof id === 'string' && typeof sender === 'string') {
+      const { error } = await service
+        .from('sms_tracking_templates_ai')
+        .update({ tier: 'learned', promoted_at: null, auto_promoted: false, updated_at: new Date().toISOString() })
+        .eq('id', id)
+
+      if (error) {
+        console.error('[admin/sms-templates] demote failed', error)
+        return NextResponse.json({ error: 'Demote failed' }, { status: 500 })
+      }
+      invalidateSenderCache(sender)
+      return NextResponse.json({ ok: true })
+    }
+
+    if (op === 'check_eligibility') {
+      const { data, error } = await service.rpc('check_sms_promotion_eligibility')
+      if (error) {
+        console.error('[admin/sms-templates] check_eligibility failed', error)
+        return NextResponse.json({ error: 'Eligibility check failed' }, { status: 500 })
+      }
+      return NextResponse.json({ eligible: data ?? [] })
     }
 
     return NextResponse.json({ error: 'Unknown op' }, { status: 400 })
