@@ -2,9 +2,9 @@
  * POST /api/sms/ack
  *
  * Client acknowledgement that an SMS-tracked expense/income actually rendered in
- * the app (via realtime sync or a tapped push). This is the ONLY signal that
- * promotes a parse log row to status='confirmed' — the true end-to-end success
- * marker. Server-side insertion alone only reaches 'logged'/'notified'.
+ * the app (via realtime sync or a tapped push). This records the render axis;
+ * a row reaches status='confirmed' (true success) only when a push was ALSO
+ * delivered. Render without a delivered push → status='rendered'.
  *
  * Auth: Supabase JWT (mobile) or bearer token from `sms_ingest_tokens`.
  * Idempotent: re-acking a confirmed row is a no-op.
@@ -49,17 +49,15 @@ export async function POST(request: Request) {
   }
 
   const service = createServiceRoleClient()
-  // Only promote rows that are logged/notified — never overwrite rejected/failed,
-  // and scope to the owner so one user can't confirm another's row.
-  const { error } = await service
-    .from('sms_parse_log')
-    .update({ status: 'confirmed', confirmed_at: new Date().toISOString(), parsed_ok: true })
-    .eq('id', parsed.data.logId)
-    .eq('user_id', userId)
-    .in('status', ['logged', 'notified'])
+  // Atomic render-ack: → 'confirmed' if a push already delivered, else 'rendered'.
+  // Scoped to the owner; never touches rejected/failed/confirmed rows.
+  const { error } = await service.rpc('sms_mark_acked', {
+    p_log_id: parsed.data.logId,
+    p_user_id: userId,
+  })
 
   if (error) {
-    console.error('[sms/ack] update failed', error)
+    console.error('[sms/ack] mark_acked failed', error)
     return NextResponse.json({ ok: false }, { status: 500 })
   }
   return NextResponse.json({ ok: true })

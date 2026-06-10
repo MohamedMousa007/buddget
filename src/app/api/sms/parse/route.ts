@@ -22,7 +22,6 @@ import { SMS_PARSER_SYSTEM_PROMPT } from '@/lib/sms/aiParserPrompt'
 import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNativePush'
 import { matchCuratedPattern } from '@/lib/sms/patterns'
 import { isNonTransaction } from '@/lib/sms/patterns/preFilter'
-import { getTemplates, invalidateSenderCache } from '@/lib/sms/templateCache'
 import { checkAndAutoPromote } from '@/lib/sms/promotionChecker'
 
 // Gemini takes 5–8 s and after() work (push + 15 s pattern learning) counts
@@ -166,14 +165,20 @@ function applyTemplate(
   } catch { return null }
 }
 
-// Tier 2: all DB templates (10 min cache, no tier filter)
+// Tier 2: all DB templates for this sender (direct, indexed query — ~1-3ms).
 async function tryStaticParse(
   message: string,
   sender: string,
   service: ReturnType<typeof createServiceRoleClient>,
 ): Promise<TemplateMatch | null> {
-  const templates = await getTemplates(sender, service)
-  for (const tpl of templates) {
+  const { data } = await service
+    .from('sms_tracking_templates_ai')
+    .select('id, regex_pattern, mapping_rules, match_count, kind')
+    .eq('sender', sender)
+    .eq('ai_enabled', true)
+    .order('match_count', { ascending: false })
+    .limit(10)
+  for (const tpl of data ?? []) {
     const result = applyTemplate(message, tpl, service)
     if (result) return result
   }
@@ -283,7 +288,6 @@ async function learnPattern(
     } else if (!tplErr && inserted) {
       console.log('[sms/parse] template learned', { sender, regex: learned.regex_pattern })
       await recordTemplateUser(inserted.id, userId, service)
-      invalidateSenderCache(sender)
       await checkAndAutoPromote(sender, service)
     } else {
       // Duplicate template (23505): record this user in the junction so the
@@ -703,12 +707,13 @@ export async function POST(request: Request) {
     try {
       const result = await sendNativePush(pushArgs)
       const delivered = result.ok && (result.sent ?? 0) > 0
-      await service.from('sms_parse_log')
-        .update(delivered
-          ? { status: 'notified', pushed_at: new Date().toISOString(), push_result: result }
-          : { push_result: result })
-        .eq('id', logId)
-        .in('status', ['logged', 'notified'])
+      // Atomic: records push_result; if delivered → 'confirmed' when the app has
+      // already acked, else 'notified'. A failed push leaves status untouched.
+      await service.rpc('sms_mark_pushed', {
+        p_log_id: logId,
+        p_result: result,
+        p_delivered: delivered,
+      })
       if (!delivered) console.error('[sms/parse] push not delivered', result)
     } catch (e) {
       console.error('[sms/parse] push notification failed', e)

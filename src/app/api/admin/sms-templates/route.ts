@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { verifyAdminPin } from '@/lib/server/adminAuth'
 import { createServiceRoleClient } from '@/lib/supabase/service'
-import { invalidateSenderCache, invalidateAllCache } from '@/lib/sms/templateCache'
 
 export async function POST(req: Request) {
   try {
@@ -90,7 +89,6 @@ export async function POST(req: Request) {
         console.error('[admin/sms-templates] bulk_toggle failed', error)
         return NextResponse.json({ error: 'Bulk update failed' }, { status: 500 })
       }
-      invalidateAllCache()
       return NextResponse.json({ ok: true })
     }
 
@@ -104,7 +102,6 @@ export async function POST(req: Request) {
         console.error('[admin/sms-templates] promote failed', error)
         return NextResponse.json({ error: 'Promote failed' }, { status: 500 })
       }
-      invalidateSenderCache(sender)
       return NextResponse.json({ ok: true })
     }
 
@@ -118,7 +115,6 @@ export async function POST(req: Request) {
         console.error('[admin/sms-templates] demote failed', error)
         return NextResponse.json({ error: 'Demote failed' }, { status: 500 })
       }
-      invalidateSenderCache(sender)
       return NextResponse.json({ ok: true })
     }
 

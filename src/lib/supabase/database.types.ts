@@ -1523,6 +1523,7 @@ export type Database = {
           pushed_at: string | null
           push_result: Json | null
           confirmed_at: string | null
+          acked_at: string | null
           status: string
           raw_body: string
           raw_sms_summary: string | null
@@ -1559,6 +1560,7 @@ export type Database = {
           pushed_at?: string | null
           push_result?: Json | null
           confirmed_at?: string | null
+          acked_at?: string | null
           status?: string
           raw_body: string
           raw_sms_summary?: string | null
@@ -1595,6 +1597,7 @@ export type Database = {
           pushed_at?: string | null
           push_result?: Json | null
           confirmed_at?: string | null
+          acked_at?: string | null
           status?: string
           raw_body?: string
           raw_sms_summary?: string | null
@@ -1813,6 +1816,14 @@ export type Database = {
       }
       cancel_subscription: {
         Args: { p_subscription_id: string }
+        Returns: undefined
+      }
+      sms_mark_pushed: {
+        Args: { p_log_id: string; p_result: Json; p_delivered: boolean }
+        Returns: undefined
+      }
+      sms_mark_acked: {
+        Args: { p_log_id: string; p_user_id: string }
         Returns: undefined
       }
       check_email_exists: { Args: { p_email: string }; Returns: boolean }

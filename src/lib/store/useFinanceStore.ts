@@ -183,6 +183,15 @@ export const useFinanceStore = create<FinanceStore>()(
         }))
       },
 
+      upsertServerExpense: (expense) =>
+        set((state) => {
+          const i = state.expenses.findIndex((e) => e.id === expense.id)
+          if (i === -1) return { expenses: [...state.expenses, expense] }
+          const next = state.expenses.slice()
+          next[i] = expense
+          return { expenses: next }
+        }),
+
       updateExpense: (id, updates) =>
         set((state) => ({
           expenses: state.expenses.map((e) =>
@@ -208,6 +217,20 @@ export const useFinanceStore = create<FinanceStore>()(
           ],
           settings: { ...state.settings, noIncomeDeclared: false },
         })),
+
+      upsertServerIncome: (source) =>
+        set((state) => {
+          const i = state.incomeSources.findIndex((s) => s.id === source.id)
+          if (i === -1) {
+            return {
+              incomeSources: [...state.incomeSources, source],
+              settings: { ...state.settings, noIncomeDeclared: false },
+            }
+          }
+          const next = state.incomeSources.slice()
+          next[i] = source
+          return { incomeSources: next }
+        }),
 
       addIncomeWithDebt: (income, debtRow) => {
         const incomeId = generateId()
