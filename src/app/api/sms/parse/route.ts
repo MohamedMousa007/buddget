@@ -22,7 +22,7 @@ import { SMS_PARSER_SYSTEM_PROMPT } from '@/lib/sms/aiParserPrompt'
 import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNativePush'
 import { matchCuratedPattern } from '@/lib/sms/patterns'
 import { isNonTransaction } from '@/lib/sms/patterns/preFilter'
-import { getPromotedTemplates, getLearnedTemplates, invalidateSenderCache } from '@/lib/sms/templateCache'
+import { getTemplates, invalidateSenderCache } from '@/lib/sms/templateCache'
 import { checkAndAutoPromote } from '@/lib/sms/promotionChecker'
 
 // Gemini takes 5–8 s and after() work (push + 15 s pattern learning) counts
@@ -166,27 +166,13 @@ function applyTemplate(
   } catch { return null }
 }
 
-// Tier 1.5: promoted templates (long-cached, ~10 min TTL)
-async function tryPromotedParse(
-  message: string,
-  sender: string,
-  service: ReturnType<typeof createServiceRoleClient>,
-): Promise<TemplateMatch | null> {
-  const templates = await getPromotedTemplates(sender, service)
-  for (const tpl of templates) {
-    const result = applyTemplate(message, tpl, service)
-    if (result) return result
-  }
-  return null
-}
-
-// Tier 2: learned templates (short-cached, ~5 min TTL)
+// Tier 2: all DB templates (10 min cache, no tier filter)
 async function tryStaticParse(
   message: string,
   sender: string,
   service: ReturnType<typeof createServiceRoleClient>,
 ): Promise<TemplateMatch | null> {
-  const templates = await getLearnedTemplates(sender, service)
+  const templates = await getTemplates(sender, service)
   for (const tpl of templates) {
     const result = applyTemplate(message, tpl, service)
     if (result) return result
@@ -447,19 +433,13 @@ export async function POST(request: Request) {
 
   const curated = matchCuratedPattern(message, sender ?? null)
 
-  // ---- Tier 1.5: promoted DB templates (long-cached, Tier 1-equivalent) ---
-  const promotedMatch = (!curated && sender)
-    ? await tryPromotedParse(message, sender, service)
-    : null
-
-  // ---- Tier 2: learned DB templates (short-cached) -------------------------
-  const staticMatch = (!curated && !promotedMatch && sender)
+  // ---- Tier 2: all DB templates (10 min cache) --------------------------------
+  const staticMatch = (!curated && sender)
     ? await tryStaticParse(message, sender, service)
     : null
 
-  const promotedResult = promotedMatch?.parsed ?? null
   const staticResult = staticMatch?.parsed ?? null
-  const matchedTemplateId = promotedMatch?.templateId ?? staticMatch?.templateId ?? null
+  const matchedTemplateId = staticMatch?.templateId ?? null
 
   if (curated) {
     patternId = curated.patternId
@@ -480,8 +460,6 @@ export async function POST(request: Request) {
       newBalance: curated.balance,
       merchantNormalized: null,
     }
-  } else if (promotedResult) {
-    parsed = promotedResult
   } else if (staticResult) {
     parsed = staticResult
   } else {
@@ -536,8 +514,8 @@ export async function POST(request: Request) {
   }
 
   // Which tier parsed this row — stamped for the admin audit loop.
-  const parseMethod: 'curated' | 'static' | 'promoted' | 'ai' =
-    curated ? 'curated' : promotedResult ? 'promoted' : staticResult ? 'static' : 'ai'
+  const parseMethod: 'curated' | 'template' | 'ai' =
+    curated ? 'curated' : staticResult ? 'template' : 'ai'
 
   if (!parsed.is_transaction || !parsed.amount || !parsed.currency) {
     await service.from('sms_parse_log')

@@ -1441,7 +1441,6 @@ export type Database = {
       }
       sms_promotion_config: {
         Row: {
-          auto_promotion_enabled: boolean
           id: number
           max_failure_rate: number
           min_age_days: number
@@ -1451,7 +1450,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          auto_promotion_enabled?: boolean
           id?: number
           max_failure_rate?: number
           min_age_days?: number
@@ -1461,7 +1459,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          auto_promotion_enabled?: boolean
           id?: number
           max_failure_rate?: number
           min_age_days?: number

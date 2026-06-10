@@ -50,8 +50,10 @@ const FAILURE_LABELS: Record<string, string> = {
 
 const METHOD_CHIPS: Record<string, { label: string; cls: string }> = {
   curated:  { label: 'Curated',  cls: 'border-green-500/20 text-green-400 bg-green-500/10' },
-  promoted: { label: 'Promoted', cls: 'border-green-500/20 text-green-400 bg-green-500/10' },
-  static:   { label: 'Learned',  cls: 'border-blue-500/20 text-blue-400 bg-blue-500/10' },
+  template: { label: 'Template', cls: 'border-blue-500/20 text-blue-400 bg-blue-500/10' },
+  // legacy values for rows recorded before simplification
+  promoted: { label: 'Template', cls: 'border-blue-500/20 text-blue-400 bg-blue-500/10' },
+  static:   { label: 'Template', cls: 'border-blue-500/20 text-blue-400 bg-blue-500/10' },
   ai:       { label: 'AI',       cls: 'border-amber-500/20 text-amber-400 bg-amber-500/10' },
 }
 

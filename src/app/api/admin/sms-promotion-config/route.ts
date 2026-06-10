@@ -4,6 +4,14 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
 import { invalidateSenderCache, invalidateAllCache } from '@/lib/sms/templateCache'
 import { invalidateConfigCache } from '@/lib/sms/promotionChecker'
 
+const DEFAULTS = {
+  min_match_count: 50,
+  min_unique_users: 3,
+  min_age_days: 7,
+  max_failure_rate: 0.05,
+  min_avg_confidence: 0.90,
+}
+
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as {
@@ -15,7 +23,6 @@ export async function POST(req: Request) {
         min_age_days?: number
         max_failure_rate?: number
         min_avg_confidence?: number
-        auto_promotion_enabled?: boolean
       }
     }
     const { pin, op, config } = body ?? {}
@@ -47,7 +54,6 @@ export async function POST(req: Request) {
       if (typeof config.min_age_days === 'number') safe.min_age_days = Math.max(0, Math.floor(config.min_age_days))
       if (typeof config.max_failure_rate === 'number') safe.max_failure_rate = Math.max(0, Math.min(1, config.max_failure_rate))
       if (typeof config.min_avg_confidence === 'number') safe.min_avg_confidence = Math.max(0, Math.min(1, config.min_avg_confidence))
-      if (typeof config.auto_promotion_enabled === 'boolean') safe.auto_promotion_enabled = config.auto_promotion_enabled
 
       const { data, error } = await service
         .from('sms_promotion_config')
@@ -59,6 +65,22 @@ export async function POST(req: Request) {
       if (error) {
         console.error('[admin/sms-promotion-config] save failed', error)
         return NextResponse.json({ error: 'Save failed' }, { status: 500 })
+      }
+      invalidateConfigCache()
+      return NextResponse.json({ ok: true, config: data })
+    }
+
+    if (op === 'reset_defaults') {
+      const { data, error } = await service
+        .from('sms_promotion_config')
+        .update({ ...DEFAULTS, updated_at: new Date().toISOString() })
+        .eq('id', 1)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('[admin/sms-promotion-config] reset failed', error)
+        return NextResponse.json({ error: 'Reset failed' }, { status: 500 })
       }
       invalidateConfigCache()
       return NextResponse.json({ ok: true, config: data })
