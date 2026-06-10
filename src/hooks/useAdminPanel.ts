@@ -38,6 +38,7 @@ export function useAdminPanel() {
   const [smsTracked, setSmsTracked] = useState<SmsTrackedRow[]>([])
   const [smsTrackedLoading, setSmsTrackedLoading] = useState(false)
   const [smsTrackedCursor, setSmsTrackedCursor] = useState<string | null>(null)
+  const [pushConfigured, setPushConfigured] = useState<boolean | null>(null)
   const [promotionConfig, setPromotionConfig] = useState<SmsPromotionConfig | null>(null)
   const [promotionConfigLoading, setPromotionConfigLoading] = useState(false)
   const [eligibleTemplates, setEligibleTemplates] = useState<EligibleTemplate[]>([])
@@ -423,6 +424,17 @@ export function useAdminPanel() {
   }, [sessionPin])
 
 
+  const checkPushHealth = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/sms-push-health', {
+        headers: { 'x-admin-pin': sessionPin },
+      })
+      if (!res.ok) return
+      const data = await res.json()
+      setPushConfigured((data as { configured: boolean }).configured)
+    } catch { /* non-fatal */ }
+  }, [sessionPin])
+
   const loadSmsTracked = useCallback(async (append = false) => {
     setSmsTrackedLoading(true)
     try {
@@ -493,6 +505,8 @@ export function useAdminPanel() {
     smsTrackedLoading,
     smsTrackedCursor,
     loadSmsTracked,
+    pushConfigured,
+    checkPushHealth,
   }
   return api
 }
