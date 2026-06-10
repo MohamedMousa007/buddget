@@ -20,6 +20,8 @@ import crypto from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { SMS_PARSER_SYSTEM_PROMPT } from '@/lib/sms/aiParserPrompt'
 import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNativePush'
+import { matchCuratedPattern } from '@/lib/sms/patterns'
+import { isNonTransaction } from '@/lib/sms/patterns/preFilter'
 
 // Gemini takes 5–8 s and after() work (push + 15 s pattern learning) counts
 // toward the function cap — the default would kill learning mid-call.
@@ -78,10 +80,6 @@ function computeSmsHash(message: string): string {
   return crypto.createHash('sha256').update(normalized).digest('hex')
 }
 
-/** failure_code values that allow a later request to take over the claim. */
-const RETRYABLE_CODES = ['gemini_error', 'rate_limited', 'not_configured']
-const STALE_PROCESSING_MS = 2 * 60 * 1000
-
 // ---------------------------------------------------------------------------
 // JSON extractor — handles Gemini markdown fences and preamble text
 // ---------------------------------------------------------------------------
@@ -115,13 +113,12 @@ async function tryStaticParse(
   message: string,
   sender: string,
   service: ReturnType<typeof createServiceRoleClient>,
-  userId: string,
 ): Promise<ParsedTx | null> {
+  // Templates are GLOBAL — one user's AI parse teaches the regex for everyone.
   const { data: templates } = await service
     .from('sms_tracking_templates_ai')
     .select('id, regex_pattern, mapping_rules, match_count')
     .eq('sender', sender)
-    .eq('user_id', userId)
     .eq('ai_enabled', true)
     .order('match_count', { ascending: false })
     .limit(20)
@@ -191,15 +188,13 @@ async function learnPattern(
   parsed: ParsedTx,
   service: ReturnType<typeof createServiceRoleClient>,
   apiKey: string,
-  userId: string,
 ): Promise<void> {
   try {
-    // Cap at 10 templates per sender per user to prevent runaway growth
+    // Global cap: 10 templates per sender prevents runaway growth
     const { count } = await service
       .from('sms_tracking_templates_ai')
       .select('*', { count: 'exact', head: true })
       .eq('sender', sender)
-      .eq('user_id', userId)
     if ((count ?? 0) >= 10) return
 
     const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
@@ -235,9 +230,10 @@ async function learnPattern(
       return
     }
 
-    // UNIQUE INDEX on (user_id, sender, md5(regex_pattern)) silently ignores exact duplicates
+    // UNIQUE INDEX on (sender, md5(regex_pattern)) silently ignores exact duplicates.
+    // user_id null = global — learned templates serve every user.
     const { error: tplErr } = await service.from('sms_tracking_templates_ai').insert({
-      user_id: userId,
+      user_id: null,
       sender,
       regex_pattern: learned.regex_pattern,
       template_sample: message.slice(0, 500),
@@ -340,14 +336,12 @@ export async function POST(request: Request) {
   const { message, sender, source, receivedAt } = parsedBody.data
   const service = createServiceRoleClient()
 
+  // sms_hash stays as a row identifier — /api/sms/confirm and the FCM
+  // sms_confirm push look rows up by hash. It no longer gates duplicates.
   const hash = computeSmsHash(message)
   const nowIso = receivedAt ?? new Date().toISOString()
 
-  // ---- Atomic claim (before any parsing) ----------------------------------
-  // The partial unique index on (user_id, sms_hash) WHERE is_duplicate=false
-  // makes this insert the dedup gate: a concurrent dual-path request or a
-  // WorkManager retry gets 23505 and returns early with zero Gemini cost.
-  const { data: claimed, error: claimErr } = await service
+  const { data: logRow, error: logErr } = await service
     .from('sms_parse_log')
     .insert({
       user_id: userId,
@@ -357,82 +351,61 @@ export async function POST(request: Request) {
       parsed_ok: false,
       failure_code: 'processing',
       sms_hash: hash,
-      is_duplicate: false,
       parsed_at: new Date().toISOString(),
       received_at: nowIso,
     })
     .select('id')
     .single()
 
-  let logId: string
-  if (claimed) {
-    logId = claimed.id
-  } else if (claimErr?.code === '23505') {
-    const { data: existing } = await service
-      .from('sms_parse_log')
-      .select('id, expense_id, income_id, failure_code, parsed_at')
-      .eq('user_id', userId)
-      .eq('sms_hash', hash)
-      .eq('is_duplicate', false)
-      .maybeSingle()
-
-    // Retryable claims (Gemini outage, quota, crashed mid-parse) may be taken
-    // over so the SMS isn't lost; settled claims end the retry chain with 200.
-    const staleProcessing =
-      existing?.failure_code === 'processing' &&
-      Date.now() - new Date(existing.parsed_at ?? 0).getTime() > STALE_PROCESSING_MS
-    const retryable =
-      !!existing &&
-      (RETRYABLE_CODES.includes(existing.failure_code ?? '') || staleProcessing)
-
-    if (!existing || !retryable) {
-      // Diagnostic row so support can see the skipped repost.
-      // is_duplicate=true sidesteps the partial unique index.
-      await service.from('sms_parse_log').insert({
-        user_id: userId,
-        source: source ?? 'sms',
-        sender: sender ?? null,
-        raw_body: message,
-        parsed_ok: false,
-        is_duplicate: true,
-        failure_code: 'duplicate',
-        sms_hash: hash,
-        expense_id: existing?.expense_id ?? null,
-        received_at: nowIso,
-      })
-      return NextResponse.json({
-        ok: true,
-        deduped: true,
-        expenseId: existing?.expense_id ?? null,
-      })
-    }
-
-    // Conditional update is the takeover lock (compare-and-swap on the exact
-    // state we observed) — 0 rows means another request won.
-    let takeoverQuery = service
-      .from('sms_parse_log')
-      .update({ failure_code: 'processing', parsed_at: new Date().toISOString() })
-      .eq('id', existing.id)
-      .eq('failure_code', existing.failure_code)
-    takeoverQuery = existing.parsed_at
-      ? takeoverQuery.eq('parsed_at', existing.parsed_at)
-      : takeoverQuery.is('parsed_at', null)
-    const { data: takeover } = await takeoverQuery.select('id')
-    if (!takeover?.length) {
-      return NextResponse.json({ ok: true, deduped: true })
-    }
-    logId = existing.id
-  } else {
-    console.error('[sms/parse] claim insert failed', claimErr)
+  if (!logRow) {
+    console.error('[sms/parse] log insert failed', logErr)
     return NextResponse.json({ ok: false, reason: 'log_insert_failed' }, { status: 500 })
   }
+  const logId = logRow.id
 
   try {
-  // Attempt static template bypass — skips rate limit + Gemini entirely.
-  let parsed: ParsedTx
-  const staticResult = sender ? await tryStaticParse(message, sender, service, userId) : null
+  // ---- Pre-filter: deterministic non-transaction rejector -----------------
+  // Kills OTPs / telecom marketing / balance-only SMS at ~0ms, zero AI cost.
+  const rejectReason = isNonTransaction(message)
+  if (rejectReason) {
+    await service.from('sms_parse_log')
+      .update({ failure_code: 'not_transaction', parse_method: 'curated' })
+      .eq('id', logId)
+    return NextResponse.json({ ok: false, reason: 'not_transaction', rejected: rejectReason })
+  }
 
-  if (staticResult) {
+  // ---- Tier 1: curated pattern library (code-shipped, global) -------------
+  let parsed: ParsedTx
+  let patternId: string | null = null
+  let paymentInstrument: string | null = null
+  let txDay: string | null = null
+
+  const curated = matchCuratedPattern(message, sender ?? null)
+  const staticResult = curated
+    ? null
+    // ---- Tier 2: AI-learned templates (global, DB) -------------------------
+    : sender ? await tryStaticParse(message, sender, service) : null
+
+  if (curated) {
+    patternId = curated.patternId
+    paymentInstrument = curated.paymentInstrument
+    txDay = curated.txDay
+    parsed = {
+      is_transaction: true,
+      amount: curated.amount,
+      currency: curated.currency,
+      merchant: curated.counterparty,
+      bank_name: curated.bank,
+      category: null,
+      confidence: 1.0,
+      kind: curated.kind,
+      cleanTitle: curated.cleanTitle,
+      rawSmsSummary: null,
+      detectedAccountLast4: curated.last4,
+      newBalance: curated.balance,
+      merchantNormalized: null,
+    }
+  } else if (staticResult) {
     parsed = staticResult
   } else {
     // Gemini path: API key required, rate-limited.
@@ -472,24 +445,22 @@ export async function POST(request: Request) {
       await service.from('sms_parse_log')
         .update({ failure_code: 'gemini_error', parse_method: 'ai' })
         .eq('id', logId)
-      // 502 → WorkManager retries; the retry takes over this claim (no new row,
-      // one Gemini call per attempt).
+      // 502 → WorkManager retries with a fresh request (new log row).
       return NextResponse.json({ ok: false, reason: 'ai_failed' }, { status: 502 })
     }
 
-    // Learn a regex pattern for this sender after the response is sent.
+    // Learn a GLOBAL regex template for this sender after the response is sent.
     // after() keeps the serverless function alive — a bare void promise is
     // frozen the moment the response returns and never completes on Vercel.
     if (sender && parsed.confidence >= PATTERN_LEARN_CONFIDENCE && parsed.is_transaction) {
-      const learnArgs = [message, sender, parsed, service, apiKey, userId] as const
+      const learnArgs = [message, sender, parsed, service, apiKey] as const
       after(() => learnPattern(...learnArgs))
     }
   }
 
-  // Track which path was used — stamped on every sms_parse_log row for admin visibility.
-  const parseMethod: 'static' | 'ai' = staticResult ? 'static' : 'ai'
-
-  // --- Everything below is unchanged from before the bypass was added ---
+  // Which tier parsed this row — stamped for the admin audit loop.
+  const parseMethod: 'curated' | 'static' | 'ai' =
+    curated ? 'curated' : staticResult ? 'static' : 'ai'
 
   if (!parsed.is_transaction || !parsed.amount || !parsed.currency) {
     await service.from('sms_parse_log')
@@ -519,52 +490,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, reason: 'low_confidence', confidence: parsed.confidence })
   }
 
-  // Fuzzy 60s dedup — catches bank + IPN dual SMS announcing the same
-  // transaction with different wording. Legitimate repeat transactions more
-  // than 60s apart pass through (the old day-wide hash blocked them).
-  const receivedMs = new Date(nowIso).getTime()
-  const { data: twin } = await service
-    .from('sms_parse_log')
-    .select('id, expense_id, income_id')
-    .eq('user_id', userId)
-    .eq('parsed_ok', true)
-    .eq('is_duplicate', false)
-    .eq('amount', parsed.amount)
-    .eq('currency', parsed.currency)
-    .neq('id', logId)
-    .gte('received_at', new Date(receivedMs - 60_000).toISOString())
-    .lte('received_at', new Date(receivedMs + 60_000).toISOString())
-    .limit(1)
-    .maybeSingle()
-
-  if (twin) {
-    await service.from('sms_parse_log')
-      .update({
-        is_duplicate: true,
-        failure_code: 'duplicate',
-        confidence: parsed.confidence,
-        amount: parsed.amount,
-        currency: parsed.currency,
-        merchant: parsed.merchant,
-        bank_name: parsed.bank_name,
-        category: parsed.category,
-        kind: parsed.kind,
-        clean_title: parsed.cleanTitle,
-        expense_id: twin.expense_id,
-        parse_method: parseMethod,
-      })
-      .eq('id', logId)
-    return NextResponse.json({ ok: true, deduped: true, expenseId: twin.expense_id })
-  }
-
   // Server-side security: strip non-digits and truncate to last 4 — never trust raw output.
   const cleanLast4 = (parsed.detectedAccountLast4 ?? '').replace(/\D/g, '').slice(-4) || null
 
   const autoAdd = parsed.confidence >= CONFIRM_CONFIDENCE
   const isIncome = ['income', 'refund', 'instant_transfer_in'].includes(parsed.kind ?? '')
-  const day = nowIso.slice(0, 10)
+  // Prefer the transaction date embedded in the SMS body (curated patterns)
+  // over the receive timestamp — they differ for delayed/offline deliveries.
+  const day = txDay ?? nowIso.slice(0, 10)
 
-  // Promote the claimed row with the full parse result.
+  // Promote the log row with the full parse result.
   const { error: promoteErr } = await service
     .from('sms_parse_log')
     .update({
@@ -584,6 +519,8 @@ export async function POST(request: Request) {
       new_balance: parsed.newBalance ?? null,
       merchant_normalized: parsed.merchantNormalized ?? null,
       parse_method: parseMethod,
+      pattern_id: patternId,
+      payment_instrument: paymentInstrument,
     })
     .eq('id', logId)
 

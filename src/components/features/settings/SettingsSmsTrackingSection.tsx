@@ -6,7 +6,6 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { useT } from '@/lib/i18n'
 import { useSmsTracking } from '@/hooks/useSmsTracking'
-import { SmsRecentEventsTable } from '@/components/features/settings/SmsRecentEventsTable'
 import { SmsIosSetupCard } from '@/components/features/settings/SmsIosSetupCard'
 import { SmsAndroidSetupCard } from '@/components/features/settings/SmsAndroidSetupCard'
 import { SmsSupportedBanksList } from '@/components/features/settings/SmsSupportedBanksList'
@@ -23,10 +22,7 @@ export function SettingsSmsTrackingSection() {
     tokenInfo,
     fetchToken,
     rotateToken,
-    recentEvents,
-    undo,
-    undoingId,
-    undoMessage,
+    lastReceivedAt,
     iosDownloadUrl,
   } = useSmsTracking()
 
@@ -85,23 +81,10 @@ export function SettingsSmsTrackingSection() {
               <SmsIosSetupCard
                 downloadUrl={iosDownloadUrl}
                 onFetchToken={fetchToken}
-                lastReceivedAt={recentEvents[0]?.received_at ?? null}
+                lastReceivedAt={lastReceivedAt}
               />
             </div>
           )}
-
-          {/* Recent auto-tracked transactions */}
-          <div className="px-4 py-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-brand-text-muted)] mb-3">
-              {t.smsTracking.recentTitle}
-            </h3>
-            <SmsRecentEventsTable
-              events={recentEvents}
-              onUndo={undo}
-              undoingId={undoingId}
-              undoMessage={undoMessage}
-            />
-          </div>
 
           {/* Supported banks — iOS / web only (Android shows inline accordion) */}
           {!onAndroid && (

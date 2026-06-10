@@ -63,7 +63,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   tutorialsCompleted: [],
   tutorialCurrentStep: null,
   smsTrackingEnabled: false,
-  customSmsKeywords: [],
 }
 
 export const DEFAULT_PROFILE: UserProfile = {

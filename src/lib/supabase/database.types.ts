@@ -1439,7 +1439,10 @@ export type Database = {
           merchant_normalized: string | null
           new_balance: number | null
           parse_method: string | null
+          parsed_at: string | null
           parsed_ok: boolean
+          pattern_id: string | null
+          payment_instrument: string | null
           raw_body: string
           raw_sms_summary: string | null
           received_at: string
@@ -1468,7 +1471,10 @@ export type Database = {
           merchant_normalized?: string | null
           new_balance?: number | null
           parse_method?: string | null
+          parsed_at?: string | null
           parsed_ok?: boolean
+          pattern_id?: string | null
+          payment_instrument?: string | null
           raw_body: string
           raw_sms_summary?: string | null
           received_at?: string
@@ -1497,7 +1503,10 @@ export type Database = {
           merchant_normalized?: string | null
           new_balance?: number | null
           parse_method?: string | null
+          parsed_at?: string | null
           parsed_ok?: boolean
+          pattern_id?: string | null
+          payment_instrument?: string | null
           raw_body?: string
           raw_sms_summary?: string | null
           received_at?: string
@@ -1621,7 +1630,6 @@ export type Database = {
         Row: {
           ai_provider: string
           budget_entry_mode: Database["public"]["Enums"]["budget_entry_mode"]
-          custom_sms_keywords: string[]
           dashboard_layout: Database["public"]["Enums"]["dashboard_layout"]
           dismiss_onboarding_banner: boolean
           enable_ai: boolean
@@ -1644,7 +1652,6 @@ export type Database = {
         Insert: {
           ai_provider?: string
           budget_entry_mode?: Database["public"]["Enums"]["budget_entry_mode"]
-          custom_sms_keywords?: string[]
           dashboard_layout?: Database["public"]["Enums"]["dashboard_layout"]
           dismiss_onboarding_banner?: boolean
           enable_ai?: boolean
@@ -1667,7 +1674,6 @@ export type Database = {
         Update: {
           ai_provider?: string
           budget_entry_mode?: Database["public"]["Enums"]["budget_entry_mode"]
-          custom_sms_keywords?: string[]
           dashboard_layout?: Database["public"]["Enums"]["dashboard_layout"]
           dismiss_onboarding_banner?: boolean
           enable_ai?: boolean

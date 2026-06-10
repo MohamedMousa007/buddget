@@ -1,7 +1,6 @@
 'use client'
 
 import { isAndroid, isNative } from '@/lib/native/isNative'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
 
 interface SmsCapacitorPlugin {
   checkPermission(): Promise<{ granted: boolean }>
@@ -10,8 +9,6 @@ interface SmsCapacitorPlugin {
   saveToken(opts: { token: string; apiUrl: string }): Promise<void>
   /** Gates the native SmsReceiver — when false it ignores all incoming SMS. */
   setEnabled(opts: { enabled: boolean }): Promise<void>
-  /** Persists custom keywords so the WorkManager path honours them. */
-  setKeywords(opts: { keywords: string[] }): Promise<void>
 }
 
 // Module-level cache — registerPlugin() is called exactly once.
@@ -58,11 +55,11 @@ export async function requestSmsPermission(): Promise<boolean> {
 }
 
 /**
- * Arms the native capture path: persists the token + keywords to
- * SharedPreferences and enables SmsReceiver. The native WorkManager is the
- * SINGLE forwarding path to /api/sms/parse — there is no JS listener, so a
- * given SMS produces exactly one POST whether the app is open or killed.
- * Live dashboard updates arrive via SmsRealtimeSync (Supabase realtime).
+ * Arms the native capture path: persists the token to SharedPreferences and
+ * enables SmsReceiver. The native WorkManager is the SINGLE forwarding path
+ * to /api/sms/parse — there is no JS listener, so a given SMS produces
+ * exactly one POST whether the app is open or killed. Live dashboard updates
+ * arrive via SmsRealtimeSync (Supabase realtime).
  */
 export async function startSMSTracking(accessToken: string): Promise<void> {
   if (!isNative() || !isAndroid()) return
@@ -83,7 +80,6 @@ export async function startSMSTracking(accessToken: string): Promise<void> {
     const base = buildUrl('').replace(/\/$/, '')
     await _plugin.saveToken({ token: accessToken, apiUrl: base })
     await _plugin.setEnabled({ enabled: true })
-    await _plugin.setKeywords({ keywords: useFinanceStore.getState().settings.customSmsKeywords ?? [] })
   } catch {
     // Non-fatal — next app open retries via SmsStartupSync.
   }
@@ -94,16 +90,6 @@ export async function stopSMSTracking(): Promise<void> {
   if (await ensurePlugin()) {
     try { await _plugin!.setEnabled({ enabled: false }) } catch { /* noop */ }
   }
-}
-
-/**
- * Pushes the current custom keyword list to the native SmsReceiver so the
- * killed-app path matches the same SMS. Safe to call on every change.
- */
-export async function syncSmsKeywords(keywords: string[]): Promise<void> {
-  if (!isNative() || !isAndroid()) return
-  if (!(await ensurePlugin()) || !_plugin) return
-  try { await _plugin.setKeywords({ keywords }) } catch { /* non-fatal */ }
 }
 
 /**

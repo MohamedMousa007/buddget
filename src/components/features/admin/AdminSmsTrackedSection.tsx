@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { RefreshCw, ChevronDown } from 'lucide-react'
+import { RefreshCw, ChevronDown, CheckCircle2 } from 'lucide-react'
 import type { AdminPanelModel } from '@/hooks/useAdminPanel'
 
 interface Props {
@@ -34,12 +34,18 @@ const FAILURE_COLORS: Record<string, string> = {
   not_configured: 'bg-red-500/10 text-[var(--color-brand-red)] border-red-500/20',
 }
 
-export function AdminSmsErrorQueue({ admin }: Props) {
-  const { smsErrors, smsErrorsLoading, smsErrorsCursor, loadSmsErrors } = admin
+const METHOD_CHIPS: Record<string, { label: string; cls: string }> = {
+  curated: { label: 'Curated', cls: 'border-green-500/20 text-green-400 bg-green-500/10' },
+  static:  { label: 'Learned', cls: 'border-blue-500/20 text-blue-400 bg-blue-500/10' },
+  ai:      { label: 'AI',      cls: 'border-amber-500/20 text-amber-400 bg-amber-500/10' },
+}
+
+export function AdminSmsTrackedSection({ admin }: Props) {
+  const { smsTracked, smsTrackedLoading, smsTrackedCursor, loadSmsTracked } = admin
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
   useEffect(() => {
-    void loadSmsErrors(false)
+    void loadSmsTracked(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -48,41 +54,42 @@ export function AdminSmsErrorQueue({ admin }: Props) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-sm font-semibold text-[var(--color-brand-text-primary)]">
-            SMS Error Queue
+            SMS Tracked
           </h2>
           <p className="text-xs text-[var(--color-brand-text-muted)] mt-0.5">
-            All SMS parse failures — including skipped, low-confidence, and crash rows.
+            Every received SMS with its parse status, method, and error details.
           </p>
         </div>
         <button
           type="button"
-          onClick={() => void loadSmsErrors(false)}
-          disabled={smsErrorsLoading}
+          onClick={() => void loadSmsTracked(false)}
+          disabled={smsTrackedLoading}
           className="flex items-center gap-1.5 text-xs rounded-xl border border-[var(--color-brand-border)] px-3 py-1.5 text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] disabled:opacity-50 transition-colors"
         >
-          <RefreshCw className={`h-3.5 w-3.5 ${smsErrorsLoading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-3.5 w-3.5 ${smsTrackedLoading ? 'animate-spin' : ''}`} />
           Refresh
         </button>
       </div>
 
-      {smsErrorsLoading && smsErrors.length === 0 && (
+      {smsTrackedLoading && smsTracked.length === 0 && (
         <p className="text-xs text-[var(--color-brand-text-muted)] py-4 text-center">Loading…</p>
       )}
 
-      {!smsErrorsLoading && smsErrors.length === 0 && (
+      {!smsTrackedLoading && smsTracked.length === 0 && (
         <p className="text-xs text-[var(--color-brand-text-muted)] py-4 text-center">
-          No failures in the log. All SMS parsed successfully.
+          No SMS tracked yet.
         </p>
       )}
 
-      {smsErrors.length > 0 && (
+      {smsTracked.length > 0 && (
         <div className="space-y-2">
-          {smsErrors.map((row) => {
-            const code = row.failure_code ?? 'unknown'
-            const label = FAILURE_LABELS[code] ?? code
-            const colorClass = FAILURE_COLORS[code] ?? FAILURE_COLORS.log_insert_failed
+          {smsTracked.map((row) => {
             const isExpanded = expandedId === row.id
             const displayName = row.clean_title ?? row.merchant ?? row.bank_name ?? row.sender ?? '—'
+            const method = row.parse_method ? METHOD_CHIPS[row.parse_method] : null
+            const failureCode = row.failure_code ?? 'unknown'
+            const failureLabel = FAILURE_LABELS[failureCode] ?? failureCode
+            const failureCls = FAILURE_COLORS[failureCode] ?? FAILURE_COLORS.log_insert_failed
 
             return (
               <div
@@ -94,10 +101,17 @@ export function AdminSmsErrorQueue({ admin }: Props) {
                   onClick={() => setExpandedId(isExpanded ? null : row.id)}
                   className="w-full flex items-start gap-3 px-3 py-2.5 text-left hover:bg-white/5 transition-colors"
                 >
-                  {/* Failure code chip */}
-                  <span className={`shrink-0 mt-0.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${colorClass}`}>
-                    {label}
-                  </span>
+                  {/* Status chip */}
+                  {row.parsed_ok ? (
+                    <span className="shrink-0 mt-0.5 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border bg-green-500/10 text-green-400 border-green-500/20">
+                      <CheckCircle2 className="h-2.5 w-2.5" />
+                      Tracked
+                    </span>
+                  ) : (
+                    <span className={`shrink-0 mt-0.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${failureCls}`}>
+                      {failureLabel}
+                    </span>
+                  )}
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
@@ -110,13 +124,9 @@ export function AdminSmsErrorQueue({ admin }: Props) {
                     <p className="text-[10px] text-[var(--color-brand-text-muted)] flex items-center gap-1.5 flex-wrap">
                       {row.sender ?? 'unknown sender'} · {row.confidence != null ? `${Math.round(row.confidence * 100)}% conf · ` : ''}
                       {new Date(row.received_at).toLocaleString()}
-                      {row.parse_method && (
-                        <span className={`font-mono text-[9px] px-1 py-0.5 rounded border ${
-                          row.parse_method === 'static'
-                            ? 'border-blue-500/20 text-blue-400 bg-blue-500/10'
-                            : 'border-amber-500/20 text-amber-400 bg-amber-500/10'
-                        }`}>
-                          {row.parse_method === 'static' ? 'Static' : 'AI'}
+                      {method && (
+                        <span className={`font-mono text-[9px] px-1 py-0.5 rounded border ${method.cls}`}>
+                          {method.label}
                         </span>
                       )}
                     </p>
@@ -133,12 +143,20 @@ export function AdminSmsErrorQueue({ admin }: Props) {
                     <pre className="text-[10px] text-[var(--color-brand-text-secondary)] whitespace-pre-wrap break-all bg-[var(--color-brand-bg)] rounded-lg p-2.5 max-h-40 overflow-y-auto font-mono leading-relaxed">
                       {row.raw_body}
                     </pre>
+                    {!row.parsed_ok && (
+                      <p className="text-[10px] text-amber-400 mt-2">
+                        Failure: {failureLabel} <span className="font-mono">({failureCode})</span>
+                      </p>
+                    )}
                     <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-2">
                       User: <span className="font-mono">{row.user_id.slice(0, 8)}…</span>
-                      {row.is_duplicate ? ' · Duplicate' : ''}
                       {row.kind ? ` · ${row.kind}` : ''}
                       {row.source ? ` · via ${row.source}` : ''}
                       {row.account_last4 ? ` · ••••${row.account_last4}` : ''}
+                      {row.payment_instrument ? ` · ${row.payment_instrument}` : ''}
+                      {row.pattern_id ? ` · pattern: ${row.pattern_id}` : ''}
+                      {row.expense_id ? ' · expense linked' : ''}
+                      {row.income_id ? ' · income linked' : ''}
                     </p>
                   </div>
                 )}
@@ -146,14 +164,14 @@ export function AdminSmsErrorQueue({ admin }: Props) {
             )
           })}
 
-          {smsErrorsCursor && (
+          {smsTrackedCursor && (
             <button
               type="button"
-              onClick={() => void loadSmsErrors(true)}
-              disabled={smsErrorsLoading}
+              onClick={() => void loadSmsTracked(true)}
+              disabled={smsTrackedLoading}
               className="w-full flex items-center justify-center gap-1.5 text-xs rounded-xl border border-[var(--color-brand-border)] py-2 text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-secondary)] disabled:opacity-50 transition-colors"
             >
-              {smsErrorsLoading ? 'Loading…' : 'Load more'}
+              {smsTrackedLoading ? 'Loading…' : 'Load more'}
             </button>
           )}
         </div>
