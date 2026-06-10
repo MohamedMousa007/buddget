@@ -42,8 +42,20 @@ function SmsStartupSync() {
 
     const tryStart = async (token: string) => {
       if (!smsEnabled() || !token) return
-      const { startSMSTracking } = await import('@/lib/native/smsTracker')
+      const { startSMSTracking, saveSmsToken } = await import('@/lib/native/smsTracker')
       await startSMSTracking(token)
+      // Replace the 1-hour Supabase JWT with the permanent ingest token.
+      // Without this, WorkManager silently gets 401 after the JWT expires and
+      // every SMS is dropped with no DB row, no error, no notification.
+      try {
+        const res = await fetch(apiUrl('/api/sms/setup-token'), {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (res.ok) {
+          const data = (await res.json()) as { token?: string }
+          if (data.token) await saveSmsToken(data.token)
+        }
+      } catch { /* non-fatal — JWT fallback already in SharedPreferences */ }
     }
 
     const tryRefresh = async (token: string) => {
