@@ -26,6 +26,7 @@ import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useNetWorth } from '@/hooks/useNetWorth'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
+import { SkeletonList } from '@/components/ui/SkeletonList'
 import {
   useHydrateBudget,
   useHydrateDebts,
@@ -38,6 +39,7 @@ import {
 
 export default function DashboardPage() {
   const t = useT()
+  const dataReady = useFinanceStore((s) => s.dataReady)
   // Each hook runs in parallel and hydrates its Zustand slice from Supabase
   // (in addition to the localStorage copy hydrated synchronously on mount).
   useHydrateExpenses()
@@ -87,6 +89,8 @@ export default function DashboardPage() {
     }
     wasAllDoneRef.current = checklist.allDone
   }, [checklist.allDone, checklist.hidden, showToast, t.onboarding.checklistCompleteToast])
+
+  if (!dataReady) return <div className="p-4"><SkeletonList rows={8} /></div>
 
   return (
     <div className="min-h-screen">

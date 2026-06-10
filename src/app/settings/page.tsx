@@ -11,12 +11,16 @@ import { SettingsDataManagementSection } from '@/components/features/settings/Se
 import { SettingsAppPreferencesSection } from '@/components/features/settings/SettingsAppPreferencesSection'
 import { SettingsSecuritySection } from '@/components/features/settings/SettingsSecuritySection'
 import { SettingsSmsTrackingSection } from '@/components/features/settings/SettingsSmsTrackingSection'
+import { SkeletonList } from '@/components/ui/SkeletonList'
 
 export default function SettingsPage() {
   const t = useT()
   // TODO: Settings children accept the full store — refactor to individual selectors per section
   const store = useFinanceStore()
+  const dataReady = store.dataReady
   const s = useSettingsPage()
+
+  if (!dataReady) return <div className="p-4"><SkeletonList rows={6} /></div>
 
   return (
     <div className="min-h-screen">

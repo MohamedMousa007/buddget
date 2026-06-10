@@ -14,10 +14,12 @@ import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { Landmark } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { useHydrateDebts, useHydrateGoals } from '@/hooks/remote'
+import { SkeletonList } from '@/components/ui/SkeletonList'
 
 export default function DebtsPage() {
   useHydrateDebts()
   useHydrateGoals()
+  const dataReady = useFinanceStore((s) => s.dataReady)
   const { debts, debtPayments } = useFinanceStore(
     useShallow((s) => ({
       debts: s.debts,
@@ -54,6 +56,8 @@ export default function DebtsPage() {
     setEditingDebtId(debtId)
     setActiveModal('editDebt')
   }
+
+  if (!dataReady) return <div className="p-4"><SkeletonList /></div>
 
   return (
     <div className="min-h-screen">

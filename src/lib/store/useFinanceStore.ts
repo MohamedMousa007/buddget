@@ -158,6 +158,8 @@ export const useFinanceStore = create<FinanceStore>()(
       lastGoldFetch: null,
       goldPriceAvailable: true,
       lastRatesFetch: null,
+      dataReady: false,
+      setDataReady: (v) => set({ dataReady: v }),
 
       addExpense: (expense) => {
         const { exchangeRates, settings } = get()
@@ -1335,6 +1337,7 @@ export const useFinanceStore = create<FinanceStore>()(
           lastGoldFetch: null,
           goldPriceAvailable: true,
           lastRatesFetch: null,
+          dataReady: false,
         }),
 
       /** Alias for `resetAllData` (logout / wipe client state). */
@@ -1540,6 +1543,7 @@ export const useFinanceStore = create<FinanceStore>()(
         return {
           ...current,
           ...p,
+          dataReady: false,
           goals: p.goals ?? current.goals,
           subscriptions: p.subscriptions ?? current.subscriptions,
           lastGoldFetch: p.lastGoldFetch ?? current.lastGoldFetch,

@@ -657,6 +657,14 @@ export interface FinanceStore {
   /** When false, live gold failed — UI must not show a trusted AED/gram figure. */
   goldPriceAvailable: boolean
   lastRatesFetch: string | null
+  /**
+   * True once the initial server pull (pullAll or pullCore) for the current
+   * userId has completed. Resets to false on sign-out and on userId change.
+   * Not persisted — always starts false on app open so pages show skeletons
+   * instead of stale localStorage data while the first pull is in flight.
+   */
+  dataReady: boolean
+  setDataReady: (v: boolean) => void
 
   /** `amountInBaseCurrency` is computed in the store from rates + base currency. */
   addExpense: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'amountInBaseCurrency'>) => void

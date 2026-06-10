@@ -131,9 +131,10 @@ async function ackSms(logId: string | undefined): Promise<void> {
  */
 function SmsRealtimeSync() {
   const smsEnabled = useFinanceStore((s) => s.settings.smsTrackingEnabled)
+  const dataReady = useFinanceStore((s) => s.dataReady)
 
   useEffect(() => {
-    if (!smsEnabled) return
+    if (!dataReady || !smsEnabled) return
     const supabase = createClient()
     const onRow = async (payload: { new: { id?: string; expense_id?: string | null; income_id?: string | null } }) => {
       const row = payload.new
@@ -172,7 +173,7 @@ function SmsRealtimeSync() {
       )
       .subscribe()
     return () => { void supabase.removeChannel(channel) }
-  }, [smsEnabled])
+  }, [dataReady, smsEnabled])
 
   return null
 }
