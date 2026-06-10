@@ -5,9 +5,8 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
 
 export async function POST(req: Request) {
   const pin = req.headers.get('x-admin-pin') ?? ''
-  if (!verifyAdminPin(pin)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authError = verifyAdminPin(pin, req)
+  if (authError) return authError
 
   const service = createServiceRoleClient()
   const { data: rows } = await service
