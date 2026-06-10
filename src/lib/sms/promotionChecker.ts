@@ -4,7 +4,6 @@ import { invalidateSenderCache } from './templateCache'
 type ServiceClient = ReturnType<typeof createServiceRoleClient>
 
 interface PromotionConfig {
-  auto_promotion_enabled: boolean
   min_match_count: number
   min_unique_users: number
   min_age_days: number
@@ -25,7 +24,7 @@ async function getPromotionConfig(service: ServiceClient): Promise<PromotionConf
 
   const { data } = await service
     .from('sms_promotion_config')
-    .select('auto_promotion_enabled, min_match_count, min_unique_users, min_age_days, max_failure_rate, min_avg_confidence')
+    .select('min_match_count, min_unique_users, min_age_days, max_failure_rate, min_avg_confidence')
     .eq('id', 1)
     .single()
 
@@ -44,7 +43,7 @@ export async function checkAndAutoPromote(
 ): Promise<void> {
   try {
     const config = await getPromotionConfig(service)
-    if (!config?.auto_promotion_enabled) return
+    if (!config) return
 
     const { data: eligible } = await service
       .rpc('check_sms_promotion_eligibility')

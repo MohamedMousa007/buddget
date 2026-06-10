@@ -2,12 +2,19 @@
 
 import { useEffect, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
-import { Switch } from '@/components/ui/switch'
 import type { AdminPanelModel } from '@/hooks/useAdminPanel'
 import type { SmsPromotionConfig } from '@/types/admin'
 
 interface Props {
   admin: AdminPanelModel
+}
+
+const DEFAULTS: Omit<SmsPromotionConfig, 'id' | 'updated_at'> = {
+  min_match_count: 50,
+  min_unique_users: 3,
+  min_age_days: 7,
+  max_failure_rate: 0.05,
+  min_avg_confidence: 0.90,
 }
 
 export function AdminSmsPromotionSection({ admin }: Props) {
@@ -35,6 +42,15 @@ export function AdminSmsPromotionSection({ admin }: Props) {
     setSaving(true)
     await savePromotionConfig(draft)
     await checkEligibility()
+    setSaving(false)
+  }
+
+  const handleReset = async () => {
+    if (!draft) return
+    const reset = { ...draft, ...DEFAULTS }
+    setDraft(reset)
+    setSaving(true)
+    await savePromotionConfig(reset)
     setSaving(false)
   }
 
@@ -94,7 +110,7 @@ export function AdminSmsPromotionSection({ admin }: Props) {
             Template Auto-Promotion
           </h2>
           <p className="text-xs text-[var(--color-brand-text-muted)] mt-0.5">
-            Learned templates that meet these criteria are promoted to Tier 1.5 (cached, high-priority).
+            Templates that meet these criteria are automatically promoted. Edit and save to change thresholds; Reset restores factory defaults.
           </p>
         </div>
         <button
@@ -114,20 +130,6 @@ export function AdminSmsPromotionSection({ admin }: Props) {
 
       {draft && (
         <>
-          {/* Auto-promotion toggle */}
-          <div className="flex items-center justify-between rounded-xl border border-[var(--color-brand-border)] px-4 py-3">
-            <div>
-              <p className="text-xs font-medium text-[var(--color-brand-text-primary)]">Auto-promotion enabled</p>
-              <p className="text-[10px] text-[var(--color-brand-text-muted)]">
-                Automatically promote templates after each pattern is learned
-              </p>
-            </div>
-            <Switch
-              checked={draft.auto_promotion_enabled}
-              onCheckedChange={(v) => set('auto_promotion_enabled', v)}
-            />
-          </div>
-
           {/* Criteria sliders */}
           <div className="rounded-xl border border-[var(--color-brand-border)] px-4 py-4 space-y-5">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-brand-text-muted)]">
@@ -182,11 +184,19 @@ export function AdminSmsPromotionSection({ admin }: Props) {
             </button>
             <button
               type="button"
+              onClick={() => void handleReset()}
+              disabled={saving}
+              className="h-10 px-4 rounded-xl border border-[var(--color-brand-border)] text-[var(--color-brand-text-muted)] text-sm font-medium hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] disabled:opacity-50 transition-colors"
+            >
+              Reset
+            </button>
+            <button
+              type="button"
               onClick={() => void handleRun()}
               disabled={running}
               className="flex-1 h-10 rounded-xl border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm font-medium hover:bg-[var(--color-brand-elevated)] disabled:opacity-50 transition-colors"
             >
-              {running ? 'Running…' : 'Run Promotion Check'}
+              {running ? 'Running…' : 'Run Check'}
             </button>
           </div>
         </>

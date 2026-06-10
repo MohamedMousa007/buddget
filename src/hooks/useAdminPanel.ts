@@ -422,47 +422,6 @@ export function useAdminPanel() {
     }
   }, [sessionPin])
 
-  const promoteTemplate = useCallback(async (id: string, sender: string): Promise<void> => {
-    try {
-      const res = await fetch('/api/admin/sms-templates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: sessionPin, op: 'promote', id, sender }),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setSmsTemplates((prev) => prev.map((t) => t.id === id
-          ? { ...t, tier: 'promoted', promoted_at: new Date().toISOString(), auto_promoted: false }
-          : t
-        ))
-      } else {
-        setPlatformMessage(data.error || 'Promote failed')
-      }
-    } catch {
-      setPlatformMessage('Network error')
-    }
-  }, [sessionPin])
-
-  const demoteTemplate = useCallback(async (id: string, sender: string): Promise<void> => {
-    try {
-      const res = await fetch('/api/admin/sms-templates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: sessionPin, op: 'demote', id, sender }),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setSmsTemplates((prev) => prev.map((t) => t.id === id
-          ? { ...t, tier: 'learned', promoted_at: null, auto_promoted: false }
-          : t
-        ))
-      } else {
-        setPlatformMessage(data.error || 'Demote failed')
-      }
-    } catch {
-      setPlatformMessage('Network error')
-    }
-  }, [sessionPin])
 
   const loadSmsTracked = useCallback(async (append = false) => {
     setSmsTrackedLoading(true)
@@ -530,8 +489,6 @@ export function useAdminPanel() {
     savePromotionConfig,
     runAutoPromotion,
     checkEligibility,
-    promoteTemplate,
-    demoteTemplate,
     smsTracked,
     smsTrackedLoading,
     smsTrackedCursor,

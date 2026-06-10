@@ -71,7 +71,6 @@ export interface SmsPromotionConfig {
   min_age_days: number
   max_failure_rate: number
   min_avg_confidence: number
-  auto_promotion_enabled: boolean
   updated_at: string
 }
 
