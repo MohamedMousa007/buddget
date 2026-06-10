@@ -15,9 +15,11 @@ import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { Receipt } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { useHydrateExpenses } from '@/hooks/remote'
+import { SkeletonList } from '@/components/ui/SkeletonList'
 
 export default function ExpensesPage() {
   useHydrateExpenses()
+  const dataReady = useFinanceStore((s) => s.dataReady)
   const { expenses, settings, exchangeRates } = useFinanceStore(
     useShallow((s) => ({
       expenses: s.expenses,
@@ -89,6 +91,8 @@ export default function ExpensesPage() {
     a.click()
     URL.revokeObjectURL(url)
   }
+
+  if (!dataReady) return <div className="p-4"><SkeletonList /></div>
 
   return (
     <div className="min-h-screen">

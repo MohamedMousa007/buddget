@@ -13,6 +13,7 @@ import {
   mergeSnapshots,
   hasMeaningfulLocalState,
 } from '@/lib/supabase/remote'
+import { markHydrated } from '@/hooks/remote/hydrateGuard'
 import type { Snapshot } from '@/lib/supabase/remote'
 
 const DEBOUNCE_MS = 500
@@ -125,17 +126,12 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     const supabase = supabaseRef.current
 
     async function pull() {
+      useFinanceStore.getState().setDataReady(false)
       try {
         const initial = useFinanceStore.getState()
         const localSnap = snapshot(initial)
         const localHasData = hasMeaningfulLocalState(localSnap)
 
-        // If localStorage already has this user's state (profile.id matches),
-        // skip the pullCore overwrite. Otherwise reloading within the flush
-        // window reverts recent edits (theme, currency, etc.) to whatever was
-        // last on the server. Transactional slices (expenses / debts / …) are
-        // still refreshed by the per-slice useHydrate* hooks, which is the
-        // intended cross-device path.
         const alreadyHydratedForUser = initial.profile.id === userId
         if (alreadyHydratedForUser && !localHasData) {
           return
@@ -144,27 +140,16 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         if (localHasData) {
           const server = await pullAll(supabase, userId)
           if (server) {
-            // Re-snapshot right before the merge. The user may have edited
-            // rows DURING the pullAll round-trip — those edits live in the
-            // live store but not in the initial `localSnap` captured above.
-            // Merging against the latest local state preserves them.
+            // Re-snapshot right before the merge so edits made during the
+            // pullAll round-trip aren't clobbered.
             const latestLocal = snapshot(useFinanceStore.getState())
             const merged = mergeSnapshots(latestLocal, server)
-            // Belt-and-suspenders: even though singleton slices now flush
-            // instantly (so the server should already hold the latest value
-            // by the time this pull completes), keep the local copy on a
-            // reload of an already-hydrated user. Protects against the edge
-            // case where the instant flush is still in-flight while this
-            // pull resolves, and `mergeSnapshots` would otherwise prefer
-            // server — which is correct for guest→auth promotion but wrong
-            // here.
-            const trustLocalSingletons = alreadyHydratedForUser
+            // Server always wins for singletons — settings flush instantly so
+            // the DB is always up to date by the time this pull completes.
             useFinanceStore.setState({
-              profile: trustLocalSingletons ? latestLocal.profile : merged.profile,
-              settings: trustLocalSingletons ? latestLocal.settings : merged.settings,
-              onboardingState: trustLocalSingletons
-                ? latestLocal.onboardingState
-                : merged.onboardingState,
+              profile: merged.profile,
+              settings: merged.settings,
+              onboardingState: merged.onboardingState,
               financialGoalsNotes: merged.financialGoalsNotes,
               activeBudgetPlanId: merged.activeBudgetPlanId,
               paymentMethods: merged.paymentMethods,
@@ -182,6 +167,10 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
               goals: merged.goals,
               budgetPlans: merged.budgetPlans,
             })
+            // Mark all slices as hydrated so per-page hooks skip redundant fetches.
+            for (const slice of ['expenses','income','debts','goals','savings','subscriptions','budget']) {
+              markHydrated(userId, slice)
+            }
             return
           }
           return
@@ -198,16 +187,13 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
             paymentMethods: core.paymentMethods,
           })
         }
-        // Historical note: a legacy `user_finance.payload` JSONB fallback
-        // branch lived here for pre-v17 users without a profiles row.
-        // DB-5 retired that table + its read path after verifying zero
-        // orphans (see supabase/migrations/0033...sql).
       } catch (e) {
         console.error('[finance sync] pull failed', e)
       } finally {
         prevSnap.current = snapshot(useFinanceStore.getState())
         lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
         hydrated.current = true
+        useFinanceStore.getState().setDataReady(true)
       }
     }
 

@@ -11,11 +11,13 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import type { Goal } from '@/lib/store/types'
 import { useHydrateGoals, useHydrateSavings, useHydrateDebts } from '@/hooks/remote'
+import { SkeletonList } from '@/components/ui/SkeletonList'
 
 export default function GoalsPage() {
   useHydrateGoals()
   useHydrateSavings()
   useHydrateDebts()
+  const dataReady = useFinanceStore((s) => s.dataReady)
   const t = useT()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<Goal | null>(null)
@@ -48,6 +50,8 @@ export default function GoalsPage() {
     setSheetOpen(false)
     setEditing(null)
   }
+
+  if (!dataReady) return <div className="p-4"><SkeletonList /></div>
 
   return (
     <div className="min-h-screen">

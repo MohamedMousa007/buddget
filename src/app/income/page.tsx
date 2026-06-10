@@ -10,12 +10,14 @@ import { Wallet } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { IncomeSourceRow } from '@/components/features/income/IncomeSourceRow'
 import { useHydrateIncome, useHydrateDebts, useHydrateSavings } from '@/hooks/remote'
+import { SkeletonList } from '@/components/ui/SkeletonList'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 
 export default function IncomePage() {
   useHydrateIncome()
   useHydrateDebts()
   useHydrateSavings()
+  const dataReady = useFinanceStore((s) => s.dataReady)
   const { incomeSources, deleteIncomeSource, savingsAccounts, debts, paymentMethods } = useFinanceStore(
     useShallow((s) => ({
       incomeSources: s.incomeSources,
@@ -35,6 +37,8 @@ export default function IncomePage() {
       () => setActiveModal('addIncome'),
       t.income.requireAuth
     )
+
+  if (!dataReady) return <div className="p-4"><SkeletonList /></div>
 
   return (
     <div className="min-h-screen">

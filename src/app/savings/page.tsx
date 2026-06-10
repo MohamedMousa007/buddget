@@ -23,6 +23,7 @@ import type { SavingsAccount } from '@/lib/store/types'
 import { useT } from '@/lib/i18n'
 import { convertCurrency } from '@/lib/utils/currency'
 import { useHydrateSavings, useHydrateGoals } from '@/hooks/remote'
+import { SkeletonList } from '@/components/ui/SkeletonList'
 
 const headerWithdrawClass =
   'inline-flex items-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)] transition-colors'
@@ -35,6 +36,7 @@ const headerAddClass =
 export default function SavingsPage() {
   useHydrateSavings()
   useHydrateGoals()
+  const dataReady = useFinanceStore((s) => s.dataReady)
   const t = useT()
   const requireAuth = useRequireAuthAction()
   const nw = useNetWorth()
@@ -127,6 +129,7 @@ export default function SavingsPage() {
     }
   }
 
+  if (!dataReady) return <div className="p-4"><SkeletonList /></div>
 
   return (
     <div className="min-h-screen pb-24">

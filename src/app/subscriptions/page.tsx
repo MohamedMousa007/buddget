@@ -13,10 +13,12 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import type { Subscription } from '@/lib/store/types'
 import { useHydrateSubscriptions, useHydrateExpenses } from '@/hooks/remote'
+import { SkeletonList } from '@/components/ui/SkeletonList'
 
 export default function SubscriptionsPage() {
   useHydrateSubscriptions()
   useHydrateExpenses()
+  const dataReady = useFinanceStore((s) => s.dataReady)
   const t = useT()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<Subscription | null>(null)
@@ -47,6 +49,8 @@ export default function SubscriptionsPage() {
     setSheetOpen(false)
     setEditing(null)
   }
+
+  if (!dataReady) return <div className="p-4"><SkeletonList /></div>
 
   return (
     <div className="min-h-screen">

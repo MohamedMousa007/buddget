@@ -700,25 +700,46 @@ export async function POST(request: Request) {
             collapseKey: `sms-confirm-${hash.slice(0, 12)}`,
           }
 
-  // Record the push send result on the log row so delivery failures are visible
-  // in admin instead of being silently console.log'd. status → 'notified' only
-  // when at least one device actually accepted the push.
-  after(async () => {
-    try {
-      const result = await sendNativePush(pushArgs)
-      const delivered = result.ok && (result.sent ?? 0) > 0
-      // Atomic: records push_result; if delivered → 'confirmed' when the app has
-      // already acked, else 'notified'. A failed push leaves status untouched.
+  // Try push synchronously first (FCM typically < 300 ms). Race against a 3 s
+  // timeout so slow Gemini parses don't exhaust Vercel's after() budget.
+  // If we win: mark immediately. If we time out: fall back to after() for
+  // best-effort delivery after the response is sent.
+  let pushHandledInline = false
+  try {
+    const pushResult = await Promise.race([
+      sendNativePush(pushArgs),
+      new Promise<'timeout'>((r) => setTimeout(() => r('timeout'), 3000)),
+    ])
+    if (pushResult !== 'timeout') {
+      const delivered = pushResult.ok && (pushResult.sent ?? 0) > 0
       await service.rpc('sms_mark_pushed', {
         p_log_id: logId,
-        p_result: result,
+        p_result: pushResult,
         p_delivered: delivered,
       })
-      if (!delivered) console.error('[sms/parse] push not delivered', result)
-    } catch (e) {
-      console.error('[sms/parse] push notification failed', e)
+      if (!delivered) console.error('[sms/parse] push not delivered', pushResult)
+      pushHandledInline = true
     }
-  })
+  } catch (e) {
+    console.error('[sms/parse] push inline attempt failed', e)
+  }
+
+  if (!pushHandledInline) {
+    after(async () => {
+      try {
+        const result = await sendNativePush(pushArgs)
+        const delivered = result.ok && (result.sent ?? 0) > 0
+        await service.rpc('sms_mark_pushed', {
+          p_log_id: logId,
+          p_result: result,
+          p_delivered: delivered,
+        })
+        if (!delivered) console.error('[sms/parse] push (after) not delivered', result)
+      } catch (e) {
+        console.error('[sms/parse] push notification (after) failed', e)
+      }
+    })
+  }
 
   // Record this user against the matched learned/promoted template for an
   // accurate distinct-user count (drives the promotion min_unique_users gate).

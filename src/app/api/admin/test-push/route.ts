@@ -9,22 +9,29 @@ export async function POST(req: Request) {
   if (authError) return authError
 
   const service = createServiceRoleClient()
-  const { data: rows } = await service
+  const { data: tokens } = await service
     .from('push_tokens')
-    .select('user_id')
-    .limit(1)
-    .single()
+    .select('user_id, platform, updated_at')
+    .limit(10)
 
-  if (!rows?.user_id) {
-    return NextResponse.json({ error: 'No push tokens registered' }, { status: 404 })
+  if (!tokens || tokens.length === 0) {
+    return NextResponse.json({
+      error: 'No push tokens registered — open the app on your device first',
+      tokenCount: 0,
+    }, { status: 404 })
   }
 
+  const userId = tokens[0]!.user_id
   const result = await sendNativePush({
-    userId: rows.user_id,
+    userId,
     title: 'FCM Test',
     body: 'Push delivery is working ✓',
     data: { type: 'test' },
   })
 
-  return NextResponse.json(result)
+  return NextResponse.json({
+    ...result,
+    tokenCount: tokens.length,
+    tokens: tokens.map((t) => ({ platform: t.platform, updatedAt: t.updated_at })),
+  })
 }
