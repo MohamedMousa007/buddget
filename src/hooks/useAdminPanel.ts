@@ -468,7 +468,7 @@ export function useAdminPanel() {
     setSmsTrackedLoading(true)
     try {
       const cursor = append ? smsTrackedCursor : undefined
-      const res = await fetch('/api/admin/sms-errors', {
+      const res = await fetch('/api/admin/sms-logs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pin: sessionPin, op: 'list', cursor, limit: 50 }),

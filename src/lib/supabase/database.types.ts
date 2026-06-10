@@ -1472,6 +1472,32 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_template_users: {
+        Row: {
+          created_at: string
+          template_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          template_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          template_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_template_users_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "sms_tracking_templates_ai"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sms_parse_log: {
         Row: {
           account_last4: string | null
@@ -1497,6 +1523,10 @@ export type Database = {
           parsed_ok: boolean
           pattern_id: string | null
           payment_instrument: string | null
+          pushed_at: string | null
+          push_result: Json | null
+          confirmed_at: string | null
+          status: string
           raw_body: string
           raw_sms_summary: string | null
           received_at: string
@@ -1529,6 +1559,10 @@ export type Database = {
           parsed_ok?: boolean
           pattern_id?: string | null
           payment_instrument?: string | null
+          pushed_at?: string | null
+          push_result?: Json | null
+          confirmed_at?: string | null
+          status?: string
           raw_body: string
           raw_sms_summary?: string | null
           received_at?: string
@@ -1561,6 +1595,10 @@ export type Database = {
           parsed_ok?: boolean
           pattern_id?: string | null
           payment_instrument?: string | null
+          pushed_at?: string | null
+          push_result?: Json | null
+          confirmed_at?: string | null
+          status?: string
           raw_body?: string
           raw_sms_summary?: string | null
           received_at?: string

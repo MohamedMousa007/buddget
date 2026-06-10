@@ -103,6 +103,27 @@ function addIncomeIfMissing(row: IncomeSourceRow): void {
 }
 
 /**
+ * Confirms back to the server that an SMS-tracked row actually rendered in the
+ * app — the signal that promotes the parse log to status='confirmed'. Without
+ * this, a row stays 'logged'/'notified' and is flagged undelivered after 2 min.
+ * Fire-and-forget; bearer-authed to match /api/sms/ack.
+ */
+async function ackSms(logId: string | undefined): Promise<void> {
+  if (!logId) return
+  try {
+    const supabase = createClient()
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    if (!token) return
+    await fetch(apiUrl('/api/sms/ack'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ logId }),
+    })
+  } catch { /* fire-and-forget */ }
+}
+
+/**
  * Subscribes to Supabase realtime events on sms_parse_log. The parse route
  * claims a row first (parsed_ok=false) and promotes it via UPDATE once the
  * expense/income exists, so BOTH events are observed and filtered client-side
@@ -114,15 +135,16 @@ function SmsRealtimeSync() {
   useEffect(() => {
     if (!smsEnabled) return
     const supabase = createClient()
-    const onRow = async (payload: { new: { expense_id?: string | null; income_id?: string | null } }) => {
+    const onRow = async (payload: { new: { id?: string; expense_id?: string | null; income_id?: string | null } }) => {
       const row = payload.new
+      let rendered = false
       if (row.expense_id) {
         const { data } = await supabase
           .from('expenses')
           .select('*')
           .eq('id', row.expense_id)
           .single()
-        if (data) addExpenseIfMissing(data as ExpenseRow)
+        if (data) { addExpenseIfMissing(data as ExpenseRow); rendered = true }
       }
       if (row.income_id) {
         const { data } = await supabase
@@ -130,8 +152,9 @@ function SmsRealtimeSync() {
           .select('*')
           .eq('id', row.income_id)
           .single()
-        if (data) addIncomeIfMissing(data as IncomeSourceRow)
+        if (data) { addIncomeIfMissing(data as IncomeSourceRow); rendered = true }
       }
+      if (rendered) void ackSms(row.id)
     }
     const channel = supabase
       .channel('sms-live')
@@ -240,14 +263,14 @@ function SmsPushActionHandler() {
         void (async () => {
           const supabase = createClient()
           const { data: row } = await supabase.from('expenses').select('*').eq('id', data.expenseId).single()
-          if (row) addExpenseIfMissing(row as ExpenseRow)
+          if (row) { addExpenseIfMissing(row as ExpenseRow); void ackSms(data.logId) }
           router.push(`/expenses?highlight=${data.expenseId}`)
         })()
       } else if (kind === 'sms_income_added' && data.incomeId) {
         void (async () => {
           const supabase = createClient()
           const { data: row } = await supabase.from('income_sources').select('*').eq('id', data.incomeId).single()
-          if (row) addIncomeIfMissing(row as IncomeSourceRow)
+          if (row) { addIncomeIfMissing(row as IncomeSourceRow); void ackSms(data.logId) }
           router.push('/income')
         })()
       }
