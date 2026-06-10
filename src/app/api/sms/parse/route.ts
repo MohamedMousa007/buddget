@@ -216,16 +216,27 @@ async function learnPattern(
     const raw = (await res.json()) as { candidates?: Array<{ content: { parts: Array<{ text: string }> } }> }
     const text = raw.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
     const jsonStr = extractJson(text)
-    if (!jsonStr) return
+    if (!jsonStr) {
+      console.warn('[sms/parse] pattern learning: Gemini returned no JSON', { sender, text: text.slice(0, 200) })
+      return
+    }
     const learned = JSON.parse(jsonStr) as { regex_pattern?: string; mapping_rules?: MappingRules }
-    if (!learned.regex_pattern || !learned.mapping_rules?.amount) return
+    if (!learned.regex_pattern || !learned.mapping_rules?.amount) {
+      console.warn('[sms/parse] pattern learning: missing regex_pattern or amount rule', { sender, learned })
+      return
+    }
 
     // Validate: must compile AND match the original message
     const re = new RegExp(learned.regex_pattern)
-    if (!re.test(message)) return
+    if (!re.test(message)) {
+      console.warn('[sms/parse] learned regex rejected (no match)', {
+        sender, regex: learned.regex_pattern,
+      })
+      return
+    }
 
     // UNIQUE INDEX on (user_id, sender, md5(regex_pattern)) silently ignores exact duplicates
-    await service.from('sms_tracking_templates_ai').insert({
+    const { error: tplErr } = await service.from('sms_tracking_templates_ai').insert({
       user_id: userId,
       sender,
       regex_pattern: learned.regex_pattern,
@@ -234,6 +245,11 @@ async function learnPattern(
       ai_enabled: true,
       match_count: 0,
     })
+    if (tplErr && tplErr.code !== '23505') {
+      console.warn('[sms/parse] template insert failed', tplErr)
+    } else if (!tplErr) {
+      console.log('[sms/parse] template learned', { sender, regex: learned.regex_pattern })
+    }
   } catch (e) {
     // Best-effort — never propagate, but keep the failure visible in logs.
     console.warn('[sms/parse] pattern learning failed', e)
