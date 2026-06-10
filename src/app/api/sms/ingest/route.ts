@@ -13,7 +13,6 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { parse } from '@/lib/sms/smsParser'
-import { isDuplicate } from '@/lib/sms/duplicateDetector'
 import { sendWebPush } from '@/lib/notifications/sendWebPush'
 
 const bodySchema = z.object({
@@ -79,31 +78,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, reason: 'no_match' })
   }
 
-  // ── 4. Duplicate check ───────────────────────────────────────────────────
-  const duplicate = await isDuplicate(userId, parsedTx, supabase)
-
-  if (duplicate) {
-    await supabase.from('sms_events').insert({
-      user_id: userId,
-      token_id: tokenId,
-      sender: senderNumber,
-      raw_body: smsBody,
-      received_at: receivedAtTs,
-      parsed_at: new Date().toISOString(),
-      parse_ok: true,
-      is_duplicate: true,
-      transaction_type: parsedTx.type,
-      amount: parsedTx.amount,
-      currency: parsedTx.currency,
-      merchant: parsedTx.merchant,
-      bank_name: parsedTx.bankName,
-      badge_key: parsedTx.badgeKey,
-      auto_category: parsedTx.autoCategory,
-    })
-    return NextResponse.json({ ok: false, reason: 'duplicate' })
-  }
-
-  // ── 5. Create expense (only for expense-type transactions) ───────────────
+  // ── 4. Create expense (only for expense-type transactions) ───────────────
   let expenseId: string | null = null
 
   if (parsedTx.shouldRecord) {

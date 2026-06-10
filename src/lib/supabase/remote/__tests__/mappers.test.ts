@@ -154,7 +154,6 @@ describe('settings mapper', () => {
       tutorialsCompleted: ['postOnboardingTour:v1', 'addIncomeTour:v1'],
       tutorialCurrentStep: 'dashboardTour:v1:3',
       smsTrackingEnabled: true,
-      customSmsKeywords: ['Vodafone Cash'],
     }
     const row = settingsToRow(s, UID)
     const back = settingsFromRow({ ...row, updated_at: '' } as never, {

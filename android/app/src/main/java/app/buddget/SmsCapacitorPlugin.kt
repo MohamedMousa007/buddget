@@ -68,23 +68,4 @@ class SmsCapacitorPlugin : Plugin() {
             .apply()
         call.resolve()
     }
-
-    /** Persists custom keywords (comma-joined) so the killed-app path honours them. */
-    @PluginMethod
-    fun setKeywords(call: PluginCall) {
-        val arr = call.getArray("keywords")
-        val joined = try {
-            (0 until (arr?.length() ?: 0))
-                .mapNotNull { arr?.getString(it)?.trim() }
-                .filter { it.isNotEmpty() }
-                .joinToString(",")
-        } catch (e: Exception) {
-            ""
-        }
-        activity.getSharedPreferences("buddget_sms", Context.MODE_PRIVATE)
-            .edit()
-            .putString("custom_keywords", joined)
-            .apply()
-        call.resolve()
-    }
 }

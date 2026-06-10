@@ -6,7 +6,7 @@ import type {
   AdminConfig,
   AdminSurveyRow,
   AdminUserRow,
-  SmsErrorRow,
+  SmsTrackedRow,
   SmsTemplateRow,
 } from '@/types/admin'
 
@@ -33,9 +33,9 @@ export function useAdminPanel() {
   const [surveyRows, setSurveyRows] = useState<AdminSurveyRow[]>([])
   const [smsTemplates, setSmsTemplates] = useState<SmsTemplateRow[]>([])
   const [smsTemplatesLoading, setSmsTemplatesLoading] = useState(false)
-  const [smsErrors, setSmsErrors] = useState<SmsErrorRow[]>([])
-  const [smsErrorsLoading, setSmsErrorsLoading] = useState(false)
-  const [smsErrorsCursor, setSmsErrorsCursor] = useState<string | null>(null)
+  const [smsTracked, setSmsTracked] = useState<SmsTrackedRow[]>([])
+  const [smsTrackedLoading, setSmsTrackedLoading] = useState(false)
+  const [smsTrackedCursor, setSmsTrackedCursor] = useState<string | null>(null)
   const [surveyEditId, setSurveyEditId] = useState<string | null>(null)
   const [surveyJson, setSurveyJson] = useState('')
   const [surveyBusy, setSurveyBusy] = useState(false)
@@ -345,10 +345,10 @@ export function useAdminPanel() {
     }
   }, [sessionPin, loadSmsTemplates])
 
-  const loadSmsErrors = useCallback(async (append = false) => {
-    setSmsErrorsLoading(true)
+  const loadSmsTracked = useCallback(async (append = false) => {
+    setSmsTrackedLoading(true)
     try {
-      const cursor = append ? smsErrorsCursor : undefined
+      const cursor = append ? smsTrackedCursor : undefined
       const res = await fetch('/api/admin/sms-errors', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -356,11 +356,11 @@ export function useAdminPanel() {
       })
       const data = await res.json()
       if (!res.ok) { setPlatformMessage(data.error || 'Failed'); return }
-      setSmsErrors((prev) => append ? [...prev, ...(data.errors ?? [])] : (data.errors ?? []))
-      setSmsErrorsCursor(data.nextCursor ?? null)
+      setSmsTracked((prev) => append ? [...prev, ...(data.errors ?? [])] : (data.errors ?? []))
+      setSmsTrackedCursor(data.nextCursor ?? null)
     } catch { setPlatformMessage('Network error') }
-    finally { setSmsErrorsLoading(false) }
-  }, [sessionPin, smsErrorsCursor])
+    finally { setSmsTrackedLoading(false) }
+  }, [sessionPin, smsTrackedCursor])
 
   const api = {
     pin,
@@ -404,10 +404,10 @@ export function useAdminPanel() {
     updateSmsTemplate,
     deleteSmsTemplate,
     bulkToggleSmsTemplates,
-    smsErrors,
-    smsErrorsLoading,
-    smsErrorsCursor,
-    loadSmsErrors,
+    smsTracked,
+    smsTrackedLoading,
+    smsTrackedCursor,
+    loadSmsTracked,
   }
   return api
 }

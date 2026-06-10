@@ -82,7 +82,6 @@ export function emptySnapshot(): Snapshot {
       tutorialsCompleted: [] as string[],
       tutorialCurrentStep: null as string | null,
       smsTrackingEnabled: false,
-      customSmsKeywords: [],
     },
     onboardingState: {
       flowVersion: 2,

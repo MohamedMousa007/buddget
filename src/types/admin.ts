@@ -57,7 +57,7 @@ export interface SmsTemplateRow {
   user_id: string | null
 }
 
-export interface SmsErrorRow {
+export interface SmsTrackedRow {
   id: string
   user_id: string
   sender: string | null
@@ -75,6 +75,11 @@ export interface SmsErrorRow {
   parse_method: string | null
   source: string | null
   account_last4: string | null
+  parsed_ok: boolean
+  expense_id: string | null
+  income_id: string | null
+  pattern_id: string | null
+  payment_instrument: string | null
 }
 
 export interface AdminSurveyRow {

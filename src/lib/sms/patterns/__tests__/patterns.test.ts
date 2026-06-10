@@ -1,0 +1,204 @@
+import { describe, it, expect } from 'vitest'
+import { matchCuratedPattern, ALL_PATTERN_SETS } from '../index'
+import { isNonTransaction } from '../preFilter'
+
+// Real captured SMS (sms_parse_log, June 2026) — first-class fixtures.
+const HSBC_IPN_OUT =
+  'Your HSBC Account ********0001 was debited with IPN outward transfer for EGP 3.50 on 10-06-2026 02:16 to SALMA SAMY ELSAYED with reference 3f5b5478. For further details, please contact HSBC call centre'
+const HSBC_IPN_IN =
+  'Your HSBC Account ********0001 was credited with IPN inward transfer for EGP 2.00 on 08-06-2026 01:01 from KARIM HAZEM MOHAMED ABO ELENEN with reference 6d158f5b. For further details, please contact HSBC call centre'
+const HSBC_PURCHASE =
+  'Your HSBC Account ****0001 was debited EGP 250.00 for purchase at Carrefour Egypt on 09-06-2026'
+
+describe('curated pattern matcher', () => {
+  it('parses HSBC IPN outward transfer', () => {
+    const m = matchCuratedPattern(HSBC_IPN_OUT, 'HSBC')
+    expect(m).not.toBeNull()
+    expect(m!.patternId).toBe('hsbc-ipn-out')
+    expect(m!.kind).toBe('instant_transfer_out')
+    expect(m!.amount).toBe(3.5)
+    expect(m!.currency).toBe('EGP')
+    expect(m!.counterparty).toBe('SALMA SAMY ELSAYED')
+    expect(m!.last4).toBe('0001')
+    expect(m!.txDay).toBe('2026-06-10')
+    expect(m!.paymentInstrument).toBe('account')
+    expect(m!.cleanTitle).toBe('Transfer to SALMA SAMY ELSAYED')
+  })
+
+  it('parses HSBC IPN inward transfer as income kind', () => {
+    const m = matchCuratedPattern(HSBC_IPN_IN, 'HSBC')
+    expect(m).not.toBeNull()
+    expect(m!.patternId).toBe('hsbc-ipn-in')
+    expect(m!.kind).toBe('instant_transfer_in')
+    expect(m!.amount).toBe(2)
+    expect(m!.counterparty).toBe('KARIM HAZEM MOHAMED ABO ELENEN')
+    expect(m!.txDay).toBe('2026-06-08')
+  })
+
+  it('parses HSBC account purchase with merchant + comma amounts', () => {
+    const m = matchCuratedPattern(HSBC_PURCHASE, 'HSBC')
+    expect(m).not.toBeNull()
+    expect(m!.patternId).toBe('hsbc-account-purchase')
+    expect(m!.kind).toBe('purchase')
+    expect(m!.amount).toBe(250)
+    expect(m!.counterparty).toBe('Carrefour Egypt')
+    expect(m!.cleanTitle).toBe('Carrefour Egypt')
+
+    const big = HSBC_PURCHASE.replace('250.00', '1,250.50')
+    expect(matchCuratedPattern(big, 'HSBC')!.amount).toBe(1250.5)
+  })
+
+  it('matches regardless of sender casing and even with unknown sender', () => {
+    expect(matchCuratedPattern(HSBC_IPN_OUT, 'hsbc')).not.toBeNull()
+    expect(matchCuratedPattern(HSBC_IPN_OUT, null)).not.toBeNull()
+  })
+
+  it('returns null for non-matching text', () => {
+    expect(matchCuratedPattern('Hello, your appointment is tomorrow', 'HSBC')).toBeNull()
+  })
+
+  it('never matches unverified patterns', () => {
+    for (const set of ALL_PATTERN_SETS) {
+      for (const p of set.patterns.filter((x) => !x.verified)) {
+        // Unverified patterns are skipped even when their regex would match.
+        const synthetic = 'card ending 1234 was charged EGP 100.00 at Test Store on 01-01-2026'
+        if (p.regex.test(synthetic)) {
+          expect(matchCuratedPattern(synthetic, set.bank)?.patternId).not.toBe(p.id)
+        }
+      }
+    }
+  })
+})
+
+// Real captures from open-source Egyptian finance apps (see docs/SMS_PATTERN_RESEARCH.md).
+const CIB_CC_PURCHASE =
+  'Your credit card ending with#8016 was charged for EGP 118.00 at SAOOD MARKET on 24/11/25  at 18:27. Card available limit is EGP  10000.21. For more details, please visit https://cib.eg/mb'
+const CIB_CC_PURCHASE_V2 =
+  'Your credit card #8810 was charged for USD 22.80 at ANTHROPIC CLAU on 01/06/26 at 15:26. Available limit is 132729.84 and the available international limit to use is EGP 137922'
+const CIB_DEBIT_APPLEPAY =
+  'تم خصم EGP 10.00  من بطاقة الخصم المباشر # **2326 باستخدام Apple Pay عند  CITYSTARS FOR MANAGEME في  23/05/26 16:24 الرصيد المتاح  EGP2700.03.'
+const CIB_ATM =
+  'تم سحب مبلغ  EGP 100.00  من بطاقة الخصم المباشر المنتهية بـ **2326 من        BDC HORYA في 19/05/26 19:55 ، الرصيد المتاح EGP 200.11'
+const CIB_IPN_OUT =
+  'يرجى العلم انه تم تنفيذ تحويل لحظي بمبلغ 1000.00 جم من حسابك المنتهي بـ ****1065 برقم مرجعي 819a53fa بتاريخ 26-05-2026 19:35 للمزيد، برجاء الاتصال بـ 19666'
+const CIB_IPN_IN =
+  'يرجى العلم انه تم تنفيذ تحويل لحظي بمبلغ 10.00 جم إلى حسابك المنتهي بـ ********1065 من KARIM MOHAMED MORSI ISM برقم مرجعي 1ac56f40 بتاريخ 31-05-2026 05:21 للمزيد، برجاء الاتصال بـ 19666'
+const VFCASH_RECEIVE =
+  'تم استلام مبلغ 6000 جنيه من رقم 01094490330 المسجل بإسم Mohamed S Amer على رقم محفظتك 01024193022.\nرصيدك الحالي: 6004.88 جنيه\nتابع كل مصروفاتك من تاريخ المعاملات على أبلكيشن أنا فودافون http://vf.eg/vfcash'
+const VFCASH_CASHOUT =
+  'تم سحب 5900.00 جنية من محفظة فودافون كاش. رصيد حسابك الحالي 45.88 جنيه. تاريخ العملية 11:44 26-05-04 رقم العملية; 019697621640.'
+const GENERIC_CARD_TRX =
+  'You have a Trx on your Card no. XXXX2939 from Talabat for EGP  204.16 on 19-May at 05:06  GMT+3 your available balance is 276.10 for more info please call 19123'
+const GENERIC_DEPOSIT =
+  'تم إيداع EGP 7900 إلى حساب رقم #0014 يوم 06/04/2026 13:24 المتاح 220157.61 EGP للمزيد اتصل ب 19123'
+const HSBC_CC =
+  'Your Credit Card ending with * 1234 has been used for EGP 1339.50 on 27/05/2026 at WE-FBB-Pre. Your available limit is EGP 100.00'
+
+describe('CIB curated patterns', () => {
+  it('parses EN credit card purchase (both template generations)', () => {
+    const m1 = matchCuratedPattern(CIB_CC_PURCHASE, 'CIB')
+    expect(m1?.patternId).toBe('cib-cc-purchase-en')
+    expect(m1?.amount).toBe(118)
+    expect(m1?.currency).toBe('EGP')
+    expect(m1?.counterparty).toBe('SAOOD MARKET')
+    expect(m1?.last4).toBe('8016')
+    expect(m1?.txDay).toBe('2025-11-24')
+    expect(m1?.paymentInstrument).toBe('card')
+
+    const m2 = matchCuratedPattern(CIB_CC_PURCHASE_V2, 'CIB')
+    expect(m2?.patternId).toBe('cib-cc-purchase-en')
+    expect(m2?.amount).toBe(22.8)
+    expect(m2?.currency).toBe('USD')
+    expect(m2?.counterparty).toBe('ANTHROPIC CLAU')
+  })
+
+  it('parses AR Apple Pay debit + ATM withdrawal', () => {
+    const pos = matchCuratedPattern(CIB_DEBIT_APPLEPAY, 'CIB')
+    expect(pos?.patternId).toBe('cib-debit-pos-ar')
+    expect(pos?.amount).toBe(10)
+    expect(pos?.last4).toBe('2326')
+    expect(pos?.counterparty).toContain('CITYSTARS')
+
+    const atm = matchCuratedPattern(CIB_ATM, 'CIB')
+    expect(atm?.patternId).toBe('cib-atm-ar')
+    expect(atm?.kind).toBe('atm_withdrawal')
+    expect(atm?.amount).toBe(100)
+    expect(atm?.txDay).toBe('2026-05-19')
+  })
+
+  it('parses AR IPN transfers with direction from من/إلى حسابك', () => {
+    const out = matchCuratedPattern(CIB_IPN_OUT, 'CIB')
+    expect(out?.patternId).toBe('cib-ipn-out-ar')
+    expect(out?.kind).toBe('instant_transfer_out')
+    expect(out?.amount).toBe(1000)
+    expect(out?.currency).toBe('EGP')
+    expect(out?.txDay).toBe('2026-05-26')
+
+    const inc = matchCuratedPattern(CIB_IPN_IN, 'CIB')
+    expect(inc?.patternId).toBe('cib-ipn-in-ar')
+    expect(inc?.kind).toBe('instant_transfer_in')
+    expect(inc?.counterparty).toBe('KARIM MOHAMED MORSI ISM')
+  })
+})
+
+describe('Vodafone Cash + generic bank patterns', () => {
+  it('parses wallet receive and cash-out', () => {
+    const rec = matchCuratedPattern(VFCASH_RECEIVE, 'VF-Cash')
+    expect(rec?.patternId).toBe('vfcash-receive-ar')
+    expect(rec?.kind).toBe('instant_transfer_in')
+    expect(rec?.amount).toBe(6000)
+    expect(rec?.counterparty).toBe('Mohamed S Amer')
+    expect(rec?.paymentInstrument).toBe('wallet')
+
+    const out = matchCuratedPattern(VFCASH_CASHOUT, 'VF-Cash')
+    expect(out?.patternId).toBe('vfcash-cashout-ar')
+    expect(out?.amount).toBe(5900)
+  })
+
+  it('parses generic card trx + deposit via fallback pass (unknown sender)', () => {
+    const trx = matchCuratedPattern(GENERIC_CARD_TRX, '19123')
+    expect(trx?.patternId).toBe('generic-card-trx-en')
+    expect(trx?.amount).toBe(204.16)
+    expect(trx?.counterparty).toBe('Talabat')
+    expect(trx?.last4).toBe('2939')
+
+    const dep = matchCuratedPattern(GENERIC_DEPOSIT, null)
+    expect(dep?.patternId).toBe('generic-deposit-ar')
+    expect(dep?.kind).toBe('income')
+    expect(dep?.amount).toBe(7900)
+    expect(dep?.txDay).toBe('2026-04-06')
+  })
+
+  it('parses HSBC credit card purchase', () => {
+    const m = matchCuratedPattern(HSBC_CC, 'HSBC')
+    expect(m?.patternId).toBe('hsbc-cc-purchase')
+    expect(m?.amount).toBe(1339.5)
+    expect(m?.counterparty).toBe('WE-FBB-Pre')
+    expect(m?.txDay).toBe('2026-05-27')
+  })
+})
+
+describe('pre-filter (non-transaction rejector)', () => {
+  it('rejects telecom marketing that mentions money', () => {
+    expect(isNonTransaction('Get 50GB for EGP 50! Renew your bundle now')).toBe('marketing')
+    expect(isNonTransaction('عرض خاص! باقة 20 جنيه فقط اشترك الان')).toBe('marketing')
+  })
+
+  it('rejects OTPs', () => {
+    expect(isNonTransaction('Your OTP is 123456. Do not share it with anyone.')).toBe('otp')
+    expect(isNonTransaction('رمز التحقق الخاص بك هو 4821')).toBe('otp')
+  })
+
+  it('rejects balance-only inquiries', () => {
+    expect(isNonTransaction('Your available balance is EGP 12,450.00')).toBe('balance_only')
+  })
+
+  it('NEVER rejects real transactions, even with marketing-ish words', () => {
+    expect(isNonTransaction(HSBC_IPN_OUT)).toBeNull()
+    expect(isNonTransaction(HSBC_IPN_IN)).toBeNull()
+    expect(isNonTransaction(HSBC_PURCHASE)).toBeNull()
+    // Transaction verb beats "bundle" vocabulary — a real renewal fee.
+    expect(isNonTransaction('EGP 50.00 debited for bundle renewal')).toBeNull()
+    expect(isNonTransaction('تم خصم 30 جنيه لتجديد الباقة')).toBeNull()
+  })
+})

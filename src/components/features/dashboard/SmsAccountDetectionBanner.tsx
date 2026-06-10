@@ -16,12 +16,14 @@ export function SmsAccountDetectionBanner() {
   const visible = detected.filter((d) => !dismissed.includes(d.last4))
   if (!visible.length) return null
 
+  // Floating in-app notification — overlays the page (no layout shift),
+  // anchored below the safe-area inset, stacks when multiple accounts appear.
   return (
-    <div className="space-y-2">
+    <div className="fixed inset-x-4 top-[calc(env(safe-area-inset-top)+12px)] z-50 space-y-2 sm:left-auto sm:right-4 sm:w-96">
       {visible.map(({ last4, bankName }) => (
         <div
           key={last4}
-          className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-3"
+          className="animate-in slide-in-from-top-4 fade-in rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-3 shadow-lg"
         >
           <div className="flex items-start justify-between gap-2">
             <p className="text-xs font-medium text-[var(--color-brand-text-primary)]">

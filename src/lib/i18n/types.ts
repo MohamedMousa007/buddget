@@ -2055,25 +2055,6 @@ export interface Dictionary {
     androidWebhookLabel: string
     androidTokenLabel: string
     androidCopied: string
-    recentTitle: string
-    recentEmpty: string
-    recentUndo: string
-    recentUndoSuccess: string
-    recentUndoExpired: string
-    recentViewExpense: string
-    failure: {
-      gemini_error: string
-      not_transaction: string
-      null_amount: string
-      low_confidence: string
-      duplicate: string
-      log_insert_failed: string
-      parse_exception: string
-      processing: string
-      rate_limited: string
-      not_configured: string
-      unknown: string
-    }
     supportedBanksTitle: string
     tokenRotateButton: string
     tokenRotateConfirm: string

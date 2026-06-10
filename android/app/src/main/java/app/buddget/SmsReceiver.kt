@@ -53,10 +53,7 @@ class SmsReceiver : BroadcastReceiver() {
         val fullBody = messages.joinToString("") { it.messageBody ?: "" }.trim()
         val sender   = messages.firstOrNull()?.originatingAddress
 
-        val customKeywords = prefs.getString("custom_keywords", "")
-            ?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
-
-        if (fullBody.isEmpty() || !isBankishMessage(fullBody, customKeywords)) return
+        if (fullBody.isEmpty() || !isBankishMessage(fullBody)) return
 
         // WorkManager is the SINGLE forwarding path — works whether the app is
         // open or killed, and the server dedup makes retries idempotent. The
@@ -95,11 +92,10 @@ class SmsReceiver : BroadcastReceiver() {
 
     /**
      * Broad keyword filter applied before queuing the WorkManager job.
-     * Keeps personal SMS off the API entirely. Custom keywords are persisted
-     * from the JS store (setKeywords) so the killed-app path matches the same
-     * SMS the user configured in Settings.
+     * Keeps personal SMS off the API entirely; the server's curated pattern
+     * library + pre-filter do the precise classification.
      */
-    private fun isBankishMessage(text: String, customKeywords: List<String>): Boolean {
+    private fun isBankishMessage(text: String): Boolean {
         val lower = text.lowercase()
         val englishKeywords = listOf(
             "egp", "aed", "sar", "qar", "kwd", "omr", "bhd",
@@ -112,7 +108,6 @@ class SmsReceiver : BroadcastReceiver() {
             "عملية شراء", "تم إيداع", "تم إضافة",
         )
         return englishKeywords.any { lower.contains(it) } ||
-               arabicKeywords.any { text.contains(it) } ||
-               customKeywords.any { lower.contains(it.lowercase()) }
+               arabicKeywords.any { text.contains(it) }
     }
 }

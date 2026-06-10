@@ -23,7 +23,6 @@ export function settingsToRow(s: AppSettings, userId: string): UserSettingsInser
     tutorials_completed: s.tutorialsCompleted,
     tutorial_current_step: s.tutorialCurrentStep,
     sms_tracking_enabled: s.smsTrackingEnabled,
-    custom_sms_keywords: s.customSmsKeywords,
   }
 }
 
@@ -58,7 +57,6 @@ export function settingsFromRow(row: UserSettingsRow, opts: SettingsFromRowOptio
     tutorialsCompleted: row.tutorials_completed ?? [],
     tutorialCurrentStep: row.tutorial_current_step ?? null,
     smsTrackingEnabled: row.sms_tracking_enabled ?? false,
-    customSmsKeywords: (row.custom_sms_keywords as string[] | null) ?? [],
     baseCurrency: opts.baseCurrency,
     secondaryCurrency: opts.secondaryCurrency,
   }
