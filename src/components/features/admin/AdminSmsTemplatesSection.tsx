@@ -139,6 +139,7 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
                 <th className="text-left py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Sample</th>
                 <th className="text-left py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Regex</th>
                 <th className="text-center py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Matches</th>
+                <th className="text-center py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Users</th>
                 <th className="text-center py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Tier</th>
                 <th className="text-center py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Promote</th>
                 <th className="text-center py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Active</th>
@@ -214,6 +215,16 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
                         : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]'
                     }`}>
                       {tpl.match_count}
+                    </span>
+                  </td>
+
+                  {/* Distinct users — feeds the promotion min_unique_users gate */}
+                  <td className="py-2.5 pr-4 text-center">
+                    <span
+                      className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]"
+                      title="Distinct users whose SMS this template has matched"
+                    >
+                      {tpl.unique_user_count}
                     </span>
                   </td>
 

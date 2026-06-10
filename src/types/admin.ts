@@ -108,6 +108,11 @@ export interface SmsTrackedRow {
   income_id: string | null
   pattern_id: string | null
   payment_instrument: string | null
+  status: 'processing' | 'rejected' | 'failed' | 'logged' | 'notified' | 'confirmed'
+  pushed_at: string | null
+  push_result: { ok?: boolean; sent?: number; failed?: number; error?: string } | null
+  confirmed_at: string | null
+  email: string | null
 }
 
 export interface AdminSurveyRow {

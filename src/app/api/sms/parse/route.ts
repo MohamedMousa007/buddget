@@ -111,11 +111,13 @@ function extractJson(text: string): string | null {
 // Static template bypass (cache-backed)
 // ---------------------------------------------------------------------------
 
+interface TemplateMatch { parsed: ParsedTx; templateId: string }
+
 function applyTemplate(
   message: string,
   tpl: { id: string; regex_pattern: string; mapping_rules: Record<string, unknown>; match_count: number },
   service: ReturnType<typeof createServiceRoleClient>,
-): ParsedTx | null {
+): TemplateMatch | null {
   let re: RegExp
   try { re = new RegExp(tpl.regex_pattern) } catch { return null }
 
@@ -150,13 +152,16 @@ function applyTemplate(
     void service.rpc('increment_sms_template_match_count', { p_id: tpl.id })
 
     return {
-      is_transaction: true, amount,
-      currency: currency as ParsedTx['currency'],
-      merchant, bank_name: bankName,
-      category: null, confidence: 1.0, kind,
-      cleanTitle, rawSmsSummary: null,
-      detectedAccountLast4: cleanLast4,
-      newBalance: null, merchantNormalized: null,
+      templateId: tpl.id,
+      parsed: {
+        is_transaction: true, amount,
+        currency: currency as ParsedTx['currency'],
+        merchant, bank_name: bankName,
+        category: null, confidence: 1.0, kind,
+        cleanTitle, rawSmsSummary: null,
+        detectedAccountLast4: cleanLast4,
+        newBalance: null, merchantNormalized: null,
+      },
     }
   } catch { return null }
 }
@@ -166,7 +171,7 @@ async function tryPromotedParse(
   message: string,
   sender: string,
   service: ReturnType<typeof createServiceRoleClient>,
-): Promise<ParsedTx | null> {
+): Promise<TemplateMatch | null> {
   const templates = await getPromotedTemplates(sender, service)
   for (const tpl of templates) {
     const result = applyTemplate(message, tpl, service)
@@ -180,13 +185,41 @@ async function tryStaticParse(
   message: string,
   sender: string,
   service: ReturnType<typeof createServiceRoleClient>,
-): Promise<ParsedTx | null> {
+): Promise<TemplateMatch | null> {
   const templates = await getLearnedTemplates(sender, service)
   for (const tpl of templates) {
     const result = applyTemplate(message, tpl, service)
     if (result) return result
   }
   return null
+}
+
+/**
+ * Records that `userId` has matched `templateId`, then recomputes the template's
+ * distinct-user count from the junction. Templates are global (user_id null), so
+ * the count cannot live on the template row alone — sms_template_users is the
+ * source of truth. Best-effort; runs in after().
+ */
+async function recordTemplateUser(
+  templateId: string,
+  userId: string,
+  service: ReturnType<typeof createServiceRoleClient>,
+): Promise<void> {
+  try {
+    await service
+      .from('sms_template_users')
+      .upsert({ template_id: templateId, user_id: userId }, { onConflict: 'template_id,user_id', ignoreDuplicates: true })
+    const { count } = await service
+      .from('sms_template_users')
+      .select('*', { count: 'exact', head: true })
+      .eq('template_id', templateId)
+    await service
+      .from('sms_tracking_templates_ai')
+      .update({ unique_user_count: count ?? 1 })
+      .eq('id', templateId)
+  } catch (e) {
+    console.warn('[sms/parse] recordTemplateUser failed', e)
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -244,7 +277,7 @@ async function learnPattern(
 
     // UNIQUE INDEX on (sender, md5(regex_pattern)) silently ignores exact duplicates.
     // user_id null = global — learned templates serve every user.
-    const { error: tplErr } = await service.from('sms_tracking_templates_ai').insert({
+    const { data: inserted, error: tplErr } = await service.from('sms_tracking_templates_ai').insert({
       user_id: null,
       sender,
       regex_pattern: learned.regex_pattern,
@@ -254,28 +287,28 @@ async function learnPattern(
       match_count: 0,
       avg_ai_confidence: parsed.confidence ?? null,
       kind: parsed.kind ?? null,
-      unique_user_count: 1,
+      unique_user_count: 0,
     })
+      .select('id')
+      .single()
+
     if (tplErr && tplErr.code !== '23505') {
       console.warn('[sms/parse] template insert failed', tplErr)
-    } else if (!tplErr) {
+    } else if (!tplErr && inserted) {
       console.log('[sms/parse] template learned', { sender, regex: learned.regex_pattern })
+      await recordTemplateUser(inserted.id, userId, service)
       invalidateSenderCache(sender)
       await checkAndAutoPromote(sender, service)
     } else {
-      // Duplicate template: increment unique_user_count if this userId is new
+      // Duplicate template (23505): record this user in the junction so the
+      // distinct-user count reflects everyone whose SMS produced this regex.
       const { data: existing } = await service
         .from('sms_tracking_templates_ai')
-        .select('id, unique_user_count, user_id')
+        .select('id')
         .eq('sender', sender)
         .eq('regex_pattern', learned.regex_pattern)
         .single()
-      if (existing && existing.user_id !== userId) {
-        await service
-          .from('sms_tracking_templates_ai')
-          .update({ unique_user_count: (existing.unique_user_count ?? 0) + 1 })
-          .eq('id', existing.id)
-      }
+      if (existing) await recordTemplateUser(existing.id, userId, service)
     }
   } catch (e) {
     // Best-effort — never propagate, but keep the failure visible in logs.
@@ -380,6 +413,7 @@ export async function POST(request: Request) {
       sender: sender ?? null,
       raw_body: message,
       parsed_ok: false,
+      status: 'processing',
       failure_code: 'processing',
       sms_hash: hash,
       parsed_at: new Date().toISOString(),
@@ -400,7 +434,7 @@ export async function POST(request: Request) {
   const rejectReason = isNonTransaction(message)
   if (rejectReason) {
     await service.from('sms_parse_log')
-      .update({ failure_code: 'not_transaction', parse_method: 'curated' })
+      .update({ status: 'rejected', failure_code: 'not_transaction', parse_method: 'curated' })
       .eq('id', logId)
     return NextResponse.json({ ok: false, reason: 'not_transaction', rejected: rejectReason })
   }
@@ -414,14 +448,18 @@ export async function POST(request: Request) {
   const curated = matchCuratedPattern(message, sender ?? null)
 
   // ---- Tier 1.5: promoted DB templates (long-cached, Tier 1-equivalent) ---
-  const promotedResult = (!curated && sender)
+  const promotedMatch = (!curated && sender)
     ? await tryPromotedParse(message, sender, service)
     : null
 
   // ---- Tier 2: learned DB templates (short-cached) -------------------------
-  const staticResult = (!curated && !promotedResult && sender)
+  const staticMatch = (!curated && !promotedMatch && sender)
     ? await tryStaticParse(message, sender, service)
     : null
+
+  const promotedResult = promotedMatch?.parsed ?? null
+  const staticResult = staticMatch?.parsed ?? null
+  const matchedTemplateId = promotedMatch?.templateId ?? staticMatch?.templateId ?? null
 
   if (curated) {
     patternId = curated.patternId
@@ -451,7 +489,7 @@ export async function POST(request: Request) {
     const apiKey = process.env.GEMINI_API_KEY?.trim()
     if (!apiKey) {
       await service.from('sms_parse_log')
-        .update({ failure_code: 'not_configured', parse_method: 'ai' })
+        .update({ status: 'failed', failure_code: 'not_configured', parse_method: 'ai' })
         .eq('id', logId)
       return NextResponse.json(
         { error: 'AI is not configured. Admin needs to set GEMINI_API_KEY.' },
@@ -468,7 +506,7 @@ export async function POST(request: Request) {
 
     if ((usage?.parsed_count_today ?? 0) >= RATE_LIMIT_PER_DAY) {
       await service.from('sms_parse_log')
-        .update({ failure_code: 'rate_limited', parse_method: 'ai' })
+        .update({ status: 'failed', failure_code: 'rate_limited', parse_method: 'ai' })
         .eq('id', logId)
       return NextResponse.json(
         { error: 'Daily SMS parse quota reached', limit: RATE_LIMIT_PER_DAY },
@@ -482,7 +520,7 @@ export async function POST(request: Request) {
     } catch (e) {
       console.error('[sms/parse] gemini failed', e)
       await service.from('sms_parse_log')
-        .update({ failure_code: 'gemini_error', parse_method: 'ai' })
+        .update({ status: 'failed', failure_code: 'gemini_error', parse_method: 'ai' })
         .eq('id', logId)
       // 502 → WorkManager retries with a fresh request (new log row).
       return NextResponse.json({ ok: false, reason: 'ai_failed' }, { status: 502 })
@@ -504,6 +542,7 @@ export async function POST(request: Request) {
   if (!parsed.is_transaction || !parsed.amount || !parsed.currency) {
     await service.from('sms_parse_log')
       .update({
+        status: 'rejected',
         confidence: parsed.confidence ?? 0,
         // is_transaction but missing amount/currency → null_amount; otherwise not a transaction
         failure_code: parsed.is_transaction ? 'null_amount' : 'not_transaction',
@@ -516,6 +555,7 @@ export async function POST(request: Request) {
   if (parsed.confidence < CONFIRM_CONFIDENCE) {
     await service.from('sms_parse_log')
       .update({
+        status: 'rejected',
         confidence: parsed.confidence,
         amount: parsed.amount,
         currency: parsed.currency,
@@ -543,6 +583,7 @@ export async function POST(request: Request) {
     .from('sms_parse_log')
     .update({
       parsed_ok: true,
+      status: 'logged',
       failure_code: null,
       confidence: parsed.confidence,
       amount: parsed.amount,
@@ -656,7 +697,7 @@ export async function POST(request: Request) {
           userId,
           title: `+${parsed.currency} ${parsed.amount.toLocaleString()} — ${parsed.cleanTitle ?? 'Bank credit'}`,
           body: `Received via ${parsed.bank_name ?? 'bank'}. Tap to view.`,
-          data: { kind: 'sms_income_added', incomeId: incomeId ?? '' },
+          data: { kind: 'sms_income_added', incomeId: incomeId ?? '', logId },
           collapseKey: `sms-income-${hash.slice(0, 12)}`,
         }
       : autoAdd
@@ -666,29 +707,42 @@ export async function POST(request: Request) {
               ? `${parsed.currency} ${parsed.amount.toLocaleString()} — ${parsed.cleanTitle}`
               : `${parsed.currency} ${parsed.amount.toLocaleString()} at ${parsed.merchant ?? 'merchant'}`,
             body: `Tracked by ${parsed.bank_name ?? 'your bank'}. Tap to view.`,
-            data: { kind: 'sms_auto_added', expenseId: expenseId ?? '' },
+            data: { kind: 'sms_auto_added', expenseId: expenseId ?? '', logId },
             collapseKey: `sms-${hash.slice(0, 12)}`,
           }
         : {
             userId,
             title: `Confirm: ${parsed.cleanTitle ?? `${parsed.currency} ${parsed.amount.toLocaleString()}`}`,
             body: `${parsed.currency} ${parsed.amount.toLocaleString()} — tap to add.`,
-            data: { kind: 'sms_confirm', hash, amount: String(parsed.amount), currency: parsed.currency },
+            data: { kind: 'sms_confirm', hash, logId, amount: String(parsed.amount), currency: parsed.currency },
             collapseKey: `sms-confirm-${hash.slice(0, 12)}`,
           }
 
+  // Record the push send result on the log row so delivery failures are visible
+  // in admin instead of being silently console.log'd. status → 'notified' only
+  // when at least one device actually accepted the push.
   after(async () => {
     try {
       const result = await sendNativePush(pushArgs)
-      if (result.ok) {
-        console.log('[sms/parse] push result', result)
-      } else {
-        console.error('[sms/parse] push failed', result)
-      }
+      const delivered = result.ok && (result.sent ?? 0) > 0
+      await service.from('sms_parse_log')
+        .update(delivered
+          ? { status: 'notified', pushed_at: new Date().toISOString(), push_result: result }
+          : { push_result: result })
+        .eq('id', logId)
+        .in('status', ['logged', 'notified'])
+      if (!delivered) console.error('[sms/parse] push not delivered', result)
     } catch (e) {
       console.error('[sms/parse] push notification failed', e)
     }
   })
+
+  // Record this user against the matched learned/promoted template for an
+  // accurate distinct-user count (drives the promotion min_unique_users gate).
+  if (matchedTemplateId && sender) {
+    const tid = matchedTemplateId
+    after(() => recordTemplateUser(tid, userId, service))
+  }
 
   return NextResponse.json({
     ok: true,
@@ -706,7 +760,7 @@ export async function POST(request: Request) {
     console.error('[sms/parse] unhandled exception', e)
     try {
       await service.from('sms_parse_log')
-        .update({ failure_code: 'parse_exception' })
+        .update({ status: 'failed', failure_code: 'parse_exception' })
         .eq('id', logId)
     } catch { /* best-effort */ }
     return NextResponse.json({ ok: false, reason: 'parse_exception' }, { status: 500 })
