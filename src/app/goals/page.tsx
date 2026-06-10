@@ -87,7 +87,7 @@ export default function GoalsPage() {
         ) : (
           <>
             <section className="space-y-3">
-              {active.map((g, idx) => {
+              {active.map((g) => {
                 return (
                   <div key={g.id}>
                     <GoalCard goal={g} t={t.goals} onEdit={openEdit} onDelete={deleteGoal} />
