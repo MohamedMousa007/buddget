@@ -22,6 +22,8 @@ import { SMS_PARSER_SYSTEM_PROMPT } from '@/lib/sms/aiParserPrompt'
 import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNativePush'
 import { matchCuratedPattern } from '@/lib/sms/patterns'
 import { isNonTransaction } from '@/lib/sms/patterns/preFilter'
+import { getPromotedTemplates, getLearnedTemplates, invalidateSenderCache } from '@/lib/sms/templateCache'
+import { checkAndAutoPromote } from '@/lib/sms/promotionChecker'
 
 // Gemini takes 5–8 s and after() work (push + 15 s pattern learning) counts
 // toward the function cap — the default would kill learning mid-call.
@@ -106,74 +108,83 @@ function extractJson(text: string): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// Static template bypass
+// Static template bypass (cache-backed)
 // ---------------------------------------------------------------------------
 
+function applyTemplate(
+  message: string,
+  tpl: { id: string; regex_pattern: string; mapping_rules: Record<string, unknown>; match_count: number },
+  service: ReturnType<typeof createServiceRoleClient>,
+): ParsedTx | null {
+  let re: RegExp
+  try { re = new RegExp(tpl.regex_pattern) } catch { return null }
+
+  const m = re.exec(message)
+  if (!m) return null
+
+  try {
+    const rules = tpl.mapping_rules as unknown as MappingRules
+
+    const rawAmt = m[rules.amount.group] ?? ''
+    const amtStr = rules.amount.removeCommas ? rawAmt.replace(/,/g, '') : rawAmt
+    const amount = parseFloat(amtStr)
+    if (!amount || !Number.isFinite(amount)) return null
+
+    const cRules = rules.currency
+    const currency = !cRules ? null
+      : 'literal' in cRules ? cRules.literal
+      : (m[cRules.group] ?? null)
+
+    const merchant  = rules.merchant ? (m[rules.merchant.group] ?? null) : null
+    const last4Raw  = rules.last4    ? (m[rules.last4.group]    ?? null) : null
+    const cleanLast4 = last4Raw ? last4Raw.replace(/\D/g, '').slice(-4) || null : null
+    const bankName  = rules.bank_name ? rules.bank_name.literal : null
+    const kind      = rules.kind as ParsedTx['kind']
+
+    const cleanTitle =
+      kind === 'atm_withdrawal'       ? `ATM Withdrawal${bankName ? ` — ${bankName}` : ''}` :
+      kind === 'instant_transfer_out' ? `Transfer${merchant ? ` to ${merchant}` : ''}` :
+      kind === 'instant_transfer_in'  ? `Transfer${merchant ? ` from ${merchant}` : ''}` :
+      merchant ?? bankName ?? null
+
+    void service.rpc('increment_sms_template_match_count', { p_id: tpl.id })
+
+    return {
+      is_transaction: true, amount,
+      currency: currency as ParsedTx['currency'],
+      merchant, bank_name: bankName,
+      category: null, confidence: 1.0, kind,
+      cleanTitle, rawSmsSummary: null,
+      detectedAccountLast4: cleanLast4,
+      newBalance: null, merchantNormalized: null,
+    }
+  } catch { return null }
+}
+
+// Tier 1.5: promoted templates (long-cached, ~10 min TTL)
+async function tryPromotedParse(
+  message: string,
+  sender: string,
+  service: ReturnType<typeof createServiceRoleClient>,
+): Promise<ParsedTx | null> {
+  const templates = await getPromotedTemplates(sender, service)
+  for (const tpl of templates) {
+    const result = applyTemplate(message, tpl, service)
+    if (result) return result
+  }
+  return null
+}
+
+// Tier 2: learned templates (short-cached, ~5 min TTL)
 async function tryStaticParse(
   message: string,
   sender: string,
   service: ReturnType<typeof createServiceRoleClient>,
 ): Promise<ParsedTx | null> {
-  // Templates are GLOBAL — one user's AI parse teaches the regex for everyone.
-  const { data: templates } = await service
-    .from('sms_tracking_templates_ai')
-    .select('id, regex_pattern, mapping_rules, match_count')
-    .eq('sender', sender)
-    .eq('ai_enabled', true)
-    .order('match_count', { ascending: false })
-    .limit(20)
-
-  if (!templates?.length) return null
-
+  const templates = await getLearnedTemplates(sender, service)
   for (const tpl of templates) {
-    let re: RegExp
-    try { re = new RegExp(tpl.regex_pattern) } catch { continue }
-
-    const m = re.exec(message)
-    if (!m) continue
-
-    try {
-      const rules = tpl.mapping_rules as MappingRules
-
-      // Amount — required; skip template if extraction fails
-      const rawAmt = m[rules.amount.group] ?? ''
-      const amtStr = rules.amount.removeCommas ? rawAmt.replace(/,/g, '') : rawAmt
-      const amount = parseFloat(amtStr)
-      if (!amount || !Number.isFinite(amount)) continue
-
-      // Currency (literal constant OR capture group)
-      const cRules = rules.currency
-      const currency = !cRules ? null
-        : 'literal' in cRules ? cRules.literal
-        : (m[cRules.group] ?? null)
-
-      // Optional fields
-      const merchant  = rules.merchant ? (m[rules.merchant.group] ?? null) : null
-      const last4Raw  = rules.last4    ? (m[rules.last4.group]    ?? null) : null
-      const cleanLast4 = last4Raw ? last4Raw.replace(/\D/g, '').slice(-4) || null : null
-      const bankName  = rules.bank_name ? rules.bank_name.literal : null
-      const kind      = rules.kind as ParsedTx['kind']
-
-      // Construct a human-readable title so push notifications are meaningful
-      const cleanTitle =
-        kind === 'atm_withdrawal'       ? `ATM Withdrawal${bankName ? ` — ${bankName}` : ''}` :
-        kind === 'instant_transfer_out' ? `Transfer${merchant ? ` to ${merchant}` : ''}` :
-        kind === 'instant_transfer_in'  ? `Transfer${merchant ? ` from ${merchant}` : ''}` :
-        merchant ?? bankName ?? null
-
-      // Atomic counter via DB function — prevents read-then-write race conditions
-      void service.rpc('increment_sms_template_match_count', { p_id: tpl.id })
-
-      return {
-        is_transaction: true, amount,
-        currency: currency as ParsedTx['currency'],
-        merchant, bank_name: bankName,
-        category: null, confidence: 1.0, kind,
-        cleanTitle, rawSmsSummary: null,
-        detectedAccountLast4: cleanLast4,
-        newBalance: null, merchantNormalized: null,
-      }
-    } catch { continue }  // malformed mapping_rules — try next template
+    const result = applyTemplate(message, tpl, service)
+    if (result) return result
   }
   return null
 }
@@ -188,6 +199,7 @@ async function learnPattern(
   parsed: ParsedTx,
   service: ReturnType<typeof createServiceRoleClient>,
   apiKey: string,
+  userId: string,
 ): Promise<void> {
   try {
     // Global cap: 10 templates per sender prevents runaway growth
@@ -240,11 +252,30 @@ async function learnPattern(
       mapping_rules: learned.mapping_rules as unknown as Record<string, unknown>,
       ai_enabled: true,
       match_count: 0,
+      avg_ai_confidence: parsed.confidence ?? null,
+      kind: parsed.kind ?? null,
+      unique_user_count: 1,
     })
     if (tplErr && tplErr.code !== '23505') {
       console.warn('[sms/parse] template insert failed', tplErr)
     } else if (!tplErr) {
       console.log('[sms/parse] template learned', { sender, regex: learned.regex_pattern })
+      invalidateSenderCache(sender)
+      await checkAndAutoPromote(sender, service)
+    } else {
+      // Duplicate template: increment unique_user_count if this userId is new
+      const { data: existing } = await service
+        .from('sms_tracking_templates_ai')
+        .select('id, unique_user_count, user_id')
+        .eq('sender', sender)
+        .eq('regex_pattern', learned.regex_pattern)
+        .single()
+      if (existing && existing.user_id !== userId) {
+        await service
+          .from('sms_tracking_templates_ai')
+          .update({ unique_user_count: (existing.unique_user_count ?? 0) + 1 })
+          .eq('id', existing.id)
+      }
     }
   } catch (e) {
     // Best-effort — never propagate, but keep the failure visible in logs.
@@ -381,10 +412,16 @@ export async function POST(request: Request) {
   let txDay: string | null = null
 
   const curated = matchCuratedPattern(message, sender ?? null)
-  const staticResult = curated
-    ? null
-    // ---- Tier 2: AI-learned templates (global, DB) -------------------------
-    : sender ? await tryStaticParse(message, sender, service) : null
+
+  // ---- Tier 1.5: promoted DB templates (long-cached, Tier 1-equivalent) ---
+  const promotedResult = (!curated && sender)
+    ? await tryPromotedParse(message, sender, service)
+    : null
+
+  // ---- Tier 2: learned DB templates (short-cached) -------------------------
+  const staticResult = (!curated && !promotedResult && sender)
+    ? await tryStaticParse(message, sender, service)
+    : null
 
   if (curated) {
     patternId = curated.patternId
@@ -405,6 +442,8 @@ export async function POST(request: Request) {
       newBalance: curated.balance,
       merchantNormalized: null,
     }
+  } else if (promotedResult) {
+    parsed = promotedResult
   } else if (staticResult) {
     parsed = staticResult
   } else {
@@ -453,14 +492,14 @@ export async function POST(request: Request) {
     // after() keeps the serverless function alive — a bare void promise is
     // frozen the moment the response returns and never completes on Vercel.
     if (sender && parsed.confidence >= PATTERN_LEARN_CONFIDENCE && parsed.is_transaction) {
-      const learnArgs = [message, sender, parsed, service, apiKey] as const
+      const learnArgs = [message, sender, parsed, service, apiKey, userId] as const
       after(() => learnPattern(...learnArgs))
     }
   }
 
   // Which tier parsed this row — stamped for the admin audit loop.
-  const parseMethod: 'curated' | 'static' | 'ai' =
-    curated ? 'curated' : staticResult ? 'static' : 'ai'
+  const parseMethod: 'curated' | 'static' | 'promoted' | 'ai' =
+    curated ? 'curated' : promotedResult ? 'promoted' : staticResult ? 'static' : 'ai'
 
   if (!parsed.is_transaction || !parsed.amount || !parsed.currency) {
     await service.from('sms_parse_log')

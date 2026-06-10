@@ -1382,39 +1382,93 @@ export type Database = {
       sms_tracking_templates_ai: {
         Row: {
           ai_enabled: boolean
+          auto_promoted: boolean
+          avg_ai_confidence: number | null
           created_at: string
           id: string
+          kind: string | null
+          last_matched_at: string | null
           mapping_rules: Json
           match_count: number
+          promoted_at: string | null
           regex_pattern: string
           sender: string
           template_sample: string
+          tier: string
+          unique_user_count: number
           updated_at: string
           user_id: string | null
         }
         Insert: {
           ai_enabled?: boolean
+          auto_promoted?: boolean
+          avg_ai_confidence?: number | null
           created_at?: string
           id?: string
+          kind?: string | null
+          last_matched_at?: string | null
           mapping_rules: Json
           match_count?: number
+          promoted_at?: string | null
           regex_pattern: string
           sender: string
           template_sample: string
+          tier?: string
+          unique_user_count?: number
           updated_at?: string
           user_id?: string | null
         }
         Update: {
           ai_enabled?: boolean
+          auto_promoted?: boolean
+          avg_ai_confidence?: number | null
           created_at?: string
           id?: string
+          kind?: string | null
+          last_matched_at?: string | null
           mapping_rules?: Json
           match_count?: number
+          promoted_at?: string | null
           regex_pattern?: string
           sender?: string
           template_sample?: string
+          tier?: string
+          unique_user_count?: number
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      sms_promotion_config: {
+        Row: {
+          auto_promotion_enabled: boolean
+          id: number
+          max_failure_rate: number
+          min_age_days: number
+          min_avg_confidence: number
+          min_match_count: number
+          min_unique_users: number
+          updated_at: string
+        }
+        Insert: {
+          auto_promotion_enabled?: boolean
+          id?: number
+          max_failure_rate?: number
+          min_age_days?: number
+          min_avg_confidence?: number
+          min_match_count?: number
+          min_unique_users?: number
+          updated_at?: string
+        }
+        Update: {
+          auto_promotion_enabled?: boolean
+          id?: number
+          max_failure_rate?: number
+          min_age_days?: number
+          min_avg_confidence?: number
+          min_match_count?: number
+          min_unique_users?: number
+          updated_at?: string
         }
         Relationships: []
       }

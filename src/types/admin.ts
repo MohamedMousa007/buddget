@@ -55,6 +55,34 @@ export interface SmsTemplateRow {
   created_at: string
   updated_at: string
   user_id: string | null
+  tier: 'learned' | 'promoted'
+  kind: string | null
+  unique_user_count: number
+  avg_ai_confidence: number | null
+  last_matched_at: string | null
+  promoted_at: string | null
+  auto_promoted: boolean
+}
+
+export interface SmsPromotionConfig {
+  id: 1
+  min_match_count: number
+  min_unique_users: number
+  min_age_days: number
+  max_failure_rate: number
+  min_avg_confidence: number
+  auto_promotion_enabled: boolean
+  updated_at: string
+}
+
+export interface EligibleTemplate {
+  template_id: string
+  sender: string
+  match_count: number
+  unique_user_count: number
+  age_days: number
+  failure_rate: number
+  avg_ai_confidence: number
 }
 
 export interface SmsTrackedRow {
