@@ -21,8 +21,6 @@ export interface DashboardTransactionsProps {
 }
 
 const MAX_ROWS = 5
-const EXPENSE_COLOR = '#E50914'
-const INCOME_COLOR = '#18A349'
 
 /**
  * "Latest transactions" card. Shows the 5 most recent entries from the
@@ -119,7 +117,7 @@ function TxRow({
   const initial = (expense.description || expense.category || '?').charAt(0).toUpperCase()
   // Treat savings-tagged rows as "green credit" so users see a visual contrast;
   // everything else is spend-red.
-  const amountColor = expense.category.toLowerCase() === 'savings' ? INCOME_COLOR : EXPENSE_COLOR
+  const amountColor = expense.category.toLowerCase() === 'savings' ? 'var(--color-brand-green)' : 'var(--color-brand-red)'
   const sign = expense.category.toLowerCase() === 'savings' ? '+' : '-'
 
   // Minimal variant: 13px text + border-separated rows (spacing comes from
@@ -129,7 +127,7 @@ function TxRow({
   const rowPad = variant === 'minimal' ? 'py-2.5' : ''
 
   return (
-    <li className={`flex items-center gap-3 ${rowPad}`}>
+    <li className={`flex items-center gap-3 ${rowPad} rounded-lg hover:bg-[var(--color-brand-elevated)] active:opacity-70 transition-colors`}>
       <span
         aria-hidden
         className="w-[30px] h-[30px] rounded-lg flex items-center justify-center text-[12px] font-semibold shrink-0"
@@ -154,7 +152,7 @@ function TxRow({
           {sign}
           {formatCompact(expense.amount)}
         </div>
-        <div className="text-[9px] text-[var(--color-brand-text-muted)] mt-0.5">
+        <div className="text-[10px] text-[var(--color-brand-text-muted)] mt-0.5">
           {relativeDate(expense.date, t)}
         </div>
       </div>

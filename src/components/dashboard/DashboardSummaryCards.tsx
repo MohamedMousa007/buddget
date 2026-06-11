@@ -38,7 +38,7 @@ export function DashboardSummaryCards({
   // Debt card colour stays neutral at zero so empty-state dashboards don't
   // look alarming; flips to brand red only when the user actually has debt.
   const hasDebt = debtTotal > 0 || activeDebtCount > 0
-  const debtColor = hasDebt ? '#E50914' : 'var(--color-brand-text-primary)'
+  const debtColor = hasDebt ? 'var(--color-brand-red)' : 'var(--color-brand-text-primary)'
   const debtSubtext = hasDebt
     ? t.dashboard.summaryDebtActive(activeDebtCount)
     : t.dashboard.summaryDebtActiveNone
@@ -52,7 +52,7 @@ export function DashboardSummaryCards({
             : t.dashboard.summaryProjectedSavingsLabel
         }
         amount={`${baseCurrency} ${formatCompact(savingsThisMonth)}`}
-        amountColor="#18A349"
+        amountColor="var(--color-brand-green)"
         subtext={
           monthClosed
             ? t.dashboard.summarySavedActualSubtext
@@ -84,7 +84,7 @@ function SummaryCard({
 }) {
   return (
     <div className="flex-1 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-3">
-      <div className="text-[9px] uppercase tracking-wider text-[var(--color-brand-text-secondary)] font-semibold">
+      <div className="text-[10px] uppercase tracking-wider text-[var(--color-brand-text-secondary)] font-semibold">
         {label}
       </div>
       <div

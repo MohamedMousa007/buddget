@@ -27,7 +27,7 @@ export function DashboardStatsRow({
   return (
     <div
       className="flex items-stretch justify-center py-3 mb-3"
-      style={{ borderBottom: '0.5px solid rgba(0,0,0,0.06)' }}
+      style={{ borderBottom: '0.5px solid var(--color-brand-border)' }}
     >
       <Stat
         label={t.dashboard.heroStatIn}
@@ -40,14 +40,14 @@ export function DashboardStatsRow({
         label={t.dashboard.heroStatOut}
         amount={totalSpent}
         currency={baseCurrency}
-        color="text-[#E50914]"
+        color="text-[var(--color-brand-red)]"
       />
       <Divider />
       <Stat
         label={t.dashboard.heroStatSaved}
         amount={savingsTotal}
         currency={baseCurrency}
-        color="text-[#18A349]"
+        color="text-[var(--color-brand-green)]"
       />
     </div>
   )
@@ -91,7 +91,7 @@ function Divider() {
     <span
       aria-hidden
       className="shrink-0 self-stretch mx-1"
-      style={{ width: '1px', background: 'rgba(0,0,0,0.06)' }}
+      style={{ width: '1px', background: 'var(--color-brand-border)' }}
     />
   )
 }

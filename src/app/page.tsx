@@ -96,7 +96,7 @@ export default function DashboardPage() {
     <div className="min-h-screen">
       <DashboardSearchParamsSync />
       <div
-        className="max-w-2xl lg:max-w-3xl mx-auto px-4 pt-4 pb-8 space-y-4"
+        className="max-w-2xl lg:max-w-3xl mx-auto px-4 pt-4 pb-8 space-y-4 animate-[dashboardIn_0.35s_ease-out]"
       >
         <SetupChecklist />
         <SmsAccountDetectionBanner />

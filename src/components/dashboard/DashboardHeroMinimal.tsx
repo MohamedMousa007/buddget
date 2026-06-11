@@ -85,9 +85,9 @@ export function DashboardHeroMinimal({ stats, suppressNumbers }: DashboardHeroMi
 }
 
 function paceTone(status: PaceStatus): { bg: string; fg: string } {
-  if (status === 'on_track') return { bg: '#EAF3DE', fg: '#3B6D11' }
-  if (status === 'warning') return { bg: '#FEF3C7', fg: '#8A5A0F' }
-  return { bg: '#FCEBEB', fg: '#A32D2D' }
+  if (status === 'on_track') return { bg: 'var(--color-status-ok-bg)',      fg: 'var(--color-status-ok-fg)' }
+  if (status === 'warning')  return { bg: 'var(--color-status-warn-bg)',    fg: 'var(--color-status-warn-fg)' }
+  return                            { bg: 'var(--color-status-danger-bg)',  fg: 'var(--color-status-danger-fg)' }
 }
 
 function paceLabel(status: PaceStatus, t: ReturnType<typeof useT>): string {

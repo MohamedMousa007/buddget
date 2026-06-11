@@ -90,7 +90,7 @@ export function DashboardPaceBadge({
 }
 
 function toneFor(status: PaceStatus): { bg: string; fg: string } {
-  if (status === 'on_track') return { bg: '#E6F9EF', fg: '#18A349' }
-  if (status === 'warning') return { bg: '#FEF3C7', fg: '#B45309' }
-  return { bg: '#FCE7E7', fg: '#E50914' }
+  if (status === 'on_track') return { bg: 'var(--color-status-ok-bg)',      fg: 'var(--color-status-ok-fg)' }
+  if (status === 'warning')  return { bg: 'var(--color-status-warn-bg)',    fg: 'var(--color-status-warn-fg)' }
+  return                            { bg: 'var(--color-status-danger-bg)',  fg: 'var(--color-status-danger-fg)' }
 }

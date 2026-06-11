@@ -40,7 +40,7 @@ export function DashboardHero({ stats, suppressNumbers }: DashboardHeroProps) {
     <section
       aria-label="Dashboard summary"
       className="rounded-3xl text-white overflow-hidden shadow-[0_10px_30px_-12px_rgba(15,23,42,0.25)]"
-      style={{ background: 'linear-gradient(180deg,#0F172A 0%,#1E293B 100%)' }}
+      style={{ background: 'linear-gradient(180deg, var(--color-hero-from) 0%, var(--color-hero-to) 100%)' }}
     >
       <div className="px-5 py-5">
         {suppressNumbers ? (
@@ -74,19 +74,19 @@ export function DashboardHero({ stats, suppressNumbers }: DashboardHeroProps) {
                 label={t.dashboard.heroStatIn}
                 amount={stats.totalIncome}
                 currency={stats.baseCurrency}
-                color="text-[#22C55E]"
+                color="text-[var(--color-hero-stat-income)]"
               />
               <Stat
                 label={t.dashboard.heroStatOut}
                 amount={stats.totalSpent}
                 currency={stats.baseCurrency}
-                color="text-[#EF4444]"
+                color="text-[var(--color-hero-stat-spend)]"
               />
               <Stat
                 label={t.dashboard.heroStatSaved}
                 amount={stats.savingsTotal}
                 currency={stats.baseCurrency}
-                color="text-[#FACC15]"
+                color="text-[var(--color-hero-stat-savings)]"
               />
             </div>
           </>
@@ -148,7 +148,7 @@ function HeroRing({ percent, usedLabel }: { percent: number; usedLabel: string }
           cy={size / 2}
           r={r}
           fill="none"
-          stroke="#E50914"
+          stroke="var(--color-brand-red)"
           strokeWidth={stroke}
           strokeDasharray={c}
           strokeDashoffset={offset}
@@ -158,7 +158,7 @@ function HeroRing({ percent, usedLabel }: { percent: number; usedLabel: string }
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
         <span className="text-white text-[15px] font-semibold">{clamped}%</span>
-        <span className="text-white/55 text-[8px] mt-0.5">{usedLabel}</span>
+        <span className="text-white/55 text-[10px] mt-0.5">{usedLabel}</span>
       </div>
     </div>
   )
