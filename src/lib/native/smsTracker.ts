@@ -2,13 +2,30 @@
 
 import { isAndroid, isNative } from '@/lib/native/isNative'
 
+export interface SmsBridgeStatus {
+  tokenSaved: boolean
+  enabled: boolean
+  lastRunAt: string
+  lastResult: string
+}
+
+export interface SmsHealthResult {
+  ok: boolean
+  status: number
+  tokenSaved: boolean
+}
+
 interface SmsCapacitorPlugin {
   checkPermission(): Promise<{ granted: boolean }>
   requestPermission(): Promise<{ granted: boolean }>
-  /** Persists token to SharedPreferences so SmsReceiver can use WorkManager when the app is killed. */
+  /** Persists token natively (SharedPreferences / UserDefaults) so the killed-app forwarding path stays armed. */
   saveToken(opts: { token: string; apiUrl: string }): Promise<void>
-  /** Gates the native SmsReceiver — when false it ignores all incoming SMS. */
+  /** Gates native forwarding — Android SmsReceiver / iOS CatchBankSmsIntent. */
   setEnabled(opts: { enabled: boolean }): Promise<void>
+  /** iOS only: bridge state incl. the App Intent's last run. */
+  getStatus(): Promise<SmsBridgeStatus>
+  /** iOS only: GET /api/sms/health through the same native path the intent uses. */
+  healthCheck(): Promise<SmsHealthResult>
 }
 
 // Module-level cache — registerPlugin() is called exactly once.
@@ -23,7 +40,7 @@ let _pluginLoaded = false
 async function ensurePlugin(): Promise<boolean> {
   if (_pluginLoaded) return _plugin !== null
   _pluginLoaded = true
-  if (!isNative() || !isAndroid()) return false
+  if (!isNative()) return false
   try {
     const { registerPlugin } = await import('@capacitor/core')
     // Store in module var — never return the proxy itself from an async function.
@@ -93,13 +110,13 @@ export async function stopSMSTracking(): Promise<void> {
 }
 
 /**
- * Saves the permanent sms_ingest_token (non-expiring) to SharedPreferences so
- * SmsForwardWorker always has a valid credential regardless of how long the app
- * has been killed. Called from useSmsTracking whenever the ingest token is
- * fetched or rotated. resolveUserId in /api/sms/parse accepts this token as Bearer.
+ * Saves the permanent sms_ingest_token (non-expiring) natively — Android
+ * SharedPreferences for SmsForwardWorker, iOS UserDefaults for
+ * CatchBankSmsIntent — so the killed-app path always has a valid credential.
+ * Called from useSmsTracking whenever the ingest token is fetched or rotated.
+ * resolveUserId in /api/sms/parse accepts this token as Bearer.
  */
 export async function saveSmsToken(ingestToken: string): Promise<void> {
-  if (!isNative() || !isAndroid()) return
   if (!(await ensurePlugin()) || !_plugin) return
   try {
     const { apiUrl: buildUrl } = await import('@/lib/apiBase')
@@ -121,4 +138,31 @@ export async function refreshSmsToken(accessToken: string): Promise<void> {
     const base = buildUrl('').replace(/\/$/, '')
     await _plugin.saveToken({ token: accessToken, apiUrl: base })
   } catch { /* non-fatal */ }
+}
+
+/** Gates native forwarding without touching the stored token (iOS toggle path). */
+export async function setSmsEnabled(enabled: boolean): Promise<void> {
+  if (!(await ensurePlugin()) || !_plugin) return
+  try { await _plugin.setEnabled({ enabled }) } catch { /* noop */ }
+}
+
+/** iOS bridge status — token saved, enabled, and the App Intent's last run. */
+export async function getSmsBridgeStatus(): Promise<SmsBridgeStatus | null> {
+  if (!(await ensurePlugin()) || !_plugin) return null
+  try {
+    return await _plugin.getStatus()
+  } catch {
+    return null
+  }
+}
+
+/** One-tap setup check: validates the stored ingest token against /api/sms/health
+ *  through the same native URLSession path CatchBankSmsIntent uses. */
+export async function runSmsHealthCheck(): Promise<SmsHealthResult | null> {
+  if (!(await ensurePlugin()) || !_plugin) return null
+  try {
+    return await _plugin.healthCheck()
+  } catch {
+    return null
+  }
 }

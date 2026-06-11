@@ -15,10 +15,10 @@ import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { subscribeToPush, unsubscribeFromPush } from '@/lib/notifications/webPushSubscribe'
 import { requestPushPermission } from '@/lib/notifications/pushNotifications'
-import { isNative, isAndroid } from '@/lib/native/isNative'
+import { isNative, isAndroid, isIOS } from '@/lib/native/isNative'
 import { createClient } from '@/lib/supabase/client'
-import { apiFetchAuth, apiUrl } from '@/lib/apiBase'
-import { saveSmsToken } from '@/lib/native/smsTracker'
+import { apiFetchAuth } from '@/lib/apiBase'
+import { saveSmsToken, setSmsEnabled } from '@/lib/native/smsTracker'
 
 export interface TokenInfo {
   token: string
@@ -50,9 +50,9 @@ export function useSmsTracking() {
       if (res.ok) {
         const data = await res.json() as TokenInfo
         setTokenInfo(data)
-        // Save the non-expiring ingest token so SmsForwardWorker always has a valid
-        // credential even after the Supabase JWT expires (1-hour TTL).
-        if (isNative() && isAndroid()) void saveSmsToken(data.token)
+        // Save the non-expiring ingest token natively (Android SmsForwardWorker /
+        // iOS CatchBankSmsIntent) so the bridge survives the 1-hour JWT TTL.
+        if (isNative()) void saveSmsToken(data.token)
       }
     }
 
@@ -113,8 +113,26 @@ export function useSmsTracking() {
         return
       }
 
+      // iOS native: arm the CatchBankSmsIntent bridge — persist the
+      // non-expiring ingest token (never the 1-hour JWT) and flip the
+      // native enabled gate the App Intent checks before forwarding.
+      if (isNative() && isIOS()) {
+        if (value) {
+          const res = await apiFetchAuth('/api/sms/setup-token')
+          if (res.ok) {
+            const data = await res.json() as TokenInfo
+            setTokenInfo(data)
+            await saveSmsToken(data.token)
+          }
+          await setSmsEnabled(true)
+        } else {
+          await setSmsEnabled(false)
+        }
+        updateSettings({ smsTrackingEnabled: value })
+        return
+      }
+
       // Web Push requires Service Workers — not available in Capacitor WebView.
-      // On iOS native, skip push entirely and just flip the Zustand flag.
       if (!isNative()) {
         if (value) {
           try {
@@ -138,7 +156,7 @@ export function useSmsTracking() {
     if (res.ok) {
       const data = await res.json() as TokenInfo
       setTokenInfo(data)
-      if (isNative() && isAndroid()) void saveSmsToken(data.token)
+      if (isNative()) void saveSmsToken(data.token)
     }
   }, [])
 
@@ -147,16 +165,9 @@ export function useSmsTracking() {
     if (res.ok) {
       const data = await res.json() as TokenInfo
       setTokenInfo(data)
-      if (isNative() && isAndroid()) void saveSmsToken(data.token)
+      if (isNative()) void saveSmsToken(data.token)
     }
   }, [])
-
-  // Absolute URL so the download opens against the deployed origin in the
-  // Capacitor iOS WebView (page origin there is https://localhost → relative
-  // paths would 404). apiUrl() returns the path unchanged on web.
-  const iosDownloadUrl = tokenInfo
-    ? apiUrl(`/api/sms/shortcut/${tokenInfo.token}`)
-    : null
 
   return {
     isEnabled,
@@ -167,7 +178,6 @@ export function useSmsTracking() {
     fetchToken,
     rotateToken,
     lastReceivedAt,
-    iosDownloadUrl,
     todayCount,
   }
 }

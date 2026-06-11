@@ -2033,16 +2033,38 @@ export interface Dictionary {
     iosCardTitle: string
     iosStatusWaiting: string
     iosStatusConnected: (time: string) => string
-    iosStepInstallTitle: string
-    iosStepInstallDesc: string
     iosStepKeywordsTitle: string
     iosStepKeywordsDesc: string
+    iosKeywordsYourCurrencies: string
+    iosKeywordsCatchAlls: string
+    iosKeywordsCatchAllsHint: string
+    iosKeywordsPrivacy: string
     iosCopyKeywords: string
     iosCopiedKeywords: string
+    iosStepOpenShortcutsTitle: string
+    iosStepOpenShortcutsDesc: string
+    iosOpenShortcutsButton: string
     iosStepAutomationTitle: string
     iosStepAutomationDesc: string
-    iosDownloadButton: string
-    iosDownloading: string
+    iosStepActionTitle: string
+    iosStepActionDesc: string
+    iosRepeatPerCurrencyHint: string
+    iosStepCheckTitle: string
+    iosStepCheckDesc: string
+    iosCheckSetupButton: string
+    iosCheckChecking: string
+    iosCheckTokenSaved: string
+    iosCheckServerReachable: string
+    iosCheckTokenValid: string
+    iosCheckFailedToken: string
+    iosCheckFailedNetwork: string
+    iosCheckFailedAuth: string
+    iosLastCatch: (time: string) => string
+    iosLastCatchWaiting: string
+    iosLastCatchFailed: string
+    iosWalkthroughPrev: string
+    iosWalkthroughNext: string
+    iosWalkthroughStep: (current: number, total: number) => string
     androidCardTitle: string
     androidCardSubtitle: string
     androidApkTitle: string
