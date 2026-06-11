@@ -258,6 +258,7 @@ export const ar: Dictionary = {
     more: 'المزيد',
     quickAdd: 'إضافة سريعة',
     profileMenu: 'قائمة الملف الشخصي',
+    settings: 'الإعدادات',
   },
 
   brand: {
@@ -947,6 +948,32 @@ export const ar: Dictionary = {
 
     importSuccess: 'بياناتك جاهزة — اكتمل الاستيراد!',
     importError: 'حدث خطأ في الاستيراد. حاول مرة أخرى.',
+
+    hub: {
+      sectionAccount: 'الحساب',
+      sectionPreferences: 'التفضيلات',
+      sectionDataTracking: 'البيانات والتتبع',
+      sectionMore: 'المزيد',
+      sectionLegal: 'قانوني',
+      profile: 'الملف الشخصي',
+      profileSubtitle: 'الاسم، الصورة، الموقع',
+      account: 'الحساب والأمان',
+      accountSubtitle: 'كلمة المرور، التحقق الثنائي، تسجيل الخروج',
+      display: 'العرض',
+      displaySubtitle: 'المظهر، اللغة، عرض الهللة',
+      currency: 'العملة',
+      currencySubtitle: 'العملة الأساسية والثانوية',
+      sms: 'تتبع الرسائل',
+      smsSubtitle: 'تسجيل معاملات البنك تلقائياً',
+      data: 'البيانات',
+      dataSubtitle: 'تصدير، استيراد، إعادة ضبط',
+      goals: 'الأهداف',
+      goalsSubtitle: 'الأهداف الادخارية',
+      subscriptions: 'الاشتراكات',
+      subscriptionsSubtitle: 'المدفوعات المتكررة',
+      terms: 'الشروط والأحكام',
+      privacy: 'سياسة الخصوصية',
+    },
   },
 
   profile: {

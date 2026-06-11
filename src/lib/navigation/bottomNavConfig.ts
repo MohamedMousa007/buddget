@@ -9,6 +9,7 @@ import {
   BarChart3,
   SlidersHorizontal,
   HandCoins,
+  Settings,
 } from 'lucide-react'
 
 export type BuddgetNavIcon = LucideIcon
@@ -32,6 +33,7 @@ export const BOTTOM_NAV_MORE_MENU: { href: string; label: string; icon: BuddgetN
   { href: '/income', label: 'income', icon: Wallet },
   { href: '/savings', label: 'savings', icon: HandCoins },
   { href: '/reports', label: 'reports', icon: BarChart3 },
+  { href: '/settings', label: 'settings', icon: Settings },
 ]
 
 export const BOTTOM_NAV_MORE_HREFS = new Set(BOTTOM_NAV_MORE_MENU.map((m) => m.href))

@@ -7,8 +7,6 @@ import {
   User,
   Settings,
   LogOut,
-  Target,
-  RefreshCw,
   ListChecks,
 } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
@@ -129,18 +127,6 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
 
       <div className="border-t border-[var(--color-brand-border)]" />
 
-      <Link href="/profile/" onClick={delayedClose} className={itemClass} role="menuitem">
-        <User className="w-4 h-4 shrink-0" />
-        <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.yourProfile}</span>
-      </Link>
-      <Link href="/goals/" onClick={delayedClose} className={itemClass} role="menuitem">
-        <Target className="w-4 h-4 shrink-0" />
-        <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.goals}</span>
-      </Link>
-      <Link href="/subscriptions/" onClick={delayedClose} className={itemClass} role="menuitem">
-        <RefreshCw className="w-4 h-4 shrink-0" />
-        <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.subscriptions}</span>
-      </Link>
       <Link href="/settings/" onClick={delayedClose} className={itemClass} role="menuitem">
         <Settings className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.settings}</span>
