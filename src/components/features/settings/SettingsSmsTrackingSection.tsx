@@ -20,10 +20,8 @@ export function SettingsSmsTrackingSection() {
     loading,
     error,
     tokenInfo,
-    fetchToken,
     rotateToken,
     lastReceivedAt,
-    iosDownloadUrl,
   } = useSmsTracking()
 
   const [rotateConfirm, setRotateConfirm] = useState(false)
@@ -78,11 +76,7 @@ export function SettingsSmsTrackingSection() {
           {/* iOS / web: shortcut setup guide */}
           {!onAndroid && (
             <div className="px-4 py-4">
-              <SmsIosSetupCard
-                downloadUrl={iosDownloadUrl}
-                onFetchToken={fetchToken}
-                lastReceivedAt={lastReceivedAt}
-              />
+              <SmsIosSetupCard lastReceivedAt={lastReceivedAt} />
             </div>
           )}
 
