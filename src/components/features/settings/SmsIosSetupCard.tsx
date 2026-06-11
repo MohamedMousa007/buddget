@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Download, Copy, Check, ShieldCheck } from 'lucide-react'
 import { useT } from '@/lib/i18n'
+import { isNative, isIOS } from '@/lib/native/isNative'
 
 interface Props {
   downloadUrl: string | null
@@ -62,7 +63,17 @@ export function SmsIosSetupCard({ downloadUrl, onFetchToken, lastReceivedAt }: P
       body: (
         <button
           type="button"
-          onClick={() => downloadUrl && window.open(downloadUrl, '_blank')}
+          onClick={() => {
+            if (!downloadUrl) return
+            // On iOS native, use the Shortcuts deep link so the app fetches the
+            // shortcut directly — downloading as a file is blocked by iOS 16+ as
+            // "unsigned". On web/Android, fall back to a direct download.
+            if (isNative() && isIOS()) {
+              window.location.href = `shortcuts://import-shortcut?url=${encodeURIComponent(downloadUrl)}&name=Buddget%20SMS%20Tracker`
+            } else {
+              window.open(downloadUrl, '_blank')
+            }
+          }}
           disabled={!downloadUrl}
           className="inline-flex h-11 items-center gap-2 rounded-xl bg-[var(--color-brand-green)] px-4 text-xs font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50"
         >
