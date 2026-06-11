@@ -2049,22 +2049,10 @@ export interface Dictionary {
     iosStepActionTitle: string
     iosStepActionDesc: string
     iosRepeatPerCurrencyHint: string
-    iosStepCheckTitle: string
-    iosStepCheckDesc: string
-    iosCheckSetupButton: string
-    iosCheckChecking: string
-    iosCheckTokenSaved: string
-    iosCheckServerReachable: string
-    iosCheckTokenValid: string
-    iosCheckFailedToken: string
-    iosCheckFailedNetwork: string
-    iosCheckFailedAuth: string
-    iosLastCatch: (time: string) => string
-    iosLastCatchWaiting: string
-    iosLastCatchFailed: string
-    iosWalkthroughPrev: string
-    iosWalkthroughNext: string
-    iosWalkthroughStep: (current: number, total: number) => string
+    iosSetupButton: string
+    iosSetupButtonConnected: string
+    iosSetupPageTitle: string
+    iosSetupDone: string
     androidCardTitle: string
     androidCardSubtitle: string
     androidApkTitle: string
