@@ -44,7 +44,7 @@ export function DashboardNetWorthHero({
               'mt-1 font-mono font-bold text-[26px] leading-none truncate',
               netWorth >= 0
                 ? 'text-[var(--color-brand-text-primary)]'
-                : 'text-[#EF4444]',
+                : 'text-[var(--color-brand-red)]',
             )}
           >
             <CurrencyLabel
@@ -72,13 +72,13 @@ export function DashboardNetWorthHero({
             label={t.dashboard.heroStatSavings}
             amount={totalSavings}
             currency={baseCurrency}
-            color="text-[#22C55E]"
+            color="text-[var(--color-brand-green)]"
           />
           <SideStat
             label={t.dashboard.heroStatDebt}
             amount={totalDebt}
             currency={baseCurrency}
-            color="text-[#FACC15]"
+            color="text-[var(--color-brand-gold)]"
           />
         </div>
       </div>

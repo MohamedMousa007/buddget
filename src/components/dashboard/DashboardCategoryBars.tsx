@@ -24,15 +24,10 @@ interface RowDatum {
   pct: number
 }
 
-const GREEN = '#18A349'
-const AMBER = '#D4A017'
-const RED = '#E50914'
-const TRACK = '#F0F0F0'
-
 function ringColor(pct: number): string {
-  if (pct > 80) return RED
-  if (pct > 60) return AMBER
-  return GREEN
+  if (pct > 80) return 'var(--color-brand-red)'
+  if (pct > 60) return 'var(--color-brand-amber)'
+  return 'var(--color-brand-green)'
 }
 
 /**
@@ -122,10 +117,10 @@ export function DashboardCategoryBars({
 function StatusChip({ tone, text }: { tone: 'ok' | 'near' | 'over'; text: string }) {
   const styles =
     tone === 'over'
-      ? 'bg-[#FCE7E7] text-[#9B1C1C]'
+      ? 'bg-[var(--color-status-danger-bg)] text-[var(--color-status-danger-fg)]'
       : tone === 'near'
-        ? 'bg-[#FEF3C7] text-[#8A5A0F]'
-        : 'bg-[#E6F9EF] text-[#0F6B4C]'
+        ? 'bg-[var(--color-status-warn-bg)] text-[var(--color-status-warn-fg)]'
+        : 'bg-[var(--color-status-ok-bg)] text-[var(--color-status-ok-fg)]'
   return (
     <span
       className={
@@ -170,7 +165,7 @@ function CategoryWheel({ row }: { row: RowDatum }) {
           viewBox={`0 0 ${size} ${size}`}
           className="absolute inset-0"
         >
-          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={TRACK} strokeWidth={stroke} />
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--color-ring-track)" strokeWidth={stroke} />
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -197,8 +192,8 @@ function CategoryWheel({ row }: { row: RowDatum }) {
         {row.category}
       </span>
       <span
-        className="text-[9px] font-mono tabular-nums"
-        style={{ color: overBudget ? RED : 'var(--color-brand-text-muted)' }}
+        className="text-[10px] font-mono tabular-nums"
+        style={{ color: overBudget ? 'var(--color-brand-red)' : 'var(--color-brand-text-muted)' }}
       >
         {formatCompact(row.spent)}/{formatCompact(row.cap)}
       </span>

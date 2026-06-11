@@ -34,19 +34,19 @@ export function DashboardSummaryTrio({
         label={t.dashboard.summarySavingsLabel}
         amount={savingsTotal}
         currency={baseCurrency}
-        color="text-[#18A349]"
+        color="text-[var(--color-brand-green)]"
       />
       <Card
         label={t.dashboard.summaryDebtLabel}
         amount={debtTotal}
         currency={baseCurrency}
-        color={hasDebt ? 'text-[#E50914]' : 'text-[var(--color-brand-text-primary)]'}
+        color={hasDebt ? 'text-[var(--color-brand-red)]' : 'text-[var(--color-brand-text-primary)]'}
       />
       <Card
         label={t.dashboard.heroNetWorthLabel}
         amount={netWorth}
         currency={baseCurrency}
-        color={netWorth >= 0 ? 'text-[#18A349]' : 'text-[#E50914]'}
+        color={netWorth >= 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red)]'}
       />
     </div>
   )
@@ -66,9 +66,9 @@ function Card({
   return (
     <div
       className="flex-1 min-w-0 rounded-xl border bg-[var(--color-brand-card)] px-3 py-2.5"
-      style={{ borderColor: 'rgba(0,0,0,0.06)' }}
+      style={{ borderColor: 'var(--color-brand-border)' }}
     >
-      <div className="text-[9px] uppercase tracking-[0.3px] text-[var(--color-brand-text-secondary)] font-semibold truncate">
+      <div className="text-[10px] uppercase tracking-[0.3px] text-[var(--color-brand-text-secondary)] font-semibold truncate">
         {label}
       </div>
       <div className={cn('mt-0.5 font-mono font-semibold text-[15px] truncate', color)}>

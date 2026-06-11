@@ -83,6 +83,26 @@
   --color-brand-text-secondary: #5A5A72;
   --color-brand-text-muted: #8A8AA0;
 
+  /* Hero card gradient — always dark navy */
+  --color-hero-from: #0F172A;
+  --color-hero-to: #1E293B;
+
+  /* On-dark hero stat colors — rendered on navy bg regardless of theme */
+  --color-hero-stat-income: #22C55E;
+  --color-hero-stat-spend: #EF4444;
+  --color-hero-stat-savings: #FACC15;
+
+  /* Shared pace/status semantic tokens */
+  --color-status-ok-bg: #E6F9EF;
+  --color-status-ok-fg: #18A349;
+  --color-status-warn-bg: #FEF3C7;
+  --color-status-warn-fg: #B45309;
+  --color-status-danger-bg: #FCE7E7;
+  --color-status-danger-fg: #E50914;
+
+  /* SVG category ring track */
+  --color-ring-track: #E8E8EC;
+
   --background: #F5F5F7;
   --foreground: #1A1A24;
   --card: #FFFFFF;
@@ -137,6 +157,15 @@
   --color-brand-text-secondary: #CFCFE0;
   --color-brand-text-muted: #9898B0;
 
+  /* Status tokens adapted for dark surfaces */
+  --color-status-ok-bg: rgba(29, 185, 84, 0.15);
+  --color-status-ok-fg: #1DB954;
+  --color-status-warn-bg: rgba(255, 159, 10, 0.15);
+  --color-status-warn-fg: #FF9F0A;
+  --color-status-danger-bg: rgba(255, 69, 58, 0.15);
+  --color-status-danger-fg: #FF453A;
+  --color-ring-track: #2A2A38;
+
   --background: #0A0A0F;
   --foreground: #FFFFFF;
   --card: #111118;
@@ -168,6 +197,11 @@
   --sidebar-accent-foreground: #FFFFFF;
   --sidebar-border: #2A2A38;
   --sidebar-ring: #E50914;
+}
+
+@keyframes dashboardIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @layer base {
