@@ -16,6 +16,7 @@ import { BiometricSessionPersist } from '@/lib/native/useBiometricSessionPersist
 import { AuthModal } from '@/components/auth/AuthModal'
 import { AuthContext, type AuthContextValue, type AuthMode, useAuth } from '@/components/auth/auth-context'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { LandingGate } from '@/components/auth/LandingGate'
 import { useEphemeralSessionGuard } from '@/hooks/useEphemeralSessionGuard'
@@ -125,6 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthContextValue['user']>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const dataReady = useFinanceStore((s) => s.dataReady)
   /** Cover the sign-out transition with the splash so the dashboard doesn't
    *  visibly flash back to default theme/data while `clearBudgetData` +
    *  `supabase.auth.signOut` complete. Cleared when `user` becomes null. */
@@ -363,6 +365,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     !onOnboardingRoute &&
     !isBypassRoute
 
+  // Hold the app behind the splash until the initial server pull lands, so the
+  // dashboard never paints stale localStorage numbers/theme that then visibly
+  // swap to the synced values. `dataReady` flips true in SupabaseFinanceSync's
+  // pull() finally — guaranteed even on the early-return path.
+  const showDataLoadingSplash =
+    mode === 'authenticated' &&
+    onboardingDoneMeta &&
+    !onOnboardingRoute &&
+    !isBypassRoute &&
+    !dataReady
+
   return (
     <AuthContext.Provider value={value}>
       <DialogProvider>
@@ -373,7 +386,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         <Suspense fallback={null}>
           <RequestResetQuerySync />
         </Suspense>
-        {showLoadingSplash || showOnboardingRedirectSplash ? (
+        {showLoadingSplash || showOnboardingRedirectSplash || showDataLoadingSplash ? (
           <AuthLoadingSplash />
         ) : showLandingGate ? (
           <Suspense fallback={null}>

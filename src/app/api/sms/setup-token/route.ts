@@ -9,14 +9,13 @@
  */
 
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
 
-export async function GET() {
-  const sessionClient = await createClient()
-  const { data: { user } } = await sessionClient.auth.getUser()
+export async function GET(request: Request) {
+  const userId = await resolveApiUserId(request)
 
-  if (!user) {
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -26,7 +25,7 @@ export async function GET() {
   const { data: existing } = await serviceClient
     .from('sms_ingest_tokens')
     .select('token')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .eq('is_active', true)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -42,7 +41,7 @@ export async function GET() {
   // Create a new token.
   const { data: newToken, error } = await serviceClient
     .from('sms_ingest_tokens')
-    .insert({ user_id: user.id })
+    .insert({ user_id: userId })
     .select('token')
     .single()
 
@@ -56,11 +55,10 @@ export async function GET() {
 }
 
 /** DELETE — rotates the token (deactivates current, issues new). */
-export async function DELETE() {
-  const sessionClient = await createClient()
-  const { data: { user } } = await sessionClient.auth.getUser()
+export async function DELETE(request: Request) {
+  const userId = await resolveApiUserId(request)
 
-  if (!user) {
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -70,13 +68,13 @@ export async function DELETE() {
   await serviceClient
     .from('sms_ingest_tokens')
     .update({ is_active: false })
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .eq('is_active', true)
 
   // Issue a new token.
   const { data: newToken, error } = await serviceClient
     .from('sms_ingest_tokens')
-    .insert({ user_id: user.id })
+    .insert({ user_id: userId })
     .select('token')
     .single()
 
