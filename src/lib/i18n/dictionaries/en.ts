@@ -257,6 +257,7 @@ export const en: Dictionary = {
     more: 'More',
     quickAdd: 'Quick add',
     profileMenu: 'Profile menu',
+    settings: 'Settings',
   },
 
   brand: {
@@ -947,6 +948,32 @@ export const en: Dictionary = {
 
     importSuccess: 'Your data is all set \u2014 import complete!',
     importError: 'Something went wrong with the import. Give it another try.',
+
+    hub: {
+      sectionAccount: 'Account',
+      sectionPreferences: 'Preferences',
+      sectionDataTracking: 'Data & Tracking',
+      sectionMore: 'More',
+      sectionLegal: 'Legal',
+      profile: 'Profile',
+      profileSubtitle: 'Name, avatar, location',
+      account: 'Account & Security',
+      accountSubtitle: 'Password, 2FA, sign out',
+      display: 'Display',
+      displaySubtitle: 'Theme, language, cents',
+      currency: 'Currency',
+      currencySubtitle: 'Base and secondary currency',
+      sms: 'SMS Tracking',
+      smsSubtitle: 'Auto-log bank transactions',
+      data: 'Data',
+      dataSubtitle: 'Export, import, reset',
+      goals: 'Goals',
+      goalsSubtitle: 'Savings targets',
+      subscriptions: 'Subscriptions',
+      subscriptionsSubtitle: 'Recurring payments',
+      terms: 'Terms & Conditions',
+      privacy: 'Privacy Policy',
+    },
   },
 
   profile: {

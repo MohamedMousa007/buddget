@@ -159,6 +159,7 @@ export interface Dictionary {
     more: string
     quickAdd: string
     profileMenu: string
+    settings: string
   }
 
   brand: {
@@ -844,6 +845,32 @@ export interface Dictionary {
 
     importSuccess: string
     importError: string
+
+    hub: {
+      sectionAccount: string
+      sectionPreferences: string
+      sectionDataTracking: string
+      sectionMore: string
+      sectionLegal: string
+      profile: string
+      profileSubtitle: string
+      account: string
+      accountSubtitle: string
+      display: string
+      displaySubtitle: string
+      currency: string
+      currencySubtitle: string
+      sms: string
+      smsSubtitle: string
+      data: string
+      dataSubtitle: string
+      goals: string
+      goalsSubtitle: string
+      subscriptions: string
+      subscriptionsSubtitle: string
+      terms: string
+      privacy: string
+    }
   }
 
   profile: {
