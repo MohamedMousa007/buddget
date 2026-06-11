@@ -5,7 +5,6 @@ import { createClient } from '@/lib/supabase/client'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSyncFailures } from '@/lib/store/useSyncFailures'
 import {
-  pullCore,
   pullAll,
   flushDiff,
   snapshot,
@@ -14,6 +13,7 @@ import {
   hasMeaningfulLocalState,
 } from '@/lib/supabase/remote'
 import { markHydrated } from '@/hooks/remote/hydrateGuard'
+import { applyTheme } from '@/lib/theme/applyTheme'
 import type { Snapshot } from '@/lib/supabase/remote'
 
 const DEBOUNCE_MS = 500
@@ -137,55 +137,47 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
           return
         }
 
-        if (localHasData) {
-          const server = await pullAll(supabase, userId)
-          if (server) {
-            // Re-snapshot right before the merge so edits made during the
-            // pullAll round-trip aren't clobbered.
-            const latestLocal = snapshot(useFinanceStore.getState())
-            const merged = mergeSnapshots(latestLocal, server)
-            // Server always wins for singletons — settings flush instantly so
-            // the DB is always up to date by the time this pull completes.
-            useFinanceStore.setState({
-              profile: merged.profile,
-              settings: merged.settings,
-              onboardingState: merged.onboardingState,
-              financialGoalsNotes: merged.financialGoalsNotes,
-              activeBudgetPlanId: merged.activeBudgetPlanId,
-              paymentMethods: merged.paymentMethods,
-              incomeSources: merged.incomeSources,
-              expenses: merged.expenses,
-              recurringExpenses: merged.recurringExpenses,
-              subscriptions: merged.subscriptions,
-              debts: merged.debts,
-              debtPayments: merged.debtPayments,
-              recurringDebtPayments: merged.recurringDebtPayments,
-              savingsAccounts: merged.savingsAccounts,
-              savingsHoldings: merged.savingsHoldings,
-              savingsTransactions: merged.savingsTransactions,
-              recurringSavingsDeposits: merged.recurringSavingsDeposits,
-              goals: merged.goals,
-              budgetPlans: merged.budgetPlans,
-            })
-            // Mark all slices as hydrated so per-page hooks skip redundant fetches.
-            for (const slice of ['expenses','income','debts','goals','savings','subscriptions','budget']) {
-              markHydrated(userId, slice)
-            }
-            return
-          }
-          return
-        }
-
-        const core = await pullCore(supabase, userId)
-        if (core) {
+        // Always pull the full snapshot — even on a fresh login with no local
+        // data — so `dataReady` only flips once every dashboard slice is present.
+        // Pulling only core singletons here would render zeroed numbers that then
+        // visibly populate as per-page hooks backfill the transactional data.
+        const server = await pullAll(supabase, userId)
+        if (server) {
+          // Re-snapshot right before the merge so edits made during the
+          // pullAll round-trip aren't clobbered.
+          const latestLocal = snapshot(useFinanceStore.getState())
+          const merged = mergeSnapshots(latestLocal, server)
+          // Server always wins for singletons — settings flush instantly so
+          // the DB is always up to date by the time this pull completes.
           useFinanceStore.setState({
-            profile: core.profile,
-            settings: core.settings,
-            onboardingState: core.onboardingState,
-            financialGoalsNotes: core.financialGoalsNotes,
-            activeBudgetPlanId: core.activeBudgetPlanId,
-            paymentMethods: core.paymentMethods,
+            profile: merged.profile,
+            settings: merged.settings,
+            onboardingState: merged.onboardingState,
+            financialGoalsNotes: merged.financialGoalsNotes,
+            activeBudgetPlanId: merged.activeBudgetPlanId,
+            paymentMethods: merged.paymentMethods,
+            incomeSources: merged.incomeSources,
+            expenses: merged.expenses,
+            recurringExpenses: merged.recurringExpenses,
+            subscriptions: merged.subscriptions,
+            debts: merged.debts,
+            debtPayments: merged.debtPayments,
+            recurringDebtPayments: merged.recurringDebtPayments,
+            savingsAccounts: merged.savingsAccounts,
+            savingsHoldings: merged.savingsHoldings,
+            savingsTransactions: merged.savingsTransactions,
+            recurringSavingsDeposits: merged.recurringSavingsDeposits,
+            goals: merged.goals,
+            budgetPlans: merged.budgetPlans,
           })
+          // Apply the server theme synchronously so the <html> class is already
+          // correct before `dataReady` flips and the loading splash is removed —
+          // no relying on the useThemeSync effect firing after the splash lifts.
+          applyTheme(merged.settings.theme)
+          // Mark all slices as hydrated so per-page hooks skip redundant fetches.
+          for (const slice of ['expenses','income','debts','goals','savings','subscriptions','budget']) {
+            markHydrated(userId, slice)
+          }
         }
       } catch (e) {
         console.error('[finance sync] pull failed', e)

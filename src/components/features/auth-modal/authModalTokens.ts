@@ -11,8 +11,10 @@ export const cardStyle: CSSProperties = {
   maxWidth: 400,
 }
 
+// `text-base` (16px) keeps iOS from auto-zooming on input focus even if the
+// viewport scale lock is ever relaxed; never drop below 16px on form fields.
 export const inputClass =
-  'w-full h-10 sm:h-11 px-3 rounded-[10px] border text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] outline-none transition-colors text-sm'
+  'w-full h-10 sm:h-11 px-3 rounded-[10px] border text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] outline-none transition-colors text-base'
 
 export const inputStyle: CSSProperties = {
   background: 'var(--color-brand-elevated)',

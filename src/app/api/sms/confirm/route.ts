@@ -10,7 +10,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
-import { createClient } from '@/lib/supabase/server'
+import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
 import { createSmsExpense, type SmsExpenseKind } from '@/lib/sms/createSmsExpense'
 
 const bodySchema = z.union([
@@ -18,21 +18,8 @@ const bodySchema = z.union([
   z.object({ hash: z.string().min(1) }),
 ])
 
-async function resolveUserId(req: Request): Promise<string | null> {
-  const auth = req.headers.get('authorization') ?? ''
-  const bearer = auth.startsWith('Bearer ') ? auth.slice(7).trim() : null
-  if (bearer) {
-    const { data } = await createServiceRoleClient().auth.getUser(bearer)
-    if (data?.user) return data.user.id
-  }
-  // Session cookie path (credentials: 'include' from browser)
-  const serverClient = await createClient()
-  const { data: { user } } = await serverClient.auth.getUser()
-  return user?.id ?? null
-}
-
 export async function POST(request: Request) {
-  const userId = await resolveUserId(request)
+  const userId = await resolveApiUserId(request)
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

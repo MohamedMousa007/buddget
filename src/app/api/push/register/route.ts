@@ -9,8 +9,8 @@
  */
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
 
 const bodySchema = z.object({
   token: z.string().min(10).max(2048),
@@ -20,29 +20,8 @@ const bodySchema = z.object({
   deviceModel: z.string().max(200).optional().nullable(),
 })
 
-async function resolveUserId(req: Request): Promise<string | null> {
-  const auth = req.headers.get('authorization') ?? ''
-  const bearer = auth.startsWith('Bearer ') ? auth.slice(7).trim() : null
-  if (bearer) {
-    try {
-      const service = createServiceRoleClient()
-      const { data, error } = await service.auth.getUser(bearer)
-      if (!error && data.user) return data.user.id
-    } catch {
-      /* fallthrough */
-    }
-  }
-  try {
-    const supabase = await createClient()
-    const { data } = await supabase.auth.getUser()
-    return data.user?.id ?? null
-  } catch {
-    return null
-  }
-}
-
 export async function POST(request: Request) {
-  const userId = await resolveUserId(request)
+  const userId = await resolveApiUserId(request)
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
@@ -94,7 +73,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const userId = await resolveUserId(request)
+  const userId = await resolveApiUserId(request)
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

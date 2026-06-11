@@ -246,7 +246,7 @@
 
   .native-scroll {
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
+    overscroll-behavior-y: none;
     scroll-behavior: smooth;
   }
 
@@ -262,6 +262,14 @@ body.platform-native {
   -webkit-user-select: none;
   user-select: none;
   overscroll-behavior-y: none;
+}
+
+/* Kill WKWebView rubber-banding (top/bottom bounce). On iOS 16+ — our minimum
+   deployment target — `overscroll-behavior` is honored, so setting it on the
+   scroll root (documentElement) stops the bounce without locking overflow,
+   which keeps tall bare routes (onboarding, reset-password) scrollable. */
+html:has(body.platform-native) {
+  overscroll-behavior: none;
 }
 body.platform-native input,
 body.platform-native textarea,
