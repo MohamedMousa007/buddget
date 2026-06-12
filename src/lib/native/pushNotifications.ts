@@ -1,6 +1,6 @@
 'use client'
 
-import { isNative, getPlatform } from '@/lib/native/isNative'
+import { isNative, getPlatform, isIOS } from '@/lib/native/isNative'
 import { apiUrl } from '@/lib/apiBase'
 
 let registered = false
@@ -37,9 +37,15 @@ export async function registerPushNotifications(args: RegisterArgs): Promise<boo
     if (!listenersAttached) {
       listenersAttached = true
 
-      PushNotifications.addListener('registration', (payload) => {
-        void postToken(payload.value, args)
-      })
+      // Android: @capacitor/push-notifications wraps FCM → registration event
+      // gives a valid FCM token. iOS: this event gives an APNs device token,
+      // not an FCM token — Firebase Admin SDK rejects APNs tokens. iOS token
+      // is fetched explicitly via @capacitor-firebase/messaging below.
+      if (!isIOS()) {
+        PushNotifications.addListener('registration', (payload) => {
+          void postToken(payload.value, args)
+        })
+      }
 
       PushNotifications.addListener('registrationError', (err) => {
         console.error('[push] registrationError', err)
@@ -67,6 +73,27 @@ export async function registerPushNotifications(args: RegisterArgs): Promise<boo
     }
 
     await PushNotifications.register()
+
+    // iOS: @capacitor/push-notifications returns an APNs device token via the
+    // `registration` event, but sendNativePush uses Firebase Admin multicast
+    // which requires FCM registration tokens. Call the native FirebaseMessaging
+    // Capacitor plugin directly (already bundled via @capacitor-firebase/messaging
+    // in CapApp-SPM) to get the real FCM token without importing its web module
+    // (which pulls in firebase/messaging and breaks the static Next.js build).
+    if (isIOS()) {
+      try {
+        const { Capacitor } = await import('@capacitor/core')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const plugins = (Capacitor as unknown as { Plugins: Record<string, unknown> }).Plugins
+        if (Capacitor.isPluginAvailable('FirebaseMessaging') && plugins) {
+          const result = await (plugins['FirebaseMessaging'] as { getToken: () => Promise<{ token: string }> }).getToken()
+          if (result?.token) void postToken(result.token, args)
+        }
+      } catch (e) {
+        console.error('[push] iOS FCM token fetch failed', e)
+      }
+    }
+
     return true
   } catch (e) {
     console.error('[push] register failed', e)
