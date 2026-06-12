@@ -62,6 +62,31 @@ Etisalat/e& money, WE Pay, Fawry, ValU, Telda (push-only), Khazna, Halan, PayMob
 Sender IDs above are from the Monyvi registry + Egyptian dev sender lists — use for
 routing once real body samples arrive via the admin SMS Tracked audit loop.
 
+## Gulf (GCC) banks — added June 2026
+Source: [pennywiseai-tracker](https://github.com/sarim2000/pennywiseai-tracker)
+per-bank Kotlin parser tests (real captured bodies) + [bank-al-bilad-sms-parser](https://github.com/obahareth/bank-al-bilad-sms-parser).
+KSA banks are Arabic RTL; UAE banks are English. The currency token is the Latin
+ISO code (`SAR`/`AED`) even inside Arabic bodies. Dates are per-bank inconsistent
+(`DD/MM/YY`, `HH:MM DD/MM/YY`, `DD-MMM-YYYY hh:mm AM/PM`) → not globally parsed.
+
+### Emirates NBD (UAE) — sender `EmiratesNBD`/`ENBD` — HIGH (shipped)
+- Card purchase EN: `Purchase of AED 27.74 with Credit Card ending 9074 at Keeta, Dubai. Avl Cr. Limit is AED 30,978.13`
+- Account debit EN: `AED 500.00 debited from A/C xxxx1234 on 24-Dec-25. Avl Bal is AED 15,234.50`
+- Account credit EN: `AED 2,500.00 credited to A/C xxxx5678 on 24-Dec-25. Available Balance: AED 25,750.00`
+
+### Mashreq (UAE) — sender `Mashreq` (NEO) — HIGH (shipped)
+- Debit card EN: `Thank you for using NEO VISA Debit Card Card ending 1234 for AED 5.99 at CARREFOUR on 26-AUG-2025 10:25 PM. Available Balance is AED 1,480.15`
+
+### SNB / AlAhli (KSA) — sender `SNB-AlAhli`/`AlAhliBank` — HIGH (shipped)
+- POS purchase AR (multi-line): `شراء نقاط بيع SamsungPay\nبـSAR 19.45\nمن filwah al\nمدى *2342\nفي 07:53 03/04/26`
+
+### Researched, NOT shipped (medium/no sample — route via AI until real captures)
+- **Al Rajhi** (KSA) `AlRajhiBank` — MEDIUM: `شراء…بـSAR <amt> لـ<m>`, `سحب:صراف آلي…مبلغ:SAR <amt>`, `حوالة محلية واردة…مبلغ:SAR <amt> من:<s>` (parser templates, not full bodies).
+- **Bank Albilad** (KSA) — MEDIUM: labeled layout `لدى: <m>` / `مبلغ: N.NN SAR` / `بطاقة: **NNNN;مدى`.
+- **FAB** (UAE) `FAB`/`FABBANK` — MEDIUM: types `Credit/Debit Card Purchase`, card `Card XXXXNNNN`, `AED <amt>` (no full body).
+- **ADCB** (UAE) — LOW: `was used for` / `withdrawn from`, card `XXX0830`.
+- **Riyad Bank, DIB, NBK, KFH, QNB** — NO credible public sample found; collect via the admin SMS Tracked audit loop.
+
 ## Cross-bank parse notes
 - Currency tokens: `EGP`, `جم`, `جنيه/جنية`, `LE`. Balance markers: `الرصيد المتاح`,
   `رصيدك الحالي`, `available limit` (credit cards report limit, not balance).

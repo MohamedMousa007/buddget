@@ -107,7 +107,7 @@ export interface SmsTrackedRow {
   income_id: string | null
   pattern_id: string | null
   payment_instrument: string | null
-  status: 'processing' | 'rejected' | 'failed' | 'logged' | 'notified' | 'rendered' | 'confirmed'
+  status: 'processing' | 'rejected' | 'failed' | 'logged' | 'notified' | 'rendered' | 'confirmed' | 'add_failed' | 'tapped'
   pushed_at: string | null
   push_result: { ok?: boolean; sent?: number; failed?: number; error?: string } | null
   confirmed_at: string | null
