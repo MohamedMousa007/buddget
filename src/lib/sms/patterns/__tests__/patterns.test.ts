@@ -197,6 +197,59 @@ describe('Vodafone Cash + generic bank patterns', () => {
   })
 })
 
+// Gulf (GCC) banks — verified real captures (pennywiseai fixtures). See
+// docs/SMS_PATTERN_RESEARCH.md. Often arrive sender-less via the iOS bridge.
+const ENBD_PURCHASE =
+  'Purchase of AED 27.74 with Credit Card ending 9074 at Keeta, Dubai. Avl Cr. Limit is AED 30,978.13'
+const ENBD_DEBIT =
+  'AED 500.00 debited from A/C xxxx1234 on 24-Dec-25. Avl Bal is AED 15,234.50'
+const ENBD_CREDIT =
+  'AED 2,500.00 credited to A/C xxxx5678 on 24-Dec-25. Available Balance: AED 25,750.00'
+const MASHREQ_PURCHASE =
+  'Thank you for using NEO VISA Debit Card Card ending 1234 for AED 5.99 at CARREFOUR on 26-AUG-2025 10:25 PM. Available Balance is AED 1,480.15'
+const SNB_POS =
+  'شراء نقاط بيع SamsungPay\nبـSAR 19.45\nمن filwah al\nمدى *2342\nفي 07:53 03/04/26'
+
+describe('Gulf (GCC) curated patterns', () => {
+  it('parses Emirates NBD card purchase / account debit / account credit', () => {
+    const p = matchCuratedPattern(ENBD_PURCHASE, 'EmiratesNBD')
+    expect(p?.patternId).toBe('enbd-card-purchase-en')
+    expect(p?.amount).toBe(27.74)
+    expect(p?.currency).toBe('AED')
+    expect(p?.last4).toBe('9074')
+    expect(p?.counterparty).toBe('Keeta, Dubai')
+    expect(p?.paymentInstrument).toBe('card')
+
+    const d = matchCuratedPattern(ENBD_DEBIT, null)
+    expect(d?.patternId).toBe('enbd-account-debit-en')
+    expect(d?.amount).toBe(500)
+    expect(d?.last4).toBe('1234')
+
+    const c = matchCuratedPattern(ENBD_CREDIT, null)
+    expect(c?.patternId).toBe('enbd-account-credit-en')
+    expect(c?.kind).toBe('instant_transfer_in')
+    expect(c?.amount).toBe(2500)
+  })
+
+  it('parses Mashreq NEO card purchase even sender-less', () => {
+    const m = matchCuratedPattern(MASHREQ_PURCHASE, '')
+    expect(m?.patternId).toBe('mashreq-card-purchase-en')
+    expect(m?.amount).toBe(5.99)
+    expect(m?.currency).toBe('AED')
+    expect(m?.counterparty).toBe('CARREFOUR')
+    expect(m?.last4).toBe('1234')
+  })
+
+  it('parses SNB AlAhli Arabic multi-line POS purchase', () => {
+    const s = matchCuratedPattern(SNB_POS, 'SNB-AlAhli')
+    expect(s?.patternId).toBe('snb-pos-purchase-ar')
+    expect(s?.currency).toBe('SAR')
+    expect(s?.amount).toBe(19.45)
+    expect(s?.counterparty).toBe('filwah al')
+    expect(s?.last4).toBe('2342')
+  })
+})
+
 describe('pre-filter (non-transaction rejector)', () => {
   it('rejects telecom marketing that mentions money', () => {
     expect(isNonTransaction('Get 50GB for EGP 50! Renew your bundle now')).toBe('marketing')
@@ -219,5 +272,14 @@ describe('pre-filter (non-transaction rejector)', () => {
     // Transaction verb beats "bundle" vocabulary — a real renewal fee.
     expect(isNonTransaction('EGP 50.00 debited for bundle renewal')).toBeNull()
     expect(isNonTransaction('تم خصم 30 جنيه لتجديد الباقة')).toBeNull()
+  })
+
+  it('passes Gulf transactions (English + Arabic) and rejects Gulf balance', () => {
+    expect(isNonTransaction(ENBD_PURCHASE)).toBeNull()
+    expect(isNonTransaction(ENBD_DEBIT)).toBeNull()
+    expect(isNonTransaction(MASHREQ_PURCHASE)).toBeNull()
+    expect(isNonTransaction(SNB_POS)).toBeNull()
+    // Pure balance inquiry with Gulf phrasing → rejected.
+    expect(isNonTransaction('الرصيد المتاح SAR 12,450.00')).toBe('balance_only')
   })
 })

@@ -18,6 +18,7 @@ const FAILURE_LABELS: Record<string, string> = {
   low_confidence: 'Low confidence',
   duplicate: 'Duplicate',
   log_insert_failed: 'Save failed',
+  insert_failed: 'Save failed',
   parse_exception: 'Parse crash',
   processing: 'Processing',
   rate_limited: 'Rate limited',
@@ -47,12 +48,20 @@ function statusChip(row: SmsTrackedRow): { label: string; cls: string; ok?: bool
   if (undelivered) {
     return { label: 'Not confirmed', cls: 'bg-amber-500/10 text-amber-400 border-amber-500/20' }
   }
+  // Defensive: a parsed row with neither expense nor income linked never produced
+  // a transaction — surface it as a failure regardless of how far status advanced.
+  if (row.parsed_ok && !row.expense_id && !row.income_id &&
+      row.status !== 'add_failed' && row.status !== 'rejected' && row.status !== 'failed') {
+    return { label: 'No transaction', cls: 'bg-red-500/10 text-[var(--color-brand-red)] border-red-500/20' }
+  }
   switch (row.status) {
     case 'confirmed': return { label: 'Confirmed',  cls: 'bg-green-500/10 text-green-400 border-green-500/20', ok: true }
+    case 'tapped':    return { label: 'Tapped · manual', cls: 'bg-amber-500/10 text-amber-400 border-amber-500/20' }
     case 'rendered':  return { label: 'In-app only', cls: 'bg-amber-500/10 text-amber-400 border-amber-500/20' }
     case 'notified':  return { label: 'Pushed',     cls: 'bg-blue-500/10 text-blue-400 border-blue-500/20' }
     case 'logged':    return { label: 'Logged',     cls: 'bg-blue-500/10 text-blue-400 border-blue-500/20' }
     case 'processing':return { label: 'Processing', cls: 'bg-blue-500/10 text-blue-400 border-blue-500/20' }
+    case 'add_failed':return { label: 'Add failed', cls: 'bg-red-500/10 text-[var(--color-brand-red)] border-red-500/20' }
     case 'rejected':  return { label: FAILURE_LABELS[row.failure_code ?? ''] ?? 'Rejected', cls: 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)] border-[var(--color-brand-border)]' }
     case 'failed':    return { label: FAILURE_LABELS[row.failure_code ?? ''] ?? 'Failed', cls: 'bg-red-500/10 text-[var(--color-brand-red)] border-red-500/20' }
     default:          return { label: row.status, cls: 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)] border-[var(--color-brand-border)]' }
@@ -82,9 +91,21 @@ function inAppCell(row: SmsTrackedRow) {
     : <span className="text-[var(--color-brand-text-muted)]">—</span>
 }
 
+type SmsFilter = 'all' | 'attention' | 'failed'
+
+/** Auto-add failures the tech team must see. */
+function isFailedRow(status: string): boolean {
+  return status === 'failed' || status === 'add_failed'
+}
+/** Needed human intervention (failed or manually rescued). */
+function needsAttention(status: string): boolean {
+  return isFailedRow(status) || status === 'tapped'
+}
+
 export function AdminSmsTrackedSection({ admin }: Props) {
   const { smsTracked, smsTrackedLoading, smsTrackedCursor, loadSmsTracked, pushConfigured, checkPushHealth } = admin
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [filter, setFilter] = useState<SmsFilter>('all')
 
   useEffect(() => {
     void loadSmsTracked(false)
@@ -94,13 +115,28 @@ export function AdminSmsTrackedSection({ admin }: Props) {
 
   const pushDown = pushConfigured === false
 
+  // Counts over the loaded window — failures float to the top (newest-first).
+  const failedCount = smsTracked.filter((r) => isFailedRow(r.status)).length
+  const tappedCount = smsTracked.filter((r) => r.status === 'tapped').length
+  const visibleRows = smsTracked.filter((r) =>
+    filter === 'all' ? true : filter === 'failed' ? isFailedRow(r.status) : needsAttention(r.status),
+  )
+
   return (
     <section className="glass-card rounded-2xl p-5 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-[var(--color-brand-text-primary)]">
-            SMS Logs
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-[var(--color-brand-text-primary)]">
+              SMS Logs
+            </h2>
+            {failedCount > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-[10px] font-bold text-[var(--color-brand-red)]">
+                <AlertTriangle className="h-2.5 w-2.5" />
+                {failedCount} failed
+              </span>
+            )}
+          </div>
           <p className="text-xs text-[var(--color-brand-text-muted)] mt-0.5">
             Every received SMS across all users. <span className="text-green-400">Confirmed</span> = push delivered AND rendered in-app; <span className="text-amber-400">In-app only</span> = rendered but no push.
           </p>
@@ -115,6 +151,29 @@ export function AdminSmsTrackedSection({ admin }: Props) {
           Refresh
         </button>
       </div>
+
+      {smsTracked.length > 0 && (
+        <div className="flex items-center gap-1.5">
+          {([
+            ['all', 'All', smsTracked.length],
+            ['attention', 'Needs attention', failedCount + tappedCount],
+            ['failed', 'Failed', failedCount],
+          ] as const).map(([key, label, count]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setFilter(key)}
+              className={`text-[11px] rounded-full px-2.5 py-1 border transition-colors ${
+                filter === key
+                  ? 'border-[var(--color-brand-text-primary)] text-[var(--color-brand-text-primary)]'
+                  : 'border-[var(--color-brand-border)] text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-secondary)]'
+              }`}
+            >
+              {label} <span className="font-mono opacity-70">{count}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {pushDown && (
         <div className="flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3">
@@ -153,12 +212,12 @@ export function AdminSmsTrackedSection({ admin }: Props) {
               </tr>
             </thead>
             <tbody>
-              {smsTracked.map((row) => {
+              {visibleRows.map((row) => {
                 const isExpanded = expandedId === row.id
                 const displayName = row.clean_title ?? row.merchant ?? row.bank_name ?? row.sender ?? '—'
                 const method = row.parse_method ? METHOD_CHIPS[row.parse_method] : null
                 const chip = statusChip(row)
-                const isFailureState = row.status === 'rejected' || row.status === 'failed'
+                const isFailureState = row.status === 'rejected' || row.status === 'failed' || row.status === 'add_failed'
 
                 return (
                   <Fragment key={row.id}>

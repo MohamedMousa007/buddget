@@ -13,6 +13,9 @@ import { CIB_PATTERNS } from './cib'
 import { NBE_PATTERNS } from './nbe'
 import { VODAFONE_CASH_PATTERNS } from './vodafoneCash'
 import { GENERIC_BANK_PATTERNS } from './genericBank'
+import { EMIRATES_NBD_PATTERNS } from './emiratesNBD'
+import { MASHREQ_PATTERNS } from './mashreq'
+import { SNB_PATTERNS } from './snb'
 
 export const ALL_PATTERN_SETS: BankPatternSet[] = [
   HSBC_PATTERNS,
@@ -20,6 +23,10 @@ export const ALL_PATTERN_SETS: BankPatternSet[] = [
   NBE_PATTERNS,
   VODAFONE_CASH_PATTERNS,
   GENERIC_BANK_PATTERNS,
+  // Gulf (GCC) — body-only matches; sender often absent on the iOS bridge.
+  EMIRATES_NBD_PATTERNS,
+  MASHREQ_PATTERNS,
+  SNB_PATTERNS,
 ]
 
 /** DD-MM-YYYY / DD/MM/YYYY / DD/MM/YY (Egyptian bank conventions) → YYYY-MM-DD. */
@@ -78,7 +85,7 @@ function tryPattern(message: string, set: BankPatternSet, p: CuratedPattern): Cu
   }
 }
 
-function normalizeSender(sender: string): string {
+export function normalizeSender(sender: string): string {
   return sender.trim().toUpperCase()
 }
 

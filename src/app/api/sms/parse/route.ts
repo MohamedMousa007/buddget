@@ -23,6 +23,8 @@ import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNative
 import { matchCuratedPattern } from '@/lib/sms/patterns'
 import { isNonTransaction } from '@/lib/sms/patterns/preFilter'
 import { checkAndAutoPromote } from '@/lib/sms/promotionChecker'
+import { lookupKeys, effectiveSender } from '@/lib/sms/routingKey'
+import { createSmsExpense, isIncomeKind } from '@/lib/sms/createSmsExpense'
 
 // Gemini takes 5–8 s and after() work (push + 15 s pattern learning) counts
 // toward the function cap — the default would kill learning mid-call.
@@ -165,19 +167,40 @@ function applyTemplate(
   } catch { return null }
 }
 
-// Tier 2: all DB templates for this sender (direct, indexed query — ~1-3ms).
+// Tier 2: DB templates for any of these routing keys (indexed `IN` query).
+// `keys` are the transport sender and/or the body hotline — see routingKey.ts.
 async function tryStaticParse(
   message: string,
-  sender: string,
+  keys: string[],
   service: ReturnType<typeof createServiceRoleClient>,
 ): Promise<TemplateMatch | null> {
   const { data } = await service
     .from('sms_tracking_templates_ai')
     .select('id, regex_pattern, mapping_rules, match_count, kind')
-    .eq('sender', sender)
+    .in('sender', keys)
     .eq('ai_enabled', true)
     .order('match_count', { ascending: false })
     .limit(10)
+  for (const tpl of data ?? []) {
+    const result = applyTemplate(message, tpl, service)
+    if (result) return result
+  }
+  return null
+}
+
+// Tier 2 fallback when no routing key is available (sender-less SMS with no
+// hotline): scan the most-matched enabled templates and try each regex, the
+// same way curated patterns scan all sets. Bounded to keep cost predictable.
+async function tryStaticParseAny(
+  message: string,
+  service: ReturnType<typeof createServiceRoleClient>,
+): Promise<TemplateMatch | null> {
+  const { data } = await service
+    .from('sms_tracking_templates_ai')
+    .select('id, regex_pattern, mapping_rules, match_count, kind')
+    .eq('ai_enabled', true)
+    .order('match_count', { ascending: false })
+    .limit(50)
   for (const tpl of data ?? []) {
     const result = applyTemplate(message, tpl, service)
     if (result) return result
@@ -437,9 +460,14 @@ export async function POST(request: Request) {
 
   const curated = matchCuratedPattern(message, sender ?? null)
 
-  // ---- Tier 2: all DB templates (10 min cache) --------------------------------
-  const staticMatch = (!curated && sender)
-    ? await tryStaticParse(message, sender, service)
+  // ---- Tier 2: learned DB templates -------------------------------------------
+  // Key by transport sender AND/OR body hotline so a sender-less iOS SMS still
+  // matches a template Android learned (and vice-versa); broad-scan when neither.
+  const candidateKeys = lookupKeys(sender, message)
+  const staticMatch = !curated
+    ? candidateKeys.length
+      ? await tryStaticParse(message, candidateKeys, service)
+      : await tryStaticParseAny(message, service)
     : null
 
   const staticResult = staticMatch?.parsed ?? null
@@ -511,8 +539,10 @@ export async function POST(request: Request) {
     // Learn a GLOBAL regex template for this sender after the response is sent.
     // after() keeps the serverless function alive — a bare void promise is
     // frozen the moment the response returns and never completes on Vercel.
-    if (sender && parsed.confidence >= PATTERN_LEARN_CONFIDENCE && parsed.is_transaction) {
-      const learnArgs = [message, sender, parsed, service, apiKey, userId] as const
+    // Learn under a stable key: hotline (cross-platform) → sender → bank name.
+    const learnKey = effectiveSender(sender, message, parsed.bank_name)
+    if (learnKey && parsed.confidence >= PATTERN_LEARN_CONFIDENCE && parsed.is_transaction) {
+      const learnArgs = [message, learnKey, parsed, service, apiKey, userId] as const
       after(() => learnPattern(...learnArgs))
     }
   }
@@ -554,26 +584,49 @@ export async function POST(request: Request) {
   // Server-side security: strip non-digits and truncate to last 4 — never trust raw output.
   const cleanLast4 = (parsed.detectedAccountLast4 ?? '').replace(/\D/g, '').slice(-4) || null
 
-  const autoAdd = parsed.confidence >= CONFIRM_CONFIDENCE
-  const isIncome = ['income', 'refund', 'instant_transfer_in'].includes(parsed.kind ?? '')
+  const isIncome = isIncomeKind(parsed.kind)
   // Prefer the transaction date embedded in the SMS body (curated patterns)
   // over the receive timestamp — they differ for delayed/offline deliveries.
   const day = txDay ?? nowIso.slice(0, 10)
 
-  // Promote the log row with the full parse result.
+  // Insert FIRST, then mark the log according to what actually happened — never
+  // report success for a row that was never created. Shared with the confirm
+  // route so auto-add and manual-add have identical persistence semantics.
+  const { expenseId, incomeId, error: insertErr } = await createSmsExpense(service, {
+    userId,
+    amount: parsed.amount,
+    currency: parsed.currency,
+    day,
+    kind: parsed.kind,
+    cleanTitle: parsed.cleanTitle,
+    merchantNormalized: parsed.merchantNormalized,
+    merchant: parsed.merchant,
+    bankName: parsed.bank_name,
+    categoryHint: parsed.category,
+    rawSmsSummary: parsed.rawSmsSummary,
+    source: source ?? 'sms',
+    rawBody: message,
+  })
+  // Treat a null id (with no thrown error) as a failure too — the row is absent.
+  const addFailed = !!insertErr || (!expenseId && !incomeId)
+  if (insertErr) console.error('[sms/parse] auto-add insert failed', insertErr)
+
+  // Promote the log row with the full parse result + an HONEST add status.
+  // add_failed keeps parsed_ok=true and awaiting_confirmation=true so the row
+  // surfaces in the in-app rescue banner and is recoverable via /api/sms/confirm.
   const { error: promoteErr } = await service
     .from('sms_parse_log')
     .update({
       parsed_ok: true,
-      status: 'logged',
-      failure_code: null,
+      status: addFailed ? 'add_failed' : 'logged',
+      failure_code: addFailed ? 'insert_failed' : null,
       confidence: parsed.confidence,
       amount: parsed.amount,
       currency: parsed.currency,
       merchant: parsed.merchant,
       bank_name: parsed.bank_name,
       category: parsed.category,
-      awaiting_confirmation: !autoAdd,
+      awaiting_confirmation: addFailed,
       account_last4: cleanLast4,
       kind: parsed.kind,
       clean_title: parsed.cleanTitle,
@@ -583,6 +636,8 @@ export async function POST(request: Request) {
       parse_method: parseMethod,
       pattern_id: patternId,
       payment_instrument: paymentInstrument,
+      expense_id: expenseId,
+      income_id: incomeId,
     })
     .eq('id', logId)
 
@@ -591,99 +646,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, reason: 'log_insert_failed' }, { status: 500 })
   }
 
-  // Auto-add expense or income.
-  let expenseId: string | null = null
-  let incomeId: string | null = null
-  const bankPrefix = parsed.bank_name ? `${parsed.bank_name}: ` : ''
-  // Clean one-sentence AI summary when available; raw SMS only as fallback.
-  const autoNotes = parsed.rawSmsSummary
-    ?? `[auto from ${source ?? 'sms'}] ${bankPrefix}${message.slice(0, 180)}`
-
-  if (autoAdd && isIncome) {
-    const sourceType = parsed.kind === 'refund' ? 'refund' : 'other'
-    const { data: insertedIncome, error: incomeErr } = await service
-      .from('income_sources')
-      .insert({
-        user_id: userId,
-        name: parsed.cleanTitle ?? parsed.merchant ?? parsed.bank_name ?? 'Bank credit',
-        amount: parsed.amount,
-        currency: parsed.currency,
-        is_recurring: false,
-        source_type: sourceType,
-        notes: autoNotes,
-      })
-      .select('id')
-      .single()
-
-    if (incomeErr) {
-      console.error('[sms/parse] insert income failed', incomeErr)
-    } else {
-      incomeId = insertedIncome?.id ?? null
-    }
-  } else if (autoAdd) {
-    const { data: pmRow } = await service
-      .from('payment_methods')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('is_default', true)
-      .maybeSingle()
-
-    type ExpenseCategory = 'Rent' | 'Transport' | 'Food' | 'Enjoyment' | 'Savings' | 'Debt' | 'Remittance' | 'Other'
-    const rawCat = (parsed.category ?? '').toLowerCase()
-    const mappedCategory: ExpenseCategory =
-      parsed.kind === 'atm_withdrawal' ? 'Other' :
-      parsed.kind === 'instant_transfer_out' ? 'Remittance' :
-      rawCat.includes('rent') || rawCat.includes('housing') ? 'Rent' :
-      rawCat.includes('transport') || rawCat.includes('travel') || rawCat.includes('fuel') || rawCat.includes('uber') ? 'Transport' :
-      rawCat.includes('food') || rawCat.includes('restaurant') || rawCat.includes('grocery') || rawCat.includes('dining') ? 'Food' :
-      rawCat.includes('entertainment') || rawCat.includes('enjoyment') || rawCat.includes('leisure') ? 'Enjoyment' :
-      rawCat.includes('saving') || rawCat.includes('investment') ? 'Savings' :
-      rawCat.includes('debt') || rawCat.includes('loan') || rawCat.includes('instalment') ? 'Debt' :
-      rawCat.includes('transfer') || rawCat.includes('remittance') || rawCat.includes('send') ? 'Remittance' :
-      'Other'
-
-    const { data: insertedExpense, error: expenseErr } = await service
-      .from('expenses')
-      .insert({
-        user_id: userId,
-        expense_date: day,
-        description: parsed.cleanTitle ?? parsed.merchantNormalized ?? parsed.merchant ?? parsed.bank_name ?? 'Bank transaction',
-        category: mappedCategory,
-        amount: parsed.amount,
-        currency: parsed.currency,
-        payment_method_id: pmRow?.id ?? null,
-        notes: autoNotes,
-      })
-      .select('id')
-      .single()
-
-    if (expenseErr) {
-      console.error('[sms/parse] insert expense failed', expenseErr)
-    } else {
-      expenseId = insertedExpense?.id ?? null
-    }
-  }
-
-  if (expenseId || incomeId) {
-    await service.from('sms_parse_log')
-      .update({ expense_id: expenseId, income_id: incomeId })
-      .eq('id', logId)
-  }
-
   // Push runs in after() so Vercel keeps the function alive until delivery,
   // and the result is logged — a missing FIREBASE_SERVICE_ACCOUNT_JSON or an
   // all-stale token list shows up in the logs instead of failing silently.
   const pushArgs: SendNativePushArgs =
-    autoAdd && isIncome
+    addFailed
       ? {
+          // Auto-add failed — turn the failure into a recoverable action instead
+          // of silence. Tapping calls /api/sms/confirm (the in-app banner does too).
           userId,
-          title: `+${parsed.currency} ${parsed.amount.toLocaleString()} — ${parsed.cleanTitle ?? 'Bank credit'}`,
-          body: `Received via ${parsed.bank_name ?? 'bank'}. Tap to view.`,
-          data: { kind: 'sms_income_added', incomeId: incomeId ?? '', logId },
-          collapseKey: `sms-income-${hash.slice(0, 12)}`,
+          title: `Couldn't add automatically — tap to add`,
+          body: `${parsed.currency} ${parsed.amount.toLocaleString()}${parsed.cleanTitle ? ` — ${parsed.cleanTitle}` : ''}`,
+          data: { kind: 'sms_confirm', hash, logId, amount: String(parsed.amount), currency: parsed.currency },
+          collapseKey: `sms-confirm-${hash.slice(0, 12)}`,
         }
-      : autoAdd
+      : isIncome
         ? {
+            userId,
+            title: `+${parsed.currency} ${parsed.amount.toLocaleString()} — ${parsed.cleanTitle ?? 'Bank credit'}`,
+            body: `Received via ${parsed.bank_name ?? 'bank'}. Tap to view.`,
+            data: { kind: 'sms_income_added', incomeId: incomeId ?? '', logId },
+            collapseKey: `sms-income-${hash.slice(0, 12)}`,
+          }
+        : {
             userId,
             title: parsed.cleanTitle
               ? `${parsed.currency} ${parsed.amount.toLocaleString()} — ${parsed.cleanTitle}`
@@ -691,13 +676,6 @@ export async function POST(request: Request) {
             body: `Tracked by ${parsed.bank_name ?? 'your bank'}. Tap to view.`,
             data: { kind: 'sms_auto_added', expenseId: expenseId ?? '', logId },
             collapseKey: `sms-${hash.slice(0, 12)}`,
-          }
-        : {
-            userId,
-            title: `Confirm: ${parsed.cleanTitle ?? `${parsed.currency} ${parsed.amount.toLocaleString()}`}`,
-            body: `${parsed.currency} ${parsed.amount.toLocaleString()} — tap to add.`,
-            data: { kind: 'sms_confirm', hash, logId, amount: String(parsed.amount), currency: parsed.currency },
-            collapseKey: `sms-confirm-${hash.slice(0, 12)}`,
           }
 
   // Try push synchronously first (FCM typically < 300 ms). Race against a 3 s
@@ -743,14 +721,15 @@ export async function POST(request: Request) {
 
   // Record this user against the matched learned/promoted template for an
   // accurate distinct-user count (drives the promotion min_unique_users gate).
-  if (matchedTemplateId && sender) {
+  if (matchedTemplateId) {
     const tid = matchedTemplateId
     after(() => recordTemplateUser(tid, userId, service))
   }
 
   return NextResponse.json({
     ok: true,
-    autoAdded: autoAdd,
+    autoAdded: !addFailed,
+    addFailed,
     isIncome,
     confidence: parsed.confidence,
     amount: parsed.amount,

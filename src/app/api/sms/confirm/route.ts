@@ -58,7 +58,7 @@ export async function POST(request: Request) {
 
   const day = new Date(row.received_at ?? Date.now()).toISOString().slice(0, 10)
 
-  const { expenseId, incomeId } = await createSmsExpense(service, {
+  const { expenseId, incomeId, error } = await createSmsExpense(service, {
     userId,
     amount: row.amount!,
     currency: row.currency!,
@@ -74,11 +74,25 @@ export async function POST(request: Request) {
     rawBody: row.raw_body ?? '',
   })
 
-  // Mark as confirmed
+  // Insert failed — leave the row recoverable (add_failed, still awaiting) and
+  // surface the failure rather than swallowing it.
+  if (error || (!expenseId && !incomeId)) {
+    console.error('[sms/confirm] insert failed', error)
+    await service
+      .from('sms_parse_log')
+      .update({ status: 'add_failed', failure_code: 'insert_failed' })
+      .eq('id', row.id)
+    return NextResponse.json({ ok: false, reason: 'insert_failed' }, { status: 500 })
+  }
+
+  // Manually rescued by the user — mark 'tapped' (a warning state in admin) so
+  // the tech team can see auto-add needed human intervention.
   await service
     .from('sms_parse_log')
     .update({
       awaiting_confirmation: false,
+      status: 'tapped',
+      failure_code: null,
       expense_id: expenseId,
       income_id: incomeId,
     })

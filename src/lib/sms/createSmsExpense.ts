@@ -2,7 +2,7 @@
  * Shared helper: promote a sms_parse_log row to an expense or income_source.
  * Used by both /api/sms/parse (auto-add) and /api/sms/confirm (user confirm).
  */
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js'
 
 export type SmsExpenseKind =
   | 'purchase' | 'online_purchase' | 'atm_withdrawal'
@@ -54,6 +54,8 @@ export interface SmsRowData {
 export interface CreateSmsExpenseResult {
   expenseId: string | null
   incomeId: string | null
+  /** Non-null when the insert failed — callers must treat the row as not added. */
+  error: PostgrestError | null
 }
 
 export async function createSmsExpense(
@@ -69,7 +71,7 @@ export async function createSmsExpense(
 
   if (isIncomeKind(row.kind)) {
     const sourceType = row.kind === 'refund' ? 'refund' : 'other'
-    const { data } = await service
+    const { data, error } = await service
       .from('income_sources')
       .insert({
         user_id: row.userId,
@@ -82,7 +84,7 @@ export async function createSmsExpense(
       })
       .select('id')
       .single()
-    return { expenseId: null, incomeId: data?.id ?? null }
+    return { expenseId: null, incomeId: data?.id ?? null, error }
   }
 
   const { data: pmRow } = await service
@@ -94,7 +96,7 @@ export async function createSmsExpense(
 
   const mappedCategory = mapKindToCategory(row.kind, row.categoryHint)
 
-  const { data } = await service
+  const { data, error } = await service
     .from('expenses')
     .insert({
       user_id: row.userId,
@@ -108,5 +110,5 @@ export async function createSmsExpense(
     })
     .select('id')
     .single()
-  return { expenseId: data?.id ?? null, incomeId: null }
+  return { expenseId: data?.id ?? null, incomeId: null, error }
 }
