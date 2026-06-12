@@ -5,23 +5,27 @@ import type { Session } from '@supabase/supabase-js'
 import { isNative, isAndroid } from '@/lib/native/isNative'
 import { registerPushNotifications } from '@/lib/native/pushNotifications'
 import { startSMSTracking } from '@/lib/native/smsTracker'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 
 interface NativeBootstrapProps {
   session: Session | null
 }
 
 /**
- * Runs once after a Supabase session is available inside the Capacitor shell:
+ * Runs after a Supabase session is available inside the Capacitor shell:
  *
- *  1. Registers the device for FCM/APNS push (`/api/push/register`).
+ *  1. Registers the device for FCM/APNS push (`/api/push/register`), re-running
+ *     on account switch (keyed by userId).
  *  2. On Android, kicks off the SMS retriever loop (Egypt-first bank parsing).
  *
- * No-op on web (PWA / desktop browsers) — those paths use VAPID web push and
- * the iOS-Shortcut SMS bridge instead.
+ * No-op on web (PWA / desktop browsers) — web has no OS push and uses the
+ * in-app notification center + the iOS-Shortcut SMS bridge instead.
  */
 export function NativeBootstrap({ session }: NativeBootstrapProps) {
+  const language = useFinanceStore((s) => s.settings.language)
+
   useEffect(() => {
-    if (!session?.access_token) return
+    if (!session?.access_token || !session.user?.id) return
     if (!isNative()) return
 
     let cancelled = false
@@ -31,7 +35,8 @@ export function NativeBootstrap({ session }: NativeBootstrapProps) {
       try {
         await registerPushNotifications({
           accessToken,
-          locale: typeof navigator !== 'undefined' ? navigator.language : undefined,
+          userId: session.user.id,
+          locale: language,
         })
       } catch (e) {
         console.error('[native-bootstrap] push register failed', e)

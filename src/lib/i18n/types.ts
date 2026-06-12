@@ -1153,6 +1153,15 @@ export interface Dictionary {
     recurringTomorrowBody: (name: string, amount: number, currency: string) => string
     recurringConfirmPaid: string
     recurringSnooze: string
+    /** Server-built copy for SMS-transaction OS push (localized per account). */
+    push: {
+      smsExpenseTitle: (amount: string, label: string | null) => string
+      smsExpenseBody: (bank: string) => string
+      smsIncomeTitle: (amount: string, label: string | null) => string
+      smsIncomeBody: (bank: string) => string
+      smsConfirmTitle: string
+      smsConfirmBody: (amount: string, label: string | null) => string
+    }
   }
 
   modals: {

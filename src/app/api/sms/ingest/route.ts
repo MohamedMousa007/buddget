@@ -2,8 +2,8 @@
  * POST /api/sms/ingest
  *
  * Receives a raw SMS from an iOS Shortcut or Android Bridge app and, if it
- * matches a known Egyptian bank pattern, automatically creates an expense and
- * dispatches a Web Push notification with Undo/View actions.
+ * matches a known Egyptian bank pattern, automatically creates an expense.
+ * (Legacy path — modern delivery + notifications run through /api/sms/parse.)
  *
  * Auth: Bearer token (from `sms_ingest_tokens`) — no session cookie required
  * because external automation apps cannot maintain one.
@@ -13,7 +13,6 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { parse } from '@/lib/sms/smsParser'
-import { sendWebPush } from '@/lib/notifications/sendWebPush'
 
 const bodySchema = z.object({
   smsBody: z.string().min(1).max(2000),
@@ -146,24 +145,8 @@ export async function POST(request: Request) {
 
   const smsEventId = smsEventRow.id
 
-  // ── 7. Dispatch Web Push notification ────────────────────────────────────
-  if (expenseId) {
-    const amountFormatted = `${parsedTx.currency} ${parsedTx.amount.toLocaleString()}`
-    const title = parsedTx.merchant
-      ? `${amountFormatted} at ${parsedTx.merchant}`
-      : `${amountFormatted} — ${parsedTx.bankName}`
-    const body = `Auto-tracked from ${parsedTx.bankName}. Tap to view or undo.`
-
-    await sendWebPush(userId, supabase, {
-      title,
-      body,
-      smsEventId,
-      expenseId,
-    }).catch((err) => {
-      // Push failures are non-fatal — the expense is already saved.
-      console.warn('[sms/ingest] push send error', err?.message)
-    })
-  }
-
+  // Legacy ingest path: the expense + event are persisted. Notification delivery
+  // (native push + in-app row) is handled by the modern /api/sms/parse pipeline;
+  // this route no longer dispatches web push.
   return NextResponse.json({ ok: true, expenseId, smsEventId })
 }

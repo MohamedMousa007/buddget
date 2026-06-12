@@ -1259,6 +1259,14 @@ export const en: Dictionary = {
       `${name} payment of ${amount} ${currency} is due tomorrow.`,
     recurringConfirmPaid: 'Confirm paid',
     recurringSnooze: 'Snooze',
+    push: {
+      smsExpenseTitle: (amount, label) => (label ? `${amount} — ${label}` : amount),
+      smsExpenseBody: (bank) => `Tracked by ${bank}. Tap to view.`,
+      smsIncomeTitle: (amount, label) => (label ? `+${amount} — ${label}` : `+${amount}`),
+      smsIncomeBody: (bank) => `Received via ${bank}. Tap to view.`,
+      smsConfirmTitle: "Couldn't add automatically — tap to add",
+      smsConfirmBody: (amount, label) => (label ? `${amount} — ${label}` : amount),
+    },
   },
 
   modals: {
