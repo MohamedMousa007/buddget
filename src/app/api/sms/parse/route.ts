@@ -25,6 +25,9 @@ import { isNonTransaction } from '@/lib/sms/patterns/preFilter'
 import { checkAndAutoPromote } from '@/lib/sms/promotionChecker'
 import { lookupKeys, effectiveSender } from '@/lib/sms/routingKey'
 import { createSmsExpense, isIncomeKind } from '@/lib/sms/createSmsExpense'
+import { getServerDictionary } from '@/lib/i18n/getServerDictionary'
+import { getUserLocale } from '@/lib/server/userLocale'
+import { emitNotification } from '@/lib/server/emitNotification'
 
 // Gemini takes 5–8 s and after() work (push + 15 s pattern learning) counts
 // toward the function cap — the default would kill learning mid-call.
@@ -646,6 +649,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, reason: 'log_insert_failed' }, { status: 500 })
   }
 
+  // Localize push + notification copy to the account's language.
+  const np = getServerDictionary(await getUserLocale(service, userId)).notifications.push
+  const amountStr = `${parsed.currency} ${parsed.amount.toLocaleString()}`
+  const bank = parsed.bank_name ?? ''
+
   // Push runs in after() so Vercel keeps the function alive until delivery,
   // and the result is logged — a missing FIREBASE_SERVICE_ACCOUNT_JSON or an
   // all-stale token list shows up in the logs instead of failing silently.
@@ -655,28 +663,41 @@ export async function POST(request: Request) {
           // Auto-add failed — turn the failure into a recoverable action instead
           // of silence. Tapping calls /api/sms/confirm (the in-app banner does too).
           userId,
-          title: `Couldn't add automatically — tap to add`,
-          body: `${parsed.currency} ${parsed.amount.toLocaleString()}${parsed.cleanTitle ? ` — ${parsed.cleanTitle}` : ''}`,
+          title: np.smsConfirmTitle,
+          body: np.smsConfirmBody(amountStr, parsed.cleanTitle ?? null),
           data: { kind: 'sms_confirm', hash, logId, amount: String(parsed.amount), currency: parsed.currency },
           collapseKey: `sms-confirm-${hash.slice(0, 12)}`,
         }
       : isIncome
         ? {
             userId,
-            title: `+${parsed.currency} ${parsed.amount.toLocaleString()} — ${parsed.cleanTitle ?? 'Bank credit'}`,
-            body: `Received via ${parsed.bank_name ?? 'bank'}. Tap to view.`,
+            title: np.smsIncomeTitle(amountStr, parsed.cleanTitle ?? parsed.merchant ?? null),
+            body: np.smsIncomeBody(bank || (parsed.merchant ?? '')),
             data: { kind: 'sms_income_added', incomeId: incomeId ?? '', logId },
             collapseKey: `sms-income-${hash.slice(0, 12)}`,
           }
         : {
             userId,
-            title: parsed.cleanTitle
-              ? `${parsed.currency} ${parsed.amount.toLocaleString()} — ${parsed.cleanTitle}`
-              : `${parsed.currency} ${parsed.amount.toLocaleString()} at ${parsed.merchant ?? 'merchant'}`,
-            body: `Tracked by ${parsed.bank_name ?? 'your bank'}. Tap to view.`,
+            title: np.smsExpenseTitle(amountStr, parsed.cleanTitle ?? parsed.merchant ?? null),
+            body: np.smsExpenseBody(bank || (parsed.merchant ?? '')),
             data: { kind: 'sms_auto_added', expenseId: expenseId ?? '', logId },
             collapseKey: `sms-${hash.slice(0, 12)}`,
           }
+
+  // Also record the event in the notifications feed (web center) — no extra
+  // push (the route already sends one below). Deduped on `sms:<logId>`.
+  after(() =>
+    emitNotification(service, {
+      userId,
+      category: addFailed ? 'sms_confirm' : isIncome ? 'sms_income' : 'sms_expense',
+      severity: addFailed ? 'warning' : isIncome ? 'success' : 'info',
+      dedupeKey: `sms:${logId}`,
+      title: pushArgs.title,
+      body: pushArgs.body,
+      metadata: { logId, expenseId, incomeId, addFailed },
+      push: false,
+    }),
+  )
 
   // Try push synchronously first (FCM typically < 300 ms). Race against a 3 s
   // timeout so slow Gemini parses don't exhaust Vercel's after() budget.

@@ -1,27 +1,11 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useShallow } from 'zustand/react/shallow'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { pushRecurringDebtReminders } from '@/lib/debts/recurringDebtPush'
-
 /**
- * Keeps recurring debt state consistent; surfaces local push reminders (due / tomorrow).
- * Payments post only after user confirms in-app (see `confirmRecurringDebtPayment`).
+ * Recurring debt reminders are now delivered server-side as OS push + in-app
+ * notifications (see /api/cron/notifications). This hook is retained as the
+ * mount point for any future client-side recurring-debt scheduling; payments
+ * still post only after the user confirms in-app (`confirmRecurringDebtPayment`).
  */
 export function useRecurringDebtPaymentScheduler() {
-  const snap = useFinanceStore(
-    useShallow((s) => ({
-      recurringDebtPayments: s.recurringDebtPayments,
-      debts: s.debts,
-      debtPayments: s.debtPayments,
-      exchangeRates: s.exchangeRates,
-      goldPricePerGram: s.goldPricePerGram,
-      baseCurrency: s.settings.baseCurrency,
-    }))
-  )
-
-  useEffect(() => {
-    pushRecurringDebtReminders()
-  }, [snap])
+  // No client-side reminder side effects — handled by the server cron.
 }

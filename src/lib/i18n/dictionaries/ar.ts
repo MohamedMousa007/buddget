@@ -1257,6 +1257,14 @@ export const ar: Dictionary = {
       `دفعة ${name} بمبلغ ${amount} ${currency} مستحقة غداً.`,
     recurringConfirmPaid: 'تأكيد الدفع',
     recurringSnooze: 'تأجيل يوم',
+    push: {
+      smsExpenseTitle: (amount, label) => (label ? `${amount} — ${label}` : amount),
+      smsExpenseBody: (bank) => `تم التتبع بواسطة ${bank}. اضغط للعرض.`,
+      smsIncomeTitle: (amount, label) => (label ? `+${amount} — ${label}` : `+${amount}`),
+      smsIncomeBody: (bank) => `تم الاستلام عبر ${bank}. اضغط للعرض.`,
+      smsConfirmTitle: 'تعذّرت الإضافة تلقائيًا — اضغط للإضافة',
+      smsConfirmBody: (amount, label) => (label ? `${amount} — ${label}` : amount),
+    },
   },
 
   modals: {

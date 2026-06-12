@@ -12,6 +12,7 @@ import {
 } from '@/components/sync/SupabaseFinanceSync'
 import { AnalyticsHeartbeat } from '@/components/sync/AnalyticsHeartbeat'
 import { NativeBootstrap } from '@/lib/native/NativeBootstrap'
+import { unregisterPushToken } from '@/lib/native/pushNotifications'
 import { BiometricSessionPersist } from '@/lib/native/useBiometricSessionPersist'
 import { AuthModal } from '@/components/auth/AuthModal'
 import { AuthContext, type AuthContextValue, type AuthMode, useAuth } from '@/components/auth/auth-context'
@@ -263,6 +264,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('[auth] clearBudgetData before signOut failed', e)
     }
     const supabase = createClient()
+    // Unregister this device's push token while the session is still valid so a
+    // signed-out device stops receiving this account's pushes (native only).
+    try {
+      const { data: { session: cur } } = await supabase.auth.getSession()
+      if (cur?.access_token) await unregisterPushToken(cur.access_token)
+    } catch (e) {
+      console.error('[auth] push unregister before signOut failed', e)
+    }
     try {
       await supabase.auth.signOut()
     } finally {

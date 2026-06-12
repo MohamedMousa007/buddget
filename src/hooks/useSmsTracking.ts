@@ -13,8 +13,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { subscribeToPush, unsubscribeFromPush } from '@/lib/notifications/webPushSubscribe'
-import { requestPushPermission } from '@/lib/notifications/pushNotifications'
 import { isNative, isAndroid, isIOS } from '@/lib/native/isNative'
 import { createClient } from '@/lib/supabase/client'
 import { apiFetchAuth } from '@/lib/apiBase'
@@ -132,19 +130,8 @@ export function useSmsTracking() {
         return
       }
 
-      // Web Push requires Service Workers — not available in Capacitor WebView.
-      if (!isNative()) {
-        if (value) {
-          try {
-            const granted = await requestPushPermission()
-            if (granted) await subscribeToPush()
-          } catch {
-            // Push setup failed — SMS toggle continues regardless
-          }
-        } else {
-          try { await unsubscribeFromPush() } catch { /* noop */ }
-        }
-      }
+      // Web has no OS push — the toggle just persists the preference; web users
+      // see SMS results in the in-app notification center.
       updateSettings({ smsTrackingEnabled: value })
     } finally {
       setLoading(false)

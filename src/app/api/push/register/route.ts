@@ -45,6 +45,11 @@ export async function POST(request: Request) {
 
   try {
     const service = createServiceRoleClient()
+    // Claim this device token for the current user. A token belongs to exactly
+    // one account at a time (push_tokens has a UNIQUE(token)); removing any prior
+    // owner's row first prevents the unique-violation that blocked account
+    // switches AND stops the previous account from receiving this device's pushes.
+    await service.from('push_tokens').delete().eq('token', token).neq('user_id', userId)
     const { error } = await service
       .from('push_tokens')
       .upsert(

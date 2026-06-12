@@ -8,7 +8,9 @@ import {
   Settings,
   LogOut,
   ListChecks,
+  Bell,
 } from 'lucide-react'
+import { isNative } from '@/lib/native/isNative'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -131,6 +133,13 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
         <Settings className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.settings}</span>
       </Link>
+      {/* Web has no OS notification tray — surface the in-app center here. */}
+      {!isNative() ? (
+        <Link href="/notifications" onClick={delayedClose} className={itemClass} role="menuitem">
+          <Bell className="w-4 h-4 shrink-0" />
+          <span className={localeInlineLabelClass(locale)}>{t.notifications.title}</span>
+        </Link>
+      ) : null}
       {checklistHidden ? (
         <button
           type="button"

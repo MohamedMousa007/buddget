@@ -641,6 +641,7 @@ export type Database = {
       notifications: {
         Row: {
           created_at: string
+          dedupe_key: string | null
           id: string
           is_read: boolean
           message: string
@@ -652,6 +653,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          dedupe_key?: string | null
           id?: string
           is_read?: boolean
           message: string
@@ -663,6 +665,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          dedupe_key?: string | null
           id?: string
           is_read?: boolean
           message?: string

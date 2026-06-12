@@ -3,13 +3,22 @@
 import { isNative, getPlatform, isIOS } from '@/lib/native/isNative'
 import { apiUrl } from '@/lib/apiBase'
 
-let registered = false
+// Tracks WHICH account the device is currently registered for. A bare boolean
+// (the old design) never reset on account switch, so a second user on the same
+// device never got a token. Keyed by userId so a switch re-registers.
+let registeredUserId: string | null = null
 let listenersAttached = false
+// Latest args + token so once-attached listeners (token refresh) post against
+// the current session, and logout can unregister the right token.
+let currentArgs: RegisterArgs | null = null
+let lastToken: string | null = null
 
 interface RegisterArgs {
   /** Supabase JWT bearer token for /api/push/register. */
   accessToken: string
-  /** Optional locale string (e.g. `en-EG`). */
+  /** The account this registration belongs to — drives account-switch re-register. */
+  userId: string
+  /** App language (`'en'|'ar'`) stored per-device for localized push. */
   locale?: string
   /** Optional app version (e.g. `1.0.0`). */
   appVersion?: string
@@ -17,20 +26,21 @@ interface RegisterArgs {
 
 /**
  * Registers the device for native push (FCM token on Android, APNS token via
- * Firebase on iOS). Safe to call multiple times — second invocation is a
- * no-op. Never throws; errors are logged and surfaced via the returned bool.
+ * Firebase on iOS). Re-registers when the signed-in account changes; otherwise
+ * a no-op. Never throws; errors are logged and surfaced via the returned bool.
  */
 export async function registerPushNotifications(args: RegisterArgs): Promise<boolean> {
   if (!isNative()) return false
-  if (registered) return true
-  registered = true
+  currentArgs = args
+  if (registeredUserId === args.userId) return true
+  registeredUserId = args.userId
 
   try {
     const { PushNotifications } = await import('@capacitor/push-notifications')
 
     const permission = await PushNotifications.requestPermissions()
     if (permission.receive !== 'granted') {
-      registered = false
+      registeredUserId = null
       return false
     }
 
@@ -43,7 +53,7 @@ export async function registerPushNotifications(args: RegisterArgs): Promise<boo
       // is fetched explicitly via @capacitor-firebase/messaging below.
       if (!isIOS()) {
         PushNotifications.addListener('registration', (payload) => {
-          void postToken(payload.value, args)
+          if (currentArgs) void postToken(payload.value, currentArgs)
         })
       }
 
@@ -70,6 +80,24 @@ export async function registerPushNotifications(args: RegisterArgs): Promise<boo
           /* noop */
         }
       })
+
+      // FCM/APNs tokens rotate. Re-post the refreshed token so the server never
+      // pushes to a dead token. Accessed via the plugin proxy (NOT the package's
+      // web module, which pulls firebase/messaging and breaks the static build).
+      try {
+        const { Capacitor } = await import('@capacitor/core')
+        const plugins = (Capacitor as unknown as { Plugins: Record<string, unknown> }).Plugins
+        const fm = plugins?.['FirebaseMessaging'] as
+          | { addListener?: (e: string, cb: (d: { token?: string }) => void) => void }
+          | undefined
+        if (Capacitor.isPluginAvailable('FirebaseMessaging') && fm?.addListener) {
+          fm.addListener('tokenReceived', (d) => {
+            if (d?.token && currentArgs) void postToken(d.token, currentArgs)
+          })
+        }
+      } catch (e) {
+        console.error('[push] tokenReceived listener failed', e)
+      }
     }
 
     await PushNotifications.register()
@@ -97,12 +125,13 @@ export async function registerPushNotifications(args: RegisterArgs): Promise<boo
     return true
   } catch (e) {
     console.error('[push] register failed', e)
-    registered = false
+    registeredUserId = null
     return false
   }
 }
 
 async function postToken(token: string, args: RegisterArgs): Promise<void> {
+  lastToken = token
   try {
     await fetch(apiUrl('/api/push/register'), {
       method: 'POST',
@@ -121,6 +150,31 @@ async function postToken(token: string, args: RegisterArgs): Promise<void> {
     })
   } catch (e) {
     console.error('[push] postToken failed', e)
+  }
+}
+
+/**
+ * Removes this device's push token from the signed-in account. Call BEFORE
+ * sign-out (while the session is still valid) so a logged-out device stops
+ * receiving the previous account's pushes. Resets the registration gate so the
+ * next account re-registers cleanly.
+ */
+export async function unregisterPushToken(accessToken: string): Promise<void> {
+  const token = lastToken
+  registeredUserId = null
+  lastToken = null
+  if (!isNative() || !token) return
+  try {
+    await fetch(apiUrl('/api/push/register'), {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ token }),
+    })
+  } catch (e) {
+    console.error('[push] unregister failed', e)
   }
 }
 

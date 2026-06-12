@@ -22,7 +22,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from('notifications')
-    .select('id, type, title, body, metadata, read, created_at')
+    .select('id, type, title, message, metadata, is_read, created_at')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(80)
@@ -36,7 +36,7 @@ export async function GET() {
     return NextResponse.json({ notifications: [], unreadCount: 0 })
   }
 
-  const unread = (data ?? []).filter((n) => !n.read).length
+  const unread = (data ?? []).filter((n) => !n.is_read).length
 
   return NextResponse.json({ notifications: data ?? [], unreadCount: unread })
 }

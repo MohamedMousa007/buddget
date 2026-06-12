@@ -6,9 +6,6 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
-import { addDays, format } from 'date-fns'
-import { isDebtFullyPaid } from '@/lib/utils/calculations'
-import { isRecurringDebtDue } from '@/lib/utils/recurringDebtPayments'
 import { useT } from '@/lib/i18n'
 
 const READ_STORAGE_KEY = 'buddget-notifications-read'
@@ -32,12 +29,20 @@ export type AppNotification = {
 
 export type ServerNotificationRow = {
   id: string
+  /** DB `type` is the severity enum (info|warning|success|error). */
   type: string
   title: string
-  body: string | null
+  message: string | null
   metadata: Record<string, unknown>
-  read: boolean
+  is_read: boolean
   created_at: string
+}
+
+/** Map a server severity enum to the inbox's display severity. */
+function serverSeverity(type: string): AppNotification['severity'] {
+  if (type === 'error') return 'critical'
+  if (type === 'warning') return 'warning'
+  return 'info'
 }
 
 function loadReadIds(): Set<string> {
@@ -66,17 +71,7 @@ export function useNotifications() {
   const stats = useMonthlyStats()
   const t = useT()
   const { monthFilter } = useSettingsStore()
-  const { debts, debtPayments, budgetCategories, recurringDebtPayments, expenses, exchangeRates } =
-    useFinanceStore(
-      useShallow((s) => ({
-        debts: s.debts,
-        debtPayments: s.debtPayments,
-        budgetCategories: s.budgetCategories,
-        recurringDebtPayments: s.recurringDebtPayments,
-        expenses: s.expenses,
-        exchangeRates: s.exchangeRates,
-      }))
-    )
+  const budgetCategories = useFinanceStore(useShallow((s) => s.budgetCategories))
 
   const [readIds, setReadIds] = useState<Set<string>>(() => loadReadIds())
   const [serverNotifications, setServerNotifications] = useState<ServerNotificationRow[]>([])
@@ -138,55 +133,10 @@ export function useNotifications() {
       }
     }
 
-    const todayYmd = format(new Date(), 'yyyy-MM-dd')
-    const tomorrowYmd = format(addDays(new Date(), 1), 'yyyy-MM-dd')
-    const debtCtx = { expenses, exchangeRates, allDebts: debts }
-
-    for (const r of recurringDebtPayments) {
-      if (!r.isActive) continue
-      const debt = debts.find((d) => d.id === r.debtId)
-      if (!debt || isDebtFullyPaid(debt, debtPayments, debtCtx)) continue
-
-      if (r.nextDueDate === tomorrowYmd) {
-        list.push({
-          id: `recurring_tomorrow:${r.id}:${tomorrowYmd}`,
-          type: 'recurring_tomorrow',
-          title: debt.name,
-          body: t.notifications.recurringTomorrowBody(debt.name, r.amount, r.currency),
-          severity: 'info',
-          createdAt: now,
-        })
-      }
-
-      if (isRecurringDebtDue(r.nextDueDate)) {
-        list.push({
-          id: `recurring_due:${r.id}:${todayYmd}`,
-          type: 'recurring_due',
-          recurringId: r.id,
-          title: debt.name,
-          body: t.notifications.recurringDueBody(debt.name, r.amount, r.currency),
-          severity: 'warning',
-          createdAt: now,
-        })
-      }
-    }
-
-    if (stats.daysLeft <= 3 && stats.daysLeft >= 0) {
-      list.push({
-        id: `month_end:${monthFilter}`,
-        type: 'month_end',
-        title:
-          stats.daysLeft === 0
-            ? t.notifications.monthEndTitleLast
-            : t.notifications.monthEndTitleDays(stats.daysLeft),
-        body:
-          stats.daysLeft === 0
-            ? t.notifications.monthEndBodyLast
-            : t.notifications.monthEndBodyDays(stats.daysLeft),
-        severity: stats.daysLeft === 0 ? 'warning' : 'info',
-        createdAt: now,
-      })
-    }
+    // Recurring-debt and month-end alerts are owned by the server cron
+    // (/api/cron/notifications) → emitted as notification rows + OS push, and
+    // merged into this feed via serverNotifications. Computing them here too
+    // would double them on web, so the client only owns budget + savings status.
 
     const hasSavingsActivity =
       stats.savingsAccountsTotal > 0.0001 ||
@@ -204,17 +154,7 @@ export function useNotifications() {
     }
 
     return list
-  }, [
-    budgetCategories,
-    debts,
-    debtPayments,
-    expenses,
-    exchangeRates,
-    monthFilter,
-    recurringDebtPayments,
-    stats,
-    t,
-  ])
+  }, [budgetCategories, monthFilter, stats, t])
 
   const localUnread = useMemo(
     () => notifications.filter((n) => !readIds.has(n.id)).length,
@@ -222,11 +162,32 @@ export function useNotifications() {
   )
 
   const serverUnread = useMemo(
-    () => serverNotifications.filter((n) => !n.read).length,
+    () => serverNotifications.filter((n) => !n.is_read).length,
     [serverNotifications]
   )
 
   const unreadCount = localUnread + serverUnread
+
+  // Merged feed for the web bell / center: server rows (SMS + cron alerts) plus
+  // the client-computed status alerts (budget / savings), newest first. On native
+  // these surface as OS push instead (the bell is web-only), so there is no
+  // per-platform duplication.
+  const mergedNotifications = useMemo<AppNotification[]>(() => {
+    const mapped: AppNotification[] = serverNotifications.map((r) => ({
+      id: r.id,
+      type: (typeof r.metadata?.category === 'string'
+        ? r.metadata.category
+        : 'info') as AppNotification['type'],
+      title: r.title,
+      body: r.message ?? '',
+      severity: serverSeverity(r.type),
+      createdAt: r.created_at,
+      // Server-emitted recurring-due rows carry the recurring id so the inbox can
+      // still offer confirm/snooze.
+      recurringId: typeof r.metadata?.recurringId === 'string' ? r.metadata.recurringId : undefined,
+    }))
+    return [...mapped, ...notifications].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+  }, [serverNotifications, notifications])
 
   const markAllRead = useCallback(async () => {
     setReadIds((prev) => {
@@ -269,7 +230,7 @@ export function useNotifications() {
   )
 
   return {
-    notifications,
+    notifications: mergedNotifications,
     serverNotifications,
     unreadCount,
     markAllRead,
