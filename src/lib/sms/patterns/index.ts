@@ -10,12 +10,14 @@
 import type { BankPatternSet, CuratedMatch, CuratedPattern, SmsKind } from './types'
 import { HSBC_PATTERNS } from './hsbc'
 import { CIB_PATTERNS } from './cib'
+import { NBE_PATTERNS } from './nbe'
 import { VODAFONE_CASH_PATTERNS } from './vodafoneCash'
 import { GENERIC_BANK_PATTERNS } from './genericBank'
 
 export const ALL_PATTERN_SETS: BankPatternSet[] = [
   HSBC_PATTERNS,
   CIB_PATTERNS,
+  NBE_PATTERNS,
   VODAFONE_CASH_PATTERNS,
   GENERIC_BANK_PATTERNS,
 ]
