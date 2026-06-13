@@ -24,6 +24,8 @@ const eslintConfig = defineConfig([
     "ios/**",
     // next-pwa worker bundles
     "public/worker-*.js",
+    // Design handoff references (not app code)
+    "design/**",
   ]),
 ]);
 

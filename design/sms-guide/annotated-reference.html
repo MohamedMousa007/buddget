@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SMS Tracking Guide — Annotated Reference (all steps)</title>
+<!-- Dev reference: every step of the guide rendered at once, with the exact
+     annotation coordinates. Toggle dark/light below. The product itself has NO
+     toggle — it follows the app theme. Open SMS Tracking Setup.dc.html for the
+     interactive, pixel-exact version. -->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800;900&family=JetBrains+Mono:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@500;700&display=swap');
+  :root{
+    --bg:#0A0A0F; --card:#111118; --elev:#1A1A24; --border:#2A2A38;
+    --t1:#fff; --t2:#CFCFE0; --tm:#9898B0; --red:#E50914;
+  }
+  body.light{
+    --bg:#F5F5F7; --card:#FFFFFF; --elev:#F0F0F4; --border:#D4D4DC;
+    --t1:#1A1A24; --t2:#5A5A72; --tm:#8A8AA0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--t1);font-family:'DM Sans',sans-serif;padding:28px 28px 60px;transition:background .2s}
+  h1{font-size:22px;font-weight:800;letter-spacing:-.3px;margin-bottom:4px}
+  .sub{font-size:13px;color:var(--tm);margin-bottom:18px}
+  .bar{display:flex;gap:8px;margin-bottom:24px}
+  .bar button{font-family:'DM Sans';font-size:13px;font-weight:700;padding:8px 14px;border-radius:9px;border:1px solid var(--border);background:var(--card);color:var(--t1);cursor:pointer}
+  .bar button.on{background:var(--red);border-color:transparent;color:#fff}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:26px}
+  .tile{display:flex;flex-direction:column;gap:12px}
+  .phone{height:496px;aspect-ratio:1290/2581;margin:0 auto;background:#050507;border-radius:26px;padding:5px;box-shadow:0 16px 40px rgba(0,0,0,.5),0 0 0 1px #1A1A24;position:relative}
+  .screen{position:relative;width:100%;height:100%;border-radius:22px;overflow:hidden;background:#fff}
+  .screen img{width:100%;height:100%;object-fit:cover;display:block}
+  .ul{position:absolute;height:3px;background:var(--red);border-radius:3px;box-shadow:0 0 7px rgba(229,9,20,.55)}
+  .arrow{position:absolute;filter:drop-shadow(0 2px 5px rgba(0,0,0,.45))}
+  .cap{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px}
+  .cap .h{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+  .cap .n{width:20px;height:20px;border-radius:6px;background:rgba(229,9,20,.14);color:var(--red);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+  .cap .t{font-size:13.5px;font-weight:700}
+  .cap p{font-size:12.5px;color:var(--t2);line-height:1.5;padding-left:28px}
+  .cap p b{color:var(--red);font-weight:700;font-family:'DM Sans','IBM Plex Sans Arabic'}
+  /* concept tile */
+  .kw{height:496px;background:var(--card);border:1px solid var(--border);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:9px;overflow:hidden}
+  .kwlabel{font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tm)}
+  .bubble{display:flex;gap:7px;align-items:flex-end}
+  .bubble .av{width:22px;height:22px;border-radius:50%;background:#34C759;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+  .bubble .bd{background:var(--elev);border:1px solid var(--border);border-radius:13px 13px 13px 3px;padding:8px 10px;font-size:11.5px;line-height:1.45;color:var(--t1)}
+  .bubble.rtl{flex-direction:row-reverse}
+  .bubble.rtl .bd{border-radius:13px 13px 3px 13px;direction:rtl;text-align:right;font-family:'IBM Plex Sans Arabic','DM Sans'}
+  .hl{background:rgba(229,9,20,.16);color:var(--red);font-weight:800;padding:0 4px;border-radius:4px;font-family:'JetBrains Mono'}
+  .hl.ar{font-family:'IBM Plex Sans Arabic'}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{background:var(--elev);border:1px solid var(--border);color:var(--t1);font-size:12px;font-weight:700;font-family:'JetBrains Mono';padding:6px 10px;border-radius:9px}
+  .chip.ar{font-family:'IBM Plex Sans Arabic'}
+  .check{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:11px}
+  .check .c{width:64px;height:64px;border-radius:50%;background:#1DB954;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(29,185,84,.5)}
+  .check .pill{background:rgba(10,10,15,.86);color:#fff;font-size:12px;font-weight:700;padding:6px 13px;border-radius:9999px;border:1px solid rgba(255,255,255,.14)}
+</style>
+</head>
+<body class="">
+  <h1>SMS Tracking Guide — annotated reference</h1>
+  <div class="sub">Every step with its exact annotation placement. The interactive, pixel-exact version is <b>SMS Tracking Setup.dc.html</b>.</div>
+  <div class="bar">
+    <button id="bd" class="on" onclick="document.body.classList.remove('light');this.classList.add('on');bl.classList.remove('on')">Dark</button>
+    <button id="bl" onclick="document.body.classList.add('light');this.classList.add('on');bd.classList.remove('on')">Light</button>
+  </div>
+  <div class="grid" id="grid"></div>
+
+<script>
+const STEPS = [
+  { img:'01.jpg', title:'Open the Automation tab', desc:'In the Shortcuts app, tap *Automation* at the bottom of the screen.', r:{x:50,y:96.3,w:24,h:4.2}, a:{x:50,y:93.6,dir:'down'} },
+  { img:'02.jpg', title:'Start a new automation', desc:'Tap *New Automation* to begin — you only do this once.', r:{x:50,y:60.7,w:42,h:5}, a:{x:50,y:57.6,dir:'down'} },
+  { img:'03.jpg', title:'Pick the Message trigger', desc:'Scroll the trigger list and choose *Message* — it fires whenever an SMS arrives.', r:{x:34,y:88,w:56,h:5}, a:{x:34,y:85,dir:'down'} },
+  { img:'04.jpg', title:'Open Message Contains', desc:'Leave Sender empty, then tap *Choose* next to *Message Contains*.', r:{x:84,y:27.5,w:24,h:4.4}, a:{x:84,y:24.8,dir:'down'} },
+  { concept:true, title:'Think of a keyword', desc:'First pick a word your bank *always* includes in its SMS — usually the currency. You’ll type it on the next screen.' },
+  { img:'05.jpg', title:'Enter your bank keyword', desc:'Type the keyword you picked, then tap *Done*.', r:{x:50,y:39,w:58,h:5}, a:{x:50,y:35.5,dir:'down'} },
+  { img:'06.jpg', title:'Confirm and continue', desc:'Make sure *Run Immediately* is ticked, then tap *Next*.', r:{x:91,y:5.6,w:17,h:3.6}, a:{x:88,y:8,dir:'up'}, r2:{x:50,y:43.2,w:80,h:4.6} },
+  { img:'07.jpg', title:'Create a blank automation', desc:'Tap *New Blank Automation* so you can add the Buddget action.', r:{x:24.5,y:37,w:44,h:14}, a:{x:24.5,y:29.5,dir:'down'} },
+  { img:'08.jpg', title:'Search for an action', desc:'Tap the *Search Actions* bar at the bottom.', r:{x:50,y:56.5,w:84,h:4.2}, a:{x:50,y:53.9,dir:'down'} },
+  { img:'09.jpg', title:'Add Catch Bank SMS', desc:'Type “Catch”, then tap *Catch Bank SMS* — the Buddget action.', r:{x:48,y:41.6,w:84,h:6}, a:{x:53,y:47,dir:'up'} },
+  { img:'10.jpg', title:'Open the message field', desc:'Tap the blue *Bank Message* field to choose what gets passed in.', r:{x:44,y:33,w:40,h:4.6}, a:{x:44,y:30,dir:'down'} },
+  { img:'11.jpg', title:'Choose Select Variable', desc:'In the options bar above the keyboard, tap *Select Variable*.', r:{x:17,y:63,w:30,h:3.8}, a:{x:17,y:60,dir:'down'} },
+  { img:'12.jpg', title:'Pick Shortcut Input', desc:'Tap *Shortcut Input* so Buddget receives the full SMS text.', r:{x:49,y:34.5,w:36,h:3.8}, a:{x:49,y:31.5,dir:'down'} },
+  { img:'13.jpg', title:'Save the shortcut', desc:'Tap *Done* — your automation is now ready.', r:{x:91,y:6.5,w:16,h:3.6}, a:{x:88,y:9,dir:'up'} },
+  { img:'14.jpg', title:"You're all set", desc:'Each keyword only catches SMS that contain it. A 2nd automation with another keyword (e.g. *USD* or *جنيه*) catches messages worded differently — so nothing slips through.', done:true },
+];
+const KW_EN=['EGP','USD','charged','debited','purchase'], KW_AR=['جنيه','دولار','خصم','شراء','عملية'];
+const chat='<svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><path d="M12 2C6.48 2 2 5.94 2 10.6c0 2.3 1.1 4.36 2.86 5.86L4 21l4.92-1.7c.97.26 2.01.4 3.08.4 5.52 0 10-3.94 10-8.5S17.52 2 12 2z"/></svg>';
+const desc = d => d.split('*').map((p,i)=> i%2?'<b>'+p+'</b>':p).join('');
+function arrowSvg(up){
+  return '<svg width="30" height="42" viewBox="0 0 46 62" fill="none" style="display:block;'+(up?'transform:scaleY(-1)':'')+'">'
+    +'<path d="M25 6 C 15 24, 15 40, 23 51" stroke="#E50914" stroke-width="5" stroke-linecap="round"/>'
+    +'<path d="M23 55 L14 44 M23 55 L33 45" stroke="#E50914" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+}
+function ul(r){ const w=r.w*0.92; return '<div class="ul" style="left:'+(r.x-w/2)+'%;top:'+(r.y+r.h/2+0.4)+'%;width:'+w+'%"></div>'; }
+function arrow(a){ const up=a.dir==='up'; return '<div class="arrow" style="left:'+a.x+'%;top:'+a.y+'%;transform:'+(up?'translate(-50%,0)':'translate(-50%,-100%)')+'">'+arrowSvg(up)+'</div>'; }
+const grid=document.getElementById('grid');
+STEPS.forEach((s,i)=>{
+  let stage='';
+  if(s.concept){
+    stage='<div class="kw">'
+      +'<div class="kwlabel">A message your bank sends</div>'
+      +'<div class="bubble"><div class="av">'+chat+'</div><div class="bd">Your card #2016 was charged <span class="hl">EGP</span> 20.00 at ****.COM.</div></div>'
+      +'<div class="bubble rtl"><div class="av">'+chat+'</div><div class="bd">تم خصم 20.00 <span class="hl ar">جنيه</span> من بطاقتك لدى ****.COM</div></div>'
+      +'<div class="kwlabel" style="margin-top:4px">Common keywords · tap to copy</div>'
+      +'<div class="chips">'+KW_EN.map(k=>'<span class="chip">'+k+'</span>').join('')+'</div>'
+      +'<div class="chips" style="direction:rtl">'+KW_AR.map(k=>'<span class="chip ar">'+k+'</span>').join('')+'</div>'
+      +'</div>';
+  } else {
+    let ov = (s.r?ul(s.r):'') + (s.r2?ul(s.r2):'') + (s.a?arrow(s.a):'');
+    if(s.done) ov += '<div class="check"><div class="c"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div class="pill">Automation active</div></div>';
+    stage='<div class="phone"><div class="screen"><img src="assets/steps/'+s.img+'" alt="">'+ov+'</div></div>';
+  }
+  grid.insertAdjacentHTML('beforeend',
+    '<div class="tile">'+stage+
+    '<div class="cap"><div class="h"><span class="n">'+(i+1)+'</span><span class="t">'+s.title+'</span></div><p>'+desc(s.desc)+'</p></div></div>');
+});
+</script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { ShieldCheck } from 'lucide-react'
 import { useT } from '@/lib/i18n'
-import { SmsIosSetupPage } from '@/components/features/settings/SmsIosSetupPage'
+import SmsTrackingGuide from '@/components/onboarding/SmsTrackingGuide'
 
 interface Props {
   lastReceivedAt: string | null
@@ -57,7 +57,7 @@ export function SmsIosSetupCard({ lastReceivedAt }: Props) {
         </button>
       </div>
 
-      {showSetup && <SmsIosSetupPage onClose={() => setShowSetup(false)} />}
+      {showSetup && <SmsTrackingGuide onClose={() => setShowSetup(false)} />}
     </>
   )
 }
