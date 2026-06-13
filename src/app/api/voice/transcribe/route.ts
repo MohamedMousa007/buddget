@@ -14,6 +14,8 @@ import { NextResponse, type NextRequest } from 'next/server'
 import Groq from 'groq-sdk'
 import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
 
+export const maxDuration = 30
+
 const EGYPT_FIRST_PROMPT = [
   'This is a budgeting voice memo recorded by a user in Egypt or the Gulf.',
   'Common currencies (in priority order): EGP (جنيه), AED, SAR, QAR, KWD, OMR, BHD, USD.',

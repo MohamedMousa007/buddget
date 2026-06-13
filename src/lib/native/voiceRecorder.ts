@@ -1,92 +1,65 @@
 'use client'
 
-import { isNative } from '@/lib/native/isNative'
-
 export interface VoiceRecording {
-  /** Audio Blob (web fallback) — `null` when native SpeechRecognition produced text directly. */
+  /** Audio Blob captured via MediaRecorder. */
   audio: Blob | null
-  /** Optional inline transcript from the OS speech engine (Capacitor SR). */
+  /** Always null — reserved for future SR integration. */
   inlineText: string | null
   /** ISO ms duration of the captured clip. */
   durationMs: number
-  /** Mime type of the captured audio (web fallback). */
+  /** Mime type of the captured audio. */
   mimeType: string | null
 }
 
 interface RecorderHandle {
   stop(): Promise<VoiceRecording>
   cancel(): Promise<void>
-  /** Normalized RMS amplitude 0–1. Returns 0 on native (no PCM access). */
+  /** Normalized RMS amplitude 0–1. */
   getAmplitude(): number
 }
 
+// Module-level permission cache — survives re-renders, reset on page reload only.
+let _permStatus: 'granted' | 'denied' | 'unavailable' | 'unknown' = 'unknown'
+
+export function getMicPermissionStatus(): typeof _permStatus {
+  return _permStatus
+}
+
+/**
+ * Request microphone access. Uses getUserMedia (works in both browser and
+ * Capacitor WKWebView/WebView). Caches the result in _permStatus.
+ */
+export async function requestMicPermission(): Promise<'granted' | 'denied' | 'unavailable'> {
+  if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+    _permStatus = 'unavailable'
+    return 'unavailable'
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    stream.getTracks().forEach((t) => t.stop())
+    _permStatus = 'granted'
+    return 'granted'
+  } catch {
+    _permStatus = 'denied'
+    return 'denied'
+  }
+}
+
+/**
+ * Start capturing audio. Always uses the web MediaRecorder path so recordings
+ * produce an audio blob for Groq Whisper transcription. Works in both browser
+ * and Capacitor WKWebView/WebView (iOS 14.3+ / Android).
+ *
+ * Call requestMicPermission() before this to ensure permission is already
+ * granted — getUserMedia inside this function will still request it if needed,
+ * but doing so mid-hold causes a native OS dialog race on mobile.
+ */
 export async function startRecording(opts?: { language?: string }): Promise<RecorderHandle> {
-  if (isNative()) {
-    try {
-      return await startNativeRecording(opts?.language)
-    } catch (e) {
-      console.warn('[voice] native recorder failed, falling back to web', e)
-    }
-  }
-  return startWebRecording(opts?.language)
+  void opts // language unused here; Groq transcription handles it server-side
+  return startWebRecording()
 }
 
-async function startNativeRecording(language?: string): Promise<RecorderHandle> {
-  const mod = await import('@capacitor-community/speech-recognition')
-  const SR = mod.SpeechRecognition
-  const start = Date.now()
-
-  const perm = await SR.checkPermissions()
-  if (perm.speechRecognition !== 'granted') {
-    const r = await SR.requestPermissions()
-    if (r.speechRecognition !== 'granted') {
-      throw new Error('Microphone permission denied')
-    }
-  }
-
-  const transcript: string[] = []
-  const listener = await SR.addListener('partialResults', (data: { matches?: string[] }) => {
-    const text = data.matches?.[0]
-    if (text) transcript[0] = text
-  })
-
-  const locale = language === 'ar' ? 'ar-SA' : 'en-US'
-
-  await SR.start({
-    language: locale,
-    maxResults: 1,
-    prompt: 'Speak your expense',
-    partialResults: true,
-    popup: false,
-  })
-
-  let stopped = false
-
-  return {
-    getAmplitude: () => 0,
-    async stop() {
-      if (stopped) return { audio: null, inlineText: transcript[0] ?? null, durationMs: 0, mimeType: null }
-      stopped = true
-      try { await SR.stop() } catch { /* noop */ }
-      try { await listener.remove() } catch { /* noop */ }
-      return {
-        audio: null,
-        inlineText: transcript[0] ?? null,
-        durationMs: Date.now() - start,
-        mimeType: null,
-      }
-    },
-    async cancel() {
-      stopped = true
-      try { await SR.stop() } catch { /* noop */ }
-      try { await listener.remove() } catch { /* noop */ }
-    },
-  }
-}
-
-async function startWebRecording(language?: string): Promise<RecorderHandle> {
-  void language // Web MediaRecorder doesn't use language; transcription handles it server-side
-
+async function startWebRecording(): Promise<RecorderHandle> {
   if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
     throw new Error('Microphone is not available on this device')
   }
@@ -97,7 +70,9 @@ async function startWebRecording(language?: string): Promise<RecorderHandle> {
   let stream: MediaStream
   try {
     stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    _permStatus = 'granted'
   } catch (e) {
+    _permStatus = 'denied'
     if (e instanceof DOMException && (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError')) {
       throw new Error(
         'Microphone access denied. Please go to Settings → Apps → Buddget → Permissions and enable Microphone.'
@@ -133,7 +108,6 @@ async function startWebRecording(language?: string): Promise<RecorderHandle> {
 
   const mime = pickPreferredMime()
   // 16 kbps keeps WebM blobs tiny (<50 KB for a 5-second clip)
-  // so Whisper transcription completes well within the 10-second abort window.
   const recorder = new MediaRecorder(
     stream,
     mime ? { mimeType: mime, audioBitsPerSecond: 16_000 } : { audioBitsPerSecond: 16_000 },

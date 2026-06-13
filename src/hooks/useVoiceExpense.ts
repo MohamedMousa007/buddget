@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { startRecording } from '@/lib/native/voiceRecorder'
+import { startRecording, requestMicPermission, getMicPermissionStatus } from '@/lib/native/voiceRecorder'
 import { extractVoiceExpense, type ExtractedExpense } from '@/lib/ai/extractVoiceExpense'
 
-export type VoiceState = 'idle' | 'recording' | 'processing' | 'confirming' | 'error'
+export type VoiceState = 'idle' | 'permission' | 'recording' | 'processing' | 'confirming' | 'error'
 
 interface UseVoiceExpenseResult {
   state: VoiceState
@@ -22,6 +22,9 @@ interface UseVoiceExpenseResult {
   cancel: () => Promise<void>
   confirm: () => void
   reset: () => void
+  /** Pre-flight mic permission request. Call this before the user holds the mic
+   *  button so the OS dialog doesn't race with the hold gesture. */
+  requestPermission: () => Promise<void>
 }
 
 export function useVoiceExpense(): UseVoiceExpenseResult {
@@ -73,11 +76,36 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
     stopRaf()
   }, [stopRaf])
 
+  const requestPermission = useCallback(async () => {
+    // Already granted — no-op (avoids a visible state flicker on re-opens)
+    if (getMicPermissionStatus() === 'granted') return
+    setState('permission')
+    try {
+      const status = await requestMicPermission()
+      if (status === 'granted') {
+        setState('idle')
+      } else {
+        setError('Microphone access denied. Please enable it in your device Settings.')
+        setState('error')
+      }
+    } catch {
+      setState('idle') // permission check failed unexpectedly — let start() handle it
+    }
+  }, [])
+
   const start = useCallback(async () => {
     setError(null)
     setDraft(null)
     setTranscript(null)
     stopPendingRef.current = false
+
+    // If permission is not yet confirmed, request it now and bail. The OS dialog
+    // will appear; on the next hold gesture recording starts normally.
+    if (getMicPermissionStatus() !== 'granted') {
+      await requestPermission()
+      return
+    }
+
     try {
       const recorder = await startRecording({ language })
 
@@ -91,7 +119,7 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
       recorderRef.current = recorder
       setState('recording')
 
-      // Amplitude polling loop — native returns 0, simulated as gentle pulse
+      // Amplitude polling loop
       const poll = () => {
         if (!recorderRef.current) return
         const now = Date.now()
@@ -106,7 +134,7 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
       setError(msg)
       setState('error')
     }
-  }, [language])
+  }, [language, requestPermission])
 
   const stop = useCallback(async () => {
     // Null synchronously to block any concurrent cancel() from re-entering
@@ -124,15 +152,15 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
     const abort = new AbortController()
     abortRef.current = abort
 
-    // 10-second wall-clock guard — timer fires if AbortController doesn't cancel first.
+    // 25-second wall-clock guard — Groq Whisper + Gemini can take 10-15 s on slow networks.
     let timeoutHandle: ReturnType<typeof setTimeout> | null = null
     const withTimeout = <T,>(p: Promise<T>): Promise<T> =>
       Promise.race([
         p,
         new Promise<T>((_, reject) => {
           timeoutHandle = setTimeout(
-            () => reject(new Error('Transcription took longer than expected. Please try again in a quieter spot.')),
-            10_000,
+            () => reject(new Error('Transcription took longer than expected. Please try again.')),
+            25_000,
           )
         }),
       ])
@@ -180,7 +208,6 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
     // Abort any in-flight transcribe fetch immediately.
     abortRef.current?.abort()
     abortRef.current = null
-    // Null synchronously so stop() returns early if called concurrently.
     stopPendingRef.current = false
     const recorder = recorderRef.current
     recorderRef.current = null
@@ -206,5 +233,5 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
     reset()
   }, [addExpense, draft, paymentMethods, reset, transcript])
 
-  return { state, draft, transcript, error, amplitude, animTime, start, stop, cancel, confirm, reset }
+  return { state, draft, transcript, error, amplitude, animTime, start, stop, cancel, confirm, reset, requestPermission }
 }

@@ -7,8 +7,8 @@
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react'
-import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion'
-import { Check, X, RotateCcw, Loader2 } from 'lucide-react'
+import { motion, useMotionValue, AnimatePresence } from 'framer-motion'
+import { Check, X, RotateCcw, Loader2, Trash2 } from 'lucide-react'
 import type { VoiceState } from '@/hooks/useVoiceExpense'
 import type { ExtractedExpense } from '@/lib/ai/extractVoiceExpense'
 
@@ -131,7 +131,6 @@ function RecordingPanel({
   onCancel: () => void
 }) {
   const x = useMotionValue(0)
-  const hintOpacity = useTransform(x, [-60, 0], [1, 0])
   const [startTs] = useState(() => Date.now())
   const [elapsed, setElapsed] = useState(0)
 
@@ -177,13 +176,15 @@ function RecordingPanel({
         {mins}:{secs}
       </span>
 
-      {/* Slide-to-cancel hint */}
-      <motion.span
-        style={{ opacity: hintOpacity }}
-        className="absolute start-4 text-[10px] text-[var(--color-brand-text-muted)] pointer-events-none"
+      {/* Trash — tap to cancel */}
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onCancel() }}
+        className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)] hover:text-[var(--color-brand-red)] transition-colors"
+        aria-label="Cancel recording"
       >
-        ← Cancel
-      </motion.span>
+        <Trash2 className="h-4 w-4" />
+      </button>
     </motion.div>
   )
 }

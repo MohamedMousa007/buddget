@@ -50,22 +50,25 @@ CREATE TABLE IF NOT EXISTS public.shared_budget_data (
 -- ---------------------------------------------------------------------------
 -- notifications
 -- ---------------------------------------------------------------------------
+CREATE TYPE IF NOT EXISTS public.notification_type AS ENUM ('info', 'warning', 'success', 'error');
+
 CREATE TABLE IF NOT EXISTS public.notifications (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
-  type TEXT NOT NULL,
-  title TEXT NOT NULL,
-  body TEXT,
-  metadata JSONB DEFAULT '{}'::jsonb,
-  read BOOLEAN NOT NULL DEFAULT false,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
+  type       public.notification_type NOT NULL DEFAULT 'info',
+  title      TEXT NOT NULL,
+  message    TEXT,
+  metadata   JSONB DEFAULT '{}'::jsonb,
+  is_read    BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS notifications_user_id_created_at_idx
   ON public.notifications (user_id, created_at DESC);
 
 CREATE INDEX IF NOT EXISTS notifications_user_id_unread_idx
-  ON public.notifications (user_id) WHERE read = false;
+  ON public.notifications (user_id) WHERE is_read = false;
 
 -- ---------------------------------------------------------------------------
 -- Invite tokens for users not yet on Buddget (72h, single-use)
