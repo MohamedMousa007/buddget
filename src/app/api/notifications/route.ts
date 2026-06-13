@@ -65,9 +65,9 @@ export async function PATCH(request: Request) {
   if (parsed.data.markAllRead) {
     const { error } = await supabase
       .from('notifications')
-      .update({ read: true })
+      .update({ is_read: true })
       .eq('user_id', user.id)
-      .eq('read', false)
+      .eq('is_read', false)
 
     if (error) {
       console.warn('[notifications PATCH all]', error.message)
@@ -83,7 +83,7 @@ export async function PATCH(request: Request) {
 
   const { error } = await supabase
     .from('notifications')
-    .update({ read: true })
+    .update({ is_read: true })
     .eq('user_id', user.id)
     .in('id', ids)
 

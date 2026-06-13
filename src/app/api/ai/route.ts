@@ -3,6 +3,12 @@ import { createClient } from '@/lib/supabase/server'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { getEffectiveAiRuntimeConfig } from '@/lib/server/aiRuntimeConfig'
 
+export const maxDuration = 30
+// GET returns a public config object (no per-user data) so force-static is safe.
+// This also satisfies Next.js output:export which requires all GET routes to be
+// statically renderable. POST handlers are dynamic regardless of this config.
+export const dynamic = 'force-static'
+
 /** When Supabase auth is enabled, AI routes require a logged-in user (quota / abuse protection). */
 async function requireUserOrUnauthorized(): Promise<NextResponse | null> {
   if (!isSupabaseConfigured()) return null
@@ -112,9 +118,6 @@ export async function POST(req: Request) {
 }
 
 export async function GET() {
-  const authDenied = await requireUserOrUnauthorized()
-  if (authDenied) return authDenied
-
   const hasKey = !!process.env.GEMINI_API_KEY?.trim()
   const runtime = getEffectiveAiRuntimeConfig()
   return NextResponse.json({
