@@ -26,7 +26,13 @@ const config: CapacitorConfig = {
     webContentsDebuggingEnabled: process.env.NODE_ENV !== 'production',
   },
   ios: {
-    contentInset: 'always',
+    /**
+     * `never` = WKWebView does NOT auto-inset for the safe area. The web layer
+     * owns all inset handling via CSS `env(safe-area-inset-*)`, so this avoids
+     * double-counting (the giant top gap) and the dynamic-inset scroll jitter
+     * that `always`/`automatic` cause. Single source of truth = CSS.
+     */
+    contentInset: 'never',
     scrollEnabled: true,
   },
   plugins: {

@@ -203,7 +203,7 @@ export function AppShell({ children }: AppShellProps) {
 
   if (bare) {
     return (
-      <div className={isNative() ? 'h-dvh overflow-y-auto overscroll-none bg-[var(--color-brand-bg)]' : 'min-h-screen bg-[var(--color-brand-bg)]'}>
+      <div className="min-h-screen bg-[var(--color-brand-bg)]">
         {children}
         <ModalProvider />
       </div>
