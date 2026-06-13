@@ -1,10 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ShieldCheck, ChevronDown, AlertTriangle } from 'lucide-react'
+import { ShieldCheck, AlertTriangle } from 'lucide-react'
 import { isNative, isAndroid } from '@/lib/native/isNative'
 import { checkSmsPermission } from '@/lib/native/smsTracker'
-import { SmsSupportedBanksList } from '@/components/features/settings/SmsSupportedBanksList'
 
 /**
  * Shown inside SettingsSmsTrackingSection when isEnabled && isAndroid().
@@ -14,7 +13,6 @@ import { SmsSupportedBanksList } from '@/components/features/settings/SmsSupport
 export function SmsAndroidSetupCard() {
   const onNative = isNative() && isAndroid()
   const [permState, setPermState] = useState<boolean | null>(null)
-  const [showBanks, setShowBanks] = useState(false)
 
   useEffect(() => {
     if (!onNative) return
@@ -49,24 +47,6 @@ export function SmsAndroidSetupCard() {
         </span>
       </div>
 
-      {/* Supported Banks accordion */}
-      <div className="rounded-xl border border-[var(--color-brand-border)] overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setShowBanks((v) => !v)}
-          className="flex w-full items-center justify-between px-3 py-2.5 text-xs font-semibold text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
-        >
-          Supported Banks &amp; Services
-          <ChevronDown
-            className={`h-3.5 w-3.5 transition-transform duration-200 ${showBanks ? 'rotate-180' : ''}`}
-          />
-        </button>
-        {showBanks && (
-          <div className="border-t border-[var(--color-brand-border)] px-3 py-3">
-            <SmsSupportedBanksList />
-          </div>
-        )}
-      </div>
     </div>
   )
 }

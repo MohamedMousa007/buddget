@@ -2131,6 +2131,8 @@ export interface Dictionary {
       finish: string
       automationActive: string
       copied: (word: string) => string
+      kwHeaderTitle: string
+      kwHeaderBody: string
       kwSentLabel: string
       kwEnPre: string
       kwEnHl: string
