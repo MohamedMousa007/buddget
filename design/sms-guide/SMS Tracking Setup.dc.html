@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/radius.css">
+  <link rel="stylesheet" href="_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/effects.css">
+  <link rel="stylesheet" href="_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/styles.css">
+  <script src="_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/_ds_bundle.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { background: #06060A; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; font-family: 'DM Sans', sans-serif; }
+    ::-webkit-scrollbar { display: none; }
+    @keyframes pulseDot  { 0%,100%{ opacity: 1 }   50%{ opacity: .35 } }
+    @keyframes ulPulse   { 0%,100%{ opacity: .55 } 50%{ opacity: 1 } }
+    @keyframes arrowBob  { 0%,100%{ transform: translateY(0) }  50%{ transform: translateY(5px) } }
+    @keyframes heroFloat { 0%,100%{ transform: translateY(0) }  50%{ transform: translateY(-4px) } }
+    @keyframes heroDot   { 0%{ top:-4px; opacity:0 } 20%{ opacity:1 } 70%{ top:30px; opacity:1 } 85%,100%{ top:30px; opacity:0 } }
+    @keyframes toastIn   { from{ opacity:0; transform: translate(-50%,8px) } to{ opacity:1; transform: translate(-50%,0) } }
+  </style>
+</helmet>
+
+<div data-role="root" class="{{ rootClass }}" style="width:390px; height:844px; background:var(--color-brand-bg); position:relative; overflow:hidden; font-family:'DM Sans',sans-serif;">
+
+  <button onClick="{{ close }}" style="position:absolute;top:16px;right:16px;z-index:60;width:30px;height:30px;border-radius:50%;background:var(--color-brand-card);border:1px solid var(--color-brand-border);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 1l8 8M9 1L1 9" stroke="var(--color-brand-text-muted)" stroke-width="1.6" stroke-linecap="round"></path></svg>
+  </button>
+
+  <div data-role="slider-track" style="width:780px; height:844px; display:flex; will-change:transform; transform:{{ trackTransform }}; transition:transform .44s cubic-bezier(.4,0,.2,1);">
+
+    <!-- ═══════════════ PANEL 1 ═══════════════ -->
+    <div data-screen-label="Intro" style="width:390px; height:844px; flex-shrink:0; display:flex; flex-direction:column; overflow:hidden; position:relative;">
+
+      <div style="display:flex; align-items:center; gap:9px; padding:24px 26px 0; flex-shrink:0;">
+        <div style="width:30px;height:30px;border-radius:9px;background:var(--color-brand-red);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(229,9,20,0.35);">
+          <span style="font-size:17px;font-weight:900;color:#fff;line-height:1;">B</span>
+        </div>
+        <span style="font-size:16px;font-weight:800;color:var(--color-brand-text-primary);letter-spacing:-.2px;">Buddget</span>
+      </div>
+
+      <div style="height:360px; flex-shrink:0; display:flex; align-items:center; justify-content:center; position:relative;">
+        {{ heroVisual }}
+      </div>
+
+      <div style="padding:0 26px 0;">
+        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(229,9,20,0.09);border:1px solid rgba(229,9,20,0.22);border-radius:9999px;padding:4px 12px;margin-bottom:13px;width:fit-content;white-space:nowrap;">
+          <div style="width:6px;height:6px;border-radius:50%;background:var(--color-brand-red);animation:pulseDot 2s infinite;flex-shrink:0;"></div>
+          <span style="font-size:10px;font-weight:700;color:var(--color-brand-red);letter-spacing:.09em;text-transform:uppercase;white-space:nowrap;">Automatic tracking</span>
+        </div>
+        <h1 style="font-size:29px;font-weight:800;color:var(--color-brand-text-primary);line-height:1.16;margin-bottom:11px;letter-spacing:-.6px;">Every bank SMS,<br/>logged for you</h1>
+        <p style="font-size:14px;color:var(--color-brand-text-secondary);line-height:1.65;max-width:310px;">The moment your bank texts you, Buddget reads the amount and merchant and records the transaction — automatically.</p>
+      </div>
+
+      <div style="margin-top:auto; padding:14px 26px 44px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1DB954" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg>
+          <span style="font-size:12px;color:var(--color-brand-text-muted);line-height:1.45;">Runs entirely on your iPhone. Buddget never sees your bank login.</span>
+        </div>
+        {{ ctaPrimary }}
+        <p style="text-align:center;font-size:12px;color:var(--color-brand-text-muted);margin-top:11px;">Takes about 2 minutes · one-time setup</p>
+      </div>
+    </div>
+
+    <!-- ═══════════════ PANEL 2 ═══════════════ -->
+    <div data-screen-label="Guided setup" style="width:390px; height:844px; flex-shrink:0; display:flex; flex-direction:column; overflow:hidden; position:relative;">
+
+      <div style="padding:18px 20px 11px; flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:7px;padding-right:48px;margin-bottom:9px;">
+          <button onClick="{{ goStep1 }}" style="width:28px;height:28px;border-radius:50%;background:var(--color-brand-card);border:1px solid var(--color-brand-border);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;" style-hover="background:var(--color-brand-elevated);">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M7.5 1.5L3 6l4.5 4.5" stroke="var(--color-brand-text-muted)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </button>
+          <span style="font-size:15px;font-weight:800;color:var(--color-brand-text-primary);letter-spacing:-.2px;">Set up auto-tracking</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
+          <span style="font-size:11px;color:var(--color-brand-text-muted);font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.02em;white-space:nowrap;">Step {{ subStepNum }} of {{ total }}</span>
+        </div>
+        <div style="height:3px;background:var(--color-brand-card);border-radius:9999px;overflow:hidden;">
+          <div style="height:100%;width:{{ progressWidth }};background:linear-gradient(90deg,#E50914,#ff6a6a);border-radius:9999px;transition:width .4s cubic-bezier(.4,0,.2,1);"></div>
+        </div>
+      </div>
+
+      <div style="flex:1; padding:2px 16px 0; min-height:0; display:flex;">
+        {{ stepVisual }}
+      </div>
+
+      <div style="padding:12px 18px 4px; flex-shrink:0;">
+        <div style="background:var(--color-brand-card);border:1px solid var(--color-brand-border);border-radius:15px;padding:13px 15px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <span style="width:20px;height:20px;border-radius:6px;background:rgba(229,9,20,0.14);color:var(--color-brand-red);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-variant-numeric:tabular-nums;">{{ subStepNum }}</span>
+            <span style="font-size:13.5px;font-weight:700;color:var(--color-brand-text-primary);">{{ currentTitle }}</span>
+          </div>
+          <p style="font-size:12.5px;color:var(--color-brand-text-secondary);line-height:1.55;padding-left:28px;">{{ currentDesc }}</p>
+        </div>
+      </div>
+
+      <div style="padding:10px 18px 6px; flex-shrink:0; display:flex; align-items:center; justify-content:space-between;">
+        <button onClick="{{ prevStep }}" style="width:38px;height:38px;border-radius:50%;background:var(--color-brand-card);border:1px solid var(--color-brand-border);cursor:pointer;display:flex;align-items:center;justify-content:center;" style-hover="background:var(--color-brand-elevated);">
+          <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M7.5 1.5L3 6l4.5 4.5" stroke="{{ prevColor }}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </button>
+        <div style="display:flex;gap:5px;align-items:center;">
+          <sc-for list="{{ dots }}" as="dot" hint-placeholder-count="15">
+            <div onClick="{{ dot.onTap }}" style="height:6px;border-radius:9999px;cursor:pointer;transition:all .28s cubic-bezier(.4,0,.2,1);background:{{ dot.bg }};width:{{ dot.w }};"></div>
+          </sc-for>
+        </div>
+        <button onClick="{{ nextStep }}" style="width:38px;height:38px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;background:{{ nextBg }};border:1px solid {{ nextBorder }};" style-hover="filter:brightness(1.1);">
+          <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M4.5 1.5L9 6l-4.5 4.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </button>
+      </div>
+
+      <div style="padding:6px 20px 26px; flex-shrink:0;">
+        {{ bottomArea }}
+      </div>
+
+    </div>
+  </div>
+
+  {{ toast }}
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;'dark' | 'light'&quot;}}">
+class Component extends DCLogic {
+  state = { step: 1, subStep: 0, copied: null };
+
+  DIR = 'assets/steps/';
+  KW_EN = ['EGP', 'USD', 'charged', 'debited', 'purchase'];
+  KW_AR = ['جنيه', 'دولار', 'خصم', 'شراء', 'عملية'];
+
+  STEPS = [
+    { img: '01.jpg', title: 'Open the Automation tab', desc: 'In the Shortcuts app, tap *Automation* at the bottom of the screen.',
+      r: { x: 50, y: 96.3, w: 24, h: 4.2 }, a: { x: 50, y: 93.6, dir: 'down' } },
+    { img: '02.jpg', title: 'Start a new automation', desc: 'Tap *New Automation* to begin — you only do this once.',
+      r: { x: 50, y: 60.7, w: 42, h: 5 }, a: { x: 50, y: 57.6, dir: 'down' } },
+    { img: '03.jpg', title: 'Pick the Message trigger', desc: 'Scroll the trigger list and choose *Message* — it fires whenever an SMS arrives.',
+      r: { x: 34, y: 88, w: 56, h: 5 }, a: { x: 34, y: 85, dir: 'down' } },
+    { img: '04.jpg', title: 'Open Message Contains', desc: 'Leave Sender empty, then tap *Choose* next to *Message Contains*.',
+      r: { x: 84, y: 27.5, w: 24, h: 4.4 }, a: { x: 84, y: 24.8, dir: 'down' } },
+    { concept: true, title: 'Think of a keyword', desc: 'First pick a word your bank *always* includes in its SMS — usually the currency. You’ll type it on the next screen.' },
+    { img: '05.jpg', title: 'Enter your bank keyword', desc: 'Type the keyword you picked, then tap *Done*.',
+      r: { x: 50, y: 39, w: 58, h: 5 }, a: { x: 50, y: 35.5, dir: 'down' } },
+    { img: '06.jpg', title: 'Confirm and continue', desc: 'Make sure *Run Immediately* is ticked, then tap *Next*.',
+      r: { x: 91, y: 5.6, w: 17, h: 3.6 }, a: { x: 88, y: 8, dir: 'up' }, r2: { x: 50, y: 43.2, w: 80, h: 4.6 } },
+    { img: '07.jpg', title: 'Create a blank automation', desc: 'Tap *New Blank Automation* so you can add the Buddget action.',
+      r: { x: 24.5, y: 37, w: 44, h: 14 }, a: { x: 24.5, y: 29.5, dir: 'down' } },
+    { img: '08.jpg', title: 'Search for an action', desc: 'Tap the *Search Actions* bar at the bottom.',
+      r: { x: 50, y: 56.5, w: 84, h: 4.2 }, a: { x: 50, y: 53.9, dir: 'down' } },
+    { img: '09.jpg', title: 'Add Catch Bank SMS', desc: 'Type “Catch”, then tap *Catch Bank SMS* — the Buddget action.',
+      r: { x: 48, y: 41.6, w: 84, h: 6 }, a: { x: 53, y: 47, dir: 'up' } },
+    { img: '10.jpg', title: 'Open the message field', desc: 'Tap the blue *Bank Message* field to choose what gets passed in.',
+      r: { x: 44, y: 33, w: 40, h: 4.6 }, a: { x: 44, y: 30, dir: 'down' } },
+    { img: '11.jpg', title: 'Choose Select Variable', desc: 'In the options bar above the keyboard, tap *Select Variable*.',
+      r: { x: 17, y: 63, w: 30, h: 3.8 }, a: { x: 17, y: 60, dir: 'down' } },
+    { img: '12.jpg', title: 'Pick Shortcut Input', desc: 'Tap *Shortcut Input* so Buddget receives the full SMS text.',
+      r: { x: 49, y: 34.5, w: 36, h: 3.8 }, a: { x: 49, y: 31.5, dir: 'down' } },
+    { img: '13.jpg', title: 'Save the shortcut', desc: 'Tap *Done* — your automation is now ready.',
+      r: { x: 91, y: 6.5, w: 16, h: 3.6 }, a: { x: 88, y: 9, dir: 'up' } },
+    { img: '14.jpg', title: "You're all set", desc: 'Each keyword only catches SMS that contain it. A 2nd automation with another keyword (e.g. *USD* or *جنيه*) catches messages worded differently — so nothing slips through.',
+      r: null, a: null, done: true },
+  ];
+
+  componentDidMount() {
+    requestAnimationFrame(() => this.forceUpdate());
+    setTimeout(() => this.forceUpdate(), 350);
+  }
+
+  _copy(text) {
+    const done = () => {
+      this.setState({ copied: text });
+      clearTimeout(this._ct);
+      this._ct = setTimeout(() => this.setState({ copied: null }), 1500);
+    };
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, () => { this._fallbackCopy(text); done(); });
+        return;
+      }
+    } catch (e) {}
+    this._fallbackCopy(text); done();
+  }
+  _fallbackCopy(text) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+    } catch (e) {}
+  }
+
+  _btn(label, onClick, variant) {
+    const e = React.createElement;
+    const DS = window.BuddgetDesignSystem_3e84a0 || {};
+    const style = {
+      width: '100%', height: '52px', fontSize: '15px', fontWeight: 700, borderRadius: '14px',
+      boxShadow: variant === 'default' ? '0 10px 30px rgba(229,9,20,0.28)' : 'none',
+    };
+    if (DS.Button) return e(DS.Button, { variant, onClick, style }, label);
+    return e('button', { onClick, style: {
+      ...style, cursor: 'pointer', border: variant === 'default' ? 'none' : '1px solid var(--color-brand-border)',
+      background: variant === 'default' ? 'var(--color-brand-red)' : 'transparent',
+      color: variant === 'default' ? '#fff' : 'var(--color-brand-text-primary)', fontFamily: "'DM Sans',sans-serif",
+    }}, label);
+  }
+
+  _icon(name, color, sw) {
+    const e = React.createElement;
+    const p = { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: color || 'currentColor', strokeWidth: sw || 2, strokeLinecap: 'round', strokeLinejoin: 'round' };
+    if (name === 'copy') return e('svg', p, e('rect', { x: 9, y: 9, width: 13, height: 13, rx: 2 }), e('path', { d: 'M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1' }));
+    if (name === 'plus') return e('svg', p, e('path', { d: 'M12 5v14M5 12h14' }));
+    return null;
+  }
+
+  /* highlight *keywords* in a description string */
+  _renderDesc(desc) {
+    const e = React.createElement;
+    return String(desc).split('*').map((part, i) =>
+      i % 2 === 1
+        ? e('span', { key: i, style: { color: '#E50914', fontWeight: 700, fontFamily: "'DM Sans','IBM Plex Sans Arabic',sans-serif" } }, part)
+        : part
+    );
+  }
+
+  /* ── PANEL 1 HERO ── */
+  _heroVisual() {
+    const e = React.createElement;
+    const DS = window.BuddgetDesignSystem_3e84a0 || {};
+    const F = "'DM Sans',sans-serif";
+
+    const sms = e('div', { style: {
+      width: '302px', maxWidth: '100%', background: 'var(--color-brand-card)',
+      border: '1px solid var(--color-brand-border)', borderRadius: '18px', padding: '12px 14px',
+      display: 'flex', gap: '11px', alignItems: 'flex-start', boxShadow: '0 10px 26px rgba(0,0,0,0.4)',
+    }},
+      e('div', { style: { width: '34px', height: '34px', borderRadius: '9px', background: '#34C759', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' } },
+        e('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: '#fff' },
+          e('path', { d: 'M12 2C6.48 2 2 5.94 2 10.6c0 2.3 1.1 4.36 2.86 5.86L4 21l4.92-1.7c.97.26 2.01.4 3.08.4 5.52 0 10-3.94 10-8.5S17.52 2 12 2z' }))
+      ),
+      e('div', { style: { flex: 1, minWidth: 0 } },
+        e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2px' } },
+          e('span', { style: { fontSize: '12.5px', fontWeight: 700, color: 'var(--color-brand-text-primary)', fontFamily: F } }, 'MyBank'),
+          e('span', { style: { fontSize: '10.5px', color: 'var(--color-brand-text-muted)', fontFamily: F } }, 'now')
+        ),
+        e('div', { style: { fontSize: '12.5px', color: 'var(--color-brand-text-secondary)', lineHeight: 1.45, fontFamily: F } },
+          'Purchase of ', e('span', { style: { fontFamily: "'JetBrains Mono',monospace", color: 'var(--color-brand-text-primary)' } }, 'EGP 45.00'), ' at STARBUCKS on card ••4821.')
+      )
+    );
+
+    const connector = e('div', { style: { position: 'relative', width: '2px', height: '36px', background: 'var(--color-brand-border)', borderRadius: '2px', margin: '7px 0' } },
+      e('div', { style: { position: 'absolute', left: '-3px', width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-brand-red)', boxShadow: '0 0 10px rgba(229,9,20,0.9)', animation: 'heroDot 2.6s ease-in-out infinite' } })
+    );
+
+    const coffee = e('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' },
+      e('path', { d: 'M18 8h1a4 4 0 0 1 0 8h-1' }), e('path', { d: 'M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z' }),
+      e('line', { x1: 6, y1: 1, x2: 6, y2: 4 }), e('line', { x1: 10, y1: 1, x2: 10, y2: 4 }), e('line', { x1: 14, y1: 1, x2: 14, y2: 4 })
+    );
+    const check = e('svg', { width: 11, height: 11, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 3.2, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('polyline', { points: '20 6 9 17 4 12' }));
+
+    const row = DS.ExpenseRow ? e(DS.ExpenseRow, { icon: coffee, iconBg: 'rgba(255,159,10,0.14)', iconColor: '#FF9F0A', description: 'Starbucks', category: 'Coffee', amount: 45, currency: 'EGP', method: 'Card ••4821' }) : null;
+    const badge = DS.Badge ? e(DS.Badge, { variant: 'green' }, check, 'Auto-logged') : null;
+
+    const card = e('div', { style: {
+      width: '302px', maxWidth: '100%', background: 'var(--color-brand-card)', border: '1px solid var(--color-brand-border)',
+      borderRadius: '18px', padding: '11px 11px 9px', boxShadow: '0 12px 30px rgba(0,0,0,0.18)',
+    }},
+      e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px', padding: '0 5px' } },
+        e('span', { style: { fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--color-brand-text-muted)', fontFamily: F, whiteSpace: 'nowrap' } }, 'Logged in Buddget'),
+        badge
+      ),
+      row
+    );
+
+    return e('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', padding: '8px 0', animation: 'heroFloat 5.5s ease-in-out infinite' } }, sms, connector, card);
+  }
+
+  /* ── ANNOTATIONS ── */
+  _underline(r, key) {
+    if (!r) return null;
+    const w = r.w * 0.92;
+    return React.createElement('div', { key: key || 'ul', style: {
+      position: 'absolute', left: (r.x - w / 2) + '%', top: (r.y + r.h / 2 + 0.4) + '%',
+      width: w + '%', height: '3px', background: '#E50914', borderRadius: '3px',
+      boxShadow: '0 0 7px rgba(229,9,20,0.55)', animation: 'ulPulse 1.8s ease-in-out infinite',
+      pointerEvents: 'none', zIndex: 11,
+    }});
+  }
+  _arrow(a) {
+    if (!a) return null;
+    const e = React.createElement;
+    const up = a.dir === 'up';
+    const svg = e('svg', { width: 36, height: 50, viewBox: '0 0 46 62', fill: 'none',
+      style: { display: 'block', filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.45))', animation: 'arrowBob 1.5s ease-in-out infinite' } },
+      e('path', { d: 'M25 6 C 15 24, 15 40, 23 51', stroke: '#E50914', strokeWidth: 5, strokeLinecap: 'round' }),
+      e('path', { d: 'M23 55 L14 44 M23 55 L33 45', stroke: '#E50914', strokeWidth: 5, strokeLinecap: 'round', strokeLinejoin: 'round' })
+    );
+    return e('div', { key: 'ar', style: {
+      position: 'absolute', left: a.x + '%', top: a.y + '%',
+      transform: up ? 'translate(-50%,0) scaleY(-1)' : 'translate(-50%,-100%)', zIndex: 12, pointerEvents: 'none',
+    }}, svg);
+  }
+
+  /* ── CONCEPT (keyword-thinking) SCREEN ── */
+  _conceptVisual() {
+    const e = React.createElement;
+    const F = "'DM Sans',sans-serif";
+    const AR = "'IBM Plex Sans Arabic','DM Sans',sans-serif";
+    const M = "'JetBrains Mono',monospace";
+
+    const hl = (t, ar) => e('span', { style: { background: 'rgba(229,9,20,0.16)', color: '#E50914', fontWeight: 800, padding: '1px 5px', borderRadius: '5px', fontFamily: ar ? AR : M } }, t);
+
+    const chatIcon = e('svg', { width: 13, height: 13, viewBox: '0 0 24 24', fill: '#fff' },
+      e('path', { d: 'M12 2C6.48 2 2 5.94 2 10.6c0 2.3 1.1 4.36 2.86 5.86L4 21l4.92-1.7c.97.26 2.01.4 3.08.4 5.52 0 10-3.94 10-8.5S17.52 2 12 2z' }));
+
+    const bubble = (rtl, children) => e('div', { style: { display: 'flex', flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'flex-end', gap: '8px' } },
+      e('div', { style: { width: '26px', height: '26px', borderRadius: '50%', background: '#34C759', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' } }, chatIcon),
+      e('div', { style: {
+        maxWidth: '258px', background: 'var(--color-brand-elevated)', border: '1px solid var(--color-brand-border)',
+        borderRadius: rtl ? '15px 15px 4px 15px' : '15px 15px 15px 4px', padding: '9px 12px',
+        fontSize: '12.5px', lineHeight: 1.5, color: 'var(--color-brand-text-primary)',
+        fontFamily: rtl ? AR : F, direction: rtl ? 'rtl' : 'ltr', textAlign: rtl ? 'right' : 'left',
+      }}, ...children)
+    );
+
+    const label = (t) => e('div', { style: { fontSize: '10px', fontWeight: 700, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--color-brand-text-muted)', fontFamily: F } }, t);
+
+    const chip = (k, ar) => e('button', { key: k, onClick: () => this._copy(k), style: {
+      display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--color-brand-elevated)',
+      border: '1px solid var(--color-brand-border)', color: 'var(--color-brand-text-primary)',
+      fontSize: '13px', fontWeight: 700, fontFamily: ar ? AR : M, padding: '7px 12px', borderRadius: '10px', cursor: 'pointer',
+    }, 'style-hover': 'border-color:#E50914;' }, k, this._icon('copy', 'var(--color-brand-text-muted)', 2));
+
+    return e('div', { style: { width: '100%', display: 'flex', flexDirection: 'column', gap: '10px', padding: '4px 4px 0', overflow: 'hidden' } },
+      label('A message your bank sends'),
+      bubble(false, ['Your card #2016 was charged ', hl('EGP'), ' 20.00 at ****.COM.']),
+      bubble(true, ['تم خصم 20.00 ', hl('جنيه', true), ' من بطاقتك لدى ****.COM']),
+      e('div', { style: { height: '2px' } }),
+      label('Common keywords · tap to copy'),
+      e('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '8px' } }, ...this.KW_EN.map((k) => chip(k, false))),
+      e('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '8px', direction: 'rtl' } }, ...this.KW_AR.map((k) => chip(k, true)))
+    );
+  }
+
+  _stepVisual(idx) {
+    const e = React.createElement;
+    const s = this.STEPS[idx];
+
+    if (s.concept) {
+      return e('div', { style: { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 0 } }, this._conceptVisual());
+    }
+
+    const overlay = [this._underline(s.r, 'ul1'), this._underline(s.r2, 'ul2'), this._arrow(s.a)];
+    if (s.done) {
+      overlay.push(e('div', { key: 'badge', style: {
+        position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', zIndex: 13,
+      }},
+        e('div', { style: { width: '74px', height: '74px', borderRadius: '50%', background: '#1DB954', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 34px rgba(29,185,84,0.5)' } },
+          e('svg', { width: 38, height: 38, viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 3, strokeLinecap: 'round', strokeLinejoin: 'round' }, e('polyline', { points: '20 6 9 17 4 12' }))),
+        e('div', { style: { background: 'rgba(10,10,15,0.86)', color: '#fff', fontSize: '13px', fontWeight: 700, padding: '7px 15px', borderRadius: '9999px', fontFamily: "'DM Sans',sans-serif", border: '1px solid rgba(255,255,255,0.14)', whiteSpace: 'nowrap' } }, 'Automation active')
+      ));
+    }
+    return e('div', { style: { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 0 } },
+      e('div', { style: { height: '100%', aspectRatio: '1290 / 2581', maxWidth: '100%', background: '#050507', borderRadius: '30px', padding: '5px', boxShadow: '0 20px 55px rgba(0,0,0,0.6), 0 0 0 1px #1A1A24', position: 'relative', flexShrink: 0 } },
+        e('div', { style: { position: 'relative', width: '100%', height: '100%', borderRadius: '25px', overflow: 'hidden', background: '#fff' } },
+          e('img', { src: this.DIR + s.img, alt: s.title, style: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' } }),
+          ...overlay
+        )
+      )
+    );
+  }
+
+  _bottomArea(idx) {
+    const e = React.createElement;
+    const F = "'DM Sans',sans-serif";
+    const s = this.STEPS[idx];
+    if (s.concept) return e('div', { style: { height: '1px' } });
+    if (s.done) {
+      const small = (label, onClick, primary) => e('button', { onClick, style: {
+        flex: 1, height: '46px', borderRadius: '13px', cursor: 'pointer', fontFamily: F, fontSize: '14px', fontWeight: 700,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+        border: primary ? 'none' : '1px solid var(--color-brand-border)',
+        background: primary ? 'var(--color-brand-red)' : 'transparent',
+        color: primary ? '#fff' : 'var(--color-brand-text-secondary)',
+        boxShadow: primary ? '0 8px 22px rgba(229,9,20,0.26)' : 'none',
+      }, 'style-hover': primary ? 'filter:brightness(1.08);' : 'background:var(--color-brand-elevated);' },
+        primary ? this._icon('plus', '#fff', 2.4) : null, label);
+      return e('div', { style: { display: 'flex', gap: '10px' } },
+        small('Add keyword', () => this.setState({ step: 2, subStep: 0 }), true),
+        small('Finish', () => history.back(), false)
+      );
+    }
+    return this._btn('Open Shortcuts app', () => window.open('shortcuts://', '_blank'), 'default');
+  }
+
+  _toast() {
+    if (!this.state.copied) return null;
+    return React.createElement('div', { style: {
+      position: 'absolute', bottom: '92px', left: '50%', transform: 'translateX(-50%)', zIndex: 80,
+      background: 'rgba(10,10,15,0.92)', color: '#fff', fontSize: '12.5px', fontWeight: 600, padding: '9px 16px',
+      borderRadius: '9999px', border: '1px solid rgba(255,255,255,0.16)', animation: 'toastIn .2s ease', whiteSpace: 'nowrap',
+      display: 'flex', alignItems: 'center', gap: '7px', fontFamily: "'DM Sans',sans-serif",
+    }},
+      React.createElement('svg', { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: '#1DB954', strokeWidth: 3, strokeLinecap: 'round', strokeLinejoin: 'round' }, React.createElement('polyline', { points: '20 6 9 17 4 12' })),
+      'Copied “' + this.state.copied + '”'
+    );
+  }
+
+  /* ── RENDER ── */
+  renderVals() {
+    const { subStep } = this.state;
+    const total = this.STEPS.length;
+    const safe = Math.min(Math.max(subStep, 0), total - 1);
+    const cur = this.STEPS[safe];
+    const pct = Math.round((safe / (total - 1)) * 100);
+    const isLast = safe === total - 1;
+
+    return {
+      rootClass: this.props.theme === 'light' ? '' : 'dark',
+      trackTransform: `translateX(${-(this.state.step - 1) * 390}px)`,
+      heroVisual: this._heroVisual(),
+      stepVisual: this._stepVisual(safe),
+      bottomArea: this._bottomArea(safe),
+      toast: this._toast(),
+      ctaPrimary: this._btn('Set up auto-tracking  →', () => this.setState({ step: 2, subStep: 0 }), 'default'),
+      currentTitle: cur.title,
+      currentDesc: this._renderDesc(cur.desc),
+      subStepNum: safe + 1,
+      total,
+      progressWidth: `${pct}%`,
+      prevColor: safe > 0 ? '#9898B0' : '#5A5A72',
+      nextBg: isLast ? '#E50914' : 'var(--color-brand-card)',
+      nextBorder: isLast ? 'transparent' : 'var(--color-brand-border)',
+      dots: this.STEPS.map((_, i) => ({
+        bg: i === safe ? '#E50914' : i < safe ? '#1DB954' : 'var(--color-brand-border)',
+        w: i === safe ? '20px' : '6px',
+        onTap: () => this.setState({ subStep: i }),
+      })),
+      prevStep: () => { if (safe > 0) this.setState({ subStep: safe - 1 }); },
+      nextStep: () => { if (!isLast) this.setState({ subStep: safe + 1 }); },
+      goStep1: () => this.setState({ step: 1 }),
+      close: () => history.back(),
+    };
+  }
+}
+</script>
+</body>
+</html>

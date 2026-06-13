@@ -2105,6 +2105,47 @@ export interface Dictionary {
     tokenRotateButton: string
     tokenRotateConfirm: string
     tokenRotateSuccess: string
+    guide: {
+      brand: string
+      introBadge: string
+      introTitle1: string
+      introTitle2: string
+      introBody: string
+      heroBankName: string
+      heroNow: string
+      heroSmsPre: string
+      heroSmsAmount: string
+      heroSmsPost: string
+      heroLoggedLabel: string
+      heroAutoLogged: string
+      heroMerchant: string
+      heroCategory: string
+      heroMethod: string
+      trust: string
+      cta: string
+      ctaCaption: string
+      setupTitle: string
+      stepOf: (n: number, total: number) => string
+      openShortcuts: string
+      addKeyword: string
+      finish: string
+      automationActive: string
+      copied: (word: string) => string
+      kwSentLabel: string
+      kwEnPre: string
+      kwEnHl: string
+      kwEnPost: string
+      kwArPre: string
+      kwArHl: string
+      kwArPost: string
+      kwCommonLabel: string
+      ariaClose: string
+      ariaBack: string
+      ariaPrev: string
+      ariaNext: string
+      ariaStep: (n: number) => string
+      steps: { title: string; desc: string }[]
+    }
   }
 
   ui: {
