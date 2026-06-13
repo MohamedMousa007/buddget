@@ -312,10 +312,11 @@ body.platform-native [contenteditable='true'] {
   user-select: text;
 }
 
-/** Push the iOS status bar away from headers when running edge-to-edge. */
-body.platform-ios main {
-  padding-top: max(env(safe-area-inset-top, 0px), 0px);
-}
+/** Push the iOS status bar away from headers when running edge-to-edge.
+    NB: <main> already reserves `3rem + safe-area-inset-top` via its Tailwind
+    `pt-[…]` utility. An unlayered `main` rule here would override that layered
+    utility (unlayered wins over @layer) and collapse the header offset, tucking
+    content under the fixed header — so only the fixed header itself is padded. */
 body.platform-ios .fixed.top-0 {
   padding-top: env(safe-area-inset-top, 0px);
 }

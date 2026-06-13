@@ -71,7 +71,7 @@ export default function SettingsPage() {
   const displayEmail = user?.email || profile.email || ''
 
   return (
-    <div className="min-h-screen">
+    <div>
       <PageHeader>
         <PageHeaderContent>
           <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)]">{t.settings.pageTitle}</h1>

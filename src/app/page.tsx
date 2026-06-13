@@ -94,7 +94,7 @@ export default function DashboardPage() {
   if (!dataReady) return <div className="p-4"><SkeletonList rows={8} /></div>
 
   return (
-    <div className="min-h-screen">
+    <div>
       <DashboardSearchParamsSync />
       <div
         className="max-w-2xl lg:max-w-3xl mx-auto px-4 pt-4 pb-8 space-y-4 animate-[dashboardIn_0.35s_ease-out]"

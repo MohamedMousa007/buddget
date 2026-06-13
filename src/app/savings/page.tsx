@@ -132,7 +132,7 @@ export default function SavingsPage() {
   if (!dataReady) return <div className="p-4"><SkeletonList /></div>
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="pb-24">
       <PageHeader>
         <PageHeaderContent className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">

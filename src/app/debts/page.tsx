@@ -60,7 +60,7 @@ export default function DebtsPage() {
   if (!dataReady) return <div className="p-4"><SkeletonList /></div>
 
   return (
-    <div className="min-h-screen">
+    <div>
       <PageHeader>
         <PageHeaderContent className="flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)] flex items-center gap-2">
