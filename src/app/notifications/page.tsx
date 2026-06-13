@@ -33,7 +33,7 @@ export default function NotificationsPage() {
   }, [isEnabled, lastReceivedAt, t])
 
   return (
-    <div className="min-h-screen">
+    <div>
       <div className="max-w-2xl mx-auto px-4 pt-4 pb-[calc(2rem+env(safe-area-inset-bottom))] space-y-4 animate-[dashboardIn_0.35s_ease-out]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">

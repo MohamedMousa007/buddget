@@ -29,7 +29,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div>
       <AdminDashboardHeader onLock={admin.lock} />
 
       <div className="px-4 py-6 lg:px-8 space-y-6 max-w-3xl mx-auto">

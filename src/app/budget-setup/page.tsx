@@ -30,7 +30,7 @@ export default function BudgetSetupPage() {
   }, [p.newPlanDialogOpen])
 
   return (
-    <div className="min-h-screen">
+    <div>
       <PageHeader>
         <PageHeaderContent>
           <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)] flex items-center gap-2">

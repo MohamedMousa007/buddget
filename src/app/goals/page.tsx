@@ -54,7 +54,7 @@ export default function GoalsPage() {
   if (!dataReady) return <div className="p-4"><SkeletonList /></div>
 
   return (
-    <div className="min-h-screen">
+    <div>
       <PageHeader>
         <PageHeaderContent>
           <div className="flex items-center justify-between gap-4 w-full">
