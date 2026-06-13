@@ -54,29 +54,19 @@ export function SmsIosSetupCard({ lastReceivedAt }: Props) {
           </span>
         </div>
 
-        {/* CTA button */}
-        {connected ? (
-          <button
-            type="button"
-            onClick={() => setShowSetup(true)}
-            className="w-full h-12 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-sm font-semibold text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-card)] transition-colors"
-          >
-            {t.smsTracking.iosSetupButtonConnected}
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setShowSetup(true)}
-            className="w-full h-[52px] rounded-[14px] text-sm font-bold text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90 active:opacity-80"
-            style={{
-              background: RED,
-              boxShadow: '0 10px 30px rgba(229,9,20,0.28)',
-            }}
-          >
-            <Zap className="h-4 w-4" strokeWidth={2.5} />
-            {t.smsTracking.iosSetupButton}
-          </button>
-        )}
+        {/* CTA — always red; connection state is communicated by the pill above */}
+        <button
+          type="button"
+          onClick={() => setShowSetup(true)}
+          className="w-full h-[52px] rounded-[14px] text-sm font-bold text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90 active:opacity-80"
+          style={{
+            background: RED,
+            boxShadow: '0 10px 30px rgba(229,9,20,0.28)',
+          }}
+        >
+          <Zap className="h-4 w-4" strokeWidth={2.5} />
+          {connected ? t.smsTracking.iosSetupButtonConnected : t.smsTracking.iosSetupButton}
+        </button>
       </div>
 
       {showSetup && <SmsTrackingGuide onClose={() => setShowSetup(false)} />}
