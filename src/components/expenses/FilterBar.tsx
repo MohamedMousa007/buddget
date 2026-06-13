@@ -54,7 +54,7 @@ export function FilterBar({
 
   return (
     <div
-      className="flex flex-wrap items-center gap-3 px-4 py-3 bg-[var(--color-brand-card)]/90 backdrop-blur-xl border-b border-[var(--color-brand-border)] sticky top-[57px] z-20"
+      className="flex flex-wrap items-center gap-3 px-4 py-3 bg-[var(--color-brand-card)]/90 backdrop-blur-xl border-b border-[var(--color-brand-border)] sticky top-[calc(3.5625rem+env(safe-area-inset-top,0px))] lg:top-[57px] z-20"
     >
       <div className="w-44">
         <SelectField

@@ -296,30 +296,15 @@ body.platform-native {
   -webkit-user-select: none;
   user-select: none;
   overscroll-behavior-y: none;
-  /* Container-scroll pattern: lock the document from scrolling so that
-     position:fixed elements are truly fixed in WKWebView / Android WebView.
-     <main> and bare-route wrappers each become their own scroll root. */
-  height: 100%;
-  overflow: hidden;
 }
 
-/* Lock the root too — required for the container-scroll pattern to hold.
-   Previously only set overscroll-behavior here; overflow:hidden is the
-   missing piece that stops WKWebView from translating fixed elements during
-   momentum scroll (the "header/footer jitter" on native iOS). */
+/* Kill WKWebView rubber-banding (top/bottom bounce). On iOS 16+ — our minimum
+   deployment target — `overscroll-behavior` is honored, so setting it on the
+   scroll root (documentElement) stops the bounce without locking overflow,
+   which keeps tall bare routes (onboarding, reset-password) scrollable. The
+   native scrollView also has `bounces = false` (BuddgetViewController.swift). */
 html:has(body.platform-native) {
-  height: 100%;
-  overflow: hidden;
-}
-
-/* <main> is the scroll root on native. Constrain it to the exact viewport
-   height and give it -webkit-overflow-scrolling for GPU-composited momentum
-   scrolling (smooth, no fixed-element lag). overscroll-behavior-y:none from
-   .native-scroll still applies here and prevents the inner bounce. */
-body.platform-native main {
-  overflow-y: scroll;
-  height: 100dvh;
-  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none;
 }
 body.platform-native input,
 body.platform-native textarea,
