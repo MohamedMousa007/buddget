@@ -1,11 +1,5 @@
 'use client'
 
-/**
- * Compact overlay shown during FAB hold-to-record.
- * Appears above the bottom nav, not as a full-screen modal.
- * Handles recording → processing → confirming → error states.
- */
-
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { motion, useMotionValue, AnimatePresence } from 'framer-motion'
 import { Check, X, RotateCcw, Loader2, Trash2 } from 'lucide-react'
@@ -45,7 +39,16 @@ export function VoiceRecordOverlay({
 
   return (
     <AnimatePresence>
-      {visible && (
+      {visible && state === 'recording' && (
+        <FloatingRecordingWidget
+          key="floating-recording"
+          amplitude={amplitude}
+          animTime={animTime}
+          onStop={onStop}
+          onCancel={onCancel}
+        />
+      )}
+      {visible && state !== 'recording' && (
         <motion.div
           key="voice-overlay"
           initial={{ y: 120, opacity: 0 }}
@@ -54,14 +57,6 @@ export function VoiceRecordOverlay({
           transition={{ type: 'spring', stiffness: 380, damping: 30 }}
           className="fixed bottom-[72px] start-4 end-4 z-[60] rounded-2xl bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] shadow-2xl overflow-hidden"
         >
-          {state === 'recording' && (
-            <RecordingPanel
-              amplitude={amplitude}
-              animTime={animTime}
-              onStop={onStop}
-              onCancel={onCancel}
-            />
-          )}
           {state === 'processing' && <ProcessingPanel onCancel={onCancel} />}
           {state === 'error' && (
             <ErrorPanel error={error} onRedo={onRedo} onClose={onClose} />
@@ -117,9 +112,11 @@ function Waveform({ amplitude, animTime }: { amplitude: number; animTime: number
   )
 }
 
-// ── Recording panel ───────────────────────────────────────────────────────────
+// ── Floating recording widget (draggable, trash-to-cancel) ──────────────────
 
-function RecordingPanel({
+const TRASH_PROXIMITY = 72 // px — distance to trigger trash animation
+
+function FloatingRecordingWidget({
   amplitude,
   animTime,
   onStop,
@@ -131,6 +128,11 @@ function RecordingPanel({
   onCancel: () => void
 }) {
   const x = useMotionValue(0)
+  const y = useMotionValue(0)
+  const [nearTrash, setNearTrash] = useState(false)
+  const [cancelFired, setCancelFired] = useState(false)
+  const trashRef = useRef<HTMLDivElement>(null)
+  const chipRef = useRef<HTMLDivElement>(null)
   const [startTs] = useState(() => Date.now())
   const [elapsed, setElapsed] = useState(0)
 
@@ -142,50 +144,121 @@ function RecordingPanel({
   const mins = String(Math.floor(elapsed / 60)).padStart(2, '0')
   const secs = String(elapsed % 60).padStart(2, '0')
 
-  return (
-    <motion.div
-      drag="x"
-      dragConstraints={{ left: -200, right: 0 }}
-      dragElastic={0.05}
-      style={{ x, touchAction: 'none' }}
-      onDragEnd={(_, info) => {
-        if (info.offset.x < -60) {
-          x.set(0)
-          onCancel()
-        } else {
-          x.set(0)
-          onStop()
-        }
-      }}
-      className="px-4 py-3 flex items-center gap-3 select-none"
-    >
-      {/* Pulsing red dot */}
-      <motion.span
-        animate={{ scale: [1, 1.25, 1], opacity: [1, 0.6, 1] }}
-        transition={{ duration: 1.2, repeat: Infinity }}
-        className="h-2.5 w-2.5 rounded-full bg-[var(--color-brand-red)] shrink-0"
-      />
+  const checkProximity = useCallback(() => {
+    const trash = trashRef.current
+    const chip = chipRef.current
+    if (!trash || !chip) return
+    const tr = trash.getBoundingClientRect()
+    const cr = chip.getBoundingClientRect()
+    const dist = Math.hypot(
+      cr.left + cr.width / 2 - (tr.left + tr.width / 2),
+      cr.top + cr.height / 2 - (tr.top + tr.height / 2),
+    )
+    setNearTrash(dist < TRASH_PROXIMITY)
+  }, [])
 
-      {/* Waveform */}
-      <div className="flex-1 overflow-hidden">
-        <Waveform amplitude={amplitude} animTime={animTime} />
+  const handleDragEnd = useCallback(() => {
+    if (nearTrash && !cancelFired) {
+      setCancelFired(true)
+      onCancel()
+    } else {
+      // Spring back to original position
+      x.set(0)
+      y.set(0)
+      setNearTrash(false)
+    }
+  }, [nearTrash, cancelFired, onCancel, x, y])
+
+  return (
+    <>
+      {/* Trash zone — fixed above the chip's resting position */}
+      <div
+        className="fixed z-[60] pointer-events-none"
+        style={{ bottom: '164px', left: 0, right: 0, display: 'flex', justifyContent: 'center' }}
+      >
+        <motion.div
+          ref={trashRef}
+          animate={{
+            scale: nearTrash ? 1.4 : 1,
+            transition: { type: 'spring', stiffness: 400, damping: 20 },
+          }}
+          className="w-12 h-12 rounded-full flex items-center justify-center border-2"
+          style={{
+            backgroundColor: nearTrash
+              ? 'var(--color-brand-red)'
+              : 'var(--color-brand-elevated)',
+            borderColor: nearTrash ? 'var(--color-brand-red)' : 'var(--color-brand-border)',
+          }}
+        >
+          <Trash2
+            className="h-5 w-5"
+            style={{ color: nearTrash ? '#fff' : 'var(--color-brand-text-muted)' }}
+          />
+        </motion.div>
       </div>
 
-      {/* Timer */}
-      <span className="text-xs font-mono text-[var(--color-brand-text-secondary)] shrink-0 w-10 text-end">
-        {mins}:{secs}
-      </span>
-
-      {/* Trash — tap to cancel */}
-      <button
-        type="button"
-        onClick={(e) => { e.stopPropagation(); onCancel() }}
-        className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)] hover:text-[var(--color-brand-red)] transition-colors"
-        aria-label="Cancel recording"
+      {/* Draggable recording chip */}
+      <motion.div
+        key="recording-chip"
+        ref={chipRef}
+        initial={{ y: 120, opacity: 0 }}
+        animate={{
+          y: 0,
+          opacity: 1,
+          scale: nearTrash ? 0.72 : 1,
+          transition: { type: 'spring', stiffness: 380, damping: 30 },
+        }}
+        exit={{ y: 120, opacity: 0, transition: { duration: 0.18 } }}
+        style={{
+          x,
+          y,
+          position: 'fixed',
+          bottom: '88px',
+          left: 0,
+          right: 0,
+          marginLeft: 'auto',
+          marginRight: 'auto',
+          width: 'fit-content',
+          zIndex: 61,
+          touchAction: 'none',
+          userSelect: 'none',
+        }}
+        drag
+        dragMomentum={false}
+        onDrag={checkProximity}
+        onDragEnd={handleDragEnd}
       >
-        <Trash2 className="h-4 w-4" />
-      </button>
-    </motion.div>
+        <div className="flex items-center gap-3 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] shadow-2xl rounded-2xl px-4 py-3">
+          {/* Pulsing red dot */}
+          <motion.span
+            animate={{ scale: [1, 1.25, 1], opacity: [1, 0.6, 1] }}
+            transition={{ duration: 1.2, repeat: Infinity }}
+            className="h-2.5 w-2.5 rounded-full bg-[var(--color-brand-red)] shrink-0"
+          />
+
+          {/* Waveform */}
+          <div className="overflow-hidden">
+            <Waveform amplitude={amplitude} animTime={animTime} />
+          </div>
+
+          {/* Timer */}
+          <span className="text-xs font-mono text-[var(--color-brand-text-secondary)] shrink-0 w-10 text-end">
+            {mins}:{secs}
+          </span>
+
+          {/* Stop button */}
+          <button
+            type="button"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); onStop() }}
+            className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-[var(--color-brand-red)]"
+            aria-label="Stop recording"
+          >
+            <div className="w-3 h-3 bg-white rounded-sm" />
+          </button>
+        </div>
+      </motion.div>
+    </>
   )
 }
 

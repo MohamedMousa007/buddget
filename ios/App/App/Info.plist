@@ -64,5 +64,7 @@
 	<true/>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Buddget uses Face ID to allow you to log in securely without entering your password.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Buddget uses the microphone to let you add expenses by voice.</string>
 </dict>
 </plist>
