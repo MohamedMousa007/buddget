@@ -93,6 +93,9 @@ const GENERIC_DEPOSIT =
   'تم إيداع EGP 7900 إلى حساب رقم #0014 يوم 06/04/2026 13:24 المتاح 220157.61 EGP للمزيد اتصل ب 19123'
 const HSBC_CC =
   'Your Credit Card ending with * 1234 has been used for EGP 1339.50 on 27/05/2026 at WE-FBB-Pre. Your available limit is EGP 100.00'
+// Real admin-log failure case — was mis-rejected as balance_only due to trailing balance clause
+const HSBC_PHONE_BANKING_TRANSFER =
+  '13JUN26 Phone Banking Transfer to 103-104***-001 EGP 30,000.48+ Your available balance is EGP 36,183.18'
 // NBE Instapay card credit — the iOS bridge strips the sender, so this must
 // match on body alone (real capture, sms_parse_log 2026-06-12).
 const NBE_IPN_IN_CARD =
@@ -179,6 +182,17 @@ describe('Vodafone Cash + generic bank patterns', () => {
     expect(m?.amount).toBe(1339.5)
     expect(m?.counterparty).toBe('WE-FBB-Pre')
     expect(m?.txDay).toBe('2026-05-27')
+  })
+
+  it('parses HSBC Phone Banking Transfer with DDMMMYY date and balance appendage', () => {
+    const m = matchCuratedPattern(HSBC_PHONE_BANKING_TRANSFER, 'HSBC')
+    expect(m?.patternId).toBe('hsbc-phone-banking-transfer-out')
+    expect(m?.kind).toBe('instant_transfer_out')
+    expect(m?.amount).toBe(30000.48)
+    expect(m?.currency).toBe('EGP')
+    expect(m?.counterparty).toBe('103-104***-001')
+    expect(m?.txDay).toBe('2026-06-13')
+    expect(m?.paymentInstrument).toBe('account')
   })
 
   it('parses NBE Instapay card credit with empty/null sender (iOS bridge)', () => {
@@ -272,6 +286,15 @@ describe('pre-filter (non-transaction rejector)', () => {
     // Transaction verb beats "bundle" vocabulary — a real renewal fee.
     expect(isNonTransaction('EGP 50.00 debited for bundle renewal')).toBeNull()
     expect(isNonTransaction('تم خصم 30 جنيه لتجديد الباقة')).toBeNull()
+  })
+
+  it('NEVER rejects SMS with a transaction amount even when a balance clause is appended', () => {
+    // Root cause: HSBC phone banking transfers include "Your available balance is X"
+    // at the end — the pre-filter was incorrectly treating this as a balance-only SMS.
+    expect(isNonTransaction(HSBC_PHONE_BANKING_TRANSFER)).toBeNull()
+    // Generic: any bank alert with trailing balance notation must pass.
+    expect(isNonTransaction('You spent EGP 150.00 at Carrefour. Your available balance is EGP 5,000.00')).toBeNull()
+    expect(isNonTransaction('AED 500.00 debited. Avl Bal is AED 15,234.50')).toBeNull()
   })
 
   it('passes Gulf transactions (English + Arabic) and rejects Gulf balance', () => {

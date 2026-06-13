@@ -25,6 +25,31 @@ const BALANCE_ONLY_RE =
   /(available\s+balance|current\s+balance|account\s+balance|balance\s+(?:is|inquiry)|رصيدك\s*(?:الحالي|المتاح)|الرصيد\s*(?:الحالي|المتاح)|استعلام\s*(?:عن\s*)?(?:ال)?رصيد)/i
 
 /**
+ * Strips balance-notification clauses (e.g. "Your available balance is EGP 36,183.18",
+ * "Avl Bal is AED 15,234.50") from text, then checks whether any currency+amount
+ * remains — a sign the SMS describes an actual transaction, not just a balance query.
+ *
+ * Prevents mis-rejection of bank notifications that append a balance line to a real
+ * transaction (a common HSBC / Emirates NBD / CIB pattern).
+ */
+function hasNonBalanceAmount(text: string): boolean {
+  const stripped = text
+    // EN: "Your available/current/account/card balance/limit is EGP 36,183.18"
+    .replace(/(?:your\s+)?(?:available|current|account|card)\s+(?:international\s+)?(?:balance|limit)(?:\s+(?:to\s+use\s+)?is\s*|:?\s*)[A-Z]{0,3}\s*[\d,]+(?:\.\d+)?/gi, '')
+    // EN compact: "Avl Bal is AED 15,234.50" / "Avl Cr. Limit is AED 30,978.13"
+    .replace(/\bavl?\.?\s*(?:cr\.?\s*)?(?:bal(?:ance)?|limit)\s+(?:is\s+)?[A-Z]{0,3}\s*[\d,]+(?:\.\d+)?/gi, '')
+    // AR: "الرصيد المتاح / الحالي : EGP 2700.03" and "رصيدك المتاح : ..."
+    .replace(/(?:الرصيد|رصيدك?)\s*(?:الحالي|المتاح)\s*:?\s*[A-Z]{0,3}\s*[\d,]+(?:\.\d+)?/gi, '')
+
+  // Any currency+amount remaining after stripping balance clauses → transaction amount present
+  return (
+    /(?:EGP|SAR|AED|KWD|QAR|OMR|BHD|USD|EUR|GBP|LE)\s*[\d,]+(?:\.\d+)?/i.test(stripped) ||
+    /[\d,]+(?:\.\d+)?\s*(?:EGP|SAR|AED|KWD|QAR|OMR|BHD|USD|EUR|GBP|LE)\b/i.test(stripped) ||
+    /[\d,]+(?:\.\d+)?\s*جني[هة]/i.test(stripped)
+  )
+}
+
+/**
  * Returns the rejection reason, or null when the SMS should proceed to the
  * pattern/AI tiers.
  */
@@ -35,6 +60,9 @@ export function isNonTransaction(text: string): NonTransactionReason | null {
   // "debited EGP 50 for bundle renewal" is a real fee.
   if (TXN_VERBS.test(text)) return null
   if (MARKETING_RE.test(text)) return 'marketing'
-  if (BALANCE_ONLY_RE.test(text)) return 'balance_only'
+  // Balance-only SMS: only reject if there is no transaction amount outside
+  // the balance-notification clause. Banks routinely append "available balance is X"
+  // to real transaction alerts — the trailing balance must not cause a false rejection.
+  if (BALANCE_ONLY_RE.test(text) && !hasNonBalanceAmount(text)) return 'balance_only'
   return null
 }
