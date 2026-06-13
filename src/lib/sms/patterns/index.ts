@@ -29,16 +29,43 @@ export const ALL_PATTERN_SETS: BankPatternSet[] = [
   SNB_PATTERNS,
 ]
 
-/** DD-MM-YYYY / DD/MM/YYYY / DD/MM/YY (Egyptian bank conventions) → YYYY-MM-DD. */
+const MON_TO_NUM: Record<string, string> = {
+  JAN: '01', FEB: '02', MAR: '03', APR: '04', MAY: '05', JUN: '06',
+  JUL: '07', AUG: '08', SEP: '09', OCT: '10', NOV: '11', DEC: '12',
+}
+
+/**
+ * Parses SMS date strings into YYYY-MM-DD.
+ * Formats: DD-MM-YYYY, DD/MM/YYYY, DD/MM/YY (Egyptian banks)
+ *          DDMMMYY / DDMMMYYYY (e.g. "13JUN26", "13JUN2026" — HSBC Phone Banking)
+ */
 function parseSmsDay(raw: string | null): string | null {
   if (!raw) return null
-  const m = /^(\d{2})[-/](\d{2})[-/](\d{2,4})/.exec(raw.trim())
-  if (!m) return null
-  const [, dd, mm, yy] = m
-  const day = Number(dd), month = Number(mm)
-  if (day < 1 || day > 31 || month < 1 || month > 12) return null
-  const yyyy = yy.length === 2 ? `20${yy}` : yy
-  return `${yyyy}-${mm}-${dd}`
+  const s = raw.trim()
+
+  // DD-MM-YYYY / DD/MM/YYYY / DD/MM/YY
+  let m = /^(\d{2})[-/](\d{2})[-/](\d{2,4})/.exec(s)
+  if (m) {
+    const [, dd, mm, yy] = m
+    const day = Number(dd), month = Number(mm)
+    if (day < 1 || day > 31 || month < 1 || month > 12) return null
+    const yyyy = yy.length === 2 ? `20${yy}` : yy
+    return `${yyyy}-${mm}-${dd}`
+  }
+
+  // DDMMMYY / DDMMMYYYY — e.g. "13JUN26" → "2026-06-13"
+  m = /^(\d{1,2})([A-Z]{3})(\d{2,4})$/i.exec(s)
+  if (m) {
+    const [, dd, mon, yy] = m
+    const mm = MON_TO_NUM[mon.toUpperCase()]
+    if (!mm) return null
+    const day = Number(dd)
+    if (day < 1 || day > 31) return null
+    const yyyy = yy.length === 2 ? `20${yy}` : yy
+    return `${yyyy}-${mm}-${dd.padStart(2, '0')}`
+  }
+
+  return null
 }
 
 function buildCleanTitle(kind: SmsKind, bank: string, counterparty: string | null): string | null {

@@ -57,5 +57,15 @@ export const HSBC_PATTERNS: BankPatternSet = {
       paymentInstrument: 'account',
       verified: false,
     },
+    {
+      // "13JUN26 Phone Banking Transfer to 103-104***-001 EGP 30,000.48+
+      //  Your available balance is EGP 36,183.18"
+      id: 'hsbc-phone-banking-transfer-out',
+      regex: /(\d{1,2}[A-Z]{3}\d{2,4})\s+Phone\s+Banking\s+Transfer\s+to\s+([\d\-*]+)\s+([A-Z]{3})\s+([\d,]+(?:\.\d+)?)\+?/i,
+      kind: 'instant_transfer_out',
+      groups: { datetime: 1, counterparty: 2, currency: 3, amount: 4 },
+      paymentInstrument: 'account',
+      verified: true,
+    },
   ],
 }
