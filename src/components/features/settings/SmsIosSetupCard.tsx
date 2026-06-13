@@ -1,9 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { ShieldCheck } from 'lucide-react'
+import { ShieldCheck, Zap } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import SmsTrackingGuide from '@/components/onboarding/SmsTrackingGuide'
+
+const RED = '#E50914'
 
 interface Props {
   lastReceivedAt: string | null
@@ -19,10 +21,15 @@ function timeAgo(iso: string): string {
   return `${Math.round(hrs / 24)}d ago`
 }
 
+function isRecent(iso: string | null): boolean {
+  if (!iso) return false
+  return Date.now() - new Date(iso).getTime() < 7 * 24 * 60 * 60 * 1000
+}
+
 export function SmsIosSetupCard({ lastReceivedAt }: Props) {
   const t = useT()
   const [showSetup, setShowSetup] = useState(false)
-  const connected = !!lastReceivedAt
+  const connected = isRecent(lastReceivedAt)
 
   return (
     <>
@@ -47,14 +54,29 @@ export function SmsIosSetupCard({ lastReceivedAt }: Props) {
           </span>
         </div>
 
-        {/* Setup CTA */}
-        <button
-          type="button"
-          onClick={() => setShowSetup(true)}
-          className="w-full h-12 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-sm font-semibold text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-card)] transition-colors"
-        >
-          {connected ? t.smsTracking.iosSetupButtonConnected : t.smsTracking.iosSetupButton}
-        </button>
+        {/* CTA button */}
+        {connected ? (
+          <button
+            type="button"
+            onClick={() => setShowSetup(true)}
+            className="w-full h-12 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-sm font-semibold text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-card)] transition-colors"
+          >
+            {t.smsTracking.iosSetupButtonConnected}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowSetup(true)}
+            className="w-full h-[52px] rounded-[14px] text-sm font-bold text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90 active:opacity-80"
+            style={{
+              background: RED,
+              boxShadow: '0 10px 30px rgba(229,9,20,0.28)',
+            }}
+          >
+            <Zap className="h-4 w-4" strokeWidth={2.5} />
+            {t.smsTracking.iosSetupButton}
+          </button>
+        )}
       </div>
 
       {showSetup && <SmsTrackingGuide onClose={() => setShowSetup(false)} />}

@@ -1,14 +1,13 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { MessageSquare, ChevronDown, RotateCcw, AlertTriangle } from 'lucide-react'
+import { MessageSquare, AlertTriangle } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { useT } from '@/lib/i18n'
 import { useSmsTracking } from '@/hooks/useSmsTracking'
 import { SmsIosSetupCard } from '@/components/features/settings/SmsIosSetupCard'
 import { SmsAndroidSetupCard } from '@/components/features/settings/SmsAndroidSetupCard'
-import { SmsSupportedBanksList } from '@/components/features/settings/SmsSupportedBanksList'
+import { SmsBankBubbles } from '@/components/features/settings/SmsBankBubbles'
 import { isAndroid } from '@/lib/native/isNative'
 
 /** Top-level section card for the Settings page. */
@@ -19,23 +18,13 @@ export function SettingsSmsTrackingSection() {
     toggle,
     loading,
     error,
-    tokenInfo,
-    rotateToken,
     lastReceivedAt,
   } = useSmsTracking()
-
-  const [rotateConfirm, setRotateConfirm] = useState(false)
-  const [showBanks, setShowBanks] = useState(false)
-
-  const handleRotate = useCallback(async () => {
-    if (!rotateConfirm) { setRotateConfirm(true); return }
-    await rotateToken()
-    setRotateConfirm(false)
-  }, [rotateConfirm, rotateToken])
 
   const onAndroid = isAndroid()
 
   return (
+    <div>
     <section className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] divide-y divide-[var(--color-brand-border)]">
       {/* Header + toggle — always visible */}
       <div className="px-4 py-4">
@@ -80,41 +69,10 @@ export function SettingsSmsTrackingSection() {
             </div>
           )}
 
-          {/* Supported banks — iOS / web only (Android shows inline accordion) */}
-          {!onAndroid && (
-            <div className="px-4 py-3">
-              <button
-                type="button"
-                onClick={() => setShowBanks((v) => !v)}
-                className="flex w-full items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-secondary)] transition-colors"
-              >
-                <span>{t.smsTracking.supportedBanksTitle}</span>
-                <ChevronDown
-                  className={`h-3.5 w-3.5 transition-transform duration-200 ${showBanks ? 'rotate-180' : ''}`}
-                />
-              </button>
-              {showBanks && <div className="mt-3"><SmsSupportedBanksList /></div>}
-            </div>
-          )}
-
-          {/* Token rotation — iOS / web only */}
-          {tokenInfo && !onAndroid && (
-            <div className="px-4 py-3 flex items-center justify-between gap-3">
-              <span className="text-xs text-[var(--color-brand-text-muted)]">
-                Token: <code className="font-mono text-[10px]">{tokenInfo.token.slice(0, 8)}&hellip;</code>
-              </span>
-              <button
-                type="button"
-                onClick={() => void handleRotate()}
-                className="flex items-center gap-1.5 text-xs text-[var(--color-brand-red)] hover:opacity-80 transition-opacity"
-              >
-                <RotateCcw className="h-3 w-3" />
-                {rotateConfirm ? t.smsTracking.tokenRotateConfirm : t.smsTracking.tokenRotateButton}
-              </button>
-            </div>
-          )}
         </>
       )}
     </section>
+    {isEnabled && <SmsBankBubbles />}
+    </div>
   )
 }
