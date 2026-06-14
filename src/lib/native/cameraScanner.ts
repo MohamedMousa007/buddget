@@ -52,8 +52,7 @@ async function captureNative(source: 'camera' | 'gallery'): Promise<CapturedImag
   const dataUrl = photo.dataUrl
   if (!dataUrl) throw new Error('Camera returned no image')
 
-  const file = await dataUrlToFile(dataUrl, `receipt-${Date.now()}.${photo.format ?? 'jpg'}`)
-  return { file, dataUrl }
+  return downscaleCaptured(dataUrl, `receipt-${Date.now()}.jpg`)
 }
 
 async function captureWeb(): Promise<CapturedImage> {
@@ -84,7 +83,7 @@ async function captureWeb(): Promise<CapturedImage> {
       try {
         const dataUrl = await fileToDataUrl(file)
         cleanup()
-        resolve({ file, dataUrl })
+        resolve(await downscaleCaptured(dataUrl, `receipt-${Date.now()}.jpg`))
       } catch (err) {
         cleanup()
         reject(err)
@@ -94,6 +93,48 @@ async function captureWeb(): Promise<CapturedImage> {
     input.addEventListener('change', onChange)
     document.body.appendChild(input)
     input.click()
+  })
+}
+
+const MAX_EDGE = 1600
+const JPEG_QUALITY = 0.8
+
+/**
+ * Downscales a captured image to a JPEG with its longest edge ≤ {@link MAX_EDGE}.
+ * Normalizes large photos and HEIC/PNG captures into a small, Gemini-friendly JPEG
+ * (keeps payloads well under the 10 MB cap and improves OCR reliability).
+ * Falls back to the original data URL if canvas decoding fails.
+ */
+async function downscaleCaptured(dataUrl: string, filename: string): Promise<CapturedImage> {
+  try {
+    const img = await loadImage(dataUrl)
+    const longest = Math.max(img.naturalWidth, img.naturalHeight)
+    const scale = longest > MAX_EDGE ? MAX_EDGE / longest : 1
+    const width = Math.round(img.naturalWidth * scale)
+    const height = Math.round(img.naturalHeight * scale)
+
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('no 2d context')
+    ctx.drawImage(img, 0, 0, width, height)
+
+    const jpegUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY)
+    const file = await dataUrlToFile(jpegUrl, filename)
+    return { file, dataUrl: jpegUrl }
+  } catch {
+    const file = await dataUrlToFile(dataUrl, filename)
+    return { file, dataUrl }
+  }
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image()
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error('Failed to decode image'))
+    img.src = src
   })
 }
 

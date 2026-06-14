@@ -7,7 +7,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { captureReceiptPhoto } from '@/lib/native/cameraScanner'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import type { Currency, ExpenseCategory } from '@/lib/store/types'
+import type { Currency, ExpenseCategory, ReceiptItem, ReceiptCharge } from '@/lib/store/types'
 
 type ScanState = 'idle' | 'scanning' | 'parsing' | 'result' | 'error'
 
@@ -18,9 +18,12 @@ interface ScannedReceipt {
   date: string
   category: ExpenseCategory
   confidence: number
-  rawTotalText: string
+  items: ReceiptItem[]
+  charges: ReceiptCharge[]
   notes: string
 }
+
+const CHARGE_TYPES: ReceiptCharge['type'][] = ['tax', 'service', 'tip', 'discount', 'other']
 
 interface ReceiptScanSheetProps {
   open: boolean
@@ -52,9 +55,10 @@ export function ReceiptScanSheet({ open, onClose }: ReceiptScanSheetProps) {
   const [result, setResult] = useState<ScannedReceipt | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const { addExpense, paymentMethods, baseCurrency } = useFinanceStore(
+  const { addExpense, addReceipt, paymentMethods, baseCurrency } = useFinanceStore(
     useShallow((s) => ({
       addExpense: s.addExpense,
+      addReceipt: s.addReceipt,
       paymentMethods: s.paymentMethods,
       baseCurrency: s.settings.baseCurrency,
     })),
@@ -127,16 +131,37 @@ export function ReceiptScanSheet({ open, onClose }: ReceiptScanSheetProps) {
   const confirm = () => {
     if (!result) return
     const defaultPm = paymentMethods.find((pm) => pm.isDefault) ?? paymentMethods[0]
+    const paymentMethodId = defaultPm?.id ?? ''
     const date = result.date || new Date().toISOString().slice(0, 10)
+
+    // When the scan produced a breakdown, persist it as one receipt row and link
+    // the single total expense to it. No breakdown → behave exactly as before.
+    const hasBreakdown = result.items.length > 0 || result.charges.length > 0
+    const receiptId = hasBreakdown
+      ? addReceipt({
+          merchant: result.merchant || 'Scanned receipt',
+          amount: result.amount,
+          currency: result.currency,
+          receiptDate: date,
+          category: result.category,
+          paymentMethodId,
+          confidence: result.confidence,
+          items: result.items,
+          charges: result.charges,
+          notes: result.notes || undefined,
+        })
+      : undefined
+
     addExpense({
       date,
       description: result.merchant || 'Scanned receipt',
       category: result.category,
       amount: result.amount,
       currency: result.currency,
-      paymentMethodId: defaultPm?.id ?? '',
+      paymentMethodId,
       isRecurring: false,
       notes: result.notes ? `receipt: ${result.notes}` : 'receipt scan',
+      ...(receiptId ? { receiptId } : {}),
     })
     onClose()
   }
@@ -306,6 +331,8 @@ function ResultView({
         </Field>
       </div>
 
+      <ReceiptBreakdown result={result} onChange={onChange} />
+
       <div className="mt-4 flex gap-2">
         <button
           type="button"
@@ -330,6 +357,77 @@ function ResultView({
           <X className="h-4 w-4" />
         </button>
       </div>
+    </div>
+  )
+}
+
+function ReceiptBreakdown({
+  result,
+  onChange,
+}: {
+  result: ScannedReceipt
+  onChange: (next: Partial<ScannedReceipt>) => void
+}) {
+  const { items, charges, amount, currency } = result
+  if (items.length === 0 && charges.length === 0) return null
+
+  // `price` is the printed line total; qty is informational only (don't multiply).
+  const breakdownSum =
+    items.reduce((s, it) => s + it.price, 0) +
+    charges.reduce((s, c) => s + c.amount, 0)
+  const mismatch = Math.abs(breakdownSum - amount) > 0.01
+
+  const fmt = (n: number) => `${n.toFixed(2)} ${currency}`
+
+  return (
+    <div className="mt-4 rounded-xl border border-[var(--color-brand-border)] p-3">
+      <p className="mb-2 text-xs font-semibold text-[var(--color-brand-text-secondary)]">Breakdown</p>
+
+      {items.length > 0 ? (
+        <ul className="space-y-1">
+          {items.map((it, i) => (
+            <li key={`item-${i}`} className="flex items-center gap-2 text-sm">
+              <span className="flex-1 truncate text-[var(--color-brand-text-primary)]">
+                {it.qty && it.qty > 1 ? `${it.qty}× ` : ''}{it.name}
+              </span>
+              <span className="tabular-nums text-[var(--color-brand-text-secondary)]">{fmt(it.price)}</span>
+              <button
+                type="button"
+                aria-label={`Remove ${it.name}`}
+                onClick={() => onChange({ items: items.filter((_, idx) => idx !== i) })}
+                className="text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-red)]"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {charges.length > 0 ? (
+        <ul className="mt-2 space-y-1 border-t border-[var(--color-brand-border)] pt-2">
+          {charges.map((c, i) => (
+            <li key={`charge-${i}`} className="flex items-center gap-2 text-sm">
+              <span className="flex-1 truncate text-[var(--color-brand-text-muted)]">{c.label}</span>
+              <span className="tabular-nums text-[var(--color-brand-text-secondary)]">{fmt(c.amount)}</span>
+              <button
+                type="button"
+                aria-label={`Remove ${c.label}`}
+                onClick={() => onChange({ charges: charges.filter((_, idx) => idx !== i) })}
+                className="text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-red)]"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {mismatch ? (
+        <p className="mt-2 text-xs text-[var(--color-brand-amber)]">
+          Breakdown sums to {fmt(breakdownSum)} but the total reads {fmt(amount)}. The total is what gets saved.
+        </p>
+      ) : null}
     </div>
   )
 }
@@ -379,7 +477,46 @@ function normaliseReceipt(raw: Record<string, unknown>, fallbackCurrency: Curren
     date,
     category,
     confidence,
-    rawTotalText: (raw.rawTotalText as string | undefined) ?? '',
+    items: normaliseItems(raw.items),
+    charges: normaliseCharges(raw.charges),
     notes: (raw.notes as string | undefined)?.toString().slice(0, 120) ?? '',
   }
+}
+
+function toNumber(value: unknown): number {
+  if (typeof value === 'number') return value
+  if (typeof value === 'string') return Number(value.replace(/[^0-9.-]/g, ''))
+  return NaN
+}
+
+function normaliseItems(raw: unknown): ReceiptItem[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .flatMap((entry) => {
+      if (!entry || typeof entry !== 'object') return []
+      const e = entry as Record<string, unknown>
+      const name = (typeof e.name === 'string' ? e.name : '').trim().slice(0, 60)
+      const price = toNumber(e.price)
+      if (!name || !Number.isFinite(price)) return []
+      const qty = toNumber(e.qty)
+      return [{ name, price, ...(Number.isFinite(qty) && qty > 0 ? { qty } : {}) }]
+    })
+    .slice(0, 100)
+}
+
+function normaliseCharges(raw: unknown): ReceiptCharge[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .flatMap((entry) => {
+      if (!entry || typeof entry !== 'object') return []
+      const e = entry as Record<string, unknown>
+      const amount = toNumber(e.amount)
+      if (!Number.isFinite(amount) || amount === 0) return []
+      const type = CHARGE_TYPES.includes(e.type as ReceiptCharge['type'])
+        ? (e.type as ReceiptCharge['type'])
+        : 'other'
+      const label = (typeof e.label === 'string' ? e.label : type).trim().slice(0, 40) || type
+      return [{ type, label, amount }]
+    })
+    .slice(0, 20)
 }

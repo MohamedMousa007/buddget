@@ -139,6 +139,7 @@ export const useFinanceStore = create<FinanceStore>()(
       onboardingState: defaultOnboardingState(),
       incomeSources: DEFAULT_INCOME,
       expenses: [],
+      receipts: [],
       recurringExpenses: [],
       subscriptions: [],
       budgetCategories: DEFAULT_BUDGET,
@@ -192,6 +193,29 @@ export const useFinanceStore = create<FinanceStore>()(
           const next = state.expenses.slice()
           next[i] = expense
           return { expenses: next }
+        }),
+
+      addReceipt: (receipt) => {
+        const id = generateId()
+        const now = new Date().toISOString()
+        set((state) => ({
+          receipts: [...state.receipts, { ...receipt, id, createdAt: now, updatedAt: now }],
+        }))
+        return id
+      },
+
+      deleteReceipt: (id) =>
+        set((state) => ({
+          receipts: state.receipts.filter((r) => r.id !== id),
+        })),
+
+      upsertServerReceipt: (receipt) =>
+        set((state) => {
+          const i = state.receipts.findIndex((r) => r.id === receipt.id)
+          if (i === -1) return { receipts: [...state.receipts, receipt] }
+          const next = state.receipts.slice()
+          next[i] = receipt
+          return { receipts: next }
         }),
 
       updateExpense: (id, updates) =>
@@ -1317,6 +1341,7 @@ export const useFinanceStore = create<FinanceStore>()(
           onboardingState: defaultOnboardingState(),
           incomeSources: DEFAULT_INCOME,
           expenses: [],
+          receipts: [],
           recurringExpenses: [],
           budgetCategories: DEFAULT_BUDGET,
           budgetPlans: [],

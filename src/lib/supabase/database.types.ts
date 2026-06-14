@@ -410,6 +410,7 @@ export type Database = {
           linked_subscription_id: string | null
           notes: string | null
           payment_method_id: string | null
+          receipt_id: string | null
           updated_at: string
           user_id: string
         }
@@ -427,6 +428,7 @@ export type Database = {
           linked_subscription_id?: string | null
           notes?: string | null
           payment_method_id?: string | null
+          receipt_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -444,6 +446,7 @@ export type Database = {
           linked_subscription_id?: string | null
           notes?: string | null
           payment_method_id?: string | null
+          receipt_id?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -464,6 +467,75 @@ export type Database = {
           },
           {
             foreignKeyName: "expenses_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      receipts: {
+        Row: {
+          amount: number
+          category: Database["public"]["Enums"]["expense_category"]
+          charges: Json
+          confidence: number | null
+          created_at: string
+          currency: Database["public"]["Enums"]["currency_code"]
+          deleted_at: string | null
+          id: string
+          items: Json
+          merchant: string | null
+          notes: string | null
+          payment_method_id: string | null
+          receipt_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category?: Database["public"]["Enums"]["expense_category"]
+          charges?: Json
+          confidence?: number | null
+          created_at?: string
+          currency: Database["public"]["Enums"]["currency_code"]
+          deleted_at?: string | null
+          id?: string
+          items?: Json
+          merchant?: string | null
+          notes?: string | null
+          payment_method_id?: string | null
+          receipt_date: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: Database["public"]["Enums"]["expense_category"]
+          charges?: Json
+          confidence?: number | null
+          created_at?: string
+          currency?: Database["public"]["Enums"]["currency_code"]
+          deleted_at?: string | null
+          id?: string
+          items?: Json
+          merchant?: string | null
+          notes?: string | null
+          payment_method_id?: string | null
+          receipt_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipts_payment_method_id_fkey"
             columns: ["payment_method_id"]
             isOneToOne: false
             referencedRelation: "payment_methods"

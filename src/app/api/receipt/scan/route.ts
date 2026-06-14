@@ -17,33 +17,94 @@ import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
 const GEMINI_MODEL = 'gemini-2.5-flash'
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
 
-const SYSTEM_PROMPT = `You are extracting a single expense from a photographed receipt for a user in Egypt or the GCC.
+const SYSTEM_PROMPT = `You are extracting an itemized expense from a photographed receipt for a user in Egypt or the GCC.
 
 Return ONLY a JSON object matching this exact schema:
 {
   "merchant": string (max 60 chars),
-  "amount": number (positive, the FINAL total the customer paid; ignore subtotals, taxes, or per-item lines),
+  "amount": number (positive, the FINAL printed grand total the customer paid),
   "currency": "EGP" | "AED" | "SAR" | "QAR" | "KWD" | "OMR" | "BHD" | "USD",
   "date": string in YYYY-MM-DD or "" if unknown,
   "category": "Food" | "Transport" | "Enjoyment" | "Rent" | "Other",
   "confidence": number in [0,1],
-  "rawTotalText": string (the literal substring you used to read the total),
+  "items": [ { "name": string (max 60 chars), "price": number, "qty": number (optional) } ],
+  "charges": [ { "type": "tax" | "service" | "tip" | "discount" | "other", "label": string (max 40 chars), "amount": number } ],
   "notes": string (max 120 chars; supplementary detail, can be empty)
 }
 
 Rules:
-- Currency priority: EGP first (Egypt-first), then AED / SAR / QAR / KWD / OMR / BHD / USD.
-- If currency is ambiguous, default to "EGP".
+- "amount" is the FINAL printed grand total (what the customer actually paid). Read it directly; do NOT sum the items yourself.
+- "items" are the purchased line items only — each with its own printed price. "qty" only when the receipt shows it. Exclude taxes, service, tips, and discounts from items.
+- "charges" hold every non-item line that affects the total: VAT/tax, service charge, tip/gratuity, delivery, and discounts (use a NEGATIVE amount for discounts). Use type "other" if none fit.
+- There is ONE category for the WHOLE receipt — do NOT categorise individual items (saves tokens).
+- If items or charges are not legible, return them as empty arrays []. Never invent lines.
+- Currency priority: EGP first (Egypt-first), then AED / SAR / QAR / KWD / OMR / BHD / USD. If ambiguous, default to "EGP".
 - Category guidance:
   - Food = restaurants, cafes, groceries, delivery (Talabat, Otlob, Carrefour Egypt, Spinneys, Gourmet, Seoudi, Metro Market).
   - Transport = Uber, Careem, taxi, fuel, metro, bus.
   - Enjoyment = cinemas, gaming, leisure shopping.
   - Rent = housing payments / utility bills.
   - Other = anything else.
-- "amount" must be a number (no currency symbol, no thousands separators).
+- All numbers must be plain numbers (no currency symbol, no thousands separators).
 - "date" should be ISO-formatted or "".
-- "confidence" should reflect how sure you are about merchant + amount.
+- "confidence" should reflect how sure you are about merchant + total.
 - Do NOT wrap the JSON in markdown fences. Output the JSON object only.`
+
+const MAX_ATTEMPTS = 3
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+class GeminiError extends Error {
+  constructor(message: string, readonly status: number, readonly retryable: boolean) {
+    super(message)
+  }
+}
+
+/**
+ * Calls Gemini with bounded retries + exponential backoff on transient failures
+ * (429, 5xx, network errors, empty/blocked candidates). Returns the raw model text.
+ */
+async function callGeminiText(apiKey: string, requestBody: unknown): Promise<string> {
+  let lastErr: GeminiError | null = null
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    if (attempt > 0) await sleep(400 * 2 ** (attempt - 1)) // 400ms, 800ms
+
+    let res: Response
+    try {
+      res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      })
+    } catch {
+      lastErr = new GeminiError('Failed to reach AI service', 502, true)
+      continue
+    }
+
+    const payload = (await res.json().catch(() => null)) as {
+      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> }; finishReason?: string }>
+      error?: { message?: string }
+    } | null
+
+    if (!res.ok || !payload) {
+      const msg = payload?.error?.message || `Gemini returned ${res.status}`
+      const retryable = res.status === 429 || res.status >= 500
+      lastErr = new GeminiError(msg, res.status, retryable)
+      if (retryable) continue
+      throw lastErr
+    }
+
+    const candidate = payload.candidates?.[0]
+    const raw = candidate?.content?.parts?.[0]?.text?.trim()
+    if (!raw) {
+      // Empty text or MAX_TOKENS/safety truncation — retry, then surface as unreadable.
+      lastErr = new GeminiError('No structured output from AI', 502, true)
+      continue
+    }
+    return raw
+  }
+  throw lastErr ?? new GeminiError('AI service unavailable', 502, true)
+}
 
 function extractJson(text: string): string | null {
   const start = text.indexOf('{')
@@ -118,32 +179,13 @@ export async function POST(request: NextRequest) {
     },
   }
 
-  let geminiRes: Response
+  let raw: string
   try {
-    geminiRes = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody),
-    })
+    raw = await callGeminiText(apiKey, requestBody)
   } catch (e) {
-    console.error('[receipt/scan] gemini fetch failed', e)
-    return NextResponse.json({ error: 'Failed to reach AI service' }, { status: 502 })
-  }
-
-  const payload = (await geminiRes.json().catch(() => null)) as {
-    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
-    error?: { message?: string }
-  } | null
-
-  if (!geminiRes.ok || !payload) {
-    const msg = payload?.error?.message || `Gemini returned ${geminiRes.status}`
-    console.error('[receipt/scan] gemini error', msg)
-    return NextResponse.json({ error: msg }, { status: geminiRes.status })
-  }
-
-  const raw = payload.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
-  if (!raw) {
-    return NextResponse.json({ error: 'No structured output from AI' }, { status: 502 })
+    const err = e instanceof GeminiError ? e : new GeminiError('AI service error', 502, false)
+    console.error('[receipt/scan] gemini error', err.message)
+    return NextResponse.json({ error: err.message }, { status: err.status })
   }
 
   let parsed: Record<string, unknown>

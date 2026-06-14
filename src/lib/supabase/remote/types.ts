@@ -23,6 +23,9 @@ export type IncomeSourceInsert = Tables['income_sources']['Insert']
 export type ExpenseRow = Tables['expenses']['Row']
 export type ExpenseInsert = Tables['expenses']['Insert']
 
+export type ReceiptRow = Tables['receipts']['Row']
+export type ReceiptInsert = Tables['receipts']['Insert']
+
 export type RecurringExpenseRow = Tables['recurring_expenses']['Row']
 export type RecurringExpenseInsert = Tables['recurring_expenses']['Insert']
 

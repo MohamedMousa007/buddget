@@ -22,8 +22,8 @@ These rules ap
 - **Design System:** Before writing or modifying any UI component, read `docs/DESIGN_SYSTEM.md`. All color tokens, spacing, border-radius, touch targets, safe-area classes, and typography must conform to the rules defined there. No hardcoded hex values, no non-standard heights for inputs, no touch targets below 44×44px.
 - **Native-Build Ownership (Capacitor):** When modifying code that touches native interfaces, storage, mappers, or plugins:
   - Do not delegate native tasks (such as editing AndroidManifest, Gradle files, Info.plist, or writing Kotlin/Swift) to the user. Execute these edits directly.
-  - After any native modification, run `npm run cap:build` or `npx cap sync` to synchronize the web assets with the native wrappers.
-  - Compile the native projects (e.g., via `./gradlew assembleDebug` or similar CLI checks) to ensure there are no compilation warnings, deprecated API errors, or manifest mismatches before declaring the task complete.
+  - After ANY web code change that must reach iOS/Android, ALWAYS run `npm run cap:build` — never bare `npx cap sync`. `cap sync` alone copies stale `out/` without rebuilding the web bundle; `npm run cap:build` stashes server-only routes, runs `CAPACITOR=true next build` (static export → `out/`), then syncs to both platforms.
+  - Compile the native projects (e.g., via `xcodebuild` or `./gradlew assembleDebug`) to ensure there are no compilation warnings, deprecated API errors, or manifest mismatches before declaring the task complete.
 
 ## Code Style
 - **Enterprise structure:** Clean module boundaries, single-responsibility files.
