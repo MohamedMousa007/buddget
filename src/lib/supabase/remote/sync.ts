@@ -9,6 +9,7 @@ import { onboardingToRow, onboardingFromRow } from './mappers/onboardingMapper'
 import { paymentMethodToRow, paymentMethodFromRow } from './mappers/paymentMethodMapper'
 import { incomeSourceToRow, incomeSourceFromRow } from './mappers/incomeSourceMapper'
 import { expenseToRow, expenseFromRow } from './mappers/expenseMapper'
+import { receiptToRow, receiptFromRow } from './mappers/receiptMapper'
 import { recurringExpenseToRow, recurringExpenseFromRow } from './mappers/recurringExpenseMapper'
 import { subscriptionToRow, subscriptionFromRow } from './mappers/subscriptionMapper'
 import { debtToRow, debtFromRow } from './mappers/debtMapper'
@@ -165,6 +166,8 @@ export async function flushDiff(
   const prevPayments = prev.paymentMethods.filter((pm) => pm.id !== DEFAULT_CASH_ID)
   emitList(runner, 'payment_methods', nextPayments, prevPayments, paymentMethodToRow, userId)
   emitList(runner, 'income_sources', next.incomeSources, prev.incomeSources, incomeSourceToRow, userId)
+  // Receipts before expenses: the expense's receipt_id FK must resolve on upsert.
+  emitList(runner, 'receipts', next.receipts, prev.receipts, receiptToRow, userId)
   emitList(runner, 'expenses', next.expenses, prev.expenses, expenseToRow, userId)
   emitList(runner, 'recurring_expenses', next.recurringExpenses, prev.recurringExpenses, recurringExpenseToRow, userId)
   emitList(runner, 'subscriptions', next.subscriptions, prev.subscriptions, subscriptionToRow, userId)
@@ -284,6 +287,7 @@ export async function pullCore(client: Client, userId: string): Promise<Snapshot
     paymentMethods: (pmR.data ?? []).map(paymentMethodFromRow),
     incomeSources: [],
     expenses: [],
+    receipts: [],
     recurringExpenses: [],
     subscriptions: [],
     debts: [],
@@ -305,7 +309,7 @@ export async function pullCore(client: Client, userId: string): Promise<Snapshot
 export async function pullAll(client: Client, userId: string): Promise<Snapshot | null> {
   const [
     profileR, settingsR, onboardingR,
-    pmR, incomeR, expenseR, recExpR, subR,
+    pmR, incomeR, expenseR, receiptR, recExpR, subR,
     debtR, debtPayR, recDebtR,
     saR, shR, stR, rsdR,
     goalR, planR, catR, subcatR,
@@ -316,6 +320,7 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
     client.from('payment_methods').select('*').eq('user_id', userId).is('deleted_at', null),
     client.from('income_sources').select('*').eq('user_id', userId).is('deleted_at', null),
     client.from('expenses').select('*').eq('user_id', userId).is('deleted_at', null),
+    client.from('receipts').select('*').eq('user_id', userId).is('deleted_at', null),
     client.from('recurring_expenses').select('*').eq('user_id', userId).is('deleted_at', null),
     client.from('subscriptions').select('*').eq('user_id', userId).is('deleted_at', null),
     client.from('debts').select('*').eq('user_id', userId).is('deleted_at', null),
@@ -392,6 +397,7 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
     paymentMethods: (pmR.data ?? []).map(paymentMethodFromRow),
     incomeSources: (incomeR.data ?? []).map(incomeSourceFromRow),
     expenses: (expenseR.data ?? []).map(expenseFromRow),
+    receipts: (receiptR.data ?? []).map(receiptFromRow),
     recurringExpenses: (recExpR.data ?? []).map(recurringExpenseFromRow),
     subscriptions: (subR.data ?? []).map(subscriptionFromRow),
     debts: (debtR.data ?? []).map(debtFromRow),

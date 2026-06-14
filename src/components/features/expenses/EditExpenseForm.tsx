@@ -1,5 +1,7 @@
 'use client'
 
+import { useState } from 'react'
+import { ReceiptText } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -10,16 +12,36 @@ import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useEditExpenseForm } from '@/hooks/useEditExpenseForm'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { ExpenseCategoryChips, PaymentMethodChips } from '@/components/features/expenses/ExpenseFormPickers'
+import { ReceiptDetailSheet } from '@/components/receipt/ReceiptDetailSheet'
 import { useT } from '@/lib/i18n'
 
 export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClose: () => void }) {
   useEscapeClose(true, onClose)
   const f = useEditExpenseForm(expense, onClose)
   const t = useT()
+  const [showReceipt, setShowReceipt] = useState(false)
 
   return (
     <div className="p-5">
       <ModalSheetHeader title={t.addExpense.editTitle} onClose={onClose} />
+
+      {expense.receiptId ? (
+        <button
+          type="button"
+          onClick={() => setShowReceipt(true)}
+          className="mb-3 inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-brand-border)] px-3 py-1.5 text-xs font-medium text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
+        >
+          <ReceiptText className="h-3.5 w-3.5" /> View receipt
+        </button>
+      ) : null}
+
+      {expense.receiptId ? (
+        <ReceiptDetailSheet
+          receiptId={expense.receiptId}
+          open={showReceipt}
+          onClose={() => setShowReceipt(false)}
+        />
+      ) : null}
 
       <div className="space-y-4">
         <div>

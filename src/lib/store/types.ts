@@ -99,6 +99,46 @@ export interface Expense {
   /** When set, this expense was created from a debt payment flow. */
   linkedDebtId?: string
   isDebtPayment?: boolean
+  /** When set, this expense is the total of a scanned receipt (`receipts.id`); breakdown lives there. */
+  receiptId?: string
+  createdAt: string
+  updatedAt: string
+}
+
+/** A single line item on a scanned receipt. No per-item category/payment method (token economy). */
+export interface ReceiptItem {
+  name: string
+  price: number
+  qty?: number
+}
+
+export type ReceiptChargeType = 'tax' | 'service' | 'tip' | 'discount' | 'other'
+
+/** A non-item charge on a receipt (tax, service, tip, discount). */
+export interface ReceiptCharge {
+  type: ReceiptChargeType
+  label: string
+  amount: number
+}
+
+/**
+ * A scanned receipt's breakdown. The printed grand total is mirrored to one
+ * {@link Expense} (carrying the single category + payment method); this row holds
+ * the itemized breakdown surfaced behind "View receipt".
+ */
+export interface Receipt {
+  id: string
+  merchant: string
+  /** Printed grand total — mirrored to the linked expense's amount. */
+  amount: number
+  currency: Currency
+  receiptDate: string
+  category: string
+  paymentMethodId?: string
+  confidence?: number
+  items: ReceiptItem[]
+  charges: ReceiptCharge[]
+  notes?: string
   createdAt: string
   updatedAt: string
 }
@@ -632,6 +672,8 @@ export interface FinanceStore {
   onboardingState: OnboardingState
   incomeSources: IncomeSource[]
   expenses: Expense[]
+  /** Scanned-receipt breakdowns (items + charges); each links to one total expense via `receiptId`. */
+  receipts: Receipt[]
   recurringExpenses: RecurringExpense[]
   subscriptions: Subscription[]
   budgetCategories: BudgetCategory[]
@@ -677,6 +719,11 @@ export interface FinanceStore {
    * upserts idempotent; prevents duplicates and soft-delete eviction).
    */
   upsertServerExpense: (expense: Expense) => void
+  /** Inserts a scanned-receipt breakdown row; returns the generated id to link the total expense. */
+  addReceipt: (receipt: Omit<Receipt, 'id' | 'createdAt' | 'updatedAt'>) => string
+  deleteReceipt: (id: string) => void
+  /** Server-row counterpart of {@link upsertServerExpense} for receipts. */
+  upsertServerReceipt: (receipt: Receipt) => void
   addIncomeSource: (source: Omit<IncomeSource, 'id' | 'createdAt'>) => void
   /** Server-row counterpart of {@link upsertServerExpense} for income. */
   upsertServerIncome: (source: IncomeSource) => void

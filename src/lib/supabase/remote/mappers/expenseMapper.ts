@@ -34,6 +34,7 @@ export function expenseToRow(e: Expense, userId: string): ExpenseInsert {
     linked_debt_payment_id: null,
     is_debt_payment: !!e.isDebtPayment,
     notes: e.notes ?? null,
+    receipt_id: e.receiptId ?? null,
     created_at: e.createdAt,
   }
 }
@@ -51,6 +52,7 @@ export function expenseFromRow(row: ExpenseRow): Expense {
     isRecurring: false,
     notes: row.notes ?? undefined,
     isDebtPayment: row.is_debt_payment,
+    receiptId: row.receipt_id ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
