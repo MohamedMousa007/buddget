@@ -2320,7 +2320,7 @@ export const ar: Dictionary = {
         { title: 'افتح Message Contains', desc: 'اترك Sender فارغاً، ثم اضغط *Choose* بجانب *Message Contains*.' },
         { title: 'فكّر في كلمة مفتاحية', desc: 'اختر الكلمة التي يضعها بنكك *دائماً* في رسائله — غالباً العملة.' },
         { title: 'أدخل كلمتك المفتاحية', desc: 'اكتب الكلمة التي اخترتها، ثم اضغط *Done*.' },
-        { title: 'أكّد وتابع', desc: 'تأكد أن *Run Immediately* مفعّل، ثم اضغط *Next*.' },
+        { title: 'أكّد وتابع', desc: 'فعّل *Run Immediately* ثم اضغط *Next*. لإسكات إشعار "shortcut running"، أطفئ *Notify When Run* أيضاً — في iOS 16.1 أو أقدم: الإعدادات ← الإشعارات ← *Shortcuts*.' },
         { title: 'أنشئ أتمتة فارغة', desc: 'اضغط *New Blank Automation* لتتمكن من إضافة إجراء Buddget.' },
         { title: 'ابحث عن إجراء', desc: 'اضغط شريط *Search Actions* في الأسفل.' },
         { title: 'أضف Catch Bank SMS', desc: 'اكتب "Catch"، ثم اضغط *Catch Bank SMS* — إجراء Buddget.' },

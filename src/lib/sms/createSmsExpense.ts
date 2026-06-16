@@ -89,8 +89,13 @@ function emptyResult(): CreateSmsExpenseResult {
 }
 
 function smsNotes(row: SmsRowData): string {
-  const bankPrefix = row.bankName ? `${row.bankName}: ` : ''
-  return row.rawSmsSummary ?? `[auto from ${row.source}] ${bankPrefix}${row.rawBody.slice(0, 180)}`
+  // Prefer the clean one-sentence AI summary. NEVER fall back to the raw SMS
+  // body — curated/template tiers don't produce a summary, and dumping the raw
+  // text (refs, account numbers, balances) into notes is noise/PII leakage.
+  if (row.rawSmsSummary) return row.rawSmsSummary
+  const label = row.cleanTitle ?? row.merchantNormalized ?? row.merchant ?? row.bankName
+  const bank = row.bankName && row.bankName !== label ? ` · ${row.bankName}` : ''
+  return label ? `Auto-tracked from ${row.source}: ${label}${bank}` : `Auto-tracked from ${row.source}`
 }
 
 function smsTitle(row: SmsRowData): string | null {
