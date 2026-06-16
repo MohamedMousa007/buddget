@@ -19,12 +19,13 @@ Return ONLY a JSON object with this exact schema (no markdown, no commentary):
   "currency": "EGP" | "AED" | "SAR" | "QAR" | "KWD" | "OMR" | "BHD" | "USD" | null,
   "merchant": string | null,
   "bank_name": string | null,
-  "category": "Food" | "Transport" | "Enjoyment" | "Rent" | "Other" | null,
+  "category": "Food" | "Groceries" | "Transport" | "Fuel" | "Enjoyment" | "Shopping" | "Health" | "Education" | "Utilities" | "Subscription" | "Rent" | "Other" | null,
   "confidence": number,
-  "kind": "purchase" | "online_purchase" | "atm_withdrawal" | "instant_transfer_out" | "instant_transfer_in" | "income" | "refund" | "fee" | "other" | null,
+  "kind": "purchase" | "online_purchase" | "atm_withdrawal" | "instant_transfer_out" | "instant_transfer_in" | "cc_payoff" | "own_transfer" | "currency_exchange" | "income" | "refund" | "fee" | "other" | null,
   "cleanTitle": string | null,
   "rawSmsSummary": string | null,
   "detectedAccountLast4": string | null,
+  "detectedCounterpartyLast4": string | null,
   "newBalance": number | null,
   "merchantNormalized": string | null
 }
@@ -40,16 +41,23 @@ Bank vocabulary (recognise these names, abbreviations, and SMS senders):
 
 Direction rules (use these to set "kind"):
 - "instant_transfer_in" / "income": money ARRIVES — "credited with", "inward transfer", "IPN received", "deposit of", "received from", "transferred to your account", "تم إيداع", "تم إضافة مبلغ", "تم استلام".
-- "instant_transfer_out": outward IPN / InstaPay / Vodafone Cash transfer to another person — "IPN outward transfer", "InstaPay to [name]", "transferred to [name]".
+- "instant_transfer_out": outward IPN / InstaPay / Vodafone Cash transfer to another PERSON — "IPN outward transfer", "InstaPay to [name]", "transferred to [name]".
+- "cc_payoff": a payment TOWARD a credit card (settling the statement), NOT a card purchase — "credit card payment received", "payment received for your credit card", "thank you for your credit card payment", "تم سداد بطاقتك الائتمانية". Do NOT use for card purchases.
+- "own_transfer": a transfer between the user's OWN accounts at the same bank — "from your account ****X to your account ****Y", "transfer between your accounts", "تحويل بين حساباتك", "من حسابك ... إلى حسابك". Set detectedCounterpartyLast4 to the destination account last4.
+- "currency_exchange": converting between the user's own currency accounts — "exchanged USD ... to EGP", "currency conversion", "FX deal", "تحويل عملة". Banks may send two messages (debit + credit); classify each leg as currency_exchange.
 - "atm_withdrawal": cash withdrawal from ATM — "ATM Cash Withdrawal", "ATM withdrawal", "تم سحب نقدي".
 - "online_purchase": e-commerce / app / subscription payment — website, app store, online merchant.
 - "purchase": in-store / POS card purchase.
 - "refund": money returned — "refund", "reversal", "رد مبلغ".
 - "fee": bank fee, service charge, interest.
 - For income/instant_transfer_in, "merchant" = sender name; "bank_name" = receiving bank.
+- Ambiguity: a card PURCHASE ("charged", "spent at", "purchase at MERCHANT") is never cc_payoff. A transfer to a named person is instant_transfer_out, never own_transfer.
 
 cleanTitle rules (short human-readable title for the expense/income record):
 - atm_withdrawal → "ATM Withdrawal — [Bank Name] [Location if present]" (e.g. "ATM Withdrawal — HSBC Heliopolis")
+- cc_payoff → "Credit Card Payment — [Bank Name]"
+- own_transfer → "Transfer between accounts — [Bank Name]"
+- currency_exchange → "Currency Exchange — [Bank Name]"
 - instant_transfer_out → "Transfer to [Recipient Full Name]" (e.g. "Transfer to Salma Samy Elsayed")
 - instant_transfer_in → "Transfer from [Sender Name]"
 - purchase / online_purchase → merchant name only (e.g. "Carrefour Egypt", "EL Wahat for Oil")
@@ -65,9 +73,14 @@ rawSmsSummary rules (one-sentence plain-English summary for the notes field):
 - Keep recipient/sender name, amount, currency, bank name, and transaction type.
 
 detectedAccountLast4 rules:
-- Extract ONLY the final 4 digits of a masked account or card number.
+- Extract ONLY the final 4 digits of the PRIMARY masked account or card number (the source the SMS is about).
 - Match patterns: "*****1234", "****1234", "ending in 1234", "card no. XXXX1234", "account ########0001".
 - Return as a 4-character digit string (e.g. "0001", "4523"). Return null if no account/card present.
+- NEVER return more than 4 digits.
+
+detectedCounterpartyLast4 rules:
+- For own_transfer / currency_exchange / transfers that name a SECOND account, extract the final 4 digits of the DESTINATION/counterparty account (e.g. "to your account ****5678" → "5678").
+- Return null when there is no second account in the message.
 - NEVER return more than 4 digits.
 
 Pattern guidance (Egypt-first):
@@ -91,4 +104,16 @@ Defaults:
 - "merchant" is the place or person that received the money. Strip card last4, dates, and reference numbers from the merchant field.
 - Set "is_transaction" to false for OTPs, balance-only updates, marketing, or any non-spend message; in that case set every other field to null and confidence to 0.
 - "confidence" must reflect how sure you are about amount + merchant. Use 0.9+ only when both are unambiguous.
-- "category": Food = restaurants / groceries / delivery (Talabat, Otlob, Carrefour, Spinneys, Gourmet, Seoudi, Metro Market). Transport = Uber / Careem / taxi / fuel. Enjoyment = cafés, cinema, shopping. Rent = housing / utilities. Other = anything else (including ATM withdrawals, transfers, fees).`
+- "category" (set ONLY for purchase / online_purchase; leave null for movements — the server derives the category from kind for atm_withdrawal/cc_payoff/own_transfer/currency_exchange/transfers/fees):
+  - Food = restaurants / cafés / delivery (Talabat, Otlob, Abu Tarek).
+  - Groceries = supermarkets / hypermarkets (Carrefour, Spinneys, Gourmet, Seoudi, Metro Market, Kazyon).
+  - Transport = Uber / Careem / taxi / Swvl / metro / tolls.
+  - Fuel = petrol/gas stations (Wataniya, ChillOut, TotalEnergies, Misr Petroleum).
+  - Enjoyment = cinema, events, leisure, hobbies.
+  - Shopping = clothing / electronics / general retail / marketplaces (Noon, Amazon, Zara, B.Tech, 2B).
+  - Health = pharmacies, clinics, hospitals, labs (Seif, El Ezaby, Vezeeta).
+  - Education = schools, universities, tuition, online courses (Udemy, Coursera).
+  - Utilities = electricity / water / gas / internet / mobile bills (WE, Vodafone, Orange, Etisalat postpaid).
+  - Subscription = recurring digital services (Netflix, Spotify, Shahid, OSN+, Anghami, iCloud, ChatGPT, YouTube Premium).
+  - Rent = housing rent / real-estate.
+  - Other = anything that fits none of the above.`

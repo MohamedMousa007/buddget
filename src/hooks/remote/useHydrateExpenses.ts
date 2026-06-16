@@ -7,6 +7,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { expenseFromRow } from '@/lib/supabase/remote/mappers/expenseMapper'
 import { recurringExpenseFromRow } from '@/lib/supabase/remote/mappers/recurringExpenseMapper'
 import { hasHydrated, markHydrated } from '@/hooks/remote/hydrateGuard'
+import { mergeById } from '@/hooks/remote/mergeById'
 
 /**
  * Hydrates `expenses` + `recurringExpenses` slices from Supabase. Runs at
@@ -31,8 +32,11 @@ export function useHydrateExpenses(): void {
         ])
         if (cancelled) return
         const patch: Partial<ReturnType<typeof useFinanceStore.getState>> = {}
-        if (expR.data) patch.expenses = expR.data.map(expenseFromRow)
-        if (recR.data) patch.recurringExpenses = recR.data.map(recurringExpenseFromRow)
+        const state = useFinanceStore.getState()
+        if (expR.data) patch.expenses = mergeById(state.expenses, expR.data.map(expenseFromRow))
+        if (recR.data) {
+          patch.recurringExpenses = mergeById(state.recurringExpenses, recR.data.map(recurringExpenseFromRow))
+        }
         if (Object.keys(patch).length > 0) useFinanceStore.setState(patch)
         markHydrated(uid, 'expenses')
       } catch (e) {

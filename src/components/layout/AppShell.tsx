@@ -18,9 +18,11 @@ import { isNative } from '@/lib/native/isNative'
 import { isAndroid } from '@/lib/native/isNative'
 import { expenseFromRow } from '@/lib/supabase/remote/mappers/expenseMapper'
 import { incomeSourceFromRow } from '@/lib/supabase/remote/mappers/incomeSourceMapper'
+import { debtPaymentFromRow } from '@/lib/supabase/remote/mappers/debtPaymentMapper'
 import { createClient } from '@/lib/supabase/client'
 import type { ExpenseRow } from '@/lib/supabase/remote/types'
 import type { IncomeSourceRow } from '@/lib/supabase/remote/types'
+import type { DebtPaymentRow } from '@/lib/supabase/remote/types'
 
 /**
  * Re-registers the Capacitor SMS listener on every app startup and on auth changes.
@@ -102,6 +104,10 @@ function addIncomeIfMissing(row: IncomeSourceRow): void {
   useFinanceStore.getState().upsertServerIncome(incomeSourceFromRow(row))
 }
 
+function addDebtPaymentIfMissing(row: DebtPaymentRow): void {
+  useFinanceStore.getState().upsertServerDebtPayment(debtPaymentFromRow(row))
+}
+
 /**
  * Confirms back to the server that an SMS-tracked row actually rendered in the
  * app — the signal that promotes the parse log to status='confirmed'. Without
@@ -136,7 +142,7 @@ function SmsRealtimeSync() {
   useEffect(() => {
     if (!dataReady || !smsEnabled) return
     const supabase = createClient()
-    const onRow = async (payload: { new: { id?: string; expense_id?: string | null; income_id?: string | null } }) => {
+    const onRow = async (payload: { new: { id?: string; expense_id?: string | null; income_id?: string | null; debt_payment_id?: string | null } }) => {
       const row = payload.new
       let rendered = false
       if (row.expense_id) {
@@ -154,6 +160,15 @@ function SmsRealtimeSync() {
           .eq('id', row.income_id)
           .single()
         if (data) { addIncomeIfMissing(data as IncomeSourceRow); rendered = true }
+      }
+      if (row.debt_payment_id) {
+        // CC payoff: pull the debt payment so the card balance updates live.
+        const { data } = await supabase
+          .from('debt_payments')
+          .select('*')
+          .eq('id', row.debt_payment_id)
+          .single()
+        if (data) { addDebtPaymentIfMissing(data as DebtPaymentRow); rendered = true }
       }
       if (rendered) void ackSms(row.id)
     }
@@ -257,7 +272,14 @@ function SmsPushActionHandler() {
             router.push(res.expenseId ? `/expenses?highlight=${res.expenseId}` : '/')
           })
           .catch(() => router.push('/'))
-      } else if (kind === 'sms_auto_added' && data.expenseId) {
+      } else if (
+        (kind === 'sms_auto_added' ||
+          kind === 'sms_transfer' ||
+          kind === 'sms_atm' ||
+          kind === 'sms_subscription' ||
+          kind === 'sms_cc_payoff') &&
+        data.expenseId
+      ) {
         // Ensure the expense is in the store before navigating (WorkManager may
         // have created it while the app was in the background — realtime subscription
         // might have missed it if the channel wasn't open yet).
@@ -265,8 +287,13 @@ function SmsPushActionHandler() {
           const supabase = createClient()
           const { data: row } = await supabase.from('expenses').select('*').eq('id', data.expenseId).single()
           if (row) { addExpenseIfMissing(row as ExpenseRow); void ackSms(data.logId) }
-          router.push(`/expenses?highlight=${data.expenseId}`)
+          // CC payoff also affects the debt ledger — send the user there.
+          router.push(kind === 'sms_cc_payoff' ? '/debts' : `/expenses?highlight=${data.expenseId}`)
         })()
+      } else if (kind === 'sms_cc_payoff') {
+        // Ambiguous CC payoff posted no expense id — just open debts.
+        void ackSms(data.logId)
+        router.push('/debts')
       } else if (kind === 'sms_income_added' && data.incomeId) {
         void (async () => {
           const supabase = createClient()
@@ -274,6 +301,10 @@ function SmsPushActionHandler() {
           if (row) { addIncomeIfMissing(row as IncomeSourceRow); void ackSms(data.logId) }
           router.push('/income')
         })()
+      } else if (kind === 'sms_salary_matched') {
+        // No row created (matched to declared salary) — acknowledge + open income.
+        void ackSms(data.logId)
+        router.push('/income')
       }
     }
     window.addEventListener('buddget:push-action', handler)

@@ -156,6 +156,16 @@ describe('spending and budget excluding Savings', () => {
     expect(calculateTotalSpentExcludingSavings([food, savings], 'AED', {})).toBe(100)
   })
 
+  it('excludes all non-spend money-movement categories from spend totals', () => {
+    const transfer: Expense = { ...baseExpense, id: '3', category: 'Transfer' }
+    const atm: Expense = { ...baseExpense, id: '4', category: 'ATM Cash Withdrawal' }
+    const fx: Expense = { ...baseExpense, id: '5', category: 'Currency Exchange' }
+    const ccPay: Expense = { ...baseExpense, id: '6', category: 'CC Payoff' }
+    const all = [food, savings, transfer, atm, fx, ccPay]
+    // Only the Food expense counts toward spend; the 5 movements are excluded.
+    expect(calculateTotalSpentExcludingSavings(all, 'AED', {})).toBe(100)
+  })
+
   it('calculateTotalBudgetExcludingSavings omits Savings row', () => {
     const cats: BudgetCategory[] = [
       { category: 'Food', budgetedAmount: 500, currency: 'AED' },

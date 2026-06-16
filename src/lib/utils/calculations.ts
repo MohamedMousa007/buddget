@@ -23,6 +23,7 @@ import type {
   SavingsTransaction,
 } from '@/lib/store/types'
 import { computeCreditCardOutstanding } from '@/lib/debt/computeCreditCardBalance'
+import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
 import { convertCurrency, tryConvertCurrency } from './currency'
 
 /** When set, credit card outstanding is derived from expenses + payments. */
@@ -157,14 +158,14 @@ export function calculateTotalSpent(
   return expenses.reduce((total, e) => total + expenseAmountInBase(e, baseCurrency, rates), 0)
 }
 
-/** Spending totals for the expense budget ring and "Money Out" — excludes Savings (allocations, not consumption). */
+/** Spending totals for the expense budget ring and "Money Out" — excludes non-spend money movements (Savings allocations, ATM cash, transfers, FX, CC payoff). */
 export function calculateTotalSpentExcludingSavings(
   expenses: Expense[],
   baseCurrency: Currency,
   rates: Record<string, number>
 ): number {
   return expenses
-    .filter((e) => e.category !== 'Savings')
+    .filter((e) => !isNonSpendCategory(e.category))
     .reduce((total, e) => total + expenseAmountInBase(e, baseCurrency, rates), 0)
 }
 
@@ -175,6 +176,7 @@ export function calculateCategorySpending(
 ): Record<string, number> {
   const spending: Record<string, number> = {}
   for (const expense of expenses) {
+    if (isNonSpendCategory(expense.category)) continue
     spending[expense.category] =
       (spending[expense.category] || 0) + expenseAmountInBase(expense, baseCurrency, rates)
   }
@@ -214,7 +216,7 @@ export function calculateTotalBudgetExcludingSavings(
   monthlyIncomeInBase: number
 ): number {
   return budgetCategories
-    .filter((b) => b.category !== 'Savings')
+    .filter((b) => !isNonSpendCategory(b.category))
     .reduce(
       (total, b) => total + effectiveCategoryBudget(b, settings, monthlyIncomeInBase),
       0
@@ -546,6 +548,7 @@ export function getPaymentMethodBreakdown(
   const breakdown: Record<string, { count: number; total: number }> = {}
 
   for (const expense of expenses) {
+    if (isNonSpendCategory(expense.category)) continue
     const method = paymentMethods.find((m) => m.id === expense.paymentMethodId)
     const name = method?.name || 'Unknown'
     if (!breakdown[name]) breakdown[name] = { count: 0, total: 0 }

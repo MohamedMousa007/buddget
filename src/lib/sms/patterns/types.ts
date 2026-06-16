@@ -9,6 +9,7 @@
 export type SmsKind =
   | 'purchase' | 'online_purchase' | 'atm_withdrawal'
   | 'instant_transfer_out' | 'instant_transfer_in'
+  | 'cc_payoff' | 'own_transfer' | 'currency_exchange'
   | 'income' | 'refund' | 'fee' | 'other'
 
 export type PaymentInstrument = 'card' | 'account' | 'wallet'
@@ -20,6 +21,8 @@ export interface PatternGroups {
   /** Merchant for purchases; sender/recipient name for transfers. */
   counterparty?: number
   last4?: number
+  /** Destination/counterparty account last4 (transfers, FX) for own-account matching. */
+  counterpartyLast4?: number
   balance?: number
   /** Transaction datetime as DD-MM-YYYY[ HH:mm] (Egyptian bank convention). */
   datetime?: number
@@ -55,6 +58,8 @@ export interface CuratedMatch {
   /** Merchant (purchases) or transfer counterparty. */
   counterparty: string | null
   last4: string | null
+  /** Destination/counterparty account last4 (transfers, FX), else null. */
+  counterpartyLast4: string | null
   balance: number | null
   paymentInstrument: PaymentInstrument | null
   /** Transaction date from the SMS body (YYYY-MM-DD), else null. */

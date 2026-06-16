@@ -29,6 +29,19 @@ export type ExpenseCategory =
   | 'Debt'
   | 'Remittance'
   | 'Other'
+  // Added spend categories (Egypt/Gulf coverage)
+  | 'Groceries'
+  | 'Fuel'
+  | 'Health'
+  | 'Shopping'
+  | 'Education'
+  | 'Utilities'
+  | 'Subscription'
+  // Non-spend money-movement categories (excluded from spend/budgets via categoryMeta)
+  | 'ATM Cash Withdrawal'
+  | 'Transfer'
+  | 'Currency Exchange'
+  | 'CC Payoff'
 
 export type PaymentMethodType = 'cash' | 'bank_transfer' | 'card_debit' | 'card_credit' | 'nol' | 'other'
 
@@ -99,6 +112,12 @@ export interface Expense {
   /** When set, this expense was created from a debt payment flow. */
   linkedDebtId?: string
   isDebtPayment?: boolean
+  /** When set, this expense settles a credit-card debt via this debt payment (`debt_payments.id`). */
+  linkedDebtPaymentId?: string
+  /** When set, this expense is linked to a tracked subscription (`subscriptions.id`). */
+  linkedSubscriptionId?: string
+  /** When set, this expense was auto-created from a parsed bank SMS (`sms_parse_log.id`). */
+  smsLogId?: string
   /** When set, this expense is the total of a scanned receipt (`receipts.id`); breakdown lives there. */
   receiptId?: string
   createdAt: string
@@ -597,7 +616,7 @@ export interface OnboardingAiPlan {
   personaTagline: string
   rationale: string
   costOfLivingNote?: string
-  percents: Record<ExpenseCategory, number>
+  percents: Partial<Record<ExpenseCategory, number>>
   assumptions: string[]
 }
 
@@ -724,6 +743,8 @@ export interface FinanceStore {
   deleteReceipt: (id: string) => void
   /** Server-row counterpart of {@link upsertServerExpense} for receipts. */
   upsertServerReceipt: (receipt: Receipt) => void
+  /** Server-row counterpart of {@link upsertServerExpense} for debt payments (SMS CC payoff). */
+  upsertServerDebtPayment: (payment: DebtPayment) => void
   addIncomeSource: (source: Omit<IncomeSource, 'id' | 'createdAt'>) => void
   /** Server-row counterpart of {@link upsertServerExpense} for income. */
   upsertServerIncome: (source: IncomeSource) => void

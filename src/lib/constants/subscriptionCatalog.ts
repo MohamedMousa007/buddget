@@ -114,6 +114,56 @@ export function findBrandByKey(key: string | null): SubscriptionBrand | undefine
   return SUBSCRIPTION_CATALOG.find((b) => b.key === key)
 }
 
+/**
+ * Explicit merchant→brandKey aliases for names that don't trivially contain the
+ * brand key (e.g. an SMS shows "OPENAI" for ChatGPT). Keys are normalised
+ * (lowercase, alphanumeric only).
+ */
+const MERCHANT_BRAND_ALIASES: Record<string, string> = {
+  openai: 'chatgpt_plus',
+  chatgpt: 'chatgpt_plus',
+  anthropic: 'claude_pro',
+  claudeai: 'claude_pro',
+  amazonprime: 'prime_video',
+  primevideo: 'prime_video',
+  googlestorage: 'google_one',
+  googleone: 'google_one',
+  disneyplus: 'disney_plus',
+  appletv: 'apple_tv_plus',
+  applemusic: 'apple_music',
+  youtubepremium: 'youtube_premium',
+  shahid: 'shahid_vip',
+  osn: 'osn_plus',
+  ms365: 'microsoft_365',
+  office365: 'microsoft_365',
+}
+
+function normalizeBrandToken(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+/**
+ * Resolves a merchant string (from a parsed SMS) to a catalog brand key, or null.
+ * Matches explicit aliases first, then substring against each brand's normalised
+ * key and name.
+ */
+export function resolveBrandKeyFromMerchant(merchant: string | null | undefined): string | null {
+  if (!merchant) return null
+  const norm = normalizeBrandToken(merchant)
+  if (!norm) return null
+  if (MERCHANT_BRAND_ALIASES[norm]) return MERCHANT_BRAND_ALIASES[norm]
+  for (const [alias, key] of Object.entries(MERCHANT_BRAND_ALIASES)) {
+    if (norm.includes(alias)) return key
+  }
+  for (const b of SUBSCRIPTION_CATALOG) {
+    const keyToken = normalizeBrandToken(b.key)
+    const nameToken = normalizeBrandToken(b.name)
+    if (keyToken && (norm.includes(keyToken) || keyToken.includes(norm))) return b.key
+    if (nameToken && (norm.includes(nameToken) || nameToken.includes(norm))) return b.key
+  }
+  return null
+}
+
 export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
   {
     catalogSection: 'catStreaming',

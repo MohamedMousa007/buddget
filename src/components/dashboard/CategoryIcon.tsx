@@ -17,6 +17,10 @@ import {
   Send,
   Layers,
   Wallet,
+  Fuel,
+  Plug,
+  Banknote,
+  ArrowLeftRight,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -44,6 +48,8 @@ export function CategoryIcon({ category, className }: CategoryIconProps) {
   if (key === 'dining' || key === 'dining_out' || key === 'restaurants') return <UtensilsCrossed className={c} />
   if (key === 'food') return <UtensilsCrossed className={c} />
   if (key === 'transport' || key === 'transportation' || key === 'commute') return <Car className={c} />
+  if (key === 'fuel' || key === 'petrol' || key === 'gas') return <Fuel className={c} />
+  if (key === 'utilities' || key === 'utility' || key === 'bills') return <Plug className={c} />
   if (key === 'entertainment' || key === 'enjoy' || key === 'enjoyment') return <Sparkles className={c} />
   if (key === 'personal' || key === 'personal_care' || key === 'self_care') return <Heart className={c} />
   if (key === 'phone' || key === 'internet' || key === 'phone_internet') return <Smartphone className={c} />
@@ -53,6 +59,9 @@ export function CategoryIcon({ category, className }: CategoryIconProps) {
   if (key === 'education' || key === 'school') return <GraduationCap className={c} />
   if (key === 'savings' || key === 'saving' || key === 'investment') return <PiggyBank className={c} />
   if (key === 'debt' || key === 'loan' || key === 'credit') return <CreditCard className={c} />
+  if (key === 'cc_payoff') return <CreditCard className={c} />
+  if (key === 'atm_cash_withdrawal' || key === 'atm') return <Banknote className={c} />
+  if (key === 'currency_exchange') return <ArrowLeftRight className={c} />
   if (key === 'remittance' || key === 'transfer') return <Send className={c} />
   if (key === 'other') return <Layers className={c} />
   return <Wallet className={c} />
