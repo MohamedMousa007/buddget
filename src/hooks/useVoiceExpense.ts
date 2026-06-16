@@ -8,6 +8,30 @@ import { extractVoiceExpense, type ExtractedExpense } from '@/lib/ai/extractVoic
 
 export type VoiceState = 'idle' | 'permission' | 'recording' | 'processing' | 'confirming' | 'error'
 
+/**
+ * Temporary on-device diagnostic for the persistent voice 401/403. Decodes the
+ * current Supabase access token client-side and reports exactly why the server
+ * rejected it (missing / expired / wrong issuer), so the failure is actionable
+ * from the device instead of guessing from server logs.
+ */
+async function diagnoseAuth(status: number): Promise<string> {
+  try {
+    const { createClient } = await import('@/lib/supabase/client')
+    const { data: { session } } = await createClient().auth.getSession()
+    const tok = session?.access_token
+    if (!tok) return `Auth ${status}: no session token on device — sign out and sign in again.`
+    let b64 = tok.split('.')[1]?.replace(/-/g, '+').replace(/_/g, '/') ?? ''
+    b64 += '='.repeat((4 - (b64.length % 4)) % 4)
+    const p = JSON.parse(atob(b64)) as { exp?: number; iss?: string }
+    const expMs = (p.exp ?? 0) * 1000
+    const expd = expMs < Date.now()
+    const iss = (p.iss ?? '?').replace('https://', '').split('.')[0]
+    return `Auth ${status}: token ${expd ? 'EXPIRED' : 'valid'} (exp ${new Date(expMs).toISOString().slice(11, 19)}, now ${new Date().toISOString().slice(11, 19)}), iss=${iss}, len=${tok.length}.`
+  } catch (e) {
+    return `Auth ${status}: token decode failed (${e instanceof Error ? e.message : 'err'}).`
+  }
+}
+
 interface UseVoiceExpenseResult {
   state: VoiceState
   draft: ExtractedExpense | null
@@ -182,6 +206,9 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
         )
         if (!res.ok) {
           const err = (await res.json().catch(() => null)) as { error?: string } | null
+          if (res.status === 401 || res.status === 403) {
+            throw new Error(await diagnoseAuth(res.status))
+          }
           throw new Error(err?.error || `Transcription failed (${res.status})`)
         }
         const data = (await res.json()) as { text: string }
