@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useCallback, useState } from 'react'
-import { motion, useMotionValue, AnimatePresence } from 'framer-motion'
+import { useEffect, useRef, useCallback, useState, type RefObject } from 'react'
+import { motion, AnimatePresence, type MotionValue } from 'framer-motion'
 import { Check, X, RotateCcw, Loader2, Trash2 } from 'lucide-react'
 import type { VoiceState } from '@/hooks/useVoiceExpense'
 import type { ExtractedExpense } from '@/lib/ai/extractVoiceExpense'
@@ -16,7 +16,13 @@ interface Props {
   animTime: number
   draft: ExtractedExpense | null
   error: string | null
-  onStop: () => void
+  /** Live finger coordinates from the hold gesture — the widget follows these. */
+  posX: MotionValue<number>
+  posY: MotionValue<number>
+  /** True while the finger is inside the trash drop-zone. */
+  nearTrash: boolean
+  /** Trash drop-zone element, owned by the gesture for proximity measurement. */
+  trashRef: RefObject<HTMLDivElement | null>
   onCancel: () => void
   onConfirm: () => void
   onRedo: () => void
@@ -29,7 +35,10 @@ export function VoiceRecordOverlay({
   animTime,
   draft,
   error,
-  onStop,
+  posX,
+  posY,
+  nearTrash,
+  trashRef,
   onCancel,
   onConfirm,
   onRedo,
@@ -44,11 +53,13 @@ export function VoiceRecordOverlay({
           key="floating-recording"
           amplitude={amplitude}
           animTime={animTime}
-          onStop={onStop}
-          onCancel={onCancel}
+          posX={posX}
+          posY={posY}
+          nearTrash={nearTrash}
+          trashRef={trashRef}
         />
       )}
-      {visible && state !== 'recording' && (
+      {(state === 'processing' || state === 'error' || state === 'confirming') && (
         <motion.div
           key="voice-overlay"
           initial={{ y: 120, opacity: 0 }}
@@ -112,27 +123,23 @@ function Waveform({ amplitude, animTime }: { amplitude: number; animTime: number
   )
 }
 
-// ── Floating recording widget (draggable, trash-to-cancel) ──────────────────
-
-const TRASH_PROXIMITY = 72 // px — distance to trigger trash animation
+// ── Floating recording widget (follows finger, drag-to-trash to cancel) ──────
 
 function FloatingRecordingWidget({
   amplitude,
   animTime,
-  onStop,
-  onCancel,
+  posX,
+  posY,
+  nearTrash,
+  trashRef,
 }: {
   amplitude: number
   animTime: number
-  onStop: () => void
-  onCancel: () => void
+  posX: MotionValue<number>
+  posY: MotionValue<number>
+  nearTrash: boolean
+  trashRef: RefObject<HTMLDivElement | null>
 }) {
-  const x = useMotionValue(0)
-  const y = useMotionValue(0)
-  const [nearTrash, setNearTrash] = useState(false)
-  const [cancelFired, setCancelFired] = useState(false)
-  const trashRef = useRef<HTMLDivElement>(null)
-  const chipRef = useRef<HTMLDivElement>(null)
   const [startTs] = useState(() => Date.now())
   const [elapsed, setElapsed] = useState(0)
 
@@ -144,120 +151,69 @@ function FloatingRecordingWidget({
   const mins = String(Math.floor(elapsed / 60)).padStart(2, '0')
   const secs = String(elapsed % 60).padStart(2, '0')
 
-  const checkProximity = useCallback(() => {
-    const trash = trashRef.current
-    const chip = chipRef.current
-    if (!trash || !chip) return
-    const tr = trash.getBoundingClientRect()
-    const cr = chip.getBoundingClientRect()
-    const dist = Math.hypot(
-      cr.left + cr.width / 2 - (tr.left + tr.width / 2),
-      cr.top + cr.height / 2 - (tr.top + tr.height / 2),
-    )
-    setNearTrash(dist < TRASH_PROXIMITY)
-  }, [])
-
-  const handleDragEnd = useCallback(() => {
-    if (nearTrash && !cancelFired) {
-      setCancelFired(true)
-      onCancel()
-    } else {
-      // Spring back to original position
-      x.set(0)
-      y.set(0)
-      setNearTrash(false)
-    }
-  }, [nearTrash, cancelFired, onCancel, x, y])
-
   return (
     <>
-      {/* Trash zone — fixed above the chip's resting position */}
+      {/* Trash drop-zone — fixed above the recording area; grows as the finger nears */}
       <div
         className="fixed z-[60] pointer-events-none"
-        style={{ bottom: '164px', left: 0, right: 0, display: 'flex', justifyContent: 'center' }}
+        style={{ bottom: 'calc(190px + env(safe-area-inset-bottom, 0px))', left: 0, right: 0, display: 'flex', justifyContent: 'center' }}
       >
         <motion.div
           ref={trashRef}
-          animate={{
-            scale: nearTrash ? 1.4 : 1,
-            transition: { type: 'spring', stiffness: 400, damping: 20 },
-          }}
-          className="w-12 h-12 rounded-full flex items-center justify-center border-2"
+          animate={{ scale: nearTrash ? 1.45 : 1 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+          className="w-14 h-14 rounded-full flex items-center justify-center border-2"
           style={{
-            backgroundColor: nearTrash
-              ? 'var(--color-brand-red)'
-              : 'var(--color-brand-elevated)',
+            backgroundColor: nearTrash ? 'var(--color-brand-red)' : 'var(--color-brand-elevated)',
             borderColor: nearTrash ? 'var(--color-brand-red)' : 'var(--color-brand-border)',
           }}
         >
-          <Trash2
-            className="h-5 w-5"
-            style={{ color: nearTrash ? '#fff' : 'var(--color-brand-text-muted)' }}
-          />
+          <Trash2 className="h-6 w-6" style={{ color: nearTrash ? '#fff' : 'var(--color-brand-text-muted)' }} />
         </motion.div>
       </div>
 
-      {/* Draggable recording chip */}
+      {/* Recording chip — its (left,top) origin tracks the finger via posX/posY,
+          and the inner wrapper offsets it to sit just above the fingertip. */}
       <motion.div
-        key="recording-chip"
-        ref={chipRef}
-        initial={{ y: 120, opacity: 0 }}
-        animate={{
-          y: 0,
-          opacity: 1,
-          scale: nearTrash ? 0.72 : 1,
-          transition: { type: 'spring', stiffness: 380, damping: 30 },
-        }}
-        exit={{ y: 120, opacity: 0, transition: { duration: 0.18 } }}
-        style={{
-          x,
-          y,
-          position: 'fixed',
-          bottom: '88px',
-          left: 0,
-          right: 0,
-          marginLeft: 'auto',
-          marginRight: 'auto',
-          width: 'fit-content',
-          zIndex: 61,
-          touchAction: 'none',
-          userSelect: 'none',
-        }}
-        drag
-        dragMomentum={false}
-        onDrag={checkProximity}
-        onDragEnd={handleDragEnd}
+        style={{ x: posX, y: posY, position: 'fixed', left: 0, top: 0, zIndex: 61, pointerEvents: 'none' }}
       >
-        <div className="flex items-center gap-3 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] shadow-2xl rounded-2xl px-4 py-3">
-          {/* Pulsing red dot */}
-          <motion.span
-            animate={{ scale: [1, 1.25, 1], opacity: [1, 0.6, 1] }}
-            transition={{ duration: 1.2, repeat: Infinity }}
-            className="h-2.5 w-2.5 rounded-full bg-[var(--color-brand-red)] shrink-0"
-          />
-
-          {/* Waveform */}
-          <div className="overflow-hidden">
-            <Waveform amplitude={amplitude} animTime={animTime} />
-          </div>
-
-          {/* Timer */}
-          <span className="text-xs font-mono text-[var(--color-brand-text-secondary)] shrink-0 w-10 text-end">
-            {mins}:{secs}
-          </span>
-
-          {/* Stop button */}
-          <button
-            type="button"
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => { e.stopPropagation(); onStop() }}
-            className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-[var(--color-brand-red)]"
-            aria-label="Stop recording"
+        <div style={{ transform: 'translate(-50%, -165%)' }}>
+          <motion.div
+            initial={{ scale: 0.7, opacity: 0 }}
+            animate={{ scale: nearTrash ? 0.6 : 1, opacity: 1 }}
+            exit={{ scale: 0.7, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 26 }}
+            className="flex items-center gap-3 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] shadow-2xl rounded-2xl px-4 py-3"
           >
-            <div className="w-3 h-3 bg-white rounded-sm" />
-          </button>
+            {/* Pulsing red dot */}
+            <motion.span
+              animate={{ scale: [1, 1.25, 1], opacity: [1, 0.6, 1] }}
+              transition={{ duration: 1.2, repeat: Infinity }}
+              className="h-2.5 w-2.5 rounded-full bg-[var(--color-brand-red)] shrink-0"
+            />
+
+            {/* Waveform */}
+            <div className="overflow-hidden">
+              <Waveform amplitude={amplitude} animTime={animTime} />
+            </div>
+
+            {/* Timer */}
+            <span className="text-xs font-mono text-[var(--color-brand-text-secondary)] shrink-0 w-10 text-end">
+              {mins}:{secs}
+            </span>
+          </motion.div>
         </div>
       </motion.div>
+
+      {/* Hint text */}
+      <div
+        className="fixed z-[60] pointer-events-none flex justify-center start-0 end-0"
+        style={{ bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))' }}
+      >
+        <span className="text-xs text-[var(--color-brand-text-muted)] bg-[var(--color-brand-card)]/80 backdrop-blur px-3 py-1 rounded-full">
+          {nearTrash ? 'Release to cancel' : 'Release to save · drag up to cancel'}
+        </span>
+      </div>
     </>
   )
 }
