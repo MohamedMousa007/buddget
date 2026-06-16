@@ -13,6 +13,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import Groq from 'groq-sdk'
 import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
+import { audioMimeToExt } from '@/lib/voice/audioMime'
 
 export const maxDuration = 30
 
@@ -56,8 +57,10 @@ export async function POST(request: NextRequest) {
 
   try {
     const groq = new Groq({ apiKey })
-    const filename = (audio as File).name || 'recording.webm'
-    const file = new File([audio], filename, { type: audio.type || 'audio/webm' })
+    // Derive the extension from the actual blob MIME — never trust the client
+    // filename. iOS sends audio/mp4; an extension mismatch makes Groq reject it.
+    const type = audio.type || 'audio/mp4'
+    const file = new File([audio], `recording.${audioMimeToExt(type)}`, { type })
 
     const result = await groq.audio.transcriptions.create({
       file,

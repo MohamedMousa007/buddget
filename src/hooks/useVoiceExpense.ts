@@ -29,7 +29,7 @@ interface UseVoiceExpenseResult {
 
 export function useVoiceExpense(): UseVoiceExpenseResult {
   const recorderRef = useRef<{
-    stop(): Promise<{ audio: Blob | null; inlineText: string | null }>
+    stop(): Promise<{ audio: Blob | null; inlineText: string | null; mimeType: string | null }>
     cancel(): Promise<void>
     getAmplitude(): number
   } | null>(null)
@@ -166,13 +166,15 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
       ])
 
     try {
-      const { audio, inlineText } = await withTimeout(recorder.stop())
+      const { audio, inlineText, mimeType } = await withTimeout(recorder.stop())
 
       let text = inlineText?.trim() ?? ''
 
       if (!text && audio) {
+        const { audioMimeToExt } = await import('@/lib/voice/audioMime')
+        const ext = audioMimeToExt(audio.type || mimeType)
         const form = new FormData()
-        form.append('audio', audio, `voice-${Date.now()}.webm`)
+        form.append('audio', audio, `voice-${Date.now()}.${ext}`)
         form.append('language', language === 'ar' ? 'ar' : 'en')
         const { apiFetchAuth } = await import('@/lib/apiBase')
         const res = await withTimeout(
