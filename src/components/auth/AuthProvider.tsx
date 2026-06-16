@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'rea
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
+import { isNative } from '@/lib/native/isNative'
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js'
 import {
   SupabaseFinanceSync,
@@ -230,7 +231,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false)
     })
 
-    return () => subscription.unsubscribe()
+    // Native WebViews pause the auto-refresh timer while backgrounded, so the
+    // access token goes stale and API calls 401. Drive startAutoRefresh on
+    // foreground (which refreshes immediately if needed) and stopAutoRefresh on
+    // background. On web the SDK's own timer suffices, so this is native-only.
+    let onVisibility: (() => void) | undefined
+    if (isNative()) {
+      onVisibility = () => {
+        if (document.visibilityState === 'visible') {
+          void supabase.auth.startAutoRefresh()
+          void supabase.auth.getSession()
+        } else {
+          void supabase.auth.stopAutoRefresh()
+        }
+      }
+      document.addEventListener('visibilitychange', onVisibility)
+      if (document.visibilityState === 'visible') void supabase.auth.startAutoRefresh()
+    }
+
+    return () => {
+      subscription.unsubscribe()
+      if (onVisibility) document.removeEventListener('visibilitychange', onVisibility)
+    }
   }, [configured, pathname, t.auth.sessionExpired])
 
   const signOut = useCallback(async () => {

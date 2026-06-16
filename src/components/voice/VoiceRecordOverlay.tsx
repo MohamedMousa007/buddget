@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useCallback, useState, type RefObject } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence, type MotionValue } from 'framer-motion'
 import { Check, X, RotateCcw, Loader2, Trash2 } from 'lucide-react'
 import type { VoiceState } from '@/hooks/useVoiceExpense'
@@ -46,7 +47,12 @@ export function VoiceRecordOverlay({
 }: Props) {
   const visible = state !== 'idle'
 
-  return (
+  // Portal to <body>: the overlay must escape the bottom-nav, whose backdrop-blur
+  // establishes a containing block that re-anchors position:fixed children
+  // (WebKit), which otherwise pushes the finger-tracked widget off-screen.
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
     <AnimatePresence>
       {visible && state === 'recording' && (
         <FloatingRecordingWidget
@@ -77,7 +83,8 @@ export function VoiceRecordOverlay({
           )}
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   )
 }
 
