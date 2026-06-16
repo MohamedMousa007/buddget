@@ -24,7 +24,7 @@ import { matchCuratedPattern } from '@/lib/sms/patterns'
 import { isNonTransaction } from '@/lib/sms/patterns/preFilter'
 import { checkAndAutoPromote } from '@/lib/sms/promotionChecker'
 import { lookupKeys, effectiveSender } from '@/lib/sms/routingKey'
-import { createSmsExpense, isIncomeKind } from '@/lib/sms/createSmsExpense'
+import { createSmsTransaction, type SmsTxResult } from '@/lib/sms/dispatch'
 import { getServerDictionary } from '@/lib/i18n/getServerDictionary'
 import { getUserLocale } from '@/lib/server/userLocale'
 import { emitNotification } from '@/lib/server/emitNotification'
@@ -56,10 +56,12 @@ interface ParsedTx {
   category: string | null
   confidence: number
   kind: 'purchase' | 'online_purchase' | 'atm_withdrawal' | 'instant_transfer_out' |
-        'instant_transfer_in' | 'income' | 'refund' | 'fee' | 'other' | null
+        'instant_transfer_in' | 'cc_payoff' | 'own_transfer' | 'currency_exchange' |
+        'income' | 'refund' | 'fee' | 'other' | null
   cleanTitle: string | null
   rawSmsSummary: string | null
   detectedAccountLast4: string | null
+  detectedCounterpartyLast4: string | null
   newBalance: number | null
   merchantNormalized: string | null
 }
@@ -149,6 +151,9 @@ function applyTemplate(
 
     const cleanTitle =
       kind === 'atm_withdrawal'       ? `ATM Withdrawal${bankName ? ` — ${bankName}` : ''}` :
+      kind === 'cc_payoff'            ? `Credit Card Payment${bankName ? ` — ${bankName}` : ''}` :
+      kind === 'own_transfer'         ? `Transfer between accounts${bankName ? ` — ${bankName}` : ''}` :
+      kind === 'currency_exchange'    ? `Currency Exchange${bankName ? ` — ${bankName}` : ''}` :
       kind === 'instant_transfer_out' ? `Transfer${merchant ? ` to ${merchant}` : ''}` :
       kind === 'instant_transfer_in'  ? `Transfer${merchant ? ` from ${merchant}` : ''}` :
       merchant ?? bankName ?? null
@@ -164,6 +169,7 @@ function applyTemplate(
         category: null, confidence: 1.0, kind,
         cleanTitle, rawSmsSummary: null,
         detectedAccountLast4: cleanLast4,
+        detectedCounterpartyLast4: null,
         newBalance: null, merchantNormalized: null,
       },
     }
@@ -416,10 +422,37 @@ export async function POST(request: Request) {
   const { message, sender, source, receivedAt } = parsedBody.data
   const service = createServiceRoleClient()
 
-  // sms_hash stays as a row identifier — /api/sms/confirm and the FCM
-  // sms_confirm push look rows up by hash. It no longer gates duplicates.
+  // sms_hash identifies the row for /api/sms/confirm + the FCM sms_confirm push.
   const hash = computeSmsHash(message)
   const nowIso = receivedAt ?? new Date().toISOString()
+
+  // Idempotency: a WorkManager/Shortcut retry of an SMS that already produced a
+  // transaction (or is awaiting confirmation) must not post a duplicate.
+  const { data: priorRows } = await service
+    .from('sms_parse_log')
+    .select('id, expense_id, income_id, debt_payment_id, awaiting_confirmation, status, paired_log_id')
+    .eq('user_id', userId)
+    .eq('sms_hash', hash)
+    .neq('status', 'rejected')
+    .limit(5)
+  const dupe = (priorRows ?? []).find(
+    (r) =>
+      r.expense_id ||
+      r.income_id ||
+      r.debt_payment_id ||
+      r.awaiting_confirmation ||
+      // A leg that already reconciled as a pair (posted no id) must not re-run.
+      r.status === 'paired' ||
+      r.paired_log_id,
+  )
+  if (dupe) {
+    return NextResponse.json({
+      ok: true,
+      duplicate: true,
+      expenseId: dupe.expense_id ?? null,
+      incomeId: dupe.income_id ?? null,
+    })
+  }
 
   const { data: logRow, error: logErr } = await service
     .from('sms_parse_log')
@@ -492,6 +525,7 @@ export async function POST(request: Request) {
       cleanTitle: curated.cleanTitle,
       rawSmsSummary: null,
       detectedAccountLast4: curated.last4,
+      detectedCounterpartyLast4: curated.counterpartyLast4,
       newBalance: curated.balance,
       merchantNormalized: null,
     }
@@ -586,16 +620,16 @@ export async function POST(request: Request) {
 
   // Server-side security: strip non-digits and truncate to last 4 — never trust raw output.
   const cleanLast4 = (parsed.detectedAccountLast4 ?? '').replace(/\D/g, '').slice(-4) || null
+  const cleanCpLast4 = (parsed.detectedCounterpartyLast4 ?? '').replace(/\D/g, '').slice(-4) || null
 
-  const isIncome = isIncomeKind(parsed.kind)
   // Prefer the transaction date embedded in the SMS body (curated patterns)
   // over the receive timestamp — they differ for delayed/offline deliveries.
   const day = txDay ?? nowIso.slice(0, 10)
 
-  // Insert FIRST, then mark the log according to what actually happened — never
-  // report success for a row that was never created. Shared with the confirm
-  // route so auto-add and manual-add have identical persistence semantics.
-  const { expenseId, incomeId, error: insertErr } = await createSmsExpense(service, {
+  // Classify + persist via the shared dispatcher: own-account/transfer/FX
+  // pairing → CC payoff → salary dedup → ATM → subscription → purchase. Posts
+  // the right record(s) (or intentionally none for paired/matched cases).
+  const tx: SmsTxResult = await createSmsTransaction(service, {
     userId,
     amount: parsed.amount,
     currency: parsed.currency,
@@ -609,10 +643,21 @@ export async function POST(request: Request) {
     rawSmsSummary: parsed.rawSmsSummary,
     source: source ?? 'sms',
     rawBody: message,
-  })
-  // Treat a null id (with no thrown error) as a failure too — the row is absent.
-  const addFailed = !!insertErr || (!expenseId && !incomeId)
-  if (insertErr) console.error('[sms/parse] auto-add insert failed', insertErr)
+    last4: cleanLast4,
+    counterpartyLast4: cleanCpLast4,
+    receivedAtIso: nowIso,
+    logId,
+    newBalance: parsed.newBalance ?? null,
+  }, { exchangeRates: {} })
+
+  const { expenseId, incomeId, debtPaymentId } = tx
+  const isIncome = tx.outcome === 'income'
+  // Some outcomes intentionally post no row (paired transfer leg / matched salary).
+  const intentionalNoPost =
+    tx.outcome === 'income_matched' || (tx.outcome === 'transfer_paired' && !expenseId)
+  const postedSomething = !!(expenseId || incomeId || debtPaymentId)
+  const addFailed = !!tx.error || (!postedSomething && !intentionalNoPost)
+  if (tx.error) console.error('[sms/parse] auto-add insert failed', tx.error)
 
   // Promote the log row with the full parse result + an HONEST add status.
   // add_failed keeps parsed_ok=true and awaiting_confirmation=true so the row
@@ -621,16 +666,18 @@ export async function POST(request: Request) {
     .from('sms_parse_log')
     .update({
       parsed_ok: true,
-      status: addFailed ? 'add_failed' : 'logged',
+      status: addFailed ? 'add_failed' : tx.outcome === 'transfer_paired' ? 'paired' : 'logged',
       failure_code: addFailed ? 'insert_failed' : null,
       confidence: parsed.confidence,
       amount: parsed.amount,
       currency: parsed.currency,
       merchant: parsed.merchant,
       bank_name: parsed.bank_name,
-      category: parsed.category,
+      // Persist the APPLIED category (e.g. Transfer / CC Payoff / Subscription) when known.
+      category: tx.category ?? parsed.category,
       awaiting_confirmation: addFailed,
       account_last4: cleanLast4,
+      counterparty_last4: cleanCpLast4,
       kind: parsed.kind,
       clean_title: parsed.cleanTitle,
       raw_sms_summary: parsed.rawSmsSummary,
@@ -641,6 +688,7 @@ export async function POST(request: Request) {
       payment_instrument: paymentInstrument,
       expense_id: expenseId,
       income_id: incomeId,
+      debt_payment_id: debtPaymentId,
     })
     .eq('id', logId)
 
@@ -653,48 +701,91 @@ export async function POST(request: Request) {
   const np = getServerDictionary(await getUserLocale(service, userId)).notifications.push
   const amountStr = `${parsed.currency} ${parsed.amount.toLocaleString()}`
   const bank = parsed.bank_name ?? ''
+  const label = parsed.cleanTitle ?? parsed.merchant ?? null
+  const isMovement =
+    tx.category === 'Transfer' || tx.category === 'Currency Exchange' || tx.category === 'ATM Cash Withdrawal'
+
+  // Notification feed bucket (web center) — keep to the 3 known categories.
+  const notifCategory = addFailed ? 'sms_confirm' : isIncome || tx.outcome === 'income_matched' ? 'sms_income' : 'sms_expense'
+  const notifSeverity = addFailed ? 'warning' : isIncome || tx.outcome === 'income_matched' ? 'success' : 'info'
 
   // Push runs in after() so Vercel keeps the function alive until delivery,
   // and the result is logged — a missing FIREBASE_SERVICE_ACCOUNT_JSON or an
   // all-stale token list shows up in the logs instead of failing silently.
-  const pushArgs: SendNativePushArgs =
-    addFailed
-      ? {
-          // Auto-add failed — turn the failure into a recoverable action instead
-          // of silence. Tapping calls /api/sms/confirm (the in-app banner does too).
-          userId,
-          title: np.smsConfirmTitle,
-          body: np.smsConfirmBody(amountStr, parsed.cleanTitle ?? null),
-          data: { kind: 'sms_confirm', hash, logId, amount: String(parsed.amount), currency: parsed.currency },
-          collapseKey: `sms-confirm-${hash.slice(0, 12)}`,
-        }
-      : isIncome
-        ? {
-            userId,
-            title: np.smsIncomeTitle(amountStr, parsed.cleanTitle ?? parsed.merchant ?? null),
-            body: np.smsIncomeBody(bank || (parsed.merchant ?? '')),
-            data: { kind: 'sms_income_added', incomeId: incomeId ?? '', logId },
-            collapseKey: `sms-income-${hash.slice(0, 12)}`,
-          }
-        : {
-            userId,
-            title: np.smsExpenseTitle(amountStr, parsed.cleanTitle ?? parsed.merchant ?? null),
-            body: np.smsExpenseBody(bank || (parsed.merchant ?? '')),
-            data: { kind: 'sms_auto_added', expenseId: expenseId ?? '', logId },
-            collapseKey: `sms-${hash.slice(0, 12)}`,
-          }
+  let pushArgs: SendNativePushArgs
+  if (addFailed) {
+    pushArgs = {
+      userId,
+      title: np.smsConfirmTitle,
+      body: np.smsConfirmBody(amountStr, label),
+      data: { kind: 'sms_confirm', hash, logId, amount: String(parsed.amount), currency: parsed.currency },
+      collapseKey: `sms-confirm-${hash.slice(0, 12)}`,
+    }
+  } else if (tx.outcome === 'income_matched') {
+    pushArgs = {
+      userId,
+      title: np.smsSalaryTitle(amountStr),
+      body: tx.confirmReason === 'salary' ? np.smsSalaryDiffersBody : np.smsSalaryBody,
+      data: { kind: 'sms_salary_matched', logId, sourceId: tx.matchedSourceId ?? '' },
+      collapseKey: `sms-salary-${hash.slice(0, 12)}`,
+    }
+  } else if (tx.category === 'CC Payoff') {
+    pushArgs = {
+      userId,
+      title: np.smsCcPayoffTitle(amountStr),
+      body: np.smsCcPayoffBody(bank || 'credit'),
+      data: { kind: 'sms_cc_payoff', logId, debtPaymentId: debtPaymentId ?? '' },
+      collapseKey: `sms-ccpay-${hash.slice(0, 12)}`,
+    }
+  } else if (tx.outcome === 'subscription') {
+    pushArgs = {
+      userId,
+      title: np.smsSubscriptionTitle(amountStr, label),
+      body: np.smsSubscriptionBody(parsed.merchantNormalized ?? parsed.merchant ?? bank),
+      data: { kind: 'sms_subscription', expenseId: expenseId ?? '', logId },
+      collapseKey: `sms-sub-${hash.slice(0, 12)}`,
+    }
+  } else if (isMovement) {
+    pushArgs = {
+      userId,
+      title: np.smsMovementTitle(amountStr, label),
+      body: np.smsMovementBody(tx.category ?? 'Transfer'),
+      data: {
+        kind: tx.category === 'ATM Cash Withdrawal' ? 'sms_atm' : 'sms_transfer',
+        expenseId: expenseId ?? '',
+        logId,
+      },
+      collapseKey: `sms-move-${hash.slice(0, 12)}`,
+    }
+  } else if (isIncome) {
+    pushArgs = {
+      userId,
+      title: np.smsIncomeTitle(amountStr, label),
+      body: np.smsIncomeBody(bank || (parsed.merchant ?? '')),
+      data: { kind: 'sms_income_added', incomeId: incomeId ?? '', logId },
+      collapseKey: `sms-income-${hash.slice(0, 12)}`,
+    }
+  } else {
+    pushArgs = {
+      userId,
+      title: np.smsExpenseTitle(amountStr, label),
+      body: np.smsExpenseBody(bank || (parsed.merchant ?? '')),
+      data: { kind: 'sms_auto_added', expenseId: expenseId ?? '', logId },
+      collapseKey: `sms-${hash.slice(0, 12)}`,
+    }
+  }
 
   // Also record the event in the notifications feed (web center) — no extra
   // push (the route already sends one below). Deduped on `sms:<logId>`.
   after(() =>
     emitNotification(service, {
       userId,
-      category: addFailed ? 'sms_confirm' : isIncome ? 'sms_income' : 'sms_expense',
-      severity: addFailed ? 'warning' : isIncome ? 'success' : 'info',
+      category: notifCategory,
+      severity: notifSeverity,
       dedupeKey: `sms:${logId}`,
       title: pushArgs.title,
       body: pushArgs.body,
-      metadata: { logId, expenseId, incomeId, addFailed },
+      metadata: { logId, expenseId, incomeId, debtPaymentId, addFailed, outcome: tx.outcome },
       push: false,
     }),
   )
@@ -825,6 +916,7 @@ async function callGemini(apiKey: string, message: string): Promise<ParsedTx> {
     cleanTitle: parsed.cleanTitle ?? null,
     rawSmsSummary: parsed.rawSmsSummary ?? null,
     detectedAccountLast4: parsed.detectedAccountLast4 ?? null,
+    detectedCounterpartyLast4: parsed.detectedCounterpartyLast4 ?? null,
     newBalance: typeof parsed.newBalance === 'number' ? parsed.newBalance : null,
     merchantNormalized: parsed.merchantNormalized ?? null,
   }

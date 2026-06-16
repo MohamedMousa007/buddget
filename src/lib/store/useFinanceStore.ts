@@ -195,6 +195,15 @@ export const useFinanceStore = create<FinanceStore>()(
           return { expenses: next }
         }),
 
+      upsertServerDebtPayment: (payment) =>
+        set((state) => {
+          const i = state.debtPayments.findIndex((p) => p.id === payment.id)
+          if (i === -1) return { debtPayments: [...state.debtPayments, payment] }
+          const next = state.debtPayments.slice()
+          next[i] = payment
+          return { debtPayments: next }
+        }),
+
       addReceipt: (receipt) => {
         const id = generateId()
         const now = new Date().toISOString()

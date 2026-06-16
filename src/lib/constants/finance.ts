@@ -1,4 +1,5 @@
 import type { Currency, DebtCurrency, ExpenseCategory, PaymentMethodType } from '@/lib/store/types'
+import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
 
 /** Fiat currencies only (expenses, income, savings, payment methods, sidebar base currency). */
 export const FIAT_CURRENCIES: Currency[] = [
@@ -21,24 +22,42 @@ export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   'Rent',
   'Transport',
   'Food',
+  'Groceries',
+  'Fuel',
   'Enjoyment',
-  'Savings',
+  'Shopping',
+  'Health',
+  'Education',
+  'Utilities',
+  'Subscription',
   'Debt',
   'Remittance',
+  'Savings',
   'Other',
+  // Non-spend money-movement categories (system-assigned, excluded from spend).
+  'ATM Cash Withdrawal',
+  'Transfer',
+  'Currency Exchange',
+  'CC Payoff',
 ]
 
 /**
  * Categories allowed when adding or normally editing an expense.
- * Savings is managed via the Savings page and dashboard card, not as spending.
+ * Excludes Savings (managed via the Savings page) and the non-spend money-movement
+ * categories (system-assigned by SMS tracking), per {@link isNonSpendCategory}.
  */
-export const EXPENSE_ENTRY_CATEGORIES: ExpenseCategory[] = EXPENSE_CATEGORIES.filter((c) => c !== 'Savings')
+export const EXPENSE_ENTRY_CATEGORIES: ExpenseCategory[] = EXPENSE_CATEGORIES.filter(
+  (c) => !isNonSpendCategory(c),
+)
 
 /**
- * Chip list for add/edit forms. Includes Savings only when the row is already Savings (legacy), so users can reclassify.
+ * Chip list for add/edit forms. Includes the row's current category when it is a
+ * system/non-spend one (e.g. an SMS-classified Transfer), so users can reclassify.
  */
 export function expenseCategoryOptionsForForm(currentCategory: ExpenseCategory): ExpenseCategory[] {
-  return currentCategory === 'Savings' ? EXPENSE_CATEGORIES : EXPENSE_ENTRY_CATEGORIES
+  return isNonSpendCategory(currentCategory)
+    ? [currentCategory, ...EXPENSE_ENTRY_CATEGORIES]
+    : EXPENSE_ENTRY_CATEGORIES
 }
 
 /** Filter dropdown: All + every expense category. */

@@ -306,3 +306,59 @@ describe('pre-filter (non-transaction rejector)', () => {
     expect(isNonTransaction('الرصيد المتاح SAR 12,450.00')).toBe('balance_only')
   })
 })
+
+// --- Movement patterns (CC payoff / own transfer / FX) ----------------------
+const CC_PAYOFF_THANKYOU =
+  'Thank you. Your credit card payment of EGP 5,000.00 has been received.'
+const CC_PAYOFF_RECEIVED =
+  'Payment of EGP 3,200.00 received for your credit card ending 1234.'
+const OWN_TRANSFER =
+  'Transfer of EGP 1,000.00 from your account ****1234 to your account ****5678.'
+const FX_DEBIT =
+  'You have exchanged USD 100.00 from account ****1234.'
+const FX_CREDIT =
+  'Currency conversion: EGP 4,800.00 credited to account ****5678.'
+
+describe('movement pattern matcher', () => {
+  it('classifies a credit-card payoff (thank-you phrasing)', () => {
+    const m = matchCuratedPattern(CC_PAYOFF_THANKYOU, null)
+    expect(m).not.toBeNull()
+    expect(m!.kind).toBe('cc_payoff')
+    expect(m!.amount).toBe(5000)
+    expect(m!.currency).toBe('EGP')
+  })
+
+  it('classifies a credit-card payoff with card last4', () => {
+    const m = matchCuratedPattern(CC_PAYOFF_RECEIVED, null)
+    expect(m).not.toBeNull()
+    expect(m!.kind).toBe('cc_payoff')
+    expect(m!.amount).toBe(3200)
+    expect(m!.last4).toBe('1234')
+  })
+
+  it('classifies an own-account transfer and captures both account last4', () => {
+    const m = matchCuratedPattern(OWN_TRANSFER, null)
+    expect(m).not.toBeNull()
+    expect(m!.kind).toBe('own_transfer')
+    expect(m!.amount).toBe(1000)
+    expect(m!.last4).toBe('1234')
+    expect(m!.counterpartyLast4).toBe('5678')
+  })
+
+  it('classifies FX debit and credit legs as currency_exchange', () => {
+    const debit = matchCuratedPattern(FX_DEBIT, null)
+    expect(debit!.kind).toBe('currency_exchange')
+    expect(debit!.currency).toBe('USD')
+    expect(debit!.amount).toBe(100)
+
+    const credit = matchCuratedPattern(FX_CREDIT, null)
+    expect(credit!.kind).toBe('currency_exchange')
+    expect(credit!.currency).toBe('EGP')
+    expect(credit!.amount).toBe(4800)
+  })
+
+  it('does NOT misclassify a card purchase as a payoff', () => {
+    const m = matchCuratedPattern(HSBC_PURCHASE, 'HSBC')
+    expect(m!.kind).toBe('purchase')
+  })
+})

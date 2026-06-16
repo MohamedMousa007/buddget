@@ -1161,6 +1161,19 @@ export interface Dictionary {
       smsIncomeBody: (bank: string) => string
       smsConfirmTitle: string
       smsConfirmBody: (amount: string, label: string | null) => string
+      /** Non-spend movement (ATM / transfer / FX) — not counted as spending. */
+      smsMovementTitle: (amount: string, label: string | null) => string
+      smsMovementBody: (kindLabel: string) => string
+      /** Credit-card payoff. */
+      smsCcPayoffTitle: (amount: string) => string
+      smsCcPayoffBody: (bank: string) => string
+      /** Subscription-linked charge. */
+      smsSubscriptionTitle: (amount: string, label: string | null) => string
+      smsSubscriptionBody: (brand: string) => string
+      /** Salary matched to declared income (no duplicate added). */
+      smsSalaryTitle: (amount: string) => string
+      smsSalaryBody: string
+      smsSalaryDiffersBody: string
     }
   }
 

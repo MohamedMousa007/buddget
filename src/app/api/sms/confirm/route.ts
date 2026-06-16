@@ -11,7 +11,8 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
-import { createSmsExpense, type SmsExpenseKind } from '@/lib/sms/createSmsExpense'
+import type { SmsExpenseKind } from '@/lib/sms/createSmsExpense'
+import { createSmsTransaction } from '@/lib/sms/dispatch'
 
 const bodySchema = z.union([
   z.object({ logId: z.string().uuid() }),
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
   // Fetch the pending row
   let query = service
     .from('sms_parse_log')
-    .select('id, kind, clean_title, merchant_normalized, merchant, bank_name, amount, currency, category, raw_sms_summary, source, raw_body, received_at')
+    .select('id, kind, clean_title, merchant_normalized, merchant, bank_name, amount, currency, category, raw_sms_summary, source, raw_body, received_at, account_last4, counterparty_last4, new_balance')
     .eq('user_id', userId)
     .eq('awaiting_confirmation', true)
     .eq('parsed_ok', true)
@@ -56,9 +57,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, reason: 'not_found' }, { status: 404 })
   }
 
-  const day = new Date(row.received_at ?? Date.now()).toISOString().slice(0, 10)
+  const receivedAtIso = new Date(row.received_at ?? Date.now()).toISOString()
+  const day = receivedAtIso.slice(0, 10)
 
-  const { expenseId, incomeId, error } = await createSmsExpense(service, {
+  // Re-run the full classifier so a user-confirmed row gets the same
+  // transfer/CC/subscription/salary handling as the auto path.
+  const tx = await createSmsTransaction(service, {
     userId,
     amount: row.amount!,
     currency: row.currency!,
@@ -72,12 +76,21 @@ export async function POST(request: Request) {
     rawSmsSummary: row.raw_sms_summary ?? null,
     source: row.source ?? 'sms',
     rawBody: row.raw_body ?? '',
-  })
+    last4: row.account_last4 ?? null,
+    counterpartyLast4: row.counterparty_last4 ?? null,
+    receivedAtIso,
+    logId: row.id,
+    newBalance: row.new_balance ?? null,
+  }, { exchangeRates: {} })
+
+  const { expenseId, incomeId, debtPaymentId } = tx
+  const postedSomething = !!(expenseId || incomeId || debtPaymentId)
+  const intentionalNoPost = tx.outcome === 'income_matched' || tx.outcome === 'transfer_paired'
 
   // Insert failed — leave the row recoverable (add_failed, still awaiting) and
   // surface the failure rather than swallowing it.
-  if (error || (!expenseId && !incomeId)) {
-    console.error('[sms/confirm] insert failed', error)
+  if (tx.error || (!postedSomething && !intentionalNoPost)) {
+    console.error('[sms/confirm] insert failed', tx.error)
     await service
       .from('sms_parse_log')
       .update({ status: 'add_failed', failure_code: 'insert_failed' })
@@ -93,8 +106,10 @@ export async function POST(request: Request) {
       awaiting_confirmation: false,
       status: 'tapped',
       failure_code: null,
+      category: tx.category ?? row.category,
       expense_id: expenseId,
       income_id: incomeId,
+      debt_payment_id: debtPaymentId,
     })
     .eq('id', row.id)
 

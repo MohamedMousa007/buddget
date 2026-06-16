@@ -16,8 +16,17 @@ import { GENERIC_BANK_PATTERNS } from './genericBank'
 import { EMIRATES_NBD_PATTERNS } from './emiratesNBD'
 import { MASHREQ_PATTERNS } from './mashreq'
 import { SNB_PATTERNS } from './snb'
+import { CC_PAYOFF_PATTERNS } from './ccPayoff'
+import { OWN_TRANSFER_PATTERNS } from './ownTransfer'
+import { FX_PATTERNS } from './fx'
 
 export const ALL_PATTERN_SETS: BankPatternSet[] = [
+  // Movement-specific sets first — they carry stronger intent signals
+  // (e.g. "Credit Card Payment", "FX", own-account transfer) than the
+  // generic purchase/transfer patterns below.
+  CC_PAYOFF_PATTERNS,
+  FX_PATTERNS,
+  OWN_TRANSFER_PATTERNS,
   HSBC_PATTERNS,
   CIB_PATTERNS,
   NBE_PATTERNS,
@@ -71,6 +80,9 @@ function parseSmsDay(raw: string | null): string | null {
 function buildCleanTitle(kind: SmsKind, bank: string, counterparty: string | null): string | null {
   switch (kind) {
     case 'atm_withdrawal':       return `ATM Withdrawal — ${bank}`
+    case 'cc_payoff':            return `Credit Card Payment — ${bank}`
+    case 'own_transfer':         return `Transfer between accounts — ${bank}`
+    case 'currency_exchange':    return `Currency Exchange — ${bank}`
     case 'instant_transfer_out': return counterparty ? `Transfer to ${counterparty}` : `Transfer — ${bank}`
     case 'instant_transfer_in':  return counterparty ? `Transfer from ${counterparty}` : `Transfer — ${bank}`
     case 'fee':                  return `Bank Fee — ${bank}`
@@ -93,6 +105,8 @@ function tryPattern(message: string, set: BankPatternSet, p: CuratedPattern): Cu
   const counterparty = p.groups.counterparty ? (m[p.groups.counterparty]?.trim() ?? null) : null
   const last4Raw = p.groups.last4 ? (m[p.groups.last4] ?? null) : null
   const last4 = last4Raw ? last4Raw.replace(/\D/g, '').slice(-4) || null : null
+  const cpLast4Raw = p.groups.counterpartyLast4 ? (m[p.groups.counterpartyLast4] ?? null) : null
+  const counterpartyLast4 = cpLast4Raw ? cpLast4Raw.replace(/\D/g, '').slice(-4) || null : null
   const balanceRaw = p.groups.balance ? (m[p.groups.balance] ?? '').replace(/,/g, '') : ''
   const balance = balanceRaw ? parseFloat(balanceRaw) : null
   const txDay = parseSmsDay(p.groups.datetime ? (m[p.groups.datetime] ?? null) : null)
@@ -105,6 +119,7 @@ function tryPattern(message: string, set: BankPatternSet, p: CuratedPattern): Cu
     currency,
     counterparty,
     last4,
+    counterpartyLast4,
     balance: balance != null && Number.isFinite(balance) ? balance : null,
     paymentInstrument: p.paymentInstrument ?? null,
     txDay,

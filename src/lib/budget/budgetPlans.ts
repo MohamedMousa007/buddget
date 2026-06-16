@@ -1,4 +1,5 @@
 import { EXPENSE_CATEGORIES, FIAT_CURRENCIES } from '@/lib/constants/finance'
+import { CATEGORY_BUDGET_ALIASES } from '@/lib/constants/categoryMeta'
 import type { BudgetCategory, BudgetPlan, BudgetPlanCategory, Currency, ExpenseCategory } from '@/lib/store/types'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 
@@ -113,6 +114,11 @@ export function categorySpendingForPlanRows(
   plan: BudgetPlan
 ): Record<string, number> {
   const out: Record<string, number> = {}
+  // Plan row names (lowercased) so an alias is only folded in when the plan has
+  // no dedicated row for that newer category.
+  const planNames = new Set(
+    plan.categories.map((c) => c.name.trim().toLowerCase()).filter(Boolean),
+  )
   for (const cat of plan.categories) {
     if (isSavingsPlanCategory(cat)) continue
     const name = cat.name.trim()
@@ -120,7 +126,16 @@ export function categorySpendingForPlanRows(
     const direct = spendingByCategory[name] ?? 0
     const enumCat = matchExpenseCategory(name)
     const legacy = enumCat != null && enumCat !== name ? spendingByCategory[enumCat] ?? 0 : 0
-    out[name] = direct + legacy
+    // Fold newer spend categories (Groceries/Fuel/…) into their legacy bucket
+    // unless the plan already has a dedicated row for them.
+    const bucket = enumCat ?? name
+    const aliases = CATEGORY_BUDGET_ALIASES[bucket] ?? []
+    let aliasSum = 0
+    for (const alias of aliases) {
+      if (planNames.has(alias.toLowerCase())) continue
+      aliasSum += spendingByCategory[alias] ?? 0
+    }
+    out[name] = direct + legacy + aliasSum
   }
   return out
 }

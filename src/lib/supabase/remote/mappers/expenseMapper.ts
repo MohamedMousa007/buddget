@@ -11,6 +11,17 @@ const VALID_CATEGORIES: readonly ExpenseCategory[] = [
   'Debt',
   'Remittance',
   'Other',
+  'Groceries',
+  'Fuel',
+  'Health',
+  'Shopping',
+  'Education',
+  'Utilities',
+  'Subscription',
+  'ATM Cash Withdrawal',
+  'Transfer',
+  'Currency Exchange',
+  'CC Payoff',
 ]
 
 function toDbCategory(category: string): ExpenseInsert['category'] {
@@ -30,11 +41,12 @@ export function expenseToRow(e: Expense, userId: string): ExpenseInsert {
     expense_date: e.date,
     payment_method_id:
       e.paymentMethodId && e.paymentMethodId !== DEFAULT_CASH_ID ? e.paymentMethodId : null,
-    linked_subscription_id: null,
-    linked_debt_payment_id: null,
+    linked_subscription_id: e.linkedSubscriptionId ?? null,
+    linked_debt_payment_id: e.linkedDebtPaymentId ?? null,
     is_debt_payment: !!e.isDebtPayment,
     notes: e.notes ?? null,
     receipt_id: e.receiptId ?? null,
+    sms_log_id: e.smsLogId ?? null,
     created_at: e.createdAt,
   }
 }
@@ -52,6 +64,9 @@ export function expenseFromRow(row: ExpenseRow): Expense {
     isRecurring: false,
     notes: row.notes ?? undefined,
     isDebtPayment: row.is_debt_payment,
+    linkedSubscriptionId: row.linked_subscription_id ?? undefined,
+    linkedDebtPaymentId: row.linked_debt_payment_id ?? undefined,
+    smsLogId: row.sms_log_id ?? undefined,
     receiptId: row.receipt_id ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

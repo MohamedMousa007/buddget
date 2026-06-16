@@ -301,7 +301,11 @@ export type Database = {
           interest_free: boolean
           interest_rate: number
           is_gold: boolean
+          cleared_at: string | null
+          credit_limit: number | null
           linked_credit_card_debt_id: string | null
+          linked_payment_method_id: string | null
+          status: string
           name: string
           notes: string | null
           person: string | null
@@ -337,7 +341,11 @@ export type Database = {
           interest_free?: boolean
           interest_rate?: number
           is_gold?: boolean
+          cleared_at?: string | null
+          credit_limit?: number | null
           linked_credit_card_debt_id?: string | null
+          linked_payment_method_id?: string | null
+          status?: string
           name: string
           notes?: string | null
           person?: string | null
@@ -373,7 +381,11 @@ export type Database = {
           interest_free?: boolean
           interest_rate?: number
           is_gold?: boolean
+          cleared_at?: string | null
+          credit_limit?: number | null
           linked_credit_card_debt_id?: string | null
+          linked_payment_method_id?: string | null
+          status?: string
           name?: string
           notes?: string | null
           person?: string | null
@@ -391,6 +403,13 @@ export type Database = {
             columns: ["linked_credit_card_debt_id"]
             isOneToOne: false
             referencedRelation: "debts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "debts_linked_payment_method_id_fkey"
+            columns: ["linked_payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
             referencedColumns: ["id"]
           },
         ]
@@ -411,6 +430,7 @@ export type Database = {
           notes: string | null
           payment_method_id: string | null
           receipt_id: string | null
+          sms_log_id: string | null
           updated_at: string
           user_id: string
         }
@@ -429,6 +449,7 @@ export type Database = {
           notes?: string | null
           payment_method_id?: string | null
           receipt_id?: string | null
+          sms_log_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -447,6 +468,7 @@ export type Database = {
           notes?: string | null
           payment_method_id?: string | null
           receipt_id?: string | null
+          sms_log_id?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1606,6 +1628,10 @@ export type Database = {
           sender: string | null
           sms_hash: string | null
           source: string
+          paired_log_id: string | null
+          debt_payment_id: string | null
+          savings_transaction_id: string | null
+          counterparty_last4: string | null
           user_id: string
         }
         Insert: {
@@ -1643,6 +1669,10 @@ export type Database = {
           sender?: string | null
           sms_hash?: string | null
           source: string
+          paired_log_id?: string | null
+          debt_payment_id?: string | null
+          savings_transaction_id?: string | null
+          counterparty_last4?: string | null
           user_id: string
         }
         Update: {
@@ -1680,6 +1710,10 @@ export type Database = {
           sender?: string | null
           sms_hash?: string | null
           source?: string
+          paired_log_id?: string | null
+          debt_payment_id?: string | null
+          savings_transaction_id?: string | null
+          counterparty_last4?: string | null
           user_id?: string
         }
         Relationships: [
@@ -1889,6 +1923,24 @@ export type Database = {
         Args: { p_key: string; p_max_hits: number; p_window_seconds: number }
         Returns: boolean
       }
+      sms_try_pair: {
+        Args: {
+          p_user_id: string
+          p_log_id: string
+          p_received_at: string
+          p_window_seconds: number
+          p_amount: number
+          p_require_equal_amount: boolean
+          p_match_kinds: string[]
+        }
+        Returns: {
+          sibling_id: string
+          sibling_kind: string
+          sibling_expense_id: string
+          sibling_income_id: string
+          sibling_status: string
+        }[]
+      }
       cancel_subscription: {
         Args: { p_subscription_id: string }
         Returns: undefined
@@ -1994,6 +2046,17 @@ export type Database = {
         | "Debt"
         | "Remittance"
         | "Other"
+        | "Groceries"
+        | "Fuel"
+        | "Health"
+        | "Shopping"
+        | "Education"
+        | "Utilities"
+        | "Subscription"
+        | "ATM Cash Withdrawal"
+        | "Transfer"
+        | "Currency Exchange"
+        | "CC Payoff"
       goal_category:
         | "spending_control"
         | "emergency"
@@ -2228,6 +2291,17 @@ export const Constants = {
         "Debt",
         "Remittance",
         "Other",
+        "Groceries",
+        "Fuel",
+        "Health",
+        "Shopping",
+        "Education",
+        "Utilities",
+        "Subscription",
+        "ATM Cash Withdrawal",
+        "Transfer",
+        "Currency Exchange",
+        "CC Payoff",
       ],
       goal_category: [
         "spending_control",

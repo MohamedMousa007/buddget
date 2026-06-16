@@ -24,6 +24,8 @@ const PALETTE_RULES: ReadonlyArray<{
   { match: (k) => k === 'groceries', palette: { bg: '#FAEEDA', text: '#B8710A' } },
   { match: (k) => k === 'dining' || k === 'dining_out' || k === 'restaurants' || k === 'food', palette: { bg: '#FAEEDA', text: '#B8710A' } },
   { match: (k) => k === 'transport' || k === 'transportation' || k === 'commute', palette: { bg: '#E6F1FB', text: '#1E5A9E' } },
+  { match: (k) => k === 'fuel' || k === 'petrol' || k === 'gas', palette: { bg: '#E6F1FB', text: '#1E5A9E' } },
+  { match: (k) => k === 'utilities' || k === 'utility' || k === 'bills', palette: { bg: '#FEF4D7', text: '#8A5A0F' } },
   { match: (k) => k === 'entertainment' || k === 'enjoy' || k === 'enjoyment', palette: { bg: '#EEEDFE', text: '#5240A8' } },
   { match: (k) => k === 'personal' || k === 'personal_care' || k === 'self_care', palette: { bg: '#FDE7E7', text: '#9B2C2C' } },
   { match: (k) => k === 'phone' || k === 'internet' || k === 'phone_internet', palette: { bg: '#E6F1FB', text: '#1E5A9E' } },
@@ -33,7 +35,10 @@ const PALETTE_RULES: ReadonlyArray<{
   { match: (k) => k === 'education' || k === 'school', palette: { bg: '#FEF4D7', text: '#8A5A0F' } },
   { match: (k) => k === 'savings' || k === 'saving' || k === 'investment', palette: { bg: '#E1F5EE', text: '#0F6B4C' } },
   { match: (k) => k === 'debt' || k === 'loan' || k === 'credit', palette: { bg: '#FCE7E7', text: '#9B1C1C' } },
+  { match: (k) => k === 'cc_payoff', palette: { bg: '#FCE7E7', text: '#9B1C1C' } },
   { match: (k) => k === 'remittance' || k === 'transfer', palette: { bg: '#E6F1FB', text: '#1E5A9E' } },
+  { match: (k) => k === 'atm_cash_withdrawal' || k === 'atm', palette: { bg: '#ECECEC', text: '#4A4A4A' } },
+  { match: (k) => k === 'currency_exchange', palette: { bg: '#E1F5EE', text: '#0F6B4C' } },
   { match: (k) => k === 'other', palette: { bg: '#ECECEC', text: '#4A4A4A' } },
 ]
 
