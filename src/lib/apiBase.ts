@@ -36,20 +36,18 @@ export function appOrigin(): string {
   return appUrl ?? ''
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let cachedSupabaseClient: any = null
-
 /**
  * Builds Authorization (+ native device id) headers for cross-origin API calls.
  * No-op on web — cookies carry the session on same-origin requests.
- * Caches the Supabase client to avoid leaking autoRefreshToken timers on native.
+ * Uses the shared native Supabase singleton so the token is always the one
+ * AuthProvider's refresh loop has already validated.
  */
 export async function buildAuthHeaders(init?: HeadersInit): Promise<Headers> {
   const headers = new Headers(init)
   if (!usesRemoteApi()) return headers
 
   const { createClient } = await import('@/lib/supabase/client')
-  const client = cachedSupabaseClient || (cachedSupabaseClient = createClient())
+  const client = createClient()
   const {
     data: { session },
   } = await client.auth.getSession()
