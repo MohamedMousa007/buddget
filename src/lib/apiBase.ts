@@ -42,7 +42,9 @@ export function appOrigin(): string {
  */
 function isJwtExpired(token: string): boolean {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+    let b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+    b64 += '='.repeat((4 - (b64.length % 4)) % 4) // pad base64url for atob
+    const payload = JSON.parse(atob(b64))
     return typeof payload.exp !== 'number' || payload.exp * 1000 < Date.now() + 30_000
   } catch {
     return true
@@ -83,9 +85,10 @@ export async function buildAuthHeaders(init?: HeadersInit): Promise<Headers> {
     }
   }
 
-  // Only attach a token that is actually valid — sending a known-expired token
-  // yields a confusing bad_jwt 403 instead of a clean re-auth path.
-  if (session?.access_token && !isJwtExpired(session.access_token)) {
+  // Attach whatever token we ended up with. The server is the authority on
+  // validity (clock skew / local decode quirks shouldn't drop the header), and
+  // apiFetchAuth retries once with a forced refresh if the server says 401.
+  if (session?.access_token) {
     headers.set('Authorization', `Bearer ${session.access_token}`)
   }
 
@@ -100,10 +103,27 @@ export async function buildAuthHeaders(init?: HeadersInit): Promise<Headers> {
   return headers
 }
 
-/** Authenticated fetch — Bearer JWT on Capacitor, cookies on web. */
+/**
+ * Authenticated fetch — Bearer JWT on Capacitor, cookies on web.
+ * Retries once on 401 after forcing a token refresh: this is the definitive
+ * guard against a stale native token (the WebView pauses auto-refresh while
+ * backgrounded). FormData/JSON bodies are reusable across the retry.
+ */
 export async function apiFetchAuth(input: string, init?: RequestInit): Promise<Response> {
   const headers = await buildAuthHeaders(init?.headers)
-  return fetch(apiUrl(input), { ...init, headers })
+  const res = await fetch(apiUrl(input), { ...init, headers })
+  if (res.status !== 401 || !usesRemoteApi()) return res
+
+  // Force a fresh token and retry exactly once.
+  try {
+    const { createClient } = await import('@/lib/supabase/client')
+    await createClient().auth.refreshSession()
+  } catch {
+    /* fall through — retry will reflect whatever session we have */
+  }
+  const retryHeaders = await buildAuthHeaders(init?.headers)
+  if (!retryHeaders.has('Authorization')) return res // no token to retry with
+  return fetch(apiUrl(input), { ...init, headers: retryHeaders })
 }
 
 /** Convenience wrapper around `fetch` that prepends the API base when present. */
