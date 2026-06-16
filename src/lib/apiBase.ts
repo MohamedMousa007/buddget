@@ -69,12 +69,23 @@ export async function buildAuthHeaders(init?: HeadersInit): Promise<Headers> {
   } = await client.auth.getSession()
 
   // Proactively refresh when the stored token is missing or about to expire.
+  // On native the auto-refresh timer can be paused while the app is backgrounded,
+  // so by record time the stored token may be stale. refreshSession() can fail if
+  // the refresh token was already rotated — fall back to a re-read of the session
+  // (the background timer may have refreshed it) rather than dropping the header.
   if (!session?.access_token || isJwtExpired(session.access_token)) {
-    const { data } = await client.auth.refreshSession()
-    session = data.session
+    const { data, error } = await client.auth.refreshSession()
+    if (!error && data.session) {
+      session = data.session
+    } else {
+      const reread = await client.auth.getSession()
+      session = reread.data.session
+    }
   }
 
-  if (session?.access_token) {
+  // Only attach a token that is actually valid — sending a known-expired token
+  // yields a confusing bad_jwt 403 instead of a clean re-auth path.
+  if (session?.access_token && !isJwtExpired(session.access_token)) {
     headers.set('Authorization', `Bearer ${session.access_token}`)
   }
 
