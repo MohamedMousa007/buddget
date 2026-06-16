@@ -107,10 +107,11 @@ async function startWebRecording(): Promise<RecorderHandle> {
   }
 
   const mime = pickPreferredMime()
-  // 16 kbps keeps WebM blobs tiny (<50 KB for a 5-second clip)
+  // 64 kbps keeps clips small while staying well above the AAC floor — 16 kbps
+  // produced garbled, often untranscribable audio on iOS (mp4/AAC).
   const recorder = new MediaRecorder(
     stream,
-    mime ? { mimeType: mime, audioBitsPerSecond: 16_000 } : { audioBitsPerSecond: 16_000 },
+    mime ? { mimeType: mime, audioBitsPerSecond: 64_000 } : { audioBitsPerSecond: 64_000 },
   )
   const chunks: Blob[] = []
   const startTs = Date.now()
@@ -120,7 +121,10 @@ async function startWebRecording(): Promise<RecorderHandle> {
   }
 
   let stopped = false
-  recorder.start(250)
+  // No timeslice — iOS WKWebView fragments the mp4 when chunked, yielding an
+  // invalid container. The full blob is assembled from chunks on stop() anyway,
+  // and the waveform is driven by the Web Audio analyser, not ondataavailable.
+  recorder.start()
 
   const stopAndCollect = (): Promise<Blob> =>
     new Promise((resolve) => {
