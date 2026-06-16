@@ -37,10 +37,26 @@ export function appOrigin(): string {
 }
 
 /**
+ * Returns true when the JWT access token is expired (or unparseable).
+ * Uses a 30-second buffer so we refresh slightly before actual expiry.
+ */
+function isJwtExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+    return typeof payload.exp !== 'number' || payload.exp * 1000 < Date.now() + 30_000
+  } catch {
+    return true
+  }
+}
+
+/**
  * Builds Authorization (+ native device id) headers for cross-origin API calls.
  * No-op on web — cookies carry the session on same-origin requests.
- * Uses the shared native Supabase singleton so the token is always the one
- * AuthProvider's refresh loop has already validated.
+ *
+ * On native the app can be backgrounded/killed, stopping the autoRefreshToken
+ * timer. On next foreground getSession() can return an expired token from
+ * localStorage → server 401. We detect expiry and force a refreshSession()
+ * before every cross-origin call so the token is always valid.
  */
 export async function buildAuthHeaders(init?: HeadersInit): Promise<Headers> {
   const headers = new Headers(init)
@@ -48,9 +64,16 @@ export async function buildAuthHeaders(init?: HeadersInit): Promise<Headers> {
 
   const { createClient } = await import('@/lib/supabase/client')
   const client = createClient()
-  const {
+  let {
     data: { session },
   } = await client.auth.getSession()
+
+  // Proactively refresh when the stored token is missing or about to expire.
+  if (!session?.access_token || isJwtExpired(session.access_token)) {
+    const { data } = await client.auth.refreshSession()
+    session = data.session
+  }
+
   if (session?.access_token) {
     headers.set('Authorization', `Bearer ${session.access_token}`)
   }
