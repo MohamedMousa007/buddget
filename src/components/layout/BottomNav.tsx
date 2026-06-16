@@ -14,10 +14,11 @@ import {
 } from '@/lib/navigation/bottomNavConfig'
 import { useBottomNavMoreSheet } from '@/hooks/useBottomNavMoreSheet'
 import { BottomNavMorePanel } from '@/components/features/layout/BottomNavMorePanel'
-import { useLongPress } from '@/hooks/useLongPress'
+import { useVoiceHoldGesture } from '@/hooks/useVoiceHoldGesture'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useVoiceExpense } from '@/hooks/useVoiceExpense'
 import { VoiceRecordOverlay } from '@/components/voice/VoiceRecordOverlay'
+import { useRef } from 'react'
 
 export function BottomNav() {
   const pathname = usePathname()
@@ -30,22 +31,22 @@ export function BottomNav() {
 
   const closeMore = () => setMoreOpen(false)
 
-  const fabLongPress = useLongPress<HTMLButtonElement>(
-    () => {
+  const trashRef = useRef<HTMLDivElement>(null)
+  const { handlers: fabHandlers, posX, posY, nearTrash } = useVoiceHoldGesture({
+    trashRef,
+    onTap: () => {
+      closeMore()
+      setActiveModal('quickAdd')
+    },
+    onHoldStart: () => {
       requireAuth(() => {
         closeMore()
         void voice.start()
       }, t.modals.fabRequireAuth)
     },
-    () => {
-      closeMore()
-      setActiveModal('quickAdd')
-    },
-    {
-      delay: 600,
-      onLongPressRelease: () => { void voice.stop() },
-    },
-  )
+    onHoldEnd: () => { void voice.stop() },
+    onHoldCancel: () => { void voice.cancel() },
+  })
 
   return (
     <nav className="lg:hidden fixed bottom-0 start-0 end-0 z-50 bg-[var(--color-brand-card)]/95 backdrop-blur-xl border-t border-[var(--color-brand-border)] safe-area-bottom">
@@ -55,10 +56,13 @@ export function BottomNav() {
         animTime={voice.animTime}
         draft={voice.draft}
         error={voice.error}
-        onStop={() => { void voice.stop() }}
+        posX={posX}
+        posY={posY}
+        nearTrash={nearTrash}
+        trashRef={trashRef}
         onCancel={() => { void voice.cancel() }}
         onConfirm={voice.confirm}
-        onRedo={() => { voice.reset(); void voice.start() }}
+        onRedo={voice.reset}
         onClose={voice.reset}
       />
       <div className="flex items-center justify-around h-16 px-2">
@@ -68,7 +72,8 @@ export function BottomNav() {
               <motion.button
                 key="fab"
                 type="button"
-                {...fabLongPress}
+                {...fabHandlers}
+                style={{ touchAction: 'none' }}
                 whileTap={{ scale: 0.92 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 22 }}
                 className="flex items-center justify-center w-12 h-12 -mt-6 rounded-full bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white shadow-lg shadow-red-900/30 transition-colors duration-200 touch-none select-none"
