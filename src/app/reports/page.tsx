@@ -1,7 +1,6 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { ChartPlaceholder } from '@/components/reports/ChartPlaceholder'
 import { ReportFilters } from '@/components/reports/ReportFilters'
 import { ReportExpenseDebtFilter } from '@/components/reports/ReportExpenseDebtFilter'
@@ -14,8 +13,6 @@ import { SpendingPacePanel } from '@/components/reports/SpendingPacePanel'
 import { ReportsSavingsPanel } from '@/components/reports/ReportsSavingsPanel'
 import { ReportsNetWorthPanel } from '@/components/reports/ReportsNetWorthPanel'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
-import { BarChart3 } from 'lucide-react'
-import { useT } from '@/lib/i18n'
 import { useHydrateExpenses, useHydrateIncome, useHydrateDebts, useHydrateSavings } from '@/hooks/remote'
 
 const MonthlyChart = dynamic(
@@ -35,19 +32,9 @@ export default function ReportsPage() {
   useHydrateSavings()
   const r = useReportsPage()
   const stats = useMonthlyStats()
-  const t = useT()
 
   return (
     <div>
-      <PageHeader>
-        <PageHeaderContent>
-          <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)] flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-[var(--color-brand-red)]" />
-            {t.reports.pageTitle}
-          </h1>
-        </PageHeaderContent>
-      </PageHeader>
-
       <div className="px-4 py-4 lg:px-6 space-y-4 max-w-6xl mx-auto">
         <ReportFilters selected={r.dateRange} onSelect={r.setDateRange} />
 

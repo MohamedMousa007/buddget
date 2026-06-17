@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { HandCoins, PieChart, Plus, Minus } from 'lucide-react'
+import { PieChart, Plus, Minus } from 'lucide-react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { formatCurrency } from '@/lib/utils/formatters'
 import {
@@ -136,11 +136,7 @@ export default function SavingsPage() {
       <PageHeader>
         <PageHeaderContent className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)] flex items-center gap-2">
-              <HandCoins className="w-6 h-6 text-[var(--color-brand-red)]" />
-              {t.savings.pageTitle}
-            </h1>
-            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--color-brand-text-muted)]">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--color-brand-text-muted)]">
               <span>
                 <span className="text-[var(--color-brand-text-secondary)]">{t.savings.netWorthShort}: </span>
                 <span

@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { Target } from 'lucide-react'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { GoalCard } from '@/components/features/goals/GoalCard'
@@ -57,11 +56,7 @@ export default function GoalsPage() {
     <div>
       <PageHeader>
         <PageHeaderContent>
-          <div className="flex items-center justify-between gap-4 w-full">
-            <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)] flex items-center gap-2">
-              <Target className="w-6 h-6 text-[var(--color-brand-red)]" aria-hidden />
-              {t.goals.pageTitle}
-            </h1>
+          <div className="flex items-center justify-end gap-4 w-full">
             <button
               type="button"
               onClick={openAdd}

@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { User, Shield, Palette, Globe, MessageSquare, Database, Target, RefreshCw, FileText } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import Link from 'next/link'
-import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
@@ -72,12 +71,6 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <PageHeader>
-        <PageHeaderContent>
-          <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)]">{t.settings.pageTitle}</h1>
-        </PageHeaderContent>
-      </PageHeader>
-
       <div className="px-4 py-4 lg:px-6 max-w-3xl mx-auto pb-10">
         {/* Identity header */}
         {user && (
