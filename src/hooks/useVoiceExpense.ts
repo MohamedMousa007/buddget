@@ -8,6 +8,7 @@ import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { startRecording, requestMicPermission, getMicPermissionStatus } from '@/lib/native/voiceRecorder'
 import { runAiCommand, type AiCommandStats } from '@/lib/ai/runAiCommand'
 import { classifyVoiceIntent } from '@/lib/voice/classifyVoiceIntent'
+import { needsEscalation } from '@/lib/voice/escalation'
 import {
   buildAIActionHandlerContext,
   executeActionItem,
@@ -34,7 +35,9 @@ export type VoiceState =
   | 'error'
 
 const TRANSCRIBE_TIMEOUT_MS = 20_000
-const EXTRACT_TIMEOUT_MS = 20_000
+// Extract may run two sequential model calls (tier-1 → escalate to tier-2), so it
+// gets a wider budget than a single stage.
+const EXTRACT_TIMEOUT_MS = 30_000
 
 /**
  * Temporary on-device diagnostic for auth rejections. Decodes the current Supabase
@@ -63,20 +66,6 @@ async function diagnoseAuth(status: number): Promise<{ message: string; hasToken
   }
   logVoiceStage('transcribe', 'fail', `auth=${status} ${message}`)
   return { message, hasToken }
-}
-
-/** Tier-1 (lean extractor) handles only these create-actions. */
-const ADD_ACTIONS = new Set<string>([
-  'add_expense', 'add_income', 'add_debt', 'add_debt_payment',
-  'deposit_savings', 'withdraw_savings', 'add_savings_account', 'add_payment_method',
-])
-
-/** Tier-1 result is out of its depth → re-run the full brain. Mirrors the SMS
- *  confidence gate: no add produced, low confidence, or an explicit bail/query. */
-function needsEscalation(r: AIResponse): boolean {
-  if (!r.actions.some((a) => ADD_ACTIONS.has(a.action))) return true
-  if (r.confidence < 0.5) return true
-  return r.actions.some((a) => a.action === 'escalate' || a.action === 'query' || a.action === 'unclear')
 }
 
 /**
@@ -290,17 +279,18 @@ export function useVoiceExpense(): UseVoiceCommandResult {
     const abort = new AbortController()
     abortRef.current = abort
 
-    let timeoutHandle: ReturnType<typeof setTimeout> | null = null
-    const withTimeout = <T,>(p: Promise<T>, ms: number, stage: VoiceStage, msg: string): Promise<T> =>
-      Promise.race([
-        p,
-        new Promise<T>((_, reject) => {
-          timeoutHandle = setTimeout(() => {
-            abort.abort()
-            reject(new VoiceStageError(stage, msg))
-          }, ms)
-        }),
-      ])
+    // Each stage owns and clears its own timer, so a resolved stage's timeout can
+    // never fire mid-next-stage and abort it (which would strand the UI).
+    const withTimeout = <T,>(p: Promise<T>, ms: number, stage: VoiceStage, msg: string): Promise<T> => {
+      let handle: ReturnType<typeof setTimeout> | undefined
+      const timeout = new Promise<T>((_, reject) => {
+        handle = setTimeout(() => {
+          abort.abort()
+          reject(new VoiceStageError(stage, msg))
+        }, ms)
+      })
+      return Promise.race([p, timeout]).finally(() => clearTimeout(handle))
+    }
 
     try {
       const { audio, inlineText, mimeType } = await recorder.stop()
@@ -356,7 +346,6 @@ export function useVoiceExpense(): UseVoiceCommandResult {
       setError(msg)
       setState('error')
     } finally {
-      if (timeoutHandle !== null) clearTimeout(timeoutHandle)
       abortRef.current = null
     }
   }, [monthFilter, stopRaf, transcribeAudio])

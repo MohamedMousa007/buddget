@@ -77,7 +77,9 @@ export async function runAiCommand({
     )
     return sendToGemini(prompt, text, [], {
       signal,
-      maxOutputTokens: 512,
+      // Output is billed as generated, not as the cap — 768 just guards against
+      // JSON truncation when one utterance lists several transactions.
+      maxOutputTokens: 768,
       maxAttempts: 2,
       backoffMs: 800,
     })
@@ -123,7 +125,7 @@ export async function runAiCommand({
     text,
     mode === 'voice' ? [] : history,
     mode === 'voice'
-      ? { signal, maxOutputTokens: 768, maxAttempts: 2, backoffMs: 800 }
+      ? { signal, maxOutputTokens: 1024, maxAttempts: 2, backoffMs: 800 }
       : { signal },
   )
 }

@@ -26,14 +26,25 @@ const TXN_VERB_EN_RE =
 /** Casual money-movement verbs (AR). */
 const TXN_VERB_AR_RE = /دفعت|صرفت|اشتريت|خدت|استلمت|حطيت|سحبت|اقترضت|وديت|بعت|ادخرت/
 
+/** A concrete amount to log: an ASCII or Arabic-Indic digit, or a currency token. */
+const AMOUNT_RE = /[\d٠-٩۰-۹]/
+
 export function classifyVoiceIntent(text: string): VoiceIntent {
   const t = text.trim()
   if (!t) return 'transactional'
 
   const hasQuestion = QUESTION_EN_RE.test(t) || QUESTION_AR_RE.test(t)
-  const hasTxn = TXN_VERB_EN_RE.test(t) || TXN_VERB_AR_RE.test(t) || hasCurrencyToken(t)
+  const hasAmount = AMOUNT_RE.test(t) || hasCurrencyToken(t)
+  const hasVerb = TXN_VERB_EN_RE.test(t) || TXN_VERB_AR_RE.test(t)
 
-  // A clear question with no money-movement signal → full brain.
-  if (hasQuestion && !hasTxn) return 'complex'
+  // A question with no amount to log is analytics ("how much did I spend?") — the
+  // money verb in such phrasing ("spend"/"pay") must NOT pull it to tier-1.
+  if (hasQuestion && !hasAmount) return 'complex'
+  // A concrete amount + a money verb is a transaction to record.
+  if (hasAmount && hasVerb) return 'transactional'
+  // A question that happens to mention a number ("how much of my 5000 is left?")
+  // is still analytics.
+  if (hasQuestion) return 'complex'
+  // Default to the cheap path; tier-1 self-escalates if it's actually out of scope.
   return 'transactional'
 }
