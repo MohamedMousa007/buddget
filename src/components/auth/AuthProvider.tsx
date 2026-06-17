@@ -132,10 +132,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const dataReady = useFinanceStore((s) => s.dataReady)
-  /** Cover the sign-out transition with the splash so the dashboard doesn't
-   *  visibly flash back to default theme/data while `clearBudgetData` +
-   *  `supabase.auth.signOut` complete. Cleared when `user` becomes null. */
-  const [signingOut, setSigningOut] = useState(false)
   const [pendingNext, setPendingNext] = useState('/')
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authModalMessage, setAuthModalMessage] = useState<string | null>(null)
@@ -260,51 +256,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     if (!configured) return
-    // Mark this sign-out as user-initiated so the onAuthStateChange SIGNED_OUT
-    // handler skips the "session expired" modal and lands the user cleanly
-    // on the landing gate.
+    // Mark as user-initiated so the SIGNED_OUT handler skips the "session expired" modal.
     userInitiatedSignOutRef.current = true
-    // Cover the transition with the splash so the dashboard doesn't flash
-    // back to defaults while flush/clear/signOut complete.
-    setSigningOut(true)
-    // Drain any debounced flush (expense just added, settings just toggled)
-    // BEFORE we wipe localStorage, otherwise those writes die with the tab
-    // session and never reach the server.
-    try {
-      await flushFinanceNow()
-    } catch (e) {
-      console.error('[auth] flushFinanceNow before signOut failed', e)
-    }
-    // Now suspend the subscribe listener so the upcoming reset-to-defaults
-    // doesn't trigger an instant flush that would overwrite the user's
-    // theme / currency / profile on the server with defaults.
-    try {
-      suspendFinanceSync()
-    } catch {
-      /* no-op */
-    }
-    try {
-      clearBudgetData()
-    } catch (e) {
-      console.error('[auth] clearBudgetData before signOut failed', e)
-    }
+    // Suspend the subscribe listener synchronously so the upcoming store reset
+    // doesn't trigger a flush that would overwrite server data with defaults.
+    try { suspendFinanceSync() } catch { /* no-op */ }
+
+    // Immediately clear UI — landing gate appears now, no spinner.
+    setUser(null)
+    setSession(null)
+    router.refresh()
+
+    // Background cleanup — user doesn't wait for any of this.
     const supabase = createClient()
-    // Unregister this device's push token while the session is still valid so a
-    // signed-out device stops receiving this account's pushes (native only).
-    try {
-      const { data: { session: cur } } = await supabase.auth.getSession()
-      if (cur?.access_token) await unregisterPushToken(cur.access_token)
-    } catch (e) {
-      console.error('[auth] push unregister before signOut failed', e)
-    }
-    try {
-      await supabase.auth.signOut()
-    } finally {
-      setUser(null)
-      setSession(null)
-      setSigningOut(false)
-      router.refresh()
-    }
+    void (async () => {
+      // Flush pending writes BEFORE wiping the store (profile.id still valid here).
+      try { await flushFinanceNow() } catch (e) { console.error('[auth] flush before signOut failed', e) }
+      // Wipe localStorage + reset Zustand stores.
+      try { clearBudgetData() } catch (e) { console.error('[auth] clearBudgetData failed', e) }
+      // Unregister push token while session may still be active on the server.
+      try {
+        const { data } = await supabase.auth.getSession()
+        if (data.session?.access_token) await unregisterPushToken(data.session.access_token)
+      } catch (e) { console.error('[auth] push unregister failed', e) }
+      // End the server session (triggers SIGNED_OUT event — handled safely by the listener).
+      try { await supabase.auth.signOut() } catch (e) { console.error('[auth] signOut failed', e) }
+    })()
   }, [configured, router])
 
   const noopSignOut = useCallback(async () => {}, [])
@@ -375,12 +352,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // tab close so they hit the landing gate again next session.
   useEphemeralSessionGuard(mode === 'authenticated')
 
-  const showLandingGate = mode === 'landing' && !isBypassRoute && !signingOut
-  const showLoadingSplash = (mode === 'loading' || signingOut) && !isBypassRoute
+  const showLandingGate = mode === 'landing' && !isBypassRoute
+  const showLoadingSplash = mode === 'loading' && !isBypassRoute
 
-  // Refs/state for welcome screen minimum display — must be declared before showDataLoadingSplash
+  // State + refs for welcome screen minimum display — declared before showDataLoadingSplash.
+  // welcomeMinBlocking is plain state (readable during render, no ref-access lint error).
+  // Both setState calls live inside setTimeout callbacks — never in the synchronous effect
+  // body — satisfying the react-compiler no-sync-setState-in-effect rule.
+  const [welcomeMinBlocking, setWelcomeMinBlocking] = useState(false)
   const welcomeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [welcomeMinDone, setWelcomeMinDone] = useState(true)
+  const welcomeStartRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   /**
    * Post-signup flash guard: a freshly signed-up user briefly renders
@@ -414,19 +395,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     !isBypassRoute &&
     !dataReady
 
-  // Minimum 1s display so the welcome screen doesn't flash on fast connections
+  // Minimum 2.5 s display so the welcome screen doesn't flash on fast connections.
+  // No cleanup is returned from the main effect — the 2.5 s timer must survive
+  // showDataLoadingSplash going false (data ready before 2.5 s), so the welcome
+  // screen keeps showing until the full minimum has elapsed.
   useEffect(() => {
-    if (showDataLoadingSplash) {
-      if (welcomeTimerRef.current) clearTimeout(welcomeTimerRef.current)
-      setWelcomeMinDone(false)
+    if (!showDataLoadingSplash) return
+    if (welcomeStartRef.current) clearTimeout(welcomeStartRef.current)
+    if (welcomeTimerRef.current) { clearTimeout(welcomeTimerRef.current); welcomeTimerRef.current = null }
+    // Defer the first setState to avoid synchronous setState in effect (react-compiler rule).
+    welcomeStartRef.current = setTimeout(() => {
+      welcomeStartRef.current = null
+      setWelcomeMinBlocking(true)
       welcomeTimerRef.current = setTimeout(() => {
-        setWelcomeMinDone(true)
+        setWelcomeMinBlocking(false)
         welcomeTimerRef.current = null
-      }, 1000)
-    }
+      }, 2500)
+    }, 0)
   }, [showDataLoadingSplash])
-  useEffect(() => () => { if (welcomeTimerRef.current) clearTimeout(welcomeTimerRef.current) }, [])
-  const showWelcomeScreen = showDataLoadingSplash || !welcomeMinDone
+  useEffect(() => () => {
+    if (welcomeStartRef.current) clearTimeout(welcomeStartRef.current)
+    if (welcomeTimerRef.current) clearTimeout(welcomeTimerRef.current)
+  }, [])
+  const showWelcomeScreen = showDataLoadingSplash || welcomeMinBlocking
 
   return (
     <AuthContext.Provider value={value}>
