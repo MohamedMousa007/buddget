@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
+import { useAuth } from '@/components/auth/auth-context'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { startRecording, requestMicPermission, getMicPermissionStatus } from '@/lib/native/voiceRecorder'
 import { extractVoiceExpense, type ExtractedExpense } from '@/lib/ai/extractVoiceExpense'
@@ -61,6 +62,7 @@ interface UseVoiceExpenseResult {
 }
 
 export function useVoiceExpense(): UseVoiceExpenseResult {
+  const { session } = useAuth()
   const recorderRef = useRef<{
     stop(): Promise<{ audio: Blob | null; inlineText: string | null; mimeType: string | null }>
     cancel(): Promise<void>
@@ -212,8 +214,11 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
         form.append('audio', audio, `voice-${Date.now()}.${ext}`)
         form.append('language', language === 'ar' ? 'ar' : 'en')
         const { apiFetchAuth } = await import('@/lib/apiBase')
+        const voiceHeaders: HeadersInit = session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : {}
         const res = await withTimeout(
-          apiFetchAuth('/api/voice/transcribe', { method: 'POST', body: form, signal: abort.signal }),
+          apiFetchAuth('/api/voice/transcribe', { method: 'POST', body: form, signal: abort.signal, headers: voiceHeaders }),
         )
         console.info(`[VOICE] transcribe response status=${res.status}`)
         if (!res.ok) {
@@ -254,7 +259,7 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
       if (timeoutHandle !== null) clearTimeout(timeoutHandle)
       abortRef.current = null
     }
-  }, [baseCurrency, language, stopRaf])
+  }, [baseCurrency, language, session, stopRaf])
 
   const cancel = useCallback(async () => {
     // Abort any in-flight transcribe fetch immediately.

@@ -133,7 +133,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         const localHasData = hasMeaningfulLocalState(localSnap)
 
         const alreadyHydratedForUser = initial.profile.id === userId
-        if (alreadyHydratedForUser && !localHasData) {
+        if (alreadyHydratedForUser && localHasData) {
           return
         }
 
@@ -206,6 +206,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       // during sign-out. At that point the store has already been reset to
       // empty defaults, and flushing would soft-delete all server-side data.
       if (syncSuspended) return
+      if (useFinanceStore.getState().profile.id === 'local') return
       if (timer.current) {
         clearTimeout(timer.current)
         timer.current = null
