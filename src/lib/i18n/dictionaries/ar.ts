@@ -1132,8 +1132,6 @@ export const ar: Dictionary = {
     loadingSignUp: 'جارٍ إعداد حسابك...',
     submitSignIn: 'سجّل دخولي',
     submitSignUp: 'أنشئ حسابي',
-    switchToSignUp: 'جديد هنا؟ أنشئ حساباً',
-    switchToSignIn: 'لديك حساب بالفعل؟ سجّل الدخول',
     footerNewHere: 'جديد هنا؟ أنشئ حساباً مجانياً ←',
     footerAlreadyHave: 'عندك حساب؟ سجل دخولك ←',
 
