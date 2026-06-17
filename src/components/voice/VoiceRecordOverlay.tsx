@@ -3,11 +3,10 @@
 import { useEffect, useRef, useCallback, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence, type MotionValue } from 'framer-motion'
-import { Check, X, RotateCcw, Loader2, Trash2, MessageCircle, Mic } from 'lucide-react'
+import { X, RotateCcw, Loader2, Trash2, MessageCircle, Mic } from 'lucide-react'
 import type { VoiceState } from '@/hooks/useVoiceExpense'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { AIChatActionPreview } from '@/components/features/ai-chat/AIChatActionPreview'
-import type { AIResponse } from '@/lib/ai/gemini'
+import { VoiceRecapEditor } from '@/components/voice/VoiceRecapEditor'
+import type { AIResponse, AIActionItem } from '@/lib/ai/gemini'
 
 const BARS = 36
 const W = BARS * 5
@@ -18,6 +17,9 @@ interface Props {
   amplitude: number
   animTime: number
   response: AIResponse | null
+  draftActions: AIActionItem[]
+  itemErrors: (string | null)[]
+  transcript: string | null
   error: string | null
   /** Live finger coordinates from the hold gesture — the widget follows these. */
   posX: MotionValue<number>
@@ -28,6 +30,8 @@ interface Props {
   trashRef: RefObject<HTMLDivElement | null>
   onCancel: () => void
   onConfirm: () => void
+  onUpdateField: (index: number, key: string, value: unknown) => void
+  onRemove: (index: number) => void
   onRedo: () => void
   onClose: () => void
   onOpenChat: () => void
@@ -38,6 +42,9 @@ export function VoiceRecordOverlay({
   amplitude,
   animTime,
   response,
+  draftActions,
+  itemErrors,
+  transcript,
   error,
   posX,
   posY,
@@ -45,11 +52,12 @@ export function VoiceRecordOverlay({
   trashRef,
   onCancel,
   onConfirm,
+  onUpdateField,
+  onRemove,
   onRedo,
   onClose,
   onOpenChat,
 }: Props) {
-  const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
   const visible = state !== 'idle'
 
   // Portal to <body>: the overlay must escape the bottom-nav, whose backdrop-blur
@@ -83,8 +91,18 @@ export function VoiceRecordOverlay({
           {state === 'error' && (
             <ErrorPanel error={error} onRedo={onRedo} onClose={onClose} />
           )}
-          {state === 'confirming' && response && (
-            <ConfirmPanel response={response} baseCurrency={baseCurrency} onConfirm={onConfirm} onRedo={onRedo} onClose={onClose} />
+          {state === 'confirming' && (
+            <VoiceRecapEditor
+              compact
+              actions={draftActions}
+              itemErrors={itemErrors}
+              transcript={transcript}
+              onUpdateField={onUpdateField}
+              onRemove={onRemove}
+              onConfirm={onConfirm}
+              onRedo={onRedo}
+              onCancel={onClose}
+            />
           )}
           {state === 'answer' && response && (
             <AnswerPanel message={response.message} onOpenChat={onOpenChat} onRedo={onRedo} onClose={onClose} />
@@ -286,67 +304,6 @@ function ErrorPanel({
           onClick={onClose}
           className="rounded-lg p-1 text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
           aria-label="Close"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-    </div>
-  )
-}
-
-// ── Confirm panel (multi-action list) ─────────────────────────────────────────
-
-function ConfirmPanel({
-  response,
-  baseCurrency,
-  onConfirm,
-  onRedo,
-  onClose,
-}: {
-  response: AIResponse
-  baseCurrency: import('@/lib/store/types').Currency
-  onConfirm: () => void
-  onRedo: () => void
-  onClose: () => void
-}) {
-  const actions = response.actions.filter((a) => a.action !== 'query' && a.action !== 'unclear')
-  const multiple = actions.length > 1
-  return (
-    <div className="px-4 py-3 space-y-2">
-      {multiple ? (
-        <p className="text-[11px] font-semibold text-[var(--color-brand-text-muted)]">
-          {actions.length} transactions
-        </p>
-      ) : null}
-      <div className="max-h-[38vh] space-y-2 overflow-y-auto">
-        {actions.map((item, idx) => (
-          <div
-            key={idx}
-            className="text-xs space-y-0.5 text-[var(--color-brand-text-primary)]/90 border-b border-[var(--color-brand-border)]/40 pb-1.5 last:border-0 last:pb-0"
-          >
-            <AIChatActionPreview action={item.action} data={item.data} baseCurrency={baseCurrency} />
-          </div>
-        ))}
-      </div>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={onConfirm}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-3 py-2 text-xs font-semibold text-white hover:bg-[var(--color-brand-red-hover)]"
-        >
-          <Check className="h-3.5 w-3.5" /> {multiple ? 'Save all' : 'Save'}
-        </button>
-        <button
-          type="button"
-          onClick={onRedo}
-          className="rounded-xl border border-[var(--color-brand-border)] px-3 py-2 text-xs text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
-        >
-          Redo
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-xl px-3 py-2 text-xs text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
         >
           <X className="h-4 w-4" />
         </button>

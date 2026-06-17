@@ -2,7 +2,7 @@ import {
   formatProxyAiErrorForUser,
   isBuddgetServerThrottleMessage,
 } from '@/lib/ai/formatAiProxyError'
-import { apiUrl, apiFetchAuth } from '@/lib/apiBase'
+import { apiFetchAuth } from '@/lib/apiBase'
 
 /** POST body for `/api/ai` (Gemini proxy). */
 export interface GeminiProxyRequestBody {

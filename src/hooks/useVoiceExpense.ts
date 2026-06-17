@@ -13,7 +13,7 @@ import {
   executeActionItem,
   validateActionItem,
 } from '@/lib/ai/aiActionHandlers'
-import type { AIResponse } from '@/lib/ai/gemini'
+import type { AIResponse, AIActionItem } from '@/lib/ai/gemini'
 import {
   logVoiceStage,
   runStage,
@@ -110,6 +110,10 @@ export interface UseVoiceCommandResult {
   state: VoiceState
   /** Parsed AI command — confirmation list, query answer, or clarification. */
   response: AIResponse | null
+  /** Editable add-actions shown in the recap (mutated via updateDraftField/removeDraftAction). */
+  draftActions: AIActionItem[]
+  /** Per-item validation error, aligned by index with draftActions. */
+  itemErrors: (string | null)[]
   transcript: string | null
   error: string | null
   amplitude: number
@@ -117,7 +121,11 @@ export interface UseVoiceCommandResult {
   start: () => Promise<void>
   stop: () => Promise<void>
   cancel: () => Promise<void>
-  /** Apply all non-query actions. Returns true when everything was saved. */
+  /** Edit one field of a recap item before saving. */
+  updateDraftField: (index: number, key: string, value: unknown) => void
+  /** Drop one item from the recap. */
+  removeDraftAction: (index: number) => void
+  /** Apply all recap items. Returns true when everything was saved. */
   confirm: () => boolean
   reset: () => void
   requestPermission: () => Promise<void>
@@ -143,6 +151,10 @@ export function useVoiceExpense(): UseVoiceCommandResult {
 
   const [state, setState] = useState<VoiceState>('idle')
   const [response, setResponse] = useState<AIResponse | null>(null)
+  /** Editable copy of the extracted add-actions shown in the recap. */
+  const [draftActions, setDraftActions] = useState<AIActionItem[]>([])
+  /** Per-item validation error, aligned by index with draftActions. */
+  const [itemErrors, setItemErrors] = useState<(string | null)[]>([])
   const [transcript, setTranscript] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [amplitude, setAmplitude] = useState(0)
@@ -162,6 +174,8 @@ export function useVoiceExpense(): UseVoiceCommandResult {
     stopSpeaking()
     setState('idle')
     setResponse(null)
+    setDraftActions([])
+    setItemErrors([])
     setTranscript(null)
     setError(null)
     stopRaf()
@@ -318,12 +332,15 @@ export function useVoiceExpense(): UseVoiceCommandResult {
 
       setResponse(aiResponse)
       const writeActions = aiResponse.actions.filter(
-        (a) => a.action !== 'query' && a.action !== 'unclear',
+        (a) => a.action !== 'query' && a.action !== 'unclear' && a.action !== 'escalate',
       )
       const needsClarify =
         !!aiResponse.clarificationNeeded || aiResponse.actions.some((a) => a.action === 'unclear')
 
       if (writeActions.length > 0) {
+        // Seed an editable, deep-cloned draft the recap can mutate per item.
+        setDraftActions(writeActions.map((a) => ({ action: a.action, data: { ...a.data } })))
+        setItemErrors([])
         setState('confirming')
       } else if (needsClarify) {
         setState('clarify')
@@ -355,29 +372,41 @@ export function useVoiceExpense(): UseVoiceCommandResult {
     reset()
   }, [reset, stopRaf])
 
+  const updateDraftField = useCallback((index: number, key: string, value: unknown) => {
+    setDraftActions((prev) =>
+      prev.map((a, i) => (i === index ? { action: a.action, data: { ...a.data, [key]: value } } : a)),
+    )
+    // Clear this row's error as the user edits it.
+    setItemErrors((prev) => (prev.length ? prev.map((e, i) => (i === index ? null : e)) : prev))
+  }, [])
+
+  const removeDraftAction = useCallback((index: number) => {
+    setDraftActions((prev) => prev.filter((_, i) => i !== index))
+    setItemErrors((prev) => prev.filter((_, i) => i !== index))
+  }, [])
+
   const confirm = useCallback((): boolean => {
-    if (!response) return false
+    if (draftActions.length === 0) return false
     const store = useFinanceStore.getState()
     const ctx = buildAIActionHandlerContext(store)
-    const toApply = response.actions.filter((a) => a.action !== 'query' && a.action !== 'unclear')
-    if (toApply.length === 0) return false
 
-    for (const { action, data } of toApply) {
-      const err = validateActionItem(ctx, action, data as Record<string, unknown>)
-      if (err) {
-        logVoiceStage('validate', 'fail', err)
-        setError(`${voiceStageLabel('validate')} step — ${err}`)
-        setState('error')
-        return false
-      }
+    // Validate every item; on any failure stay in the recap with per-item errors
+    // so the user can fix or remove just the offending row (no full-recap wipe).
+    const errs = draftActions.map(({ action, data }) =>
+      validateActionItem(ctx, action, data as Record<string, unknown>),
+    )
+    if (errs.some(Boolean)) {
+      logVoiceStage('validate', 'fail', errs.filter(Boolean).join(' | '))
+      setItemErrors(errs)
+      return false
     }
-    logVoiceStage('validate', 'ok', `items=${toApply.length}`)
+    logVoiceStage('validate', 'ok', `items=${draftActions.length}`)
 
     try {
-      for (const { action, data } of toApply) {
+      for (const { action, data } of draftActions) {
         executeActionItem(ctx, action, data as Record<string, unknown>)
       }
-      logVoiceStage('apply', 'ok', `items=${toApply.length}`)
+      logVoiceStage('apply', 'ok', `items=${draftActions.length}`)
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Could not save'
       logVoiceStage('apply', 'fail', msg)
@@ -387,7 +416,7 @@ export function useVoiceExpense(): UseVoiceCommandResult {
     }
     reset()
     return true
-  }, [response, reset])
+  }, [draftActions, reset])
 
   const openInChat = useCallback(() => {
     const text = transcript
@@ -398,6 +427,8 @@ export function useVoiceExpense(): UseVoiceCommandResult {
   return {
     state,
     response,
+    draftActions,
+    itemErrors,
     transcript,
     error,
     amplitude,
@@ -405,6 +436,8 @@ export function useVoiceExpense(): UseVoiceCommandResult {
     start,
     stop,
     cancel,
+    updateDraftField,
+    removeDraftAction,
     confirm,
     reset,
     requestPermission,

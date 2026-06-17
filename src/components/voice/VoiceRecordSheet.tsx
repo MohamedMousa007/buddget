@@ -1,17 +1,14 @@
 'use client'
 
 import { useEffect, useRef, useCallback } from 'react'
-import { Mic, MicOff, X, Check, Loader2, AlertTriangle, Trash2, MessageCircle, Volume2, VolumeX } from 'lucide-react'
+import { Mic, MicOff, X, Loader2, AlertTriangle, Trash2, MessageCircle, Volume2, VolumeX } from 'lucide-react'
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { useVoiceExpense } from '@/hooks/useVoiceExpense'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { AIChatActionPreview } from '@/components/features/ai-chat/AIChatActionPreview'
+import { VoiceRecapEditor } from '@/components/voice/VoiceRecapEditor'
 import { speak, stopSpeaking } from '@/lib/voice/speak'
 import { isNative } from '@/lib/native/isNative'
-import type { AIResponse } from '@/lib/ai/gemini'
-import type { Currency } from '@/lib/store/types'
 
 interface VoiceRecordSheetProps {
   open: boolean
@@ -19,9 +16,10 @@ interface VoiceRecordSheetProps {
 }
 
 export function VoiceRecordSheet({ open, onClose }: VoiceRecordSheetProps) {
-  const { state, response, transcript, error, amplitude, animTime, start, stop, cancel, confirm, reset, requestPermission, openInChat } =
-    useVoiceExpense()
-  const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
+  const {
+    state, response, draftActions, itemErrors, transcript, error, amplitude, animTime,
+    start, stop, cancel, updateDraftField, removeDraftAction, confirm, reset, requestPermission, openInChat,
+  } = useVoiceExpense()
 
   // Pre-flight mic permission when the sheet opens so the OS dialog never races
   // with the hold gesture. If already granted, requestPermission() is a no-op.
@@ -67,11 +65,13 @@ export function VoiceRecordSheet({ open, onClose }: VoiceRecordSheetProps) {
 
         {state === 'processing' ? <ProcessingView onCancel={() => void handleCancel()} /> : null}
 
-        {state === 'confirming' && response ? (
-          <ConfirmView
-            response={response}
+        {state === 'confirming' ? (
+          <VoiceRecapEditor
+            actions={draftActions}
+            itemErrors={itemErrors}
             transcript={transcript}
-            baseCurrency={baseCurrency}
+            onUpdateField={updateDraftField}
+            onRemove={removeDraftAction}
             onConfirm={() => { if (confirm()) onClose() }}
             onRedo={() => { reset(); void start() }}
             onCancel={() => void handleCancel()}
@@ -344,75 +344,6 @@ function ProcessingView({ onCancel }: { onCancel: () => void }) {
       >
         <X className="h-4 w-4" /> Cancel
       </button>
-    </div>
-  )
-}
-
-// ── Confirm (multi-action list) ───────────────────────────────────────────────
-
-function ConfirmView({
-  response,
-  transcript,
-  baseCurrency,
-  onConfirm,
-  onRedo,
-  onCancel,
-}: {
-  response: AIResponse
-  transcript: string | null
-  baseCurrency: Currency
-  onConfirm: () => void
-  onRedo: () => void
-  onCancel: () => void
-}) {
-  const actions = response.actions.filter((a) => a.action !== 'query' && a.action !== 'unclear')
-  const multiple = actions.length > 1
-
-  return (
-    <div className="w-full">
-      <h3 className="text-base font-semibold text-[var(--color-brand-text-primary)]">
-        {multiple ? `${actions.length} transactions detected` : 'Confirm to save'}
-      </h3>
-
-      <div className="mt-3 max-h-[42vh] space-y-2 overflow-y-auto pr-0.5">
-        {actions.map((item, idx) => (
-          <div
-            key={idx}
-            className="rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/60 p-3 text-sm space-y-1 text-[var(--color-brand-text-primary)]/90"
-          >
-            <AIChatActionPreview action={item.action} data={item.data} baseCurrency={baseCurrency} />
-          </div>
-        ))}
-      </div>
-
-      {transcript ? (
-        <p className="mt-3 text-xs italic text-[var(--color-brand-text-muted)]">&ldquo;{transcript}&rdquo;</p>
-      ) : null}
-
-      <div className="mt-5 flex gap-2">
-        <button
-          type="button"
-          onClick={onConfirm}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-4 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
-        >
-          <Check className="h-4 w-4" />
-          {multiple ? 'Save all' : 'Save'}
-        </button>
-        <button
-          type="button"
-          onClick={onRedo}
-          className="rounded-xl border border-[var(--color-brand-border)] px-3 py-2.5 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
-        >
-          Redo
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-xl px-3 py-2.5 text-sm text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
-        >
-          Close
-        </button>
-      </div>
     </div>
   )
 }
