@@ -27,13 +27,18 @@ const EGYPT_FIRST_PROMPT = [
 ].join(' ')
 
 export async function POST(request: NextRequest) {
+  const started = Date.now()
   const { user } = await resolveRouteUser(request)
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) {
+    console.error('[VOICE:transcribe] fail status=401 reason=unauthorized')
+    return NextResponse.json({ error: 'Unauthorized', stage: 'transcribe' }, { status: 401 })
+  }
 
   const apiKey = process.env.GROQ_API_KEY?.trim()
   if (!apiKey) {
+    console.error(`[VOICE:transcribe] fail status=503 user=${user.id} reason=no_groq_key`)
     return NextResponse.json(
-      { error: 'Voice is not configured. Admin needs to set GROQ_API_KEY.' },
+      { error: 'Voice is not configured. Admin needs to set GROQ_API_KEY.', stage: 'transcribe' },
       { status: 503 },
     )
   }
@@ -78,23 +83,24 @@ export async function POST(request: NextRequest) {
     const type = audio.type || 'audio/mp4'
     const file = new File([audio], `recording.${audioMimeToExt(type)}`, { type })
 
+    // `json` (not `verbose_json`) — we only read `.text`; smaller response payload.
     const result = await groq.audio.transcriptions.create({
       file,
       model: 'whisper-large-v3',
       prompt: EGYPT_FIRST_PROMPT,
       language: language === 'ar' ? 'ar' : 'en',
-      response_format: 'verbose_json',
+      response_format: 'json',
       temperature: 0,
     })
 
+    console.info(`[VOICE:transcribe] ok user=${user.id} latency=${Date.now() - started}ms bytes=${audio.size}`)
     return NextResponse.json({
       text: result.text ?? '',
       language: (result as { language?: string }).language ?? language,
-      duration: (result as { duration?: number }).duration ?? null,
     })
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown transcription error'
-    console.error('[voice/transcribe] failed', msg)
-    return NextResponse.json({ error: msg }, { status: 502 })
+    console.error(`[VOICE:transcribe] fail status=502 user=${user.id} latency=${Date.now() - started}ms err=${msg}`)
+    return NextResponse.json({ error: msg, stage: 'transcribe' }, { status: 502 })
   }
 }

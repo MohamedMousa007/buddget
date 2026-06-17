@@ -3,9 +3,11 @@
 import { useEffect, useRef, useCallback, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence, type MotionValue } from 'framer-motion'
-import { Check, X, RotateCcw, Loader2, Trash2 } from 'lucide-react'
+import { Check, X, RotateCcw, Loader2, Trash2, MessageCircle, Mic } from 'lucide-react'
 import type { VoiceState } from '@/hooks/useVoiceExpense'
-import type { ExtractedExpense } from '@/lib/ai/extractVoiceExpense'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { AIChatActionPreview } from '@/components/features/ai-chat/AIChatActionPreview'
+import type { AIResponse } from '@/lib/ai/gemini'
 
 const BARS = 36
 const W = BARS * 5
@@ -15,7 +17,7 @@ interface Props {
   state: VoiceState
   amplitude: number
   animTime: number
-  draft: ExtractedExpense | null
+  response: AIResponse | null
   error: string | null
   /** Live finger coordinates from the hold gesture — the widget follows these. */
   posX: MotionValue<number>
@@ -28,13 +30,14 @@ interface Props {
   onConfirm: () => void
   onRedo: () => void
   onClose: () => void
+  onOpenChat: () => void
 }
 
 export function VoiceRecordOverlay({
   state,
   amplitude,
   animTime,
-  draft,
+  response,
   error,
   posX,
   posY,
@@ -44,7 +47,9 @@ export function VoiceRecordOverlay({
   onConfirm,
   onRedo,
   onClose,
+  onOpenChat,
 }: Props) {
+  const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
   const visible = state !== 'idle'
 
   // Portal to <body>: the overlay must escape the bottom-nav, whose backdrop-blur
@@ -65,7 +70,7 @@ export function VoiceRecordOverlay({
           trashRef={trashRef}
         />
       )}
-      {(state === 'processing' || state === 'error' || state === 'confirming') && (
+      {(state === 'processing' || state === 'error' || state === 'confirming' || state === 'answer' || state === 'clarify') && (
         <motion.div
           key="voice-overlay"
           initial={{ y: 120, opacity: 0 }}
@@ -78,8 +83,14 @@ export function VoiceRecordOverlay({
           {state === 'error' && (
             <ErrorPanel error={error} onRedo={onRedo} onClose={onClose} />
           )}
-          {state === 'confirming' && draft && (
-            <ConfirmPanel draft={draft} onConfirm={onConfirm} onRedo={onRedo} onClose={onClose} />
+          {state === 'confirming' && response && (
+            <ConfirmPanel response={response} baseCurrency={baseCurrency} onConfirm={onConfirm} onRedo={onRedo} onClose={onClose} />
+          )}
+          {state === 'answer' && response && (
+            <AnswerPanel message={response.message} onOpenChat={onOpenChat} onRedo={onRedo} onClose={onClose} />
+          )}
+          {state === 'clarify' && response && (
+            <ClarifyPanel message={response.clarificationNeeded || response.message} onAnswer={onRedo} onClose={onClose} />
           )}
         </motion.div>
       )}
@@ -283,33 +294,39 @@ function ErrorPanel({
   )
 }
 
-// ── Confirm panel ─────────────────────────────────────────────────────────────
+// ── Confirm panel (multi-action list) ─────────────────────────────────────────
 
 function ConfirmPanel({
-  draft,
+  response,
+  baseCurrency,
   onConfirm,
   onRedo,
   onClose,
 }: {
-  draft: ExtractedExpense
+  response: AIResponse
+  baseCurrency: import('@/lib/store/types').Currency
   onConfirm: () => void
   onRedo: () => void
   onClose: () => void
 }) {
+  const actions = response.actions.filter((a) => a.action !== 'query' && a.action !== 'unclear')
+  const multiple = actions.length > 1
   return (
     <div className="px-4 py-3 space-y-2">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-[var(--color-brand-text-primary)] truncate">
-            {draft.description}
-          </p>
-          <p className="text-xs text-[var(--color-brand-text-muted)]">
-            {draft.amount.toLocaleString()} {draft.currency} · {draft.category}
-          </p>
-        </div>
-        <p className="text-[10px] text-[var(--color-brand-text-muted)] shrink-0 mt-0.5">
-          {Math.round(draft.confidence * 100)}% confident
+      {multiple ? (
+        <p className="text-[11px] font-semibold text-[var(--color-brand-text-muted)]">
+          {actions.length} transactions
         </p>
+      ) : null}
+      <div className="max-h-[38vh] space-y-2 overflow-y-auto">
+        {actions.map((item, idx) => (
+          <div
+            key={idx}
+            className="text-xs space-y-0.5 text-[var(--color-brand-text-primary)]/90 border-b border-[var(--color-brand-border)]/40 pb-1.5 last:border-0 last:pb-0"
+          >
+            <AIChatActionPreview action={item.action} data={item.data} baseCurrency={baseCurrency} />
+          </div>
+        ))}
       </div>
       <div className="flex gap-2">
         <button
@@ -317,7 +334,7 @@ function ConfirmPanel({
           onClick={onConfirm}
           className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-3 py-2 text-xs font-semibold text-white hover:bg-[var(--color-brand-red-hover)]"
         >
-          <Check className="h-3.5 w-3.5" /> Save
+          <Check className="h-3.5 w-3.5" /> {multiple ? 'Save all' : 'Save'}
         </button>
         <button
           type="button"
@@ -325,6 +342,83 @@ function ConfirmPanel({
           className="rounded-xl border border-[var(--color-brand-border)] px-3 py-2 text-xs text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
         >
           Redo
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-xl px-3 py-2 text-xs text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Answer panel (query) ──────────────────────────────────────────────────────
+
+function AnswerPanel({
+  message,
+  onOpenChat,
+  onRedo,
+  onClose,
+}: {
+  message: string
+  onOpenChat: () => void
+  onRedo: () => void
+  onClose: () => void
+}) {
+  return (
+    <div className="px-4 py-3 space-y-2">
+      <p className="text-sm text-[var(--color-brand-text-primary)] max-h-[34vh] overflow-y-auto">{message}</p>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onOpenChat}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-3 py-2 text-xs font-semibold text-white hover:bg-[var(--color-brand-red-hover)]"
+        >
+          <MessageCircle className="h-3.5 w-3.5" /> Open in chat
+        </button>
+        <button
+          type="button"
+          onClick={onRedo}
+          className="rounded-xl border border-[var(--color-brand-border)] px-3 py-2 text-xs text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
+        >
+          Ask again
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-xl px-3 py-2 text-xs text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Clarify panel ─────────────────────────────────────────────────────────────
+
+function ClarifyPanel({
+  message,
+  onAnswer,
+  onClose,
+}: {
+  message: string
+  onAnswer: () => void
+  onClose: () => void
+}) {
+  return (
+    <div className="px-4 py-3 space-y-2">
+      <p className="text-xs text-[var(--color-brand-text-secondary)]">{message || 'Could you add a bit more detail?'}</p>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onAnswer}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-3 py-2 text-xs font-semibold text-white hover:bg-[var(--color-brand-red-hover)]"
+        >
+          <Mic className="h-3.5 w-3.5" /> Answer by voice
         </button>
         <button
           type="button"

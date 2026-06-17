@@ -1,11 +1,17 @@
 'use client'
 
 import { useEffect, useRef, useCallback } from 'react'
-import { Mic, MicOff, X, Check, Loader2, AlertTriangle, Trash2 } from 'lucide-react'
+import { Mic, MicOff, X, Check, Loader2, AlertTriangle, Trash2, MessageCircle, Volume2, VolumeX } from 'lucide-react'
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { useVoiceExpense } from '@/hooks/useVoiceExpense'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { AIChatActionPreview } from '@/components/features/ai-chat/AIChatActionPreview'
+import { speak, stopSpeaking } from '@/lib/voice/speak'
 import { isNative } from '@/lib/native/isNative'
+import type { AIResponse } from '@/lib/ai/gemini'
+import type { Currency } from '@/lib/store/types'
 
 interface VoiceRecordSheetProps {
   open: boolean
@@ -13,8 +19,9 @@ interface VoiceRecordSheetProps {
 }
 
 export function VoiceRecordSheet({ open, onClose }: VoiceRecordSheetProps) {
-  const { state, draft, transcript, error, amplitude, animTime, start, stop, cancel, confirm, reset, requestPermission } =
+  const { state, response, transcript, error, amplitude, animTime, start, stop, cancel, confirm, reset, requestPermission, openInChat } =
     useVoiceExpense()
+  const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
 
   // Pre-flight mic permission when the sheet opens so the OS dialog never races
   // with the hold gesture. If already granted, requestPermission() is a no-op.
@@ -60,16 +67,31 @@ export function VoiceRecordSheet({ open, onClose }: VoiceRecordSheetProps) {
 
         {state === 'processing' ? <ProcessingView onCancel={() => void handleCancel()} /> : null}
 
-        {state === 'confirming' && draft ? (
+        {state === 'confirming' && response ? (
           <ConfirmView
-            description={draft.description}
-            amount={draft.amount}
-            currency={draft.currency}
-            category={draft.category}
-            confidence={draft.confidence}
+            response={response}
             transcript={transcript}
-            onConfirm={() => { confirm(); onClose() }}
+            baseCurrency={baseCurrency}
+            onConfirm={() => { if (confirm()) onClose() }}
             onRedo={() => { reset(); void start() }}
+            onCancel={() => void handleCancel()}
+          />
+        ) : null}
+
+        {state === 'answer' && response ? (
+          <AnswerView
+            message={response.message}
+            transcript={transcript}
+            onAskAgain={() => { reset(); void start() }}
+            onOpenChat={() => { openInChat(); onClose() }}
+            onClose={() => void handleCancel()}
+          />
+        ) : null}
+
+        {state === 'clarify' && response ? (
+          <ClarifyView
+            message={response.clarificationNeeded || response.message}
+            onAnswer={() => { reset(); void start() }}
             onCancel={() => void handleCancel()}
           />
         ) : null}
@@ -326,42 +348,41 @@ function ProcessingView({ onCancel }: { onCancel: () => void }) {
   )
 }
 
-// ── Confirm ─────────────────────────────────────────────────────────────────
+// ── Confirm (multi-action list) ───────────────────────────────────────────────
 
 function ConfirmView({
-  description,
-  amount,
-  currency,
-  category,
-  confidence,
+  response,
   transcript,
+  baseCurrency,
   onConfirm,
   onRedo,
   onCancel,
 }: {
-  description: string
-  amount: number
-  currency: string
-  category: string
-  confidence: number
+  response: AIResponse
   transcript: string | null
+  baseCurrency: Currency
   onConfirm: () => void
   onRedo: () => void
   onCancel: () => void
 }) {
+  const actions = response.actions.filter((a) => a.action !== 'query' && a.action !== 'unclear')
+  const multiple = actions.length > 1
+
   return (
     <div className="w-full">
       <h3 className="text-base font-semibold text-[var(--color-brand-text-primary)]">
-        Looks like an expense
+        {multiple ? `${actions.length} transactions detected` : 'Confirm to save'}
       </h3>
-      <p className="mt-1 text-xs text-[var(--color-brand-text-muted)]">
-        AI confidence: {Math.round(confidence * 100)}%
-      </p>
 
-      <div className="mt-4 space-y-2 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/60 p-4">
-        <Row label="Amount" value={`${amount.toLocaleString()} ${currency}`} />
-        <Row label="Description" value={description} />
-        <Row label="Category" value={category} />
+      <div className="mt-3 max-h-[42vh] space-y-2 overflow-y-auto pr-0.5">
+        {actions.map((item, idx) => (
+          <div
+            key={idx}
+            className="rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/60 p-3 text-sm space-y-1 text-[var(--color-brand-text-primary)]/90"
+          >
+            <AIChatActionPreview action={item.action} data={item.data} baseCurrency={baseCurrency} />
+          </div>
+        ))}
       </div>
 
       {transcript ? (
@@ -375,7 +396,7 @@ function ConfirmView({
           className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-4 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
         >
           <Check className="h-4 w-4" />
-          Save expense
+          {multiple ? 'Save all' : 'Save'}
         </button>
         <button
           type="button"
@@ -396,11 +417,113 @@ function ConfirmView({
   )
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+// ── Answer (query, read-only) ─────────────────────────────────────────────────
+
+function AnswerView({
+  message,
+  transcript,
+  onAskAgain,
+  onOpenChat,
+  onClose,
+}: {
+  message: string
+  transcript: string | null
+  onAskAgain: () => void
+  onOpenChat: () => void
+  onClose: () => void
+}) {
+  const muted = useSettingsStore((s) => s.voiceSpeakMuted)
+  const setMuted = useSettingsStore((s) => s.setVoiceSpeakMuted)
+
   return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="text-[var(--color-brand-text-muted)]">{label}</span>
-      <span className="font-medium text-[var(--color-brand-text-primary)]">{value}</span>
+    <div className="w-full">
+      {transcript ? (
+        <p className="text-xs text-[var(--color-brand-text-muted)]">
+          You asked: <span className="italic">&ldquo;{transcript}&rdquo;</span>
+        </p>
+      ) : null}
+
+      <div className="mt-3 flex items-start gap-2 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/60 p-4">
+        <p className="flex-1 text-sm text-[var(--color-brand-text-primary)]">{message}</p>
+        <button
+          type="button"
+          onClick={() => {
+            const next = !muted
+            setMuted(next)
+            if (next) stopSpeaking()
+            else speak(message)
+          }}
+          className="shrink-0 rounded-lg p-1.5 text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+          aria-label={muted ? 'Unmute answer' : 'Mute answer'}
+        >
+          {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+        </button>
+      </div>
+
+      <div className="mt-5 flex gap-2">
+        <button
+          type="button"
+          onClick={onOpenChat}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-4 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
+        >
+          <MessageCircle className="h-4 w-4" />
+          Open in chat
+        </button>
+        <button
+          type="button"
+          onClick={onAskAgain}
+          className="rounded-xl border border-[var(--color-brand-border)] px-3 py-2.5 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
+        >
+          Ask again
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-xl px-3 py-2.5 text-sm text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Clarify (needs more info) ─────────────────────────────────────────────────
+
+function ClarifyView({
+  message,
+  onAnswer,
+  onCancel,
+}: {
+  message: string
+  onAnswer: () => void
+  onCancel: () => void
+}) {
+  return (
+    <div className="w-full text-center">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)]">
+        <Mic className="h-6 w-6 text-[var(--color-brand-text-muted)]" />
+      </div>
+      <p className="mt-3 text-sm text-[var(--color-brand-text-primary)] max-w-[300px] mx-auto">
+        {message || 'Could you add a bit more detail?'}
+      </p>
+      <div className="mt-5 flex justify-center gap-2">
+        <button
+          type="button"
+          onClick={onAnswer}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-4 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
+        >
+          <Mic className="h-4 w-4" />
+          Answer by voice
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-xl px-3 py-2.5 text-sm text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+        >
+          Cancel
+        </button>
+      </div>
     </div>
   )
 }

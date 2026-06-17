@@ -1,19 +1,44 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/auth-context'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { startRecording, requestMicPermission, getMicPermissionStatus } from '@/lib/native/voiceRecorder'
-import { extractVoiceExpense, type ExtractedExpense } from '@/lib/ai/extractVoiceExpense'
+import { runAiCommand, type AiCommandStats } from '@/lib/ai/runAiCommand'
+import {
+  buildAIActionHandlerContext,
+  executeActionItem,
+  validateActionItem,
+} from '@/lib/ai/aiActionHandlers'
+import type { AIResponse } from '@/lib/ai/gemini'
+import {
+  logVoiceStage,
+  runStage,
+  voiceStageLabel,
+  VoiceStageError,
+  type VoiceStage,
+} from '@/lib/voice/voiceStages'
+import { speak, stopSpeaking } from '@/lib/voice/speak'
 
-export type VoiceState = 'idle' | 'permission' | 'recording' | 'processing' | 'confirming' | 'error'
+export type VoiceState =
+  | 'idle'
+  | 'permission'
+  | 'recording'
+  | 'processing'
+  | 'confirming'
+  | 'answer'
+  | 'clarify'
+  | 'error'
+
+const TRANSCRIBE_TIMEOUT_MS = 20_000
+const EXTRACT_TIMEOUT_MS = 20_000
 
 /**
- * Temporary on-device diagnostic for the persistent voice 401/403. Decodes the
- * current Supabase access token client-side and reports exactly why the server
- * rejected it (missing / expired / wrong issuer), so the failure is actionable
- * from the device instead of guessing from server logs.
+ * Temporary on-device diagnostic for auth rejections. Decodes the current Supabase
+ * access token client-side and reports exactly why a 401/403 happened (missing /
+ * expired / wrong issuer), so the failure is actionable from the device.
  */
 async function diagnoseAuth(status: number): Promise<{ message: string; hasToken: boolean }> {
   let message: string
@@ -23,74 +48,63 @@ async function diagnoseAuth(status: number): Promise<{ message: string; hasToken
     const { data: { session }, error } = await createClient().auth.getSession()
     const tok = session?.access_token
     if (!tok) {
-      message = `Auth ${status}: no session token on device — sign in again. (getSession err=${error?.message ?? 'none'})`
+      message = `no session token on device — sign in again. (getSession err=${error?.message ?? 'none'})`
     } else {
       hasToken = true
       let b64 = tok.split('.')[1]?.replace(/-/g, '+').replace(/_/g, '/') ?? ''
       b64 += '='.repeat((4 - (b64.length % 4)) % 4)
-      const p = JSON.parse(atob(b64)) as { exp?: number; iss?: string }
+      const p = JSON.parse(atob(b64)) as { exp?: number }
       const expMs = (p.exp ?? 0) * 1000
-      const expd = expMs < Date.now()
-      const iss = (p.iss ?? '?').replace('https://', '').split('.')[0]
-      message = `Auth ${status}: token ${expd ? 'EXPIRED' : 'valid'} (exp ${new Date(expMs).toISOString().slice(11, 19)}, now ${new Date().toISOString().slice(11, 19)}), iss=${iss}, len=${tok.length}.`
+      message = expMs < Date.now() ? 'your session expired — sign in again.' : 'token looks valid; please retry.'
     }
-  } catch (e) {
-    message = `Auth ${status}: token decode failed (${e instanceof Error ? e.message : 'err'}).`
+  } catch {
+    message = 'could not verify your session — sign in again.'
   }
-  // TEMP diagnostic — surfaces in Android logcat under tag `Capacitor/Console`.
-  console.error(`[VOICE] ${message}`)
+  logVoiceStage('transcribe', 'fail', `auth=${status} ${message}`)
   return { message, hasToken }
 }
 
-interface UseVoiceExpenseResult {
+export interface UseVoiceCommandResult {
   state: VoiceState
-  draft: ExtractedExpense | null
+  /** Parsed AI command — confirmation list, query answer, or clarification. */
+  response: AIResponse | null
   transcript: string | null
   error: string | null
-  /** Normalized amplitude 0–1 updated each animation frame while recording. */
   amplitude: number
-  /** Current animation timestamp (ms) — driven by the recording RAF loop. */
   animTime: number
   start: () => Promise<void>
   stop: () => Promise<void>
   cancel: () => Promise<void>
-  confirm: () => void
+  /** Apply all non-query actions. Returns true when everything was saved. */
+  confirm: () => boolean
   reset: () => void
-  /** Pre-flight mic permission request. Call this before the user holds the mic
-   *  button so the OS dialog doesn't race with the hold gesture. */
   requestPermission: () => Promise<void>
+  /** Hand the transcript off to the full AI chat to continue the conversation. */
+  openInChat: () => void
 }
 
-export function useVoiceExpense(): UseVoiceExpenseResult {
+export function useVoiceExpense(): UseVoiceCommandResult {
   const { session } = useAuth()
+  const monthFilter = useSettingsStore((s) => s.monthFilter)
+  const stats = useMonthlyStats()
+  const statsRef = useRef<AiCommandStats>(stats)
+  statsRef.current = stats
+
   const recorderRef = useRef<{
     stop(): Promise<{ audio: Blob | null; inlineText: string | null; mimeType: string | null }>
     cancel(): Promise<void>
     getAmplitude(): number
   } | null>(null)
   const rafRef = useRef<number | null>(null)
-  // When stop() is called before the recorder is ready (user releases the mic
-  // button before startRecording() resolves), this flag causes start() to
-  // cancel immediately after initialisation instead of entering recording state.
   const stopPendingRef = useRef(false)
-  // AbortController for the in-flight transcribe fetch — aborted by cancel().
   const abortRef = useRef<AbortController | null>(null)
 
   const [state, setState] = useState<VoiceState>('idle')
-  const [draft, setDraft] = useState<ExtractedExpense | null>(null)
+  const [response, setResponse] = useState<AIResponse | null>(null)
   const [transcript, setTranscript] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [amplitude, setAmplitude] = useState(0)
   const [animTime, setAnimTime] = useState(0)
-
-  const { addExpense, paymentMethods, baseCurrency, language } = useFinanceStore(
-    useShallow((s) => ({
-      addExpense: s.addExpense,
-      paymentMethods: s.paymentMethods,
-      baseCurrency: s.settings.baseCurrency,
-      language: s.settings.language,
-    })),
-  )
 
   const stopRaf = useCallback(() => {
     if (rafRef.current !== null) {
@@ -100,19 +114,18 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
     setAmplitude(0)
   }, [])
 
-  // Clean up RAF on unmount
   useEffect(() => () => stopRaf(), [stopRaf])
 
   const reset = useCallback(() => {
+    stopSpeaking()
     setState('idle')
-    setDraft(null)
+    setResponse(null)
     setTranscript(null)
     setError(null)
     stopRaf()
   }, [stopRaf])
 
   const requestPermission = useCallback(async () => {
-    // Already granted — no-op (avoids a visible state flicker on re-opens)
     if (getMicPermissionStatus() === 'granted') return
     setState('permission')
     try {
@@ -124,37 +137,32 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
         setState('error')
       }
     } catch {
-      setState('idle') // permission check failed unexpectedly — let start() handle it
+      setState('idle')
     }
   }, [])
 
   const start = useCallback(async () => {
     setError(null)
-    setDraft(null)
+    setResponse(null)
     setTranscript(null)
     stopPendingRef.current = false
 
-    // If permission is not yet confirmed, request it now and bail. The OS dialog
-    // will appear; on the next hold gesture recording starts normally.
     if (getMicPermissionStatus() !== 'granted') {
       await requestPermission()
       return
     }
 
     try {
-      const recorder = await startRecording({ language })
-
-      // User released the mic before the recorder was ready — cancel silently.
+      const recorder = await startRecording({})
       if (stopPendingRef.current) {
         stopPendingRef.current = false
         try { await recorder.cancel() } catch { /* noop */ }
         return
       }
-
       recorderRef.current = recorder
       setState('recording')
+      logVoiceStage('record', 'start')
 
-      // Amplitude polling loop
       const poll = () => {
         if (!recorderRef.current) return
         const now = Date.now()
@@ -166,106 +174,142 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
       rafRef.current = requestAnimationFrame(poll)
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Could not access the microphone'
-      setError(msg)
+      setError(`${voiceStageLabel('record')} step — ${msg}`)
       setState('error')
     }
-  }, [language, requestPermission])
+  }, [requestPermission])
+
+  /** POST the audio to the transcribe route (base64 JSON bypasses CapacitorHttp
+   *  header stripping) and return the text. Handles the 401 self-heal. */
+  const transcribeAudio = useCallback(
+    async (audio: Blob, mimeType: string | null, signal: AbortSignal): Promise<string> => {
+      const mime = audio.type || mimeType || 'audio/mp4'
+      const arrayBuffer = await audio.arrayBuffer()
+      const bytes = new Uint8Array(arrayBuffer)
+      let binary = ''
+      for (let i = 0; i < bytes.length; i += 8192) {
+        binary += String.fromCharCode(...bytes.subarray(i, Math.min(i + 8192, bytes.length)))
+      }
+      const base64Audio = btoa(binary)
+      const language = useFinanceStore.getState().settings.language === 'ar' ? 'ar' : 'en'
+      const body = JSON.stringify({ audio: base64Audio, mimeType: mime, language })
+
+      const { apiFetchAuth } = await import('@/lib/apiBase')
+      const headers: HeadersInit = session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }
+        : { 'Content-Type': 'application/json' }
+      const res = await apiFetchAuth('/api/voice/transcribe', { method: 'POST', body, signal, headers })
+
+      if (!res.ok) {
+        const err = (await res.json().catch(() => null)) as { error?: string } | null
+        if (res.status === 401 || res.status === 403) {
+          const diag = await diagnoseAuth(res.status)
+          if (!diag.hasToken) {
+            try {
+              const { createClient } = await import('@/lib/supabase/client')
+              await createClient().auth.signOut()
+            } catch { /* noop */ }
+          }
+          throw new VoiceStageError('transcribe', diag.message)
+        }
+        throw new VoiceStageError('transcribe', err?.error || `transcription failed (${res.status})`)
+      }
+      const data = (await res.json()) as { text?: string }
+      return data.text?.trim() ?? ''
+    },
+    [session],
+  )
 
   const stop = useCallback(async () => {
-    // Null synchronously to block any concurrent cancel() from re-entering
     const recorder = recorderRef.current
     if (!recorder) {
-      // Recorder not ready yet — flag start() to cancel after initialisation.
       stopPendingRef.current = true
       return
     }
     recorderRef.current = null
     stopRaf()
+    logVoiceStage('record', 'ok')
     setState('processing')
 
-    // AbortController lets cancel() abort the in-flight fetch instantly.
     const abort = new AbortController()
     abortRef.current = abort
 
-    // 25-second wall-clock guard — Groq Whisper + Gemini can take 10-15 s on slow networks.
     let timeoutHandle: ReturnType<typeof setTimeout> | null = null
-    const withTimeout = <T,>(p: Promise<T>): Promise<T> =>
+    const withTimeout = <T,>(p: Promise<T>, ms: number, stage: VoiceStage, msg: string): Promise<T> =>
       Promise.race([
         p,
         new Promise<T>((_, reject) => {
-          timeoutHandle = setTimeout(
-            () => reject(new Error('Transcription took longer than expected. Please try again.')),
-            25_000,
-          )
+          timeoutHandle = setTimeout(() => {
+            abort.abort()
+            reject(new VoiceStageError(stage, msg))
+          }, ms)
         }),
       ])
 
     try {
-      const { audio, inlineText, mimeType } = await withTimeout(recorder.stop())
-
+      const { audio, inlineText, mimeType } = await recorder.stop()
       let text = inlineText?.trim() ?? ''
 
       if (!text && audio) {
-        const mime = audio.type || mimeType || 'audio/mp4'
-        // Convert to base64 JSON — CapacitorHttp strips Authorization headers on
-        // multipart/form-data binary uploads; JSON requests preserve all headers.
-        const arrayBuffer = await audio.arrayBuffer()
-        const bytes = new Uint8Array(arrayBuffer)
-        let binary = ''
-        for (let i = 0; i < bytes.length; i += 8192) {
-          binary += String.fromCharCode(...bytes.subarray(i, Math.min(i + 8192, bytes.length)))
-        }
-        const base64Audio = btoa(binary)
-        const body = JSON.stringify({ audio: base64Audio, mimeType: mime, language: language === 'ar' ? 'ar' : 'en' })
-        const { apiFetchAuth } = await import('@/lib/apiBase')
-        const voiceHeaders: HeadersInit = session?.access_token
-          ? { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }
-          : { 'Content-Type': 'application/json' }
-        const res = await withTimeout(
-          apiFetchAuth('/api/voice/transcribe', { method: 'POST', body, signal: abort.signal, headers: voiceHeaders }),
+        text = await runStage('transcribe', "couldn't reach the server", () =>
+          withTimeout(
+            transcribeAudio(audio, mimeType, abort.signal),
+            TRANSCRIBE_TIMEOUT_MS,
+            'transcribe',
+            'Transcription took too long. Please try again.',
+          ),
         )
-        if (!res.ok) {
-          const err = (await res.json().catch(() => null)) as { error?: string } | null
-          if (res.status === 401 || res.status === 403) {
-            const diag = await diagnoseAuth(res.status)
-            if (!diag.hasToken) {
-              // Dead/expired session that can't refresh — self-heal to a clean
-              // login instead of leaving a zombie "authed but every call 401s".
-              try {
-                const { createClient } = await import('@/lib/supabase/client')
-                await createClient().auth.signOut()
-              } catch { /* noop */ }
-              throw new Error('Your session expired — please sign in again, then retry voice.')
-            }
-            throw new Error(diag.message)
-          }
-          console.error(`[VOICE] transcribe failed status=${res.status} body=${JSON.stringify(err)}`)
-          throw new Error(err?.error || `Transcription failed (${res.status})`)
-        }
-        const data = (await res.json()) as { text: string }
-        text = data.text?.trim() ?? ''
       }
 
-      if (!text) throw new Error("Couldn't hear that — try again in a quieter spot.")
+      if (!text) throw new VoiceStageError('transcribe', "Didn't catch that — try again in a quieter spot.")
       setTranscript(text)
 
-      const extracted = await withTimeout(extractVoiceExpense(text, baseCurrency))
-      setDraft(extracted)
-      setState('confirming')
+      const store = useFinanceStore.getState()
+      const aiResponse = await runStage('extract', "the assistant didn't respond", () =>
+        withTimeout(
+          runAiCommand({
+            store,
+            stats: statsRef.current,
+            monthFilter,
+            text,
+            mode: 'voice',
+            signal: abort.signal,
+          }),
+          EXTRACT_TIMEOUT_MS,
+          'extract',
+          'The assistant took too long. Please try again.',
+        ),
+      )
+
+      setResponse(aiResponse)
+      const writeActions = aiResponse.actions.filter(
+        (a) => a.action !== 'query' && a.action !== 'unclear',
+      )
+      const needsClarify =
+        !!aiResponse.clarificationNeeded || aiResponse.actions.some((a) => a.action === 'unclear')
+
+      if (writeActions.length > 0) {
+        setState('confirming')
+      } else if (needsClarify) {
+        setState('clarify')
+      } else {
+        setState('answer')
+        if (!useSettingsStore.getState().voiceSpeakMuted) {
+          speak(aiResponse.message, useFinanceStore.getState().settings.language)
+        }
+      }
     } catch (e) {
-      // AbortError fires when cancel() is called mid-fetch — go silent back to idle.
       if (e instanceof Error && e.name === 'AbortError') return
-      const msg = e instanceof Error ? e.message : 'Something went wrong'
+      const msg = e instanceof VoiceStageError ? e.userMessage : e instanceof Error ? e.message : 'Something went wrong'
       setError(msg)
       setState('error')
     } finally {
       if (timeoutHandle !== null) clearTimeout(timeoutHandle)
       abortRef.current = null
     }
-  }, [baseCurrency, language, session, stopRaf])
+  }, [monthFilter, stopRaf, transcribeAudio])
 
   const cancel = useCallback(async () => {
-    // Abort any in-flight transcribe fetch immediately.
     abortRef.current?.abort()
     abortRef.current = null
     stopPendingRef.current = false
@@ -276,22 +320,59 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
     reset()
   }, [reset, stopRaf])
 
-  const confirm = useCallback(() => {
-    if (!draft) return
-    const defaultPm = paymentMethods.find((pm) => pm.isDefault) ?? paymentMethods[0]
-    const today = new Date().toISOString().slice(0, 10)
-    addExpense({
-      date: today,
-      description: draft.description,
-      category: draft.category,
-      amount: draft.amount,
-      currency: draft.currency,
-      paymentMethodId: defaultPm?.id ?? '',
-      isRecurring: false,
-      notes: transcript ? `voice: ${transcript}` : undefined,
-    })
-    reset()
-  }, [addExpense, draft, paymentMethods, reset, transcript])
+  const confirm = useCallback((): boolean => {
+    if (!response) return false
+    const store = useFinanceStore.getState()
+    const ctx = buildAIActionHandlerContext(store)
+    const toApply = response.actions.filter((a) => a.action !== 'query' && a.action !== 'unclear')
+    if (toApply.length === 0) return false
 
-  return { state, draft, transcript, error, amplitude, animTime, start, stop, cancel, confirm, reset, requestPermission }
+    for (const { action, data } of toApply) {
+      const err = validateActionItem(ctx, action, data as Record<string, unknown>)
+      if (err) {
+        logVoiceStage('validate', 'fail', err)
+        setError(`${voiceStageLabel('validate')} step — ${err}`)
+        setState('error')
+        return false
+      }
+    }
+    logVoiceStage('validate', 'ok', `items=${toApply.length}`)
+
+    try {
+      for (const { action, data } of toApply) {
+        executeActionItem(ctx, action, data as Record<string, unknown>)
+      }
+      logVoiceStage('apply', 'ok', `items=${toApply.length}`)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Could not save'
+      logVoiceStage('apply', 'fail', msg)
+      setError(`${voiceStageLabel('apply')} step — ${msg}`)
+      setState('error')
+      return false
+    }
+    reset()
+    return true
+  }, [response, reset])
+
+  const openInChat = useCallback(() => {
+    const text = transcript
+    reset()
+    if (text) useSettingsStore.getState().openAiChatWithSeed(text)
+  }, [transcript, reset])
+
+  return {
+    state,
+    response,
+    transcript,
+    error,
+    amplitude,
+    animTime,
+    start,
+    stop,
+    cancel,
+    confirm,
+    reset,
+    requestPermission,
+    openInChat,
+  }
 }
