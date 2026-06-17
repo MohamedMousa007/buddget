@@ -55,6 +55,9 @@ export function BottomNav() {
         amplitude={voice.amplitude}
         animTime={voice.animTime}
         response={voice.response}
+        draftActions={voice.draftActions}
+        itemErrors={voice.itemErrors}
+        transcript={voice.transcript}
         error={voice.error}
         posX={posX}
         posY={posY}
@@ -62,6 +65,8 @@ export function BottomNav() {
         trashRef={trashRef}
         onCancel={() => { void voice.cancel() }}
         onConfirm={() => { voice.confirm() }}
+        onUpdateField={voice.updateDraftField}
+        onRemove={voice.removeDraftAction}
         onRedo={voice.reset}
         onClose={voice.reset}
         onOpenChat={voice.openInChat}
