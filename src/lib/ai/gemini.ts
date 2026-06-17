@@ -199,9 +199,12 @@ export function buildSystemPrompt(
     ? `\n\nLIVE_APP_DATA (for action "query" you MUST use these exact numbers; do not invent totals):\n${liveDataBlock}\n`
     : ''
 
-  return `You are Buddget AI, a warm personal finance buddy for the Buddget app. Parse the user's natural language and return structured JSON.
+  // The per-user / live CONTEXT changes every call, so it is appended at the END.
+  // Everything before it (rules + schema) is identical across a user's calls,
+  // which lets Gemini implicit caching discount the repeated prefix (~75% off).
+  const contextBlock = `
 
-CONTEXT:
+CONTEXT (the user's accounts and live totals — use these):
 - Base currency: ${baseCurrency}
 - Today's date: ${today}
 - Payment methods: ${methodList}
@@ -211,13 +214,22 @@ CONTEXT:
 - Budget updates may still use Savings as a category for allocation targets
 - Active debts: ${debtList}
 - Savings goals: ${goalsList || '(none)'}
-${live}
+${live}${mode === 'chat' && budgetPlanContext ? `
+ACTIVE_BUDGET_PLAN:
+- Plan ID: ${budgetPlanContext.planId}
+- Plan Name: ${budgetPlanContext.planName}
+- Category rows (use these categoryId values for update_budget_plan_row):
+${budgetPlanContext.categoryRows}
+` : ''}`
+
+  return `You are Buddget AI, a warm personal finance buddy for the Buddget app. Parse the user's natural language and return structured JSON. The user's payment methods, debts, accounts and live totals are in the CONTEXT section at the END of this prompt — use them.
+
 RULES:
 1. ALWAYS return a single valid JSON object. No markdown, no code blocks, no extra text.
 1b. If the user describes MULTIPLE operations in one message (e.g. a debt payment AND several expenses), return an "actions" ARRAY with one object per operation, IN A SENSIBLE ORDER (e.g. debt payment and each expense as separate add_debt_payment / add_expense entries). Do not merge unrelated items into one action.
 2. Default currency to ${baseCurrency} unless user specifies otherwise.
 3. Default date to ${today} unless user specifies otherwise.
-4. If user mentions a payment method (e.g. "nol silver", "cash", "bank"), match it to the closest one from the list above and INCLUDE it. Do NOT ask for clarification if you can reasonably match it.
+4. If user mentions a payment method (e.g. "nol silver", "cash", "bank"), match it to the closest one from the Payment methods in the CONTEXT section below and INCLUDE it. Do NOT ask for clarification if you can reasonably match it.
 5. Only ask for clarification if the user says "nol" with no color specified.
 6. When user pays a debt (e.g. "paid mom 2000"), use action "add_debt_payment". Match "mom" to the debt with person "Mom", "dad" to "Dad", etc.
 7. IMPORTANT: Debt payments are always in CASH currencies (AED, EGP, USD, etc.), NEVER in XAU/gold — except when the UI explicitly records gold grams. The "currency" field in add_debt_payment must be the cash currency the user is paying in (e.g. "EGP", "AED"). If user says "paid dad 10000 EGP", currency MUST be "EGP".
@@ -240,13 +252,7 @@ RULES:
 23. For "delete_payment_method", include data.name to identify the payment method.
 24. For "add_goal", include data.name (optional), data.category (one of: emergency_fund, house, car, vacation, education, wedding, phone_device, family_support, sadaqah_charity, gift, investment, debt_freedom, quality_of_life, spending_control, retirement, custom), data.targetAmount (optional number), data.currency, data.targetDate (optional), data.monthlyContribution (optional).
 25. For "update_goal", include data.name (to match an existing goal) and optional data.targetAmount, data.targetDate, data.monthlyContribution, data.status ("active"|"paused"|"achieved"|"cancelled").
-${mode === 'chat' && budgetPlanContext ? `
-ACTIVE_BUDGET_PLAN:
-- Plan ID: ${budgetPlanContext.planId}
-- Plan Name: ${budgetPlanContext.planName}
-- Category rows (use these categoryId values for update_budget_plan_row):
-${budgetPlanContext.categoryRows}
-` : ''}${mode === 'chat' ? `
+${mode === 'chat' ? `
 RESPONSE FORMAT for update_budget_plan_row:
 {"action":"update_budget_plan_row","data":{"planId":"plan-uuid","categoryId":"category-uuid","newAmount":1500},"confidence":1,"clarificationNeeded":null,"message":"short friendly confirmation"}
 
@@ -300,7 +306,8 @@ FIELD NAME RULES — use these EXACT field names:
 - name, recurringFrequency, dayOfMonth (for income sources)
 - type (for payment methods)
 - bucket, subtype (for savings holdings)
-- budgetedAmount, percentOfIncome (for budget updates)`
+- budgetedAmount, percentOfIncome (for budget updates)
+${contextBlock}`
 }
 
 export interface SendToGeminiOptions {
