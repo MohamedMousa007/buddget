@@ -9,7 +9,7 @@ export const PAGE_HEADER_SURFACE_BASE =
  * mobile header is `3rem + safe-area-inset-top` tall, desktop header is `h-12`
  * (no inset). The inset-aware calc covers both — env() is 0 on desktop.
  */
-export const PAGE_HEADER_SURFACE_CLASS = `sticky top-[calc(3rem+env(safe-area-inset-top,0px))] lg:top-12 z-30 ${PAGE_HEADER_SURFACE_BASE}`
+export const PAGE_HEADER_SURFACE_CLASS = `sticky top-[calc(52px+env(safe-area-inset-top,0px))] lg:top-12 z-30 ${PAGE_HEADER_SURFACE_BASE}`
 
 /** Full-width routes without DesktopHeaderBar (onboarding, reset-password, etc.). */
 export const PAGE_HEADER_BARE_CLASS = `sticky top-0 z-30 ${PAGE_HEADER_SURFACE_BASE}`

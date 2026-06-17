@@ -7,12 +7,17 @@ import { AuthNavButtons } from '@/components/layout/AuthNavButtons'
 import { MonthNavigationControl } from '@/components/layout/MonthNavigationControl'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useLocale, useT } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
+import { sectionTitleNavKey } from '@/lib/navigation/bottomNavConfig'
 
 export function DesktopHeaderBar() {
   const { monthFilter, setMonthFilter } = useSettingsStore()
   const pathname = usePathname()
   const t = useT()
   const { locale } = useLocale()
+  const sectionKey = sectionTitleNavKey(pathname)
+  const sectionTitle = sectionKey ? t.nav[sectionKey] : ''
+  const isHome = pathname === '/'
 
   return (
     <>
@@ -42,24 +47,31 @@ export function DesktopHeaderBar() {
       </header>
 
       {/* ─── Mobile header (<lg) ─── */}
-      <header className="flex lg:hidden fixed top-0 start-0 end-0 z-40 min-h-[calc(3rem+env(safe-area-inset-top,0px))] flex-col bg-[var(--color-brand-card)]/90 border-b border-[var(--color-brand-border)] backdrop-blur-xl safe-area-top">
-        <div className="flex h-12 shrink-0 items-center px-4">
-          <div className="flex flex-1 min-w-0 justify-start items-center">
-            <Link
-              href="/"
-              className="shrink-0 text-xl font-bold font-heading tracking-tight text-[var(--color-brand-text-primary)]"
-            >
-              Bud<span className="text-[var(--color-brand-red)]">d</span>get
-            </Link>
-          </div>
+      <header className="flex lg:hidden fixed top-0 start-0 end-0 z-40 min-h-[calc(52px+env(safe-area-inset-top,0px))] flex-col bg-[var(--color-brand-bg)] border-b border-[var(--color-brand-border)] safe-area-top">
+        <div className="flex h-[52px] shrink-0 items-center gap-[9px] px-[18px]">
+          <Link
+            href="/"
+            className="shrink-0 text-[19px] font-extrabold font-heading tracking-[-0.4px] text-[var(--color-brand-text-primary)]"
+          >
+            Bud<span className="text-[var(--color-brand-red)]">d</span>get
+          </Link>
+          {sectionTitle && (
+            <>
+              <span className="h-4 w-px shrink-0 bg-[var(--color-brand-border)]" />
+              <span className="min-w-0 truncate text-sm font-semibold text-[var(--color-brand-text-secondary)]">
+                {sectionTitle}
+              </span>
+            </>
+          )}
 
-          <div className="flex flex-1 min-w-0 justify-center items-center">
-            {pathname === '/' && (
+          {/* Home keeps its month switcher in-header (dashboard is out of scope). */}
+          {isHome && (
+            <div className="ms-auto flex min-w-0 items-center">
               <MonthNavigationControl monthFilter={monthFilter} onChange={setMonthFilter} compact />
-            )}
-          </div>
+            </div>
+          )}
 
-          <div className="flex flex-1 min-w-0 justify-end items-center">
+          <div className={cn('flex shrink-0 items-center', isHome ? 'ms-2' : 'ms-auto')}>
             <AuthNavButtons layout="mobile" />
           </div>
         </div>

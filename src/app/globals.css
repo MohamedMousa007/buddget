@@ -346,3 +346,52 @@ html[data-locale='ar'] .font-mono-numbers {
 html[data-locale='ar'] .prose-rtl {
   text-align: end;
 }
+
+/**
+ * Dual-thumb amount slider (Expenses filter). Two stacked range inputs share
+ * one visible track drawn behind them; only the thumbs are interactive.
+ * `accent-color:transparent` suppresses the native fill so exactly one track
+ * line shows.
+ */
+.rng2 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 26px;
+  margin: 0;
+  background: none;
+  accent-color: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: none;
+}
+.rng2::-webkit-slider-runnable-track {
+  background: transparent;
+  border: none;
+  height: 26px;
+}
+.rng2::-webkit-slider-thumb {
+  pointer-events: auto;
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 5px solid var(--color-brand-red);
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  margin-top: 2px;
+}
+.rng2::-moz-range-track {
+  background: transparent;
+}
+.rng2::-moz-range-thumb {
+  pointer-events: auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 5px solid var(--color-brand-red);
+  cursor: pointer;
+}

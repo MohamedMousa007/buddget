@@ -17,6 +17,12 @@ export interface PmPrefill {
   last4: string
 }
 
+/** Persisted resting position of the draggable Buddgy orb. */
+export interface BuddgyOrbPosition {
+  side: 'left' | 'right'
+  top: number
+}
+
 interface SettingsState {
   sidebarOpen: boolean
   activeModal: string | null
@@ -34,6 +40,9 @@ interface SettingsState {
   /** When opening add-debt sheet from "Record payment" on a card */
   debtSheetPaymentOnly: boolean
   debtSheetPrefillDebtId: string | null
+  /** Draggable Buddgy orb resting position (persisted). */
+  buddgyOrb: BuddgyOrbPosition
+  setBuddgyOrb: (pos: BuddgyOrbPosition) => void
   setSidebarOpen: (open: boolean) => void
   setActiveModal: (modal: string | null) => void
   setEditingExpenseId: (expenseId: string | null) => void
@@ -76,6 +85,8 @@ export const useSettingsStore = create<SettingsState>()(
       voiceSpeakMuted: false,
       debtSheetPaymentOnly: false,
       debtSheetPrefillDebtId: null,
+      buddgyOrb: { side: 'right', top: 620 },
+      setBuddgyOrb: (pos) => set({ buddgyOrb: pos }),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
       setActiveModal: (modal) => set({ activeModal: modal }),
       setEditingExpenseId: (expenseId) => set({ editingExpenseId: expenseId }),
@@ -137,6 +148,7 @@ export const useSettingsStore = create<SettingsState>()(
       partialize: (state) => ({
         monthFilter: state.monthFilter,
         voiceSpeakMuted: state.voiceSpeakMuted,
+        buddgyOrb: state.buddgyOrb,
       }),
     }
   )

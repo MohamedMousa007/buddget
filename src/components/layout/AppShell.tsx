@@ -230,7 +230,7 @@ export function AppShell({ children }: AppShellProps) {
       <MarketRatesSync />
       <Sidebar />
       <DesktopHeaderBar />
-      <main className="native-scroll pt-[calc(3rem+env(safe-area-inset-top,0px))] lg:pt-12 lg:ms-[176px] pb-[calc(4rem+env(safe-area-inset-bottom,0px))] lg:pb-0 min-h-screen safe-area-x">
+      <main className="native-scroll pt-[calc(52px+env(safe-area-inset-top,0px))] lg:pt-12 lg:ms-[176px] pb-[calc(4rem+env(safe-area-inset-bottom,0px))] lg:pb-0 min-h-screen safe-area-x">
         <OnboardingBanner />
         <SyncFailureBanner />
         {children}

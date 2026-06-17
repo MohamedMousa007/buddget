@@ -140,7 +140,7 @@ export function CreditCardDebtCard({ debt, payments, onRecordPayment, onEdit }: 
           <button
             type="button"
             onClick={onRecordPayment}
-            className="flex-1 py-2.5 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-medium transition-colors"
+            className="flex-1 py-2.5 rounded-xl bg-[var(--color-brand-green)] hover:bg-[var(--color-brand-green-hover)] text-white text-sm font-medium transition-colors"
           >
             {t.debts.payNow}
           </button>
