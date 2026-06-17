@@ -38,27 +38,43 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  let form: FormData
-  try {
-    form = await request.formData()
-  } catch {
-    return NextResponse.json({ error: 'Invalid form data' }, { status: 400 })
+  let audio: Blob
+  let language: string
+  const contentType = request.headers.get('content-type') ?? ''
+  if (contentType.includes('application/json')) {
+    let body: { audio?: string; mimeType?: string; language?: string }
+    try {
+      body = await request.json() as { audio?: string; mimeType?: string; language?: string }
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    }
+    if (!body.audio) return NextResponse.json({ error: 'Missing audio field' }, { status: 400 })
+    const buffer = Buffer.from(body.audio, 'base64')
+    if (buffer.byteLength > 25 * 1024 * 1024) {
+      return NextResponse.json({ error: 'Audio exceeds 25 MB' }, { status: 413 })
+    }
+    audio = new Blob([buffer], { type: body.mimeType || 'audio/mp4' })
+    language = body.language?.trim() || 'en'
+  } else {
+    let form: FormData
+    try {
+      form = await request.formData()
+    } catch {
+      return NextResponse.json({ error: 'Invalid form data' }, { status: 400 })
+    }
+    const file = form.get('audio')
+    if (!(file instanceof Blob)) {
+      return NextResponse.json({ error: 'Missing audio blob' }, { status: 400 })
+    }
+    if (file.size > 25 * 1024 * 1024) {
+      return NextResponse.json({ error: 'Audio exceeds 25 MB' }, { status: 413 })
+    }
+    audio = file
+    language = (form.get('language') as string | null)?.trim() || 'en'
   }
-
-  const audio = form.get('audio')
-  if (!(audio instanceof Blob)) {
-    return NextResponse.json({ error: 'Missing audio blob' }, { status: 400 })
-  }
-  if (audio.size > 25 * 1024 * 1024) {
-    return NextResponse.json({ error: 'Audio exceeds 25 MB' }, { status: 413 })
-  }
-
-  const language = (form.get('language') as string | null)?.trim() || 'en'
 
   try {
     const groq = new Groq({ apiKey })
-    // Derive the extension from the actual blob MIME — never trust the client
-    // filename. iOS sends audio/mp4; an extension mismatch makes Groq reject it.
     const type = audio.type || 'audio/mp4'
     const file = new File([audio], `recording.${audioMimeToExt(type)}`, { type })
 
