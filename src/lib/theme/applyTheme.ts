@@ -25,13 +25,13 @@ export function applyTheme(setting: ThemeSetting): void {
 /**
  * Inline script source injected in `<head>` to prevent FOUC.
  * Reads the persisted theme from the Zustand store in localStorage.
- * Defaults to 'light' when no preference is stored.
+ * Defaults to 'dark' (Midnight) when no preference is stored.
  */
 export const THEME_INIT_SCRIPT = `
 (function(){
   try {
     var raw = localStorage.getItem('buddget-storage');
-    var theme = 'light';
+    var theme = 'dark';
     if (raw) {
       var parsed = JSON.parse(raw);
       var s = parsed && parsed.state && parsed.state.settings;
@@ -48,9 +48,9 @@ export const THEME_INIT_SCRIPT = `
     root.style.colorScheme = eff === 'dark' ? 'dark' : 'light';
   } catch(e) {
     var r = document.documentElement;
-    r.classList.remove('dark');
-    r.setAttribute('data-theme', 'light');
-    r.style.colorScheme = 'light';
+    r.classList.add('dark');
+    r.setAttribute('data-theme', 'dark');
+    r.style.colorScheme = 'dark';
   }
 })();
 `

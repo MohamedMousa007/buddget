@@ -851,6 +851,7 @@ export interface Dictionary {
     themeLight: string
     themeSystem: string
     themeNameMidnight: string
+    themeNameBright: string
     themeNamePaper: string
     themeNameMinimal: string
     themePickerHint: string

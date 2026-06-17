@@ -23,30 +23,21 @@ interface ThemePreset {
   palette: PaletteId
   /** Underlying dashboard layout written to `settings.dashboardLayout`. */
   layout: LayoutId
-  labelKey: 'themeNamePaper' | 'themeNameMidnight' | 'themeNameMinimal' | 'themeSystem'
+  labelKey: 'themeNameMidnight' | 'themeNameBright' | 'themeSystem'
   /** Card colour — used as the swatch background for non-system presets. */
   card: string
   /** Accent glyph colour rendered as a small dot in the swatch centre. */
   accent: string
   /** System swatch uses a conic gradient instead of a solid fill. */
   swatchStyle?: React.CSSProperties
-  /** When true, the swatch gets a thin horizontal line across the middle
-   *  to hint at the minimal-stack layout. */
-  minimalMark?: boolean
 }
 
+// Themes are intentionally limited to the Midnight redesign for now:
+// Midnight (dark, default), its Bright (light) counterpart, and System.
+// Other presets (Paper/Minimal) are disabled until they're redesigned.
 const THEMES: ThemePreset[] = [
-  { id: 'paper',    palette: 'light',  layout: 'standard', labelKey: 'themeNamePaper',    card: '#F5F4F0', accent: '#E50914' },
   { id: 'midnight', palette: 'dark',   layout: 'standard', labelKey: 'themeNameMidnight', card: '#0A0A0F', accent: '#E50914' },
-  {
-    id: 'minimal',
-    palette: 'light',
-    layout: 'minimal',
-    labelKey: 'themeNameMinimal',
-    card: '#FFFFFF',
-    accent: '#0A0A0F',
-    minimalMark: true,
-  },
+  { id: 'bright',   palette: 'light',  layout: 'standard', labelKey: 'themeNameBright',    card: '#F5F5F7', accent: '#E50914' },
   {
     id: 'system',
     palette: 'system',
@@ -55,7 +46,7 @@ const THEMES: ThemePreset[] = [
     card: '#FFFFFF',
     accent: '#E50914',
     swatchStyle: {
-      background: 'conic-gradient(from 45deg, #F5F4F0 0deg 180deg, #0A0A0F 180deg 360deg)',
+      background: 'conic-gradient(from 45deg, #F5F5F7 0deg 180deg, #0A0A0F 180deg 360deg)',
     },
   },
 ]
@@ -111,11 +102,6 @@ export function SettingsAppPreferencesSection({ store }: SettingsAppPreferencesS
                 >
                   {preset.palette === 'system' ? (
                     <Monitor className="w-4 h-4 text-[var(--color-brand-text-primary)]/70" />
-                  ) : preset.minimalMark ? (
-                    <span
-                      className="absolute inset-x-[18%] h-[2px] rounded-full"
-                      style={{ background: preset.accent }}
-                    />
                   ) : (
                     <span
                       className="w-4 h-4 rounded-full"

@@ -954,6 +954,7 @@ export const en: Dictionary = {
     themeLight: 'Light',
     themeSystem: 'System',
     themeNameMidnight: 'Midnight',
+    themeNameBright: 'Bright',
     themeNamePaper: 'Paper',
     themeNameMinimal: 'Minimal',
     themePickerHint: 'Pick a look. More coming soon.',
