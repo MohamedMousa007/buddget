@@ -165,11 +165,14 @@ export function useVoiceHoldGesture({
         /* no-op */
       }
       const wasHolding = holdingRef.current
+      // iOS/Capacitor fires pointercancel instead of pointerup on quick taps when
+      // setPointerCapture is active — treat as tap if the hold timer hadn't fired yet.
+      const pendingTap = timerRef.current != null && startRef.current != null
       reset()
-      // System interruption (call, notification) — discard rather than save garbage.
       if (wasHolding) onHoldCancel()
+      else if (pendingTap) onTap()
     },
-    [onHoldCancel, reset],
+    [onHoldCancel, onTap, reset],
   )
 
   const onContextMenu = useCallback((e: ReactPointerEvent<HTMLButtonElement>) => {
