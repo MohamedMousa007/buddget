@@ -1,7 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import type { BuddgetNavIcon } from '@/lib/navigation/bottomNavConfig'
+import { motion } from 'framer-motion'
+import { ChevronRight } from 'lucide-react'
+import type { MoreMenuItem } from '@/lib/navigation/bottomNavConfig'
 import { cn } from '@/lib/utils'
 import { localeInlineLabelClass, useLocale, useT } from '@/lib/i18n'
 import type { Dictionary } from '@/lib/i18n'
@@ -12,25 +14,30 @@ export function BottomNavMorePanel({
   onNavigate,
 }: {
   pathname: string
-  items: { href: string; label: string; icon: BuddgetNavIcon }[]
+  items: MoreMenuItem[]
   onNavigate: () => void
 }) {
   const t = useT()
   const { locale } = useLocale()
   return (
-    <div
-      className="fixed start-3 end-3 z-[56] rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] shadow-xl shadow-black/40 p-2 pb-3"
-      style={{ bottom: 'max(1rem, calc(4rem + env(safe-area-inset-bottom, 0px)))' }}
+    <motion.div
+      initial={{ y: '110%' }}
+      animate={{ y: 0 }}
+      exit={{ y: '110%' }}
+      transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+      className="fixed start-0 end-0 bottom-0 z-[56] rounded-t-[26px] border-t border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 pt-2.5 shadow-[0_-20px_50px_-20px_rgba(0,0,0,0.7)]"
+      style={{ paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))' }}
     >
+      <div className="mx-auto mt-0.5 mb-3 h-[5px] w-[42px] rounded-[3px] bg-[var(--color-brand-border)]" />
       <p
         className={cn(
-          'px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]',
+          'px-1 pb-2 text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-brand-text-muted)]',
           locale === 'ar' && 'text-end',
         )}
       >
         {t.common.goTo}
       </p>
-      <ul className="flex flex-col gap-0.5">
+      <ul className="flex flex-col gap-[3px]">
         {items.map((m) => {
           const active = pathname === m.href
           return (
@@ -39,21 +46,27 @@ export function BottomNavMorePanel({
                 href={m.href}
                 onClick={onNavigate}
                 className={cn(
-                  'flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors',
+                  'flex items-center gap-[13px] rounded-2xl px-2.5 py-[9px] text-left transition-colors',
                   active
                     ? 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-red)]'
-                    : 'text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)]'
+                    : 'text-[var(--color-brand-text-primary)]',
                 )}
               >
-                <m.icon className="h-5 w-5 shrink-0 opacity-90" />
-                <span className={localeInlineLabelClass(locale)}>
+                <span
+                  className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[11px]"
+                  style={{ background: m.bg, color: m.fg }}
+                >
+                  <m.icon className="h-[19px] w-[19px]" />
+                </span>
+                <span className={cn('flex-1 text-[14.5px] font-semibold', localeInlineLabelClass(locale))}>
                   {t.nav[m.label as keyof Dictionary['nav']]}
                 </span>
+                <ChevronRight className="h-[17px] w-[17px] shrink-0 text-[var(--color-brand-text-muted)]" />
               </Link>
             </li>
           )
         })}
       </ul>
-    </div>
+    </motion.div>
   )
 }

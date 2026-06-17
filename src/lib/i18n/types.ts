@@ -301,6 +301,22 @@ export interface Dictionary {
     removePurchase: string
     confirmDelete: string
     badgeDebt: string
+    spentThisMonth: string
+    entries: string
+    addExpenseCta: string
+    filtersTitle: string
+    resetAll: string
+    showResults: string
+    labelCategory: string
+    labelCategories: string
+    labelPayment: string
+    labelAmount: string
+    amountRange: string
+    minimum: string
+    maximum: string
+    selectMulti: string
+    doneCta: string
+    badgeSms: string
   }
 
   addExpense: {
@@ -340,6 +356,16 @@ export interface Dictionary {
     perPaycheck: (amount: string) => string
     perWeek: (amount: string) => string
     monthlyEquiv: (amount: string) => string
+    monthlyIncomeLabel: string
+    recurringLabel: string
+    oneTimeLabel: string
+    recurringSourcesLabel: string
+    incomeThisMonthLabel: string
+    mainAccount: string
+    perMoSuffix: string
+    freqMonthlyDay: (day: number) => string
+    freqBiweeklyShort: string
+    freqWeeklyShort: string
     confirmDelete: string
     sourceTypeSalary: string
     sourceTypeBonus: string
@@ -512,6 +538,8 @@ export interface Dictionary {
     requireAuthRecurring: string
     buttonPayDebt: string
     buttonAddDebt: string
+    totalStillOwed: string
+    activeDebtsCount: (n: number) => string
     buttonRecurring: string
     buttonTrack: string
     emptyIcon: string
@@ -1182,6 +1210,12 @@ export interface Dictionary {
     fabVoiceExpense: string
     fabScanReceipt: string
     fabLongPressTip: string
+    fabVoiceTip: string
+    fabTileScan: string
+    fabTileExpense: string
+    fabTileIncome: string
+    fabTileDebt: string
+    fabTileSaving: string
     fabLogPurchase: string
     fabAddIncome: string
     fabAddPayment: string
@@ -1209,6 +1243,7 @@ export interface Dictionary {
     suggestion1: string
     suggestion2: string
     suggestion3: string
+    suggestion4: string
     confirmAdd: string
     confirmEdit: string
     multiIntentHint: string

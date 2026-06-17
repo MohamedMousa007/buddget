@@ -142,6 +142,7 @@ export function ModalShell({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
             onClick={onBackdropClick}
             className={cn(
               'fixed inset-0',
@@ -181,7 +182,7 @@ export function ModalShell({
                 ? { duration: 0.24, ease: [0.32, 0.72, 0.34, 1] }
                 : desktopFadePanel
                   ? { duration: 0.22, ease: [0.32, 0.72, 0.34, 1] }
-                  : { type: 'spring', damping: 25, stiffness: 300 }
+                  : { duration: 0.26, ease: [0.22, 1, 0.36, 1] }
             }
             onAnimationComplete={(definition) => {
               // Framer fires onAnimationComplete for both enter + exit.

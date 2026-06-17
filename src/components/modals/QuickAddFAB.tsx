@@ -1,7 +1,7 @@
 'use client'
 
 import type { LucideIcon } from 'lucide-react'
-import { Plus, X, Receipt, DollarSign, CreditCard, FileText, Sparkles, Mic, Camera } from 'lucide-react'
+import { Plus, X, Receipt, DollarSign, CreditCard, Coins, Mic, Camera } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ModalShell } from '@/components/modals/ModalShell'
@@ -13,29 +13,29 @@ import { useLongPress } from '@/hooks/useLongPress'
 import { VoiceRecordSheet } from '@/components/voice/VoiceRecordSheet'
 import { ReceiptScanSheet } from '@/components/receipt/ReceiptScanSheet'
 
-type QuickAddOption = {
+type QuickAddTile = {
   id: string
   label: string
   icon: LucideIcon
+  fg: string
+  bg: string
 }
 
 export function QuickAddFAB() {
   const router = useRouter()
-  const { activeModal, setActiveModal, openDebtSheetNew } = useSettingsStore()
+  const { activeModal, setActiveModal } = useSettingsStore()
   const requireAuth = useRequireAuthAction()
   const t = useT()
   const isOpen = activeModal === 'quickAdd'
   const voiceOpen = activeModal === 'voiceExpense'
   const scanOpen = activeModal === 'scanReceipt'
 
-  const options: QuickAddOption[] = [
-    { id: 'voiceExpense', label: t.modals.fabVoiceExpense, icon: Mic },
-    { id: 'scanReceipt', label: t.modals.fabScanReceipt, icon: Camera },
-    { id: 'addExpense', label: t.modals.fabLogPurchase, icon: Receipt },
-    { id: 'addIncome', label: t.modals.fabAddIncome, icon: DollarSign },
-    { id: 'addPaymentMethod', label: t.modals.fabAddPayment, icon: CreditCard },
-    { id: 'addDebt', label: t.modals.fabTrackDebt, icon: FileText },
-    { id: 'budgetSetup', label: t.modals.fabAskAi, icon: Sparkles },
+  const tiles: QuickAddTile[] = [
+    { id: 'scanReceipt', label: t.modals.fabTileScan, icon: Camera, fg: '#4DA3FF', bg: 'rgba(77,163,255,.16)' },
+    { id: 'addExpense', label: t.modals.fabTileExpense, icon: Receipt, fg: 'var(--color-brand-red)', bg: 'rgba(229,9,20,.14)' },
+    { id: 'addIncome', label: t.modals.fabTileIncome, icon: DollarSign, fg: 'var(--color-brand-green)', bg: 'rgba(29,185,84,.14)' },
+    { id: 'payDebt', label: t.modals.fabTileDebt, icon: CreditCard, fg: '#FF5C5C', bg: 'rgba(255,92,92,.14)' },
+    { id: 'addGoal', label: t.modals.fabTileSaving, icon: Coins, fg: 'var(--color-brand-gold)', bg: 'rgba(245,200,66,.14)' },
   ]
 
   const openVoice = () => {
@@ -44,39 +44,22 @@ export function QuickAddFAB() {
     }, t.modals.fabRequireAuth)
   }
 
-  const openScan = () => {
-    requireAuth(() => {
-      setActiveModal('scanReceipt')
-    }, t.modals.fabRequireAuth)
-  }
-
-  const runOption = (optionId: string) => {
+  const runTile = (tileId: string) => {
     const msg = t.modals.fabRequireAuth
-    if (optionId === 'voiceExpense') {
-      openVoice()
+    if (tileId === 'scanReceipt') {
+      requireAuth(() => setActiveModal('scanReceipt'), msg)
       return
     }
-    if (optionId === 'scanReceipt') {
-      openScan()
-      return
-    }
-    if (optionId === 'addDebt') {
+    if (tileId === 'payDebt') {
       requireAuth(() => {
         setActiveModal(null)
-        openDebtSheetNew()
+        router.push('/debts')
       }, msg)
-      return
-    }
-    if (optionId === 'budgetSetup') {
-      requireAuth(() => {
-        setActiveModal(null)
-        router.push('/budget-setup')
-      }, t.modals.fabRequireAuthAi)
       return
     }
     requireAuth(() => {
       setActiveModal(null)
-      setActiveModal(optionId)
+      setActiveModal(tileId)
     }, msg)
   }
 
@@ -97,10 +80,7 @@ export function QuickAddFAB() {
         aria-label={isOpen ? t.common.close : t.nav.quickAdd}
         aria-expanded={isOpen}
       >
-        <motion.div
-          animate={{ rotate: isOpen ? 45 : 0 }}
-          transition={{ duration: 0.2 }}
-        >
+        <motion.div animate={{ rotate: isOpen ? 45 : 0 }} transition={{ duration: 0.2 }}>
           {isOpen ? <X className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
         </motion.div>
       </button>
@@ -109,26 +89,31 @@ export function QuickAddFAB() {
         open={isOpen}
         onBackdropClick={() => setActiveModal(null)}
         dragToClose
-        panelClassName="!bottom-[max(0.5rem,calc(4rem+env(safe-area-inset-bottom,0px)))] !start-2 !end-2 !max-h-[min(72vh,calc(100dvh-5.5rem))] lg:!bottom-24 lg:!end-8 lg:!start-auto lg:!top-auto lg:!translate-x-0 lg:!translate-y-0 lg:!w-[360px] lg:!max-h-[min(90vh,520px)] lg:!rounded-2xl"
+        panelClassName="!bottom-0 !start-0 !end-0 !rounded-t-[26px] lg:!bottom-24 lg:!end-8 lg:!start-auto lg:!top-auto lg:!translate-x-0 lg:!translate-y-0 lg:!w-[360px] lg:!rounded-2xl"
       >
-        <h3 className="text-lg font-semibold text-[var(--color-brand-text-primary)] mb-4 pe-2">
-          {t.modals.fabTitle}
-        </h3>
-        <p className="text-xs text-[var(--color-brand-text-muted)] mb-3 pe-2">
-          {t.modals.fabLongPressTip}
-        </p>
-        <div className="space-y-1">
-          {options.map((option) => {
-            const Icon = option.icon
+        <div className="mb-[14px] flex items-center justify-center gap-[7px] text-[11px] font-semibold text-[var(--color-brand-red)]">
+          <Mic className="h-[13px] w-[13px] shrink-0" />
+          {t.modals.fabVoiceTip}
+        </div>
+        <div className="grid grid-cols-5 gap-[6px]">
+          {tiles.map((tile) => {
+            const Icon = tile.icon
             return (
               <button
-                key={option.id}
+                key={tile.id}
                 type="button"
-                onClick={() => runOption(option.id)}
-                className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors text-start"
+                onClick={() => runTile(tile.id)}
+                className="flex flex-col items-center gap-[7px] rounded-[13px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-[3px] py-[11px] text-center transition-colors hover:bg-[var(--color-brand-border)]/40"
               >
-                <Icon className="h-5 w-5 shrink-0 text-[var(--color-brand-text-secondary)]" aria-hidden />
-                <span>{option.label}</span>
+                <span
+                  className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px]"
+                  style={{ background: tile.bg, color: tile.fg }}
+                >
+                  <Icon className="h-[17px] w-[17px]" aria-hidden />
+                </span>
+                <span className="text-[10.5px] font-semibold leading-[1.15] text-[var(--color-brand-text-primary)]">
+                  {tile.label}
+                </span>
               </button>
             )
           })}

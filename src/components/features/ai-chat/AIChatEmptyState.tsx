@@ -1,6 +1,7 @@
 'use client'
 
-import { Bot } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { SlidersHorizontal, PieChart, CreditCard, RefreshCw } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 
 export interface AIChatEmptyStateProps {
@@ -8,30 +9,32 @@ export interface AIChatEmptyStateProps {
 }
 
 /**
- * Shown when the thread has no messages yet.
+ * Shown when the thread has no messages yet — four red-chip suggestion rows.
  */
 export function AIChatEmptyState({ onPickSuggestion }: AIChatEmptyStateProps) {
   const t = useT()
-  const suggestions = [t.ai.suggestion1, t.ai.suggestion2, t.ai.suggestion3]
+  const suggestions: { icon: LucideIcon; label: string }[] = [
+    { icon: SlidersHorizontal, label: t.ai.suggestion1 },
+    { icon: PieChart, label: t.ai.suggestion2 },
+    { icon: CreditCard, label: t.ai.suggestion3 },
+    { icon: RefreshCw, label: t.ai.suggestion4 },
+  ]
 
   return (
-    <div className="text-center py-8">
-      <Bot className="w-10 h-10 text-[var(--color-brand-text-muted)] mx-auto mb-3" aria-hidden />
-      <p className="text-sm text-[var(--color-brand-text-secondary)] whitespace-pre-line">
-        {t.ai.emptyIntro}
-      </p>
-      <div className="mt-4 space-y-2">
-        {suggestions.map((suggestion) => (
-          <button
-            key={suggestion}
-            type="button"
-            onClick={() => onPickSuggestion(suggestion)}
-            className="block w-full text-start px-3 py-2 rounded-lg bg-[var(--color-brand-elevated)] text-xs text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-border)] transition-colors"
-          >
-            &ldquo;{suggestion}&rdquo;
-          </button>
-        ))}
-      </div>
+    <div className="flex flex-col gap-[7px]">
+      {suggestions.map(({ icon: Icon, label }) => (
+        <button
+          key={label}
+          type="button"
+          onClick={() => onPickSuggestion(label)}
+          className="flex w-full items-center gap-[11px] rounded-[13px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-[13px] py-[11px] text-start transition-colors hover:bg-[var(--color-brand-border)]/40"
+        >
+          <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] bg-[rgba(229,9,20,0.13)] text-[var(--color-brand-red)]">
+            <Icon className="h-4 w-4" aria-hidden />
+          </span>
+          <span className="text-[13.5px] font-semibold text-[var(--color-brand-text-primary)]">{label}</span>
+        </button>
+      ))}
     </div>
   )
 }

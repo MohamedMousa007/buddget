@@ -99,9 +99,9 @@ export function AuthNavButtons({
   }
 
   if (layout === 'mobile') {
+    // Redesign: no notification bell on the mobile header — avatar only.
     return (
       <div className={cn('flex flex-nowrap items-center justify-end gap-1', className)}>
-        {user && !isNative() ? <NotificationInbox /> : null}
         <ProfileAvatarWithMenu />
       </div>
     )

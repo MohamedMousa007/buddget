@@ -292,7 +292,7 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
         <button
           type="button"
           onClick={onRecordPayment}
-          className="w-full mt-4 py-2.5 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-medium transition-colors"
+          className="w-full mt-4 py-2.5 rounded-xl bg-[var(--color-brand-green)] hover:bg-[var(--color-brand-green-hover)] text-white text-sm font-medium transition-colors"
         >
           {t.debts.buttonLogPayment}
         </button>

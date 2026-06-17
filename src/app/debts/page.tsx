@@ -9,17 +9,20 @@ import { DebtCard } from '@/components/debts/DebtCard'
 import { CreditCardDebtCard } from '@/components/features/debts/CreditCardDebtCard'
 import { AllDebtsPaymentHistory } from '@/components/features/debts/AllDebtsPaymentHistory'
 import { DebtHistoryTable } from '@/components/features/debts/DebtHistoryTable'
-import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
-import { Landmark } from 'lucide-react'
+import { Landmark, Plus, Check } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { useHydrateDebts, useHydrateGoals } from '@/hooks/remote'
 import { SkeletonList } from '@/components/ui/SkeletonList'
+import { useMonthlyStats } from '@/hooks/useMonthlyStats'
+import { formatCurrency } from '@/lib/utils/formatters'
 
 export default function DebtsPage() {
   useHydrateDebts()
   useHydrateGoals()
   const dataReady = useFinanceStore((s) => s.dataReady)
+  const stats = useMonthlyStats()
+  const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
   const { debts, debtPayments } = useFinanceStore(
     useShallow((s) => ({
       debts: s.debts,
@@ -61,32 +64,39 @@ export default function DebtsPage() {
 
   return (
     <div>
-      <PageHeader>
-        <PageHeaderContent className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)] flex items-center gap-2">
-            <Landmark className="w-6 h-6 text-[var(--color-brand-red)]" />
-            {t.debts.pageTitle}
-          </h1>
-          <div className="flex flex-wrap gap-2">
+      <div className="px-4 pt-[14px] pb-4 lg:px-6 space-y-5 max-w-6xl mx-auto">
+        {/* Overview card: total still owed + active-debts pill + actions */}
+        <div className="rounded-[20px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-[18px] dark:bg-[linear-gradient(150deg,#1d1416,#121017)]">
+          <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-[var(--color-brand-text-muted)]">
+            {t.debts.totalStillOwed}
+          </p>
+          <p className="font-mono-numbers mt-[7px] text-[30px] font-bold leading-none tracking-[-0.5px] text-[var(--color-brand-text-primary)]">
+            {formatCurrency(stats.debtRemainingTotal, baseCurrency)}
+          </p>
+          <span className="mt-[10px] inline-flex items-center gap-[6px] rounded-full bg-[rgba(255,92,92,0.12)] px-[11px] py-1 text-[11.5px] font-bold text-[#FF5C5C]">
+            <Landmark className="h-[13px] w-[13px]" strokeWidth={2.2} />
+            {t.debts.activeDebtsCount(activeDebts.length)}
+          </span>
+          <div className="mt-[14px] flex gap-[9px]">
             <button
               type="button"
               onClick={() => guardedPayDebt()}
-              className="px-4 py-2 rounded-lg bg-[var(--color-brand-green)] hover:bg-[var(--color-brand-green)]/80 text-white text-sm font-medium transition-colors"
+              className="flex h-[42px] flex-1 items-center justify-center gap-[7px] rounded-[13px] bg-[var(--color-brand-green)] text-[13.5px] font-bold text-white hover:bg-[var(--color-brand-green-hover)]"
             >
+              <Check className="h-4 w-4" strokeWidth={2.2} />
               {t.debts.buttonPayDebt}
             </button>
             <button
               type="button"
               onClick={() => guardedNewDebt()}
-              className="px-4 py-2 rounded-lg bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-medium transition-colors"
+              className="flex h-[42px] flex-1 items-center justify-center gap-[7px] rounded-[13px] bg-[var(--color-brand-red)] text-[13.5px] font-bold text-white hover:bg-[var(--color-brand-red-hover)]"
             >
-              {t.debts.buttonAddDebt}
+              <Plus className="h-4 w-4" strokeWidth={2.2} />
+              {t.debts.buttonAddDebt.replace(/^\+\s*/, '')}
             </button>
           </div>
-        </PageHeaderContent>
-      </PageHeader>
+        </div>
 
-      <div className="px-4 py-4 lg:px-6 space-y-5 max-w-6xl mx-auto">
         {debts.length === 0 ? (
           <EmptyState
             icon={t.debts.emptyIcon}

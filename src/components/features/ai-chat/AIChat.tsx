@@ -43,11 +43,11 @@ export function AIChat() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="ai-chat-title"
-            initial={{ y: '100%', opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: '100%', opacity: 0 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed bottom-0 start-0 end-0 z-50 bg-[var(--color-brand-card)] rounded-t-3xl border-t border-[var(--color-brand-border)] h-[80vh] flex flex-col lg:bottom-8 lg:end-8 lg:start-auto lg:top-auto lg:w-[400px] lg:h-[600px] lg:rounded-2xl lg:border"
+            initial={{ y: '110%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '110%' }}
+            transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed bottom-0 start-0 end-0 z-50 bg-[var(--color-brand-card)] rounded-t-[26px] border-t border-[var(--color-brand-border)] shadow-[0_-20px_50px_-20px_rgba(0,0,0,0.7)] max-h-[80vh] flex flex-col lg:bottom-8 lg:end-8 lg:start-auto lg:top-auto lg:w-[400px] lg:h-[600px] lg:rounded-2xl lg:border"
           >
             <AIChatHeader onClose={close} />
 
