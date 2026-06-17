@@ -58,9 +58,9 @@ const KEYFRAMES = `
 @keyframes bg-heroFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
 @keyframes bg-heroDot   { 0%{top:-4px;opacity:0} 20%{opacity:1} 70%{top:30px;opacity:1} 85%,100%{top:30px;opacity:0} }
 @keyframes bg-toastIn   { from{opacity:0;transform:translate(-50%,8px)} to{opacity:1;transform:translate(-50%,0)} }
-@keyframes bg-slideR    { from{opacity:0;transform:translateX(26px)} to{opacity:1;transform:translateX(0)} }
-@keyframes bg-slideL    { from{opacity:0;transform:translateX(-26px)} to{opacity:1;transform:translateX(0)} }
-@keyframes bg-fadeUp    { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes bg-slideR    { from{opacity:0;transform:translate3d(24px,0,0)} to{opacity:1;transform:translate3d(0,0,0)} }
+@keyframes bg-slideL    { from{opacity:0;transform:translate3d(-24px,0,0)} to{opacity:1;transform:translate3d(0,0,0)} }
+@keyframes bg-fadeUp    { from{opacity:0;transform:translate3d(0,8px,0)} to{opacity:1;transform:translate3d(0,0,0)} }
 `;
 function useKeyframes() {
   useEffect(() => {
@@ -205,9 +205,15 @@ function KeywordScreen({ onCopy, phase }: { onCopy: (k: string) => void; phase: 
   const t = useT();
   const g = t.smsTracking.guide;
 
+  // Each block glides in once on its phase. A single CSS animation owns both the
+  // opacity and the transform — no concurrent `transition` (that double-drove
+  // opacity and caused the stutter). The translate3d keyframes are GPU-composited
+  // for the animation's duration; no permanent `will-change` (that pins every
+  // block to its own layer and renders muddy). `.7s` + the guide's standard
+  // easing keeps it unhurried and consistent with the panel/progress transitions.
   const vis = (minPhase: number, dir: 'R' | 'L' | 'U' = 'R') => ({
     opacity: phase >= minPhase ? 1 : 0,
-    animation: phase >= minPhase ? `bg-slide${dir} .45s cubic-bezier(.22,1,.36,1) both` : 'none',
+    animation: phase >= minPhase ? `bg-slide${dir} .7s cubic-bezier(.4,0,.2,1) both` : 'none',
     pointerEvents: (phase >= minPhase ? 'auto' : 'none') as React.CSSProperties['pointerEvents'],
   });
 
@@ -216,7 +222,7 @@ function KeywordScreen({ onCopy, phase }: { onCopy: (k: string) => void; phase: 
       <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10, padding: '0 4px', overflow: 'hidden' }}>
 
         {/* Header — phase 1, slides from right */}
-        <div style={{ ...vis(1, 'R'), transition: 'opacity .35s' }}>
+        <div style={{ ...vis(1, 'R') }}>
           <h2 style={{ fontSize: 17, fontWeight: 800, color: 'var(--color-brand-text-primary)', fontFamily: F, lineHeight: 1.25, letterSpacing: '-.3px', marginBottom: 4 }}>
             {g.kwHeaderTitle}
           </h2>
@@ -226,7 +232,7 @@ function KeywordScreen({ onCopy, phase }: { onCopy: (k: string) => void; phase: 
         </div>
 
         {/* SMS examples — phase 2, slides from left */}
-        <div style={{ ...vis(2, 'L'), transition: 'opacity .35s', display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ ...vis(2, 'L'), display: 'flex', flexDirection: 'column', gap: 6 }}>
           <KwLabel>{g.kwSentLabel}</KwLabel>
           {/* Arrow pointing at the highlighted keyword in the first bubble */}
           <div style={{ position: 'relative' }}>
@@ -243,7 +249,7 @@ function KeywordScreen({ onCopy, phase }: { onCopy: (k: string) => void; phase: 
         </div>
 
         {/* Keyword chips — phase 3, slides from right */}
-        <div style={{ ...vis(3, 'R'), transition: 'opacity .35s', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ ...vis(3, 'R'), display: 'flex', flexDirection: 'column', gap: 8 }}>
           <KwLabel>{g.kwCommonLabel}</KwLabel>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>{KW_EN.map(k => <KwChip key={k} k={k} onCopy={onCopy} />)}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, direction: 'rtl' }}>{KW_AR.map(k => <KwChip key={k} k={k} ar onCopy={onCopy} />)}</div>
@@ -307,14 +313,16 @@ export default function SmsTrackingGuide({ onClose }: SmsTrackingGuideProps) {
   const pct = Math.round((safe / (total - 1)) * 100);
   const isLast = safe === total - 1;
 
-  // Drive concept-screen animation phases.
+  // Drive concept-screen animation phases. Gaps are reading-paced (~2s) so each
+  // block's .7s glide fully settles and the user can read it before the next
+  // appears: header → SMS examples → keyword chips → step box.
   // conceptState.step !== safe means phase is 0 (derived), so no synchronous setState needed.
   useEffect(() => {
     if (!cur.concept) return;
-    const t1 = setTimeout(() => setConceptState({ step: safe, phase: 1 }), 180);
-    const t2 = setTimeout(() => setConceptState({ step: safe, phase: 2 }), 820);
-    const t3 = setTimeout(() => setConceptState({ step: safe, phase: 3 }), 1480);
-    const t4 = setTimeout(() => setConceptState({ step: safe, phase: 4 }), 2050);
+    const t1 = setTimeout(() => setConceptState({ step: safe, phase: 1 }), 350);
+    const t2 = setTimeout(() => setConceptState({ step: safe, phase: 2 }), 2350);
+    const t3 = setTimeout(() => setConceptState({ step: safe, phase: 3 }), 4250);
+    const t4 = setTimeout(() => setConceptState({ step: safe, phase: 4 }), 5950);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
   }, [safe, cur.concept]);
 
