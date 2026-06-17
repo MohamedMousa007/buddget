@@ -52,10 +52,18 @@ export async function buildAuthHeaders(init?: HeadersInit): Promise<Headers> {
   if (!usesRemoteApi()) return headers
 
   const { createClient } = await import('@/lib/supabase/client')
-  const { data: { session } } = await createClient().auth.getSession()
+  const { data: { session }, error } = await createClient().auth.getSession()
   if (session?.access_token) {
     headers.set('Authorization', `Bearer ${session.access_token}`)
   }
+  // TEMP diagnostic — surfaces in Android logcat under tag `Capacitor/Console`.
+  try {
+    const exp = session?.expires_at ? session.expires_at - Math.floor(Date.now() / 1000) : null
+    console.info(
+      `[AUTH] buildAuthHeaders hasSession=${!!session} tokenLen=${session?.access_token?.length ?? 0}` +
+        ` expIn=${exp}s err=${error?.message ?? 'none'}`,
+    )
+  } catch { /* noop */ }
 
   const { isNative } = await import('@/lib/native/isNative')
   if (isNative()) {

@@ -14,22 +14,31 @@ export type VoiceState = 'idle' | 'permission' | 'recording' | 'processing' | 'c
  * rejected it (missing / expired / wrong issuer), so the failure is actionable
  * from the device instead of guessing from server logs.
  */
-async function diagnoseAuth(status: number): Promise<string> {
+async function diagnoseAuth(status: number): Promise<{ message: string; hasToken: boolean }> {
+  let message: string
+  let hasToken = false
   try {
     const { createClient } = await import('@/lib/supabase/client')
-    const { data: { session } } = await createClient().auth.getSession()
+    const { data: { session }, error } = await createClient().auth.getSession()
     const tok = session?.access_token
-    if (!tok) return `Auth ${status}: no session token on device — sign out and sign in again.`
-    let b64 = tok.split('.')[1]?.replace(/-/g, '+').replace(/_/g, '/') ?? ''
-    b64 += '='.repeat((4 - (b64.length % 4)) % 4)
-    const p = JSON.parse(atob(b64)) as { exp?: number; iss?: string }
-    const expMs = (p.exp ?? 0) * 1000
-    const expd = expMs < Date.now()
-    const iss = (p.iss ?? '?').replace('https://', '').split('.')[0]
-    return `Auth ${status}: token ${expd ? 'EXPIRED' : 'valid'} (exp ${new Date(expMs).toISOString().slice(11, 19)}, now ${new Date().toISOString().slice(11, 19)}), iss=${iss}, len=${tok.length}.`
+    if (!tok) {
+      message = `Auth ${status}: no session token on device — sign in again. (getSession err=${error?.message ?? 'none'})`
+    } else {
+      hasToken = true
+      let b64 = tok.split('.')[1]?.replace(/-/g, '+').replace(/_/g, '/') ?? ''
+      b64 += '='.repeat((4 - (b64.length % 4)) % 4)
+      const p = JSON.parse(atob(b64)) as { exp?: number; iss?: string }
+      const expMs = (p.exp ?? 0) * 1000
+      const expd = expMs < Date.now()
+      const iss = (p.iss ?? '?').replace('https://', '').split('.')[0]
+      message = `Auth ${status}: token ${expd ? 'EXPIRED' : 'valid'} (exp ${new Date(expMs).toISOString().slice(11, 19)}, now ${new Date().toISOString().slice(11, 19)}), iss=${iss}, len=${tok.length}.`
+    }
   } catch (e) {
-    return `Auth ${status}: token decode failed (${e instanceof Error ? e.message : 'err'}).`
+    message = `Auth ${status}: token decode failed (${e instanceof Error ? e.message : 'err'}).`
   }
+  // TEMP diagnostic — surfaces in Android logcat under tag `Capacitor/Console`.
+  console.error(`[VOICE] ${message}`)
+  return { message, hasToken }
 }
 
 interface UseVoiceExpenseResult {
@@ -197,6 +206,8 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
       if (!text && audio) {
         const { audioMimeToExt } = await import('@/lib/voice/audioMime')
         const ext = audioMimeToExt(audio.type || mimeType)
+        // TEMP diagnostic — surfaces in Android logcat under tag `Capacitor/Console`.
+        console.info(`[VOICE] recorded bytes=${audio.size} mime=${audio.type || mimeType} ext=${ext} → POST /api/voice/transcribe`)
         const form = new FormData()
         form.append('audio', audio, `voice-${Date.now()}.${ext}`)
         form.append('language', language === 'ar' ? 'ar' : 'en')
@@ -204,11 +215,23 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
         const res = await withTimeout(
           apiFetchAuth('/api/voice/transcribe', { method: 'POST', body: form, signal: abort.signal }),
         )
+        console.info(`[VOICE] transcribe response status=${res.status}`)
         if (!res.ok) {
           const err = (await res.json().catch(() => null)) as { error?: string } | null
           if (res.status === 401 || res.status === 403) {
-            throw new Error(await diagnoseAuth(res.status))
+            const diag = await diagnoseAuth(res.status)
+            if (!diag.hasToken) {
+              // Dead/expired session that can't refresh — self-heal to a clean
+              // login instead of leaving a zombie "authed but every call 401s".
+              try {
+                const { createClient } = await import('@/lib/supabase/client')
+                await createClient().auth.signOut()
+              } catch { /* noop */ }
+              throw new Error('Your session expired — please sign in again, then retry voice.')
+            }
+            throw new Error(diag.message)
           }
+          console.error(`[VOICE] transcribe failed status=${res.status} body=${JSON.stringify(err)}`)
           throw new Error(err?.error || `Transcription failed (${res.status})`)
         }
         const data = (await res.json()) as { text: string }
