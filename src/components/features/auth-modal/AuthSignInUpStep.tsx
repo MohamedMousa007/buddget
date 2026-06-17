@@ -17,6 +17,7 @@ import type { AuthEmailStep, AuthPasswordIntent } from '@/hooks/useAuthModal'
 export interface AuthSignInUpStepProps {
   emailStep: AuthEmailStep
   passwordIntent: AuthPasswordIntent
+  setPasswordIntent: (v: AuthPasswordIntent) => void
   emailAdvancePending: boolean
   advanceAfterEmail: () => void
   backToEmail: () => void
@@ -56,6 +57,7 @@ function maskEmail(email: string): string {
 export function AuthSignInUpStep({
   emailStep,
   passwordIntent,
+  setPasswordIntent,
   emailAdvancePending,
   advanceAfterEmail,
   backToEmail,
@@ -261,6 +263,20 @@ export function AuthSignInUpStep({
                 )}
               </AuthPrimaryButton>
             </div>
+
+            {/* Escape hatch: if the email check guessed wrong (e.g. an existing
+                account got routed to sign-up after a flaky check), let the user
+                flip intent in one tap without re-running the check. */}
+            <button
+              type="button"
+              onClick={() => {
+                setPasswordIntent(isSignin ? 'signup' : 'signin')
+                setError('')
+              }}
+              className="w-full text-center text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]"
+            >
+              {isSignin ? t.auth.switchToSignUp : t.auth.switchToSignIn}
+            </button>
           </motion.div>
         ) : (
           <motion.div
