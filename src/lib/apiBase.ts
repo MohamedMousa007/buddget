@@ -53,7 +53,7 @@ export async function buildAuthHeaders(init?: HeadersInit): Promise<Headers> {
 
   if (!headers.has('Authorization')) {
     const { createClient } = await import('@/lib/supabase/client')
-    const { data: { session }, error } = await createClient().auth.getSession()
+    const { data: { session } } = await createClient().auth.getSession()
     if (session?.access_token) {
       headers.set('Authorization', `Bearer ${session.access_token}`)
     }

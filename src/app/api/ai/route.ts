@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
+import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
 import { getEffectiveAiRuntimeConfig } from '@/lib/server/aiRuntimeConfig'
 
 export const maxDuration = 30
@@ -10,15 +10,10 @@ export const maxDuration = 30
 export const dynamic = 'force-static'
 
 /** When Supabase auth is enabled, AI routes require a logged-in user (quota / abuse protection). */
-async function requireUserOrUnauthorized(): Promise<NextResponse | null> {
+async function requireUserOrUnauthorized(req: Request): Promise<NextResponse | null> {
   if (!isSupabaseConfigured()) return null
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const { user } = await resolveRouteUser(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   return null
 }
 
@@ -54,7 +49,7 @@ function isRateLimited(key: string, max: number, windowMs: number): boolean {
 
 export async function POST(req: Request) {
   try {
-    const authDenied = await requireUserOrUnauthorized()
+    const authDenied = await requireUserOrUnauthorized(req)
     if (authDenied) return authDenied
 
     const runtime = getEffectiveAiRuntimeConfig()
