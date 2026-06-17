@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { RefreshCw } from 'lucide-react'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SubscriptionCard } from '@/components/features/subscriptions/SubscriptionCard'
@@ -56,11 +55,7 @@ export default function SubscriptionsPage() {
     <div>
       <PageHeader>
         <PageHeaderContent>
-          <div className="flex items-center justify-between gap-4 w-full">
-            <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)] flex items-center gap-2">
-              <RefreshCw className="w-6 h-6 text-[var(--color-brand-red)]" aria-hidden />
-              {t.subscriptions.pageTitle}
-            </h1>
+          <div className="flex items-center justify-end gap-4 w-full">
             <button
               type="button"
               onClick={openAdd}

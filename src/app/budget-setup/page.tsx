@@ -1,8 +1,6 @@
 'use client'
 
 import { useRef, useEffect } from 'react'
-import { SlidersHorizontal } from 'lucide-react'
-import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { BudgetPlannerSummary } from '@/components/features/budget-planner/BudgetPlannerSummary'
 import { BudgetPlannerCategories } from '@/components/features/budget-planner/BudgetPlannerCategories'
 import { BudgetSetupNoPlansEmpty } from '@/components/features/budget-planner/BudgetSetupNoPlansEmpty'
@@ -31,15 +29,6 @@ export default function BudgetSetupPage() {
 
   return (
     <div>
-      <PageHeader>
-        <PageHeaderContent>
-          <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)] flex items-center gap-2">
-            <SlidersHorizontal className="w-6 h-6 text-[var(--color-brand-red)]" />
-            {t.nav.budgetSetup}
-          </h1>
-        </PageHeaderContent>
-      </PageHeader>
-
       <div
         className="px-4 py-4 lg:px-6 max-w-3xl mx-auto space-y-4"
        
