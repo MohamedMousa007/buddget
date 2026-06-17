@@ -66,7 +66,7 @@ export function emptySnapshot(): Snapshot {
       baseCurrency: 'AED',
       secondaryCurrency: null,
       showSecondaryCurrency: false,
-      theme: 'light',
+      theme: 'dark',
       language: 'en',
       showCentsInDashboard: true,
       monthStartDay: 1,

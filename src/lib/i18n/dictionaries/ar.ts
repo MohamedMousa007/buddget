@@ -954,6 +954,7 @@ export const ar: Dictionary = {
     themeLight: 'فاتح',
     themeSystem: 'تلقائي',
     themeNameMidnight: 'منتصف الليل',
+    themeNameBright: 'مضيء',
     themeNamePaper: 'ورقي',
     themeNameMinimal: 'مبسّط',
     themePickerHint: 'اختر الشكل. المزيد قادم.',
