@@ -1029,6 +1029,8 @@ export interface Dictionary {
     loadingSignUp: string
     submitSignIn: string
     submitSignUp: string
+    switchToSignUp: string
+    switchToSignIn: string
     footerNewHere: string
     footerAlreadyHave: string
 

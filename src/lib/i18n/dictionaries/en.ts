@@ -1133,6 +1133,8 @@ export const en: Dictionary = {
     loadingSignUp: 'Setting up your account...',
     submitSignIn: 'Sign me in',
     submitSignUp: 'Create my account',
+    switchToSignUp: "New here? Create an account",
+    switchToSignIn: 'Already have an account? Sign in',
     footerNewHere: 'New here? Sign up \u2192',
     footerAlreadyHave: 'Already have an account? Sign in \u2192',
 

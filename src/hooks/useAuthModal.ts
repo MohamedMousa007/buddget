@@ -80,7 +80,7 @@ export function useAuthModal() {
   const [emailStep, setEmailStep] = useState<AuthEmailStep>('collect')
   /** Derived by `advanceAfterEmail`: whether the resolved email belongs to an
    *  existing verified account ('signin') or is free to register ('signup'). */
-  const [passwordIntent, setPasswordIntent] = useState<AuthPasswordIntent>('signup')
+  const [passwordIntent, setPasswordIntent] = useState<AuthPasswordIntent>('signin')
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -180,33 +180,58 @@ export function useAuthModal() {
     abortRef.current = controller
     setEmailAdvancePending(true)
 
-    try {
-      const res = await apiFetch('/api/auth/check-email', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email: trimmed }),
-        signal: controller.signal,
-      })
-      if (controller.signal.aborted) return
-      if (!res.ok) {
-        // Rate-limited (429) or server error — fall through as "free" so the
-        // user can attempt signup. Supabase remains source of truth.
-        track(AUTH_EVENTS.morphFallback, { reason: res.status === 429 ? 'rate_limit' : 'error' })
-        applyResult(false, false, false)
-        return
+    // One check-email attempt. Returns the parsed result, or 'retry' for
+    // transient failures (network / 5xx) worth another try, or 'giveup' for
+    // aborts and non-retryable statuses (e.g. 429 — won't clear immediately).
+    const attemptCheck = async (): Promise<
+      { exists: boolean; verified: boolean } | 'retry' | 'giveup'
+    > => {
+      try {
+        const res = await apiFetch('/api/auth/check-email', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ email: trimmed }),
+          signal: controller.signal,
+        })
+        if (controller.signal.aborted) return 'giveup'
+        if (res.ok) {
+          const body = (await res.json()) as { exists?: boolean; verified?: boolean }
+          return { exists: !!body.exists, verified: !!body.verified }
+        }
+        return res.status >= 500 ? 'retry' : 'giveup'
+      } catch (e) {
+        if (controller.signal.aborted) return 'giveup'
+        console.error('[auth] advanceAfterEmail fetch failed', e)
+        return 'retry'
       }
-      const body = (await res.json()) as { exists?: boolean; verified?: boolean }
-      emailCacheRef.current.set(key, {
-        exists: !!body.exists,
-        verified: !!body.verified,
-        at: Date.now(),
-      })
-      applyResult(!!body.exists, !!body.verified, false)
-    } catch (e) {
-      if (controller.signal.aborted) return
-      console.error('[auth] advanceAfterEmail fetch failed', e)
-      track(AUTH_EVENTS.morphFallback, { reason: 'exception' })
-      applyResult(false, false, false)
+    }
+
+    try {
+      let resolved: { exists: boolean; verified: boolean } | null = null
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const r = await attemptCheck()
+        if (controller.signal.aborted) return
+        if (r === 'giveup') break
+        if (r === 'retry') {
+          if (attempt < 2) await new Promise((res) => setTimeout(res, 300 * (attempt + 1)))
+          continue
+        }
+        resolved = r
+        break
+      }
+
+      if (resolved) {
+        emailCacheRef.current.set(key, { ...resolved, at: Date.now() })
+        applyResult(resolved.exists, resolved.verified, false)
+      } else {
+        // Inconclusive check (network/CORS/timeout/429). NEVER force an existing
+        // user onto the create-account path — default to sign-in. A genuinely new
+        // user can flip to "Create account" via the toggle on the password step.
+        track(AUTH_EVENTS.morphFallback, { reason: 'inconclusive' })
+        setPasswordIntent('signin')
+        setEmailStep('password')
+        setError('')
+      }
     } finally {
       if (abortRef.current === controller) {
         setEmailAdvancePending(false)
@@ -546,6 +571,7 @@ export function useAuthModal() {
     // Morph state
     emailStep,
     passwordIntent,
+    setPasswordIntent,
     emailAdvancePending,
     advanceAfterEmail,
     backToEmail,

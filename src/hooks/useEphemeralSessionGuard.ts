@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { isNative } from '@/lib/native/isNative'
 
 const EPHEMERAL_KEY = 'buddget_ephemeral_session'
 
@@ -41,6 +42,10 @@ function readEphemeral(): boolean {
 export function useEphemeralSessionGuard(userSignedIn: boolean): void {
   useEffect(() => {
     if (!userSignedIn) return
+    // On native, `pagehide` fires on every app BACKGROUND (not just close), so
+    // signing out here would log the user out each time they leave the app.
+    // Native sessions persist; ephemeral-on-close is a web-only behaviour.
+    if (isNative()) return
     const handler = () => {
       if (!readEphemeral()) return
       try {
