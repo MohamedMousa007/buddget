@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, Suspense, lazy } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
@@ -21,6 +21,9 @@ import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { LandingGate } from '@/components/auth/LandingGate'
+const WelcomeScreen = lazy(() =>
+  import('@/components/auth/WelcomeScreen').then((m) => ({ default: m.WelcomeScreen })),
+)
 import { useEphemeralSessionGuard } from '@/hooks/useEphemeralSessionGuard'
 import { DialogProvider } from '@/components/ui/dialog/DialogProvider'
 
@@ -375,6 +378,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const showLandingGate = mode === 'landing' && !isBypassRoute && !signingOut
   const showLoadingSplash = (mode === 'loading' || signingOut) && !isBypassRoute
 
+  // Refs/state for welcome screen minimum display — must be declared before showDataLoadingSplash
+  const welcomeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [welcomeMinDone, setWelcomeMinDone] = useState(true)
+
   /**
    * Post-signup flash guard: a freshly signed-up user briefly renders
    * whatever route the auth modal was opened from (usually `/`) before
@@ -407,6 +414,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     !isBypassRoute &&
     !dataReady
 
+  // Minimum 1s display so the welcome screen doesn't flash on fast connections
+  useEffect(() => {
+    if (showDataLoadingSplash) {
+      if (welcomeTimerRef.current) clearTimeout(welcomeTimerRef.current)
+      setWelcomeMinDone(false)
+      welcomeTimerRef.current = setTimeout(() => {
+        setWelcomeMinDone(true)
+        welcomeTimerRef.current = null
+      }, 1000)
+    }
+  }, [showDataLoadingSplash])
+  useEffect(() => () => { if (welcomeTimerRef.current) clearTimeout(welcomeTimerRef.current) }, [])
+  const showWelcomeScreen = showDataLoadingSplash || !welcomeMinDone
+
   return (
     <AuthContext.Provider value={value}>
       <DialogProvider>
@@ -417,8 +438,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         <Suspense fallback={null}>
           <RequestResetQuerySync />
         </Suspense>
-        {showLoadingSplash || showOnboardingRedirectSplash || showDataLoadingSplash ? (
+        {showLoadingSplash || showOnboardingRedirectSplash ? (
           <AuthLoadingSplash />
+        ) : showWelcomeScreen ? (
+          <Suspense fallback={<AuthLoadingSplash />}>
+            <WelcomeScreen />
+          </Suspense>
         ) : showLandingGate ? (
           <Suspense fallback={null}>
             <LandingGate />
