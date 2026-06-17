@@ -207,8 +207,6 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
 
       if (!text && audio) {
         const mime = audio.type || mimeType || 'audio/mp4'
-        // TEMP diagnostic — surfaces in Android logcat under tag `Capacitor/Console`.
-        console.info(`[VOICE] recorded bytes=${audio.size} mime=${mime} → POST /api/voice/transcribe (json)`)
         // Convert to base64 JSON — CapacitorHttp strips Authorization headers on
         // multipart/form-data binary uploads; JSON requests preserve all headers.
         const arrayBuffer = await audio.arrayBuffer()
@@ -226,7 +224,6 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
         const res = await withTimeout(
           apiFetchAuth('/api/voice/transcribe', { method: 'POST', body, signal: abort.signal, headers: voiceHeaders }),
         )
-        console.info(`[VOICE] transcribe response status=${res.status}`)
         if (!res.ok) {
           const err = (await res.json().catch(() => null)) as { error?: string } | null
           if (res.status === 401 || res.status === 403) {
