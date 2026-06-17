@@ -202,6 +202,10 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
 
     const flush = async () => {
       if (!hydrated.current) return
+      // A stale debounce timer can fire after suspendFinanceSync() is called
+      // during sign-out. At that point the store has already been reset to
+      // empty defaults, and flushing would soft-delete all server-side data.
+      if (syncSuspended) return
       if (timer.current) {
         clearTimeout(timer.current)
         timer.current = null

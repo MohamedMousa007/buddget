@@ -150,6 +150,8 @@ export function useAuthModal() {
     track(AUTH_EVENTS.emailSubmitted, { cached: emailCacheRef.current.has(key) })
 
     const applyResult = (exists: boolean, verified: boolean, cached: boolean) => {
+      // TEMP diagnostic — surfaces in Android logcat under tag `Capacitor/Console`.
+      console.info(`[MORPH] email="${key}" exists=${exists} verified=${verified} cached=${cached} → intent=${exists && verified ? 'signin' : exists ? 'verify-pending' : 'signup'}`)
       if (exists && verified) {
         setPasswordIntent('signin')
         setEmailStep('password')
@@ -227,6 +229,7 @@ export function useAuthModal() {
         // Inconclusive check (network/CORS/timeout/429). NEVER force an existing
         // user onto the create-account path — default to sign-in. A genuinely new
         // user can flip to "Create account" via the toggle on the password step.
+        console.info(`[MORPH] email="${key}" inconclusive → intent=signin (fallback)`)
         track(AUTH_EVENTS.morphFallback, { reason: 'inconclusive' })
         setPasswordIntent('signin')
         setEmailStep('password')
