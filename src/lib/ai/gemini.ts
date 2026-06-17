@@ -36,6 +36,8 @@ export type AIAction =
   | 'replace_budget_plan'
   | 'query'
   | 'unclear'
+  // Returned by the lean tier-1 voice extractor to hand off to the full brain.
+  | 'escalate'
 
 export interface AIActionItem {
   action: AIAction
@@ -74,6 +76,7 @@ const AI_ACTIONS: AIAction[] = [
   'replace_budget_plan',
   'query',
   'unclear',
+  'escalate',
 ]
 
 const actionItemSchema = z.object({
@@ -162,17 +165,15 @@ export { formatProxyAiErrorForUser } from '@/lib/ai/formatAiProxyError'
  */
 export type AiPromptMode = 'chat' | 'voice'
 
-export function buildSystemPrompt(
-  baseCurrency: Currency,
+/** User entity name lists shared by every prompt so the model can match
+ *  "mom" / "nol silver" / an account name to a real record. */
+function buildEntityContext(
   paymentMethods: PaymentMethod[],
   debts: Debt[],
-  liveDataBlock?: string,
-  budgetPlanContext?: { planId: string; planName: string; categoryRows: string },
-  incomeSources: IncomeSource[] = [],
-  savingsAccounts: SavingsAccount[] = [],
-  goals: Goal[] = [],
-  mode: AiPromptMode = 'chat'
-): string {
+  incomeSources: IncomeSource[],
+  savingsAccounts: SavingsAccount[],
+  goals: Goal[],
+) {
   const methodList = paymentMethods.map((m) => `"${m.name}" (id: ${m.id})`).join(', ')
   const debtList = debts
     .map((d) => {
@@ -193,6 +194,27 @@ export function buildSystemPrompt(
   const goalsList = goals
     .map((g) => `"${g.name}" (${g.category}${g.targetAmount != null ? `, target ${g.currency} ${g.targetAmount}` : ''})`)
     .join(', ')
+  return { methodList, debtList, incomeList, savingsAccountList, goalsList }
+}
+
+export function buildSystemPrompt(
+  baseCurrency: Currency,
+  paymentMethods: PaymentMethod[],
+  debts: Debt[],
+  liveDataBlock?: string,
+  budgetPlanContext?: { planId: string; planName: string; categoryRows: string },
+  incomeSources: IncomeSource[] = [],
+  savingsAccounts: SavingsAccount[] = [],
+  goals: Goal[] = [],
+  mode: AiPromptMode = 'chat'
+): string {
+  const { methodList, debtList, incomeList, savingsAccountList, goalsList } = buildEntityContext(
+    paymentMethods,
+    debts,
+    incomeSources,
+    savingsAccounts,
+    goals,
+  )
   const today = new Date().toISOString().slice(0, 10)
 
   const live = liveDataBlock
@@ -308,6 +330,65 @@ FIELD NAME RULES — use these EXACT field names:
 - bucket, subtype (for savings holdings)
 - budgetedAmount, percentOfIncome (for budget updates)
 ${contextBlock}`
+}
+
+/**
+ * Tier-1 voice prompt: a small, adds-only extractor (the cheap path for the common
+ * "log a transaction" case). Knows nothing about queries, budgets, goals, or edits —
+ * it returns `{"action":"escalate"}` for anything outside straightforward new entries,
+ * and `useVoiceExpense` then re-runs the full `voice` prompt. Static text leads;
+ * the per-user CONTEXT trails so the prefix can be implicitly cached.
+ */
+export function buildVoiceExtractPrompt(
+  baseCurrency: Currency,
+  paymentMethods: PaymentMethod[],
+  debts: Debt[],
+  incomeSources: IncomeSource[] = [],
+  savingsAccounts: SavingsAccount[] = [],
+): string {
+  const { methodList, debtList, incomeList, savingsAccountList } = buildEntityContext(
+    paymentMethods,
+    debts,
+    incomeSources,
+    savingsAccounts,
+    [],
+  )
+  const today = new Date().toISOString().slice(0, 10)
+
+  return `You are Buddget's quick-entry voice parser. Turn the user's spoken words into NEW transaction entries as JSON. You ONLY create entries.
+
+RULES:
+1. Return ONE valid JSON object. No markdown, no code fences, no extra text.
+2. If the user lists MULTIPLE items, return {"actions":[ ... ]} with one object per item.
+3. Default currency to ${baseCurrency} and date to ${today} unless the user says otherwise.
+4. Match payment methods, debt people, and account names to the CONTEXT list at the end.
+5. Debt payments are ALWAYS a cash currency (EGP/AED/USD/…), never gold.
+6. ESCALATE: if the user is asking a question, wants to edit/delete/clear an existing record, wants budget or goal changes, or you cannot map it cleanly to an action below, return {"action":"escalate","data":{}}.
+7. confidence is 0..1 — set below 0.5 if unsure.
+
+ACTIONS (the "data" fields for each):
+- add_expense: description, amount, currency, category(Rent|Transport|Food|Enjoyment|Debt|Remittance|Other), paymentMethod, date, isRecurring
+- add_income: name, amount, currency, sourceType(salary|bonus|side_hustle|investment|savings|debt|gift|refund|other), isRecurring, recurringFrequency(monthly|biweekly|weekly), dayOfMonth, paymentMethod, person(when sourceType=debt)
+- add_debt: name, amount, currency, person, direction(i_owe|they_owe)
+- add_debt_payment: debtName, person, amount, currency, date, paymentMethod
+- deposit_savings / withdraw_savings: account, amount, currency
+- add_savings_account: name, category(savings|investment), type(bank|cash|gold|stablecoin|crypto|stocks|real_estate|other), currency, openingBalance
+- add_payment_method: name, type(cash|bank_transfer|card_debit|card_credit|nol|other)
+
+FIELD NAMES — use these EXACT keys: description, amount, currency, category, paymentMethod, date, isRecurring, debtName, person, name, sourceType, recurringFrequency, dayOfMonth, direction, account, type, openingBalance.
+
+EXAMPLES:
+{"action":"add_expense","data":{"description":"Talabat","amount":250,"currency":"${baseCurrency}","category":"Food","paymentMethod":"Cash","date":"${today}","isRecurring":false},"confidence":1,"clarificationNeeded":null,"message":"Logged Talabat 250"}
+{"actions":[{"action":"add_debt_payment","data":{"person":"Mom","amount":2000,"currency":"${baseCurrency}","date":"${today}","paymentMethod":"Cash"}},{"action":"add_expense","data":{"description":"lunch","amount":30,"currency":"${baseCurrency}","category":"Food","date":"${today}","isRecurring":false}}],"confidence":1,"clarificationNeeded":null,"message":"Paid Mom 2000 and lunch 30"}
+{"action":"escalate","data":{}}
+
+CONTEXT:
+- Base currency: ${baseCurrency}
+- Today's date: ${today}
+- Payment methods: ${methodList || '(none)'}
+- Active debts: ${debtList || '(none)'}
+- Income sources: ${incomeList || '(none)'}
+- Savings accounts: ${savingsAccountList || '(none)'}`
 }
 
 export interface SendToGeminiOptions {

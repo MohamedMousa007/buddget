@@ -7,6 +7,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { startRecording, requestMicPermission, getMicPermissionStatus } from '@/lib/native/voiceRecorder'
 import { runAiCommand, type AiCommandStats } from '@/lib/ai/runAiCommand'
+import { classifyVoiceIntent } from '@/lib/voice/classifyVoiceIntent'
 import {
   buildAIActionHandlerContext,
   executeActionItem,
@@ -62,6 +63,47 @@ async function diagnoseAuth(status: number): Promise<{ message: string; hasToken
   }
   logVoiceStage('transcribe', 'fail', `auth=${status} ${message}`)
   return { message, hasToken }
+}
+
+/** Tier-1 (lean extractor) handles only these create-actions. */
+const ADD_ACTIONS = new Set<string>([
+  'add_expense', 'add_income', 'add_debt', 'add_debt_payment',
+  'deposit_savings', 'withdraw_savings', 'add_savings_account', 'add_payment_method',
+])
+
+/** Tier-1 result is out of its depth → re-run the full brain. Mirrors the SMS
+ *  confidence gate: no add produced, low confidence, or an explicit bail/query. */
+function needsEscalation(r: AIResponse): boolean {
+  if (!r.actions.some((a) => ADD_ACTIONS.has(a.action))) return true
+  if (r.confidence < 0.5) return true
+  return r.actions.some((a) => a.action === 'escalate' || a.action === 'query' || a.action === 'unclear')
+}
+
+/**
+ * Turn a transcript into an AIResponse via the two-tier router:
+ * heuristic pre-route → lean tier-1 extractor → escalate to the full brain only
+ * when needed. The tier taken is logged on the `extract` breadcrumb.
+ */
+async function extractCommand(
+  store: ReturnType<typeof useFinanceStore.getState>,
+  stats: AiCommandStats,
+  monthFilter: string,
+  text: string,
+  signal: AbortSignal,
+): Promise<AIResponse> {
+  if (classifyVoiceIntent(text) === 'complex') {
+    const r = await runAiCommand({ store, stats, monthFilter, text, mode: 'voice', signal })
+    logVoiceStage('extract', 'ok', 'tier=2')
+    return r
+  }
+  const tier1 = await runAiCommand({ store, stats, monthFilter, text, mode: 'voiceExtract', signal })
+  if (needsEscalation(tier1)) {
+    const r = await runAiCommand({ store, stats, monthFilter, text, mode: 'voice', signal })
+    logVoiceStage('extract', 'ok', 'tier=1→2')
+    return r
+  }
+  logVoiceStage('extract', 'ok', 'tier=1')
+  return tier1
 }
 
 export interface UseVoiceCommandResult {
@@ -267,14 +309,7 @@ export function useVoiceExpense(): UseVoiceCommandResult {
       const store = useFinanceStore.getState()
       const aiResponse = await runStage('extract', "the assistant didn't respond", () =>
         withTimeout(
-          runAiCommand({
-            store,
-            stats: statsRef.current,
-            monthFilter,
-            text,
-            mode: 'voice',
-            signal: abort.signal,
-          }),
+          extractCommand(store, statsRef.current, monthFilter, text, abort.signal),
           EXTRACT_TIMEOUT_MS,
           'extract',
           'The assistant took too long. Please try again.',

@@ -1,6 +1,14 @@
 import type { FinanceStore } from '@/lib/store/types'
-import { buildSystemPrompt, sendToGemini, type AIResponse, type AiPromptMode } from '@/lib/ai/gemini'
+import {
+  buildSystemPrompt,
+  buildVoiceExtractPrompt,
+  sendToGemini,
+  type AIResponse,
+} from '@/lib/ai/gemini'
 import { buildPlanRowsForPrompt } from '@/lib/ai/budgetPlannerAi'
+
+/** `chat`/`voice` = full brain; `voiceExtract` = lean tier-1 adds-only extractor. */
+export type AiCommandMode = 'chat' | 'voice' | 'voiceExtract'
 
 /** The slice of `useMonthlyStats()` the live-data block needs. */
 export interface AiCommandStats {
@@ -37,8 +45,8 @@ export interface RunAiCommandArgs {
   stats: AiCommandStats
   monthFilter: string
   text: string
-  /** `chat` = full prompt + history; `voice` = lean single-shot. */
-  mode: AiPromptMode
+  /** `chat` = full prompt + history; `voice` = full single-shot; `voiceExtract` = lean tier-1. */
+  mode: AiCommandMode
   history?: { role: string; content: string }[]
   signal?: AbortSignal
 }
@@ -58,6 +66,23 @@ export async function runAiCommand({
   history = [],
   signal,
 }: RunAiCommandArgs): Promise<AIResponse> {
+  // Tier-1: lean adds-only extractor — no live data, no history, smallest budget.
+  if (mode === 'voiceExtract') {
+    const prompt = buildVoiceExtractPrompt(
+      store.settings.baseCurrency,
+      store.paymentMethods,
+      store.debts,
+      store.incomeSources,
+      store.savingsAccounts,
+    )
+    return sendToGemini(prompt, text, [], {
+      signal,
+      maxOutputTokens: 512,
+      maxAttempts: 2,
+      backoffMs: 800,
+    })
+  }
+
   const liveDataBlock = buildLiveDataBlock(store, stats, monthFilter)
 
   // Voice omits the budget-plan rows entirely (token-lean); chat includes them so
