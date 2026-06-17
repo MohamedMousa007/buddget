@@ -62,7 +62,6 @@ export function AuthModalBody({ showBranding = true }: { showBranding?: boolean 
             <AuthSignInUpStep
               emailStep={a.emailStep}
               passwordIntent={a.passwordIntent}
-              setPasswordIntent={a.setPasswordIntent}
               emailAdvancePending={a.emailAdvancePending}
               advanceAfterEmail={() => void a.advanceAfterEmail()}
               backToEmail={a.backToEmail}

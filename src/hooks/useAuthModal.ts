@@ -571,7 +571,6 @@ export function useAuthModal() {
     // Morph state
     emailStep,
     passwordIntent,
-    setPasswordIntent,
     emailAdvancePending,
     advanceAfterEmail,
     backToEmail,
