@@ -32,7 +32,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<string>2</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIBackgroundModes</key>
@@ -66,5 +66,13 @@
 	<string>Buddget uses Face ID to allow you to log in securely without entering your password.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Buddget uses the microphone to let you add expenses by voice.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Buddget uses the camera to let you scan receipts and track expenses.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Buddget accesses your photo library to let you attach receipt images to expenses.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Buddget saves receipt images to your photo library.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Buddget uses speech recognition to let you add expenses by voice.</string>
 </dict>
 </plist>
