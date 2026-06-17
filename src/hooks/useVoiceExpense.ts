@@ -206,19 +206,25 @@ export function useVoiceExpense(): UseVoiceExpenseResult {
       let text = inlineText?.trim() ?? ''
 
       if (!text && audio) {
-        const { audioMimeToExt } = await import('@/lib/voice/audioMime')
-        const ext = audioMimeToExt(audio.type || mimeType)
+        const mime = audio.type || mimeType || 'audio/mp4'
         // TEMP diagnostic — surfaces in Android logcat under tag `Capacitor/Console`.
-        console.info(`[VOICE] recorded bytes=${audio.size} mime=${audio.type || mimeType} ext=${ext} → POST /api/voice/transcribe`)
-        const form = new FormData()
-        form.append('audio', audio, `voice-${Date.now()}.${ext}`)
-        form.append('language', language === 'ar' ? 'ar' : 'en')
+        console.info(`[VOICE] recorded bytes=${audio.size} mime=${mime} → POST /api/voice/transcribe (json)`)
+        // Convert to base64 JSON — CapacitorHttp strips Authorization headers on
+        // multipart/form-data binary uploads; JSON requests preserve all headers.
+        const arrayBuffer = await audio.arrayBuffer()
+        const bytes = new Uint8Array(arrayBuffer)
+        let binary = ''
+        for (let i = 0; i < bytes.length; i += 8192) {
+          binary += String.fromCharCode(...bytes.subarray(i, Math.min(i + 8192, bytes.length)))
+        }
+        const base64Audio = btoa(binary)
+        const body = JSON.stringify({ audio: base64Audio, mimeType: mime, language: language === 'ar' ? 'ar' : 'en' })
         const { apiFetchAuth } = await import('@/lib/apiBase')
         const voiceHeaders: HeadersInit = session?.access_token
-          ? { Authorization: `Bearer ${session.access_token}` }
-          : {}
+          ? { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }
+          : { 'Content-Type': 'application/json' }
         const res = await withTimeout(
-          apiFetchAuth('/api/voice/transcribe', { method: 'POST', body: form, signal: abort.signal, headers: voiceHeaders }),
+          apiFetchAuth('/api/voice/transcribe', { method: 'POST', body, signal: abort.signal, headers: voiceHeaders }),
         )
         console.info(`[VOICE] transcribe response status=${res.status}`)
         if (!res.ok) {
