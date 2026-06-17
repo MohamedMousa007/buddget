@@ -2,7 +2,7 @@
 
 import { formatCurrency } from '@/lib/utils/formatters'
 import { getField } from '@/lib/ai/aiActionHandlers'
-import type { AIAction } from '@/lib/ai/gemini'
+import { friendlyLineForActionItem, type AIAction } from '@/lib/ai/gemini'
 import type { Currency } from '@/lib/store/types'
 
 export interface AIChatActionPreviewProps {
@@ -95,5 +95,56 @@ export function AIChatActionPreview({ action, data: d, baseCurrency }: AIChatAct
       </>
     )
   }
-  return null
+  if (action === 'add_debt') {
+    return (
+      <>
+        <p>🤝 {String(getField(d, 'name') || getField(d, 'person') || 'Debt')}</p>
+        <p>💰 {formatCurrency(Number(getField(d, 'amount')) || 0, String(getField(d, 'currency') || baseCurrency))}</p>
+        <p className="text-[var(--color-brand-text-muted)]">
+          {getField(d, 'direction') === 'they_owe' ? 'They owe you' : 'You owe'}
+          {getField(d, 'person') ? ` · ${String(getField(d, 'person'))}` : ''}
+        </p>
+      </>
+    )
+  }
+  if (action === 'deposit_savings' || action === 'withdraw_savings') {
+    const isDeposit = action === 'deposit_savings'
+    return (
+      <>
+        <p>{isDeposit ? '🐷' : '🏧'} {isDeposit ? 'Deposit to' : 'Withdraw from'} {String(getField(d, 'account', 'name') || '?')}</p>
+        <p>💰 {formatCurrency(Number(getField(d, 'amount')) || 0, String(getField(d, 'currency') || baseCurrency))}</p>
+      </>
+    )
+  }
+  if (action === 'add_savings_account') {
+    return (
+      <>
+        <p>🏦 {String(getField(d, 'name') || 'Savings account')}</p>
+        <p className="text-[var(--color-brand-text-muted)]">
+          {String(getField(d, 'category') || 'savings')} · {String(getField(d, 'type') || 'bank')}
+        </p>
+        {Number(getField(d, 'openingBalance')) > 0 ? (
+          <p>💰 {formatCurrency(Number(getField(d, 'openingBalance')) || 0, String(getField(d, 'currency') || baseCurrency))}</p>
+        ) : null}
+      </>
+    )
+  }
+  if (action === 'add_goal') {
+    const target = Number(getField(d, 'targetAmount'))
+    return (
+      <>
+        <p>🎯 {String(getField(d, 'name') || getField(d, 'category') || 'Goal')}</p>
+        {target > 0 ? <p>💰 {formatCurrency(target, String(getField(d, 'currency') || baseCurrency))}</p> : null}
+        {getField(d, 'targetDate') ? (
+          <p className="text-[var(--color-brand-text-muted)]">By {String(getField(d, 'targetDate'))}</p>
+        ) : null}
+      </>
+    )
+  }
+  if (action === 'clear_debt') {
+    return <p>✅ Mark &ldquo;{String(getField(d, 'name', 'person') || '')}&rdquo; as paid off</p>
+  }
+  // Fallback for any remaining actionable type (update_*/delete_*/plan edits) —
+  // never render an empty row in a multi-action list.
+  return <p>{friendlyLineForActionItem(action, d)}</p>
 }

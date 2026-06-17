@@ -152,6 +152,16 @@ export function parseModelJsonToAIResponse(text: string, rawFallbackMessage?: st
 
 export { formatProxyAiErrorForUser } from '@/lib/ai/formatAiProxyError'
 
+/**
+ * `chat` = full prompt with every response-format example + budget-plan rows.
+ * `voice` = token-lean variant: single-shot quick capture. Drops the verbose
+ * per-action JSON example blocks and the budget-plan `categoryRows` dump (voice
+ * excludes fine-grained `update_budget_plan_row`/`replace_budget_plan`; simple
+ * `update_budget_category` still works). Keeps the user-context name lists (needed
+ * to match "mom"/"nol"/account names), the multi-action example, and field rules.
+ */
+export type AiPromptMode = 'chat' | 'voice'
+
 export function buildSystemPrompt(
   baseCurrency: Currency,
   paymentMethods: PaymentMethod[],
@@ -160,7 +170,8 @@ export function buildSystemPrompt(
   budgetPlanContext?: { planId: string; planName: string; categoryRows: string },
   incomeSources: IncomeSource[] = [],
   savingsAccounts: SavingsAccount[] = [],
-  goals: Goal[] = []
+  goals: Goal[] = [],
+  mode: AiPromptMode = 'chat'
 ): string {
   const methodList = paymentMethods.map((m) => `"${m.name}" (id: ${m.id})`).join(', ')
   const debtList = debts
@@ -229,13 +240,13 @@ RULES:
 23. For "delete_payment_method", include data.name to identify the payment method.
 24. For "add_goal", include data.name (optional), data.category (one of: emergency_fund, house, car, vacation, education, wedding, phone_device, family_support, sadaqah_charity, gift, investment, debt_freedom, quality_of_life, spending_control, retirement, custom), data.targetAmount (optional number), data.currency, data.targetDate (optional), data.monthlyContribution (optional).
 25. For "update_goal", include data.name (to match an existing goal) and optional data.targetAmount, data.targetDate, data.monthlyContribution, data.status ("active"|"paused"|"achieved"|"cancelled").
-${budgetPlanContext ? `
+${mode === 'chat' && budgetPlanContext ? `
 ACTIVE_BUDGET_PLAN:
 - Plan ID: ${budgetPlanContext.planId}
 - Plan Name: ${budgetPlanContext.planName}
 - Category rows (use these categoryId values for update_budget_plan_row):
 ${budgetPlanContext.categoryRows}
-` : ''}
+` : ''}${mode === 'chat' ? `
 RESPONSE FORMAT for update_budget_plan_row:
 {"action":"update_budget_plan_row","data":{"planId":"plan-uuid","categoryId":"category-uuid","newAmount":1500},"confidence":1,"clarificationNeeded":null,"message":"short friendly confirmation"}
 
@@ -263,7 +274,21 @@ RESPONSE FORMAT for update_budget_category:
 
 RESPONSE FORMAT for queries:
 {"action":"query","data":{},"confidence":1,"clarificationNeeded":null,"message":"your answer here"}
-
+` : `
+COMPACT SCHEMA (one JSON object; "data" fields per action):
+- add_expense: description, amount, currency, category(Rent|Transport|Food|Enjoyment|Debt|Remittance|Other), paymentMethod, date, isRecurring
+- add_debt_payment: debtName, person, amount, currency(cash, never gold), date, paymentMethod
+- add_income: name, amount, currency, sourceType(salary|bonus|side_hustle|investment|savings|debt|gift|refund|other), isRecurring, recurringFrequency(monthly|biweekly|weekly), dayOfMonth, paymentMethod, person(when sourceType=debt)
+- add_debt: name, amount, currency, person, direction(i_owe|they_owe)
+- clear_debt: name|person
+- add_payment_method: name, type(cash|bank_transfer|card_debit|card_credit|nol|other)
+- add_savings_account: name, category(savings|investment), type(bank|cash|gold|stablecoin|crypto|stocks|real_estate|other), currency, openingBalance
+- deposit_savings / withdraw_savings: account, amount, currency
+- add_savings_holding: name, amount, currency, bucket(liquid|investment), subtype(bank|cash|gold|stocks|crypto|real_estate|other)
+- add_goal: name, category, targetAmount, currency, targetDate, monthlyContribution
+- update_budget_category: category, budgetedAmount OR percentOfIncome
+- query: data {} and put the answer in "message"
+`}
 RESPONSE FORMAT for MULTIPLE operations in one user message (preferred when user lists several items):
 {"actions":[{"action":"add_debt_payment","data":{"person":"Dad","amount":10000,"currency":"EGP","date":"${today}","paymentMethod":"Cash"}},{"action":"add_expense","data":{"description":"Mandi lunch","amount":30,"currency":"AED","category":"Food","paymentMethod":"Cash","date":"${today}","isRecurring":false}},{"action":"add_expense","data":{"description":"Water","amount":1,"currency":"AED","category":"Food","paymentMethod":"Cash","date":"${today}","isRecurring":false}}],"confidence":1,"clarificationNeeded":null,"message":"short summary listing each item"}
 
@@ -278,10 +303,21 @@ FIELD NAME RULES — use these EXACT field names:
 - budgetedAmount, percentOfIncome (for budget updates)`
 }
 
+export interface SendToGeminiOptions {
+  /** Abort the in-flight request (e.g. voice cancel). */
+  signal?: AbortSignal
+  /** Cap on model output tokens (voice uses a smaller value). */
+  maxOutputTokens?: number
+  /** Retry tuning forwarded to generateWithFallback (voice = fewer/faster). */
+  maxAttempts?: number
+  backoffMs?: number
+}
+
 export async function sendToGemini(
   systemPrompt: string,
   userMessage: string,
-  conversationHistory: { role: string; content: string }[] = []
+  conversationHistory: { role: string; content: string }[] = [],
+  options?: SendToGeminiOptions
 ): Promise<AIResponse> {
   const contents = [
     {
@@ -306,13 +342,20 @@ export async function sendToGemini(
     },
   ]
 
-  const response = await generateWithFallback({
-    contents,
-    generationConfig: {
-      temperature: 0.3,
-      maxOutputTokens: 1024,
+  const response = await generateWithFallback(
+    {
+      contents,
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: options?.maxOutputTokens ?? 1024,
+      },
     },
-  })
+    {
+      signal: options?.signal,
+      maxAttempts: options?.maxAttempts,
+      backoffMs: options?.backoffMs,
+    }
+  )
 
   await throwIfAiProxyNotOk(response)
 
@@ -326,7 +369,7 @@ export async function sendToGemini(
   return parseModelJsonToAIResponse(text, text)
 }
 
-function friendlyLineForActionItem(action: AIAction, d: Record<string, unknown>): string {
+export function friendlyLineForActionItem(action: AIAction, d: Record<string, unknown>): string {
   switch (action) {
     case 'add_expense': {
       const desc = d.description || 'expense'

@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore, type ExpensePrefill } from '@/lib/store/useSettingsStore'
-import { buildSystemPrompt, sendToGemini, type AIResponse } from '@/lib/ai/gemini'
-import { buildPlanRowsForPrompt } from '@/lib/ai/budgetPlannerAi'
+import { type AIResponse } from '@/lib/ai/gemini'
+import { runAiCommand } from '@/lib/ai/runAiCommand'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import {
@@ -30,7 +30,8 @@ const AI_CHAT_HISTORY_MAX_MESSAGES = 5
 
 export function useAIChat() {
   const store = useFinanceStore()
-  const { activeModal, setActiveModal, openAddExpenseWithPrefill, monthFilter } = useSettingsStore()
+  const { activeModal, setActiveModal, openAddExpenseWithPrefill, monthFilter, aiChatSeed, clearAiChatSeed } =
+    useSettingsStore()
   const stats = useMonthlyStats()
   const { user, openAuthModal } = useAuth()
   const t = useT()
@@ -57,6 +58,14 @@ export function useAIChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  // Voice "Open in chat" hands off the transcript: pre-fill the composer once.
+  useEffect(() => {
+    if (isOpen && aiChatSeed) {
+      setInput(aiChatSeed)
+      clearAiChatSeed()
+    }
+  }, [isOpen, aiChatSeed, clearAiChatSeed])
+
   useEffect(() => {
     if (!isOpen) return
     const onKeyDown = (e: KeyboardEvent) => {
@@ -78,45 +87,19 @@ export function useAIChat() {
     setIsLoading(true)
 
     try {
-      const liveDataBlock = [
-        `Billing month: ${monthFilter}`,
-        `Base currency: ${store.settings.baseCurrency}`,
-        `Monthly income (estimated): ${stats.totalIncome}`,
-        `Spent this month (expense categories, excl. Savings): ${stats.totalSpentExcludingSavings}`,
-        `Budget for expenses (excl. Savings allocation): ${stats.totalExpenseBudget}`,
-        `Remaining vs expense budget: ${stats.remaining}`,
-        `Savings total (holdings + legacy Savings-tagged expenses this month): ${stats.savingsTotal}`,
-        `Debt remaining (approx): ${stats.debtRemainingTotal}`,
-        `Days left in month: ${stats.daysLeft}`,
-      ].join('\n')
-
-      const activePlan =
-        store.budgetPlans.find((p) => p.id === store.activeBudgetPlanId) ?? store.budgetPlans[0]
-      const budgetPlanContext = activePlan
-        ? {
-            planId: activePlan.id,
-            planName: activePlan.name,
-            categoryRows: buildPlanRowsForPrompt(activePlan, store.settings.baseCurrency, store.exchangeRates),
-          }
-        : undefined
-
-      const systemPrompt = buildSystemPrompt(
-        store.settings.baseCurrency,
-        store.paymentMethods,
-        store.debts,
-        liveDataBlock,
-        budgetPlanContext,
-        store.incomeSources,
-        store.savingsAccounts,
-        store.goals
-      )
-
       const history = messages.slice(-AI_CHAT_HISTORY_MAX_MESSAGES).map((m) => ({
         role: m.role,
         content: m.content,
       }))
 
-      const response = await sendToGemini(systemPrompt, userMessage, history)
+      const response = await runAiCommand({
+        store,
+        stats,
+        monthFilter,
+        text: userMessage,
+        mode: 'chat',
+        history,
+      })
 
       setMessages((prev) => [
         ...prev,

@@ -27,6 +27,10 @@ interface SettingsState {
   expensePrefill: ExpensePrefill | null
   pmPrefill: PmPrefill | null
   monthFilter: string
+  /** Pre-filled AI chat input (e.g. voice "Open in chat" hands off the transcript). */
+  aiChatSeed: string | null
+  /** Mute spoken-aloud answers in the voice flow (persisted). */
+  voiceSpeakMuted: boolean
   /** When opening add-debt sheet from "Record payment" on a card */
   debtSheetPaymentOnly: boolean
   debtSheetPrefillDebtId: string | null
@@ -40,6 +44,9 @@ interface SettingsState {
   openAddPaymentMethodWithPrefill: (data: PmPrefill) => void
   clearPmPrefill: () => void
   setMonthFilter: (month: string) => void
+  openAiChatWithSeed: (text: string) => void
+  clearAiChatSeed: () => void
+  setVoiceSpeakMuted: (muted: boolean) => void
   openDebtSheetNew: () => void
   openPayDebtSheet: () => void
   openDebtSheetRecordPayment: (debtId: string) => void
@@ -65,6 +72,8 @@ export const useSettingsStore = create<SettingsState>()(
       expensePrefill: null,
       pmPrefill: null,
       monthFilter: getCurrentMonth(),
+      aiChatSeed: null,
+      voiceSpeakMuted: false,
       debtSheetPaymentOnly: false,
       debtSheetPrefillDebtId: null,
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
@@ -79,6 +88,9 @@ export const useSettingsStore = create<SettingsState>()(
         set({ activeModal: 'addPaymentMethod', pmPrefill: data }),
       clearPmPrefill: () => set({ pmPrefill: null }),
       setMonthFilter: (month) => set({ monthFilter: month }),
+      openAiChatWithSeed: (text) => set({ activeModal: 'aiChat', aiChatSeed: text }),
+      clearAiChatSeed: () => set({ aiChatSeed: null }),
+      setVoiceSpeakMuted: (muted) => set({ voiceSpeakMuted: muted }),
       openDebtSheetNew: () =>
         set({
           debtSheetPaymentOnly: false,
@@ -109,6 +121,8 @@ export const useSettingsStore = create<SettingsState>()(
           expensePrefill: null,
           pmPrefill: null,
           monthFilter: getCurrentMonth(),
+          aiChatSeed: null,
+          voiceSpeakMuted: false,
           debtSheetPaymentOnly: false,
           debtSheetPrefillDebtId: null,
         }),
@@ -120,7 +134,10 @@ export const useSettingsStore = create<SettingsState>()(
     {
       name: 'buddget-ui-settings',
       storage: createJSONStorage(() => createSafeLocalStorage()),
-      partialize: (state) => ({ monthFilter: state.monthFilter }),
+      partialize: (state) => ({
+        monthFilter: state.monthFilter,
+        voiceSpeakMuted: state.voiceSpeakMuted,
+      }),
     }
   )
 )

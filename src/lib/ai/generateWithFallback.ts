@@ -26,22 +26,19 @@ function sleep(ms: number): Promise<void> {
  */
 export async function generateWithFallback(
   body: GeminiProxyRequestBody,
-  options?: { maxAttempts?: number; backoffMs?: number }
+  options?: { maxAttempts?: number; backoffMs?: number; signal?: AbortSignal }
 ): Promise<Response> {
   const maxAttempts = Math.max(1, options?.maxAttempts ?? DEFAULT_MAX_ATTEMPTS)
   const backoffMs = Math.max(0, options?.backoffMs ?? DEFAULT_BACKOFF_MS)
 
   let last: Response | undefined
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const { buildAuthHeaders } = await import('@/lib/apiBase')
-    const headers = await buildAuthHeaders({ 'Content-Type': 'application/json' })
-    console.info(`[AI] attempt=${attempt} hasAuth=${headers.has('Authorization')} tokenLen=${headers.get('Authorization')?.length ?? 0}`)
     const response = await apiFetchAuth('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      signal: options?.signal,
     })
-    console.info(`[AI] status=${response.status}`)
     last = response
     if (response.status !== 429) return response
     if (attempt < maxAttempts - 1) await sleep(backoffMs * (attempt + 1))

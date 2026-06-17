@@ -7,11 +7,17 @@ export const maxDuration = 30
 export const dynamic = 'force-dynamic'
 
 /** When Supabase auth is enabled, AI routes require a logged-in user (quota / abuse protection). */
-async function requireUserOrUnauthorized(req: Request): Promise<NextResponse | null> {
-  if (!isSupabaseConfigured()) return null
+async function requireUserOrUnauthorized(
+  req: Request,
+): Promise<{ denied: NextResponse } | { userId: string | null }> {
+  if (!isSupabaseConfigured()) return { userId: null }
   const { user } = await resolveRouteUser(req)
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  return null
+  if (!user) {
+    return {
+      denied: NextResponse.json({ error: 'Unauthorized', stage: 'extract' }, { status: 401 }),
+    }
+  }
+  return { userId: user.id }
 }
 
 const GEMINI_MODEL = 'gemini-2.5-flash'
@@ -45,9 +51,14 @@ function isRateLimited(key: string, max: number, windowMs: number): boolean {
 }
 
 export async function POST(req: Request) {
+  const started = Date.now()
   try {
-    const authDenied = await requireUserOrUnauthorized(req)
-    if (authDenied) return authDenied
+    const auth = await requireUserOrUnauthorized(req)
+    if ('denied' in auth) {
+      console.error('[AI] fail status=401 reason=unauthorized')
+      return auth.denied
+    }
+    const userId = auth.userId ?? 'anon'
 
     const runtime = getEffectiveAiRuntimeConfig()
 
@@ -55,7 +66,7 @@ export async function POST(req: Request) {
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'AI is not configured. Admin needs to set GEMINI_API_KEY.' },
+        { error: 'AI is not configured. Admin needs to set GEMINI_API_KEY.', stage: 'extract' },
         { status: 503 }
       )
     }
@@ -98,14 +109,15 @@ export async function POST(req: Request) {
 
     if (!response.ok) {
       const errorMsg = payload?.error?.message || `Gemini API returned ${response.status}`
-      console.error('[AI Route] Gemini error:', errorMsg)
-      return NextResponse.json({ error: errorMsg }, { status: response.status })
+      console.error(`[AI] fail status=${response.status} user=${userId} latency=${Date.now() - started}ms err=${errorMsg}`)
+      return NextResponse.json({ error: errorMsg, stage: 'extract' }, { status: response.status })
     }
 
+    console.info(`[AI] ok user=${userId} latency=${Date.now() - started}ms`)
     return NextResponse.json(payload)
   } catch (err) {
-    console.error('[AI Route] Unexpected error:', err)
-    return NextResponse.json({ error: 'Failed to process AI request' }, { status: 500 })
+    console.error(`[AI] fail status=500 latency=${Date.now() - started}ms err=${err instanceof Error ? err.message : String(err)}`)
+    return NextResponse.json({ error: 'Failed to process AI request', stage: 'extract' }, { status: 500 })
   }
 }
 

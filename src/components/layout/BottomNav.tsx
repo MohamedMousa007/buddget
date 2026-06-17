@@ -54,16 +54,17 @@ export function BottomNav() {
         state={voice.state}
         amplitude={voice.amplitude}
         animTime={voice.animTime}
-        draft={voice.draft}
+        response={voice.response}
         error={voice.error}
         posX={posX}
         posY={posY}
         nearTrash={nearTrash}
         trashRef={trashRef}
         onCancel={() => { void voice.cancel() }}
-        onConfirm={voice.confirm}
+        onConfirm={() => { voice.confirm() }}
         onRedo={voice.reset}
         onClose={voice.reset}
+        onOpenChat={voice.openInChat}
       />
       <div className="flex items-center justify-around h-16 px-2">
         {BOTTOM_NAV_ITEMS.map((item) => {
