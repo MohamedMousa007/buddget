@@ -4,10 +4,7 @@ import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
 import { getEffectiveAiRuntimeConfig } from '@/lib/server/aiRuntimeConfig'
 
 export const maxDuration = 30
-// GET returns a public config object (no per-user data) so force-static is safe.
-// This also satisfies Next.js output:export which requires all GET routes to be
-// statically renderable. POST handlers are dynamic regardless of this config.
-export const dynamic = 'force-static'
+export const dynamic = 'force-dynamic'
 
 /** When Supabase auth is enabled, AI routes require a logged-in user (quota / abuse protection). */
 async function requireUserOrUnauthorized(req: Request): Promise<NextResponse | null> {
