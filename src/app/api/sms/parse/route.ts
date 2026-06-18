@@ -266,6 +266,65 @@ async function recordLearnOutcome(
   }
 }
 
+type RegexAttempt =
+  | { ok: true; regex: string; mapping: MappingRules }
+  | { ok: false; status: string }
+
+/**
+ * One regex-generation attempt: ask Gemini for a regex, then VALIDATE it
+ * compiles and matches the source SMS. Returns a failure status (never throws
+ * for the expected cases) so the caller can retry — the LLM is non-deterministic
+ * and a single call routinely yields no_json / a non-matching regex.
+ */
+async function generateMatchingRegex(
+  message: string,
+  sender: string,
+  parsed: ParsedTx,
+  apiKey: string,
+): Promise<RegexAttempt> {
+  const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    // Bounded so a single attempt can't run past the route's budget; the retry
+    // loop compensates for flaky calls. (15s + default thinking always aborted;
+    // thinkingBudget:0 produced empty responses — a small cap is the sweet spot.)
+    signal: AbortSignal.timeout(18_000),
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [{ text: buildRegexLearningPrompt(message, sender, parsed) }] }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        temperature: 0.1,
+        thinkingConfig: { thinkingBudget: 256 },
+      },
+    }),
+  })
+  if (!res.ok) return { ok: false, status: 'gemini_error' }
+
+  const raw = (await res.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> }
+  const text = raw.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+  const jsonStr = extractJson(text)
+  if (!jsonStr) return { ok: false, status: 'no_json' }
+  let learned: { regex_pattern?: string; mapping_rules?: MappingRules }
+  try {
+    learned = JSON.parse(jsonStr)
+  } catch {
+    return { ok: false, status: 'no_json' }
+  }
+  if (!learned.regex_pattern || !learned.mapping_rules?.amount) {
+    return { ok: false, status: 'no_regex_or_amount' }
+  }
+  let re: RegExp
+  try {
+    re = new RegExp(learned.regex_pattern)
+  } catch {
+    return { ok: false, status: 'regex_invalid' }
+  }
+  if (!re.test(message)) {
+    return { ok: false, status: `regex_no_match: ${learned.regex_pattern}`.slice(0, 200) }
+  }
+  return { ok: true, regex: learned.regex_pattern, mapping: learned.mapping_rules }
+}
+
 async function learnPattern(
   message: string,
   sender: string,
@@ -283,62 +342,17 @@ async function learnPattern(
       .eq('sender', sender)
     if ((count ?? 0) >= 10) return recordLearnOutcome(service, logId, 'cap_reached')
 
-    const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      // Was 15s — gemini-2.5-flash routinely exceeded it (its default "thinking"
-      // adds latency), so EVERY learn attempt aborted and crashed the learner,
-      // which is why AI templates were never produced. Disable thinking (regex
-      // generation is mechanical, needs no reasoning) and give it real headroom;
-      // still well within the route's 60s maxDuration after the response is sent.
-      signal: AbortSignal.timeout(30_000),
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: buildRegexLearningPrompt(message, sender, parsed) }] }],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.1,
-          thinkingConfig: { thinkingBudget: 0 },
-        },
-      }),
-    })
-    if (!res.ok) {
-      console.warn('[sms/parse] pattern learning: Gemini regex-gen HTTP error', { sender, status: res.status })
-      return recordLearnOutcome(service, logId, 'gemini_error')
+    // The LLM is non-deterministic — a single call routinely returns no JSON or
+    // a regex that doesn't match its own sample. Retry up to 3× and keep the
+    // first attempt that compiles AND matches; record the last failure otherwise.
+    let attempt: RegexAttempt = { ok: false, status: 'no_json' }
+    for (let i = 0; i < 3; i++) {
+      attempt = await generateMatchingRegex(message, sender, parsed, apiKey)
+      if (attempt.ok) break
     }
-
-    const raw = (await res.json()) as { candidates?: Array<{ content: { parts: Array<{ text: string }> } }> }
-    const text = raw.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-    const jsonStr = extractJson(text)
-    if (!jsonStr) {
-      console.warn('[sms/parse] pattern learning: Gemini returned no JSON', { sender, text: text.slice(0, 200) })
-      return recordLearnOutcome(service, logId, 'no_json')
-    }
-    let learned: { regex_pattern?: string; mapping_rules?: MappingRules }
-    try {
-      learned = JSON.parse(jsonStr)
-    } catch {
-      console.warn('[sms/parse] pattern learning: JSON.parse failed', { sender, jsonStr: jsonStr.slice(0, 200) })
-      return recordLearnOutcome(service, logId, 'no_json')
-    }
-    if (!learned.regex_pattern || !learned.mapping_rules?.amount) {
-      console.warn('[sms/parse] pattern learning: missing regex_pattern or amount rule', { sender, learned })
-      return recordLearnOutcome(service, logId, 'no_regex_or_amount')
-    }
-
-    // Validate: must COMPILE (guarded — a malformed AI regex must not crash the
-    // whole learner) AND match the original message.
-    let re: RegExp
-    try {
-      re = new RegExp(learned.regex_pattern)
-    } catch (e) {
-      console.warn('[sms/parse] learned regex failed to compile', { sender, regex: learned.regex_pattern, e })
-      return recordLearnOutcome(service, logId, 'regex_invalid')
-    }
-    if (!re.test(message)) {
-      console.warn('[sms/parse] learned regex rejected (no match)', {
-        sender, regex: learned.regex_pattern,
-      })
-      return recordLearnOutcome(service, logId, `regex_no_match: ${learned.regex_pattern}`.slice(0, 200))
+    if (!attempt.ok) {
+      console.warn('[sms/parse] pattern learning: no matching regex after retries', { sender, status: attempt.status })
+      return recordLearnOutcome(service, logId, attempt.status)
     }
 
     // UNIQUE INDEX on (sender, md5(regex_pattern)) silently ignores exact duplicates.
@@ -346,9 +360,9 @@ async function learnPattern(
     const { data: inserted, error: tplErr } = await service.from('sms_tracking_templates_ai').insert({
       user_id: null,
       sender,
-      regex_pattern: learned.regex_pattern,
+      regex_pattern: attempt.regex,
       template_sample: message.slice(0, 500),
-      mapping_rules: learned.mapping_rules as unknown as Record<string, unknown>,
+      mapping_rules: attempt.mapping as unknown as Record<string, unknown>,
       ai_enabled: true,
       match_count: 0,
       avg_ai_confidence: parsed.confidence ?? null,
@@ -362,7 +376,7 @@ async function learnPattern(
       console.warn('[sms/parse] template insert failed', tplErr)
       return recordLearnOutcome(service, logId, 'insert_failed')
     } else if (!tplErr && inserted) {
-      console.log('[sms/parse] template learned', { sender, regex: learned.regex_pattern })
+      console.log('[sms/parse] template learned', { sender, regex: attempt.regex })
       await recordTemplateUser(inserted.id, userId, service)
       await checkAndAutoPromote(sender, service)
       return recordLearnOutcome(service, logId, 'learned', inserted.id)
@@ -373,7 +387,7 @@ async function learnPattern(
         .from('sms_tracking_templates_ai')
         .select('id')
         .eq('sender', sender)
-        .eq('regex_pattern', learned.regex_pattern)
+        .eq('regex_pattern', attempt.regex)
         .single()
       if (existing) await recordTemplateUser(existing.id, userId, service)
       return recordLearnOutcome(service, logId, 'duplicate', existing?.id ?? null)
