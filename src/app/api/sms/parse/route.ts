@@ -304,14 +304,27 @@ async function learnPattern(
       console.warn('[sms/parse] pattern learning: Gemini returned no JSON', { sender, text: text.slice(0, 200) })
       return recordLearnOutcome(service, logId, 'no_json')
     }
-    const learned = JSON.parse(jsonStr) as { regex_pattern?: string; mapping_rules?: MappingRules }
+    let learned: { regex_pattern?: string; mapping_rules?: MappingRules }
+    try {
+      learned = JSON.parse(jsonStr)
+    } catch {
+      console.warn('[sms/parse] pattern learning: JSON.parse failed', { sender, jsonStr: jsonStr.slice(0, 200) })
+      return recordLearnOutcome(service, logId, 'no_json')
+    }
     if (!learned.regex_pattern || !learned.mapping_rules?.amount) {
       console.warn('[sms/parse] pattern learning: missing regex_pattern or amount rule', { sender, learned })
       return recordLearnOutcome(service, logId, 'no_regex_or_amount')
     }
 
-    // Validate: must compile AND match the original message
-    const re = new RegExp(learned.regex_pattern)
+    // Validate: must COMPILE (guarded — a malformed AI regex must not crash the
+    // whole learner) AND match the original message.
+    let re: RegExp
+    try {
+      re = new RegExp(learned.regex_pattern)
+    } catch (e) {
+      console.warn('[sms/parse] learned regex failed to compile', { sender, regex: learned.regex_pattern, e })
+      return recordLearnOutcome(service, logId, 'regex_invalid')
+    }
     if (!re.test(message)) {
       console.warn('[sms/parse] learned regex rejected (no match)', {
         sender, regex: learned.regex_pattern,
@@ -358,8 +371,10 @@ async function learnPattern(
     }
   } catch (e) {
     // Best-effort — never propagate, but keep the failure visible in logs + admin.
+    // Capture the message so the admin row names the actual cause (timeout, etc.).
+    const msg = e instanceof Error ? e.message : String(e)
     console.warn('[sms/parse] pattern learning failed', e)
-    await recordLearnOutcome(service, logId, 'exception')
+    await recordLearnOutcome(service, logId, `exception: ${msg}`.slice(0, 120))
   }
 }
 
