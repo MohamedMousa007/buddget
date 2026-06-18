@@ -218,7 +218,7 @@ export function AppShell({ children }: AppShellProps) {
 
   if (bare) {
     return (
-      <div className="min-h-screen bg-[var(--color-brand-bg)]">
+      <div className="min-h-[100dvh] bg-[var(--color-brand-bg)]">
         {children}
         <ModalProvider />
       </div>
@@ -226,11 +226,11 @@ export function AppShell({ children }: AppShellProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-brand-bg)] no-tap-highlight">
+    <div className="min-h-[100dvh] bg-[var(--color-brand-bg)] no-tap-highlight">
       <MarketRatesSync />
       <Sidebar />
       <DesktopHeaderBar />
-      <main className="native-scroll pt-[calc(52px+env(safe-area-inset-top,0px))] lg:pt-12 lg:ms-[176px] pb-[calc(4rem+env(safe-area-inset-bottom,0px))] lg:pb-0 min-h-screen safe-area-x">
+      <main className="native-scroll pt-[calc(52px+env(safe-area-inset-top,0px))] lg:pt-12 lg:ms-[176px] pb-[calc(4rem+env(safe-area-inset-bottom,0px))] lg:pb-0 min-h-[100dvh] safe-area-x">
         <OnboardingBanner />
         <SyncFailureBanner />
         {children}
