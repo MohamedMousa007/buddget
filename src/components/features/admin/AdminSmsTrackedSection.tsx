@@ -50,6 +50,7 @@ const LEARN_CHIPS: Record<string, { label: string; cls: string }> = {
   gemini_error: { label: 'ai-err', cls: RED },
   no_json: { label: 'no-json', cls: RED },
   no_regex_or_amount: { label: 'bad-rule', cls: RED },
+  regex_invalid: { label: 'bad-regex', cls: RED },
   regex_no_match: { label: 'no-match', cls: RED },
   insert_failed: { label: 'ins-fail', cls: RED },
   exception: { label: 'exc', cls: RED },
