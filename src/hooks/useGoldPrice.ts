@@ -1,54 +1,22 @@
 'use client'
 
-import { useEffect, useCallback } from 'react'
+import { useEffect } from 'react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-
-const FIFTEEN_MINUTES = 15 * 60 * 1000
+import { fetchGoldPrice, GOLD_TTL_MS } from '@/lib/market/marketData'
 
 export function useGoldPrice() {
   const goldPricePerGram = useFinanceStore((s) => s.goldPricePerGram)
   const goldPriceAvailable = useFinanceStore((s) => s.goldPriceAvailable)
   const lastGoldFetch = useFinanceStore((s) => s.lastGoldFetch)
-  const updateGoldPrice = useFinanceStore((s) => s.updateGoldPrice)
-  const setGoldUnavailable = useFinanceStore((s) => s.setGoldUnavailable)
-
-  const fetchGoldPrice = useCallback(async () => {
-    try {
-      const { apiFetch } = await import('@/lib/apiBase')
-      const res = await apiFetch('/api/gold')
-      if (!res.ok) {
-        setGoldUnavailable()
-        return
-      }
-
-      const data = await res.json()
-
-      if (data.available === false) {
-        // API is up but gold providers are all down
-        setGoldUnavailable()
-        return
-      }
-
-      if (data.pricePerGram) {
-        updateGoldPrice(data.pricePerGram)
-      }
-    } catch {
-      setGoldUnavailable()
-    }
-  }, [updateGoldPrice, setGoldUnavailable])
 
   useEffect(() => {
     const shouldFetch =
-      !lastGoldFetch ||
-      Date.now() - new Date(lastGoldFetch).getTime() > FIFTEEN_MINUTES
+      !lastGoldFetch || Date.now() - new Date(lastGoldFetch).getTime() > GOLD_TTL_MS
+    if (shouldFetch) void fetchGoldPrice()
 
-    if (shouldFetch) {
-      fetchGoldPrice()
-    }
-
-    const interval = setInterval(fetchGoldPrice, FIFTEEN_MINUTES)
+    const interval = setInterval(() => void fetchGoldPrice(), GOLD_TTL_MS)
     return () => clearInterval(interval)
-  }, [lastGoldFetch, fetchGoldPrice])
+  }, [lastGoldFetch])
 
   return {
     goldPricePerGram,

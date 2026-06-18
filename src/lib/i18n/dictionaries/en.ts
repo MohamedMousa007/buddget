@@ -926,15 +926,15 @@ export const en: Dictionary = {
     paymentMethodsAdd: '+ Add a method',
     paymentMethodsRemoveConfirm: "Remove this payment method? Your existing expenses won\u2019t be affected.",
 
-    aiTitle: 'Buddget Assistant',
-    aiToggle: 'Turn on Buddget assistant',
+    aiTitle: 'Buddgy',
+    aiToggle: 'Turn on Buddgy',
     aiToggleHint: 'Your preference \u2014 the server still needs a Gemini API key to work',
     aiConnection: 'Connection',
     aiConnectionSub: 'Google Gemini \u00B7 server-side',
     aiReady: 'Ready',
     aiNotSetUp: 'Not set up yet',
     aiModel: 'Model',
-    aiFooter1: 'Your admin manages the Buddget setup. Tap the chat bubble in the bottom-right corner to chat with Buddget.',
+    aiFooter1: 'Your admin manages the Buddget setup. Tap the chat bubble in the bottom-right corner to chat with Buddgy.',
     aiFooter2: 'Your Gemini API key has its own Google quota (~20 requests/min). The admin "Throttle per device" setting adds an extra cap inside Buddget \u2014 it doesn\u2019t change Google\u2019s limit. If you see quota errors, wait a moment, send fewer messages, or get your free key at Google AI Studio.',
 
     dataTitle: 'Your Data',
@@ -1108,7 +1108,7 @@ export const en: Dictionary = {
     projectedSavingsLine: (amount, savingsRatePercent) =>
       `If you stick to this plan, you'll save ${amount} this month (${savingsRatePercent}% of income)`,
     savingsAllocationBadge: 'Savings',
-    aiEvalTitle: "Buddget's take",
+    aiEvalTitle: "Buddgy's take",
     aiEvalLoading: 'Reviewing your plan…',
     aiEvalError: 'Could not evaluate the plan right now.',
     aiEvalStatusGood: 'Good',
@@ -1117,10 +1117,10 @@ export const en: Dictionary = {
     aiEvalTipGood: 'Keep an eye on actual spending so this plan stays realistic.',
     aiEvalTipTight: 'Build a small buffer or trim one discretionary category for breathing room.',
     aiEvalTipUnrealistic: 'Lower a few top categories or revisit income until planned expenses fit.',
-    aiEvalExpandAria: "Show or hide Buddget's full plan notes",
+    aiEvalExpandAria: "Show or hide Buddgy's full plan notes",
     aiEvalSuggestionLabel: 'Tip:',
-    aiChatTitle: 'Ask Buddget',
-    aiChatPlaceholder: 'Ask Buddget for cuts, realism, or new amounts…',
+    aiChatTitle: 'Ask Buddgy',
+    aiChatPlaceholder: 'Ask Buddgy for cuts, realism, or new amounts…',
     aiSend: 'Send',
     applySuggestion: 'Apply',
     applied: 'Applied',
@@ -1146,10 +1146,10 @@ export const en: Dictionary = {
     noPlansEmptyTitle: 'No budget plans yet',
     noPlansEmptyDesc: 'Create your first plan to start tracking where your money goes each month',
     noPlansCreateFirst: '+ Create your first plan',
-    buddgyTagline: 'Buddget — Your personal budget buddy!',
+    buddgyTagline: 'Buddgy — Your personal budget buddy!',
     buddgyBuilderOpening:
-      "Hey there! 👋 I'm Buddget, your personal budget buddy. I'm going to help you build a budget plan that actually works for your life.\n\nLet's start simple: what's your total monthly income, and what currency is it in? If it already looks right in your app, just say \"yes\" to confirm or tell me the updated amount.",
-    buddgyChatSubtitle: 'Buddget — Your personal budget buddy!',
+      "Hey there! 👋 I'm Buddgy, your personal budget buddy. I'm going to help you build a budget plan that actually works for your life.\n\nLet's start simple: what's your total monthly income, and what currency is it in? If it already looks right in your app, just say \"yes\" to confirm or tell me the updated amount.",
+    buddgyChatSubtitle: 'Buddgy — Your personal budget buddy!',
     buddgyBuilderBadge: 'Plan builder',
   },
 
@@ -1339,12 +1339,12 @@ export const en: Dictionary = {
   },
 
   ai: {
-    headerTitle: 'Buddget AI',
+    headerTitle: 'Buddgy',
     headerSubtitle: 'Your money assistant — ask anything',
-    composerPlaceholder: 'Ask Buddget AI…',
+    composerPlaceholder: 'Ask Buddgy…',
     sendMessage: 'Send message',
     emptyIntro:
-      "Hi there! I'm Buddget \uD83E\uDD16 — your personal budget buddy!\nTell me what you spent, earned, or want to track and I'll take care of the rest.",
+      "Hi there! I'm Buddgy \uD83E\uDD16 — your personal budget buddy!\nTell me what you spent, earned, or want to track and I'll take care of the rest.",
     suggestion1: 'Build me a monthly budget',
     suggestion2: 'Where did my money go this month?',
     suggestion3: 'How fast can I clear my Visa?',
@@ -1489,7 +1489,7 @@ export const en: Dictionary = {
       },
       buddgy: {
         welcomeIntro: {
-          default: "Hey \u2014 I\u2019m Buddget, your money buddy. Let\u2019s get you set up.",
+          default: "Hey \u2014 I\u2019m Buddgy, your money buddy. Let\u2019s get you set up.",
         },
         identityName: {
           default: 'What should I call you?',

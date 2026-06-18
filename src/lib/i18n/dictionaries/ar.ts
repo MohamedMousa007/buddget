@@ -926,15 +926,15 @@ export const ar: Dictionary = {
     paymentMethodsAdd: '+ أضف طريقة',
     paymentMethodsRemoveConfirm: 'حذف طريقة الدفع هذه؟ مصروفاتك الحالية لن تتأثر.',
 
-    aiTitle: 'مساعد Buddget',
-    aiToggle: 'تشغيل مساعد Buddget',
+    aiTitle: 'Buddgy',
+    aiToggle: 'تشغيل Buddgy',
     aiToggleHint: 'تفضيلك — الخادم يحتاج مفتاح Gemini API للعمل',
     aiConnection: 'الاتصال',
     aiConnectionSub: 'Google Gemini · من الخادم',
     aiReady: 'جاهز',
     aiNotSetUp: 'لم يُعد بعد',
     aiModel: 'النموذج',
-    aiFooter1: 'المسؤول يدير إعداد Buddget. اضغط على فقاعة المحادثة في الزاوية للدردشة مع Buddget.',
+    aiFooter1: 'المسؤول يدير إعداد Buddget. اضغط على فقاعة المحادثة في الزاوية للدردشة مع Buddgy.',
     aiFooter2: 'مفتاح Gemini API له حصة Google خاصة (~20 طلب/دقيقة). إعداد المسؤول "حد الجهاز" يضيف حداً إضافياً داخل Buddget — لا يغير حد Google. إذا رأيت أخطاء حصة، انتظر لحظة أو أرسل رسائل أقل.',
 
     dataTitle: 'بياناتك',
@@ -1108,7 +1108,7 @@ export const ar: Dictionary = {
     projectedSavingsLine: (amount, savingsRatePercent) =>
       `إذا التزمت بهذه الخطة، ستدخر ${amount} هذا الشهر (${savingsRatePercent}% من الدخل)`,
     savingsAllocationBadge: 'مدخرات',
-    aiEvalTitle: 'رأي Buddget',
+    aiEvalTitle: 'رأي Buddgy',
     aiEvalLoading: 'جارٍ مراجعة خطتك…',
     aiEvalError: 'تعذر تقييم الخطة الآن.',
     aiEvalStatusGood: 'جيد',
@@ -1117,10 +1117,10 @@ export const ar: Dictionary = {
     aiEvalTipGood: 'راقب الإنفاق الفعلي للبقاء ضمن هذه الخطة.',
     aiEvalTipTight: 'أضف هامشاً صغيراً أو قلّل فئة ترفيهية واحدة.',
     aiEvalTipUnrealistic: 'خفّض بعض الفئات الكبيرة أو راجع الدخل حتى تتناسب المصروفات.',
-    aiEvalExpandAria: 'إظهار أو إخفاء ملاحظات Buddget بالكامل',
+    aiEvalExpandAria: 'إظهار أو إخفاء ملاحظات Buddgy بالكامل',
     aiEvalSuggestionLabel: 'نصيحة:',
-    aiChatTitle: 'اسأل Buddget',
-    aiChatPlaceholder: 'اطلب من Buddget تخفيضات أو واقعية أو مبالغ جديدة…',
+    aiChatTitle: 'اسأل Buddgy',
+    aiChatPlaceholder: 'اطلب من Buddgy تخفيضات أو واقعية أو مبالغ جديدة…',
     aiSend: 'إرسال',
     applySuggestion: 'تطبيق',
     applied: 'تم التطبيق',
@@ -1145,10 +1145,10 @@ export const ar: Dictionary = {
     noPlansEmptyTitle: 'لا توجد خطط ميزانية بعد',
     noPlansEmptyDesc: 'أنشئ خطتك الأولى لتبدأ تتبع أين تذهب أموالك كل شهر',
     noPlansCreateFirst: '+ أنشئ خطتك الأولى',
-    buddgyTagline: 'Buddget — رفيقك الشخصي للميزانية!',
+    buddgyTagline: 'Buddgy — رفيقك الشخصي للميزانية!',
     buddgyBuilderOpening:
-      'أهلًا! 👋 أنا Buddget، رفيقك الشخصي للميزانية. سأساعدك على بناء خطة تناسب حياتك.\n\nلنبدأ بسؤال بسيط: ما إجمالي دخلك الشهري وبأي عملة؟ إذا كان الرقم في التطبيق صحيحًا، قل «نعم» أو أخبرني بالمبلغ المحدث.',
-    buddgyChatSubtitle: 'Buddget — رفيقك الشخصي للميزانية!',
+      'أهلًا! 👋 أنا Buddgy، رفيقك الشخصي للميزانية. سأساعدك على بناء خطة تناسب حياتك.\n\nلنبدأ بسؤال بسيط: ما إجمالي دخلك الشهري وبأي عملة؟ إذا كان الرقم في التطبيق صحيحًا، قل «نعم» أو أخبرني بالمبلغ المحدث.',
+    buddgyChatSubtitle: 'Buddgy — رفيقك الشخصي للميزانية!',
     buddgyBuilderBadge: 'بناء الخطة',
   },
 
@@ -1337,12 +1337,12 @@ export const ar: Dictionary = {
   },
 
   ai: {
-    headerTitle: 'Buddget AI',
+    headerTitle: 'Buddgy',
     headerSubtitle: 'مساعدك المالي — اسأل أي شيء',
-    composerPlaceholder: 'اسأل Buddget AI…',
+    composerPlaceholder: 'اسأل Buddgy…',
     sendMessage: 'إرسال',
     emptyIntro:
-      'أهلاً! أنا Buddget 🤖 — رفيقك الشخصي للميزانية!\nأخبرني بما صرفت أو كسبت أو تريد تتبعه وأنا أتولى الباقي.',
+      'أهلاً! أنا Buddgy 🤖 — رفيقك الشخصي للميزانية!\nأخبرني بما صرفت أو كسبت أو تريد تتبعه وأنا أتولى الباقي.',
     suggestion1: 'اصنع لي ميزانية شهرية',
     suggestion2: 'أين ذهبت أموالي هذا الشهر؟',
     suggestion3: 'كم أحتاج لسداد فيزا؟',
@@ -1486,7 +1486,7 @@ export const ar: Dictionary = {
       },
       buddgy: {
         welcomeIntro: {
-          default: 'أهلاً — أنا Buddget، رفيقك المالي. خلّينا نبدأ.',
+          default: 'أهلاً — أنا Buddgy، رفيقك المالي. خلّينا نبدأ.',
         },
         identityName: {
           default: 'ماذا نناديك؟',

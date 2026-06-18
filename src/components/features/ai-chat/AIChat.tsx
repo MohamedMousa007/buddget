@@ -73,7 +73,7 @@ function computePanel(orb: BuddgyOrbPosition): PanelGeometry | null {
 }
 
 /**
- * Buddget AI assistant panel. Opens anchored to the draggable Buddgy orb's
+ * Buddgy assistant panel. Opens anchored to the draggable Buddgy orb's
  * current edge position — on every platform — so it emerges from the icon and
  * never lands on the QuickAdd FAB (desktop) or bottom tab bar (mobile). Stays
  * inside the safe area. Logic lives in `useAIChat`.
