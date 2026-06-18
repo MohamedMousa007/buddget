@@ -286,10 +286,19 @@ async function learnPattern(
     const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      signal: AbortSignal.timeout(15_000),
+      // Was 15s — gemini-2.5-flash routinely exceeded it (its default "thinking"
+      // adds latency), so EVERY learn attempt aborted and crashed the learner,
+      // which is why AI templates were never produced. Disable thinking (regex
+      // generation is mechanical, needs no reasoning) and give it real headroom;
+      // still well within the route's 60s maxDuration after the response is sent.
+      signal: AbortSignal.timeout(30_000),
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: buildRegexLearningPrompt(message, sender, parsed) }] }],
-        generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
+        generationConfig: {
+          responseMimeType: 'application/json',
+          temperature: 0.1,
+          thinkingConfig: { thinkingBudget: 0 },
+        },
       }),
     })
     if (!res.ok) {
