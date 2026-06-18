@@ -112,6 +112,9 @@ export interface SmsTrackedRow {
   push_result: { ok?: boolean; sent?: number; failed?: number; error?: string } | null
   confirmed_at: string | null
   acked_at: string | null
+  /** AI template-learning outcome (only meaningful when parse_method='ai'). */
+  learn_status: string | null
+  learn_template_id: string | null
   email: string | null
 }
 
