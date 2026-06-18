@@ -127,7 +127,6 @@ function AuthNextQuerySync({ configured }: { configured: boolean }) {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const router = useRouter()
   const [user, setUser] = useState<AuthContextValue['user']>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
@@ -270,7 +269,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // while mode is still 'authenticated', tripping the 2.5s WelcomeScreen splash.
     setUser(null)
     setSession(null)
-    router.refresh()
+    // NOTE: do NOT call router.refresh() here. On native, it triggers the
+    // visibilitychange handler which calls getSession() before
+    // supabase.auth.signOut() has cleared the localStorage session — the SDK
+    // finds the still-valid token and fires SIGNED_IN, restoring the user.
+    // The LandingGate renders automatically from setUser(null) above.
 
     // Background cleanup — user doesn't wait for any of this.
     const supabase = createClient()
@@ -294,7 +297,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // useEphemeralSessionGuard.) Triggers SIGNED_OUT, handled by the listener.
       try { await supabase.auth.signOut({ scope: 'local' }) } catch (e) { console.error('[auth] signOut failed', e) }
     })()
-  }, [configured, router, session])
+  }, [configured, session])
 
   const noopSignOut = useCallback(async () => {}, [])
 

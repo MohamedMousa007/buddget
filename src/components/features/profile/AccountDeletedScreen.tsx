@@ -2,14 +2,22 @@
 
 import { CheckCircle2 } from 'lucide-react'
 import { useT } from '@/lib/i18n'
+import { createClient } from '@/lib/supabase/client'
 
 export function AccountDeletedScreen() {
   const t = useT()
 
-  const handleHome = () => {
-    if (typeof window !== 'undefined') {
-      window.location.assign('/')
+  const handleHome = async () => {
+    // Clear the local Supabase session before hard-reloading. scope:'local' has
+    // no network round-trip (the auth user is already gone server-side), so this
+    // is instant. Without it, getSession() on the next app init finds a stale
+    // token, tries a token refresh, gets a 400, and fires SIGNED_OUT mid-load.
+    try {
+      await createClient().auth.signOut({ scope: 'local' })
+    } catch {
+      /* user already deleted — safe to ignore */
     }
+    window.location.assign('/')
   }
 
   return (
@@ -28,7 +36,7 @@ export function AccountDeletedScreen() {
       </p>
       <button
         type="button"
-        onClick={handleHome}
+        onClick={() => void handleHome()}
         className="h-12 px-8 rounded-2xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
       >
         {t.profile.deleteAccountSuccessButton}

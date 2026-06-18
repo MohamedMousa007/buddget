@@ -4,7 +4,7 @@ import { useCallback, useRef, useState, type PointerEvent as ReactPointerEvent, 
 import { useMotionValue } from 'framer-motion'
 
 const HOLD_MS = 300 // press duration before recording starts (shorter than a tap-to-menu)
-const SCROLL_CANCEL_PX = 16 // movement before the hold fires that aborts it (treat as scroll)
+const SCROLL_CANCEL_PX = 24 // movement before the hold fires that aborts it (treat as scroll)
 const TRASH_RADIUS = 72 // finger-to-trash distance that arms cancel
 
 interface VoiceHoldOptions {
@@ -47,6 +47,7 @@ export function useVoiceHoldGesture({
   const startRef = useRef<{ x: number; y: number } | null>(null)
   const nearTrashRef = useRef(false)
   const pointerIdRef = useRef<number | null>(null)
+  const elementRef = useRef<HTMLButtonElement | null>(null)
 
   const clearTimer = () => {
     if (timerRef.current) {
@@ -70,6 +71,7 @@ export function useVoiceHoldGesture({
     startRef.current = null
     nearTrashRef.current = false
     pointerIdRef.current = null
+    elementRef.current = null
     setNearTrash(false)
     posX.set(0)
     posY.set(0)
@@ -80,20 +82,29 @@ export function useVoiceHoldGesture({
       if (e.button !== 0 && e.pointerType === 'mouse') return
       startRef.current = { x: e.clientX, y: e.clientY }
       pointerIdRef.current = e.pointerId
+      elementRef.current = e.currentTarget
       holdingRef.current = false
       nearTrashRef.current = false
       setNearTrash(false)
       posX.set(e.clientX)
       posY.set(e.clientY)
-      try {
-        e.currentTarget.setPointerCapture(e.pointerId)
-      } catch {
-        /* capture unsupported — gesture still works while finger stays on button */
-      }
+      // DO NOT call setPointerCapture here. On Android WebView, calling it
+      // synchronously inside pointerdown can trigger pointercancel before the
+      // timer below is set — making timerRef.current null when the cancel
+      // handler checks pendingTap, so onTap() never fires. Capture is deferred
+      // to when the hold actually starts (see timer below).
       clearTimer()
       timerRef.current = setTimeout(() => {
         timerRef.current = null
         holdingRef.current = true
+        // Safe to capture now: we're recording and need drag-to-trash tracking.
+        try {
+          const el = elementRef.current
+          const pid = pointerIdRef.current
+          if (el != null && pid != null) el.setPointerCapture(pid)
+        } catch {
+          /* capture unsupported — drag tracking degrades gracefully */
+        }
         void haptic('medium')
         onHoldStart()
       }, HOLD_MS)
@@ -175,12 +186,23 @@ export function useVoiceHoldGesture({
     [onHoldCancel, onTap, reset],
   )
 
+  // Without early setPointerCapture, pointer events stop routing to the FAB
+  // once the finger leaves its bounds. Cancel the pre-hold timer so the hold
+  // doesn't fire spuriously mid-scroll. During recording (holdingRef = true)
+  // capture is already active, so this handler is never reached then.
+  const onPointerLeave = useCallback(() => {
+    if (!holdingRef.current) {
+      clearTimer()
+      startRef.current = null
+    }
+  }, [])
+
   const onContextMenu = useCallback((e: ReactPointerEvent<HTMLButtonElement>) => {
     e.preventDefault() // suppress the iOS long-press callout
   }, [])
 
   return {
-    handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onContextMenu },
+    handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onPointerLeave, onContextMenu },
     posX,
     posY,
     nearTrash,

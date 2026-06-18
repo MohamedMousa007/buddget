@@ -43,8 +43,15 @@ async function ensureInit(): Promise<void> {
       // OAuth flow via capgo's Broadcast Channel mode (no backend / redirect-URL
       // config of our own — capgo routes through its hosted handler, which is
       // registered as a Return URL on the Apple Services ID).
+      // The Java plugin validates redirectUrl before checking useBroadcastChannel,
+      // so we must supply it even in broadcast-channel mode (where the plugin
+      // ignores it and uses the hardcoded Firebase handler URL instead).
       const apple = isAndroid()
-        ? { clientId: APPLE_SERVICES_ID, useBroadcastChannel: true }
+        ? {
+            clientId: APPLE_SERVICES_ID,
+            useBroadcastChannel: true,
+            redirectUrl: 'https://capacitor-social-login.firebaseapp.com/__/auth/handler',
+          }
         : {}
       await SocialLogin.initialize({ apple, ...google })
     })().catch((e) => {

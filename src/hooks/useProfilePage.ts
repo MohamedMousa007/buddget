@@ -6,7 +6,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useLocale, useT } from '@/lib/i18n'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
-import { clearBudgetData } from '@/lib/auth/clearBudgetData'
+
 import { apiFetchAuth } from '@/lib/apiBase'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 import {
@@ -121,21 +121,18 @@ export function useProfilePage() {
         const body = (await res.json().catch(() => null)) as { error?: string } | null
         throw new Error(body?.error || t.profile.deleteAccountError)
       }
-      // Wipe local state and revoke the client session (auth user is already gone server-side).
-      clearBudgetData()
-      try {
-        await signOut()
-      } catch {
-        // ignore — the auth user is already deleted, signOut may 400
-      }
-      // Show success screen; navigation to home happens on user acknowledgement.
+      // Show the success overlay FIRST (z-[200], covers the authenticated dashboard).
+      // Calling signOut() here sets user=null → AuthProvider unmounts {children}
+      // before AccountDeletedScreen ever renders. The screen's "Go Home" button
+      // calls supabase.auth.signOut({ scope:'local' }) then window.location.assign('/')
+      // which hard-reloads to the landing gate with a clean slate.
       setDeleteOpen(false)
       setDeleteSuccess(true)
     } catch (e) {
       setDeleteError(e instanceof Error ? e.message : t.profile.deleteAccountError)
       setDeleting(false)
     }
-  }, [signOut, t.profile.deleteAccountError])
+  }, [t.profile.deleteAccountError])
 
   const supabaseConfigured = useMemo(
     () =>
