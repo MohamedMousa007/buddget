@@ -16,7 +16,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { isNative, isAndroid, isIOS } from '@/lib/native/isNative'
 import { createClient } from '@/lib/supabase/client'
 import { apiFetchAuth } from '@/lib/apiBase'
-import { saveSmsToken, setSmsEnabled } from '@/lib/native/smsTracker'
+import { saveSmsToken, setSmsEnabled, setIosSetupCompleted, getSmsBridgeStatus, type SmsBridgeStatus } from '@/lib/native/smsTracker'
 
 export interface TokenInfo {
   token: string
@@ -36,8 +36,23 @@ export function useSmsTracking() {
   const [error, setError] = useState<string | null>(null)
   const [lastReceivedAt, setLastReceivedAt] = useState<string | null>(null)
   const [todayCount, setTodayCount] = useState(0)
+  const [deviceStatus, setDeviceStatus] = useState<SmsBridgeStatus | null>(null)
 
-  const isEnabled = settings.smsTrackingEnabled
+  // Per-device truth: on native the bridge state is authoritative (a synced
+  // setting from another device must not show "on" until this device is armed).
+  // On web there is no bridge — the synced setting is the source.
+  const isEnabled = isNative() ? deviceStatus?.enabled ?? false : settings.smsTrackingEnabled
+  // iOS hides the switch until the Shortcut guide is finished. Android/web always show it.
+  const isSetup = isNative() && isIOS() ? deviceStatus?.setupCompleted ?? false : true
+
+  const refreshStatus = useCallback(async () => {
+    if (!isNative()) return
+    setDeviceStatus(await getSmsBridgeStatus())
+  }, [])
+
+  useEffect(() => {
+    void refreshStatus()
+  }, [refreshStatus])
 
   // Fetch token + connection status when enabled
   useEffect(() => {
@@ -134,9 +149,33 @@ export function useSmsTracking() {
       // see SMS results in the in-app notification center.
       updateSettings({ smsTrackingEnabled: value })
     } finally {
+      void refreshStatus()
       setLoading(false)
     }
-  }, [updateSettings])
+  }, [updateSettings, refreshStatus])
+
+  /**
+   * Called when the user finishes the iOS Shortcut setup guide: arm the bridge
+   * (token + enabled), mark setup complete (reveals the switch, ON), and sync
+   * the cross-device intent. Returns once the device status reflects it.
+   */
+  const completeIosSetup = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await apiFetchAuth('/api/sms/setup-token')
+      if (res.ok) {
+        const data = await res.json() as TokenInfo
+        setTokenInfo(data)
+        await saveSmsToken(data.token)
+      }
+      await setIosSetupCompleted(true)
+      await setSmsEnabled(true)
+      updateSettings({ smsTrackingEnabled: true })
+      await refreshStatus()
+    } finally {
+      setLoading(false)
+    }
+  }, [updateSettings, refreshStatus])
 
   const fetchToken = useCallback(async () => {
     const res = await apiFetchAuth('/api/sms/setup-token')
@@ -158,7 +197,10 @@ export function useSmsTracking() {
 
   return {
     isEnabled,
+    isSetup,
     toggle,
+    completeIosSetup,
+    refreshStatus,
     loading,
     error,
     tokenInfo,

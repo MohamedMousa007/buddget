@@ -68,4 +68,46 @@ class SmsCapacitorPlugin : Plugin() {
             .apply()
         call.resolve()
     }
+
+    /**
+     * Per-device tracking state — authoritative for the UI (the server setting is
+     * only cross-device intent). On a fresh install nothing is set ⇒ all false.
+     * setupCompleted == tokenSaved on Android (no setup guide; arming = saving a token).
+     */
+    @PluginMethod
+    fun getStatus(call: PluginCall) {
+        val prefs = activity.getSharedPreferences("buddget_sms", Context.MODE_PRIVATE)
+        val tokenSaved = prefs.getString("access_token", null) != null
+        val enabled = prefs.getBoolean("sms_enabled", false)
+        val permission = getPermissionState("sms")?.name == "GRANTED"
+        call.resolve(JSObject().apply {
+            put("tokenSaved", tokenSaved)
+            put("enabled", enabled)
+            put("setupCompleted", tokenSaved)
+            put("permission", permission)
+        })
+    }
+
+    /** Phase-1/2 forwarding mode: "sender" (business-sender) or "keyword" (legacy). */
+    @PluginMethod
+    fun setForwardMode(call: PluginCall) {
+        val mode = call.getString("mode") ?: "sender"
+        activity.getSharedPreferences("buddget_sms", Context.MODE_PRIVATE)
+            .edit()
+            .putString("sms_forward_mode", mode)
+            .apply()
+        call.resolve()
+    }
+
+    /** Sign-out / account switch: wipe per-device SMS state so the next user starts OFF. */
+    @PluginMethod
+    fun clearState(call: PluginCall) {
+        activity.getSharedPreferences("buddget_sms", Context.MODE_PRIVATE)
+            .edit()
+            .remove("access_token")
+            .remove("api_url")
+            .putBoolean("sms_enabled", false)
+            .apply()
+        call.resolve()
+    }
 }

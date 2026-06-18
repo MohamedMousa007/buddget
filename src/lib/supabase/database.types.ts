@@ -1592,6 +1592,78 @@ export type Database = {
           },
         ]
       }
+      sms_keyword_pool: {
+        Row: {
+          keyword: string
+          lang: string | null
+          hit_count: number
+          first_seen: string
+          last_seen: string
+        }
+        Insert: {
+          keyword: string
+          lang?: string | null
+          hit_count?: number
+          first_seen?: string
+          last_seen?: string
+        }
+        Update: {
+          keyword?: string
+          lang?: string | null
+          hit_count?: number
+          first_seen?: string
+          last_seen?: string
+        }
+        Relationships: []
+      }
+      sms_sender_pool: {
+        Row: {
+          sender: string
+          hit_count: number
+          txn_count: number
+          last_seen: string
+        }
+        Insert: {
+          sender: string
+          hit_count?: number
+          txn_count?: number
+          last_seen?: string
+        }
+        Update: {
+          sender?: string
+          hit_count?: number
+          txn_count?: number
+          last_seen?: string
+        }
+        Relationships: []
+      }
+      sms_sender_currency: {
+        Row: {
+          user_id: string
+          sender: string
+          currency: Database["public"]["Enums"]["currency_code"]
+          confirmed: boolean
+          hit_count: number
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          sender: string
+          currency: Database["public"]["Enums"]["currency_code"]
+          confirmed?: boolean
+          hit_count?: number
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          sender?: string
+          currency?: Database["public"]["Enums"]["currency_code"]
+          confirmed?: boolean
+          hit_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sms_parse_log: {
         Row: {
           account_last4: string | null
@@ -1928,6 +2000,27 @@ export type Database = {
       api_rate_hit: {
         Args: { p_key: string; p_max_hits: number; p_window_seconds: number }
         Returns: boolean
+      }
+      bump_sms_keyword: {
+        Args: { p_keyword: string; p_lang: string }
+        Returns: undefined
+      }
+      bump_sms_sender: {
+        Args: { p_sender: string; p_is_txn: boolean }
+        Returns: undefined
+      }
+      learn_sms_sender_currency: {
+        Args: {
+          p_user: string
+          p_sender: string
+          p_currency: Database["public"]["Enums"]["currency_code"]
+          p_confirmed: boolean
+        }
+        Returns: undefined
+      }
+      get_sms_keyword_pool: {
+        Args: { top_n?: number }
+        Returns: { keyword: string; lang: string; hit_count: number }[]
       }
       sms_try_pair: {
         Args: {

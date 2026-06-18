@@ -53,7 +53,15 @@ class SmsReceiver : BroadcastReceiver() {
         val fullBody = messages.joinToString("") { it.messageBody ?: "" }.trim()
         val sender   = messages.firstOrNull()?.originatingAddress
 
-        if (fullBody.isEmpty() || !isBankishMessage(fullBody)) return
+        // Phase 1 default = "sender": forward any business-sender SMS that has a
+        // number; personal (long numeric) senders still require a keyword match,
+        // so personal SMS stay off the API. "keyword" restores the legacy gate.
+        val mode = prefs.getString("sms_forward_mode", "sender") ?: "sender"
+        val shouldForward = when (mode) {
+            "keyword" -> isBankishMessage(fullBody)
+            else      -> (isBusinessSender(sender) && hasDigit(fullBody)) || isBankishMessage(fullBody)
+        }
+        if (fullBody.isEmpty() || !shouldForward) return
 
         // WorkManager is the SINGLE forwarding path — works whether the app is
         // open or killed, and the server dedup makes retries idempotent. The
@@ -90,10 +98,28 @@ class SmsReceiver : BroadcastReceiver() {
         }
     }
 
+    private fun hasDigit(text: String): Boolean = text.any { it.isDigit() }
+
     /**
-     * Broad keyword filter applied before queuing the WorkManager job.
-     * Keeps personal SMS off the API entirely; the server's curated pattern
-     * library + pre-filter do the precise classification.
+     * A "business" sender is an alphanumeric ID (e.g. "VF-Cash", "CIB") or a
+     * short numeric code (≤7 digits, e.g. "19666") — i.e. NOT a normal personal
+     * phone number (≥8 digits). Financial institutions always send from these,
+     * so forwarding any business-sender SMS with a number captures every
+     * bank/wallet transaction regardless of wording, while personal SMS (long
+     * numeric senders) are still excluded unless they hit a keyword.
+     */
+    private fun isBusinessSender(sender: String?): Boolean {
+        val s = sender?.trim()?.removePrefix("+") ?: return false
+        if (s.isEmpty()) return false
+        if (s.any { it.isLetter() }) return true               // alphanumeric ID
+        val digits = s.count { it.isDigit() }
+        return digits in 1..7                                   // short code
+    }
+
+    /**
+     * Broad keyword filter — the Phase-2 path and the fallback for personal
+     * senders. The server's curated pattern library + pre-filter do the precise
+     * classification.
      */
     private fun isBankishMessage(text: String): Boolean {
         val lower = text.lowercase()

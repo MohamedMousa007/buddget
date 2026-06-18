@@ -292,9 +292,11 @@ function PhoneMock({ step, title }: { step: Step; title: string }) {
 // ── main component ────────────────────────────────────────────────────────────
 export type SmsTrackingGuideProps = {
   onClose?: () => void;
+  /** Fired when the user taps "Finish" (setup complete), before closing. Distinct from cancel/X. */
+  onComplete?: () => void;
 };
 
-export default function SmsTrackingGuide({ onClose }: SmsTrackingGuideProps) {
+export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGuideProps) {
   useKeyframes();
   const t = useT();
   const g = t.smsTracking.guide;
@@ -333,6 +335,8 @@ export default function SmsTrackingGuide({ onClose }: SmsTrackingGuideProps) {
     copyTimer.current = setTimeout(() => setCopied(null), 1500);
   }, []);
   const close = useCallback(() => (onClose ? onClose() : window.history.back()), [onClose]);
+  // "Finish": mark setup complete (arms the bridge + reveals the switch), then close.
+  const finish = useCallback(() => { onComplete?.(); close(); }, [onComplete, close]);
 
   const conceptPhase = conceptState.step === safe ? conceptState.phase : 0;
   const stepBoxVisible = !cur.concept || conceptPhase >= 4;
@@ -461,7 +465,7 @@ export default function SmsTrackingGuide({ onClose }: SmsTrackingGuideProps) {
                     <Plus size={14} strokeWidth={2.4} color="#fff" />
                     {g.addKeyword}
                   </button>
-                  <button onClick={close} style={{ flex: 1, height: 46, borderRadius: 13, cursor: 'pointer', fontFamily: F, fontSize: 14, fontWeight: 700, border: '1px solid var(--color-brand-border)', background: 'transparent', color: 'var(--color-brand-text-secondary)' }}>{g.finish}</button>
+                  <button onClick={finish} style={{ flex: 1, height: 46, borderRadius: 13, cursor: 'pointer', fontFamily: F, fontSize: 14, fontWeight: 700, border: '1px solid var(--color-brand-border)', background: 'transparent', color: 'var(--color-brand-text-secondary)' }}>{g.finish}</button>
                 </div>
               ) : (
                 <Button variant="default" style={{ width: '100%', height: 52, fontSize: 15, fontWeight: 700, borderRadius: 14, boxShadow: '0 10px 30px rgba(229,9,20,0.28)' }} onClick={openShortcuts}>{g.openShortcuts}</Button>
