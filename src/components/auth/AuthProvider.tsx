@@ -444,9 +444,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         <Suspense fallback={null}>
           <RequestResetQuerySync />
         </Suspense>
-        {showLoadingSplash || showOnboardingRedirectSplash ? (
+        {showLoadingSplash ? (
           <AuthLoadingSplash />
-        ) : showWelcomeScreen ? (
+        ) : showWelcomeScreen || showOnboardingRedirectSplash ? (
           <Suspense fallback={<AuthLoadingSplash />}>
             <WelcomeScreen />
           </Suspense>

@@ -93,6 +93,7 @@ export async function nativeSocialSignIn(provider: OAuthProvider): Promise<Nativ
     const { SocialLogin } = await import('@capgo/capacitor-social-login')
 
     let idToken: string | null = null
+    let googleRawNonce: string | undefined
     if (provider === 'apple') {
       const { result } = await SocialLogin.login({
         provider: 'apple',
@@ -102,9 +103,18 @@ export async function nativeSocialSignIn(provider: OAuthProvider): Promise<Nativ
       })
       idToken = result.idToken
     } else {
+      // Generate a nonce pair so Google embeds it in the ID token and Supabase
+      // can verify it. capgo passes hashedNonce as-is to GIDSignIn; Supabase
+      // expects rawNonce and computes SHA-256 internally to match the token claim.
+      const bytes = new Uint8Array(32)
+      crypto.getRandomValues(bytes)
+      googleRawNonce = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')
+      const hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(googleRawNonce))
+      const hashedNonce = Array.from(new Uint8Array(hashBuf), b => b.toString(16).padStart(2, '0')).join('')
+
       const { result } = await SocialLogin.login({
         provider: 'google',
-        options: { scopes: ['profile', 'email'] },
+        options: { scopes: ['profile', 'email'], nonce: hashedNonce },
       })
       idToken = 'idToken' in result ? result.idToken : null
     }
@@ -112,7 +122,11 @@ export async function nativeSocialSignIn(provider: OAuthProvider): Promise<Nativ
     if (!idToken) return { error: { message: 'No identity token returned' }, cancelled: false }
 
     const supabase: SupabaseClient = createClient()
-    const { error } = await supabase.auth.signInWithIdToken({ provider, token: idToken })
+    const { error } = await supabase.auth.signInWithIdToken({
+      provider,
+      token: idToken,
+      ...(googleRawNonce ? { nonce: googleRawNonce } : {}),
+    })
     return { error: error ? { message: error.message } : null, cancelled: false }
   } catch (e) {
     if (isCancellation(e)) return { error: null, cancelled: true }
