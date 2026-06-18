@@ -5,8 +5,12 @@ import { isAndroid, isNative } from '@/lib/native/isNative'
 export interface SmsBridgeStatus {
   tokenSaved: boolean
   enabled: boolean
-  lastRunAt: string
-  lastResult: string
+  /** iOS: Shortcut setup guide finished. Android: == tokenSaved (no guide). */
+  setupCompleted: boolean
+  /** Android: live RECEIVE_SMS permission. iOS: always true (no OS SMS perm). */
+  permission: boolean
+  lastRunAt?: string
+  lastResult?: string
 }
 
 export interface SmsHealthResult {
@@ -22,7 +26,13 @@ interface SmsCapacitorPlugin {
   saveToken(opts: { token: string; apiUrl: string }): Promise<void>
   /** Gates native forwarding — Android SmsReceiver / iOS CatchBankSmsIntent. */
   setEnabled(opts: { enabled: boolean }): Promise<void>
-  /** iOS only: bridge state incl. the App Intent's last run. */
+  /** iOS: marks the Shortcut setup guide as finished (gates switch visibility). */
+  setSetupCompleted(opts: { completed: boolean }): Promise<void>
+  /** Android forwarding mode: "sender" (Phase 1) or "keyword" (legacy/Phase 2). iOS no-op. */
+  setForwardMode(opts: { mode: string }): Promise<void>
+  /** Sign-out: wipe per-device SMS state (token/enabled/setupCompleted). */
+  clearState(): Promise<void>
+  /** Per-device bridge state — authoritative for the UI. */
   getStatus(): Promise<SmsBridgeStatus>
   /** iOS only: GET /api/sms/health through the same native path the intent uses. */
   healthCheck(): Promise<SmsHealthResult>
@@ -102,6 +112,28 @@ export async function startSMSTracking(accessToken: string): Promise<void> {
   }
 }
 
+/**
+ * App-open resume: re-arms the native bridge ONLY if this device already has
+ * tracking enabled (the user turned it on here). Never turns tracking on — so a
+ * fresh sign-in (or a different user on a shared device) stays OFF until they
+ * explicitly enable it. Refreshes the stored token so the killed-app path keeps
+ * a valid credential.
+ */
+export async function resumeSmsTrackingIfEnabled(accessToken: string): Promise<void> {
+  if (!isNative() || !isAndroid()) return
+  if (!(await ensurePlugin()) || !_plugin) return
+  try {
+    const status = await _plugin.getStatus()
+    if (!status?.enabled) return // respect per-device OFF
+    const granted = await checkSmsPermission()
+    if (!granted) return
+    const { apiUrl: buildUrl } = await import('@/lib/apiBase')
+    const base = buildUrl('').replace(/\/$/, '')
+    await _plugin.saveToken({ token: accessToken, apiUrl: base })
+    await _plugin.setEnabled({ enabled: true })
+  } catch { /* non-fatal — next app open retries */ }
+}
+
 export async function stopSMSTracking(): Promise<void> {
   // Fully pause the native receiver — no notifications, no WorkManager.
   if (await ensurePlugin()) {
@@ -146,7 +178,25 @@ export async function setSmsEnabled(enabled: boolean): Promise<void> {
   try { await _plugin.setEnabled({ enabled }) } catch { /* noop */ }
 }
 
-/** iOS bridge status — token saved, enabled, and the App Intent's last run. */
+/** iOS: mark the Shortcut setup guide finished so the on/off switch becomes visible. */
+export async function setIosSetupCompleted(completed: boolean): Promise<void> {
+  if (!(await ensurePlugin()) || !_plugin) return
+  try { await _plugin.setSetupCompleted({ completed }) } catch { /* noop */ }
+}
+
+/** Switch the Android forwarding mode ("sender" Phase 1 / "keyword" Phase 2). */
+export async function setSmsForwardMode(mode: 'sender' | 'keyword'): Promise<void> {
+  if (!(await ensurePlugin()) || !_plugin) return
+  try { await _plugin.setForwardMode({ mode }) } catch { /* noop */ }
+}
+
+/** Sign-out / account switch: wipe per-device SMS state so the next user starts OFF. */
+export async function clearSmsNative(): Promise<void> {
+  if (!(await ensurePlugin()) || !_plugin) return
+  try { await _plugin.clearState() } catch { /* noop */ }
+}
+
+/** Per-device bridge status — token saved, enabled, setup completed, permission. */
 export async function getSmsBridgeStatus(): Promise<SmsBridgeStatus | null> {
   if (!(await ensurePlugin()) || !_plugin) return null
   try {

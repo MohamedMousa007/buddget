@@ -279,6 +279,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try { await flushFinanceNow() } catch (e) { console.error('[auth] flush before signOut failed', e) }
       // Wipe localStorage + reset Zustand stores.
       try { clearBudgetData() } catch (e) { console.error('[auth] clearBudgetData failed', e) }
+      // Wipe per-device SMS bridge state (token/enabled/setup) so the next user
+      // on this device starts with tracking OFF and unconfigured.
+      try { const { clearSmsNative } = await import('@/lib/native/smsTracker'); await clearSmsNative() } catch (e) { console.error('[auth] clearSmsNative failed', e) }
       // Unregister push token using the captured token (session is gone by now).
       if (accessToken) {
         try { await unregisterPushToken(accessToken) } catch (e) { console.error('[auth] push unregister failed', e) }

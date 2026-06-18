@@ -25,6 +25,8 @@ import { isNonTransaction } from '@/lib/sms/patterns/preFilter'
 import { checkAndAutoPromote } from '@/lib/sms/promotionChecker'
 import { lookupKeys, effectiveSender } from '@/lib/sms/routingKey'
 import { createSmsTransaction, type SmsTxResult } from '@/lib/sms/dispatch'
+import { resolveCurrency } from '@/lib/sms/currencyResolver'
+import { extractKeywords } from '@/lib/sms/keywordExtractor'
 import { getServerDictionary } from '@/lib/i18n/getServerDictionary'
 import { getUserLocale } from '@/lib/server/userLocale'
 import { emitNotification } from '@/lib/server/emitNotification'
@@ -660,18 +662,32 @@ export async function POST(request: Request) {
   const parseMethod: 'curated' | 'template' | 'ai' =
     curated ? 'curated' : staticResult ? 'template' : 'ai'
 
-  if (!parsed.is_transaction || !parsed.amount || !parsed.currency) {
+  // Stable sender identity (hotline → sender → bank) for currency learning + pooling.
+  const senderKey = effectiveSender(sender, message, parsed.bank_name)
+
+  // Reject only true non-transactions — NEVER for a missing currency (Egyptian
+  // wallet SMS often omit it). resolveCurrency backfills below.
+  if (!parsed.is_transaction || !parsed.amount) {
     await service.from('sms_parse_log')
       .update({
         status: 'rejected',
         confidence: parsed.confidence ?? 0,
-        // is_transaction but missing amount/currency → null_amount; otherwise not a transaction
         failure_code: parsed.is_transaction ? 'null_amount' : 'not_transaction',
         parse_method: parseMethod,
       })
       .eq('id', logId)
     return NextResponse.json({ ok: false, reason: 'not_transaction' })
   }
+
+  // Backfill the currency (literal → learned (user,sender) → base → EGP). When the
+  // value is a guess, `provisional` flags the row for one-time user confirmation.
+  const { currency: resolvedCurrency, provisional: currencyProvisional } = await resolveCurrency(service, {
+    userId,
+    sender: senderKey,
+    rawBody: message,
+    parsedCurrency: parsed.currency,
+  })
+  parsed.currency = resolvedCurrency
 
   if (parsed.confidence < CONFIRM_CONFIDENCE) {
     await service.from('sms_parse_log')
@@ -731,6 +747,36 @@ export async function POST(request: Request) {
   const addFailed = !!tx.error || (!postedSomething && !intentionalNoPost)
   if (tx.error) console.error('[sms/parse] auto-add insert failed', tx.error)
 
+  // Provisional currency: the row IS added (auto-when-confident), but the value
+  // was a guess — flag it so the user confirms the currency once.
+  const provisionalConfirm = currencyProvisional && !addFailed && postedSomething
+
+  // Learn the (user, sender) currency for next time — confirmed when it came from
+  // a literal/known mapping, provisional otherwise. Best-effort, after response.
+  if (senderKey && !addFailed && (postedSomething || tx.outcome === 'income_matched')) {
+    const learnConfirmed = !currencyProvisional
+    const ccy = parsed.currency
+    after(() => service.rpc('learn_sms_sender_currency', {
+      p_user: userId, p_sender: senderKey, p_currency: ccy, p_confirmed: learnConfirmed,
+    }))
+  }
+
+  // Keyword + sender frequency pools (Phase-2 data). Collect from any confirmed
+  // transaction tier (curated/template/AI), best-effort, after the response.
+  if (!addFailed && (postedSomething || tx.outcome === 'income_matched')) {
+    const tokens = extractKeywords(message)
+    after(async () => {
+      try {
+        if (senderKey) await service.rpc('bump_sms_sender', { p_sender: senderKey, p_is_txn: true })
+        for (const tk of tokens) {
+          await service.rpc('bump_sms_keyword', { p_keyword: tk.keyword, p_lang: tk.lang })
+        }
+      } catch (e) {
+        console.warn('[sms/parse] keyword pooling failed', e)
+      }
+    })
+  }
+
   // Promote the log row with the full parse result + an HONEST add status.
   // add_failed keeps parsed_ok=true and awaiting_confirmation=true so the row
   // surfaces in the in-app rescue banner and is recoverable via /api/sms/confirm.
@@ -739,7 +785,7 @@ export async function POST(request: Request) {
     .update({
       parsed_ok: true,
       status: addFailed ? 'add_failed' : tx.outcome === 'transfer_paired' ? 'paired' : 'logged',
-      failure_code: addFailed ? 'insert_failed' : null,
+      failure_code: addFailed ? 'insert_failed' : provisionalConfirm ? 'currency_provisional' : null,
       confidence: parsed.confidence,
       amount: parsed.amount,
       currency: parsed.currency,
@@ -747,7 +793,6 @@ export async function POST(request: Request) {
       bank_name: parsed.bank_name,
       // Persist the APPLIED category (e.g. Transfer / CC Payoff / Subscription) when known.
       category: tx.category ?? parsed.category,
-      awaiting_confirmation: addFailed,
       account_last4: cleanLast4,
       counterparty_last4: cleanCpLast4,
       kind: parsed.kind,
@@ -759,6 +804,7 @@ export async function POST(request: Request) {
       pattern_id: patternId,
       payment_instrument: paymentInstrument,
       learn_status: learnStatus,
+      awaiting_confirmation: addFailed || provisionalConfirm,
       expense_id: expenseId,
       income_id: incomeId,
       debt_payment_id: debtPaymentId,
@@ -779,8 +825,8 @@ export async function POST(request: Request) {
     tx.category === 'Transfer' || tx.category === 'Currency Exchange' || tx.category === 'ATM Cash Withdrawal'
 
   // Notification feed bucket (web center) — keep to the 3 known categories.
-  const notifCategory = addFailed ? 'sms_confirm' : isIncome || tx.outcome === 'income_matched' ? 'sms_income' : 'sms_expense'
-  const notifSeverity = addFailed ? 'warning' : isIncome || tx.outcome === 'income_matched' ? 'success' : 'info'
+  const notifCategory = addFailed || provisionalConfirm ? 'sms_confirm' : isIncome || tx.outcome === 'income_matched' ? 'sms_income' : 'sms_expense'
+  const notifSeverity = addFailed || provisionalConfirm ? 'warning' : isIncome || tx.outcome === 'income_matched' ? 'success' : 'info'
 
   // Push runs in after() so Vercel keeps the function alive until delivery,
   // and the result is logged — a missing FIREBASE_SERVICE_ACCOUNT_JSON or an
@@ -793,6 +839,14 @@ export async function POST(request: Request) {
       body: np.smsConfirmBody(amountStr, label),
       data: { kind: 'sms_confirm', hash, logId, amount: String(parsed.amount), currency: parsed.currency },
       collapseKey: `sms-confirm-${hash.slice(0, 12)}`,
+    }
+  } else if (provisionalConfirm) {
+    pushArgs = {
+      userId,
+      title: np.smsCurrencyConfirmTitle(amountStr),
+      body: np.smsCurrencyConfirmBody(label),
+      data: { kind: 'sms_currency_confirm', hash, logId, expenseId: expenseId ?? '', currency: parsed.currency ?? '' },
+      collapseKey: `sms-ccy-${hash.slice(0, 12)}`,
     }
   } else if (tx.outcome === 'income_matched') {
     pushArgs = {

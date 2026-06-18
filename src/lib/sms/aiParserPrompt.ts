@@ -100,7 +100,9 @@ merchantNormalized rules:
 - Return null for ATM withdrawals, transfers (instant_transfer_out/in), income, and whenever merchant is null.
 
 Defaults:
-- If currency is implied but not literal, prefer EGP first, then the user's local currency.
+- CURRENCY IS REQUIRED FOR A TRANSACTION: never return null currency when is_transaction is true. If no currency literal is present, infer it (EGP for Egyptian-format SMS / Vodafone Cash / Fawry / wallets, otherwise the most likely local currency). Only null when is_transaction is false.
+- AMOUNT when several numbers appear: pick the amount DEBITED/DEDUCTED from the user's own wallet/account/card (e.g. "وخصم 250 من محفظتك" → 250), NOT a balance ("الرصيد الحالي"/"رصيدك") and NOT an amount credited to a third party or to a phone line (mobile top-up value). Example: "تم شحن رصيد موبايلك ب 175 ... وخصم 250 من محفظتك ... الحالي 548.2" → amount = 250.
+- MOBILE RECHARGE / top-up of the user's own line ("شحن رصيد", "recharge", "top up") → kind = "purchase", category = "Utilities".
 - "merchant" is the place or person that received the money. Strip card last4, dates, and reference numbers from the merchant field.
 - Set "is_transaction" to false for OTPs, balance-only updates, marketing, or any non-spend message; in that case set every other field to null and confidence to 0.
 - "confidence" must reflect how sure you are about amount + merchant. Use 0.9+ only when both are unambiguous.

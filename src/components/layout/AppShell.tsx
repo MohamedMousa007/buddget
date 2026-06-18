@@ -277,6 +277,7 @@ function SmsPushActionHandler() {
           kind === 'sms_transfer' ||
           kind === 'sms_atm' ||
           kind === 'sms_subscription' ||
+          kind === 'sms_currency_confirm' ||
           kind === 'sms_cc_payoff') &&
         data.expenseId
       ) {

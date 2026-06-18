@@ -9,6 +9,8 @@ const RED = '#E50914'
 
 interface Props {
   lastReceivedAt: string | null
+  /** Fired when the user finishes the setup guide — arms the bridge + reveals the switch. */
+  onSetupComplete?: () => void
 }
 
 function timeAgo(iso: string): string {
@@ -26,7 +28,7 @@ function isRecent(iso: string | null): boolean {
   return Date.now() - new Date(iso).getTime() < 7 * 24 * 60 * 60 * 1000
 }
 
-export function SmsIosSetupCard({ lastReceivedAt }: Props) {
+export function SmsIosSetupCard({ lastReceivedAt, onSetupComplete }: Props) {
   const t = useT()
   const [showSetup, setShowSetup] = useState(false)
   const connected = isRecent(lastReceivedAt)
@@ -69,7 +71,12 @@ export function SmsIosSetupCard({ lastReceivedAt }: Props) {
         </button>
       </div>
 
-      {showSetup && <SmsTrackingGuide onClose={() => setShowSetup(false)} />}
+      {showSetup && (
+        <SmsTrackingGuide
+          onClose={() => setShowSetup(false)}
+          onComplete={onSetupComplete}
+        />
+      )}
     </>
   )
 }

@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { isNative, isAndroid } from '@/lib/native/isNative'
 import { registerPushNotifications } from '@/lib/native/pushNotifications'
-import { startSMSTracking } from '@/lib/native/smsTracker'
+import { resumeSmsTrackingIfEnabled } from '@/lib/native/smsTracker'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 
 interface NativeBootstrapProps {
@@ -44,9 +44,11 @@ export function NativeBootstrap({ session }: NativeBootstrapProps) {
       if (cancelled) return
       if (isAndroid()) {
         try {
-          await startSMSTracking(accessToken)
+          // Resume only if this device already has tracking ON — never auto-enable
+          // on a fresh sign-in (default OFF per device until the user opts in).
+          await resumeSmsTrackingIfEnabled(accessToken)
         } catch (e) {
-          console.error('[native-bootstrap] sms tracking failed', e)
+          console.error('[native-bootstrap] sms tracking resume failed', e)
         }
       }
     })()

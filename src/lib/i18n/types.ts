@@ -986,6 +986,9 @@ export interface Dictionary {
     deleteAccountCancel: string
     deleteAccountInProgress: string
     deleteAccountError: string
+    deleteAccountSuccessTitle: string
+    deleteAccountSuccessBody: string
+    deleteAccountSuccessButton: string
 
     photoTitle: string
     photoDesc: string
@@ -1192,6 +1195,9 @@ export interface Dictionary {
       smsIncomeBody: (bank: string) => string
       smsConfirmTitle: string
       smsConfirmBody: (amount: string, label: string | null) => string
+      /** Auto-added but the currency was assumed — tap to confirm/correct. */
+      smsCurrencyConfirmTitle: (amount: string) => string
+      smsCurrencyConfirmBody: (label: string | null) => string
       /** Non-spend movement (ATM / transfer / FX) — not counted as spending. */
       smsMovementTitle: (amount: string, label: string | null) => string
       smsMovementBody: (kindLabel: string) => string
@@ -1816,6 +1822,7 @@ export interface Dictionary {
     currencyDetected: (currency: string) => string
     currencyChange: string
     addSecondaryCurrency: string
+    secondaryCurrencyTitle: string
     secondaryCurrencySelected: (currency: string) => string
     secondaryCurrencyHint: string
     secondaryCurrencyRemove: string
@@ -1843,13 +1850,9 @@ export interface Dictionary {
     spendingProfileTitle: string
     spendingProfileSubtitle: string
     incomeRangeLabel: string
-    incomeRangeLabels: {
-      under_1k: string
-      '1k_3k': string
-      '3k_7k': string
-      '7k_15k': string
-      '15k_plus': string
-    }
+    incomeRangeUnder: (max: string) => string
+    incomeRangeBetween: (min: string, max: string) => string
+    incomeRangePlus: (min: string) => string
     moneyManagementLabel: string
     moneyManagementLabels: {
       spreadsheet: string

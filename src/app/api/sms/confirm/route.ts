@@ -13,11 +13,16 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
 import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
 import type { SmsExpenseKind } from '@/lib/sms/createSmsExpense'
 import { createSmsTransaction } from '@/lib/sms/dispatch'
+import { effectiveSender } from '@/lib/sms/routingKey'
 
-const bodySchema = z.union([
-  z.object({ logId: z.string().uuid() }),
-  z.object({ hash: z.string().min(1) }),
-])
+const bodySchema = z
+  .object({
+    logId: z.string().uuid().optional(),
+    hash: z.string().min(1).optional(),
+    // Optional currency confirmation/correction for `currency_provisional` rows.
+    currency: z.string().min(1).max(8).optional(),
+  })
+  .refine((d) => !!d.logId || !!d.hash, { message: 'Provide logId or hash' })
 
 export async function POST(request: Request) {
   const userId = await resolveApiUserId(request)
@@ -40,21 +45,54 @@ export async function POST(request: Request) {
   // Fetch the pending row
   let query = service
     .from('sms_parse_log')
-    .select('id, kind, clean_title, merchant_normalized, merchant, bank_name, amount, currency, category, raw_sms_summary, source, raw_body, received_at, account_last4, counterparty_last4, new_balance')
+    .select('id, kind, clean_title, merchant_normalized, merchant, bank_name, amount, currency, category, raw_sms_summary, source, raw_body, received_at, account_last4, counterparty_last4, new_balance, sender, expense_id, income_id, failure_code')
     .eq('user_id', userId)
     .eq('awaiting_confirmation', true)
     .eq('parsed_ok', true)
 
-  if ('logId' in parsed.data) {
+  if (parsed.data.logId) {
     query = query.eq('id', parsed.data.logId)
   } else {
-    query = query.eq('sms_hash', parsed.data.hash)
+    query = query.eq('sms_hash', parsed.data.hash!)
   }
 
   const { data: row } = await query.maybeSingle()
 
   if (!row) {
     return NextResponse.json({ ok: false, reason: 'not_found' }, { status: 404 })
+  }
+
+  const senderKey = effectiveSender(row.sender, row.raw_body ?? '', row.bank_name)
+
+  // CURRENCY CONFIRMATION path: the row was already auto-added (provisional
+  // currency). Update the existing record in place + learn the (user,sender)
+  // currency — NEVER create a second row.
+  if (row.expense_id || row.income_id) {
+    const confirmedCurrency = parsed.data.currency ?? row.currency
+    if (confirmedCurrency) {
+      if (row.expense_id) {
+        await service.from('expenses').update({ currency: confirmedCurrency }).eq('id', row.expense_id).eq('user_id', userId)
+      }
+      if (row.income_id) {
+        await service.from('income_sources').update({ currency: confirmedCurrency }).eq('id', row.income_id).eq('user_id', userId)
+      }
+      if (senderKey) {
+        await service.rpc('learn_sms_sender_currency', {
+          p_user: userId, p_sender: senderKey, p_currency: confirmedCurrency, p_confirmed: true,
+        })
+      }
+    }
+    await service
+      .from('sms_parse_log')
+      .update({ awaiting_confirmation: false, status: 'confirmed', failure_code: null, currency: confirmedCurrency })
+      .eq('id', row.id)
+    return NextResponse.json({
+      ok: true,
+      currencyConfirmed: true,
+      expenseId: row.expense_id,
+      incomeId: row.income_id,
+      currency: confirmedCurrency,
+    })
   }
 
   const receivedAtIso = new Date(row.received_at ?? Date.now()).toISOString()
