@@ -338,7 +338,7 @@ async function learnPattern(
       console.warn('[sms/parse] learned regex rejected (no match)', {
         sender, regex: learned.regex_pattern,
       })
-      return recordLearnOutcome(service, logId, 'regex_no_match')
+      return recordLearnOutcome(service, logId, `regex_no_match: ${learned.regex_pattern}`.slice(0, 200))
     }
 
     // UNIQUE INDEX on (sender, md5(regex_pattern)) silently ignores exact duplicates.
@@ -397,9 +397,13 @@ Extracted: amount=${parsed.amount}, currency=${parsed.currency}, merchant=${JSON
 Rules:
 - Use numbered capture groups (NOT named groups)
 - Escape ALL literal special regex chars: . * ( ) [ ] { } + ? ^ $ |
+- Replace EVERY run of whitespace with \\s+ (SMS spacing is irregular — double spaces, tabs, RTL marks between words)
+- Replace masked account/card numbers (digits mixed with *, e.g. 507803******6685) ENTIRELY with [\\d*]+
 - Use [\\d,]+\\.?\\d* for amounts that may contain comma separators
-- Replace transaction-specific values (names, amounts, reference numbers) with flexible patterns like \\S+, .+?, or \\d+
-- The generated regex MUST match the exact SMS shown above when tested with new RegExp(regex_pattern).test(message)
+- Replace transaction-specific values (names, amounts, reference numbers, dates, times) with flexible patterns like \\S+, .+?, or \\d+
+- Do NOT use ^ or $ anchors
+- Keep Arabic words exactly as literals
+- The generated regex MUST match the exact SMS shown above when tested with new RegExp(regex_pattern).test(message) — verify it matches before responding
 
 Return JSON only (no markdown fences):
 {
