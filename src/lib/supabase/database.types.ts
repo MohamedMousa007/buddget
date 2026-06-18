@@ -1632,6 +1632,8 @@ export type Database = {
           debt_payment_id: string | null
           savings_transaction_id: string | null
           counterparty_last4: string | null
+          learn_status: string | null
+          learn_template_id: string | null
           user_id: string
         }
         Insert: {
@@ -1673,6 +1675,8 @@ export type Database = {
           debt_payment_id?: string | null
           savings_transaction_id?: string | null
           counterparty_last4?: string | null
+          learn_status?: string | null
+          learn_template_id?: string | null
           user_id: string
         }
         Update: {
@@ -1714,6 +1718,8 @@ export type Database = {
           debt_payment_id?: string | null
           savings_transaction_id?: string | null
           counterparty_last4?: string | null
+          learn_status?: string | null
+          learn_template_id?: string | null
           user_id?: string
         }
         Relationships: [

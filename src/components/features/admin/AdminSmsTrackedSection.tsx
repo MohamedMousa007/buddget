@@ -34,6 +34,27 @@ const METHOD_CHIPS: Record<string, { label: string; cls: string }> = {
   ai:       { label: 'AI',       cls: 'border-amber-500/20 text-amber-400 bg-amber-500/10' },
 }
 
+/** AI template-learning outcome chip (shown under the AI method chip). */
+const GREEN = 'border-green-500/20 text-green-400 bg-green-500/10'
+const AMBER = 'border-amber-500/20 text-amber-400 bg-amber-500/10'
+const RED = 'border-red-500/20 text-[var(--color-brand-red)] bg-red-500/10'
+const BLUE = 'border-blue-500/20 text-blue-400 bg-blue-500/10'
+const LEARN_CHIPS: Record<string, { label: string; cls: string }> = {
+  learned: { label: 'learned', cls: GREEN },
+  duplicate: { label: 'dup', cls: GREEN },
+  pending: { label: 'pending', cls: BLUE },
+  cap_reached: { label: 'cap', cls: AMBER },
+  skipped_low_conf: { label: 'low-conf', cls: AMBER },
+  skipped_no_key: { label: 'no-key', cls: AMBER },
+  skipped_not_tx: { label: 'not-tx', cls: AMBER },
+  gemini_error: { label: 'ai-err', cls: RED },
+  no_json: { label: 'no-json', cls: RED },
+  no_regex_or_amount: { label: 'bad-rule', cls: RED },
+  regex_no_match: { label: 'no-match', cls: RED },
+  insert_failed: { label: 'ins-fail', cls: RED },
+  exception: { label: 'exc', cls: RED },
+}
+
 /**
  * Row status chip. "Confirmed" (green) is the only true success: a push WAS
  * delivered AND the app acked the render. "In-app only" (amber) means the app
@@ -250,6 +271,20 @@ export function AdminSmsTrackedSection({ admin }: Props) {
                             {method.label}
                           </span>
                         )}
+                        {row.parse_method === 'ai' && row.learn_status && (() => {
+                          const lc = LEARN_CHIPS[row.learn_status] ?? {
+                            label: row.learn_status,
+                            cls: 'border-[var(--color-brand-border)] text-[var(--color-brand-text-muted)] bg-[var(--color-brand-elevated)]',
+                          }
+                          return (
+                            <span
+                              title={`AI learning: ${row.learn_status}`}
+                              className={`block mt-1 mx-auto w-fit font-mono text-[8px] px-1 py-0.5 rounded border ${lc.cls}`}
+                            >
+                              {lc.label}
+                            </span>
+                          )
+                        })()}
                       </td>
                       <td className="py-2.5 pr-3 text-center">{pushCell(row)}</td>
                       <td className="py-2.5 pr-3 text-center">{inAppCell(row)}</td>

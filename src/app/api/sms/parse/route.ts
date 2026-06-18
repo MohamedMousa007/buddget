@@ -249,6 +249,23 @@ async function recordTemplateUser(
 // Pattern learning (async, never blocks the response)
 // ---------------------------------------------------------------------------
 
+/** Persist the template-learning outcome on the parse-log row (admin-visible). */
+async function recordLearnOutcome(
+  service: ReturnType<typeof createServiceRoleClient>,
+  logId: string,
+  status: string,
+  templateId: string | null = null,
+): Promise<void> {
+  try {
+    await service
+      .from('sms_parse_log')
+      .update({ learn_status: status, learn_template_id: templateId })
+      .eq('id', logId)
+  } catch (e) {
+    console.warn('[sms/parse] recordLearnOutcome failed', e)
+  }
+}
+
 async function learnPattern(
   message: string,
   sender: string,
@@ -256,6 +273,7 @@ async function learnPattern(
   service: ReturnType<typeof createServiceRoleClient>,
   apiKey: string,
   userId: string,
+  logId: string,
 ): Promise<void> {
   try {
     // Global cap: 10 templates per sender prevents runaway growth
@@ -263,7 +281,7 @@ async function learnPattern(
       .from('sms_tracking_templates_ai')
       .select('*', { count: 'exact', head: true })
       .eq('sender', sender)
-    if ((count ?? 0) >= 10) return
+    if ((count ?? 0) >= 10) return recordLearnOutcome(service, logId, 'cap_reached')
 
     const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
       method: 'POST',
@@ -274,19 +292,22 @@ async function learnPattern(
         generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
       }),
     })
-    if (!res.ok) return
+    if (!res.ok) {
+      console.warn('[sms/parse] pattern learning: Gemini regex-gen HTTP error', { sender, status: res.status })
+      return recordLearnOutcome(service, logId, 'gemini_error')
+    }
 
     const raw = (await res.json()) as { candidates?: Array<{ content: { parts: Array<{ text: string }> } }> }
     const text = raw.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
     const jsonStr = extractJson(text)
     if (!jsonStr) {
       console.warn('[sms/parse] pattern learning: Gemini returned no JSON', { sender, text: text.slice(0, 200) })
-      return
+      return recordLearnOutcome(service, logId, 'no_json')
     }
     const learned = JSON.parse(jsonStr) as { regex_pattern?: string; mapping_rules?: MappingRules }
     if (!learned.regex_pattern || !learned.mapping_rules?.amount) {
       console.warn('[sms/parse] pattern learning: missing regex_pattern or amount rule', { sender, learned })
-      return
+      return recordLearnOutcome(service, logId, 'no_regex_or_amount')
     }
 
     // Validate: must compile AND match the original message
@@ -295,7 +316,7 @@ async function learnPattern(
       console.warn('[sms/parse] learned regex rejected (no match)', {
         sender, regex: learned.regex_pattern,
       })
-      return
+      return recordLearnOutcome(service, logId, 'regex_no_match')
     }
 
     // UNIQUE INDEX on (sender, md5(regex_pattern)) silently ignores exact duplicates.
@@ -317,10 +338,12 @@ async function learnPattern(
 
     if (tplErr && tplErr.code !== '23505') {
       console.warn('[sms/parse] template insert failed', tplErr)
+      return recordLearnOutcome(service, logId, 'insert_failed')
     } else if (!tplErr && inserted) {
       console.log('[sms/parse] template learned', { sender, regex: learned.regex_pattern })
       await recordTemplateUser(inserted.id, userId, service)
       await checkAndAutoPromote(sender, service)
+      return recordLearnOutcome(service, logId, 'learned', inserted.id)
     } else {
       // Duplicate template (23505): record this user in the junction so the
       // distinct-user count reflects everyone whose SMS produced this regex.
@@ -331,10 +354,12 @@ async function learnPattern(
         .eq('regex_pattern', learned.regex_pattern)
         .single()
       if (existing) await recordTemplateUser(existing.id, userId, service)
+      return recordLearnOutcome(service, logId, 'duplicate', existing?.id ?? null)
     }
   } catch (e) {
-    // Best-effort — never propagate, but keep the failure visible in logs.
+    // Best-effort — never propagate, but keep the failure visible in logs + admin.
     console.warn('[sms/parse] pattern learning failed', e)
+    await recordLearnOutcome(service, logId, 'exception')
   }
 }
 
@@ -493,6 +518,8 @@ export async function POST(request: Request) {
   let patternId: string | null = null
   let paymentInstrument: string | null = null
   let txDay: string | null = null
+  // AI template-learning outcome, persisted on the log row for admin visibility.
+  let learnStatus: string | null = null
 
   const curated = matchCuratedPattern(message, sender ?? null)
 
@@ -578,9 +605,12 @@ export async function POST(request: Request) {
     // frozen the moment the response returns and never completes on Vercel.
     // Learn under a stable key: hotline (cross-platform) → sender → bank name.
     const learnKey = effectiveSender(sender, message, parsed.bank_name)
-    if (learnKey && parsed.confidence >= PATTERN_LEARN_CONFIDENCE && parsed.is_transaction) {
-      const learnArgs = [message, learnKey, parsed, service, apiKey, userId] as const
-      after(() => learnPattern(...learnArgs))
+    if (!parsed.is_transaction) learnStatus = 'skipped_not_tx'
+    else if (!learnKey) learnStatus = 'skipped_no_key'
+    else if (parsed.confidence < PATTERN_LEARN_CONFIDENCE) learnStatus = 'skipped_low_conf'
+    else {
+      learnStatus = 'pending' // learnPattern overwrites with its real outcome
+      after(() => learnPattern(message, learnKey, parsed, service, apiKey, userId, logId))
     }
   }
 
@@ -686,6 +716,7 @@ export async function POST(request: Request) {
       parse_method: parseMethod,
       pattern_id: patternId,
       payment_instrument: paymentInstrument,
+      learn_status: learnStatus,
       expense_id: expenseId,
       income_id: incomeId,
       debt_payment_id: debtPaymentId,
