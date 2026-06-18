@@ -1,11 +1,13 @@
 'use client'
 
 import { useCallback, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { APP_CONFIG } from '@/lib/config'
 import { appOrigin } from '@/lib/apiBase'
 import { mapOAuthError } from '@/components/auth/authErrors'
 import { isOAuthProviderEnabled, type OAuthProvider } from '@/lib/auth/oauthProviders'
+import { routeAfterAuth } from '@/lib/auth/postAuthRedirect'
 import { useT } from '@/lib/i18n'
 import { isNative } from '@/lib/native/isNative'
 
@@ -19,6 +21,7 @@ import { isNative } from '@/lib/native/isNative'
  */
 export function useOAuthSignIn(nextPath: string) {
   const t = useT()
+  const router = useRouter()
   const [pending, setPending] = useState<OAuthProvider | null>(null)
   const [error, setError] = useState('')
 
@@ -44,7 +47,13 @@ export function useOAuthSignIn(nextPath: string) {
               setPending(null)
               return
             }
-            // Success: onAuthStateChange('SIGNED_IN') closes the modal + routes.
+            // Route new users to /onboarding, returning users to nextPath.
+            // onAuthStateChange closes the modal; we handle the route here since
+            // native sign-in never triggers a server-side middleware redirect.
+            const supabase = createClient()
+            const { data: userData } = await supabase.auth.getUser()
+            router.replace(routeAfterAuth(userData.user, nextPath))
+            setPending(null)
             return
           }
         }
@@ -67,7 +76,7 @@ export function useOAuthSignIn(nextPath: string) {
         setPending(null)
       }
     },
-    [nextPath, t],
+    [nextPath, t, router],
   )
 
   return {
