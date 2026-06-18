@@ -335,14 +335,24 @@ describe('nativeSocialSignIn — Google — iOS', () => {
     expect(result).toEqual({ error: null, cancelled: false })
   })
 
-  it('passes the idToken to supabase with provider=google', async () => {
+  it('passes the idToken + nonce to supabase with provider=google', async () => {
     const { nativeSocialSignIn } = await freshModule({ android: false })
     mocks.login.mockResolvedValueOnce({ result: { idToken: 'g-ios-token' } })
     await nativeSocialSignIn('google')
-    expect(mocks.signInWithIdToken).toHaveBeenCalledWith({
-      provider: 'google',
-      token: 'g-ios-token',
-    })
+    expect(mocks.signInWithIdToken).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provider: 'google',
+        token: 'g-ios-token',
+        nonce: expect.any(String),
+      }),
+    )
+    // The hashed nonce must also have been forwarded to login
+    expect(mocks.login).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provider: 'google',
+        options: expect.objectContaining({ nonce: expect.any(String) }),
+      }),
+    )
   })
 
   it('returns {error:null,cancelled:true} when user cancels', async () => {
