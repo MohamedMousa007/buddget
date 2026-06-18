@@ -14,36 +14,69 @@ import type { BuddgyOrbPosition } from '@/lib/store/useSettingsStore'
 const DESKTOP_BP = 1024
 const PANEL_W = 400
 const PANEL_H = 600
-const EDGE_GAP = 12 // gap from the viewport edge (matches the orb inset)
+const EDGE_GAP = 12 // gap from the viewport / safe-area edge (matches the orb inset)
 const ORB_SIZE = 44
-const FAB_CLEAR = 96 // keep the bottom-right QuickAdd FAB uncovered on the right side
+const FAB_CLEAR = 96 // desktop: keep the bottom-right QuickAdd FAB uncovered
+const NAV_CLEAR = 76 // mobile: keep the bottom tab bar uncovered
+const HEADER_CLEAR = 52 // mobile: keep the fixed top header uncovered
 
-/** Desktop panel geometry, anchored to the orb and clamped into the viewport. */
-interface DesktopPanel {
+/** Panel geometry, anchored to the orb and clamped inside the safe area. */
+interface PanelGeometry {
   side: 'left' | 'right'
   top: number
+  width: number
   height: number
+  /** Horizontal inset from the orb's edge (incl. safe-area). */
+  sideInset: number
   /** Vertical transform-origin (px from the panel top) — animates open from the orb. */
   originY: number
 }
 
-function computeDesktopPanel(orb: BuddgyOrbPosition): DesktopPanel | null {
-  if (typeof window === 'undefined' || window.innerWidth < DESKTOP_BP) return null
+/** Resolved safe-area insets in px (mirrored from CSS env via custom props). */
+function safeAreaInsets(): { top: number; bottom: number; left: number; right: number } {
+  if (typeof window === 'undefined') return { top: 0, bottom: 0, left: 0, right: 0 }
+  const cs = getComputedStyle(document.documentElement)
+  const px = (v: string) => parseFloat(cs.getPropertyValue(v)) || 0
+  return {
+    top: px('--sai-top'),
+    bottom: px('--sai-bottom'),
+    left: px('--sai-left'),
+    right: px('--sai-right'),
+  }
+}
+
+function computePanel(orb: BuddgyOrbPosition): PanelGeometry | null {
+  if (typeof window === 'undefined') return null
+  const vw = window.innerWidth
   const vh = window.innerHeight
-  const height = Math.min(PANEL_H, vh - EDGE_GAP * 2)
+  const ins = safeAreaInsets()
+  const desktop = vw >= DESKTOP_BP
+
+  const width = desktop
+    ? PANEL_W
+    : Math.min(PANEL_W, vw - ins.left - ins.right - EDGE_GAP * 2)
+  const availH = vh - ins.top - ins.bottom - EDGE_GAP * 2
+  const height = Math.min(desktop ? PANEL_H : Math.round(vh * 0.82), PANEL_H, availH)
+
+  // The bottom nav (mobile) / floating FAB (desktop, right side only) must stay clear.
+  const bottomClear = desktop ? (orb.side === 'right' ? FAB_CLEAR : EDGE_GAP) : NAV_CLEAR
+  const topClear = desktop ? EDGE_GAP : HEADER_CLEAR + EDGE_GAP
+
   const orbCenter = orb.top + ORB_SIZE / 2
-  // On the right the panel must clear the bottom-right FAB; on the left a plain edge gap is enough.
-  const bottomClear = orb.side === 'right' ? FAB_CLEAR : EDGE_GAP
-  const maxTop = vh - height - bottomClear
-  const top = Math.max(EDGE_GAP, Math.min(maxTop, orbCenter - height / 2))
+  const minTop = ins.top + topClear
+  const maxTop = Math.max(minTop, vh - ins.bottom - height - bottomClear)
+  const top = Math.max(minTop, Math.min(maxTop, orbCenter - height / 2))
   const originY = Math.max(0, Math.min(height, orbCenter - top))
-  return { side: orb.side, top, height, originY }
+  const sideInset = (orb.side === 'left' ? ins.left : ins.right) + EDGE_GAP
+
+  return { side: orb.side, top, width, height, sideInset, originY }
 }
 
 /**
- * Full-screen (mobile) / floating (desktop) Buddget AI assistant. On desktop the
- * panel opens anchored to the draggable Buddgy orb's current edge position rather
- * than a fixed corner, so it never lands on the QuickAdd FAB. Logic lives in `useAIChat`.
+ * Buddget AI assistant panel. Opens anchored to the draggable Buddgy orb's
+ * current edge position — on every platform — so it emerges from the icon and
+ * never lands on the QuickAdd FAB (desktop) or bottom tab bar (mobile). Stays
+ * inside the safe area. Logic lives in `useAIChat`.
  */
 export function AIChat() {
   const {
@@ -62,48 +95,18 @@ export function AIChat() {
   } = useAIChat()
 
   const orb = useSettingsStore((s) => s.buddgyOrb)
-  const [panel, setPanel] = useState<DesktopPanel | null>(() => computeDesktopPanel(orb))
+  const [panel, setPanel] = useState<PanelGeometry | null>(() => computePanel(orb))
 
   useEffect(() => {
-    const recompute = () => setPanel(computeDesktopPanel(orb))
+    const recompute = () => setPanel(computePanel(orb))
     recompute()
     window.addEventListener('resize', recompute)
     return () => window.removeEventListener('resize', recompute)
   }, [orb])
 
-  const isDesktop = panel != null
-
-  const panelClass = isDesktop
-    ? 'fixed z-50 flex flex-col overflow-hidden bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.7)]'
-    : 'fixed bottom-0 start-0 end-0 z-50 flex flex-col max-h-[80vh] bg-[var(--color-brand-card)] rounded-t-[26px] border-t border-[var(--color-brand-border)] shadow-[0_-20px_50px_-20px_rgba(0,0,0,0.7)]'
-
-  const panelStyle = isDesktop
-    ? {
-        top: panel.top,
-        ...(panel.side === 'left' ? { left: EDGE_GAP } : { right: EDGE_GAP }),
-        width: PANEL_W,
-        height: panel.height,
-        transformOrigin: `${panel.side} ${panel.originY}px`,
-      }
-    : undefined
-
-  const motionProps = isDesktop
-    ? {
-        initial: { opacity: 0, scale: 0.92 },
-        animate: { opacity: 1, scale: 1 },
-        exit: { opacity: 0, scale: 0.92 },
-        transition: { duration: 0.22, ease: [0.22, 1, 0.36, 1] as const },
-      }
-    : {
-        initial: { y: '110%' },
-        animate: { y: 0 },
-        exit: { y: '110%' },
-        transition: { duration: 0.26, ease: [0.22, 1, 0.36, 1] as const },
-      }
-
   return (
     <AnimatePresence>
-      {isOpen && (
+      {isOpen && panel && (
         <>
           <motion.div
             initial={{ opacity: 0 }}
@@ -117,9 +120,18 @@ export function AIChat() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="ai-chat-title"
-            style={panelStyle}
-            {...motionProps}
-            className={panelClass}
+            style={{
+              top: panel.top,
+              ...(panel.side === 'left' ? { left: panel.sideInset } : { right: panel.sideInset }),
+              width: panel.width,
+              height: panel.height,
+              transformOrigin: `${panel.side} ${panel.originY}px`,
+            }}
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.92 }}
+            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed z-50 flex flex-col overflow-hidden bg-[var(--color-brand-card)] rounded-[22px] border border-[var(--color-brand-border)] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.7)]"
           >
             <AIChatHeader onClose={close} />
 
