@@ -41,7 +41,7 @@ export async function generateBudgetPlan(params: {
   const savingsRate =
     params.income > 0 ? Math.round((Math.max(0, projectedSavings) / params.income) * 100) : 0
 
-  const systemPrompt = `You are Buddget AI, a financial advisor for the Buddget app.
+  const systemPrompt = `You are Buddgy, a financial advisor for the Buddget app.
 Generate one short motivational tip. The plan has ONLY expense categories — no Savings category row.
 Projected savings = income minus those expenses (${projectedSavings} ${params.currency}/month, ~${savingsRate}% of income).
 

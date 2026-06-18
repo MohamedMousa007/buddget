@@ -10,9 +10,9 @@ import {
   snapshot,
   emptySnapshot,
   mergeSnapshots,
-  hasMeaningfulLocalState,
 } from '@/lib/supabase/remote'
 import { markHydrated } from '@/hooks/remote/hydrateGuard'
+import { ensureMarketDataFresh } from '@/lib/market/marketData'
 import { applyTheme } from '@/lib/theme/applyTheme'
 import type { Snapshot } from '@/lib/supabase/remote'
 
@@ -128,19 +128,13 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     async function pull() {
       useFinanceStore.getState().setDataReady(false)
       try {
-        const initial = useFinanceStore.getState()
-        const localSnap = snapshot(initial)
-        const localHasData = hasMeaningfulLocalState(localSnap)
-
-        const alreadyHydratedForUser = initial.profile.id === userId
-        if (alreadyHydratedForUser && localHasData) {
-          return
-        }
-
-        // Always pull the full snapshot — even on a fresh login with no local
-        // data — so `dataReady` only flips once every dashboard slice is present.
-        // Pulling only core singletons here would render zeroed numbers that then
-        // visibly populate as per-page hooks backfill the transactional data.
+        // Always pull the full snapshot before flipping dataReady — even on a
+        // warm start where this user's data is already in localStorage. Skipping
+        // the pull (the old `profile.id === userId && hasLocalData` early-return)
+        // lifted the splash on CACHED numbers, then the per-page `useHydrate*`
+        // hooks refetched and merged server rows after mount, visibly changing
+        // the dashboard totals. Pulling here marks every slice hydrated so those
+        // hooks short-circuit → the splash covers the whole sync, no flicker.
         const server = await pullAll(supabase, userId)
         if (server) {
           // Re-snapshot right before the merge so edits made during the
@@ -182,6 +176,15 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       } catch (e) {
         console.error('[finance sync] pull failed', e)
       } finally {
+        // Load FX rates + gold UNDER the splash so converted totals are final on
+        // first paint (no post-load currency/gold flicker). Freshness-gated, and
+        // capped so a slow/down market API can't pin the splash open.
+        try {
+          await Promise.race([
+            ensureMarketDataFresh(),
+            new Promise((r) => setTimeout(r, 3500)),
+          ])
+        } catch { /* keep cached/default rates */ }
         prevSnap.current = snapshot(useFinanceStore.getState())
         lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
         hydrated.current = true

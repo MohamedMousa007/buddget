@@ -1,47 +1,18 @@
 'use client'
 
-import { useEffect, useCallback } from 'react'
+import { useEffect } from 'react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-
-const FOUR_HOURS = 4 * 60 * 60 * 1000
+import { fetchExchangeRates, RATES_TTL_MS } from '@/lib/market/marketData'
 
 export function useRates() {
-  const { exchangeRates, lastRatesFetch, updateRates } = useFinanceStore()
-
-  const fetchRates = useCallback(async () => {
-    try {
-      const { apiFetch } = await import('@/lib/apiBase')
-      const res = await apiFetch('/api/rates')
-      if (!res.ok) return
-
-      const data = await res.json()
-      if (data.rates && typeof data.rates === 'object') {
-        updateRates(data.rates as Record<string, number>)
-      }
-      if (
-        data.gold &&
-        typeof data.gold === 'object' &&
-        typeof data.gold.pricePerGramUsd === 'number' &&
-        data.gold.pricePerGramUsd > 0
-      ) {
-        const usdToAed = (data.rates?.['USD_AED'] as number) ?? 3.6725
-        const aedPerGram = data.gold.pricePerGramUsd * usdToAed
-        useFinanceStore.getState().updateGoldPrice(aedPerGram)
-      }
-    } catch (err) {
-      console.warn('Failed to fetch exchange rates, using cached values', err)
-    }
-  }, [updateRates])
+  const exchangeRates = useFinanceStore((s) => s.exchangeRates)
+  const lastRatesFetch = useFinanceStore((s) => s.lastRatesFetch)
 
   useEffect(() => {
     const shouldFetch =
-      !lastRatesFetch ||
-      Date.now() - new Date(lastRatesFetch).getTime() > FOUR_HOURS
+      !lastRatesFetch || Date.now() - new Date(lastRatesFetch).getTime() > RATES_TTL_MS
+    if (shouldFetch) void fetchExchangeRates()
+  }, [lastRatesFetch])
 
-    if (shouldFetch) {
-      fetchRates()
-    }
-  }, [lastRatesFetch, fetchRates])
-
-  return { exchangeRates, lastRatesFetch, refetch: fetchRates }
+  return { exchangeRates, lastRatesFetch, refetch: fetchExchangeRates }
 }

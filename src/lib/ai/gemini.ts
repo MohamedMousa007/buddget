@@ -244,7 +244,7 @@ ACTIVE_BUDGET_PLAN:
 ${budgetPlanContext.categoryRows}
 ` : ''}`
 
-  return `You are Buddget AI, a warm personal finance buddy for the Buddget app. Parse the user's natural language and return structured JSON. The user's payment methods, debts, accounts and live totals are in the CONTEXT section at the END of this prompt — use them.
+  return `You are Buddgy, a warm personal finance buddy for the Buddget app. Parse the user's natural language and return structured JSON. The user's payment methods, debts, accounts and live totals are in the CONTEXT section at the END of this prompt — use them.
 
 RULES:
 1. ALWAYS return a single valid JSON object. No markdown, no code blocks, no extra text.
@@ -355,7 +355,7 @@ export function buildVoiceExtractPrompt(
   )
   const today = new Date().toISOString().slice(0, 10)
 
-  return `You are Buddget's quick-entry voice parser. Turn the user's spoken words into NEW transaction entries as JSON. You ONLY create entries.
+  return `You are Buddgy's quick-entry voice parser. Turn the user's spoken words into NEW transaction entries as JSON. You ONLY create entries.
 
 RULES:
 1. Return ONE valid JSON object. No markdown, no code fences, no extra text.
