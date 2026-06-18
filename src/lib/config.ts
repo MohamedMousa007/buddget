@@ -7,17 +7,3 @@ export const APP_CONFIG = {
   noReplyEmail: 'noreply@buddget.app',
   domain: 'buddget.app',
 } as const
-
-const base = APP_CONFIG.url.replace(/\/$/, '')
-
-export const AUTH_REDIRECTS = {
-  afterLogin: '/',
-  afterSignup: '/onboarding',
-  afterLogout: '/',
-  /**
-   * Supabase `resetPasswordForEmail` fallback when `window` is unavailable (SSR).
-   * Client code should prefer `window.location.origin` so production links never point at localhost.
-   */
-  passwordReset: `${base}/auth/callback?next=/reset-password/confirm`,
-  authCallback: `${base}/auth/callback`,
-} as const
