@@ -30,6 +30,14 @@
 				<string>app.buddget</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>google-signin</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.778240192154-msqujjuarl3k374c6gutnutj0nooqcjd</string>
+			</array>
+		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>2</string>
@@ -74,5 +82,7 @@
 	<string>Buddget saves receipt images to your photo library.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Buddget uses speech recognition to let you add expenses by voice.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
