@@ -7,6 +7,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useLocale, useT } from '@/lib/i18n'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
+import { apiFetchAuth } from '@/lib/apiBase'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 import {
   getOnboardingCompletionPercent,
@@ -99,6 +100,7 @@ export function useProfilePage() {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [deleteSuccess, setDeleteSuccess] = useState(false)
 
   const openDeleteDialog = useCallback(() => {
     setDeleteError(null)
@@ -114,29 +116,26 @@ export function useProfilePage() {
     setDeleting(true)
     setDeleteError(null)
     try {
-      const res = await fetch('/api/account/delete', { method: 'POST' })
+      const res = await apiFetchAuth('/api/account/delete', { method: 'POST' })
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as { error?: string } | null
         throw new Error(body?.error || t.profile.deleteAccountError)
       }
-      // Clear local state, sign out server-side, and land the user on the marketing home.
+      // Wipe local state and revoke the client session (auth user is already gone server-side).
       clearBudgetData()
       try {
         await signOut()
       } catch {
-        // ignore sign-out failure — the auth user is already deleted
+        // ignore — the auth user is already deleted, signOut may 400
       }
-      // Hard navigation so the middleware + Supabase client re-initialise cleanly.
-      if (typeof window !== 'undefined') {
-        window.location.assign('/')
-      } else {
-        router.replace('/')
-      }
+      // Show success screen; navigation to home happens on user acknowledgement.
+      setDeleteOpen(false)
+      setDeleteSuccess(true)
     } catch (e) {
       setDeleteError(e instanceof Error ? e.message : t.profile.deleteAccountError)
       setDeleting(false)
     }
-  }, [router, signOut, t.profile.deleteAccountError])
+  }, [signOut, t.profile.deleteAccountError])
 
   const supabaseConfigured = useMemo(
     () =>
@@ -182,6 +181,7 @@ export function useProfilePage() {
     deleteOpen,
     deleting,
     deleteError,
+    deleteSuccess,
     openDeleteDialog,
     closeDeleteDialog,
     confirmDelete,

@@ -7,6 +7,7 @@ import { SettingsSubPageShell } from '@/components/features/settings/SettingsSub
 import { SettingsSecuritySection } from '@/components/features/settings/SettingsSecuritySection'
 import { SettingsPaymentMethodsSection } from '@/components/features/settings/SettingsPaymentMethodsSection'
 import { DeleteAccountDialog } from '@/components/features/profile/DeleteAccountDialog'
+import { AccountDeletedScreen } from '@/components/features/profile/AccountDeletedScreen'
 import { ProfileFieldRow } from '@/components/profile/ProfileFieldRow'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
@@ -106,6 +107,8 @@ export default function SettingsAccountPage() {
         inProgress={p.deleting}
         error={p.deleteError}
       />
+
+      {p.deleteSuccess && <AccountDeletedScreen />}
     </SettingsSubPageShell>
   )
 }
