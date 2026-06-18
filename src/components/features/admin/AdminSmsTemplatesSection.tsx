@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { RefreshCw, Trash2 } from 'lucide-react'
+import { RefreshCw, Trash2, ListTree, X } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import type { AdminPanelModel } from '@/hooks/useAdminPanel'
 import type { SmsTemplateRow } from '@/types/admin'
@@ -14,7 +14,11 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
   const {
     smsTemplates, smsTemplatesLoading, loadSmsTemplates,
     updateSmsTemplate, deleteSmsTemplate, bulkToggleSmsTemplates,
+    keywordPool, senderPool, keywordPoolLoading, loadKeywordPool,
   } = admin
+
+  const [showPool, setShowPool] = useState(false)
+  const openPool = () => { setShowPool(true); void loadKeywordPool() }
 
   const allEnabled  = smsTemplates.length > 0 && smsTemplates.every((t) => t.ai_enabled)
   const allDisabled = smsTemplates.length > 0 && smsTemplates.every((t) => !t.ai_enabled)
@@ -94,6 +98,15 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
           )}
           <button
             type="button"
+            onClick={openPool}
+            className="flex items-center gap-1.5 text-xs rounded-xl border border-[var(--color-brand-border)] px-3 py-1.5 text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] transition-colors"
+            title="Keyword + sender frequency pool collected from confirmed transactions (Phase-2 allowlist data)"
+          >
+            <ListTree className="h-3.5 w-3.5" />
+            Keyword Pool
+          </button>
+          <button
+            type="button"
             onClick={() => void loadSmsTemplates()}
             disabled={smsTemplatesLoading}
             className="flex items-center gap-1.5 text-xs rounded-xl border border-[var(--color-brand-border)] px-3 py-1.5 text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] disabled:opacity-50 transition-colors"
@@ -103,6 +116,114 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
           </button>
         </div>
       </div>
+
+      {showPool && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setShowPool(false)}
+        >
+          <div
+            className="glass-card w-full max-w-2xl max-h-[80vh] overflow-hidden rounded-2xl flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-brand-border)]">
+              <div>
+                <h3 className="text-sm font-semibold text-[var(--color-brand-text-primary)]">SMS Keyword Pool</h3>
+                <p className="text-xs text-[var(--color-brand-text-muted)] mt-0.5">
+                  Vocabulary + senders learned from confirmed transactions, by frequency.
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => void loadKeywordPool()}
+                  disabled={keywordPoolLoading}
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-brand-elevated)] disabled:opacity-50"
+                  aria-label="Refresh keyword pool"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${keywordPoolLoading ? 'animate-spin' : ''}`} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPool(false)}
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-brand-elevated)]"
+                  aria-label="Close"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="overflow-y-auto px-5 py-4 space-y-5">
+              {keywordPoolLoading && keywordPool.length === 0 && (
+                <p className="text-xs text-[var(--color-brand-text-muted)] py-4 text-center">Loading…</p>
+              )}
+
+              {/* Senders */}
+              <div>
+                <h4 className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-brand-text-muted)] mb-2">
+                  Senders ({senderPool.length})
+                </h4>
+                {senderPool.length === 0 ? (
+                  <p className="text-xs text-[var(--color-brand-text-muted)]">No senders pooled yet.</p>
+                ) : (
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-[var(--color-brand-border)] text-[10px] uppercase tracking-wide text-[var(--color-brand-text-muted)]">
+                        <th className="text-left py-1.5 pr-4">Sender</th>
+                        <th className="text-center py-1.5 pr-4">Hits</th>
+                        <th className="text-center py-1.5">Txns</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {senderPool.map((s) => (
+                        <tr key={s.sender} className="border-b border-[var(--color-brand-border)]/50">
+                          <td className="py-1.5 pr-4 font-mono text-[var(--color-brand-text-primary)]">{s.sender}</td>
+                          <td className="py-1.5 pr-4 text-center text-[var(--color-brand-text-secondary)]">{s.hit_count}</td>
+                          <td className="py-1.5 text-center text-[var(--color-brand-text-secondary)]">{s.txn_count}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+              {/* Keywords */}
+              <div>
+                <h4 className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-brand-text-muted)] mb-2">
+                  Keywords ({keywordPool.length})
+                </h4>
+                {keywordPool.length === 0 ? (
+                  <p className="text-xs text-[var(--color-brand-text-muted)]">No keywords pooled yet.</p>
+                ) : (
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-[var(--color-brand-border)] text-[10px] uppercase tracking-wide text-[var(--color-brand-text-muted)]">
+                        <th className="text-left py-1.5 pr-4">Keyword</th>
+                        <th className="text-left py-1.5 pr-4">Lang</th>
+                        <th className="text-center py-1.5">Count</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {keywordPool.map((k) => (
+                        <tr key={k.keyword} className="border-b border-[var(--color-brand-border)]/50">
+                          <td className="py-1.5 pr-4 font-mono text-[var(--color-brand-text-primary)]">{k.keyword}</td>
+                          <td className="py-1.5 pr-4 text-[var(--color-brand-text-muted)] uppercase">{k.lang ?? '—'}</td>
+                          <td className="py-1.5 text-center">
+                            <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--color-brand-green)]/10 text-[var(--color-brand-green)]">
+                              {k.hit_count}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {smsTemplatesLoading && smsTemplates.length === 0 && (
         <p className="text-xs text-[var(--color-brand-text-muted)] py-4 text-center">Loading…</p>

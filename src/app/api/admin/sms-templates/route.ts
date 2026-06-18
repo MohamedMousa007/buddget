@@ -118,6 +118,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true })
     }
 
+    if (op === 'keyword_pool') {
+      // Data-driven vocabulary collected from confirmed transactions (Phase-2 prep).
+      const [kw, sndr] = await Promise.all([
+        service.from('sms_keyword_pool').select('keyword, lang, hit_count, last_seen').order('hit_count', { ascending: false }).limit(500),
+        service.from('sms_sender_pool').select('sender, hit_count, txn_count, last_seen').order('hit_count', { ascending: false }).limit(200),
+      ])
+      if (kw.error || sndr.error) {
+        console.error('[admin/sms-templates] keyword_pool failed', kw.error ?? sndr.error)
+        return NextResponse.json({ error: 'Failed to load keyword pool' }, { status: 500 })
+      }
+      return NextResponse.json({ keywords: kw.data ?? [], senders: sndr.data ?? [] })
+    }
+
     if (op === 'check_eligibility') {
       const { data, error } = await service.rpc('check_sms_promotion_eligibility')
       if (error) {
