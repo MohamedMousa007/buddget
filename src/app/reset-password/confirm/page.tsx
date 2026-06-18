@@ -162,12 +162,11 @@ export default function ResetPasswordConfirmPage() {
     } catch (e) {
       console.error('[reset-password] clearBudgetData failed', e)
     }
-    const { error: signOutError } = await supabase.auth.signOut({ scope: 'global' })
+    // Local scope clears the session synchronously with no network round-trip;
+    // 'global' hangs on slow native links (same failure mode as logout). The
+    // recovery session is single-use, so a local clear is sufficient here.
+    await supabase.auth.signOut({ scope: 'local' })
     setLoading(false)
-    if (signOutError) {
-      setError(t.resetPassword.errorUpdateFailed)
-      return
-    }
     try {
       await fetch('/api/auth/password-updated', { method: 'POST' })
     } catch (e) {

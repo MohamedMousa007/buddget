@@ -55,7 +55,7 @@ export default function SettingsAccountPage() {
             className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
           >
             <Lock className="w-4 h-4" />
-            {p.resetSent ? t.profile.resetLinkSent : t.profile.changePassword}
+            {t.profile.changePassword}
           </button>
           <button
             type="button"

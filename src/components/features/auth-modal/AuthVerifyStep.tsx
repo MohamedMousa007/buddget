@@ -19,8 +19,8 @@ export interface AuthVerifyStepProps {
 }
 
 /**
- * Shared email-OTP screen. Used for both post-signup email confirmation and
- * the 2FA challenge when signing in on a new device.
+ * Shared email-OTP screen. Used for post-signup email confirmation, the 2FA
+ * challenge on a new device, and the in-app password-reset recovery code.
  */
 export function AuthVerifyStep({
   email,
@@ -35,15 +35,18 @@ export function AuthVerifyStep({
 }: AuthVerifyStepProps) {
   const t = useT()
   const is2fa = purpose === '2fa'
+  const isRecovery = purpose === 'recovery'
+  const title = isRecovery ? t.auth.recoveryVerifyTitle : is2fa ? t.auth.twoFaVerifyTitle : t.auth.verifyTitle
+  const subtitle = isRecovery
+    ? t.auth.recoveryCodeSent(email)
+    : is2fa
+      ? t.auth.twoFaCodeSent(email)
+      : t.auth.verifyCodeSent(email)
   return (
     <div className="space-y-5">
       <div className="text-center">
-        <h2 className="text-lg font-semibold text-[var(--color-brand-text-primary)]">
-          {is2fa ? t.auth.twoFaVerifyTitle : t.auth.verifyTitle}
-        </h2>
-        <p className="text-sm text-[var(--color-brand-text-muted)] mt-1">
-          {is2fa ? t.auth.twoFaCodeSent(email) : t.auth.verifyCodeSent(email)}
-        </p>
+        <h2 className="text-lg font-semibold text-[var(--color-brand-text-primary)]">{title}</h2>
+        <p className="text-sm text-[var(--color-brand-text-muted)] mt-1">{subtitle}</p>
       </div>
       <AuthOtpRow value={otp} onChange={onOtpChange} disabled={loading} />
       <AuthPrimaryButton disabled={loading} onClick={() => void onVerify()}>

@@ -1174,10 +1174,13 @@ export const en: Dictionary = {
     placeholderConfirm: 'Confirm your password',
 
     forgotTitle: 'No worries \u2014 happens to everyone \uD83D\uDE04',
-    forgotSuccess: 'Reset link on its way! Check your inbox \uD83D\uDCEC',
+    forgotSubtitle: 'Enter your email and we\u2019ll send you a 6-digit reset code.',
     forgotLabelEmail: 'Your email',
-    forgotSendLink: 'Send reset link',
+    forgotSendCode: 'Send reset code',
     forgotBackToSignIn: 'Back to sign in',
+
+    recoveryVerifyTitle: 'Enter your reset code \uD83D\uDD11',
+    recoveryCodeSent: (email) => `We sent a 6-digit code to ${email}. Enter it to set a new password.`,
 
     verifyTitle: 'Check your inbox \uD83D\uDCEC',
     verifyCodeSent: (email) => `We sent a 6-digit code to ${email}`,

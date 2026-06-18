@@ -26,7 +26,6 @@ const WelcomeScreen = lazy(() =>
 )
 import { useEphemeralSessionGuard } from '@/hooks/useEphemeralSessionGuard'
 import { DialogProvider } from '@/components/ui/dialog/DialogProvider'
-import { NATIVE_AUTH_SCHEME } from '@/lib/native/nativeAuthScheme'
 
 /**
  * Minimal centered splash rendered while the initial auth check is in flight.
@@ -122,50 +121,6 @@ function AuthNextQuerySync({ configured }: { configured: boolean }) {
     const q = qs.toString()
     router.replace(q ? `${pathname}?${q}` : pathname)
   }, [configured, loading, user, searchParams, pathname, router, openAuthModal])
-
-  return null
-}
-
-/**
- * On native (Capacitor), listens for deep links matching the custom URL scheme
- * and exchanges the PKCE code client-side — the only client that has the code
- * verifier in localStorage. Renders null.
- */
-function NativeAuthCallbackHandler() {
-  const router = useRouter()
-
-  useEffect(() => {
-    if (!isNative()) return
-
-    let handle: { remove: () => void } | null = null
-
-    void (async () => {
-      const [{ App }, { Browser }] = await Promise.all([
-        import('@capacitor/app'),
-        import('@capacitor/browser'),
-      ])
-
-      handle = await App.addListener('appUrlOpen', async ({ url }) => {
-        if (!url.startsWith(`${NATIVE_AUTH_SCHEME}://auth/callback`)) return
-        try { await Browser.close() } catch { /* no-op */ }
-
-        const parsed = new URL(url)
-        const code = parsed.searchParams.get('code')
-        if (!code) return
-
-        const supabase = createClient()
-        const { error } = await supabase.auth.exchangeCodeForSession(code)
-        if (error) return
-
-        const next = parsed.searchParams.get('next') ?? '/'
-        if (next.startsWith('/') && !next.startsWith('//')) {
-          router.replace(next)
-        }
-      })
-    })()
-
-    return () => { handle?.remove() }
-  }, [router])
 
   return null
 }
@@ -307,7 +262,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // doesn't trigger a flush that would overwrite server data with defaults.
     try { suspendFinanceSync() } catch { /* no-op */ }
 
-    // Immediately clear UI — landing gate appears now, no spinner.
+    // Capture the token BEFORE clearing — the background push-unregister needs it.
+    const accessToken = session?.access_token ?? null
+
+    // Immediately clear UI — landing gate appears now, no spinner. Callers must
+    // NOT call clearBudgetData() before this: doing so flips dataReady=false
+    // while mode is still 'authenticated', tripping the 2.5s WelcomeScreen splash.
     setUser(null)
     setSession(null)
     router.refresh()
@@ -319,15 +279,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try { await flushFinanceNow() } catch (e) { console.error('[auth] flush before signOut failed', e) }
       // Wipe localStorage + reset Zustand stores.
       try { clearBudgetData() } catch (e) { console.error('[auth] clearBudgetData failed', e) }
-      // Unregister push token while session may still be active on the server.
-      try {
-        const { data } = await supabase.auth.getSession()
-        if (data.session?.access_token) await unregisterPushToken(data.session.access_token)
-      } catch (e) { console.error('[auth] push unregister failed', e) }
-      // End the server session (triggers SIGNED_OUT event — handled safely by the listener).
-      try { await supabase.auth.signOut() } catch (e) { console.error('[auth] signOut failed', e) }
+      // Unregister push token using the captured token (session is gone by now).
+      if (accessToken) {
+        try { await unregisterPushToken(accessToken) } catch (e) { console.error('[auth] push unregister failed', e) }
+      }
+      // Local scope clears the session from storage synchronously with NO network
+      // round-trip — this is what makes logout instant and reliable on native.
+      // The default 'global' scope hangs on slow links and, on failure, leaves
+      // the local session intact, which the next getSession() then restores —
+      // the exact "loading then logout failed" bug. (Same pattern as
+      // useEphemeralSessionGuard.) Triggers SIGNED_OUT, handled by the listener.
+      try { await supabase.auth.signOut({ scope: 'local' }) } catch (e) { console.error('[auth] signOut failed', e) }
     })()
-  }, [configured, router])
+  }, [configured, router, session])
 
   const noopSignOut = useCallback(async () => {}, [])
 
@@ -467,7 +431,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={value}>
       <DialogProvider>
-        <NativeAuthCallbackHandler />
         <Suspense fallback={null}>
           <AuthNextQuerySync configured={configured} />
         </Suspense>

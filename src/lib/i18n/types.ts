@@ -1070,10 +1070,13 @@ export interface Dictionary {
     placeholderConfirm: string
 
     forgotTitle: string
-    forgotSuccess: string
+    forgotSubtitle: string
     forgotLabelEmail: string
-    forgotSendLink: string
+    forgotSendCode: string
     forgotBackToSignIn: string
+
+    recoveryVerifyTitle: string
+    recoveryCodeSent: (email: string) => string
 
     verifyTitle: string
     verifyCodeSent: (email: string) => string

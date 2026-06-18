@@ -1173,10 +1173,13 @@ export const ar: Dictionary = {
     placeholderConfirm: 'أعد كتابة كلمة المرور',
 
     forgotTitle: 'لا تقلق — يحصل مع الجميع 😄',
-    forgotSuccess: 'رابط إعادة التعيين في الطريق! تفقد بريدك 📬',
+    forgotSubtitle: 'أدخل بريدك الإلكتروني وسنرسل لك رمز إعادة تعيين من 6 أرقام.',
     forgotLabelEmail: 'بريدك الإلكتروني',
-    forgotSendLink: 'أرسل رابط إعادة التعيين',
+    forgotSendCode: 'أرسل رمز إعادة التعيين',
     forgotBackToSignIn: 'رجوع لتسجيل الدخول',
+
+    recoveryVerifyTitle: 'أدخل رمز إعادة التعيين 🔑',
+    recoveryCodeSent: (email) => `أرسلنا رمزاً من 6 أرقام إلى ${email}. أدخله لتعيين كلمة مرور جديدة.`,
 
     verifyTitle: 'تفقد بريدك 📬',
     verifyCodeSent: (email) => `أرسلنا رمزاً مكوناً من 6 أرقام إلى ${email}`,

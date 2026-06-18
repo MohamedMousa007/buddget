@@ -10,19 +10,18 @@ export interface AuthForgotStepProps {
   email: string
   onEmailChange: (v: string) => void
   loading: boolean
-  forgotSuccess: boolean
   onSendReset: () => void
   onBackToSignIn: () => void
 }
 
 /**
- * Password reset request step (email + send link).
+ * Password reset request step: collect the email, then send a 6-digit recovery
+ * code (the flow advances in-app to the OTP step — no email link, no browser).
  */
 export function AuthForgotStep({
   email,
   onEmailChange,
   loading,
-  forgotSuccess,
   onSendReset,
   onBackToSignIn,
 }: AuthForgotStepProps) {
@@ -30,32 +29,28 @@ export function AuthForgotStep({
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold text-[var(--color-brand-text-primary)] text-center">{t.auth.forgotTitle}</h2>
-      {forgotSuccess ? (
-        <p className="text-sm text-center text-[var(--color-brand-text-muted)]">{t.auth.forgotSuccess}</p>
-      ) : (
-        <>
-          <div>
-            <label className="text-xs text-[var(--color-brand-text-muted)] mb-1 block">{t.auth.forgotLabelEmail}</label>
-            <div className="relative">
-              <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
-              <input
-                type="email"
-                dir="ltr"
-                autoComplete="email"
-                inputMode="email"
-                value={email}
-                onChange={(e) => onEmailChange(e.target.value)}
-                className={cn(inputClass, inputFocus, 'ps-10')}
-                style={inputStyle}
-                placeholder={t.auth.placeholderEmail}
-              />
-            </div>
-          </div>
-          <AuthPrimaryButton disabled={loading} onClick={() => void onSendReset()}>
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : t.auth.forgotSendLink}
-          </AuthPrimaryButton>
-        </>
-      )}
+      <p className="text-sm text-center text-[var(--color-brand-text-muted)]">{t.auth.forgotSubtitle}</p>
+      <div>
+        <label className="text-xs text-[var(--color-brand-text-muted)] mb-1 block">{t.auth.forgotLabelEmail}</label>
+        <div className="relative">
+          <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
+          <input
+            type="email"
+            dir="ltr"
+            autoComplete="email"
+            inputMode="email"
+            value={email}
+            onChange={(e) => onEmailChange(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && void onSendReset()}
+            className={cn(inputClass, inputFocus, 'ps-10')}
+            style={inputStyle}
+            placeholder={t.auth.placeholderEmail}
+          />
+        </div>
+      </div>
+      <AuthPrimaryButton disabled={loading} onClick={() => void onSendReset()}>
+        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : t.auth.forgotSendCode}
+      </AuthPrimaryButton>
       <button type="button" onClick={onBackToSignIn} className="w-full text-sm text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]">
         {t.auth.forgotBackToSignIn}
       </button>
