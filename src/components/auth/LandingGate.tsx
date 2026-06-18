@@ -37,8 +37,8 @@ export function LandingGate() {
     <>
       <style>{`
         @keyframes lgBreathe {
-          0%, 100% { transform: translateX(-50%) scale(1); opacity: .6; }
-          50% { transform: translateX(-50%) scale(1.12); opacity: .9; }
+          0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: .6; }
+          50% { transform: translate(-50%, -50%) scale(1.12); opacity: .9; }
         }
         @keyframes lgRotHead3 {
           0%   { opacity: 0; transform: translateY(12px); }
@@ -65,13 +65,13 @@ export function LandingGate() {
           the centred look on tablets/desktop. */}
       <div className="lg-bg min-h-[100svh] bg-[var(--color-brand-bg)] relative overflow-hidden flex items-start justify-center pt-[max(env(safe-area-inset-top),2rem)] pb-8 sm:items-center sm:pt-0 sm:pb-0">
 
-        {/* Ambient glow — dark mode only */}
+        {/* Ambient glow — dark mode only, fixed so keyboard opening doesn't shift it */}
         <div
           className="lg-glow"
           style={{
             display: 'none',
-            position: 'absolute',
-            top: '-110px',
+            position: 'fixed',
+            top: '30%',
             left: '50%',
             width: '400px',
             height: '400px',
@@ -80,6 +80,7 @@ export function LandingGate() {
             filter: 'blur(8px)',
             animation: 'lgBreathe 8s ease-in-out infinite',
             zIndex: 0,
+            pointerEvents: 'none',
           }}
         />
 

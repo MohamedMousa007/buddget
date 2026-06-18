@@ -45,7 +45,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   baseCurrency: 'EGP',
   secondaryCurrency: null,
   showSecondaryCurrency: false,
-  theme: 'dark',
+  theme: 'system',
   language: 'en',
   showCentsInDashboard: true,
   monthStartDay: 1,

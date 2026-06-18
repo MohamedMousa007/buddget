@@ -45,8 +45,8 @@ export function WelcomeScreen() {
     <>
       <style>{`
         @keyframes wmBreathe {
-          0%, 100% { transform: translateX(-50%) scale(1); opacity: .7; }
-          50% { transform: translateX(-50%) scale(1.14); opacity: 1; }
+          0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: .7; }
+          50% { transform: translate(-50%, -50%) scale(1.14); opacity: 1; }
         }
         @keyframes wmRotHead3 {
           0%   { opacity: 0; transform: translateY(14px); }
@@ -74,12 +74,12 @@ export function WelcomeScreen() {
           zIndex: 9999,
         }}
       >
-        {/* Ambient glow */}
+        {/* Ambient glow — centred on screen, not behind the wordmark */}
         <div
           className="wm-glow"
           style={{
             position: 'absolute',
-            top: '-110px',
+            top: '35%',
             left: '50%',
             width: '400px',
             height: '400px',
@@ -88,6 +88,7 @@ export function WelcomeScreen() {
             filter: 'blur(8px)',
             animation: 'wmBreathe 8s ease-in-out infinite',
             zIndex: 1,
+            pointerEvents: 'none',
           }}
         />
 
