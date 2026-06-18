@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient as createServerSupabase } from '@/lib/supabase/server'
+import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
 /**
@@ -10,9 +10,8 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
  * so cascade-on-auth-delete doesn't clean them up. We delete each user-scoped
  * table explicitly with the service role, then delete the auth user last.
  *
- * The client must be authenticated. We derive the user id from the cookie session
- * so a signed-in user can only ever delete themselves — never pass a user id in
- * the body.
+ * Supports both cookie-based auth (web) and Bearer JWT (native Capacitor) via
+ * resolveApiUserId — never pass a user id in the body.
  */
 const USER_ID_TABLES = [
   // Budget shape
@@ -45,17 +44,12 @@ const USER_ID_TABLES = [
   'user_settings',
 ] as const
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
-    const supabase = await createServerSupabase()
-    const {
-      data: { user },
-      error: authErr,
-    } = await supabase.auth.getUser()
-    if (authErr || !user) {
+    const uid = await resolveApiUserId(request)
+    if (!uid) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
-    const uid = user.id
 
     const admin = createServiceRoleClient()
     const errors: string[] = []
