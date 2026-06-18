@@ -78,7 +78,7 @@ export function DashboardNetWorthHero({
             label={t.dashboard.heroStatDebt}
             amount={totalDebt}
             currency={baseCurrency}
-            color="text-[var(--color-brand-gold)]"
+            color="text-[var(--color-brand-red)]"
           />
         </div>
       </div>
