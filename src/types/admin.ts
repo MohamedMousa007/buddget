@@ -44,6 +44,20 @@ export interface AdminAnalyticsSnapshot {
   >
 }
 
+export interface SmsKeywordPoolRow {
+  keyword: string
+  lang: string | null
+  hit_count: number
+  last_seen: string
+}
+
+export interface SmsSenderPoolRow {
+  sender: string
+  hit_count: number
+  txn_count: number
+  last_seen: string
+}
+
 export interface SmsTemplateRow {
   id: string
   sender: string

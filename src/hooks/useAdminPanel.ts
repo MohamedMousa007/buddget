@@ -8,6 +8,8 @@ import type {
   AdminUserRow,
   SmsTrackedRow,
   SmsTemplateRow,
+  SmsKeywordPoolRow,
+  SmsSenderPoolRow,
   SmsPromotionConfig,
   EligibleTemplate,
 } from '@/types/admin'
@@ -35,6 +37,9 @@ export function useAdminPanel() {
   const [surveyRows, setSurveyRows] = useState<AdminSurveyRow[]>([])
   const [smsTemplates, setSmsTemplates] = useState<SmsTemplateRow[]>([])
   const [smsTemplatesLoading, setSmsTemplatesLoading] = useState(false)
+  const [keywordPool, setKeywordPool] = useState<SmsKeywordPoolRow[]>([])
+  const [senderPool, setSenderPool] = useState<SmsSenderPoolRow[]>([])
+  const [keywordPoolLoading, setKeywordPoolLoading] = useState(false)
   const [smsTracked, setSmsTracked] = useState<SmsTrackedRow[]>([])
   const [smsTrackedLoading, setSmsTrackedLoading] = useState(false)
   const [smsTrackedCursor, setSmsTrackedCursor] = useState<string | null>(null)
@@ -291,6 +296,25 @@ export function useAdminPanel() {
     }
   }, [sessionPin])
 
+  const loadKeywordPool = useCallback(async () => {
+    setKeywordPoolLoading(true)
+    try {
+      const res = await fetch('/api/admin/sms-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: sessionPin, op: 'keyword_pool' }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setPlatformMessage(data.error || 'Failed to load keyword pool'); return }
+      setKeywordPool(data.keywords ?? [])
+      setSenderPool(data.senders ?? [])
+    } catch {
+      setPlatformMessage('Network error')
+    } finally {
+      setKeywordPoolLoading(false)
+    }
+  }, [sessionPin])
+
   const updateSmsTemplate = useCallback(async (
     id: string,
     patch: Partial<Pick<SmsTemplateRow, 'ai_enabled' | 'regex_pattern'>>,
@@ -491,6 +515,10 @@ export function useAdminPanel() {
     smsTemplates,
     smsTemplatesLoading,
     loadSmsTemplates,
+    keywordPool,
+    senderPool,
+    keywordPoolLoading,
+    loadKeywordPool,
     updateSmsTemplate,
     deleteSmsTemplate,
     bulkToggleSmsTemplates,
