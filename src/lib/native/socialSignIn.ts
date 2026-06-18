@@ -1,18 +1,32 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import type { OAuthProvider } from '@/lib/auth/oauthProviders'
+import { isAndroid } from '@/lib/native/isNative'
 
 /**
  * Google client IDs are build-time inlined (`NEXT_PUBLIC_*`). Apple needs none
- * (it authenticates against the app's bundle ID). Until the Google iOS client
+ * on iOS (it authenticates against the app's bundle ID).
+ *
+ * Google native sign-in uses different client IDs per platform: iOS needs the
+ * iOS client ID, Android uses the Web client ID as its serverClientId (the
+ * returned id token's audience is the Web client ID). Until the relevant client
  * is provisioned, native Google falls back to the web-redirect flow.
  */
 const GOOGLE_IOS_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_IOS_CLIENT_ID?.trim() || undefined
 const GOOGLE_WEB_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim() || undefined
 
-/** True once the native Google iOS client ID is configured at build time. */
+/**
+ * Apple Services ID — required for Apple sign-in on Android (Apple has no native
+ * Android SDK, so it runs as a web OAuth flow). iOS authenticates against the
+ * bundle ID and needs no Services ID. The id token's `aud` is this Services ID,
+ * which must be listed in Supabase's Apple "Client IDs".
+ */
+const APPLE_SERVICES_ID =
+  process.env.NEXT_PUBLIC_APPLE_SERVICES_ID?.trim() || 'app.buddget.web.service'
+
+/** True once the client ID this platform needs for native Google is configured. */
 export function isNativeGoogleConfigured(): boolean {
-  return Boolean(GOOGLE_IOS_CLIENT_ID)
+  return isAndroid() ? Boolean(GOOGLE_WEB_CLIENT_ID) : Boolean(GOOGLE_IOS_CLIENT_ID)
 }
 
 /** One-shot cached initialize — calling `initialize` twice throws on native. */
@@ -21,12 +35,18 @@ async function ensureInit(): Promise<void> {
   if (!initPromise) {
     initPromise = (async () => {
       const { SocialLogin } = await import('@capgo/capacitor-social-login')
-      await SocialLogin.initialize({
-        apple: {},
-        ...(GOOGLE_IOS_CLIENT_ID
+      const google =
+        GOOGLE_IOS_CLIENT_ID || GOOGLE_WEB_CLIENT_ID
           ? { google: { iOSClientId: GOOGLE_IOS_CLIENT_ID, webClientId: GOOGLE_WEB_CLIENT_ID } }
-          : {}),
-      })
+          : {}
+      // iOS Apple is fully native (no clientId/redirect). Android runs the web
+      // OAuth flow via capgo's Broadcast Channel mode (no backend / redirect-URL
+      // config of our own — capgo routes through its hosted handler, which is
+      // registered as a Return URL on the Apple Services ID).
+      const apple = isAndroid()
+        ? { clientId: APPLE_SERVICES_ID, useBroadcastChannel: true }
+        : {}
+      await SocialLogin.initialize({ apple, ...google })
     })().catch((e) => {
       initPromise = null // allow a later retry of a transient init failure
       throw e
@@ -69,7 +89,9 @@ export async function nativeSocialSignIn(provider: OAuthProvider): Promise<Nativ
     if (provider === 'apple') {
       const { result } = await SocialLogin.login({
         provider: 'apple',
-        options: { scopes: ['name', 'email'] },
+        options: isAndroid()
+          ? { scopes: ['name', 'email'], useBroadcastChannel: true }
+          : { scopes: ['name', 'email'] },
       })
       idToken = result.idToken
     } else {
