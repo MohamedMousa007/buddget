@@ -35,7 +35,7 @@ export interface AuthEmailFieldProps {
 /**
  * Dedicated email input for the morph form. Owns its own Enter-to-advance
  * behaviour and the optional trailing arrow button. Password-manager friendly:
- * carries `autocomplete="username webauthn"` + `type="email"` so Safari /
+ * carries `name="email"` + `autocomplete="username"` + `type="email"` so Safari /
  * 1Password / Chrome Autofill all recognise the form.
  */
 export const AuthEmailField = forwardRef<HTMLInputElement, AuthEmailFieldProps>(
@@ -64,7 +64,7 @@ export const AuthEmailField = forwardRef<HTMLInputElement, AuthEmailFieldProps>(
             type="email"
             name="email"
             dir="ltr"
-            autoComplete="username webauthn"
+            autoComplete="username"
             inputMode="email"
             spellCheck={false}
             autoCapitalize="none"

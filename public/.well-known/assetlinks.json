@@ -4,7 +4,7 @@
     "target": {
       "namespace": "android_app",
       "package_name": "app.buddget",
-      "sha256_cert_fingerprints": ["YOUR_ANDROID_SHA256_FINGERPRINT"]
+      "sha256_cert_fingerprints": ["E8:52:8F:9C:07:EC:69:81:80:0B:AD:4A:EF:75:48:70:1E:77:D6:8C:C1:A2:34:72:3C:A5:97:3C:29:71:A3:10"]
     }
   }
 ]

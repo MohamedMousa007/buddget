@@ -174,7 +174,7 @@ export function AuthSignInUpStep({
               <input
                 type="password"
                 name="password"
-                autoComplete="current-password webauthn"
+                autoComplete="current-password"
                 tabIndex={-1}
                 aria-hidden="true"
                 value={password}
@@ -209,58 +209,82 @@ export function AuthSignInUpStep({
                 : t.auth.createAccountFor(maskedEmail)}
             </p>
 
-            <AuthPasswordField
-              ref={passwordRef}
-              value={password}
-              onChange={(v) => {
-                setPassword(v)
-                if (error) setError('')
+            {/* Real <form> with a username + password pair so the OS/browser
+                password manager autofills here and offers to SAVE on submit.
+                The username is an off-screen controlled input (mirrors the
+                collect step's hidden password) carrying the resolved email. */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (!loading) submitPassword()
               }}
-              onSubmit={submitPassword}
-              label={t.auth.labelPassword}
-              autoComplete={isSignin ? 'current-password webauthn' : 'new-password webauthn'}
-              disabled={loading}
-            />
+              className="space-y-3"
+            >
+              <input
+                type="text"
+                name="email"
+                autoComplete="username"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                tabIndex={-1}
+                aria-hidden="true"
+                className="absolute h-0 w-0 opacity-0 pointer-events-none"
+              />
 
-            {isSignin ? (
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-xs text-[var(--color-brand-text-secondary)] cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded border-[var(--color-brand-border)] accent-[var(--color-brand-red)]"
-                  />
-                  <span>{t.auth.rememberMe}</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={onForgotClick}
-                  className="text-xs text-[var(--color-brand-red)] hover:underline"
-                >
-                  {t.auth.forgotPassword}
-                </button>
+              <AuthPasswordField
+                ref={passwordRef}
+                value={password}
+                onChange={(v) => {
+                  setPassword(v)
+                  if (error) setError('')
+                }}
+                onSubmit={submitPassword}
+                label={t.auth.labelPassword}
+                name="password"
+                autoComplete={isSignin ? 'current-password' : 'new-password'}
+                disabled={loading}
+              />
+
+              {isSignin ? (
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 text-xs text-[var(--color-brand-text-secondary)] cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="w-4 h-4 rounded border-[var(--color-brand-border)] accent-[var(--color-brand-red)]"
+                    />
+                    <span>{t.auth.rememberMe}</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={onForgotClick}
+                    className="text-xs text-[var(--color-brand-red)] hover:underline"
+                  >
+                    {t.auth.forgotPassword}
+                  </button>
+                </div>
+              ) : (
+                <PasswordStrengthMeter password={password} />
+              )}
+
+              <AuthFormErrorAlert error={error} onResendCode={resendCode} />
+
+              <div ref={submitBtnWrapRef}>
+                <AuthPrimaryButton type="submit" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>{isSignin ? t.auth.loadingSignIn : t.auth.loadingSignUp}</span>
+                    </>
+                  ) : isSignin ? (
+                    t.auth.submitSignIn
+                  ) : (
+                    t.auth.submitSignUp
+                  )}
+                </AuthPrimaryButton>
               </div>
-            ) : (
-              <PasswordStrengthMeter password={password} />
-            )}
-
-            <AuthFormErrorAlert error={error} onResendCode={resendCode} />
-
-            <div ref={submitBtnWrapRef}>
-              <AuthPrimaryButton disabled={loading} onClick={submitPassword}>
-                {loading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>{isSignin ? t.auth.loadingSignIn : t.auth.loadingSignUp}</span>
-                  </>
-                ) : isSignin ? (
-                  t.auth.submitSignIn
-                ) : (
-                  t.auth.submitSignUp
-                )}
-              </AuthPrimaryButton>
-            </div>
+            </form>
           </motion.div>
         ) : (
           <motion.div

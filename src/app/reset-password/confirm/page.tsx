@@ -211,9 +211,10 @@ export default function ResetPasswordConfirmPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--color-brand-bg)]">
-      <div
+      <form
         className="w-full max-w-md border p-5 sm:p-6 rounded-2xl space-y-3"
         style={{ background: 'var(--color-brand-card)', borderColor: 'var(--color-brand-border)' }}
+        onSubmit={(e) => { e.preventDefault(); void submit() }}
       >
         <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)] text-center">
           {t.resetPassword.title}
@@ -231,6 +232,7 @@ export default function ResetPasswordConfirmPage() {
             <input
               type={showNew ? 'text' : 'password'}
               dir="ltr"
+              name="new-password"
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -256,10 +258,10 @@ export default function ResetPasswordConfirmPage() {
             <input
               type={showConfirm ? 'text' : 'password'}
               dir="ltr"
+              name="confirm-password"
               autoComplete="new-password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && void submit()}
               placeholder={t.resetPassword.placeholderConfirm}
               className={cn(inputClass, toneClass(confirmTone), 'ps-10 pe-10')}
               style={inputStyle}
@@ -275,14 +277,14 @@ export default function ResetPasswordConfirmPage() {
 
         {error ? <p className="text-sm text-[var(--color-brand-red)]">{error}</p> : null}
 
-        <AuthPrimaryButton disabled={loading} onClick={() => void submit()}>
+        <AuthPrimaryButton type="submit" disabled={loading}>
           {loading ? (
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
             t.resetPassword.buttonSubmit
           )}
         </AuthPrimaryButton>
-      </div>
+      </form>
     </div>
   )
 }
