@@ -85,8 +85,13 @@ export function useProfilePage() {
     if (!email) return
     try {
       const supabase = createClient()
+      const { isNative } = await import('@/lib/native/isNative')
+      const { NATIVE_AUTH_SCHEME } = await import('@/lib/native/nativeAuthScheme')
+      const resetRedirect = isNative()
+        ? `${NATIVE_AUTH_SCHEME}://auth/callback?next=/reset-password/confirm`
+        : `${window.location.origin}/reset-password/confirm`
       await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password/confirm`,
+        redirectTo: resetRedirect,
       })
       setResetSent(true)
       setTimeout(() => setResetSent(false), 5000)

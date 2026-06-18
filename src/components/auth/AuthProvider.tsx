@@ -26,6 +26,7 @@ const WelcomeScreen = lazy(() =>
 )
 import { useEphemeralSessionGuard } from '@/hooks/useEphemeralSessionGuard'
 import { DialogProvider } from '@/components/ui/dialog/DialogProvider'
+import { NATIVE_AUTH_SCHEME } from '@/lib/native/nativeAuthScheme'
 
 /**
  * Minimal centered splash rendered while the initial auth check is in flight.
@@ -121,6 +122,50 @@ function AuthNextQuerySync({ configured }: { configured: boolean }) {
     const q = qs.toString()
     router.replace(q ? `${pathname}?${q}` : pathname)
   }, [configured, loading, user, searchParams, pathname, router, openAuthModal])
+
+  return null
+}
+
+/**
+ * On native (Capacitor), listens for deep links matching the custom URL scheme
+ * and exchanges the PKCE code client-side — the only client that has the code
+ * verifier in localStorage. Renders null.
+ */
+function NativeAuthCallbackHandler() {
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!isNative()) return
+
+    let handle: { remove: () => void } | null = null
+
+    void (async () => {
+      const [{ App }, { Browser }] = await Promise.all([
+        import('@capacitor/app'),
+        import('@capacitor/browser'),
+      ])
+
+      handle = await App.addListener('appUrlOpen', async ({ url }) => {
+        if (!url.startsWith(`${NATIVE_AUTH_SCHEME}://auth/callback`)) return
+        try { await Browser.close() } catch { /* no-op */ }
+
+        const parsed = new URL(url)
+        const code = parsed.searchParams.get('code')
+        if (!code) return
+
+        const supabase = createClient()
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        if (error) return
+
+        const next = parsed.searchParams.get('next') ?? '/'
+        if (next.startsWith('/') && !next.startsWith('//')) {
+          router.replace(next)
+        }
+      })
+    })()
+
+    return () => { handle?.remove() }
+  }, [router])
 
   return null
 }
@@ -422,6 +467,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={value}>
       <DialogProvider>
+        <NativeAuthCallbackHandler />
         <Suspense fallback={null}>
           <AuthNextQuerySync configured={configured} />
         </Suspense>
