@@ -5,6 +5,7 @@ import { useAuthModal } from '@/hooks/useAuthModal'
 import { AuthModalBranding } from '@/components/features/auth-modal/AuthModalBranding'
 import { AuthForgotStep } from '@/components/features/auth-modal/AuthForgotStep'
 import { AuthVerifyStep } from '@/components/features/auth-modal/AuthVerifyStep'
+import { AuthResetPasswordStep } from '@/components/features/auth-modal/AuthResetPasswordStep'
 import { AuthSignInUpStep } from '@/components/features/auth-modal/AuthSignInUpStep'
 import { LanguageToggle } from '@/components/ui/LanguageToggle'
 
@@ -33,13 +34,18 @@ export function AuthModalBody({ showBranding = true }: { showBranding?: boolean 
               email={a.email}
               onEmailChange={a.setEmail}
               loading={a.loading}
-              forgotSuccess={a.forgotSuccess}
               onSendReset={() => void a.sendForgot()}
               onBackToSignIn={() => {
                 a.setStep('form')
-                a.setForgotSuccess(false)
                 a.setError('')
               }}
+            />
+          ) : a.step === 'reset-new-password' ? (
+            <AuthResetPasswordStep
+              loading={a.loading}
+              error={a.error}
+              setError={a.setError}
+              onSubmit={(pw) => void a.submitNewPassword(pw)}
             />
           ) : a.step === 'verify' ? (
             <AuthVerifyStep
@@ -49,11 +55,12 @@ export function AuthModalBody({ showBranding = true }: { showBranding?: boolean 
               loading={a.loading}
               resendCooldown={a.resendCooldown}
               purpose={a.verifyPurpose}
-              onVerify={() => void a.verifySignupOtp()}
+              onVerify={() => void a.verifyOtpCode()}
               onResend={() => void a.resendCode()}
               onUseDifferentEmail={() => {
-                a.setStep('form')
-                a.backToEmail()
+                // Recovery starts from the forgot step; signup/2FA from email entry.
+                a.setStep(a.verifyPurpose === 'recovery' ? 'forgot' : 'form')
+                if (a.verifyPurpose !== 'recovery') a.backToEmail()
                 a.setOtp('')
                 a.setError('')
               }}
@@ -77,7 +84,6 @@ export function AuthModalBody({ showBranding = true }: { showBranding?: boolean 
               loading={a.loading}
               onForgotClick={() => {
                 a.setStep('forgot')
-                a.setForgotSuccess(false)
                 a.setError('')
               }}
               resendCode={a.resendCode}

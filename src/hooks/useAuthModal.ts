@@ -7,19 +7,19 @@ import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { mapAuthError, mapOAuthCallbackReason, mapOAuthError, isValidEmailFormat } from '@/components/auth/authErrors'
 import { useAuth } from '@/components/auth/auth-context'
 import { useT } from '@/lib/i18n'
-import { APP_CONFIG } from '@/lib/config'
 import { apiFetch, apiFetchAuth } from '@/lib/apiBase'
 import { routeAfterAuth } from '@/lib/auth/postAuthRedirect'
 import { MIN_PASSWORD_LEN } from '@/components/features/auth-modal/authModalTokens'
 import { markSessionEphemeral } from '@/hooks/useEphemeralSessionGuard'
 import { AUTH_EVENTS, track } from '@/lib/analytics/events'
 
-export type AuthStep = 'form' | 'verify' | 'forgot'
+export type AuthStep = 'form' | 'verify' | 'forgot' | 'reset-new-password'
 /**
- * 'signup' — verifying the email-confirmation OTP right after creating the account.
- * '2fa'    — verifying the email-OTP challenge that gates sign-in on a new device.
+ * 'signup'   — verifying the email-confirmation OTP right after creating the account.
+ * '2fa'      — verifying the email-OTP challenge that gates sign-in on a new device.
+ * 'recovery' — verifying the 6-digit password-reset code, fully in-app (no link).
  */
-export type AuthVerifyPurpose = 'signup' | '2fa'
+export type AuthVerifyPurpose = 'signup' | '2fa' | 'recovery'
 
 /**
  * Morph-form state machine:
@@ -89,7 +89,6 @@ export function useAuthModal() {
   /** Set while `/api/auth/check-email` is resolving. Disables the email input + advance button. */
   const [emailAdvancePending, setEmailAdvancePending] = useState(false)
   const [error, setError] = useState('')
-  const [forgotSuccess, setForgotSuccess] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
   const [verifyPurpose, setVerifyPurpose] = useState<AuthVerifyPurpose>('signup')
   const [rememberMe, setRememberMe] = useState(true)
@@ -455,7 +454,7 @@ export function useAuthModal() {
     else void signUp()
   }, [passwordIntent, signIn, signUp])
 
-  const verifySignupOtp = useCallback(async () => {
+  const verifyOtpCode = useCallback(async () => {
     if (!supabase) {
       setError(t.auth.errorFallback)
       return
@@ -467,7 +466,10 @@ export function useAuthModal() {
       return
     }
     setLoading(true)
-    const otpType: 'signup' | 'email' = verifyPurpose === 'signup' ? 'signup' : 'email'
+    // 'signup' → email confirmation; 'recovery' → password reset code;
+    // '2fa' → email-OTP device challenge (Supabase type 'email').
+    const otpType: 'signup' | 'recovery' | 'email' =
+      verifyPurpose === 'signup' ? 'signup' : verifyPurpose === 'recovery' ? 'recovery' : 'email'
     const { error: e } = await supabase.auth.verifyOtp({
       email: email.trim(),
       token,
@@ -478,6 +480,15 @@ export function useAuthModal() {
       setError(mapAuthError(e, 'otp', t))
       return
     }
+    // Recovery: the session now carries recovery scope — go set the new password
+    // in-modal (do NOT trust the device or route to the dashboard yet).
+    if (verifyPurpose === 'recovery') {
+      setLoading(false)
+      setOtp('')
+      setStep('reset-new-password')
+      return
+    }
+    // Device-trust is a signup/2FA concept only.
     try {
       await apiFetchAuth('/api/auth/device/trust', { method: 'POST' })
     } catch {
@@ -488,6 +499,38 @@ export function useAuthModal() {
     router.refresh()
     router.replace(routeAfterAuth(userData.user, safeNext))
   }, [email, otp, router, safeNext, supabase, t, verifyPurpose])
+
+  /**
+   * State 'reset-new-password': set the new password using the recovery-scoped
+   * session established by `verifyOtpCode`. On success the user stays signed in
+   * (smoother than the web link flow's sign-out-then-relogin).
+   */
+  const submitNewPassword = useCallback(
+    async (newPassword: string) => {
+      if (!supabase) {
+        setError(t.auth.errorFallback)
+        return
+      }
+      setError('')
+      setLoading(true)
+      const { error: e } = await supabase.auth.updateUser({ password: newPassword })
+      if (e) {
+        setLoading(false)
+        const m = (e.message || '').toLowerCase()
+        if (m.includes('same') && m.includes('password')) {
+          setError(t.resetPassword.errorSamePassword)
+          return
+        }
+        setError(mapAuthError(e, 'forgot', t))
+        return
+      }
+      setLoading(false)
+      const { data: userData } = await supabase.auth.getUser()
+      router.refresh()
+      router.replace(routeAfterAuth(userData.user, safeNext))
+    },
+    [router, safeNext, supabase, t],
+  )
 
   const resendCode = useCallback(async () => {
     if (!supabase) {
@@ -500,10 +543,12 @@ export function useAuthModal() {
     const { error: e } =
       verifyPurpose === 'signup'
         ? await supabase.auth.resend({ type: 'signup', email: email.trim() })
-        : await supabase.auth.signInWithOtp({
-            email: email.trim(),
-            options: { shouldCreateUser: false },
-          })
+        : verifyPurpose === 'recovery'
+          ? await supabase.auth.resetPasswordForEmail(email.trim())
+          : await supabase.auth.signInWithOtp({
+              email: email.trim(),
+              options: { shouldCreateUser: false },
+            })
     setLoading(false)
     if (e) {
       setError(mapAuthError(e, 'resend', t))
@@ -520,42 +565,23 @@ export function useAuthModal() {
     setError('')
     if (!validateEmailField()) return
     setLoading(true)
-
-    try {
-      const res = await apiFetch('/api/auth/check-email', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() }),
-      })
-      if (res.ok) {
-        const body = (await res.json()) as { exists?: boolean }
-        if (body.exists === false) {
-          setLoading(false)
-          setError(t.auth.errorNoAccountForEmail)
-          return
-        }
-      }
-    } catch {
-      /* fall through */
-    }
-
-    const { appOrigin } = await import('@/lib/apiBase')
-    const { isNative } = await import('@/lib/native/isNative')
-    const { NATIVE_AUTH_SCHEME } = await import('@/lib/native/nativeAuthScheme')
-    const origin = appOrigin() || APP_CONFIG.url.replace(/\/$/, '')
-    const resetRedirect = isNative()
-      ? `${NATIVE_AUTH_SCHEME}://auth/callback?next=/reset-password/confirm`
-      : `${origin}/auth/callback?next=/reset-password/confirm`
-    const { error: e } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: resetRedirect,
-    })
+    // No redirectTo → Supabase emails a 6-digit recovery code ({{ .Token }})
+    // instead of a magic link, so the whole flow stays in-app (no browser).
+    // We do NOT gate on /api/auth/check-email: resetPasswordForEmail returns
+    // success regardless of whether the account exists, so always advancing to
+    // the code step both closes the account-enumeration vector and simplifies
+    // the path (a mistyped address simply never receives a code).
+    const { error: e } = await supabase.auth.resetPasswordForEmail(email.trim())
     setLoading(false)
     if (e) {
       setError(mapAuthError(e, 'forgot', t))
       return
     }
-    setForgotSuccess(true)
-  }, [email, supabase, t, validateEmailField])
+    setVerifyPurpose('recovery')
+    setOtp('')
+    setStep('verify')
+    startResendCooldown()
+  }, [email, startResendCooldown, supabase, t, validateEmailField])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -598,16 +624,15 @@ export function useAuthModal() {
     loading,
     error,
     setError,
-    forgotSuccess,
-    setForgotSuccess,
     resendCooldown,
     verifyPurpose,
     rememberMe,
     setRememberMe,
-    // Legacy handlers (still used by verify/forgot steps)
+    // Step handlers (verify / forgot / reset)
     signIn,
     signUp,
-    verifySignupOtp,
+    verifyOtpCode,
+    submitNewPassword,
     resendCode,
     sendForgot,
     // Animation key

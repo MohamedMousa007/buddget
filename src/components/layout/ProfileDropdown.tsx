@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback, type RefObject } from 'react'
 import Link from 'next/link'
-import { useRouter, usePathname } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { User, Settings, LogOut } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -10,7 +10,6 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 import { cn } from '@/lib/utils'
 import { localeInlineLabelClass, useLocale, useT } from '@/lib/i18n'
-import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 
 interface ProfileDropdownProps {
   open: boolean
@@ -23,7 +22,6 @@ const itemClass =
   'flex items-center gap-3 px-4 py-3 text-[13.5px] font-medium text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors duration-150 cursor-pointer w-full text-start'
 
 export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdownProps) {
-  const router = useRouter()
   const pathname = usePathname()
   const t = useT()
   const { locale } = useLocale()
@@ -70,10 +68,11 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
   }, [onClose])
 
   const handleSignOut = async () => {
-    clearBudgetData()
+    // signOut owns all teardown and drops us to the landing gate. Don't
+    // clearBudgetData() first (flips dataReady=false while authenticated → the
+    // logout loading splash) and don't push('/') (signOut already navigates).
     await signOut()
     onClose()
-    router.push('/')
   }
 
   if (!open) return null

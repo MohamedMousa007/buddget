@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useLocale, useT } from '@/lib/i18n'
-import { createClient } from '@/lib/supabase/client'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
@@ -46,7 +45,6 @@ export function useProfilePage() {
     country: '',
     city: '',
   })
-  const [resetSent, setResetSent] = useState(false)
 
   const avatarSrc = resolveProfileAvatarSrc(store.profile)
   const displayName = store.profile.name || t.profile.displayNameFallback
@@ -80,31 +78,19 @@ export function useProfilePage() {
     setForm((prev) => ({ ...prev, [field]: value }))
   }, [])
 
-  const handlePasswordReset = useCallback(async () => {
-    const email = user?.email
-    if (!email) return
-    try {
-      const supabase = createClient()
-      const { isNative } = await import('@/lib/native/isNative')
-      const { NATIVE_AUTH_SCHEME } = await import('@/lib/native/nativeAuthScheme')
-      const resetRedirect = isNative()
-        ? `${NATIVE_AUTH_SCHEME}://auth/callback?next=/reset-password/confirm`
-        : `${window.location.origin}/reset-password/confirm`
-      await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: resetRedirect,
-      })
-      setResetSent(true)
-      setTimeout(() => setResetSent(false), 5000)
-    } catch {
-      // silently fail
-    }
-  }, [user?.email])
+  const handlePasswordReset = useCallback(() => {
+    // The user is already authenticated, so the reset-password page renders the
+    // new-password form directly off the live session and updates via
+    // updateUser — fully in-app, no email/OTP round-trip, works on native.
+    router.push('/reset-password/confirm')
+  }, [router])
 
   const handleSignOut = useCallback(async () => {
-    clearBudgetData()
+    // signOut owns ALL teardown (store wipe, push unregister, session clear).
+    // Do NOT call clearBudgetData() here — that flips dataReady=false while mode
+    // is still 'authenticated' and trips the 2.5s loading splash on logout.
     await signOut()
-    router.push('/')
-  }, [router, signOut])
+  }, [signOut])
 
   const redoOnboarding = useCallback(() => {
     router.push('/onboarding?redo=1')
@@ -178,7 +164,6 @@ export function useProfilePage() {
     avatarModalOpen,
     setAvatarModalOpen,
     form,
-    resetSent,
     avatarSrc,
     displayName,
     displayEmail,
