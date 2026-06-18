@@ -134,7 +134,7 @@ export default function IncomePage() {
             <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-[var(--color-brand-text-muted)]">
               {t.income.monthlyIncomeLabel}
             </p>
-            <p className="font-mono-numbers mt-[6px] text-[27px] font-bold leading-none tracking-[-0.5px] text-[var(--color-brand-green)]">
+            <p className="font-mono-numbers mt-[6px] text-[27px] font-bold leading-none tracking-[-0.5px] text-[var(--color-brand-text-primary)]">
               {fmtNum(monthlyTotal)}{' '}
               <span className="text-[12px] font-medium text-[var(--color-brand-text-muted)]">{base}</span>
             </p>
@@ -192,7 +192,7 @@ export default function IncomePage() {
                 <p className="mt-0.5 truncate text-[11.5px] text-[var(--color-brand-text-muted)]">{freqLabel(s)} · → {accountLabel(s)}</p>
               </div>
               <div className="shrink-0 text-end">
-                <p className="font-mono-numbers text-[15px] font-bold text-[var(--color-brand-green)]">+{fmtNum(toBase(s))}</p>
+                <p className="font-mono-numbers text-[15px] font-bold text-[var(--color-brand-text-primary)]">+{fmtNum(toBase(s))}</p>
                 <p className="mt-px text-[10px] text-[var(--color-brand-text-muted)]">{base} {t.income.perMoSuffix}</p>
               </div>
             </button>
@@ -211,7 +211,7 @@ export default function IncomePage() {
         <div key={g.day}>
           <div className="flex items-center justify-between px-1 pb-[5px] pt-[9px]">
             <span className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">{g.label}</span>
-            <span className="font-mono-numbers text-[10.5px] font-semibold text-[var(--color-brand-green)]">+{fmtNum(g.total)} {base}</span>
+            <span className="font-mono-numbers text-[10.5px] font-semibold text-[var(--color-brand-text-muted)]">+{fmtNum(g.total)} {base}</span>
           </div>
           <div className="mb-[10px] overflow-hidden rounded-[14px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
             {g.items.map((r, idx) => {
@@ -235,7 +235,7 @@ export default function IncomePage() {
                     </div>
                     <span className="block truncate text-[11px] text-[var(--color-brand-text-muted)]">→ {accountLabel(r.source)}</span>
                   </div>
-                  <span className="font-mono-numbers shrink-0 text-[14px] font-bold text-[var(--color-brand-green)]">+{fmtNum(toBase(r.source))}</span>
+                  <span className="font-mono-numbers shrink-0 text-[14px] font-bold text-[var(--color-brand-text-primary)]">+{fmtNum(toBase(r.source))} <span className="text-[10px] font-medium text-[var(--color-brand-text-muted)]">{base}</span></span>
                 </div>
               )
             })}

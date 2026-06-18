@@ -9,6 +9,7 @@ import { useExpenseFilterStore, amountIsFiltered } from '@/lib/store/useExpenseF
 import { filterExpensesByMonth, expenseAmountInBase } from '@/lib/utils/calculations'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatCurrency, escapeCsvField } from '@/lib/utils/formatters'
+import { downloadOrShareFile } from '@/lib/utils/exportFile'
 import { ExpenseFilters } from '@/components/expenses/ExpenseFilters'
 import { ExpenseDayList } from '@/components/expenses/ExpenseDayList'
 import { MonthNavigationControl } from '@/components/layout/MonthNavigationControl'
@@ -103,13 +104,7 @@ export default function ExpensesPage() {
       )
       .join('\n')
 
-    const blob = new Blob([headers + rows], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `buddget-expenses-${monthFilter}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+    void downloadOrShareFile(`buddget-expenses-${monthFilter}.csv`, headers + rows, 'text/csv')
   }
 
   const addExpense = () =>
@@ -133,7 +128,7 @@ export default function ExpensesPage() {
       </div>
 
       {/* Stats card */}
-      <div className="mb-[14px] rounded-[20px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-[16px_18px] dark:bg-[linear-gradient(150deg,#15151d,#101017)]">
+      <div className="mb-[14px] rounded-[20px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-[16px_18px] dark:bg-[linear-gradient(150deg,#1d1416,#121017)]">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-[var(--color-brand-text-muted)]">
