@@ -1054,7 +1054,6 @@ export const ar: Dictionary = {
     accountEmail: 'البريد',
     accountMemberSince: 'عضو منذ',
     changePassword: 'تغيير كلمة المرور',
-    resetLinkSent: 'تم إرسال رابط إعادة التعيين 📬',
 
     avatarModalTitle: 'تحديث صورتك',
     avatarTabPick: 'اختر صورة رمزية',

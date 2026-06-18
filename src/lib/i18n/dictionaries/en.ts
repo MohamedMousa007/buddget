@@ -1054,7 +1054,6 @@ export const en: Dictionary = {
     accountEmail: 'Email',
     accountMemberSince: 'Member since',
     changePassword: 'Change password',
-    resetLinkSent: 'Reset link sent \uD83D\uDCEC',
 
     avatarModalTitle: 'Update your photo',
     avatarTabPick: 'Pick an avatar',

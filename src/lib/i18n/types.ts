@@ -952,7 +952,6 @@ export interface Dictionary {
     accountEmail: string
     accountMemberSince: string
     changePassword: string
-    resetLinkSent: string
 
     avatarModalTitle: string
     avatarTabPick: string
