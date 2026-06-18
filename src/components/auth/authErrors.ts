@@ -51,7 +51,22 @@ export function mapOAuthError(
   }
   if (reason === 'provider_error') return t.auth.oauthFailed
 
-  return raw || t.auth.oauthFailed
+  // Android: Google plugin not registered in MainActivity [ERR_ANDROID_GOOGLE_ACTIVITY]
+  if (m.includes('main activity') || m.includes('scopes without')) return t.auth.oauthFailed
+  // Apple: Services ID redirect URL missing from Apple Developer [ERR_APPLE_REDIRECT_URL]
+  if (
+    m.includes('invalid_request') ||
+    m.includes('redirect_uri') ||
+    m.includes('redirect url') ||
+    m.includes('web redirect')
+  )
+    return t.auth.oauthUnavailable
+  // Back-button dismiss or 2-minute timeout [ERR_AUTH_TIMEOUT]
+  if (m.includes('auth_timeout') || m.includes('sign_in_cancelled')) return t.auth.oauthCancelled
+  // Plugin returned no token or stale credential [ERR_NO_TOKEN]
+  if (m.includes('no identity token') || m.includes('credential')) return t.auth.oauthFailed
+
+  return t.auth.oauthFailed
 }
 
 /** Map Supabase / network errors to user-facing copy (AuthModal). */

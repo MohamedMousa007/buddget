@@ -69,10 +69,23 @@ export interface NativeSignInResult {
   cancelled: boolean
 }
 
+const NATIVE_AUTH_TIMEOUT_MS = 120_000
+
+/** Race a login call against a 2-minute timeout so a hung promise (e.g. Apple
+ *  BroadcastChannel tab closed via Android back) never leaves the spinner stuck. */
+function withTimeout<T>(p: Promise<T>): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('auth_timeout')), NATIVE_AUTH_TIMEOUT_MS),
+    ),
+  ])
+}
+
 /** iOS ASAuthorization / Google sign-in surface their cancel as code 1001 / "cancel". */
 function isCancellation(e: unknown): boolean {
   const m = (e instanceof Error ? e.message : String(e ?? '')).toLowerCase()
-  return m.includes('cancel') || m.includes('1001')
+  return m.includes('cancel') || m.includes('1001') || m.includes('auth_timeout')
 }
 
 /**
@@ -95,12 +108,12 @@ export async function nativeSocialSignIn(provider: OAuthProvider): Promise<Nativ
     let idToken: string | null = null
     let googleRawNonce: string | undefined
     if (provider === 'apple') {
-      const { result } = await SocialLogin.login({
+      const { result } = await withTimeout(SocialLogin.login({
         provider: 'apple',
         options: isAndroid()
           ? { scopes: ['name', 'email'], useBroadcastChannel: true }
           : { scopes: ['name', 'email'] },
-      })
+      }))
       idToken = result.idToken
     } else {
       // Generate a nonce pair so Google embeds it in the ID token and Supabase
@@ -112,10 +125,10 @@ export async function nativeSocialSignIn(provider: OAuthProvider): Promise<Nativ
       const hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(googleRawNonce))
       const hashedNonce = Array.from(new Uint8Array(hashBuf), b => b.toString(16).padStart(2, '0')).join('')
 
-      const { result } = await SocialLogin.login({
+      const { result } = await withTimeout(SocialLogin.login({
         provider: 'google',
         options: { scopes: ['profile', 'email'], nonce: hashedNonce },
-      })
+      }))
       idToken = 'idToken' in result ? result.idToken : null
     }
 

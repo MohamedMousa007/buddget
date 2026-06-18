@@ -31,7 +31,7 @@ export const THEME_INIT_SCRIPT = `
 (function(){
   try {
     var raw = localStorage.getItem('buddget-storage');
-    var theme = 'dark';
+    var theme = 'system';
     if (raw) {
       var parsed = JSON.parse(raw);
       var s = parsed && parsed.state && parsed.state.settings;

@@ -5,12 +5,14 @@ import android.content.pm.PackageManager
 import android.webkit.PermissionRequest
 import com.getcapacitor.BridgeActivity
 import com.getcapacitor.BridgeWebChromeClient
+import ee.forgr.capacitor.social.login.SocialLoginPlugin
 
 class MainActivity : BridgeActivity() {
     private var pendingMicRequest: PermissionRequest? = null
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         registerPlugin(SmsCapacitorPlugin::class.java)
+        registerPlugin(SocialLoginPlugin::class.java)
         super.onCreate(savedInstanceState)
         // Android WebView denies getUserMedia unless the host app grants the
         // RESOURCE_AUDIO_CAPTURE resource here — even when RECORD_AUDIO is held.

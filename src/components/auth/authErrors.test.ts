@@ -27,11 +27,30 @@ describe('mapOAuthError', () => {
     )
   })
 
-  it('extracts message from plain {message:string} object (regression: was "[object Object]")', () => {
-    expect(mapOAuthError({ message: 'native sign-in failed' }, null, en)).toBe('native sign-in failed')
+  it('extracts message from plain {message:string} object but never leaks raw text to UI', () => {
+    // Unrecognised plugin messages fall through to the generic fallback — never verbatim.
+    expect(mapOAuthError({ message: 'native sign-in failed' }, null, en)).toBe(en.auth.oauthFailed)
   })
 
-  it('coerces non-string message property to string', () => {
-    expect(mapOAuthError({ message: 42 }, null, en)).toBe('42')
+  it('coerces non-string message property to string then applies generic fallback', () => {
+    expect(mapOAuthError({ message: 42 }, null, en)).toBe(en.auth.oauthFailed)
+  })
+
+  it('maps Android Google activity error to oauthFailed [ERR_ANDROID_GOOGLE_ACTIVITY]', () => {
+    expect(mapOAuthError(new Error('Cannot use scopes without main activity'), null, en)).toBe(en.auth.oauthFailed)
+    expect(mapOAuthError(new Error('no main activity found'), null, en)).toBe(en.auth.oauthFailed)
+  })
+
+  it('maps Apple invalid redirect error to oauthUnavailable [ERR_APPLE_REDIRECT_URL]', () => {
+    expect(mapOAuthError(new Error('invalid_request: invalid web redirect url'), null, en)).toBe(en.auth.oauthUnavailable)
+    expect(mapOAuthError(new Error('redirect_uri mismatch'), null, en)).toBe(en.auth.oauthUnavailable)
+  })
+
+  it('maps auth_timeout to oauthCancelled [ERR_AUTH_TIMEOUT]', () => {
+    expect(mapOAuthError(new Error('auth_timeout'), null, en)).toBe(en.auth.oauthCancelled)
+  })
+
+  it('maps no identity token error to oauthFailed [ERR_NO_TOKEN]', () => {
+    expect(mapOAuthError(new Error('No identity token returned'), null, en)).toBe(en.auth.oauthFailed)
   })
 })
