@@ -540,9 +540,14 @@ export function useAuthModal() {
     }
 
     const { appOrigin } = await import('@/lib/apiBase')
+    const { isNative } = await import('@/lib/native/isNative')
+    const { NATIVE_AUTH_SCHEME } = await import('@/lib/native/nativeAuthScheme')
     const origin = appOrigin() || APP_CONFIG.url.replace(/\/$/, '')
+    const resetRedirect = isNative()
+      ? `${NATIVE_AUTH_SCHEME}://auth/callback?next=/reset-password/confirm`
+      : `${origin}/auth/callback?next=/reset-password/confirm`
     const { error: e } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${origin}/auth/callback?next=/reset-password/confirm`,
+      redirectTo: resetRedirect,
     })
     setLoading(false)
     if (e) {
