@@ -26,7 +26,14 @@ export function mapOAuthError(
   if (reason === 'cancelled') return t.auth.oauthCancelled
   if (reason === 'exchange_failed' || reason === 'missing_code') return t.auth.oauthFailed
 
-  const raw = err instanceof Error ? err.message : err ? String(err) : ''
+  const raw =
+    err instanceof Error
+      ? err.message
+      : err && typeof err === 'object' && 'message' in err
+        ? String((err as { message: unknown }).message)
+        : err
+          ? String(err)
+          : ''
   const m = raw.toLowerCase()
 
   if (m.includes('fetch') || m.includes('network') || m.includes('failed to fetch')) {

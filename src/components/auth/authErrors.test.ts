@@ -26,4 +26,12 @@ describe('mapOAuthError', () => {
       en.auth.oauthUnavailable,
     )
   })
+
+  it('extracts message from plain {message:string} object (regression: was "[object Object]")', () => {
+    expect(mapOAuthError({ message: 'native sign-in failed' }, null, en)).toBe('native sign-in failed')
+  })
+
+  it('coerces non-string message property to string', () => {
+    expect(mapOAuthError({ message: 42 }, null, en)).toBe('42')
+  })
 })

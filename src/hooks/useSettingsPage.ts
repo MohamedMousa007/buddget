@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useT } from '@/lib/i18n'
-import { clearBudgetData } from '@/lib/auth/clearBudgetData'
+
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 
 export interface SettingsImportBannerState {
@@ -18,7 +18,7 @@ export interface SettingsImportBannerState {
  */
 export function useSettingsPage() {
   const t = useT()
-  const router = useRouter()
+
   const { user, signOut, openAuthModal } = useAuth()
   const store = useFinanceStore()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -78,13 +78,14 @@ export function useSettingsPage() {
   }
 
   const signOutAndHome = async () => {
-    clearBudgetData()
+    // signOut() owns all teardown and drops to the landing gate automatically.
+    // Do NOT call clearBudgetData() first — it flips dataReady=false while mode
+    // is still 'authenticated', triggering the 2.5s WelcomeScreen splash.
     await signOut()
-    router.replace('/')
   }
 
   return {
-    router,
+
     store,
     user,
     openAuthModal,

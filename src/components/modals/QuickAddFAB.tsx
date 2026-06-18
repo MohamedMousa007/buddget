@@ -63,6 +63,28 @@ export function QuickAddFAB() {
     }, msg)
   }
 
+  const renderTile = (tile: QuickAddTile) => {
+    const Icon = tile.icon
+    return (
+      <button
+        key={tile.id}
+        type="button"
+        onClick={() => runTile(tile.id)}
+        className="flex w-full flex-col items-center gap-[9px] rounded-[14px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-[5px] py-[14px] text-center transition-colors active:bg-[var(--color-brand-border)]/40"
+      >
+        <span
+          className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-[12px]"
+          style={{ background: tile.bg, color: tile.fg }}
+        >
+          <Icon className="h-[22px] w-[22px]" aria-hidden />
+        </span>
+        <span className="text-[12px] font-semibold leading-[1.2] text-[var(--color-brand-text-primary)]">
+          {tile.label}
+        </span>
+      </button>
+    )
+  }
+
   useEscapeClose(isOpen, () => setActiveModal(null))
 
   const longPress = useLongPress<HTMLButtonElement>(
@@ -95,28 +117,17 @@ export function QuickAddFAB() {
           <Mic className="h-[13px] w-[13px] shrink-0" />
           {t.modals.fabVoiceTip}
         </div>
-        <div className="grid grid-cols-5 gap-[6px]">
-          {tiles.map((tile) => {
-            const Icon = tile.icon
-            return (
-              <button
-                key={tile.id}
-                type="button"
-                onClick={() => runTile(tile.id)}
-                className="flex flex-col items-center gap-[7px] rounded-[13px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-[3px] py-[11px] text-center transition-colors hover:bg-[var(--color-brand-border)]/40"
-              >
-                <span
-                  className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px]"
-                  style={{ background: tile.bg, color: tile.fg }}
-                >
-                  <Icon className="h-[17px] w-[17px]" aria-hidden />
-                </span>
-                <span className="text-[10.5px] font-semibold leading-[1.15] text-[var(--color-brand-text-primary)]">
-                  {tile.label}
-                </span>
-              </button>
-            )
-          })}
+        <div className="flex flex-col gap-[6px]">
+          <div className="grid grid-cols-3 gap-[6px]">
+            {tiles.slice(0, 3).map(renderTile)}
+          </div>
+          <div className="flex justify-center gap-[6px]">
+            {tiles.slice(3).map((tile) => (
+              <div key={tile.id} style={{ width: 'calc((100% - 12px) / 3)' }}>
+                {renderTile(tile)}
+              </div>
+            ))}
+          </div>
         </div>
       </ModalShell>
 
