@@ -1822,7 +1822,6 @@ export interface Dictionary {
     currencyDetected: (currency: string) => string
     currencyChange: string
     addSecondaryCurrency: string
-    secondaryCurrencyTitle: string
     secondaryCurrencySelected: (currency: string) => string
     secondaryCurrencyHint: string
     secondaryCurrencyRemove: string

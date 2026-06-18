@@ -1,7 +1,15 @@
 'use client'
 
-import { ChevronRight } from 'lucide-react'
+import { useMemo } from 'react'
+import { ChevronRight, AlertTriangle } from 'lucide-react'
 import { useT } from '@/lib/i18n'
+import { useRates } from '@/hooks/useRates'
+import { useSmsTracking } from '@/hooks/useSmsTracking'
+import { buildIncomeRangeLabels } from '@/components/features/onboarding/incomeRanges'
+import { isNative, isIOS } from '@/lib/native/isNative'
+import { Switch } from '@/components/ui/switch'
+import { SmsIosSetupCard } from '@/components/features/settings/SmsIosSetupCard'
+import type { Currency } from '@/lib/store/types'
 import type { IncomeRangeKey, MoneyManagementMethod, SpendingCategory, OnboardingState } from '@/hooks/useOnboarding'
 
 interface StepSpendingProps {
@@ -49,10 +57,10 @@ export function StepSpending({
         </p>
       </div>
 
-      <IncomeRangeField selected={state.incomeRange} onSelect={onIncomeRangeSelect} t={t} />
+      <IncomeRangeField selected={state.incomeRange} onSelect={onIncomeRangeSelect} currency={state.currency} t={t} />
       <ManagementField selected={state.moneyManagementMethod} onSelect={onManagementSelect} t={t} />
       <CategoriesField selected={state.spendingCategories} onToggle={onToggleCategory} t={t} />
-      <SmsToggle enabled={state.smsTrackingEnabled} onToggle={onToggleSms} t={t} />
+      <SmsTrackingField onToggleSms={onToggleSms} t={t} />
 
       <button
         onClick={onNext}
@@ -68,12 +76,20 @@ export function StepSpending({
 function IncomeRangeField({
   selected,
   onSelect,
+  currency,
   t,
 }: {
   selected: IncomeRangeKey | ''
   onSelect: (r: IncomeRangeKey) => void
+  currency: Currency
   t: ReturnType<typeof useT>
 }) {
+  const { exchangeRates } = useRates()
+  const labels = useMemo(
+    () => buildIncomeRangeLabels(currency, exchangeRates, t.onboarding),
+    [currency, exchangeRates, t],
+  )
+
   return (
     <div className="space-y-2">
       <label className="text-xs font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
@@ -87,7 +103,7 @@ function IncomeRangeField({
             onClick={() => onSelect(r)}
             className={`w-full py-2.5 px-4 rounded-xl text-sm font-medium border text-start transition-colors ${selected === r ? 'bg-[var(--color-brand-red)] border-[var(--color-brand-red)] text-white' : 'bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] hover:border-[var(--color-brand-red)]/50'}`}
           >
-            {t.onboarding.incomeRangeLabels[r]}
+            {labels[r]}
           </button>
         ))}
       </div>
@@ -161,36 +177,70 @@ function CategoriesField({
   )
 }
 
-function SmsToggle({
-  enabled,
-  onToggle,
+/**
+ * SMS tracking — mirrors the real Settings flow (SettingsSmsTrackingSection):
+ * Android requests the OS permission and arms the bridge on grant; iOS shows the
+ * Shortcut setup card and arms on completion; web just persists the preference.
+ * `onToggleSms` syncs the onboarding-local flag so the review step reflects it.
+ */
+function SmsTrackingField({
+  onToggleSms,
   t,
 }: {
-  enabled: boolean
-  onToggle: (v: boolean) => void
+  onToggleSms: (v: boolean) => void
   t: ReturnType<typeof useT>
 }) {
+  const { isEnabled, isSetup, toggle, completeIosSetup, loading, error, lastReceivedAt } = useSmsTracking()
+  const onIOS = isNative() && isIOS()
+  const showSwitch = isSetup // iOS hides the switch until the Shortcut guide is finished
+
   return (
-    <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/60 p-4 flex items-center justify-between gap-4">
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">
-          {t.onboarding.smsTrackingLabel}
-        </p>
-        <p className="text-xs text-[var(--color-brand-text-muted)] mt-0.5 leading-relaxed">
-          {t.onboarding.smsTrackingHint}
-        </p>
+    <div className="space-y-3">
+      <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/60 p-4 space-y-3">
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">
+              {t.onboarding.smsTrackingLabel}
+            </p>
+            <p className="text-xs text-[var(--color-brand-text-muted)] mt-0.5 leading-relaxed">
+              {t.onboarding.smsTrackingHint}
+            </p>
+          </div>
+          {showSwitch && (
+            <Switch
+              checked={isEnabled}
+              disabled={loading}
+              onCheckedChange={async (v) => {
+                await toggle(v)
+                onToggleSms(v)
+              }}
+            />
+          )}
+        </div>
+
+        {/* iOS, not yet set up: show the Shortcut setup card (no switch). */}
+        {onIOS && !isSetup && (
+          <SmsIosSetupCard
+            lastReceivedAt={lastReceivedAt}
+            onSetupComplete={async () => {
+              await completeIosSetup()
+              onToggleSms(true)
+            }}
+          />
+        )}
+
+        {/* iOS, set up & enabled: re-open guide / status pill. */}
+        {onIOS && isSetup && isEnabled && (
+          <SmsIosSetupCard lastReceivedAt={lastReceivedAt} onSetupComplete={completeIosSetup} />
+        )}
+
+        {error && (
+          <div className="flex items-start gap-2 rounded-xl bg-amber-500/10 border border-amber-500/20 px-3 py-2.5 text-xs text-amber-400">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
       </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={enabled}
-        onClick={() => onToggle(!enabled)}
-        className={`relative shrink-0 w-10 h-6 rounded-full transition-colors ${enabled ? 'bg-[var(--color-brand-red)]' : 'bg-[var(--color-brand-border)]'}`}
-      >
-        <span
-          className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-4' : 'translate-x-0'}`}
-        />
-      </button>
     </div>
   )
 }

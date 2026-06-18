@@ -90,17 +90,22 @@ export function StepIdentity({
         </div>
 
         {selectedCountry && (
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-xs text-[var(--color-brand-text-muted)]">
-              {t.onboarding.currencyDetected(state.currency)}
-            </span>
+          <div className="flex items-center justify-between gap-3 mt-2 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/60 px-4 py-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="shrink-0 rounded-lg bg-[var(--color-brand-red)]/10 px-2.5 py-1 text-sm font-bold text-[var(--color-brand-red)]">
+                {state.currency}
+              </span>
+              <span className="text-xs text-[var(--color-brand-text-muted)] truncate">
+                {t.onboarding.currencyDetected(state.currency)}
+              </span>
+            </div>
             <button
               type="button"
               onClick={onToggleCurrencyOverride}
-              className="flex items-center gap-0.5 text-xs text-[var(--color-brand-red)] hover:underline"
+              className="flex shrink-0 items-center gap-1 min-h-[44px] rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-3 text-xs font-semibold text-[var(--color-brand-text-primary)] hover:border-[var(--color-brand-red)]/50 transition-colors"
             >
               {t.onboarding.currencyChange}
-              <ChevronDown className={`w-3 h-3 transition-transform ${state.currencyOverrideOpen ? 'rotate-180' : ''}`} aria-hidden />
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${state.currencyOverrideOpen ? 'rotate-180' : ''}`} aria-hidden />
             </button>
           </div>
         )}
@@ -174,7 +179,7 @@ function CurrencyGrid({
             key={c}
             type="button"
             onClick={() => onSelect(c)}
-            className={`py-1.5 rounded-lg text-xs font-medium border transition-colors ${selected === c ? 'bg-[var(--color-brand-red)] border-[var(--color-brand-red)] text-white' : 'bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] hover:border-[var(--color-brand-red)]/50'}`}
+            className={`min-h-[44px] rounded-lg text-xs font-medium border transition-colors ${selected === c ? 'bg-[var(--color-brand-red)] border-[var(--color-brand-red)] text-white' : 'bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] hover:border-[var(--color-brand-red)]/50'}`}
           >
             {c}
           </button>
@@ -199,36 +204,56 @@ function SecondaryCurrencySection({
   t: ReturnType<typeof useT>
 }) {
   return (
-    <div className="space-y-2">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex items-center gap-1 text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)] transition-colors"
-      >
-        <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
-        {selected
-          ? t.onboarding.secondaryCurrencySelected(selected)
-          : t.onboarding.addSecondaryCurrency}
-      </button>
-      {open && (
-        <div className="space-y-2">
-          <p className="text-xs text-[var(--color-brand-text-muted)]">{t.onboarding.secondaryCurrencyHint}</p>
-          <CurrencyGrid
-            currencies={CURRENCIES}
-            selected={selected}
-            onSelect={onSelect}
-            exclude={primary}
-          />
-          {selected && (
+    <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/60 p-4 space-y-3">
+      <div>
+        <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">
+          {t.onboarding.secondaryCurrencyTitle}
+        </p>
+        <p className="text-xs text-[var(--color-brand-text-muted)] mt-0.5 leading-relaxed">
+          {t.onboarding.secondaryCurrencyHint}
+        </p>
+      </div>
+
+      {selected ? (
+        <div className="flex items-center justify-between gap-3">
+          <span className="rounded-lg bg-[var(--color-brand-red)]/10 px-2.5 py-1 text-sm font-bold text-[var(--color-brand-red)]">
+            {selected}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onToggle}
+              className="min-h-[44px] rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-3 text-xs font-semibold text-[var(--color-brand-text-primary)] hover:border-[var(--color-brand-red)]/50 transition-colors"
+            >
+              {t.onboarding.currencyChange}
+            </button>
             <button
               type="button"
               onClick={() => onSelect('')}
-              className="text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-red)] transition-colors"
+              className="min-h-[44px] rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-3 text-xs font-semibold text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-red)] hover:border-[var(--color-brand-red)]/50 transition-colors"
             >
               {t.onboarding.secondaryCurrencyRemove}
             </button>
-          )}
+          </div>
         </div>
+      ) : (
+        <button
+          type="button"
+          onClick={onToggle}
+          className="flex w-full items-center justify-center gap-1.5 min-h-[44px] rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-3 text-sm font-semibold text-[var(--color-brand-text-primary)] hover:border-[var(--color-brand-red)]/50 transition-colors"
+        >
+          {t.onboarding.addSecondaryCurrency}
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
+        </button>
+      )}
+
+      {open && (
+        <CurrencyGrid
+          currencies={CURRENCIES}
+          selected={selected}
+          onSelect={onSelect}
+          exclude={primary}
+        />
       )}
     </div>
   )

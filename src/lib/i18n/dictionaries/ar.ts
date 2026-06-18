@@ -1965,7 +1965,6 @@ export const ar: Dictionary = {
     currencyDetected: (currency: string) => `${currency} هي عملتك الرئيسية`,
     currencyChange: 'عملة مختلفة؟',
     addSecondaryCurrency: '+ إضافة عملة ثانوية',
-    secondaryCurrencyTitle: 'هل تتعامل بعملة أخرى؟',
     secondaryCurrencySelected: (currency: string) => `ثانوية: ${currency}`,
     secondaryCurrencyHint: 'اختياري — مفيد إن كنت تكسب أو تنفق بعملة أخرى.',
     secondaryCurrencyRemove: 'إزالة العملة الثانوية',
