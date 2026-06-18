@@ -2,6 +2,8 @@
 
 import { Pencil, Loader2 } from 'lucide-react'
 import { useT } from '@/lib/i18n'
+import { useRates } from '@/hooks/useRates'
+import { buildIncomeRangeLabels } from '@/components/features/onboarding/incomeRanges'
 import type { OnboardingState } from '@/hooks/useOnboarding'
 import { ONBOARDING_COUNTRIES } from '@/hooks/useOnboarding'
 
@@ -18,6 +20,7 @@ interface StepReviewProps {
  */
 export function StepReview({ state, onEdit, onSubmit, onSkipIncome }: StepReviewProps) {
   const t = useT()
+  const { exchangeRates } = useRates()
   const country = ONBOARDING_COUNTRIES.find((c) => c.code === state.country)
 
   return (
@@ -60,7 +63,7 @@ export function StepReview({ state, onEdit, onSubmit, onSkipIncome }: StepReview
       >
         <div className="text-sm text-[var(--color-brand-text-primary)] space-y-0.5">
           {state.incomeRange && (
-            <p>{t.onboarding.incomeRangeLabels[state.incomeRange]}</p>
+            <p>{buildIncomeRangeLabels(state.currency, exchangeRates, t.onboarding)[state.incomeRange]}</p>
           )}
           {state.moneyManagementMethod && (
             <p className="text-[var(--color-brand-text-muted)]">

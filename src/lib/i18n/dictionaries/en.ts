@@ -1969,7 +1969,6 @@ export const en: Dictionary = {
     currencyDetected: (currency: string) => `${currency} is your main currency`,
     currencyChange: 'Different currency?',
     addSecondaryCurrency: '+ Add a secondary currency',
-    secondaryCurrencyTitle: 'Manage money in another currency?',
     secondaryCurrencySelected: (currency: string) => `Secondary: ${currency}`,
     secondaryCurrencyHint: 'Optional — useful if you earn, remit, or spend in another currency.',
     secondaryCurrencyRemove: 'Remove secondary currency',

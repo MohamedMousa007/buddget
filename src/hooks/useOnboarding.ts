@@ -205,10 +205,13 @@ export function useOnboarding() {
       setState((prev) => ({ ...prev, submitting: true, error: null }))
       try {
         const country = ONBOARDING_COUNTRIES.find((c) => c.code === state.country)
+        // smsTrackingEnabled is owned by useSmsTracking (it arms the native
+        // bridge on toggle); don't write it here or we'd clobber the
+        // native-authoritative value with the stale onboarding-local one.
         updateSettings({
           baseCurrency: state.currency,
           secondaryCurrency: state.secondaryCurrency || null,
-          smsTrackingEnabled: state.smsTrackingEnabled,
+          showSecondaryCurrency: !!state.secondaryCurrency,
         })
         updateProfile({
           name: state.name.trim(),
