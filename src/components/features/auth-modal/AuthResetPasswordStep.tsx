@@ -66,7 +66,7 @@ export function AuthResetPasswordStep({ loading, error, setError, onSubmit }: Au
   }
 
   return (
-    <div className="space-y-4">
+    <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); submit() }}>
       <div className="text-center">
         <h2 className="text-lg font-semibold text-[var(--color-brand-text-primary)]">{t.resetPassword.title}</h2>
         <p className="text-sm text-[var(--color-brand-text-muted)] mt-1">{t.resetPassword.subtitle}</p>
@@ -79,6 +79,7 @@ export function AuthResetPasswordStep({ loading, error, setError, onSubmit }: Au
           <input
             type={showNew ? 'text' : 'password'}
             dir="ltr"
+            name="new-password"
             autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -102,10 +103,10 @@ export function AuthResetPasswordStep({ loading, error, setError, onSubmit }: Au
           <input
             type={showConfirm ? 'text' : 'password'}
             dir="ltr"
+            name="confirm-password"
             autoComplete="new-password"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && submit()}
             placeholder={t.resetPassword.placeholderConfirm}
             className={cn(inputClass, toneClass(confirmTone), 'ps-10 pe-10')}
             style={inputStyle}
@@ -121,9 +122,9 @@ export function AuthResetPasswordStep({ loading, error, setError, onSubmit }: Au
 
       {error ? <p className="text-sm text-[var(--color-brand-red)]">{error}</p> : null}
 
-      <AuthPrimaryButton disabled={loading} onClick={submit}>
+      <AuthPrimaryButton type="submit" disabled={loading}>
         {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : t.resetPassword.buttonSubmit}
       </AuthPrimaryButton>
-    </div>
+    </form>
   )
 }

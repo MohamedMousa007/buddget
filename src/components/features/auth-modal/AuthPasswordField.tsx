@@ -27,8 +27,10 @@ export interface AuthPasswordFieldProps {
   /** Enter key submit handler. */
   onSubmit: () => void
   label: string
-  /** Either "new-password webauthn" for signup or "current-password webauthn" for signin. */
-  autoComplete: 'current-password webauthn' | 'new-password webauthn'
+  /** "current-password" for signin, "new-password" for signup. */
+  autoComplete: 'current-password' | 'new-password'
+  /** Form-field name so password managers pair it with the username. */
+  name?: string
   tone?: PasswordFieldTone
   disabled?: boolean
   placeholder?: string
@@ -36,12 +38,11 @@ export interface AuthPasswordFieldProps {
 
 /**
  * Standalone password input with show/hide toggle. Used in the morph form's
- * State 2 (password entry). Always carries `webauthn` so passkey autofill is
- * offered on supporting browsers.
+ * State 2 (password entry).
  */
 export const AuthPasswordField = forwardRef<HTMLInputElement, AuthPasswordFieldProps>(
   function AuthPasswordField(
-    { value, onChange, onSubmit, label, autoComplete, tone = 'neutral', disabled, placeholder },
+    { value, onChange, onSubmit, label, autoComplete, name, tone = 'neutral', disabled, placeholder },
     ref,
   ) {
     const t = useT()
@@ -65,6 +66,7 @@ export const AuthPasswordField = forwardRef<HTMLInputElement, AuthPasswordFieldP
             ref={ref}
             type={show ? 'text' : 'password'}
             dir="ltr"
+            name={name}
             autoComplete={autoComplete}
             value={value}
             onChange={(e) => onChange(e.target.value)}

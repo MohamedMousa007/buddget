@@ -42,6 +42,13 @@ const nextConfig: NextConfig = {
     : {}),
   headers: async () => [
     {
+      // Apple AutoFill fetches this extension-less file and (with nosniff)
+      // requires Content-Type: application/json. Vercel would otherwise serve
+      // it as octet-stream and the association would fail to validate.
+      source: '/.well-known/apple-app-site-association',
+      headers: [{ key: 'Content-Type', value: 'application/json' }],
+    },
+    {
       source: '/(.*)',
       headers: [
         { key: 'X-Content-Type-Options', value: 'nosniff' },
