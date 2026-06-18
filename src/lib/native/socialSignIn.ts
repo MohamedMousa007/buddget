@@ -116,6 +116,12 @@ export async function nativeSocialSignIn(provider: OAuthProvider): Promise<Nativ
     return { error: error ? { message: error.message } : null, cancelled: false }
   } catch (e) {
     if (isCancellation(e)) return { error: null, cancelled: true }
-    return { error: { message: e instanceof Error ? e.message : String(e) }, cancelled: false }
+    const message =
+      e instanceof Error
+        ? e.message
+        : e && typeof e === 'object' && 'message' in e
+          ? String((e as { message: unknown }).message)
+          : String(e)
+    return { error: { message }, cancelled: false }
   }
 }
