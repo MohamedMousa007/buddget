@@ -260,11 +260,14 @@ export function useOnboarding() {
         })
         if (!res.ok) throw new Error('Failed to complete onboarding')
 
-        // Refresh client session so user_metadata.onboarding_completed=true is
-        // visible to AuthProvider before router.push — without this the
-        // post-completion navigation lands on an indefinite loading splash.
+        // Sync onboarding_completed into the local auth state so AuthProvider
+        // sees it immediately on router.push('/').
+        // updateUser fires USER_UPDATED → onAuthStateChange updates user_metadata
+        // without touching the refresh token (safe on native; refreshSession()
+        // can race the SDK's own auto-refresh and 400-kill the session).
         const supabase = createClient()
-        await supabase.auth.refreshSession()
+        const { error: syncErr } = await supabase.auth.updateUser({ data: { onboarding_completed: true } })
+        if (syncErr) console.warn('[onboarding] metadata sync failed:', syncErr.message)
 
         router.push('/')
       } catch (e) {
