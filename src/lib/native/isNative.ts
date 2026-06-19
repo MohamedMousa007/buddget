@@ -9,6 +9,16 @@ export function isNative(): boolean {
   }
 }
 
+/**
+ * True when this is the Capacitor static-export bundle (set at build time by
+ * `scripts/capacitor-build.mjs`). Independent of the runtime Capacitor bridge,
+ * so OAuth can hard-route to native sign-in even if `isNativePlatform()` ever
+ * mis-reports — the web-redirect flow is unrecoverable inside the WebView.
+ */
+export function isNativeShellBuild(): boolean {
+  return process.env.NEXT_PUBLIC_NATIVE_SHELL === 'true'
+}
+
 /** `'ios' | 'android' | 'web'` — safe to call during SSR (returns `'web'`). */
 export function getPlatform(): 'ios' | 'android' | 'web' {
   try {

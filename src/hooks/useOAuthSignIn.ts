@@ -9,7 +9,7 @@ import { mapOAuthError } from '@/components/auth/authErrors'
 import { isOAuthProviderEnabled, type OAuthProvider } from '@/lib/auth/oauthProviders'
 import { routeAfterAuth } from '@/lib/auth/postAuthRedirect'
 import { useT } from '@/lib/i18n'
-import { isNative } from '@/lib/native/isNative'
+import { isNative, isNativeShellBuild } from '@/lib/native/isNative'
 
 /**
  * Supabase OAuth sign-in for Google / Apple. Returns per-provider availability
@@ -30,13 +30,19 @@ export function useOAuthSignIn(nextPath: string) {
       if (!isOAuthProviderEnabled(provider)) return
       setPending(provider)
       setError('')
+      // The web-redirect (signInWithOAuth → /auth/callback) flow is unrecoverable
+      // inside the native WebView: the PKCE verifier lives in the app's
+      // https://localhost storage but the callback runs server-side on the
+      // deployed origin (cookies) → "missing initial state". In the native bundle
+      // we must ALWAYS use native sign-in and never fall through to web redirect.
+      const native = isNativeShellBuild() || isNative()
       try {
-        if (isNative()) {
+        if (native) {
           const { nativeSocialSignIn, isNativeGoogleConfigured } = await import(
             '@/lib/native/socialSignIn'
           )
           if (provider === 'apple' || isNativeGoogleConfigured()) {
-            const { error: e, cancelled } = await nativeSocialSignIn(provider)
+            const { error: e, cancelled, user } = await nativeSocialSignIn(provider)
             if (cancelled) {
               setError(mapOAuthError(null, 'cancelled', t))
               setPending(null)
@@ -47,18 +53,23 @@ export function useOAuthSignIn(nextPath: string) {
               setPending(null)
               return
             }
-            // Route new users to /onboarding, returning users to nextPath.
-            // onAuthStateChange closes the modal; we handle the route here since
-            // native sign-in never triggers a server-side middleware redirect.
-            const supabase = createClient()
-            const { data: { session } } = await supabase.auth.getSession()
-            router.replace(routeAfterAuth(session?.user ?? null, nextPath))
+            // Route new users to /onboarding, returning users to nextPath, using
+            // the user returned by signInWithIdToken (no getSession round-trip,
+            // which can race the SDK's in-memory session update). onAuthStateChange
+            // closes the modal; we route here since native sign-in never triggers
+            // a server-side middleware redirect.
+            router.replace(routeAfterAuth(user, nextPath))
             setPending(null)
             return
           }
+          // Native but provider unusable natively — surface friendly copy rather
+          // than falling to the broken web-redirect flow.
+          setError(mapOAuthError({ message: 'no identity token' }, null, t))
+          setPending(null)
+          return
         }
 
-        // Web, or native Google before its client IDs are provisioned.
+        // Web / PWA only — never reached in the native bundle.
         const supabase = createClient()
         const origin = appOrigin() || APP_CONFIG.url.replace(/\/$/, '')
         const next = nextPath && nextPath.startsWith('/') ? nextPath : '/'

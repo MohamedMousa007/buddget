@@ -225,7 +225,19 @@ describe('nativeSocialSignIn — Apple — iOS', () => {
     mocks.login.mockResolvedValueOnce({ result: { idToken: 'apple-ios-token' } })
     mocks.signInWithIdToken.mockResolvedValueOnce({ error: null })
     const result = await nativeSocialSignIn('apple')
-    expect(result).toEqual({ error: null, cancelled: false })
+    expect(result).toEqual({ error: null, cancelled: false, user: null })
+  })
+
+  it('returns the user from signInWithIdToken for post-auth routing (no getSession)', async () => {
+    const { nativeSocialSignIn } = await freshModule({ android: false })
+    mocks.login.mockResolvedValueOnce({ result: { idToken: 'apple-ios-token' } })
+    mocks.signInWithIdToken.mockResolvedValueOnce({
+      data: { user: { id: 'u_123' } },
+      error: null,
+    })
+    const result = await nativeSocialSignIn('apple')
+    expect(result.user).toEqual({ id: 'u_123' })
+    expect(result.error).toBeNull()
   })
 
   it('passes the idToken to supabase.auth.signInWithIdToken with provider=apple', async () => {
@@ -242,14 +254,14 @@ describe('nativeSocialSignIn — Apple — iOS', () => {
     const { nativeSocialSignIn } = await freshModule({ android: false })
     mocks.login.mockRejectedValueOnce(new Error('User cancelled the sign-in'))
     const result = await nativeSocialSignIn('apple')
-    expect(result).toEqual({ error: null, cancelled: true })
+    expect(result).toEqual({ error: null, cancelled: true, user: null })
   })
 
   it('returns {error:null,cancelled:true} when user cancels with code 1001', async () => {
     const { nativeSocialSignIn } = await freshModule({ android: false })
     mocks.login.mockRejectedValueOnce(new Error('Error 1001: user dismissed'))
     const result = await nativeSocialSignIn('apple')
-    expect(result).toEqual({ error: null, cancelled: true })
+    expect(result).toEqual({ error: null, cancelled: true, user: null })
   })
 
   it('returns error when login throws a non-cancel error', async () => {
@@ -294,7 +306,7 @@ describe('nativeSocialSignIn — Apple — Android', () => {
     mocks.login.mockResolvedValueOnce({ result: { idToken: 'apple-android-token' } })
     mocks.signInWithIdToken.mockResolvedValueOnce({ error: null })
     const result = await nativeSocialSignIn('apple')
-    expect(result).toEqual({ error: null, cancelled: false })
+    expect(result).toEqual({ error: null, cancelled: false, user: null })
   })
 
   it('calls login with useBroadcastChannel:true on Android', async () => {
@@ -312,7 +324,7 @@ describe('nativeSocialSignIn — Apple — Android', () => {
     const { nativeSocialSignIn } = await freshModule({ android: true })
     mocks.login.mockRejectedValueOnce(new Error('User cancelled'))
     const result = await nativeSocialSignIn('apple')
-    expect(result).toEqual({ error: null, cancelled: true })
+    expect(result).toEqual({ error: null, cancelled: true, user: null })
   })
 
   it('returns error when login throws non-cancel (plain object from capgo)', async () => {
@@ -332,7 +344,7 @@ describe('nativeSocialSignIn — Google — iOS', () => {
     const { nativeSocialSignIn } = await freshModule({ android: false })
     mocks.login.mockResolvedValueOnce({ result: { idToken: 'google-ios-token' } })
     const result = await nativeSocialSignIn('google')
-    expect(result).toEqual({ error: null, cancelled: false })
+    expect(result).toEqual({ error: null, cancelled: false, user: null })
   })
 
   it('passes the idToken + nonce to supabase with provider=google', async () => {
@@ -359,7 +371,7 @@ describe('nativeSocialSignIn — Google — iOS', () => {
     const { nativeSocialSignIn } = await freshModule({ android: false })
     mocks.login.mockRejectedValueOnce(new Error('sign_in_cancelled'))
     const result = await nativeSocialSignIn('google')
-    expect(result).toEqual({ error: null, cancelled: true })
+    expect(result).toEqual({ error: null, cancelled: true, user: null })
   })
 
   it('handles idToken in result when login result uses {idToken} shape', async () => {
@@ -393,7 +405,7 @@ describe('nativeSocialSignIn — Google — Android', () => {
     mocks.login.mockResolvedValueOnce({ result: { idToken: 'google-android-token' } })
     mocks.signInWithIdToken.mockResolvedValueOnce({ error: null })
     const result = await nativeSocialSignIn('google')
-    expect(result).toEqual({ error: null, cancelled: false })
+    expect(result).toEqual({ error: null, cancelled: false, user: null })
   })
 
   it('returns {error:null,cancelled:true} when user cancels', async () => {
@@ -437,7 +449,7 @@ describe('cancellation detection', () => {
       const { nativeSocialSignIn } = await freshModule({ android: false })
       mocks.login.mockRejectedValueOnce(new Error(msg))
       const result = await nativeSocialSignIn('apple')
-      expect(result).toEqual({ error: null, cancelled: true })
+      expect(result).toEqual({ error: null, cancelled: true, user: null })
     })
   }
 
