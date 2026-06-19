@@ -51,8 +51,8 @@ export function useOAuthSignIn(nextPath: string) {
             // onAuthStateChange closes the modal; we handle the route here since
             // native sign-in never triggers a server-side middleware redirect.
             const supabase = createClient()
-            const { data: userData } = await supabase.auth.getUser()
-            router.replace(routeAfterAuth(userData.user, nextPath))
+            const { data: { session } } = await supabase.auth.getSession()
+            router.replace(routeAfterAuth(session?.user ?? null, nextPath))
             setPending(null)
             return
           }
