@@ -127,6 +127,9 @@ function AuthNextQuerySync({ configured }: { configured: boolean }) {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
+  const pathnameRef = useRef(pathname)
+  useEffect(() => { pathnameRef.current = pathname }, [pathname])
   const [user, setUser] = useState<AuthContextValue['user']>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
@@ -202,7 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (
           !intentional &&
           wasAuthedRef.current &&
-          !pathname.startsWith('/reset-password')
+          !pathnameRef.current.startsWith('/reset-password')
         ) {
           wasAuthedRef.current = false
           setAuthModalMessage(t.auth.sessionExpired)
@@ -251,7 +254,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       subscription.unsubscribe()
       if (onVisibility) document.removeEventListener('visibilitychange', onVisibility)
     }
-  }, [configured, pathname, t.auth.sessionExpired])
+  }, [configured, t.auth.sessionExpired])
 
   const signOut = useCallback(async () => {
     if (!configured) return
@@ -398,6 +401,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     !onboardingDoneMeta &&
     !onOnboardingRoute &&
     !isBypassRoute
+
+  useEffect(() => {
+    if (!showOnboardingRedirectSplash) return
+    router.replace('/onboarding')
+  }, [showOnboardingRedirectSplash, router])
 
   // Hold the app behind the splash until the initial server pull lands, so the
   // dashboard never paints stale localStorage numbers/theme that then visibly
