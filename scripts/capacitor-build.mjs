@@ -93,7 +93,7 @@ try {
   console.log('[cap-build] stashing /api and /middleware')
   stash()
 
-  const env = { ...process.env, CAPACITOR: 'true' }
+  const env = { ...process.env, CAPACITOR: 'true', NEXT_PUBLIC_NATIVE_SHELL: 'true' }
   console.log('[cap-build] running next build (static export)…')
   execSync('next build --webpack', { stdio: 'inherit', env, cwd: ROOT })
 

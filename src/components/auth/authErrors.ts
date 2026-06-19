@@ -17,14 +17,20 @@ export function mapOAuthCallbackReason(reason: string | null | undefined): OAuth
   return 'provider_error'
 }
 
-/** Map OAuth start/callback failures to friendly i18n copy. */
+/** Append a compact dev-reference code so users can report what failed without device logs. */
+function withRef(message: string, code: string): string {
+  return `${message} (ref: ${code})`
+}
+
+/** Map OAuth start/callback failures to friendly i18n copy with a dev-reference code. */
 export function mapOAuthError(
   err: unknown,
   reason: OAuthFailureReason | null,
   t: Dictionary,
 ): string {
   if (reason === 'cancelled') return t.auth.oauthCancelled
-  if (reason === 'exchange_failed' || reason === 'missing_code') return t.auth.oauthFailed
+  if (reason === 'exchange_failed' || reason === 'missing_code')
+    return withRef(t.auth.oauthFailed, 'EXCHANGE')
 
   const raw =
     err instanceof Error
@@ -37,36 +43,38 @@ export function mapOAuthError(
   const m = raw.toLowerCase()
 
   if (m.includes('fetch') || m.includes('network') || m.includes('failed to fetch')) {
-    return t.auth.errorNetwork
+    return withRef(t.auth.errorNetwork, 'NET')
   }
   if (
     m.includes('provider is not enabled') ||
     m.includes('unsupported provider') ||
     m.includes('validation failed')
   ) {
-    return t.auth.oauthUnavailable
+    return withRef(t.auth.oauthUnavailable, 'PROVIDER')
   }
   if (m.includes('access_denied') || m.includes('cancel')) {
     return t.auth.oauthCancelled
   }
-  if (reason === 'provider_error') return t.auth.oauthFailed
+  if (reason === 'provider_error') return withRef(t.auth.oauthFailed, 'PROVIDER')
 
-  // Android: Google plugin not registered in MainActivity [ERR_ANDROID_GOOGLE_ACTIVITY]
-  if (m.includes('main activity') || m.includes('scopes without')) return t.auth.oauthFailed
-  // Apple: Services ID redirect URL missing from Apple Developer [ERR_APPLE_REDIRECT_URL]
+  // Android: Google plugin not registered in MainActivity / Credential Manager failure
+  if (m.includes('main activity') || m.includes('scopes without'))
+    return withRef(t.auth.oauthFailed, 'ANDROID_GOOGLE')
+  // Apple: Services ID redirect URL missing from Apple Developer
   if (
     m.includes('invalid_request') ||
     m.includes('redirect_uri') ||
     m.includes('redirect url') ||
     m.includes('web redirect')
   )
-    return t.auth.oauthUnavailable
-  // Back-button dismiss or 2-minute timeout [ERR_AUTH_TIMEOUT]
+    return withRef(t.auth.oauthUnavailable, 'APPLE_REDIRECT')
+  // Back-button dismiss or 2-minute timeout
   if (m.includes('auth_timeout') || m.includes('sign_in_cancelled')) return t.auth.oauthCancelled
-  // Plugin returned no token or stale credential [ERR_NO_TOKEN]
-  if (m.includes('no identity token') || m.includes('credential')) return t.auth.oauthFailed
+  // Plugin returned no token or stale credential
+  if (m.includes('no identity token') || m.includes('credential'))
+    return withRef(t.auth.oauthFailed, 'NO_TOKEN')
 
-  return t.auth.oauthFailed
+  return withRef(t.auth.oauthFailed, 'GENERIC')
 }
 
 /** Map Supabase / network errors to user-facing copy (AuthModal). */

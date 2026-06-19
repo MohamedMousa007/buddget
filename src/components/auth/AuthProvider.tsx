@@ -380,6 +380,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [welcomeMinBlocking, setWelcomeMinBlocking] = useState(false)
   const welcomeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const welcomeStartRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Safety valve: if the initial server pull never completes (slow/failed native
+  // API call), release the splash after a hard ceiling so the user is never
+  // trapped on an eternal dark screen. The pull continues in the background.
+  const [dataPullTimedOut, setDataPullTimedOut] = useState(false)
+  const dataPullTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   /**
    * Post-signup flash guard: a freshly signed-up user briefly renders
@@ -416,7 +421,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     onboardingDoneMeta &&
     !onOnboardingRoute &&
     !isBypassRoute &&
-    !dataReady
+    !dataReady &&
+    !dataPullTimedOut
 
   // Minimum 2.5 s display so the welcome screen doesn't flash on fast connections.
   // No cleanup is returned from the main effect — the 2.5 s timer must survive
@@ -440,6 +446,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (welcomeStartRef.current) clearTimeout(welcomeStartRef.current)
     if (welcomeTimerRef.current) clearTimeout(welcomeTimerRef.current)
   }, [])
+
+  // Hard ceiling on the data-loading splash. Based on the underlying condition
+  // (not showDataLoadingSplash, which already factors in the timeout) so the
+  // timer arms once and isn't self-cancelling. Resets when data arrives.
+  const awaitingInitialPull =
+    mode === 'authenticated' && onboardingDoneMeta && !onOnboardingRoute && !isBypassRoute && !dataReady
+  useEffect(() => {
+    if (!awaitingInitialPull) {
+      if (dataPullTimerRef.current) { clearTimeout(dataPullTimerRef.current); dataPullTimerRef.current = null }
+      if (dataPullTimedOut) setDataPullTimedOut(false)
+      return
+    }
+    if (dataPullTimerRef.current) return
+    dataPullTimerRef.current = setTimeout(() => {
+      dataPullTimerRef.current = null
+      setDataPullTimedOut(true)
+    }, 8000)
+  }, [awaitingInitialPull, dataPullTimedOut])
+  useEffect(() => () => {
+    if (dataPullTimerRef.current) clearTimeout(dataPullTimerRef.current)
+  }, [])
+
   const showWelcomeScreen = showDataLoadingSplash || welcomeMinBlocking
 
   return (

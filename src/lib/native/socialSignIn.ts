@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient, User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import type { OAuthProvider } from '@/lib/auth/oauthProviders'
 import { isAndroid } from '@/lib/native/isNative'
@@ -67,6 +67,8 @@ export interface NativeSignInResult {
   error: { message: string } | null
   /** User dismissed the native sheet — surface friendly copy, not an error. */
   cancelled: boolean
+  /** Authenticated user from the id-token exchange — used for routing without a getSession round-trip. */
+  user: User | null
 }
 
 const NATIVE_AUTH_TIMEOUT_MS = 120_000
@@ -132,23 +134,28 @@ export async function nativeSocialSignIn(provider: OAuthProvider): Promise<Nativ
       idToken = 'idToken' in result ? result.idToken : null
     }
 
-    if (!idToken) return { error: { message: 'No identity token returned' }, cancelled: false }
+    if (!idToken)
+      return { error: { message: 'No identity token returned' }, cancelled: false, user: null }
 
     const supabase: SupabaseClient = createClient()
-    const { error } = await supabase.auth.signInWithIdToken({
+    const { data, error } = await supabase.auth.signInWithIdToken({
       provider,
       token: idToken,
       ...(googleRawNonce ? { nonce: googleRawNonce } : {}),
     })
-    return { error: error ? { message: error.message } : null, cancelled: false }
+    return {
+      error: error ? { message: error.message } : null,
+      cancelled: false,
+      user: data?.user ?? null,
+    }
   } catch (e) {
-    if (isCancellation(e)) return { error: null, cancelled: true }
+    if (isCancellation(e)) return { error: null, cancelled: true, user: null }
     const message =
       e instanceof Error
         ? e.message
         : e && typeof e === 'object' && 'message' in e
           ? String((e as { message: unknown }).message)
           : String(e)
-    return { error: { message }, cancelled: false }
+    return { error: { message }, cancelled: false, user: null }
   }
 }
