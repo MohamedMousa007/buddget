@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "778240192154",
+    "project_id": "gen-lang-client-0929604237",
+    "storage_bucket": "gen-lang-client-0929604237.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:778240192154:android:20757c9eaf36da5dd8f923",
+        "android_client_info": {
+          "package_name": "app.buddget"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "778240192154-ot2lvpocoo3decfsld9vk6fapmnstclp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.buddget",
+            "certificate_hash": "d1a7c1c606dc9c4f00c1f951dd89589d1eb66e2c"
+          }
+        },
+        {
+          "client_id": "778240192154-25mklgchljt81ctfnbmln5j4g432sh0l.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDlXnLSx3VBsYs_kGb1h2oo55GrGlrEtYg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "778240192154-25mklgchljt81ctfnbmln5j4g432sh0l.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "778240192154-msqujjuarl3k374c6gutnutj0nooqcjd.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "app.buddget"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
