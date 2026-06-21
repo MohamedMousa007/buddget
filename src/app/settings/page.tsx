@@ -1,7 +1,5 @@
 'use client'
 
-import { useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 import { User, Shield, Palette, Globe, MessageSquare, Database, Target, RefreshCw, FileText } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import Link from 'next/link'
@@ -9,16 +7,8 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 import { SettingsRow } from '@/components/features/settings/SettingsRow'
-import { ProfileOnboardingSection } from '@/components/features/profile/ProfileOnboardingSection'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { useT, useLocale } from '@/lib/i18n'
-import {
-  getOnboardingCompletionPercent,
-  getOnboardingStageRows,
-  onboardingProgressSnapshotFromStore,
-  isExpertOnboardingComplete,
-} from '@/lib/onboarding/onboardingProgress'
-import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { cn } from '@/lib/utils'
 
 function SectionHeader({ label }: { label: string }) {
@@ -41,27 +31,13 @@ export default function SettingsPage() {
   const t = useT()
   const { locale } = useLocale()
   const { user } = useAuth()
-  const router = useRouter()
 
-  const { profile, dataReady, onboardingState } = useFinanceStore(
+  const { profile, dataReady } = useFinanceStore(
     useShallow((s) => ({
       profile: s.profile,
       dataReady: s.dataReady,
-      onboardingState: s.onboardingState,
     })),
   )
-
-  const store = useFinanceStore()
-
-  const onboardingPct = getOnboardingCompletionPercent(store, t)
-  const onboardingStages = getOnboardingStageRows(onboardingProgressSnapshotFromStore(store), t)
-  const onboardingDone =
-    user?.user_metadata?.onboarding_completed === true ||
-    isExpertOnboardingComplete(onboardingState)
-
-  const redoOnboarding = useCallback(() => {
-    router.push('/onboarding?redo=1')
-  }, [router])
 
   if (!dataReady) return <div className="p-4"><SkeletonList rows={8} /></div>
 
@@ -91,20 +67,6 @@ export default function SettingsPage() {
               ) : null}
             </div>
           </Link>
-        )}
-
-        {/* Onboarding progress */}
-        {!onboardingDone && (
-          <div className="mb-2">
-            <ProfileOnboardingSection
-              expertDone={onboardingDone}
-              pct={onboardingPct}
-              stages={onboardingStages}
-              supabaseConfigured={isSupabaseConfigured()}
-              user={user}
-              onRedoOnboarding={redoOnboarding}
-            />
-          </div>
         )}
 
         {/* Account */}

@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { DashboardSearchParamsSync } from '@/components/dashboard/DashboardSearchParamsSync'
 import { DashboardHero } from '@/components/dashboard/DashboardHero'
@@ -13,20 +12,11 @@ import { DashboardTransactions } from '@/components/dashboard/DashboardTransacti
 import { DashboardSummaryCards } from '@/components/dashboard/DashboardSummaryCards'
 import { DashboardSummaryTrio } from '@/components/dashboard/DashboardSummaryTrio'
 import { DashboardGoalsStrip } from '@/components/dashboard/DashboardGoalsStrip'
-import { DashboardFirstRunChecklist } from '@/components/dashboard/DashboardFirstRunChecklist'
-import { BuildBudgetCta } from '@/components/dashboard/BuildBudgetCta'
-import { LockedFeatureCard } from '@/components/ui/LockedFeatureCard'
-import { SetupChecklist } from '@/components/features/onboarding/SetupChecklist'
 import { SmsAccountDetectionBanner } from '@/components/features/dashboard/SmsAccountDetectionBanner'
 import { SmsPendingConfirmationsBanner } from '@/components/features/dashboard/SmsPendingConfirmationsBanner'
-import { useFirstRunChecklist } from '@/lib/onboarding/firstRunChecklist'
-import { useLegacyOnboardingMigrator } from '@/lib/onboarding/migrateLegacyOnboarding'
-import { ONBOARDING_EVENTS, track } from '@/lib/analytics/events'
-import { useActionToast } from '@/components/ui/ActionToast'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useNetWorth } from '@/hooks/useNetWorth'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { useT } from '@/lib/i18n'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import {
   useHydrateBudget,
@@ -39,10 +29,7 @@ import {
 } from '@/hooks/remote'
 
 export default function DashboardPage() {
-  const t = useT()
   const dataReady = useFinanceStore((s) => s.dataReady)
-  // Each hook runs in parallel and hydrates its Zustand slice from Supabase
-  // (in addition to the localStorage copy hydrated synchronously on mount).
   useHydrateExpenses()
   useHydrateIncome()
   useHydrateDebts()
@@ -50,46 +37,15 @@ export default function DashboardPage() {
   useHydrateGoals()
   useHydrateBudget()
   useHydrateSubscriptions()
-  useLegacyOnboardingMigrator()
 
   const stats = useMonthlyStats()
   const netWorth = useNetWorth()
-  const checklist = useFirstRunChecklist()
-  const showToast = useActionToast()
   const { dashboardLayout } = useFinanceStore(
     useShallow((s) => ({
       dashboardLayout: s.settings.dashboardLayout ?? 'standard',
     })),
   )
   const isMinimal = dashboardLayout === 'minimal'
-
-  const [justBuilt, setJustBuilt] = useState(false)
-  const showChecklist = !checklist.hidden && !checklist.allDone && !justBuilt
-  // Locks bypassed for device testing — re-enable when onboarding flow is stable
-  const incomeIsLocked = false
-  const budgetIsLocked = false
-  const netWorthIsLocked = false
-
-  const wasAllDoneRef = useRef<boolean | null>(null)
-  useEffect(() => {
-    if (checklist.hidden) {
-      wasAllDoneRef.current = null
-      return
-    }
-    if (wasAllDoneRef.current === null) {
-      wasAllDoneRef.current = checklist.allDone
-      return
-    }
-    if (!wasAllDoneRef.current && checklist.allDone) {
-      try {
-        showToast(t.onboarding.checklistCompleteToast)
-      } catch {
-        /* toast provider not mounted in tests */
-      }
-      track(ONBOARDING_EVENTS.checklistAllCompleted)
-    }
-    wasAllDoneRef.current = checklist.allDone
-  }, [checklist.allDone, checklist.hidden, showToast, t.onboarding.checklistCompleteToast])
 
   if (!dataReady) return <div className="p-4"><SkeletonList rows={8} /></div>
 
@@ -99,7 +55,6 @@ export default function DashboardPage() {
       <div
         className="max-w-2xl lg:max-w-3xl mx-auto px-4 pt-4 pb-8 space-y-4 animate-[dashboardIn_0.35s_ease-out]"
       >
-        <SetupChecklist />
         <SmsPendingConfirmationsBanner />
         <SmsAccountDetectionBanner />
 
@@ -112,26 +67,8 @@ export default function DashboardPage() {
               daysLeft: stats.daysLeft,
               baseCurrency: stats.baseCurrency,
             }}
-            suppressNumbers={showChecklist}
+            suppressNumbers={false}
           />
-        ) : incomeIsLocked ? (
-          <LockedFeatureCard title="Cash flow & income" dependency="income">
-            <DashboardHero
-              stats={{
-                leftToSpend: 0,
-                budgetUsedPercent: 0,
-                totalIncome: 0,
-                totalSpent: stats.totalSpent,
-                savingsTotal: stats.savingsTotal,
-                netSavingsTransfersThisMonth: 0,
-                dailyRate: stats.dailyRate,
-                paceStatus: stats.paceStatus,
-                daysLeft: stats.daysLeft,
-                baseCurrency: stats.baseCurrency,
-              }}
-              suppressNumbers={false}
-            />
-          </LockedFeatureCard>
         ) : (
           <DashboardHero
             stats={{
@@ -146,16 +83,11 @@ export default function DashboardPage() {
               daysLeft: stats.daysLeft,
               baseCurrency: stats.baseCurrency,
             }}
-            suppressNumbers={showChecklist}
+            suppressNumbers={false}
           />
         )}
 
-        {showChecklist ? (
-          <>
-            <DashboardFirstRunChecklist snapshot={checklist} />
-            <BuildBudgetCta onBuilt={() => setJustBuilt(true)} />
-          </>
-        ) : isMinimal ? (
+        {isMinimal ? (
           <DashboardStatsRow
             totalIncome={stats.totalIncome}
             totalSpent={stats.totalSpent}
@@ -164,17 +96,13 @@ export default function DashboardPage() {
           />
         ) : (
           <>
-            {netWorthIsLocked ? (
-              <LockedFeatureCard title="Net worth" dependency="income" />
-            ) : (
-              <DashboardNetWorthHero
-                netWorth={netWorth.netWorth}
-                monthlyFlow={netWorth.monthlyFlow}
-                totalSavings={netWorth.totalSavings}
-                totalDebt={netWorth.totalDebt}
-                baseCurrency={stats.baseCurrency}
-              />
-            )}
+            <DashboardNetWorthHero
+              netWorth={netWorth.netWorth}
+              monthlyFlow={netWorth.monthlyFlow}
+              totalSavings={netWorth.totalSavings}
+              totalDebt={netWorth.totalDebt}
+              baseCurrency={stats.baseCurrency}
+            />
             <DashboardPaceBadge
               paceStatus={stats.paceStatus}
               dailyRate={stats.dailyRate}
@@ -186,15 +114,11 @@ export default function DashboardPage() {
           </>
         )}
 
-        {budgetIsLocked ? (
-          <LockedFeatureCard title="Budget progress" dependency="budget_plan" />
-        ) : (
-          <DashboardCategoryBars
-            budgetCategories={stats.dashboardBudgetCategories}
-            categorySpending={stats.categorySpending}
-            categoryBudgetCaps={stats.categoryBudgetCaps}
-          />
-        )}
+        <DashboardCategoryBars
+          budgetCategories={stats.dashboardBudgetCategories}
+          categorySpending={stats.categorySpending}
+          categoryBudgetCaps={stats.categoryBudgetCaps}
+        />
 
         <DashboardTransactions
           expenses={stats.monthlyExpenses}
