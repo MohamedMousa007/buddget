@@ -24,6 +24,7 @@ These rules ap
   - Do not delegate native tasks (such as editing AndroidManifest, Gradle files, Info.plist, or writing Kotlin/Swift) to the user. Execute these edits directly.
   - After ANY web code change that must reach iOS/Android, ALWAYS run `npm run cap:build` — never bare `npx cap sync`. `cap sync` alone copies stale `out/` without rebuilding the web bundle; `npm run cap:build` stashes server-only routes, runs `CAPACITOR=true next build` (static export → `out/`), then syncs to both platforms.
   - Compile the native projects (e.g., via `xcodebuild` or `./gradlew assembleDebug`) to ensure there are no compilation warnings, deprecated API errors, or manifest mismatches before declaring the task complete.
+  - **Android APK naming + Drive upload (MANDATORY):** Every APK build must be uploaded to Google Drive via `bash scripts/upload-apk.sh <apk-path>`. The APK filename must include context: pass the Linear ticket ID as the first argument to `scripts/native-release.sh` (e.g. `bash scripts/native-release.sh BUD-123`) so the file is named `buddget-android-vc<N>-BUD-123.apk`; for ad-hoc builds with no ticket, the script auto-generates a slug from the last commit message. Always include the Drive share link in any Linear ticket comment or summary.
 
 ## Code Style
 - **Enterprise structure:** Clean module boundaries, single-responsibility files.
