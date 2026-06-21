@@ -45,7 +45,14 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 export PATH="$JAVA_HOME/bin:$PATH"
 ( cd android && ./gradlew assembleDebug )
 mkdir -p dist
-DEST="dist/buddget-android-vc${NEW_AND}.apk"
+# Name includes ticket ID when provided, otherwise a short slug from the last commit.
+TICKET="${1:-}"
+if [ -n "$TICKET" ]; then
+  APK_LABEL="$TICKET"
+else
+  APK_LABEL=$(git log -1 --format="%s" | sed 's/[^a-zA-Z0-9]/-/g' | cut -c1-40 | sed 's/-*$//')
+fi
+DEST="dist/buddget-android-vc${NEW_AND}-${APK_LABEL}.apk"
 cp android/app/build/outputs/apk/debug/app-debug.apk "$DEST"
 
 # --- Upload APK to Google Drive (anyone with link) ---
