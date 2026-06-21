@@ -3,27 +3,26 @@
 import { RefObject } from 'react'
 import { AlertTriangle, Database, Download, Trash2, Upload } from 'lucide-react'
 import { useT } from '@/lib/i18n'
-import type { FinanceStore } from '@/lib/store/types'
 
 export interface SettingsDataManagementSectionProps {
-  store: FinanceStore
   fileInputRef: RefObject<HTMLInputElement | null>
   showResetConfirm: boolean
   onShowResetConfirm: (v: boolean) => void
   onExport: () => void
   onImportChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onStartFresh: () => void
 }
 
 /**
  * JSON backup / import and destructive reset.
  */
 export function SettingsDataManagementSection({
-  store,
   fileInputRef,
   showResetConfirm,
   onShowResetConfirm,
   onExport,
   onImportChange,
+  onStartFresh,
 }: SettingsDataManagementSectionProps) {
   const t = useT()
 
@@ -79,8 +78,8 @@ export function SettingsDataManagementSection({
             <button
               type="button"
               onClick={() => {
-                store.resetAllData()
                 onShowResetConfirm(false)
+                void onStartFresh()
               }}
               className="px-3 py-1 rounded-lg bg-[var(--color-brand-red)] text-white text-xs font-medium"
             >

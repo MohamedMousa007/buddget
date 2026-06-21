@@ -5,6 +5,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useT } from '@/lib/i18n'
+import { clearBudgetData } from '@/lib/auth/clearBudgetData'
+import { apiFetchAuth } from '@/lib/apiBase'
 
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 
@@ -84,9 +86,22 @@ export function useSettingsPage() {
     await signOut()
   }
 
-  return {
+  const handleStartFresh = async () => {
+    // Best-effort server wipe so data doesn't rehydrate from Supabase on next start.
+    try {
+      await apiFetchAuth('/api/account/reset-data', { method: 'POST' })
+    } catch (e) {
+      console.error('[startFresh] server wipe failed', e)
+    }
+    // Wipe localStorage + in-memory Zustand state.
+    clearBudgetData()
+    // Restore dataReady so the UI renders immediately instead of hanging on
+    // the loading splash (resetAllData inside clearBudgetData sets it false,
+    // and SupabaseFinanceSync's pull only fires on userId change — never here).
+    useFinanceStore.getState().setDataReady(true)
+  }
 
-    store,
+  return {
     user,
     openAuthModal,
     signOutAndHome,
@@ -97,5 +112,6 @@ export function useSettingsPage() {
     importBanner,
     handleExport,
     handleImport,
+    handleStartFresh,
   }
 }
