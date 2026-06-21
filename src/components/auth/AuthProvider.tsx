@@ -141,6 +141,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const configured = useMemo(() => isSupabaseConfigured(), [])
 
+  // Safety net: if getSession() never resolves (e.g. native token refresh hangs
+  // on slow/no network), release the loading gate after 10 s so the user reaches
+  // the landing screen instead of being stuck forever.
+  useEffect(() => {
+    if (!configured) return
+    const id = globalThis.setTimeout(() => setLoading(false), 10_000)
+    return () => globalThis.clearTimeout(id)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // mount-only — getSession resolves quickly on good connections
+
   const openAuthModal = useCallback(
     (
       next?: string,
@@ -401,11 +411,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    */
   const onboardingDoneMeta = user?.user_metadata?.onboarding_completed === true
   const onOnboardingRoute = pathname.startsWith('/onboarding')
+  // pathnameRef.current is the *previous* pathname (updated post-render via useEffect).
+  // On the very first render after router.push('/') from completeOnboarding(), the
+  // previous pathname is still '/onboarding' while the current one is '/'. The
+  // USER_UPDATED event that sets onboarding_completed=true on the user is already
+  // queued in React but hasn't committed yet. Suppressing the redirect for this one
+  // render gives React one cycle to flush the state update, preventing the race
+  // condition that bounced newly-onboarded users back to /onboarding.
+  const justLeftOnboarding = pathnameRef.current.startsWith('/onboarding') && !onOnboardingRoute
   const showOnboardingRedirectSplash =
     mode === 'authenticated' &&
     !onboardingDoneMeta &&
     !onOnboardingRoute &&
-    !isBypassRoute
+    !isBypassRoute &&
+    !justLeftOnboarding
 
   useEffect(() => {
     if (!showOnboardingRedirectSplash) return
