@@ -63,11 +63,12 @@ describe('AuthProvider.signOut — source invariants', () => {
 
 describe('useSettingsPage.signOutAndHome — caller invariants', () => {
   const code = src('hooks/useSettingsPage.ts')
-  // Only import lines — if clearBudgetData is not imported it cannot be called
-  const importLines = code.split('\n').filter((l) => l.startsWith('import')).join('\n')
 
-  it('clearBudgetData is not imported (was triggering 2.5s splash when called before signOut)', () => {
-    expect(importLines).not.toContain('clearBudgetData')
+  it('signOutAndHome does not call clearBudgetData (would trigger 2.5s splash before signOut completes)', () => {
+    const fnStart = code.indexOf('const signOutAndHome = async')
+    const fnEnd = code.indexOf('\n  }', fnStart)
+    const body = stripLineComments(code.slice(fnStart, fnEnd))
+    expect(body).not.toContain('clearBudgetData')
   })
 
   it('router.replace is not called (route teardown belongs to signOut)', () => {
