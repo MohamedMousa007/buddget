@@ -18,6 +18,7 @@ import { BiometricSessionPersist } from '@/lib/native/useBiometricSessionPersist
 import { AuthModal } from '@/components/auth/AuthModal'
 import { AuthContext, type AuthContextValue, type AuthMode, useAuth } from '@/components/auth/auth-context'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
+import { onboardingComplete } from '@/lib/auth/postAuthRedirect'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { LandingGate } from '@/components/auth/LandingGate'
@@ -134,6 +135,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const dataReady = useFinanceStore((s) => s.dataReady)
+  // Local, race-free onboarding markers — `completeOnboarding()` persists these
+  // to localStorage before navigating, so they survive the native `updateUser`
+  // metadata race that leaves `user_metadata.onboarding_completed` stale.
+  const onboardingVersion = useFinanceStore((s) => s.profile.onboardingVersion)
+  const onboardingState = useFinanceStore((s) => s.onboardingState)
   const [pendingNext, setPendingNext] = useState('/')
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authModalMessage, setAuthModalMessage] = useState<string | null>(null)
@@ -405,11 +411,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    *
    * Block children until one of:
    *   - the user is already on `/onboarding`
-   *   - `user_metadata.onboarding_completed === true`
+   *   - onboarding is complete (server metadata OR local store marker)
    *
    * Bypass routes (reset-password, auth callback) always render.
    */
-  const onboardingDoneMeta = user?.user_metadata?.onboarding_completed === true
+  const onboardingDone = onboardingComplete(user, {
+    profile: { onboardingVersion },
+    onboardingState,
+  })
   const onOnboardingRoute = pathname.startsWith('/onboarding')
   // pathnameRef.current is the *previous* pathname (updated post-render via useEffect).
   // On the very first render after router.push('/') from completeOnboarding(), the
@@ -421,7 +430,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const justLeftOnboarding = pathnameRef.current.startsWith('/onboarding') && !onOnboardingRoute
   const showOnboardingRedirectSplash =
     mode === 'authenticated' &&
-    !onboardingDoneMeta &&
+    !onboardingDone &&
     !onOnboardingRoute &&
     !isBypassRoute &&
     !justLeftOnboarding
@@ -437,7 +446,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // pull() finally — guaranteed even on the early-return path.
   const showDataLoadingSplash =
     mode === 'authenticated' &&
-    onboardingDoneMeta &&
+    onboardingDone &&
     !onOnboardingRoute &&
     !isBypassRoute &&
     !dataReady &&
@@ -470,7 +479,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // (not showDataLoadingSplash, which already factors in the timeout) so the
   // timer arms once and isn't self-cancelling. Resets when data arrives.
   const awaitingInitialPull =
-    mode === 'authenticated' && onboardingDoneMeta && !onOnboardingRoute && !isBypassRoute && !dataReady
+    mode === 'authenticated' && onboardingDone && !onOnboardingRoute && !isBypassRoute && !dataReady
   useEffect(() => {
     if (!awaitingInitialPull) {
       if (dataPullTimerRef.current) { clearTimeout(dataPullTimerRef.current); dataPullTimerRef.current = null }

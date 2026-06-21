@@ -9,6 +9,7 @@ import { useAuth } from '@/components/auth/auth-context'
 import { useT } from '@/lib/i18n'
 import { apiFetch, apiFetchAuth } from '@/lib/apiBase'
 import { routeAfterAuth } from '@/lib/auth/postAuthRedirect'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { MIN_PASSWORD_LEN } from '@/components/features/auth-modal/authModalTokens'
 import { markSessionEphemeral } from '@/hooks/useEphemeralSessionGuard'
 import { AUTH_EVENTS, track } from '@/lib/analytics/events'
@@ -346,7 +347,7 @@ export function useAuthModal() {
     setLoading(false)
     const { data: userData } = await supabase.auth.getUser()
     router.refresh()
-    router.replace(routeAfterAuth(userData.user, safeNext))
+    router.replace(routeAfterAuth(userData.user, safeNext, useFinanceStore.getState()))
   }, [
     email,
     password,
@@ -423,7 +424,7 @@ export function useAuthModal() {
       // transition for ~500-1000 ms on top of the natural navigation.
       // Server components on the new route pick up the fresh session
       // cookies at the next navigation/mount naturally.
-      router.replace(routeAfterAuth(userData.user, safeNext))
+      router.replace(routeAfterAuth(userData.user, safeNext, useFinanceStore.getState()))
       return
     }
     if (data.user) {
@@ -497,7 +498,7 @@ export function useAuthModal() {
     setLoading(false)
     const { data: userData } = await supabase.auth.getUser()
     router.refresh()
-    router.replace(routeAfterAuth(userData.user, safeNext))
+    router.replace(routeAfterAuth(userData.user, safeNext, useFinanceStore.getState()))
   }, [email, otp, router, safeNext, supabase, t, verifyPurpose])
 
   /**
@@ -527,7 +528,7 @@ export function useAuthModal() {
       setLoading(false)
       const { data: userData } = await supabase.auth.getUser()
       router.refresh()
-      router.replace(routeAfterAuth(userData.user, safeNext))
+      router.replace(routeAfterAuth(userData.user, safeNext, useFinanceStore.getState()))
     },
     [router, safeNext, supabase, t],
   )
