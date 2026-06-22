@@ -43,7 +43,7 @@ interface DebtHistoryTableProps {
  */
 export function DebtHistoryTable({ debts, debtPayments }: DebtHistoryTableProps) {
   const t = useT()
-  const { formatDateShort } = useLocalizedFormatters()
+  const { formatDateShort, formatDayAbbr, formatTime } = useLocalizedFormatters()
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const { expenses, exchangeRates, allDebts } = useFinanceStore(
     useShallow((s) => ({
@@ -106,6 +106,8 @@ export function DebtHistoryTable({ debts, debtPayments }: DebtHistoryTableProps)
                   expanded={expanded}
                   onToggle={() => setExpandedId(expanded ? null : debt.id)}
                   formatDateShort={formatDateShort}
+                  formatDayAbbr={formatDayAbbr}
+                  formatTime={formatTime}
                   typeLabel={debtTypeLabel(debt, t.debts)}
                   tr={t.debts}
                 />
@@ -128,6 +130,8 @@ function DebtHistoryRow({
   expanded,
   onToggle,
   formatDateShort,
+  formatDayAbbr,
+  formatTime,
   typeLabel,
   tr,
 }: {
@@ -140,6 +144,8 @@ function DebtHistoryRow({
   expanded: boolean
   onToggle: () => void
   formatDateShort: (iso: string) => string
+  formatDayAbbr: (iso: string) => string
+  formatTime: (iso: string) => string
   typeLabel: string
   tr: {
     statusCleared: string
@@ -208,7 +214,13 @@ function DebtHistoryRow({
                         key={p.id}
                         className="flex flex-wrap justify-between gap-2 text-xs text-[var(--color-brand-text-secondary)]"
                       >
-                        <span>{formatDateShort(p.date)}</span>
+                        <span className="flex items-center gap-1.5">
+                          <span className="font-bold text-[var(--color-brand-text-primary)]">{formatDayAbbr(p.date)}</span>
+                          <span>·</span>
+                          <span>{formatDateShort(p.date)}</span>
+                          <span>·</span>
+                          <span className="text-[var(--color-brand-text-muted)]">{formatTime(p.createdAt)}</span>
+                        </span>
                         <span className="font-mono-numbers">
                           {debt.isGold ? `${p.amountPaid.toFixed(2)}g` : formatCurrency(showAmt, payCur)}
                         </span>

@@ -47,6 +47,14 @@ export function useLocalizedFormatters() {
       monthButtonLabel(month1to12: number) {
         return digits(format(new Date(2024, month1to12 - 1, 1), 'MMM', { locale: dfLocale }))
       },
+      /** Abbreviated weekday: WED / الأربعاء */
+      formatDayAbbr(dateStr: string) {
+        return format(parseISO(dateStr), 'EEE', { locale: dfLocale }).toUpperCase()
+      },
+      /** Time respecting device 12/24h preference via Intl. */
+      formatTime(isoStr: string) {
+        return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date(isoStr))
+      },
     }
   }, [dfLocale, t, locale])
 }
