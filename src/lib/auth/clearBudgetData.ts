@@ -31,6 +31,18 @@ export function clearBudgetData(): void {
         /* SSR or restricted storage */
       }
     }
+    // Belt-and-suspenders: drop any Supabase auth-token keys (sb-<ref>-auth-token,
+    // -code-verifier, etc.) so a stale SDK session can never survive a clear and
+    // get restored on the next launch. signOut({scope:'local'}) normally does this;
+    // this guards the path where it failed or was skipped.
+    try {
+      for (let i = window.localStorage.length - 1; i >= 0; i--) {
+        const k = window.localStorage.key(i)
+        if (k && k.startsWith('sb-') && k.includes('-auth-token')) window.localStorage.removeItem(k)
+      }
+    } catch {
+      /* restricted storage */
+    }
   }
 
   try {

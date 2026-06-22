@@ -8,7 +8,6 @@ import { profileFromRow } from '@/lib/supabase/remote/mappers/profileMapper'
 import { settingsFromRow } from '@/lib/supabase/remote/mappers/settingsMapper'
 import { onboardingFromRow } from '@/lib/supabase/remote/mappers/onboardingMapper'
 import { paymentMethodFromRow } from '@/lib/supabase/remote/mappers/paymentMethodMapper'
-import type { Currency } from '@/lib/store/types'
 
 /**
  * Core hydration needed by every page: profiles, user_settings, onboarding_state,
@@ -40,11 +39,10 @@ export function useHydrateCore(): void {
           patch.profile = profile
           patch.financialGoalsNotes = extras.financialGoalsNotes
           patch.activeBudgetPlanId = extras.activeBudgetPlanId
-          const secondary = (profileR.data.secondary_currency ?? null) as Currency | null
           if (settingsR.data) {
             patch.settings = settingsFromRow(settingsR.data, {
-              baseCurrency: profile.baseCurrency,
-              secondaryCurrency: secondary,
+              baseCurrency: extras.baseCurrency,
+              secondaryCurrency: extras.secondaryCurrency ?? null,
             })
           }
         }

@@ -45,19 +45,23 @@ describe('AuthProvider.signOut — source invariants', () => {
     expect(setSessionPos).toBeLessThan(iifePos)
   })
 
-  it('flushFinanceNow is called before clearBudgetData in the background IIFE', () => {
+  it('flushFinanceNow is called before clearBudgetData (pending writes land while the token is valid)', () => {
     const flushPos = signOutBody.indexOf('flushFinanceNow()')
     const clearPos = signOutBody.indexOf('clearBudgetData()')
     expect(flushPos).toBeGreaterThan(-1)
     expect(clearPos).toBeGreaterThan(flushPos)
   })
 
-  it("supabase.auth.signOut({scope:'local'}) is the last step in the background IIFE", () => {
+  it("SECURITY: supabase.auth.signOut({scope:'local'}) runs after flush and BEFORE the background IIFE", () => {
+    // The session token must be cleared from storage before the slower SMS/push
+    // cleanup (the background IIFE). If the user force-quits mid-teardown, the
+    // token must already be gone — otherwise the next launch's getSession()
+    // restores it and the "signed-out" user is logged back in.
     const supabasePos = signOutBody.indexOf("supabase.auth.signOut({ scope: 'local' })")
-    const clearPos = signOutBody.indexOf('clearBudgetData()')
     const flushPos = signOutBody.indexOf('flushFinanceNow()')
-    expect(supabasePos).toBeGreaterThan(clearPos)
+    const iifePos = signOutBody.indexOf('void (async () => {')
     expect(supabasePos).toBeGreaterThan(flushPos)
+    expect(supabasePos).toBeLessThan(iifePos)
   })
 })
 

@@ -70,8 +70,6 @@ export const DEFAULT_PROFILE: UserProfile = {
   name: '',
   gender: null,
   liteMode: false,
-  onboardingVersion: 0,
-  baseCurrency: 'EGP',
   createdAt: new Date().toISOString(),
 }
 
@@ -81,8 +79,6 @@ export function createFreshDefaultProfile(): UserProfile {
     id: 'local',
     name: '',
     liteMode: false,
-    onboardingVersion: 0,
-    baseCurrency: 'EGP',
     createdAt: new Date().toISOString(),
   }
 }

@@ -137,6 +137,7 @@ export async function flushDiff(
   const profileExtras = {
     financialGoalsNotes: next.financialGoalsNotes,
     activeBudgetPlanId: next.activeBudgetPlanId,
+    baseCurrency: next.settings.baseCurrency,
     secondaryCurrency: next.settings.secondaryCurrency ?? null,
   }
   const prevProfileSig = {
@@ -144,6 +145,7 @@ export async function flushDiff(
     extras: {
       financialGoalsNotes: prev.financialGoalsNotes,
       activeBudgetPlanId: prev.activeBudgetPlanId,
+      baseCurrency: prev.settings.baseCurrency,
       secondaryCurrency: prev.settings.secondaryCurrency ?? null,
     },
   }
@@ -239,9 +241,9 @@ export async function pullCore(client: Client, userId: string): Promise<Snapshot
   const { profile, extras } = profileFromRow(profileR.data)
   const secondary = (profileR.data.secondary_currency ?? null) as Currency | null
   const settings = settingsR.data
-    ? settingsFromRow(settingsR.data, { baseCurrency: profile.baseCurrency, secondaryCurrency: secondary })
+    ? settingsFromRow(settingsR.data, { baseCurrency: extras.baseCurrency, secondaryCurrency: secondary })
     : {
-        baseCurrency: profile.baseCurrency,
+        baseCurrency: extras.baseCurrency,
         secondaryCurrency: secondary,
         showSecondaryCurrency: false,
         theme: 'dark' as const,
@@ -341,9 +343,9 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
   const { profile, extras } = profileFromRow(profileR.data)
   const secondary = (profileR.data.secondary_currency ?? null) as Currency | null
   const settings = settingsR.data
-    ? settingsFromRow(settingsR.data, { baseCurrency: profile.baseCurrency, secondaryCurrency: secondary })
+    ? settingsFromRow(settingsR.data, { baseCurrency: extras.baseCurrency, secondaryCurrency: secondary })
     : {
-        baseCurrency: profile.baseCurrency,
+        baseCurrency: extras.baseCurrency,
         secondaryCurrency: secondary,
         showSecondaryCurrency: false,
         theme: 'dark' as const,

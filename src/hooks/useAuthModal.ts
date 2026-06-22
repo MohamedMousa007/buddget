@@ -10,7 +10,6 @@ import { useT } from '@/lib/i18n'
 import { apiFetch, apiFetchAuth } from '@/lib/apiBase'
 import { routeAfterAuth, navigateAfterAuth } from '@/lib/auth/postAuthRedirect'
 import { isNative } from '@/lib/native/isNative'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { MIN_PASSWORD_LEN } from '@/components/features/auth-modal/authModalTokens'
 import { markSessionEphemeral } from '@/hooks/useEphemeralSessionGuard'
 import { AUTH_EVENTS, track } from '@/lib/analytics/events'
@@ -350,7 +349,7 @@ export function useAuthModal() {
     // Skip router.refresh on native: there's no server to revalidate and it
     // desyncs the static-export App Router (navigateAfterAuth hard-loads anyway).
     if (!isNative()) router.refresh()
-    navigateAfterAuth(router, routeAfterAuth(userData.user, safeNext, useFinanceStore.getState()))
+    navigateAfterAuth(router, routeAfterAuth(userData.user, safeNext))
   }, [
     email,
     password,
@@ -427,7 +426,7 @@ export function useAuthModal() {
       // transition for ~500-1000 ms on top of the natural navigation.
       // Server components on the new route pick up the fresh session
       // cookies at the next navigation/mount naturally.
-      navigateAfterAuth(router, routeAfterAuth(userData.user, safeNext, useFinanceStore.getState()))
+      navigateAfterAuth(router, routeAfterAuth(userData.user, safeNext))
       return
     }
     if (data.user) {
@@ -503,7 +502,7 @@ export function useAuthModal() {
     // Skip router.refresh on native: there's no server to revalidate and it
     // desyncs the static-export App Router (navigateAfterAuth hard-loads anyway).
     if (!isNative()) router.refresh()
-    navigateAfterAuth(router, routeAfterAuth(userData.user, safeNext, useFinanceStore.getState()))
+    navigateAfterAuth(router, routeAfterAuth(userData.user, safeNext))
   }, [email, otp, router, safeNext, supabase, t, verifyPurpose])
 
   /**
@@ -533,7 +532,7 @@ export function useAuthModal() {
       setLoading(false)
       const { data: userData } = await supabase.auth.getUser()
       if (!isNative()) router.refresh()
-      navigateAfterAuth(router, routeAfterAuth(userData.user, safeNext, useFinanceStore.getState()))
+      navigateAfterAuth(router, routeAfterAuth(userData.user, safeNext))
     },
     [router, safeNext, supabase, t],
   )

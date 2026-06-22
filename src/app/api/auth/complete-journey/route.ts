@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
 
     const { error: profileErr } = await admin
       .from('profiles')
-      .update({ onboarding_completed: true, onboarding_version: 2 })
+      .update({ onboarding_completed: true })
       .eq('id', user.id)
     if (profileErr) {
       console.error('[auth/complete-journey] profiles update failed', profileErr.message)

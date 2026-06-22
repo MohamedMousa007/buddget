@@ -135,9 +135,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const dataReady = useFinanceStore((s) => s.dataReady)
-  // Bridge signal — written to localStorage before navigation, holds the gate
-  // open while the first post-reload sync pull is in flight on native.
-  const onboardingVersion = useFinanceStore((s) => s.profile.onboardingVersion)
   const [pendingNext, setPendingNext] = useState('/')
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authModalMessage, setAuthModalMessage] = useState<string | null>(null)
@@ -292,27 +289,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // finds the still-valid token and fires SIGNED_IN, restoring the user.
     // The LandingGate renders automatically from setUser(null) above.
 
-    // Background cleanup — user doesn't wait for any of this.
     const supabase = createClient()
+    // SECURITY: clear the session token FIRST, awaited, before the slower
+    // SMS/push cleanup. If the user force-quits the app mid-teardown, the token
+    // must already be gone from storage — otherwise the next launch's
+    // getSession() restores it and the "signed-out" user is logged back in.
+    // Flush pending writes first (token still valid). Local scope clears storage
+    // with NO network round-trip, so it can't hang on a slow link.
+    try { await flushFinanceNow() } catch (e) { console.error('[auth] flush before signOut failed', e) }
+    try { await supabase.auth.signOut({ scope: 'local' }) } catch (e) { console.error('[auth] signOut failed', e) }
+    // Wipe localStorage + reset Zustand stores (also strips any sb-* auth keys).
+    try { clearBudgetData() } catch (e) { console.error('[auth] clearBudgetData failed', e) }
+
+    // Remaining best-effort cleanup — non-blocking, session is already gone.
     void (async () => {
-      // Flush pending writes BEFORE wiping the store (profile.id still valid here).
-      try { await flushFinanceNow() } catch (e) { console.error('[auth] flush before signOut failed', e) }
-      // Wipe localStorage + reset Zustand stores.
-      try { clearBudgetData() } catch (e) { console.error('[auth] clearBudgetData failed', e) }
-      // Wipe per-device SMS bridge state (token/enabled/setup) so the next user
-      // on this device starts with tracking OFF and unconfigured.
+      // Wipe per-device SMS bridge state so the next user starts with tracking OFF.
       try { const { clearSmsNative } = await import('@/lib/native/smsTracker'); await clearSmsNative() } catch (e) { console.error('[auth] clearSmsNative failed', e) }
-      // Unregister push token using the captured token (session is gone by now).
       if (accessToken) {
         try { await unregisterPushToken(accessToken) } catch (e) { console.error('[auth] push unregister failed', e) }
       }
-      // Local scope clears the session from storage synchronously with NO network
-      // round-trip — this is what makes logout instant and reliable on native.
-      // The default 'global' scope hangs on slow links and, on failure, leaves
-      // the local session intact, which the next getSession() then restores —
-      // the exact "loading then logout failed" bug. (Same pattern as
-      // useEphemeralSessionGuard.) Triggers SIGNED_OUT, handled by the listener.
-      try { await supabase.auth.signOut({ scope: 'local' }) } catch (e) { console.error('[auth] signOut failed', e) }
     })()
   }, [configured, session])
 
@@ -409,23 +404,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    *
    * Block children until one of:
    *   - the user is already on `/onboarding`
-   *   - onboarding is complete (server metadata OR local store marker)
+   *   - onboarding is complete (server `user_metadata.onboarding_completed`)
    *
    * Bypass routes (reset-password, auth callback) always render.
    */
-  const onboardingDone = onboardingComplete(user, { profile: { onboardingVersion } })
+  const onboardingDone = onboardingComplete(user)
   const onOnboardingRoute = pathname.startsWith('/onboarding')
-  // On web (SPA navigation), suppress the redirect for one render cycle after
-  // leaving /onboarding — the USER_UPDATED event may not have committed yet and
-  // pathnameRef.current still holds the previous route. On native the hard reload
-  // resets all state so this guard never fires, but it doesn't hurt to keep it.
-  const justLeftOnboarding = !isNative() && pathnameRef.current.startsWith('/onboarding') && !onOnboardingRoute
   const showOnboardingRedirectSplash =
     mode === 'authenticated' &&
     !onboardingDone &&
     !onOnboardingRoute &&
-    !isBypassRoute &&
-    !justLeftOnboarding
+    !isBypassRoute
 
   useEffect(() => {
     if (!showOnboardingRedirectSplash) return

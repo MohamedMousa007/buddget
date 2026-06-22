@@ -904,7 +904,6 @@ export type Database = {
           no_debts_declared: boolean
           no_goals_declared: boolean
           onboarding_completed: boolean
-          onboarding_version: number
           phone: string | null
           rent_includes_utilities: boolean
           secondary_currency:
@@ -937,7 +936,6 @@ export type Database = {
           no_debts_declared?: boolean
           no_goals_declared?: boolean
           onboarding_completed?: boolean
-          onboarding_version?: number
           phone?: string | null
           rent_includes_utilities?: boolean
           secondary_currency?:
@@ -970,7 +968,6 @@ export type Database = {
           no_debts_declared?: boolean
           no_goals_declared?: boolean
           onboarding_completed?: boolean
-          onboarding_version?: number
           phone?: string | null
           rent_includes_utilities?: boolean
           secondary_currency?:

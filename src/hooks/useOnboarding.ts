@@ -218,7 +218,6 @@ export function useOnboarding() {
           name: state.name.trim(),
           country: country?.code ?? state.country,
           liteMode,
-          onboardingVersion: 2,
         })
 
         if (withIncome && state.incomeAmount) {
@@ -261,18 +260,25 @@ export function useOnboarding() {
         })
         if (!res.ok) throw new Error('Failed to complete onboarding')
 
-        // Sync onboarding_completed into the local auth state so AuthProvider
-        // sees it immediately on landing at '/'.
-        // updateUser fires USER_UPDATED → onAuthStateChange updates user_metadata
-        // without touching the refresh token (safe on native; refreshSession()
-        // can race the SDK's own auto-refresh and 400-kill the session).
+        // The gate is metadata-only, so the metadata write MUST land before we
+        // navigate — no swallow-and-navigate. updateUser fires USER_UPDATED and
+        // persists onboarding_completed into the LOCAL session (localStorage), so
+        // the native hard reload's getSession() reads it back true. It does NOT
+        // manual-refresh the token (safe on native; refreshSession() races the
+        // SDK auto-refresh and 400-kills the session). complete-journey already
+        // set it server-side, so a failure here is recoverable on retry; we
+        // surface an error rather than dropping the user into a re-onboarding loop.
         const supabase = createClient()
-        const { error: syncErr } = await supabase.auth.updateUser({ data: { onboarding_completed: true } })
-        if (syncErr) console.warn('[onboarding] metadata sync failed:', syncErr.message)
+        let metadataSynced = false
+        for (let i = 0; i < 2 && !metadataSynced; i++) {
+          const { error: syncErr } = await supabase.auth.updateUser({ data: { onboarding_completed: true } })
+          metadataSynced = !syncErr
+          if (syncErr) console.warn('[onboarding] metadata sync attempt failed:', syncErr.message)
+        }
+        if (!metadataSynced) throw new Error('Could not finalize sign-up. Please try again.')
 
         // Hard-load on native (static export) so the App Router / AppShell can't
-        // desync and strip the dashboard chrome; onboardingVersion=2 is already
-        // persisted locally so onboardingComplete() holds across the reload.
+        // desync and strip the dashboard chrome.
         navigateAfterAuth(router, '/')
       } catch (e) {
         setState((prev) => ({
