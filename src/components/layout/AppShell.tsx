@@ -173,6 +173,23 @@ function SmsRealtimeSync() {
       }
       if (rendered) void ackSms(row.id)
     }
+
+    // ponytail: catch-up ack — rows processed while app was closed/backgrounded
+    // never fire a realtime event the subscription can see, so they stay 'logged'
+    // or 'notified' forever. On mount, ack any such rows that already have a
+    // linked transaction (expense/income/debt_payment).
+    void (async () => {
+      const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+      const { data: pending } = await supabase
+        .from('sms_parse_log')
+        .select('id')
+        .in('status', ['logged', 'notified'])
+        .or('expense_id.not.is.null,income_id.not.is.null,debt_payment_id.not.is.null')
+        .gte('received_at', cutoff)
+        .limit(50)
+      for (const row of pending ?? []) void ackSms(row.id)
+    })()
+
     const channel = supabase
       .channel('sms-live')
       .on(
