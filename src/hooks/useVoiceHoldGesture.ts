@@ -44,6 +44,7 @@ export function useVoiceHoldGesture({
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const holdingRef = useRef(false) // true once recording has begun
+  const tapPendingRef = useRef(false) // true from pointerdown until hold fires or scroll cancels
   const startRef = useRef<{ x: number; y: number } | null>(null)
   const nearTrashRef = useRef(false)
   const pointerIdRef = useRef<number | null>(null)
@@ -68,6 +69,7 @@ export function useVoiceHoldGesture({
   const reset = useCallback(() => {
     clearTimer()
     holdingRef.current = false
+    tapPendingRef.current = false
     startRef.current = null
     nearTrashRef.current = false
     pointerIdRef.current = null
@@ -84,6 +86,7 @@ export function useVoiceHoldGesture({
       pointerIdRef.current = e.pointerId
       elementRef.current = e.currentTarget
       holdingRef.current = false
+      tapPendingRef.current = true
       nearTrashRef.current = false
       setNearTrash(false)
       posX.set(e.clientX)
@@ -96,6 +99,7 @@ export function useVoiceHoldGesture({
       clearTimer()
       timerRef.current = setTimeout(() => {
         timerRef.current = null
+        tapPendingRef.current = false
         holdingRef.current = true
         // Safe to capture now: we're recording and need drag-to-trash tracking.
         try {
@@ -123,6 +127,7 @@ export function useVoiceHoldGesture({
         const dy = e.clientY - start.y
         if (dx * dx + dy * dy > SCROLL_CANCEL_PX * SCROLL_CANCEL_PX) {
           clearTimer()
+          tapPendingRef.current = false
           startRef.current = null
         }
         return
@@ -156,7 +161,7 @@ export function useVoiceHoldGesture({
       }
       const wasHolding = holdingRef.current
       const overTrash = nearTrashRef.current
-      const pendingTap = timerRef.current != null && startRef.current != null
+      const pendingTap = tapPendingRef.current
       reset()
       if (wasHolding) {
         if (overTrash) onHoldCancel()
@@ -178,7 +183,7 @@ export function useVoiceHoldGesture({
       const wasHolding = holdingRef.current
       // iOS/Capacitor fires pointercancel instead of pointerup on quick taps when
       // setPointerCapture is active — treat as tap if the hold timer hadn't fired yet.
-      const pendingTap = timerRef.current != null && startRef.current != null
+      const pendingTap = tapPendingRef.current
       reset()
       if (wasHolding) onHoldCancel()
       else if (pendingTap) onTap()
@@ -186,15 +191,12 @@ export function useVoiceHoldGesture({
     [onHoldCancel, onTap, reset],
   )
 
-  // Without early setPointerCapture, pointer events stop routing to the FAB
-  // once the finger leaves its bounds. Cancel the pre-hold timer so the hold
-  // doesn't fire spuriously mid-scroll. During recording (holdingRef = true)
-  // capture is already active, so this handler is never reached then.
+  // Android WebView fires pointerleave during ordinary quick taps (finger never
+  // actually left the button). Clearing the timer prevents a spurious hold from
+  // firing if the finger does leave mid-scroll, but we must NOT clear
+  // tapPendingRef — that would swallow the tap when pointerup arrives.
   const onPointerLeave = useCallback(() => {
-    if (!holdingRef.current) {
-      clearTimer()
-      startRef.current = null
-    }
+    if (!holdingRef.current) clearTimer()
   }, [])
 
   const onContextMenu = useCallback((e: ReactPointerEvent<HTMLButtonElement>) => {
