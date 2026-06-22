@@ -75,18 +75,16 @@ export function BottomNav() {
         {BOTTOM_NAV_ITEMS.map((item) => {
           if (item.kind === 'fab') {
             return (
-              <div key="fab" className="flex-1 flex justify-center">
-                <motion.button
+              <div key="fab" className="flex-1 flex justify-center" style={{ touchAction: 'none' }}>
+                <button
                   type="button"
                   {...fabHandlers}
                   style={{ touchAction: 'none' }}
-                  whileTap={{ scale: 0.92 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 22 }}
-                  className="flex items-center justify-center w-14 h-14 -mt-5 rounded-full bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white shadow-[0_8px_20px_rgba(127,6,12,0.5)] transition-colors duration-200 touch-none select-none"
+                  className="flex items-center justify-center w-14 h-14 -mt-5 rounded-full bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white shadow-[0_8px_20px_rgba(127,6,12,0.5)] transition-[colors,transform] duration-[75ms] active:scale-[0.92] touch-none select-none"
                   aria-label={t.nav.quickAdd}
                 >
                   <item.icon className="w-[26px] h-[26px]" strokeWidth={2.4} />
-                </motion.button>
+                </button>
               </div>
             )
           }

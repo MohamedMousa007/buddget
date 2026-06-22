@@ -82,6 +82,7 @@ export function useVoiceHoldGesture({
   const onPointerDown = useCallback(
     (e: ReactPointerEvent<HTMLButtonElement>) => {
       if (e.button !== 0 && e.pointerType === 'mouse') return
+      console.info(`[FAB] pointerdown type=${e.pointerType} id=${e.pointerId}`)
       startRef.current = { x: e.clientX, y: e.clientY }
       pointerIdRef.current = e.pointerId
       elementRef.current = e.currentTarget
@@ -162,11 +163,13 @@ export function useVoiceHoldGesture({
       const wasHolding = holdingRef.current
       const overTrash = nearTrashRef.current
       const pendingTap = tapPendingRef.current
+      console.info(`[FAB] pointerup wasHolding=${wasHolding} pendingTap=${pendingTap}`)
       reset()
       if (wasHolding) {
         if (overTrash) onHoldCancel()
         else onHoldEnd()
       } else if (pendingTap) {
+        console.info('[FAB] → onTap()')
         onTap()
       }
     },
@@ -184,9 +187,10 @@ export function useVoiceHoldGesture({
       // iOS/Capacitor fires pointercancel instead of pointerup on quick taps when
       // setPointerCapture is active — treat as tap if the hold timer hadn't fired yet.
       const pendingTap = tapPendingRef.current
+      console.info(`[FAB] pointercancel wasHolding=${wasHolding} pendingTap=${pendingTap}`)
       reset()
       if (wasHolding) onHoldCancel()
-      else if (pendingTap) onTap()
+      else if (pendingTap) { console.info('[FAB] → onTap() via cancel'); onTap() }
     },
     [onHoldCancel, onTap, reset],
   )
@@ -196,6 +200,7 @@ export function useVoiceHoldGesture({
   // firing if the finger does leave mid-scroll, but we must NOT clear
   // tapPendingRef — that would swallow the tap when pointerup arrives.
   const onPointerLeave = useCallback(() => {
+    console.info(`[FAB] pointerleave holding=${holdingRef.current} tapPending=${tapPendingRef.current}`)
     if (!holdingRef.current) clearTimer()
   }, [])
 
