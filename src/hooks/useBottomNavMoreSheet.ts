@@ -7,6 +7,11 @@ export function useBottomNavMoreSheet() {
   const moreWrapRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    document.body.style.overflow = moreOpen ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [moreOpen])
+
+  useEffect(() => {
     if (!moreOpen) return
     const onDoc = (e: MouseEvent | TouchEvent) => {
       const el = moreWrapRef.current
