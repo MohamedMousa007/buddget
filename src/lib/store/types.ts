@@ -490,7 +490,6 @@ export interface UserProfile {
   phone?: string
   /** Optional self-selected gender. Null (or missing) when unset. */
   gender?: 'male' | 'female' | 'prefer_not_to_say' | null
-  baseCurrency: Currency
   /**
    * Set when the user ticks "I have no debts" on the first-run checklist so
    * the debt item flips to done without forcing them to add a fake entry.
@@ -504,8 +503,6 @@ export interface UserProfile {
   noGoalsDeclared?: boolean
   /** True when user skipped income during onboarding. Tracking-only mode. */
   liteMode?: boolean
-  /** 0 = never completed, 1 = old flow, 2 = new 2-step flow */
-  onboardingVersion?: number
   /**
    * Household composition used by the budget-build AI (drives rent / food /
    * transport scaling factors). Synced via `profiles.household`.

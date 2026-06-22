@@ -195,6 +195,8 @@ export const ar: Dictionary = {
 
   common: {
     save: 'حفظ',
+    saveAndSync: 'حفظ ومزامنة',
+    savedSynced: 'تم الحفظ والمزامنة',
     cancel: 'إلغاء',
     delete: 'حذف',
     edit: 'تعديل',

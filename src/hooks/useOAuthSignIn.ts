@@ -8,7 +8,6 @@ import { appOrigin } from '@/lib/apiBase'
 import { mapOAuthError } from '@/components/auth/authErrors'
 import { isOAuthProviderEnabled, type OAuthProvider } from '@/lib/auth/oauthProviders'
 import { routeAfterAuth, navigateAfterAuth } from '@/lib/auth/postAuthRedirect'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { isNative, isNativeShellBuild } from '@/lib/native/isNative'
 
@@ -59,7 +58,7 @@ export function useOAuthSignIn(nextPath: string) {
             // which can race the SDK's in-memory session update). onAuthStateChange
             // closes the modal; we route here since native sign-in never triggers
             // a server-side middleware redirect.
-            navigateAfterAuth(router, routeAfterAuth(user, nextPath, useFinanceStore.getState()))
+            navigateAfterAuth(router, routeAfterAuth(user, nextPath))
             setPending(null)
             return
           }

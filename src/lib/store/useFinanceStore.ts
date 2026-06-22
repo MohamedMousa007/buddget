@@ -47,7 +47,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { buildGoalProgressContext } from '@/lib/goals/computeGoalProgress'
 import { reconcileAchievedGoals } from '@/lib/goals/reconcileAchievedGoals'
 import { migrateIdsToUuid } from '@/lib/store/migrations/v17_uuid_remap'
-const PERSIST_VERSION = 17
+const PERSIST_VERSION = 18
 
 function reconcileGoalsForState(state: FinanceStore): Goal[] {
   const ctx = buildGoalProgressContext(state, useSettingsStore.getState().monthFilter)
@@ -1407,6 +1407,14 @@ export const useFinanceStore = create<FinanceStore>()(
           persistedState && typeof persistedState === 'object'
             ? (persistedState as Record<string, unknown>)
             : {}
+        // v18: the onboarding gate is metadata-only (onboarding_version dropped)
+        // and currency is settings-only (profile.baseCurrency removed). Strip both
+        // dead keys from the persisted profile so they can't linger or mislead.
+        if (fromVersion < 18 && base.profile && typeof base.profile === 'object') {
+          const prof = base.profile as Record<string, unknown>
+          delete prof.onboardingVersion
+          delete prof.baseCurrency
+        }
         // v17: all client-side row ids must be valid UUIDs so Supabase's
         // uuid-typed PK columns accept them on sync. Runs first so the rest
         // of the migration chain already sees UUID ids.

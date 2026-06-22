@@ -96,18 +96,17 @@ describe('profile mapper', () => {
       phone: '+1',
       city: 'Cairo',
       country: 'Egypt',
-      baseCurrency: 'EGP',
       createdAt: '2026-04-01T00:00:00.000Z',
       avatar: 'https://…/x.png',
       avatarPresetId: 'toon_a',
     }
-    const row = profileToRow(p, { financialGoalsNotes: 'save more', activeBudgetPlanId: null }, UID)
+    const row = profileToRow(p, { financialGoalsNotes: 'save more', activeBudgetPlanId: null, baseCurrency: 'EGP' }, UID)
     expect(row.id).toBe(UID)
     expect(row.base_currency).toBe('EGP')
     expect(row.city).toBe('Cairo')
     expect(row.avatar_image_path).toBe('https://…/x.png')
     const back = profileFromRow({ ...row, updated_at: row.created_at ?? '' } as never)
-    expect(back.profile.baseCurrency).toBe('EGP')
+    expect(back.extras.baseCurrency).toBe('EGP')
     expect(back.profile.city).toBe('Cairo')
     expect(back.extras.financialGoalsNotes).toBe('save more')
   })
@@ -118,11 +117,10 @@ describe('profile mapper', () => {
       const p: UserProfile = {
         id: 'local',
         name: 'Alice',
-        baseCurrency: 'EGP',
         createdAt: '2026-04-01T00:00:00.000Z',
         gender,
       }
-      const row = profileToRow(p, { financialGoalsNotes: '', activeBudgetPlanId: null }, UID)
+      const row = profileToRow(p, { financialGoalsNotes: '', activeBudgetPlanId: null, baseCurrency: 'EGP' }, UID)
       expect(row.gender).toBe(gender ?? null)
       const back = profileFromRow({ ...row, updated_at: row.created_at ?? '' } as never)
       expect(back.profile.gender).toBe(gender ?? null)

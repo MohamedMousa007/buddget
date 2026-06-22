@@ -61,7 +61,7 @@ export function snapshot(state: Pick<FinanceStore,
 
 export function emptySnapshot(): Snapshot {
   return {
-    profile: { id: 'local', name: '', baseCurrency: 'AED', createdAt: new Date().toISOString() },
+    profile: { id: 'local', name: '', createdAt: new Date().toISOString() },
     settings: {
       baseCurrency: 'AED',
       secondaryCurrency: null,

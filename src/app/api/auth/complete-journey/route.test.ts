@@ -1,39 +1,30 @@
 /**
- * Contract test: the complete-journey route MUST write both
- * `onboarding_completed` AND `onboarding_version` to the profiles table.
+ * Contract test: the complete-journey route MUST set `onboarding_completed` on
+ * BOTH the auth user metadata and the profiles row.
  *
- * Why this matters: the Supabase sync's pull() reads `onboarding_version` from
- * the DB on every data pull and overwrites the local store. If the API doesn't
- * set it, every pull resets onboardingVersion to 0 → onboardingComplete()
- * returns false → AuthProvider redirects the user back to /onboarding in a loop.
- * This test ensures both fields are always present in the profiles update call.
+ * Why this matters: the onboarding gate is now metadata-only
+ * (`user_metadata.onboarding_completed`). This service-role route is the
+ * authoritative writer — it sets the auth metadata (read by the gate) and
+ * mirrors the flag into profiles (cross-device source of truth). If either is
+ * missing, a user can be bounced back to /onboarding.
  */
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import { describe, expect, it } from 'vitest'
 
-const routeSrc = readFileSync(
-  join(import.meta.dirname, 'route.ts'),
-  'utf8',
-)
+const routeSrc = readFileSync(join(import.meta.dirname, 'route.ts'), 'utf8')
 
 describe('complete-journey route contract', () => {
   it('sets onboarding_completed in the profiles update', () => {
     expect(routeSrc).toContain('onboarding_completed: true')
   })
 
-  it('sets onboarding_version in the profiles update — prevents sync-pull overwrite loop', () => {
-    // This was the root cause of BUD-41 (attempt 5): the API set
-    // onboarding_completed but not onboarding_version, so pull() kept resetting
-    // the local store to 0 and bouncing users back to /onboarding.
-    expect(routeSrc).toContain('onboarding_version: 2')
+  it('sets onboarding_completed in the auth user metadata', () => {
+    expect(routeSrc).toContain('onboarding_completed: true')
+    expect(routeSrc).toContain('updateUserById')
   })
 
-  it('both fields appear in the same .update() call', () => {
-    const updateMatch = routeSrc.match(/\.update\(\{[^}]+\}\)/s)
-    expect(updateMatch).not.toBeNull()
-    const updateBlock = updateMatch![0]
-    expect(updateBlock).toContain('onboarding_completed')
-    expect(updateBlock).toContain('onboarding_version')
+  it('no longer references the dropped onboarding_version column', () => {
+    expect(routeSrc).not.toContain('onboarding_version')
   })
 })

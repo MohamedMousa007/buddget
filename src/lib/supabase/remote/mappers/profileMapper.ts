@@ -4,6 +4,10 @@ import type { ProfileRow, ProfileInsert } from '@/lib/supabase/remote/types'
 export interface ProfileExtras {
   financialGoalsNotes: string
   activeBudgetPlanId: string | null
+  /** Base display currency (from AppSettings — the single in-app home). Written to
+   *  profiles.base_currency (the single server home). Sourced here, not from the
+   *  profile slice, because the settings UI mutates settings.baseCurrency. */
+  baseCurrency: Currency
   /** Secondary display currency (from AppSettings). Written to profiles.secondary_currency. */
   secondaryCurrency?: Currency | null
   /** Present on READ; preserved via round-trip test so the value stays in the
@@ -37,7 +41,7 @@ export function profileToRow(
     phone: p.phone ?? null,
     city: p.city ?? null,
     country: p.country ?? null,
-    base_currency: p.baseCurrency,
+    base_currency: extras.baseCurrency,
     secondary_currency: (extras.secondaryCurrency ?? null) as Currency | null,
     avatar_emoji: p.avatarPresetId ?? null,
     avatar_image_path: p.avatar ?? null,
@@ -55,10 +59,9 @@ export function profileToRow(
     monthly_rent: p.monthlyRent ?? null,
     rent_includes_utilities: p.rentIncludesUtilities ?? false,
     lite_mode: p.liteMode ?? false,
-    // DO NOT add onboarding_version here. It is server-only, written exclusively
-    // by /api/auth/complete-journey (service role). Adding it here would let a
-    // stale client upsert reset the value to 0 on every sync tick, causing the
-    // onboarding redirect loop that was the root cause of BUD-41.
+    // onboarding_completed / display_name are NOT written here — they are
+    // server-authoritative, set only by /api/auth/complete-journey (service role).
+    // Omitting them keeps PostgREST's existing value on upsert-conflict.
   }
 }
 
@@ -76,7 +79,6 @@ export function profileFromRow(row: ProfileRow): ProfileFromRowResult {
     phone: row.phone ?? undefined,
     city: row.city ?? undefined,
     country: row.country ?? undefined,
-    baseCurrency: row.base_currency as Currency,
     avatar: row.avatar_image_path ?? undefined,
     avatarPresetId: row.avatar_emoji ?? undefined,
     gender: (row.gender ?? null) as UserProfile['gender'],
@@ -89,12 +91,13 @@ export function profileFromRow(row: ProfileRow): ProfileFromRowResult {
     monthlyRent: row.monthly_rent,
     rentIncludesUtilities: row.rent_includes_utilities,
     liteMode: row.lite_mode,
-    onboardingVersion: row.onboarding_version,
     createdAt: row.created_at,
   }
   const extras: ProfileExtras = {
     financialGoalsNotes: row.financial_goals_notes ?? '',
     activeBudgetPlanId: row.active_budget_plan_id,
+    baseCurrency: row.base_currency as Currency,
+    secondaryCurrency: (row.secondary_currency ?? null) as Currency | null,
     onboardingCompleted: row.onboarding_completed,
     displayName: row.display_name,
   }

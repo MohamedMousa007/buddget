@@ -194,6 +194,8 @@ export const en: Dictionary = {
 
   common: {
     save: 'Save',
+    saveAndSync: 'Save & sync',
+    savedSynced: 'Saved & synced',
     cancel: 'Cancel',
     delete: 'Delete',
     edit: 'Edit',

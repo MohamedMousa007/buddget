@@ -93,6 +93,10 @@ export interface Dictionary {
 
   common: {
     save: string
+    /** Settings force-sync button label */
+    saveAndSync: string
+    /** Toast shown after a successful force-sync */
+    savedSynced: string
     cancel: string
     delete: string
     edit: string
