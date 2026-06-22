@@ -19,7 +19,7 @@ const OTP_RE =
   /(\bOTP\b|one[\s-]?time\s+(?:pass(?:word|code)?|pin|code)|verification\s+code|activation\s+code|do\s+not\s+share|never\s+share|رمز\s*التحقق|رمز\s*التفعيل|كلمة\s*(?:السر|المرور)|لا\s*تشارك)/i
 
 const MARKETING_RE =
-  /(\boffer\b|\bbundle\b|\bquota\b|\bpromo(?:tion)?\b|\bvoucher\b|\bdiscount\b|%\s*off|recharge\s+now|renew\s+(?:your\s+)?(?:bundle|plan|subscription)|subscribe\s+(?:now|to)|congratulations|you\s+(?:won|have\s+won)|valid\s+until|limited\s+time|عرض|باقة|اشترك|جدد\s*باقتك|خصم\s*\d+\s*%|مبروك)/i
+  /(\boffer\b|\bbundle\b|\bquota\b|\bpromo(?:tion)?\b|\bvoucher\b|\bdiscount\b|%\s*off|recharge\s+now|renew\s+(?:your\s+)?(?:bundle|plan|subscription)|subscribe\s+(?:now|to)|congratulations|you\s+(?:won|have\s+won)|valid\s+until|limited\s+time|عرض|باقة|اشترك|جدد\s*باقتك|خصم\s*\d+\s*%|مبروك|للمزيد\s*اتصل)/i
 
 const BALANCE_ONLY_RE =
   /(available\s+balance|current\s+balance|account\s+balance|balance\s+(?:is|inquiry)|رصيدك\s*(?:الحالي|المتاح)|الرصيد\s*(?:الحالي|المتاح)|استعلام\s*(?:عن\s*)?(?:ال)?رصيد)/i

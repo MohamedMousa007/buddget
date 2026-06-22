@@ -21,6 +21,7 @@ const FAILURE_LABELS: Record<string, string> = {
   insert_failed: 'Save failed',
   parse_exception: 'Parse crash',
   processing: 'Processing',
+  timed_out: 'Timed out',
   rate_limited: 'Rate limited',
   not_configured: 'AI not configured',
 }

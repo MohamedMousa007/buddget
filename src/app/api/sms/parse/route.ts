@@ -491,6 +491,13 @@ export async function POST(request: Request) {
   const { message, sender, source, receivedAt } = parsedBody.data
   const service = createServiceRoleClient()
 
+  // ponytail: self-healing — resolve rows stuck at 'processing' >2 min (Vercel kill before DB update)
+  void service.from('sms_parse_log')
+    .update({ status: 'failed', failure_code: 'timed_out' })
+    .eq('user_id', userId)
+    .eq('status', 'processing')
+    .lt('parsed_at', new Date(Date.now() - 2 * 60 * 1000).toISOString())
+
   // sms_hash identifies the row for /api/sms/confirm + the FCM sms_confirm push.
   const hash = computeSmsHash(message)
   const nowIso = receivedAt ?? new Date().toISOString()
