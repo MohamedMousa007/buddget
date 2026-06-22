@@ -127,6 +127,11 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
 
     async function pull() {
       useFinanceStore.getState().setDataReady(false)
+      // ponytail: start market fetch immediately so it overlaps with pullAll instead of running after
+      const marketPromise = Promise.race([
+        ensureMarketDataFresh(),
+        new Promise<void>((r) => setTimeout(r, 3500)),
+      ])
       try {
         // Always pull the full snapshot before flipping dataReady — even on a
         // warm start where this user's data is already in localStorage. Skipping
@@ -176,15 +181,9 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       } catch (e) {
         console.error('[finance sync] pull failed', e)
       } finally {
-        // Load FX rates + gold UNDER the splash so converted totals are final on
-        // first paint (no post-load currency/gold flicker). Freshness-gated, and
-        // capped so a slow/down market API can't pin the splash open.
-        try {
-          await Promise.race([
-            ensureMarketDataFresh(),
-            new Promise((r) => setTimeout(r, 3500)),
-          ])
-        } catch { /* keep cached/default rates */ }
+        // Await the market fetch started above — by now it's been running in
+        // parallel with pullAll so it's likely already done or nearly done.
+        try { await marketPromise } catch { /* keep cached/default rates */ }
         prevSnap.current = snapshot(useFinanceStore.getState())
         lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
         hydrated.current = true

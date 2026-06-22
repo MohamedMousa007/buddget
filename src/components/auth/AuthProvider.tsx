@@ -459,7 +459,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       welcomeTimerRef.current = setTimeout(() => {
         setWelcomeMinBlocking(false)
         welcomeTimerRef.current = null
-      }, 2500)
+      }, 1500)
     }, 0)
   }, [showDataLoadingSplash])
   useEffect(() => () => {
