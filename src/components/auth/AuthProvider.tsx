@@ -18,7 +18,7 @@ import { BiometricSessionPersist } from '@/lib/native/useBiometricSessionPersist
 import { AuthModal } from '@/components/auth/AuthModal'
 import { AuthContext, type AuthContextValue, type AuthMode, useAuth } from '@/components/auth/auth-context'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
-import { onboardingComplete } from '@/lib/auth/postAuthRedirect'
+import { onboardingComplete, navigateAfterAuth } from '@/lib/auth/postAuthRedirect'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { LandingGate } from '@/components/auth/LandingGate'
@@ -437,7 +437,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!showOnboardingRedirectSplash) return
-    router.replace('/onboarding')
+    navigateAfterAuth(router, '/onboarding')
   }, [showOnboardingRedirectSplash, router])
 
   // Hold the app behind the splash until the initial server pull lands, so the

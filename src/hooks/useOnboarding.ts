@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { createClient } from '@/lib/supabase/client'
+import { navigateAfterAuth } from '@/lib/auth/postAuthRedirect'
 import type { Currency, IncomeSourceType } from '@/lib/store/types'
 
 export const ONBOARDING_COUNTRIES: {
@@ -261,7 +262,7 @@ export function useOnboarding() {
         if (!res.ok) throw new Error('Failed to complete onboarding')
 
         // Sync onboarding_completed into the local auth state so AuthProvider
-        // sees it immediately on router.push('/').
+        // sees it immediately on landing at '/'.
         // updateUser fires USER_UPDATED → onAuthStateChange updates user_metadata
         // without touching the refresh token (safe on native; refreshSession()
         // can race the SDK's own auto-refresh and 400-kill the session).
@@ -269,7 +270,10 @@ export function useOnboarding() {
         const { error: syncErr } = await supabase.auth.updateUser({ data: { onboarding_completed: true } })
         if (syncErr) console.warn('[onboarding] metadata sync failed:', syncErr.message)
 
-        router.push('/')
+        // Hard-load on native (static export) so the App Router / AppShell can't
+        // desync and strip the dashboard chrome; onboardingVersion=2 is already
+        // persisted locally so onboardingComplete() holds across the reload.
+        navigateAfterAuth(router, '/')
       } catch (e) {
         setState((prev) => ({
           ...prev,
