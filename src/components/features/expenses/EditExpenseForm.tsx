@@ -13,13 +13,24 @@ import { useEditExpenseForm } from '@/hooks/useEditExpenseForm'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { ExpenseCategoryChips, PaymentMethodChips } from '@/components/features/expenses/ExpenseFormPickers'
 import { ReceiptDetailSheet } from '@/components/receipt/ReceiptDetailSheet'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 
 export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClose: () => void }) {
   useEscapeClose(true, onClose)
   const f = useEditExpenseForm(expense, onClose)
   const t = useT()
+  const confirm = useConfirm()
+  const deleteExpense = useFinanceStore((s) => s.deleteExpense)
   const [showReceipt, setShowReceipt] = useState(false)
+
+  const handleDelete = async () => {
+    if (await confirm({ title: t.dashboard.confirmDeleteExpense, destructive: true })) {
+      deleteExpense(expense.id)
+      onClose()
+    }
+  }
 
   return (
     <div className="p-5">
@@ -119,21 +130,30 @@ export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClos
           />
         </div>
 
-        <div className="flex gap-3 pt-2">
+        <div className="flex flex-col gap-2 pt-2">
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-3 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
+            >
+              {t.common.neverMind}
+            </button>
+            <button
+              type="button"
+              onClick={f.handleSubmit}
+              disabled={!f.description || !f.amount}
+              className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {t.addExpense.buttonSave}
+            </button>
+          </div>
           <button
             type="button"
-            onClick={onClose}
-            className="flex-1 py-3 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
+            onClick={handleDelete}
+            className="w-full py-3 rounded-xl border border-[var(--color-brand-red)] text-sm font-medium text-[var(--color-brand-red)] hover:bg-[var(--color-brand-elevated)] transition-colors"
           >
-          {t.common.neverMind}
-        </button>
-          <button
-            type="button"
-            onClick={f.handleSubmit}
-            disabled={!f.description || !f.amount}
-            className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {t.addExpense.buttonSave}
+            {t.common.delete}
           </button>
         </div>
       </div>
