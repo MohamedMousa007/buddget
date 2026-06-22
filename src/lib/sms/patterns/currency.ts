@@ -27,7 +27,7 @@ export const CURRENCY_TOKEN_RE =
  * excludes weak nouns like "amount"/"مبلغ" that also appear in ads.
  */
 export const TXN_KEYWORD_RE =
-  /(?:debit(?:ed)?|credit(?:ed)?|withdraw(?:n|al)?|charged|spent\s+at|purchase\s+(?:of|at)|pos\s+purchase|atm\s+(?:withdrawal|cash)|transfer(?:red)?|phone\s+banking|payment\s+(?:of|received)|received\s+from|paid\s+to|تم\s*خصم|تم\s*سحب|تم\s*دفع|تم\s*إيداع|تم\s*استلام|تم\s*تحويل|تم\s*إضافة|عملية\s*شراء|سحب\s*نقدي|نقاط\s*بيع)/i
+  /(?:debit(?:ed)?|credit(?:ed)?|withdraw(?:n|al)?|charged|spent\s+at|purchase\s+(?:of|at)|pos\s+purchase|atm\s+(?:withdrawal|cash)|transfer(?:red)?|phone\s+banking|payment\s+(?:of|received)|received\s+from|paid\s+to|تم\s*خصم|تم\s*سحب|تم\s*دفع|تم\s*إيداع|تم\s*استلام|تم\s*تحويل|تم\s*إضافة|عملية\s*شراء|سحب\s*نقدي|نقاط\s*بيع|تحويل\s*لحظي)/i
 
 /** True when the text contains any recognized currency token. */
 export function hasCurrencyToken(text: string): boolean {
