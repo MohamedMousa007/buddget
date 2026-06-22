@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { User } from '@supabase/supabase-js'
 import { onboardingComplete, routeAfterAuth, type OnboardingStoreSignal } from './postAuthRedirect'
 
-const fresh: OnboardingStoreSignal = { profile: {}, onboardingState: undefined }
+const fresh: OnboardingStoreSignal = { profile: {} }
 const userWith = (meta: Record<string, unknown>) => ({ user_metadata: meta }) as unknown as User
 
 describe('onboardingComplete', () => {
@@ -12,11 +12,18 @@ describe('onboardingComplete', () => {
 
   it('true from local store marker when metadata is stale (the native race)', () => {
     expect(
-      onboardingComplete(userWith({}), { profile: { onboardingVersion: 2 }, onboardingState: undefined }),
+      onboardingComplete(userWith({}), { profile: { onboardingVersion: 2 } }),
     ).toBe(true)
   })
 
   it('false when neither metadata nor local store indicate completion', () => {
+    expect(onboardingComplete(userWith({}), fresh)).toBe(false)
+  })
+
+  it('false when only the expert survey is done (not a core-onboarding signal)', () => {
+    // isExpertOnboardingComplete used to be a third arm here; removing it was
+    // intentional — expert survey completion is a different concept and was
+    // silently bypassing the core onboarding gate for malformed states.
     expect(onboardingComplete(userWith({}), fresh)).toBe(false)
   })
 })
@@ -28,7 +35,7 @@ describe('routeAfterAuth', () => {
 
   it('honours preferredNext once onboarding is locally complete', () => {
     expect(
-      routeAfterAuth(userWith({}), '/expenses', { profile: { onboardingVersion: 2 }, onboardingState: undefined }),
+      routeAfterAuth(userWith({}), '/expenses', { profile: { onboardingVersion: 2 } }),
     ).toBe('/expenses')
   })
 })

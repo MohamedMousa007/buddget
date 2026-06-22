@@ -1,29 +1,39 @@
 import type { User } from '@supabase/supabase-js'
-import type { OnboardingState, UserProfile } from '@/lib/store/types'
-import { isExpertOnboardingComplete } from '@/lib/onboarding/onboardingProgress'
+import type { UserProfile } from '@/lib/store/types'
 import { isNative } from '@/lib/native/isNative'
 
-/** Local store slice that proves onboarding finished on this device. */
+/** Local store slice used by the onboarding gate. */
 export interface OnboardingStoreSignal {
   profile: Pick<UserProfile, 'onboardingVersion'>
-  onboardingState: OnboardingState | undefined
 }
 
 /**
- * Source of truth for "has this user finished onboarding?".
+ * Single source of truth for "has this user finished onboarding?".
  *
- * Trusting `user_metadata.onboarding_completed` alone is unsafe on native: the
- * Capacitor singleton client often loses the `updateUser` metadata write to a
- * token-refresh race, so the in-memory user never gets the flag. The onboarding
- * flow ALSO writes `profile.onboardingVersion = 2` to the persisted store before
- * navigating, which is race-free on native. Either signal means done.
+ * Two signals, two roles:
+ *
+ * 1. `user_metadata.onboarding_completed` — server-authoritative, cross-device.
+ *    Set by the `/api/auth/complete-journey` service-role route. Survives app
+ *    restarts and device changes once the Supabase session refreshes.
+ *
+ * 2. `profile.onboardingVersion >= 2` — local bridge signal. Written to
+ *    localStorage by `completeOnboarding()` *before* any API call or navigation,
+ *    so it survives the native hard reload while the first post-reload sync pull
+ *    is still in flight. The API also persists `onboarding_version = 2` to the
+ *    DB, so after the pull completes both signals agree.
+ *
+ * NOTE: `isExpertOnboardingComplete` was previously a third arm here. It was
+ * removed because it measures a different thing (detailed survey completion, not
+ * core onboarding) and caused the gate to silently pass users who hadn't
+ * actually finished the signup flow.
  */
 export function onboardingComplete(user: User | null, store: OnboardingStoreSignal): boolean {
-  return (
-    user?.user_metadata?.onboarding_completed === true ||
-    (store.profile.onboardingVersion ?? 0) >= 2 ||
-    isExpertOnboardingComplete(store.onboardingState)
-  )
+  // Primary: server-set flag in user metadata (authoritative, cross-device)
+  if (user?.user_metadata?.onboarding_completed === true) return true
+  // Bridge: local marker holds the gate open while the first sync pull is in
+  // flight after a hard reload on native. Converges with the server once pull()
+  // reads back onboarding_version = 2 (set by complete-journey API).
+  return (store.profile.onboardingVersion ?? 0) >= 2
 }
 
 /** After sign-in / sign-up, send users who haven't finished onboarding there first. */

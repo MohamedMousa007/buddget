@@ -135,11 +135,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const dataReady = useFinanceStore((s) => s.dataReady)
-  // Local, race-free onboarding markers — `completeOnboarding()` persists these
-  // to localStorage before navigating, so they survive the native `updateUser`
-  // metadata race that leaves `user_metadata.onboarding_completed` stale.
+  // Bridge signal — written to localStorage before navigation, holds the gate
+  // open while the first post-reload sync pull is in flight on native.
   const onboardingVersion = useFinanceStore((s) => s.profile.onboardingVersion)
-  const onboardingState = useFinanceStore((s) => s.onboardingState)
   const [pendingNext, setPendingNext] = useState('/')
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authModalMessage, setAuthModalMessage] = useState<string | null>(null)
@@ -415,19 +413,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    *
    * Bypass routes (reset-password, auth callback) always render.
    */
-  const onboardingDone = onboardingComplete(user, {
-    profile: { onboardingVersion },
-    onboardingState,
-  })
+  const onboardingDone = onboardingComplete(user, { profile: { onboardingVersion } })
   const onOnboardingRoute = pathname.startsWith('/onboarding')
-  // pathnameRef.current is the *previous* pathname (updated post-render via useEffect).
-  // On the very first render after router.push('/') from completeOnboarding(), the
-  // previous pathname is still '/onboarding' while the current one is '/'. The
-  // USER_UPDATED event that sets onboarding_completed=true on the user is already
-  // queued in React but hasn't committed yet. Suppressing the redirect for this one
-  // render gives React one cycle to flush the state update, preventing the race
-  // condition that bounced newly-onboarded users back to /onboarding.
-  const justLeftOnboarding = pathnameRef.current.startsWith('/onboarding') && !onOnboardingRoute
+  // On web (SPA navigation), suppress the redirect for one render cycle after
+  // leaving /onboarding — the USER_UPDATED event may not have committed yet and
+  // pathnameRef.current still holds the previous route. On native the hard reload
+  // resets all state so this guard never fires, but it doesn't hurt to keep it.
+  const justLeftOnboarding = !isNative() && pathnameRef.current.startsWith('/onboarding') && !onOnboardingRoute
   const showOnboardingRedirectSplash =
     mode === 'authenticated' &&
     !onboardingDone &&

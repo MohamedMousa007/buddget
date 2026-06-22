@@ -55,7 +55,10 @@ export function profileToRow(
     monthly_rent: p.monthlyRent ?? null,
     rent_includes_utilities: p.rentIncludesUtilities ?? false,
     lite_mode: p.liteMode ?? false,
-    // onboarding_version written only by the complete-journey API (service role)
+    // DO NOT add onboarding_version here. It is server-only, written exclusively
+    // by /api/auth/complete-journey (service role). Adding it here would let a
+    // stale client upsert reset the value to 0 on every sync tick, causing the
+    // onboarding redirect loop that was the root cause of BUD-41.
   }
 }
 
