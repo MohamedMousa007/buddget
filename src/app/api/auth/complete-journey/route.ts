@@ -26,10 +26,6 @@ export async function POST(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
-    if (user.user_metadata?.onboarding_completed === true) {
-      return NextResponse.json({ ok: true, alreadyCompleted: true })
-    }
-
     const admin = createServiceRoleClient()
     const { error } = await admin.auth.admin.updateUserById(user.id, {
       user_metadata: {
