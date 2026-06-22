@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { extractKeywords } from '../keywordExtractor'
 import { resolveCurrency } from '../currencyResolver'
+import { isNonTransaction } from '../patterns/preFilter'
 
 // ── keywordExtractor ────────────────────────────────────────────────────────
 describe('extractKeywords', () => {
@@ -92,6 +93,30 @@ describe('resolveCurrency', () => {
     const r = await resolveCurrency(svc, { ...base, rawBody: 'وخصم 250 من محفظتك', parsedCurrency: 'USD' })
     expect(r.provisional).toBe(true)
     expect(r.currency).toBe('EGP')
+  })
+})
+
+// ── isNonTransaction ────────────────────────────────────────────────────────
+describe('isNonTransaction', () => {
+  it('passes NBE InstaPay SMS containing "للمزيد اتصل" through to AI tier', () => {
+    // BUD-46: "تحويل لحظي" is an unambiguous bank-transfer term that must override
+    // the MARKETING_RE "للمزيد اتصل" pattern added in BUD-45.
+    const nbeInstaPay =
+      'تم تنفيذ تحويل لحظي من بطاقة رقم  507803******6685 بمبلغ 408.5 رقم مرجعي 242920916123يوم 2026-06-17 الساعه 21:55 للمزيد اتصل علي 19888'
+    expect(isNonTransaction(nbeInstaPay)).toBeNull()
+  })
+
+  it('rejects a plain telecom "للمزيد اتصل" SMS with no transaction signal', () => {
+    const telecom = 'تم تجديد باقتك الشهرية بنجاح للمزيد اتصل على 888'
+    expect(isNonTransaction(telecom)).toBe('marketing')
+  })
+
+  it('passes OTP-free bank SMS through regardless of balance line', () => {
+    expect(isNonTransaction('Your account was debited EGP 500 at Carrefour')).toBeNull()
+  })
+
+  it('rejects OTPs', () => {
+    expect(isNonTransaction('Your OTP is 123456. Do not share it.')).toBe('otp')
   })
 })
 

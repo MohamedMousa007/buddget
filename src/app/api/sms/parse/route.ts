@@ -1010,6 +1010,7 @@ async function callGemini(apiKey: string, message: string): Promise<ParsedTx> {
     generationConfig: {
       temperature: 0,
       responseMimeType: 'application/json',
+      thinkingConfig: { thinkingBudget: 0 },
     },
   }
 
