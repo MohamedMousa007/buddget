@@ -144,6 +144,7 @@ export interface Dictionary {
     toastDebtPaymentRecorded: string
     toastSavingsDeposited: string
     ariaSwapCurrencies: string
+    pressBackAgainToExit: string
   }
 
   nav: {

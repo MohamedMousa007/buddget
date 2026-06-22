@@ -242,6 +242,7 @@ export const en: Dictionary = {
     toastDebtPaymentRecorded: 'Payment recorded',
     toastSavingsDeposited: 'Savings deposit saved',
     ariaSwapCurrencies: 'Swap from and to currencies',
+    pressBackAgainToExit: 'Press back again to exit',
   },
 
   nav: {

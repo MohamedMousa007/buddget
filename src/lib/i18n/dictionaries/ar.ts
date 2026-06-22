@@ -243,6 +243,7 @@ export const ar: Dictionary = {
     toastDebtPaymentRecorded: 'تم تسجيل الدفعة',
     toastSavingsDeposited: 'تم حفظ الإيداع',
     ariaSwapCurrencies: 'تبديل العملتين من وإلى',
+    pressBackAgainToExit: 'اضغط رجوع مرة أخرى للخروج',
   },
 
   nav: {
