@@ -1009,6 +1009,7 @@ async function callGemini(apiKey: string, message: string): Promise<ParsedTx> {
   const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(30_000),
     body: JSON.stringify(body),
   })
 
