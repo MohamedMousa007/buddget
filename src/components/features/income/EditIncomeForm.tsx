@@ -3,6 +3,7 @@
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
+import { Trash2 } from 'lucide-react'
 import type { IncomeSource } from '@/lib/store/types'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useEditIncomeForm } from '@/hooks/useEditIncomeForm'
@@ -18,9 +19,15 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
   useEscapeClose(true, onClose)
   const f = useEditIncomeForm(source, onClose)
   const t = useT()
-  const { savingsAccounts, debts } = useFinanceStore(
-    useShallow((s) => ({ savingsAccounts: s.savingsAccounts, debts: s.debts }))
+  const { savingsAccounts, debts, deleteIncomeSource } = useFinanceStore(
+    useShallow((s) => ({ savingsAccounts: s.savingsAccounts, debts: s.debts, deleteIncomeSource: s.deleteIncomeSource }))
   )
+
+  const handleDelete = () => {
+    if (!window.confirm(t.income.confirmDelete)) return
+    deleteIncomeSource(source.id)
+    onClose()
+  }
 
   const linkedAcc =
     source.linkedSavingsAccountId != null
@@ -94,6 +101,16 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
             {t.editIncome.buttonSave}
           </button>
         </div>
+        {!source.sharedPlanId && (
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="flex w-full items-center justify-center gap-2 py-3 text-sm text-[var(--color-brand-red)] opacity-80 hover:opacity-100"
+          >
+            <Trash2 className="h-4 w-4" />
+            {t.common.delete}
+          </button>
+        )}
       </div>
     </div>
   )
