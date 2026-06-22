@@ -32,8 +32,11 @@ import type { DebtPaymentRow } from '@/lib/supabase/remote/types'
  * 2. Fresh install / re-login: `smsEnabled` stays true but token never saved
  *    to SharedPreferences → WorkManager path dead.
  *    Fixed by listening to SIGNED_IN auth event.
- * 3. Token expiry (JWT expires in 1h): stored token goes stale.
- *    Fixed by listening to TOKEN_REFRESHED and calling refreshSmsToken.
+ *
+ * NOTE: TOKEN_REFRESHED no longer updates SharedPreferences with the JWT because
+ * that was overwriting the non-expiring ingest token, causing WorkManager to 401
+ * after the JWT expired when the device was offline. The ingest token (saved by
+ * saveSmsToken below) is permanent and does not need per-refresh updates.
  */
 function SmsStartupSync() {
   useEffect(() => {
@@ -45,9 +48,10 @@ function SmsStartupSync() {
       if (!smsEnabled() || !token) return
       const { startSMSTracking, saveSmsToken } = await import('@/lib/native/smsTracker')
       await startSMSTracking(token)
-      // Replace the 1-hour Supabase JWT with the permanent ingest token.
-      // Without this, WorkManager silently gets 401 after the JWT expires and
-      // every SMS is dropped with no DB row, no error, no notification.
+      // Replace the 1-hour Supabase JWT with the permanent ingest token so
+      // WorkManager stays valid when the device is offline for >1h and the JWT
+      // cannot be refreshed. If offline here, the JWT fallback is already in
+      // SharedPreferences and is valid for up to 1h from this call.
       try {
         const res = await fetch(apiUrl('/api/sms/setup-token'), {
           headers: { Authorization: `Bearer ${token}` },
@@ -59,12 +63,6 @@ function SmsStartupSync() {
       } catch { /* non-fatal — JWT fallback already in SharedPreferences */ }
     }
 
-    const tryRefresh = async (token: string) => {
-      if (!smsEnabled() || !token) return
-      const { refreshSmsToken } = await import('@/lib/native/smsTracker')
-      await refreshSmsToken(token)
-    }
-
     let unsub: (() => void) | null = null
     void (async () => {
       const { createClient } = await import('@/lib/supabase/client')
@@ -72,11 +70,12 @@ function SmsStartupSync() {
       // Initial mount — handles re-launch while already logged in
       const { data } = await client.auth.getSession()
       void tryStart(data.session?.access_token ?? '')
-      // Auth state changes — handles login after fresh install + token refresh
+      // Auth state changes — handles login after fresh install
       const { data: listener } = client.auth.onAuthStateChange((event, session) => {
         const token = session?.access_token ?? ''
         if (event === 'SIGNED_IN') void tryStart(token)
-        if (event === 'TOKEN_REFRESHED') void tryRefresh(token)
+        // TOKEN_REFRESHED intentionally not handled: updating SharedPreferences
+        // with the new JWT would overwrite the non-expiring ingest token.
       })
       unsub = listener.subscription.unsubscribe
     })()
