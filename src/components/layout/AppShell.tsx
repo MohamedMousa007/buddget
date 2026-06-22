@@ -215,10 +215,6 @@ export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname()
   const bare = isBareAuthRoute(pathname)
 
-  // ponytail: temporary native diagnostic for BUD-41 (chrome-strip). Surfaces in
-  // logcat under `Capacitor/Console`; remove once the no-tabs report is confirmed fixed.
-  if (isNative()) console.info(`[SHELL] pathname=${pathname} bare=${bare}`)
-
   if (bare) {
     return (
       <div className="min-h-[100dvh] bg-[var(--color-brand-bg)]">
