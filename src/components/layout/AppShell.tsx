@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { apiUrl } from '@/lib/apiBase'
 import { Sidebar } from './Sidebar'
@@ -13,8 +13,11 @@ import { useRates } from '@/hooks/useRates'
 import { useGoldPrice } from '@/hooks/useGoldPrice'
 import { WidgetSync } from '@/lib/native/WidgetSync'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { isNative } from '@/lib/native/isNative'
 import { isAndroid } from '@/lib/native/isNative'
+import { useActionToast } from '@/components/ui/ActionToast'
+import { useT } from '@/lib/i18n'
 import { expenseFromRow } from '@/lib/supabase/remote/mappers/expenseMapper'
 import { incomeSourceFromRow } from '@/lib/supabase/remote/mappers/incomeSourceMapper'
 import { debtPaymentFromRow } from '@/lib/supabase/remote/mappers/debtPaymentMapper'
@@ -198,6 +201,68 @@ function MarketRatesSync() {
   return null
 }
 
+/**
+ * Handles Android hardware back button: closes open modals, navigates to
+ * Dashboard from inner screens, and shows a "press again to exit" toast on
+ * Dashboard before calling App.exitApp() on the second press within 2 s.
+ */
+function AndroidBackHandler() {
+  const activeModal = useSettingsStore((s) => s.activeModal)
+  const setActiveModal = useSettingsStore((s) => s.setActiveModal)
+  const pathname = usePathname()
+  const router = useRouter()
+  const showToast = useActionToast()
+  const t = useT()
+  const exitPending = useRef(false)
+
+  // Keep fresh values in refs so we never need to re-register the listener
+  const activeModalRef = useRef(activeModal)
+  const setActiveModalRef = useRef(setActiveModal)
+  const pathnameRef = useRef(pathname)
+  const showToastRef = useRef(showToast)
+  const tRef = useRef(t)
+  const routerRef = useRef(router)
+
+  useEffect(() => { activeModalRef.current = activeModal }, [activeModal])
+  useEffect(() => { pathnameRef.current = pathname }, [pathname])
+  useEffect(() => { showToastRef.current = showToast }, [showToast])
+  useEffect(() => { tRef.current = t }, [t])
+  useEffect(() => { routerRef.current = router }, [router])
+
+  useEffect(() => {
+    if (!isAndroid()) return
+    let cancelled = false
+    let handle: { remove: () => Promise<void> } | null = null
+    void (async () => {
+      const { App } = await import('@capacitor/app')
+      if (cancelled) return
+      handle = await App.addListener('backButton', () => {
+        if (activeModalRef.current) {
+          setActiveModalRef.current(null)
+          return
+        }
+        if (pathnameRef.current !== '/') {
+          routerRef.current.push('/')
+          return
+        }
+        if (exitPending.current) {
+          void App.exitApp()
+          return
+        }
+        exitPending.current = true
+        showToastRef.current(tRef.current.common.pressBackAgainToExit)
+        window.setTimeout(() => { exitPending.current = false }, 2000)
+      })
+    })()
+    return () => {
+      cancelled = true
+      void handle?.remove()
+    }
+  }, []) // mount only — refs keep values current
+
+  return null
+}
+
 interface AppShellProps {
   children: React.ReactNode
 }
@@ -238,6 +303,7 @@ export function AppShell({ children }: AppShellProps) {
       <SmsStartupSync />
       <SmsRealtimeSync />
       <SmsPushActionHandler />
+      <AndroidBackHandler />
     </div>
   )
 }
