@@ -66,3 +66,6 @@ next-env.d.ts
 # Capacitor build stash (used by scripts/capacitor-build.mjs)
 /.cap-stash/
 
+dist/
+.claude/*.log
+.claude/linear-bot.log
