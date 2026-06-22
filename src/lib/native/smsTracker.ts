@@ -158,19 +158,13 @@ export async function saveSmsToken(ingestToken: string): Promise<void> {
 }
 
 /**
- * Refreshes the access token stored in SharedPreferences. Called on Supabase
- * TOKEN_REFRESHED events so the WorkManager path stays valid after the
- * 1-hour JWT expiry.
+ * No-op: SharedPreferences now holds the non-expiring ingest token (set by
+ * saveSmsToken on startup). Writing the JWT here would overwrite the ingest
+ * token and cause WorkManager to 401 once the JWT expires while offline.
  */
-export async function refreshSmsToken(accessToken: string): Promise<void> {
-  if (!isNative() || !isAndroid()) return
-  if (!(await ensurePlugin()) || !_plugin) return
-  try {
-    const { apiUrl: buildUrl } = await import('@/lib/apiBase')
-    const base = buildUrl('').replace(/\/$/, '')
-    await _plugin.saveToken({ token: accessToken, apiUrl: base })
-  } catch { /* non-fatal */ }
-}
+// ponytail: intentional no-op — JWT refresh must not overwrite ingest token
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function refreshSmsToken(_accessToken: string): Promise<void> {}
 
 /** Gates native forwarding without touching the stored token (iOS toggle path). */
 export async function setSmsEnabled(enabled: boolean): Promise<void> {
