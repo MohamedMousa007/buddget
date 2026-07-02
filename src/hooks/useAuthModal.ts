@@ -345,7 +345,6 @@ export function useAuthModal() {
     }
 
     setLoading(false)
-    await supabase.auth.getUser()
     // Skip router.refresh on native: there's no server to revalidate and it
     // desyncs the static-export App Router (navigateAfterAuth hard-loads anyway).
     if (!isNative()) router.refresh()
@@ -420,7 +419,6 @@ export function useAuthModal() {
       return
     }
     if (data.session) {
-      await supabase.auth.getUser()
       // Direct replace — no router.refresh() afterwards. The refresh
       // forces a full server revalidation that stalls the splash
       // transition for ~500-1000 ms on top of the natural navigation.
@@ -498,7 +496,6 @@ export function useAuthModal() {
       /* non-fatal */
     }
     setLoading(false)
-    await supabase.auth.getUser()
     // Skip router.refresh on native: there's no server to revalidate and it
     // desyncs the static-export App Router (navigateAfterAuth hard-loads anyway).
     if (!isNative()) router.refresh()
@@ -530,7 +527,6 @@ export function useAuthModal() {
         return
       }
       setLoading(false)
-      await supabase.auth.getUser()
       if (!isNative()) router.refresh()
       navigateAfterAuth(router, safeNext)
     },

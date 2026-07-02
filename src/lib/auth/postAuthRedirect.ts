@@ -1,7 +1,7 @@
 import { isNative } from '@/lib/native/isNative'
 
 /**
- * Navigate to a top-level route after an auth/onboarding transition.
+ * Navigate to a top-level route after a successful auth action.
  *
  * Native (Capacitor) ships a Next static export with NO server: `router.replace`
  * + `router.refresh` can leave `usePathname()` desynced from the rendered route,
