@@ -37,7 +37,6 @@ export function AdminUsersSection({ admin }: AdminUsersSectionProps) {
             <thead className="sticky top-0 bg-[var(--color-brand-bg)] text-[var(--color-brand-text-muted)]">
               <tr>
                 <th className="p-2 font-medium">Email</th>
-                <th className="p-2 font-medium">Onboarding</th>
                 <th className="p-2 font-medium">Last sign-in</th>
               </tr>
             </thead>
@@ -45,7 +44,6 @@ export function AdminUsersSection({ admin }: AdminUsersSectionProps) {
               {admin.users.map((u) => (
                 <tr key={u.id} className="border-t border-[var(--color-brand-border)]">
                   <td className="p-2 text-[var(--color-brand-text-primary)] font-mono-numbers">{u.email || u.id.slice(0, 8)}</td>
-                  <td className="p-2">{u.onboarding_completed ? 'Done' : 'Pending'}</td>
                   <td className="p-2 text-[var(--color-brand-text-secondary)]">
                     {u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : '—'}
                   </td>

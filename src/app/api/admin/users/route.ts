@@ -28,7 +28,6 @@ export async function POST(req: Request) {
         email: u.email,
         created_at: u.created_at,
         last_sign_in_at: u.last_sign_in_at,
-        onboarding_completed: u.user_metadata?.onboarding_completed === true,
       })) ?? []
 
     return NextResponse.json({

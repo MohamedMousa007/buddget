@@ -67,7 +67,6 @@ export default function DashboardPage() {
               daysLeft: stats.daysLeft,
               baseCurrency: stats.baseCurrency,
             }}
-            suppressNumbers={false}
           />
         ) : (
           <DashboardHero
@@ -83,7 +82,6 @@ export default function DashboardPage() {
               daysLeft: stats.daysLeft,
               baseCurrency: stats.baseCurrency,
             }}
-            suppressNumbers={false}
           />
         )}
 

@@ -14,7 +14,6 @@ export interface DashboardHeroMinimalStats {
 
 export interface DashboardHeroMinimalProps {
   stats: DashboardHeroMinimalStats
-  suppressNumbers?: boolean
 }
 
 /**
@@ -24,21 +23,8 @@ export interface DashboardHeroMinimalProps {
  * Minimal theme's dashboard stack — the standard theme keeps the navy
  * `DashboardHero` card.
  */
-export function DashboardHeroMinimal({ stats, suppressNumbers }: DashboardHeroMinimalProps) {
+export function DashboardHeroMinimal({ stats }: DashboardHeroMinimalProps) {
   const t = useT()
-
-  if (suppressNumbers) {
-    return (
-      <div className="py-4 text-center">
-        <p className="text-lg font-semibold text-[var(--color-brand-text-primary)]">
-          {t.onboarding.coreGateTitle}
-        </p>
-        <p className="text-xs text-[var(--color-brand-text-muted)] mt-1">
-          {t.onboarding.coreGateSubtitle}
-        </p>
-      </div>
-    )
-  }
 
   const tone = paceTone(stats.paceStatus)
   const statusLabel = paceLabel(stats.paceStatus, t)

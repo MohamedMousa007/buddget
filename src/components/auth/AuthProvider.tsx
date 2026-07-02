@@ -18,7 +18,6 @@ import { BiometricSessionPersist } from '@/lib/native/useBiometricSessionPersist
 import { AuthModal } from '@/components/auth/AuthModal'
 import { AuthContext, type AuthContextValue, type AuthMode, useAuth } from '@/components/auth/auth-context'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
-import { onboardingComplete, navigateAfterAuth } from '@/lib/auth/postAuthRedirect'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { LandingGate } from '@/components/auth/LandingGate'
@@ -128,7 +127,6 @@ function AuthNextQuerySync({ configured }: { configured: boolean }) {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const router = useRouter()
   const pathnameRef = useRef(pathname)
   useEffect(() => { pathnameRef.current = pathname }, [pathname])
   const [user, setUser] = useState<AuthContextValue['user']>(null)
@@ -395,40 +393,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [dataPullTimedOut, setDataPullTimedOut] = useState(false)
   const dataPullTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  /**
-   * Post-signup flash guard: a freshly signed-up user briefly renders
-   * whatever route the auth modal was opened from (usually `/`) before
-   * the client-side `router.replace('/onboarding')` in useAuthModal
-   * completes. Middleware redirects server-side, but that's a separate
-   * request — the SPA render happens first.
-   *
-   * Block children until one of:
-   *   - the user is already on `/onboarding`
-   *   - onboarding is complete (server `user_metadata.onboarding_completed`)
-   *
-   * Bypass routes (reset-password, auth callback) always render.
-   */
-  const onboardingDone = onboardingComplete(user)
-  const onOnboardingRoute = pathname.startsWith('/onboarding')
-  const showOnboardingRedirectSplash =
-    mode === 'authenticated' &&
-    !onboardingDone &&
-    !onOnboardingRoute &&
-    !isBypassRoute
-
-  useEffect(() => {
-    if (!showOnboardingRedirectSplash) return
-    navigateAfterAuth(router, '/onboarding')
-  }, [showOnboardingRedirectSplash, router])
-
   // Hold the app behind the splash until the initial server pull lands, so the
   // dashboard never paints stale localStorage numbers/theme that then visibly
   // swap to the synced values. `dataReady` flips true in SupabaseFinanceSync's
   // pull() finally — guaranteed even on the early-return path.
   const showDataLoadingSplash =
     mode === 'authenticated' &&
-    onboardingDone &&
-    !onOnboardingRoute &&
     !isBypassRoute &&
     !dataReady &&
     !dataPullTimedOut
@@ -460,7 +430,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // (not showDataLoadingSplash, which already factors in the timeout) so the
   // timer arms once and isn't self-cancelling. Resets when data arrives.
   const awaitingInitialPull =
-    mode === 'authenticated' && onboardingDone && !onOnboardingRoute && !isBypassRoute && !dataReady
+    mode === 'authenticated' && !isBypassRoute && !dataReady
   useEffect(() => {
     if (!awaitingInitialPull) {
       if (dataPullTimerRef.current) { clearTimeout(dataPullTimerRef.current); dataPullTimerRef.current = null }
@@ -491,7 +461,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         </Suspense>
         {showLoadingSplash ? (
           <AuthLoadingSplash />
-        ) : showWelcomeScreen || showOnboardingRedirectSplash ? (
+        ) : showWelcomeScreen ? (
           <Suspense fallback={<AuthLoadingSplash />}>
             <WelcomeScreen />
           </Suspense>

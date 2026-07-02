@@ -7,7 +7,7 @@ import { APP_CONFIG } from '@/lib/config'
 import { appOrigin } from '@/lib/apiBase'
 import { mapOAuthError } from '@/components/auth/authErrors'
 import { isOAuthProviderEnabled, type OAuthProvider } from '@/lib/auth/oauthProviders'
-import { routeAfterAuth, navigateAfterAuth } from '@/lib/auth/postAuthRedirect'
+import { navigateAfterAuth } from '@/lib/auth/postAuthRedirect'
 import { useT } from '@/lib/i18n'
 import { isNative, isNativeShellBuild } from '@/lib/native/isNative'
 
@@ -42,7 +42,7 @@ export function useOAuthSignIn(nextPath: string) {
             '@/lib/native/socialSignIn'
           )
           if (provider === 'apple' || isNativeGoogleConfigured()) {
-            const { error: e, cancelled, user } = await nativeSocialSignIn(provider)
+            const { error: e, cancelled } = await nativeSocialSignIn(provider)
             if (cancelled) {
               setError(mapOAuthError(null, 'cancelled', t))
               setPending(null)
@@ -53,12 +53,9 @@ export function useOAuthSignIn(nextPath: string) {
               setPending(null)
               return
             }
-            // Route new users to /onboarding, returning users to nextPath, using
-            // the user returned by signInWithIdToken (no getSession round-trip,
-            // which can race the SDK's in-memory session update). onAuthStateChange
-            // closes the modal; we route here since native sign-in never triggers
-            // a server-side middleware redirect.
-            navigateAfterAuth(router, routeAfterAuth(user, nextPath))
+            // onAuthStateChange closes the modal; we route here since native
+            // sign-in never triggers a server-side middleware redirect.
+            navigateAfterAuth(router, nextPath)
             setPending(null)
             return
           }

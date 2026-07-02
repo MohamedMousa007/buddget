@@ -35,7 +35,6 @@ function publicApiRateLimitOk(ip: string): boolean {
 }
 
 const AUTH_CALLBACK = '/auth/callback'
-const ONBOARDING_PATH = '/onboarding'
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
@@ -117,7 +116,6 @@ export async function middleware(request: NextRequest) {
 
   const isAuthCallback = pathname === AUTH_CALLBACK || pathname.startsWith(`${AUTH_CALLBACK}/`)
   const isResetPassword = pathname.startsWith('/reset-password')
-  const isOnboarding = pathname === ONBOARDING_PATH || pathname.startsWith(`${ONBOARDING_PATH}/`)
   const isAdmin = pathname.startsWith('/admin')
 
   if (isAuthCallback || isResetPassword) {
@@ -136,23 +134,6 @@ export async function middleware(request: NextRequest) {
   // /admin requires a signed-in account (PIN still required inside the app / APIs)
   if (isAdmin) {
     return supabaseResponse
-  }
-
-  const onboardingDone = user.user_metadata?.onboarding_completed === true
-  const onboardingRedo = request.nextUrl.searchParams.get('redo') === '1'
-
-  if (!onboardingDone && !isOnboarding) {
-    const url = request.nextUrl.clone()
-    url.pathname = ONBOARDING_PATH
-    url.search = ''
-    return NextResponse.redirect(url)
-  }
-
-  if (onboardingDone && !onboardingRedo && isOnboarding) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/'
-    url.search = ''
-    return NextResponse.redirect(url)
   }
 
   return supabaseResponse

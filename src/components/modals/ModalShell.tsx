@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion, useDragControls } from 'framer-motion'
-import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
 const OVERLAY_Z = 'z-[100]'
@@ -22,13 +21,6 @@ interface ModalShellProps {
    * Bottom sheet: drag handle at top pulls down to dismiss; inner area scrolls independently (mobile-friendly).
    */
   dragToClose?: boolean
-  /**
-   * Fires once the open animation finishes (spring settles at y=0). Used by
-   * onboarding's tutorial system to start the tutorial *after* the modal is
-   * fully on-screen instead of during the spring animation. Called at most
-   * once per open cycle; safe to omit outside onboarding.
-   */
-  onOpenAnimationComplete?: () => void
 }
 
 /**
@@ -41,18 +33,10 @@ export function ModalShell({
   zIndexClassName,
   panelClassName = '',
   dragToClose = false,
-  onOpenAnimationComplete,
 }: ModalShellProps) {
   const dragControls = useDragControls()
   const zStack = zIndexClassName ?? OVERLAY_Z
   const panelRef = useRef<HTMLDivElement>(null)
-  const pathname = usePathname()
-  // During the Journey we dim the backdrop less (bg-black/35) and drop
-  // the blur so the modal reads as "on top of" the flow rather than
-  // "replacing" it. The Journey header is fixed at z-[130] — above
-  // the modal's z-[100] — so the progress bar + back button remain
-  // visible and interactable throughout.
-  const journeyChrome = pathname?.startsWith('/onboarding') ?? false
 
   useEffect(() => {
     if (!open) return
@@ -91,13 +75,8 @@ export function ModalShell({
     }
   }, [open])
 
-  // During onboarding, blend the modal in (centered cross-fade + slight
-  // scale lift) instead of sliding it from the bottom — the bottom-up
-  // slide reads as an interruption inside a journey card; a centered
-  // blend feels like the modal belongs to the same surface.
-  const panelStaticClasses = journeyChrome
-    ? 'fixed start-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(92vw,440px)] max-h-[90vh] bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)]'
-    : 'fixed bottom-0 start-0 end-0 bg-[var(--color-brand-card)] rounded-t-3xl border-t border-[var(--color-brand-border)] max-h-[90vh] lg:bottom-auto lg:top-1/2 lg:start-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[440px] lg:rounded-2xl lg:border lg:max-h-[90vh]'
+  const panelStaticClasses =
+    'fixed bottom-0 start-0 end-0 bg-[var(--color-brand-card)] rounded-t-3xl border-t border-[var(--color-brand-border)] max-h-[90vh] lg:bottom-auto lg:top-1/2 lg:start-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[440px] lg:rounded-2xl lg:border lg:max-h-[90vh]'
 
   const [lgMotion, setLgMotion] = useState(false)
   useEffect(() => {
@@ -131,7 +110,7 @@ export function ModalShell({
     }
   }, [open])
 
-  const desktopFadePanel = !journeyChrome && lgMotion
+  const desktopFadePanel = lgMotion
 
   return (
     <AnimatePresence>
@@ -144,11 +123,7 @@ export function ModalShell({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
             onClick={onBackdropClick}
-            className={cn(
-              'fixed inset-0',
-              journeyChrome ? 'bg-black/35' : 'bg-black/60 backdrop-blur-sm',
-              zStack,
-            )}
+            className={cn('fixed inset-0', 'bg-black/60 backdrop-blur-sm', zStack)}
           />
           <motion.div
             ref={panelRef}
@@ -156,57 +131,15 @@ export function ModalShell({
             role="dialog"
             aria-modal="true"
             tabIndex={-1}
-            initial={
-              journeyChrome
-                ? { opacity: 0, scale: 0.96 }
-                : desktopFadePanel
-                  ? { opacity: 0, scale: 0.98 }
-                  : { y: '100%' }
-            }
-            animate={
-              journeyChrome
-                ? { opacity: 1, scale: 1 }
-                : desktopFadePanel
-                  ? { opacity: 1, scale: 1 }
-                  : { y: 0 }
-            }
-            exit={
-              journeyChrome
-                ? { opacity: 0, scale: 0.97 }
-                : desktopFadePanel
-                  ? { opacity: 0, scale: 0.97 }
-                  : { y: '100%' }
-            }
+            initial={desktopFadePanel ? { opacity: 0, scale: 0.98 } : { y: '100%' }}
+            animate={desktopFadePanel ? { opacity: 1, scale: 1 } : { y: 0 }}
+            exit={desktopFadePanel ? { opacity: 0, scale: 0.97 } : { y: '100%' }}
             transition={
-              journeyChrome
-                ? { duration: 0.24, ease: [0.32, 0.72, 0.34, 1] }
-                : desktopFadePanel
-                  ? { duration: 0.22, ease: [0.32, 0.72, 0.34, 1] }
-                  : { duration: 0.26, ease: [0.22, 1, 0.36, 1] }
+              desktopFadePanel
+                ? { duration: 0.22, ease: [0.32, 0.72, 0.34, 1] }
+                : { duration: 0.26, ease: [0.22, 1, 0.36, 1] }
             }
-            onAnimationComplete={(definition) => {
-              // Framer fires onAnimationComplete for both enter + exit.
-              // For the journey blend variant, the open target is
-              // `opacity: 1`; for the bottom-sheet variant it's `y: 0`.
-              // Dispatches both the direct callback and a
-              // `modal-opened` custom event consumed by
-              // OnboardingModalGate.
-              const isOpenTarget =
-                typeof definition === 'object' &&
-                definition !== null &&
-                ((journeyChrome && 'opacity' in definition && (definition as { opacity: number }).opacity === 1) ||
-                  (desktopFadePanel &&
-                    'opacity' in definition &&
-                    (definition as { opacity: number }).opacity === 1) ||
-                  (!journeyChrome && !desktopFadePanel && 'y' in definition && (definition as { y: number | string }).y === 0))
-              if (isOpenTarget) {
-                onOpenAnimationComplete?.()
-                if (typeof window !== 'undefined') {
-                  window.dispatchEvent(new CustomEvent('buddget:modal-opened'))
-                }
-              }
-            }}
-            drag={dragToClose && !journeyChrome && !desktopFadePanel ? 'y' : false}
+            drag={dragToClose && !desktopFadePanel ? 'y' : false}
             dragListener={false}
             dragControls={dragToClose ? dragControls : undefined}
             dragConstraints={{ top: 0 }}
@@ -225,7 +158,7 @@ export function ModalShell({
               panelClassName
             )}
             style={
-              keyboardOffset > 0 && !journeyChrome && !desktopFadePanel
+              keyboardOffset > 0 && !desktopFadePanel
                 ? { paddingBottom: `${keyboardOffset}px` }
                 : undefined
             }

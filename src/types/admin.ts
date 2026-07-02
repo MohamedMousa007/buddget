@@ -31,7 +31,6 @@ export interface AdminUserRow {
   email: string | undefined
   created_at: string
   last_sign_in_at: string | null
-  onboarding_completed: boolean
 }
 
 export interface AdminAnalyticsSnapshot {
@@ -132,10 +131,3 @@ export interface SmsTrackedRow {
   email: string | null
 }
 
-export interface AdminSurveyRow {
-  id: string
-  version: number
-  published: boolean
-  config: unknown
-  updated_at: string
-}

@@ -11,7 +11,6 @@ export default function robots(): MetadataRoute.Robots {
           '/debts',
           '/reports',
           '/settings',
-          '/onboarding',
           '/admin',
           '/api/',
           '/profile',

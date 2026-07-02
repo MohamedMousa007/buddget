@@ -62,7 +62,7 @@ export function diffLists<T extends HasId>(next: readonly T[], prev: readonly T[
 
 /**
  * Singleton diff: returns the new value when it differs from the previous, otherwise null.
- * Used for `profile`, `user_settings`, `onboarding_state` — one row per user.
+ * Used for `profile`, `user_settings` — one row per user.
  */
 export function diffSingleton<T>(next: T, prev: T | null | undefined): T | null {
   if (prev == null) return next

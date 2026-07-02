@@ -1,29 +1,4 @@
-import type { User } from '@supabase/supabase-js'
 import { isNative } from '@/lib/native/isNative'
-
-/**
- * Single source of truth for "has this user finished onboarding?".
- *
- * `user_metadata.onboarding_completed` is the ONLY signal: it lives in the auth
- * JWT, is available synchronously after `getSession()` on every cold start, is
- * per-user (never inherited across users on a shared device), is cross-device,
- * and survives the native hard reload. The previous local-store bridge
- * (`profile.onboardingVersion`) was device-global localStorage AND a synced
- * field, so a new signup on a device that previously had an onboarded user
- * inherited it and skipped onboarding — that whole class of bug is gone.
- *
- * Set authoritatively by `/api/auth/complete-journey` (service role) and mirrored
- * into the local session by `supabase.auth.updateUser()` in `completeOnboarding`.
- */
-export function onboardingComplete(user: User | null): boolean {
-  return user?.user_metadata?.onboarding_completed === true
-}
-
-/** After sign-in / sign-up, send users who haven't finished onboarding there first. */
-export function routeAfterAuth(user: User | null, preferredNext: string): string {
-  if (!user) return preferredNext
-  return onboardingComplete(user) ? preferredNext : '/onboarding'
-}
 
 /**
  * Navigate to a top-level route after an auth/onboarding transition.
