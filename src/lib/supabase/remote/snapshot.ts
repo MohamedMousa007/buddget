@@ -1,4 +1,4 @@
-import type { FinanceStore, UserProfile, AppSettings, OnboardingState, PaymentMethod, IncomeSource, Expense, Receipt, RecurringExpense, Subscription, Debt, DebtPayment, RecurringDebtPayment, SavingsAccount, SavingsHolding, SavingsTransaction, RecurringSavingsDeposit, Goal, BudgetPlan } from '@/lib/store/types'
+import type { FinanceStore, UserProfile, AppSettings, PaymentMethod, IncomeSource, Expense, Receipt, RecurringExpense, Subscription, Debt, DebtPayment, RecurringDebtPayment, SavingsAccount, SavingsHolding, SavingsTransaction, RecurringSavingsDeposit, Goal, BudgetPlan } from '@/lib/store/types'
 
 /**
  * Mirror of the finance store slices we persist to Supabase. Used to compute diffs
@@ -7,7 +7,6 @@ import type { FinanceStore, UserProfile, AppSettings, OnboardingState, PaymentMe
 export interface Snapshot {
   profile: UserProfile
   settings: AppSettings
-  onboardingState: OnboardingState
   financialGoalsNotes: string
   activeBudgetPlanId: string | null
   paymentMethods: PaymentMethod[]
@@ -29,7 +28,7 @@ export interface Snapshot {
 
 /** Copy the parts of the Zustand store that map to DB rows. Plain JSON; safe to `deepEqual` on. */
 export function snapshot(state: Pick<FinanceStore,
-  | 'profile' | 'settings' | 'onboardingState' | 'financialGoalsNotes' | 'activeBudgetPlanId'
+  | 'profile' | 'settings' | 'financialGoalsNotes' | 'activeBudgetPlanId'
   | 'paymentMethods' | 'incomeSources' | 'expenses' | 'receipts' | 'recurringExpenses'
   | 'subscriptions' | 'debts' | 'debtPayments' | 'recurringDebtPayments'
   | 'savingsAccounts' | 'savingsHoldings' | 'savingsTransactions' | 'recurringSavingsDeposits'
@@ -38,7 +37,6 @@ export function snapshot(state: Pick<FinanceStore,
   return {
     profile: state.profile,
     settings: state.settings,
-    onboardingState: state.onboardingState,
     financialGoalsNotes: state.financialGoalsNotes,
     activeBudgetPlanId: state.activeBudgetPlanId,
     paymentMethods: state.paymentMethods,
@@ -75,26 +73,12 @@ export function emptySnapshot(): Snapshot {
       aiProvider: 'gemini',
       noIncomeDeclared: false,
       showAllCurrenciesInForms: true,
-      dismissOnboardingBanner: false,
-      onboardingBannerRemindAt: null,
       twoFactorEmailEnabled: false,
-      onboardingChecklistHidden: false,
       legacyOnboardingMigratedAt: null,
       dashboardLayout: 'standard' as const,
       tutorialsCompleted: [] as string[],
       tutorialCurrentStep: null as string | null,
       smsTrackingEnabled: false,
-    },
-    onboardingState: {
-      flowVersion: 2,
-      answers: {},
-      currentStepIndex: 0,
-      planAccepted: false,
-      selectedPlanIndex: null,
-      aiPlans: null,
-      aiGeneratedAt: null,
-      lastValidationNotes: null,
-      draftEntries: {},
     },
     financialGoalsNotes: '',
     activeBudgetPlanId: null,

@@ -22,7 +22,6 @@ import type {
   Goal,
   IncomeSource,
   IncomeSourceType,
-  OnboardingState,
   PaymentMethod,
   RecurringSavingsDeposit,
   SavingsAccount,
@@ -37,7 +36,6 @@ import {
   patchRecurringFromSubscription,
 } from '@/lib/subscriptions/subscriptionRecurring'
 import { normalizeDebtIncoming } from '@/lib/debt/normalizeDebt'
-import { defaultOnboardingState } from '@/lib/onboarding/onboardingTypes'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { SAVINGS_TYPE_ICONS } from '@/lib/constants/savingsIcons'
 import { normalizeSavingsAccountsList } from '@/lib/savings/normalizeSavingsAccount'
@@ -136,7 +134,6 @@ export const useFinanceStore = create<FinanceStore>()(
       profile: DEFAULT_PROFILE,
       settings: DEFAULT_SETTINGS,
       financialGoalsNotes: '',
-      onboardingState: defaultOnboardingState(),
       incomeSources: DEFAULT_INCOME,
       expenses: [],
       receipts: [],
@@ -1242,16 +1239,6 @@ export const useFinanceStore = create<FinanceStore>()(
           profile: { ...state.profile, ...updates },
         })),
 
-
-      setOnboardingState: (updates) =>
-        set((state) => {
-          const next =
-            typeof updates === 'function'
-              ? updates(state.onboardingState)
-              : { ...state.onboardingState, ...updates }
-          return { onboardingState: next }
-        }),
-
       updateRates: (rates) =>
         set((state) => ({
           exchangeRates: { ...state.exchangeRates, ...rates },
@@ -1324,9 +1311,6 @@ export const useFinanceStore = create<FinanceStore>()(
             settings: data.settings
               ? { ...state.settings, ...data.settings }
               : state.settings,
-            onboardingState: data.onboardingState
-              ? { ...defaultOnboardingState(), ...data.onboardingState }
-              : state.onboardingState,
             goals: data.goals ?? state.goals,
             subscriptions: data.subscriptions ?? state.subscriptions,
           }
@@ -1342,7 +1326,6 @@ export const useFinanceStore = create<FinanceStore>()(
         const data = {
           profile: state.profile,
           settings: state.settings,
-          onboardingState: state.onboardingState,
           incomeSources: state.incomeSources,
           expenses: state.expenses,
           recurringExpenses: state.recurringExpenses,
@@ -1368,7 +1351,6 @@ export const useFinanceStore = create<FinanceStore>()(
         set({
           profile: createFreshDefaultProfile(),
           settings: { ...DEFAULT_SETTINGS },
-          onboardingState: defaultOnboardingState(),
           incomeSources: DEFAULT_INCOME,
           expenses: [],
           receipts: [],
@@ -1481,7 +1463,6 @@ export const useFinanceStore = create<FinanceStore>()(
               typeof p.activeBudgetPlanId === 'string' || p.activeBudgetPlanId === null
                 ? p.activeBudgetPlanId
                 : null,
-            onboardingState: (p.onboardingState as OnboardingState | undefined) ?? defaultOnboardingState(),
             recurringDebtPayments: Array.isArray(p.recurringDebtPayments)
               ? p.recurringDebtPayments
               : [],
@@ -1514,7 +1495,6 @@ export const useFinanceStore = create<FinanceStore>()(
               typeof p.activeBudgetPlanId === 'string' || p.activeBudgetPlanId === null
                 ? p.activeBudgetPlanId
                 : null,
-            onboardingState: (p.onboardingState as OnboardingState | undefined) ?? defaultOnboardingState(),
             recurringDebtPayments: Array.isArray(p.recurringDebtPayments)
               ? p.recurringDebtPayments
               : [],
@@ -1538,7 +1518,6 @@ export const useFinanceStore = create<FinanceStore>()(
               : ((p.savingsAccounts as SavingsAccount[]) ?? [])
           return {
             ...p,
-            onboardingState: (p.onboardingState as OnboardingState | undefined) ?? defaultOnboardingState(),
             recurringDebtPayments: Array.isArray(p.recurringDebtPayments)
               ? p.recurringDebtPayments
               : [],
@@ -1562,7 +1541,6 @@ export const useFinanceStore = create<FinanceStore>()(
               : ((p.savingsAccounts as SavingsAccount[]) ?? [])
           return {
             ...p,
-            onboardingState: (p.onboardingState as OnboardingState | undefined) ?? defaultOnboardingState(),
             recurringDebtPayments: [],
             recurringSavingsDeposits: [],
             savingsAccounts,
@@ -1578,7 +1556,6 @@ export const useFinanceStore = create<FinanceStore>()(
           ...p,
           profile: DEFAULT_PROFILE,
           settings: { ...DEFAULT_SETTINGS, noIncomeDeclared: false },
-          onboardingState: defaultOnboardingState(),
           incomeSources: [],
           expenses: [],
           recurringExpenses: [],
@@ -1620,9 +1597,6 @@ export const useFinanceStore = create<FinanceStore>()(
           savingsTransactions: p.savingsTransactions ?? current.savingsTransactions,
           recurringSavingsDeposits: p.recurringSavingsDeposits ?? current.recurringSavingsDeposits,
           recurringDebtPayments: p.recurringDebtPayments ?? current.recurringDebtPayments,
-          onboardingState: p.onboardingState
-            ? { ...current.onboardingState, ...p.onboardingState }
-            : current.onboardingState,
           settings: {
             ...current.settings,
             ...p.settings,

@@ -14,20 +14,12 @@ import type { Currency } from '@/lib/store/types'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
-import { useDraftEntry } from '@/lib/onboarding/draftEntry'
 import {
   MODAL_BODY_SCROLL_CLASS,
   MODAL_CONTROL_CLASS,
   MODAL_LABEL_CLASS,
   MODAL_SHEET_OUTER_CLASS,
 } from '@/lib/modals/modalFormClasses'
-
-interface IncomeDraftShape {
-  name: string
-  amount: string
-  currency: Currency
-  isRecurring: boolean
-}
 
 export function AddIncomeSheet() {
   const showToast = useActionToast()
@@ -42,14 +34,10 @@ export function AddIncomeSheet() {
   const t = useT()
   const isOpen = activeModal === 'addIncome'
 
-  const draft = useDraftEntry<IncomeDraftShape>('incomeSources')
-
-  const [name, setName] = useState(draft.initial?.name ?? '')
-  const [amount, setAmount] = useState(draft.initial?.amount ?? '')
-  const [currency, setCurrency] = useState<Currency>(
-    draft.initial?.currency ?? settings.baseCurrency,
-  )
-  const [isRecurring, setIsRecurring] = useState(draft.initial?.isRecurring ?? true)
+  const [name, setName] = useState('')
+  const [amount, setAmount] = useState('')
+  const [currency, setCurrency] = useState<Currency>(settings.baseCurrency)
+  const [isRecurring, setIsRecurring] = useState(true)
 
   const prevIsOpen = useRef(false)
   const defaultPmId =
@@ -58,18 +46,11 @@ export function AddIncomeSheet() {
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- sync default currency when sheet opens */
     if (isOpen && !prevIsOpen.current) {
-      if (!draft.active || !draft.initial?.currency) {
-        setCurrency(settings.baseCurrency)
-      }
+      setCurrency(settings.baseCurrency)
     }
     prevIsOpen.current = isOpen
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [isOpen, settings.baseCurrency, draft.active, draft.initial])
-
-  useEffect(() => {
-    if (!isOpen || !draft.active) return
-    draft.update({ name, amount, currency, isRecurring })
-  }, [isOpen, draft, name, amount, currency, isRecurring])
+  }, [isOpen, settings.baseCurrency])
 
   const resetForm = useCallback(() => {
     setName('')
@@ -96,13 +77,12 @@ export function AddIncomeSheet() {
     })
 
     showToast(t.common.toastIncomeAdded)
-    draft.clear()
     resetForm()
     setActiveModal(null)
   }
 
   const handleClose = () => {
-    if (!draft.active) resetForm()
+    resetForm()
     setActiveModal(null)
   }
 

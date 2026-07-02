@@ -28,15 +28,14 @@ function mergeList<T extends WithId>(local: T[], server: T[]): T[] {
 
 /**
  * Merge a local Zustand snapshot with the server snapshot. Singleton slices
- * (profile/settings/onboardingState) prefer the server — signing in expresses
- * a clear intent to use the server's identity. Used on first sign-in of a
- * returning user or when merging offline edits made while signed out.
+ * (profile/settings) prefer the server — signing in expresses a clear intent
+ * to use the server's identity. Used on first sign-in of a returning user or
+ * when merging offline edits made while signed out.
  */
 export function mergeSnapshots(local: Snapshot, server: Snapshot): Snapshot {
   return {
     profile: server.profile,
     settings: server.settings,
-    onboardingState: server.onboardingState,
     // Singletons-ish:
     financialGoalsNotes: server.financialGoalsNotes || local.financialGoalsNotes,
     activeBudgetPlanId: server.activeBudgetPlanId ?? local.activeBudgetPlanId,

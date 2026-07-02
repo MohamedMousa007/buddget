@@ -18,7 +18,6 @@ import type {
 
 import { profileFromRow, profileToRow } from '@/lib/supabase/remote/mappers/profileMapper'
 import { settingsFromRow, settingsToRow } from '@/lib/supabase/remote/mappers/settingsMapper'
-import { onboardingFromRow, onboardingToRow } from '@/lib/supabase/remote/mappers/onboardingMapper'
 import { paymentMethodFromRow, paymentMethodToRow } from '@/lib/supabase/remote/mappers/paymentMethodMapper'
 import { incomeSourceFromRow, incomeSourceToRow } from '@/lib/supabase/remote/mappers/incomeSourceMapper'
 import { expenseFromRow, expenseToRow } from '@/lib/supabase/remote/mappers/expenseMapper'
@@ -143,10 +142,7 @@ describe('settings mapper', () => {
       aiProvider: 'gemini' as const,
       noIncomeDeclared: false,
       showAllCurrenciesInForms: true,
-      dismissOnboardingBanner: false,
-      onboardingBannerRemindAt: null,
       twoFactorEmailEnabled: false,
-      onboardingChecklistHidden: false,
       legacyOnboardingMigratedAt: null,
       dashboardLayout: 'minimal' as const,
       tutorialsCompleted: ['postOnboardingTour:v1', 'addIncomeTour:v1'],
@@ -159,28 +155,6 @@ describe('settings mapper', () => {
       secondaryCurrency: 'USD',
     })
     expect(back).toEqual(s)
-  })
-})
-
-describe('onboarding mapper', () => {
-  it('round-trips answers + step index + draft entries, drops deprecated fields', () => {
-    const o = {
-      flowVersion: 2,
-      answers: { country: 'Egypt', foo: ['bar'] },
-      currentStepIndex: 5,
-      planAccepted: true,
-      selectedPlanIndex: null,
-      aiPlans: null,
-      aiGeneratedAt: null,
-      lastValidationNotes: null,
-      draftEntries: { incomeDraft: { name: 'Salary', amount: 15000 } },
-    }
-    const row = onboardingToRow(o, UID)
-    const back = onboardingFromRow({ ...row, updated_at: '' } as never)
-    expect(back.currentStepIndex).toBe(5)
-    expect(back.planAccepted).toBe(true)
-    expect(back.answers).toEqual(o.answers)
-    expect(back.draftEntries).toEqual(o.draftEntries)
   })
 })
 

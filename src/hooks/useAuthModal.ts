@@ -8,7 +8,7 @@ import { mapAuthError, mapOAuthCallbackReason, mapOAuthError, isValidEmailFormat
 import { useAuth } from '@/components/auth/auth-context'
 import { useT } from '@/lib/i18n'
 import { apiFetch, apiFetchAuth } from '@/lib/apiBase'
-import { routeAfterAuth, navigateAfterAuth } from '@/lib/auth/postAuthRedirect'
+import { navigateAfterAuth } from '@/lib/auth/postAuthRedirect'
 import { isNative } from '@/lib/native/isNative'
 import { MIN_PASSWORD_LEN } from '@/components/features/auth-modal/authModalTokens'
 import { markSessionEphemeral } from '@/hooks/useEphemeralSessionGuard'
@@ -345,11 +345,11 @@ export function useAuthModal() {
     }
 
     setLoading(false)
-    const { data: userData } = await supabase.auth.getUser()
+    await supabase.auth.getUser()
     // Skip router.refresh on native: there's no server to revalidate and it
     // desyncs the static-export App Router (navigateAfterAuth hard-loads anyway).
     if (!isNative()) router.refresh()
-    navigateAfterAuth(router, routeAfterAuth(userData.user, safeNext))
+    navigateAfterAuth(router, safeNext)
   }, [
     email,
     password,
@@ -420,13 +420,13 @@ export function useAuthModal() {
       return
     }
     if (data.session) {
-      const { data: userData } = await supabase.auth.getUser()
+      await supabase.auth.getUser()
       // Direct replace — no router.refresh() afterwards. The refresh
       // forces a full server revalidation that stalls the splash
       // transition for ~500-1000 ms on top of the natural navigation.
       // Server components on the new route pick up the fresh session
       // cookies at the next navigation/mount naturally.
-      navigateAfterAuth(router, routeAfterAuth(userData.user, safeNext))
+      navigateAfterAuth(router, safeNext)
       return
     }
     if (data.user) {
@@ -498,11 +498,11 @@ export function useAuthModal() {
       /* non-fatal */
     }
     setLoading(false)
-    const { data: userData } = await supabase.auth.getUser()
+    await supabase.auth.getUser()
     // Skip router.refresh on native: there's no server to revalidate and it
     // desyncs the static-export App Router (navigateAfterAuth hard-loads anyway).
     if (!isNative()) router.refresh()
-    navigateAfterAuth(router, routeAfterAuth(userData.user, safeNext))
+    navigateAfterAuth(router, safeNext)
   }, [email, otp, router, safeNext, supabase, t, verifyPurpose])
 
   /**
@@ -530,9 +530,9 @@ export function useAuthModal() {
         return
       }
       setLoading(false)
-      const { data: userData } = await supabase.auth.getUser()
+      await supabase.auth.getUser()
       if (!isNative()) router.refresh()
-      navigateAfterAuth(router, routeAfterAuth(userData.user, safeNext))
+      navigateAfterAuth(router, safeNext)
     },
     [router, safeNext, supabase, t],
   )

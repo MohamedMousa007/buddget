@@ -9,12 +9,6 @@ import { isSupabaseConfigured } from '@/lib/supabase/env'
 
 import { apiFetchAuth } from '@/lib/apiBase'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
-import {
-  getOnboardingCompletionPercent,
-  isExpertOnboardingComplete,
-  getOnboardingStageRows,
-  onboardingProgressSnapshotFromStore,
-} from '@/lib/onboarding/onboardingProgress'
 
 const INPUT_CLASS =
   'bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] focus:border-[var(--color-brand-red)] rounded-xl px-3 py-2 text-[var(--color-brand-text-primary)] text-sm w-full outline-none transition-colors'
@@ -93,10 +87,6 @@ export function useProfilePage() {
     await signOut()
   }, [signOut])
 
-  const redoOnboarding = useCallback(() => {
-    router.push('/onboarding?redo=1')
-  }, [router])
-
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -140,17 +130,6 @@ export function useProfilePage() {
     []
   )
 
-  const onboardingPct = getOnboardingCompletionPercent(store, t)
-  const onboardingStages = getOnboardingStageRows(onboardingProgressSnapshotFromStore(store), t)
-  // Source of truth for "is this user done with onboarding?" is the
-  // Supabase `user_metadata.onboarding_completed` flag — flipped by
-  // `/api/auth/complete-journey`. Falling back to the legacy
-  // `isExpertOnboardingComplete(...)` check for guest mode + users who
-  // completed via the legacy core-gate path.
-  const onboardingDone =
-    user?.user_metadata?.onboarding_completed === true ||
-    isExpertOnboardingComplete(store.onboardingState)
-
   return {
     t,
     locale,
@@ -170,11 +149,7 @@ export function useProfilePage() {
     updateField,
     handlePasswordReset,
     handleSignOut,
-    redoOnboarding,
     supabaseConfigured,
-    onboardingPct,
-    onboardingStages,
-    onboardingDone,
     deleteOpen,
     deleting,
     deleteError,

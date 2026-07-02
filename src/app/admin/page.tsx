@@ -9,7 +9,6 @@ import { AdminSmsPromotionSection } from '@/components/features/admin/AdminSmsPr
 import { AdminSmsTrackedSection } from '@/components/features/admin/AdminSmsTrackedSection'
 import { AdminUsersSection } from '@/components/features/admin/AdminUsersSection'
 import { AdminAnalyticsSection } from '@/components/features/admin/AdminAnalyticsSection'
-import { AdminSurveySection } from '@/components/features/admin/AdminSurveySection'
 import { AdminServerSection } from '@/components/features/admin/AdminServerSection'
 import { AdminHelpSection } from '@/components/features/admin/AdminHelpSection'
 
@@ -45,7 +44,6 @@ export default function AdminPage() {
         <AdminSmsTrackedSection admin={admin} />
         <AdminUsersSection admin={admin} />
         <AdminAnalyticsSection admin={admin} />
-        <AdminSurveySection admin={admin} />
         <AdminServerSection config={admin.config} />
         <AdminHelpSection />
       </div>

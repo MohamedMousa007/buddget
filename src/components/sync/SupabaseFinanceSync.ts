@@ -51,14 +51,14 @@ export function suspendFinanceSync(): void {
  * a re-schedule is warranted.
  */
 type TrackedSliceKey =
-  | 'profile' | 'settings' | 'onboardingState' | 'financialGoalsNotes'
+  | 'profile' | 'settings' | 'financialGoalsNotes'
   | 'activeBudgetPlanId' | 'paymentMethods' | 'incomeSources' | 'expenses'
   | 'recurringExpenses' | 'subscriptions' | 'debts' | 'debtPayments'
   | 'recurringDebtPayments' | 'savingsAccounts' | 'savingsHoldings'
   | 'savingsTransactions' | 'recurringSavingsDeposits' | 'goals' | 'budgetPlans'
 
 const TRACKED_SLICES: readonly TrackedSliceKey[] = [
-  'profile', 'settings', 'onboardingState', 'financialGoalsNotes',
+  'profile', 'settings', 'financialGoalsNotes',
   'activeBudgetPlanId', 'paymentMethods', 'incomeSources', 'expenses',
   'recurringExpenses', 'subscriptions', 'debts', 'debtPayments',
   'recurringDebtPayments', 'savingsAccounts', 'savingsHoldings',
@@ -67,15 +67,14 @@ const TRACKED_SLICES: readonly TrackedSliceKey[] = [
 
 /**
  * Singleton slices (not array-of-rows) that never fire rapidly — toggling a
- * theme, flipping a currency, marking onboarding done. These flush with no
- * debounce so the DB reflects the change before the user can reload. Bulk
- * list slices (expenses, debts, …) still get the 500 ms coalesce to batch
- * rapid keystrokes during form entry.
+ * theme, flipping a currency. These flush with no debounce so the DB
+ * reflects the change before the user can reload. Bulk list slices
+ * (expenses, debts, …) still get the 500 ms coalesce to batch rapid
+ * keystrokes during form entry.
  */
 const INSTANT_SLICE_KEYS: ReadonlySet<TrackedSliceKey> = new Set<TrackedSliceKey>([
   'profile',
   'settings',
-  'onboardingState',
   'activeBudgetPlanId',
   'financialGoalsNotes',
 ])
@@ -92,11 +91,11 @@ const INSTANT_SLICE_KEYS: ReadonlySet<TrackedSliceKey> = new Set<TrackedSliceKey
  * tables stabilised; saves ~50% of the write volume per flush.
  *
  * Data-loss hardening:
- *  - Singleton-slice writes (profile / settings / onboardingState /
- *    activeBudgetPlanId / financialGoalsNotes) flush with no debounce —
- *    theme / currency / onboarding toggles never fire rapidly, so there is
- *    nothing to batch and zero reason to delay. List slices still use a
- *    500 ms coalesce to batch rapid keystrokes during form entry.
+ *  - Singleton-slice writes (profile / settings / activeBudgetPlanId /
+ *    financialGoalsNotes) flush with no debounce — theme / currency
+ *    toggles never fire rapidly, so there is nothing to batch and zero
+ *    reason to delay. List slices still use a 500 ms coalesce to batch
+ *    rapid keystrokes during form entry.
  *  - `visibilitychange` (→ hidden) + `pagehide` listeners force-flush any
  *    pending write so closing / reloading / backgrounding the tab never
  *    drops a write.
@@ -151,7 +150,6 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
           useFinanceStore.setState({
             profile: merged.profile,
             settings: merged.settings,
-            onboardingState: merged.onboardingState,
             financialGoalsNotes: merged.financialGoalsNotes,
             activeBudgetPlanId: merged.activeBudgetPlanId,
             paymentMethods: merged.paymentMethods,
@@ -260,7 +258,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         timer.current = null
       }
       if (instantDirty) {
-        // Singleton toggle (theme / currency / onboarding / …) — flush now.
+        // Singleton toggle (theme / currency / …) — flush now.
         // The in-flight promise settles before any visible reload, so the DB
         // is always at least as fresh as the UI for these fields.
         void flush()

@@ -11,9 +11,6 @@ export type ProfileUpdate = Tables['profiles']['Update']
 export type UserSettingsRow = Tables['user_settings']['Row']
 export type UserSettingsInsert = Tables['user_settings']['Insert']
 
-export type OnboardingStateRow = Tables['onboarding_state']['Row']
-export type OnboardingStateInsert = Tables['onboarding_state']['Insert']
-
 export type PaymentMethodRow = Tables['payment_methods']['Row']
 export type PaymentMethodInsert = Tables['payment_methods']['Insert']
 

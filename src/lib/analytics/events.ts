@@ -16,50 +16,7 @@ export const AUTH_EVENTS = {
   droppedAt: 'auth.dropped_at',
 } as const
 
-export const ONBOARDING_EVENTS = {
-  coreGateStart: 'onboarding.core_gate_start',
-  coreGateStepAdvanced: 'onboarding.core_gate_step_advanced',
-  coreGateCompleted: 'onboarding.core_gate_completed',
-  checklistItemCompleted: 'onboarding.checklist_item_completed',
-  checklistAllCompleted: 'onboarding.checklist_all_completed',
-  checklistHidden: 'onboarding.checklist_hidden',
-  budgetAutoBuildStarted: 'onboarding.budget_auto_build_started',
-  budgetAutoBuilt: 'onboarding.budget_auto_built',
-  budgetAutoBuildFallback: 'onboarding.budget_auto_build_fallback',
-} as const
-
-/**
- * Events for the Journey (flow v3). Kept as a separate namespace so Core
- * Gate metrics don't mix with Journey metrics during the A/B period.
- */
-export const JOURNEY_EVENTS = {
-  started: 'journey.started',
-  pathChosen: 'journey.path_chosen',
-  phaseEntered: 'journey.phase_entered',
-  cardCompleted: 'journey.card_completed',
-  cardSkipped: 'journey.card_skipped',
-  backPressed: 'journey.back_pressed',
-  // Modal + gate card events (SP4) ----------------------------------
-  modalOpened: 'journey.modal_opened',
-  modalSaved: 'journey.modal_saved',
-  modalClosedEmpty: 'journey.modal_closed_empty',
-  gateAnswered: 'journey.gate_answered',
-  // AI + completion --------------------------------------------------
-  aiParseCalled: 'journey.ai.parse_called',
-  aiParseFailed: 'journey.ai.parse_failed',
-  aiPlanCalled: 'journey.ai.plan_called',
-  aiPlanSucceeded: 'journey.ai.plan_succeeded',
-  aiPlanFailed: 'journey.ai.plan_failed',
-  fallbackPresetUsed: 'journey.fallback_preset_used',
-  completed: 'journey.completed',
-  abandonedAt: 'journey.abandoned_at',
-} as const
-
-type EventName =
-  | (typeof AUTH_EVENTS)[keyof typeof AUTH_EVENTS]
-  | (typeof ONBOARDING_EVENTS)[keyof typeof ONBOARDING_EVENTS]
-  | (typeof JOURNEY_EVENTS)[keyof typeof JOURNEY_EVENTS]
-  | (string & {})
+type EventName = (typeof AUTH_EVENTS)[keyof typeof AUTH_EVENTS] | (string & {})
 
 type EventProps = Record<string, string | number | boolean | null | undefined>
 

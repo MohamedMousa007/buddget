@@ -20,9 +20,6 @@ export interface DashboardHeroStats {
 
 export interface DashboardHeroProps {
   stats: DashboardHeroStats
-  /** When the first-run checklist is visible, suppress the numeric zone and
-   *  show a "Let's get you set up" greeting instead of misleading zero values. */
-  suppressNumbers?: boolean
 }
 
 /**
@@ -33,7 +30,7 @@ export interface DashboardHeroProps {
  * - Pace info is promoted to `<DashboardPaceBadge>` underneath so it can
  *   actually stand out instead of hiding as muted text at the hero's foot.
  */
-export function DashboardHero({ stats, suppressNumbers }: DashboardHeroProps) {
+export function DashboardHero({ stats }: DashboardHeroProps) {
   const t = useT()
 
   return (
@@ -43,54 +40,45 @@ export function DashboardHero({ stats, suppressNumbers }: DashboardHeroProps) {
       style={{ background: 'linear-gradient(180deg, var(--color-hero-from) 0%, var(--color-hero-to) 100%)' }}
     >
       <div className="px-5 py-5">
-        {suppressNumbers ? (
-          <div className="py-2">
-            <p className="text-lg font-semibold text-white">{t.onboarding.coreGateTitle}</p>
-            <p className="text-xs text-white/50 mt-1">{t.onboarding.coreGateSubtitle}</p>
+        {/* Left-to-spend + ring */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] uppercase tracking-wider text-white/60 font-medium">
+              {t.dashboard.heroLeftToSpend}
+            </p>
+            <p className="mt-1 font-mono font-bold text-white text-[32px] leading-none truncate">
+              <CurrencyLabel
+                amount={Math.max(0, stats.leftToSpend)}
+                currency={stats.baseCurrency}
+                compact="auto"
+                fullMaxChars={11}
+              />
+            </p>
           </div>
-        ) : (
-          <>
-            {/* Left-to-spend + ring */}
-            <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] uppercase tracking-wider text-white/60 font-medium">
-                  {t.dashboard.heroLeftToSpend}
-                </p>
-                <p className="mt-1 font-mono font-bold text-white text-[32px] leading-none truncate">
-                  <CurrencyLabel
-                    amount={Math.max(0, stats.leftToSpend)}
-                    currency={stats.baseCurrency}
-                    compact="auto"
-                    fullMaxChars={11}
-                  />
-                </p>
-              </div>
-              <HeroRing percent={stats.budgetUsedPercent} usedLabel={t.dashboard.heroUsedSuffix} />
-            </div>
+          <HeroRing percent={stats.budgetUsedPercent} usedLabel={t.dashboard.heroUsedSuffix} />
+        </div>
 
-            {/* Stats row — In / Out / Saved with hairline dividers + currency */}
-            <div className="mt-5 pt-4 border-t border-white/[0.06] grid grid-cols-3 divide-x divide-white/[0.06]">
-              <Stat
-                label={t.dashboard.heroStatIn}
-                amount={stats.totalIncome}
-                currency={stats.baseCurrency}
-                color="text-[var(--color-hero-stat-income)]"
-              />
-              <Stat
-                label={t.dashboard.heroStatOut}
-                amount={stats.totalSpent}
-                currency={stats.baseCurrency}
-                color="text-[var(--color-hero-stat-spend)]"
-              />
-              <Stat
-                label={t.dashboard.heroStatSaved}
-                amount={stats.savingsTotal}
-                currency={stats.baseCurrency}
-                color="text-[var(--color-hero-stat-savings)]"
-              />
-            </div>
-          </>
-        )}
+        {/* Stats row — In / Out / Saved with hairline dividers + currency */}
+        <div className="mt-5 pt-4 border-t border-white/[0.06] grid grid-cols-3 divide-x divide-white/[0.06]">
+          <Stat
+            label={t.dashboard.heroStatIn}
+            amount={stats.totalIncome}
+            currency={stats.baseCurrency}
+            color="text-[var(--color-hero-stat-income)]"
+          />
+          <Stat
+            label={t.dashboard.heroStatOut}
+            amount={stats.totalSpent}
+            currency={stats.baseCurrency}
+            color="text-[var(--color-hero-stat-spend)]"
+          />
+          <Stat
+            label={t.dashboard.heroStatSaved}
+            amount={stats.savingsTotal}
+            currency={stats.baseCurrency}
+            color="text-[var(--color-hero-stat-savings)]"
+          />
+        </div>
       </div>
     </section>
   )

@@ -70,8 +70,6 @@ export const importDataSchema = z.object({
       phone: z.string().optional(),
       gender: z.enum(['male', 'female', 'prefer_not_to_say']).nullable().optional(),
       baseCurrency: currencySchema,
-      noDebtsDeclared: z.boolean().optional(),
-      noGoalsDeclared: z.boolean().optional(),
       household: z.enum(['solo', 'couple', 'family']).nullable().optional(),
       lifestyleTier: z.enum(['minimal', 'balanced', 'comfortable']).nullable().optional(),
       foodFrequency: z.enum(['everyday', 'mostdays', 'sometimes', 'rarely']).nullable().optional(),
@@ -95,10 +93,7 @@ export const importDataSchema = z.object({
       aiProvider: z.enum(['gemini']).optional(),
       noIncomeDeclared: z.boolean().optional(),
       showAllCurrenciesInForms: z.boolean().optional(),
-      dismissOnboardingBanner: z.boolean().optional(),
-      onboardingBannerRemindAt: z.string().nullable().optional(),
       twoFactorEmailEnabled: z.boolean().optional(),
-      onboardingChecklistHidden: z.boolean().optional(),
       legacyOnboardingMigratedAt: z.string().nullable().optional(),
       dashboardLayout: z.enum(['standard', 'minimal']).optional(),
     })
@@ -460,31 +455,5 @@ export const importDataSchema = z.object({
         achievedAt: z.string().nullable(),
       })
     )
-    .optional(),
-  onboardingState: z
-    .object({
-      flowVersion: z.number(),
-      answers: z.record(z.string(), z.unknown()),
-      currentStepIndex: z.number(),
-      planAccepted: z.boolean(),
-      selectedPlanIndex: z.number().nullable(),
-      aiPlans: z
-        .array(
-          z.object({
-            id: z.string(),
-            label: z.string(),
-            personaId: z.string(),
-            personaLabel: z.string(),
-            personaTagline: z.string(),
-            rationale: z.string(),
-            costOfLivingNote: z.string().optional(),
-            percents: z.record(z.string(), z.number()),
-            assumptions: z.array(z.string()),
-          })
-        )
-        .nullable(),
-      aiGeneratedAt: z.string().nullable(),
-      lastValidationNotes: z.array(z.string()).nullable(),
-    })
     .optional(),
 })

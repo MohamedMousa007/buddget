@@ -491,19 +491,6 @@ export interface UserProfile {
   /** Optional self-selected gender. Null (or missing) when unset. */
   gender?: 'male' | 'female' | 'prefer_not_to_say' | null
   /**
-   * Set when the user ticks "I have no debts" on the first-run checklist so
-   * the debt item flips to done without forcing them to add a fake entry.
-   * Synced via `profiles.no_debts_declared`.
-   */
-  noDebtsDeclared?: boolean
-  /**
-   * Parallels `noDebtsDeclared` for the goals checklist row. Cross-device via
-   * `profiles.no_goals_declared`.
-   */
-  noGoalsDeclared?: boolean
-  /** True when user skipped income during onboarding. Tracking-only mode. */
-  liteMode?: boolean
-  /**
    * Household composition used by the budget-build AI (drives rent / food /
    * transport scaling factors). Synced via `profiles.household`.
    */
@@ -536,7 +523,7 @@ export interface AppSettings {
   /** Gemini is configured with server-side GEMINI_API_KEY only (never stored in the client). */
   aiProvider: 'gemini'
   /**
-   * Set during onboarding when the user has no income yet. Income- and %-of-income budget
+   * True when the user has no income yet. Income- and %-of-income budget
    * KPIs stay at 0 until they add an income source (which clears this flag).
    */
   noIncomeDeclared: boolean
@@ -546,25 +533,12 @@ export interface AppSettings {
    * selectors on this page or the sidebar. New installs default to true (switch off).
    */
   showAllCurrenciesInForms: boolean
-  /** When true, the dashboard onboarding banner stays hidden until reset (e.g. after completing onboarding). */
-  dismissOnboardingBanner: boolean
-  /**
-   * ISO timestamp: "Remind me later" snooze on the onboarding banner. Banner is hidden while `now < remindAt`.
-   * Cleared automatically once the timestamp passes; null when no snooze is active.
-   */
-  onboardingBannerRemindAt: string | null
   /**
    * When true, sign-in on an untrusted device requires an email OTP step even after the password is
    * correct. Trusted devices (verified via OTP previously) skip the challenge until the HttpOnly
    * `buddget_device_id` cookie expires or is cleared.
    */
   twoFactorEmailEnabled: boolean
-  /**
-   * When true, the dashboard first-run checklist is hidden even if not yet
-   * 100% complete. Re-enabled via the profile dropdown "Finish setup" entry.
-   * Synced across devices via `user_settings.onboarding_checklist_hidden`.
-   */
-  onboardingChecklistHidden: boolean
   /**
    * ISO timestamp: set once the legacy-onboarding migrator has run (idempotent).
    * Client-only flag — excluded from Supabase round-trip on purpose.
@@ -596,44 +570,6 @@ export interface AppSettings {
    * Synced via `user_settings.sms_tracking_enabled`.
    */
   smsTrackingEnabled: boolean
-}
-
-/** Draft payment row from onboarding (applied to store on finish). */
-export interface OnboardingPaymentDraft {
-  preset: string
-  type: PaymentMethodType
-  nickname: string
-}
-
-export interface OnboardingAiPlan {
-  id: string
-  label: string
-  personaId: string
-  personaLabel: string
-  personaTagline: string
-  rationale: string
-  costOfLivingNote?: string
-  percents: Partial<Record<ExpenseCategory, number>>
-  assumptions: string[]
-}
-
-export interface OnboardingState {
-  flowVersion: number
-  answers: Record<string, unknown>
-  currentStepIndex: number
-  planAccepted: boolean
-  selectedPlanIndex: number | null
-  aiPlans: OnboardingAiPlan[] | null
-  aiGeneratedAt: string | null
-  lastValidationNotes: string[] | null
-  /**
-   * Half-filled modal drafts during onboarding, keyed by modal id
-   * (e.g. `incomeDraft`, `pmDraft`). Debounced-written from the client;
-   * cleared on successful save. Lets a mid-modal tab-close resume with
-   * the in-progress entry instead of a blank form. Synced via
-   * `onboarding_state.draft_entries`.
-   */
-  draftEntries: Record<string, unknown>
 }
 
 export type GoalStatus = 'active' | 'achieved' | 'paused' | 'cancelled'
@@ -683,9 +619,6 @@ export interface FinanceStore {
   settings: AppSettings
   /** Free-text financial goals from the plan builder; synced in finance payload. */
   financialGoalsNotes: string
-  /** Journey progress, answers, and cached AI plans. Synced to
-   *  `public.onboarding_state` via `flushDiff`. */
-  onboardingState: OnboardingState
   incomeSources: IncomeSource[]
   expenses: Expense[]
   /** Scanned-receipt breakdowns (items + charges); each links to one total expense via `receiptId`. */
@@ -851,7 +784,6 @@ export interface FinanceStore {
   updateGoal: (id: string, updates: Partial<Goal>) => void
   deleteGoal: (id: string) => void
   achieveGoal: (id: string) => void
-  setOnboardingState: (updates: Partial<OnboardingState> | ((prev: OnboardingState) => OnboardingState)) => void
   updateRates: (rates: Record<string, number>) => void
   updateGoldPrice: (price: number) => void
   setGoldUnavailable: () => void

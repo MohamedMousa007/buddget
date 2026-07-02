@@ -10,21 +10,14 @@ export interface ProfileExtras {
   baseCurrency: Currency
   /** Secondary display currency (from AppSettings). Written to profiles.secondary_currency. */
   secondaryCurrency?: Currency | null
-  /** Present on READ; preserved via round-trip test so the value stays in the
-   *  store when we re-hydrate a freshly-flipped onboarding flag. */
-  onboardingCompleted?: boolean
   displayName?: string | null
 }
 
 /**
  * Zustand `profile` + a few top-level fields → profiles row.
  *
- * Important: `onboarding_completed` and `display_name` are NEVER written from
- * the client. They are authoritatively set server-side by the service-role
- * route `/api/auth/complete-core-onboarding`. The sync upsert used to clobber
- * them with `false`/`null` every debounce tick — onboarding-state could not
- * persist. Leaving those fields off the insert means PostgREST keeps the
- * existing server value on upsert-conflict.
+ * Important: `display_name` is NEVER written from the client — it's set
+ * server-side. Omitting it keeps PostgREST's existing value on upsert-conflict.
  */
 export function profileToRow(
   p: UserProfile,
@@ -50,18 +43,14 @@ export function profileToRow(
     active_budget_plan_id: extras.activeBudgetPlanId ?? null,
     active_shared_budget_id: null,
     default_shared_budget_plan_id: null,
-    no_debts_declared: p.noDebtsDeclared ?? false,
-    no_goals_declared: p.noGoalsDeclared ?? false,
     household: p.household ?? null,
     lifestyle_tier: p.lifestyleTier ?? null,
     food_frequency: p.foodFrequency ?? null,
     transport_mode: p.transportMode ?? null,
     monthly_rent: p.monthlyRent ?? null,
     rent_includes_utilities: p.rentIncludesUtilities ?? false,
-    lite_mode: p.liteMode ?? false,
-    // onboarding_completed / display_name are NOT written here — they are
-    // server-authoritative, set only by /api/auth/complete-journey (service role).
-    // Omitting them keeps PostgREST's existing value on upsert-conflict.
+    // display_name is NOT written here — it's server-authoritative. Omitting
+    // it keeps PostgREST's existing value on upsert-conflict.
   }
 }
 
@@ -82,15 +71,12 @@ export function profileFromRow(row: ProfileRow): ProfileFromRowResult {
     avatar: row.avatar_image_path ?? undefined,
     avatarPresetId: row.avatar_emoji ?? undefined,
     gender: (row.gender ?? null) as UserProfile['gender'],
-    noDebtsDeclared: row.no_debts_declared,
-    noGoalsDeclared: row.no_goals_declared,
     household: (row.household ?? null) as UserProfile['household'],
     lifestyleTier: (row.lifestyle_tier ?? null) as UserProfile['lifestyleTier'],
     foodFrequency: (row.food_frequency ?? null) as UserProfile['foodFrequency'],
     transportMode: (row.transport_mode ?? null) as UserProfile['transportMode'],
     monthlyRent: row.monthly_rent,
     rentIncludesUtilities: row.rent_includes_utilities,
-    liteMode: row.lite_mode,
     createdAt: row.created_at,
   }
   const extras: ProfileExtras = {
@@ -98,7 +84,6 @@ export function profileFromRow(row: ProfileRow): ProfileFromRowResult {
     activeBudgetPlanId: row.active_budget_plan_id,
     baseCurrency: row.base_currency as Currency,
     secondaryCurrency: (row.secondary_currency ?? null) as Currency | null,
-    onboardingCompleted: row.onboarding_completed,
     displayName: row.display_name,
   }
   return { profile, extras }

@@ -28,8 +28,6 @@ const FINANCIAL_TABLES = [
   'payment_methods',
   'notifications',
   'app_analytics_events',
-  'onboarding_feedback',
-  'onboarding_state',
   'user_settings',
 ] as const
 

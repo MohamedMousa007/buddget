@@ -9,14 +9,11 @@ export type {
   Debt,
   UserProfile,
   AppSettings,
-  OnboardingAiPlan,
-  OnboardingPaymentDraft,
 } from '@/lib/store/types'
 
 export type {
   AdminConfig,
   AdminUserRow,
   AdminAnalyticsSnapshot,
-  AdminSurveyRow,
   AiRuntimeSlice,
 } from './admin'

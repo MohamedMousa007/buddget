@@ -54,10 +54,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   aiProvider: 'gemini',
   noIncomeDeclared: false,
   showAllCurrenciesInForms: true,
-  dismissOnboardingBanner: false,
-  onboardingBannerRemindAt: null,
   twoFactorEmailEnabled: false,
-  onboardingChecklistHidden: false,
   legacyOnboardingMigratedAt: null,
   dashboardLayout: 'standard',
   tutorialsCompleted: [],
@@ -69,7 +66,6 @@ export const DEFAULT_PROFILE: UserProfile = {
   id: 'local',
   name: '',
   gender: null,
-  liteMode: false,
   createdAt: new Date().toISOString(),
 }
 
@@ -78,7 +74,6 @@ export function createFreshDefaultProfile(): UserProfile {
   return {
     id: 'local',
     name: '',
-    liteMode: false,
     createdAt: new Date().toISOString(),
   }
 }

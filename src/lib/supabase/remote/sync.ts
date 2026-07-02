@@ -5,7 +5,6 @@ import type { HasId } from './types'
 import { diffLists, diffSingleton } from './diff'
 import { profileToRow, profileFromRow } from './mappers/profileMapper'
 import { settingsToRow, settingsFromRow } from './mappers/settingsMapper'
-import { onboardingToRow, onboardingFromRow } from './mappers/onboardingMapper'
 import { paymentMethodToRow, paymentMethodFromRow } from './mappers/paymentMethodMapper'
 import { incomeSourceToRow, incomeSourceFromRow } from './mappers/incomeSourceMapper'
 import { expenseToRow, expenseFromRow } from './mappers/expenseMapper'
@@ -156,9 +155,6 @@ export async function flushDiff(
   if (diffSingleton(next.settings, prev.settings) != null) {
     runner.upsert('user_settings', [settingsToRow(next.settings, userId)], 'user_settings.upsert')
   }
-  if (diffSingleton(next.onboardingState, prev.onboardingState) != null) {
-    runner.upsert('onboarding_state', [onboardingToRow(next.onboardingState, userId)], 'onboarding_state.upsert')
-  }
 
   // Array slices — the built-in `pm_default_cash` sentinel is kept in-store
   // for a frictionless add-expense UX but never synced: its non-UUID id
@@ -221,18 +217,16 @@ function flushBudgetPlans(runner: OpRunner, userId: string, prev: Snapshot, next
 }
 
 /**
- * Minimal "always needed" hydration: profiles + user_settings + onboarding_state +
- * payment_methods. All per-page hooks add the heavier domains (expenses, debts, etc.)
- * on demand.
+ * Minimal "always needed" hydration: profiles + user_settings + payment_methods.
+ * All per-page hooks add the heavier domains (expenses, debts, etc.) on demand.
  *
  * Returns partial snapshot (array slices default to []) — use as the baseline for
  * the sync-layer diff; per-page hooks can update Zustand independently.
  */
 export async function pullCore(client: Client, userId: string): Promise<Snapshot | null> {
-  const [profileR, settingsR, onboardingR, pmR] = await Promise.all([
+  const [profileR, settingsR, pmR] = await Promise.all([
     client.from('profiles').select('*').eq('id', userId).maybeSingle(),
     client.from('user_settings').select('*').eq('user_id', userId).maybeSingle(),
-    client.from('onboarding_state').select('*').eq('user_id', userId).maybeSingle(),
     client.from('payment_methods').select('*').eq('user_id', userId).is('deleted_at', null),
   ])
 
@@ -255,10 +249,7 @@ export async function pullCore(client: Client, userId: string): Promise<Snapshot
         aiProvider: 'gemini' as const,
         noIncomeDeclared: false,
         showAllCurrenciesInForms: true,
-        dismissOnboardingBanner: false,
-        onboardingBannerRemindAt: null,
         twoFactorEmailEnabled: false,
-        onboardingChecklistHidden: false,
         legacyOnboardingMigratedAt: null,
         dashboardLayout: 'standard' as const,
         tutorialsCompleted: [] as string[],
@@ -266,24 +257,9 @@ export async function pullCore(client: Client, userId: string): Promise<Snapshot
         smsTrackingEnabled: false,
       }
 
-  const onboardingState = onboardingR.data
-    ? onboardingFromRow(onboardingR.data)
-    : {
-        flowVersion: 2,
-        answers: {},
-        currentStepIndex: 0,
-        planAccepted: false,
-        selectedPlanIndex: null,
-        aiPlans: null,
-        aiGeneratedAt: null,
-        lastValidationNotes: null,
-        draftEntries: {},
-      }
-
   return {
     profile,
     settings,
-    onboardingState,
     financialGoalsNotes: extras.financialGoalsNotes,
     activeBudgetPlanId: extras.activeBudgetPlanId,
     paymentMethods: (pmR.data ?? []).map(paymentMethodFromRow),
@@ -310,7 +286,7 @@ export async function pullCore(client: Client, userId: string): Promise<Snapshot
  */
 export async function pullAll(client: Client, userId: string): Promise<Snapshot | null> {
   const [
-    profileR, settingsR, onboardingR,
+    profileR, settingsR,
     pmR, incomeR, expenseR, receiptR, recExpR, subR,
     debtR, debtPayR, recDebtR,
     saR, shR, stR, rsdR,
@@ -318,7 +294,6 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
   ] = await Promise.all([
     client.from('profiles').select('*').eq('id', userId).maybeSingle(),
     client.from('user_settings').select('*').eq('user_id', userId).maybeSingle(),
-    client.from('onboarding_state').select('*').eq('user_id', userId).maybeSingle(),
     client.from('payment_methods').select('*').eq('user_id', userId).is('deleted_at', null),
     client.from('income_sources').select('*').eq('user_id', userId).is('deleted_at', null),
     client.from('expenses').select('*').eq('user_id', userId).is('deleted_at', null),
@@ -357,29 +332,12 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
         aiProvider: 'gemini' as const,
         noIncomeDeclared: false,
         showAllCurrenciesInForms: true,
-        dismissOnboardingBanner: false,
-        onboardingBannerRemindAt: null,
         twoFactorEmailEnabled: false,
-        onboardingChecklistHidden: false,
         legacyOnboardingMigratedAt: null,
         dashboardLayout: 'standard' as const,
         tutorialsCompleted: [] as string[],
         tutorialCurrentStep: null as string | null,
         smsTrackingEnabled: false,
-      }
-
-  const onboardingState = onboardingR.data
-    ? onboardingFromRow(onboardingR.data)
-    : {
-        flowVersion: 2,
-        answers: {},
-        currentStepIndex: 0,
-        planAccepted: false,
-        selectedPlanIndex: null,
-        aiPlans: null,
-        aiGeneratedAt: null,
-        lastValidationNotes: null,
-        draftEntries: {},
       }
 
   const plans = (planR.data ?? []).map((plan) =>
@@ -393,7 +351,6 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
   return {
     profile,
     settings,
-    onboardingState,
     financialGoalsNotes: extras.financialGoalsNotes,
     activeBudgetPlanId: extras.activeBudgetPlanId,
     paymentMethods: (pmR.data ?? []).map(paymentMethodFromRow),

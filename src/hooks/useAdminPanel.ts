@@ -4,7 +4,6 @@ import { useCallback, useState } from 'react'
 import type {
   AdminAnalyticsSnapshot,
   AdminConfig,
-  AdminSurveyRow,
   AdminUserRow,
   SmsTrackedRow,
   SmsTemplateRow,
@@ -33,8 +32,6 @@ export function useAdminPanel() {
   const [users, setUsers] = useState<AdminUserRow[]>([])
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
   const [analytics, setAnalytics] = useState<AdminAnalyticsSnapshot | null>(null)
-  const [surveyLoading, setSurveyLoading] = useState(false)
-  const [surveyRows, setSurveyRows] = useState<AdminSurveyRow[]>([])
   const [smsTemplates, setSmsTemplates] = useState<SmsTemplateRow[]>([])
   const [smsTemplatesLoading, setSmsTemplatesLoading] = useState(false)
   const [keywordPool, setKeywordPool] = useState<SmsKeywordPoolRow[]>([])
@@ -47,9 +44,6 @@ export function useAdminPanel() {
   const [promotionConfig, setPromotionConfig] = useState<SmsPromotionConfig | null>(null)
   const [promotionConfigLoading, setPromotionConfigLoading] = useState(false)
   const [eligibleTemplates, setEligibleTemplates] = useState<EligibleTemplate[]>([])
-  const [surveyEditId, setSurveyEditId] = useState<string | null>(null)
-  const [surveyJson, setSurveyJson] = useState('')
-  const [surveyBusy, setSurveyBusy] = useState(false)
 
   const handleLogin = useCallback(async () => {
     if (!pin.trim()) return
@@ -186,97 +180,6 @@ export function useAdminPanel() {
       setAnalyticsLoading(false)
     }
   }, [sessionPin])
-
-  const loadSurveyRows = useCallback(async () => {
-    setPlatformMessage('')
-    setSurveyLoading(true)
-    try {
-      const res = await fetch('/api/admin/survey', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: sessionPin, op: 'list' }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setPlatformMessage(data.error || 'Failed to load survey')
-        return
-      }
-      const rows = (data.rows ?? []) as AdminSurveyRow[]
-      setSurveyRows(rows)
-      const first = rows[0]
-      if (first) {
-        setSurveyEditId(first.id)
-        setSurveyJson(JSON.stringify(first.config ?? { steps: [] }, null, 2))
-      } else {
-        setSurveyEditId(null)
-        setSurveyJson(JSON.stringify({ steps: [] }, null, 2))
-      }
-      setPlatformMessage(`Loaded ${rows.length} survey row(s).`)
-    } catch {
-      setPlatformMessage('Network error')
-    } finally {
-      setSurveyLoading(false)
-    }
-  }, [sessionPin])
-
-  const saveSurveyConfig = useCallback(async () => {
-    setPlatformMessage('')
-    let parsed: unknown
-    try {
-      parsed = JSON.parse(surveyJson)
-    } catch {
-      setPlatformMessage('Invalid JSON')
-      return
-    }
-    setSurveyBusy(true)
-    try {
-      const res = await fetch('/api/admin/survey', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: sessionPin, op: 'update', id: surveyEditId, config: parsed }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setPlatformMessage(data.error || 'Save failed')
-        return
-      }
-      setPlatformMessage('Survey config saved.')
-      setSurveyRows((prev) => prev.map((r) => (r.id === surveyEditId ? { ...r, config: parsed } : r)))
-    } catch {
-      setPlatformMessage('Network error')
-    } finally {
-      setSurveyBusy(false)
-    }
-  }, [sessionPin, surveyEditId, surveyJson])
-
-  const publishSurvey = useCallback(async () => {
-    setPlatformMessage('')
-    setSurveyBusy(true)
-    try {
-      const res = await fetch('/api/admin/survey', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: sessionPin, op: 'publish', id: surveyEditId }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setPlatformMessage(data.error || 'Publish failed')
-        return
-      }
-      setPlatformMessage('Published selected survey version.')
-      const res2 = await fetch('/api/admin/survey', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: sessionPin, op: 'list' }),
-      })
-      const data2 = await res2.json()
-      if (res2.ok) setSurveyRows(data2.rows ?? [])
-    } catch {
-      setPlatformMessage('Network error')
-    } finally {
-      setSurveyBusy(false)
-    }
-  }, [sessionPin, surveyEditId])
 
   const loadSmsTemplates = useCallback(async () => {
     setSmsTemplatesLoading(true)
@@ -502,16 +405,6 @@ export function useAdminPanel() {
     analytics,
     analyticsLoading,
     loadAnalytics,
-    surveyRows,
-    surveyEditId,
-    setSurveyEditId,
-    surveyJson,
-    setSurveyJson,
-    surveyLoading,
-    surveyBusy,
-    loadSurveyRows,
-    saveSurveyConfig,
-    publishSurvey,
     smsTemplates,
     smsTemplatesLoading,
     loadSmsTemplates,

@@ -13,7 +13,6 @@ import { PAYMENT_METHOD_TYPE_OPTIONS } from '@/lib/constants/finance'
 import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { useT } from '@/lib/i18n'
-import { useDraftEntry } from '@/lib/onboarding/draftEntry'
 import {
   defaultColorForPaymentMethodType,
   defaultIconEmojiForPaymentMethodType,
@@ -28,13 +27,6 @@ import {
 
 const ADD_PAYMENT_METHOD_TYPES = ['cash', 'bank_transfer', 'nol', 'card_credit', 'card_debit'] as const satisfies readonly PaymentMethodType[]
 
-interface PaymentMethodDraftShape {
-  name: string
-  type: PaymentMethodType
-  currency: Currency
-  isDefault: boolean
-}
-
 const LAST4_TYPES: PaymentMethodType[] = ['bank_transfer', 'card_credit', 'card_debit']
 
 export function AddPaymentMethodSheet() {
@@ -43,14 +35,10 @@ export function AddPaymentMethodSheet() {
   const t = useT()
   const isOpen = activeModal === 'addPaymentMethod'
 
-  const draft = useDraftEntry<PaymentMethodDraftShape>('paymentMethods')
-
-  const [name, setName] = useState(draft.initial?.name ?? '')
-  const [type, setType] = useState<PaymentMethodType>(draft.initial?.type ?? 'cash')
-  const [currency, setCurrency] = useState<Currency>(
-    draft.initial?.currency ?? settings.baseCurrency,
-  )
-  const [isDefault, setIsDefault] = useState(draft.initial?.isDefault ?? false)
+  const [name, setName] = useState('')
+  const [type, setType] = useState<PaymentMethodType>('cash')
+  const [currency, setCurrency] = useState<Currency>(settings.baseCurrency)
+  const [isDefault, setIsDefault] = useState(false)
   const [last4, setLast4] = useState('')
   const [last4Error, setLast4Error] = useState<string | null>(null)
   const prevIsOpen = useRef(false)
@@ -59,9 +47,7 @@ export function AddPaymentMethodSheet() {
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- sync default currency and prefill when sheet opens */
     if (isOpen && !prevIsOpen.current) {
-      if (!draft.active || !draft.initial?.currency) {
-        setCurrency(settings.baseCurrency)
-      }
+      setCurrency(settings.baseCurrency)
       if (pmPrefill && appliedPrefill.current !== pmPrefill) {
         appliedPrefill.current = pmPrefill
         setName(pmPrefill.name)
@@ -71,12 +57,7 @@ export function AddPaymentMethodSheet() {
     }
     prevIsOpen.current = isOpen
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [isOpen, settings.baseCurrency, draft.active, draft.initial, pmPrefill])
-
-  useEffect(() => {
-    if (!isOpen || !draft.active) return
-    draft.update({ name, type, currency, isDefault })
-  }, [isOpen, draft, name, type, currency, isDefault])
+  }, [isOpen, settings.baseCurrency, pmPrefill])
 
   const resetForm = () => {
     setName('')
@@ -107,14 +88,13 @@ export function AddPaymentMethodSheet() {
       ...(last4 && LAST4_TYPES.includes(type) ? { last4 } : {}),
     })
 
-    draft.clear()
     resetForm()
     clearPmPrefill()
     setActiveModal(null)
   }
 
   const handleClose = () => {
-    if (!draft.active) resetForm()
+    resetForm()
     clearPmPrefill()
     setActiveModal(null)
   }
