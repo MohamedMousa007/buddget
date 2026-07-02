@@ -137,6 +137,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authModalMessage, setAuthModalMessage] = useState<string | null>(null)
   const [authModalInitialStep, setAuthModalInitialStep] = useState<'form' | 'forgot'>('form')
+  // One-shot splash latch state — see the gate block below for semantics.
+  // Declared here so the SIGNED_OUT handler and signOut() can reset it.
+  const [splashDoneFor, setSplashDoneFor] = useState<string | null>(null)
+  const [minElapsedFor, setMinElapsedFor] = useState<string | null>(null)
+  const [dataPullTimedOut, setDataPullTimedOut] = useState(false)
 
   const configured = useMemo(() => isSupabaseConfigured(), [])
 
@@ -222,6 +227,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           wasAuthedRef.current = false
         }
+        // Re-arm the one-shot splash so the next sign-in gets a fresh gate.
+        setSplashDoneFor(null)
+        setMinElapsedFor(null)
+        setDataPullTimedOut(false)
       } else if (_event === 'SIGNED_IN' && incomingUser) {
         wasAuthedRef.current = true
       }
@@ -249,8 +258,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (isNative()) {
       onVisibility = () => {
         if (document.visibilityState === 'visible') {
+          // startAutoRefresh alone — it already refreshes immediately if the
+          // token is stale. A manual getSession() here races the SDK's refresh
+          // (single-use refresh tokens) and churns auth events on every
+          // foreground, e.g. right after the Android permission dialog.
           void supabase.auth.startAutoRefresh()
-          void supabase.auth.getSession()
         } else {
           void supabase.auth.stopAutoRefresh()
         }
@@ -278,9 +290,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Immediately clear UI — landing gate appears now, no spinner. Callers must
     // NOT call clearBudgetData() before this: doing so flips dataReady=false
-    // while mode is still 'authenticated', tripping the 2.5s WelcomeScreen splash.
+    // while mode is still 'authenticated', dropping every page to skeletons.
     setUser(null)
     setSession(null)
+    // Re-arm the one-shot splash for the next sign-in.
+    setSplashDoneFor(null)
+    setMinElapsedFor(null)
+    setDataPullTimedOut(false)
     // NOTE: do NOT call router.refresh() here. On native, it triggers the
     // visibilitychange handler which calls getSession() before
     // supabase.auth.signOut() has cleared the localStorage session — the SDK
@@ -380,61 +396,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const showLandingGate = mode === 'landing' && !isBypassRoute
   const showLoadingSplash = mode === 'loading' && !isBypassRoute
 
-  // State + refs for welcome screen minimum display — declared before showDataLoadingSplash.
-  // welcomeMinBlocking is plain state (readable during render, no ref-access lint error).
-  // Both setState calls live inside setTimeout callbacks — never in the synchronous effect
-  // body — satisfying the react-compiler no-sync-setState-in-effect rule.
-  const [welcomeMinBlocking, setWelcomeMinBlocking] = useState(false)
-  const welcomeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const welcomeStartRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // One-shot splash latch: the welcome splash shows exactly ONCE per sign-in.
+  // It holds until the initial server pull lands (dataReady) AND a 1.5 s
+  // minimum has elapsed, then latches off for this user. Gating on dataReady
+  // alone was level-triggered: any later dataReady=false blip (token-refresh
+  // churn after the Android permission dialog, background re-pull, store
+  // reset) yanked the app back to the splash after the homepage had rendered.
+  // Post-latch dataReady=false periods render the per-page SkeletonLists.
+  const minTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Safety valve: if the initial server pull never completes (slow/failed native
   // API call), release the splash after a hard ceiling so the user is never
   // trapped on an eternal dark screen. The pull continues in the background.
-  const [dataPullTimedOut, setDataPullTimedOut] = useState(false)
+  // First pull only — reset alongside the latch on sign-out.
   const dataPullTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Hold the app behind the splash until the initial server pull lands, so the
-  // dashboard never paints stale localStorage numbers/theme that then visibly
-  // swap to the synced values. `dataReady` flips true in SupabaseFinanceSync's
-  // pull() finally — guaranteed even on the early-return path.
-  const showDataLoadingSplash =
-    mode === 'authenticated' &&
-    !isBypassRoute &&
-    !dataReady &&
-    !dataPullTimedOut
+  const gateUserId = user?.id ?? null
+  const splashDone = gateUserId != null && splashDoneFor === gateUserId
+  // True from the very first authenticated frame until the latch flips — the
+  // homepage can never paint mid-splash (the latch only flips in a timeout).
+  const showWelcomeScreen = mode === 'authenticated' && !isBypassRoute && !splashDone
 
-  // Minimum 2.5 s display so the welcome screen doesn't flash on fast connections.
-  // No cleanup is returned from the main effect — the 2.5 s timer must survive
-  // showDataLoadingSplash going false (data ready before 2.5 s), so the welcome
-  // screen keeps showing until the full minimum has elapsed.
+  // Minimum 1.5 s display so the welcome screen doesn't flash on fast connections.
+  // setState lives inside the timeout callback (react-compiler rule).
   useEffect(() => {
-    if (!showDataLoadingSplash) return
-    if (welcomeStartRef.current) clearTimeout(welcomeStartRef.current)
-    if (welcomeTimerRef.current) { clearTimeout(welcomeTimerRef.current); welcomeTimerRef.current = null }
-    // Defer the first setState to avoid synchronous setState in effect (react-compiler rule).
-    welcomeStartRef.current = setTimeout(() => {
-      welcomeStartRef.current = null
-      setWelcomeMinBlocking(true)
-      welcomeTimerRef.current = setTimeout(() => {
-        setWelcomeMinBlocking(false)
-        welcomeTimerRef.current = null
-      }, 1500)
-    }, 0)
-  }, [showDataLoadingSplash])
-  useEffect(() => () => {
-    if (welcomeStartRef.current) clearTimeout(welcomeStartRef.current)
-    if (welcomeTimerRef.current) clearTimeout(welcomeTimerRef.current)
-  }, [])
+    if (!showWelcomeScreen || gateUserId == null) return
+    if (minTimerRef.current) clearTimeout(minTimerRef.current)
+    minTimerRef.current = setTimeout(() => {
+      minTimerRef.current = null
+      setMinElapsedFor(gateUserId)
+    }, 1500)
+    return () => {
+      if (minTimerRef.current) { clearTimeout(minTimerRef.current); minTimerRef.current = null }
+    }
+  }, [showWelcomeScreen, gateUserId])
 
-  // Hard ceiling on the data-loading splash. Based on the underlying condition
-  // (not showDataLoadingSplash, which already factors in the timeout) so the
-  // timer arms once and isn't self-cancelling. Resets when data arrives.
-  const awaitingInitialPull =
-    mode === 'authenticated' && !isBypassRoute && !dataReady
+  // Latch once the initial pull landed (or hit the 8 s ceiling) and the minimum
+  // display elapsed. Deferred a tick so the splash frame is never skipped.
   useEffect(() => {
-    if (!awaitingInitialPull) {
+    if (!showWelcomeScreen || gateUserId == null) return
+    if (!(dataReady || dataPullTimedOut)) return
+    if (minElapsedFor !== gateUserId) return
+    const id = setTimeout(() => setSplashDoneFor(gateUserId), 0)
+    return () => clearTimeout(id)
+  }, [showWelcomeScreen, gateUserId, dataReady, dataPullTimedOut, minElapsedFor])
+
+  // 8 s hard ceiling — arms only while the pre-latch splash is waiting on data,
+  // so it can never fire (or re-splash) after the latch is set.
+  useEffect(() => {
+    if (!showWelcomeScreen || dataReady) {
       if (dataPullTimerRef.current) { clearTimeout(dataPullTimerRef.current); dataPullTimerRef.current = null }
-      if (dataPullTimedOut) setDataPullTimedOut(false)
       return
     }
     if (dataPullTimerRef.current) return
@@ -442,12 +452,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       dataPullTimerRef.current = null
       setDataPullTimedOut(true)
     }, 8000)
-  }, [awaitingInitialPull, dataPullTimedOut])
+  }, [showWelcomeScreen, dataReady])
   useEffect(() => () => {
     if (dataPullTimerRef.current) clearTimeout(dataPullTimerRef.current)
   }, [])
-
-  const showWelcomeScreen = showDataLoadingSplash || welcomeMinBlocking
 
   return (
     <AuthContext.Provider value={value}>

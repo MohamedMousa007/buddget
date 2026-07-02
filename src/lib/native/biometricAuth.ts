@@ -32,14 +32,19 @@ interface BiometryPlugin {
   }): Promise<void>
 }
 
-async function loadPlugin(): Promise<BiometryPlugin | null> {
+// Wrapped in an object: resolving a bare Capacitor plugin proxy from an async
+// function makes the promise machinery probe `.then` on the proxy, which the
+// proxy forwards as a native call → unhandled "BiometricAuthNative.then() is
+// not implemented" rejection on every load.
+async function loadPlugin(): Promise<{ plugin: BiometryPlugin } | null> {
   if (!isNative()) return null
   try {
     const mod = (await import('@aparajita/capacitor-biometric-auth')) as unknown as {
       BiometricAuth?: BiometryPlugin
       default?: BiometryPlugin
     }
-    return mod.BiometricAuth ?? mod.default ?? null
+    const plugin = mod.BiometricAuth ?? mod.default ?? null
+    return plugin ? { plugin } : null
   } catch (e) {
     console.warn('[biometric] plugin missing', e)
     return null
@@ -62,10 +67,10 @@ function biometryTypeFrom(num: number | undefined): BiometryType {
  * web path is still less reliable than the native plugin).
  */
 export async function isAvailable(): Promise<AvailableInfo> {
-  const plugin = await loadPlugin()
-  if (plugin) {
+  const loaded = await loadPlugin()
+  if (loaded) {
     try {
-      const info = await plugin.checkBiometry()
+      const info = await loaded.plugin.checkBiometry()
       const type = biometryTypeFrom(info.biometryType ?? info.biometryTypes?.[0])
       return { available: Boolean(info.isAvailable), type }
     } catch (e) {
@@ -96,9 +101,9 @@ export async function getType(): Promise<BiometryType> {
  * userVerification: 'required'.
  */
 export async function authenticate(reason = 'Unlock Buddget'): Promise<void> {
-  const plugin = await loadPlugin()
-  if (plugin) {
-    await plugin.authenticate({
+  const loaded = await loadPlugin()
+  if (loaded) {
+    await loaded.plugin.authenticate({
       reason,
       cancelTitle: 'Cancel',
       fallbackTitle: 'Use passcode',
