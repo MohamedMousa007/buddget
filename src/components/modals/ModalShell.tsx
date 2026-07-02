@@ -6,6 +6,12 @@ import { cn } from '@/lib/utils'
 
 const OVERLAY_Z = 'z-[100]'
 
+// Ghost-click guard: the tap that opens a modal fires its compatibility `click`
+// after React has already mounted the full-screen backdrop, so the click lands
+// on the backdrop and instantly closes the modal (BUD-50 FAB flicker). Ignore
+// dismissal events landing within this window of the modal opening.
+const OPEN_GRACE_MS = 400
+
 const FOCUSABLE =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
@@ -37,6 +43,15 @@ export function ModalShell({
   const dragControls = useDragControls()
   const zStack = zIndexClassName ?? OVERLAY_Z
   const panelRef = useRef<HTMLDivElement>(null)
+
+  const openedAtRef = useRef(0)
+  useEffect(() => {
+    if (open) openedAtRef.current = performance.now()
+  }, [open])
+  const guardedDismiss = () => {
+    if (performance.now() - openedAtRef.current < OPEN_GRACE_MS) return
+    onBackdropClick()
+  }
 
   useEffect(() => {
     if (!open) return
@@ -122,7 +137,7 @@ export function ModalShell({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
-            onClick={onBackdropClick}
+            onClick={guardedDismiss}
             className={cn('fixed inset-0', 'bg-black/60 backdrop-blur-sm', zStack)}
           />
           <motion.div
@@ -147,7 +162,7 @@ export function ModalShell({
             onDragEnd={(_, info) => {
               if (!dragToClose) return
               if (info.offset.y > 72 || info.velocity.y > 450) {
-                onBackdropClick()
+                guardedDismiss()
               }
             }}
             className={cn(

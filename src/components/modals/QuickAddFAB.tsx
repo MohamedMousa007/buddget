@@ -8,8 +8,9 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
+import { useRef } from 'react'
 import { useT } from '@/lib/i18n'
-import { useLongPress } from '@/hooks/useLongPress'
+import { useVoiceHoldGesture } from '@/hooks/useVoiceHoldGesture'
 import { VoiceRecordSheet } from '@/components/voice/VoiceRecordSheet'
 import { ReceiptScanSheet } from '@/components/receipt/ReceiptScanSheet'
 
@@ -87,17 +88,22 @@ export function QuickAddFAB() {
 
   useEscapeClose(isOpen, () => setActiveModal(null))
 
-  const longPress = useLongPress<HTMLButtonElement>(
-    openVoice,
-    () => setActiveModal(isOpen ? null : 'quickAdd'),
-    { delay: 600 },
-  )
+  // Desktop has no drag-to-trash zone; recording is managed inside VoiceRecordSheet.
+  const trashRef = useRef<HTMLDivElement>(null)
+  const { handlers } = useVoiceHoldGesture({
+    trashRef,
+    holdMs: 600,
+    onTap: () => setActiveModal(isOpen ? null : 'quickAdd'),
+    onHoldStart: openVoice,
+    onHoldEnd: () => {},
+    onHoldCancel: () => {},
+  })
 
   return (
     <>
       <button
         type="button"
-        {...longPress}
+        {...handlers}
         className="hidden lg:flex fixed bottom-8 end-8 z-50 items-center justify-center w-14 h-14 rounded-full bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white shadow-lg shadow-red-900/30 transition-all duration-200 active:scale-95 cursor-pointer touch-none select-none"
         aria-label={isOpen ? t.common.close : t.nav.quickAdd}
         aria-expanded={isOpen}
