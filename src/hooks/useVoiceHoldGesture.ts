@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject } from 'react'
+import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject } from 'react'
 import { useMotionValue } from 'framer-motion'
 
 const HOLD_MS = 300 // press duration before recording starts (shorter than a tap-to-menu)
@@ -18,6 +18,8 @@ interface VoiceHoldOptions {
   onTap: () => void
   /** The trash drop-zone element, measured live to compute proximity. */
   trashRef: RefObject<HTMLDivElement | null>
+  /** Press duration before the hold fires. Defaults to HOLD_MS. */
+  holdMs?: number
 }
 
 /**
@@ -36,6 +38,7 @@ export function useVoiceHoldGesture({
   onHoldCancel,
   onTap,
   trashRef,
+  holdMs = HOLD_MS,
 }: VoiceHoldOptions) {
   // Live absolute finger coordinates (clientX/clientY) — drive the widget.
   const posX = useMotionValue(0)
@@ -49,6 +52,19 @@ export function useVoiceHoldGesture({
   const nearTrashRef = useRef(false)
   const pointerIdRef = useRef<number | null>(null)
   const elementRef = useRef<HTMLButtonElement | null>(null)
+
+  // Defer onTap past the current input task. The browser dispatches the tap's
+  // compatibility `click` synchronously after pointerup — if onTap mounts a
+  // full-screen backdrop synchronously (React flushes discrete events), that
+  // ghost click lands on the backdrop and instantly dismisses what the tap
+  // just opened (BUD-50 flicker). setTimeout(0) lets the click fire first.
+  const onTapRef = useRef(onTap)
+  useEffect(() => {
+    onTapRef.current = onTap
+  }, [onTap])
+  const fireTap = useCallback(() => {
+    setTimeout(() => onTapRef.current(), 0)
+  }, [])
 
   const clearTimer = () => {
     if (timerRef.current) {
@@ -82,7 +98,6 @@ export function useVoiceHoldGesture({
   const onPointerDown = useCallback(
     (e: ReactPointerEvent<HTMLButtonElement>) => {
       if (e.button !== 0 && e.pointerType === 'mouse') return
-      console.info(`[FAB] pointerdown type=${e.pointerType} id=${e.pointerId}`)
       startRef.current = { x: e.clientX, y: e.clientY }
       pointerIdRef.current = e.pointerId
       elementRef.current = e.currentTarget
@@ -112,9 +127,9 @@ export function useVoiceHoldGesture({
         }
         void haptic('medium')
         onHoldStart()
-      }, HOLD_MS)
+      }, holdMs)
     },
-    [haptic, onHoldStart, posX, posY],
+    [haptic, holdMs, onHoldStart, posX, posY],
   )
 
   const onPointerMove = useCallback(
@@ -163,17 +178,15 @@ export function useVoiceHoldGesture({
       const wasHolding = holdingRef.current
       const overTrash = nearTrashRef.current
       const pendingTap = tapPendingRef.current
-      console.info(`[FAB] pointerup wasHolding=${wasHolding} pendingTap=${pendingTap}`)
       reset()
       if (wasHolding) {
         if (overTrash) onHoldCancel()
         else onHoldEnd()
       } else if (pendingTap) {
-        console.info('[FAB] → onTap()')
-        onTap()
+        fireTap()
       }
     },
-    [onHoldCancel, onHoldEnd, onTap, reset],
+    [fireTap, onHoldCancel, onHoldEnd, reset],
   )
 
   const onPointerCancel = useCallback(
@@ -187,12 +200,11 @@ export function useVoiceHoldGesture({
       // iOS/Capacitor fires pointercancel instead of pointerup on quick taps when
       // setPointerCapture is active — treat as tap if the hold timer hadn't fired yet.
       const pendingTap = tapPendingRef.current
-      console.info(`[FAB] pointercancel wasHolding=${wasHolding} pendingTap=${pendingTap}`)
       reset()
       if (wasHolding) onHoldCancel()
-      else if (pendingTap) { console.info('[FAB] → onTap() via cancel'); onTap() }
+      else if (pendingTap) fireTap()
     },
-    [onHoldCancel, onTap, reset],
+    [fireTap, onHoldCancel, reset],
   )
 
   // Android WebView fires pointerleave during ordinary quick taps (finger never
@@ -200,7 +212,6 @@ export function useVoiceHoldGesture({
   // firing if the finger does leave mid-scroll, but we must NOT clear
   // tapPendingRef — that would swallow the tap when pointerup arrives.
   const onPointerLeave = useCallback(() => {
-    console.info(`[FAB] pointerleave holding=${holdingRef.current} tapPending=${tapPendingRef.current}`)
     if (!holdingRef.current) clearTimer()
   }, [])
 
