@@ -43,6 +43,14 @@ export function suspendFinanceSync(): void {
 }
 
 /**
+ * Last user a pull() ran for. Re-mounts for the SAME user (auth-event churn,
+ * token refresh) must not blank `dataReady` — the app is already showing live
+ * data and flipping it would drop every page to skeletons. A genuine account
+ * switch still forces the flip (belt-and-suspenders on top of clearBudgetData).
+ */
+let lastPulledUserId: string | null = null
+
+/**
  * Every data-bearing snapshot slice the flush cares about. Subscribing
  * without a selector fires on every `set()` — even FX-rate ticks — which
  * resets the debounce timer and can starve real user writes for minutes
@@ -125,7 +133,8 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     const supabase = supabaseRef.current
 
     async function pull() {
-      useFinanceStore.getState().setDataReady(false)
+      if (lastPulledUserId !== userId) useFinanceStore.getState().setDataReady(false)
+      lastPulledUserId = userId
       // ponytail: start market fetch immediately so it overlaps with pullAll instead of running after
       const marketPromise = Promise.race([
         ensureMarketDataFresh(),

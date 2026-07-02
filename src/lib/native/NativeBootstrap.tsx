@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { isNative, isAndroid } from '@/lib/native/isNative'
 import { registerPushNotifications } from '@/lib/native/pushNotifications'
@@ -24,18 +24,29 @@ interface NativeBootstrapProps {
 export function NativeBootstrap({ session }: NativeBootstrapProps) {
   const language = useFinanceStore((s) => s.settings.language)
 
+  // Read the token via a ref at call time. Keying the effect on access_token
+  // re-ran the ENTIRE bootstrap (permission request, FCM register, SMS resume)
+  // on every token refresh — once per hour and on each foreground churn.
+  const tokenRef = useRef<string | null>(null)
   useEffect(() => {
-    if (!session?.access_token || !session.user?.id) return
+    tokenRef.current = session?.access_token ?? null
+  }, [session?.access_token])
+
+  const userId = session?.user?.id ?? null
+
+  useEffect(() => {
+    if (!userId) return
     if (!isNative()) return
 
     let cancelled = false
 
     void (async () => {
-      const accessToken = session.access_token
+      const accessToken = tokenRef.current
+      if (!accessToken) return
       try {
         await registerPushNotifications({
           accessToken,
-          userId: session.user.id,
+          userId,
           locale: language,
         })
       } catch (e) {
@@ -56,7 +67,8 @@ export function NativeBootstrap({ session }: NativeBootstrapProps) {
     return () => {
       cancelled = true
     }
-  }, [session?.access_token])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]) // once per signed-in user — token read from ref, language at first-run value
 
   return null
 }
