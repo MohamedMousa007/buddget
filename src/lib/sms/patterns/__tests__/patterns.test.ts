@@ -184,15 +184,33 @@ describe('Vodafone Cash + generic bank patterns', () => {
     expect(m?.txDay).toBe('2026-05-27')
   })
 
-  it('parses HSBC Phone Banking Transfer with DDMMMYY date and balance appendage', () => {
+  it('parses HSBC Phone Banking Transfer credit leg (+) as currency_exchange', () => {
     const m = matchCuratedPattern(HSBC_PHONE_BANKING_TRANSFER, 'HSBC')
-    expect(m?.patternId).toBe('hsbc-phone-banking-transfer-out')
-    expect(m?.kind).toBe('instant_transfer_out')
+    expect(m?.patternId).toBe('hsbc-phone-banking-fx-credit')
+    expect(m?.kind).toBe('currency_exchange')
     expect(m?.amount).toBe(30000.48)
     expect(m?.currency).toBe('EGP')
     expect(m?.counterparty).toBe('103-104***-001')
     expect(m?.txDay).toBe('2026-06-13')
     expect(m?.paymentInstrument).toBe('account')
+  })
+
+  it('parses HSBC Phone Banking Transfer debit leg (-) as currency_exchange', () => {
+    const body = '20JUN26 Phone Banking Transfer from 103-104***-110 USD 200.00- Your available balance is USD 2,172.73'
+    const m = matchCuratedPattern(body, 'HSBC')
+    expect(m?.patternId).toBe('hsbc-phone-banking-fx-debit')
+    expect(m?.kind).toBe('currency_exchange')
+    expect(m?.amount).toBe(200)
+    expect(m?.currency).toBe('USD')
+    expect(m?.counterparty).toBe('103-104***-110')
+    expect(m?.txDay).toBe('2026-06-20')
+  })
+
+  it('HSBC Phone Banking Transfer without +/- falls back to instant_transfer_out', () => {
+    const body = '13JUN26 Phone Banking Transfer to 103-104***-001 EGP 30,000.48 Your available balance is EGP 36,183.18'
+    const m = matchCuratedPattern(body, 'HSBC')
+    expect(m?.patternId).toBe('hsbc-phone-banking-transfer-out')
+    expect(m?.kind).toBe('instant_transfer_out')
   })
 
   it('parses NBE Instapay card credit with empty/null sender (iOS bridge)', () => {

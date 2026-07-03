@@ -58,8 +58,29 @@ export const HSBC_PATTERNS: BankPatternSet = {
       verified: false,
     },
     {
+      // "20JUN26 Phone Banking Transfer to 103-104***-001 EGP 9,968.00+ Your available balance is EGP 11,349.68"
+      // '+' suffix = credit leg of own-account FX (USD→EGP). Paired by dispatch with the 'from' debit leg.
+      id: 'hsbc-phone-banking-fx-credit',
+      regex: /(\d{1,2}[A-Z]{3}\d{2,4})\s+Phone\s+Banking\s+Transfer\s+to\s+([\d\-*]+)\s+([A-Z]{3})\s+([\d,]+(?:\.\d+)?)\+/i,
+      kind: 'currency_exchange',
+      groups: { datetime: 1, counterparty: 2, currency: 3, amount: 4 },
+      paymentInstrument: 'account',
+      verified: true,
+    },
+    {
+      // "20JUN26 Phone Banking Transfer from 103-104***-110 USD 200.00- Your available balance is USD 2,172.73"
+      // '-' suffix = debit leg of own-account FX. Paired by dispatch with the 'to' credit leg.
+      id: 'hsbc-phone-banking-fx-debit',
+      regex: /(\d{1,2}[A-Z]{3}\d{2,4})\s+Phone\s+Banking\s+Transfer\s+from\s+([\d\-*]+)\s+([A-Z]{3})\s+([\d,]+(?:\.\d+)?)-/i,
+      kind: 'currency_exchange',
+      groups: { datetime: 1, counterparty: 2, currency: 3, amount: 4 },
+      paymentInstrument: 'account',
+      verified: true,
+    },
+    {
       // "13JUN26 Phone Banking Transfer to 103-104***-001 EGP 30,000.48+
       //  Your available balance is EGP 36,183.18"
+      // Fallback for transfers without +/- sign (plain outgoing transfers to own accounts).
       id: 'hsbc-phone-banking-transfer-out',
       regex: /(\d{1,2}[A-Z]{3}\d{2,4})\s+Phone\s+Banking\s+Transfer\s+to\s+([\d\-*]+)\s+([A-Z]{3})\s+([\d,]+(?:\.\d+)?)\+?/i,
       kind: 'instant_transfer_out',
