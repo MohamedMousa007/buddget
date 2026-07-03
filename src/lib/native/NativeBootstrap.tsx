@@ -5,6 +5,7 @@ import type { Session } from '@supabase/supabase-js'
 import { isNative, isAndroid } from '@/lib/native/isNative'
 import { registerPushNotifications } from '@/lib/native/pushNotifications'
 import { resumeSmsTrackingIfEnabled } from '@/lib/native/smsTracker'
+import { cleanupOldReceiptImages } from '@/lib/native/receiptImages'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 
 interface NativeBootstrapProps {
@@ -39,6 +40,8 @@ export function NativeBootstrap({ session }: NativeBootstrapProps) {
     if (!isNative()) return
 
     let cancelled = false
+
+    void cleanupOldReceiptImages()
 
     void (async () => {
       const accessToken = tokenRef.current

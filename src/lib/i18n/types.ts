@@ -786,6 +786,8 @@ export interface Dictionary {
   }
 
   settings: {
+    unsavedTitle: string
+    unsavedBody: string
     pageTitle: string
     pageSubtitle: string
     footer: string

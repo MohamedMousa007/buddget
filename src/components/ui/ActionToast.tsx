@@ -20,7 +20,7 @@ export function ActionToastProvider({ children }: { children: React.ReactNode })
     <ToastContext.Provider value={show}>
       {children}
       {message ? (
-        <div className="fixed bottom-20 inset-x-0 z-[100] flex justify-center pointer-events-none px-4">
+        <div className="fixed top-[calc(env(safe-area-inset-top)+1rem)] inset-x-0 z-[100] flex justify-center pointer-events-none px-4">
           <div
             role="status"
             aria-live="polite"

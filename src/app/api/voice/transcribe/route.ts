@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     const file = new File([audio], `recording.${audioMimeToExt(type)}`, { type })
 
     // `json` (not `verbose_json`) — we only read `.text`; smaller response payload.
-    const result = await groq.audio.transcriptions.create({
+    const transcribe = () => groq.audio.transcriptions.create({
       file,
       model: 'whisper-large-v3',
       prompt: EGYPT_FIRST_PROMPT,
@@ -92,6 +92,18 @@ export async function POST(request: NextRequest) {
       response_format: 'json',
       temperature: 0,
     })
+
+    let result: Awaited<ReturnType<typeof transcribe>>
+    try {
+      result = await transcribe()
+    } catch (err) {
+      // Retry once on rate limit, server errors, or connection failures (no status).
+      const status = (err as { status?: number }).status
+      const retryable = status === undefined || status === 429 || status >= 500
+      if (!retryable) throw err
+      await new Promise((r) => setTimeout(r, 500))
+      result = await transcribe()
+    }
 
     console.info(`[VOICE:transcribe] ok user=${user.id} latency=${Date.now() - started}ms bytes=${audio.size}`)
     return NextResponse.json({

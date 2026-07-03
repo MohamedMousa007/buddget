@@ -1,9 +1,12 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { useShallow } from 'zustand/react/shallow'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { readReceiptImage } from '@/lib/native/receiptImages'
 
 /** Read-only view of a scanned receipt's itemized breakdown (items + charges). */
 export function ReceiptDetailSheet({
@@ -22,6 +25,17 @@ export function ReceiptDetailSheet({
     })),
   )
 
+  const [img, setImg] = useState<{ id: string; src: string } | null>(null)
+  useEffect(() => {
+    if (!open || !receiptId) return
+    let stale = false
+    void readReceiptImage(receiptId).then((src) => {
+      if (!stale && src) setImg({ id: receiptId, src })
+    })
+    return () => { stale = true }
+  }, [open, receiptId])
+  const imgSrc = img && img.id === receiptId ? img.src : null
+
   const shellOpen = open && !!receipt
 
   return (
@@ -29,6 +43,17 @@ export function ReceiptDetailSheet({
       {receipt ? (
         <div className="p-5">
           <ModalSheetHeader title="Receipt" onClose={onClose} />
+
+          {imgSrc ? (
+            <Image
+              src={imgSrc}
+              alt="Receipt photo"
+              width={240}
+              height={320}
+              unoptimized
+              className="mb-3 h-40 w-auto rounded-xl border border-[var(--color-brand-border)] object-cover"
+            />
+          ) : null}
 
           <div className="space-y-1">
             <p className="text-base font-semibold text-[var(--color-brand-text-primary)]">{receipt.merchant || 'Receipt'}</p>
