@@ -68,29 +68,26 @@ async function captureWeb(): Promise<CapturedImage> {
     input.style.position = 'fixed'
     input.style.left = '-9999px'
 
-    const cleanup = () => {
-      input.removeEventListener('change', onChange)
-      document.body.removeChild(input)
-    }
-
+    // Mutable ref so onChange and onCancel can share a cleanup without forward-ref TS errors.
+    let detach = () => {}
     const onChange = async () => {
       const file = input.files?.[0]
-      if (!file) {
-        cleanup()
-        reject(new Error('No image selected'))
-        return
-      }
+      if (!file) { detach(); reject(new Error('No image selected')); return }
       try {
         const dataUrl = await fileToDataUrl(file)
-        cleanup()
+        detach()
         resolve(await downscaleCaptured(dataUrl, `receipt-${Date.now()}.jpg`))
-      } catch (err) {
-        cleanup()
-        reject(err)
-      }
+      } catch (err) { detach(); reject(err) }
+    }
+    const onCancel = () => { detach(); reject(new Error('No image selected')) }
+    detach = () => {
+      input.removeEventListener('change', onChange)
+      input.removeEventListener('cancel', onCancel)
+      if (input.parentNode) document.body.removeChild(input)
     }
 
     input.addEventListener('change', onChange)
+    input.addEventListener('cancel', onCancel)
     document.body.appendChild(input)
     input.click()
   })
