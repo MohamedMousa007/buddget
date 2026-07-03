@@ -884,6 +884,8 @@ export const en: Dictionary = {
   },
 
   settings: {
+    unsavedTitle: 'Unsaved changes',
+    unsavedBody: 'You changed some settings. Save them before leaving?',
     pageTitle: 'Your Preferences',
     pageSubtitle: 'Manage your currencies, payments, and data. Budget settings live in your Profile.',
     footer: 'Buddget v1.0 \u2014 Your money, your way.',

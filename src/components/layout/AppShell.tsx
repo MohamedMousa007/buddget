@@ -16,6 +16,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { isNative } from '@/lib/native/isNative'
 import { isAndroid } from '@/lib/native/isNative'
+import { runBackGuards } from '@/lib/navigation/backGuard'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useT } from '@/lib/i18n'
 import { expenseFromRow } from '@/lib/supabase/remote/mappers/expenseMapper'
@@ -219,9 +220,10 @@ function MarketRatesSync() {
 }
 
 /**
- * Handles Android hardware back button: closes open modals, navigates to
- * Dashboard from inner screens, and shows a "press again to exit" toast on
- * Dashboard before calling App.exitApp() on the second press within 2 s.
+ * Handles Android hardware back button: closes open modals, lets registered
+ * back guards intercept (e.g. unsaved-changes dialogs), steps back through
+ * webview history from inner screens, and shows a "press again to exit" toast
+ * on Dashboard before calling App.exitApp() on the second press within 2 s.
  */
 function AndroidBackHandler() {
   const activeModal = useSettingsStore((s) => s.activeModal)
@@ -253,13 +255,15 @@ function AndroidBackHandler() {
     void (async () => {
       const { App } = await import('@capacitor/app')
       if (cancelled) return
-      handle = await App.addListener('backButton', () => {
+      handle = await App.addListener('backButton', ({ canGoBack }) => {
         if (activeModalRef.current) {
           setActiveModalRef.current(null)
           return
         }
+        if (runBackGuards()) return
         if (pathnameRef.current !== '/') {
-          routerRef.current.push('/')
+          if (canGoBack) window.history.back()
+          else routerRef.current.push('/')
           return
         }
         if (exitPending.current) {

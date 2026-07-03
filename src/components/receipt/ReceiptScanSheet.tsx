@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useShallow } from 'zustand/react/shallow'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { captureReceiptPhoto } from '@/lib/native/cameraScanner'
+import { saveReceiptImage } from '@/lib/native/receiptImages'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Currency, ExpenseCategory, ReceiptItem, ReceiptCharge } from '@/lib/store/types'
 
@@ -151,6 +152,8 @@ export function ReceiptScanSheet({ open, onClose }: ReceiptScanSheetProps) {
           notes: result.notes || undefined,
         })
       : undefined
+
+    if (receiptId && preview) void saveReceiptImage(receiptId, preview)
 
     addExpense({
       date,
@@ -495,10 +498,16 @@ function normaliseItems(raw: unknown): ReceiptItem[] {
     .flatMap((entry) => {
       if (!entry || typeof entry !== 'object') return []
       const e = entry as Record<string, unknown>
-      const name = (typeof e.name === 'string' ? e.name : '').trim().slice(0, 60)
+      let name = (typeof e.name === 'string' ? e.name : '').trim().slice(0, 60)
       const price = toNumber(e.price)
       if (!name || !Number.isFinite(price)) return []
-      const qty = toNumber(e.qty)
+      let qty = toNumber(e.qty)
+      // Safety net when the model leaves a quantity marker in the name ("2x Water", "x2 Water").
+      const m = name.match(/^(?:x\s*(\d{1,3})|(\d{1,3})\s*[x×])\s+(.+)/i)
+      if (m && !(Number.isFinite(qty) && qty > 0)) {
+        qty = Number(m[1] ?? m[2])
+        name = m[3].trim()
+      }
       return [{ name, price, ...(Number.isFinite(qty) && qty > 0 ? { qty } : {}) }]
     })
     .slice(0, 100)

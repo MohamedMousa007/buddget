@@ -34,7 +34,7 @@ Return ONLY a JSON object matching this exact schema:
 
 Rules:
 - "amount" is the FINAL printed grand total (what the customer actually paid). Read it directly; do NOT sum the items yourself.
-- "items" are the purchased line items only — each with its own printed price. "qty" only when the receipt shows it. Exclude taxes, service, tips, and discounts from items.
+- "items" are the purchased line items only — each with its own printed price. "price" is the LINE TOTAL for that line (unit price × quantity), exactly as printed. Set "qty" when the receipt shows a quantity. If the item name contains a quantity marker like "2x", "x2" or "2 ×", set "qty" to that number and REMOVE the marker from "name". Exclude taxes, service, tips, and discounts from items.
 - "charges" hold every non-item line that affects the total: VAT/tax, service charge, tip/gratuity, delivery, and discounts (use a NEGATIVE amount for discounts). Use type "other" if none fit.
 - There is ONE category for the WHOLE receipt — do NOT categorise individual items (saves tokens).
 - If items or charges are not legible, return them as empty arrays []. Never invent lines.
@@ -176,6 +176,7 @@ export async function POST(request: NextRequest) {
     generationConfig: {
       temperature: 0,
       responseMimeType: 'application/json',
+      maxOutputTokens: 2048,
     },
   }
 

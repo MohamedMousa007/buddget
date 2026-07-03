@@ -34,6 +34,16 @@ export async function requestMicPermission(): Promise<'granted' | 'denied' | 'un
     _permStatus = 'unavailable'
     return 'unavailable'
   }
+  if (_permStatus === 'denied') {
+    // Don't re-trigger the native prompt after a denial. Refresh the cache via
+    // the Permissions API when available (picks up a grant made in OS Settings).
+    try {
+      const st = await navigator.permissions.query({ name: 'microphone' as PermissionName })
+      if (st.state === 'granted') _permStatus = 'granted'
+    } catch { /* Permissions API unavailable — keep cached denial */ }
+    if (_permStatus === 'denied') return 'denied'
+    return 'granted'
+  }
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
     stream.getTracks().forEach((t) => t.stop())
@@ -151,7 +161,9 @@ async function startWebRecording(): Promise<RecorderHandle> {
     },
     async cancel() {
       stopped = true
+      recorder.ondataavailable = null
       try { if (recorder.state !== 'inactive') recorder.stop() } catch { /* noop */ }
+      chunks.length = 0
       await cleanup()
     },
   }
