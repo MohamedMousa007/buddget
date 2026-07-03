@@ -26,9 +26,9 @@ export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClos
   const [showReceipt, setShowReceipt] = useState(false)
 
   const handleDelete = async () => {
+    onClose()
     if (await confirm({ title: t.dashboard.confirmDeleteExpense, destructive: true })) {
       deleteExpense(expense.id)
-      onClose()
     }
   }
 
