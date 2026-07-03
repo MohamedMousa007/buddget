@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { Camera, Check, X, Loader2, AlertTriangle, RefreshCcw } from 'lucide-react'
 import Image from 'next/image'
 import { useShallow } from 'zustand/react/shallow'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { captureReceiptPhoto } from '@/lib/native/cameraScanner'
+import { isNative } from '@/lib/native/isNative'
 import { saveReceiptImage } from '@/lib/native/receiptImages'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Currency, ExpenseCategory, ReceiptItem, ReceiptCharge } from '@/lib/store/types'
@@ -55,6 +56,7 @@ export function ReceiptScanSheet({ open, onClose }: ReceiptScanSheetProps) {
   const [preview, setPreview] = useState<string | null>(null)
   const [result, setResult] = useState<ScannedReceipt | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const scanAbortRef = useRef<AbortController | null>(null)
 
   const { addExpense, addReceipt, paymentMethods, baseCurrency } = useFinanceStore(
     useShallow((s) => ({
@@ -66,6 +68,8 @@ export function ReceiptScanSheet({ open, onClose }: ReceiptScanSheetProps) {
   )
 
   const reset = useCallback(() => {
+    scanAbortRef.current?.abort()
+    scanAbortRef.current = null
     setState('idle')
     setPreview(null)
     setResult(null)
@@ -79,15 +83,18 @@ export function ReceiptScanSheet({ open, onClose }: ReceiptScanSheetProps) {
   const startScan = useCallback(async () => {
     setError(null)
     setState('scanning')
+    const ctrl = new AbortController()
+    scanAbortRef.current = ctrl
     try {
       const captured = await captureReceiptPhoto()
+      if (ctrl.signal.aborted) return
       setPreview(captured.dataUrl)
       setState('parsing')
 
       const form = new FormData()
       form.append('image', captured.file)
       const { apiFetchAuth } = await import('@/lib/apiBase')
-      const res = await apiFetchAuth('/api/receipt/scan', { method: 'POST', body: form, credentials: 'include' })
+      const res = await apiFetchAuth('/api/receipt/scan', { method: 'POST', body: form, credentials: 'include', signal: ctrl.signal })
       if (!res.ok) {
         if (res.status === 503) {
           throw new Error('AI scanning is temporarily offline. Please set up manually or try again in a moment.')
@@ -108,10 +115,12 @@ export function ReceiptScanSheet({ open, onClose }: ReceiptScanSheetProps) {
       if (!data.receipt) {
         throw new Error('We had trouble reading this receipt image. Please ensure the total amount and merchant are clearly visible, then try again.')
       }
+      if (ctrl.signal.aborted) return
       const r = normaliseReceipt(data.receipt, baseCurrency)
       setResult(r)
       setState('result')
     } catch (e) {
+      if (ctrl.signal.aborted) return
       const msg =
         e instanceof TypeError
           ? 'Network connection lost. Please check your internet and try again.'
@@ -123,8 +132,9 @@ export function ReceiptScanSheet({ open, onClose }: ReceiptScanSheetProps) {
     }
   }, [baseCurrency])
 
+  // ponytail: web auto-start skipped — input.click() from useEffect lacks user gesture on mobile browsers
   useEffect(() => {
-    if (open && state === 'idle') {
+    if (open && state === 'idle' && isNative()) {
       void startScan()
     }
   }, [open, state, startScan])
