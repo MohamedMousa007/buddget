@@ -189,8 +189,27 @@ function DebtHistoryRow({
             {cleared ? tr.statusCleared : tr.statusInProgress}
           </span>
         </td>
-        <td className="py-3 font-mono-numbers text-[var(--color-brand-text-secondary)]">
-          {debt.clearedAt ? formatDateShort(debt.clearedAt) : '—'}
+        <td className="py-3 text-[var(--color-brand-text-secondary)]">
+          {cleared ? (() => {
+            const last = payments.length > 0
+              ? [...payments].sort((a, b) => b.date.localeCompare(a.date))[0]!
+              : null
+            const dateStr = last?.date ?? debt.clearedAt
+            if (!dateStr) return '—'
+            return (
+              <span className="flex items-center gap-1 text-xs whitespace-nowrap">
+                <span className="font-bold text-[var(--color-brand-text-primary)]">{formatDayAbbr(dateStr)}</span>
+                <span>·</span>
+                <span>{formatDateShort(dateStr)}</span>
+                {last ? (
+                  <>
+                    <span>·</span>
+                    <span className="text-[var(--color-brand-text-muted)]">{formatTime(last.createdAt)}</span>
+                  </>
+                ) : null}
+              </span>
+            )
+          })() : '—'}
         </td>
       </tr>
       {expanded ? (
