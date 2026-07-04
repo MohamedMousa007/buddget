@@ -642,11 +642,14 @@ export interface FinanceStore {
   recurringDebtPayments: RecurringDebtPayment[]
   goals: Goal[]
   exchangeRates: Record<string, number>
+  /** Live 24k gold spot, per gram, denominated in the user's base currency. */
   goldPricePerGram: number
   /** ISO time of last successful `/api/gold` fetch (client). */
   lastGoldFetch: string | null
-  /** When false, live gold failed — UI must not show a trusted AED/gram figure. */
+  /** False only when live gold failed AND we never had a good price (no fallback). */
   goldPriceAvailable: boolean
+  /** True when the last fetch failed but a prior good price is being shown (delayed). */
+  goldPriceStale: boolean
   lastRatesFetch: string | null
   /**
    * True once the initial server pull (pullAll or pullCore) for the current

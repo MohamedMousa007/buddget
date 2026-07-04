@@ -9,6 +9,7 @@ export function SavingsCardConversionLine({
   account,
   settings,
   exchangeRates,
+  goldPricePerGram,
   goldPriceAvailable,
   liveCryptoLabel,
   liveStocksLabel,
@@ -17,6 +18,7 @@ export function SavingsCardConversionLine({
   account: SavingsAccount
   settings: AppSettings
   exchangeRates: Record<string, number>
+  goldPricePerGram: number
   goldPriceAvailable: boolean
   liveCryptoLabel: string
   liveStocksLabel: string
@@ -35,7 +37,8 @@ export function SavingsCardConversionLine({
     primary,
     secondary,
     settings.showSecondaryCurrency,
-    exchangeRates
+    exchangeRates,
+    goldPricePerGram
   )
 
   if (needsPlaceholder) {

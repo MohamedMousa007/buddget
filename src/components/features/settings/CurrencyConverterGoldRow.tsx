@@ -20,12 +20,19 @@ export function CurrencyConverterGoldRow({
           <span>✦</span> {t.goldLabel}
         </span>
         {store.goldPriceAvailable !== false ? (
-          <span className="font-mono-numbers text-sm text-[var(--color-brand-gold)]">
-            {store.goldPricePerGram.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}{' '}
-            {store.settings.baseCurrency}
+          <span className="flex flex-col items-end">
+            <span className="font-mono-numbers text-sm text-[var(--color-brand-gold)]">
+              {store.goldPricePerGram.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}{' '}
+              {store.settings.baseCurrency}
+            </span>
+            {store.goldPriceStale && (
+              <span className="text-[10px] text-[var(--color-brand-text-muted)] italic">
+                {t.goldPriceDelayed}
+              </span>
+            )}
           </span>
         ) : (
           <span className="text-xs text-[var(--color-brand-text-muted)] italic">{t.goldPriceUnavailable}</span>
