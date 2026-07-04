@@ -36,6 +36,8 @@ interface SmsCapacitorPlugin {
   getStatus(): Promise<SmsBridgeStatus>
   /** iOS only: GET /api/sms/health through the same native path the intent uses. */
   healthCheck(): Promise<SmsHealthResult>
+  /** iOS only: returns and clears SMS queued while offline, for retry on next app open. */
+  drainPendingQueue(): Promise<{ items: Array<{ message: string; sender: string; receivedAt: string; source: string }> }>
 }
 
 // Module-level cache — registerPlugin() is called exactly once.
@@ -188,6 +190,22 @@ export async function setSmsForwardMode(mode: 'sender' | 'keyword'): Promise<voi
 export async function clearSmsNative(): Promise<void> {
   if (!(await ensurePlugin()) || !_plugin) return
   try { await _plugin.clearState() } catch { /* noop */ }
+}
+
+/**
+ * iOS only: drains the offline-pending queue that CatchBankSmsIntent populates
+ * when the device has no network. Returns queued items and clears the queue so
+ * they are not re-submitted on the next app open.
+ */
+export async function drainSmsPendingQueue(): Promise<Array<{ message: string; sender: string; receivedAt: string; source: string }>> {
+  if (!isNative() || isAndroid()) return []
+  if (!(await ensurePlugin()) || !_plugin) return []
+  try {
+    const { items } = await _plugin.drainPendingQueue()
+    return items ?? []
+  } catch {
+    return []
+  }
 }
 
 /** Per-device bridge status — token saved, enabled, setup completed, permission. */

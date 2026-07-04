@@ -28,43 +28,50 @@ import type { IncomeSourceRow } from '@/lib/supabase/remote/types'
 import type { DebtPaymentRow } from '@/lib/supabase/remote/types'
 
 /**
- * Re-registers the Capacitor SMS listener on every app startup and on auth changes.
+ * Fires on every native app startup and on auth changes. Handles two platforms:
  *
- * Two failure modes solved:
- * 1. Restart: `listenerAttached` resets to false → no listener registered.
- *    Fixed by running on mount and calling startSMSTracking (idempotent guard inside).
- * 2. Fresh install / re-login: `smsEnabled` stays true but token never saved
- *    to SharedPreferences → WorkManager path dead.
- *    Fixed by listening to SIGNED_IN auth event.
+ * Android: re-arms the WorkManager bridge (startSMSTracking + ingest token refresh).
+ *   TOKEN_REFRESHED intentionally not handled — updating SharedPreferences with
+ *   the new JWT would overwrite the non-expiring ingest token.
  *
- * NOTE: TOKEN_REFRESHED no longer updates SharedPreferences with the JWT because
- * that was overwriting the non-expiring ingest token, causing WorkManager to 401
- * after the JWT expired when the device was offline. The ingest token (saved by
- * saveSmsToken below) is permanent and does not need per-refresh updates.
+ * iOS: drains the offline-pending queue populated by CatchBankSmsIntent when
+ *   the device had no network at SMS arrival time. Each queued message is
+ *   re-submitted to /api/sms/parse with the current session JWT.
  */
 function SmsStartupSync() {
   useEffect(() => {
-    if (!isNative() || !isAndroid()) return
+    if (!isNative()) return
 
     const smsEnabled = () => useFinanceStore.getState().settings.smsTrackingEnabled
 
     const tryStart = async (token: string) => {
       if (!smsEnabled() || !token) return
-      const { startSMSTracking, saveSmsToken } = await import('@/lib/native/smsTracker')
-      await startSMSTracking(token)
-      // Replace the 1-hour Supabase JWT with the permanent ingest token so
-      // WorkManager stays valid when the device is offline for >1h and the JWT
-      // cannot be refreshed. If offline here, the JWT fallback is already in
-      // SharedPreferences and is valid for up to 1h from this call.
-      try {
-        const res = await fetch(apiUrl('/api/sms/setup-token'), {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        if (res.ok) {
-          const data = (await res.json()) as { token?: string }
-          if (data.token) await saveSmsToken(data.token)
+      if (isAndroid()) {
+        const { startSMSTracking, saveSmsToken } = await import('@/lib/native/smsTracker')
+        await startSMSTracking(token)
+        try {
+          const res = await fetch(apiUrl('/api/sms/setup-token'), {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          if (res.ok) {
+            const data = (await res.json()) as { token?: string }
+            if (data.token) await saveSmsToken(data.token)
+          }
+        } catch { /* non-fatal — JWT fallback already in SharedPreferences */ }
+      } else {
+        // iOS: replay SMS that CatchBankSmsIntent couldn't deliver while offline.
+        // Skip if still offline — items stay queued for next app open with network.
+        if (!navigator.onLine) return
+        const { drainSmsPendingQueue } = await import('@/lib/native/smsTracker')
+        const pending = await drainSmsPendingQueue()
+        for (const item of pending) {
+          void fetch(apiUrl('/api/sms/parse'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify(item),
+          }).catch(() => {})
         }
-      } catch { /* non-fatal — JWT fallback already in SharedPreferences */ }
+      }
     }
 
     let unsub: (() => void) | null = null
@@ -78,8 +85,6 @@ function SmsStartupSync() {
       const { data: listener } = client.auth.onAuthStateChange((event, session) => {
         const token = session?.access_token ?? ''
         if (event === 'SIGNED_IN') void tryStart(token)
-        // TOKEN_REFRESHED intentionally not handled: updating SharedPreferences
-        // with the new JWT would overwrite the non-expiring ingest token.
       })
       unsub = listener.subscription.unsubscribe
     })()
