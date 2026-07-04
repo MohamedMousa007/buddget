@@ -36,21 +36,27 @@ export function savingsAccountConversionAmounts(
   primary: Currency,
   secondary: Currency | null,
   showSecondary: boolean,
-  rates: Record<string, number>
+  rates: Record<string, number>,
+  goldPricePerGram: number
 ): { primary: number | null; secondary: number | null; needsPlaceholder: boolean } {
   if (needsLiveValuationPlaceholder(account)) {
     return { primary: null, secondary: null, needsPlaceholder: true }
   }
 
-  let primaryConv: number | null = null
-  if (account.currency !== primary) {
-    primaryConv = tryConvertCurrency(account.currentBalance, account.currency, primary, rates)
+  // XAU balances are in grams; the rates map's XAU cross-rate is per troy ounce,
+  // so route gold through the base-currency spot (goldPricePerGram) instead.
+  const toCurrency = (target: Currency): number | null => {
+    if (account.currency === target) return null
+    if (account.currency === 'XAU') {
+      const base = goldGramsToMoney(account.currentBalance, goldPricePerGram, 24)
+      return target === primary ? base : tryConvertCurrency(base, primary, target, rates)
+    }
+    return tryConvertCurrency(account.currentBalance, account.currency, target, rates)
   }
 
-  let secondaryConv: number | null = null
-  if (showSecondary && secondary && secondary !== account.currency) {
-    secondaryConv = tryConvertCurrency(account.currentBalance, account.currency, secondary, rates)
-  }
+  const primaryConv = toCurrency(primary)
+  const secondaryConv =
+    showSecondary && secondary ? toCurrency(secondary) : null
 
   return { primary: primaryConv, secondary: secondaryConv, needsPlaceholder: false }
 }

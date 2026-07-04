@@ -34,6 +34,7 @@ export function SavingsAccountCard({
   const t = useT()
   const settings = useFinanceStore((s) => s.settings)
   const exchangeRates = useFinanceStore((s) => s.exchangeRates)
+  const goldPricePerGram = useFinanceStore((s) => s.goldPricePerGram)
   const goldPriceAvailable = useFinanceStore((s) => s.goldPriceAvailable)
   return (
     <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4 space-y-3">
@@ -54,6 +55,7 @@ export function SavingsAccountCard({
               account={account}
               settings={settings}
               exchangeRates={exchangeRates}
+              goldPricePerGram={goldPricePerGram}
               goldPriceAvailable={goldPriceAvailable !== false}
               liveCryptoLabel={t.savings.liveCryptoSoon}
               liveStocksLabel={t.savings.liveStocksSoon}

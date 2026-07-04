@@ -816,6 +816,7 @@ export interface Dictionary {
     currencyConverterTitle: string
     currencyConverterNoRate: string
     goldPriceUnavailable: string
+    goldPriceDelayed: string
     ratesAttribution: string
     showMeAround: string
     showMeAroundDesc: string

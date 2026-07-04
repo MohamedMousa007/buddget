@@ -154,7 +154,10 @@ export const useFinanceStore = create<FinanceStore>()(
       exchangeRates: { ...DEFAULT_MARKET_RATES },
       goldPricePerGram: DEFAULT_GOLD_PRICE_PER_GRAM,
       lastGoldFetch: null,
-      goldPriceAvailable: true,
+      // No successful fetch yet — the default price is a placeholder, not a
+      // trusted figure. A fetch under the splash flips this true.
+      goldPriceAvailable: false,
+      goldPriceStale: false,
       lastRatesFetch: null,
       dataReady: false,
       setDataReady: (v) => set({ dataReady: v }),
@@ -1250,9 +1253,18 @@ export const useFinanceStore = create<FinanceStore>()(
           goldPricePerGram: price,
           lastGoldFetch: new Date().toISOString(),
           goldPriceAvailable: true,
+          goldPriceStale: false,
         }),
 
-      setGoldUnavailable: () => set({ goldPriceAvailable: false }),
+      // Providers failed: keep the last good price and mark it stale so the UI can
+      // warn "prices may be delayed". Only report hard-unavailable when we never
+      // had a real price (still the default, no successful fetch yet).
+      setGoldUnavailable: () =>
+        set((state) =>
+          state.lastGoldFetch
+            ? { goldPriceStale: true }
+            : { goldPriceAvailable: false, goldPriceStale: false }
+        ),
 
       importData: (jsonString) => {
         let parsed: unknown
@@ -1372,7 +1384,8 @@ export const useFinanceStore = create<FinanceStore>()(
           exchangeRates: { ...DEFAULT_MARKET_RATES },
           goldPricePerGram: DEFAULT_GOLD_PRICE_PER_GRAM,
           lastGoldFetch: null,
-          goldPriceAvailable: true,
+          goldPriceAvailable: false,
+          goldPriceStale: false,
           lastRatesFetch: null,
           dataReady: false,
         }),
@@ -1573,7 +1586,8 @@ export const useFinanceStore = create<FinanceStore>()(
           exchangeRates: { ...DEFAULT_MARKET_RATES },
           goldPricePerGram: DEFAULT_GOLD_PRICE_PER_GRAM,
           lastGoldFetch: null,
-          goldPriceAvailable: true,
+          goldPriceAvailable: false,
+          goldPriceStale: false,
           lastRatesFetch: null,
         } as never
       },
@@ -1588,6 +1602,7 @@ export const useFinanceStore = create<FinanceStore>()(
           subscriptions: p.subscriptions ?? current.subscriptions,
           lastGoldFetch: p.lastGoldFetch ?? current.lastGoldFetch,
           goldPriceAvailable: p.goldPriceAvailable ?? current.goldPriceAvailable,
+          goldPriceStale: false,
           financialGoalsNotes: p.financialGoalsNotes ?? current.financialGoalsNotes,
           budgetPlans: p.budgetPlans ?? current.budgetPlans,
           activeBudgetPlanId:

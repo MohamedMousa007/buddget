@@ -7,7 +7,46 @@ interface GoldProvider {
   fetch: () => Promise<number> // returns USD per troy ounce
 }
 
+// Ordered by freshness: real-time spot sources first, ECB daily reference
+// (frankfurter) last — it can lag a day, so it's a fallback, not the primary.
 const providers: GoldProvider[] = [
+  {
+    name: 'gold-api.com',
+    fetch: async () => {
+      const res = await fetch('https://gold-api.com/api/price/XAU', {
+        signal: AbortSignal.timeout(5000),
+      })
+      if (!res.ok) throw new Error(`gold-api.com ${res.status}`)
+      const data = await res.json()
+      if (data.price) return data.price
+      throw new Error('No price')
+    },
+  },
+  {
+    name: 'api.metals.live',
+    fetch: async () => {
+      const res = await fetch('https://api.metals.live/v1/spot/gold', {
+        signal: AbortSignal.timeout(5000),
+      })
+      if (!res.ok) throw new Error(`api.metals.live ${res.status}`)
+      const data = await res.json()
+      if (Array.isArray(data) && data.length > 0 && data[0].price) return data[0].price
+      throw new Error('No price')
+    },
+  },
+  {
+    name: 'metals.live',
+    fetch: async () => {
+      const res = await fetch('https://metals.live/api/spot', {
+        signal: AbortSignal.timeout(5000),
+      })
+      if (!res.ok) throw new Error(`metals.live ${res.status}`)
+      const metals = await res.json()
+      const gold = metals.find((m: { metal: string }) => m.metal === 'gold')
+      if (!gold?.price) throw new Error('No gold in response')
+      return gold.price
+    },
+  },
   {
     name: 'frankfurter.dev',
     fetch: async () => {
@@ -41,43 +80,6 @@ const providers: GoldProvider[] = [
       return 1 / rate
     },
   },
-  {
-    name: 'metals.live',
-    fetch: async () => {
-      const res = await fetch('https://metals.live/api/spot', {
-        signal: AbortSignal.timeout(5000),
-      })
-      if (!res.ok) throw new Error(`metals.live ${res.status}`)
-      const metals = await res.json()
-      const gold = metals.find((m: { metal: string }) => m.metal === 'gold')
-      if (!gold?.price) throw new Error('No gold in response')
-      return gold.price
-    },
-  },
-  {
-    name: 'api.metals.live',
-    fetch: async () => {
-      const res = await fetch('https://api.metals.live/v1/spot/gold', {
-        signal: AbortSignal.timeout(5000),
-      })
-      if (!res.ok) throw new Error(`api.metals.live ${res.status}`)
-      const data = await res.json()
-      if (Array.isArray(data) && data.length > 0 && data[0].price) return data[0].price
-      throw new Error('No price')
-    },
-  },
-  {
-    name: 'gold-api.com',
-    fetch: async () => {
-      const res = await fetch('https://gold-api.com/api/price/XAU', {
-        signal: AbortSignal.timeout(5000),
-      })
-      if (!res.ok) throw new Error(`gold-api.com ${res.status}`)
-      const data = await res.json()
-      if (data.price) return data.price
-      throw new Error('No price')
-    },
-  },
 ]
 
 async function fetchGoldPriceUSD(): Promise<{ price: number; provider: string } | null> {
@@ -94,7 +96,9 @@ async function fetchGoldPriceUSD(): Promise<{ price: number; provider: string } 
       continue
     }
   }
-  console.warn('[gold] All 5 providers failed:', errors.join(' | '))
+  console.error(
+    `[gold] All ${providers.length} providers failed — gold price unavailable. Reasons: ${errors.join(' | ')}`
+  )
   return null
 }
 
