@@ -5,6 +5,7 @@ import { Preferences } from '@capacitor/preferences'
 
 const SESSION_KEY = 'buddget.biometric.session'
 const ENABLED_KEY = 'buddget.biometric.enabled'
+const ACCOUNT_KEY = 'buddget.biometric.account'
 
 export type BiometryType = 'face' | 'fingerprint' | 'iris' | 'unknown' | null
 
