@@ -146,7 +146,6 @@ export const useSettingsStore = create<SettingsState>()(
       name: 'buddget-ui-settings',
       storage: createJSONStorage(() => createSafeLocalStorage()),
       partialize: (state) => ({
-        monthFilter: state.monthFilter,
         voiceSpeakMuted: state.voiceSpeakMuted,
         buddgyOrb: state.buddgyOrb,
       }),
