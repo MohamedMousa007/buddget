@@ -5,11 +5,12 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * Persistent ring buffer for SMS the WorkManager path could not deliver
- * (missing token, terminal 4xx, retries exhausted). Mirrors the iOS
- * UserDefaults pending_queue: cap 50, oldest evicted, drained by the JS
- * layer on app open once a fresh ingest token is saved. The server dedups
- * by sms_hash, so replaying an already-delivered item is harmless.
+ * Persistent "captured but not yet synced" ledger. SmsReceiver enqueues every
+ * forwarded SMS up front; SmsForwardWorker removes it once the server accepts
+ * the POST. Whatever remains is offline/undelivered — the app renders it as
+ * "waiting to sync" cards and the app-open/reconnect drain replays it. Cap 50,
+ * oldest evicted (mirrors iOS). The server dedups by sms_hash, so a drain
+ * racing a WorkManager delivery is harmless.
  */
 /** minSdk-24-safe UTC ISO-8601 timestamp (java.time needs API 26). */
 object SmsTime {
@@ -37,6 +38,10 @@ object PendingSmsQueue {
         write(context, trim(items))
     }
 
+    /** Returns queued items WITHOUT clearing — for the in-app pending preview. */
+    @Synchronized
+    fun peek(context: Context): JSONArray = read(context)
+
     /** Returns all queued items and clears the queue. */
     @Synchronized
     fun drain(context: Context): JSONArray {
@@ -44,6 +49,26 @@ object PendingSmsQueue {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit().remove(KEY).apply()
         return items
+    }
+
+    /** Removes one item after successful delivery (matched by body + receive time). */
+    @Synchronized
+    fun remove(context: Context, message: String, receivedAt: String) {
+        val items = read(context)
+        val kept = JSONArray()
+        var removed = false
+        for (i in 0 until items.length()) {
+            val item = items.getJSONObject(i)
+            if (!removed &&
+                item.optString("message") == message &&
+                item.optString("receivedAt") == receivedAt
+            ) {
+                removed = true
+                continue
+            }
+            kept.put(item)
+        }
+        if (removed) write(context, kept)
     }
 
     /** Re-appends items whose replay failed, respecting the cap. */

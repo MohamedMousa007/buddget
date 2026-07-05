@@ -69,12 +69,16 @@ class SmsReceiver : BroadcastReceiver() {
         // Credentials are NOT baked into the job — the worker reads the current
         // token/apiUrl from SharedPreferences at execution time, and routes
         // undeliverable SMS to PendingSmsQueue instead of dropping them.
+        // Stamped NOW — a job delayed offline must report when the SMS
+        // actually arrived, not when the POST finally ran.
+        val receivedAt = SmsTime.nowIso()
+        // Ledger-first: the SMS is "pending" until the worker's POST succeeds.
+        // The app renders this as a waiting-to-sync card while offline.
+        PendingSmsQueue.enqueue(context, fullBody, sender ?: "", receivedAt)
         val data = workDataOf(
             SmsForwardWorker.KEY_MESSAGE     to fullBody,
             SmsForwardWorker.KEY_SENDER      to (sender ?: ""),
-            // Stamped NOW — a job delayed offline must report when the SMS
-            // actually arrived, not when the POST finally ran.
-            SmsForwardWorker.KEY_RECEIVED_AT to SmsTime.nowIso(),
+            SmsForwardWorker.KEY_RECEIVED_AT to receivedAt,
         )
         WorkManager.getInstance(context).enqueue(
             OneTimeWorkRequestBuilder<SmsForwardWorker>()
