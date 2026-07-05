@@ -7,9 +7,9 @@ import { useT } from '@/lib/i18n'
 import { THRESHOLD, resistedPull, canEngage } from './pullToRefreshLogic'
 
 const REST = 56 // px below the header the spinner rests at while syncing
-const MIN_SPIN = 400 // keep the spinner up at least this long so it never flashes
+const MIN_SPIN = 220 // just enough that a sub-frame sync doesn't flash — no artificial dwell
 const SYNC_TIMEOUT = 6000 // never let the spinner hang "forever"
-const DONE_MS = 1000 // how long "Refreshed!" stays
+const DONE_MS = 550 // brief "Refreshed!" confirmation, then out
 
 async function haptic() {
   try {
