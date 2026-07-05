@@ -102,6 +102,33 @@ function RequestResetQuerySync() {
   return null
 }
 
+/**
+ * Supabase redirects to `/?error=auth#error=access_denied&error_code=otp_expired`
+ * when the user clicks an expired password-reset link. Open the forgot-password
+ * modal with an expiry message so they can request a fresh one.
+ */
+function AuthErrorQuerySync() {
+  const searchParams = useSearchParams()
+  const pathname = usePathname()
+  const router = useRouter()
+  const handled = useRef(false)
+  const { openAuthModal } = useAuth()
+  const t = useT()
+
+  useEffect(() => {
+    if (handled.current) return
+    if (searchParams.get('error') !== 'auth') return
+    handled.current = true
+    openAuthModal('/', t.resetPassword.errorLinkExpired, 'signin', 'forgot')
+    const qs = new URLSearchParams(searchParams.toString())
+    qs.delete('error')
+    const q = qs.toString()
+    router.replace(q ? `${pathname}?${q}` : pathname)
+  }, [searchParams, pathname, router, openAuthModal, t])
+
+  return null
+}
+
 /** Opens the auth modal when `?next=` is present (e.g. middleware redirect from /admin). */
 function AuthNextQuerySync({ configured }: { configured: boolean }) {
   const searchParams = useSearchParams()
@@ -144,6 +171,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [dataPullTimedOut, setDataPullTimedOut] = useState(false)
 
   const configured = useMemo(() => isSupabaseConfigured(), [])
+
+  // Tracks whether the auth modal is currently open so the onAuthStateChange
+  // handler can distinguish "in-modal OTP recovery flow" from "magic link flow".
+  const authModalOpenRef = useRef(false)
+  useEffect(() => { authModalOpenRef.current = authModalOpen }, [authModalOpen])
 
   // Safety net: if getSession() never resolves (e.g. native token refresh hangs
   // on slow/no network), release the loading gate after 10 s so the user reaches
@@ -197,6 +229,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, nextSession: Session | null) => {
       const incomingUser = nextSession?.user ?? null
+      if (_event === 'PASSWORD_RECOVERY') {
+        // The user must still choose a new password — do NOT close the modal or
+        // mark them as authenticated yet. Two sub-cases:
+        //   • In-modal OTP flow (modal is open): the verifyOtp callback will
+        //     transition the modal to the reset-new-password step. Return early
+        //     so setUser/setAuthModalOpen(false) don't interfere.
+        //   • Magic-link from email (modal closed, not already on reset page):
+        //     navigate to the dedicated reset page which handles its own session.
+        if (!authModalOpenRef.current && !window.location.pathname.startsWith('/reset-password')) {
+          window.location.replace('/reset-password/confirm')
+        }
+        return
+      }
       if (_event === 'SIGNED_OUT') {
         // Stop the finance sync BEFORE wiping the store, otherwise the
         // reset-to-defaults fires the subscribe listener and overwrites
@@ -466,6 +511,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         <PasswordUpdatedCookieSync />
         <Suspense fallback={null}>
           <RequestResetQuerySync />
+        </Suspense>
+        <Suspense fallback={null}>
+          <AuthErrorQuerySync />
         </Suspense>
         {showLoadingSplash ? (
           <AuthLoadingSplash />
