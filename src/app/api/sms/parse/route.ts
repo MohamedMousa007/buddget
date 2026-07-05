@@ -517,8 +517,6 @@ export async function POST(request: Request) {
       r.income_id ||
       r.debt_payment_id ||
       r.awaiting_confirmation ||
-      // A leg that already reconciled as a pair (posted no id) must not re-run.
-      r.status === 'paired' ||
       r.paired_log_id,
   )
   if (dupe) {
@@ -821,6 +819,14 @@ export async function POST(request: Request) {
   if (promoteErr) {
     console.error('[sms/parse] log promote failed', promoteErr)
     return NextResponse.json({ ok: false, reason: 'log_insert_failed' }, { status: 500 })
+  }
+
+  // Server-side pre-ack: mark the row as 'rendered' immediately so the admin
+  // shows the honest state ("In-app only" or "Confirmed" once push lands) instead
+  // of "Not confirmed" for hours until the native app opens and the client catch-up
+  // ACK fires. Only for rows where a transaction was actually created or matched.
+  if (!addFailed && !provisionalConfirm && (postedSomething || tx.outcome === 'income_matched')) {
+    await service.rpc('sms_mark_acked', { p_log_id: logId, p_user_id: userId })
   }
 
   // Localize push + notification copy to the account's language.
