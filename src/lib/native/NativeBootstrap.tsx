@@ -2,9 +2,8 @@
 
 import { useEffect, useRef } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { isNative, isAndroid } from '@/lib/native/isNative'
+import { isNative } from '@/lib/native/isNative'
 import { registerPushNotifications } from '@/lib/native/pushNotifications'
-import { resumeSmsTrackingIfEnabled } from '@/lib/native/smsTracker'
 import { cleanupOldReceiptImages } from '@/lib/native/receiptImages'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 
@@ -39,8 +38,6 @@ export function NativeBootstrap({ session }: NativeBootstrapProps) {
     if (!userId) return
     if (!isNative()) return
 
-    let cancelled = false
-
     void cleanupOldReceiptImages()
 
     void (async () => {
@@ -55,21 +52,9 @@ export function NativeBootstrap({ session }: NativeBootstrapProps) {
       } catch (e) {
         console.error('[native-bootstrap] push register failed', e)
       }
-      if (cancelled) return
-      if (isAndroid()) {
-        try {
-          // Resume only if this device already has tracking ON — never auto-enable
-          // on a fresh sign-in (default OFF per device until the user opts in).
-          await resumeSmsTrackingIfEnabled(accessToken)
-        } catch (e) {
-          console.error('[native-bootstrap] sms tracking resume failed', e)
-        }
-      }
+      // SMS bridge arming lives in AppShell's SmsStartupSync — the single
+      // path that writes the native token (ingest token only, never the JWT).
     })()
-
-    return () => {
-      cancelled = true
-    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]) // once per signed-in user — token read from ref, language at first-run value
 

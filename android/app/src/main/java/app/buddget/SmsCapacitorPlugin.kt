@@ -42,8 +42,11 @@ class SmsCapacitorPlugin : Plugin() {
     }
 
     /**
-     * Persists the Supabase access token + API base URL to SharedPreferences
-     * so SmsReceiver can forward SMS via WorkManager even when the app is killed.
+     * Persists the non-expiring sms_ingest_token + API base URL to
+     * SharedPreferences so SmsReceiver can forward SMS via WorkManager even
+     * when the app is killed. Deliberately does NOT touch sms_enabled —
+     * setEnabled is the single gate, so a background token refresh can never
+     * re-enable tracking the user turned off.
      */
     @PluginMethod
     fun saveToken(call: PluginCall) {
@@ -53,7 +56,6 @@ class SmsCapacitorPlugin : Plugin() {
             .edit()
             .putString("access_token", token)
             .putString("api_url", apiUrl)
-            .putBoolean("sms_enabled", true) // saving a token implies tracking is active
             .apply()
         call.resolve()
     }
@@ -85,7 +87,25 @@ class SmsCapacitorPlugin : Plugin() {
             put("enabled", enabled)
             put("setupCompleted", tokenSaved)
             put("permission", permission)
+            put("lastRunAt", prefs.getString("last_run_at", "") ?: "")
+            put("lastResult", prefs.getString("last_result", "") ?: "")
+            put("pendingCount", PendingSmsQueue.count(activity))
         })
+    }
+
+    /** Returns and clears all SMS the worker could not deliver (offline / bad token). */
+    @PluginMethod
+    fun drainPendingQueue(call: PluginCall) {
+        val items = PendingSmsQueue.drain(activity)
+        call.resolve(JSObject().apply { put("items", org.json.JSONArray(items.toString())) })
+    }
+
+    /** Re-appends items whose JS-side replay failed so they survive to the next drain. */
+    @PluginMethod
+    fun requeuePending(call: PluginCall) {
+        val items = call.getArray("items") ?: run { call.resolve(); return }
+        PendingSmsQueue.requeue(activity, org.json.JSONArray(items.toString()))
+        call.resolve()
     }
 
     /** Phase-1/2 forwarding mode: "sender" (business-sender) or "keyword" (legacy). */
@@ -106,6 +126,7 @@ class SmsCapacitorPlugin : Plugin() {
             .edit()
             .remove("access_token")
             .remove("api_url")
+            .remove("pending_queue")
             .putBoolean("sms_enabled", false)
             .apply()
         call.resolve()

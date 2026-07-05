@@ -16,6 +16,7 @@ export function SettingsSmsTrackingSection() {
   const {
     isEnabled,
     isSetup,
+    pendingCount,
     toggle,
     completeIosSetup,
     loading,
@@ -55,6 +56,12 @@ export function SettingsSmsTrackingSection() {
         ) : (
           // iOS, not yet set up: show ONLY the setup CTA (no switch).
           <SmsIosSetupCard lastReceivedAt={lastReceivedAt} onSetupComplete={completeIosSetup} />
+        )}
+
+        {isEnabled && pendingCount > 0 && (
+          <p className="mt-3 text-xs text-[var(--color-brand-text-muted)]">
+            {t.smsTracking.pendingQueued(pendingCount)}
+          </p>
         )}
 
         {error && (

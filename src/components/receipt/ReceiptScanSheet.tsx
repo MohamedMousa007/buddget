@@ -9,9 +9,11 @@ import { captureReceiptPhoto } from '@/lib/native/cameraScanner'
 import { isNative } from '@/lib/native/isNative'
 import { saveReceiptImage } from '@/lib/native/receiptImages'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { isOnline } from '@/hooks/useNetworkStatus'
+import { usePendingAiJobs, savePendingMedia, deletePendingMedia } from '@/lib/store/usePendingAiJobs'
 import type { Currency, ExpenseCategory, ReceiptItem, ReceiptCharge } from '@/lib/store/types'
 
-type ScanState = 'idle' | 'scanning' | 'parsing' | 'result' | 'error'
+type ScanState = 'idle' | 'scanning' | 'parsing' | 'result' | 'error' | 'queued'
 
 interface ScannedReceipt {
   merchant: string
@@ -30,6 +32,10 @@ const CHARGE_TYPES: ReceiptCharge['type'][] = ['tax', 'service', 'tip', 'discoun
 interface ReceiptScanSheetProps {
   open: boolean
   onClose: () => void
+  /** Review an offline-queued capture: skips the camera and parses this image. */
+  seed?: { jobId: string; dataUrl: string } | null
+  /** Fired when the user confirms the parsed result (used to clear queued jobs). */
+  onConfirmed?: () => void
 }
 
 const SUPPORTED_CURRENCIES: Currency[] = [
@@ -51,7 +57,26 @@ const SUPPORTED_CATEGORIES: ExpenseCategory[] = [
   'Other',
 ]
 
-export function ReceiptScanSheet({ open, onClose }: ReceiptScanSheetProps) {
+/** Stores the photo on-device and enqueues a pending receipt job. */
+async function queueReceiptCapture(dataUrl: string): Promise<boolean> {
+  try {
+    const id = crypto.randomUUID()
+    const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1)
+    if (!(await savePendingMedia(id, base64))) return false
+    const added = usePendingAiJobs.getState().addJob({
+      id,
+      kind: 'receipt',
+      mimeType: 'image/jpeg',
+      createdAt: new Date().toISOString(),
+    })
+    if (!added) void deletePendingMedia(id)
+    return added
+  } catch {
+    return false
+  }
+}
+
+export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptScanSheetProps) {
   const [state, setState] = useState<ScanState>('idle')
   const [preview, setPreview] = useState<string | null>(null)
   const [result, setResult] = useState<ScannedReceipt | null>(null)
@@ -85,9 +110,14 @@ export function ReceiptScanSheet({ open, onClose }: ReceiptScanSheetProps) {
     setState('scanning')
     const ctrl = new AbortController()
     scanAbortRef.current = ctrl
+    let capturedDataUrl: string | null = null
     try {
-      const captured = await captureReceiptPhoto()
+      // Seeded review of an offline-queued capture: reuse the stored photo.
+      const captured = seed
+        ? { dataUrl: seed.dataUrl, file: await (await fetch(seed.dataUrl)).blob() }
+        : await captureReceiptPhoto()
       if (ctrl.signal.aborted) return
+      capturedDataUrl = captured.dataUrl
       setPreview(captured.dataUrl)
       setState('parsing')
 
@@ -121,6 +151,13 @@ export function ReceiptScanSheet({ open, onClose }: ReceiptScanSheetProps) {
       setState('result')
     } catch (e) {
       if (ctrl.signal.aborted) return
+      // Offline capture-now-process-later (native): keep the photo on device
+      // and queue it for the PendingCapturesChip instead of erroring. Seeded
+      // reviews stay queued anyway, so only fresh captures enqueue.
+      if (!seed && capturedDataUrl && isNative() && !isOnline() && (await queueReceiptCapture(capturedDataUrl))) {
+        setState('queued')
+        return
+      }
       const msg =
         e instanceof TypeError
           ? 'Network connection lost. Please check your internet and try again.'
@@ -130,7 +167,7 @@ export function ReceiptScanSheet({ open, onClose }: ReceiptScanSheetProps) {
       setError(msg)
       setState('error')
     }
-  }, [baseCurrency])
+  }, [baseCurrency, seed])
 
   // ponytail: web auto-start skipped — input.click() from useEffect lacks user gesture on mobile browsers
   useEffect(() => {
@@ -176,6 +213,7 @@ export function ReceiptScanSheet({ open, onClose }: ReceiptScanSheetProps) {
       notes: result.notes ? `receipt: ${result.notes}` : 'receipt scan',
       ...(receiptId ? { receiptId } : {}),
     })
+    onConfirmed?.()
     onClose()
   }
 
@@ -202,6 +240,24 @@ export function ReceiptScanSheet({ open, onClose }: ReceiptScanSheetProps) {
           ) : null}
           <Loader2 className="h-6 w-6 animate-spin text-[var(--color-brand-red)]" />
           <p className="text-sm text-[var(--color-brand-text-secondary)]">Reading the receipt…</p>
+        </Centered>
+      ) : null}
+
+      {state === 'queued' ? (
+        <Centered>
+          <Check className="h-8 w-8 text-[var(--color-brand-green)]" />
+          <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">Saved for later</p>
+          <p className="max-w-[280px] text-xs text-[var(--color-brand-text-muted)] text-center">
+            You&apos;re offline — the photo is saved on your device. A chip will appear when
+            you&apos;re back online so you can finish the scan.
+          </p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="mt-2 rounded-xl bg-[var(--color-brand-red)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
+          >
+            Done
+          </button>
         </Centered>
       ) : null}
 

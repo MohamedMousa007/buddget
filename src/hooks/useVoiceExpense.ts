@@ -23,6 +23,9 @@ import {
   type VoiceStage,
 } from '@/lib/voice/voiceStages'
 import { speak, stopSpeaking } from '@/lib/voice/speak'
+import { isOnline } from '@/hooks/useNetworkStatus'
+import { isNative } from '@/lib/native/isNative'
+import { usePendingAiJobs, savePendingMedia, deletePendingMedia } from '@/lib/store/usePendingAiJobs'
 
 export type VoiceState =
   | 'idle'
@@ -120,6 +123,30 @@ export interface UseVoiceCommandResult {
   requestPermission: () => Promise<void>
   /** Hand the transcript off to the full AI chat to continue the conversation. */
   openInChat: () => void
+}
+
+/** Stores the audio on-device and enqueues a pending voice job. */
+async function queueVoiceCapture(audio: Blob, mimeType: string | null): Promise<boolean> {
+  try {
+    const arrayBuffer = await audio.arrayBuffer()
+    const bytes = new Uint8Array(arrayBuffer)
+    let binary = ''
+    for (let i = 0; i < bytes.length; i += 8192) {
+      binary += String.fromCharCode(...bytes.subarray(i, Math.min(i + 8192, bytes.length)))
+    }
+    const id = crypto.randomUUID()
+    if (!(await savePendingMedia(id, btoa(binary)))) return false
+    const added = usePendingAiJobs.getState().addJob({
+      id,
+      kind: 'voice',
+      mimeType: audio.type || mimeType || 'audio/mp4',
+      createdAt: new Date().toISOString(),
+    })
+    if (!added) void deletePendingMedia(id)
+    return added
+  } catch {
+    return false
+  }
 }
 
 export function useVoiceExpense(): UseVoiceCommandResult {
@@ -295,6 +322,20 @@ export function useVoiceExpense(): UseVoiceCommandResult {
     try {
       const { audio, inlineText, mimeType } = await recorder.stop()
       let text = inlineText?.trim() ?? ''
+
+      // Offline capture-now-process-later (native): keep the recording on
+      // device and queue it — the PendingCapturesChip replays it through
+      // transcription once the network returns. Web offline falls through to
+      // the normal transcribe error (no queue).
+      if (!text && audio && isNative() && !isOnline()) {
+        const saved = await queueVoiceCapture(audio, mimeType)
+        if (saved) {
+          logVoiceStage('transcribe', 'ok', 'queued_offline')
+          setError("You're offline — recording saved. Tap the pending-captures chip when you're back online to finish it.")
+          setState('error')
+          return
+        }
+      }
 
       if (!text && audio) {
         text = await runStage('transcribe', "couldn't reach the server", () =>

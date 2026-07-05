@@ -1598,6 +1598,19 @@ export const ar: Dictionary = {
     categoryCustom: 'هدف مخصص',
   },
 
+  pendingCaptures: {
+    chip: (count: number) =>
+      count === 1
+        ? 'تسجيل واحد محفوظ — اضغط للمراجعة'
+        : `${count} تسجيلات محفوظة — اضغط للمراجعة`,
+    waitingOffline: (count: number) =>
+      count === 1
+        ? 'تسجيل واحد محفوظ — بانتظار الاتصال'
+        : `${count} تسجيلات محفوظة — بانتظار الاتصال`,
+    failed: 'تعذّرت معالجة التسجيل — اضغط لإعادة المحاولة',
+    buddgyOffline: 'بادجي يحتاج اتصالاً بالإنترنت — بياناتك ما زالت متاحة دون اتصال.',
+  },
+
   smsTracking: {
     sectionTitle: 'تتبع الرسائل تلقائياً',
     sectionSubtitle: 'رصد المعاملات البنكية تلقائياً من رسائل SMS الواردة.',
@@ -1605,6 +1618,8 @@ export const ar: Dictionary = {
     toggleHint: 'عند التفعيل، تُحلَّل رسائل SMS البنكية تلقائياً وتُضاف المعاملات إلى مصروفاتك.',
     statusConnected: (bank: string, time: string) => `آخر رسالة من ${bank} في ${time}`,
     statusNeverConnected: 'لم يتم استقبال أي رسالة بعد. أكمل الإعداد أدناه.',
+    pendingQueued: (count: number) =>
+      count === 1 ? 'رسالة واحدة بانتظار المزامنة' : `${count} رسائل بانتظار المزامنة`,
     iosCardTitle: 'إعداد iOS',
     iosStatusWaiting: 'في انتظار أول رسالة…',
     iosStatusConnected: (time: string) => `متصل · آخر رسالة ${time}`,

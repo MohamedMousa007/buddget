@@ -14,6 +14,7 @@ import {
 import { markHydrated } from '@/hooks/remote/hydrateGuard'
 import { ensureMarketDataFresh } from '@/lib/market/marketData'
 import { applyTheme } from '@/lib/theme/applyTheme'
+import { isOnline, subscribeNetwork } from '@/hooks/useNetworkStatus'
 import type { Snapshot } from '@/lib/supabase/remote'
 
 const DEBOUNCE_MS = 500
@@ -144,6 +145,18 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     async function pull() {
       if (lastPulledUserId !== userId) useFinanceStore.getState().setDataReady(false)
       lastPulledUserId = userId
+      // Offline fast-path: the persisted store IS the data — don't make the
+      // user wait on a pull that cannot succeed (it would drag the splash to
+      // its 8 s ceiling). Baseline the flush snapshots from the cache so
+      // offline edits diff correctly, and let the reconnect trigger run the
+      // real sync in the background once the network returns.
+      if (!isOnline()) {
+        prevSnap.current = snapshot(useFinanceStore.getState())
+        lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
+        hydrated.current = true
+        useFinanceStore.getState().setDataReady(true)
+        return
+      }
       // ponytail: start market fetch immediately so it overlaps with pullAll instead of running after
       const marketPromise = Promise.race([
         ensureMarketDataFresh(),
@@ -279,8 +292,44 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     window.addEventListener('pagehide', onHide)
     document.addEventListener('visibilitychange', onVisibility)
 
+    // Reconnect trigger: when the device comes back online, push queued local
+    // edits + pull server truth (same parallel path as pull-to-refresh), then
+    // replay any SMS the native bridge queued while offline. Debounced 2 s so
+    // a flapping connection doesn't stampede the server. Never touches
+    // dataReady — rows merge in place with no loading state.
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+    const unsubNet = subscribeNetwork((online) => {
+      if (!online) {
+        if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null }
+        return
+      }
+      if (reconnectTimer) clearTimeout(reconnectTimer)
+      reconnectTimer = setTimeout(() => {
+        reconnectTimer = null
+        void (async () => {
+          if (syncSuspended || !hydrated.current) return
+          void ensureMarketDataFresh().catch(() => { /* cached rates remain */ })
+          try {
+            await pendingSync?.()
+          } catch (e) {
+            console.error('[finance sync] reconnect sync failed', e)
+          }
+          try {
+            const { data } = await supabase.auth.getSession()
+            const token = data.session?.access_token
+            if (token) {
+              const { drainAndSubmitPendingSms } = await import('@/lib/native/smsTracker')
+              await drainAndSubmitPendingSms(token)
+            }
+          } catch { /* next app open drains */ }
+        })()
+      }, 2000)
+    })
+
     return () => {
       unsub()
+      unsubNet()
+      if (reconnectTimer) clearTimeout(reconnectTimer)
       window.removeEventListener('pagehide', onHide)
       document.removeEventListener('visibilitychange', onVisibility)
       if (timer.current) clearTimeout(timer.current)
