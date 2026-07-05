@@ -220,12 +220,14 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     // Expose for imperative callers (signOut).
     pendingFlush = flush
 
-    // Expose full-sync for pull-to-refresh: drain pending local edits up, then
-    // pull + merge server truth down, then re-baseline the flush snapshots so
-    // the merged server rows aren't seen as new local writes.
+    // Expose full-sync for pull-to-refresh. Push local edits and pull server
+    // truth CONCURRENTLY — they're independent (the merge keeps whichever row is
+    // newer by updatedAt), so parallelising them halves the round-trips and
+    // makes a successful refresh feel instant instead of two serial hops.
+    // Re-baseline the flush snapshots afterwards so merged server rows aren't
+    // seen as fresh local writes.
     pendingSync = async () => {
-      await flush()
-      await runFullSync(supabase, userId)
+      await Promise.all([flush(), runFullSync(supabase, userId)])
       prevSnap.current = snapshot(useFinanceStore.getState())
       lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
     }
