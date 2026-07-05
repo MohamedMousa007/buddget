@@ -74,13 +74,14 @@ function statusChip(row: SmsTrackedRow): { label: string; cls: string; ok?: bool
   // Defensive: a parsed row with neither expense nor income linked never produced
   // a transaction — surface it as a failure regardless of how far status advanced.
   if (row.parsed_ok && !row.expense_id && !row.income_id &&
-      row.status !== 'add_failed' && row.status !== 'rejected' && row.status !== 'failed') {
+      row.status !== 'add_failed' && row.status !== 'rejected' && row.status !== 'failed' && row.status !== 'paired') {
     return { label: 'No transaction', cls: 'bg-red-500/10 text-[var(--color-brand-red)] border-red-500/20' }
   }
   switch (row.status) {
     case 'confirmed': return { label: 'Confirmed',  cls: 'bg-green-500/10 text-green-400 border-green-500/20', ok: true }
     case 'tapped':    return { label: 'Tapped · manual', cls: 'bg-amber-500/10 text-amber-400 border-amber-500/20' }
     case 'rendered':  return { label: 'In-app only', cls: 'bg-amber-500/10 text-amber-400 border-amber-500/20' }
+    case 'paired':    return { label: 'Paired',     cls: 'bg-blue-500/10 text-blue-400 border-blue-500/20' }
     case 'notified':  return { label: 'Pushed',     cls: 'bg-blue-500/10 text-blue-400 border-blue-500/20' }
     case 'logged':    return { label: 'Logged',     cls: 'bg-blue-500/10 text-blue-400 border-blue-500/20' }
     case 'processing':return { label: 'Processing', cls: 'bg-blue-500/10 text-blue-400 border-blue-500/20' }
