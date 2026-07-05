@@ -53,14 +53,16 @@ function SmsStartupSync() {
       // arm this one.
       const { getSmsBridgeStatus, ensureIngestToken, drainAndSubmitPendingSms } =
         await import('@/lib/native/smsTracker')
+      const { isOnline } = await import('@/hooks/useNetworkStatus')
       const status = await getSmsBridgeStatus()
-      if (!status?.enabled) return
       // Android: refresh the stored ingest token BEFORE draining, so queued
       // items that failed on a stale token replay with a valid one (self-heal).
-      if (isAndroid()) await ensureIngestToken(token)
+      if (status?.enabled && isAndroid()) await ensureIngestToken(token)
       // Replay SMS the native path couldn't deliver (offline / stale token).
+      // NOT gated on `enabled` — SMS queued before the user disabled tracking
+      // must still reach the server instead of stranding as pending cards.
       // Skip while offline — items stay queued for the next online open.
-      if (!navigator.onLine) return
+      if (!isOnline()) return
       await drainAndSubmitPendingSms(token)
     }
 

@@ -10,6 +10,8 @@ import { isNative } from '@/lib/native/isNative'
 import { saveReceiptImage } from '@/lib/native/receiptImages'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { isOnline } from '@/hooks/useNetworkStatus'
+import { registerBackGuard } from '@/lib/navigation/backGuard'
+import { newClientId } from '@/lib/store/useFinanceStore'
 import { usePendingAiJobs, savePendingMedia, deletePendingMedia } from '@/lib/store/usePendingAiJobs'
 import type { Currency, ExpenseCategory, ReceiptItem, ReceiptCharge } from '@/lib/store/types'
 
@@ -60,7 +62,7 @@ const SUPPORTED_CATEGORIES: ExpenseCategory[] = [
 /** Stores the photo on-device and enqueues a pending receipt job. */
 async function queueReceiptCapture(dataUrl: string): Promise<boolean> {
   try {
-    const id = crypto.randomUUID()
+    const id = newClientId()
     const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1)
     if (!(await savePendingMedia(id, base64))) return false
     const added = usePendingAiJobs.getState().addJob({
@@ -104,6 +106,16 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
   useEffect(() => {
     if (!open) reset()
   }, [open, reset])
+
+  // Android hardware back closes the sheet instead of navigating underneath it
+  // (matters for the PendingCapturesChip instance, which isn't activeModal-driven).
+  useEffect(() => {
+    if (!open) return
+    return registerBackGuard(() => {
+      onClose()
+      return true
+    })
+  }, [open, onClose])
 
   const startScan = useCallback(async () => {
     setError(null)
@@ -158,8 +170,9 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
         setState('queued')
         return
       }
-      const msg =
-        e instanceof TypeError
+      const msg = !isOnline()
+        ? "You're offline. Receipt scanning needs an internet connection — please try again once you're back online."
+        : e instanceof TypeError
           ? 'Network connection lost. Please check your internet and try again.'
           : e instanceof Error
             ? e.message
@@ -246,10 +259,11 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
       {state === 'queued' ? (
         <Centered>
           <Check className="h-8 w-8 text-[var(--color-brand-green)]" />
-          <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">Saved for later</p>
+          <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">Receipt captured</p>
           <p className="max-w-[280px] text-xs text-[var(--color-brand-text-muted)] text-center">
-            You&apos;re offline — the photo is saved on your device. A chip will appear when
-            you&apos;re back online so you can finish the scan.
+            You&apos;re offline right now, so we saved the photo on your device. When
+            you&apos;re back online, a chip will appear at the top of the app — tap it
+            to finish adding this receipt.
           </p>
           <button
             type="button"

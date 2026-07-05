@@ -19,9 +19,8 @@ public class SmsCapacitorPlugin: CAPInstancePlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "clearState", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getStatus", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "healthCheck", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "drainPendingQueue", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "peekPendingQueue", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "requeuePending", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "removePending", returnType: CAPPluginReturnPromise)
     ]
 
     @objc func checkPermission(_ call: CAPPluginCall) { call.resolve(["granted": true]) }
@@ -70,21 +69,15 @@ public class SmsCapacitorPlugin: CAPInstancePlugin, CAPBridgedPlugin {
         ])
     }
 
-    /// Returns and clears all SMS messages queued by CatchBankSmsIntent while offline.
-    @objc func drainPendingQueue(_ call: CAPPluginCall) {
-        let pending = SmsCredentialStore.drainPending()
-        call.resolve(["items": pending])
-    }
-
-    /// Returns queued SMS without clearing — feeds the in-app "waiting to sync" cards.
+    /// Returns queued SMS without clearing — the queue stays authoritative.
     @objc func peekPendingQueue(_ call: CAPPluginCall) {
         call.resolve(["items": SmsCredentialStore.peekPending()])
     }
 
-    /// Re-appends items whose JS-side replay failed so they survive to the next drain.
-    @objc func requeuePending(_ call: CAPPluginCall) {
+    /// Removes items the server confirmed (or permanently rejected) during a drain.
+    @objc func removePending(_ call: CAPPluginCall) {
         let items = (call.getArray("items") as? [[String: String]]) ?? []
-        SmsCredentialStore.requeuePending(items)
+        SmsCredentialStore.removePending(items)
         call.resolve()
     }
 
@@ -116,7 +109,13 @@ enum SmsCredentialStore {
     private static let lastResultKey = "buddget.sms.last_result"
     private static let pendingQueueKey = "buddget.sms.pending_queue"
 
+    /// Serializes queue read-modify-write: CatchBankSmsIntent (Swift-concurrency
+    /// thread) and the Capacitor bridge queue mutate the same UserDefaults array;
+    /// an unlocked interleave could drop a freshly-enqueued SMS.
+    private static let queueLock = NSLock()
+
     static func enqueuePending(message: String, sender: String, receivedAt: String) {
+        queueLock.lock(); defer { queueLock.unlock() }
         let d = UserDefaults.standard
         var queue = (d.array(forKey: pendingQueueKey) as? [[String: String]]) ?? []
         queue.append(["message": message, "sender": sender, "receivedAt": receivedAt, "source": "sms"])
@@ -124,28 +123,29 @@ enum SmsCredentialStore {
         d.set(queue, forKey: pendingQueueKey)
     }
 
-    static func drainPending() -> [[String: String]] {
-        let d = UserDefaults.standard
-        let queue = (d.array(forKey: pendingQueueKey) as? [[String: String]]) ?? []
-        d.removeObject(forKey: pendingQueueKey)
-        return queue
-    }
-
     static func peekPending() -> [[String: String]] {
-        (UserDefaults.standard.array(forKey: pendingQueueKey) as? [[String: String]]) ?? []
+        queueLock.lock(); defer { queueLock.unlock() }
+        return (UserDefaults.standard.array(forKey: pendingQueueKey) as? [[String: String]]) ?? []
     }
 
-    static func requeuePending(_ items: [[String: String]]) {
+    static func removePending(_ items: [[String: String]]) {
         guard !items.isEmpty else { return }
+        queueLock.lock(); defer { queueLock.unlock() }
         let d = UserDefaults.standard
         var queue = (d.array(forKey: pendingQueueKey) as? [[String: String]]) ?? []
-        queue.append(contentsOf: items)
-        if queue.count > 50 { queue = Array(queue.suffix(50)) }
+        for item in items {
+            if let idx = queue.firstIndex(where: {
+                $0["message"] == item["message"] && $0["receivedAt"] == item["receivedAt"]
+            }) {
+                queue.remove(at: idx)
+            }
+        }
         d.set(queue, forKey: pendingQueueKey)
     }
 
     static var pendingCount: Int {
-        ((UserDefaults.standard.array(forKey: pendingQueueKey) as? [[String: String]]) ?? []).count
+        queueLock.lock(); defer { queueLock.unlock() }
+        return ((UserDefaults.standard.array(forKey: pendingQueueKey) as? [[String: String]]) ?? []).count
     }
 
     static func save(token: String, apiUrl: String) {

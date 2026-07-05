@@ -3,7 +3,7 @@
 import { useEffect, useRef, useCallback, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence, type MotionValue } from 'framer-motion'
-import { X, RotateCcw, Loader2, Trash2, MessageCircle, Mic } from 'lucide-react'
+import { X, RotateCcw, Loader2, Trash2, MessageCircle, Mic, CheckCircle2 } from 'lucide-react'
 import type { VoiceState } from '@/hooks/useVoiceExpense'
 import { VoiceRecapEditor } from '@/components/voice/VoiceRecapEditor'
 import type { AIResponse, AIActionItem } from '@/lib/ai/gemini'
@@ -78,7 +78,7 @@ export function VoiceRecordOverlay({
           trashRef={trashRef}
         />
       )}
-      {(state === 'processing' || state === 'error' || state === 'confirming' || state === 'answer' || state === 'clarify') && (
+      {(state === 'processing' || state === 'error' || state === 'queued' || state === 'confirming' || state === 'answer' || state === 'clarify') && (
         <motion.div
           key="voice-overlay"
           initial={{ y: 120, opacity: 0 }}
@@ -91,6 +91,7 @@ export function VoiceRecordOverlay({
           {state === 'error' && (
             <ErrorPanel error={error} onRedo={onRedo} onClose={onClose} />
           )}
+          {state === 'queued' && <QueuedPanel onClose={onClose} />}
           {state === 'confirming' && (
             <VoiceRecapEditor
               compact
@@ -268,6 +269,29 @@ function ProcessingPanel({ onCancel }: { onCancel: () => void }) {
         onClick={onCancel}
         className="rounded-lg p-1 text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
         aria-label="Cancel"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  )
+}
+
+// ── Queued panel (offline save) ──────────────────────────────────────────────
+
+function QueuedPanel({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="px-4 py-3 flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+        <CheckCircle2 className="h-4 w-4 shrink-0 text-[var(--color-brand-green)]" />
+        <p className="text-xs text-[var(--color-brand-text-secondary)] min-w-0">
+          Recording saved — you&apos;re offline. Tap the chip at the top when you&apos;re back online to finish it.
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onClose}
+        className="shrink-0 rounded-lg p-1.5 text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+        aria-label="Close"
       >
         <X className="h-4 w-4" />
       </button>

@@ -197,6 +197,10 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
 
     const flush = async () => {
       if (!hydrated.current) return
+      // Offline: don't attempt a doomed flush that would raise the sync-failure
+      // banner. prevSnap doesn't advance, so the reconnect flush (or the next
+      // online mutation) sends exactly this diff.
+      if (!isOnline()) return
       // A stale debounce timer can fire after suspendFinanceSync() is called
       // during sign-out. At that point the store has already been reset to
       // empty defaults, and flushing would soft-delete all server-side data.
@@ -233,14 +237,17 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     // Expose for imperative callers (signOut).
     pendingFlush = flush
 
-    // Expose full-sync for pull-to-refresh. Push local edits and pull server
-    // truth CONCURRENTLY — they're independent (the merge keeps whichever row is
-    // newer by updatedAt), so parallelising them halves the round-trips and
-    // makes a successful refresh feel instant instead of two serial hops.
+    // Expose full-sync for pull-to-refresh and the reconnect trigger. Flush
+    // FIRST, then pull: running them concurrently let pullAll read the server
+    // before the flush's soft-deletes/updates committed, and the tombstone-less
+    // union merge then resurrected offline deletes and reverted offline
+    // singleton edits (the re-baseline made it permanent). Two serial hops is
+    // the price of correctness after offline edits.
     // Re-baseline the flush snapshots afterwards so merged server rows aren't
     // seen as fresh local writes.
     pendingSync = async () => {
-      await Promise.all([flush(), runFullSync(supabase, userId)])
+      await flush()
+      await runFullSync(supabase, userId)
       prevSnap.current = snapshot(useFinanceStore.getState())
       lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
     }

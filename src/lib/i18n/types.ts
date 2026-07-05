@@ -1497,6 +1497,7 @@ export interface Dictionary {
     chip: (count: number) => string
     waitingOffline: (count: number) => string
     failed: string
+    voiceEmpty: string
     buddgyOffline: string
   }
 

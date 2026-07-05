@@ -36,6 +36,8 @@ export type VoiceState =
   | 'answer'
   | 'clarify'
   | 'error'
+  /** Offline: recording saved on-device, queued for the pending-captures chip. */
+  | 'queued'
 
 const TRANSCRIBE_TIMEOUT_MS = 20_000
 // Extract may run two sequential model calls (tier-1 → escalate to tier-2), so it
@@ -134,7 +136,8 @@ async function queueVoiceCapture(audio: Blob, mimeType: string | null): Promise<
     for (let i = 0; i < bytes.length; i += 8192) {
       binary += String.fromCharCode(...bytes.subarray(i, Math.min(i + 8192, bytes.length)))
     }
-    const id = crypto.randomUUID()
+    const { newClientId } = await import('@/lib/store/useFinanceStore')
+    const id = newClientId()
     if (!(await savePendingMedia(id, btoa(binary)))) return false
     const added = usePendingAiJobs.getState().addJob({
       id,
@@ -331,10 +334,18 @@ export function useVoiceExpense(): UseVoiceCommandResult {
         const saved = await queueVoiceCapture(audio, mimeType)
         if (saved) {
           logVoiceStage('transcribe', 'ok', 'queued_offline')
-          setError("You're offline — recording saved. Tap the pending-captures chip when you're back online to finish it.")
-          setState('error')
+          setState('queued')
           return
         }
+      }
+
+      // Web offline (no capture queue): fail fast with an honest message
+      // instead of a 20s timeout ending in "couldn't reach the server".
+      if (!text && audio && !isNative() && !isOnline()) {
+        throw new VoiceStageError(
+          'transcribe',
+          "You're offline. Voice needs an internet connection — please try again once you're back online.",
+        )
       }
 
       if (!text && audio) {
