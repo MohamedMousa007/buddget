@@ -1,13 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { motion, useMotionValue, useSpring, useTransform, animate } from 'framer-motion'
-import { Check } from 'lucide-react'
+import { AnimatePresence, motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import { syncFinanceNow } from '@/components/sync/SupabaseFinanceSync'
+import { useT } from '@/lib/i18n'
+import { THRESHOLD, resistedPull, canEngage } from './pullToRefreshLogic'
 
-const THRESHOLD = 80 // px of resisted pull to commit a refresh
-const MAX_PULL = 120 // px cap on how far the content follows the finger
-const RESISTANCE = 0.5 // finger travel → content travel (rubber-band feel)
+const REST = 56 // px below the header the spinner rests at while syncing
+const MIN_SPIN = 400 // keep the spinner up at least this long so it never flashes
+const SYNC_TIMEOUT = 6000 // never let the spinner hang "forever"
+const DONE_MS = 1000 // how long "Refreshed!" stays
 
 async function haptic() {
   try {
@@ -18,157 +20,176 @@ async function haptic() {
   }
 }
 
-/**
- * Standard threshold pull-to-refresh. Engages only when the scroll container is
- * already at the top; pulling down past THRESHOLD against resistance and
- * releasing runs a full server sync (`syncFinanceNow`). Touch-only — mouse
- * never fires these events, so desktop is excluded with no platform check.
- *
- * The native rubber-band is disabled app-wide (`overscroll-behavior: none`), so
- * this owns both the gesture and the visual feedback.
- */
-export function PullToRefresh({
-  scrollRef,
-  children,
-}: {
-  scrollRef: React.RefObject<HTMLElement | null>
-  children: React.ReactNode
-}) {
-  const pull = useMotionValue(0) // resisted pull distance (0..MAX_PULL)
-  const [refreshing, setRefreshing] = useState(false)
-  const [done, setDone] = useState(false)
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-  // Content follows the pull while dragging; during refresh it rests at THRESHOLD
-  // so the spinner stays visible. Spring gives the release-snap its bounce.
-  const contentY = useSpring(pull, { stiffness: 500, damping: 40 })
+/**
+ * Pull-to-refresh. The page scrolls on the WINDOW (main isn't a scroll
+ * container), so "at top" is `window.scrollY <= 0`. The gesture must BEGIN at
+ * the top: a hard flick that scrolls up to the top ends with the finger lifted,
+ * so triggering a refresh needs a fresh second swipe from the top — it can
+ * never fire on the same swipe that scrolled up (BUD-57).
+ *
+ * The indicator is a fixed overlay anchored just below the app header with a
+ * high z-index, so it never drags a sticky sub-header and is never clipped.
+ * Touch-only — mouse never fires these events, so desktop is excluded.
+ */
+export function PullToRefresh({ children }: { children: React.ReactNode }) {
+  const t = useT()
+  const y = useMotionValue(0) // indicator offset below the header
+  const [phase, setPhase] = useState<'idle' | 'pull' | 'refreshing' | 'done'>('idle')
 
   useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
-
     let startY = 0
-    let engaged = false // touch began at scroll-top and is pulling down
-    let armed = false // crossed THRESHOLD (for the one-shot haptic)
+    let engaged = false // gesture began at the top and is a downward pull
+    let armed = false // crossed THRESHOLD (one-shot haptic)
+    let active = false // a refresh cycle is running
+
+    const atTop = () => canEngage(window.scrollY || document.documentElement.scrollTop || 0)
 
     const onStart = (e: TouchEvent) => {
-      if (refreshing) return
-      // Engage only from the very top so normal scrolling is untouched.
-      if (el.scrollTop > 0) { engaged = false; return }
+      if (active || e.touches.length !== 1 || !atTop()) { engaged = false; return }
       startY = e.touches[0].clientY
       engaged = true
       armed = false
     }
 
     const onMove = (e: TouchEvent) => {
-      if (!engaged || refreshing) return
+      if (!engaged || active) return
       const dy = e.touches[0].clientY - startY
       if (dy <= 0) {
-        // Pulling back up / scrolling down — release control to the scroller.
-        if (pull.get() === 0) { engaged = false }
-        pull.set(0)
+        // Not pulling down (scrolling up / settling) — hand back to the scroller.
+        engaged = false
+        if (y.get() !== 0) animate(y, 0, { type: 'spring', stiffness: 600, damping: 40 })
+        setPhase('idle')
         return
       }
-      // Actively pulling down from the top — take over from native scroll.
+      // Genuine downward pull from the very top — take over from native scroll.
       e.preventDefault()
-      const resisted = Math.min(dy * RESISTANCE, MAX_PULL)
-      pull.set(resisted)
+      const resisted = resistedPull(dy)
+      y.set(resisted)
+      setPhase('pull')
       const nowArmed = resisted >= THRESHOLD
       if (nowArmed && !armed) void haptic()
       armed = nowArmed
     }
 
-    const onEnd = () => {
-      if (!engaged || refreshing) return
-      engaged = false
-      if (pull.get() >= THRESHOLD) {
-        setRefreshing(true)
-        animate(pull, THRESHOLD, { stiffness: 500, damping: 40, type: 'spring' })
-        void syncFinanceNow().finally(() => {
-          setRefreshing(false)
-          setDone(true)
-          animate(pull, 0, { stiffness: 500, damping: 40, type: 'spring' })
-          window.setTimeout(() => setDone(false), 700)
-        })
-      } else {
-        animate(pull, 0, { stiffness: 500, damping: 40, type: 'spring' })
-      }
+    const finish = () => {
+      setPhase('idle')
+      animate(y, 0, { type: 'spring', stiffness: 600, damping: 40 })
     }
 
-    el.addEventListener('touchstart', onStart, { passive: true })
-    el.addEventListener('touchmove', onMove, { passive: false })
-    el.addEventListener('touchend', onEnd, { passive: true })
-    el.addEventListener('touchcancel', onEnd, { passive: true })
-    return () => {
-      el.removeEventListener('touchstart', onStart)
-      el.removeEventListener('touchmove', onMove)
-      el.removeEventListener('touchend', onEnd)
-      el.removeEventListener('touchcancel', onEnd)
+    const onEnd = () => {
+      if (!engaged || active) return
+      engaged = false
+      if (y.get() < THRESHOLD) { finish(); return }
+      // Commit: snap the spinner to its resting spot and sync.
+      active = true
+      setPhase('refreshing')
+      animate(y, REST, { type: 'spring', stiffness: 600, damping: 38 })
+      void (async () => {
+        const started = Date.now()
+        try {
+          await Promise.race([syncFinanceNow(), sleep(SYNC_TIMEOUT)])
+        } catch { /* best-effort; next auto-flush retries */ }
+        const elapsed = Date.now() - started
+        if (elapsed < MIN_SPIN) await sleep(MIN_SPIN - elapsed)
+        setPhase('done')
+        await sleep(DONE_MS)
+        active = false
+        finish()
+      })()
     }
-  }, [scrollRef, refreshing, pull])
+
+    window.addEventListener('touchstart', onStart, { passive: true })
+    window.addEventListener('touchmove', onMove, { passive: false })
+    window.addEventListener('touchend', onEnd, { passive: true })
+    window.addEventListener('touchcancel', onEnd, { passive: true })
+    return () => {
+      window.removeEventListener('touchstart', onStart)
+      window.removeEventListener('touchmove', onMove)
+      window.removeEventListener('touchend', onEnd)
+      window.removeEventListener('touchcancel', onEnd)
+    }
+  }, [y])
 
   return (
     <>
-      <Indicator pull={pull} refreshing={refreshing} done={done} />
-      <motion.div style={{ y: contentY }}>{children}</motion.div>
+      <Indicator y={y} phase={phase} label={t.common.refreshed} />
+      {children}
     </>
   )
 }
 
 function Indicator({
-  pull,
-  refreshing,
-  done,
+  y,
+  phase,
+  label,
 }: {
-  pull: ReturnType<typeof useMotionValue<number>>
-  refreshing: boolean
-  done: boolean
+  y: ReturnType<typeof useMotionValue<number>>
+  phase: 'idle' | 'pull' | 'refreshing' | 'done'
+  label: string
 }) {
-  // Ring progress 0→1 as pull approaches THRESHOLD.
-  const progress = useTransform(pull, [0, THRESHOLD], [0, 1], { clamp: true })
-  const CIRC = 2 * Math.PI * 9 // r=9
+  const progress = useTransform(y, [0, THRESHOLD], [0, 1], { clamp: true })
+  const CIRC = 2 * Math.PI * 9
   const dashOffset = useTransform(progress, (p) => CIRC * (1 - p))
-  // The badge rides down with the pull, centered under the header.
-  const badgeY = useTransform(pull, (p) => Math.min(p, MAX_PULL))
-  const opacity = useTransform(pull, [0, 24], [0, 1], { clamp: true })
-  const scale = useTransform(pull, [0, THRESHOLD], [0.7, 1], { clamp: true })
+  const opacity = useTransform(y, [0, 20], [0, 1], { clamp: true })
+  const scale = useTransform(y, [0, THRESHOLD], [0.6, 1], { clamp: true })
+
+  const showDone = phase === 'done'
 
   return (
     <motion.div
-      aria-hidden
-      style={{ y: badgeY, opacity: refreshing || done ? 1 : opacity, scale: refreshing || done ? 1 : scale }}
-      className="pointer-events-none absolute inset-x-0 top-[calc(52px+env(safe-area-inset-top,0px))] lg:top-12 z-10 flex -translate-y-1/2 justify-center"
+      aria-hidden={phase === 'idle'}
+      style={{
+        y,
+        opacity: phase === 'refreshing' || phase === 'done' ? 1 : opacity,
+        scale: phase === 'refreshing' || phase === 'done' ? 1 : scale,
+      }}
+      className="pointer-events-none fixed inset-x-0 top-[calc(52px+env(safe-area-inset-top,0px))] lg:top-12 z-[60] flex justify-center"
     >
-      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-brand-card)] shadow-md ring-1 ring-[var(--color-brand-border)]">
-        {done ? (
-          <motion.span
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 500, damping: 18 }}
+      <AnimatePresence mode="wait" initial={false}>
+        {showDone ? (
+          <motion.div
+            key="done"
+            initial={{ scale: 0.7, opacity: 0, y: -6 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: -6 }}
+            transition={{ type: 'spring', stiffness: 520, damping: 22 }}
+            className="rounded-full bg-[var(--color-brand-green)] px-4 py-1.5 text-sm font-semibold text-white shadow-lg"
           >
-            <Check className="h-4 w-4 text-[var(--color-brand-green)]" />
-          </motion.span>
-        ) : refreshing ? (
-          <motion.svg
-            width="22" height="22" viewBox="0 0 22 22"
-            animate={{ rotate: 360 }}
-            transition={{ repeat: Infinity, ease: 'linear', duration: 0.8 }}
-          >
-            <circle cx="11" cy="11" r="9" fill="none" stroke="var(--color-brand-border)" strokeWidth="2.5" />
-            <circle
-              cx="11" cy="11" r="9" fill="none" stroke="var(--color-brand-red)" strokeWidth="2.5"
-              strokeLinecap="round" strokeDasharray={CIRC} strokeDashoffset={CIRC * 0.7}
-            />
-          </motion.svg>
+            {label}
+          </motion.div>
         ) : (
-          <svg width="22" height="22" viewBox="0 0 22 22" style={{ transform: 'rotate(-90deg)' }}>
-            <circle cx="11" cy="11" r="9" fill="none" stroke="var(--color-brand-border)" strokeWidth="2.5" />
-            <motion.circle
-              cx="11" cy="11" r="9" fill="none" stroke="var(--color-brand-red)" strokeWidth="2.5"
-              strokeLinecap="round" strokeDasharray={CIRC} style={{ strokeDashoffset: dashOffset }}
-            />
-          </svg>
+          <motion.div
+            key="ring"
+            exit={{ scale: 0.7, opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-brand-card)] shadow-md ring-1 ring-[var(--color-brand-border)]"
+          >
+            {phase === 'refreshing' ? (
+              <motion.svg
+                width="22" height="22" viewBox="0 0 22 22"
+                animate={{ rotate: 360 }}
+                transition={{ repeat: Infinity, ease: 'linear', duration: 0.7 }}
+              >
+                <circle cx="11" cy="11" r="9" fill="none" stroke="var(--color-brand-border)" strokeWidth="2.5" />
+                <circle
+                  cx="11" cy="11" r="9" fill="none" stroke="var(--color-brand-red)" strokeWidth="2.5"
+                  strokeLinecap="round" strokeDasharray={CIRC} strokeDashoffset={CIRC * 0.7}
+                />
+              </motion.svg>
+            ) : (
+              <svg width="22" height="22" viewBox="0 0 22 22" style={{ transform: 'rotate(-90deg)' }}>
+                <circle cx="11" cy="11" r="9" fill="none" stroke="var(--color-brand-border)" strokeWidth="2.5" />
+                <motion.circle
+                  cx="11" cy="11" r="9" fill="none" stroke="var(--color-brand-red)" strokeWidth="2.5"
+                  strokeLinecap="round" strokeDasharray={CIRC} style={{ strokeDashoffset: dashOffset }}
+                />
+              </svg>
+            )}
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
     </motion.div>
   )
 }

@@ -99,6 +99,8 @@ export interface Dictionary {
     savedSynced: string
     /** Settings save-button confirmation state */
     saved: string
+    /** Pull-to-refresh success message */
+    refreshed: string
     cancel: string
     delete: string
     edit: string

@@ -303,7 +303,6 @@ export function AppShell({ children }: AppShellProps) {
   useThemeSync()
   const pathname = usePathname()
   const bare = isBareAuthRoute(pathname)
-  const mainRef = useRef<HTMLElement>(null)
 
   if (bare) {
     return (
@@ -319,8 +318,8 @@ export function AppShell({ children }: AppShellProps) {
       <MarketRatesSync />
       <Sidebar />
       <DesktopHeaderBar />
-      <main ref={mainRef} className="native-scroll relative pt-[calc(52px+env(safe-area-inset-top,0px))] lg:pt-12 lg:ms-[176px] pb-[calc(4rem+env(safe-area-inset-bottom,0px))] lg:pb-0 min-h-[100dvh] safe-area-x">
-        <PullToRefresh scrollRef={mainRef}>
+      <main className="native-scroll pt-[calc(52px+env(safe-area-inset-top,0px))] lg:pt-12 lg:ms-[176px] pb-[calc(4rem+env(safe-area-inset-bottom,0px))] lg:pb-0 min-h-[100dvh] safe-area-x">
+        <PullToRefresh>
           <SyncFailureBanner />
           {children}
         </PullToRefresh>
