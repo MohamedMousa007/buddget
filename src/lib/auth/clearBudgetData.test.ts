@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   financeReset: vi.fn(),
   settingsReset: vi.fn(),
   resetHydrationGuard: vi.fn(),
+  clearPendingAiJobs: vi.fn(),
 }))
 
 vi.mock('@/lib/store/useFinanceStore', () => ({
@@ -16,11 +17,15 @@ vi.mock('@/lib/store/useSettingsStore', () => ({
 vi.mock('@/hooks/remote/hydrateGuard', () => ({
   resetHydrationGuard: mocks.resetHydrationGuard,
 }))
+vi.mock('@/lib/store/usePendingAiJobs', () => ({
+  clearPendingAiJobs: mocks.clearPendingAiJobs,
+}))
 
 const STORAGE_KEYS = [
   'buddget-storage',
   'buddget-ui-settings',
   'buddget-notifications-read',
+  'buddget-pending-ai-jobs',
   'buddget-pwa-install-banner-dismissed-at',
   'pwa-install-dismissed',
   'buddget_guest_nickname',
@@ -42,7 +47,7 @@ describe('clearBudgetData', () => {
     vi.unstubAllGlobals()
   })
 
-  it('removes all 7 persisted storage keys', () => {
+  it('removes every persisted storage key', () => {
     clearBudgetData()
     for (const key of STORAGE_KEYS) {
       expect(removeItem).toHaveBeenCalledWith(key)

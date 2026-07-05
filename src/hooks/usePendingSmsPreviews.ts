@@ -76,5 +76,13 @@ export function usePendingSmsPreviews(): PendingSmsPreview[] {
     }
   }, [refresh])
 
+  // While cards are showing, re-peek periodically: the native WorkManager can
+  // deliver in the background (no JS event) and the card must clear promptly.
+  useEffect(() => {
+    if (previews.length === 0) return
+    const id = setInterval(() => void refresh(), 15_000)
+    return () => clearInterval(id)
+  }, [previews.length > 0, refresh]) // eslint-disable-line react-hooks/exhaustive-deps
+
   return previews
 }

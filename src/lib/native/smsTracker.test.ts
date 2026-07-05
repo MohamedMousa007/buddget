@@ -13,8 +13,8 @@ const mocks = vi.hoisted(() => ({
   saveToken: vi.fn(() => Promise.resolve()),
   setEnabled: vi.fn(() => Promise.resolve()),
   getStatus: vi.fn(() => Promise.resolve({ enabled: true, tokenSaved: true, setupCompleted: true, permission: true })),
-  drainPendingQueue: vi.fn(() => Promise.resolve({ items: [] as unknown[] })),
-  requeuePending: vi.fn(() => Promise.resolve()),
+  peekPendingQueue: vi.fn(() => Promise.resolve({ items: [] as unknown[] })),
+  removePending: vi.fn(() => Promise.resolve()),
   fetch: vi.fn<[], Promise<Response>>(),
 }))
 
@@ -28,8 +28,8 @@ vi.mock('@capacitor/core', () => ({
     saveToken: mocks.saveToken,
     setEnabled: mocks.setEnabled,
     getStatus: mocks.getStatus,
-    drainPendingQueue: mocks.drainPendingQueue,
-    requeuePending: mocks.requeuePending,
+    peekPendingQueue: mocks.peekPendingQueue,
+    removePending: mocks.removePending,
   })),
 }))
 
@@ -101,34 +101,46 @@ describe('drainAndSubmitPendingSms', () => {
     { message: 'txn 3', sender: 'HSBC', receivedAt: '2026-07-01T00:02:00Z', source: 'sms' },
   ]
 
-  it('replays every drained item and requeues only transient failures', async () => {
-    mocks.drainPendingQueue.mockResolvedValue({ items })
+  it('removes only delivered/permanently-rejected items; transient failures stay queued', async () => {
+    mocks.peekPendingQueue.mockResolvedValue({ items })
     mocks.fetch
-      .mockResolvedValueOnce(new Response('{}', { status: 200 })) // txn 1 ok
-      .mockResolvedValueOnce(new Response('{}', { status: 503 })) // txn 2 transient
-      .mockResolvedValueOnce(new Response('{}', { status: 400 })) // txn 3 permanent reject
+      .mockResolvedValueOnce(new Response('{}', { status: 200 })) // txn 1 delivered
+      .mockResolvedValueOnce(new Response('{}', { status: 503 })) // txn 2 transient — stays
+      .mockResolvedValueOnce(new Response('{}', { status: 400 })) // txn 3 permanent reject — removed
     const sms = await freshModule()
     await sms.drainAndSubmitPendingSms('jwt')
     expect(mocks.fetch).toHaveBeenCalledTimes(3)
-    // Only the 5xx item goes back in the queue — 200 delivered, 400 is permanent.
-    expect(mocks.requeuePending).toHaveBeenCalledTimes(1)
-    expect(mocks.requeuePending.mock.calls[0][0]).toEqual({ items: [items[1]] })
+    expect(mocks.removePending).toHaveBeenCalledTimes(1)
+    expect(mocks.removePending.mock.calls[0][0]).toEqual({ items: [items[0], items[2]] })
   })
 
-  it('requeues items when the network drops mid-drain', async () => {
-    mocks.drainPendingQueue.mockResolvedValue({ items: [items[0]] })
-    mocks.fetch.mockRejectedValue(new TypeError('offline'))
+  it('stops on auth failure without touching the queue (every item would 401)', async () => {
+    mocks.peekPendingQueue.mockResolvedValue({ items })
+    mocks.fetch.mockResolvedValue(new Response('{}', { status: 401 }))
     const sms = await freshModule()
     await sms.drainAndSubmitPendingSms('jwt')
-    expect(mocks.requeuePending).toHaveBeenCalledWith({ items: [items[0]] })
+    expect(mocks.fetch).toHaveBeenCalledTimes(1) // bailed after the first 401
+    expect(mocks.removePending).not.toHaveBeenCalled()
+  })
+
+  it('keeps everything queued when the network drops mid-drain', async () => {
+    mocks.peekPendingQueue.mockResolvedValue({ items })
+    mocks.fetch
+      .mockResolvedValueOnce(new Response('{}', { status: 200 }))
+      .mockRejectedValueOnce(new TypeError('offline'))
+    const sms = await freshModule()
+    await sms.drainAndSubmitPendingSms('jwt')
+    expect(mocks.fetch).toHaveBeenCalledTimes(2) // stopped after the network error
+    // The one delivered item is still removed; the rest survive on device.
+    expect(mocks.removePending).toHaveBeenCalledWith({ items: [items[0]] })
   })
 
   it('does nothing when the queue is empty', async () => {
-    mocks.drainPendingQueue.mockResolvedValue({ items: [] })
+    mocks.peekPendingQueue.mockResolvedValue({ items: [] })
     const sms = await freshModule()
     await sms.drainAndSubmitPendingSms('jwt')
     expect(mocks.fetch).not.toHaveBeenCalled()
-    expect(mocks.requeuePending).not.toHaveBeenCalled()
+    expect(mocks.removePending).not.toHaveBeenCalled()
   })
 })
 

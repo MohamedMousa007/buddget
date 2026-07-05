@@ -1,6 +1,6 @@
 'use client'
 
-import { isAndroid, isNative } from '@/lib/native/isNative'
+import { isNative } from '@/lib/native/isNative'
 
 export interface SmsBridgeStatus {
   tokenSaved: boolean
@@ -45,12 +45,10 @@ interface SmsCapacitorPlugin {
   getStatus(): Promise<SmsBridgeStatus>
   /** iOS only: GET /api/sms/health through the same native path the intent uses. */
   healthCheck(): Promise<SmsHealthResult>
-  /** Returns and clears SMS queued while offline / undeliverable, for replay. */
-  drainPendingQueue(): Promise<{ items: PendingSmsItem[] }>
-  /** Returns queued SMS WITHOUT clearing — feeds the waiting-to-sync cards. */
+  /** Returns queued SMS WITHOUT clearing — the queue stays authoritative. */
   peekPendingQueue(): Promise<{ items: PendingSmsItem[] }>
-  /** Re-appends items whose replay failed so they survive to the next drain. */
-  requeuePending(opts: { items: PendingSmsItem[] }): Promise<void>
+  /** Removes items after the server confirmed them (or permanently rejected). */
+  removePending(opts: { items: PendingSmsItem[] }): Promise<void>
 }
 
 /** Fired whenever the native pending queue may have changed (post-drain). */
@@ -177,25 +175,27 @@ export async function clearSmsNative(): Promise<void> {
 }
 
 /**
- * Drains the native pending queue (SMS captured offline or undeliverable —
- * iOS: CatchBankSmsIntent failures; Android: SmsForwardWorker failures) and
- * replays each item to /api/sms/parse SEQUENTIALLY, re-queueing anything that
- * still fails so no SMS is ever lost to a flaky replay. The server dedups by
- * sms_hash, so a double-submit (e.g. app killed mid-drain) is harmless.
+ * Replays the native pending queue (SMS captured offline / undeliverable) to
+ * /api/sms/parse SEQUENTIALLY. The queue stays authoritative the whole time:
+ * items are only removed AFTER the server confirmed (2xx) or permanently
+ * rejected (400/422) them, so an app kill mid-replay never loses an SMS.
+ * Auth (401/403), rate-limit (429), 5xx and network errors leave the item
+ * queued for the next drain. The server dedups by sms_hash, so re-delivering
+ * an item whose removal didn't land is harmless.
  */
 export async function drainAndSubmitPendingSms(accessToken: string): Promise<void> {
   if (!isNative() || !accessToken) return
   if (!(await ensurePlugin()) || !_plugin) return
   let items: PendingSmsItem[]
   try {
-    items = (await _plugin.drainPendingQueue()).items ?? []
+    items = (await _plugin.peekPendingQueue()).items ?? []
   } catch {
     return
   }
   if (items.length === 0) return
 
   const { apiUrl: buildUrl } = await import('@/lib/apiBase')
-  const failed: PendingSmsItem[] = []
+  const done: PendingSmsItem[] = []
   for (const item of items) {
     try {
       const res = await fetch(buildUrl('/api/sms/parse'), {
@@ -203,15 +203,18 @@ export async function drainAndSubmitPendingSms(accessToken: string): Promise<voi
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify(item),
       })
-      // 4xx = the server rejected this item permanently (bad payload) — do not
-      // re-queue it forever. 5xx/network = transient, keep it.
-      if (res.status >= 500) failed.push(item)
+      if (res.ok || res.status === 400 || res.status === 422) {
+        done.push(item)
+      } else if (res.status === 401 || res.status === 403) {
+        break // token problem — every remaining item would fail identically
+      }
+      // 429/5xx: leave queued, keep trying the rest (per-item quota may differ)
     } catch {
-      failed.push(item)
+      break // network dropped mid-drain — stop, everything left stays queued
     }
   }
-  if (failed.length > 0) {
-    try { await _plugin.requeuePending({ items: failed }) } catch { /* next SMS re-arms */ }
+  if (done.length > 0) {
+    try { await _plugin.removePending({ items: done }) } catch { /* re-delivery is deduped */ }
   }
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(SMS_QUEUE_CHANGED_EVENT))
 }

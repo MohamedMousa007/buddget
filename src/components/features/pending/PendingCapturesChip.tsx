@@ -22,7 +22,7 @@ export function PendingCapturesChip() {
   const removeJob = usePendingAiJobs((s) => s.removeJob)
   const { online } = useNetworkStatus()
   const [busy, setBusy] = useState(false)
-  const [failed, setFailed] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
   const [reviewJob, setReviewJob] = useState<{ jobId: string; dataUrl: string } | null>(null)
   const openAiChatWithSeed = useSettingsStore((s) => s.openAiChatWithSeed)
 
@@ -37,7 +37,7 @@ export function PendingCapturesChip() {
     if (busy || !online) return
     const job = jobs[0]
     setBusy(true)
-    setFailed(false)
+    setNotice(null)
     try {
       const media = await readPendingMedia(job.id)
       if (!media) {
@@ -59,11 +59,18 @@ export function PendingCapturesChip() {
       if (!res.ok) throw new Error(`transcribe failed (${res.status})`)
       const data = (await res.json()) as { text?: string }
       const text = data.text?.trim()
-      finishJob(job.id)
-      // Confirmation happens in the AI chat — same flow as a live voice note.
-      if (text) openAiChatWithSeed(text)
+      if (text) {
+        finishJob(job.id)
+        // Confirmation happens in the AI chat — same flow as a live voice note.
+        openAiChatWithSeed(text)
+      } else {
+        // Transcription succeeded but heard nothing — retrying won't change
+        // that, so drop the job and tell the user honestly.
+        finishJob(job.id)
+        setNotice(t.pendingCaptures.voiceEmpty)
+      }
     } catch {
-      setFailed(true)
+      setNotice(t.pendingCaptures.failed)
     } finally {
       setBusy(false)
     }
@@ -85,11 +92,10 @@ export function PendingCapturesChip() {
           <WifiOff className="h-4 w-4 shrink-0 text-[var(--color-brand-text-muted)]" />
         )}
         <span className="flex-1 text-xs text-[var(--color-brand-text-secondary)]">
-          {failed
-            ? t.pendingCaptures.failed
-            : online
+          {notice ??
+            (online
               ? t.pendingCaptures.chip(jobs.length)
-              : t.pendingCaptures.waitingOffline(jobs.length)}
+              : t.pendingCaptures.waitingOffline(jobs.length))}
         </span>
       </button>
 

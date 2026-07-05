@@ -93,3 +93,19 @@ export async function deletePendingMedia(id: string): Promise<void> {
     await Filesystem.deleteFile({ path: `${DIR}/${id}`, directory: Directory.Data })
   } catch { /* already gone */ }
 }
+
+/**
+ * Sign-out teardown: wipe the job list AND the media directory so a queued
+ * voice note or receipt photo can never surface for the next user on a
+ * shared device.
+ */
+export function clearPendingAiJobs(): void {
+  usePendingAiJobs.setState({ jobs: [] })
+  if (!isNative()) return
+  void (async () => {
+    try {
+      const { Filesystem, Directory } = await fs()
+      await Filesystem.rmdir({ path: DIR, directory: Directory.Data, recursive: true })
+    } catch { /* directory never created */ }
+  })()
+}

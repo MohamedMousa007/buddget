@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useCallback } from 'react'
-import { Mic, MicOff, X, Loader2, AlertTriangle, Trash2, MessageCircle, Volume2, VolumeX } from 'lucide-react'
+import { Mic, MicOff, X, Loader2, AlertTriangle, Trash2, MessageCircle, Volume2, VolumeX, CheckCircle2 } from 'lucide-react'
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { useVoiceExpense } from '@/hooks/useVoiceExpense'
@@ -51,6 +51,8 @@ export function VoiceRecordSheet({ open, onClose }: VoiceRecordSheetProps) {
         {state === 'error' ? (
           <ErrorView error={error} onRetry={reset} onClose={() => void handleCancel()} />
         ) : null}
+
+        {state === 'queued' ? <QueuedView onClose={onClose} /> : null}
 
         {state === 'idle' || state === 'recording' ? (
           <RecordingView
@@ -460,6 +462,29 @@ function ClarifyView({
 }
 
 // ── Error ────────────────────────────────────────────────────────────────────
+
+function QueuedView({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="flex flex-col items-center gap-3 py-4 text-center">
+      <CheckCircle2 className="h-8 w-8 text-[var(--color-brand-green)]" />
+      <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">
+        Recording saved
+      </p>
+      <p className="text-xs text-[var(--color-brand-text-muted)] max-w-[280px]">
+        You&apos;re offline right now, so we kept it on your device. When you&apos;re back
+        online, a chip will appear at the top of the app — tap it to finish adding
+        this expense.
+      </p>
+      <button
+        type="button"
+        onClick={onClose}
+        className="mt-2 rounded-xl bg-[var(--color-brand-red)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
+      >
+        Done
+      </button>
+    </div>
+  )
+}
 
 function ErrorView({
   error,

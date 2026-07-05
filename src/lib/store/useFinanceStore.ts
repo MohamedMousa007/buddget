@@ -115,6 +115,11 @@ function generateId(): string {
   return `${rand()}${rand()}-${rand()}-4${rand().slice(1)}-${((8 + Math.floor(Math.random() * 4)).toString(16)) + rand().slice(1)}-${rand()}${rand()}${rand()}`
 }
 
+/** Guarded v4 UUID for non-store client ids (older Android WebViews lack crypto.randomUUID). */
+export function newClientId(): string {
+  return generateId()
+}
+
 
 function migrateShowAllCurrenciesInForms(prevSettings: Record<string, unknown>): boolean {
   if (typeof prevSettings.showAllCurrenciesInForms === 'boolean') return prevSettings.showAllCurrenciesInForms

@@ -1611,6 +1611,7 @@ export const en: Dictionary = {
         ? '1 capture saved — waiting for connection'
         : `${count} captures saved — waiting for connection`,
     failed: "Couldn't process that capture — tap to retry",
+    voiceEmpty: "We couldn't hear anything in that recording, so it was removed.",
     buddgyOffline: 'Buddgy needs an internet connection — your data is still available offline.',
   },
 

@@ -42,15 +42,6 @@ object PendingSmsQueue {
     @Synchronized
     fun peek(context: Context): JSONArray = read(context)
 
-    /** Returns all queued items and clears the queue. */
-    @Synchronized
-    fun drain(context: Context): JSONArray {
-        val items = read(context)
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit().remove(KEY).apply()
-        return items
-    }
-
     /** Removes one item after successful delivery (matched by body + receive time). */
     @Synchronized
     fun remove(context: Context, message: String, receivedAt: String) {
@@ -69,14 +60,6 @@ object PendingSmsQueue {
             kept.put(item)
         }
         if (removed) write(context, kept)
-    }
-
-    /** Re-appends items whose replay failed, respecting the cap. */
-    @Synchronized
-    fun requeue(context: Context, failed: JSONArray) {
-        val items = read(context)
-        for (i in 0 until failed.length()) items.put(failed.getJSONObject(i))
-        write(context, trim(items))
     }
 
     @Synchronized

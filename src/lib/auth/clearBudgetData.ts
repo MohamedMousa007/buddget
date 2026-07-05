@@ -1,5 +1,6 @@
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { clearPendingAiJobs } from '@/lib/store/usePendingAiJobs'
 import { resetHydrationGuard } from '@/hooks/remote/hydrateGuard'
 
 /**
@@ -11,6 +12,7 @@ const STORAGE_KEYS = [
   'buddget-storage',
   'buddget-ui-settings',
   'buddget-notifications-read',
+  'buddget-pending-ai-jobs',
   'buddget-pwa-install-banner-dismissed-at',
   'pwa-install-dismissed',
   'buddget_guest_nickname',
@@ -55,6 +57,14 @@ export function clearBudgetData(): void {
     useSettingsStore.getState().reset()
   } catch (e) {
     console.error('[clearBudgetData] settings reset failed', e)
+  }
+
+  // Offline AI captures (voice audio / receipt photos) are per-user — wipe the
+  // queue and its on-device media so they never leak to the next account.
+  try {
+    clearPendingAiJobs()
+  } catch (e) {
+    console.error('[clearBudgetData] pending AI jobs reset failed', e)
   }
 
   // Clear the per-userId hydrate dedup guard so the next sign-in hydrates

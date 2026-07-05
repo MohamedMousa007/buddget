@@ -100,18 +100,15 @@ class SmsCapacitorPlugin : Plugin() {
         call.resolve(JSObject().apply { put("items", org.json.JSONArray(items.toString())) })
     }
 
-    /** Returns and clears all SMS the worker could not deliver (offline / bad token). */
+    /** Removes items the server confirmed (or permanently rejected) during a drain. */
     @PluginMethod
-    fun drainPendingQueue(call: PluginCall) {
-        val items = PendingSmsQueue.drain(activity)
-        call.resolve(JSObject().apply { put("items", org.json.JSONArray(items.toString())) })
-    }
-
-    /** Re-appends items whose JS-side replay failed so they survive to the next drain. */
-    @PluginMethod
-    fun requeuePending(call: PluginCall) {
+    fun removePending(call: PluginCall) {
         val items = call.getArray("items") ?: run { call.resolve(); return }
-        PendingSmsQueue.requeue(activity, org.json.JSONArray(items.toString()))
+        val arr = org.json.JSONArray(items.toString())
+        for (i in 0 until arr.length()) {
+            val item = arr.getJSONObject(i)
+            PendingSmsQueue.remove(activity, item.optString("message"), item.optString("receivedAt"))
+        }
         call.resolve()
     }
 
