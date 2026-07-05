@@ -198,6 +198,7 @@ export const ar: Dictionary = {
     saveAndSync: 'حفظ ومزامنة',
     savedSynced: 'تم الحفظ والمزامنة',
     saved: 'تم الحفظ',
+    refreshed: 'تم التحديث!',
     cancel: 'إلغاء',
     delete: 'حذف',
     edit: 'تعديل',
