@@ -97,6 +97,8 @@ export interface Dictionary {
     saveAndSync: string
     /** Toast shown after a successful force-sync */
     savedSynced: string
+    /** Settings save-button confirmation state */
+    saved: string
     cancel: string
     delete: string
     edit: string

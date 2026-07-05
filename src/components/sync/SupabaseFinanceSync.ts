@@ -27,6 +27,15 @@ export function flushFinanceNow(): Promise<void> {
   return pendingFlush ? pendingFlush() : Promise.resolve()
 }
 
+/** Imperative full-sync handle (set by the mounted `SupabaseFinanceSync`).
+ *  Pull-to-refresh calls `syncFinanceNow()` to push pending local edits, then
+ *  pull the server snapshot and merge it into the store — without flipping
+ *  `dataReady` (the PTR spinner is the only progress affordance). */
+let pendingSync: (() => Promise<void>) | null = null
+export function syncFinanceNow(): Promise<void> {
+  return pendingSync ? pendingSync() : Promise.resolve()
+}
+
 /**
  * Global "stop talking to the server" switch. The subscribe listener bails
  * out when this is true, which matters during sign-out: `clearBudgetData()`
@@ -148,43 +157,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         // hooks refetched and merged server rows after mount, visibly changing
         // the dashboard totals. Pulling here marks every slice hydrated so those
         // hooks short-circuit → the splash covers the whole sync, no flicker.
-        const server = await pullAll(supabase, userId)
-        if (server) {
-          // Re-snapshot right before the merge so edits made during the
-          // pullAll round-trip aren't clobbered.
-          const latestLocal = snapshot(useFinanceStore.getState())
-          const merged = mergeSnapshots(latestLocal, server)
-          // Server always wins for singletons — settings flush instantly so
-          // the DB is always up to date by the time this pull completes.
-          useFinanceStore.setState({
-            profile: merged.profile,
-            settings: merged.settings,
-            financialGoalsNotes: merged.financialGoalsNotes,
-            activeBudgetPlanId: merged.activeBudgetPlanId,
-            paymentMethods: merged.paymentMethods,
-            incomeSources: merged.incomeSources,
-            expenses: merged.expenses,
-            recurringExpenses: merged.recurringExpenses,
-            subscriptions: merged.subscriptions,
-            debts: merged.debts,
-            debtPayments: merged.debtPayments,
-            recurringDebtPayments: merged.recurringDebtPayments,
-            savingsAccounts: merged.savingsAccounts,
-            savingsHoldings: merged.savingsHoldings,
-            savingsTransactions: merged.savingsTransactions,
-            recurringSavingsDeposits: merged.recurringSavingsDeposits,
-            goals: merged.goals,
-            budgetPlans: merged.budgetPlans,
-          })
-          // Apply the server theme synchronously so the <html> class is already
-          // correct before `dataReady` flips and the loading splash is removed —
-          // no relying on the useThemeSync effect firing after the splash lifts.
-          applyTheme(merged.settings.theme)
-          // Mark all slices as hydrated so per-page hooks skip redundant fetches.
-          for (const slice of ['expenses','income','debts','goals','savings','subscriptions','budget']) {
-            markHydrated(userId, slice)
-          }
-        }
+        await runFullSync(supabase, userId)
       } catch (e) {
         console.error('[finance sync] pull failed', e)
       } finally {
@@ -247,6 +220,16 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     // Expose for imperative callers (signOut).
     pendingFlush = flush
 
+    // Expose full-sync for pull-to-refresh: drain pending local edits up, then
+    // pull + merge server truth down, then re-baseline the flush snapshots so
+    // the merged server rows aren't seen as new local writes.
+    pendingSync = async () => {
+      await flush()
+      await runFullSync(supabase, userId)
+      prevSnap.current = snapshot(useFinanceStore.getState())
+      lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
+    }
+
     const unsub = useFinanceStore.subscribe(() => {
       if (!hydrated.current) return
       // Sign-out in progress: the store is being reset to defaults. Ignore
@@ -300,10 +283,57 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       document.removeEventListener('visibilitychange', onVisibility)
       if (timer.current) clearTimeout(timer.current)
       if (pendingFlush === flush) pendingFlush = null
+      pendingSync = null
     }
   }, [userId])
 
   return null
+}
+
+/**
+ * Pull the full server snapshot and merge it into the store. Shared by the
+ * mount hydrate and the imperative `syncFinanceNow()` (pull-to-refresh).
+ * Does NOT touch `dataReady` — callers own the loading affordance.
+ */
+async function runFullSync(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<void> {
+  const server = await pullAll(supabase, userId)
+  if (!server) return
+  // Re-snapshot right before the merge so edits made during the
+  // pullAll round-trip aren't clobbered.
+  const latestLocal = snapshot(useFinanceStore.getState())
+  const merged = mergeSnapshots(latestLocal, server)
+  // Server always wins for singletons — settings flush instantly so
+  // the DB is always up to date by the time this pull completes.
+  useFinanceStore.setState({
+    profile: merged.profile,
+    settings: merged.settings,
+    financialGoalsNotes: merged.financialGoalsNotes,
+    activeBudgetPlanId: merged.activeBudgetPlanId,
+    paymentMethods: merged.paymentMethods,
+    incomeSources: merged.incomeSources,
+    expenses: merged.expenses,
+    recurringExpenses: merged.recurringExpenses,
+    subscriptions: merged.subscriptions,
+    debts: merged.debts,
+    debtPayments: merged.debtPayments,
+    recurringDebtPayments: merged.recurringDebtPayments,
+    savingsAccounts: merged.savingsAccounts,
+    savingsHoldings: merged.savingsHoldings,
+    savingsTransactions: merged.savingsTransactions,
+    recurringSavingsDeposits: merged.recurringSavingsDeposits,
+    goals: merged.goals,
+    budgetPlans: merged.budgetPlans,
+  })
+  // Apply the server theme synchronously so the <html> class is already
+  // correct before the loading splash is removed.
+  applyTheme(merged.settings.theme)
+  // Mark all slices as hydrated so per-page hooks skip redundant fetches.
+  for (const slice of ['expenses','income','debts','goals','savings','subscriptions','budget']) {
+    markHydrated(userId, slice)
+  }
 }
 
 // ─── Slice-change detection ──────────────────────────────────────────────

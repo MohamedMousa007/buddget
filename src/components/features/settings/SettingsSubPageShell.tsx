@@ -30,8 +30,12 @@ export function SettingsSubPageShell({ title, children, showSave = true }: Props
   useEffect(() => { confirmOpenRef.current = confirmOpen }, [confirmOpen])
 
   // Sections write to the store on change (live feedback); dirty = drifted
-  // from the mount snapshot, discard = restore that snapshot.
+  // from the mount snapshot, discard = restore that snapshot. The selector
+  // makes dirtiness reactive so the Save button can show/hide itself.
   const snapshotRef = useRef(useFinanceStore.getState().settings)
+  const [, bumpBaseline] = useState(0) // re-render when the saved baseline moves
+  const settings = useFinanceStore((s) => s.settings)
+  const dirty = JSON.stringify(settings) !== JSON.stringify(snapshotRef.current)
   const isDirty = () =>
     JSON.stringify(useFinanceStore.getState().settings) !== JSON.stringify(snapshotRef.current)
 
@@ -85,7 +89,7 @@ export function SettingsSubPageShell({ title, children, showSave = true }: Props
                 : <ChevronLeft className="h-5 w-5" />}
             </button>
             <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)]">{title}</h1>
-            {showSave ? <div className="ms-auto"><SettingsSaveButton onSaved={() => { snapshotRef.current = useFinanceStore.getState().settings }} /></div> : null}
+            {showSave ? <div className="ms-auto"><SettingsSaveButton dirty={dirty} onSaved={() => { snapshotRef.current = useFinanceStore.getState().settings; bumpBaseline((n) => n + 1) }} /></div> : null}
           </div>
         </PageHeaderContent>
       </PageHeader>
