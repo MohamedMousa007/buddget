@@ -787,6 +787,7 @@ export const useFinanceStore = create<FinanceStore>()(
               household: nextHousehold,
               buddgyGuidedComplete: nextBuddgyGuidedComplete,
               buddgyFlow: nextBuddgyFlow,
+              updatedAt: new Date().toISOString(),
             }
           }),
         })),
@@ -881,7 +882,7 @@ export const useFinanceStore = create<FinanceStore>()(
                 amount: Number.isFinite(s.amount) ? s.amount : 0,
               })),
             }
-            return { ...p, categories: [...p.categories, row] }
+            return { ...p, categories: [...p.categories, row], updatedAt: new Date().toISOString() }
           }),
         }))
         return catId
@@ -893,6 +894,7 @@ export const useFinanceStore = create<FinanceStore>()(
             if (p.id !== planId) return p
             return {
               ...p,
+              updatedAt: new Date().toISOString(),
               categories: p.categories.map((c) => {
                 if (c.id !== categoryId) return c
                 const nextSubs =
@@ -926,7 +928,7 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => ({
           budgetPlans: state.budgetPlans.map((p) =>
             p.id === planId
-              ? { ...p, categories: p.categories.filter((c) => c.id !== categoryId) }
+              ? { ...p, categories: p.categories.filter((c) => c.id !== categoryId), updatedAt: new Date().toISOString() }
               : p
           ),
         })),
@@ -938,6 +940,7 @@ export const useFinanceStore = create<FinanceStore>()(
             if (p.id !== planId) return p
             return {
               ...p,
+              updatedAt: new Date().toISOString(),
               categories: p.categories.map((c) => {
                 if (c.id !== categoryId) return c
                 return {
@@ -965,6 +968,7 @@ export const useFinanceStore = create<FinanceStore>()(
             if (p.id !== planId) return p
             return {
               ...p,
+              updatedAt: new Date().toISOString(),
               categories: p.categories.map((c) => {
                 if (c.id !== categoryId) return c
                 return {
@@ -993,6 +997,7 @@ export const useFinanceStore = create<FinanceStore>()(
             if (p.id !== planId) return p
             return {
               ...p,
+              updatedAt: new Date().toISOString(),
               categories: p.categories.map((c) =>
                 c.id === categoryId
                   ? { ...c, subcategories: c.subcategories.filter((s) => s.id !== subId) }

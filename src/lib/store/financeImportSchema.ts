@@ -186,6 +186,7 @@ export const importDataSchema = z.object({
         id: z.string(),
         name: z.string(),
         createdAt: z.string(),
+        updatedAt: z.string().optional(),
         household: z.enum(['solo', 'partner', 'family']).nullable().optional(),
         buddgyGuidedComplete: z.boolean().optional(),
         buddgyFlow: z

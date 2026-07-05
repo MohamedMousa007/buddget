@@ -282,6 +282,7 @@ export interface BudgetPlan {
   name: string
   categories: BudgetPlanCategory[]
   createdAt: string
+  updatedAt?: string
   /** Guided setup: household size for AI and sliders. */
   household?: BudgetHousehold | null
   buddgyFlow?: BuddgyFlowDraft | null
