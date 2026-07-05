@@ -181,7 +181,13 @@ export function useMonthlyStats() {
       : spendingByEnum
     const daysLeft = calculateDaysLeftInMonth(monthFilter, settings.monthStartDay)
 
+    // Month-filtered: used for budget progress and savings nudge notifications.
     const savingsFromExpenses = monthlyExpenses
+      .filter((e) => e.category === 'Savings')
+      .reduce((sum, e) => sum + expenseAmountInBase(e, settings.baseCurrency, exchangeRates), 0)
+
+    // All-time: so the cumulative "Saved" total persists across month boundaries.
+    const allTimeSavingsFromExpenses = expenses
       .filter((e) => e.category === 'Savings')
       .reduce((sum, e) => sum + expenseAmountInBase(e, settings.baseCurrency, exchangeRates), 0)
 
@@ -199,7 +205,7 @@ export function useMonthlyStats() {
       goldOk
     )
 
-    const savingsTotal = savingsAccountsTotal + savingsHoldingsTotal + savingsFromExpenses
+    const savingsTotal = savingsAccountsTotal + savingsHoldingsTotal + allTimeSavingsFromExpenses
 
     const netSavingsTransfersThisMonth = netSavingsLedgerInBaseForMonth(
       savingsTransactions,
