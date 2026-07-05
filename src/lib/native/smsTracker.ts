@@ -47,9 +47,14 @@ interface SmsCapacitorPlugin {
   healthCheck(): Promise<SmsHealthResult>
   /** Returns and clears SMS queued while offline / undeliverable, for replay. */
   drainPendingQueue(): Promise<{ items: PendingSmsItem[] }>
+  /** Returns queued SMS WITHOUT clearing — feeds the waiting-to-sync cards. */
+  peekPendingQueue(): Promise<{ items: PendingSmsItem[] }>
   /** Re-appends items whose replay failed so they survive to the next drain. */
   requeuePending(opts: { items: PendingSmsItem[] }): Promise<void>
 }
+
+/** Fired whenever the native pending queue may have changed (post-drain). */
+export const SMS_QUEUE_CHANGED_EVENT = 'buddget:sms-queue-changed'
 
 // Module-level cache — registerPlugin() is called exactly once.
 // IMPORTANT: Never return the Capacitor plugin proxy from an async function.
@@ -207,6 +212,18 @@ export async function drainAndSubmitPendingSms(accessToken: string): Promise<voi
   }
   if (failed.length > 0) {
     try { await _plugin.requeuePending({ items: failed }) } catch { /* next SMS re-arms */ }
+  }
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(SMS_QUEUE_CHANGED_EVENT))
+}
+
+/** Non-destructive read of the pending queue for the waiting-to-sync cards. */
+export async function peekPendingSms(): Promise<PendingSmsItem[]> {
+  if (!isNative()) return []
+  if (!(await ensurePlugin()) || !_plugin) return []
+  try {
+    return (await _plugin.peekPendingQueue()).items ?? []
+  } catch {
+    return []
   }
 }
 

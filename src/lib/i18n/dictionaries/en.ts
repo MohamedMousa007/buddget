@@ -1614,6 +1614,13 @@ export const en: Dictionary = {
     buddgyOffline: 'Buddgy needs an internet connection — your data is still available offline.',
   },
 
+  pendingSms: {
+    waiting: 'Waiting to sync — will be added automatically',
+    generic: 'Bank SMS captured',
+    more: (count: number) =>
+      count === 1 ? '1 more message will be checked when online' : `${count} more messages will be checked when online`,
+  },
+
   smsTracking: {
     sectionTitle: 'SMS Auto-Tracking',
     sectionSubtitle: 'Automatically detect and record bank transactions from incoming SMS messages.',

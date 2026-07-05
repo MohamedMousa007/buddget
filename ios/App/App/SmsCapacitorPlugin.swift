@@ -20,6 +20,7 @@ public class SmsCapacitorPlugin: CAPInstancePlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "getStatus", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "healthCheck", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "drainPendingQueue", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "peekPendingQueue", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "requeuePending", returnType: CAPPluginReturnPromise)
     ]
 
@@ -75,6 +76,11 @@ public class SmsCapacitorPlugin: CAPInstancePlugin, CAPBridgedPlugin {
         call.resolve(["items": pending])
     }
 
+    /// Returns queued SMS without clearing — feeds the in-app "waiting to sync" cards.
+    @objc func peekPendingQueue(_ call: CAPPluginCall) {
+        call.resolve(["items": SmsCredentialStore.peekPending()])
+    }
+
     /// Re-appends items whose JS-side replay failed so they survive to the next drain.
     @objc func requeuePending(_ call: CAPPluginCall) {
         let items = (call.getArray("items") as? [[String: String]]) ?? []
@@ -123,6 +129,10 @@ enum SmsCredentialStore {
         let queue = (d.array(forKey: pendingQueueKey) as? [[String: String]]) ?? []
         d.removeObject(forKey: pendingQueueKey)
         return queue
+    }
+
+    static func peekPending() -> [[String: String]] {
+        (UserDefaults.standard.array(forKey: pendingQueueKey) as? [[String: String]]) ?? []
     }
 
     static func requeuePending(_ items: [[String: String]]) {

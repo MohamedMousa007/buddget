@@ -9,6 +9,7 @@ import { PullToRefresh } from './PullToRefresh'
 import { ModalProvider } from '@/components/modals/ModalProvider'
 import { SyncFailureBanner } from '@/components/layout/SyncFailureBanner'
 import { PendingCapturesChip } from '@/components/features/pending/PendingCapturesChip'
+import { PendingSmsCards } from '@/components/features/pending/PendingSmsCards'
 import { DesktopHeaderBar } from '@/components/layout/DesktopHeaderBar'
 import { useThemeSync } from '@/hooks/useThemeSync'
 import { useRates } from '@/hooks/useRates'
@@ -310,6 +311,7 @@ export function AppShell({ children }: AppShellProps) {
         <PullToRefresh>
           <SyncFailureBanner />
           <PendingCapturesChip />
+          <PendingSmsCards />
           {children}
         </PullToRefresh>
       </main>

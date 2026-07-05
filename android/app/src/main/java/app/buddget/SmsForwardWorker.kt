@@ -31,16 +31,14 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
         val token  = prefs.getString("access_token", null)
         val apiUrl = prefs.getString("api_url", null)
 
+        // The receiver already put this SMS in PendingSmsQueue (ledger-first);
+        // terminal outcomes below just leave it there for the app-open drain.
         if (token == null || apiUrl == null) {
-            // Not armed yet (fresh install / cleared state) — keep the SMS for
-            // the app-open drain instead of losing it.
-            PendingSmsQueue.enqueue(applicationContext, message, sender, receivedAt)
             recordRun(prefs, "no_token")
             return@withContext Result.failure()
         }
 
         if (runAttemptCount >= MAX_ATTEMPTS) {
-            PendingSmsQueue.enqueue(applicationContext, message, sender, receivedAt)
             recordRun(prefs, "retries_exhausted")
             return@withContext Result.failure()
         }
@@ -62,6 +60,7 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
             conn.disconnect()
             when {
                 code in 200..299 -> {
+                    PendingSmsQueue.remove(applicationContext, message, receivedAt)
                     recordRun(prefs, "ok")
                     Result.success()
                 }
@@ -70,9 +69,9 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
                     Result.retry()   // transient server error
                 }
                 else -> {
-                    // 4xx — bad/stale token or bad request. The app-open drain
-                    // replays it after ensureIngestToken saves a fresh token.
-                    PendingSmsQueue.enqueue(applicationContext, message, sender, receivedAt)
+                    // 4xx — bad/stale token or bad request. Stays in the queue;
+                    // the app-open drain replays it after ensureIngestToken
+                    // saves a fresh token.
                     recordRun(prefs, "http_$code")
                     Result.failure()
                 }

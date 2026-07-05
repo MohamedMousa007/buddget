@@ -93,6 +93,13 @@ class SmsCapacitorPlugin : Plugin() {
         })
     }
 
+    /** Returns queued SMS without clearing — feeds the in-app "waiting to sync" cards. */
+    @PluginMethod
+    fun peekPendingQueue(call: PluginCall) {
+        val items = PendingSmsQueue.peek(activity)
+        call.resolve(JSObject().apply { put("items", org.json.JSONArray(items.toString())) })
+    }
+
     /** Returns and clears all SMS the worker could not deliver (offline / bad token). */
     @PluginMethod
     fun drainPendingQueue(call: PluginCall) {

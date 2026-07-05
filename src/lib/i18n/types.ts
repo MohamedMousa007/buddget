@@ -1500,6 +1500,12 @@ export interface Dictionary {
     buddgyOffline: string
   }
 
+  pendingSms: {
+    waiting: string
+    generic: string
+    more: (count: number) => string
+  }
+
   smsTracking: {
     sectionTitle: string
     sectionSubtitle: string
