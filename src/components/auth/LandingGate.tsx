@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import type { CSSProperties } from 'react'
 import { AuthModalBody } from '@/components/features/auth-modal/AuthModalBody'
 import { useT } from '@/lib/i18n'
@@ -32,6 +33,15 @@ const ACCENT: CSSProperties = { fontWeight: 700, color: '#E50914' }
  */
 export function LandingGate() {
   const t = useT()
+  const [keyboardOpen, setKeyboardOpen] = useState(false)
+
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const onResize = () => setKeyboardOpen(window.innerHeight - vv.height > 150)
+    vv.addEventListener('resize', onResize)
+    return () => vv.removeEventListener('resize', onResize)
+  }, [])
 
   return (
     <>
@@ -58,6 +68,7 @@ export function LandingGate() {
           .lg-ticker p { animation: none !important; opacity: 0; }
           .lg-ticker p:first-child { opacity: 1 !important; }
         }
+        .lg-ticker-hide { display: none !important; }
       `}</style>
 
       {/* Layout note: top-aligned on phones so the soft keyboard doesn't push the
@@ -123,9 +134,9 @@ export function LandingGate() {
           </p>
         </main>
 
-        {/* Marketing ticker — dark mode only, fixed to viewport bottom */}
+        {/* Marketing ticker — dark mode only, fixed to viewport bottom; hidden when keyboard is open */}
         <div
-          className="lg-ticker"
+          className={`lg-ticker${keyboardOpen ? ' lg-ticker-hide' : ''}`}
           style={{
             display: 'none',
             position: 'fixed',
