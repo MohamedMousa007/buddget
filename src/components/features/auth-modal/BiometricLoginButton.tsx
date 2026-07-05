@@ -6,10 +6,17 @@ import { createClient } from '@/lib/supabase/client'
 import {
   authenticate,
   clearSession,
+  getLinkedAccount,
   getSavedSession,
   isAvailable,
   type BiometryType,
 } from '@/lib/native/biometricAuth'
+
+function maskEmail(email: string): string {
+  const at = email.indexOf('@')
+  if (at < 1) return '***'
+  return `${email[0]}***${email.slice(at)}`
+}
 
 interface BiometricLoginButtonProps {
   /** Auto-prompt the OS biometric sheet on mount when conditions are met. */
@@ -29,6 +36,7 @@ export function BiometricLoginButton({ autoPrompt = false, onSuccess }: Biometri
   const [available, setAvailable] = useState<boolean>(false)
   const [type, setType] = useState<BiometryType>(null)
   const [hasSession, setHasSession] = useState<boolean>(false)
+  const [linkedAccount, setLinkedAccount] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const autoPromptedRef = useRef(false)
@@ -38,10 +46,12 @@ export function BiometricLoginButton({ autoPrompt = false, onSuccess }: Biometri
     void (async () => {
       const info = await isAvailable()
       const saved = await getSavedSession()
+      const account = await getLinkedAccount()
       if (cancelled) return
       setAvailable(info.available)
       setType(info.type)
       setHasSession(Boolean(saved))
+      setLinkedAccount(account)
     })()
     return () => {
       cancelled = true
@@ -52,7 +62,7 @@ export function BiometricLoginButton({ autoPrompt = false, onSuccess }: Biometri
     setBusy(true)
     setError(null)
     try {
-      await authenticate('Sign in to Buddget')
+      await authenticate('Confirm your identity')
       const refreshToken = await getSavedSession()
       if (!refreshToken) throw new Error('No saved session — sign in with email once.')
       const supabase = createClient()
@@ -66,7 +76,7 @@ export function BiometricLoginButton({ autoPrompt = false, onSuccess }: Biometri
       const msg = e instanceof Error ? e.message : 'Biometric sign-in failed'
       setError(msg)
       // Clear obviously-stale session so we don't loop the user.
-      if (msg.toLowerCase().includes('expired') || msg.toLowerCase().includes('invalid')) {
+      if (msg.toLowerCase().includes('expired') || msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('session')) {
         await clearSession()
         setHasSession(false)
       }
@@ -100,6 +110,8 @@ export function BiometricLoginButton({ autoPrompt = false, onSuccess }: Biometri
       </button>
       {error ? (
         <p className="text-xs text-[var(--color-brand-red)] text-center">{error}</p>
+      ) : linkedAccount ? (
+        <p className="text-xs text-[var(--color-brand-text-muted)] text-center">{maskEmail(linkedAccount)}</p>
       ) : null}
     </div>
   )

@@ -55,10 +55,11 @@ async function loadPlugin(): Promise<{ plugin: BiometryPlugin } | null> {
 /** Maps the plugin's numeric biometry type to a readable label. */
 function biometryTypeFrom(num: number | undefined): BiometryType {
   if (!num) return null
-  // 0/1 = none, 2 = TouchID, 3 = FaceID, 4 = fingerprint, 5 = face, 6 = iris (varies)
-  if (num === 3 || num === 5) return 'face'
-  if (num === 2 || num === 4) return 'fingerprint'
-  if (num === 6) return 'iris'
+  // @aparajita/capacitor-biometric-auth enum:
+  // 1=touchId(iOS), 2=faceId(iOS), 3=fingerprintAuthentication(Android), 4=faceAuthentication(Android), 5=irisAuthentication
+  if (num === 1 || num === 3) return 'fingerprint'
+  if (num === 2 || num === 4) return 'face'
+  if (num === 5) return 'iris'
   return 'unknown'
 }
 
@@ -159,10 +160,24 @@ export async function clearSession(): Promise<void> {
   }
 }
 
-export async function setEnabled(enabled: boolean): Promise<void> {
+export async function getLinkedAccount(): Promise<string | null> {
+  try {
+    const { value } = await Preferences.get({ key: ACCOUNT_KEY })
+    return value || null
+  } catch {
+    return null
+  }
+}
+
+export async function setEnabled(enabled: boolean, email?: string): Promise<void> {
   try {
     await Preferences.set({ key: ENABLED_KEY, value: enabled ? '1' : '0' })
-    if (!enabled) await clearSession()
+    if (!enabled) {
+      await clearSession()
+      await Preferences.remove({ key: ACCOUNT_KEY })
+    } else if (email) {
+      await Preferences.set({ key: ACCOUNT_KEY, value: email })
+    }
   } catch {
     /* noop */
   }
