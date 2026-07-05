@@ -1493,6 +1493,13 @@ export interface Dictionary {
     categoryCustom: string
   }
 
+  pendingCaptures: {
+    chip: (count: number) => string
+    waitingOffline: (count: number) => string
+    failed: string
+    buddgyOffline: string
+  }
+
   smsTracking: {
     sectionTitle: string
     sectionSubtitle: string
@@ -1500,6 +1507,7 @@ export interface Dictionary {
     toggleHint: string
     statusConnected: (bank: string, time: string) => string
     statusNeverConnected: string
+    pendingQueued: (count: number) => string
     iosCardTitle: string
     iosStatusWaiting: string
     iosStatusConnected: (time: string) => string

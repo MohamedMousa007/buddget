@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { WifiOff } from 'lucide-react'
 import { useAIChat } from '@/hooks/useAIChat'
+import { useT } from '@/lib/i18n'
+import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { AIChatHeader } from '@/components/features/ai-chat/AIChatHeader'
 import { AIChatEmptyState } from '@/components/features/ai-chat/AIChatEmptyState'
@@ -94,6 +97,8 @@ export function AIChat() {
     baseCurrency,
   } = useAIChat()
 
+  const t = useT()
+  const { online } = useNetworkStatus()
   const orb = useSettingsStore((s) => s.buddgyOrb)
   const [panel, setPanel] = useState<PanelGeometry | null>(() => computePanel(orb))
 
@@ -152,11 +157,18 @@ export function AIChat() {
               {isLoading ? <AIChatTypingIndicator /> : null}
             </div>
 
+            {!online && (
+              <div className="flex items-center gap-2 border-t border-[var(--color-brand-border)] px-4 py-2.5 text-xs text-[var(--color-brand-text-muted)]">
+                <WifiOff className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                {t.pendingCaptures.buddgyOffline}
+              </div>
+            )}
+
             <AIChatComposer
               value={input}
               onChange={setInput}
               onSend={() => void handleSend()}
-              disabled={isLoading}
+              disabled={isLoading || !online}
             />
           </motion.div>
         </>

@@ -11,6 +11,15 @@ export interface SmsBridgeStatus {
   permission: boolean
   lastRunAt?: string
   lastResult?: string
+  /** SMS captured but not yet delivered to the server (offline / bad token). */
+  pendingCount?: number
+}
+
+export interface PendingSmsItem {
+  message: string
+  sender: string
+  receivedAt: string
+  source: string
 }
 
 export interface SmsHealthResult {
@@ -36,8 +45,10 @@ interface SmsCapacitorPlugin {
   getStatus(): Promise<SmsBridgeStatus>
   /** iOS only: GET /api/sms/health through the same native path the intent uses. */
   healthCheck(): Promise<SmsHealthResult>
-  /** iOS only: returns and clears SMS queued while offline, for retry on next app open. */
-  drainPendingQueue(): Promise<{ items: Array<{ message: string; sender: string; receivedAt: string; source: string }> }>
+  /** Returns and clears SMS queued while offline / undeliverable, for replay. */
+  drainPendingQueue(): Promise<{ items: PendingSmsItem[] }>
+  /** Re-appends items whose replay failed so they survive to the next drain. */
+  requeuePending(opts: { items: PendingSmsItem[] }): Promise<void>
 }
 
 // Module-level cache — registerPlugin() is called exactly once.
@@ -84,56 +95,33 @@ export async function requestSmsPermission(): Promise<boolean> {
 }
 
 /**
- * Arms the native capture path: persists the token to SharedPreferences and
- * enables SmsReceiver. The native WorkManager is the SINGLE forwarding path
- * to /api/sms/parse — there is no JS listener, so a given SMS produces
- * exactly one POST whether the app is open or killed. Live dashboard updates
- * arrive via SmsRealtimeSync (Supabase realtime).
+ * Fetches the permanent sms_ingest_token from the server and persists it
+ * natively via saveSmsToken. The JWT is used ONLY as the Authorization header
+ * for this fetch — it is NEVER written to native storage (a stored JWT expires
+ * in ~1h and every later SMS POST would 401 and be dropped). Retries because a
+ * failed fetch must leave the previously-stored ingest token untouched: it
+ * never expires, so stale-but-valid beats clobbered.
  */
-export async function startSMSTracking(accessToken: string): Promise<void> {
-  if (!isNative() || !isAndroid()) return
-
-  if (!(await ensurePlugin()) || !_plugin) {
-    console.warn('[sms-tracker] SmsCapacitorPlugin not available')
-    return
+export async function ensureIngestToken(accessToken: string): Promise<boolean> {
+  if (!isNative() || !accessToken) return false
+  const { apiUrl: buildUrl } = await import('@/lib/apiBase')
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(buildUrl('/api/sms/setup-token'), {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      })
+      if (res.ok) {
+        const data = (await res.json()) as { token?: string }
+        if (data.token) {
+          await saveSmsToken(data.token)
+          return true
+        }
+      }
+      if (res.status === 401) return false // bad session — retrying won't help
+    } catch { /* network error — retry below */ }
+    if (attempt < 2) await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)))
   }
-
-  const granted = await checkSmsPermission()
-  if (!granted) {
-    console.warn('[sms-tracker] SMS permission not granted')
-    return
-  }
-
-  try {
-    const { apiUrl: buildUrl } = await import('@/lib/apiBase')
-    const base = buildUrl('').replace(/\/$/, '')
-    await _plugin.saveToken({ token: accessToken, apiUrl: base })
-    await _plugin.setEnabled({ enabled: true })
-  } catch {
-    // Non-fatal — next app open retries via SmsStartupSync.
-  }
-}
-
-/**
- * App-open resume: re-arms the native bridge ONLY if this device already has
- * tracking enabled (the user turned it on here). Never turns tracking on — so a
- * fresh sign-in (or a different user on a shared device) stays OFF until they
- * explicitly enable it. Refreshes the stored token so the killed-app path keeps
- * a valid credential.
- */
-export async function resumeSmsTrackingIfEnabled(accessToken: string): Promise<void> {
-  if (!isNative() || !isAndroid()) return
-  if (!(await ensurePlugin()) || !_plugin) return
-  try {
-    const status = await _plugin.getStatus()
-    if (!status?.enabled) return // respect per-device OFF
-    const granted = await checkSmsPermission()
-    if (!granted) return
-    const { apiUrl: buildUrl } = await import('@/lib/apiBase')
-    const base = buildUrl('').replace(/\/$/, '')
-    await _plugin.saveToken({ token: accessToken, apiUrl: base })
-    await _plugin.setEnabled({ enabled: true })
-  } catch { /* non-fatal — next app open retries */ }
+  return false
 }
 
 export async function stopSMSTracking(): Promise<void> {
@@ -159,16 +147,7 @@ export async function saveSmsToken(ingestToken: string): Promise<void> {
   } catch { /* non-fatal */ }
 }
 
-/**
- * No-op: SharedPreferences now holds the non-expiring ingest token (set by
- * saveSmsToken on startup). Writing the JWT here would overwrite the ingest
- * token and cause WorkManager to 401 once the JWT expires while offline.
- */
-// ponytail: intentional no-op — JWT refresh must not overwrite ingest token
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function refreshSmsToken(_accessToken: string): Promise<void> {}
-
-/** Gates native forwarding without touching the stored token (iOS toggle path). */
+/** Gates native forwarding without touching the stored token. */
 export async function setSmsEnabled(enabled: boolean): Promise<void> {
   if (!(await ensurePlugin()) || !_plugin) return
   try { await _plugin.setEnabled({ enabled }) } catch { /* noop */ }
@@ -193,18 +172,41 @@ export async function clearSmsNative(): Promise<void> {
 }
 
 /**
- * iOS only: drains the offline-pending queue that CatchBankSmsIntent populates
- * when the device has no network. Returns queued items and clears the queue so
- * they are not re-submitted on the next app open.
+ * Drains the native pending queue (SMS captured offline or undeliverable —
+ * iOS: CatchBankSmsIntent failures; Android: SmsForwardWorker failures) and
+ * replays each item to /api/sms/parse SEQUENTIALLY, re-queueing anything that
+ * still fails so no SMS is ever lost to a flaky replay. The server dedups by
+ * sms_hash, so a double-submit (e.g. app killed mid-drain) is harmless.
  */
-export async function drainSmsPendingQueue(): Promise<Array<{ message: string; sender: string; receivedAt: string; source: string }>> {
-  if (!isNative() || isAndroid()) return []
-  if (!(await ensurePlugin()) || !_plugin) return []
+export async function drainAndSubmitPendingSms(accessToken: string): Promise<void> {
+  if (!isNative() || !accessToken) return
+  if (!(await ensurePlugin()) || !_plugin) return
+  let items: PendingSmsItem[]
   try {
-    const { items } = await _plugin.drainPendingQueue()
-    return items ?? []
+    items = (await _plugin.drainPendingQueue()).items ?? []
   } catch {
-    return []
+    return
+  }
+  if (items.length === 0) return
+
+  const { apiUrl: buildUrl } = await import('@/lib/apiBase')
+  const failed: PendingSmsItem[] = []
+  for (const item of items) {
+    try {
+      const res = await fetch(buildUrl('/api/sms/parse'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify(item),
+      })
+      // 4xx = the server rejected this item permanently (bad payload) — do not
+      // re-queue it forever. 5xx/network = transient, keep it.
+      if (res.status >= 500) failed.push(item)
+    } catch {
+      failed.push(item)
+    }
+  }
+  if (failed.length > 0) {
+    try { await _plugin.requeuePending({ items: failed }) } catch { /* next SMS re-arms */ }
   }
 }
 

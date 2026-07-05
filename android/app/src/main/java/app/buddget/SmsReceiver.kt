@@ -66,36 +66,35 @@ class SmsReceiver : BroadcastReceiver() {
         // WorkManager is the SINGLE forwarding path — works whether the app is
         // open or killed, and the server dedup makes retries idempotent. The
         // user is notified by the server-side FCM push once parsing completes.
-        val token  = prefs.getString("access_token", null)
-        val apiUrl = prefs.getString("api_url", null)
-
-        if (token != null && apiUrl != null) {
-            val data = workDataOf(
-                SmsForwardWorker.KEY_MESSAGE  to fullBody,
-                SmsForwardWorker.KEY_SENDER   to (sender ?: ""),
-                SmsForwardWorker.KEY_TOKEN    to token,
-                SmsForwardWorker.KEY_API_URL  to apiUrl,
-            )
-            WorkManager.getInstance(context).enqueue(
-                OneTimeWorkRequestBuilder<SmsForwardWorker>()
-                    .setInputData(data)
-                    // Android 12+: start the POST immediately instead of waiting
-                    // for batch scheduling; older devices fall back to a normal
-                    // request (no foreground requirements with this policy).
-                    .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-                    .setConstraints(
-                        Constraints.Builder()
-                            .setRequiredNetworkType(NetworkType.CONNECTED)
-                            .build()
-                    )
-                    .setBackoffCriteria(
-                        BackoffPolicy.EXPONENTIAL,
-                        WorkRequest.MIN_BACKOFF_MILLIS,
-                        TimeUnit.MILLISECONDS,
-                    )
-                    .build()
-            )
-        }
+        // Credentials are NOT baked into the job — the worker reads the current
+        // token/apiUrl from SharedPreferences at execution time, and routes
+        // undeliverable SMS to PendingSmsQueue instead of dropping them.
+        val data = workDataOf(
+            SmsForwardWorker.KEY_MESSAGE     to fullBody,
+            SmsForwardWorker.KEY_SENDER      to (sender ?: ""),
+            // Stamped NOW — a job delayed offline must report when the SMS
+            // actually arrived, not when the POST finally ran.
+            SmsForwardWorker.KEY_RECEIVED_AT to SmsTime.nowIso(),
+        )
+        WorkManager.getInstance(context).enqueue(
+            OneTimeWorkRequestBuilder<SmsForwardWorker>()
+                .setInputData(data)
+                // Android 12+: start the POST immediately instead of waiting
+                // for batch scheduling; older devices fall back to a normal
+                // request (no foreground requirements with this policy).
+                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                .setConstraints(
+                    Constraints.Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED)
+                        .build()
+                )
+                .setBackoffCriteria(
+                    BackoffPolicy.EXPONENTIAL,
+                    WorkRequest.MIN_BACKOFF_MILLIS,
+                    TimeUnit.MILLISECONDS,
+                )
+                .build()
+        )
     }
 
     private fun hasDigit(text: String): Boolean = text.any { it.isDigit() }

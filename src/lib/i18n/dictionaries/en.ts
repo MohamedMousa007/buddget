@@ -1601,6 +1601,19 @@ export const en: Dictionary = {
     categoryCustom: 'Custom goal',
   },
 
+  pendingCaptures: {
+    chip: (count: number) =>
+      count === 1
+        ? '1 offline capture ready — tap to review'
+        : `${count} offline captures ready — tap to review`,
+    waitingOffline: (count: number) =>
+      count === 1
+        ? '1 capture saved — waiting for connection'
+        : `${count} captures saved — waiting for connection`,
+    failed: "Couldn't process that capture — tap to retry",
+    buddgyOffline: 'Buddgy needs an internet connection — your data is still available offline.',
+  },
+
   smsTracking: {
     sectionTitle: 'SMS Auto-Tracking',
     sectionSubtitle: 'Automatically detect and record bank transactions from incoming SMS messages.',
@@ -1608,6 +1621,8 @@ export const en: Dictionary = {
     toggleHint: 'When on, bank SMS messages forwarded by your device will be parsed and added to your expenses automatically.',
     statusConnected: (bank: string, time: string) => `Last received from ${bank} at ${time}`,
     statusNeverConnected: 'No SMS received yet. Complete setup below.',
+    pendingQueued: (count: number) =>
+      count === 1 ? '1 message waiting to sync' : `${count} messages waiting to sync`,
     iosCardTitle: 'iOS Setup',
     iosStatusWaiting: 'Waiting for your first SMS…',
     iosStatusConnected: (time: string) => `Connected · last SMS ${time}`,

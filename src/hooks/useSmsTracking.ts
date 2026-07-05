@@ -104,20 +104,22 @@ export function useSmsTracking() {
       // Android native: OS permission must be confirmed before enabling.
       // The switch only flips green after the grant dialog resolves 'granted'.
       if (isNative() && isAndroid()) {
-        const { checkSmsPermission, requestSmsPermission, startSMSTracking, stopSMSTracking } =
+        const { checkSmsPermission, requestSmsPermission, ensureIngestToken, stopSMSTracking } =
           await import('@/lib/native/smsTracker')
         if (value) {
           const alreadyGranted = await checkSmsPermission()
           const granted = alreadyGranted || (await requestSmsPermission())
           if (!granted) return // user denied — leave switch OFF
+          // Store the non-expiring ingest token (never the 1-hour JWT), then
+          // flip the native gate — same order as the iOS path below.
           const session = await createClient().auth.getSession()
-          try {
-            await startSMSTracking(session.data.session?.access_token ?? '')
-            setError(null)
-          } catch {
-            setError('SMS tracking failed to start. Please check permissions and try again.')
+          const armed = await ensureIngestToken(session.data.session?.access_token ?? '')
+          if (!armed) {
+            setError('SMS tracking failed to start. Please check your connection and try again.')
             return // do not flip switch on
           }
+          await setSmsEnabled(true)
+          setError(null)
         } else {
           await stopSMSTracking()
           setError(null)
@@ -198,6 +200,7 @@ export function useSmsTracking() {
   return {
     isEnabled,
     isSetup,
+    pendingCount: deviceStatus?.pendingCount ?? 0,
     toggle,
     completeIosSetup,
     refreshStatus,

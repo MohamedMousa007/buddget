@@ -8,6 +8,7 @@ import { BottomNav } from './BottomNav'
 import { PullToRefresh } from './PullToRefresh'
 import { ModalProvider } from '@/components/modals/ModalProvider'
 import { SyncFailureBanner } from '@/components/layout/SyncFailureBanner'
+import { PendingCapturesChip } from '@/components/features/pending/PendingCapturesChip'
 import { DesktopHeaderBar } from '@/components/layout/DesktopHeaderBar'
 import { useThemeSync } from '@/hooks/useThemeSync'
 import { useRates } from '@/hooks/useRates'
@@ -31,9 +32,9 @@ import type { DebtPaymentRow } from '@/lib/supabase/remote/types'
 /**
  * Fires on every native app startup and on auth changes. Handles two platforms:
  *
- * Android: re-arms the WorkManager bridge (startSMSTracking + ingest token refresh).
- *   TOKEN_REFRESHED intentionally not handled — updating SharedPreferences with
- *   the new JWT would overwrite the non-expiring ingest token.
+ * Android: refreshes the non-expiring ingest token (the ONLY credential ever
+ *   written to SharedPreferences — a stored JWT would expire in ~1h and every
+ *   later SMS POST would 401 and be silently dropped).
  *
  * iOS: drains the offline-pending queue populated by CatchBankSmsIntent when
  *   the device had no network at SMS arrival time. Each queued message is
@@ -43,36 +44,23 @@ function SmsStartupSync() {
   useEffect(() => {
     if (!isNative()) return
 
-    const smsEnabled = () => useFinanceStore.getState().settings.smsTrackingEnabled
-
     const tryStart = async (token: string) => {
-      if (!smsEnabled() || !token) return
-      if (isAndroid()) {
-        const { startSMSTracking, saveSmsToken } = await import('@/lib/native/smsTracker')
-        await startSMSTracking(token)
-        try {
-          const res = await fetch(apiUrl('/api/sms/setup-token'), {
-            headers: { Authorization: `Bearer ${token}` },
-          })
-          if (res.ok) {
-            const data = (await res.json()) as { token?: string }
-            if (data.token) await saveSmsToken(data.token)
-          }
-        } catch { /* non-fatal — JWT fallback already in SharedPreferences */ }
-      } else {
-        // iOS: replay SMS that CatchBankSmsIntent couldn't deliver while offline.
-        // Skip if still offline — items stay queued for next app open with network.
-        if (!navigator.onLine) return
-        const { drainSmsPendingQueue } = await import('@/lib/native/smsTracker')
-        const pending = await drainSmsPendingQueue()
-        for (const item of pending) {
-          void fetch(apiUrl('/api/sms/parse'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify(item),
-          }).catch(() => {})
-        }
-      }
+      if (!token) return
+      // Gate on the NATIVE per-device flag, not the store setting — the store
+      // may not be rehydrated yet on cold start (the old gate silently skipped
+      // the token refresh), and a setting synced from another device must not
+      // arm this one.
+      const { getSmsBridgeStatus, ensureIngestToken, drainAndSubmitPendingSms } =
+        await import('@/lib/native/smsTracker')
+      const status = await getSmsBridgeStatus()
+      if (!status?.enabled) return
+      // Android: refresh the stored ingest token BEFORE draining, so queued
+      // items that failed on a stale token replay with a valid one (self-heal).
+      if (isAndroid()) await ensureIngestToken(token)
+      // Replay SMS the native path couldn't deliver (offline / stale token).
+      // Skip while offline — items stay queued for the next online open.
+      if (!navigator.onLine) return
+      await drainAndSubmitPendingSms(token)
     }
 
     let unsub: (() => void) | null = null
@@ -321,6 +309,7 @@ export function AppShell({ children }: AppShellProps) {
       <main className="native-scroll pt-[calc(52px+env(safe-area-inset-top,0px))] lg:pt-12 lg:ms-[176px] pb-[calc(4rem+env(safe-area-inset-bottom,0px))] lg:pb-0 min-h-[100dvh] safe-area-x">
         <PullToRefresh>
           <SyncFailureBanner />
+          <PendingCapturesChip />
           {children}
         </PullToRefresh>
       </main>
