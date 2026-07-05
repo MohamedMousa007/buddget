@@ -12,15 +12,27 @@ export PATH="/Users/mohamedmousa/.local/bin:/Users/mohamedmousa/.nvm/versions/no
 
 cd "$ROOT" || exit 1
 
-# Single-flight lock. Reclaim if stale (>2h: a prior run hung or crashed).
-if ! mkdir "$LOCKDIR" 2>/dev/null; then
-  if [ -n "$(find "$LOCKDIR" -maxdepth 0 -mmin +120 2>/dev/null)" ]; then
-    rmdir "$LOCKDIR" 2>/dev/null && mkdir "$LOCKDIR" 2>/dev/null || { echo "$(date) lock busy, skip" >>"$LOG"; exit 0; }
+# Single-flight lock with self-heal. The owner writes its PID into the lockdir.
+# A SIGKILL (e.g. a foreground run hitting a tool timeout) skips the EXIT trap
+# and orphans the lock; rather than block every run for 2h, a contending run
+# reclaims the lock the moment it sees the owner PID is dead. Belt-and-braces:
+# if the owner is somehow still alive but has run >2h, treat it as hung, kill it,
+# and reclaim.
+acquire_lock() { mkdir "$LOCKDIR" 2>/dev/null && echo $$ >"$LOCKDIR/pid"; }
+if ! acquire_lock; then
+  owner="$(cat "$LOCKDIR/pid" 2>/dev/null)"
+  if [ -z "$owner" ] || ! kill -0 "$owner" 2>/dev/null; then
+    reason="dead owner (${owner:-none})"
+  elif [ -n "$(find "$LOCKDIR" -maxdepth 0 -mmin +120 2>/dev/null)" ]; then
+    kill "$owner" 2>/dev/null; reason="hung owner ($owner, >2h)"
   else
-    echo "$(date) lock busy, skip" >>"$LOG"; exit 0
+    echo "$(date) lock busy (owner=$owner alive), skip" >>"$LOG"; exit 0
   fi
+  rm -rf "$LOCKDIR"
+  acquire_lock || { echo "$(date) lock busy, reclaim failed, skip" >>"$LOG"; exit 0; }
+  echo "$(date) reclaimed stale lock: $reason" >>"$LOG"
 fi
-trap 'rmdir "$LOCKDIR" 2>/dev/null' EXIT
+trap 'rm -rf "$LOCKDIR"' EXIT
 
 echo "===== $(date) run start =====" >>"$LOG"
 
