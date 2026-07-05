@@ -196,6 +196,7 @@ export const en: Dictionary = {
     save: 'Save',
     saveAndSync: 'Save & sync',
     savedSynced: 'Saved & synced',
+    saved: 'Saved',
     cancel: 'Cancel',
     delete: 'Delete',
     edit: 'Edit',

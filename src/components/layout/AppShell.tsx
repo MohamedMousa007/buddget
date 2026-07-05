@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { apiUrl } from '@/lib/apiBase'
 import { Sidebar } from './Sidebar'
 import { BottomNav } from './BottomNav'
+import { PullToRefresh } from './PullToRefresh'
 import { ModalProvider } from '@/components/modals/ModalProvider'
 import { SyncFailureBanner } from '@/components/layout/SyncFailureBanner'
 import { DesktopHeaderBar } from '@/components/layout/DesktopHeaderBar'
@@ -302,6 +303,7 @@ export function AppShell({ children }: AppShellProps) {
   useThemeSync()
   const pathname = usePathname()
   const bare = isBareAuthRoute(pathname)
+  const mainRef = useRef<HTMLElement>(null)
 
   if (bare) {
     return (
@@ -317,9 +319,11 @@ export function AppShell({ children }: AppShellProps) {
       <MarketRatesSync />
       <Sidebar />
       <DesktopHeaderBar />
-      <main className="native-scroll pt-[calc(52px+env(safe-area-inset-top,0px))] lg:pt-12 lg:ms-[176px] pb-[calc(4rem+env(safe-area-inset-bottom,0px))] lg:pb-0 min-h-[100dvh] safe-area-x">
-        <SyncFailureBanner />
-        {children}
+      <main ref={mainRef} className="native-scroll relative pt-[calc(52px+env(safe-area-inset-top,0px))] lg:pt-12 lg:ms-[176px] pb-[calc(4rem+env(safe-area-inset-bottom,0px))] lg:pb-0 min-h-[100dvh] safe-area-x">
+        <PullToRefresh scrollRef={mainRef}>
+          <SyncFailureBanner />
+          {children}
+        </PullToRefresh>
       </main>
       <BottomNav />
       <ModalProvider />
