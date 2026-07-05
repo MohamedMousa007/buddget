@@ -2,9 +2,9 @@
  * POST /api/sms/ack
  *
  * Client acknowledgement that an SMS-tracked expense/income actually rendered in
- * the app (via realtime sync or a tapped push). This records the render axis;
- * a row reaches status='confirmed' (true success) only when a push was ALSO
- * delivered. Render without a delivered push → status='rendered'.
+ * the app (via realtime sync or a tapped push). An ack means the app has the
+ * transaction, which is the success signal → status='confirmed'. Push delivery
+ * is recorded separately (pushed_at/push_result) and does not gate confirmation.
  *
  * Auth: Supabase JWT (mobile) or bearer token from `sms_ingest_tokens`.
  * Idempotent: re-acking a confirmed row is a no-op.

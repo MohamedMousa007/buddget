@@ -821,10 +821,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, reason: 'log_insert_failed' }, { status: 500 })
   }
 
-  // Server-side pre-ack: mark the row as 'rendered' immediately so the admin
-  // shows the honest state ("In-app only" or "Confirmed" once push lands) instead
-  // of "Not confirmed" for hours until the native app opens and the client catch-up
-  // ACK fires. Only for rows where a transaction was actually created or matched.
+  // Server-side pre-ack: the transaction exists in-app now, so confirm it
+  // immediately instead of leaving it "Not confirmed" for hours until the native
+  // app opens and the client catch-up ACK fires. Push delivery is tracked
+  // separately. Only for rows where a transaction was actually created or matched.
   if (!addFailed && !provisionalConfirm && (postedSomething || tx.outcome === 'income_matched')) {
     await service.rpc('sms_mark_acked', { p_log_id: logId, p_user_id: userId })
   }
