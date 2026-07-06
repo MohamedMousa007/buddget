@@ -3,6 +3,7 @@
 import { Loader2 } from 'lucide-react'
 import { useOAuthSignIn } from '@/hooks/useOAuthSignIn'
 import type { OAuthProvider } from '@/lib/auth/oauthProviders'
+import { isAndroid, isNative } from '@/lib/native/isNative'
 import { useT } from '@/lib/i18n'
 
 /**
@@ -13,6 +14,13 @@ export function AuthOAuthButtons({ nextPath }: { nextPath: string }) {
   const t = useT()
   const { pending, error, canCancel, signIn, cancelSignIn, isGoogleEnabled, isAppleEnabled } =
     useOAuthSignIn(nextPath)
+
+  // Apple has no native Android SDK; the only Android path is a web OAuth hop
+  // (capgo broadcast-channel) that's unreliable on a domain we don't own, so we
+  // hide the button there — Android users sign in with Google. The native-Apple
+  // setup (socialSignIn.ts) is left fully wired so this is a one-line re-enable.
+  // Read at render like BiometricLoginButton; isNative()/isAndroid() are SSR-safe.
+  const showApple = !(isNative() && isAndroid())
 
   // While a provider is loading AND the user is back in the app, its button
   // becomes a tap-to-cancel control (escape hatch for a hung native flow).
@@ -30,16 +38,18 @@ export function AuthOAuthButtons({ nextPath }: { nextPath: string }) {
         onClick={() => (cancellable('google') ? cancelSignIn() : void signIn('google'))}
         variant="outline"
       />
-      <OAuthButton
-        provider="apple"
-        enabled={isAppleEnabled}
-        pending={pending === 'apple'}
-        disabled={pending !== null && !cancellable('apple')}
-        label={cancellable('apple') ? t.auth.oauthTapToCancel : t.auth.continueWithApple}
-        disabledHint={t.auth.oauthProviderDisabled}
-        onClick={() => (cancellable('apple') ? cancelSignIn() : void signIn('apple'))}
-        variant="apple"
-      />
+      {showApple ? (
+        <OAuthButton
+          provider="apple"
+          enabled={isAppleEnabled}
+          pending={pending === 'apple'}
+          disabled={pending !== null && !cancellable('apple')}
+          label={cancellable('apple') ? t.auth.oauthTapToCancel : t.auth.continueWithApple}
+          disabledHint={t.auth.oauthProviderDisabled}
+          onClick={() => (cancellable('apple') ? cancelSignIn() : void signIn('apple'))}
+          variant="apple"
+        />
+      ) : null}
       {error ? (
         <p className="text-[12px] text-[var(--color-brand-red)] text-center" role="alert">
           {error}
