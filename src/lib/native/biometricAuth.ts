@@ -6,7 +6,6 @@ import { Preferences } from '@capacitor/preferences'
 const SESSION_KEY = 'buddget.biometric.session'
 const ENABLED_KEY = 'buddget.biometric.enabled'
 const ACCOUNT_KEY = 'buddget.biometric.account'
-const PENDING_ENABLE_KEY = 'buddget.biometric.pendingEnable'
 
 export type BiometryType = 'face' | 'fingerprint' | 'iris' | 'unknown' | null
 
@@ -74,6 +73,9 @@ export async function isAvailable(): Promise<AvailableInfo> {
   if (loaded) {
     try {
       const info = await loaded.plugin.checkBiometry()
+      // Diagnostic: on iOS a device that "shows nothing" reports why here
+      // (isAvailable/biometryType/code) — read via Safari Web Inspector.
+      console.warn('[biometric] checkBiometry', JSON.stringify(info))
       const type = biometryTypeFrom(info.biometryType ?? info.biometryTypes?.[0])
       return { available: Boolean(info.isAvailable), type }
     } catch (e) {
@@ -103,15 +105,16 @@ export async function getType(): Promise<BiometryType> {
  * cancel / failure. The web fallback uses the WebAuthn `get()` ceremony with
  * userVerification: 'required'.
  */
-export async function authenticate(reason = 'Unlock Buddget'): Promise<void> {
+export async function authenticate(reason = 'Sign in to Buddget'): Promise<void> {
   const loaded = await loadPlugin()
   if (loaded) {
+    // One line of copy only: `reason` is the iOS prompt text and the Android
+    // title. No androidSubtitle — repeating `reason` there rendered it twice.
     await loaded.plugin.authenticate({
       reason,
       cancelTitle: 'Cancel',
       fallbackTitle: 'Use passcode',
-      androidTitle: 'Buddget',
-      androidSubtitle: reason,
+      androidTitle: reason,
       androidConfirmationRequired: false,
       androidBiometryStrength: 'weak',
     })
@@ -181,27 +184,6 @@ export async function setEnabled(enabled: boolean, email?: string): Promise<void
     }
   } catch {
     /* noop */
-  }
-}
-
-/** One-shot marker: user tapped the biometric button on the auth screen before
- *  enabling it — enable automatically after the next successful sign-in. */
-export async function setPendingEnable(): Promise<void> {
-  try {
-    await Preferences.set({ key: PENDING_ENABLE_KEY, value: '1' })
-  } catch {
-    /* noop */
-  }
-}
-
-export async function consumePendingEnable(): Promise<boolean> {
-  try {
-    const { value } = await Preferences.get({ key: PENDING_ENABLE_KEY })
-    if (value !== '1') return false
-    await Preferences.remove({ key: PENDING_ENABLE_KEY })
-    return true
-  } catch {
-    return false
   }
 }
 

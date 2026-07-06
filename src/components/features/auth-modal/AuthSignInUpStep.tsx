@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { AuthEmailField } from '@/components/features/auth-modal/AuthEmailField'
@@ -9,7 +9,7 @@ import { AuthFormErrorAlert } from '@/components/features/auth-modal/AuthFormErr
 import { AuthPrimaryButton } from '@/components/features/auth-modal/AuthPrimaryButton'
 import { AuthOAuthButtons } from '@/components/features/auth-modal/AuthOAuthButtons'
 import { PasswordStrengthMeter } from '@/components/features/auth-modal/PasswordStrengthMeter'
-import { BiometricLoginButton, type BiometricMessage } from '@/components/features/auth-modal/BiometricLoginButton'
+import { BiometricLoginButton } from '@/components/features/auth-modal/BiometricLoginButton'
 import { useAuth } from '@/components/auth/auth-context'
 import { useT } from '@/lib/i18n'
 import type { AuthEmailStep, AuthPasswordIntent } from '@/hooks/useAuthModal'
@@ -80,7 +80,6 @@ export function AuthSignInUpStep({
   const emailRef = useRef<HTMLInputElement>(null)
   const passwordRef = useRef<HTMLInputElement>(null)
   const submitBtnWrapRef = useRef<HTMLDivElement>(null)
-  const [bioMsg, setBioMsg] = useState<BiometricMessage | null>(null)
 
   // Focus management on state transitions.
   useEffect(() => {
@@ -136,6 +135,10 @@ export function AuthSignInUpStep({
               {t.auth.morphTitle}
             </p>
 
+            {/* Only renders for a returning user who enabled biometric in Settings.
+                Success flows through onAuthStateChange, which swaps the whole gate. */}
+            <BiometricLoginButton />
+
             <AuthOAuthButtons nextPath={pendingNext || '/'} />
 
             <div className="relative flex items-center gap-3">
@@ -159,34 +162,17 @@ export function AuthSignInUpStep({
               }}
               className="space-y-3"
             >
-              <div className="flex items-end gap-2">
-                <div className="min-w-0 flex-1">
-                  <AuthEmailField
-                    ref={emailRef}
-                    value={email}
-                    onChange={(v) => {
-                      setEmail(v)
-                      if (error) setError('')
-                    }}
-                    onAdvance={advanceAfterEmail}
-                    pending={emailAdvancePending}
-                    showAdvanceButton
-                  />
-                </div>
-                <BiometricLoginButton autoPrompt onMessage={setBioMsg} />
-              </div>
-              {bioMsg ? (
-                <p
-                  className={`text-xs text-center ${
-                    bioMsg.tone === 'error'
-                      ? 'text-[var(--color-brand-red)]'
-                      : 'text-[var(--color-brand-text-muted)]'
-                  }`}
-                  role={bioMsg.tone === 'error' ? 'alert' : undefined}
-                >
-                  {bioMsg.text}
-                </p>
-              ) : null}
+              <AuthEmailField
+                ref={emailRef}
+                value={email}
+                onChange={(v) => {
+                  setEmail(v)
+                  if (error) setError('')
+                }}
+                onAdvance={advanceAfterEmail}
+                pending={emailAdvancePending}
+                showAdvanceButton
+              />
               <input
                 type="password"
                 name="password"

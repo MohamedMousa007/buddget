@@ -39,22 +39,6 @@ vi.mock('@capgo/capacitor-social-login', () => ({
   },
 }))
 
-const appMocks = vi.hoisted(() => ({
-  removeFn: vi.fn(() => Promise.resolve()),
-  stateCb: null as null | ((s: { isActive: boolean }) => void),
-  listenerCount: 0,
-}))
-
-vi.mock('@capacitor/app', () => ({
-  App: {
-    addListener: (_evt: string, cb: (s: { isActive: boolean }) => void) => {
-      appMocks.stateCb = cb
-      appMocks.listenerCount += 1
-      return Promise.resolve({ remove: appMocks.removeFn })
-    },
-  },
-}))
-
 vi.mock('@/lib/supabase/client', () => ({
   createClient: vi.fn(() => ({
     auth: { signInWithIdToken: mocks.signInWithIdToken },
@@ -95,8 +79,6 @@ const CAPGO_REDIRECT_URL = 'https://capacitor-social-login.firebaseapp.com/__/au
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.lastInitArgs = null
-  appMocks.stateCb = null
-  appMocks.listenerCount = 0
   mocks.isAndroid.mockReturnValue(false)
   mocks.initialize.mockResolvedValue(undefined)
   mocks.login.mockResolvedValue({ result: { idToken: 'id-token-ios' } })
@@ -471,74 +453,46 @@ describe('nativeSocialSignIn — Google scopes per platform', () => {
 })
 
 // ---------------------------------------------------------------------------
-// Foreground-return cancellation (Android back out of the custom tab)
+// Abort (user tapped the loading button to cancel a hung flow)
 // ---------------------------------------------------------------------------
-describe('foreground-return cancellation', () => {
-  it('treats app resume with a login still unsettled after the grace as cancel (Android)', async () => {
-    vi.useFakeTimers()
-    try {
-      const { nativeSocialSignIn } = await freshModule({ android: true })
-      mocks.login.mockReturnValueOnce(new Promise(() => {})) // never settles
-      const resultP = nativeSocialSignIn('apple')
-      await vi.advanceTimersByTimeAsync(0) // flush listener attach
-      expect(appMocks.stateCb).toBeTruthy()
-      appMocks.stateCb!({ isActive: true })
-      await vi.advanceTimersByTimeAsync(2_500)
-      const result = await resultP
-      expect(result).toEqual({ error: null, cancelled: true, user: null })
-      expect(appMocks.removeFn).toHaveBeenCalled()
-    } finally {
-      vi.useRealTimers()
-    }
+describe('AbortSignal cancellation', () => {
+  it('aborts before the Supabase exchange → cancelled, no signInWithIdToken', async () => {
+    const { nativeSocialSignIn } = await freshModule({ android: false })
+    const controller = new AbortController()
+    // Login resolves a token, but the signal is already aborted by the time we
+    // check it (user tapped cancel while the sheet was up).
+    mocks.login.mockImplementationOnce(() => {
+      controller.abort()
+      return Promise.resolve({ result: { idToken: 'tok' } })
+    })
+    const result = await nativeSocialSignIn('google', controller.signal)
+    expect(result).toEqual({ error: null, cancelled: true, user: null })
+    expect(mocks.signInWithIdToken).not.toHaveBeenCalled()
   })
 
-  it('does not misread a login that settles within the grace window', async () => {
-    vi.useFakeTimers()
-    try {
-      const { nativeSocialSignIn } = await freshModule({ android: true })
-      let resolveLogin!: (v: unknown) => void
-      mocks.login.mockReturnValueOnce(new Promise((res) => { resolveLogin = res }))
-      const resultP = nativeSocialSignIn('apple')
-      await vi.advanceTimersByTimeAsync(0)
-      appMocks.stateCb!({ isActive: true })
-      await vi.advanceTimersByTimeAsync(100)
-      resolveLogin({ result: { idToken: 'late-token' } })
-      await vi.advanceTimersByTimeAsync(0)
-      const result = await resultP
-      expect(result).toEqual({ error: null, cancelled: false, user: null })
-      expect(appMocks.removeFn).toHaveBeenCalled()
-    } finally {
-      vi.useRealTimers()
-    }
-  })
-
-  it('attaches no appStateChange watcher on iOS', async () => {
-    vi.useFakeTimers()
-    try {
-      const { nativeSocialSignIn } = await freshModule({ android: false })
-      let resolveLogin!: (v: unknown) => void
-      mocks.login.mockReturnValueOnce(new Promise((res) => { resolveLogin = res }))
-      const resultP = nativeSocialSignIn('apple')
-      await vi.advanceTimersByTimeAsync(0)
-      expect(appMocks.listenerCount).toBe(0)
-      resolveLogin({ result: { idToken: 't' } })
-      await resultP
-    } finally {
-      vi.useRealTimers()
-    }
+  it('does not abort a normal flow when the signal stays clear', async () => {
+    const { nativeSocialSignIn } = await freshModule({ android: false })
+    const controller = new AbortController()
+    mocks.login.mockResolvedValueOnce({ result: { idToken: 'tok' } })
+    const result = await nativeSocialSignIn('google', controller.signal)
+    expect(result.cancelled).toBe(false)
+    expect(mocks.signInWithIdToken).toHaveBeenCalled()
   })
 })
 
 // ---------------------------------------------------------------------------
-// isCancellation edge cases (tested indirectly through nativeSocialSignIn)
+// isCancellation — broadened per-platform cancel signatures
 // ---------------------------------------------------------------------------
 describe('cancellation detection', () => {
   const cancellationErrors = [
-    'User cancelled the request',
-    'The operation was cancelled',
+    'User cancelled the request', // generic
+    'The operation was canceled', // US spelling
     'CANCEL',
-    'Error 1001',
-    'error code 1001',
+    'Error 1001', // iOS ASAuthorization
+    '12501: cancelled by user', // Android Google legacy
+    'androidx.credentials.exceptions.GetCredentialCancellationException',
+    'activity is cancelled by the user.',
+    'ASWebAuthenticationSessionErrorCodeCanceledLogin',
   ]
 
   for (const msg of cancellationErrors) {
@@ -556,5 +510,15 @@ describe('cancellation detection', () => {
     const result = await nativeSocialSignIn('apple')
     expect(result.cancelled).toBe(false)
     expect(result.error).not.toBeNull()
+  })
+
+  it('a resolved login is never turned into a cancel', async () => {
+    const { nativeSocialSignIn } = await freshModule({ android: false })
+    mocks.login.mockResolvedValueOnce({ result: { idToken: 'real-token' } })
+    mocks.signInWithIdToken.mockResolvedValueOnce({ data: { user: { id: 'u1' } }, error: null })
+    const result = await nativeSocialSignIn('google')
+    expect(result.cancelled).toBe(false)
+    expect(result.error).toBeNull()
+    expect(result.user).toEqual({ id: 'u1' })
   })
 })

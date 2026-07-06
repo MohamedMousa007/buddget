@@ -2,6 +2,7 @@
 
 import { Loader2 } from 'lucide-react'
 import { useOAuthSignIn } from '@/hooks/useOAuthSignIn'
+import type { OAuthProvider } from '@/lib/auth/oauthProviders'
 import { useT } from '@/lib/i18n'
 
 /**
@@ -10,7 +11,12 @@ import { useT } from '@/lib/i18n'
  */
 export function AuthOAuthButtons({ nextPath }: { nextPath: string }) {
   const t = useT()
-  const { pending, error, signIn, isGoogleEnabled, isAppleEnabled } = useOAuthSignIn(nextPath)
+  const { pending, error, canCancel, signIn, cancelSignIn, isGoogleEnabled, isAppleEnabled } =
+    useOAuthSignIn(nextPath)
+
+  // While a provider is loading AND the user is back in the app, its button
+  // becomes a tap-to-cancel control (escape hatch for a hung native flow).
+  const cancellable = (provider: OAuthProvider) => pending === provider && canCancel
 
   return (
     <div className="space-y-2">
@@ -18,20 +24,20 @@ export function AuthOAuthButtons({ nextPath }: { nextPath: string }) {
         provider="google"
         enabled={isGoogleEnabled}
         pending={pending === 'google'}
-        disabled={pending !== null}
-        label={t.auth.continueWithGoogle}
+        disabled={pending !== null && !cancellable('google')}
+        label={cancellable('google') ? t.auth.oauthTapToCancel : t.auth.continueWithGoogle}
         disabledHint={t.auth.oauthProviderDisabled}
-        onClick={() => void signIn('google')}
+        onClick={() => (cancellable('google') ? cancelSignIn() : void signIn('google'))}
         variant="outline"
       />
       <OAuthButton
         provider="apple"
         enabled={isAppleEnabled}
         pending={pending === 'apple'}
-        disabled={pending !== null}
-        label={t.auth.continueWithApple}
+        disabled={pending !== null && !cancellable('apple')}
+        label={cancellable('apple') ? t.auth.oauthTapToCancel : t.auth.continueWithApple}
         disabledHint={t.auth.oauthProviderDisabled}
-        onClick={() => void signIn('apple')}
+        onClick={() => (cancellable('apple') ? cancelSignIn() : void signIn('apple'))}
         variant="apple"
       />
       {error ? (

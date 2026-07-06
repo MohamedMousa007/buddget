@@ -15,7 +15,7 @@ function tickerItemStyle(delaySeconds: number): CSSProperties {
     fontWeight: 400,
     letterSpacing: '-0.2px',
     lineHeight: 1.35,
-    color: 'rgba(255,255,255,.75)',
+    // Colour lives in CSS (`.lg-ticker p`) so it can be theme-aware.
     animation: 'lgRotHead3 13.5s ease-in-out infinite',
     animationFillMode: 'backwards',
     animationDelay: `${delaySeconds}s`,
@@ -35,12 +35,26 @@ export function LandingGate() {
   const t = useT()
   const [keyboardOpen, setKeyboardOpen] = useState(false)
 
+  // Hide the bottom ticker while typing. Focus tracks the keyboard exactly and,
+  // unlike a visualViewport delta, doesn't fail when the native WebView resizes
+  // with the keyboard. Touch devices only, so a desktop click doesn't blank it.
   useEffect(() => {
-    const vv = window.visualViewport
-    if (!vv) return
-    const onResize = () => setKeyboardOpen(window.innerHeight - vv.height > 150)
-    vv.addEventListener('resize', onResize)
-    return () => vv.removeEventListener('resize', onResize)
+    if (!window.matchMedia?.('(pointer: coarse)').matches) return
+    const isField = (el: EventTarget | null) =>
+      el instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)
+    const onFocusIn = (e: FocusEvent) => {
+      if (isField(e.target)) setKeyboardOpen(true)
+    }
+    const onFocusOut = () => {
+      // Defer so focus moving between two fields doesn't flash the ticker.
+      queueMicrotask(() => setKeyboardOpen(isField(document.activeElement)))
+    }
+    document.addEventListener('focusin', onFocusIn)
+    document.addEventListener('focusout', onFocusOut)
+    return () => {
+      document.removeEventListener('focusin', onFocusIn)
+      document.removeEventListener('focusout', onFocusOut)
+    }
   }, [])
 
   return (
@@ -57,12 +71,13 @@ export function LandingGate() {
           33%  { opacity: 0; transform: translateY(-12px); }
           100% { opacity: 0; }
         }
-        @media (prefers-color-scheme: dark) {
-          .lg-bg { background: linear-gradient(180deg, #2C2C35, #222229) !important; }
-          .lg-glow, .lg-ticker { display: block !important; }
-        }
+        /* Same treatment in both themes — only colours differ ("no variations").
+           Theme is driven by the .dark class (see lib/theme/applyTheme.ts), never
+           the OS setting, so a Light app on a Dark OS still looks light. */
+        .lg-bg { background: linear-gradient(180deg, #FFFFFF, #EDEDF2) !important; }
         .dark .lg-bg { background: linear-gradient(180deg, #2C2C35, #222229) !important; }
-        .dark .lg-glow, .dark .lg-ticker { display: block !important; }
+        .lg-ticker p { color: rgba(26,26,36,.70); }
+        .dark .lg-ticker p { color: rgba(255,255,255,.75); }
         @media (prefers-reduced-motion: reduce) {
           .lg-glow { animation: none !important; opacity: .6; }
           .lg-ticker p { animation: none !important; opacity: 0; }
@@ -74,13 +89,12 @@ export function LandingGate() {
       {/* Layout note: top-aligned on phones so the soft keyboard doesn't push the
           wordmark off-screen when an input is focused. sm:items-center restores
           the centred look on tablets/desktop. */}
-      <div className="lg-bg min-h-[100svh] bg-[var(--color-brand-bg)] relative overflow-hidden flex items-start justify-center pt-[max(env(safe-area-inset-top),2rem)] pb-8 sm:items-center sm:pt-0 sm:pb-0">
+      <div className="lg-bg min-h-[100svh] relative overflow-hidden flex items-start justify-center pt-[max(env(safe-area-inset-top),2rem)] pb-8 sm:items-center sm:pt-0 sm:pb-0">
 
-        {/* Ambient glow — dark mode only, fixed so keyboard opening doesn't shift it */}
+        {/* Ambient glow — both themes, fixed so keyboard opening doesn't shift it */}
         <div
           className="lg-glow"
           style={{
-            display: 'none',
             position: 'fixed',
             top: '30%',
             left: '50%',
@@ -134,11 +148,10 @@ export function LandingGate() {
           </p>
         </main>
 
-        {/* Marketing ticker — dark mode only, fixed to viewport bottom; hidden when keyboard is open */}
+        {/* Marketing ticker — both themes, fixed to viewport bottom; hidden while typing */}
         <div
           className={`lg-ticker${keyboardOpen ? ' lg-ticker-hide' : ''}`}
           style={{
-            display: 'none',
             position: 'fixed',
             left: '36px',
             right: '36px',

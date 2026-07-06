@@ -71,60 +71,44 @@ export interface NativeSignInResult {
   user: User | null
 }
 
-const NATIVE_AUTH_TIMEOUT_MS = 120_000
-const FOREGROUND_CANCEL_GRACE_MS = 2_500
+const NATIVE_AUTH_TIMEOUT_MS = 60_000
 
 /**
- * Race a login call against a 2-minute backstop, plus (Android only) a
- * foreground-return watcher: capgo's broadcast-channel Apple flow never rejects
- * when the user backs out of the custom tab, so if the app returns to the
- * foreground and the login is still unsettled after a short grace, treat it as
- * a cancellation. iOS providers reject properly on cancel (code 1001), and
- * Google-on-iOS briefly backgrounds the app on success, so no watcher there.
+ * Cleanup-only backstop so a wedged `SocialLogin.login()` promise can't leak
+ * forever. This is invisible: the UI spinner is cleared much earlier (10s) by
+ * the caller (`useOAuthSignIn`). Resolving cancel here is never surfaced as an
+ * error. We do NOT try to detect cancel from app-resume — after account
+ * selection the app also returns to the foreground while the token is still
+ * being fetched, so "resumed + still loading" is indistinguishable from a real
+ * in-progress sign-in. The only trustworthy cancel signal is the plugin's own
+ * rejection (see isCancellation) or an explicit user abort (AbortSignal).
  */
-async function withCancellation<T>(p: Promise<T>): Promise<T> {
-  let settled = false
-  const tracked = p.finally(() => {
-    settled = true
-  })
-  let graceTimer: ReturnType<typeof setTimeout> | undefined
-  let listener: { remove(): Promise<void> } | undefined
-  try {
-    return await Promise.race([
-      tracked,
-      new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('auth_timeout')), NATIVE_AUTH_TIMEOUT_MS)
-        if (!isAndroid()) return
-        void import('@capacitor/app')
-          .then(({ App }) =>
-            App.addListener('appStateChange', ({ isActive }) => {
-              if (!isActive || settled) return
-              if (graceTimer) clearTimeout(graceTimer)
-              graceTimer = setTimeout(() => {
-                if (!settled) reject(new Error('auth_cancelled_foreground'))
-              }, FOREGROUND_CANCEL_GRACE_MS)
-            }),
-          )
-          .then((handle) => {
-            listener = handle
-            // Login settled before the async attach finished — clean up now,
-            // the finally below already ran with `listener` still undefined.
-            if (settled) void handle.remove().catch(() => {})
-          })
-          .catch(() => {})
-      }),
-    ])
-  } finally {
-    if (graceTimer) clearTimeout(graceTimer)
-    void listener?.remove().catch(() => {})
-  }
+function withTimeout<T>(p: Promise<T>): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('auth_timeout')), NATIVE_AUTH_TIMEOUT_MS),
+    ),
+  ])
 }
 
-/** iOS ASAuthorization / Google sign-in surface their cancel as code 1001 / "cancel". */
+/**
+ * True when the plugin's rejection means the user dismissed the native UI.
+ * capgo surfaces cancel differently per platform/provider, so match broadly:
+ * iOS ASAuthorization (1001), Android Google legacy (12501), Android Credential
+ * Manager (GetCredentialCancellationException / "activity is cancelled" /
+ * "user canceled"), iOS ASWebAuthenticationSession canceled-login, plus our own
+ * `auth_timeout` cleanup sentinel.
+ */
 function isCancellation(e: unknown): boolean {
   const m = (e instanceof Error ? e.message : String(e ?? '')).toLowerCase()
-  // 'cancel' also matches our own 'auth_cancelled_foreground' sentinel.
-  return m.includes('cancel') || m.includes('1001') || m.includes('auth_timeout')
+  return (
+    m.includes('cancel') || // cancel / canceled / cancelled / CancellationException / CanceledLogin
+    m.includes('1001') ||
+    m.includes('12501') ||
+    m.includes('auth_timeout') ||
+    m.includes('aborted')
+  )
 }
 
 /**
@@ -139,7 +123,10 @@ function isCancellation(e: unknown): boolean {
  * `signInWithIdToken`. Reconciling the two is error-prone; omitting the nonce
  * is the supported, reliable path (the id token is short-lived + audience-bound).
  */
-export async function nativeSocialSignIn(provider: OAuthProvider): Promise<NativeSignInResult> {
+export async function nativeSocialSignIn(
+  provider: OAuthProvider,
+  signal?: AbortSignal,
+): Promise<NativeSignInResult> {
   try {
     await ensureInit()
     const { SocialLogin } = await import('@capgo/capacitor-social-login')
@@ -147,7 +134,7 @@ export async function nativeSocialSignIn(provider: OAuthProvider): Promise<Nativ
     let idToken: string | null = null
     let googleRawNonce: string | undefined
     if (provider === 'apple') {
-      const { result } = await withCancellation(SocialLogin.login({
+      const { result } = await withTimeout(SocialLogin.login({
         provider: 'apple',
         options: isAndroid()
           ? { scopes: ['name', 'email'], useBroadcastChannel: true }
@@ -167,7 +154,7 @@ export async function nativeSocialSignIn(provider: OAuthProvider): Promise<Nativ
       // Android: never pass `scopes` — email/profile/openid are the plugin's
       // defaults, and passing ANY scopes array makes capgo's GoogleProvider
       // demand a ModifiedMainActivityForSocialLoginPlugin and reject the call.
-      const { result } = await withCancellation(SocialLogin.login({
+      const { result } = await withTimeout(SocialLogin.login({
         provider: 'google',
         options: isAndroid()
           ? { nonce: hashedNonce }
@@ -175,6 +162,10 @@ export async function nativeSocialSignIn(provider: OAuthProvider): Promise<Nativ
       }))
       idToken = 'idToken' in result ? result.idToken : null
     }
+
+    // The user tapped cancel while the native sheet was up — abort before we
+    // exchange the token, so a completing flow doesn't sign them in post-cancel.
+    if (signal?.aborted) return { error: null, cancelled: true, user: null }
 
     if (!idToken)
       return { error: { message: 'No identity token returned' }, cancelled: false, user: null }
@@ -191,13 +182,16 @@ export async function nativeSocialSignIn(provider: OAuthProvider): Promise<Nativ
       user: data?.user ?? null,
     }
   } catch (e) {
-    if (isCancellation(e)) return { error: null, cancelled: true, user: null }
     const message =
       e instanceof Error
         ? e.message
         : e && typeof e === 'object' && 'message' in e
           ? String((e as { message: unknown }).message)
           : String(e)
+    // Surface capgo's exact rejection string so we can confirm/extend cancel
+    // matching from a device remote-inspector session.
+    console.warn('[oauth] login rejected:', message)
+    if (isCancellation(e)) return { error: null, cancelled: true, user: null }
     return { error: { message }, cancelled: false, user: null }
   }
 }

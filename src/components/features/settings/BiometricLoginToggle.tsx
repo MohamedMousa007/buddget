@@ -100,22 +100,23 @@ export function BiometricLoginToggle({ userEmail }: BiometricLoginToggleProps) {
             </p>
           </div>
         </div>
-        {/* p-2.5/-m-2.5 grows the hit area to 44px without moving the layout. */}
+        {/* p-2.5/-m-2.5 grows the hit area to 44px without moving the layout.
+            Flex-centered thumb (no absolute positioning) → robust on iOS WKWebView. */}
         <button
           type="button"
           onClick={() => void toggle()}
           disabled={busy || Boolean(conflict)}
           role="switch"
           aria-checked={enabled}
-          className="relative shrink-0 rounded-full p-2.5 -m-2.5 disabled:opacity-60"
+          className="shrink-0 rounded-full p-2.5 -m-2.5 disabled:opacity-60"
         >
           <span
-            className={`block h-6 w-11 rounded-full transition-colors ${
+            className={`flex h-6 w-11 items-center rounded-full px-[3px] transition-colors ${
               enabled ? 'bg-[var(--color-brand-red)]' : 'bg-[var(--color-brand-border)]'
             }`}
           >
             <span
-              className={`absolute top-3 start-3 block h-5 w-5 rounded-full bg-white transition-transform ${
+              className={`block h-[18px] w-[18px] rounded-full bg-white shadow-sm transition-transform ${
                 enabled ? 'translate-x-5 rtl:-translate-x-5' : ''
               }`}
             />
