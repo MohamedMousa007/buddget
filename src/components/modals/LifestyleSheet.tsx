@@ -53,7 +53,7 @@ export function LifestyleSheet() {
   useEscapeClose(isOpen, () => setActiveModal(null))
 
   return (
-    <ModalShell open={isOpen} onBackdropClick={() => setActiveModal(null)} dragToClose>
+    <ModalShell open={isOpen} onBackdropClick={() => setActiveModal(null)} padContent>
       <div className="p-5">
         <ModalSheetHeader title={t.onboarding.lifestyleTitle} onClose={() => setActiveModal(null)} />
         <p className="text-xs text-[var(--color-brand-text-muted)] mb-4 -mt-1">

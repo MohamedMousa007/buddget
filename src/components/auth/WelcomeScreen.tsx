@@ -2,6 +2,8 @@
 
 import type { CSSProperties } from 'react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useAuth } from '@/components/auth/auth-context'
+import { emailLocalPart } from '@/lib/auth/emailLocalPart'
 
 function getGreeting(hour: number, isArabic: boolean): string {
   if (isArabic) return hour < 12 ? 'صباح الخير' : 'مساء الخير'
@@ -30,9 +32,15 @@ function tickerItemStyle(delaySeconds: number): CSSProperties {
 const ACCENT: CSSProperties = { fontWeight: 700, color: '#E50914' }
 
 export function WelcomeScreen() {
-  const name = useFinanceStore((s) => s.profile.name)
+  const { user } = useAuth()
+  const profileName = useFinanceStore((s) => s.profile.name)
   const language = useFinanceStore((s) => s.settings.language)
   const isArabic = language === 'ar'
+
+  // Personal greeting from the first frame: the real name once the profile has
+  // loaded, otherwise the signed-in user's own email local-part (their own
+  // address — no privacy concern). Never blank on first sign-in.
+  const name = profileName?.trim() || emailLocalPart(user?.email ?? '')
 
   const hour = new Date().getHours()
   const greeting = getGreeting(hour, isArabic)

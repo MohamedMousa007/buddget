@@ -37,7 +37,7 @@ export function SmsReviewSheet({ open, onClose, items, confirmItem, dismissItem 
   }
 
   return (
-    <ModalShell open={open} onBackdropClick={onClose} dragToClose panelClassName="!max-h-[min(80vh,640px)]">
+    <ModalShell open={open} onBackdropClick={onClose} padContent panelClassName="!max-h-[min(80vh,640px)]">
       <div className="space-y-3 pb-2">
         <div>
           <h2 className="text-base font-semibold text-[var(--color-brand-text-primary)]">

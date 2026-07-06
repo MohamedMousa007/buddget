@@ -12,6 +12,7 @@ import { PasswordStrengthMeter } from '@/components/features/auth-modal/Password
 import { BiometricLoginButton } from '@/components/features/auth-modal/BiometricLoginButton'
 import { useAuth } from '@/components/auth/auth-context'
 import { useT } from '@/lib/i18n'
+import { emailLocalPart } from '@/lib/auth/emailLocalPart'
 import type { AuthEmailStep, AuthPasswordIntent } from '@/hooks/useAuthModal'
 
 export interface AuthSignInUpStepProps {
@@ -34,15 +35,6 @@ export interface AuthSignInUpStepProps {
   resendCode: () => Promise<void>
   rememberMe: boolean
   setRememberMe: (v: boolean) => void
-}
-
-function maskEmail(email: string): string {
-  const at = email.indexOf('@')
-  if (at <= 0) return email
-  const local = email.slice(0, at)
-  const domain = email.slice(at)
-  if (local.length <= 2) return `${local[0] ?? ''}***${domain}`
-  return `${local[0]}${'*'.repeat(Math.max(1, local.length - 2))}${local[local.length - 1]}${domain}`
 }
 
 /**
@@ -104,15 +96,15 @@ export function AuthSignInUpStep({
     return () => vv.removeEventListener('resize', onResize)
   }, [emailStep])
 
-  const maskedEmail = maskEmail(email.trim())
+  const displayEmail = emailLocalPart(email)
   const isSignin = passwordIntent === 'signin'
 
   // Screen-reader announcement text for each state.
   const srAnnouncement =
     emailStep === 'password'
       ? isSignin
-        ? t.auth.srEnterPasswordFor(maskedEmail)
-        : t.auth.srCreateAccountFor(maskedEmail)
+        ? t.auth.srEnterPasswordFor(displayEmail)
+        : t.auth.srCreateAccountFor(displayEmail)
       : emailStep === 'verify-pending'
         ? t.auth.srFinishVerifying
         : ''
@@ -211,8 +203,8 @@ export function AuthSignInUpStep({
 
             <p className="text-sm text-[var(--color-brand-text-primary)]">
               {isSignin
-                ? t.auth.welcomeBack(maskedEmail)
-                : t.auth.createAccountFor(maskedEmail)}
+                ? t.auth.welcomeBack(displayEmail)
+                : t.auth.createAccountFor(displayEmail)}
             </p>
 
             {/* Real <form> with a username + password pair so the OS/browser

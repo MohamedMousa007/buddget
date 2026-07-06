@@ -24,9 +24,23 @@ interface ModalShellProps {
   /** Appended to the panel `className` (e.g. wider sheet). */
   panelClassName?: string
   /**
-   * Bottom sheet: drag handle at top pulls down to dismiss; inner area scrolls independently (mobile-friendly).
+   * Bottom sheet: drag handle at top pulls down to dismiss; inner area scrolls
+   * independently (mobile-friendly). On by default — every bottom sheet is
+   * swipe-closable. Automatically disabled on desktop (centered fade).
    */
   dragToClose?: boolean
+  /**
+   * Adds the sheet's inner horizontal + bottom padding (`px-5 pb-5`). Set for
+   * sheets whose content does NOT bring its own padding; leave off for forms
+   * that already pad themselves so they aren't double-inset.
+   */
+  padContent?: boolean
+  /**
+   * The child manages its own scroll (pinned header + internal scrolling body,
+   * e.g. ExpenseSheetForm). ModalShell then renders the child as a bounded flex
+   * column WITHOUT its own scroll container, so there's no nested scroller.
+   */
+  scrollChild?: boolean
 }
 
 /**
@@ -38,7 +52,9 @@ export function ModalShell({
   children,
   zIndexClassName,
   panelClassName = '',
-  dragToClose = false,
+  dragToClose = true,
+  padContent = false,
+  scrollChild = false,
 }: ModalShellProps) {
   const dragControls = useDragControls()
   const zStack = zIndexClassName ?? OVERLAY_Z
@@ -180,15 +196,25 @@ export function ModalShell({
           >
             {dragToClose ? (
               <>
+                {/* Generous, misclick-safe grab strip (≥44px). Sole drag
+                    initiator: it sits above all interactive content, so it can
+                    never swallow a tap on a button/input. Hidden on desktop,
+                    where the sheet is a centered fade with no drag. */}
                 <div
-                  className="flex shrink-0 justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing touch-none select-none"
+                  className="flex shrink-0 items-center justify-center min-h-[44px] cursor-grab active:cursor-grabbing touch-none select-none lg:hidden"
                   onPointerDown={(e) => dragControls.start(e)}
                   role="presentation"
                   aria-hidden
                 >
                   <div className="w-10 h-1 rounded-full bg-[var(--color-brand-border)]" />
                 </div>
-                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain touch-pan-y px-5 pb-5">
+                <div
+                  className={cn(
+                    'flex min-h-0 flex-1 flex-col',
+                    !scrollChild && 'overflow-y-auto overscroll-y-contain touch-pan-y',
+                    padContent && 'px-5 pb-5',
+                  )}
+                >
                   {children}
                 </div>
               </>
