@@ -163,24 +163,40 @@ export async function nativeSocialSignIn(
           : { scopes: ['name', 'email'] },
       }), signal)
       idToken = result.idToken
-    } else {
-      // Generate a nonce pair so Google embeds it in the ID token and Supabase
-      // can verify it. capgo passes hashedNonce as-is to GIDSignIn; Supabase
-      // expects rawNonce and computes SHA-256 internally to match the token claim.
+    } else if (isAndroid()) {
+      // Android: generate a nonce pair so Google embeds it in the ID token and
+      // Supabase can verify it. Credential Manager mints a fresh token per login,
+      // so the nonce always round-trips. Never pass `scopes` — email/profile/
+      // openid are the plugin's defaults, and passing ANY scopes array makes
+      // capgo's GoogleProvider demand a ModifiedMainActivityForSocialLoginPlugin
+      // and reject the call.
       const bytes = new Uint8Array(32)
       crypto.getRandomValues(bytes)
       googleRawNonce = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')
       const hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(googleRawNonce))
       const hashedNonce = Array.from(new Uint8Array(hashBuf), b => b.toString(16).padStart(2, '0')).join('')
 
-      // Android: never pass `scopes` — email/profile/openid are the plugin's
-      // defaults, and passing ANY scopes array makes capgo's GoogleProvider
-      // demand a ModifiedMainActivityForSocialLoginPlugin and reject the call.
       const { result } = await withTimeout(SocialLogin.login({
         provider: 'google',
-        options: isAndroid()
-          ? { nonce: hashedNonce }
-          : { scopes: ['profile', 'email'], nonce: hashedNonce },
+        options: { nonce: hashedNonce },
+      }), signal)
+      idToken = 'idToken' in result ? result.idToken : null
+    } else {
+      // iOS: NO nonce — capgo's GoogleProvider short-circuits to
+      // restorePreviousSignIn whenever GIDSignIn has a cached user, and the
+      // refreshed ID token carries no/stale nonce; sending one to Supabase then
+      // fails every retry after any first attempt. Same documented tradeoff as
+      // Apple-iOS above (token stays audience-bound + short-lived). Logout first
+      // so a poisoned cache from an old nonce-flow build can't serve a token
+      // whose stale nonce claim would still mismatch.
+      try {
+        await SocialLogin.logout?.({ provider: 'google' })
+      } catch {
+        /* best-effort: no prior session */
+      }
+      const { result } = await withTimeout(SocialLogin.login({
+        provider: 'google',
+        options: { scopes: ['profile', 'email'] },
       }), signal)
       idToken = 'idToken' in result ? result.idToken : null
     }

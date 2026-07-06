@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, Suspense, lazy } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
@@ -21,9 +21,9 @@ import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { LandingGate } from '@/components/auth/LandingGate'
-const WelcomeScreen = lazy(() =>
-  import('@/components/auth/WelcomeScreen').then((m) => ({ default: m.WelcomeScreen })),
-)
+// Static import: lazy() made the FIRST sign-in suspend on the chunk fetch,
+// flashing the spinner splash before the welcome screen painted.
+import { WelcomeScreen } from '@/components/auth/WelcomeScreen'
 import { useEphemeralSessionGuard } from '@/hooks/useEphemeralSessionGuard'
 import { DialogProvider } from '@/components/ui/dialog/DialogProvider'
 
@@ -544,9 +544,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         {showLoadingSplash ? (
           <AuthLoadingSplash />
         ) : showWelcomeScreen ? (
-          <Suspense fallback={<AuthLoadingSplash />}>
-            <WelcomeScreen />
-          </Suspense>
+          <WelcomeScreen />
         ) : showLandingGate ? (
           <Suspense fallback={null}>
             <LandingGate />
