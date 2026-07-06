@@ -198,6 +198,9 @@ export async function nativeSocialSignIn(
       token: idToken,
       ...(googleRawNonce ? { nonce: googleRawNonce } : {}),
     })
+    // Surface the exact GoTrue rejection (audience/nonce/config) so an iOS
+    // "provider didn't work" can be pinned from a device remote-inspector.
+    if (error) console.warn(`[oauth] signInWithIdToken(${provider}) rejected:`, error.message)
     return {
       error: error ? { message: error.message } : null,
       cancelled: false,

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronLeft, ChevronRight, X, Search } from 'lucide-react'
 import { useLocale } from '@/lib/i18n'
 
@@ -71,6 +71,13 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
   const [mode, setMode] = useState<'days' | 'months' | 'years'>('days')
   const [view, setView] = useState({ y: sel.y, m: sel.m })
   const [yearQuery, setYearQuery] = useState('')
+  const selYearRef = useRef<HTMLButtonElement>(null)
+
+  // Land the year grid on the selected year (recent/current by default, or the
+  // birthdate year when editing one) instead of scrolling from 1970.
+  useEffect(() => {
+    if (mode === 'years') selYearRef.current?.scrollIntoView({ block: 'center' })
+  }, [mode])
 
   if (!open) return null
 
@@ -297,6 +304,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                   return (
                     <button
                       key={yr}
+                      ref={on ? selYearRef : undefined}
                       type="button"
                       onClick={() => {
                         setView({ y: yr, m })
