@@ -35,23 +35,39 @@ export function LandingGate() {
   const t = useT()
   const [keyboardOpen, setKeyboardOpen] = useState(false)
 
-  // Hide the bottom ticker while typing. Focus tracks the keyboard exactly and,
-  // unlike a visualViewport delta, doesn't fail when the native WebView resizes
-  // with the keyboard. Touch devices only, so a desktop click doesn't blank it.
+  // Hide the bottom ticker while the keyboard is up. Primary signal is the
+  // visualViewport shrinking (reliable when the WebView resizes for the
+  // keyboard); focus events are a secondary trigger for cases where the viewport
+  // doesn't shrink. keyboardOpen = either fired. Touch devices only.
   useEffect(() => {
     if (!window.matchMedia?.('(pointer: coarse)').matches) return
     const isField = (el: EventTarget | null) =>
       el instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)
+
+    const vv = window.visualViewport
+    let viewportHidden = false
+    let focusHidden = false
+    const apply = () => setKeyboardOpen(viewportHidden || focusHidden)
+
+    const onViewport = () => {
+      viewportHidden = vv ? window.innerHeight - vv.height > 120 : false
+      apply()
+    }
     const onFocusIn = (e: FocusEvent) => {
-      if (isField(e.target)) setKeyboardOpen(true)
+      if (isField(e.target)) { focusHidden = true; apply() }
     }
     const onFocusOut = () => {
-      // Defer so focus moving between two fields doesn't flash the ticker.
-      queueMicrotask(() => setKeyboardOpen(isField(document.activeElement)))
+      queueMicrotask(() => { focusHidden = isField(document.activeElement); apply() })
     }
+
+    vv?.addEventListener('resize', onViewport)
+    vv?.addEventListener('scroll', onViewport)
     document.addEventListener('focusin', onFocusIn)
     document.addEventListener('focusout', onFocusOut)
+    onViewport()
     return () => {
+      vv?.removeEventListener('resize', onViewport)
+      vv?.removeEventListener('scroll', onViewport)
       document.removeEventListener('focusin', onFocusIn)
       document.removeEventListener('focusout', onFocusOut)
     }

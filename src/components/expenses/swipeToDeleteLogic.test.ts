@@ -1,27 +1,20 @@
 import { describe, it, expect } from 'vitest'
-import { resolveSwipe, COMMIT_FRACTION } from './swipeToDeleteLogic'
+import { resolveSwipe, OPEN_AT } from './swipeToDeleteLogic'
 
-const W = 320
-const THRESH = W * COMMIT_FRACTION // 272px
-
-describe('swipe-to-delete commit logic', () => {
-  it('deletes on a near-full leftward swipe', () => {
-    expect(resolveSwipe(-THRESH, W)).toBe(true)
-    expect(resolveSwipe(-W, W)).toBe(true)
+describe('swipe-to-delete open logic', () => {
+  it('opens when dragged left past the threshold', () => {
+    expect(resolveSwipe(-OPEN_AT)).toBe(true)
+    expect(resolveSwipe(-(OPEN_AT + 60))).toBe(true)
   })
 
-  it('snaps back on a shallow leftward swipe', () => {
-    expect(resolveSwipe(-(THRESH - 1), W)).toBe(false)
-    expect(resolveSwipe(-50, W)).toBe(false)
-    expect(resolveSwipe(0, W)).toBe(false)
+  it('stays closed on a shallow left swipe', () => {
+    expect(resolveSwipe(-(OPEN_AT - 1))).toBe(false)
+    expect(resolveSwipe(-40)).toBe(false)
+    expect(resolveSwipe(0)).toBe(false)
   })
 
-  it('never deletes on a rightward swipe (one direction only)', () => {
-    expect(resolveSwipe(W, W)).toBe(false)
-    expect(resolveSwipe(THRESH, W)).toBe(false)
-  })
-
-  it('is inert without a measured width', () => {
-    expect(resolveSwipe(-9999, 0)).toBe(false)
+  it('never opens on a rightward swipe (one direction only)', () => {
+    expect(resolveSwipe(OPEN_AT)).toBe(false)
+    expect(resolveSwipe(300)).toBe(false)
   })
 })

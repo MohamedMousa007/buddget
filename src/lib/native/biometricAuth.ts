@@ -108,13 +108,14 @@ export async function getType(): Promise<BiometryType> {
 export async function authenticate(reason = 'Sign in to Buddget'): Promise<void> {
   const loaded = await loadPlugin()
   if (loaded) {
-    // One line of copy only: `reason` is the iOS prompt text and the Android
-    // title. No androidSubtitle — repeating `reason` there rendered it twice.
+    // Android maps `androidTitle`→setTitle and `reason`→setDescription; setting
+    // both to the same string rendered two identical lines. Keep them distinct:
+    // brand as the title, `reason` as the single action line. (No androidSubtitle.)
     await loaded.plugin.authenticate({
       reason,
       cancelTitle: 'Cancel',
       fallbackTitle: 'Use passcode',
-      androidTitle: reason,
+      androidTitle: 'Buddget',
       androidConfirmationRequired: false,
       androidBiometryStrength: 'weak',
     })
@@ -143,23 +144,26 @@ export interface SavedSession {
   refresh_token: string
 }
 
-/** Returns the saved Supabase session pair (set after a previous sign-in).
- *  Falls back to treating a legacy bare-string value as a refresh-only token. */
+/** Returns the saved Supabase session pair, and ONLY a full {access_token,
+ *  refresh_token} pair. A legacy bare-string value (refresh-only) is treated as
+ *  not restorable (returns null): it's a rotated/stale token that fails restore
+ *  with "Auth session missing". The user re-arms biometric by signing in with
+ *  email once, which persists a fresh pair. */
 export async function getSavedSession(): Promise<SavedSession | null> {
   try {
     const { value } = await Preferences.get({ key: SESSION_KEY })
     if (!value) return null
-    try {
-      const parsed = JSON.parse(value) as Partial<SavedSession>
-      if (parsed && typeof parsed.refresh_token === 'string' && parsed.refresh_token) {
-        return { access_token: parsed.access_token ?? '', refresh_token: parsed.refresh_token }
-      }
-    } catch {
-      // Legacy format: the raw refresh token was stored as a bare string.
-      return { access_token: '', refresh_token: value }
+    const parsed = JSON.parse(value) as Partial<SavedSession>
+    if (
+      parsed &&
+      typeof parsed.access_token === 'string' && parsed.access_token &&
+      typeof parsed.refresh_token === 'string' && parsed.refresh_token
+    ) {
+      return { access_token: parsed.access_token, refresh_token: parsed.refresh_token }
     }
     return null
   } catch {
+    // Unparseable / legacy bare-string token → not restorable.
     return null
   }
 }

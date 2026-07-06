@@ -135,10 +135,6 @@ export function AuthSignInUpStep({
               {t.auth.morphTitle}
             </p>
 
-            {/* Only renders for a returning user who enabled biometric in Settings.
-                Success flows through onAuthStateChange, which swaps the whole gate. */}
-            <BiometricLoginButton />
-
             <AuthOAuthButtons nextPath={pendingNext || '/'} />
 
             <div className="relative flex items-center gap-3">
@@ -162,17 +158,25 @@ export function AuthSignInUpStep({
               }}
               className="space-y-3"
             >
-              <AuthEmailField
-                ref={emailRef}
-                value={email}
-                onChange={(v) => {
-                  setEmail(v)
-                  if (error) setError('')
-                }}
-                onAdvance={advanceAfterEmail}
-                pending={emailAdvancePending}
-                showAdvanceButton
-              />
+              {/* Email + compact biometric icon. The fingerprint button renders
+                  only for a returning user who enabled biometric in Settings;
+                  success flows through onAuthStateChange, which swaps the gate. */}
+              <div className="flex items-end gap-2">
+                <div className="min-w-0 flex-1">
+                  <AuthEmailField
+                    ref={emailRef}
+                    value={email}
+                    onChange={(v) => {
+                      setEmail(v)
+                      if (error) setError('')
+                    }}
+                    onAdvance={advanceAfterEmail}
+                    pending={emailAdvancePending}
+                    showAdvanceButton
+                  />
+                </div>
+                <BiometricLoginButton onError={setError} />
+              </div>
               <input
                 type="password"
                 name="password"
