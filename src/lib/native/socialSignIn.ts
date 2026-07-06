@@ -83,13 +83,25 @@ const NATIVE_AUTH_TIMEOUT_MS = 60_000
  * in-progress sign-in. The only trustworthy cancel signal is the plugin's own
  * rejection (see isCancellation) or an explicit user abort (AbortSignal).
  */
-function withTimeout<T>(p: Promise<T>): Promise<T> {
-  return Promise.race([
+function withTimeout<T>(p: Promise<T>, signal?: AbortSignal): Promise<T> {
+  const races: Promise<T>[] = [
     p,
     new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error('auth_timeout')), NATIVE_AUTH_TIMEOUT_MS),
     ),
-  ])
+  ]
+  // Settle immediately on user abort (back-button) so a wedged native login
+  // promise — e.g. Android-Apple's broadcast-channel flow that never rejects on
+  // dismiss — can't leave our flow pending and block the next attempt.
+  if (signal) {
+    races.push(
+      new Promise<never>((_, reject) => {
+        if (signal.aborted) reject(new Error('aborted'))
+        else signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true })
+      }),
+    )
+  }
+  return Promise.race(races)
 }
 
 /**
@@ -134,12 +146,22 @@ export async function nativeSocialSignIn(
     let idToken: string | null = null
     let googleRawNonce: string | undefined
     if (provider === 'apple') {
+      // ponytail: best-effort reset before Android-Apple's broadcast-channel
+      // flow so a channel left open by a dismissed prior attempt doesn't collide
+      // and wedge the retry. Ignored where logout is a no-op / not logged in.
+      if (isAndroid()) {
+        try {
+          await SocialLogin.logout?.({ provider: 'apple' })
+        } catch {
+          /* best-effort: no prior session / not implemented */
+        }
+      }
       const { result } = await withTimeout(SocialLogin.login({
         provider: 'apple',
         options: isAndroid()
           ? { scopes: ['name', 'email'], useBroadcastChannel: true }
           : { scopes: ['name', 'email'] },
-      }))
+      }), signal)
       idToken = result.idToken
     } else {
       // Generate a nonce pair so Google embeds it in the ID token and Supabase
@@ -159,7 +181,7 @@ export async function nativeSocialSignIn(
         options: isAndroid()
           ? { nonce: hashedNonce }
           : { scopes: ['profile', 'email'], nonce: hashedNonce },
-      }))
+      }), signal)
       idToken = 'idToken' in result ? result.idToken : null
     }
 

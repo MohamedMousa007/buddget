@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { CategoryIcon } from '@/components/dashboard/CategoryIcon'
 import { SwipeToDelete } from '@/components/expenses/SwipeToDelete'
@@ -49,7 +49,6 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
   )
   const { setEditingExpenseId, setActiveModal } = useSettingsStore()
   const toast = useActionToast()
-  const [openId, setOpenId] = useState<string | null>(null)
   const base = settings.baseCurrency
   const secondary = settings.secondaryCurrency
   const showSecondary = settings.showSecondaryCurrency && secondary
@@ -82,7 +81,6 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
   }
 
   const handleDelete = (e: Expense) => {
-    setOpenId(null)
     deleteExpense(e.id)
     toast(t.expenses.expenseDeleted, { undo: () => restoreExpense(e), undoLabel: t.common.undo })
   }
@@ -119,8 +117,6 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
               return (
                 <SwipeToDelete
                   key={e.id}
-                  isOpen={openId === e.id}
-                  onOpenChange={(open) => setOpenId(open ? e.id : null)}
                   onDelete={() => handleDelete(e)}
                   deleteLabel={t.expenses.swipeDelete}
                 >

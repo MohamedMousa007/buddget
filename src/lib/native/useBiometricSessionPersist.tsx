@@ -25,12 +25,20 @@ export function BiometricSessionPersist({ session }: BiometricSessionPersistProp
       if (cancelled || !info.available) return
 
       const enabled = await isEnabled()
-      if (!enabled || !session?.refresh_token) {
-        // Not opted in (or signed out): make sure no token lingers.
+      if (!enabled) {
+        // Opted out: make sure no token lingers.
         await clearSession()
         return
       }
-      await saveSession(session.refresh_token)
+      // Enabled: only (re)save when we actually have a live session. A transient
+      // null session (e.g. the signed-out auth screen) must NOT wipe the saved
+      // pair — that would erase the biometric login the user is about to use.
+      if (session?.access_token && session.refresh_token) {
+        await saveSession({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+        })
+      }
     })()
 
     return () => {
