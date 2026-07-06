@@ -14,6 +14,33 @@ async function tapHaptic() {
   }
 }
 
+function DeletePanel({
+  side,
+  deleteLabel,
+  onDelete,
+}: {
+  side: 'start' | 'end'
+  deleteLabel: string
+  onDelete: () => void
+}) {
+  return (
+    <div
+      className={`absolute inset-y-0 ${side === 'end' ? 'end-0' : 'start-0'} flex`}
+      style={{ width: REVEAL }}
+    >
+      <button
+        type="button"
+        aria-label={deleteLabel}
+        onClick={() => { void tapHaptic(); onDelete() }}
+        className="flex w-full flex-col items-center justify-center gap-0.5 bg-[var(--color-brand-red)] text-white active:bg-[var(--color-brand-red-hover)]"
+      >
+        <Trash2 className="h-[18px] w-[18px]" />
+        <span className="text-[10px] font-semibold">{deleteLabel}</span>
+      </button>
+    </div>
+  )
+}
+
 export function SwipeToDelete({
   children,
   onDelete,
@@ -29,15 +56,17 @@ export function SwipeToDelete({
 }) {
   const x = useMotionValue(0)
   const didDrag = useRef(false)
+  const sideRef = useRef<'start' | 'end'>('end')
 
   // Follow external open state (e.g. another row opened → close this one).
   useEffect(() => {
-    const target = isOpen ? -REVEAL : 0
+    const target = isOpen ? (sideRef.current === 'end' ? -REVEAL : REVEAL) : 0
     if (x.get() !== target) animate(x, target, { type: 'spring', stiffness: 500, damping: 40 })
   }, [isOpen, x])
 
   const handleDragEnd = (_: unknown, info: PanInfo) => {
     const target = resolveSwipe(x.get(), info.velocity.x)
+    if (target !== 0) sideRef.current = target < 0 ? 'end' : 'start'
     animate(x, target, { type: 'spring', stiffness: 500, damping: 40 })
     onOpenChange(target !== 0)
   }
@@ -53,22 +82,13 @@ export function SwipeToDelete({
   }
 
   return (
-    <div className="relative" onPointerDownCapture={() => { didDrag.current = false }}>
-      <div className="absolute inset-y-0 end-0 flex" style={{ width: REVEAL }}>
-        <button
-          type="button"
-          aria-label={deleteLabel}
-          onClick={() => { void tapHaptic(); onDelete() }}
-          className="flex w-full flex-col items-center justify-center gap-0.5 bg-[var(--color-brand-red)] text-white active:bg-[var(--color-brand-red-hover)]"
-        >
-          <Trash2 className="h-[18px] w-[18px]" />
-          <span className="text-[10px] font-semibold">{deleteLabel}</span>
-        </button>
-      </div>
+    <div className="relative overflow-hidden" onPointerDownCapture={() => { didDrag.current = false }}>
+      <DeletePanel side="end" deleteLabel={deleteLabel} onDelete={onDelete} />
+      <DeletePanel side="start" deleteLabel={deleteLabel} onDelete={onDelete} />
       <motion.div
         drag="x"
         dragDirectionLock
-        dragConstraints={{ left: -REVEAL, right: 0 }}
+        dragConstraints={{ left: -REVEAL, right: REVEAL }}
         dragElastic={0.05}
         onDragStart={() => { didDrag.current = true }}
         onDragEnd={handleDragEnd}

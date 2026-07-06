@@ -46,10 +46,10 @@ export function ActionToastProvider({ children }: { children: React.ReactNode })
           <div
             role="status"
             aria-live="polite"
-            className={`flex items-center gap-3 rounded-full shadow-lg pointer-events-auto text-sm font-medium text-white ${
+            className={`flex items-center gap-3 rounded-full shadow-lg pointer-events-auto text-sm font-medium ${
               hasUndo
                 ? 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)] border border-[var(--color-brand-border)] pl-4 pr-1.5 py-1.5'
-                : 'bg-[var(--color-brand-green)] px-4 py-2'
+                : 'bg-[var(--color-brand-green)] text-white px-4 py-2'
             }`}
           >
             <span>{hasUndo ? toast.message : `✓ ${toast.message}`}</span>
