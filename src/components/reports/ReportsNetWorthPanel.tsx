@@ -22,7 +22,7 @@ export function ReportsNetWorthPanel() {
       </h2>
       <p
         className={`text-2xl font-bold font-mono-numbers ${
-          nw.netWorth >= 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red)]'
+          nw.netWorth >= 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red-text)]'
         }`}
       >
         {formatCurrency(nw.netWorth, nw.baseCurrency, true)}

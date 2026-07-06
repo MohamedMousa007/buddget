@@ -71,7 +71,7 @@ export function BudgetPlannerSummary({
           {hasIncome ? (
             <p
               className={`mt-1 text-lg font-semibold font-mono-numbers ${
-                projectedSavings >= 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red)]'
+                projectedSavings >= 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red-text)]'
               }`}
             >
               {savingsStr}

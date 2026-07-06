@@ -81,7 +81,45 @@
   --color-brand-text: #1A1A24;
   --color-brand-text-primary: #1A1A24;
   --color-brand-text-secondary: #5A5A72;
-  --color-brand-text-muted: #8A8AA0;
+  /* Bumped from #8A8AA0 (3.38:1 on white, fails AA for small text) to clear 4.5:1. */
+  --color-brand-text-muted: #6E6E88;
+  /* Red used as TEXT on a card surface (negative amounts, net worth) rather
+     than as a button/icon surface — same hue family as --color-brand-red,
+     tuned per-theme to clear 4.5:1 body-text contrast. Light mode already
+     clears it via the base red, so this equals it there. */
+  --color-brand-red-text: #E50914;
+
+  /* Category chip accents — light-mode values are darker/more saturated than
+     the dark-mode pastels below so icon glyphs clear 3:1 against a white
+     card; dark-mode values are unchanged from the original design. */
+  --cat-rent-fg: #DC2626;
+  --cat-rent-bg: rgba(220, 38, 38, 0.12);
+  --cat-food-fg: #EA580C;
+  --cat-food-bg: rgba(234, 88, 12, 0.12);
+  --cat-transport-fg: #2563EB;
+  --cat-transport-bg: rgba(37, 99, 235, 0.12);
+  --cat-enjoy-fg: #7C3AED;
+  --cat-enjoy-bg: rgba(124, 58, 237, 0.12);
+  --cat-debt-fg: #BE123C;
+  --cat-debt-bg: rgba(190, 18, 60, 0.12);
+  --cat-savings-fg: #B45309;
+  --cat-savings-bg: rgba(180, 83, 9, 0.12);
+  --cat-utilities-fg: #0D9488;
+  --cat-utilities-bg: rgba(13, 148, 136, 0.12);
+  --cat-shopping-fg: #DB2777;
+  --cat-shopping-bg: rgba(219, 39, 119, 0.12);
+  --cat-health-fg: #059669;
+  --cat-health-bg: rgba(5, 150, 105, 0.12);
+  --cat-education-fg: #4F46E5;
+  --cat-education-bg: rgba(79, 70, 229, 0.12);
+  --cat-subscription-fg: #A21CAF;
+  --cat-subscription-bg: rgba(162, 28, 175, 0.12);
+  --cat-remittance-fg: #0E7490;
+  --cat-remittance-bg: rgba(14, 116, 144, 0.12);
+  --cat-transfer-fg: #475569;
+  --cat-transfer-bg: rgba(71, 85, 105, 0.12);
+  --cat-neutral-fg: #6E6E88;
+  --cat-neutral-bg: rgba(110, 110, 136, 0.12);
 
   /* Hero card gradient — always dark navy */
   --color-hero-from: #0F172A;
@@ -156,6 +194,39 @@
      readable in dark mode. */
   --color-brand-text-secondary: #CFCFE0;
   --color-brand-text-muted: #9898B0;
+  /* Base red text is 3.92:1 on the dark card (below 4.5:1 AA for body text);
+     red-500 clears 4.99:1 while still reading unambiguously as "red". */
+  --color-brand-red-text: #EF4444;
+
+  /* Category chip accents — original dark-mode pastel palette, unchanged. */
+  --cat-rent-fg: #FF6B6B;
+  --cat-rent-bg: rgba(255, 107, 107, 0.13);
+  --cat-food-fg: #F5A623;
+  --cat-food-bg: rgba(245, 166, 35, 0.13);
+  --cat-transport-fg: #4DA3FF;
+  --cat-transport-bg: rgba(77, 163, 255, 0.13);
+  --cat-enjoy-fg: #A78BFA;
+  --cat-enjoy-bg: rgba(167, 139, 250, 0.13);
+  --cat-debt-fg: #FF5C5C;
+  --cat-debt-bg: rgba(255, 92, 92, 0.13);
+  --cat-savings-fg: #F5C842;
+  --cat-savings-bg: rgba(245, 200, 66, 0.13);
+  --cat-utilities-fg: #2DD4BF;
+  --cat-utilities-bg: rgba(45, 212, 191, 0.14);
+  --cat-shopping-fg: #F472B6;
+  --cat-shopping-bg: rgba(244, 114, 182, 0.14);
+  --cat-health-fg: #34D399;
+  --cat-health-bg: rgba(52, 211, 153, 0.14);
+  --cat-education-fg: #818CF8;
+  --cat-education-bg: rgba(129, 140, 248, 0.14);
+  --cat-subscription-fg: #C084FC;
+  --cat-subscription-bg: rgba(192, 132, 252, 0.14);
+  --cat-remittance-fg: #22D3EE;
+  --cat-remittance-bg: rgba(34, 211, 238, 0.14);
+  --cat-transfer-fg: #8AA0C8;
+  --cat-transfer-bg: rgba(138, 160, 200, 0.14);
+  --cat-neutral-fg: #9898B0;
+  --cat-neutral-bg: rgba(152, 152, 176, 0.13);
 
   /* Status tokens adapted for dark surfaces */
   --color-status-ok-bg: rgba(29, 185, 84, 0.15);
@@ -403,3 +474,9 @@ html[data-locale='ar'] .prose-rtl {
   border: 5px solid var(--color-brand-red);
   cursor: pointer;
 }
+
+/* Add/Edit Expense redesign + Unified Date Picker motion tokens */
+@keyframes efRise { from { transform: translateY(24px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+@keyframes efUp   { from { transform: translateY(100%) } to { transform: translateY(0) } }
+@keyframes efFade { from { opacity: 0 } to { opacity: 1 } }
+@keyframes efPop  { from { transform: scale(.94); opacity: 0 } to { transform: scale(1); opacity: 1 } }

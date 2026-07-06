@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { categoryChipColors } from './categoryChip'
 import type { ExpenseCategory } from '@/lib/store/types'
 
-const NEUTRAL_FG = '#9898B0'
+const NEUTRAL_FG = 'var(--cat-neutral-fg)'
 
 // Every ExpenseCategory member except 'Other' must get a distinct color chip —
 // this is what fixed the "pale"/all-grey expense list.
@@ -27,5 +27,10 @@ describe('categoryChipColors', () => {
 
   it('normalizes spacing/case for multi-word categories', () => {
     expect(categoryChipColors('atm cash withdrawal')).toEqual(categoryChipColors('ATM Cash Withdrawal'))
+  })
+
+  it('returns a CSS custom property reference, resolvable per-theme', () => {
+    expect(categoryChipColors('Rent').fg).toMatch(/^var\(--cat-.+-fg\)$/)
+    expect(categoryChipColors('Rent').bg).toMatch(/^var\(--cat-.+-bg\)$/)
   })
 })

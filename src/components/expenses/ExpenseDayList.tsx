@@ -155,7 +155,7 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                     </span>
                   </span>
                   <span className="shrink-0 text-end">
-                    <span className="font-mono-numbers block text-[14px] font-bold text-[var(--color-brand-red)]">
+                    <span className="font-mono-numbers block text-[14px] font-bold text-[var(--color-brand-red-text)]">
                       −{fmtNum(baseVal)}{' '}
                       <span className="text-[10px] font-medium text-[var(--color-brand-text-muted)]">{base}</span>
                     </span>

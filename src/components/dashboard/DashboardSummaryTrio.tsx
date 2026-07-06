@@ -40,13 +40,13 @@ export function DashboardSummaryTrio({
         label={t.dashboard.summaryDebtLabel}
         amount={debtTotal}
         currency={baseCurrency}
-        color={hasDebt ? 'text-[var(--color-brand-red)]' : 'text-[var(--color-brand-text-primary)]'}
+        color={hasDebt ? 'text-[var(--color-brand-red-text)]' : 'text-[var(--color-brand-text-primary)]'}
       />
       <Card
         label={t.dashboard.heroNetWorthLabel}
         amount={netWorth}
         currency={baseCurrency}
-        color={netWorth >= 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red)]'}
+        color={netWorth >= 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red-text)]'}
       />
     </div>
   )
