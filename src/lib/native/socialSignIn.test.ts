@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   isAndroid: vi.fn<[], boolean>(() => false),
   initialize: vi.fn<[], Promise<void>>(() => Promise.resolve()),
   login: vi.fn(),
+  logout: vi.fn(() => Promise.resolve()),
   signInWithIdToken: vi.fn(() => Promise.resolve({ error: null })),
   // Capture the args SocialLogin.initialize is called with, per test.
   lastInitArgs: null as Parameters<typeof import('@capgo/capacitor-social-login').SocialLogin.initialize>[0] | null,
@@ -36,6 +37,7 @@ vi.mock('@capgo/capacitor-social-login', () => ({
       return mocks.initialize(...args)
     },
     login: (...args: unknown[]) => mocks.login(...args),
+    logout: (...args: unknown[]) => mocks.logout(...args),
   },
 }))
 
@@ -347,24 +349,20 @@ describe('nativeSocialSignIn — Google — iOS', () => {
     expect(result).toEqual({ error: null, cancelled: false, user: null })
   })
 
-  it('passes the idToken + nonce to supabase with provider=google', async () => {
+  it('passes the idToken WITHOUT nonce to supabase (iOS restore path drops nonces)', async () => {
     const { nativeSocialSignIn } = await freshModule({ android: false })
     mocks.login.mockResolvedValueOnce({ result: { idToken: 'g-ios-token' } })
     await nativeSocialSignIn('google')
-    expect(mocks.signInWithIdToken).toHaveBeenCalledWith(
-      expect.objectContaining({
-        provider: 'google',
-        token: 'g-ios-token',
-        nonce: expect.any(String),
-      }),
-    )
-    // The hashed nonce must also have been forwarded to login
-    expect(mocks.login).toHaveBeenCalledWith(
-      expect.objectContaining({
-        provider: 'google',
-        options: expect.objectContaining({ nonce: expect.any(String) }),
-      }),
-    )
+    expect(mocks.signInWithIdToken).toHaveBeenCalledWith({
+      provider: 'google',
+      token: 'g-ios-token',
+    })
+    // No nonce forwarded to login either — capgo's GIDSignIn restore path
+    // returns cached/refreshed tokens whose nonce claim can't match.
+    const arg = mocks.login.mock.calls[0][0] as { options: Record<string, unknown> }
+    expect(arg.options.nonce).toBeUndefined()
+    // Cache cleared first so a stale nonce-carrying token can't be served.
+    expect(mocks.logout).toHaveBeenCalledWith({ provider: 'google' })
   })
 
   it('returns {error:null,cancelled:true} when user cancels', async () => {
@@ -442,13 +440,13 @@ describe('nativeSocialSignIn — Google scopes per platform', () => {
     expect(arg.options.nonce).toEqual(expect.any(String))
   })
 
-  it('passes scopes on iOS', async () => {
+  it('passes scopes but never a nonce on iOS', async () => {
     const { nativeSocialSignIn } = await freshModule({ android: false })
     mocks.login.mockResolvedValueOnce({ result: { idToken: 't' } })
     await nativeSocialSignIn('google')
     const arg = mocks.login.mock.calls[0][0] as { options: Record<string, unknown> }
     expect(arg.options.scopes).toEqual(['profile', 'email'])
-    expect(arg.options.nonce).toEqual(expect.any(String))
+    expect(arg.options.nonce).toBeUndefined()
   })
 })
 
