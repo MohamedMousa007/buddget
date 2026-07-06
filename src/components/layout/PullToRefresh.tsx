@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import { syncFinanceNow } from '@/components/sync/SupabaseFinanceSync'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT } from '@/lib/i18n'
 import { THRESHOLD, resistedPull, canEngage } from './pullToRefreshLogic'
 
@@ -50,7 +51,9 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
     const atTop = () => canEngage(window.scrollY || document.documentElement.scrollTop || 0)
 
     const onStart = (e: TouchEvent) => {
-      if (active || e.touches.length !== 1 || !atTop()) { engaged = false; return }
+      // Never engage behind an open sheet/modal — a pull there is not a refresh.
+      const modalOpen = useSettingsStore.getState().activeModal !== null
+      if (active || modalOpen || e.touches.length !== 1 || !atTop()) { engaged = false; return }
       startX = e.touches[0].clientX
       startY = e.touches[0].clientY
       axis = null

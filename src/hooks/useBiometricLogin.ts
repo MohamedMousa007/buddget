@@ -57,14 +57,13 @@ export function useBiometricLogin(onSuccess?: () => void) {
       const saved = await getSavedSession()
       if (!saved) throw new Error('No saved session — sign in with email once.')
       const supabase = createClient()
-      // setSession uses the access token when still valid (no refresh-endpoint
-      // hit → no token-rotation race); only refreshes when it has expired.
-      const { data, error: setErr } = saved.access_token
-        ? await supabase.auth.setSession({
-            access_token: saved.access_token,
-            refresh_token: saved.refresh_token,
-          })
-        : await supabase.auth.refreshSession({ refresh_token: saved.refresh_token })
+      // getSavedSession guarantees a full pair. setSession hydrates from the
+      // access token when still valid (no refresh-endpoint hit → no rotation
+      // race) and refreshes once with the freshest stored token when expired.
+      const { data, error: setErr } = await supabase.auth.setSession({
+        access_token: saved.access_token,
+        refresh_token: saved.refresh_token,
+      })
       if (setErr) throw setErr
       // Persist the (possibly rotated) tokens so a later restore stays fresh.
       if (data.session) {

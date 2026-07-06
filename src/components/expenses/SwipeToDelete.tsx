@@ -1,9 +1,9 @@
 'use client'
 
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { animate, motion, useMotionValue, type PanInfo } from 'framer-motion'
 import { Trash2 } from 'lucide-react'
-import { COMMIT_FRACTION, resolveSwipe } from './swipeToDeleteLogic'
+import { REVEAL, resolveSwipe } from './swipeToDeleteLogic'
 
 async function tapHaptic() {
   try {
@@ -14,85 +14,76 @@ async function tapHaptic() {
   }
 }
 
+function DeletePanel({ deleteLabel, onDelete }: { deleteLabel: string; onDelete: () => void }) {
+  return (
+    <div className="absolute inset-y-0 end-0 flex" style={{ width: REVEAL }}>
+      <button
+        type="button"
+        aria-label={deleteLabel}
+        onClick={() => { void tapHaptic(); onDelete() }}
+        className="flex w-full flex-col items-center justify-center gap-0.5 bg-[var(--color-brand-red)] text-white active:bg-[var(--color-brand-red-hover)]"
+      >
+        <Trash2 className="h-[18px] w-[18px]" />
+        <span className="text-[10px] font-semibold">{deleteLabel}</span>
+      </button>
+    </div>
+  )
+}
+
 /**
- * One-direction (right-to-left) swipe-to-delete. The row must travel almost its
- * whole width left before a release commits the delete — a fast flick never
- * triggers it (velocity is ignored) and there is no shallow reveal to mis-tap. A
- * single haptic fires when the drag crosses the commit threshold. Deletion is
- * immediate on release; the caller surfaces an undo toast.
+ * One-direction (right-to-left) reveal-and-tap swipe-to-delete. A deliberate,
+ * near-mid-card swipe snaps the row open to expose a Delete button (a fast flick
+ * won't trip it — velocity is ignored); a tap on that button deletes. Only one
+ * row stays open at a time via isOpen/onOpenChange.
  */
 export function SwipeToDelete({
   children,
   onDelete,
+  isOpen,
+  onOpenChange,
   deleteLabel,
 }: {
   children: React.ReactNode
   onDelete: () => void
+  isOpen: boolean
+  onOpenChange: (open: boolean) => void
   deleteLabel: string
 }) {
   const x = useMotionValue(0)
-  const rowRef = useRef<HTMLDivElement>(null)
-  const widthRef = useRef(0)
   const didDrag = useRef(false)
-  const armed = useRef(false)
 
-  const handleDragStart = () => {
-    didDrag.current = true
-    armed.current = false
-    widthRef.current = rowRef.current?.offsetWidth ?? 0
-  }
-
-  const handleDrag = () => {
-    const w = widthRef.current
-    if (!w) return
-    const past = -x.get() >= w * COMMIT_FRACTION
-    if (past && !armed.current) {
-      armed.current = true
-      void tapHaptic()
-    } else if (!past && armed.current) {
-      armed.current = false
-    }
-  }
+  // Follow external open state (another row opened → close this one).
+  useEffect(() => {
+    const target = isOpen ? -REVEAL : 0
+    if (x.get() !== target) animate(x, target, { type: 'spring', stiffness: 500, damping: 40 })
+  }, [isOpen, x])
 
   const handleDragEnd = (_: unknown, _info: PanInfo) => {
-    if (resolveSwipe(x.get(), widthRef.current)) {
-      void tapHaptic()
-      onDelete()
-      return
-    }
-    animate(x, 0, { type: 'spring', stiffness: 500, damping: 40 })
+    const open = resolveSwipe(x.get())
+    if (open) void tapHaptic()
+    animate(x, open ? -REVEAL : 0, { type: 'spring', stiffness: 500, damping: 40 })
+    onOpenChange(open)
   }
 
-  // Capture-phase guard: swallow the row tap when a drag just happened so a swipe
-  // never fires the row's edit action as a ghost click.
+  // Capture-phase guard: swallow the row tap when a drag just happened or the
+  // row is open (first tap on an open row just closes it) — never a ghost edit.
   const handleClickCapture = (e: React.MouseEvent) => {
-    if (didDrag.current) {
+    if (didDrag.current || isOpen) {
       e.preventDefault()
       e.stopPropagation()
+      if (isOpen) onOpenChange(false)
     }
   }
 
   return (
-    <div
-      ref={rowRef}
-      className="relative overflow-hidden"
-      onPointerDownCapture={() => { didDrag.current = false }}
-    >
-      <div className="absolute inset-y-0 end-0 start-0 flex items-stretch justify-end bg-[var(--color-brand-red)] text-white">
-        <div className="flex flex-col items-center justify-center gap-0.5 px-5">
-          <Trash2 className="h-[18px] w-[18px]" />
-          <span className="text-[10px] font-semibold">{deleteLabel}</span>
-        </div>
-      </div>
+    <div className="relative overflow-hidden" onPointerDownCapture={() => { didDrag.current = false }}>
+      <DeletePanel deleteLabel={deleteLabel} onDelete={onDelete} />
       <motion.div
         drag="x"
         dragDirectionLock
-        // Left ceiling is generous (full row travel); the card springs back on
-        // release unless the commit threshold is crossed. right:0 = one-direction.
-        dragConstraints={{ left: -2000, right: 0 }}
-        dragElastic={0.05}
-        onDragStart={handleDragStart}
-        onDrag={handleDrag}
+        dragConstraints={{ left: -210, right: 0 }}
+        dragElastic={0.06}
+        onDragStart={() => { didDrag.current = true }}
         onDragEnd={handleDragEnd}
         onClickCapture={handleClickCapture}
         style={{ x, background: 'var(--color-brand-card)' }}
