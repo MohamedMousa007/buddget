@@ -2,10 +2,10 @@
  * POST /api/sms/confirm
  *
  * Promotes a sms_parse_log row (awaiting_confirmation = true) to an expense or income.
- * Called when the user taps "Add Expense" on the SmsPendingConfirmationsBanner or
+ * Called when the user confirms an item in the dashboard SmsReviewSheet or
  * taps a `sms_confirm` FCM push notification.
  *
- * Auth: Supabase session cookie (credentials: 'include') or Bearer JWT.
+ * Auth: Supabase session cookie (web) or Bearer JWT (native via apiFetchAuth).
  */
 import { NextResponse } from 'next/server'
 import { z } from 'zod'

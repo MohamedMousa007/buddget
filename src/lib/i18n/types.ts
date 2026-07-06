@@ -800,6 +800,13 @@ export interface Dictionary {
     twoFaToggleHint: string
     twoFaFooter: string
 
+    biometricUseFace: string
+    biometricUseFingerprint: string
+    biometricHint: string
+    biometricConflict: string
+    biometricEnabledFor: (email: string) => string
+    biometricConfirmReason: string
+
     accountTitle: string
     accountSignedIn: (email: string) => string
     accountSignOut: string
@@ -1140,6 +1147,9 @@ export interface Dictionary {
     oauthUnavailable: string
     oauthFailed: string
     oauthCancelled: string
+    biometricSignInFace: string
+    biometricSignInFingerprint: string
+    biometricEnableHint: string
     oauthProviderDisabled: string
     sessionExpired: string
     rememberMe: string
@@ -1505,6 +1515,17 @@ export interface Dictionary {
     waiting: string
     generic: string
     more: (count: number) => string
+  }
+
+  smsReview: {
+    chip: (count: number) => string
+    title: string
+    subtitle: string
+    addTransaction: string
+    confirmCurrencyBtn: (currency: string) => string
+    confirmCurrencyHelp: string
+    dismiss: string
+    actionFailed: string
   }
 
   smsTracking: {

@@ -333,14 +333,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Capture the token BEFORE clearing — the background push-unregister needs it.
     const accessToken = session?.access_token ?? null
 
-    // On native: clear the biometric saved-session BEFORE setUser(null) so the
-    // LandingGate's BiometricLoginButton cannot auto-prompt after intentional sign-out.
-    // BiometricSessionPersist would normally handle this, but it unmounts together
-    // with the user → it never sees session=null and never calls clearSession().
+    // On native: users who opted into biometric login keep their saved token
+    // across an intentional sign-out — that's the whole point of the quick
+    // biometric sign-in button. Everyone else gets the token wiped BEFORE
+    // setUser(null) (BiometricSessionPersist unmounts with the user, so it
+    // never sees session=null and can't do it).
     if (isNative()) {
       try {
-        const { clearSession: clearBiometricSession } = await import('@/lib/native/biometricAuth')
-        await clearBiometricSession()
+        const { clearSession: clearBiometricSession, isEnabled: biometricEnabled } =
+          await import('@/lib/native/biometricAuth')
+        if (!(await biometricEnabled())) await clearBiometricSession()
       } catch { /* noop */ }
     }
 

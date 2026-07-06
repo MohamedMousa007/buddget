@@ -6,6 +6,7 @@ import { Preferences } from '@capacitor/preferences'
 const SESSION_KEY = 'buddget.biometric.session'
 const ENABLED_KEY = 'buddget.biometric.enabled'
 const ACCOUNT_KEY = 'buddget.biometric.account'
+const PENDING_ENABLE_KEY = 'buddget.biometric.pendingEnable'
 
 export type BiometryType = 'face' | 'fingerprint' | 'iris' | 'unknown' | null
 
@@ -180,6 +181,27 @@ export async function setEnabled(enabled: boolean, email?: string): Promise<void
     }
   } catch {
     /* noop */
+  }
+}
+
+/** One-shot marker: user tapped the biometric button on the auth screen before
+ *  enabling it — enable automatically after the next successful sign-in. */
+export async function setPendingEnable(): Promise<void> {
+  try {
+    await Preferences.set({ key: PENDING_ENABLE_KEY, value: '1' })
+  } catch {
+    /* noop */
+  }
+}
+
+export async function consumePendingEnable(): Promise<boolean> {
+  try {
+    const { value } = await Preferences.get({ key: PENDING_ENABLE_KEY })
+    if (value !== '1') return false
+    await Preferences.remove({ key: PENDING_ENABLE_KEY })
+    return true
+  } catch {
+    return false
   }
 }
 

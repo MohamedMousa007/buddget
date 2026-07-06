@@ -13,7 +13,7 @@ import { DashboardSummaryCards } from '@/components/dashboard/DashboardSummaryCa
 import { DashboardSummaryTrio } from '@/components/dashboard/DashboardSummaryTrio'
 import { DashboardGoalsStrip } from '@/components/dashboard/DashboardGoalsStrip'
 import { SmsAccountDetectionBanner } from '@/components/features/dashboard/SmsAccountDetectionBanner'
-import { SmsPendingConfirmationsBanner } from '@/components/features/dashboard/SmsPendingConfirmationsBanner'
+import { SmsReviewChip } from '@/components/features/dashboard/SmsReviewChip'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useNetWorth } from '@/hooks/useNetWorth'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -55,7 +55,7 @@ export default function DashboardPage() {
       <div
         className="max-w-2xl lg:max-w-3xl mx-auto px-4 pt-4 pb-8 space-y-4 animate-[dashboardIn_0.35s_ease-out]"
       >
-        <SmsPendingConfirmationsBanner />
+        <SmsReviewChip />
         <SmsAccountDetectionBanner />
 
         {isMinimal ? (

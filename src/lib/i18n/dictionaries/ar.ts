@@ -898,6 +898,13 @@ export const ar: Dictionary = {
     twoFaFooter:
       'بعد التحقق من الجهاز، يتذكره Buddget لمدة 180 يوماً. مسح ملفات تعريف الارتباط، أو استخدام وضع التصفح الخاص، أو تسجيل الدخول من جهاز جديد سيطلب الرمز مرة أخرى.',
 
+    biometricUseFace: 'استخدم Face ID لتسجيل الدخول',
+    biometricUseFingerprint: 'استخدم البصمة لتسجيل الدخول',
+    biometricHint: 'تخطَّ كلمة المرور على هذا الجهاز بعد تسجيل دخول واحد.',
+    biometricConflict: 'البصمة مفعّلة لحساب آخر على هذا الجهاز.',
+    biometricEnabledFor: (email) => `مفعّلة لـ ${email}`,
+    biometricConfirmReason: 'أكّد هويتك',
+
     accountTitle: 'حسابك',
     accountSignedIn: (email) => `أنت مسجل بـ ${email}. ميزانيتك محفوظة ومتزامنة.`,
     accountSignOut: 'تسجيل الخروج من Buddget',
@@ -1239,6 +1246,9 @@ export const ar: Dictionary = {
     oauthUnavailable: 'لم نتمكن من الوصول للموفّر. حاول مرة أخرى أو استخدم البريد الإلكتروني.',
     oauthFailed: 'تعذّر تسجيل الدخول عبر هذا الموفّر. حاول مرة أخرى أو استخدم البريد الإلكتروني.',
     oauthCancelled: 'تم إلغاء تسجيل الدخول.',
+    biometricSignInFace: 'تسجيل الدخول بواسطة Face ID',
+    biometricSignInFingerprint: 'تسجيل الدخول بالبصمة',
+    biometricEnableHint: 'سجّل الدخول بالبريد الإلكتروني أو Google أولاً — سنفعّل تسجيل الدخول بالبصمة في المرة القادمة.',
     oauthProviderDisabled: 'غير متاح حالياً',
     sessionExpired: 'انتهت جلستك. سجّل دخولك مرة أخرى للمتابعة.',
     rememberMe: 'أبقني مسجّلاً',
@@ -1617,6 +1627,18 @@ export const ar: Dictionary = {
     generic: 'رسالة بنكية ملتقطة',
     more: (count: number) =>
       count === 1 ? 'رسالة إضافية سيتم فحصها عند الاتصال' : `${count} رسائل إضافية سيتم فحصها عند الاتصال`,
+  },
+
+  smsReview: {
+    chip: (count: number) =>
+      count === 1 ? 'معاملة واحدة بحاجة لمراجعتك' : `${count} معاملات بحاجة لمراجعتك`,
+    title: 'مراجعة المعاملات',
+    subtitle: 'رُصدت في رسائل بنكك — أكّد أو تجاهل كل واحدة.',
+    addTransaction: 'إضافة المعاملة',
+    confirmCurrencyBtn: (currency: string) => `تأكيد ${currency}`,
+    confirmCurrencyHelp: 'أُضيفت بالفعل — فقط أكّد العملة.',
+    dismiss: 'تجاهل',
+    actionFailed: 'لم تنجح العملية. تحقق من اتصالك وحاول مرة أخرى.',
   },
 
   smsTracking: {
