@@ -39,7 +39,10 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
   const [phase, setPhase] = useState<'idle' | 'pull' | 'refreshing' | 'done'>('idle')
 
   useEffect(() => {
+    const SLOP = 10 // px of movement before an axis is decided (matches native touch-slop)
+    let startX = 0
     let startY = 0
+    let axis: 'x' | 'y' | null = null // locked gesture direction, decided once per touch
     let engaged = false // gesture began at the top and is a downward pull
     let armed = false // crossed THRESHOLD (one-shot haptic)
     let active = false // a refresh cycle is running
@@ -48,16 +51,26 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
 
     const onStart = (e: TouchEvent) => {
       if (active || e.touches.length !== 1 || !atTop()) { engaged = false; return }
+      startX = e.touches[0].clientX
       startY = e.touches[0].clientY
+      axis = null
       engaged = true
       armed = false
     }
 
     const onMove = (e: TouchEvent) => {
       if (!engaged || active) return
+      const dx = e.touches[0].clientX - startX
       const dy = e.touches[0].clientY - startY
-      if (dy <= 0) {
-        // Not pulling down (scrolling up / settling) — hand back to the scroller.
+
+      if (axis === null) {
+        if (dx * dx + dy * dy < SLOP * SLOP) return // undecided — let the browser wait too
+        // Tie-break toward horizontal: only lock vertical when clearly dominant.
+        axis = Math.abs(dy) > Math.abs(dx) * 1.2 ? 'y' : 'x'
+      }
+
+      if (axis === 'x' || dy <= 0) {
+        // Horizontal swipe, or not pulling down (scrolling up / settling) — hand back to the scroller.
         engaged = false
         if (y.get() !== 0) animate(y, 0, { type: 'spring', stiffness: 600, damping: 40 })
         setPhase('idle')

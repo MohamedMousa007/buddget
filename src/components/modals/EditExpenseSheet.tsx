@@ -19,7 +19,11 @@ export function EditExpenseSheet() {
   const shellOpen = isOpen && !!expense
 
   return (
-    <ModalShell open={shellOpen} onBackdropClick={close}>
+    <ModalShell
+      open={shellOpen}
+      onBackdropClick={close}
+      panelClassName="rounded-t-[30px] border-t-[#23232f]"
+    >
       {expense ? <EditExpenseForm key={expense.id} expense={expense} onClose={close} /> : null}
     </ModalShell>
   )

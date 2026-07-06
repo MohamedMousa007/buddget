@@ -106,6 +106,7 @@ export interface Dictionary {
     edit: string
     back: string
     close: string
+    selectDate: string
     /** Walkthrough / tutorial primary action */
     next: string
     confirm: string
@@ -349,6 +350,42 @@ export interface Dictionary {
     buttonSubmit: string
     buttonSave: string
     creditCardOutstandingHint: (cardName: string, amountLabel: string) => string
+  }
+
+  /** Add/Edit Expense sheet redesign + shared date picker. */
+  expenseForm: {
+    titleAdd: string
+    titleEdit: string
+    amount: string
+    currency: string
+    description: string
+    descriptionPlaceholder: string
+    category: string
+    paymentMethod: string
+    addNote: string
+    notePlaceholder: string
+    nonSpendHint: string
+    saveExpense: string
+    saveChanges: string
+    currencyTitle: string
+    paymentTitle: string
+    addPaymentMethod: string
+    defaultBadge: string
+    name: string
+    namePlaceholder: string
+    type: string
+    last4: string
+    setDefault: string
+    confirmTitle: string
+    confirmBody: string
+    discardChanges: string
+    today: string
+    /** Canonical category id → short grid label. */
+    categoryLabels: Record<string, string>
+    /** Currency code → full name. */
+    currencyNames: Record<string, string>
+    /** Payment method type → label. */
+    paymentTypeLabels: Record<string, string>
   }
 
   income: {

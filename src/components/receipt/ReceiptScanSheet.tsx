@@ -5,6 +5,7 @@ import { Camera, Check, X, Loader2, AlertTriangle, RefreshCcw } from 'lucide-rea
 import Image from 'next/image'
 import { useShallow } from 'zustand/react/shallow'
 import { ModalShell } from '@/components/modals/ModalShell'
+import { DatePickerField } from '@/components/ui/DatePickerField'
 import { captureReceiptPhoto } from '@/lib/native/cameraScanner'
 import { isNative } from '@/lib/native/isNative'
 import { saveReceiptImage } from '@/lib/native/receiptImages'
@@ -405,12 +406,7 @@ function ResultView({
           </select>
         </Field>
         <Field label="Date" className="col-span-2">
-          <input
-            type="date"
-            value={result.date}
-            onChange={(e) => onChange({ date: e.target.value })}
-            className="w-full rounded-lg border border-[var(--color-brand-border)] bg-transparent px-2 py-1.5 text-sm text-[var(--color-brand-text-primary)]"
-          />
+          <DatePickerField value={result.date} onChange={(date) => onChange({ date })} />
         </Field>
       </div>
 

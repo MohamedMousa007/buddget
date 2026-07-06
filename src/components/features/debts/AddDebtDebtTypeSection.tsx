@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label'
 import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import type { DebtKind, InstallmentProvider } from '@/lib/store/types'
 import { InstallmentProviderPicker } from '@/components/features/debts/InstallmentProviderPicker'
+import { DatePickerField } from '@/components/ui/DatePickerField'
 import { useT } from '@/lib/i18n'
 
 interface AddDebtDebtTypeSectionProps {
@@ -195,12 +196,7 @@ export function AddDebtDebtTypeSection({
           </div>
           <div className="max-w-[180px]">
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelStartDate}</Label>
-            <Input
-              type="date"
-              value={installmentStartDate}
-              onChange={(e) => setInstallmentStartDate(e.target.value)}
-              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
-            />
+            <DatePickerField value={installmentStartDate} onChange={setInstallmentStartDate} className="mt-1" />
           </div>
         </>
       ) : null}

@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/colors.css">
+<link rel="stylesheet" href="_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/typography.css">
+<style>
+  .ef-scroll::-webkit-scrollbar { display:none; }
+  .ef-scroll { scrollbar-width:none; -ms-overflow-style:none; }
+  input, textarea, button { outline:none !important; -webkit-tap-highlight-color:transparent; }
+  input:focus, textarea:focus, button:focus, input:focus-visible, textarea:focus-visible, button:focus-visible { outline:none !important; box-shadow:none !important; }
+  @keyframes efRise { from { transform:translateY(24px); opacity:0 } to { transform:translateY(0); opacity:1 } }
+  @keyframes efUp { from { transform:translateY(100%) } to { transform:translateY(0) } }
+  @keyframes efFade { from { opacity:0 } to { opacity:1 } }
+  @keyframes efPop { from { transform:scale(.94); opacity:0 } to { transform:scale(1); opacity:1 } }
+</style>
+</helmet>
+<div dir="{{ dir }}" style="position:absolute;inset:0;font-family:{{ fontFam }};">
+
+  <!-- sheet -->
+  <div style="position:absolute;left:0;right:0;bottom:0;max-height:84%;background:#111118;border-top:1px solid #23232f;border-radius:30px 30px 0 0;display:flex;flex-direction:column;animation:efRise .4s cubic-bezier(.22,1,.36,1);">
+    <div style="padding:10px 20px 0;flex:none;">
+      <div style="width:40px;height:4px;border-radius:999px;background:#2A2A38;margin:2px auto 12px;"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="font:600 18px var(--font-sans);color:#fff;">{{ title }}</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button onClick="{{ openCal }}" style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;background:#1A1A24;border:1px solid #2A2A38;color:#CFCFE0;font:600 12px var(--font-sans);cursor:pointer;white-space:nowrap;" style-hover="border-color:#3a3a46;"><span style="width:14px;height:14px;flex:none;display:inline-flex;color:#9898B0;">{{ icCalendar }}</span>{{ dateLabel }}</button>
+          <button onClick="{{ onX }}" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:none;background:#1A1A24;border-radius:999px;color:#9898B0;cursor:pointer;padding:8px;" style-hover="background:#23232f;color:#CFCFE0;">{{ icClose }}</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ef-scroll" style="flex:1;min-height:0;overflow-y:auto;padding:14px 20px 6px;display:flex;flex-direction:column;gap:14px;">
+      <div style="display:grid;grid-template-columns:1fr 108px;gap:12px;align-items:end;">
+        <div>
+          <div style="font:600 10px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:#6E6E85;margin-bottom:7px;">{{ t.amount }}</div>
+          <div style="display:flex;align-items:center;gap:8px;height:52px;background:#16161f;border:1px solid #26262f;border-radius:14px;padding:0 14px;">
+            <span style="font:600 18px var(--font-mono);color:#5A5A72;">{{ cur }}</span>
+            <input value="{{ amt }}" onChange="{{ onAmt }}" dir="ltr" inputmode="decimal" placeholder="0.00" style="flex:1;min-width:0;border:none;background:transparent;color:#fff;font:700 24px var(--font-mono);letter-spacing:-0.02em;width:100%;text-align:start;">
+          </div>
+        </div>
+        <div>
+          <div style="font:600 10px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:#6E6E85;margin-bottom:7px;">{{ t.currency }}</div>
+          <button onClick="{{ openCurrency }}" style="width:100%;height:52px;display:flex;align-items:center;justify-content:space-between;background:#16161f;border:1px solid #26262f;border-radius:14px;padding:0 14px;color:#fff;font:600 16px var(--font-sans);cursor:pointer;" style-hover="border-color:#3a3a46;">{{ cur }}<span style="width:16px;height:16px;display:inline-flex;color:#9898B0;">{{ icChevron }}</span></button>
+        </div>
+      </div>
+
+      <div>
+        <div style="font:600 10px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:#6E6E85;margin-bottom:7px;">{{ t.description }}</div>
+        <input value="{{ desc }}" onChange="{{ onDesc }}" placeholder="{{ t.descPh }}" style="width:100%;height:46px;background:#16161f;border:1px solid #26262f;border-radius:14px;padding:0 14px;color:#fff;font:400 15px var(--font-sans);text-align:start;">
+      </div>
+
+      <div>
+        <div style="font:600 10px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:#6E6E85;margin-bottom:9px;">{{ t.category }}</div>
+        <div style="margin:0 -20px;padding:0 20px;">
+          <div ref="{{ catScrollRef }}" onScroll="{{ onCatScroll }}" class="ef-scroll" style="overflow-x:auto;padding-bottom:2px;">
+            <div style="display:grid;grid-auto-flow:column;grid-template-rows:repeat(2,60px);grid-auto-columns:66px;gap:8px;width:max-content;">
+              <sc-for list="{{ cats }}" as="cat" hint-placeholder-count="14">
+                <button onClick="{{ cat.onSelect }}" style="{{ cat.tileStyle }}">
+                  <sc-if value="{{ cat.isNon }}" hint-placeholder-val="{{ false }}">
+                    <span style="position:absolute;top:5px;inset-inline-end:5px;width:13px;height:13px;display:inline-flex;color:#8A8AA0;">{{ icArrows }}</span>
+                  </sc-if>
+                  <span style="width:22px;height:22px;display:inline-flex;color:{{ cat.iconColor }};">{{ cat.icon }}</span>
+                  <span style="{{ cat.labelStyle }}">{{ cat.label }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <!-- scroll indicator (subtle) -->
+        <div style="display:flex;justify-content:center;margin-top:9px;">
+          <div style="position:relative;width:64px;height:2px;border-radius:999px;background:#20202a;overflow:hidden;">
+            <div style="{{ scrollThumbStyle }}"></div>
+          </div>
+        </div>
+        <sc-if value="{{ nonHint }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;gap:9px;align-items:flex-start;margin-top:11px;padding:10px 12px;background:rgba(77,163,255,.10);border:1px solid rgba(77,163,255,.28);border-radius:12px;">
+            <span style="width:16px;height:16px;flex:none;margin-top:1px;color:#7FB2FF;">{{ icInfo }}</span>
+            <span style="font:500 12px var(--font-sans);color:#B9D3F5;line-height:1.4;text-align:start;">{{ t.nonHint }}</span>
+          </div>
+        </sc-if>
+      </div>
+
+      <div>
+        <div style="font:600 10px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:#6E6E85;margin-bottom:9px;">{{ t.payment }}</div>
+        <button onClick="{{ openPay }}" style="width:100%;display:flex;align-items:center;justify-content:space-between;height:58px;background:#16161f;border:1px solid #26262f;border-radius:14px;padding:0 12px;cursor:pointer;" style-hover="border-color:#3a3a46;">
+          <div style="display:flex;align-items:center;gap:11px;min-width:0;">
+            <span style="{{ selPaySwatch }}"><span style="width:16px;height:16px;display:inline-flex;">{{ selPayIcon }}</span></span>
+            <div style="text-align:start;min-width:0;">
+              <div style="font:600 14px var(--font-sans);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ selPayName }}</div>
+              <div style="font:500 11px var(--font-sans);color:#8A8AA0;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ selPaySub }}</div>
+            </div>
+          </div>
+          <span style="width:18px;height:18px;flex:none;display:inline-flex;color:#9898B0;">{{ icChevron }}</span>
+        </button>
+      </div>
+
+      <div>
+        <sc-if value="{{ noteClosed }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ openNote }}" style="align-self:flex-start;display:inline-flex;align-items:center;gap:5px;background:none;border:none;color:#E50914;font:600 14px var(--font-sans);cursor:pointer;padding:2px 0;"><span style="width:14px;height:14px;display:inline-flex;">{{ icPlus }}</span>{{ t.addNote }}</button>
+        </sc-if>
+        <sc-if value="{{ noteOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="position:relative;">
+            <input value="{{ note }}" onChange="{{ onNote }}" placeholder="{{ t.notePh }}" style="width:100%;height:46px;background:#16161f;border:1px solid #26262f;border-radius:12px;padding-block:0;padding-inline:14px 46px;color:#fff;font:400 14px var(--font-sans);text-align:start;">
+            <button onClick="{{ closeNote }}" style="position:absolute;inset-inline-end:7px;top:50%;transform:translateY(-50%);width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:none;border:none;color:#8A8AA0;cursor:pointer;padding:9px;" style-hover="color:#CFCFE0;">{{ icClose }}</button>
+          </div>
+        </sc-if>
+      </div>
+      <div style="height:2px;"></div>
+    </div>
+
+    <div style="padding:12px 20px 22px;flex:none;border-top:1px solid #1c1c26;">
+      <button onClick="{{ onSave }}" style="width:100%;height:54px;border:none;border-radius:16px;background:#E50914;color:#fff;font:600 16px var(--font-sans);cursor:pointer;" style-hover="background:#F40612;">{{ cta }}</button>
+    </div>
+  </div>
+
+  <!-- payment dropdown -->
+  <sc-if value="{{ payOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:5;animation:efFade .18s ease;">
+      <div onClick="{{ closePay }}" style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
+      <div style="position:absolute;left:0;right:0;bottom:0;background:#14141b;border-top:1px solid #26262f;border-radius:26px 26px 0 0;padding:10px 16px 22px;animation:efUp .28s cubic-bezier(.22,1,.36,1);">
+        <div style="width:40px;height:4px;border-radius:999px;background:#2A2A38;margin:2px auto 10px;"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px 8px;">
+          <div style="font:600 16px var(--font-sans);color:#fff;">{{ t.paymentTitle }}</div>
+          <button onClick="{{ closePay }}" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:none;background:#1A1A24;border-radius:999px;color:#9898B0;cursor:pointer;padding:8px;">{{ icClose }}</button>
+        </div>
+        <div class="ef-scroll" style="display:flex;flex-direction:column;gap:4px;max-height:320px;overflow-y:auto;">
+          <sc-for list="{{ methods }}" as="m" hint-placeholder-count="4">
+            <button onClick="{{ m.onSelect }}" style="{{ m.rowStyle }}">
+              <span style="{{ m.swatch }}"><span style="width:17px;height:17px;display:inline-flex;">{{ m.icon }}</span></span>
+              <div style="flex:1;text-align:start;min-width:0;">
+                <div style="display:flex;align-items:center;gap:7px;"><span style="font:600 14px var(--font-sans);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ m.name }}</span><sc-if value="{{ m.isDefault }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font:600 9px var(--font-sans);letter-spacing:.05em;text-transform:uppercase;color:#9898B0;background:#22222c;border-radius:6px;padding:2px 6px;">{{ t.defaultBadge }}</span></sc-if></div>
+                <div style="font:500 11px var(--font-sans);color:#8A8AA0;margin-top:1px;">{{ m.sub }}</div>
+              </div>
+              <sc-if value="{{ m.selected }}" hint-placeholder-val="{{ false }}"><span style="width:20px;height:20px;flex:none;display:inline-flex;color:#E50914;">{{ icCheck }}</span></sc-if>
+            </button>
+          </sc-for>
+        </div>
+        <button onClick="{{ openAddPay }}" style="width:100%;display:flex;align-items:center;gap:10px;height:52px;margin-top:8px;background:rgba(229,9,20,.08);border:1px solid rgba(229,9,20,.28);border-radius:14px;padding:0 14px;color:#FF5C5C;font:600 14px var(--font-sans);cursor:pointer;" style-hover="background:rgba(229,9,20,.14);"><span style="width:20px;height:20px;display:inline-flex;">{{ icPlus }}</span>{{ t.addPay }}</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- currency dropdown -->
+  <sc-if value="{{ curOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:6;animation:efFade .18s ease;">
+      <div onClick="{{ closeCurrency }}" style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
+      <div style="position:absolute;left:0;right:0;bottom:0;background:#14141b;border-top:1px solid #26262f;border-radius:26px 26px 0 0;padding:10px 16px 22px;animation:efUp .28s cubic-bezier(.22,1,.36,1);">
+        <div style="width:40px;height:4px;border-radius:999px;background:#2A2A38;margin:2px auto 10px;"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px 8px;">
+          <div style="font:600 16px var(--font-sans);color:#fff;">{{ t.currencyTitle }}</div>
+          <button onClick="{{ closeCurrency }}" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:none;background:#1A1A24;border-radius:999px;color:#9898B0;cursor:pointer;padding:8px;">{{ icClose }}</button>
+        </div>
+        <div class="ef-scroll" style="display:flex;flex-direction:column;gap:2px;max-height:352px;overflow-y:auto;">
+          <sc-for list="{{ currencies }}" as="cc" hint-placeholder-count="8">
+            <button onClick="{{ cc.onSelect }}" style="{{ cc.rowStyle }}">
+              <span style="font:700 15px var(--font-mono);color:#fff;width:46px;text-align:start;">{{ cc.code }}</span>
+              <span style="flex:1;text-align:start;font:500 13px var(--font-sans);color:#8A8AA0;">{{ cc.name }}</span>
+              <sc-if value="{{ cc.selected }}" hint-placeholder-val="{{ false }}"><span style="width:19px;height:19px;flex:none;display:inline-flex;color:#E50914;">{{ icCheck }}</span></sc-if>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- add payment method modal -->
+  <sc-if value="{{ addPayOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:7;animation:efFade .18s ease;">
+      <div onClick="{{ closeAddPay }}" style="position:absolute;inset:0;background:rgba(0,0,0,.6);"></div>
+      <div style="position:absolute;left:0;right:0;bottom:0;background:#111118;border-top:1px solid #26262f;border-radius:26px 26px 0 0;padding:10px 20px 22px;animation:efUp .28s cubic-bezier(.22,1,.36,1);">
+        <div style="width:40px;height:4px;border-radius:999px;background:#2A2A38;margin:2px auto 12px;"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div style="font:600 17px var(--font-sans);color:#fff;">{{ t.addPayTitle }}</div>
+          <button onClick="{{ closeAddPay }}" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:none;background:#1A1A24;border-radius:999px;color:#9898B0;cursor:pointer;padding:8px;">{{ icClose }}</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:15px;">
+          <div>
+            <div style="font:600 10px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:#6E6E85;margin-bottom:7px;">{{ t.name }}</div>
+            <input value="{{ apName }}" onChange="{{ onApName }}" placeholder="{{ t.namePh }}" style="width:100%;height:48px;background:#1A1A24;border:1px solid #2A2A38;border-radius:12px;padding:0 14px;color:#fff;font:400 15px var(--font-sans);text-align:start;">
+          </div>
+          <div>
+            <div style="font:600 10px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:#6E6E85;margin-bottom:9px;">{{ t.type }}</div>
+            <div class="ef-scroll" style="display:flex;gap:7px;overflow-x:auto;">
+              <sc-for list="{{ apTypes }}" as="tp" hint-placeholder-count="5">
+                <button onClick="{{ tp.onSelect }}" style="{{ tp.style }}">{{ tp.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:{{ apGridCols }};gap:12px;">
+            <div>
+              <div style="font:600 10px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:#6E6E85;margin-bottom:7px;">{{ t.currency }}</div>
+              <button onClick="{{ onApCur }}" style="width:100%;height:48px;display:flex;align-items:center;justify-content:space-between;background:#1A1A24;border:1px solid #2A2A38;border-radius:12px;padding:0 14px;color:#fff;font:600 15px var(--font-sans);cursor:pointer;">{{ apCur }}<span style="width:15px;height:15px;display:inline-flex;color:#9898B0;">{{ icChevron }}</span></button>
+            </div>
+            <sc-if value="{{ apNeedsLast4 }}" hint-placeholder-val="{{ false }}">
+              <div>
+                <div style="font:600 10px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:#6E6E85;margin-bottom:7px;">{{ t.last4 }}</div>
+                <input value="{{ apLast4 }}" onChange="{{ onApLast4 }}" dir="ltr" inputmode="numeric" maxlength="4" placeholder="0001" style="width:100%;height:48px;background:#1A1A24;border:1px solid #2A2A38;border-radius:12px;padding:0 14px;color:#fff;font:500 15px var(--font-mono);text-align:start;">
+              </div>
+            </sc-if>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 0;">
+            <span style="font:500 14px var(--font-sans);color:#CFCFE0;">{{ t.setDefault }}</span>
+            <button onClick="{{ onApDefault }}" style="{{ apTrackStyle }}"><span style="{{ apKnobStyle }}"></span></button>
+          </div>
+          <button onClick="{{ onApSave }}" style="{{ apSaveStyle }}">{{ t.addPay }}</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- calendar popup (centered) -->
+  <sc-if value="{{ calOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;padding:22px;animation:efFade .16s ease;">
+      <div onClick="{{ closeCal }}" style="position:absolute;inset:0;background:rgba(0,0,0,.62);"></div>
+      <div style="position:relative;width:100%;max-width:300px;animation:efPop .22s cubic-bezier(.22,1,.36,1);">
+        <dc-import name="Unified Calendar" lang="{{ calLang }}" onConfirm="{{ onCalConfirm }}" onClose="{{ closeCal }}" hint-size="100%,318"></dc-import>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- discard / save confirm (edit) -->
+  <sc-if value="{{ confirmOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:9;display:flex;align-items:center;justify-content:center;padding:26px;animation:efFade .16s ease;">
+      <div onClick="{{ closeConfirm }}" style="position:absolute;inset:0;background:rgba(0,0,0,.68);"></div>
+      <div style="position:relative;width:100%;max-width:300px;background:#15151f;border:1px solid #2A2A38;border-radius:20px;padding:22px 20px 18px;box-shadow:0 24px 60px -12px rgba(0,0,0,.7);animation:efPop .22s cubic-bezier(.22,1,.36,1);text-align:start;">
+        <div style="font:600 17px var(--font-sans);color:#fff;">{{ t.confirmTitle }}</div>
+        <div style="margin-top:8px;font:400 13.5px var(--font-sans);color:#9898B0;line-height:1.45;">{{ t.confirmBody }}</div>
+        <div style="display:flex;flex-direction:column;gap:9px;margin-top:20px;">
+          <button onClick="{{ onSaveChanges }}" style="height:48px;border:none;border-radius:13px;background:#E50914;color:#fff;font:600 15px var(--font-sans);cursor:pointer;" style-hover="background:#F40612;">{{ ctaConfirm }}</button>
+          <button onClick="{{ onDiscard }}" style="height:48px;border:1px solid #2A2A38;border-radius:13px;background:transparent;color:#FF6B6B;font:600 15px var(--font-sans);cursor:pointer;" style-hover="background:#1A1A24;">{{ t.discard }}</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:720},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;add&quot;,&quot;edit&quot;],&quot;default&quot;:&quot;add&quot;,&quot;tsType&quot;:&quot;'add' | 'edit'&quot;},&quot;lang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;en&quot;,&quot;ar&quot;],&quot;default&quot;:&quot;en&quot;,&quot;tsType&quot;:&quot;'en' | 'ar'&quot;}}">
+class Component extends DCLogic {
+  CURRENCIES = ['AED', 'USD', 'EGP', 'EUR', 'GBP', 'SAR', 'KWD', 'QAR', 'BHD', 'OMR', 'MAD', 'TND', 'JOD'];
+  CUR_NAMES = { AED: 'UAE Dirham', USD: 'US Dollar', EGP: 'Egyptian Pound', EUR: 'Euro', GBP: 'Pound Sterling', SAR: 'Saudi Riyal', KWD: 'Kuwaiti Dinar', QAR: 'Qatari Riyal', BHD: 'Bahraini Dinar', OMR: 'Omani Rial', MAD: 'Moroccan Dirham', TND: 'Tunisian Dinar', JOD: 'Jordanian Dinar' };
+  CUR_NAMES_AR = { AED: 'درهم إماراتي', USD: 'دولار أمريكي', EGP: 'جنيه مصري', EUR: 'يورو', GBP: 'جنيه إسترليني', SAR: 'ريال سعودي', KWD: 'دينار كويتي', QAR: 'ريال قطري', BHD: 'دينار بحريني', OMR: 'ريال عماني', MAD: 'درهم مغربي', TND: 'دينار تونسي', JOD: 'دينار أردني' };
+
+  STR = {
+    en: { amount: 'Amount', currency: 'Currency', description: 'Description', descPh: 'What was it for?', category: 'Category', swipe: 'Swipe for more →', arrowsNote: 'Categories marked with ⇄ move money without deducting from your balance.', payment: 'Payment method', addNote: 'Add note', notePh: 'Add a note', nonHint: "Money movement — this won't be deducted from your spending or budget.", paymentTitle: 'Payment method', currencyTitle: 'Currency', addPay: 'Add payment method', addPayTitle: 'Add payment method', name: 'Name', namePh: 'e.g. HSBC Current Account', type: 'Type', last4: 'Last 4 digits', setDefault: 'Set as default', defaultBadge: 'Default', confirmTitle: 'Save your changes?', confirmBody: "You've edited this expense. Save your changes, or discard them and keep the original.", discard: 'Discard changes' },
+    ar: { amount: 'المبلغ', currency: 'العملة', description: 'الوصف', descPh: 'على ماذا صُرِف؟', category: 'الفئة', swipe: '← اسحب للمزيد', arrowsNote: 'الفئات المعلَّمة بـ ⇄ تُحرِّك الأموال دون خصمها من رصيدك.', payment: 'طريقة الدفع', addNote: 'إضافة ملاحظة', notePh: 'أضف ملاحظة', nonHint: 'تحويل أموال — لن يُخصم هذا من إنفاقك أو ميزانيتك.', paymentTitle: 'طريقة الدفع', currencyTitle: 'العملة', addPay: 'إضافة طريقة دفع', addPayTitle: 'إضافة طريقة دفع', name: 'الاسم', namePh: 'مثال: حساب HSBC الجاري', type: 'النوع', last4: 'آخر ٤ أرقام', setDefault: 'تعيين كافتراضي', defaultBadge: 'افتراضي', confirmTitle: 'حفظ التغييرات؟', confirmBody: 'لقد عدّلتَ هذا المصروف. احفظ تغييراتك، أو تجاهلها واحتفظ بالأصل.', discard: 'تجاهل التغييرات' },
+  };
+  TT = {
+    en: { addTitle: 'Add expense', editTitle: 'Edit expense', saveExpense: 'Save expense', saveChanges: 'Save changes' },
+    ar: { addTitle: 'إضافة مصروف', editTitle: 'تعديل المصروف', saveExpense: 'حفظ المصروف', saveChanges: 'حفظ التغييرات' },
+  };
+
+  ICONS = {
+    x: '<path d="M18 6 6 18"/><path d="M6 6l12 12"/>',
+    chevron: '<path d="m6 9 6 6 6-6"/>',
+    calendar: '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
+    plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+    check: '<path d="M20 6 9 17l-5-5"/>',
+    info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+    arrows: '<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>',
+    arrowRight: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+    house: '<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+    car: '<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>',
+    utensils: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>',
+    cart: '<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
+    fuel: '<line x1="3" x2="15" y1="22" y2="22"/><line x1="4" x2="14" y1="9" y2="9"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2 2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"/>',
+    sparkles: '<path d="M9.94 15.5A2 2 0 0 0 8.5 14.06l-6.14-1.58a.5.5 0 0 1 0-.96L8.5 9.94A2 2 0 0 0 9.94 8.5l1.58-6.14a.5.5 0 0 1 .96 0L14.06 8.5A2 2 0 0 0 15.5 9.94l6.14 1.58a.5.5 0 0 1 0 .96L15.5 14.06a2 2 0 0 0-1.44 1.44l-1.58 6.14a.5.5 0 0 1-.96 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/>',
+    bag: '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>',
+    heart: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/>',
+    cap: '<path d="M21.42 10.92a1 1 0 0 0-.02-1.84L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.83l8.57 3.91a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>',
+    plug: '<path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/>',
+    refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+    card: '<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>',
+    send: '<path d="M14.54 21.69a.5.5 0 0 0 .93-.03l6.5-19a.5.5 0 0 0-.63-.63l-19 6.5a.5.5 0 0 0-.03.94l7.93 3.18a2 2 0 0 1 1.11 1.11z"/><path d="m21.85 2.15-10.94 10.94"/>',
+    layers: '<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/>',
+    banknote: '<rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01"/><path d="M18 12h.01"/>',
+    landmark: '<line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/>',
+    ticket: '<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>',
+    piggy: '<path d="M11 17h3v2a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-3a3.16 3.16 0 0 0 2-2h1a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1h-1a5 5 0 0 0-2-3V3a4 4 0 0 0-3.2 1.6l-.3.4H11a6 6 0 0 0-6 6v1a5 5 0 0 0 2 4v3a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1z"/><path d="M16 10h.01"/><path d="M2 8v1a2 2 0 0 0 2 2h1"/>',
+    wallet: '<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
+    coins: '<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/>',
+    badgeDollar: '<path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/>',
+    banknoteUp: '<path d="M12 18H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4.5"/><path d="M18 12h.01"/><path d="M19 22v-6"/><path d="m22 19-3-3-3 3"/><path d="M6 12h.01"/><circle cx="12" cy="12" r="2"/>',
+  };
+
+  CATS = [
+    { id: 'Rent', label: 'Rent', ar: 'إيجار', icon: 'house', fg: '#FF6B6B' },
+    { id: 'Transport', label: 'Transport', ar: 'مواصلات', icon: 'car', fg: '#4DA3FF' },
+    { id: 'Food', label: 'Food', ar: 'طعام', icon: 'utensils', fg: '#F5A623' },
+    { id: 'Groceries', label: 'Groceries', ar: 'بقالة', icon: 'cart', fg: '#6FD48A' },
+    { id: 'Fuel', label: 'Fuel', ar: 'وقود', icon: 'fuel', fg: '#38BDF8' },
+    { id: 'Enjoyment', label: 'Enjoyment', ar: 'ترفيه', icon: 'sparkles', fg: '#A78BFA' },
+    { id: 'Shopping', label: 'Shopping', ar: 'تسوّق', icon: 'bag', fg: '#F472B6' },
+    { id: 'Health', label: 'Health', ar: 'صحة', icon: 'heart', fg: '#34D399' },
+    { id: 'Education', label: 'Education', ar: 'تعليم', icon: 'cap', fg: '#FBBF24' },
+    { id: 'Utilities', label: 'Utilities', ar: 'مرافق', icon: 'plug', fg: '#FCD34D' },
+    { id: 'Subscription', label: 'Subs', ar: 'اشتراكات', icon: 'refresh', fg: '#C084FC' },
+    { id: 'Debt', label: 'Debt', ar: 'ديون', icon: 'landmark', fg: '#FF5C5C' },
+    { id: 'Remittance', label: 'Remit', ar: 'تحويلات', icon: 'send', fg: '#60A5FA' },
+    { id: 'Other', label: 'Other', ar: 'أخرى', icon: 'layers', fg: '#9898B0' },
+    { id: 'ATM Cash Withdrawal', label: 'ATM', ar: 'سحب نقدي', icon: 'banknote', fg: '#C7C7D6', nonspend: true },
+    { id: 'Transfer', label: 'Transfer', ar: 'تحويل', icon: 'banknoteUp', fg: '#93A7CE', nonspend: true },
+    { id: 'Currency Exchange', label: 'Exchange', ar: 'صرافة', icon: 'badgeDollar', fg: '#6FD4C0', nonspend: true },
+    { id: 'CC Payoff', label: 'CC Payoff', ar: 'سداد بطاقة', icon: 'card', fg: '#F0A0A0', nonspend: true },
+    { id: 'Savings', label: 'Savings', ar: 'ادّخار', icon: 'coins', fg: '#F5C842', nonspend: true },
+  ];
+
+  BASE_PAYS = [
+    { id: 'cash', name: 'Cash', ar: 'نقدًا', type: 'cash', cur: 'EGP', last4: '', color: '#C9C9D4', isDefault: true },
+    { id: 'hsbc', name: 'HSBC Current Account', ar: 'حساب HSBC الجاري', type: 'bank_transfer', cur: 'EGP', last4: '0001', color: '#22C55E' },
+    { id: 'cib', name: 'CIB Credit Card', ar: 'بطاقة CIB الائتمانية', type: 'card_credit', cur: 'EGP', last4: '2016', color: '#3B82F6' },
+    { id: 'nol', name: 'Nol Card', ar: 'بطاقة نول', type: 'nol', cur: 'AED', last4: '', color: '#C0C0C0' },
+  ];
+
+  AP_TYPES = [
+    { v: 'cash', l: 'Cash', ar: 'نقد' }, { v: 'bank_transfer', l: 'Bank account', ar: 'حساب بنكي' }, { v: 'nol', l: 'Nol card', ar: 'بطاقة نول' },
+    { v: 'card_credit', l: 'Credit card', ar: 'بطاقة ائتمان' }, { v: 'card_debit', l: 'Debit card', ar: 'بطاقة خصم' },
+  ];
+
+  isAr() { return this.props && this.props.lang === 'ar'; }
+
+  initState() {
+    const p = this.props || {};
+    const edit = p.mode === 'edit';
+    const ar = p.lang === 'ar';
+    const base = edit
+      ? { amt: '420.00', desc: ar ? 'بقالة من سبينس' : 'Groceries at Spinneys', note: ar ? 'تسوّق أسبوعي من سبينس' : 'Weekly run at Spinneys', noteOpen: true, curIdx: 2, cat: 'Groceries', pay: 'cib', dateLabel: ar ? 'الأحد، 12 يوليو' : 'Sun, 12 Jul' }
+      : { amt: '', desc: '', note: '', noteOpen: false, curIdx: 2, cat: 'Food', pay: 'cash', dateLabel: ar ? 'اليوم' : 'Today' };
+    this.INIT = { amt: base.amt, desc: base.desc, note: base.note, curIdx: base.curIdx, cat: base.cat, pay: base.pay, dateLabel: base.dateLabel };
+    return { ...base, payOpen: false, addPayOpen: false, calOpen: false, curOpen: false, confirmOpen: false, extra: [], ap: { name: '', type: 'cash', curIdx: 2, last4: '', def: false } };
+  }
+  state = this.initState();
+
+  catScrollRef = React.createRef();
+  onCatScroll = () => {
+    const el = this.catScrollRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    const frac = max > 0 ? el.scrollLeft / max : 0;
+    if (Math.abs(frac - (this.state.catFrac || 0)) > 0.005) this.setState({ catFrac: frac });
+  };
+
+  componentDidMount() {
+    if (this.props && this.props.mode === 'edit' && this.state.cat !== 'Groceries') {
+      this.setState(this.initState());
+    }
+  }
+
+  typeLabel(t) { const ar = this.isAr(); const m = { cash: ['Cash', 'نقد'], bank_transfer: ['Bank account', 'حساب بنكي'], card_credit: ['Credit card', 'بطاقة ائتمان'], card_debit: ['Debit card', 'بطاقة خصم'], nol: ['Nol card', 'بطاقة نول'], other: ['Other', 'أخرى'] }; return (m[t] || m.other)[ar ? 1 : 0]; }
+  typeIcon(t) { const m = { cash: 'banknote', bank_transfer: 'landmark', card_credit: 'card', card_debit: 'card', nol: 'ticket', other: 'wallet' }; return m[t] || 'wallet'; }
+  typeColor(t) { const m = { cash: '#C9C9D4', bank_transfer: '#22C55E', card_credit: '#3B82F6', card_debit: '#A855F7', nol: '#C0C0C0', other: '#9CA3AF' }; return m[t] || '#9CA3AF'; }
+  payName(m) { return this.isAr() && m.ar ? m.ar : m.name; }
+
+  ico(name, sw) {
+    const svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (sw || 2) + '" stroke-linecap="round" stroke-linejoin="round" width="100%" height="100%" style="display:block">' + (this.ICONS[name] || '') + '</svg>';
+    return React.createElement('span', { style: { display: 'inline-flex', width: '100%', height: '100%' }, dangerouslySetInnerHTML: { __html: svg } });
+  }
+  rgba(hex, a) { const h = hex.replace('#', ''); return 'rgba(' + parseInt(h.slice(0, 2), 16) + ',' + parseInt(h.slice(2, 4), 16) + ',' + parseInt(h.slice(4, 6), 16) + ',' + a + ')'; }
+
+  methodsList() { return [...this.BASE_PAYS, ...this.state.extra]; }
+  paySub(m) { return this.typeLabel(m.type) + ' · ' + m.cur + (m.last4 ? ' · ··' + m.last4 : ''); }
+  setAmt(v) { if (/^[0-9]*\.?[0-9]*$/.test(v)) this.setState({ amt: v }); }
+  dirty() { const i = this.INIT, s = this.state; return s.amt !== i.amt || s.desc !== i.desc || s.note !== i.note || s.curIdx !== i.curIdx || s.cat !== i.cat || s.pay !== i.pay || s.dateLabel !== i.dateLabel; }
+  saveAp() {
+    const ap = this.state.ap;
+    if (!ap.name.trim()) return;
+    const id = 'x' + Date.now();
+    const m = { id, name: ap.name.trim(), type: ap.type, cur: this.CURRENCIES[ap.curIdx], last4: ap.last4, color: this.typeColor(ap.type), isDefault: ap.def };
+    this.setState(s => ({ extra: [...s.extra, m], pay: id, addPayOpen: false, payOpen: false, ap: { name: '', type: 'cash', curIdx: 2, last4: '', def: false } }));
+  }
+
+  renderVals() {
+    const s = this.state;
+    const ar = this.isAr();
+    const t = this.STR[ar ? 'ar' : 'en'];
+    const tt = this.TT[ar ? 'ar' : 'en'];
+    const isEdit = this.props && this.props.mode === 'edit';
+    const cur = this.CURRENCIES[s.curIdx];
+    const selCat = this.CATS.find(c => c.id === s.cat);
+    const nonHint = !!(selCat && selCat.nonspend);
+
+    const cats = this.CATS.map(c => {
+      const on = c.id === s.cat;
+      let tileStyle = 'position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border-radius:15px;cursor:pointer;transition:all .13s;';
+      if (on) tileStyle += 'background:' + this.rgba(c.fg, 0.15) + ';border:1px solid ' + this.rgba(c.fg, 0.55) + ';';
+      else tileStyle += 'background:#16161f;border:1px' + (c.nonspend ? ' dashed #34343f' : ' solid #24242f') + ';';
+      return { ...c, label: ar ? c.ar : c.label, icon: this.ico(c.icon), isNon: !!c.nonspend, iconColor: on ? c.fg : '#8A8AA0', tileStyle, labelStyle: 'font:600 10px var(--font-sans);color:' + (on ? '#FFFFFF' : '#B7B7C8') + ';white-space:nowrap;', onSelect: () => this.setState({ cat: c.id }) };
+    });
+
+    const methods = this.methodsList().map(m => {
+      const on = m.id === s.pay;
+      return {
+        ...m, name: this.payName(m), icon: this.ico(this.typeIcon(m.type)),
+        swatch: 'flex:none;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:' + this.rgba(m.color, 0.16) + ';color:' + m.color + ';',
+        rowStyle: 'display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border-radius:14px;cursor:pointer;border:1px solid ' + (on ? this.rgba('#E50914', 0.4) : 'transparent') + ';background:' + (on ? 'rgba(229,9,20,.07)' : 'transparent') + ';transition:all .12s;',
+        sub: this.paySub(m), selected: on, onSelect: () => this.setState({ pay: m.id, payOpen: false }),
+      };
+    });
+    const selM = this.methodsList().find(m => m.id === s.pay) || this.BASE_PAYS[0];
+
+    const ap = s.ap;
+    const apNeedsLast4 = ap.type === 'bank_transfer' || ap.type === 'card_credit' || ap.type === 'card_debit';
+    const apTypes = this.AP_TYPES.map(ty => ({
+      label: ar ? ty.ar : ty.l,
+      style: 'flex:none;padding:8px 13px;border-radius:999px;cursor:pointer;font:600 12px var(--font-sans);transition:all .12s;white-space:nowrap;' + (ap.type === ty.v ? 'background:#E50914;border:1px solid #E50914;color:#fff;' : 'background:#1A1A24;border:1px solid #2A2A38;color:#A0A0B8;'),
+      onSelect: () => this.setState(st => ({ ap: { ...st.ap, type: ty.v } })),
+    }));
+    const apValid = ap.name.trim().length > 0;
+
+    return {
+      dir: ar ? 'rtl' : 'ltr', fontFam: ar ? 'var(--font-sans-ar)' : 'var(--font-sans)', calLang: ar ? 'ar' : 'en', t,
+      icClose: this.ico('x'), icChevron: this.ico('chevron'), icCalendar: this.ico('calendar'),
+      icPlus: this.ico('plus'), icCheck: this.ico('check'), icInfo: this.ico('info'), icArrows: this.ico('arrows', 2.4),
+      catScrollRef: this.catScrollRef, onCatScroll: this.onCatScroll,
+      icScrollArrow: this.ico('arrowRight', 2.4),
+      ...(function (self) {
+        const el = self.catScrollRef.current;
+        const frac = self.state.catFrac || 0;
+        let thumbPct = 40;
+        if (el && el.scrollWidth > 0) thumbPct = Math.max(22, Math.min(100, (el.clientWidth / el.scrollWidth) * 100));
+        const leftPct = (100 - thumbPct) * frac;
+        const atEnd = frac >= 0.985;
+        return {
+          scrollThumbStyle: 'position:absolute;top:0;bottom:0;width:' + thumbPct + '%;' + (ar ? 'right' : 'left') + ':' + leftPct + '%;border-radius:999px;background:#4A4A58;transition:' + (ar ? 'right' : 'left') + ' .08s linear;',
+        };
+      })(this),
+
+      title: isEdit ? tt.editTitle : tt.addTitle,
+      cta: isEdit ? tt.saveChanges : tt.saveExpense,
+      ctaConfirm: tt.saveChanges,
+      onSave: () => {},
+      onX: () => { if (isEdit && this.dirty()) this.setState({ confirmOpen: true }); },
+
+      amt: s.amt, onAmt: e => this.setAmt(e.target.value),
+      desc: s.desc, onDesc: e => this.setState({ desc: e.target.value }),
+      cur,
+      curOpen: s.curOpen, openCurrency: () => this.setState({ curOpen: true }), closeCurrency: () => this.setState({ curOpen: false }),
+      currencies: this.CURRENCIES.map((code, i) => ({
+        code, name: (ar ? this.CUR_NAMES_AR : this.CUR_NAMES)[code] || code, selected: i === s.curIdx,
+        rowStyle: 'display:flex;align-items:center;gap:10px;width:100%;padding:12px 12px;border-radius:12px;cursor:pointer;border:1px solid ' + (i === s.curIdx ? this.rgba('#E50914', 0.4) : 'transparent') + ';background:' + (i === s.curIdx ? 'rgba(229,9,20,.07)' : 'transparent') + ';transition:all .12s;',
+        onSelect: () => this.setState({ curIdx: i, curOpen: false }),
+      })),
+      cats, nonHint,
+
+      methods,
+      selPayName: this.payName(selM), selPaySub: this.paySub(selM),
+      selPayIcon: this.ico(this.typeIcon(selM.type)),
+      selPaySwatch: 'flex:none;width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:' + this.rgba(selM.color, 0.16) + ';color:' + selM.color + ';',
+      payOpen: s.payOpen, openPay: () => this.setState({ payOpen: true }), closePay: () => this.setState({ payOpen: false }),
+      addPayOpen: s.addPayOpen, openAddPay: () => this.setState({ addPayOpen: true }), closeAddPay: () => this.setState({ addPayOpen: false }),
+
+      apName: ap.name, onApName: e => this.setState(st => ({ ap: { ...st.ap, name: e.target.value } })),
+      apTypes,
+      apCur: this.CURRENCIES[ap.curIdx], onApCur: () => this.setState(st => ({ ap: { ...st.ap, curIdx: (st.ap.curIdx + 1) % this.CURRENCIES.length } })),
+      apNeedsLast4, apGridCols: apNeedsLast4 ? '1fr 1fr' : '1fr',
+      apLast4: ap.last4, onApLast4: e => this.setState(st => ({ ap: { ...st.ap, last4: e.target.value.replace(/\D/g, '').slice(0, 4) } })),
+      apTrackStyle: 'position:relative;width:44px;height:26px;border-radius:999px;border:none;cursor:pointer;transition:background .2s;background:' + (ap.def ? '#E50914' : '#2A2A38') + ';',
+      apKnobStyle: 'position:absolute;top:3px;inset-inline-start:3px;width:20px;height:20px;border-radius:999px;background:#fff;transition:transform .2s;transform:translateX(' + (ap.def ? (ar ? '-18px' : '18px') : '0') + ');',
+      onApDefault: () => this.setState(st => ({ ap: { ...st.ap, def: !st.ap.def } })),
+      apSaveStyle: 'width:100%;height:50px;margin-top:4px;border:none;border-radius:14px;background:#E50914;color:#fff;font:600 15px var(--font-sans);cursor:' + (apValid ? 'pointer' : 'not-allowed') + ';opacity:' + (apValid ? '1' : '.5') + ';',
+      onApSave: () => this.saveAp(),
+
+      noteOpen: s.noteOpen, noteClosed: !s.noteOpen,
+      openNote: () => this.setState({ noteOpen: true }), closeNote: () => this.setState({ noteOpen: false, note: '' }),
+      note: s.note, onNote: e => this.setState({ note: e.target.value }),
+
+      dateLabel: s.dateLabel, calOpen: s.calOpen,
+      openCal: () => this.setState({ calOpen: true }), closeCal: () => this.setState({ calOpen: false }),
+      onCalConfirm: label => this.setState({ dateLabel: label, calOpen: false }),
+
+      confirmOpen: s.confirmOpen,
+      closeConfirm: () => this.setState({ confirmOpen: false }),
+      onSaveChanges: () => this.setState({ confirmOpen: false }),
+      onDiscard: () => { const i = this.INIT; this.setState({ amt: i.amt, desc: i.desc, note: i.note, noteOpen: !!i.note, curIdx: i.curIdx, cat: i.cat, pay: i.pay, dateLabel: i.dateLabel, confirmOpen: false }); },
+    };
+  }
+}
+</script>
+</body>
+</html>

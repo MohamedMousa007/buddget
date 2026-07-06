@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/colors.css">
+<link rel="stylesheet" href="_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/typography.css">
+<style>
+  .uc-scroll::-webkit-scrollbar { width:0; display:none; }
+  .uc-scroll { scrollbar-width:none; -ms-overflow-style:none; }
+  .uc-yin::placeholder { color:#5A5A72; }
+  input, button { outline:none !important; -webkit-tap-highlight-color:transparent; }
+  input:focus, button:focus, input:focus-visible, button:focus-visible { outline:none !important; box-shadow:none !important; }
+</style>
+</helmet>
+<div dir="{{ dir }}" style="width:100%;background:#12121b;border:1px solid #2E2E3C;border-radius:22px;box-shadow:0 26px 64px -14px rgba(0,0,0,.7);overflow:hidden;font-family:{{ fontFam }};color:#fff;">
+
+  <!-- header bar -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 13px 10px;background:linear-gradient(160deg,#E50914,#B00810);box-shadow:0 5px 16px -10px rgba(229,9,20,.4);">
+    <div style="display:flex;align-items:center;gap:7px;">
+      <button onClick="{{ openMonths }}" style="{{ monthBtnStyle }}"><span style="white-space:nowrap;">{{ monthName }}</span><span style="width:14px;height:14px;display:inline-flex;color:rgba(255,255,255,.8);transition:transform .2s;transform:rotate({{ monthCaret }});">{{ icDown }}</span></button>
+      <button onClick="{{ openYears }}" style="{{ yearBtnStyle }}"><span>{{ yearLabel }}</span><span style="width:14px;height:14px;display:inline-flex;color:rgba(255,255,255,.8);transition:transform .2s;transform:rotate({{ yearCaret }});">{{ icDown }}</span></button>
+    </div>
+    <div style="display:flex;align-items:center;gap:5px;">
+      <sc-if value="{{ showArrows }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ prev }}" style="width:27px;height:27px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(255,255,255,.16);border-radius:9px;color:#fff;cursor:pointer;padding:8px;" style-hover="background:rgba(255,255,255,.3);">{{ icLeft }}</button>
+        <button onClick="{{ next }}" style="width:27px;height:27px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(255,255,255,.16);border-radius:9px;color:#fff;cursor:pointer;padding:8px;" style-hover="background:rgba(255,255,255,.3);">{{ icRight }}</button>
+      </sc-if>
+      <button onClick="{{ close }}" style="width:27px;height:27px;display:flex;align-items:center;justify-content:center;border:none;background:rgba(255,255,255,.16);border-radius:9px;color:rgba(255,255,255,.9);cursor:pointer;padding:8px;margin-left:2px;" style-hover="background:rgba(255,255,255,.3);color:#fff;">{{ icX }}</button>
+    </div>
+  </div>
+
+  <!-- content region (constant height) -->
+  <div style="height:230px;padding:9px 13px 13px;">
+
+    <!-- DAY VIEW -->
+    <sc-if value="{{ isDays }}" hint-placeholder-val="{{ true }}">
+      <div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px;">
+          <sc-for list="{{ weekdays }}" as="w" hint-placeholder-count="7">
+            <div style="text-align:center;font:700 10px var(--font-sans);letter-spacing:.04em;color:#7C7C92;padding:1px 0;">{{ w }}</div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(6,1fr);gap:2px;height:186px;">
+          <sc-for list="{{ cells }}" as="c" hint-placeholder-count="42">
+            <button onClick="{{ c.onPick }}" style="{{ c.style }}">
+              {{ c.day }}
+              <sc-if value="{{ c.dot }}" hint-placeholder-val="{{ false }}">
+                <span style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:999px;background:#FF3B44;"></span>
+              </sc-if>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- MONTHS VIEW -->
+    <sc-if value="{{ isMonths }}" hint-placeholder-val="{{ false }}">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr);gap:9px;height:100%;">
+        <sc-for list="{{ months }}" as="mo" hint-placeholder-count="12">
+          <button onClick="{{ mo.onPick }}" style="{{ mo.style }}">{{ mo.label }}</button>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- YEARS VIEW -->
+    <sc-if value="{{ isYears }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;height:100%;">
+        <div style="position:relative;margin-bottom:10px;flex:none;">
+          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;display:inline-flex;color:#8A8AA0;">{{ icSearch }}</span>
+          <input class="uc-yin" value="{{ yearQuery }}" onChange="{{ onYearQuery }}" inputmode="numeric" placeholder="{{ yearPlaceholder }}" style="width:100%;height:38px;background:#1A1A24;border:1px solid #2E2E3C;border-radius:11px;padding:0 14px 0 34px;color:#fff;font:600 14px var(--font-mono);">
+        </div>
+        <div class="uc-scroll" style="flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;align-content:start;">
+          <sc-for list="{{ years }}" as="yr" hint-placeholder-count="12">
+            <button onClick="{{ yr.onPick }}" style="{{ yr.style }}">{{ yr.y }}</button>
+          </sc-for>
+          <sc-if value="{{ noYears }}" hint-placeholder-val="{{ false }}">
+            <div style="grid-column:1 / -1;text-align:center;padding:22px 0;color:#5A5A72;font:500 13px var(--font-sans);">{{ noYearText }}</div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:330,&quot;height&quot;:386},&quot;lang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;en&quot;,&quot;ar&quot;],&quot;default&quot;:&quot;en&quot;,&quot;tsType&quot;:&quot;'en' | 'ar'&quot;},&quot;onConfirm&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(label: string) =&gt; void&quot;},&quot;onClose&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;}}">
+class Component extends DCLogic {
+  state = {
+    mode: 'days',                 // 'days' | 'months' | 'years'
+    view: { y: 2026, m: 6 },
+    sel: { y: 2026, m: 6, d: 6 },
+    yearQuery: '',
+  };
+
+  TODAY = { y: 2026, m: 6, d: 6 };
+  WD = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  MON = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  MONS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  WDL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  MON_AR = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+  WD_AR = ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'];
+  WDL_AR = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  YEARS = (() => { const a = []; for (let y = 1970; y <= 2035; y++) a.push(y); return a; })();
+
+  ICONS = {
+    left: '<path d="m15 18-6-6 6-6"/>',
+    right: '<path d="m9 18 6-6-6-6"/>',
+    down: '<path d="m6 9 6 6 6-6"/>',
+    x: '<path d="M18 6 6 18"/><path d="M6 6l12 12"/>',
+    search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  };
+  ico(n) {
+    const svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="100%" height="100%" style="display:block">' + this.ICONS[n] + '</svg>';
+    return React.createElement('span', { style: { display: 'inline-flex', width: '100%', height: '100%' }, dangerouslySetInnerHTML: { __html: svg } });
+  }
+
+  setMode(m) { this.setState(s => ({ mode: s.mode === m ? 'days' : m, yearQuery: '' })); }
+  shiftMonth(delta) { this.setState(s => { let m = s.view.m + delta, y = s.view.y; if (m < 0) { m = 11; y -= 1; } if (m > 11) { m = 0; y += 1; } return { view: { y, m } }; }); }
+  shiftYear(delta) { this.setState(s => ({ view: { y: s.view.y + delta, m: s.view.m } })); }
+  selectMonth(m) { this.setState(s => ({ view: { y: s.view.y, m }, mode: 'days' })); }
+  selectYear(y) { this.setState({ view: { y, m: this.state.view.m }, mode: 'days', yearQuery: '' }); }
+  pick(t) {
+    this.setState({ sel: { y: t.y, m: t.m, d: t.d }, view: { y: t.y, m: t.m } });
+    const ar = this.props && this.props.lang === 'ar';
+    const isToday = this.TODAY.y === t.y && this.TODAY.m === t.m && this.TODAY.d === t.d;
+    const dow = new Date(t.y, t.m, t.d).getDay();
+    const label = isToday ? (ar ? 'اليوم' : 'Today') : (ar ? (this.WDL_AR[dow] + '، ' + t.d + ' ' + this.MON_AR[t.m]) : (this.WDL[dow] + ', ' + t.d + ' ' + this.MONS[t.m]));
+    if (this.props.onConfirm) this.props.onConfirm(label);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const { y, m } = s.view;
+    const isDays = s.mode === 'days', isMonths = s.mode === 'months', isYears = s.mode === 'years';
+    const ar = this.props && this.props.lang === 'ar';
+
+    // 6-row (42-cell) grid with leading/trailing days
+    const first = new Date(y, m, 1).getDay();
+    const dim = new Date(y, m + 1, 0).getDate();
+    const prevDim = new Date(y, m, 0).getDate();
+    const prevM = m === 0 ? 11 : m - 1, prevY = m === 0 ? y - 1 : y;
+    const nextM = m === 11 ? 0 : m + 1, nextY = m === 11 ? y + 1 : y;
+    const raw = [];
+    for (let i = first - 1; i >= 0; i--) raw.push({ d: prevDim - i, y: prevY, m: prevM, out: true });
+    for (let d = 1; d <= dim; d++) raw.push({ d, y, m, out: false });
+    let nd = 1;
+    while (raw.length < 42) { raw.push({ d: nd, y: nextY, m: nextM, out: true }); nd++; }
+
+    const cells = raw.map(c => {
+      const isSel = s.sel.y === c.y && s.sel.m === c.m && s.sel.d === c.d;
+      const isToday = this.TODAY.y === c.y && this.TODAY.m === c.m && this.TODAY.d === c.d;
+      let style = 'position:relative;display:flex;align-items:center;justify-content:center;border-radius:10px;cursor:pointer;font:600 13px var(--font-sans);transition:background .12s;border:none;';
+      if (isSel) style += 'background:#E50914;color:#fff;box-shadow:0 4px 12px rgba(229,9,20,.4);';
+      else if (isToday) style += 'background:rgba(229,9,20,.12);color:#FF6B6B;';
+      else style += 'background:transparent;color:' + (c.out ? '#4B4B58' : '#E8E8F0') + ';';
+      return { day: c.d, style, dot: isToday && !isSel, onPick: () => this.pick(c) };
+    });
+
+    const months = (ar ? this.MON_AR : this.MONS).map((lbl, i) => {
+      const isCur = i === m;
+      const isTM = i === this.TODAY.m && y === this.TODAY.y;
+      let style = 'display:flex;align-items:center;justify-content:center;border-radius:12px;cursor:pointer;font:600 14px var(--font-sans);transition:all .12s;';
+      if (isCur) style += 'background:#E50914;color:#fff;border:1px solid #E50914;';
+      else if (isTM) style += 'background:rgba(229,9,20,.1);color:#FF7A82;border:1px solid rgba(229,9,20,.45);';
+      else style += 'background:#1B1B26;color:#D6D6E2;border:1px solid #2A2A38;';
+      return { label: lbl, style, onPick: () => this.selectMonth(i) };
+    });
+
+    const q = s.yearQuery.trim();
+    const list = q ? this.YEARS.filter(yr => String(yr).indexOf(q) >= 0) : this.YEARS;
+    const years = list.map(yr => {
+      const on = yr === y;
+      const isTY = yr === this.TODAY.y;
+      let style = 'height:40px;display:flex;align-items:center;justify-content:center;border-radius:10px;cursor:pointer;font:600 14px var(--font-mono);transition:all .12s;';
+      if (on) style += 'background:#E50914;color:#fff;border:1px solid #E50914;';
+      else if (isTY) style += 'background:rgba(229,9,20,.1);color:#FF7A82;border:1px solid rgba(229,9,20,.4);';
+      else style += 'background:#1B1B26;color:#D6D6E2;border:1px solid #2A2A38;';
+      return { y: yr, style, onPick: () => this.selectYear(yr) };
+    });
+
+    const activeBtn = 'display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border-radius:9px;cursor:pointer;font:700 14.5px var(--font-sans);border:1px solid ';
+    const monthBtnStyle = activeBtn + (isMonths ? 'rgba(255,255,255,.6);background:rgba(255,255,255,.3);color:#fff;' : 'rgba(255,255,255,.3);background:rgba(255,255,255,.15);color:#fff;');
+    const yearBtnStyle = 'display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border-radius:9px;cursor:pointer;font:700 14.5px var(--font-mono);border:1px solid ' + (isYears ? 'rgba(255,255,255,.6);background:rgba(255,255,255,.3);color:#fff;' : 'rgba(255,255,255,.3);background:rgba(255,255,255,.15);color:#fff;');
+
+    return {
+      icLeft: this.ico('left'), icRight: this.ico('right'), icDown: this.ico('down'), icX: this.ico('x'), icSearch: this.ico('search'),
+      isDays, isMonths, isYears, showArrows: !isYears,
+      monthName: ar ? this.MON_AR[m] : this.MONS[m], yearLabel: String(y),
+      dir: ar ? 'rtl' : 'ltr', fontFam: ar ? 'var(--font-sans-ar)' : 'var(--font-sans)',
+      yearPlaceholder: ar ? 'اكتب سنة…' : 'Type a year…', noYearText: ar ? 'لا توجد سنة مطابقة' : 'No matching year',
+      monthCaret: isMonths ? '180deg' : '0deg', yearCaret: isYears ? '180deg' : '0deg',
+      monthBtnStyle, yearBtnStyle,
+      weekdays: ar ? this.WD_AR : this.WD, cells, months, years, noYears: years.length === 0,
+      yearQuery: s.yearQuery, onYearQuery: e => this.setState({ yearQuery: e.target.value.replace(/\D/g, '').slice(0, 4) }),
+      openMonths: () => this.setMode('months'), openYears: () => this.setMode('years'),
+      prev: () => (isMonths ? this.shiftYear(-1) : this.shiftMonth(-1)),
+      next: () => (isMonths ? this.shiftYear(1) : this.shiftMonth(1)),
+      close: () => { if (this.props.onClose) this.props.onClose(); },
+    };
+  }
+}
+</script>
+</body>
+</html>
