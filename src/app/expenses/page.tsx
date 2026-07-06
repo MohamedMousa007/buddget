@@ -108,7 +108,7 @@ export default function ExpensesPage() {
   }
 
   const addExpense = () =>
-    requireAuth(() => setActiveModal('quickAdd'), t.expenses.requireAuth)
+    requireAuth(() => setActiveModal('addExpense'), t.expenses.requireAuth)
 
   if (!dataReady) return <div className="p-4"><SkeletonList /></div>
 
