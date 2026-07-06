@@ -13,6 +13,7 @@ export function AddExpenseSheet() {
     <ModalShell
       open={sheet.isOpen}
       onBackdropClick={sheet.handleClose}
+      scrollChild
       panelClassName="rounded-t-[30px] border-t-[#23232f]"
     >
       <ExpenseSheetForm

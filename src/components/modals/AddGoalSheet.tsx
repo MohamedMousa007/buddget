@@ -226,7 +226,7 @@ export function AddGoalSheet({ open, onClose, editingGoal }: AddGoalSheetProps) 
   const title = editingGoal ? t.goals.editGoal : t.goals.addGoal
 
   return (
-    <ModalShell open={open} onBackdropClick={onClose} dragToClose>
+    <ModalShell open={open} onBackdropClick={onClose} padContent>
       <AddGoalSheetForm
         key={editingGoal?.id ?? 'new'}
         editingGoal={editingGoal}

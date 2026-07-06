@@ -164,10 +164,9 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
 
   return (
     <>
-      <div className="flex max-h-[84vh] flex-col outline-none">
-        {/* header */}
-        <div className="shrink-0 px-5 pt-2.5">
-          <div className="mx-auto mt-0.5 mb-3 h-1 w-10 rounded-full bg-[#2A2A38]" />
+      <div className="flex min-h-0 flex-1 flex-col outline-none">
+        {/* header — ModalShell renders the drag handle above this. */}
+        <div className="shrink-0 px-5 pt-1">
           <div className="flex items-center justify-between">
             <div className="text-[18px] font-semibold text-white">
               {mode === 'edit' ? t.expenseForm.titleEdit : t.expenseForm.titleAdd}

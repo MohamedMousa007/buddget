@@ -40,7 +40,7 @@ export function VoiceRecordSheet({ open, onClose }: VoiceRecordSheetProps) {
     <ModalShell
       open={open}
       onBackdropClick={() => void handleCancel()}
-      dragToClose
+      padContent
       panelClassName="!max-h-[min(70vh,540px)]"
     >
       <div className="flex flex-col items-center gap-4 pb-2">

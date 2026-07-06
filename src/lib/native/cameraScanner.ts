@@ -10,6 +10,24 @@ export interface CapturedImage {
 }
 
 /**
+ * Thrown when the user backs out of the camera / picker without capturing a
+ * photo. Callers treat this as a silent no-op (no "couldn't read" error) —
+ * cancelling is intentional, not a failure.
+ */
+export class ReceiptCaptureCancelled extends Error {
+  constructor() {
+    super('Capture cancelled')
+    this.name = 'ReceiptCaptureCancelled'
+  }
+}
+
+/** Matches the varied cancel messages Capacitor Camera throws across platforms. */
+function isCaptureCancellation(e: unknown): boolean {
+  const m = String(e instanceof Error ? e.message : e).toLowerCase()
+  return /cancel/.test(m) || /no image/.test(m) || m.includes('user cancelled')
+}
+
+/**
  * Captures a single receipt image. Prefers the Capacitor Camera plugin (true
  * native camera, edge-detect on Android, document mode on iOS); falls back to
  * a hidden `<input type="file" capture="environment">` on the web.
@@ -40,14 +58,21 @@ async function captureNative(source: 'camera' | 'gallery'): Promise<CapturedImag
     }
   }
 
-  const photo = await Camera.getPhoto({
-    quality: 80,
-    allowEditing: false,
-    resultType: CameraResultType.DataUrl,
-    source: source === 'camera' ? CameraSource.Camera : CameraSource.Photos,
-    correctOrientation: true,
-    saveToGallery: false,
-  })
+  let photo
+  try {
+    photo = await Camera.getPhoto({
+      quality: 80,
+      allowEditing: false,
+      resultType: CameraResultType.DataUrl,
+      source: source === 'camera' ? CameraSource.Camera : CameraSource.Photos,
+      correctOrientation: true,
+      saveToGallery: false,
+    })
+  } catch (e) {
+    // User backed out of the camera/picker — silent cancel, not a failure.
+    if (isCaptureCancellation(e)) throw new ReceiptCaptureCancelled()
+    throw e
+  }
 
   const dataUrl = photo.dataUrl
   if (!dataUrl) throw new Error('Camera returned no image')
@@ -72,14 +97,14 @@ async function captureWeb(): Promise<CapturedImage> {
     let detach = () => {}
     const onChange = async () => {
       const file = input.files?.[0]
-      if (!file) { detach(); reject(new Error('No image selected')); return }
+      if (!file) { detach(); reject(new ReceiptCaptureCancelled()); return }
       try {
         const dataUrl = await fileToDataUrl(file)
         detach()
         resolve(await downscaleCaptured(dataUrl, `receipt-${Date.now()}.jpg`))
       } catch (err) { detach(); reject(err) }
     }
-    const onCancel = () => { detach(); reject(new Error('No image selected')) }
+    const onCancel = () => { detach(); reject(new ReceiptCaptureCancelled()) }
     detach = () => {
       input.removeEventListener('change', onChange)
       input.removeEventListener('cancel', onCancel)

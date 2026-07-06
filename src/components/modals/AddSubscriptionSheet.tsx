@@ -114,7 +114,7 @@ export type AddSubscriptionSheetProps = {
 export function AddSubscriptionSheet({ open, onClose, editing, instanceKey }: AddSubscriptionSheetProps) {
   if (!open) return null
   return (
-    <ModalShell open={open} onBackdropClick={onClose} dragToClose>
+    <ModalShell open={open} onBackdropClick={onClose} padContent>
       <div className="pt-1">
         <AddSubscriptionSheetInner
           key={`${editing?.id ?? 'new'}-${instanceKey}`}

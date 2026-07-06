@@ -4,15 +4,13 @@ import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
 
-export function ModalSheetDragHandle({ className }: { className?: string }) {
-  return (
-    <div
-      className={cn(
-        'w-10 h-1 bg-[var(--color-brand-border)] rounded-full mx-auto mb-4 lg:hidden',
-        className
-      )}
-    />
-  )
+/**
+ * Deprecated: ModalShell now always renders the drag-handle grab strip, so a
+ * header-level handle would double up. Kept as a no-op to avoid touching every
+ * header call site.
+ */
+export function ModalSheetDragHandle() {
+  return null
 }
 
 export interface ModalSheetHeaderProps {

@@ -116,7 +116,7 @@ export function QuickAddFAB() {
       <ModalShell
         open={isOpen}
         onBackdropClick={() => setActiveModal(null)}
-        dragToClose
+        padContent
         panelClassName="!bottom-0 !start-0 !end-0 !rounded-t-[26px] lg:!bottom-24 lg:!end-8 lg:!start-auto lg:!top-auto lg:!translate-x-0 lg:!translate-y-0 lg:!w-[360px] lg:!rounded-2xl"
       >
         <div className="mb-[14px] flex items-center justify-center gap-[7px] text-[11px] font-semibold text-[var(--color-brand-red)]">

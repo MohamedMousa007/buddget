@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Camera, Check, X, Loader2, AlertTriangle, RefreshCcw } from 'lucide-react'
+import { Camera, Check, X, Loader2, ReceiptText, RefreshCcw } from 'lucide-react'
 import Image from 'next/image'
 import { useShallow } from 'zustand/react/shallow'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { DatePickerField } from '@/components/ui/DatePickerField'
-import { captureReceiptPhoto } from '@/lib/native/cameraScanner'
+import { captureReceiptPhoto, ReceiptCaptureCancelled } from '@/lib/native/cameraScanner'
 import { isNative } from '@/lib/native/isNative'
 import { saveReceiptImage } from '@/lib/native/receiptImages'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -164,6 +164,15 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
       setState('result')
     } catch (e) {
       if (ctrl.signal.aborted) return
+      // Intentional cancel (backed out of camera/picker): no error. Native
+      // auto-opens the camera on `idle`, so resetting to idle would re-launch
+      // it in a loop — close the sheet instead. Web has no auto-start, so
+      // return to idle to allow another attempt.
+      if (e instanceof ReceiptCaptureCancelled) {
+        if (isNative()) onClose()
+        else setState('idle')
+        return
+      }
       // Offline capture-now-process-later (native): keep the photo on device
       // and queue it for the PendingCapturesChip instead of erroring. Seeded
       // reviews stay queued anyway, so only fresh captures enqueue.
@@ -181,7 +190,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
       setError(msg)
       setState('error')
     }
-  }, [baseCurrency, seed])
+  }, [baseCurrency, seed, onClose])
 
   // ponytail: web auto-start skipped — input.click() from useEffect lacks user gesture on mobile browsers
   useEffect(() => {
@@ -235,7 +244,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
     <ModalShell
       open={open}
       onBackdropClick={onClose}
-      dragToClose
+      padContent
       panelClassName="!max-h-[min(86vh,720px)]"
     >
       {state === 'scanning' ? <Centered><Loader2 className="h-8 w-8 animate-spin text-[var(--color-brand-red)]" /><p className="text-sm text-[var(--color-brand-text-secondary)]">Opening camera…</p></Centered> : null}
@@ -277,27 +286,30 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
       ) : null}
 
       {state === 'error' ? (
-        <Centered>
-          <AlertTriangle className="h-8 w-8 text-[var(--color-brand-amber)]" />
-          <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">Couldn&apos;t read that receipt</p>
-          <p className="max-w-[280px] text-xs text-[var(--color-brand-text-muted)] text-center">{error}</p>
-          <div className="mt-2 flex gap-2">
+        <div className="relative">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="absolute end-0 top-0 inline-flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <Centered>
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-brand-elevated)]">
+              <ReceiptText className="h-7 w-7 text-[var(--color-brand-text-muted)]" />
+            </div>
+            <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">Let&apos;s try that again</p>
+            <p className="max-w-[280px] text-xs text-[var(--color-brand-text-muted)] text-center">{error}</p>
             <button
               type="button"
               onClick={() => void startScan()}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
+              className="mt-1 inline-flex items-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
             >
               <RefreshCcw className="h-4 w-4" /> Try again
             </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-xl px-3 py-2 text-sm text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
-            >
-              Close
-            </button>
-          </div>
-        </Centered>
+          </Centered>
+        </div>
       ) : null}
 
       {state === 'result' && result ? (
