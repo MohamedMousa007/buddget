@@ -43,8 +43,8 @@ export function useOAuthSignIn(nextPath: string) {
           )
           if (provider === 'apple' || isNativeGoogleConfigured()) {
             const { error: e, cancelled } = await nativeSocialSignIn(provider)
+            // User backed out — reset silently; a cancel is not an error.
             if (cancelled) {
-              setError(mapOAuthError(null, 'cancelled', t))
               setPending(null)
               return
             }

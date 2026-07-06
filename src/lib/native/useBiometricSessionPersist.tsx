@@ -3,20 +3,28 @@
 import { useEffect } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { isNative } from '@/lib/native/isNative'
-import { isEnabled, saveSession, clearSession, isAvailable } from '@/lib/native/biometricAuth'
+import {
+  authenticate,
+  clearSession,
+  consumePendingEnable,
+  getLinkedAccount,
+  isAvailable,
+  isEnabled,
+  saveSession,
+  setEnabled,
+} from '@/lib/native/biometricAuth'
 
 interface BiometricSessionPersistProps {
   session: Session | null
-  /** When true, signed-in users save their refresh token by default. */
-  defaultEnabled?: boolean
 }
 
 /**
- * Persists the Supabase refresh token in encrypted Capacitor Preferences once
- * the user opts into biometric login (Settings toggle). The actual prompt is
- * gated by `BiometricLoginButton`, which reads the same key on next launch.
+ * Keeps the encrypted biometric refresh token in sync with the opt-in state:
+ * saves it only while the user has biometric login enabled (Settings toggle or
+ * the auth-screen quick button), wipes it otherwise. Also consumes the one-shot
+ * "enable after next sign-in" marker set by the auth-screen biometric button.
  */
-export function BiometricSessionPersist({ session, defaultEnabled = true }: BiometricSessionPersistProps) {
+export function BiometricSessionPersist({ session }: BiometricSessionPersistProps) {
   useEffect(() => {
     if (!isNative()) return
     let cancelled = false
@@ -25,11 +33,28 @@ export function BiometricSessionPersist({ session, defaultEnabled = true }: Biom
       const info = await isAvailable()
       if (cancelled || !info.available) return
 
-      const enabled = (await isEnabled()) || defaultEnabled
-      if (!enabled) return
+      let enabled = await isEnabled()
 
-      if (!session?.refresh_token) {
-        // Signed out — wipe the saved blob so the next open doesn't auto-prompt.
+      // One-shot auto-enable: the user tapped the biometric button before
+      // signing in. Verify identity once, then opt them in.
+      if (!enabled && session?.refresh_token && (await consumePendingEnable())) {
+        const linked = await getLinkedAccount()
+        const email = session.user?.email
+        if (!linked || (email && linked === email)) {
+          try {
+            await authenticate('Enable biometric sign-in')
+            await setEnabled(true, email)
+            enabled = true
+          } catch {
+            // Declined the prompt — stay disabled; the Settings toggle remains.
+          }
+        }
+      }
+
+      if (cancelled) return
+      if (!enabled || !session?.refresh_token) {
+        // Not opted in (or signed out): make sure no token lingers — including
+        // tokens saved by the old always-on behaviour.
         await clearSession()
         return
       }
@@ -39,7 +64,7 @@ export function BiometricSessionPersist({ session, defaultEnabled = true }: Biom
     return () => {
       cancelled = true
     }
-  }, [session?.refresh_token, defaultEnabled])
+  }, [session?.refresh_token, session?.user?.email])
 
   return null
 }

@@ -898,6 +898,13 @@ export const en: Dictionary = {
     twoFaFooter:
       "Once you verify a device, Buddget remembers it for 180 days. Clearing cookies, using a private window, or signing in from a new machine will prompt the code again.",
 
+    biometricUseFace: 'Use Face ID to sign in',
+    biometricUseFingerprint: 'Use Fingerprint to sign in',
+    biometricHint: 'Skip the password on this device after one sign-in.',
+    biometricConflict: 'Biometric is enabled for another account on this device.',
+    biometricEnabledFor: (email) => `Enabled for ${email}`,
+    biometricConfirmReason: 'Confirm your identity',
+
     accountTitle: 'Your Account',
     accountSignedIn: (email) => `You\u2019re signed in as ${email}. Your budget is synced and safe.`,
     accountSignOut: 'Sign out of Buddget',
@@ -1240,6 +1247,9 @@ export const en: Dictionary = {
     oauthUnavailable: "Couldn\u2019t reach that provider. Try again or use email.",
     oauthFailed: "Sign-in with that provider didn\u2019t work. Try again or use email.",
     oauthCancelled: 'Sign-in was cancelled.',
+    biometricSignInFace: 'Sign in with Face ID',
+    biometricSignInFingerprint: 'Sign in with Fingerprint',
+    biometricEnableHint: "Sign in with your email or Google first — we'll turn on biometric sign-in for next time.",
     oauthProviderDisabled: 'Not available right now',
     sessionExpired: 'Your session expired. Sign in again to continue where you left off.',
     rememberMe: 'Keep me signed in',
@@ -1620,6 +1630,18 @@ export const en: Dictionary = {
     generic: 'Bank SMS captured',
     more: (count: number) =>
       count === 1 ? '1 more message will be checked when online' : `${count} more messages will be checked when online`,
+  },
+
+  smsReview: {
+    chip: (count: number) =>
+      count === 1 ? '1 transaction needs your review' : `${count} transactions need your review`,
+    title: 'Review transactions',
+    subtitle: 'Spotted in your bank SMS — confirm or dismiss each one.',
+    addTransaction: 'Add transaction',
+    confirmCurrencyBtn: (currency: string) => `Confirm ${currency}`,
+    confirmCurrencyHelp: 'Already added — just confirm the currency.',
+    dismiss: 'Dismiss',
+    actionFailed: "That didn't go through. Check your connection and try again.",
   },
 
   smsTracking: {

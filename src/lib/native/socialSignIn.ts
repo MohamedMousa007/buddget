@@ -72,21 +72,58 @@ export interface NativeSignInResult {
 }
 
 const NATIVE_AUTH_TIMEOUT_MS = 120_000
+const FOREGROUND_CANCEL_GRACE_MS = 2_500
 
-/** Race a login call against a 2-minute timeout so a hung promise (e.g. Apple
- *  BroadcastChannel tab closed via Android back) never leaves the spinner stuck. */
-function withTimeout<T>(p: Promise<T>): Promise<T> {
-  return Promise.race([
-    p,
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('auth_timeout')), NATIVE_AUTH_TIMEOUT_MS),
-    ),
-  ])
+/**
+ * Race a login call against a 2-minute backstop, plus (Android only) a
+ * foreground-return watcher: capgo's broadcast-channel Apple flow never rejects
+ * when the user backs out of the custom tab, so if the app returns to the
+ * foreground and the login is still unsettled after a short grace, treat it as
+ * a cancellation. iOS providers reject properly on cancel (code 1001), and
+ * Google-on-iOS briefly backgrounds the app on success, so no watcher there.
+ */
+async function withCancellation<T>(p: Promise<T>): Promise<T> {
+  let settled = false
+  const tracked = p.finally(() => {
+    settled = true
+  })
+  let graceTimer: ReturnType<typeof setTimeout> | undefined
+  let listener: { remove(): Promise<void> } | undefined
+  try {
+    return await Promise.race([
+      tracked,
+      new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('auth_timeout')), NATIVE_AUTH_TIMEOUT_MS)
+        if (!isAndroid()) return
+        void import('@capacitor/app')
+          .then(({ App }) =>
+            App.addListener('appStateChange', ({ isActive }) => {
+              if (!isActive || settled) return
+              if (graceTimer) clearTimeout(graceTimer)
+              graceTimer = setTimeout(() => {
+                if (!settled) reject(new Error('auth_cancelled_foreground'))
+              }, FOREGROUND_CANCEL_GRACE_MS)
+            }),
+          )
+          .then((handle) => {
+            listener = handle
+            // Login settled before the async attach finished — clean up now,
+            // the finally below already ran with `listener` still undefined.
+            if (settled) void handle.remove().catch(() => {})
+          })
+          .catch(() => {})
+      }),
+    ])
+  } finally {
+    if (graceTimer) clearTimeout(graceTimer)
+    void listener?.remove().catch(() => {})
+  }
 }
 
 /** iOS ASAuthorization / Google sign-in surface their cancel as code 1001 / "cancel". */
 function isCancellation(e: unknown): boolean {
   const m = (e instanceof Error ? e.message : String(e ?? '')).toLowerCase()
+  // 'cancel' also matches our own 'auth_cancelled_foreground' sentinel.
   return m.includes('cancel') || m.includes('1001') || m.includes('auth_timeout')
 }
 
@@ -110,7 +147,7 @@ export async function nativeSocialSignIn(provider: OAuthProvider): Promise<Nativ
     let idToken: string | null = null
     let googleRawNonce: string | undefined
     if (provider === 'apple') {
-      const { result } = await withTimeout(SocialLogin.login({
+      const { result } = await withCancellation(SocialLogin.login({
         provider: 'apple',
         options: isAndroid()
           ? { scopes: ['name', 'email'], useBroadcastChannel: true }
@@ -127,9 +164,14 @@ export async function nativeSocialSignIn(provider: OAuthProvider): Promise<Nativ
       const hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(googleRawNonce))
       const hashedNonce = Array.from(new Uint8Array(hashBuf), b => b.toString(16).padStart(2, '0')).join('')
 
-      const { result } = await withTimeout(SocialLogin.login({
+      // Android: never pass `scopes` — email/profile/openid are the plugin's
+      // defaults, and passing ANY scopes array makes capgo's GoogleProvider
+      // demand a ModifiedMainActivityForSocialLoginPlugin and reject the call.
+      const { result } = await withCancellation(SocialLogin.login({
         provider: 'google',
-        options: { scopes: ['profile', 'email'], nonce: hashedNonce },
+        options: isAndroid()
+          ? { nonce: hashedNonce }
+          : { scopes: ['profile', 'email'], nonce: hashedNonce },
       }))
       idToken = 'idToken' in result ? result.idToken : null
     }

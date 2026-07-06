@@ -1,118 +1,74 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { Fingerprint, Loader2, ScanFace } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
-import {
-  authenticate,
-  clearSession,
-  getLinkedAccount,
-  getSavedSession,
-  isAvailable,
-  type BiometryType,
-} from '@/lib/native/biometricAuth'
+import { useBiometricLogin } from '@/hooks/useBiometricLogin'
+import { setPendingEnable } from '@/lib/native/biometricAuth'
+import { isNative } from '@/lib/native/isNative'
+import { useT } from '@/lib/i18n'
 
-function maskEmail(email: string): string {
-  const at = email.indexOf('@')
-  if (at < 1) return '***'
-  return `${email[0]}***${email.slice(at)}`
+export interface BiometricMessage {
+  text: string
+  tone: 'muted' | 'error'
 }
 
 interface BiometricLoginButtonProps {
-  /** Auto-prompt the OS biometric sheet on mount when conditions are met. */
+  /** Auto-prompt the OS biometric sheet on mount when biometric login is enabled. */
   autoPrompt?: boolean
   /** Called once Supabase reports a refreshed session. */
   onSuccess?: () => void
+  /** Receives hint/error copy — rendered by the parent where there's width for it. */
+  onMessage?: (msg: BiometricMessage | null) => void
 }
 
 /**
- * Renders a one-tap biometric sign-in button when the device supports
- * biometrics AND a previous session was saved on this device. The actual
- * Supabase session is restored via `setSession({ refresh_token })`; the
- * refresh token itself sits in encrypted Capacitor Preferences (Keychain on
- * iOS, EncryptedSharedPreferences on Android).
+ * Compact biometric icon button for the auth screen (Face ID on iOS,
+ * Fingerprint on Android). Enabled + saved session → one-tap sign-in.
+ * Not enabled yet → sets the one-shot "enable after next sign-in" marker and
+ * tells the user biometric will be on next time.
  */
-export function BiometricLoginButton({ autoPrompt = false, onSuccess }: BiometricLoginButtonProps) {
-  const [available, setAvailable] = useState<boolean>(false)
-  const [type, setType] = useState<BiometryType>(null)
-  const [hasSession, setHasSession] = useState<boolean>(false)
-  const [linkedAccount, setLinkedAccount] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+export function BiometricLoginButton({ autoPrompt = false, onSuccess, onMessage }: BiometricLoginButtonProps) {
+  const t = useT()
+  const { available, type, enabled, hasSession, busy, error, trigger } = useBiometricLogin(onSuccess)
   const autoPromptedRef = useRef(false)
 
-  useEffect(() => {
-    let cancelled = false
-    void (async () => {
-      const info = await isAvailable()
-      const saved = await getSavedSession()
-      const account = await getLinkedAccount()
-      if (cancelled) return
-      setAvailable(info.available)
-      setType(info.type)
-      setHasSession(Boolean(saved))
-      setLinkedAccount(account)
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  const ready = enabled && hasSession
 
-  const trigger = useCallback(async () => {
-    setBusy(true)
-    setError(null)
-    try {
-      await authenticate('Confirm your identity')
-      const refreshToken = await getSavedSession()
-      if (!refreshToken) throw new Error('No saved session — sign in with email once.')
-      const supabase = createClient()
-      const { error: setErr } = await supabase.auth.setSession({
-        access_token: '',
-        refresh_token: refreshToken,
-      })
-      if (setErr) throw setErr
-      onSuccess?.()
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Biometric sign-in failed'
-      setError(msg)
-      // Clear obviously-stale session so we don't loop the user.
-      if (msg.toLowerCase().includes('expired') || msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('session')) {
-        await clearSession()
-        setHasSession(false)
-      }
-    } finally {
-      setBusy(false)
-    }
-  }, [onSuccess])
+  useEffect(() => {
+    onMessage?.(error ? { text: error, tone: 'error' } : null)
+  }, [error, onMessage])
 
   useEffect(() => {
     if (!autoPrompt || autoPromptedRef.current) return
-    if (!available || !hasSession) return
+    if (!available || !ready) return
     autoPromptedRef.current = true
     void trigger()
-  }, [autoPrompt, available, hasSession, trigger])
+  }, [autoPrompt, available, ready, trigger])
 
-  if (!available || !hasSession) return null
+  if (!isNative() || !available) return null
 
   const Icon = type === 'face' ? ScanFace : Fingerprint
-  const label = type === 'face' ? 'Sign in with Face ID' : 'Sign in with Fingerprint'
+  const label = type === 'face' ? t.auth.biometricSignInFace : t.auth.biometricSignInFingerprint
+
+  const onTap = async () => {
+    if (ready) {
+      void trigger()
+      return
+    }
+    await setPendingEnable()
+    onMessage?.({ text: t.auth.biometricEnableHint, tone: 'muted' })
+  }
 
   return (
-    <div className="space-y-1">
-      <button
-        type="button"
-        onClick={() => void trigger()}
-        disabled={busy}
-        className="flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-4 py-2.5 text-sm font-medium text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-card)] disabled:opacity-60"
-      >
-        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
-        <span>{label}</span>
-      </button>
-      {error ? (
-        <p className="text-xs text-[var(--color-brand-red)] text-center">{error}</p>
-      ) : linkedAccount ? (
-        <p className="text-xs text-[var(--color-brand-text-muted)] text-center">{maskEmail(linkedAccount)}</p>
-      ) : null}
-    </div>
+    <button
+      type="button"
+      onClick={() => void onTap()}
+      disabled={busy}
+      aria-label={label}
+      title={label}
+      className="flex h-10 w-11 shrink-0 items-center justify-center rounded-[10px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[var(--color-brand-text-primary)] transition-colors hover:bg-[var(--color-brand-elevated)] disabled:opacity-60 sm:h-11"
+    >
+      {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Icon className="h-5 w-5" aria-hidden />}
+    </button>
   )
 }

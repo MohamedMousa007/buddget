@@ -2,10 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import { Fingerprint, ScanFace } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { useT } from '@/lib/i18n'
 import {
+  authenticate,
   getLinkedAccount,
   isAvailable,
   isEnabled,
+  saveSession,
   setEnabled,
   type BiometryType,
 } from '@/lib/native/biometricAuth'
@@ -21,6 +25,7 @@ interface BiometricLoginToggleProps {
 }
 
 export function BiometricLoginToggle({ userEmail }: BiometricLoginToggleProps) {
+  const t = useT()
   const [available, setAvailable] = useState(false)
   const [type, setType] = useState<BiometryType>(null)
   const [enabled, setEnabledState] = useState(false)
@@ -47,7 +52,7 @@ export function BiometricLoginToggle({ userEmail }: BiometricLoginToggleProps) {
   if (!available) return null
 
   const Icon = type === 'face' ? ScanFace : Fingerprint
-  const label = type === 'face' ? 'Use Face ID to sign in' : 'Use Fingerprint to sign in'
+  const label = type === 'face' ? t.settings.biometricUseFace : t.settings.biometricUseFingerprint
 
   // Another account has biometric locked to this device
   const conflict = linkedAccount && userEmail && linkedAccount !== userEmail
@@ -56,11 +61,26 @@ export function BiometricLoginToggle({ userEmail }: BiometricLoginToggleProps) {
     if (conflict) return
     setBusy(true)
     try {
-      const next = !enabled
-      await setEnabled(next, userEmail)
-      setEnabledState(next)
-      if (next && userEmail) setLinkedAccount(userEmail)
-      if (!next) setLinkedAccount(null)
+      if (!enabled) {
+        // Verify identity first — on iOS this is also what triggers the OS
+        // Face ID permission prompt. Declining leaves the switch off.
+        try {
+          await authenticate(t.settings.biometricConfirmReason)
+        } catch {
+          return
+        }
+        await setEnabled(true, userEmail)
+        // Save the current refresh token now so the auth-screen biometric
+        // button works immediately, not only after the next token rotation.
+        const { data: { session } } = await createClient().auth.getSession()
+        if (session?.refresh_token) await saveSession(session.refresh_token)
+        setEnabledState(true)
+        if (userEmail) setLinkedAccount(userEmail)
+      } else {
+        await setEnabled(false, userEmail)
+        setEnabledState(false)
+        setLinkedAccount(null)
+      }
     } finally {
       setBusy(false)
     }
@@ -75,32 +95,35 @@ export function BiometricLoginToggle({ userEmail }: BiometricLoginToggleProps) {
             <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">{label}</p>
             <p className="text-xs text-[var(--color-brand-text-muted)]">
               {conflict
-                ? `Enabled for ${maskEmail(linkedAccount)}`
-                : 'Skip the password on this device after one email sign-in.'}
+                ? t.settings.biometricEnabledFor(maskEmail(linkedAccount))
+                : t.settings.biometricHint}
             </p>
           </div>
         </div>
+        {/* p-2.5/-m-2.5 grows the hit area to 44px without moving the layout. */}
         <button
           type="button"
           onClick={() => void toggle()}
           disabled={busy || Boolean(conflict)}
           role="switch"
           aria-checked={enabled}
-          className={`relative h-6 w-11 rounded-full transition-colors ${
-            enabled ? 'bg-[var(--color-brand-red)]' : 'bg-[var(--color-brand-border)]'
-          } disabled:opacity-60`}
+          className="relative shrink-0 rounded-full p-2.5 -m-2.5 disabled:opacity-60"
         >
           <span
-            className={`absolute top-0.5 inline-block h-5 w-5 rounded-full bg-white transition-transform ${
-              enabled ? 'translate-x-5' : 'translate-x-0.5'
+            className={`block h-6 w-11 rounded-full transition-colors ${
+              enabled ? 'bg-[var(--color-brand-red)]' : 'bg-[var(--color-brand-border)]'
             }`}
-          />
+          >
+            <span
+              className={`absolute top-3 start-3 block h-5 w-5 rounded-full bg-white transition-transform ${
+                enabled ? 'translate-x-5 rtl:-translate-x-5' : ''
+              }`}
+            />
+          </span>
         </button>
       </div>
       {conflict ? (
-        <p className="text-xs text-[var(--color-brand-red)]">
-          Biometric is enabled for another account on this device.
-        </p>
+        <p className="text-xs text-[var(--color-brand-red)]">{t.settings.biometricConflict}</p>
       ) : null}
     </div>
   )

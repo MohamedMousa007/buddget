@@ -39,6 +39,22 @@ vi.mock('@capgo/capacitor-social-login', () => ({
   },
 }))
 
+const appMocks = vi.hoisted(() => ({
+  removeFn: vi.fn(() => Promise.resolve()),
+  stateCb: null as null | ((s: { isActive: boolean }) => void),
+  listenerCount: 0,
+}))
+
+vi.mock('@capacitor/app', () => ({
+  App: {
+    addListener: (_evt: string, cb: (s: { isActive: boolean }) => void) => {
+      appMocks.stateCb = cb
+      appMocks.listenerCount += 1
+      return Promise.resolve({ remove: appMocks.removeFn })
+    },
+  },
+}))
+
 vi.mock('@/lib/supabase/client', () => ({
   createClient: vi.fn(() => ({
     auth: { signInWithIdToken: mocks.signInWithIdToken },
@@ -79,6 +95,8 @@ const CAPGO_REDIRECT_URL = 'https://capacitor-social-login.firebaseapp.com/__/au
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.lastInitArgs = null
+  appMocks.stateCb = null
+  appMocks.listenerCount = 0
   mocks.isAndroid.mockReturnValue(false)
   mocks.initialize.mockResolvedValue(undefined)
   mocks.login.mockResolvedValue({ result: { idToken: 'id-token-ios' } })
@@ -429,6 +447,85 @@ describe('nativeSocialSignIn — Google — Android', () => {
     expect(mocks.login).toHaveBeenCalledWith(
       expect.objectContaining({ provider: 'google' }),
     )
+  })
+})
+
+describe('nativeSocialSignIn — Google scopes per platform', () => {
+  it('omits scopes on Android (capgo rejects any scopes without a modified MainActivity)', async () => {
+    const { nativeSocialSignIn } = await freshModule({ android: true })
+    mocks.login.mockResolvedValueOnce({ result: { idToken: 't' } })
+    await nativeSocialSignIn('google')
+    const arg = mocks.login.mock.calls[0][0] as { options: Record<string, unknown> }
+    expect(arg.options.scopes).toBeUndefined()
+    expect(arg.options.nonce).toEqual(expect.any(String))
+  })
+
+  it('passes scopes on iOS', async () => {
+    const { nativeSocialSignIn } = await freshModule({ android: false })
+    mocks.login.mockResolvedValueOnce({ result: { idToken: 't' } })
+    await nativeSocialSignIn('google')
+    const arg = mocks.login.mock.calls[0][0] as { options: Record<string, unknown> }
+    expect(arg.options.scopes).toEqual(['profile', 'email'])
+    expect(arg.options.nonce).toEqual(expect.any(String))
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Foreground-return cancellation (Android back out of the custom tab)
+// ---------------------------------------------------------------------------
+describe('foreground-return cancellation', () => {
+  it('treats app resume with a login still unsettled after the grace as cancel (Android)', async () => {
+    vi.useFakeTimers()
+    try {
+      const { nativeSocialSignIn } = await freshModule({ android: true })
+      mocks.login.mockReturnValueOnce(new Promise(() => {})) // never settles
+      const resultP = nativeSocialSignIn('apple')
+      await vi.advanceTimersByTimeAsync(0) // flush listener attach
+      expect(appMocks.stateCb).toBeTruthy()
+      appMocks.stateCb!({ isActive: true })
+      await vi.advanceTimersByTimeAsync(2_500)
+      const result = await resultP
+      expect(result).toEqual({ error: null, cancelled: true, user: null })
+      expect(appMocks.removeFn).toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not misread a login that settles within the grace window', async () => {
+    vi.useFakeTimers()
+    try {
+      const { nativeSocialSignIn } = await freshModule({ android: true })
+      let resolveLogin!: (v: unknown) => void
+      mocks.login.mockReturnValueOnce(new Promise((res) => { resolveLogin = res }))
+      const resultP = nativeSocialSignIn('apple')
+      await vi.advanceTimersByTimeAsync(0)
+      appMocks.stateCb!({ isActive: true })
+      await vi.advanceTimersByTimeAsync(100)
+      resolveLogin({ result: { idToken: 'late-token' } })
+      await vi.advanceTimersByTimeAsync(0)
+      const result = await resultP
+      expect(result).toEqual({ error: null, cancelled: false, user: null })
+      expect(appMocks.removeFn).toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('attaches no appStateChange watcher on iOS', async () => {
+    vi.useFakeTimers()
+    try {
+      const { nativeSocialSignIn } = await freshModule({ android: false })
+      let resolveLogin!: (v: unknown) => void
+      mocks.login.mockReturnValueOnce(new Promise((res) => { resolveLogin = res }))
+      const resultP = nativeSocialSignIn('apple')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(appMocks.listenerCount).toBe(0)
+      resolveLogin({ result: { idToken: 't' } })
+      await resultP
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
 
