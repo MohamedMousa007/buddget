@@ -244,6 +244,13 @@ export const useFinanceStore = create<FinanceStore>()(
           expenses: state.expenses.filter((e) => e.id !== id),
         })),
 
+      restoreExpense: (expense) =>
+        set((state) =>
+          state.expenses.some((e) => e.id === expense.id)
+            ? state
+            : { expenses: [...state.expenses, expense] },
+        ),
+
       addIncomeSource: (source) =>
         set((state) => ({
           incomeSources: [

@@ -208,6 +208,7 @@ export const en: Dictionary = {
     remove: 'Remove',
     loading: 'Loading…',
     unknown: 'Unknown',
+    undo: 'Undo',
     dash: '–',
     signIn: 'Sign in',
     signUp: 'Sign up',
@@ -419,6 +420,8 @@ export const en: Dictionary = {
     selectMulti: 'Select one or more',
     doneCta: 'Done',
     badgeSms: 'SMS',
+    swipeDelete: 'Delete',
+    expenseDeleted: 'Expense deleted',
   },
 
   addExpense: {
@@ -1247,9 +1250,9 @@ export const en: Dictionary = {
     oauthUnavailable: "Couldn\u2019t reach that provider. Try again or use email.",
     oauthFailed: "Sign-in with that provider didn\u2019t work. Try again or use email.",
     oauthCancelled: 'Sign-in was cancelled.',
+    oauthTapToCancel: 'Tap to cancel',
     biometricSignInFace: 'Sign in with Face ID',
     biometricSignInFingerprint: 'Sign in with Fingerprint',
-    biometricEnableHint: "Sign in with your email or Google first — we'll turn on biometric sign-in for next time.",
     oauthProviderDisabled: 'Not available right now',
     sessionExpired: 'Your session expired. Sign in again to continue where you left off.',
     rememberMe: 'Keep me signed in',

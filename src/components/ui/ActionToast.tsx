@@ -1,32 +1,70 @@
 'use client'
 
-import { createContext, useCallback, useContext, useState } from 'react'
+import { createContext, useCallback, useContext, useRef, useState } from 'react'
 
-const ToastContext = createContext<(msg: string) => void>(() => {})
+interface ToastOptions {
+  undo?: () => void
+  undoLabel?: string
+}
+
+type ShowToast = (msg: string, opts?: ToastOptions) => void
+
+const ToastContext = createContext<ShowToast>(() => {})
 
 export function useActionToast() {
   return useContext(ToastContext)
 }
 
-export function ActionToastProvider({ children }: { children: React.ReactNode }) {
-  const [message, setMessage] = useState<string | null>(null)
+interface ToastState {
+  message: string
+  undo?: () => void
+  undoLabel?: string
+}
 
-  const show = useCallback((msg: string) => {
-    setMessage(msg)
-    window.setTimeout(() => setMessage(null), 2000)
+export function ActionToastProvider({ children }: { children: React.ReactNode }) {
+  const [toast, setToast] = useState<ToastState | null>(null)
+  const timer = useRef<number | undefined>(undefined)
+
+  const dismiss = useCallback(() => {
+    window.clearTimeout(timer.current)
+    setToast(null)
   }, [])
+
+  const show = useCallback<ShowToast>((message, opts) => {
+    window.clearTimeout(timer.current)
+    setToast({ message, undo: opts?.undo, undoLabel: opts?.undoLabel })
+    timer.current = window.setTimeout(() => setToast(null), opts?.undo ? 5000 : 2000)
+  }, [])
+
+  const hasUndo = !!toast?.undo
 
   return (
     <ToastContext.Provider value={show}>
       {children}
-      {message ? (
+      {toast ? (
         <div className="fixed top-[calc(env(safe-area-inset-top)+1rem)] inset-x-0 z-[100] flex justify-center pointer-events-none px-4">
           <div
             role="status"
             aria-live="polite"
-            className="bg-[var(--color-brand-green)] text-white text-sm font-medium px-4 py-2 rounded-full shadow-lg pointer-events-auto"
+            className={`flex items-center gap-3 rounded-full shadow-lg pointer-events-auto text-sm font-medium text-white ${
+              hasUndo
+                ? 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)] border border-[var(--color-brand-border)] pl-4 pr-1.5 py-1.5'
+                : 'bg-[var(--color-brand-green)] px-4 py-2'
+            }`}
           >
-            ✓ {message}
+            <span>{hasUndo ? toast.message : `✓ ${toast.message}`}</span>
+            {hasUndo ? (
+              <button
+                type="button"
+                onClick={() => {
+                  toast!.undo!()
+                  dismiss()
+                }}
+                className="min-h-[36px] rounded-full bg-[var(--color-brand-red)] px-3 text-xs font-semibold text-white active:opacity-80"
+              >
+                {toast.undoLabel || 'Undo'}
+              </button>
+            ) : null}
           </div>
         </div>
       ) : null}
