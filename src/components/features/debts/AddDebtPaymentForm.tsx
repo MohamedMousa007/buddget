@@ -8,6 +8,7 @@ import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField
 import { buildFiatCurrencyPickerOptions } from '@/lib/utils/currencyPickerOptions'
 import { RECURRING_DEBT_FREQUENCIES } from '@/lib/constants/debtRecurring'
 import type { AppSettings, Debt, DebtRecurringFrequency, PaymentMethod } from '@/lib/store/types'
+import { DatePickerField } from '@/components/ui/DatePickerField'
 import { useT } from '@/lib/i18n'
 
 export interface AddDebtPaymentFormProps {
@@ -167,12 +168,7 @@ export function AddDebtPaymentForm({
 
       <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebtPayment.labelDate}</Label>
-        <Input
-          type="date"
-          value={paymentDate}
-          onChange={(e) => setPaymentDate(e.target.value)}
-          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
-        />
+        <DatePickerField value={paymentDate} onChange={setPaymentDate} className="mt-1" />
       </div>
 
       {paymentScheduleMode === 'recurring' ? (

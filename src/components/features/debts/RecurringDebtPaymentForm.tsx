@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch'
 import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import type { Debt, DebtRecurringFrequency } from '@/lib/store/types'
 import { RECURRING_DEBT_FREQUENCIES } from '@/lib/constants/debtRecurring'
+import { DatePickerField } from '@/components/ui/DatePickerField'
 import { useT } from '@/lib/i18n'
 
 export interface RecurringDebtPaymentFormProps {
@@ -145,12 +146,7 @@ export function RecurringDebtPaymentForm({
 
       <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.recurringDebt.labelNextDue}</Label>
-        <Input
-          type="date"
-          value={nextDueDate}
-          onChange={(e) => onNextDueDateChange(e.target.value)}
-          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
-        />
+        <DatePickerField value={nextDueDate} onChange={onNextDueDateChange} className="mt-1" />
       </div>
 
       <div>

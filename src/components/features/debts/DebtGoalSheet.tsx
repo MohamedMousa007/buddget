@@ -4,9 +4,9 @@ import { useMemo, useState, useEffect } from 'react'
 import { endOfMonth, format, parseISO } from 'date-fns'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
+import { DatePickerField } from '@/components/ui/DatePickerField'
 import { calculateGoalPayment } from '@/lib/debts/calculateGoalPayment'
 import type { Currency, DebtGoal } from '@/lib/store/types'
 import { formatCurrency } from '@/lib/utils/formatters'
@@ -130,12 +130,7 @@ export function DebtGoalSheet({
         <div className="space-y-4">
           <div className="max-w-[200px]">
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.goalClearBy}</Label>
-            <Input
-              type="month"
-              value={monthValue}
-              onChange={(e) => setMonthValue(e.target.value)}
-              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
-            />
+            <DatePickerField mode="month" value={monthValue} onChange={setMonthValue} className="mt-1" />
           </div>
           <div className="max-w-[180px]">
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.goalPaying}</Label>

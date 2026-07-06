@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/colors.css">
+<link rel="stylesheet" href="_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/typography.css">
+<link rel="stylesheet" href="_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/radius.css">
+<link rel="stylesheet" href="_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/effects.css">
+<style>
+  body { margin:0; background:#0c0c12; }
+  * { -webkit-tap-highlight-color: transparent; box-sizing:border-box; }
+  @keyframes efPop { from { transform:scale(.94); opacity:0 } to { transform:scale(1); opacity:1 } }
+</style>
+</helmet>
+<div class="dark" style="min-height:100%;background:#0c0c12;font-family:var(--font-sans);padding-bottom:60px;">
+
+  <div style="padding:30px 44px 6px;">
+    <div style="font:700 22px var(--font-sans);color:#fff;letter-spacing:-0.01em;">Add &amp; Edit Expense — Refined</div>
+    <div style="margin-top:5px;font:400 14px var(--font-sans);color:#9898B0;max-width:780px;">One shared expense form in add and edit modes, plus the unified date picker. Both sheets are live — slide categories, tap the date &amp; payment rows. On 2b (edit) the X asks to save or discard when there are unsaved changes.</div>
+  </div>
+
+  <section id="turn3" style="display:flex;flex-wrap:wrap;gap:44px;padding:22px 44px 40px;align-items:flex-start;">
+
+    <!-- ============ 2a — ADD EXPENSE ============ -->
+    <div id="2a" style="width:414px;display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-flex;padding:3px 9px;border-radius:999px;background:#E50914;color:#fff;font:700 12px var(--font-mono);">2a</span>
+          <span style="font:600 16px var(--font-sans);color:#fff;">Add expense · live</span>
+        </div>
+        <div style="margin-top:4px;font:400 13px var(--font-sans);color:#8A8AA0;">Fresh entry · content-height sheet</div>
+      </div>
+      <div style="width:414px;background:#000;border-radius:46px;padding:12px;box-shadow:0 40px 70px -24px rgba(0,0,0,.75);">
+        <div style="position:relative;width:390px;height:844px;background:#0A0A0F;border-radius:36px;overflow:hidden;">
+          <div style="position:absolute;top:0;left:0;right:0;height:46px;z-index:1;display:flex;align-items:center;justify-content:space-between;padding:0 28px;font:600 14px var(--font-sans);color:#fff;">
+            <span>7:50</span>
+            <div style="display:flex;align-items:center;gap:7px;"><span style="width:17px;height:14px;color:#fff;">{{ icSignal }}</span><span style="width:16px;height:14px;color:#fff;">{{ icWifi }}</span><span style="width:24px;height:13px;color:#fff;">{{ icBattery }}</span></div>
+          </div>
+          <div style="position:absolute;inset:46px 0 0;padding:8px 16px;opacity:.32;">
+            <div style="height:110px;border-radius:20px;background:linear-gradient(160deg,#0F172A,#1E293B);"></div>
+            <div style="height:52px;border-radius:16px;background:#14141c;margin-top:12px;"></div>
+          </div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.52);"></div>
+          <dc-import name="Expense Form" mode="add" style="position:absolute;inset:0;" hint-size="100%,100%"></dc-import>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 2b — EDIT EXPENSE ============ -->
+    <div id="2b" style="width:414px;display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-flex;padding:3px 9px;border-radius:999px;background:#E50914;color:#fff;font:700 12px var(--font-mono);">2b</span>
+          <span style="font:600 16px var(--font-sans);color:#fff;">Edit expense · live</span>
+        </div>
+        <div style="margin-top:4px;font:400 13px var(--font-sans);color:#8A8AA0;">Prefilled · Save changes · X asks to save / discard</div>
+      </div>
+      <div style="width:414px;background:#000;border-radius:46px;padding:12px;box-shadow:0 40px 70px -24px rgba(0,0,0,.75);">
+        <div style="position:relative;width:390px;height:844px;background:#0A0A0F;border-radius:36px;overflow:hidden;">
+          <div style="position:absolute;top:0;left:0;right:0;height:46px;z-index:1;display:flex;align-items:center;justify-content:space-between;padding:0 28px;font:600 14px var(--font-sans);color:#fff;">
+            <span>7:50</span>
+            <div style="display:flex;align-items:center;gap:7px;"><span style="width:17px;height:14px;color:#fff;">{{ icSignal }}</span><span style="width:16px;height:14px;color:#fff;">{{ icWifi }}</span><span style="width:24px;height:13px;color:#fff;">{{ icBattery }}</span></div>
+          </div>
+          <div style="position:absolute;inset:46px 0 0;padding:8px 16px;opacity:.32;">
+            <div style="height:110px;border-radius:20px;background:linear-gradient(160deg,#0F172A,#1E293B);"></div>
+            <div style="height:52px;border-radius:16px;background:#14141c;margin-top:12px;"></div>
+          </div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.52);"></div>
+          <dc-import name="Expense Form" mode="edit" style="position:absolute;inset:0;" hint-size="100%,100%"></dc-import>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 2c — UNIFIED CALENDAR (HANDOFF) ============ -->
+    <div id="2c" style="width:414px;display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-flex;padding:3px 9px;border-radius:999px;background:#E50914;color:#fff;font:700 12px var(--font-mono);">2c</span>
+          <span style="font:600 16px var(--font-sans);color:#fff;">Unified date picker</span>
+        </div>
+        <div style="margin-top:4px;font:400 13px var(--font-sans);color:#8A8AA0;">Popup · tap month/year title for fast nav · standardize app-wide</div>
+      </div>
+      <div style="width:414px;background:#000;border-radius:46px;padding:12px;box-shadow:0 40px 70px -24px rgba(0,0,0,.75);">
+        <div style="position:relative;width:390px;height:844px;background:#0A0A0F;border-radius:36px;overflow:hidden;">
+          <div style="position:absolute;top:0;left:0;right:0;height:46px;z-index:1;display:flex;align-items:center;justify-content:space-between;padding:0 28px;font:600 14px var(--font-sans);color:#fff;">
+            <span>7:50</span>
+            <div style="display:flex;align-items:center;gap:7px;"><span style="width:17px;height:14px;color:#fff;">{{ icSignal }}</span><span style="width:16px;height:14px;color:#fff;">{{ icWifi }}</span><span style="width:24px;height:13px;color:#fff;">{{ icBattery }}</span></div>
+          </div>
+          <div style="position:absolute;inset:46px 0 0;padding:8px 16px;opacity:.3;">
+            <div style="height:110px;border-radius:20px;background:linear-gradient(160deg,#0F172A,#1E293B);"></div>
+            <div style="height:52px;border-radius:16px;background:#14141c;margin-top:12px;"></div>
+            <div style="height:52px;border-radius:16px;background:#14141c;margin-top:10px;"></div>
+          </div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.62);"></div>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:22px;">
+            <div style="position:relative;width:100%;max-width:300px;animation:efPop .3s cubic-bezier(.22,1,.36,1);">
+              <dc-import name="Unified Calendar" hint-size="100%,318"></dc-import>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:390px;background:#13131a;border:1px solid #22222c;border-radius:16px;padding:16px;">
+        <div style="font:600 12px var(--font-sans);color:#CFCFE0;margin-bottom:6px;">Handoff note</div>
+        <div style="font:400 12.5px var(--font-sans);color:#8A8AA0;line-height:1.5;">Reuse this popup for every date surface — add/edit expense &amp; income, debt due dates, recurring schedules, report ranges. It opens centered over a dim scrim. Tap a day to pick instantly (no confirm). Tap the month/year title to jump months and step years. Selected = red fill, today = red dot. Time is captured automatically on the backend.</div>
+      </div>
+    </div>
+
+  </section>
+
+  <div style="padding:18px 44px 6px;border-top:1px solid #1c1c26;margin-top:8px;">
+    <div style="font:700 20px var(--font-sans);color:#fff;letter-spacing:-0.01em;">النسخة العربية · Arabic (RTL)</div>
+    <div style="margin-top:5px;font:400 14px var(--font-sans);color:#9898B0;max-width:780px;">The exact same components with <code style="color:#CFCFE0;">lang=&quot;ar&quot;</code> — right-to-left layout, Arabic copy, IBM Plex Sans Arabic, and the red-header calendar with Arabic months/weekdays.</div>
+  </div>
+
+  <section id="turn3ar" style="display:flex;flex-wrap:wrap;gap:44px;padding:22px 44px 40px;align-items:flex-start;">
+
+    <!-- 2d — ADD (AR) -->
+    <div id="2d" style="width:414px;display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-flex;padding:3px 9px;border-radius:999px;background:#E50914;color:#fff;font:700 12px var(--font-mono);">2d</span>
+          <span style="font:600 16px var(--font-sans);color:#fff;">إضافة مصروف · Add (AR)</span>
+        </div>
+      </div>
+      <div style="width:414px;background:#000;border-radius:46px;padding:12px;box-shadow:0 40px 70px -24px rgba(0,0,0,.75);">
+        <div style="position:relative;width:390px;height:844px;background:#0A0A0F;border-radius:36px;overflow:hidden;">
+          <div style="position:absolute;top:0;left:0;right:0;height:46px;z-index:1;display:flex;align-items:center;justify-content:space-between;padding:0 28px;font:600 14px var(--font-sans);color:#fff;">
+            <span>7:50</span>
+            <div style="display:flex;align-items:center;gap:7px;"><span style="width:17px;height:14px;color:#fff;">{{ icSignal }}</span><span style="width:16px;height:14px;color:#fff;">{{ icWifi }}</span><span style="width:24px;height:13px;color:#fff;">{{ icBattery }}</span></div>
+          </div>
+          <div style="position:absolute;inset:46px 0 0;padding:8px 16px;opacity:.32;">
+            <div style="height:110px;border-radius:20px;background:linear-gradient(160deg,#0F172A,#1E293B);"></div>
+            <div style="height:52px;border-radius:16px;background:#14141c;margin-top:12px;"></div>
+          </div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.52);"></div>
+          <dc-import name="Expense Form" mode="add" lang="ar" style="position:absolute;inset:0;" hint-size="100%,100%"></dc-import>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2e — EDIT (AR) -->
+    <div id="2e" style="width:414px;display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-flex;padding:3px 9px;border-radius:999px;background:#E50914;color:#fff;font:700 12px var(--font-mono);">2e</span>
+          <span style="font:600 16px var(--font-sans);color:#fff;">تعديل المصروف · Edit (AR)</span>
+        </div>
+      </div>
+      <div style="width:414px;background:#000;border-radius:46px;padding:12px;box-shadow:0 40px 70px -24px rgba(0,0,0,.75);">
+        <div style="position:relative;width:390px;height:844px;background:#0A0A0F;border-radius:36px;overflow:hidden;">
+          <div style="position:absolute;top:0;left:0;right:0;height:46px;z-index:1;display:flex;align-items:center;justify-content:space-between;padding:0 28px;font:600 14px var(--font-sans);color:#fff;">
+            <span>7:50</span>
+            <div style="display:flex;align-items:center;gap:7px;"><span style="width:17px;height:14px;color:#fff;">{{ icSignal }}</span><span style="width:16px;height:14px;color:#fff;">{{ icWifi }}</span><span style="width:24px;height:13px;color:#fff;">{{ icBattery }}</span></div>
+          </div>
+          <div style="position:absolute;inset:46px 0 0;padding:8px 16px;opacity:.32;">
+            <div style="height:110px;border-radius:20px;background:linear-gradient(160deg,#0F172A,#1E293B);"></div>
+            <div style="height:52px;border-radius:16px;background:#14141c;margin-top:12px;"></div>
+          </div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.52);"></div>
+          <dc-import name="Expense Form" mode="edit" lang="ar" style="position:absolute;inset:0;" hint-size="100%,100%"></dc-import>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2f — CALENDAR (AR) -->
+    <div id="2f" style="width:414px;display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-flex;padding:3px 9px;border-radius:999px;background:#E50914;color:#fff;font:700 12px var(--font-mono);">2f</span>
+          <span style="font:600 16px var(--font-sans);color:#fff;">التقويم · Calendar (AR)</span>
+        </div>
+      </div>
+      <div style="width:414px;background:#000;border-radius:46px;padding:12px;box-shadow:0 40px 70px -24px rgba(0,0,0,.75);">
+        <div style="position:relative;width:390px;height:844px;background:#0A0A0F;border-radius:36px;overflow:hidden;">
+          <div style="position:absolute;top:0;left:0;right:0;height:46px;z-index:1;display:flex;align-items:center;justify-content:space-between;padding:0 28px;font:600 14px var(--font-sans);color:#fff;">
+            <span>7:50</span>
+            <div style="display:flex;align-items:center;gap:7px;"><span style="width:17px;height:14px;color:#fff;">{{ icSignal }}</span><span style="width:16px;height:14px;color:#fff;">{{ icWifi }}</span><span style="width:24px;height:13px;color:#fff;">{{ icBattery }}</span></div>
+          </div>
+          <div style="position:absolute;inset:46px 0 0;padding:8px 16px;opacity:.3;">
+            <div style="height:110px;border-radius:20px;background:linear-gradient(160deg,#0F172A,#1E293B);"></div>
+            <div style="height:52px;border-radius:16px;background:#14141c;margin-top:12px;"></div>
+            <div style="height:52px;border-radius:16px;background:#14141c;margin-top:10px;"></div>
+          </div>
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.62);"></div>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:22px;">
+            <div style="position:relative;width:100%;max-width:300px;animation:efPop .3s cubic-bezier(.22,1,.36,1);">
+              <dc-import name="Unified Calendar" lang="ar" hint-size="100%,318"></dc-import>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  ICONS = {
+    signal: '<path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/>',
+    wifi: '<path d="M12 20h.01"/><path d="M8.5 16.4a5 5 0 0 1 7 0"/><path d="M5 12.9a10 10 0 0 1 14 0"/><path d="M1.4 9.4a15 15 0 0 1 21.2 0"/>',
+    battery: '<rect x="1" y="7" width="18" height="10" rx="2.5"/><line x1="22" y1="11" x2="22" y2="13"/><rect x="3" y="9" width="12" height="6" rx="1" fill="currentColor" stroke="none"/>',
+  };
+  ico(name) {
+    const svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="100%" height="100%" style="display:block">' + (this.ICONS[name] || '') + '</svg>';
+    return React.createElement('span', { style: { display: 'inline-flex', width: '100%', height: '100%' }, dangerouslySetInnerHTML: { __html: svg } });
+  }
+  renderVals() {
+    return { icSignal: this.ico('signal'), icWifi: this.ico('wifi'), icBattery: this.ico('battery') };
+  }
+}
+</script>
+</body>
+</html>

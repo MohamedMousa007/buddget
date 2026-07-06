@@ -238,7 +238,7 @@ export function ExpenseFilters({
 
   return (
     <div className="mb-3 flex items-center gap-2">
-      <div className="hide-scrollbar flex min-w-0 flex-1 gap-[7px] overflow-x-auto py-0.5">
+      <div className="hide-scrollbar flex min-w-0 flex-1 gap-[7px] overflow-x-auto py-0.5 [touch-action:pan-x]">
         <button type="button" onClick={() => setDropdown('cat')} className={chip(cats.length > 0)}>
           <LayoutGrid className="h-[14px] w-[14px]" />
           {catChipLabel}
