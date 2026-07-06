@@ -52,7 +52,6 @@
   /* Buddget brand tokens — resolved at runtime via :root / .dark overrides */
   --color-brand-red: var(--color-brand-red);
   --color-brand-red-hover: var(--color-brand-red-hover);
-  --color-brand-expense: var(--color-brand-expense);
   --color-brand-gold: var(--color-brand-gold);
   --color-brand-green: var(--color-brand-green);
   --color-brand-green-hover: var(--color-brand-green-hover);
@@ -71,7 +70,6 @@
 :root {
   --color-brand-red: #E50914;
   --color-brand-red-hover: #C5070F;
-  --color-brand-expense: #C5303A;
   --color-brand-gold: #D4A017;
   --color-brand-green: #18A349;
   --color-brand-green-hover: #12843B;
@@ -143,7 +141,6 @@
 .dark {
   --color-brand-red: #E50914;
   --color-brand-red-hover: #F40612;
-  --color-brand-expense: #FF7A7A;
   --color-brand-gold: #F5C842;
   --color-brand-green: #1DB954;
   --color-brand-green-hover: #25D067;
