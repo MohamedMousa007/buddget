@@ -665,6 +665,8 @@ export interface FinanceStore {
   addExpense: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'amountInBaseCurrency'>) => void
   updateExpense: (id: string, updates: Partial<Expense>) => void
   deleteExpense: (id: string) => void
+  /** Re-inserts a just-deleted expense VERBATIM (same id/timestamps) — powers Undo. */
+  restoreExpense: (expense: Expense) => void
   /**
    * Inserts/replaces an already-persisted server row VERBATIM by its real id —
    * no id/timestamp regeneration. Used to ingest SMS-created expenses from

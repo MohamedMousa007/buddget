@@ -209,6 +209,7 @@ export const ar: Dictionary = {
     remove: 'إزالة',
     loading: 'جارٍ التحميل…',
     unknown: 'غير معروف',
+    undo: 'تراجع',
     dash: '–',
     signIn: 'تسجيل الدخول',
     signUp: 'إنشاء حساب',
@@ -419,6 +420,8 @@ export const ar: Dictionary = {
     selectMulti: 'اختر واحدة أو أكثر',
     doneCta: 'تم',
     badgeSms: 'SMS',
+    swipeDelete: 'حذف',
+    expenseDeleted: 'تم حذف المصروف',
   },
 
   addExpense: {
@@ -1246,9 +1249,9 @@ export const ar: Dictionary = {
     oauthUnavailable: 'لم نتمكن من الوصول للموفّر. حاول مرة أخرى أو استخدم البريد الإلكتروني.',
     oauthFailed: 'تعذّر تسجيل الدخول عبر هذا الموفّر. حاول مرة أخرى أو استخدم البريد الإلكتروني.',
     oauthCancelled: 'تم إلغاء تسجيل الدخول.',
+    oauthTapToCancel: 'اضغط للإلغاء',
     biometricSignInFace: 'تسجيل الدخول بواسطة Face ID',
     biometricSignInFingerprint: 'تسجيل الدخول بالبصمة',
-    biometricEnableHint: 'سجّل الدخول بالبريد الإلكتروني أو Google أولاً — سنفعّل تسجيل الدخول بالبصمة في المرة القادمة.',
     oauthProviderDisabled: 'غير متاح حالياً',
     sessionExpired: 'انتهت جلستك. سجّل دخولك مرة أخرى للمتابعة.',
     rememberMe: 'أبقني مسجّلاً',

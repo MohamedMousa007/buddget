@@ -112,6 +112,7 @@ export interface Dictionary {
     remove: string
     loading: string
     unknown: string
+    undo: string
     dash: string
     signIn: string
     signUp: string
@@ -326,6 +327,8 @@ export interface Dictionary {
     selectMulti: string
     doneCta: string
     badgeSms: string
+    swipeDelete: string
+    expenseDeleted: string
   }
 
   addExpense: {
@@ -1147,9 +1150,9 @@ export interface Dictionary {
     oauthUnavailable: string
     oauthFailed: string
     oauthCancelled: string
+    oauthTapToCancel: string
     biometricSignInFace: string
     biometricSignInFingerprint: string
-    biometricEnableHint: string
     oauthProviderDisabled: string
     sessionExpired: string
     rememberMe: string

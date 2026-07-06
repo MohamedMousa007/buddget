@@ -1,8 +1,10 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { CategoryIcon } from '@/components/dashboard/CategoryIcon'
+import { SwipeToDelete } from '@/components/expenses/SwipeToDelete'
+import { useActionToast } from '@/components/ui/ActionToast'
 import { categoryChipColors } from '@/lib/expenses/categoryChip'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -36,14 +38,18 @@ interface DayGroup {
 
 export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
   const t = useT()
-  const { settings, exchangeRates, paymentMethods } = useFinanceStore(
+  const { settings, exchangeRates, paymentMethods, deleteExpense, restoreExpense } = useFinanceStore(
     useShallow((s) => ({
       settings: s.settings,
       exchangeRates: s.exchangeRates,
       paymentMethods: s.paymentMethods,
+      deleteExpense: s.deleteExpense,
+      restoreExpense: s.restoreExpense,
     })),
   )
   const { setEditingExpenseId, setActiveModal } = useSettingsStore()
+  const toast = useActionToast()
+  const [openId, setOpenId] = useState<string | null>(null)
   const base = settings.baseCurrency
   const secondary = settings.secondaryCurrency
   const showSecondary = settings.showSecondaryCurrency && secondary
@@ -75,6 +81,12 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
     setActiveModal('editExpense')
   }
 
+  const handleDelete = (e: Expense) => {
+    setOpenId(null)
+    deleteExpense(e.id)
+    toast(t.expenses.expenseDeleted, { undo: () => restoreExpense(e), undoLabel: t.common.undo })
+  }
+
   if (expenses.length === 0) {
     return (
       <p className="px-1 py-10 text-center text-sm text-[var(--color-brand-text-muted)]">
@@ -92,7 +104,7 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
               {g.label}
             </span>
             <span className="font-mono-numbers text-[10.5px] font-semibold text-[var(--color-brand-text-muted)]">
-              {fmtNum(g.total)} {base}
+              −{fmtNum(g.total)} {base}
             </span>
           </div>
           <div className="overflow-hidden rounded-[14px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
@@ -105,8 +117,14 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                 ? formatCurrency(convertCurrency(baseVal, base, secondary, exchangeRates), secondary)
                 : null
               return (
-                <button
+                <SwipeToDelete
                   key={e.id}
+                  isOpen={openId === e.id}
+                  onOpenChange={(open) => setOpenId(open ? e.id : null)}
+                  onDelete={() => handleDelete(e)}
+                  deleteLabel={t.expenses.swipeDelete}
+                >
+                <button
                   type="button"
                   onClick={() => openEdit(e.id)}
                   className={`flex w-full items-center gap-[11px] px-3 py-[9px] text-start transition-colors hover:bg-[var(--color-brand-elevated)] ${idx === 0 ? '' : 'border-t border-[var(--color-brand-border)]'}`}
@@ -137,17 +155,18 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                     </span>
                   </span>
                   <span className="shrink-0 text-end">
-                    <span className="font-mono-numbers block text-[14px] font-bold text-[var(--color-brand-text-primary)]">
-                      {fmtNum(baseVal)}{' '}
+                    <span className="font-mono-numbers block text-[14px] font-bold text-[var(--color-brand-expense)]">
+                      −{fmtNum(baseVal)}{' '}
                       <span className="text-[10px] font-medium text-[var(--color-brand-text-muted)]">{base}</span>
                     </span>
                     {usd ? (
                       <span className="font-mono-numbers block text-[9.5px] text-[var(--color-brand-text-muted)]">
-                        {usd}
+                        −{usd}
                       </span>
                     ) : null}
                   </span>
                 </button>
+                </SwipeToDelete>
               )
             })}
           </div>
