@@ -44,6 +44,9 @@ export function useOAuthSignIn(nextPath: string) {
     abortRef.current = null
     setPending(null)
     setCanCancel(false)
+    // Clear any stale error so the next attempt starts clean and the button
+    // reads as ready rather than showing a leftover failure.
+    setError('')
   }, [])
 
   const signIn = useCallback(

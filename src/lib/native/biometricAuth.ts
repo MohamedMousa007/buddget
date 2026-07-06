@@ -138,19 +138,35 @@ export async function authenticate(reason = 'Sign in to Buddget'): Promise<void>
   })
 }
 
-/** Returns the saved Supabase session token (set after a previous email sign-in). */
-export async function getSavedSession(): Promise<string | null> {
+export interface SavedSession {
+  access_token: string
+  refresh_token: string
+}
+
+/** Returns the saved Supabase session pair (set after a previous sign-in).
+ *  Falls back to treating a legacy bare-string value as a refresh-only token. */
+export async function getSavedSession(): Promise<SavedSession | null> {
   try {
     const { value } = await Preferences.get({ key: SESSION_KEY })
-    return value || null
+    if (!value) return null
+    try {
+      const parsed = JSON.parse(value) as Partial<SavedSession>
+      if (parsed && typeof parsed.refresh_token === 'string' && parsed.refresh_token) {
+        return { access_token: parsed.access_token ?? '', refresh_token: parsed.refresh_token }
+      }
+    } catch {
+      // Legacy format: the raw refresh token was stored as a bare string.
+      return { access_token: '', refresh_token: value }
+    }
+    return null
   } catch {
     return null
   }
 }
 
-export async function saveSession(refreshToken: string): Promise<void> {
+export async function saveSession(session: SavedSession): Promise<void> {
   try {
-    await Preferences.set({ key: SESSION_KEY, value: refreshToken })
+    await Preferences.set({ key: SESSION_KEY, value: JSON.stringify(session) })
   } catch (e) {
     console.warn('[biometric] saveSession failed', e)
   }

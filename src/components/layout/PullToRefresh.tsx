@@ -180,17 +180,16 @@ function Indicator({
             className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-brand-card)] shadow-md ring-1 ring-[var(--color-brand-border)]"
           >
             {phase === 'refreshing' ? (
-              <motion.svg
+              <svg
                 width="22" height="22" viewBox="0 0 22 22"
-                animate={{ rotate: 360 }}
-                transition={{ repeat: Infinity, ease: 'linear', duration: 0.7 }}
+                style={{ animation: 'bg-spin 0.7s linear infinite', transformOrigin: 'center' }}
               >
                 <circle cx="11" cy="11" r="9" fill="none" stroke="var(--color-brand-border)" strokeWidth="2.5" />
                 <circle
                   cx="11" cy="11" r="9" fill="none" stroke="var(--color-brand-red)" strokeWidth="2.5"
                   strokeLinecap="round" strokeDasharray={CIRC} strokeDashoffset={CIRC * 0.7}
                 />
-              </motion.svg>
+              </svg>
             ) : (
               <svg width="22" height="22" viewBox="0 0 22 22" style={{ transform: 'rotate(-90deg)' }}>
                 <circle cx="11" cy="11" r="9" fill="none" stroke="var(--color-brand-border)" strokeWidth="2.5" />

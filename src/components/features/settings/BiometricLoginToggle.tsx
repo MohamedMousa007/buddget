@@ -73,7 +73,12 @@ export function BiometricLoginToggle({ userEmail }: BiometricLoginToggleProps) {
         // Save the current refresh token now so the auth-screen biometric
         // button works immediately, not only after the next token rotation.
         const { data: { session } } = await createClient().auth.getSession()
-        if (session?.refresh_token) await saveSession(session.refresh_token)
+        if (session?.access_token && session.refresh_token) {
+          await saveSession({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+          })
+        }
         setEnabledState(true)
         if (userEmail) setLinkedAccount(userEmail)
       } else {

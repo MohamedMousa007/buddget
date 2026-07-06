@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
   authenticate,
-  clearSession,
   getLinkedAccount,
   getSavedSession,
   isAvailable,
@@ -13,24 +12,14 @@ import {
   type BiometryType,
 } from '@/lib/native/biometricAuth'
 
-/** Only these mean the saved refresh token itself is dead — clear it. A bare
- *  "session" match or a network/offline failure must NOT wipe the token. */
-function isDeadRefreshToken(msg: string): boolean {
-  const m = msg.toLowerCase()
-  return (
-    m.includes('invalid') ||
-    m.includes('expired') ||
-    m.includes('revoked') ||
-    m.includes('refresh token')
-  )
-}
-
 /**
  * State + trigger for biometric sign-in. Restores the Supabase session from the
- * saved refresh token via `refreshSession({ refresh_token })` — the documented
- * cold-restore path (there is no active session here, so it does not race the
- * SDK auto-refresh). The token sits in encrypted Capacitor Preferences (Keychain
- * on iOS, EncryptedSharedPreferences on Android).
+ * saved token pair via `setSession({ access_token, refresh_token })` — when the
+ * access token is still valid this hydrates with no refresh-endpoint hit, so it
+ * can't trip the single-use refresh-token rotation. A failure is never
+ * destructive: the button and saved token stay put so the user can retry or fall
+ * back to email. The pair sits in encrypted Capacitor Preferences (Keychain on
+ * iOS, EncryptedSharedPreferences on Android).
  */
 export function useBiometricLogin(onSuccess?: () => void) {
   const [available, setAvailable] = useState(false)
@@ -65,28 +54,34 @@ export function useBiometricLogin(onSuccess?: () => void) {
     setError(null)
     try {
       await authenticate()
-      const refreshToken = await getSavedSession()
-      if (!refreshToken) throw new Error('No saved session — sign in with email once.')
+      const saved = await getSavedSession()
+      if (!saved) throw new Error('No saved session — sign in with email once.')
       const supabase = createClient()
-      const { data, error: refreshErr } = await supabase.auth.refreshSession({
-        refresh_token: refreshToken,
-      })
-      if (refreshErr) throw refreshErr
-      // refreshSession rotates the single-use token — persist the new one now so
-      // a kill right after restore doesn't leave a spent token behind.
-      if (data.session?.refresh_token) await saveSession(data.session.refresh_token)
+      // setSession uses the access token when still valid (no refresh-endpoint
+      // hit → no token-rotation race); only refreshes when it has expired.
+      const { data, error: setErr } = saved.access_token
+        ? await supabase.auth.setSession({
+            access_token: saved.access_token,
+            refresh_token: saved.refresh_token,
+          })
+        : await supabase.auth.refreshSession({ refresh_token: saved.refresh_token })
+      if (setErr) throw setErr
+      // Persist the (possibly rotated) tokens so a later restore stays fresh.
+      if (data.session) {
+        await saveSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        })
+      }
       onSuccess?.()
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Biometric sign-in failed'
       // Dismissing the OS prompt is not an error — reset silently.
       if (msg.toLowerCase().includes('cancel')) return
+      // Non-destructive: keep the button and saved token so the user can retry
+      // or fall back to email. Log the raw error for on-device diagnosis.
+      console.warn('[biometric] restore failed', msg)
       setError(msg)
-      // Only wipe the saved token when it's genuinely dead — never on a network
-      // error (offline retry) or a generic "session missing" string.
-      if (isDeadRefreshToken(msg)) {
-        await clearSession()
-        setHasSession(false)
-      }
     } finally {
       setBusy(false)
     }

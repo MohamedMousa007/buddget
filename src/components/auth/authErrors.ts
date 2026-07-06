@@ -17,9 +17,10 @@ export function mapOAuthCallbackReason(reason: string | null | undefined): OAuth
   return 'provider_error'
 }
 
-/** Append a compact dev-reference code so users can report what failed without device logs. */
+/** Log a compact support code for diagnosis without leaking it into user copy. */
 function withRef(message: string, code: string): string {
-  return `${message} (ref: ${code})`
+  console.warn(`[auth] ${code}`)
+  return message
 }
 
 /** Map OAuth start/callback failures to friendly i18n copy with a dev-reference code. */
@@ -111,7 +112,8 @@ export function mapAuthError(err: unknown, context: 'signin' | 'signup' | 'otp' 
     return t.auth.errorOtpExpired
   }
 
-  return raw || t.auth.errorFallback
+  if (raw) console.warn('[auth] unmapped:', raw)
+  return t.auth.errorFallback
 }
 
 export function isValidEmailFormat(email: string): boolean {

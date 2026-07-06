@@ -480,3 +480,7 @@ html[data-locale='ar'] .prose-rtl {
 @keyframes efUp   { from { transform: translateY(100%) } to { transform: translateY(0) } }
 @keyframes efFade { from { opacity: 0 } to { opacity: 1 } }
 @keyframes efPop  { from { transform: scale(.94); opacity: 0 } to { transform: scale(1); opacity: 1 } }
+
+/* Compositor-driven spin: keeps rotating even when the main thread is blocked
+   (e.g. a heavy sync during pull-to-refresh), unlike a rAF/JS-driven rotation. */
+@keyframes bg-spin { to { transform: rotate(360deg) } }
