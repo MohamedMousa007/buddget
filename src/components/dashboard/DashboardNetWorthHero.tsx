@@ -44,7 +44,7 @@ export function DashboardNetWorthHero({
               'mt-1 font-mono font-bold text-[26px] leading-none truncate',
               netWorth >= 0
                 ? 'text-[var(--color-brand-text-primary)]'
-                : 'text-[var(--color-brand-red)]',
+                : 'text-[var(--color-brand-red-text)]',
             )}
           >
             <CurrencyLabel
@@ -78,7 +78,7 @@ export function DashboardNetWorthHero({
             label={t.dashboard.heroStatDebt}
             amount={totalDebt}
             currency={baseCurrency}
-            color="text-[var(--color-brand-red)]"
+            color="text-[var(--color-brand-red-text)]"
           />
         </div>
       </div>

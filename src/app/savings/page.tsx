@@ -141,7 +141,7 @@ export default function SavingsPage() {
                 <span className="text-[var(--color-brand-text-secondary)]">{t.savings.netWorthShort}: </span>
                 <span
                   className={`font-mono-numbers font-semibold ${
-                    nw.netWorth >= 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red)]'
+                    nw.netWorth >= 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red-text)]'
                   }`}
                 >
                   {formatCurrency(nw.netWorth, settings.baseCurrency)}
@@ -196,7 +196,7 @@ export default function SavingsPage() {
             </p>
             <p
               className={`text-xl sm:text-2xl font-mono-numbers font-bold ${
-                nw.netWorth >= 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red)]'
+                nw.netWorth >= 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red-text)]'
               }`}
             >
               {formatCurrency(nw.netWorth, settings.baseCurrency)}
@@ -236,7 +236,7 @@ export default function SavingsPage() {
               </span>
               <span
                 className={`font-mono-numbers ${
-                  nw.monthlyFlow >= 0 ? 'text-[var(--color-brand-text-primary)]' : 'text-[var(--color-brand-red)]'
+                  nw.monthlyFlow >= 0 ? 'text-[var(--color-brand-text-primary)]' : 'text-[var(--color-brand-red-text)]'
                 }`}
               >
                 {nw.monthlyFlow < 0 ? '− ' : ''}
@@ -248,7 +248,7 @@ export default function SavingsPage() {
                 <span className="h-2 w-2 rounded-full bg-[var(--color-brand-red)]" aria-hidden />
                 {t.savings.breakdownRowDebt}
               </span>
-              <span className="font-mono-numbers text-[var(--color-brand-red)]">
+              <span className="font-mono-numbers text-[var(--color-brand-red-text)]">
                 − {formatCurrency(nw.totalDebt, settings.baseCurrency)}
               </span>
             </li>
