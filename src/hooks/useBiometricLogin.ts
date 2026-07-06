@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useT } from '@/lib/i18n'
 import {
   authenticate,
+  clearSession,
   getLinkedAccount,
   getSavedSession,
   isAvailable,
@@ -22,6 +24,7 @@ import {
  * iOS, EncryptedSharedPreferences on Android).
  */
 export function useBiometricLogin(onSuccess?: () => void) {
+  const t = useT()
   const [available, setAvailable] = useState(false)
   const [type, setType] = useState<BiometryType>(null)
   const [enabled, setEnabled] = useState(false)
@@ -64,14 +67,20 @@ export function useBiometricLogin(onSuccess?: () => void) {
         access_token: saved.access_token,
         refresh_token: saved.refresh_token,
       })
-      if (setErr) throw setErr
-      // Persist the (possibly rotated) tokens so a later restore stays fresh.
-      if (data.session) {
-        await saveSession({
-          access_token: data.session.access_token,
-          refresh_token: data.session.refresh_token,
-        })
+      if (setErr || !data.session) {
+        // The stored token was rotated/revoked server-side (session_not_found).
+        // Wipe it so the stale button self-heals and the user isn't shown the
+        // raw "Auth session missing!" — they re-arm by signing in with email once.
+        await clearSession()
+        setHasSession(false)
+        setError(t.auth.sessionExpired)
+        return
       }
+      // Persist the (possibly rotated) tokens so a later restore stays fresh.
+      await saveSession({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      })
       onSuccess?.()
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Biometric sign-in failed'
@@ -84,7 +93,7 @@ export function useBiometricLogin(onSuccess?: () => void) {
     } finally {
       setBusy(false)
     }
-  }, [onSuccess])
+  }, [onSuccess, t])
 
   return { available, type, enabled, hasSession, linkedAccount, busy, error, trigger }
 }

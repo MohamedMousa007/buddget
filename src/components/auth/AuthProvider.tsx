@@ -332,17 +332,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Capture the token BEFORE clearing — the background push-unregister needs it.
     const accessToken = session?.access_token ?? null
+    const supabase = createClient()
 
-    // On native: users who opted into biometric login keep their saved token
-    // across an intentional sign-out — that's the whole point of the quick
-    // biometric sign-in button. Everyone else gets the token wiped BEFORE
-    // setUser(null) (BiometricSessionPersist unmounts with the user, so it
-    // never sees session=null and can't do it).
+    // On native, biometric-opted-in users keep a saved token across an
+    // intentional sign-out — that's the whole point of the quick fingerprint
+    // button. Capture the FRESHEST pair straight from SDK storage here rather
+    // than trusting the copy BiometricSessionPersist last wrote (which may be a
+    // token the live client has since rotated → already "used"). After this
+    // local sign-out the client never rotates again, so this exact token stays
+    // valid + unused; biometric restore then can't trip refresh-token reuse
+    // detection, which is what was revoking the session server-side
+    // ("session_not_found" → the "Auth session missing!" error). Everyone else
+    // gets the token wiped now (BiometricSessionPersist unmounts with the user,
+    // so it never sees session=null and can't do it).
     if (isNative()) {
       try {
-        const { clearSession: clearBiometricSession, isEnabled: biometricEnabled } =
-          await import('@/lib/native/biometricAuth')
-        if (!(await biometricEnabled())) await clearBiometricSession()
+        const bio = await import('@/lib/native/biometricAuth')
+        if (await bio.isEnabled()) {
+          const { data } = await supabase.auth.getSession()
+          const s = data.session
+          if (s?.access_token && s.refresh_token) {
+            await bio.saveSession({ access_token: s.access_token, refresh_token: s.refresh_token })
+          }
+        } else {
+          await bio.clearSession()
+        }
       } catch { /* noop */ }
     }
 
@@ -361,7 +375,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // finds the still-valid token and fires SIGNED_IN, restoring the user.
     // The LandingGate renders automatically from setUser(null) above.
 
-    const supabase = createClient()
     // SECURITY: clear the session token FIRST, awaited, before the slower
     // SMS/push cleanup. If the user force-quits the app mid-teardown, the token
     // must already be gone from storage — otherwise the next launch's
