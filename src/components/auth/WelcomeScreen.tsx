@@ -74,7 +74,8 @@ export function WelcomeScreen() {
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'linear-gradient(180deg, #2C2C35, #222229)',
+          background:
+            'radial-gradient(120% 55% at 50% -6%, rgba(229,9,20,.24) 0%, rgba(229,9,20,.05) 38%, rgba(20,18,26,0) 62%), linear-gradient(180deg, #1A1720 0%, #121016 55%, #0E0C12 100%)',
           overflow: 'hidden',
           color: '#fff',
           fontFamily: bodyFont,
