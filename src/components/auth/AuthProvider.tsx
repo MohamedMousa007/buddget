@@ -14,8 +14,8 @@ import {
 import { AnalyticsHeartbeat } from '@/components/sync/AnalyticsHeartbeat'
 import { NativeBootstrap } from '@/lib/native/NativeBootstrap'
 import { unregisterPushToken } from '@/lib/native/pushNotifications'
-import { BiometricSessionPersist } from '@/lib/native/useBiometricSessionPersist'
 import { AuthModal } from '@/components/auth/AuthModal'
+import { LockScreen } from '@/components/auth/LockScreen'
 import { AuthContext, type AuthContextValue, type AuthMode, useAuth } from '@/components/auth/auth-context'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -158,6 +158,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { pathnameRef.current = pathname }, [pathname])
   const [user, setUser] = useState<AuthContextValue['user']>(null)
   const [session, setSession] = useState<Session | null>(null)
+  // Native biometric lock. `locked` gates the UI behind LockScreen while the
+  // SDK keeps sole ownership of the (frozen) session. `lockedRef` lets the
+  // auth-state listener ignore background events while locked; `bioLockChecked`
+  // holds the initial gate decision until the async biometric-enabled read
+  // resolves, so a restored session can't flash the app before we lock it.
+  const [locked, setLocked] = useState(false)
+  const lockedRef = useRef(false)
+  const bioLockCheckedRef = useRef(!isNative())
+  const setLockedBoth = useCallback((v: boolean) => {
+    lockedRef.current = v
+    setLocked(v)
+  }, [])
   const [loading, setLoading] = useState(true)
   const dataReady = useFinanceStore((s) => s.dataReady)
   const [pendingNext, setPendingNext] = useState('/')
@@ -243,6 +255,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
       if (_event === 'SIGNED_OUT') {
+        // A real sign-out clears the lock gate: there's no session left to
+        // unlock, so the landing form takes over.
+        setLockedBoth(false)
+        bioLockCheckedRef.current = true
         // Stop the finance sync BEFORE wiping the store, otherwise the
         // reset-to-defaults fires the subscribe listener and overwrites
         // the user's server-side settings/profile with defaults.
@@ -278,31 +294,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setDataPullTimedOut(false)
       } else if (_event === 'SIGNED_IN' && incomingUser) {
         wasAuthedRef.current = true
-      } else if (_event === 'TOKEN_REFRESHED' && nextSession && isNative()) {
-        // Refresh tokens are single-use — every background rotation invalidates
-        // whatever pair biometric last saved. Keep it perpetually current
-        // instead of only writing it at enable-time and sign-out time, or a
-        // rotation in between silently stales the saved pair (session_not_found
-        // on the next biometric sign-in).
-        void (async () => {
-          try {
-            const bio = await import('@/lib/native/biometricAuth')
-            if (await bio.isEnabled()) {
-              await bio.saveSession({
-                access_token: nextSession.access_token,
-                refresh_token: nextSession.refresh_token,
-              })
-            }
-          } catch { /* noop */ }
-        })()
       }
+      // While locked — or before the initial biometric-lock decision resolves on
+      // native — keep the restored session owned by the SDK and hidden. Revealing
+      // it here would flash the app behind the lock. `unlock()` sets state
+      // explicitly once the user passes the biometric prompt. SIGNED_OUT above
+      // already cleared the lock, so it flows through and drops to landing.
+      if (lockedRef.current || !bioLockCheckedRef.current) return
       setSession(nextSession)
       setUser(incomingUser)
       if (incomingUser) setAuthModalOpen(false)
     })
 
-    void supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
+    void supabase.auth.getSession().then(async ({ data }: { data: { session: Session | null } }) => {
       const s = data.session
+      // Native + a restored session + app-lock opted in → gate behind LockScreen.
+      // The SDK keeps the session; we freeze auto-refresh so nothing rotates the
+      // token while locked (sole owner → no refresh-token reuse). unlock() thaws.
+      if (s?.user && isNative()) {
+        try {
+          const { isAppLockEnabled } = await import('@/lib/native/biometricAuth')
+          if (await isAppLockEnabled()) {
+            bioLockCheckedRef.current = true
+            wasAuthedRef.current = true
+            setLockedBoth(true)
+            void supabase.auth.stopAutoRefresh()
+            setLoading(false)
+            return
+          }
+        } catch { /* fall through to a normal reveal */ }
+      }
+      bioLockCheckedRef.current = true
       setSession(s)
       setUser(s?.user ?? null)
       if (s?.user) {
@@ -319,6 +341,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let onVisibility: (() => void) | undefined
     if (isNative()) {
       onVisibility = () => {
+        // Locked: leave the token frozen so the SDK stays the sole owner until
+        // the user unlocks. Thawing here would rotate it behind the lock screen.
+        if (lockedRef.current) return
         if (document.visibilityState === 'visible') {
           // startAutoRefresh alone — it already refreshes immediately if the
           // token is stale. A manual getSession() here races the SDK's refresh
@@ -350,32 +375,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Capture the token BEFORE clearing — the background push-unregister needs it.
     const accessToken = session?.access_token ?? null
     const supabase = createClient()
-
-    // On native, biometric-opted-in users keep a saved token across an
-    // intentional sign-out — that's the whole point of the quick fingerprint
-    // button. Capture the FRESHEST pair straight from SDK storage here rather
-    // than trusting the copy BiometricSessionPersist last wrote (which may be a
-    // token the live client has since rotated → already "used"). After this
-    // local sign-out the client never rotates again, so this exact token stays
-    // valid + unused; biometric restore then can't trip refresh-token reuse
-    // detection, which is what was revoking the session server-side
-    // ("session_not_found" → the "Auth session missing!" error). Everyone else
-    // gets the token wiped now (BiometricSessionPersist unmounts with the user,
-    // so it never sees session=null and can't do it).
-    if (isNative()) {
-      try {
-        const bio = await import('@/lib/native/biometricAuth')
-        if (await bio.isEnabled()) {
-          const { data } = await supabase.auth.getSession()
-          const s = data.session
-          if (s?.access_token && s.refresh_token) {
-            await bio.saveSession({ access_token: s.access_token, refresh_token: s.refresh_token })
-          }
-        } else {
-          await bio.clearSession()
-        }
-      } catch { /* noop */ }
-    }
+    // A full sign-out drops the lock gate; biometric stays enabled and re-arms
+    // on the next sign-in (the session is destroyed here, so there's nothing to
+    // unlock until then). Inlined (not setLockedBoth) so signOut's deps stay
+    // [configured, session] — refs/setters need no dependency listing.
+    lockedRef.current = false
+    setLocked(false)
 
     // Immediately clear UI — landing gate appears now, no spinner. Callers must
     // NOT call clearBudgetData() before this: doing so flips dataReady=false
@@ -413,6 +418,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })()
   }, [configured, session])
 
+  /**
+   * Reveal the live session after a successful biometric prompt. The SDK still
+   * owns the (frozen) session in its own storage, so we just thaw auto-refresh
+   * — which refreshes the token once, in-process, single-use — and read it back.
+   * No token is replayed, so refresh-token reuse detection can't fire. Returns
+   * false if the SDK no longer holds a session (revoked server-side): the caller
+   * then falls back to a full sign-out + email.
+   */
+  const unlock = useCallback(async (): Promise<boolean> => {
+    if (!configured) return false
+    const supabase = createClient()
+    try {
+      await supabase.auth.startAutoRefresh()
+      const { data } = await supabase.auth.getSession()
+      const s = data.session
+      if (!s?.user) return false
+      setLockedBoth(false)
+      bioLockCheckedRef.current = true
+      wasAuthedRef.current = true
+      setSession(s)
+      setUser(s.user)
+      setAuthModalOpen(false)
+      return true
+    } catch {
+      return false
+    }
+  }, [configured, setLockedBoth])
+
   const noopSignOut = useCallback(async () => {}, [])
 
   const mode: AuthMode = !configured
@@ -431,6 +464,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             session,
             loading,
             signOut,
+            locked,
+            unlock,
             pendingNext,
             setPendingNext,
             authModalMessage,
@@ -444,6 +479,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             session: null,
             loading: false,
             signOut: noopSignOut,
+            locked: false,
+            unlock: async () => false,
             pendingNext: '/',
             setPendingNext,
             authModalMessage: null,
@@ -458,6 +495,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       session,
       loading,
       signOut,
+      locked,
+      unlock,
       noopSignOut,
       pendingNext,
       authModalMessage,
@@ -565,6 +604,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         </Suspense>
         {showLoadingSplash ? (
           <AuthLoadingSplash />
+        ) : locked ? (
+          <LockScreen />
         ) : showWelcomeScreen ? (
           <WelcomeScreen />
         ) : showLandingGate ? (
@@ -579,7 +620,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             <SupabaseFinanceSync userId={user.id} />
             <AnalyticsHeartbeat userId={user.id} />
             <NativeBootstrap session={session} />
-            <BiometricSessionPersist session={session} />
           </>
         ) : null}
         {showAuthModal ? (

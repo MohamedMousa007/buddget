@@ -1,42 +1,68 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Fingerprint, Loader2, ScanFace } from 'lucide-react'
-import { useBiometricLogin } from '@/hooks/useBiometricLogin'
+import { biometricSignIn, getType, isEnabled, type BiometryType } from '@/lib/native/biometricAuth'
 import { isNative } from '@/lib/native/isNative'
 import { useT } from '@/lib/i18n'
 
 interface BiometricLoginButtonProps {
-  /** Called once Supabase reports a restored session. */
-  onSuccess?: () => void
   /** Surfaces the biometric error to the parent form's error slot. */
   onError?: (msg: string) => void
 }
 
 /**
- * Compact icon-only biometric sign-in button — appears ONLY after the user has
- * enabled biometric login in Settings and a full session is saved on this device
- * (Face ID on iOS, Fingerprint on Android). Sits inline at the end of the email
- * row; tap restores the session. Errors bubble to the parent via onError so the
- * button stays a single icon and doesn't disturb the row layout.
+ * Signed-out biometric sign-in button. Appears when this device has a remembered
+ * account (biometric enabled). Tapping mints a FRESH session via the device-token
+ * backend (`biometricSignIn`) — no stored Supabase token is replayed — and the
+ * resulting SIGNED_IN event swaps the gate. Sits inline at the end of the email
+ * row; errors bubble to the parent so the button stays a single icon.
  */
-export function BiometricLoginButton({ onSuccess, onError }: BiometricLoginButtonProps) {
+export function BiometricLoginButton({ onError }: BiometricLoginButtonProps) {
   const t = useT()
-  const { available, type, enabled, hasSession, busy, error, trigger } = useBiometricLogin(onSuccess)
+  const [type, setType] = useState<BiometryType>(null)
+  const [ready, setReady] = useState(false)
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    if (error) onError?.(error)
-  }, [error, onError])
+    let cancelled = false
+    void (async () => {
+      const on = isNative() && (await isEnabled())
+      const kind = on ? await getType() : null
+      if (cancelled) return
+      setReady(on)
+      setType(kind)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
-  if (!isNative() || !available || !enabled || !hasSession) return null
+  if (!ready) return null
 
   const Icon = type === 'face' ? ScanFace : Fingerprint
   const label = type === 'face' ? t.auth.biometricSignInFace : t.auth.biometricSignInFingerprint
 
+  const run = async () => {
+    if (busy) return
+    setBusy(true)
+    try {
+      const ok = await biometricSignIn(t.settings.biometricConfirmReason)
+      // Success flows through onAuthStateChange → the gate swaps to the app.
+      if (!ok) onError?.(t.auth.sessionExpired)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message.toLowerCase() : ''
+      // Cancel / dismiss is not an error.
+      if (!msg.includes('cancel')) onError?.(t.auth.sessionExpired)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <button
       type="button"
-      onClick={() => void trigger()}
+      onClick={() => void run()}
       disabled={busy}
       aria-label={label}
       title={label}

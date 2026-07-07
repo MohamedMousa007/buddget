@@ -3,13 +3,13 @@
 import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Loader2 } from 'lucide-react'
+import { BiometricLoginButton } from '@/components/features/auth-modal/BiometricLoginButton'
 import { AuthEmailField } from '@/components/features/auth-modal/AuthEmailField'
 import { AuthPasswordField } from '@/components/features/auth-modal/AuthPasswordField'
 import { AuthFormErrorAlert } from '@/components/features/auth-modal/AuthFormErrorAlert'
 import { AuthPrimaryButton } from '@/components/features/auth-modal/AuthPrimaryButton'
 import { AuthOAuthButtons } from '@/components/features/auth-modal/AuthOAuthButtons'
 import { PasswordStrengthMeter } from '@/components/features/auth-modal/PasswordStrengthMeter'
-import { BiometricLoginButton } from '@/components/features/auth-modal/BiometricLoginButton'
 import { useAuth } from '@/components/auth/auth-context'
 import { useT } from '@/lib/i18n'
 import { emailLocalPart } from '@/lib/auth/emailLocalPart'
@@ -150,9 +150,9 @@ export function AuthSignInUpStep({
               }}
               className="space-y-3"
             >
-              {/* Email + compact biometric icon. The fingerprint button renders
-                  only for a returning user who enabled biometric in Settings;
-                  success flows through onAuthStateChange, which swaps the gate. */}
+              {/* Email + biometric sign-in. The fingerprint button renders only
+                  on native when this device has a remembered account (biometric
+                  enabled); it mints a fresh session, and SIGNED_IN swaps the gate. */}
               <div className="flex items-end gap-2">
                 <div className="min-w-0 flex-1">
                   <AuthEmailField

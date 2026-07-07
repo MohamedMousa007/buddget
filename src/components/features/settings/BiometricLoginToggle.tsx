@@ -2,23 +2,16 @@
 
 import { useEffect, useState } from 'react'
 import { Fingerprint, ScanFace } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 import { useT } from '@/lib/i18n'
 import {
   authenticate,
   getLinkedAccount,
   isAvailable,
   isEnabled,
-  saveSession,
-  setEnabled,
+  registerBiometric,
+  unregisterBiometric,
   type BiometryType,
 } from '@/lib/native/biometricAuth'
-
-function maskEmail(email: string): string {
-  const at = email.indexOf('@')
-  if (at < 1) return '***'
-  return `${email[0]}***${email.slice(at)}`
-}
 
 interface BiometricLoginToggleProps {
   userEmail?: string
@@ -29,7 +22,6 @@ export function BiometricLoginToggle({ userEmail }: BiometricLoginToggleProps) {
   const [available, setAvailable] = useState(false)
   const [type, setType] = useState<BiometryType>(null)
   const [enabled, setEnabledState] = useState(false)
-  const [linkedAccount, setLinkedAccount] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
@@ -41,24 +33,21 @@ export function BiometricLoginToggle({ userEmail }: BiometricLoginToggleProps) {
       if (cancelled) return
       setAvailable(info.available)
       setType(info.type)
-      setEnabledState(on)
-      setLinkedAccount(account)
+      // Enabled for THIS account only — a device bound to another account reads
+      // as off here; toggling on takes over the binding.
+      setEnabledState(on && account === userEmail)
     })()
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [userEmail])
 
   if (!available) return null
 
   const Icon = type === 'face' ? ScanFace : Fingerprint
   const label = type === 'face' ? t.settings.biometricUseFace : t.settings.biometricUseFingerprint
 
-  // Another account has biometric locked to this device
-  const conflict = linkedAccount && userEmail && linkedAccount !== userEmail
-
   const toggle = async () => {
-    if (conflict) return
     setBusy(true)
     try {
       if (!enabled) {
@@ -69,22 +58,13 @@ export function BiometricLoginToggle({ userEmail }: BiometricLoginToggleProps) {
         } catch {
           return
         }
-        await setEnabled(true, userEmail)
-        // Save the current refresh token now so the auth-screen biometric
-        // button works immediately, not only after the next token rotation.
-        const { data: { session } } = await createClient().auth.getSession()
-        if (session?.access_token && session.refresh_token) {
-          await saveSession({
-            access_token: session.access_token,
-            refresh_token: session.refresh_token,
-          })
-        }
-        setEnabledState(true)
-        if (userEmail) setLinkedAccount(userEmail)
+        // Registers a device secret with the backend, taking over any previous
+        // account bound to this device.
+        const ok = await registerBiometric(userEmail)
+        setEnabledState(ok)
       } else {
-        await setEnabled(false, userEmail)
+        await unregisterBiometric()
         setEnabledState(false)
-        setLinkedAccount(null)
       }
     } finally {
       setBusy(false)
@@ -99,9 +79,7 @@ export function BiometricLoginToggle({ userEmail }: BiometricLoginToggleProps) {
           <div>
             <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">{label}</p>
             <p className="text-xs text-[var(--color-brand-text-muted)]">
-              {conflict
-                ? t.settings.biometricEnabledFor(maskEmail(linkedAccount))
-                : t.settings.biometricHint}
+              {t.settings.biometricHint}
             </p>
           </div>
         </div>
@@ -110,7 +88,7 @@ export function BiometricLoginToggle({ userEmail }: BiometricLoginToggleProps) {
         <button
           type="button"
           onClick={() => void toggle()}
-          disabled={busy || Boolean(conflict)}
+          disabled={busy}
           role="switch"
           aria-checked={enabled}
           className="shrink-0 rounded-full p-2.5 -m-2.5 disabled:opacity-60"
@@ -128,9 +106,6 @@ export function BiometricLoginToggle({ userEmail }: BiometricLoginToggleProps) {
           </span>
         </button>
       </div>
-      {conflict ? (
-        <p className="text-xs text-[var(--color-brand-red)]">{t.settings.biometricConflict}</p>
-      ) : null}
     </div>
   )
 }

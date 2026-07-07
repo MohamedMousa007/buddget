@@ -19,7 +19,7 @@ export function AuthOAuthButtons({ nextPath }: { nextPath: string }) {
   // (capgo broadcast-channel) that's unreliable on a domain we don't own, so we
   // hide the button there — Android users sign in with Google. The native-Apple
   // setup (socialSignIn.ts) is left fully wired so this is a one-line re-enable.
-  // Read at render like BiometricLoginButton; isNative()/isAndroid() are SSR-safe.
+  // Read at render; isNative()/isAndroid() are SSR-safe.
   const showApple = !(isNative() && isAndroid())
 
   // While a provider is loading AND the user is back in the app, its button

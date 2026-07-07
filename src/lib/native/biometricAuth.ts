@@ -6,6 +6,8 @@ import { Preferences } from '@capacitor/preferences'
 const SESSION_KEY = 'buddget.biometric.session'
 const ENABLED_KEY = 'buddget.biometric.enabled'
 const ACCOUNT_KEY = 'buddget.biometric.account'
+const SECRET_KEY = 'buddget.biometric.secret'
+const APPLOCK_KEY = 'buddget.biometric.applock'
 
 export type BiometryType = 'face' | 'fingerprint' | 'iris' | 'unknown' | null
 
@@ -139,43 +141,9 @@ export async function authenticate(reason = 'Sign in to Buddget'): Promise<void>
   })
 }
 
-export interface SavedSession {
-  access_token: string
-  refresh_token: string
-}
-
-/** Returns the saved Supabase session pair, and ONLY a full {access_token,
- *  refresh_token} pair. A legacy bare-string value (refresh-only) is treated as
- *  not restorable (returns null): it's a rotated/stale token that fails restore
- *  with "Auth session missing". The user re-arms biometric by signing in with
- *  email once, which persists a fresh pair. */
-export async function getSavedSession(): Promise<SavedSession | null> {
-  try {
-    const { value } = await Preferences.get({ key: SESSION_KEY })
-    if (!value) return null
-    const parsed = JSON.parse(value) as Partial<SavedSession>
-    if (
-      parsed &&
-      typeof parsed.access_token === 'string' && parsed.access_token &&
-      typeof parsed.refresh_token === 'string' && parsed.refresh_token
-    ) {
-      return { access_token: parsed.access_token, refresh_token: parsed.refresh_token }
-    }
-    return null
-  } catch {
-    // Unparseable / legacy bare-string token → not restorable.
-    return null
-  }
-}
-
-export async function saveSession(session: SavedSession): Promise<void> {
-  try {
-    await Preferences.set({ key: SESSION_KEY, value: JSON.stringify(session) })
-  } catch (e) {
-    console.warn('[biometric] saveSession failed', e)
-  }
-}
-
+/** Removes any legacy stashed session token. Biometric no longer stores or
+ *  replays tokens — the SDK owns the session and LockScreen just gates it — so
+ *  this only cleans up pairs written by older builds. */
 export async function clearSession(): Promise<void> {
   try {
     await Preferences.remove({ key: SESSION_KEY })
@@ -214,4 +182,108 @@ export async function isEnabled(): Promise<boolean> {
   } catch {
     return false
   }
+}
+
+/** Opt-in app lock: also require a biometric prompt on every cold launch, not
+ *  just for signed-out re-login. Independent of `isEnabled` at the storage level
+ *  but only meaningful while biometric sign-in is enabled. */
+export async function isAppLockEnabled(): Promise<boolean> {
+  try {
+    const { value } = await Preferences.get({ key: APPLOCK_KEY })
+    return value === '1'
+  } catch {
+    return false
+  }
+}
+
+export async function setAppLockEnabled(on: boolean): Promise<void> {
+  try {
+    await Preferences.set({ key: APPLOCK_KEY, value: on ? '1' : '0' })
+  } catch {
+    /* noop */
+  }
+}
+
+// ---- Device-token sign-in ---------------------------------------------------
+// A 256-bit device secret is minted on enable and stored on-device; only its
+// SHA-256 hash is registered server-side. Biometric sign-in exchanges the secret
+// for a fresh session (verifyOtp) — no Supabase token is ever stored or replayed.
+
+function randomSecret(): string {
+  const bytes = new Uint8Array(32)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+async function sha256Hex(input: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input))
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+/**
+ * Enable biometric sign-in for the signed-in account on this device. Mints a
+ * device secret, registers its hash with the backend (which takes over any prior
+ * binding on this device), then persists the secret + enabled state locally.
+ * Must be called while authenticated. Returns false on any failure.
+ */
+export async function registerBiometric(email?: string): Promise<boolean> {
+  try {
+    const secret = randomSecret()
+    const secretHash = await sha256Hex(secret)
+    const { apiFetchAuth } = await import('@/lib/apiBase')
+    const res = await apiFetchAuth('/api/biometric/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret_hash: secretHash }),
+    })
+    if (!res.ok) return false
+    await Preferences.set({ key: SECRET_KEY, value: secret })
+    await setEnabled(true, email)
+    return true
+  } catch (e) {
+    console.warn('[biometric] registerBiometric failed', e)
+    return false
+  }
+}
+
+/** Disable biometric sign-in: drop the server binding and wipe local secret/state. */
+export async function unregisterBiometric(): Promise<void> {
+  try {
+    const { apiFetchAuth } = await import('@/lib/apiBase')
+    await apiFetchAuth('/api/biometric/register', { method: 'DELETE' })
+  } catch (e) {
+    console.warn('[biometric] unregisterBiometric request failed', e)
+  }
+  try { await Preferences.remove({ key: SECRET_KEY }) } catch { /* noop */ }
+  await setAppLockEnabled(false)
+  await setEnabled(false)
+}
+
+/**
+ * Signed-out biometric sign-in. Prompts, then exchanges the stored device secret
+ * for a fresh session via the backend + verifyOtp. Throws only on prompt
+ * cancel/dismiss (message contains "cancel"); returns false on any auth failure.
+ */
+export async function biometricSignIn(reason?: string): Promise<boolean> {
+  await authenticate(reason)
+  const { value: secret } = await Preferences.get({ key: SECRET_KEY })
+  if (!secret) return false
+  const { apiFetchAuth } = await import('@/lib/apiBase')
+  const res = await apiFetchAuth('/api/biometric/signin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ secret }),
+  })
+  if (!res.ok) return false
+  const data = (await res.json().catch(() => null)) as { email?: string; token?: string } | null
+  if (!data?.email || !data.token) return false
+  const { createClient } = await import('@/lib/supabase/client')
+  const supabase = createClient()
+  // The OTP comes from generateLink({type:'magiclink'}). GoTrue accepts it under
+  // either 'email' or 'magiclink' depending on version — try the common one, then
+  // fall back so a version mismatch can't silently break sign-in.
+  const first = await supabase.auth.verifyOtp({ email: data.email, token: data.token, type: 'email' })
+  if (!first.error) return true
+  const second = await supabase.auth.verifyOtp({ email: data.email, token: data.token, type: 'magiclink' })
+  return !second.error
 }
