@@ -32,7 +32,7 @@ export function MonthNavigationControl({ monthFilter, onChange, compact }: Month
         onClick={prev}
         aria-label="Previous month"
       >
-        <ChevronLeft className={compact ? 'w-5 h-5' : 'w-[22px] h-[22px]'} />
+        <ChevronLeft className={compact ? 'w-5 h-5' : 'w-6 h-6'} />
       </button>
       <MonthYearPicker
         monthFilter={monthFilter}
@@ -46,7 +46,7 @@ export function MonthNavigationControl({ monthFilter, onChange, compact }: Month
         onClick={next}
         aria-label="Next month"
       >
-        <ChevronRight className={compact ? 'w-5 h-5' : 'w-[22px] h-[22px]'} />
+        <ChevronRight className={compact ? 'w-5 h-5' : 'w-6 h-6'} />
       </button>
     </div>
   )

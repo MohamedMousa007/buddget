@@ -286,7 +286,7 @@ function RecordingView({
         </motion.div>
       </div>
 
-      <p className="text-center text-xs text-[var(--color-brand-text-muted)] max-w-[260px]">
+      <p className="text-center text-xs text-[var(--color-brand-text-muted)] max-w-64">
         {isRecording
           ? 'Release to transcribe · Drag to trash to cancel'
           : 'Try "200 جنيه taxi", "90 EGP Talabat", or "120 dirhams Carrefour".' +
@@ -316,7 +316,7 @@ function PermissionView({ onRequest }: { onRequest: () => void }) {
       </div>
       <div>
         <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">Microphone access needed</p>
-        <p className="mt-1 text-xs text-[var(--color-brand-text-muted)] max-w-[260px]">
+        <p className="mt-1 text-xs text-[var(--color-brand-text-muted)] max-w-64">
           Allow microphone access so Buddget can hear your expense.
         </p>
       </div>
@@ -437,7 +437,7 @@ function ClarifyView({
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)]">
         <Mic className="h-6 w-6 text-[var(--color-brand-text-muted)]" />
       </div>
-      <p className="mt-3 text-sm text-[var(--color-brand-text-primary)] max-w-[300px] mx-auto">
+      <p className="mt-3 text-sm text-[var(--color-brand-text-primary)] max-w-72 mx-auto">
         {message || 'Could you add a bit more detail?'}
       </p>
       <div className="mt-5 flex justify-center gap-2">
@@ -470,7 +470,7 @@ function QueuedView({ onClose }: { onClose: () => void }) {
       <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">
         Recording saved
       </p>
-      <p className="text-xs text-[var(--color-brand-text-muted)] max-w-[280px]">
+      <p className="text-xs text-[var(--color-brand-text-muted)] max-w-72">
         You&apos;re offline right now, so we kept it on your device. When you&apos;re back
         online, a chip will appear at the top of the app — tap it to finish adding
         this expense.
@@ -501,7 +501,7 @@ function ErrorView({
       <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">
         Couldn&apos;t capture that
       </p>
-      <p className="text-xs text-[var(--color-brand-text-muted)] max-w-[280px]">
+      <p className="text-xs text-[var(--color-brand-text-muted)] max-w-72">
         {error ?? 'Something went wrong. Try again or close.'}
       </p>
       <div className="mt-2 flex gap-2">

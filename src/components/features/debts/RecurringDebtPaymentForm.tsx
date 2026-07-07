@@ -179,7 +179,7 @@ export function RecurringDebtPaymentForm({
         <Textarea
           value={notes}
           onChange={(e) => onNotesChange(e.target.value)}
-          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] min-h-[50px]"
+          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] min-h-12"
         />
       </div>
 

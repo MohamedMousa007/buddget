@@ -113,57 +113,57 @@ export default function IncomePage() {
   if (!dataReady) return <div className="p-4"><SkeletonList /></div>
 
   return (
-    <div className="px-4 pb-[130px] pt-[14px]">
+    <div className="px-4 pb-32 pt-3.5">
       {/* Header row: month switcher · add source */}
-      <div className="mb-[13px] flex items-center gap-2">
+      <div className="mb-3.5 flex items-center gap-2">
         <MonthNavigationControl monthFilter={monthFilter} onChange={setMonthFilter} compact />
         <button
           type="button"
           onClick={openAddIncome}
-          className="flex h-10 min-w-0 flex-1 items-center justify-center gap-[7px] rounded-[12px] bg-[var(--color-brand-red)] text-[13.5px] font-bold text-white hover:bg-[var(--color-brand-red-hover)]"
+          className="flex h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-lg bg-[var(--color-brand-red)] text-sm font-bold text-white hover:bg-[var(--color-brand-red-hover)]"
         >
-          <Plus className="h-[17px] w-[17px]" strokeWidth={2.4} />
+          <Plus className="h-4 w-4" strokeWidth={2.4} />
           {t.income.addSource}
         </button>
       </div>
 
       {/* Monthly income + counts */}
-      <div className="mb-4 rounded-[20px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-[16px_18px] dark:bg-[linear-gradient(150deg,#101913,#101017)]">
+      <div className="mb-4 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-[16px_18px] dark:bg-[linear-gradient(150deg,#101913,#101017)]">
         <div className="flex items-start justify-between">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-[var(--color-brand-text-muted)]">
               {t.income.monthlyIncomeLabel}
             </p>
-            <p className="font-mono-numbers mt-[6px] text-[27px] font-bold leading-none tracking-[-0.5px] text-[var(--color-brand-text-primary)]">
+            <p className="font-mono-numbers mt-1.5 text-3xl font-bold leading-none tracking-[-0.5px] text-[var(--color-brand-text-primary)]">
               {fmtNum(monthlyTotal)}{' '}
-              <span className="text-[12px] font-medium text-[var(--color-brand-text-muted)]">{base}</span>
+              <span className="text-xs font-medium text-[var(--color-brand-text-muted)]">{base}</span>
             </p>
             {monthlyUsd ? (
-              <p className="font-mono-numbers mt-1 text-[12px] text-[var(--color-brand-text-muted)]">≈ {monthlyUsd}</p>
+              <p className="font-mono-numbers mt-1 text-xs text-[var(--color-brand-text-muted)]">≈ {monthlyUsd}</p>
             ) : null}
           </div>
-          <span className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[14px] bg-[rgba(29,185,84,0.12)] text-[var(--color-brand-green)]">
-            <TrendingUp className="h-[22px] w-[22px]" />
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[rgba(29,185,84,0.12)] text-[var(--color-brand-green)]">
+            <TrendingUp className="h-6 w-6" />
           </span>
         </div>
-        <div className="my-[13px] h-px bg-[var(--color-brand-border)]" />
-        <div className="flex gap-[14px]">
-          <div className="flex flex-1 items-center gap-[9px]">
-            <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] bg-[rgba(29,185,84,0.13)] text-[var(--color-brand-green)]">
+        <div className="my-3.5 h-px bg-[var(--color-brand-border)]" />
+        <div className="flex gap-3.5">
+          <div className="flex flex-1 items-center gap-2.5">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[rgba(29,185,84,0.13)] text-[var(--color-brand-green)]">
               <RefreshCw className="h-4 w-4" />
             </span>
             <div>
-              <p className="font-mono-numbers text-[16px] font-bold leading-none text-[var(--color-brand-text-primary)]">{recurring.length}</p>
+              <p className="font-mono-numbers text-base font-bold leading-none text-[var(--color-brand-text-primary)]">{recurring.length}</p>
               <p className="mt-0.5 text-[10px] text-[var(--color-brand-text-muted)]">{t.income.recurringLabel}</p>
             </div>
           </div>
           <div className="w-px bg-[var(--color-brand-border)]" />
-          <div className="flex flex-1 items-center gap-[9px]">
-            <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] bg-[rgba(245,200,66,0.13)] text-[var(--color-brand-gold)]">
+          <div className="flex flex-1 items-center gap-2.5">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[rgba(245,200,66,0.13)] text-[var(--color-brand-gold)]">
               <Plus className="h-4 w-4" />
             </span>
             <div>
-              <p className="font-mono-numbers text-[16px] font-bold leading-none text-[var(--color-brand-text-primary)]">{oneTimeThisMonth.length}</p>
+              <p className="font-mono-numbers text-base font-bold leading-none text-[var(--color-brand-text-primary)]">{oneTimeThisMonth.length}</p>
               <p className="mt-0.5 text-[10px] text-[var(--color-brand-text-muted)]">{t.income.oneTimeLabel}</p>
             </div>
           </div>
@@ -171,10 +171,10 @@ export default function IncomePage() {
       </div>
 
       {/* Recurring sources (first) */}
-      <p className="mb-[9px] px-1 text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-brand-text-muted)]">
+      <p className="mb-2.5 px-1 text-xs font-bold uppercase tracking-[0.06em] text-[var(--color-brand-text-muted)]">
         {t.income.recurringSourcesLabel}
       </p>
-      <div className="mb-[18px] flex flex-col gap-[10px]">
+      <div className="mb-5 flex flex-col gap-2.5">
         {recurring.map((s) => {
           const colors = incomeTypeColors(s.sourceType)
           return (
@@ -182,60 +182,60 @@ export default function IncomePage() {
               key={s.id}
               type="button"
               onClick={() => { setEditingIncomeId(s.id); setActiveModal('editIncome') }}
-              className="flex items-center gap-3 rounded-[18px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-[14px] text-start"
+              className="flex items-center gap-3 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-3.5 text-start"
             >
-              <span className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[13px]" style={{ background: colors.bg, color: colors.fg }}>
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg" style={{ background: colors.bg, color: colors.fg }}>
                 <IncomeTypeIcon type={s.sourceType} className="h-5 w-5" />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[14.5px] font-bold text-[var(--color-brand-text-primary)]">{s.name}</p>
-                <p className="mt-0.5 truncate text-[11.5px] text-[var(--color-brand-text-muted)]">{freqLabel(s)} · → {accountLabel(s)}</p>
+                <p className="truncate text-sm font-bold text-[var(--color-brand-text-primary)]">{s.name}</p>
+                <p className="mt-0.5 truncate text-xs text-[var(--color-brand-text-muted)]">{freqLabel(s)} · → {accountLabel(s)}</p>
               </div>
               <div className="shrink-0 text-end">
-                <p className="font-mono-numbers text-[15px] font-bold text-[var(--color-brand-text-primary)]">+{fmtNum(toBase(s))}</p>
+                <p className="font-mono-numbers text-base font-bold text-[var(--color-brand-text-primary)]">+{fmtNum(toBase(s))}</p>
                 <p className="mt-px text-[10px] text-[var(--color-brand-text-muted)]">{base} {t.income.perMoSuffix}</p>
               </div>
             </button>
           )
         })}
         {recurring.length === 0 ? (
-          <p className="px-1 py-2 text-[12px] text-[var(--color-brand-text-muted)]">{t.income.emptyDesc}</p>
+          <p className="px-1 py-2 text-xs text-[var(--color-brand-text-muted)]">{t.income.emptyDesc}</p>
         ) : null}
       </div>
 
       {/* Income this month */}
-      <p className="mb-[9px] px-1 text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-brand-text-muted)]">
+      <p className="mb-2.5 px-1 text-xs font-bold uppercase tracking-[0.06em] text-[var(--color-brand-text-muted)]">
         {t.income.incomeThisMonthLabel}
       </p>
       {incomeGroups.map((g) => (
         <div key={g.day}>
-          <div className="flex items-center justify-between px-1 pb-[5px] pt-[9px]">
-            <span className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">{g.label}</span>
-            <span className="font-mono-numbers text-[10.5px] font-semibold text-[var(--color-brand-text-muted)]">+{fmtNum(g.total)} {base}</span>
+          <div className="flex items-center justify-between px-1 pb-1.5 pt-2.5">
+            <span className="text-xs font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">{g.label}</span>
+            <span className="font-mono-numbers text-xs font-semibold text-[var(--color-brand-text-muted)]">+{fmtNum(g.total)} {base}</span>
           </div>
-          <div className="mb-[10px] overflow-hidden rounded-[14px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
+          <div className="mb-2.5 overflow-hidden rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
             {g.items.map((r, idx) => {
               const colors = incomeTypeColors(r.source.sourceType)
               return (
                 <div
                   key={r.id}
-                  className={`flex items-center gap-[11px] px-[13px] py-[10px] ${idx === 0 ? '' : 'border-t border-[var(--color-brand-border)]'}`}
+                  className={`flex items-center gap-3 px-3.5 py-2.5 ${idx === 0 ? '' : 'border-t border-[var(--color-brand-border)]'}`}
                 >
-                  <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px]" style={{ background: colors.bg, color: colors.fg }}>
-                    <IncomeTypeIcon type={r.source.sourceType} className="h-[17px] w-[17px]" />
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md" style={{ background: colors.bg, color: colors.fg }}>
+                    <IncomeTypeIcon type={r.source.sourceType} className="h-4 w-4" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-[6px]">
-                      <span className="truncate text-[13.5px] font-semibold text-[var(--color-brand-text-primary)]">{r.name}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{r.name}</span>
                       <span
-                        className={`shrink-0 rounded-full px-[7px] py-[2px] text-[9px] font-extrabold uppercase tracking-[0.04em] ${r.recurring ? 'bg-[rgba(29,185,84,0.14)] text-[var(--color-brand-green)]' : 'bg-[rgba(245,200,66,0.14)] text-[var(--color-brand-gold)]'}`}
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] ${r.recurring ? 'bg-[rgba(29,185,84,0.14)] text-[var(--color-brand-green)]' : 'bg-[rgba(245,200,66,0.14)] text-[var(--color-brand-gold)]'}`}
                       >
                         {r.recurring ? t.income.recurringLabel : t.income.oneTimeLabel}
                       </span>
                     </div>
-                    <span className="block truncate text-[11px] text-[var(--color-brand-text-muted)]">→ {accountLabel(r.source)}</span>
+                    <span className="block truncate text-xs text-[var(--color-brand-text-muted)]">→ {accountLabel(r.source)}</span>
                   </div>
-                  <span className="font-mono-numbers shrink-0 text-[14px] font-bold text-[var(--color-brand-text-primary)]">+{fmtNum(toBase(r.source))} <span className="text-[10px] font-medium text-[var(--color-brand-text-muted)]">{base}</span></span>
+                  <span className="font-mono-numbers shrink-0 text-sm font-bold text-[var(--color-brand-text-primary)]">+{fmtNum(toBase(r.source))} <span className="text-[10px] font-medium text-[var(--color-brand-text-muted)]">{base}</span></span>
                 </div>
               )
             })}

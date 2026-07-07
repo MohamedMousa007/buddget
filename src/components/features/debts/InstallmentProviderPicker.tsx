@@ -31,7 +31,7 @@ export function InstallmentProviderPicker({ value, onChange }: InstallmentProvid
             key={p.key}
             type="button"
             onClick={() => onChange(p.key)}
-            className={`rounded-lg border px-3 py-1.5 text-sm text-left transition-colors max-w-[140px] ${
+            className={`rounded-lg border px-3 py-1.5 text-sm text-left transition-colors max-w-36 ${
               value === p.key
                 ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10 text-[var(--color-brand-text-primary)]'
                 : 'border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]'

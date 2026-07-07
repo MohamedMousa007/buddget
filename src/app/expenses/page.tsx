@@ -113,40 +113,40 @@ export default function ExpensesPage() {
   if (!dataReady) return <div className="p-4"><SkeletonList /></div>
 
   return (
-    <div className="px-4 pb-[130px] pt-[14px]">
+    <div className="px-4 pb-32 pt-3.5">
       {/* Header row: month switcher · export */}
-      <div className="mb-[13px] flex items-center justify-between gap-2">
+      <div className="mb-3.5 flex items-center justify-between gap-2">
         <MonthNavigationControl monthFilter={monthFilter} onChange={setMonthFilter} compact />
         <button
           type="button"
           onClick={handleExport}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[var(--color-brand-text-secondary)]"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[var(--color-brand-text-secondary)]"
           aria-label={t.expenses.downloadData}
         >
-          <Download className="h-[17px] w-[17px]" />
+          <Download className="h-4 w-4" />
         </button>
       </div>
 
       {/* Stats card */}
-      <div className="mb-[14px] rounded-[20px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-[16px_18px] dark:bg-[linear-gradient(150deg,#1d1416,#121017)]">
+      <div className="mb-3.5 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-[16px_18px] dark:bg-[linear-gradient(150deg,#1d1416,#121017)]">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-[var(--color-brand-text-muted)]">
               {t.expenses.spentThisMonth}
             </p>
-            <p className="font-mono-numbers mt-[6px] text-[27px] font-bold leading-none tracking-[-0.5px] text-[var(--color-brand-text-primary)]">
+            <p className="font-mono-numbers mt-1.5 text-3xl font-bold leading-none tracking-[-0.5px] text-[var(--color-brand-text-primary)]">
               {fmtNum(totalAmount)}{' '}
-              <span className="text-[13px] font-medium text-[var(--color-brand-text-muted)]">{base}</span>
+              <span className="text-sm font-medium text-[var(--color-brand-text-muted)]">{base}</span>
             </p>
             {totalUsd ? (
-              <p className="font-mono-numbers mt-1 text-[12px] text-[var(--color-brand-text-muted)]">≈ {totalUsd}</p>
+              <p className="font-mono-numbers mt-1 text-xs text-[var(--color-brand-text-muted)]">≈ {totalUsd}</p>
             ) : null}
           </div>
           <div className="text-end">
             <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-[var(--color-brand-text-muted)]">
               {t.expenses.entries}
             </p>
-            <p className="font-mono-numbers mt-[6px] text-[18px] font-bold text-[var(--color-brand-text-secondary)]">
+            <p className="font-mono-numbers mt-1.5 text-lg font-bold text-[var(--color-brand-text-secondary)]">
               {filteredExpenses.length}
             </p>
           </div>
@@ -154,9 +154,9 @@ export default function ExpensesPage() {
         <button
           type="button"
           onClick={addExpense}
-          className="mt-[15px] flex h-[42px] w-full items-center justify-center gap-[7px] rounded-[13px] bg-[var(--color-brand-red)] text-[14px] font-bold text-white hover:bg-[var(--color-brand-red-hover)]"
+          className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-brand-red)] text-sm font-bold text-white hover:bg-[var(--color-brand-red-hover)]"
         >
-          <Plus className="h-[17px] w-[17px]" strokeWidth={2.4} />
+          <Plus className="h-4 w-4" strokeWidth={2.4} />
           {t.expenses.addExpenseCta}
         </button>
       </div>

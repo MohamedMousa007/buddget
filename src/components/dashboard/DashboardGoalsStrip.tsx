@@ -51,23 +51,23 @@ function GoalChip({ goal }: { goal: Goal }) {
   return (
     <Link
       href="/goals"
-      className="shrink-0 snap-start rounded-xl bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] px-3 py-2 flex items-center gap-2 min-w-[152px] hover:bg-[var(--color-brand-elevated)] transition-colors"
+      className="shrink-0 snap-start rounded-xl bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] px-3 py-2 flex items-center gap-2 min-w-40 hover:bg-[var(--color-brand-elevated)] transition-colors"
     >
       <span
         aria-hidden
-        className="w-7 h-7 rounded-lg flex items-center justify-center text-[12px] font-semibold shrink-0"
+        className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-semibold shrink-0"
         style={{ background: palette.bg, color: palette.text }}
       >
         {initial}
       </span>
       <div className="min-w-0">
         <div className="flex items-baseline gap-1.5">
-          <span className="text-[11px] font-medium text-[var(--color-brand-text-primary)] truncate">
+          <span className="text-xs font-medium text-[var(--color-brand-text-primary)] truncate">
             {short}
           </span>
           <span className="text-[10px] text-[var(--color-brand-text-secondary)]">{pct}%</span>
         </div>
-        <div className="mt-1 h-[3px] w-12 rounded-full bg-[var(--color-brand-elevated)] overflow-hidden">
+        <div className="mt-1 h-1 w-12 rounded-full bg-[var(--color-brand-elevated)] overflow-hidden">
           <div
             className="h-full rounded-full"
             style={{ width: `${pct}%`, background: palette.text }}

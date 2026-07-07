@@ -171,7 +171,7 @@ function Hero() {
             <div style={{ fontSize: 11, color: 'var(--color-brand-text-muted)', fontFamily: F, lineHeight: 1.3 }}>{g.heroCategory}</div>
           </div>
           <div style={{ textAlign: 'end', flexShrink: 0 }}>
-            <MoneyDisplay amount={45} currency="EGP" variant="table" primaryClassName="text-[13px] font-bold text-[var(--color-brand-text-primary)]" />
+            <MoneyDisplay amount={45} currency="EGP" variant="table" primaryClassName="text-sm font-bold text-[var(--color-brand-text-primary)]" />
             <div style={{ fontSize: 11, color: 'var(--color-brand-text-muted)', fontFamily: F, lineHeight: 1.3 }}>{g.heroMethod}</div>
           </div>
         </div>

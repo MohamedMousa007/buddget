@@ -149,7 +149,7 @@ export function EditDebtForm({
             <Textarea
               value={f.notes}
               onChange={(e) => f.setNotes(e.target.value)}
-              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] min-h-[60px]"
+              className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] min-h-16"
             />
           </div>
 

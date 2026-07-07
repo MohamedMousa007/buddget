@@ -99,15 +99,15 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
     <>
       {groups.map((g) => (
         <div key={g.key}>
-          <div className="flex items-center justify-between px-1 pb-[5px] pt-[9px]">
-            <span className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">
+          <div className="flex items-center justify-between px-1 pb-1.5 pt-2.5">
+            <span className="text-xs font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">
               {g.label}
             </span>
-            <span className="font-mono-numbers text-[10.5px] font-semibold text-[var(--color-brand-text-muted)]">
+            <span className="font-mono-numbers text-xs font-semibold text-[var(--color-brand-text-muted)]">
               −{fmtNum(g.total)} {base}
             </span>
           </div>
-          <div className="overflow-hidden rounded-[14px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
+          <div className="overflow-hidden rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
             {g.items.map((e, idx) => {
               const colors = categoryChipColors(e.category)
               const method = paymentMethods.find((m) => m.id === e.paymentMethodId)
@@ -127,40 +127,40 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                 <button
                   type="button"
                   onClick={() => openEdit(e.id)}
-                  className={`flex w-full items-center gap-[11px] px-3 py-[9px] text-start transition-colors hover:bg-[var(--color-brand-elevated)] ${idx === 0 ? '' : 'border-t border-[var(--color-brand-border)]'}`}
+                  className={`flex w-full items-center gap-3 px-3 py-2.5 text-start transition-colors hover:bg-[var(--color-brand-elevated)] ${idx === 0 ? '' : 'border-t border-[var(--color-brand-border)]'}`}
                 >
                   <span
-                    className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px]"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md"
                     style={{ background: colors.bg, color: colors.fg }}
                   >
-                    <CategoryIcon category={e.category} className="h-[17px] w-[17px]" />
+                    <CategoryIcon category={e.category} className="h-4 w-4" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-[6px]">
-                      <span className="truncate text-[13.5px] font-semibold text-[var(--color-brand-text-primary)]">
+                    <span className="flex items-center gap-1.5">
+                      <span className="truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">
                         {e.description}
                       </span>
                       {isSms ? (
-                        <span className="shrink-0 rounded-full bg-[rgba(29,185,84,0.12)] px-[6px] py-[2px] text-[9px] font-extrabold uppercase tracking-[0.04em] text-[var(--color-brand-green)]">
+                        <span className="shrink-0 rounded-full bg-[rgba(29,185,84,0.12)] px-1.5 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-[var(--color-brand-green)]">
                           {t.expenses.badgeSms}
                         </span>
                       ) : e.isDebtPayment ? (
-                        <span className="shrink-0 rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-[6px] py-[2px] text-[9px] font-extrabold uppercase tracking-[0.04em] text-[var(--color-brand-text-secondary)]">
+                        <span className="shrink-0 rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-1.5 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-[var(--color-brand-text-secondary)]">
                           {t.expenses.badgeDebt}
                         </span>
                       ) : null}
                     </span>
-                    <span className="block truncate text-[11px] text-[var(--color-brand-text-muted)]">
+                    <span className="block truncate text-xs text-[var(--color-brand-text-muted)]">
                       {method?.name || t.common.unknown}
                     </span>
                   </span>
                   <span className="shrink-0 text-end">
-                    <span className="font-mono-numbers block text-[14px] font-bold text-[var(--color-brand-red-text)]">
+                    <span className="font-mono-numbers block text-sm font-bold text-[var(--color-brand-red-text)]">
                       −{fmtNum(baseVal)}{' '}
                       <span className="text-[10px] font-medium text-[var(--color-brand-text-muted)]">{base}</span>
                     </span>
                     {usd ? (
-                      <span className="font-mono-numbers block text-[9.5px] text-[var(--color-brand-text-muted)]">
+                      <span className="font-mono-numbers block text-xs text-[var(--color-brand-text-muted)]">
                         −{usd}
                       </span>
                     ) : null}

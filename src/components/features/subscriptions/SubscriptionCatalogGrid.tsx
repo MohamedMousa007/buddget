@@ -66,7 +66,7 @@ function BrandTile({ b, onPick }: { b: SubscriptionBrand; onPick: (x: Subscripti
         size="lg"
         className="mx-auto"
       />
-      <span className="text-[11px] font-medium leading-tight line-clamp-2 text-[var(--color-brand-text-primary)] w-full">
+      <span className="text-xs font-medium leading-tight line-clamp-2 text-[var(--color-brand-text-primary)] w-full">
         {b.name}
       </span>
     </button>

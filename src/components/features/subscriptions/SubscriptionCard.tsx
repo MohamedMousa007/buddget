@@ -72,7 +72,7 @@ export function SubscriptionCard({
         </p>
         <button
           type="button"
-          className="mt-1 inline-flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg hover:bg-[var(--color-brand-card)] text-[var(--color-brand-text-muted)]"
+          className="mt-1 inline-flex items-center justify-center min-w-11 min-h-11 rounded-lg hover:bg-[var(--color-brand-card)] text-[var(--color-brand-text-muted)]"
           aria-expanded={menuOpen}
           aria-label="Menu"
           onClick={() => setMenuOpen((v) => !v)}

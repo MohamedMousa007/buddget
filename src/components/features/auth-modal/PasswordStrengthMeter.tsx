@@ -79,7 +79,7 @@ export function PasswordStrengthMeter({ password }: PasswordStrengthMeterProps) 
             />
           ))}
         </div>
-        <span className="text-[11px] font-medium text-[var(--color-brand-text-muted)] min-w-[44px] text-end">
+        <span className="text-xs font-medium text-[var(--color-brand-text-muted)] min-w-11 text-end">
           {password.length === 0 ? t.auth.passwordStrengthLabel : labels[score]}
         </span>
       </div>

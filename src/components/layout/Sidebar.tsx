@@ -43,7 +43,7 @@ export function Sidebar() {
   )
 
   return (
-    <aside className="hidden lg:flex flex-col w-[176px] h-screen bg-[var(--color-brand-card)] border-e border-[var(--color-brand-border)] fixed start-0 top-0 z-40 overflow-hidden">
+    <aside className="hidden lg:flex flex-col w-44 h-screen bg-[var(--color-brand-card)] border-e border-[var(--color-brand-border)] fixed start-0 top-0 z-40 overflow-hidden">
       <div className="p-4">
         <Link href="/" className="flex items-center gap-2">
           <span className="text-xl font-bold font-heading tracking-tight">

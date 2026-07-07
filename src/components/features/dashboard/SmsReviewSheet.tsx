@@ -77,7 +77,7 @@ export function SmsReviewSheet({ open, onClose, items, confirmItem, dismissItem 
                   {formattedAmount}
                 </p>
               )}
-              <p className="mt-0.5 text-[11px] text-[var(--color-brand-text-muted)]">
+              <p className="mt-0.5 text-xs text-[var(--color-brand-text-muted)]">
                 {provisional ? t.smsReview.confirmCurrencyHelp : null}
                 {item.bank_name ? (
                   <span className={provisional ? 'ms-1.5' : undefined}>
@@ -91,7 +91,7 @@ export function SmsReviewSheet({ open, onClose, items, confirmItem, dismissItem 
                   type="button"
                   disabled={busy}
                   onClick={() => void run(item.id, () => confirmItem(item.id, provisional ? (item.currency ?? undefined) : undefined))}
-                  className="flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[var(--color-brand-green)]/10 px-4 text-sm font-medium text-[var(--color-brand-green)] disabled:opacity-60"
+                  className="flex min-h-11 items-center gap-1.5 rounded-xl bg-[var(--color-brand-green)]/10 px-4 text-sm font-medium text-[var(--color-brand-green)] disabled:opacity-60"
                 >
                   {busy ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -106,7 +106,7 @@ export function SmsReviewSheet({ open, onClose, items, confirmItem, dismissItem 
                   type="button"
                   disabled={busy}
                   onClick={() => void run(item.id, () => dismissItem(item.id))}
-                  className="min-h-[44px] rounded-xl px-4 text-sm text-[var(--color-brand-text-muted)] disabled:opacity-60"
+                  className="min-h-11 rounded-xl px-4 text-sm text-[var(--color-brand-text-muted)] disabled:opacity-60"
                 >
                   {t.smsReview.dismiss}
                 </button>

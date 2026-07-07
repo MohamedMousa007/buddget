@@ -367,6 +367,8 @@ export interface Dictionary {
     nonSpendHint: string
     saveExpense: string
     saveChanges: string
+    cueAmount: string
+    cueDescription: string
     currencyTitle: string
     paymentTitle: string
     addPaymentMethod: string

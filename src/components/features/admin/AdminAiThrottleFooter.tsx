@@ -18,7 +18,7 @@ export function AdminAiThrottleFooter({
   return (
     <>
       {config?.ai.runtime ? (
-        <p className="text-[11px] text-[var(--color-brand-text-muted)]">
+        <p className="text-xs text-[var(--color-brand-text-muted)]">
           <span className="text-[var(--color-brand-text-secondary)]">Currently applied:</span>{' '}
           {config.ai.runtime.effective.rateLimitingEnabled
             ? `throttling on — ${config.ai.runtime.effective.rateLimitMaxRequests} req / ${Math.round(config.ai.runtime.effective.rateLimitWindowMs / 1000)}s per device`

@@ -127,20 +127,20 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
   const yearList = q ? YEARS.filter((yr) => String(yr).includes(q)) : YEARS
 
   const activePill =
-    'inline-flex items-center gap-1 px-2.5 py-[5px] rounded-[9px] cursor-pointer border text-white'
-  const monthPill = `${activePill} font-bold text-[14.5px] border-white/30 ${
+    'inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md cursor-pointer border text-white'
+  const monthPill = `${activePill} font-bold text-sm border-white/30 ${
     isMonths ? 'bg-white/30' : 'bg-white/15'
   }`
-  const yearPill = `${activePill} font-bold text-[14.5px] font-mono-numbers border-white/30 ${
+  const yearPill = `${activePill} font-bold text-sm font-mono-numbers border-white/30 ${
     isYears ? 'bg-white/30' : 'bg-white/15'
   }`
   const headerBtn =
-    'w-[27px] h-[27px] flex items-center justify-center border-none rounded-[9px] text-white cursor-pointer bg-white/[0.16] hover:bg-white/30'
+    'w-7 h-7 flex items-center justify-center border-none rounded-md text-white cursor-pointer bg-white/[0.16] hover:bg-white/30'
 
   return (
     <div
       dir={ar ? 'rtl' : 'ltr'}
-      className="fixed inset-0 z-[130] flex items-center justify-center p-[22px]"
+      className="fixed inset-0 z-[130] flex items-center justify-center p-6"
       style={{ animation: 'efFade .16s ease' }}
     >
       <button
@@ -150,7 +150,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
         className="absolute inset-0 bg-black/[0.62] border-none cursor-default"
       />
       <div
-        className="relative w-full max-w-[300px] overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[var(--color-brand-text-primary)]"
+        className="relative w-full max-w-72 overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[var(--color-brand-text-primary)]"
         style={{
           boxShadow: '0 26px 64px -14px rgba(0,0,0,.4)',
           fontFamily: ar ? 'var(--font-sans-ar)' : 'var(--font-sans)',
@@ -159,13 +159,13 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
       >
         {/* header bar */}
         <div
-          className="flex items-center justify-between px-[13px] pt-[11px] pb-[10px]"
+          className="flex items-center justify-between px-3.5 pt-3 pb-2.5"
           style={{
             background: 'linear-gradient(160deg,#F40612,#C5070F)',
             boxShadow: '0 6px 18px -8px rgba(229,9,20,.6)',
           }}
         >
-          <div className="flex items-center gap-[7px]">
+          <div className="flex items-center gap-2">
             <button type="button" onClick={() => setModeToggle('months')} className={monthPill}>
               <span className="whitespace-nowrap">{ar ? MON_AR[m] : MONS[m]}</span>
               <ChevronDown
@@ -181,7 +181,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
               />
             </button>
           </div>
-          <div className="flex items-center gap-[5px]">
+          <div className="flex items-center gap-1.5">
             {!isYears ? (
               <>
                 <button
@@ -200,14 +200,14 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                 </button>
               </>
             ) : null}
-            <button type="button" onClick={onClose} className={`${headerBtn} ms-[2px]`}>
+            <button type="button" onClick={onClose} className={`${headerBtn} ms-0.5`}>
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
         {/* content region — constant height */}
-        <div className="h-[230px] px-[13px] pt-[9px] pb-[13px]">
+        <div className="h-56 px-3.5 pt-2.5 pb-3.5">
           {isDays ? (
             <div>
               <div className="grid grid-cols-7 mb-1.5">
@@ -220,7 +220,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                   </div>
                 ))}
               </div>
-              <div className="grid grid-cols-7 grid-rows-6 gap-[2px] h-[186px]">
+              <div className="grid grid-cols-7 grid-rows-6 gap-0.5 h-48">
                 {raw.map((c, i) => {
                   const isSel = sel.y === c.y && sel.m === c.m && sel.d === c.d
                   const isToday = today.y === c.y && today.m === c.m && today.d === c.d
@@ -236,7 +236,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                       key={i}
                       type="button"
                       onClick={() => pick(c)}
-                      className={`relative flex items-center justify-center rounded-[10px] cursor-pointer text-[13px] font-semibold border-none transition-colors ${bg}`}
+                      className={`relative flex items-center justify-center rounded-md cursor-pointer text-sm font-semibold border-none transition-colors ${bg}`}
                       style={isSel ? { boxShadow: '0 4px 12px rgba(229,9,20,.4)' } : undefined}
                     >
                       {c.d}
@@ -251,7 +251,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
           ) : null}
 
           {isMonths ? (
-            <div className="grid grid-cols-3 grid-rows-4 gap-[9px] h-full">
+            <div className="grid grid-cols-3 grid-rows-4 gap-2.5 h-full">
               {(ar ? MON_AR : MONS).map((lbl, i) => {
                 const isCur = i === m
                 const isTM = i === today.m && y === today.y
@@ -268,7 +268,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                       setView({ y, m: i })
                       setMode('days')
                     }}
-                    className={`flex items-center justify-center rounded-[12px] cursor-pointer text-sm font-semibold border transition-colors ${cls}`}
+                    className={`flex items-center justify-center rounded-lg cursor-pointer text-sm font-semibold border transition-colors ${cls}`}
                   >
                     {lbl}
                   </button>
@@ -289,7 +289,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                   inputMode="numeric"
                   dir="ltr"
                   placeholder={ar ? 'اكتب سنة…' : 'Type a year…'}
-                  className="w-full h-[38px] rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] ps-[34px] pe-3.5 text-[var(--color-brand-text-primary)] text-sm font-semibold font-mono-numbers text-start placeholder:text-[var(--color-brand-text-muted)] focus:outline-none"
+                  className="w-full h-10 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] ps-9 pe-3.5 text-[var(--color-brand-text-primary)] text-sm font-semibold font-mono-numbers text-start placeholder:text-[var(--color-brand-text-muted)] focus:outline-none"
                 />
               </div>
               <div className="flex-1 overflow-y-auto grid grid-cols-3 gap-2 content-start [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -311,14 +311,14 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                         setMode('days')
                         setYearQuery('')
                       }}
-                      className={`h-10 flex items-center justify-center rounded-[10px] cursor-pointer text-sm font-semibold font-mono-numbers border transition-colors ${cls}`}
+                      className={`h-10 flex items-center justify-center rounded-md cursor-pointer text-sm font-semibold font-mono-numbers border transition-colors ${cls}`}
                     >
                       {yr}
                     </button>
                   )
                 })}
                 {yearList.length === 0 ? (
-                  <div className="col-span-3 text-center py-[22px] text-[var(--color-brand-text-muted)] text-[13px] font-medium">
+                  <div className="col-span-3 text-center py-6 text-[var(--color-brand-text-muted)] text-sm font-medium">
                     {ar ? 'لا توجد سنة مطابقة' : 'No matching year'}
                   </div>
                 ) : null}

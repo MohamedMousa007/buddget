@@ -51,7 +51,7 @@ export function AuthOAuthButtons({ nextPath }: { nextPath: string }) {
         />
       ) : null}
       {error ? (
-        <p className="text-[12px] text-[var(--color-brand-red)] text-center" role="alert">
+        <p className="text-xs text-[var(--color-brand-red)] text-center" role="alert">
           {error}
         </p>
       ) : null}

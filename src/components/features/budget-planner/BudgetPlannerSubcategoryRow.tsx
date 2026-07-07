@@ -46,7 +46,7 @@ export function BudgetPlannerSubcategoryRow({ sub, labels, onUpdate, onDelete }:
         value={sub.name}
         onChange={(e) => onUpdate({ name: e.target.value })}
         placeholder={labels.subcategoryNamePlaceholder}
-        className="flex-1 min-w-[100px] rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1 text-xs text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)]"
+        className="flex-1 min-w-24 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1 text-xs text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)]"
       />
       <input
         type="text"

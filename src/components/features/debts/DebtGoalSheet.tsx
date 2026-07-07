@@ -128,11 +128,11 @@ export function DebtGoalSheet({
           </span>
         </p>
         <div className="space-y-4">
-          <div className="max-w-[200px]">
+          <div className="max-w-48">
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.goalClearBy}</Label>
             <DatePickerField mode="month" value={monthValue} onChange={setMonthValue} className="mt-1" />
           </div>
-          <div className="max-w-[180px]">
+          <div className="max-w-44">
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.goalPaying}</Label>
             <SelectField
               value={frequency}

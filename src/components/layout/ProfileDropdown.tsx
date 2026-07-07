@@ -19,7 +19,7 @@ interface ProfileDropdownProps {
 }
 
 const itemClass =
-  'flex items-center gap-3 px-4 py-3 text-[13.5px] font-medium text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors duration-150 cursor-pointer w-full text-start'
+  'flex items-center gap-3 px-4 py-3 text-sm font-medium text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors duration-150 cursor-pointer w-full text-start'
 
 export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdownProps) {
   const pathname = usePathname()
@@ -83,10 +83,10 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
 
   return (
     <div
-      className="absolute top-full end-0 mt-2 z-50 w-64 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-[20px] shadow-[0_24px_50px_-16px_rgba(0,0,0,0.7)] overflow-hidden"
+      className="absolute top-full end-0 mt-2 z-50 w-64 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl shadow-[0_24px_50px_-16px_rgba(0,0,0,0.7)] overflow-hidden"
       role="menu"
     >
-      <div className="flex items-center gap-[11px] px-[15px] py-[14px]">
+      <div className="flex items-center gap-3 px-4 py-3.5">
         <div className="w-11 h-11 rounded-full overflow-hidden border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] flex items-center justify-center shrink-0">
           {avatarSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -98,7 +98,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
         <div className={cn('min-w-0', locale === 'ar' && 'text-end')}>
           <p className="text-sm font-bold text-[var(--color-brand-text-primary)] truncate">{displayName}</p>
           {displayEmail ? (
-            <p className="text-[11.5px] text-[var(--color-brand-text-muted)] truncate">{displayEmail}</p>
+            <p className="text-xs text-[var(--color-brand-text-muted)] truncate">{displayEmail}</p>
           ) : null}
         </div>
       </div>
@@ -106,11 +106,11 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
       <div className="border-t border-[var(--color-brand-border)]" />
 
       <Link href="/settings/profile" onClick={delayedClose} className={itemClass} role="menuitem">
-        <User className="w-[17px] h-[17px] shrink-0" />
+        <User className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.profile.editProfile}</span>
       </Link>
       <Link href="/settings/" onClick={delayedClose} className={itemClass} role="menuitem">
-        <Settings className="w-[17px] h-[17px] shrink-0" />
+        <Settings className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.settings}</span>
       </Link>
 
@@ -121,7 +121,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
         className={cn(itemClass, 'font-semibold text-[var(--color-brand-red)] hover:text-[var(--color-brand-red)]')}
         role="menuitem"
       >
-        <LogOut className="w-[17px] h-[17px] shrink-0" />
+        <LogOut className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.common.signOut}</span>
       </button>
     </div>

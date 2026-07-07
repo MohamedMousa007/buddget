@@ -116,7 +116,7 @@ export function SettingsAppPreferencesSection({ store }: SettingsAppPreferencesS
                 </span>
                 <span
                   className={cn(
-                    'text-[11px]',
+                    'text-xs',
                     selected
                       ? 'text-[var(--color-brand-text-primary)] font-medium'
                       : 'text-[var(--color-brand-text-secondary)]',

@@ -19,7 +19,7 @@ const LAST4_TYPES: PaymentMethodType[] = ['bank_transfer', 'card_credit', 'card_
 
 // shared surface/input recipes — all theme-driven via brand tokens
 const INPUT =
-  'h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-start text-[15px] font-normal text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus:outline-none focus:border-[var(--color-brand-red)]'
+  'h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-start text-base font-normal text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus:outline-none focus:border-[var(--color-brand-red)]'
 const SHEET_SURFACE =
   'absolute inset-x-0 bottom-0 rounded-t-2xl border-t border-[var(--color-brand-border)] bg-[var(--color-brand-card)]'
 
@@ -181,7 +181,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
               <button
                 type="button"
                 onClick={() => setCalOpen(true)}
-                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-[7px] text-[12px] font-semibold text-[var(--color-brand-text-secondary)] hover:border-[var(--color-brand-text-muted)]"
+                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-xs font-semibold text-[var(--color-brand-text-secondary)] hover:border-[var(--color-brand-text-muted)]"
               >
                 <Calendar className="w-3.5 h-3.5 text-[var(--color-brand-text-muted)]" />
                 {formatDatePillLabel(date, locale, t.expenseForm.today)}
@@ -192,7 +192,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                 aria-label={t.common.close}
                 className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-border)] hover:text-[var(--color-brand-text-secondary)]"
               >
-                <X className="w-[18px] h-[18px]" strokeWidth={2} />
+                <X className="w-5 h-5" strokeWidth={2} />
               </button>
             </div>
           </div>
@@ -203,7 +203,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
           {/* amount + currency */}
           <div className="grid grid-cols-[1fr_108px] gap-3 items-end">
             <div>
-              <div className={`${microLabel} mb-[7px]`}>{t.expenseForm.amount}</div>
+              <div className={`${microLabel} mb-2`}>{t.expenseForm.amount}</div>
               <div className="flex h-12 items-center rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 focus-within:border-[var(--color-brand-red)]">
                 <input
                   value={amount}
@@ -212,16 +212,16 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                   inputMode="decimal"
                   placeholder="0.00"
                   aria-label={t.expenseForm.amount}
-                  className="w-full min-w-0 flex-1 border-none bg-transparent text-start font-bold text-[24px] font-mono-numbers tracking-[-0.02em] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus:outline-none"
+                  className="w-full min-w-0 flex-1 border-none bg-transparent text-start font-bold text-2xl font-mono-numbers tracking-[-0.02em] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus:outline-none"
                 />
               </div>
             </div>
             <div>
-              <div className={`${microLabel} mb-[7px]`}>{t.expenseForm.currency}</div>
+              <div className={`${microLabel} mb-2`}>{t.expenseForm.currency}</div>
               <button
                 type="button"
                 onClick={() => setCurOpen(true)}
-                className="flex h-12 w-full items-center justify-between rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-[16px] font-semibold text-[var(--color-brand-text-secondary)] hover:border-[var(--color-brand-text-muted)]"
+                className="flex h-12 w-full items-center justify-between rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-base font-semibold text-[var(--color-brand-text-secondary)] hover:border-[var(--color-brand-text-muted)]"
               >
                 {currency}
                 <ChevronDown className="w-4 h-4 text-[var(--color-brand-text-muted)]" />
@@ -231,7 +231,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
 
           {/* description */}
           <div>
-            <div className={`${microLabel} mb-[7px]`}>{t.expenseForm.description}</div>
+            <div className={`${microLabel} mb-2`}>{t.expenseForm.description}</div>
             <input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -245,7 +245,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
 
           {/* category grid */}
           <div>
-            <div className={`${microLabel} mb-[9px]`}>{t.expenseForm.category}</div>
+            <div className={`${microLabel} mb-2.5`}>{t.expenseForm.category}</div>
             <div className="-mx-5 px-5">
               <div ref={catRef} onScroll={onCatScroll} className={`overflow-x-auto pb-0.5 ${HIDE_SCROLL}`}>
                 <div
@@ -273,12 +273,12 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                         className="relative flex flex-col items-center justify-center gap-1.5 rounded-2xl transition-all"
                       >
                         {c.nonspend ? (
-                          <span className="absolute top-[5px] inline-flex w-[13px] h-[13px] text-[var(--color-brand-text-muted)] end-[5px]">
+                          <span className="absolute top-1.5 inline-flex w-3.5 h-3.5 text-[var(--color-brand-text-muted)] end-1.5">
                             <ArrowLeftRight className="w-full h-full" strokeWidth={2.4} />
                           </span>
                         ) : null}
                         <Icon
-                          className="w-[22px] h-[22px]"
+                          className="w-6 h-6"
                           style={{ color: on ? c.accent : 'var(--color-brand-text-muted)' }}
                         />
                         <span
@@ -294,8 +294,8 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
               </div>
             </div>
             {/* scroll indicator */}
-            <div className="mt-[9px] flex justify-center">
-              <div className="relative h-[3px] w-16 overflow-hidden rounded-full bg-[var(--color-brand-border)]">
+            <div className="mt-2.5 flex justify-center">
+              <div className="relative h-1 w-16 overflow-hidden rounded-full bg-[var(--color-brand-border)]">
                 <div
                   className="absolute top-0 bottom-0 rounded-full bg-[var(--color-brand-text-secondary)]"
                   style={{
@@ -307,9 +307,9 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
               </div>
             </div>
             {nonSpendSelected ? (
-              <div className="mt-[11px] flex items-start gap-[9px] rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2.5">
+              <div className="mt-3 flex items-start gap-2.5 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2.5">
                 <Info className="mt-px w-4 h-4 shrink-0 text-[var(--color-brand-text-muted)]" />
-                <span className="text-start text-[12px] font-medium leading-[1.4] text-[var(--color-brand-text-secondary)]">
+                <span className="text-start text-xs font-medium leading-[1.4] text-[var(--color-brand-text-secondary)]">
                   {t.expenseForm.nonSpendHint}
                 </span>
               </div>
@@ -318,17 +318,17 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
 
           {/* payment method */}
           <div>
-            <div className={`${microLabel} mb-[9px]`}>{t.expenseForm.paymentMethod}</div>
+            <div className={`${microLabel} mb-2.5`}>{t.expenseForm.paymentMethod}</div>
             <button
               type="button"
               onClick={() => setPayOpen(true)}
               className="flex h-14 w-full items-center justify-between rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 hover:border-[var(--color-brand-text-muted)]"
             >
-              <div className="flex min-w-0 items-center gap-[11px]">
+              <div className="flex min-w-0 items-center gap-3">
                 {selPay ? (
                   <>
                     <span
-                      className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[11px]"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
                       style={{ background: rgba(swatchColor(selPay), 0.16), color: swatchColor(selPay) }}
                     >
                       {(() => {
@@ -337,20 +337,20 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                       })()}
                     </span>
                     <div className="min-w-0 text-start">
-                      <div className="truncate text-[14px] font-semibold text-[var(--color-brand-text-primary)]">{selPay.name}</div>
-                      <div className="mt-px truncate text-[11px] font-medium text-[var(--color-brand-text-muted)]">{paySub(selPay)}</div>
+                      <div className="truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{selPay.name}</div>
+                      <div className="mt-px truncate text-xs font-medium text-[var(--color-brand-text-muted)]">{paySub(selPay)}</div>
                     </div>
                   </>
                 ) : (
-                  <span className="text-[14px] font-medium text-[var(--color-brand-text-muted)]">{t.expenseForm.addPaymentMethod}</span>
+                  <span className="text-sm font-medium text-[var(--color-brand-text-muted)]">{t.expenseForm.addPaymentMethod}</span>
                 )}
               </div>
-              <ChevronDown className="w-[18px] h-[18px] shrink-0 text-[var(--color-brand-text-muted)]" />
+              <ChevronDown className="w-5 h-5 shrink-0 text-[var(--color-brand-text-muted)]" />
             </button>
           </div>
 
           {creditCardOutstandingHint ? (
-            <p className="text-[11px] leading-snug text-[var(--color-brand-text-muted)]" role="status">
+            <p className="text-xs leading-snug text-[var(--color-brand-text-muted)]" role="status">
               ⓘ{' '}
               {t.addExpense.creditCardOutstandingHint(
                 creditCardOutstandingHint.cardName,
@@ -378,7 +378,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                     setNotes('')
                   }}
                   aria-label={t.common.close}
-                  className="absolute top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center p-[9px] text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-secondary)] end-[7px]"
+                  className="absolute top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center p-2.5 text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-secondary)] end-2"
                 >
                   {IcClose}
                 </button>
@@ -387,7 +387,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
               <button
                 type="button"
                 onClick={() => setNoteOpen(true)}
-                className="inline-flex items-center gap-1.5 self-start py-0.5 text-[14px] font-semibold text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)]"
+                className="inline-flex items-center gap-1.5 self-start py-0.5 text-sm font-semibold text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)]"
               >
                 <Plus className="w-3.5 h-3.5" />
                 {t.expenseForm.addNote}
@@ -398,12 +398,19 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
         </div>
 
         {/* footer */}
-        <div className="shrink-0 border-t border-[var(--color-brand-border)] px-5 pt-3 pb-[22px]">
+        <div className="shrink-0 border-t border-[var(--color-brand-border)] px-5 pt-3 pb-6">
+          {submitDisabled ? (
+            <p className="mb-2 text-center text-xs font-medium text-[var(--color-brand-text-muted)]" role="status">
+              {!amount.trim() || Number.isNaN(amountNum) || amountNum <= 0
+                ? t.expenseForm.cueAmount
+                : t.expenseForm.cueDescription}
+            </p>
+          ) : null}
           <button
             type="button"
             onClick={onSubmit}
             disabled={submitDisabled}
-            className={`h-14 w-full rounded-2xl text-[16px] font-semibold transition-colors ${
+            className={`h-14 w-full rounded-2xl text-base font-semibold transition-colors ${
               submitDisabled
                 ? 'cursor-not-allowed bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]'
                 : 'bg-[var(--color-brand-red)] text-white hover:bg-[var(--color-brand-red-hover)]'
@@ -427,7 +434,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
               className="absolute inset-0 border-none bg-black/55"
             />
             <div
-              className={`${SHEET_SURFACE} px-4 pt-2.5 pb-[22px]`}
+              className={`${SHEET_SURFACE} px-4 pt-2.5 pb-6`}
               style={{
                 animation: 'efUp .28s cubic-bezier(.22,1,.36,1)',
                 fontFamily: ar ? 'var(--font-sans-ar)' : 'var(--font-sans)',
@@ -435,17 +442,17 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
             >
               <div className="mx-auto mt-0.5 mb-2.5 h-1 w-10 rounded-full bg-[var(--color-brand-border)]" />
               <div className="flex items-center justify-between px-1 pb-2">
-                <div className="text-[16px] font-semibold text-[var(--color-brand-text-primary)]">{t.expenseForm.paymentTitle}</div>
+                <div className="text-base font-semibold text-[var(--color-brand-text-primary)]">{t.expenseForm.paymentTitle}</div>
                 <button
                   type="button"
                   onClick={() => setPayOpen(false)}
                   aria-label={t.common.close}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] p-2 text-[var(--color-brand-text-muted)]"
+                  className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] p-3 text-[var(--color-brand-text-muted)]"
                 >
                   {IcClose}
                 </button>
               </div>
-              <div className={`flex max-h-[320px] flex-col gap-1 overflow-y-auto ${HIDE_SCROLL}`}>
+              <div className={`flex max-h-80 flex-col gap-1 overflow-y-auto ${HIDE_SCROLL}`}>
                 {paymentMethods.map((m) => {
                   const on = m.id === paymentMethodId
                   const Icon = paymentTypeIcon(m.type)
@@ -464,21 +471,21 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                       }}
                     >
                       <span
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px]"
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md"
                         style={{ background: rgba(swatchColor(m), 0.16), color: swatchColor(m) }}
                       >
-                        <Icon className="w-[17px] h-[17px]" />
+                        <Icon className="w-4 h-4" />
                       </span>
                       <div className="min-w-0 flex-1 text-start">
-                        <div className="flex items-center gap-[7px]">
-                          <span className="truncate text-[14px] font-semibold text-[var(--color-brand-text-primary)]">{m.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{m.name}</span>
                           {m.isDefault ? (
-                            <span className="shrink-0 rounded-[6px] bg-[var(--color-brand-elevated)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[.05em] text-[var(--color-brand-text-muted)]">
+                            <span className="shrink-0 rounded-sm bg-[var(--color-brand-elevated)] px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[.05em] text-[var(--color-brand-text-muted)]">
                               {t.expenseForm.defaultBadge}
                             </span>
                           ) : null}
                         </div>
-                        <div className="mt-px text-[11px] font-medium text-[var(--color-brand-text-muted)]">{paySub(m)}</div>
+                        <div className="mt-px text-xs font-medium text-[var(--color-brand-text-muted)]">{paySub(m)}</div>
                       </div>
                       {on ? <Check className="w-5 h-5 shrink-0 text-[var(--color-brand-red)]" /> : null}
                     </button>
@@ -488,7 +495,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
               <button
                 type="button"
                 onClick={() => setAddPayOpen(true)}
-                className="mt-2 flex h-12 w-full items-center gap-2.5 rounded-xl border border-[rgba(229,9,20,.28)] bg-[rgba(229,9,20,.08)] px-3.5 text-[14px] font-semibold text-[var(--color-brand-red)] hover:bg-[rgba(229,9,20,.14)]"
+                className="mt-2 flex h-12 w-full items-center gap-2.5 rounded-xl border border-[rgba(229,9,20,.28)] bg-[rgba(229,9,20,.08)] px-3.5 text-sm font-semibold text-[var(--color-brand-red)] hover:bg-[rgba(229,9,20,.14)]"
               >
                 <Plus className="w-5 h-5" />
                 {t.expenseForm.addPaymentMethod}
@@ -509,7 +516,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
               className="absolute inset-0 border-none bg-black/55"
             />
             <div
-              className={`${SHEET_SURFACE} px-4 pt-2.5 pb-[22px]`}
+              className={`${SHEET_SURFACE} px-4 pt-2.5 pb-6`}
               style={{
                 animation: 'efUp .28s cubic-bezier(.22,1,.36,1)',
                 fontFamily: ar ? 'var(--font-sans-ar)' : 'var(--font-sans)',
@@ -517,17 +524,17 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
             >
               <div className="mx-auto mt-0.5 mb-2.5 h-1 w-10 rounded-full bg-[var(--color-brand-border)]" />
               <div className="flex items-center justify-between px-1 pb-2">
-                <div className="text-[16px] font-semibold text-[var(--color-brand-text-primary)]">{t.expenseForm.currencyTitle}</div>
+                <div className="text-base font-semibold text-[var(--color-brand-text-primary)]">{t.expenseForm.currencyTitle}</div>
                 <button
                   type="button"
                   onClick={() => setCurOpen(false)}
                   aria-label={t.common.close}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] p-2 text-[var(--color-brand-text-muted)]"
+                  className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] p-3 text-[var(--color-brand-text-muted)]"
                 >
                   {IcClose}
                 </button>
               </div>
-              <div className={`flex max-h-[352px] flex-col gap-0.5 overflow-y-auto ${HIDE_SCROLL}`}>
+              <div className={`flex max-h-96 flex-col gap-0.5 overflow-y-auto ${HIDE_SCROLL}`}>
                 {FIAT_CURRENCIES.map((code) => {
                   const on = code === currency
                   return (
@@ -544,11 +551,11 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                         background: on ? 'rgba(229,9,20,.07)' : 'transparent',
                       }}
                     >
-                      <span className="w-[46px] text-start text-[15px] font-bold font-mono-numbers text-[var(--color-brand-text-primary)]">{code}</span>
-                      <span className="flex-1 text-start text-[13px] font-medium text-[var(--color-brand-text-muted)]">
+                      <span className="w-12 text-start text-base font-bold font-mono-numbers text-[var(--color-brand-text-primary)]">{code}</span>
+                      <span className="flex-1 text-start text-sm font-medium text-[var(--color-brand-text-muted)]">
                         {t.expenseForm.currencyNames[code] ?? code}
                       </span>
-                      {on ? <Check className="w-[19px] h-[19px] shrink-0 text-[var(--color-brand-red)]" /> : null}
+                      {on ? <Check className="w-5 h-5 shrink-0 text-[var(--color-brand-red)]" /> : null}
                     </button>
                   )
                 })}
@@ -569,7 +576,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
               className="absolute inset-0 border-none bg-black/60"
             />
             <div
-              className={`${SHEET_SURFACE} px-5 pt-2.5 pb-[22px]`}
+              className={`${SHEET_SURFACE} px-5 pt-2.5 pb-6`}
               style={{
                 animation: 'efUp .28s cubic-bezier(.22,1,.36,1)',
                 fontFamily: ar ? 'var(--font-sans-ar)' : 'var(--font-sans)',
@@ -577,19 +584,19 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
             >
               <div className="mx-auto mt-0.5 mb-3 h-1 w-10 rounded-full bg-[var(--color-brand-border)]" />
               <div className="mb-4 flex items-center justify-between">
-                <div className="text-[17px] font-semibold text-[var(--color-brand-text-primary)]">{t.expenseForm.addPaymentMethod}</div>
+                <div className="text-lg font-semibold text-[var(--color-brand-text-primary)]">{t.expenseForm.addPaymentMethod}</div>
                 <button
                   type="button"
                   onClick={() => setAddPayOpen(false)}
                   aria-label={t.common.close}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] p-2 text-[var(--color-brand-text-muted)]"
+                  className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] p-3 text-[var(--color-brand-text-muted)]"
                 >
                   {IcClose}
                 </button>
               </div>
-              <div className="flex flex-col gap-[15px]">
+              <div className="flex flex-col gap-4">
                 <div>
-                  <div className={`${microLabel} mb-[7px]`}>{t.expenseForm.name}</div>
+                  <div className={`${microLabel} mb-2`}>{t.expenseForm.name}</div>
                   <input
                     value={apName}
                     onChange={(e) => setApName(e.target.value)}
@@ -598,8 +605,8 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                   />
                 </div>
                 <div>
-                  <div className={`${microLabel} mb-[9px]`}>{t.expenseForm.type}</div>
-                  <div className={`flex gap-[7px] overflow-x-auto ${HIDE_SCROLL}`}>
+                  <div className={`${microLabel} mb-2.5`}>{t.expenseForm.type}</div>
+                  <div className={`flex gap-2 overflow-x-auto ${HIDE_SCROLL}`}>
                     {ADD_PAY_TYPES.map((ty) => {
                       const on = apType === ty
                       return (
@@ -608,7 +615,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                           type="button"
                           onClick={() => setApType(ty)}
                           aria-pressed={on}
-                          className="shrink-0 whitespace-nowrap rounded-full border px-[13px] py-2 text-[12px] font-semibold transition-all"
+                          className="shrink-0 whitespace-nowrap rounded-full border px-3.5 py-2 text-xs font-semibold transition-all"
                           style={
                             on
                               ? { background: 'var(--color-brand-red)', borderColor: 'var(--color-brand-red)', color: '#fff' }
@@ -630,22 +637,22 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                   style={{ gridTemplateColumns: LAST4_TYPES.includes(apType) ? '1fr 1fr' : '1fr' }}
                 >
                   <div>
-                    <div className={`${microLabel} mb-[7px]`}>{t.expenseForm.currency}</div>
+                    <div className={`${microLabel} mb-2`}>{t.expenseForm.currency}</div>
                     <button
                       type="button"
                       onClick={() => {
                         const i = FIAT_CURRENCIES.indexOf(apCurrency)
                         setApCurrency(FIAT_CURRENCIES[(i + 1) % FIAT_CURRENCIES.length])
                       }}
-                      className="flex h-12 w-full items-center justify-between rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-[15px] font-semibold text-[var(--color-brand-text-primary)]"
+                      className="flex h-12 w-full items-center justify-between rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-base font-semibold text-[var(--color-brand-text-primary)]"
                     >
                       {apCurrency}
-                      <ChevronDown className="w-[15px] h-[15px] text-[var(--color-brand-text-muted)]" />
+                      <ChevronDown className="w-4 h-4 text-[var(--color-brand-text-muted)]" />
                     </button>
                   </div>
                   {LAST4_TYPES.includes(apType) ? (
                     <div>
-                      <div className={`${microLabel} mb-[7px]`}>{t.expenseForm.last4}</div>
+                      <div className={`${microLabel} mb-2`}>{t.expenseForm.last4}</div>
                       <input
                         value={apLast4}
                         onChange={(e) => setApLast4(e.target.value.replace(/\D/g, '').slice(0, 4))}
@@ -659,18 +666,18 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                   ) : null}
                 </div>
                 <div className="flex items-center justify-between py-0.5">
-                  <span className="text-[14px] font-medium text-[var(--color-brand-text-secondary)]">{t.expenseForm.setDefault}</span>
+                  <span className="text-sm font-medium text-[var(--color-brand-text-secondary)]">{t.expenseForm.setDefault}</span>
                   <button
                     type="button"
                     onClick={() => setApDefault((v) => !v)}
                     role="switch"
                     aria-checked={apDefault}
                     aria-label={t.expenseForm.setDefault}
-                    className="relative h-[26px] w-[44px] rounded-full border-none transition-colors"
+                    className="relative h-7 w-11 rounded-full border-none transition-colors"
                     style={{ background: apDefault ? 'var(--color-brand-red)' : 'var(--color-brand-border)' }}
                   >
                     <span
-                      className="absolute top-[3px] h-5 w-5 rounded-full bg-white transition-transform start-[3px]"
+                      className="absolute top-1 h-5 w-5 rounded-full bg-white transition-transform start-1"
                       style={{ transform: apDefault ? (ar ? 'translateX(-18px)' : 'translateX(18px)') : 'translateX(0)' }}
                     />
                   </button>
@@ -679,7 +686,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                   type="button"
                   onClick={saveAddPayment}
                   disabled={!apName.trim()}
-                  className="mt-1 h-12 w-full rounded-xl bg-[var(--color-brand-red)] text-[15px] font-semibold text-white hover:bg-[var(--color-brand-red-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mt-1 h-12 w-full rounded-xl bg-[var(--color-brand-red)] text-base font-semibold text-white hover:bg-[var(--color-brand-red-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {t.expenseForm.addPaymentMethod}
                 </button>
@@ -706,7 +713,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
         <Portal>
           <div
             dir={ar ? 'rtl' : 'ltr'}
-            className="fixed inset-0 z-[125] flex items-center justify-center p-[26px]"
+            className="fixed inset-0 z-[125] flex items-center justify-center p-7"
             style={{ animation: 'efFade .16s ease' }}
           >
             <button
@@ -716,25 +723,25 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
               className="absolute inset-0 border-none bg-black/[0.68]"
             />
             <div
-              className="relative w-full max-w-[300px] rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-5 pt-[22px] pb-[18px] text-start"
+              className="relative w-full max-w-72 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-5 pt-6 pb-5 text-start"
               style={{
                 boxShadow: '0 24px 60px -12px rgba(0,0,0,.4)',
                 animation: 'efPop .22s cubic-bezier(.22,1,.36,1)',
                 fontFamily: ar ? 'var(--font-sans-ar)' : 'var(--font-sans)',
               }}
             >
-              <div className="text-[17px] font-semibold text-[var(--color-brand-text-primary)]">{t.expenseForm.confirmTitle}</div>
-              <div className="mt-2 text-[13.5px] font-normal leading-[1.45] text-[var(--color-brand-text-muted)]">
+              <div className="text-lg font-semibold text-[var(--color-brand-text-primary)]">{t.expenseForm.confirmTitle}</div>
+              <div className="mt-2 text-sm font-normal leading-[1.45] text-[var(--color-brand-text-muted)]">
                 {t.expenseForm.confirmBody}
               </div>
-              <div className="mt-5 flex flex-col gap-[9px]">
+              <div className="mt-5 flex flex-col gap-2.5">
                 <button
                   type="button"
                   onClick={() => {
                     setConfirmOpen(false)
                     onSubmit()
                   }}
-                  className="h-12 rounded-xl bg-[var(--color-brand-red)] text-[15px] font-semibold text-white hover:bg-[var(--color-brand-red-hover)]"
+                  className="h-12 rounded-xl bg-[var(--color-brand-red)] text-base font-semibold text-white hover:bg-[var(--color-brand-red-hover)]"
                 >
                   {t.expenseForm.saveChanges}
                 </button>
@@ -745,7 +752,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                     setConfirmOpen(false)
                     onClose()
                   }}
-                  className="h-12 rounded-xl border border-[var(--color-brand-border)] bg-transparent text-[15px] font-semibold text-[var(--color-brand-red)] hover:bg-[var(--color-brand-elevated)]"
+                  className="h-12 rounded-xl border border-[var(--color-brand-border)] bg-transparent text-base font-semibold text-[var(--color-brand-red)] hover:bg-[var(--color-brand-elevated)]"
                 >
                   {t.expenseForm.discardChanges}
                 </button>

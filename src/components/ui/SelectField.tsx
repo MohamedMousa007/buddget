@@ -190,7 +190,7 @@ export const SelectField = forwardRef<HTMLButtonElement, SelectFieldProps>(
                     <span className="min-w-0 flex-1 truncate">
                       <span className="block truncate">{opt.label}</span>
                       {opt.description ? (
-                        <span className="block truncate text-[11px] text-[var(--color-brand-text-muted)]">
+                        <span className="block truncate text-xs text-[var(--color-brand-text-muted)]">
                           {opt.description}
                         </span>
                       ) : null}

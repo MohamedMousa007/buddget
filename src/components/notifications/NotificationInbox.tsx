@@ -73,7 +73,7 @@ export function NotificationInbox({
       >
         <Bell className="h-4 w-4" />
         {unreadCount > 0 ? (
-          <span className="absolute -top-1 -end-1 min-w-[18px] h-[18px] rounded-full bg-[var(--color-brand-red)] px-1 text-[10px] font-bold leading-[18px] text-center text-white">
+          <span className="absolute -top-1 -end-1 min-w-5 h-5 rounded-full bg-[var(--color-brand-red)] px-1 text-[10px] font-bold leading-[18px] text-center text-white">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         ) : null}

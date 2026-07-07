@@ -23,7 +23,7 @@ export function AdminAiThrottleInputs({
       <div className="flex items-center justify-between gap-3 py-2">
         <div>
           <p className="text-sm text-[var(--color-brand-text-primary)]">Throttle per device (IP)</p>
-          <p className="text-[11px] text-[var(--color-brand-text-muted)]">
+          <p className="text-xs text-[var(--color-brand-text-muted)]">
             Turn off for solo use; turn on to limit what each visitor can send to Gemini through your server.
           </p>
         </div>

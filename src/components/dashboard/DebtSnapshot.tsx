@@ -89,7 +89,7 @@ export function DebtSnapshot() {
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-base">{rowIcon}</span>
                   <h4 className="text-sm font-medium text-[var(--color-brand-text-primary)]">{debt.name}</h4>
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase ${badgeClass}`}>
+                  <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full uppercase ${badgeClass}`}>
                     {rowBadge}
                   </span>
                 </div>

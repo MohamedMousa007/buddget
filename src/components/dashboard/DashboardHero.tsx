@@ -46,7 +46,7 @@ export function DashboardHero({ stats }: DashboardHeroProps) {
             <p className="text-[10px] uppercase tracking-wider text-white/60 font-medium">
               {t.dashboard.heroLeftToSpend}
             </p>
-            <p className="mt-1 font-mono font-bold text-white text-[32px] leading-none truncate">
+            <p className="mt-1 font-mono font-bold text-white text-3xl leading-none truncate">
               <CurrencyLabel
                 amount={Math.max(0, stats.leftToSpend)}
                 currency={stats.baseCurrency}
@@ -97,7 +97,7 @@ function Stat({
 }) {
   return (
     <div className="min-w-0 text-center px-1.5">
-      <div className={cn('font-mono font-bold text-[15px] leading-none truncate', color)}>
+      <div className={cn('font-mono font-bold text-base leading-none truncate', color)}>
         <CurrencyLabel
           amount={Math.max(0, amount)}
           currency={currency}
@@ -145,7 +145,7 @@ function HeroRing({ percent, usedLabel }: { percent: number; usedLabel: string }
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
-        <span className="text-white text-[15px] font-semibold">{clamped}%</span>
+        <span className="text-white text-base font-semibold">{clamped}%</span>
         <span className="text-white/55 text-[10px] mt-0.5">{usedLabel}</span>
       </div>
     </div>

@@ -39,7 +39,7 @@ export function AIChatConfirmationCard({
   return (
     <div className="mt-3 pt-3 border-t border-[var(--color-brand-text-primary)]/10 space-y-2">
       {multiIntentHint ? (
-        <p className="text-[11px] text-amber-200/90 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2 py-1.5">
+        <p className="text-xs text-amber-200/90 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2 py-1.5">
           {t.ai.multiIntentHint}
         </p>
       ) : null}

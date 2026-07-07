@@ -33,7 +33,7 @@ export function ReportsNetWorthPanel() {
         </p>
       ) : null}
       {nw.netWorthGoldIncomplete ? (
-        <p className="text-[11px] text-[var(--color-brand-text-muted)] flex items-start gap-1.5 pt-1">
+        <p className="text-xs text-[var(--color-brand-text-muted)] flex items-start gap-1.5 pt-1">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[var(--color-brand-gold)]" aria-hidden />
           <span>{t.reports.netWorthGoldIncomplete}</span>
         </p>

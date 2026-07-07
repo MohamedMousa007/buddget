@@ -81,7 +81,7 @@ export function DashboardCategoryBars({
   return (
     <section className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
       <div className="flex items-center justify-between gap-2 mb-3">
-        <h2 className="text-[11px] uppercase tracking-[0.3px] text-[var(--color-brand-text-secondary)] font-semibold shrink-0">
+        <h2 className="text-xs uppercase tracking-[0.3px] text-[var(--color-brand-text-secondary)] font-semibold shrink-0">
           {t.dashboard.sectionCategoriesTitle}
         </h2>
         {status ? <StatusChip tone={status.tone} text={status.text} /> : null}
@@ -153,7 +153,7 @@ function CategoryWheel({ row }: { row: RowDatum }) {
   const offset = c * (1 - pct / 100)
 
   return (
-    <div className="flex flex-col items-center gap-1 shrink-0 w-[64px] sm:w-auto">
+    <div className="flex flex-col items-center gap-1 shrink-0 w-16 sm:w-auto">
       <div
         className="relative flex items-center justify-center rounded-full"
         style={{ width: size, height: size, background: palette.bg }}
@@ -182,7 +182,7 @@ function CategoryWheel({ row }: { row: RowDatum }) {
         {/* Wrapper sets `color` so the lucide icon (which uses currentColor)
             picks up the palette's darker ink on the pastel circle. */}
         <span className="relative flex" style={{ color: palette.text }}>
-          <CategoryIcon category={row.category} className="w-[22px] h-[22px]" />
+          <CategoryIcon category={row.category} className="w-6 h-6" />
         </span>
       </div>
       <span

@@ -21,18 +21,18 @@ export function AIChatEmptyState({ onPickSuggestion }: AIChatEmptyStateProps) {
   ]
 
   return (
-    <div className="flex flex-col gap-[7px]">
+    <div className="flex flex-col gap-2">
       {suggestions.map(({ icon: Icon, label }) => (
         <button
           key={label}
           type="button"
           onClick={() => onPickSuggestion(label)}
-          className="flex w-full items-center gap-[11px] rounded-[13px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-[13px] py-[11px] text-start transition-colors hover:bg-[var(--color-brand-border)]/40"
+          className="flex w-full items-center gap-3 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 py-3 text-start transition-colors hover:bg-[var(--color-brand-border)]/40"
         >
-          <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] bg-[rgba(229,9,20,0.13)] text-[var(--color-brand-red)]">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[rgba(229,9,20,0.13)] text-[var(--color-brand-red)]">
             <Icon className="h-4 w-4" aria-hidden />
           </span>
-          <span className="text-[13.5px] font-semibold text-[var(--color-brand-text-primary)]">{label}</span>
+          <span className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{label}</span>
         </button>
       ))}
     </div>

@@ -71,7 +71,7 @@ export function BottomNav() {
         onClose={voice.reset}
         onOpenChat={voice.openInChat}
       />
-      <div className="flex items-start justify-between h-16 px-[14px] pt-2">
+      <div className="flex items-start justify-between h-16 px-3.5 pt-2">
         {BOTTOM_NAV_ITEMS.map((item) => {
           if (item.kind === 'fab') {
             return (
@@ -83,7 +83,7 @@ export function BottomNav() {
                   className="flex items-center justify-center w-14 h-14 -mt-5 rounded-full bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white shadow-[0_8px_20px_rgba(127,6,12,0.5)] transition-[colors,transform] duration-[75ms] active:scale-[0.92] touch-none select-none"
                   aria-label={t.nav.quickAdd}
                 >
-                  <item.icon className="w-[26px] h-[26px]" strokeWidth={2.4} />
+                  <item.icon className="w-7 h-7" strokeWidth={2.4} />
                 </button>
               </div>
             )
@@ -124,8 +124,8 @@ export function BottomNav() {
                   aria-expanded={moreOpen}
                   aria-haspopup="true"
                 >
-                  <item.icon className="w-[23px] h-[23px]" />
-                  <span className="text-[10.5px] font-semibold">{t.nav[item.label as keyof Dictionary['nav']]}</span>
+                  <item.icon className="w-6 h-6" />
+                  <span className="text-xs font-semibold">{t.nav[item.label as keyof Dictionary['nav']]}</span>
                 </button>
               </div>
             )
@@ -142,8 +142,8 @@ export function BottomNav() {
                 isActive ? 'text-[var(--color-brand-red)]' : 'text-[var(--color-brand-text-muted)]'
               )}
             >
-              <item.icon className="w-[23px] h-[23px]" />
-              <span className="text-[10.5px] font-semibold">{t.nav[item.label as keyof Dictionary['nav']]}</span>
+              <item.icon className="w-6 h-6" />
+              <span className="text-xs font-semibold">{t.nav[item.label as keyof Dictionary['nav']]}</span>
             </Link>
           )
         })}

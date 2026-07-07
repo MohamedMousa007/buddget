@@ -64,13 +64,13 @@ export function DebtCardPlanMeta({ debt, payments, paidOff, balanceCtx }: DebtCa
             {Array.from({ length: debt.installmentCount }).map((_, i) => (
               <div
                 key={i}
-                className={`h-1.5 min-w-[6px] flex-1 rounded-sm ${
+                className={`h-1.5 min-w-1.5 flex-1 rounded-sm ${
                   i < completed ? 'bg-[var(--color-brand-red)]' : 'bg-[var(--color-brand-border)]'
                 }`}
               />
             ))}
           </div>
-          <p className="text-[11px] text-[var(--color-brand-text-muted)]">
+          <p className="text-xs text-[var(--color-brand-text-muted)]">
             {t.debts.installmentProgress(completed, debt.installmentCount)}
             {nextDue ? ` · ${t.debts.installmentNextDue(nextDue)}` : ''}
           </p>

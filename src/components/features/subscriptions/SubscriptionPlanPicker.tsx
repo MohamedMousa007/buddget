@@ -75,7 +75,7 @@ export function SubscriptionPlanPicker({
                   : undefined
               }
             >
-              <span className="text-[15px] font-semibold leading-tight text-[var(--color-brand-text-primary)] line-clamp-2">
+              <span className="text-base font-semibold leading-tight text-[var(--color-brand-text-primary)] line-clamp-2">
                 {pl.name}
               </span>
               <div className="mt-2">

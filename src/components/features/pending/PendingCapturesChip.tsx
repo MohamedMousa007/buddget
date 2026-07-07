@@ -82,7 +82,7 @@ export function PendingCapturesChip() {
         type="button"
         onClick={() => void processNext()}
         disabled={busy || !online}
-        className="mx-4 mt-3 flex min-h-[44px] w-[calc(100%-2rem)] items-center gap-2.5 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-2.5 text-start disabled:opacity-80"
+        className="mx-4 mt-3 flex min-h-11 w-[calc(100%-2rem)] items-center gap-2.5 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-2.5 text-start disabled:opacity-80"
       >
         {busy ? (
           <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[var(--color-brand-green)]" />

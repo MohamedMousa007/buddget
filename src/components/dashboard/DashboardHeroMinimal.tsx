@@ -31,10 +31,10 @@ export function DashboardHeroMinimal({ stats }: DashboardHeroMinimalProps) {
 
   return (
     <div className="py-4 text-center">
-      <p className="text-[11px] uppercase tracking-[0.5px] text-[var(--color-brand-text-secondary)] font-medium">
+      <p className="text-xs uppercase tracking-[0.5px] text-[var(--color-brand-text-secondary)] font-medium">
         {t.dashboard.heroLeftToSpend}
       </p>
-      <p className="mt-1 font-mono font-bold text-[36px] leading-none text-[var(--color-brand-text-primary)]">
+      <p className="mt-1 font-mono font-bold text-4xl leading-none text-[var(--color-brand-text-primary)]">
         <CurrencyLabel
           amount={Math.max(0, stats.leftToSpend)}
           currency={stats.baseCurrency}
@@ -45,12 +45,12 @@ export function DashboardHeroMinimal({ stats }: DashboardHeroMinimalProps) {
 
       {stats.daysLeft >= 0 ? (
         <div
-          className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-md text-[11px] font-medium"
+          className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium"
           style={{ background: tone.bg, color: tone.fg }}
         >
           <span
             aria-hidden
-            className="w-[5px] h-[5px] rounded-full shrink-0"
+            className="w-1.5 h-1.5 rounded-full shrink-0"
             style={{ background: tone.fg }}
           />
           <span>{statusLabel}</span>

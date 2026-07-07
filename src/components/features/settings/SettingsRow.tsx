@@ -56,7 +56,7 @@ export function SettingsRow({
     </>
   )
 
-  const baseClass = 'flex items-center gap-3 px-4 min-h-[44px] w-full text-start transition-colors hover:bg-[var(--color-brand-elevated)] py-2'
+  const baseClass = 'flex items-center gap-3 px-4 min-h-11 w-full text-start transition-colors hover:bg-[var(--color-brand-elevated)] py-2'
 
   if (href) {
     return <Link href={href} className={baseClass}>{content}</Link>

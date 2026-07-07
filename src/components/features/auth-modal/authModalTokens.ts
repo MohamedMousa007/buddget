@@ -15,7 +15,7 @@ export const cardStyle: CSSProperties = {
 // biometric button steals width; native shell locks viewport scale so iOS
 // focus-zoom (the reason 16px is usually the floor) can't trigger here.
 export const inputClass =
-  'w-full h-10 sm:h-11 px-3 rounded-[10px] border text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] outline-none transition-colors text-[15px]'
+  'w-full h-10 sm:h-11 px-3 rounded-md border text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] outline-none transition-colors text-base'
 
 export const inputStyle: CSSProperties = {
   background: 'var(--color-brand-elevated)',

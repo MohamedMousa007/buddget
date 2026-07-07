@@ -22,7 +22,7 @@ export function ProfileAvatarSection({ fileRef, store, activePreset, onAvatarFil
   return (
     <section className="glass-card rounded-2xl p-5 space-y-4">
       <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">{t.profile.photoTitle}</h2>
-      <p className="text-[11px] text-[var(--color-brand-text-muted)]">
+      <p className="text-xs text-[var(--color-brand-text-muted)]">
         {t.profile.photoDesc}
       </p>
       <input

@@ -30,10 +30,10 @@ export function AIChatComposer({ value, onChange, onSend, disabled }: AIChatComp
           type="button"
           onClick={onSend}
           disabled={!value.trim() || disabled}
-          className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[11px] bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white transition-colors disabled:opacity-50"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white transition-colors disabled:opacity-50"
           aria-label={t.ai.sendMessage}
         >
-          <Send className="w-[18px] h-[18px]" />
+          <Send className="w-5 h-5" />
         </button>
       </div>
     </div>

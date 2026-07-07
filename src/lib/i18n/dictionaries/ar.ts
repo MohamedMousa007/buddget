@@ -460,6 +460,8 @@ export const ar: Dictionary = {
     nonSpendHint: 'تحويل أموال — لن يُخصم هذا من إنفاقك أو ميزانيتك.',
     saveExpense: 'حفظ المصروف',
     saveChanges: 'حفظ التغييرات',
+    cueAmount: 'أدخل مبلغًا للمتابعة',
+    cueDescription: 'أضف وصفًا للمتابعة',
     currencyTitle: 'العملة',
     paymentTitle: 'طريقة الدفع',
     addPaymentMethod: 'إضافة طريقة دفع',

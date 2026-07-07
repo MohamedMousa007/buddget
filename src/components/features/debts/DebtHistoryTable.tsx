@@ -75,7 +75,7 @@ export function DebtHistoryTable({ debts, debtPayments }: DebtHistoryTableProps)
         {t.debts.debtHistorySectionTitle}
       </h2>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm text-left min-w-[640px]">
+        <table className="w-full text-sm text-left min-w-96">
           <thead>
             <tr className="text-[10px] uppercase tracking-wider text-[var(--color-brand-text-muted)] border-b border-[var(--color-brand-border)]">
               <th className="py-2 pe-2">{t.debts.historyColDebt}</th>
@@ -163,7 +163,7 @@ function DebtHistoryRow({
         onClick={onToggle}
       >
         <td className="py-3 pe-2">
-          <div className="flex items-center gap-2 min-w-[120px]">
+          <div className="flex items-center gap-2 min-w-32">
             <ChevronDown
               className={`w-4 h-4 shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`}
             />

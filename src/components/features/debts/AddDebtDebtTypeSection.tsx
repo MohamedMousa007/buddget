@@ -194,7 +194,7 @@ export function AddDebtDebtTypeSection({
               />
             </div>
           </div>
-          <div className="max-w-[180px]">
+          <div className="max-w-44">
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelStartDate}</Label>
             <DatePickerField value={installmentStartDate} onChange={setInstallmentStartDate} className="mt-1" />
           </div>
@@ -202,7 +202,7 @@ export function AddDebtDebtTypeSection({
       ) : null}
 
       {debtType === 'general' ? (
-        <div className="max-w-[220px]">
+        <div className="max-w-56">
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelCreditor}</Label>
           <Input
             value={creditor}

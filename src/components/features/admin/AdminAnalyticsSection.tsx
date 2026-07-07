@@ -19,7 +19,7 @@ export function AdminAnalyticsSection({ admin }: AdminAnalyticsSectionProps) {
           Usage (approx.)
         </h2>
       </div>
-      <p className="text-[11px] text-[var(--color-brand-text-muted)]">
+      <p className="text-xs text-[var(--color-brand-text-muted)]">
         Heartbeats while the app tab is visible (~45s chunks). Not exact device screen time.
       </p>
       <button
@@ -32,7 +32,7 @@ export function AdminAnalyticsSection({ admin }: AdminAnalyticsSectionProps) {
       </button>
       {admin.analytics && admin.users.length > 0 ? (
         <div className="overflow-x-auto rounded-xl border border-[var(--color-brand-border)] max-h-72 overflow-y-auto">
-          <table className="w-full text-start text-[11px]">
+          <table className="w-full text-start text-xs">
             <thead className="sticky top-0 bg-[var(--color-brand-bg)] text-[var(--color-brand-text-muted)]">
               <tr>
                 <th className="p-2 font-medium">User</th>
@@ -57,7 +57,7 @@ export function AdminAnalyticsSection({ admin }: AdminAnalyticsSectionProps) {
           </table>
         </div>
       ) : admin.analytics ? (
-        <p className="text-[11px] text-[var(--color-brand-text-muted)]">
+        <p className="text-xs text-[var(--color-brand-text-muted)]">
           Load users first to map analytics rows to emails.
         </p>
       ) : null}

@@ -69,7 +69,7 @@ export function SavingsAccountCard({
             onClick={onEdit}
             title={t.common.edit}
             aria-label={t.common.edit}
-            className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)] hover:text-[var(--color-brand-text-primary)]"
+            className="inline-flex items-center justify-center min-w-11 min-h-11 rounded-lg text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)] hover:text-[var(--color-brand-text-primary)]"
           >
             <Pencil className="h-4 w-4" aria-hidden />
           </button>
@@ -78,7 +78,7 @@ export function SavingsAccountCard({
             onClick={onDelete}
             title={t.common.delete}
             aria-label={t.common.delete}
-            className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)] hover:text-[var(--color-brand-red)]"
+            className="inline-flex items-center justify-center min-w-11 min-h-11 rounded-lg text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)] hover:text-[var(--color-brand-red)]"
           >
             <Trash2 className="h-4 w-4" aria-hidden />
           </button>

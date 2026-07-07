@@ -85,7 +85,7 @@ export function VoiceRecordOverlay({
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 120, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-          className="fixed bottom-[72px] start-4 end-4 z-[60] rounded-2xl bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] shadow-2xl overflow-hidden"
+          className="fixed bottom-18 start-4 end-4 z-[60] rounded-2xl bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] shadow-2xl overflow-hidden"
         >
           {state === 'processing' && <ProcessingPanel onCancel={onCancel} />}
           {state === 'error' && (

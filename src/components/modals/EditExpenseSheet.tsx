@@ -23,7 +23,7 @@ export function EditExpenseSheet() {
       open={shellOpen}
       onBackdropClick={close}
       scrollChild
-      panelClassName="rounded-t-[30px] border-t-[var(--color-brand-border)]"
+      panelClassName="rounded-t-4xl border-t-[var(--color-brand-border)]"
     >
       {expense ? <EditExpenseForm key={expense.id} expense={expense} onClose={close} /> : null}
     </ModalShell>

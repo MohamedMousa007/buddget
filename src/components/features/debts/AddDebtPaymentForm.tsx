@@ -239,7 +239,7 @@ export function AddDebtPaymentForm({
         <Textarea
           value={paymentNotes}
           onChange={(e) => setPaymentNotes(e.target.value)}
-          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] min-h-[60px]"
+          className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] min-h-16"
         />
       </div>
       <div className="flex gap-3 pt-2">
