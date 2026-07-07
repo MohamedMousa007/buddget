@@ -72,7 +72,7 @@ export function AddDebtNewFormAmountBlock({
             <DebtFiatCurrencySelect
               value={currency}
               onChange={setCurrency}
-              className="mt-1.5 w-full h-12 px-3 rounded-xl border border-[#2A2A38] bg-[#1A1A24] text-white text-sm focus:border-[#E50914]"
+              className="mt-1.5 w-full h-12 px-3 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)] text-sm focus:border-[var(--color-brand-red)]"
             />
           </div>
         ) : (

@@ -135,7 +135,7 @@ export function AddPaymentMethodSheet() {
                       className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
                         type === opt ?
                           'bg-[var(--color-brand-red)] text-white'
-                        : 'bg-[#1A1A24] text-[#A0A0B8] border border-[#2A2A38] hover:border-[#5A5A72]'
+                        : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)] border border-[var(--color-brand-border)] hover:border-[var(--color-brand-text-muted)]'
                       }`}
                     >
                       {label}
@@ -151,7 +151,7 @@ export function AddPaymentMethodSheet() {
             <FiatCurrencySelect
               value={currency}
               onChange={setCurrency}
-              className={`mt-1.5 w-full h-12 px-3 rounded-xl border border-[#2A2A38] bg-[#1A1A24] text-white text-sm focus:border-[#E50914]`}
+              className={`mt-1.5 w-full h-12 px-3 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)] text-sm focus:border-[var(--color-brand-red)]`}
             />
           </div>
 

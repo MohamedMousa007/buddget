@@ -150,9 +150,9 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
         className="absolute inset-0 bg-black/[0.62] border-none cursor-default"
       />
       <div
-        className="relative w-full max-w-[300px] overflow-hidden rounded-[22px] border border-[#2E2E3C] bg-[#12121b] text-white"
+        className="relative w-full max-w-[300px] overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[var(--color-brand-text-primary)]"
         style={{
-          boxShadow: '0 26px 64px -14px rgba(0,0,0,.7)',
+          boxShadow: '0 26px 64px -14px rgba(0,0,0,.4)',
           fontFamily: ar ? 'var(--font-sans-ar)' : 'var(--font-sans)',
           animation: 'efPop .22s cubic-bezier(.22,1,.36,1)',
         }}
@@ -214,7 +214,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                 {(ar ? WD_AR : WD).map((w, i) => (
                   <div
                     key={i}
-                    className="text-center text-[10px] font-bold tracking-[.04em] text-[#7C7C92] py-px"
+                    className="text-center text-[10px] font-bold tracking-[.04em] text-[var(--color-brand-text-muted)] py-px"
                   >
                     {w}
                   </div>
@@ -225,12 +225,12 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                   const isSel = sel.y === c.y && sel.m === c.m && sel.d === c.d
                   const isToday = today.y === c.y && today.m === c.m && today.d === c.d
                   const bg = isSel
-                    ? 'bg-[#E50914] text-white'
+                    ? 'bg-[var(--color-brand-red)] text-white'
                     : isToday
-                      ? 'bg-[rgba(229,9,20,.12)] text-[#FF6B6B]'
+                      ? 'bg-[rgba(229,9,20,.12)] text-[var(--color-brand-red)]'
                       : c.out
-                        ? 'text-[#4B4B58]'
-                        : 'text-[#E8E8F0]'
+                        ? 'text-[var(--color-brand-text-muted)]'
+                        : 'text-[var(--color-brand-text-primary)]'
                   return (
                     <button
                       key={i}
@@ -256,10 +256,10 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                 const isCur = i === m
                 const isTM = i === today.m && y === today.y
                 const cls = isCur
-                  ? 'bg-[#E50914] text-white border-[#E50914]'
+                  ? 'bg-[var(--color-brand-red)] text-white border-[var(--color-brand-red)]'
                   : isTM
-                    ? 'bg-[rgba(229,9,20,.1)] text-[#FF7A82] border-[rgba(229,9,20,.45)]'
-                    : 'bg-[#1B1B26] text-[#D6D6E2] border-[#2A2A38]'
+                    ? 'bg-[rgba(229,9,20,.1)] text-[var(--color-brand-red)] border-[rgba(229,9,20,.45)]'
+                    : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] border-[var(--color-brand-border)]'
                 return (
                   <button
                     key={i}
@@ -280,7 +280,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
           {isYears ? (
             <div className="flex flex-col h-full">
               <div className="relative mb-2.5 shrink-0">
-                <span className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 inline-flex text-[#8A8AA0]">
+                <span className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 inline-flex text-[var(--color-brand-text-muted)]">
                   <Search className="w-4 h-4" />
                 </span>
                 <input
@@ -289,7 +289,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                   inputMode="numeric"
                   dir="ltr"
                   placeholder={ar ? 'اكتب سنة…' : 'Type a year…'}
-                  className="w-full h-[38px] rounded-[11px] border border-[#2E2E3C] bg-[#1A1A24] ps-[34px] pe-3.5 text-white text-sm font-semibold font-mono-numbers text-start placeholder:text-[#5A5A72] focus:outline-none"
+                  className="w-full h-[38px] rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] ps-[34px] pe-3.5 text-[var(--color-brand-text-primary)] text-sm font-semibold font-mono-numbers text-start placeholder:text-[var(--color-brand-text-muted)] focus:outline-none"
                 />
               </div>
               <div className="flex-1 overflow-y-auto grid grid-cols-3 gap-2 content-start [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -297,10 +297,10 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                   const on = yr === y
                   const isTY = yr === today.y
                   const cls = on
-                    ? 'bg-[#E50914] text-white border-[#E50914]'
+                    ? 'bg-[var(--color-brand-red)] text-white border-[var(--color-brand-red)]'
                     : isTY
-                      ? 'bg-[rgba(229,9,20,.1)] text-[#FF7A82] border-[rgba(229,9,20,.4)]'
-                      : 'bg-[#1B1B26] text-[#D6D6E2] border-[#2A2A38]'
+                      ? 'bg-[rgba(229,9,20,.1)] text-[var(--color-brand-red)] border-[rgba(229,9,20,.4)]'
+                      : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] border-[var(--color-brand-border)]'
                   return (
                     <button
                       key={yr}
@@ -318,7 +318,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                   )
                 })}
                 {yearList.length === 0 ? (
-                  <div className="col-span-3 text-center py-[22px] text-[#5A5A72] text-[13px] font-medium">
+                  <div className="col-span-3 text-center py-[22px] text-[var(--color-brand-text-muted)] text-[13px] font-medium">
                     {ar ? 'لا توجد سنة مطابقة' : 'No matching year'}
                   </div>
                 ) : null}
