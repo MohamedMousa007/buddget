@@ -22,9 +22,9 @@ export function AuthFormErrorAlert({ error, onSignInInstead, onResendCode }: Aut
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
-          className="flex items-center justify-center gap-1.5 text-center text-xs text-[var(--color-brand-red)]"
+          className="flex items-start justify-center gap-1.5 text-center text-[11px] leading-snug text-[#FF8A6B]"
         >
-          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+          <AlertCircle className="w-3 h-3 shrink-0 mt-[2px]" />
           <span>
             {error}
             {error === t.auth.errorAccountExists && onSignInInstead ? (

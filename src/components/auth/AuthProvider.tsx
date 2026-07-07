@@ -278,6 +278,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setDataPullTimedOut(false)
       } else if (_event === 'SIGNED_IN' && incomingUser) {
         wasAuthedRef.current = true
+      } else if (_event === 'TOKEN_REFRESHED' && nextSession && isNative()) {
+        // Refresh tokens are single-use — every background rotation invalidates
+        // whatever pair biometric last saved. Keep it perpetually current
+        // instead of only writing it at enable-time and sign-out time, or a
+        // rotation in between silently stales the saved pair (session_not_found
+        // on the next biometric sign-in).
+        void (async () => {
+          try {
+            const bio = await import('@/lib/native/biometricAuth')
+            if (await bio.isEnabled()) {
+              await bio.saveSession({
+                access_token: nextSession.access_token,
+                refresh_token: nextSession.refresh_token,
+              })
+            }
+          } catch { /* noop */ }
+        })()
       }
       setSession(nextSession)
       setUser(incomingUser)
@@ -452,10 +469,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   )
 
   // Reset-password + auth-callback routes must be reachable for unauthenticated
-  // users — they're part of the inbound auth flow. The gate bypasses them and
-  // renders children directly.
+  // users — they're part of the inbound auth flow. Legal pages must be public
+  // too (linked from the signed-out landing screen) — without this the gate
+  // swallows the route and re-renders LandingGate on top of it, remounting the
+  // email step and popping the keyboard instead of showing the policy text.
+  // The gate bypasses all of these and renders children directly.
   const isBypassRoute =
-    pathname.startsWith('/reset-password') || pathname.startsWith('/auth/callback')
+    pathname.startsWith('/reset-password') ||
+    pathname.startsWith('/auth/callback') ||
+    pathname.startsWith('/legal')
 
   const skipAuthModal = pathname.startsWith('/reset-password')
   const showAuthModal = configured && !loading && authModalOpen && !user && !skipAuthModal
