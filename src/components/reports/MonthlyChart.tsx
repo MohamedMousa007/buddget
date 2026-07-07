@@ -31,7 +31,7 @@ export function MonthlyChart({ data, currency }: MonthlyChartProps) {
           Nothing here yet — add some transactions to see your trends
         </p>
       ) : (
-        <div className="h-[300px] min-h-[300px] min-w-[100px]">
+        <div className="h-72 min-h-72 min-w-24">
           {mounted ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>

@@ -23,7 +23,7 @@ function DeletePanel({ deleteLabel, onDelete }: { deleteLabel: string; onDelete:
         onClick={() => { void tapHaptic(); onDelete() }}
         className="flex w-full flex-col items-center justify-center gap-0.5 bg-[var(--color-brand-red)] text-white active:bg-[var(--color-brand-red-hover)]"
       >
-        <Trash2 className="h-[18px] w-[18px]" />
+        <Trash2 className="h-5 w-5" />
         <span className="text-[10px] font-semibold">{deleteLabel}</span>
       </button>
     </div>

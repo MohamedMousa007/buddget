@@ -76,11 +76,11 @@ export function DashboardPaceBadge({
         <p className="text-sm font-semibold text-[var(--color-brand-text-primary)] truncate">
           {title}
         </p>
-        <p className="text-[11px] text-[var(--color-brand-text-secondary)] mt-0.5">
+        <p className="text-xs text-[var(--color-brand-text-secondary)] mt-0.5">
           {subtitle}
         </p>
         {cutBackNames ? (
-          <p className="text-[11px] text-[var(--color-brand-text-muted)] mt-0.5">
+          <p className="text-xs text-[var(--color-brand-text-muted)] mt-0.5">
             {t.dashboard.paceBadgeCutBack(cutBackNames)}
           </p>
         ) : null}

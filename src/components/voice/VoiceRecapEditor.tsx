@@ -182,7 +182,7 @@ export function VoiceRecapEditor({
               </div>
 
               {err ? (
-                <p className="mt-1.5 flex items-center gap-1 text-[11px] text-[var(--color-brand-red)]">
+                <p className="mt-1.5 flex items-center gap-1 text-xs text-[var(--color-brand-red)]">
                   <AlertCircle className="h-3 w-3 shrink-0" /> {err}
                 </p>
               ) : null}

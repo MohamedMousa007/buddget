@@ -270,7 +270,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
         <Centered>
           <Check className="h-8 w-8 text-[var(--color-brand-green)]" />
           <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">Receipt captured</p>
-          <p className="max-w-[280px] text-xs text-[var(--color-brand-text-muted)] text-center">
+          <p className="max-w-72 text-xs text-[var(--color-brand-text-muted)] text-center">
             You&apos;re offline right now, so we saved the photo on your device. When
             you&apos;re back online, a chip will appear at the top of the app — tap it
             to finish adding this receipt.
@@ -300,7 +300,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
               <ReceiptText className="h-7 w-7 text-[var(--color-brand-text-muted)]" />
             </div>
             <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">Let&apos;s try that again</p>
-            <p className="max-w-[280px] text-xs text-[var(--color-brand-text-muted)] text-center">{error}</p>
+            <p className="max-w-72 text-xs text-[var(--color-brand-text-muted)] text-center">{error}</p>
             <button
               type="button"
               onClick={() => void startScan()}

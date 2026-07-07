@@ -70,7 +70,7 @@ export function AllDebtsPaymentHistoryTable({
                 key={payment.id}
                 className="border-b border-[var(--color-brand-border)] hover:bg-[var(--color-brand-elevated)] transition-colors group"
               >
-                <td className="py-2.5 px-2 sm:px-3 text-sm font-semibold text-[var(--color-brand-text-primary)] uppercase max-w-[120px] sm:max-w-[160px] truncate">
+                <td className="py-2.5 px-2 sm:px-3 text-sm font-semibold text-[var(--color-brand-text-primary)] uppercase max-w-32 sm:max-w-[160px] truncate">
                   {debt.name}
                 </td>
                 <td className="py-2.5 px-2 sm:px-3 text-sm font-mono-numbers text-[var(--color-brand-text-secondary)] whitespace-nowrap">
@@ -114,7 +114,7 @@ export function AllDebtsPaymentHistoryTable({
                     return formatCurrency(0, baseCurrency)
                   })()}
                 </td>
-                <td className="py-2.5 px-2 sm:px-3 text-sm text-[var(--color-brand-text-muted)] max-w-[200px] truncate hidden md:table-cell">
+                <td className="py-2.5 px-2 sm:px-3 text-sm text-[var(--color-brand-text-muted)] max-w-48 truncate hidden md:table-cell">
                   {payment.notes || '–'}
                 </td>
                 <td className="py-2.5 px-2 sm:px-3">

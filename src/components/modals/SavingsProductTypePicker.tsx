@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 
 const pillClass = (selected: boolean) =>
   cn(
-    'flex min-w-[120px] items-center gap-2 rounded-[10px] border px-4 py-2.5 text-left text-[13px] font-medium transition-colors',
+    'flex min-w-32 items-center gap-2 rounded-md border px-4 py-2.5 text-left text-sm font-medium transition-colors',
     selected
       ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10 text-[var(--color-brand-text-primary)]'
       : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'

@@ -57,7 +57,7 @@ export const AuthPasswordField = forwardRef<HTMLInputElement, AuthPasswordFieldP
 
     return (
       <div>
-        <label className="text-[11px] text-[var(--color-brand-text-muted)] mb-0.5 block">
+        <label className="text-xs text-[var(--color-brand-text-muted)] mb-0.5 block">
           {label}
         </label>
         <div className="relative">

@@ -82,7 +82,7 @@ export function SyncFailureBanner() {
               {t.syncFailures.autoRetryNote}
             </p>
             {expanded ? (
-              <ul className="mt-2 space-y-1 text-[11px] text-[var(--color-brand-text-muted)] font-mono">
+              <ul className="mt-2 space-y-1 text-xs text-[var(--color-brand-text-muted)] font-mono">
                 {failures.map((f, i) => (
                   <li key={`${f.label}-${i}`} className="truncate">
                     <span className="text-[var(--color-brand-text-secondary)]">{f.label}</span>
@@ -94,7 +94,7 @@ export function SyncFailureBanner() {
                 ))}
               </ul>
             ) : primary ? (
-              <p className="mt-0.5 truncate text-[11px] text-[var(--color-brand-text-muted)] font-mono">
+              <p className="mt-0.5 truncate text-xs text-[var(--color-brand-text-muted)] font-mono">
                 {primary.label}
               </p>
             ) : null}

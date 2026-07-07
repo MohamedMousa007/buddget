@@ -111,11 +111,11 @@ export function BudgetRing({
   return (
     <div className="glass-card rounded-2xl p-4 sm:p-6 flex flex-col items-center">
       {incomeBlockedNote ? (
-        <p className="text-[11px] text-amber-200/90 text-center mb-3 px-1 leading-snug">{incomeBlockedNote}</p>
+        <p className="text-xs text-amber-200/90 text-center mb-3 px-1 leading-snug">{incomeBlockedNote}</p>
       ) : null}
 
       {/* Responsive ring: 140px mobile, 200px sm+ */}
-      <div className="relative w-[140px] h-[140px] sm:w-[200px] sm:h-[200px]">
+      <div className="relative w-36 h-36 sm:w-[200px] sm:h-[200px]">
         <svg
           className="transform -rotate-90 w-full h-full"
           viewBox="0 0 200 200"
@@ -187,7 +187,7 @@ export function BudgetRing({
         </div>
 
         {showSuggestion && (
-          <p className="text-[11px] text-[var(--color-brand-text-muted)] text-center pt-0.5">
+          <p className="text-xs text-[var(--color-brand-text-muted)] text-center pt-0.5">
             {t.dashboard.suggestedDailyLabel.replace('{amount}', formatCurrency(suggestedDaily, currency))}
           </p>
         )}

@@ -201,7 +201,7 @@ export function ModalShell({
                     never swallow a tap on a button/input. Hidden on desktop,
                     where the sheet is a centered fade with no drag. */}
                 <div
-                  className="flex shrink-0 items-center justify-center min-h-[44px] cursor-grab active:cursor-grabbing touch-none select-none lg:hidden"
+                  className="flex shrink-0 items-center justify-center min-h-11 cursor-grab active:cursor-grabbing touch-none select-none lg:hidden"
                   onPointerDown={(e) => dragControls.start(e)}
                   role="presentation"
                   aria-hidden

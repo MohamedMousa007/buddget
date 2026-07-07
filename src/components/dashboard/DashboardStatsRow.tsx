@@ -68,7 +68,7 @@ function Stat({
     <div className="flex-1 min-w-0 text-center px-3">
       <div
         className={cn(
-          'font-mono font-semibold text-[16px] leading-none truncate',
+          'font-mono font-semibold text-base leading-none truncate',
           color,
         )}
       >

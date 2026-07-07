@@ -177,7 +177,7 @@ export function AddSavingsAccountForm({ onDone }: AddSavingsAccountFormProps) {
           />
         </div>
         {savingsType === 'gold' ? (
-          <p className="mt-1 text-[11px] text-[var(--color-brand-text-muted)]">{t.savings.goldCurrencyHint}</p>
+          <p className="mt-1 text-xs text-[var(--color-brand-text-muted)]">{t.savings.goldCurrencyHint}</p>
         ) : null}
       </div>
 

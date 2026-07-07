@@ -22,7 +22,7 @@ export function DesktopHeaderBar() {
   return (
     <>
       {/* ─── Desktop header (lg+) ─── */}
-      <header className="hidden lg:flex fixed top-0 start-[176px] end-0 z-40 h-12 items-center justify-between px-6 bg-[var(--color-brand-card)]/90 border-b border-[var(--color-brand-border)] backdrop-blur-xl">
+      <header className="hidden lg:flex fixed top-0 start-44 end-0 z-40 h-12 items-center justify-between px-6 bg-[var(--color-brand-card)]/90 border-b border-[var(--color-brand-border)] backdrop-blur-xl">
         <div className="flex items-center shrink-0">
           {pathname === '/' && (
             <Link
@@ -48,10 +48,10 @@ export function DesktopHeaderBar() {
 
       {/* ─── Mobile header (<lg) ─── */}
       <header className="flex lg:hidden fixed top-0 start-0 end-0 z-40 min-h-[calc(52px+env(safe-area-inset-top,0px))] flex-col bg-[var(--color-brand-bg)] border-b border-[var(--color-brand-border)] safe-area-top">
-        <div className="flex h-[52px] shrink-0 items-center gap-[9px] px-[18px]">
+        <div className="flex h-14 shrink-0 items-center gap-2.5 px-5">
           <Link
             href="/"
-            className="shrink-0 text-[19px] font-extrabold font-heading tracking-[-0.4px] text-[var(--color-brand-text-primary)]"
+            className="shrink-0 text-xl font-extrabold font-heading tracking-[-0.4px] text-[var(--color-brand-text-primary)]"
           >
             Bud<span className="text-[var(--color-brand-red)]">d</span>get
           </Link>

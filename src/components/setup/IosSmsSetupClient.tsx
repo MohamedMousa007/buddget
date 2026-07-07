@@ -63,7 +63,7 @@ export function IosSmsSetupClient({ token, parseEndpoint, ingestEndpoint }: IosS
             {copied === 'token' ? 'Copied' : 'Copy'}
           </button>
         </div>
-        <p className="mt-2 text-[11px] text-[var(--color-brand-text-muted)]">
+        <p className="mt-2 text-xs text-[var(--color-brand-text-muted)]">
           Treat this like a password — anyone with it can post SMS to your account.
         </p>
       </div>

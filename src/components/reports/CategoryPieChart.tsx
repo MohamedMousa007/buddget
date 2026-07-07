@@ -31,7 +31,7 @@ export function CategoryPieChart({ data, currency }: CategoryPieChartProps) {
           No spending yet — your breakdown will appear here
         </p>
       ) : (
-        <div className="h-[300px] min-h-[300px] min-w-[100px]">
+        <div className="h-72 min-h-72 min-w-24">
           {mounted ? (
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>

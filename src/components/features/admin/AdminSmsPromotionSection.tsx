@@ -84,7 +84,7 @@ export function AdminSmsPromotionSection({ admin }: Props) {
             <p className="text-xs font-medium text-[var(--color-brand-text-primary)]">{label}</p>
             <p className="text-[10px] text-[var(--color-brand-text-muted)]">{description}</p>
           </div>
-          <span className="text-xs font-mono font-semibold text-[var(--color-brand-text-primary)] min-w-[48px] text-right">
+          <span className="text-xs font-mono font-semibold text-[var(--color-brand-text-primary)] min-w-12 text-right">
             {display}
           </span>
         </div>

@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils'
 
 function SectionHeader({ label }: { label: string }) {
   return (
-    <p className="px-1 pt-5 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
+    <p className="px-1 pt-5 pb-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
       {label}
     </p>
   )

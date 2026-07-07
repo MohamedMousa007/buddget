@@ -29,7 +29,7 @@ export function CategoryBar({
   return (
     <div className="glass-card rounded-2xl p-5 space-y-4">
       {incomeBlockedNote ? (
-        <p className="text-[11px] text-amber-200/90 leading-snug">{incomeBlockedNote}</p>
+        <p className="text-xs text-amber-200/90 leading-snug">{incomeBlockedNote}</p>
       ) : null}
       <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
         {t.dashboard.categoryTitle}

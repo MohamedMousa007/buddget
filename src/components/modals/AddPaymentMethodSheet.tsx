@@ -132,7 +132,7 @@ export function AddPaymentMethodSheet() {
                       key={opt}
                       type="button"
                       onClick={() => setType(opt)}
-                      className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                      className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                         type === opt ?
                           'bg-[var(--color-brand-red)] text-white'
                         : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)] border border-[var(--color-brand-border)] hover:border-[var(--color-brand-text-muted)]'

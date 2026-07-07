@@ -237,7 +237,7 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
 
       {smsTemplates.length > 0 && (
         <div className="overflow-x-auto -mx-5 px-5">
-          <table className="w-full min-w-[560px] text-xs">
+          <table className="w-full min-w-96 text-xs">
             <thead>
               <tr className="border-b border-[var(--color-brand-border)]">
                 <th className="text-left py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Sender</th>
@@ -258,7 +258,7 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
                   </td>
 
                   {/* Sample */}
-                  <td className="py-2.5 pr-4 max-w-[160px]">
+                  <td className="py-2.5 pr-4 max-w-40">
                     <span
                       className="block truncate text-[var(--color-brand-text-secondary)] cursor-default"
                       title={tpl.template_sample}
@@ -268,7 +268,7 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
                   </td>
 
                   {/* Regex — inline edit */}
-                  <td className="py-2.5 pr-4 max-w-[200px]">
+                  <td className="py-2.5 pr-4 max-w-48">
                     {editingId === tpl.id ? (
                       <div className="space-y-1.5">
                         <textarea

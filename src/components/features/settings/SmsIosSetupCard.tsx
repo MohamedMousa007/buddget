@@ -60,7 +60,7 @@ export function SmsIosSetupCard({ lastReceivedAt, onSetupComplete }: Props) {
         <button
           type="button"
           onClick={() => setShowSetup(true)}
-          className="w-full h-[52px] rounded-[14px] text-sm font-bold text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90 active:opacity-80"
+          className="w-full h-14 rounded-lg text-sm font-bold text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90 active:opacity-80"
           style={{
             background: RED,
             boxShadow: '0 10px 30px rgba(229,9,20,0.28)',

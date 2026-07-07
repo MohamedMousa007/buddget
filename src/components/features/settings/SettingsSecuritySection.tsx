@@ -41,7 +41,7 @@ export function SettingsSecuritySection({ store }: SettingsSecuritySectionProps)
         />
       </div>
 
-      <p className="text-[11px] text-[var(--color-brand-text-muted)] border-t border-[var(--color-brand-border)] pt-3 leading-relaxed">
+      <p className="text-xs text-[var(--color-brand-text-muted)] border-t border-[var(--color-brand-border)] pt-3 leading-relaxed">
         {t.settings.twoFaFooter}
       </p>
     </section>

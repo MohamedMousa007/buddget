@@ -66,10 +66,10 @@ export function BudgetRingNoBudget({
   return (
     <div className="glass-card rounded-2xl p-4 sm:p-6 flex flex-col items-center">
       {incomeBlockedNote ? (
-        <p className="text-[11px] text-amber-200/90 text-center mb-3 px-1 leading-snug">{incomeBlockedNote}</p>
+        <p className="text-xs text-amber-200/90 text-center mb-3 px-1 leading-snug">{incomeBlockedNote}</p>
       ) : null}
 
-      <div className="relative w-[140px] h-[140px] sm:w-[200px] sm:h-[200px]">
+      <div className="relative w-36 h-36 sm:w-[200px] sm:h-[200px]">
         <svg className="transform -rotate-90 w-full h-full" viewBox="0 0 200 200">
           <circle
             cx="100"

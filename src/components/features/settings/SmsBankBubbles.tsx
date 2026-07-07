@@ -47,7 +47,7 @@ export function SmsBankBubbles() {
         {BANKS.map((b, i) => (
           <div
             key={b.name}
-            className="flex items-center gap-1.5 rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-3 py-1.5 text-[11px] font-semibold text-[var(--color-brand-text-secondary)] select-none"
+            className="flex items-center gap-1.5 rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-3 py-1.5 text-xs font-semibold text-[var(--color-brand-text-secondary)] select-none"
             style={{
               animation: `sm-pop .38s cubic-bezier(.34,1.56,.64,1) ${i * 55}ms both, sm-float ${3.8 + (i % 4) * 0.4}s ease-in-out ${i * 0.28}s infinite`,
             }}

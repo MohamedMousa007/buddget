@@ -19,7 +19,7 @@ export function AdminUsersSection({ admin }: AdminUsersSectionProps) {
           Users (Supabase)
         </h2>
       </div>
-      <p className="text-[11px] text-[var(--color-brand-text-muted)]">
+      <p className="text-xs text-[var(--color-brand-text-muted)]">
         Requires <code className="text-[var(--color-brand-text-secondary)]">SUPABASE_SERVICE_ROLE_KEY</code> on the
         server.
       </p>
@@ -33,7 +33,7 @@ export function AdminUsersSection({ admin }: AdminUsersSectionProps) {
       </button>
       {admin.users.length > 0 ? (
         <div className="overflow-x-auto rounded-xl border border-[var(--color-brand-border)] max-h-72 overflow-y-auto">
-          <table className="w-full text-start text-[11px]">
+          <table className="w-full text-start text-xs">
             <thead className="sticky top-0 bg-[var(--color-brand-bg)] text-[var(--color-brand-text-muted)]">
               <tr>
                 <th className="p-2 font-medium">Email</th>

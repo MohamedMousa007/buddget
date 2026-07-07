@@ -15,7 +15,7 @@ export function AdminHelpSection() {
           <code className="text-[var(--color-brand-red)]">Vercel</code> (not native{' '}
           <code className="text-[var(--color-brand-red)]">.env.local</code>):
         </p>
-        <div className="p-3 rounded-lg bg-[var(--color-brand-bg)] font-mono-numbers space-y-1 text-[11px]">
+        <div className="p-3 rounded-lg bg-[var(--color-brand-bg)] font-mono-numbers space-y-1 text-xs">
           <p>
             <span className="text-[var(--color-brand-text-secondary)]">GEMINI_API_KEY</span>=
             <span className="text-[var(--color-brand-green)]">your_key_here</span>

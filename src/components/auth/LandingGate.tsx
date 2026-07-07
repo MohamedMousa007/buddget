@@ -160,7 +160,7 @@ export function LandingGate() {
           </div>
 
           {/* Legal footer */}
-          <p className="mt-6 text-center text-[11px] text-[var(--color-brand-text-muted)]">
+          <p className="mt-6 text-center text-xs text-[var(--color-brand-text-muted)]">
             <Link href="/legal/privacy" onClick={blurActive} className="hover:text-[var(--color-brand-text-secondary)] transition-colors">
               Privacy Policy
             </Link>

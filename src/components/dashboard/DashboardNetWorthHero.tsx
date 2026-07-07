@@ -41,7 +41,7 @@ export function DashboardNetWorthHero({
           </p>
           <p
             className={cn(
-              'mt-1 font-mono font-bold text-[26px] leading-none truncate',
+              'mt-1 font-mono font-bold text-2xl leading-none truncate',
               netWorth >= 0
                 ? 'text-[var(--color-brand-text-primary)]'
                 : 'text-[var(--color-brand-red-text)]',
@@ -102,7 +102,7 @@ function SideStat({
       <p className="text-[10px] uppercase tracking-wider text-[var(--color-brand-text-secondary)] font-medium">
         {label}
       </p>
-      <p className={cn('mt-1 font-mono font-bold text-[18px] leading-none truncate', color)}>
+      <p className={cn('mt-1 font-mono font-bold text-lg leading-none truncate', color)}>
         <CurrencyLabel
           amount={Math.max(0, amount)}
           currency={currency}

@@ -60,7 +60,7 @@ export function ActionToastProvider({ children }: { children: React.ReactNode })
                   toast!.undo!()
                   dismiss()
                 }}
-                className="min-h-[36px] rounded-full bg-[var(--color-brand-red)] px-3 text-xs font-semibold text-white active:opacity-80"
+                className="min-h-9 rounded-full bg-[var(--color-brand-red)] px-3 text-xs font-semibold text-white active:opacity-80"
               >
                 {toast.undoLabel || 'Undo'}
               </button>

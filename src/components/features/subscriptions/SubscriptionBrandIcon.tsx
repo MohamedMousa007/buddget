@@ -24,7 +24,7 @@ export function SubscriptionBrandIcon({
   className?: string
 }) {
   const px = size === 'lg' ? 48 : size === 'sm' ? 32 : 40
-  const radius = size === 'lg' ? 'rounded-xl' : size === 'sm' ? 'rounded-lg' : 'rounded-[10px]'
+  const radius = size === 'lg' ? 'rounded-xl' : size === 'sm' ? 'rounded-lg' : 'rounded-md'
   const label = (initial || emoji || '?').trim()
 
   if (brandKey) {

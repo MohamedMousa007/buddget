@@ -14,7 +14,7 @@ export function AddExpenseSheet() {
       open={sheet.isOpen}
       onBackdropClick={sheet.handleClose}
       scrollChild
-      panelClassName="rounded-t-[30px] border-t-[var(--color-brand-border)]"
+      panelClassName="rounded-t-4xl border-t-[var(--color-brand-border)]"
     >
       <ExpenseSheetForm
         mode="add"

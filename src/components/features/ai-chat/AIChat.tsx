@@ -136,7 +136,7 @@ export function AIChat() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.92 }}
             transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed z-50 flex flex-col overflow-hidden bg-[var(--color-brand-card)] rounded-[22px] border border-[var(--color-brand-border)] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.7)]"
+            className="fixed z-50 flex flex-col overflow-hidden bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.7)]"
           >
             <AIChatHeader onClose={close} />
 

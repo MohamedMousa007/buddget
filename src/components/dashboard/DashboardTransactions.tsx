@@ -55,13 +55,13 @@ export function DashboardTransactions({
   return (
     <section className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-[11px] uppercase tracking-[0.3px] text-[var(--color-brand-text-secondary)] font-semibold">
+        <h2 className="text-xs uppercase tracking-[0.3px] text-[var(--color-brand-text-secondary)] font-semibold">
           {t.dashboard.sectionTxTitle}
         </h2>
         {hasRows ? (
           <Link
             href="/expenses"
-            className="text-[11px] text-[var(--color-brand-red)] hover:underline"
+            className="text-xs text-[var(--color-brand-red)] hover:underline"
           >
             {t.dashboard.sectionSeeAll}
           </Link>
@@ -83,7 +83,7 @@ export function DashboardTransactions({
           <p className="text-xs text-[var(--color-brand-text-secondary)]">
             {t.dashboard.recentEmpty}
           </p>
-          <p className="text-[11px] text-[var(--color-brand-text-muted)]">
+          <p className="text-xs text-[var(--color-brand-text-muted)]">
             {t.dashboard.recentEmptyDesc}
           </p>
         </div>
@@ -122,15 +122,15 @@ function TxRow({
 
   // Minimal variant: 13px text + border-separated rows (spacing comes from
   // the parent's `divide-y`). Standard: 12px text + `space-y-3` gap.
-  const nameSize = variant === 'minimal' ? 'text-[13px]' : 'text-[12px]'
-  const amountSize = variant === 'minimal' ? 'text-[13px]' : 'text-[12px]'
+  const nameSize = variant === 'minimal' ? 'text-sm' : 'text-xs'
+  const amountSize = variant === 'minimal' ? 'text-sm' : 'text-xs'
   const rowPad = variant === 'minimal' ? 'py-2.5' : ''
 
   return (
     <li className={`flex items-center gap-3 ${rowPad} rounded-lg hover:bg-[var(--color-brand-elevated)] active:opacity-70 transition-colors`}>
       <span
         aria-hidden
-        className="w-[30px] h-[30px] rounded-lg flex items-center justify-center text-[12px] font-semibold shrink-0"
+        className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-semibold shrink-0"
         style={{ background: palette.bg, color: palette.text }}
       >
         {initial}

@@ -72,13 +72,13 @@ export function SpendingPacePanel({
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <p className="text-[11px] text-[var(--color-brand-text-muted)] mb-0.5">{t.reports.avgDailySpend}</p>
+          <p className="text-xs text-[var(--color-brand-text-muted)] mb-0.5">{t.reports.avgDailySpend}</p>
           <p className={`text-lg font-semibold font-mono-numbers ${statusColor[paceStatus]}`}>
             {formatCurrency(dailyRate, currency)}
           </p>
         </div>
         <div>
-          <p className="text-[11px] text-[var(--color-brand-text-muted)] mb-0.5">{t.reports.projectedTotal}</p>
+          <p className="text-xs text-[var(--color-brand-text-muted)] mb-0.5">{t.reports.projectedTotal}</p>
           <p className={`text-lg font-semibold font-mono-numbers ${statusColor[paceStatus]}`}>
             {formatCurrency(projectedSpend, currency)}
           </p>

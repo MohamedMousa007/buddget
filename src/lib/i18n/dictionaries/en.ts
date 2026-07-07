@@ -460,6 +460,8 @@ export const en: Dictionary = {
     nonSpendHint: "Money movement — this won't be deducted from your spending or budget.",
     saveExpense: 'Save expense',
     saveChanges: 'Save changes',
+    cueAmount: 'Enter an amount to continue',
+    cueDescription: 'Add a description to continue',
     currencyTitle: 'Currency',
     paymentTitle: 'Payment method',
     addPaymentMethod: 'Add payment method',

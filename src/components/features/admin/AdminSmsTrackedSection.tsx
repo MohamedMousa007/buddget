@@ -187,7 +187,7 @@ export function AdminSmsTrackedSection({ admin }: Props) {
               key={key}
               type="button"
               onClick={() => setFilter(key)}
-              className={`text-[11px] rounded-full px-2.5 py-1 border transition-colors ${
+              className={`text-xs rounded-full px-2.5 py-1 border transition-colors ${
                 filter === key
                   ? 'border-[var(--color-brand-text-primary)] text-[var(--color-brand-text-primary)]'
                   : 'border-[var(--color-brand-border)] text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-secondary)]'
@@ -204,7 +204,7 @@ export function AdminSmsTrackedSection({ admin }: Props) {
           <AlertTriangle className="h-4 w-4 text-[var(--color-brand-red)] shrink-0 mt-0.5" />
           <div>
             <p className="text-xs font-semibold text-[var(--color-brand-red)]">Push delivery is down</p>
-            <p className="text-[11px] text-[var(--color-brand-text-secondary)] mt-0.5">
+            <p className="text-xs text-[var(--color-brand-text-secondary)] mt-0.5">
               <span className="font-mono">FIREBASE_SERVICE_ACCOUNT_JSON</span> is not set in the deployed environment — no one is receiving SMS push notifications. Set it in the Vercel project env to restore delivery.
             </p>
           </div>
@@ -221,7 +221,7 @@ export function AdminSmsTrackedSection({ admin }: Props) {
 
       {smsTracked.length > 0 && (
         <div className="overflow-x-auto -mx-5 px-5">
-          <table className="w-full min-w-[720px] text-xs">
+          <table className="w-full min-w-96 text-xs">
             <thead>
               <tr className="border-b border-[var(--color-brand-border)]">
                 <th className="text-left py-2 pr-3 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Status</th>
@@ -255,7 +255,7 @@ export function AdminSmsTrackedSection({ admin }: Props) {
                           {chip.label}
                         </span>
                       </td>
-                      <td className="py-2.5 pr-3 max-w-[220px]">
+                      <td className="py-2.5 pr-3 max-w-56">
                         <span className="block truncate text-[var(--color-brand-text-primary)] font-medium">
                           {row.amount != null && row.currency ? `${row.currency} ${row.amount.toLocaleString()} · ` : ''}{displayName}
                         </span>
@@ -263,14 +263,14 @@ export function AdminSmsTrackedSection({ admin }: Props) {
                       <td className="py-2.5 pr-3 whitespace-nowrap text-[var(--color-brand-text-secondary)]">
                         {row.sender ?? '—'}
                       </td>
-                      <td className="py-2.5 pr-3 max-w-[160px]">
+                      <td className="py-2.5 pr-3 max-w-40">
                         <span className="block truncate text-[var(--color-brand-text-secondary)]" title={row.email ?? row.user_id}>
                           {row.email ?? `${row.user_id.slice(0, 8)}…`}
                         </span>
                       </td>
                       <td className="py-2.5 pr-3 text-center">
                         {method && (
-                          <span className={`font-mono text-[9px] px-1.5 py-0.5 rounded border ${method.cls}`}>
+                          <span className={`font-mono text-xs px-1.5 py-0.5 rounded border ${method.cls}`}>
                             {method.label}
                           </span>
                         )}
@@ -282,7 +282,7 @@ export function AdminSmsTrackedSection({ admin }: Props) {
                           return (
                             <span
                               title={`AI learning: ${row.learn_status}`}
-                              className={`block mt-1 mx-auto w-fit font-mono text-[8px] px-1 py-0.5 rounded border ${lc.cls}`}
+                              className={`block mt-1 mx-auto w-fit font-mono text-xs px-1 py-0.5 rounded border ${lc.cls}`}
                             >
                               {lc.label}
                             </span>

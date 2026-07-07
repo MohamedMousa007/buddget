@@ -60,7 +60,7 @@ export function MonthYearPicker({ monthFilter, onChange, className, compact }: M
         <span className="font-medium whitespace-nowrap">{label}</span>
       </PopoverTrigger>
       <PopoverContent
-        className="w-auto min-w-[260px] bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] p-3"
+        className="w-auto min-w-64 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] p-3"
         align="center"
       >
         <div className="flex items-center gap-2 mb-3">

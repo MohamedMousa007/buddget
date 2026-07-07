@@ -62,7 +62,7 @@ export function AuthOtpRow({ value, onChange, disabled }: AuthOtpRowProps) {
           onChange={(e) => setDigit(i, e.target.value)}
           onKeyDown={(e) => handleKeyDown(i, e)}
           className={cn(
-            'w-12 h-14 sm:w-12 rounded-[10px] border text-center text-2xl outline-none transition-colors disabled:opacity-50',
+            'w-12 h-14 sm:w-12 rounded-md border text-center text-2xl outline-none transition-colors disabled:opacity-50',
             inputFocus
           )}
           style={{

@@ -64,24 +64,24 @@ export default function DebtsPage() {
 
   return (
     <div>
-      <div className="px-4 pt-[14px] pb-4 lg:px-6 space-y-5 max-w-6xl mx-auto">
+      <div className="px-4 pt-3.5 pb-4 lg:px-6 space-y-5 max-w-6xl mx-auto">
         {/* Overview card: total still owed + active-debts pill + actions */}
-        <div className="rounded-[20px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-[18px] dark:bg-[linear-gradient(150deg,#1d1416,#121017)]">
+        <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-5 dark:bg-[linear-gradient(150deg,#1d1416,#121017)]">
           <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-[var(--color-brand-text-muted)]">
             {t.debts.totalStillOwed}
           </p>
-          <p className="font-mono-numbers mt-[7px] text-[30px] font-bold leading-none tracking-[-0.5px] text-[var(--color-brand-text-primary)]">
+          <p className="font-mono-numbers mt-2 text-3xl font-bold leading-none tracking-[-0.5px] text-[var(--color-brand-text-primary)]">
             {formatCurrency(stats.debtRemainingTotal, baseCurrency)}
           </p>
-          <span className="mt-[10px] inline-flex items-center gap-[6px] rounded-full bg-[rgba(255,92,92,0.12)] px-[11px] py-1 text-[11.5px] font-bold text-[#FF5C5C]">
-            <Landmark className="h-[13px] w-[13px]" strokeWidth={2.2} />
+          <span className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-[rgba(255,92,92,0.12)] px-3 py-1 text-xs font-bold text-[#FF5C5C]">
+            <Landmark className="h-3.5 w-3.5" strokeWidth={2.2} />
             {t.debts.activeDebtsCount(activeDebts.length)}
           </span>
-          <div className="mt-[14px] flex gap-[9px]">
+          <div className="mt-3.5 flex gap-2.5">
             <button
               type="button"
               onClick={() => guardedPayDebt()}
-              className="flex h-[42px] flex-1 items-center justify-center gap-[7px] rounded-[13px] bg-[var(--color-brand-green)] text-[13.5px] font-bold text-white hover:bg-[var(--color-brand-green-hover)]"
+              className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-[var(--color-brand-green)] text-sm font-bold text-white hover:bg-[var(--color-brand-green-hover)]"
             >
               <Check className="h-4 w-4" strokeWidth={2.2} />
               {t.debts.buttonPayDebt}
@@ -89,7 +89,7 @@ export default function DebtsPage() {
             <button
               type="button"
               onClick={() => guardedNewDebt()}
-              className="flex h-[42px] flex-1 items-center justify-center gap-[7px] rounded-[13px] bg-[var(--color-brand-red)] text-[13.5px] font-bold text-white hover:bg-[var(--color-brand-red-hover)]"
+              className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-[var(--color-brand-red)] text-sm font-bold text-white hover:bg-[var(--color-brand-red-hover)]"
             >
               <Plus className="h-4 w-4" strokeWidth={2.2} />
               {t.debts.buttonAddDebt.replace(/^\+\s*/, '')}

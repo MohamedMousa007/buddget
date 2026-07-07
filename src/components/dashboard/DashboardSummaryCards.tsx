@@ -88,7 +88,7 @@ function SummaryCard({
         {label}
       </div>
       <div
-        className="mt-1 font-mono font-semibold text-[15px] tabular-nums truncate"
+        className="mt-1 font-mono font-semibold text-base tabular-nums truncate"
         style={{ color: amountColor }}
       >
         {amount}

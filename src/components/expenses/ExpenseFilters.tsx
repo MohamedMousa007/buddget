@@ -65,12 +65,12 @@ function FilterSheet({
             exit={{ y: '110%' }}
             transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
             className={cn(
-              'hide-scrollbar fixed inset-x-0 bottom-0 z-[60] overflow-y-auto rounded-t-[26px] border-t border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-[18px] pt-2.5 shadow-[0_-20px_50px_-20px_rgba(0,0,0,0.7)]',
+              'hide-scrollbar fixed inset-x-0 bottom-0 z-[60] overflow-y-auto rounded-t-3xl border-t border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-5 pt-2.5 shadow-[0_-20px_50px_-20px_rgba(0,0,0,0.7)]',
               maxHeightClass,
             )}
             style={{ paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))' }}
           >
-            <div className="mx-auto mt-0.5 mb-[14px] h-[5px] w-[42px] rounded-[3px] bg-[var(--color-brand-border)]" />
+            <div className="mx-auto mt-0.5 mb-3.5 h-1.5 w-11 rounded-sm bg-[var(--color-brand-border)]" />
             {children}
           </motion.div>
         </>
@@ -83,20 +83,20 @@ function CheckBox({ selected }: { selected: boolean }) {
   return (
     <span
       className={cn(
-        'flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[7px] border-2 text-white',
+        'flex h-6 w-6 shrink-0 items-center justify-center rounded-sm border-2 text-white',
         selected
           ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)]'
           : 'border-[var(--color-brand-border)] bg-transparent',
       )}
     >
-      <Check className="h-[13px] w-[13px]" strokeWidth={3} style={{ opacity: selected ? 1 : 0 }} />
+      <Check className="h-3.5 w-3.5" strokeWidth={3} style={{ opacity: selected ? 1 : 0 }} />
     </span>
   )
 }
 
 function selRowClass(selected: boolean) {
   return cn(
-    'flex w-full items-center gap-3 rounded-[13px] border px-[13px] py-[11px] text-start transition-colors',
+    'flex w-full items-center gap-3 rounded-lg border px-3.5 py-3 text-start transition-colors',
     selected
       ? 'border-[var(--color-brand-red)] bg-[rgba(229,9,20,0.1)]'
       : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]',
@@ -113,10 +113,10 @@ function AmountRangeControl() {
 
   return (
     <>
-      <div className="relative mb-4 h-[26px]">
-        <div className="absolute left-0 right-0 top-1/2 h-[5px] -translate-y-1/2 rounded-full bg-[var(--color-brand-elevated)]" />
+      <div className="relative mb-4 h-7">
+        <div className="absolute left-0 right-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-[var(--color-brand-elevated)]" />
         <div
-          className="absolute top-1/2 h-[5px] -translate-y-1/2 rounded-full bg-[var(--color-brand-red)]"
+          className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-[var(--color-brand-red)]"
           style={{ left: minPct, right: maxRightPct }}
         />
         <input
@@ -140,14 +140,14 @@ function AmountRangeControl() {
           aria-label={t.expenses.maximum}
         />
       </div>
-      <div className="mb-[18px] flex gap-[10px]">
+      <div className="mb-5 flex gap-2.5">
         <label className="flex-1">
-          <p className="mb-[5px] text-[10px] font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">
+          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">
             {t.expenses.minimum}
           </p>
-          <div className="flex items-center gap-[6px] rounded-[12px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-[9px]">
+          <div className="flex items-center gap-1.5 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2.5">
             <input
-              className="font-mono-numbers min-w-0 flex-1 border-none bg-transparent text-[15px] font-bold text-[var(--color-brand-text-primary)] outline-none"
+              className="font-mono-numbers min-w-0 flex-1 border-none bg-transparent text-base font-bold text-[var(--color-brand-text-primary)] outline-none"
               type="number"
               min={0}
               max={AMOUNT_MAX}
@@ -155,16 +155,16 @@ function AmountRangeControl() {
               value={amtMin}
               onChange={(e) => setAmtMin(+e.target.value || 0)}
             />
-            <span className="text-[11px] text-[var(--color-brand-text-muted)]">EGP</span>
+            <span className="text-xs text-[var(--color-brand-text-muted)]">EGP</span>
           </div>
         </label>
         <label className="flex-1">
-          <p className="mb-[5px] text-[10px] font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">
+          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">
             {t.expenses.maximum}
           </p>
-          <div className="flex items-center gap-[6px] rounded-[12px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-[9px]">
+          <div className="flex items-center gap-1.5 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2.5">
             <input
-              className="font-mono-numbers min-w-0 flex-1 border-none bg-transparent text-[15px] font-bold text-[var(--color-brand-text-primary)] outline-none"
+              className="font-mono-numbers min-w-0 flex-1 border-none bg-transparent text-base font-bold text-[var(--color-brand-text-primary)] outline-none"
               type="number"
               min={0}
               max={AMOUNT_MAX}
@@ -172,7 +172,7 @@ function AmountRangeControl() {
               value={amtMax}
               onChange={(e) => setAmtMax(+e.target.value || 0)}
             />
-            <span className="text-[11px] text-[var(--color-brand-text-muted)]">EGP</span>
+            <span className="text-xs text-[var(--color-brand-text-muted)]">EGP</span>
           </div>
         </label>
       </div>
@@ -181,7 +181,7 @@ function AmountRangeControl() {
 }
 
 const redDoneBtn =
-  'h-[46px] w-full rounded-[14px] bg-[var(--color-brand-red)] text-[14.5px] font-bold text-white'
+  'h-12 w-full rounded-lg bg-[var(--color-brand-red)] text-sm font-bold text-white'
 
 export function ExpenseFilters({
   categories,
@@ -228,7 +228,7 @@ export function ExpenseFilters({
 
   const chip = (active: boolean) =>
     cn(
-      'inline-flex shrink-0 items-center gap-[6px] whitespace-nowrap rounded-full border px-[13px] py-2 text-[12.5px] font-semibold transition-colors',
+      'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 py-2 text-xs font-semibold transition-colors',
       active
         ? 'border-[var(--color-brand-red)] bg-[rgba(229,9,20,0.12)] text-[var(--color-brand-text-primary)]'
         : 'border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[var(--color-brand-text-secondary)]',
@@ -238,32 +238,32 @@ export function ExpenseFilters({
 
   return (
     <div className="mb-3 flex items-center gap-2">
-      <div className="hide-scrollbar flex min-w-0 flex-1 gap-[7px] overflow-x-auto py-0.5 [touch-action:pan-x]">
+      <div className="hide-scrollbar flex min-w-0 flex-1 gap-2 overflow-x-auto py-0.5 [touch-action:pan-x]">
         <button type="button" onClick={() => setDropdown('cat')} className={chip(cats.length > 0)}>
-          <LayoutGrid className="h-[14px] w-[14px]" />
+          <LayoutGrid className="h-3.5 w-3.5" />
           {catChipLabel}
-          <ArrowUpDown className="h-[13px] w-[13px] opacity-55" />
+          <ArrowUpDown className="h-3.5 w-3.5 opacity-55" />
         </button>
         <button type="button" onClick={() => setDropdown('method')} className={chip(methodsSel.length > 0)}>
-          <CreditCard className="h-[14px] w-[14px]" />
+          <CreditCard className="h-3.5 w-3.5" />
           {methodChipLabel}
-          <ArrowUpDown className="h-[13px] w-[13px] opacity-55" />
+          <ArrowUpDown className="h-3.5 w-3.5 opacity-55" />
         </button>
         <button type="button" onClick={() => setDropdown('amount')} className={chip(amtActive)}>
-          <DollarSign className="h-[14px] w-[14px]" />
+          <DollarSign className="h-3.5 w-3.5" />
           {amtChipLabel}
-          <ArrowUpDown className="h-[13px] w-[13px] opacity-55" />
+          <ArrowUpDown className="h-3.5 w-3.5 opacity-55" />
         </button>
       </div>
       <button
         type="button"
         onClick={() => setDropdown('all')}
-        className="relative flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[13px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[var(--color-brand-text-primary)]"
+        className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[var(--color-brand-text-primary)]"
         aria-label={t.expenses.filtersTitle}
       >
-        <SlidersHorizontal className="h-[18px] w-[18px]" />
+        <SlidersHorizontal className="h-5 w-5" />
         {filterCount > 0 ? (
-          <span className="absolute -right-[5px] -top-[5px] flex h-[18px] min-w-[18px] items-center justify-center rounded-[9px] border-2 border-[var(--color-brand-bg)] bg-[var(--color-brand-red)] px-1 text-[10px] font-extrabold text-white">
+          <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-md border-2 border-[var(--color-brand-bg)] bg-[var(--color-brand-red)] px-1 text-[10px] font-extrabold text-white">
             {filterCount}
           </span>
         ) : null}
@@ -271,19 +271,19 @@ export function ExpenseFilters({
 
       {/* Category dropdown */}
       <FilterSheet open={dropdown === 'cat'} onClose={close} maxHeightClass="max-h-[80%]">
-        <div className="mb-[14px] flex items-center justify-between">
-          <h3 className="text-[16px] font-extrabold text-[var(--color-brand-text-primary)]">{t.expenses.labelCategory}</h3>
-          <span className="text-[11px] text-[var(--color-brand-text-muted)]">{t.expenses.selectMulti}</span>
+        <div className="mb-3.5 flex items-center justify-between">
+          <h3 className="text-base font-extrabold text-[var(--color-brand-text-primary)]">{t.expenses.labelCategory}</h3>
+          <span className="text-xs text-[var(--color-brand-text-muted)]">{t.expenses.selectMulti}</span>
         </div>
-        <div className="mb-[14px] flex flex-col gap-[7px]">
+        <div className="mb-3.5 flex flex-col gap-2">
           {categories.map((c) => {
             const sel = cats.includes(c.id)
             return (
               <button key={c.id} type="button" onClick={() => toggleCat(c.id)} className={selRowClass(sel)}>
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-[var(--color-brand-card)] text-[var(--color-brand-text-secondary)]">
-                  <CategoryIcon category={c.id} className="h-[17px] w-[17px]" />
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[var(--color-brand-card)] text-[var(--color-brand-text-secondary)]">
+                  <CategoryIcon category={c.id} className="h-4 w-4" />
                 </span>
-                <span className="flex-1 text-[14px] font-semibold text-[var(--color-brand-text-primary)]">{c.label}</span>
+                <span className="flex-1 text-sm font-semibold text-[var(--color-brand-text-primary)]">{c.label}</span>
                 <CheckBox selected={sel} />
               </button>
             )
@@ -294,17 +294,17 @@ export function ExpenseFilters({
 
       {/* Payment dropdown */}
       <FilterSheet open={dropdown === 'method'} onClose={close} maxHeightClass="max-h-[80%]">
-        <div className="mb-[14px] flex items-center justify-between">
-          <h3 className="text-[16px] font-extrabold text-[var(--color-brand-text-primary)]">{t.expenses.labelPayment}</h3>
-          <span className="text-[11px] text-[var(--color-brand-text-muted)]">{t.expenses.selectMulti}</span>
+        <div className="mb-3.5 flex items-center justify-between">
+          <h3 className="text-base font-extrabold text-[var(--color-brand-text-primary)]">{t.expenses.labelPayment}</h3>
+          <span className="text-xs text-[var(--color-brand-text-muted)]">{t.expenses.selectMulti}</span>
         </div>
-        <div className="mb-[14px] flex flex-col gap-[7px]">
+        <div className="mb-3.5 flex flex-col gap-2">
           {methods.map((m) => {
             const sel = methodsSel.includes(m.id)
             return (
               <button key={m.id} type="button" onClick={() => toggleMethod(m.id)} className={selRowClass(sel)}>
-                <span className="h-[10px] w-[10px] shrink-0 rounded-full" style={{ background: m.color }} />
-                <span className="flex-1 text-[14px] font-semibold text-[var(--color-brand-text-primary)]">{m.label}</span>
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: m.color }} />
+                <span className="flex-1 text-sm font-semibold text-[var(--color-brand-text-primary)]">{m.label}</span>
                 <CheckBox selected={sel} />
               </button>
             )
@@ -315,9 +315,9 @@ export function ExpenseFilters({
 
       {/* Amount dropdown */}
       <FilterSheet open={dropdown === 'amount'} onClose={close}>
-        <div className="mb-[18px] flex items-center justify-between">
-          <h3 className="text-[16px] font-extrabold text-[var(--color-brand-text-primary)]">{t.expenses.amountRange}</h3>
-          <span className="font-mono-numbers text-[14px] font-bold text-[var(--color-brand-red)]">{amountReadout}</span>
+        <div className="mb-5 flex items-center justify-between">
+          <h3 className="text-base font-extrabold text-[var(--color-brand-text-primary)]">{t.expenses.amountRange}</h3>
+          <span className="font-mono-numbers text-sm font-bold text-[var(--color-brand-red)]">{amountReadout}</span>
         </div>
         <AmountRangeControl />
         <button type="button" onClick={close} className={redDoneBtn}>{t.expenses.doneCta}</button>
@@ -326,40 +326,40 @@ export function ExpenseFilters({
       {/* All-filters sheet */}
       <FilterSheet open={dropdown === 'all'} onClose={close} maxHeightClass="max-h-[84%]">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-[17px] font-extrabold text-[var(--color-brand-text-primary)]">{t.expenses.filtersTitle}</h3>
-          <button type="button" onClick={reset} className="text-[12.5px] font-bold text-[var(--color-brand-red)]">
+          <h3 className="text-lg font-extrabold text-[var(--color-brand-text-primary)]">{t.expenses.filtersTitle}</h3>
+          <button type="button" onClick={reset} className="text-xs font-bold text-[var(--color-brand-red)]">
             {t.expenses.resetAll}
           </button>
         </div>
 
-        <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">
+        <p className="mb-2 text-xs font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">
           {t.expenses.labelCategory}
         </p>
-        <div className="mb-[18px] grid grid-cols-2 gap-[7px]">
+        <div className="mb-5 grid grid-cols-2 gap-2">
           {categories.map((c) => {
             const sel = cats.includes(c.id)
             return (
               <button key={c.id} type="button" onClick={() => toggleCat(c.id)} className={selRowClass(sel)}>
-                <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] bg-[var(--color-brand-card)] text-[var(--color-brand-text-secondary)]">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[var(--color-brand-card)] text-[var(--color-brand-text-secondary)]">
                   <CategoryIcon category={c.id} className="h-4 w-4" />
                 </span>
-                <span className="flex-1 truncate text-[13px] font-semibold text-[var(--color-brand-text-primary)]">{c.label}</span>
+                <span className="flex-1 truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{c.label}</span>
                 <CheckBox selected={sel} />
               </button>
             )
           })}
         </div>
 
-        <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">
+        <p className="mb-2 text-xs font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">
           {t.expenses.labelPayment}
         </p>
-        <div className="mb-[18px] flex flex-col gap-[7px]">
+        <div className="mb-5 flex flex-col gap-2">
           {methods.map((m) => {
             const sel = methodsSel.includes(m.id)
             return (
               <button key={m.id} type="button" onClick={() => toggleMethod(m.id)} className={selRowClass(sel)}>
-                <span className="h-[9px] w-[9px] shrink-0 rounded-full" style={{ background: m.color }} />
-                <span className="flex-1 text-[13.5px] font-semibold text-[var(--color-brand-text-primary)]">{m.label}</span>
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: m.color }} />
+                <span className="flex-1 text-sm font-semibold text-[var(--color-brand-text-primary)]">{m.label}</span>
                 <CheckBox selected={sel} />
               </button>
             )
@@ -367,14 +367,14 @@ export function ExpenseFilters({
         </div>
 
         <div className="mb-1 flex items-center justify-between">
-          <p className="text-[11px] font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">
+          <p className="text-xs font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">
             {t.expenses.amountRange}
           </p>
-          <span className="font-mono-numbers text-[12.5px] font-bold text-[var(--color-brand-text-primary)]">{amountReadout}</span>
+          <span className="font-mono-numbers text-xs font-bold text-[var(--color-brand-text-primary)]">{amountReadout}</span>
         </div>
         <AmountRangeControl />
 
-        <button type="button" onClick={close} className="h-12 w-full rounded-[14px] bg-[var(--color-brand-red)] text-[15px] font-bold text-white">
+        <button type="button" onClick={close} className="h-12 w-full rounded-lg bg-[var(--color-brand-red)] text-base font-bold text-white">
           {t.expenses.showResults.replace('{count}', String(resultCount))}
         </button>
       </FilterSheet>

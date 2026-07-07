@@ -26,7 +26,7 @@ export function SavingsCardConversionLine({
 }) {
   if (account.currency === 'XAU' && !goldPriceAvailable) {
     return (
-      <p className="text-[11px] text-[var(--color-brand-text-muted)] italic">({goldAedUnavailableLabel})</p>
+      <p className="text-xs text-[var(--color-brand-text-muted)] italic">({goldAedUnavailableLabel})</p>
     )
   }
 
@@ -44,7 +44,7 @@ export function SavingsCardConversionLine({
   if (needsPlaceholder) {
     const msg = account.type === 'stocks' ? liveStocksLabel : liveCryptoLabel
     return (
-      <p className="text-[11px] text-[var(--color-brand-text-muted)] font-mono-numbers">({msg})</p>
+      <p className="text-xs text-[var(--color-brand-text-muted)] font-mono-numbers">({msg})</p>
     )
   }
 
@@ -58,7 +58,7 @@ export function SavingsCardConversionLine({
   if (parts.length === 0) return null
 
   return (
-    <p className="text-[11px] text-[var(--color-brand-text-muted)] font-mono-numbers">
+    <p className="text-xs text-[var(--color-brand-text-muted)] font-mono-numbers">
       ({parts.join(' · ')})
     </p>
   )

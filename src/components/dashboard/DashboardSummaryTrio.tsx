@@ -71,7 +71,7 @@ function Card({
       <div className="text-[10px] uppercase tracking-[0.3px] text-[var(--color-brand-text-secondary)] font-semibold truncate">
         {label}
       </div>
-      <div className={cn('mt-0.5 font-mono font-semibold text-[15px] truncate', color)}>
+      <div className={cn('mt-0.5 font-mono font-semibold text-base truncate', color)}>
         <CurrencyLabel
           amount={amount}
           currency={currency}

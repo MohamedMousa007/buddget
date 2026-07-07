@@ -71,15 +71,15 @@ export function QuickAddFAB() {
         key={tile.id}
         type="button"
         onClick={() => runTile(tile.id)}
-        className="flex w-full flex-col items-center gap-[9px] rounded-[14px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-[5px] py-[14px] text-center transition-colors active:bg-[var(--color-brand-border)]/40"
+        className="flex w-full flex-col items-center gap-2.5 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-1.5 py-3.5 text-center transition-colors active:bg-[var(--color-brand-border)]/40"
       >
         <span
-          className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-[12px]"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg"
           style={{ background: tile.bg, color: tile.fg }}
         >
-          <Icon className="h-[22px] w-[22px]" aria-hidden />
+          <Icon className="h-6 w-6" aria-hidden />
         </span>
-        <span className="text-[12px] font-semibold leading-[1.2] text-[var(--color-brand-text-primary)]">
+        <span className="text-xs font-semibold leading-[1.2] text-[var(--color-brand-text-primary)]">
           {tile.label}
         </span>
       </button>
@@ -117,17 +117,17 @@ export function QuickAddFAB() {
         open={isOpen}
         onBackdropClick={() => setActiveModal(null)}
         padContent
-        panelClassName="!bottom-0 !start-0 !end-0 !rounded-t-[26px] lg:!bottom-24 lg:!end-8 lg:!start-auto lg:!top-auto lg:!translate-x-0 lg:!translate-y-0 lg:!w-[360px] lg:!rounded-2xl"
+        panelClassName="!bottom-0 !start-0 !end-0 !rounded-t-3xl lg:!bottom-24 lg:!end-8 lg:!start-auto lg:!top-auto lg:!translate-x-0 lg:!translate-y-0 lg:!w-[360px] lg:!rounded-2xl"
       >
-        <div className="mb-[14px] flex items-center justify-center gap-[7px] text-[11px] font-semibold text-[var(--color-brand-red)]">
-          <Mic className="h-[13px] w-[13px] shrink-0" />
+        <div className="mb-3.5 flex items-center justify-center gap-2 text-xs font-semibold text-[var(--color-brand-red)]">
+          <Mic className="h-3.5 w-3.5 shrink-0" />
           {t.modals.fabVoiceTip}
         </div>
-        <div className="flex flex-col gap-[6px]">
-          <div className="grid grid-cols-3 gap-[6px]">
+        <div className="flex flex-col gap-1.5">
+          <div className="grid grid-cols-3 gap-1.5">
             {tiles.slice(0, 3).map(renderTile)}
           </div>
-          <div className="flex justify-center gap-[6px]">
+          <div className="flex justify-center gap-1.5">
             {tiles.slice(3).map((tile) => (
               <div key={tile.id} style={{ width: 'calc((100% - 12px) / 3)' }}>
                 {renderTile(tile)}
