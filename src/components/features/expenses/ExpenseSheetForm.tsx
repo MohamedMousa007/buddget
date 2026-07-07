@@ -203,15 +203,15 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
           {/* amount + currency */}
           <div className="grid grid-cols-[1fr_108px] gap-3 items-end">
             <div>
-              <div className={`${microLabel} mb-2`}>{t.expenseForm.amount}</div>
+              <label htmlFor="ef-amount" className={`block ${microLabel} mb-2`}>{t.expenseForm.amount}</label>
               <div className="flex h-12 items-center rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 focus-within:border-[var(--color-brand-red)]">
                 <input
+                  id="ef-amount"
                   value={amount}
                   onChange={(e) => setAmt(e.target.value)}
                   dir="ltr"
                   inputMode="decimal"
                   placeholder="0.00"
-                  aria-label={t.expenseForm.amount}
                   className="w-full min-w-0 flex-1 border-none bg-transparent text-start font-bold text-2xl font-mono-numbers tracking-[-0.02em] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus:outline-none"
                 />
               </div>
@@ -231,12 +231,12 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
 
           {/* description */}
           <div>
-            <div className={`${microLabel} mb-2`}>{t.expenseForm.description}</div>
+            <label htmlFor="ef-description" className={`block ${microLabel} mb-2`}>{t.expenseForm.description}</label>
             <input
+              id="ef-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={t.expenseForm.descriptionPlaceholder}
-              aria-label={t.expenseForm.description}
               className={INPUT}
             />
           </div>
@@ -322,24 +322,24 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
             <button
               type="button"
               onClick={() => setPayOpen(true)}
-              className="flex h-14 w-full items-center justify-between rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 hover:border-[var(--color-brand-text-muted)]"
+              className="flex h-12 w-full items-center justify-between gap-2 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 hover:border-[var(--color-brand-text-muted)]"
             >
-              <div className="flex min-w-0 items-center gap-3">
+              <div className="flex min-w-0 flex-1 items-center gap-2.5">
                 {selPay ? (
                   <>
                     <span
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
                       style={{ background: rgba(swatchColor(selPay), 0.16), color: swatchColor(selPay) }}
                     >
                       {(() => {
                         const Icon = paymentTypeIcon(selPay.type)
-                        return <Icon className="w-4 h-4" />
+                        return <Icon className="w-[15px] h-[15px]" />
                       })()}
                     </span>
-                    <div className="min-w-0 text-start">
-                      <div className="truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{selPay.name}</div>
-                      <div className="mt-px truncate text-xs font-medium text-[var(--color-brand-text-muted)]">{paySub(selPay)}</div>
-                    </div>
+                    <span className="min-w-0 truncate text-start text-sm font-semibold text-[var(--color-brand-text-primary)]">{selPay.name}</span>
+                    <span className="shrink-0 text-xs font-medium text-[var(--color-brand-text-muted)]">
+                      {selPay.currency}{selPay.last4 ? ` · ··${selPay.last4}` : ''}
+                    </span>
                   </>
                 ) : (
                   <span className="text-sm font-medium text-[var(--color-brand-text-muted)]">{t.expenseForm.addPaymentMethod}</span>
