@@ -982,6 +982,8 @@ export const en: Dictionary = {
     biometricConflict: 'Biometric is enabled for another account on this device.',
     biometricEnabledFor: (email) => `Enabled for ${email}`,
     biometricConfirmReason: 'Confirm your identity',
+    appLockTitle: 'Require biometric on launch',
+    appLockHint: 'Lock the app each time it opens, not just after signing out.',
 
     accountTitle: 'Your Account',
     accountSignedIn: (email) => `You\u2019re signed in as ${email}. Your budget is synced and safe.`,

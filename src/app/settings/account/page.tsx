@@ -6,6 +6,7 @@ import { Lock, LogOut, Trash2 } from 'lucide-react'
 import { SettingsSubPageShell } from '@/components/features/settings/SettingsSubPageShell'
 import { SettingsSecuritySection } from '@/components/features/settings/SettingsSecuritySection'
 import { BiometricLoginToggle } from '@/components/features/settings/BiometricLoginToggle'
+import { AppLockToggle } from '@/components/features/settings/AppLockToggle'
 import { SettingsPaymentMethodsSection } from '@/components/features/settings/SettingsPaymentMethodsSection'
 import { DeleteAccountDialog } from '@/components/features/profile/DeleteAccountDialog'
 import { AccountDeletedScreen } from '@/components/features/profile/AccountDeletedScreen'
@@ -90,6 +91,7 @@ export default function SettingsAccountPage() {
       {/* Security */}
       <SettingsSecuritySection store={store} />
       <BiometricLoginToggle userEmail={p.user.email} />
+      <AppLockToggle userEmail={p.user.email} />
 
       {/* Payment methods */}
       <SettingsPaymentMethodsSection

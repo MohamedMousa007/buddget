@@ -10,6 +10,16 @@ export type AuthContextValue = {
   session: Session | null
   loading: boolean
   signOut: () => Promise<void>
+  /**
+   * True on native when a live SDK session exists but the app is gated behind
+   * a biometric unlock (biometric login enabled). The session stays owned by
+   * the SDK — nothing is replayed — so there is no refresh-token reuse.
+   */
+  locked: boolean
+  /** Reveal the live session after a successful biometric prompt. Returns false
+   *  if the SDK no longer holds a session (revoked/expired) — caller falls back
+   *  to a full sign-out + email. */
+  unlock: () => Promise<boolean>
   pendingNext: string
   setPendingNext: (path: string) => void
   /** Optional message shown above the sign-in form (e.g. "Sign in to add an expense"). */

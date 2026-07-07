@@ -846,6 +846,8 @@ export interface Dictionary {
     biometricConflict: string
     biometricEnabledFor: (email: string) => string
     biometricConfirmReason: string
+    appLockTitle: string
+    appLockHint: string
 
     accountTitle: string
     accountSignedIn: (email: string) => string

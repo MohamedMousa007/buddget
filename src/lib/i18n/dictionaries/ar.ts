@@ -981,6 +981,8 @@ export const ar: Dictionary = {
     biometricConflict: 'البصمة مفعّلة لحساب آخر على هذا الجهاز.',
     biometricEnabledFor: (email) => `مفعّلة لـ ${email}`,
     biometricConfirmReason: 'أكّد هويتك',
+    appLockTitle: 'طلب البصمة عند فتح التطبيق',
+    appLockHint: 'اقفل التطبيق في كل مرة يُفتح فيها، وليس فقط بعد تسجيل الخروج.',
 
     accountTitle: 'حسابك',
     accountSignedIn: (email) => `أنت مسجل بـ ${email}. ميزانيتك محفوظة ومتزامنة.`,
