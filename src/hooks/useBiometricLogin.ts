@@ -71,6 +71,7 @@ export function useBiometricLogin(onSuccess?: () => void) {
         // The stored token was rotated/revoked server-side (session_not_found).
         // Wipe it so the stale button self-heals and the user isn't shown the
         // raw "Auth session missing!" — they re-arm by signing in with email once.
+        console.warn('[biometric] setSession failed', setErr)
         await clearSession()
         setHasSession(false)
         setError(t.auth.sessionExpired)

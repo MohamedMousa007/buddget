@@ -2,8 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import type { CSSProperties } from 'react'
+import Link from 'next/link'
 import { AuthModalBody } from '@/components/features/auth-modal/AuthModalBody'
 import { useT } from '@/lib/i18n'
+
+function blurActive() {
+  ;(document.activeElement as HTMLElement | null)?.blur?.()
+}
 
 function tickerItemStyle(delaySeconds: number): CSSProperties {
   return {
@@ -87,13 +92,15 @@ export function LandingGate() {
           33%  { opacity: 0; transform: translateY(-12px); }
           100% { opacity: 0; }
         }
-        /* Same treatment in both themes — only colours differ ("no variations").
-           Theme is driven by the .dark class (see lib/theme/applyTheme.ts), never
-           the OS setting, so a Light app on a Dark OS still looks light. */
-        .lg-bg { background: linear-gradient(180deg, #FFFFFF, #EDEDF2) !important; }
-        .dark .lg-bg { background: linear-gradient(180deg, #2C2C35, #222229) !important; }
-        .lg-ticker p { color: rgba(26,26,36,.70); }
-        .dark .lg-ticker p { color: rgba(255,255,255,.75); }
+        /* Fixed neutral brand canvas — identical in light and dark OS/app theme.
+           The whole gate is wrapped in .dark (below) so every brand token resolves
+           to its dark value; there is no light variant of the auth screen. */
+        .lg-bg {
+          background:
+            radial-gradient(120% 60% at 50% -6%, rgba(229,9,20,.26) 0%, rgba(229,9,20,.06) 38%, rgba(20,18,26,0) 62%),
+            linear-gradient(180deg, #1A1720 0%, #121016 55%, #0E0C12 100%) !important;
+        }
+        .lg-ticker p { color: rgba(255,255,255,.75); }
         @media (prefers-reduced-motion: reduce) {
           .lg-glow { animation: none !important; opacity: .6; }
           .lg-ticker p { animation: none !important; opacity: 0; }
@@ -105,14 +112,14 @@ export function LandingGate() {
       {/* Layout note: top-aligned on phones so the soft keyboard doesn't push the
           wordmark off-screen when an input is focused. sm:items-center restores
           the centred look on tablets/desktop. */}
-      <div className="lg-bg min-h-[100svh] relative overflow-hidden flex items-start justify-center pt-[max(env(safe-area-inset-top),2rem)] pb-8 sm:items-center sm:pt-0 sm:pb-0">
+      <div className="dark lg-bg min-h-[100svh] relative overflow-hidden flex items-start justify-center pt-[max(env(safe-area-inset-top),2rem)] pb-8 sm:items-center sm:pt-0 sm:pb-0">
 
-        {/* Ambient glow — both themes, fixed so keyboard opening doesn't shift it */}
+        {/* Ambient glow — bloom behind the wordmark, fixed so keyboard opening doesn't shift it */}
         <div
           className="lg-glow"
           style={{
             position: 'fixed',
-            top: '30%',
+            top: '16%',
             left: '50%',
             width: '400px',
             height: '400px',
@@ -145,8 +152,8 @@ export function LandingGate() {
           <div
             className="w-full border rounded-2xl p-5 sm:p-6 shadow-xl"
             style={{
-              background: 'var(--color-brand-card)',
-              borderColor: 'var(--color-brand-border)',
+              background: 'rgba(255,255,255,0.045)',
+              borderColor: 'rgba(255,255,255,0.09)',
             }}
           >
             <AuthModalBody showBranding={false} />
@@ -154,13 +161,13 @@ export function LandingGate() {
 
           {/* Legal footer */}
           <p className="mt-6 text-center text-[11px] text-[var(--color-brand-text-muted)]">
-            <a href="/legal/privacy" className="hover:text-[var(--color-brand-text-secondary)] transition-colors">
+            <Link href="/legal/privacy" onClick={blurActive} className="hover:text-[var(--color-brand-text-secondary)] transition-colors">
               Privacy Policy
-            </a>
+            </Link>
             <span className="mx-2" aria-hidden>·</span>
-            <a href="/legal/terms" className="hover:text-[var(--color-brand-text-secondary)] transition-colors">
+            <Link href="/legal/terms" onClick={blurActive} className="hover:text-[var(--color-brand-text-secondary)] transition-colors">
               Terms of Service
-            </a>
+            </Link>
           </p>
         </main>
 
@@ -175,6 +182,7 @@ export function LandingGate() {
             height: '48px',
             textAlign: 'center',
             zIndex: 20,
+            pointerEvents: 'none',
           }}
         >
           <p style={tickerItemStyle(0)}>
