@@ -108,8 +108,52 @@ export function calculateMonthlyIncome(
 }
 
 /**
- * Recurring income that counts for a calendar month: sources that existed by the end of that month.
- * (New income sources added mid-timeline do not inflate earlier months.)
+ * True when a recurring source's effective window `[effectiveStart, effectiveEnd]`
+ * (inclusive; open end = ongoing) overlaps `[windowStart, windowEnd]`.
+ */
+export function recurringActiveForWindow(
+  source: IncomeSource,
+  windowStart: Date,
+  windowEnd: Date
+): boolean {
+  const effStart = parseISO((source.effectiveStart ?? source.createdAt).slice(0, 10))
+  if (effStart > windowEnd) return false
+  if (source.effectiveEnd && parseISO(source.effectiveEnd) < windowStart) return false
+  return true
+}
+
+/**
+ * Expected ("projected") income for a month: active effective-dated recurring
+ * templates at their monthly-equivalent, plus one-time sources received inside the
+ * month window. Respects `monthStartDay` (custom budget cycle). This is the number
+ * budgets and projected-savings scale on — it does not depend on whether a paycheck
+ * has actually landed yet.
+ */
+export function projectedIncomeForMonth(
+  sources: IncomeSource[],
+  baseCurrency: Currency,
+  rates: Record<string, number>,
+  monthStr: string,
+  monthStartDay = 1
+): number {
+  const { start, end } = getMonthRange(monthStr, monthStartDay)
+  let total = 0
+  for (const source of sources) {
+    if (source.isRecurring) {
+      if (!recurringActiveForWindow(source, start, end)) continue
+      const monthlyEq = source.amount * incomeMonthlyMultiplier(source.recurringFrequency)
+      total += convertCurrency(monthlyEq, source.currency, baseCurrency, rates)
+    } else if (isWithinInterval(parseISO(source.createdAt), { start, end })) {
+      total += convertCurrency(source.amount, source.currency, baseCurrency, rates)
+    }
+  }
+  return total
+}
+
+/**
+ * Recurring income that counts for a calendar month: sources whose effective window
+ * overlaps that month. (New income sources added mid-timeline do not inflate earlier
+ * months; ended sources stop counting after their `effectiveEnd`.)
  */
 export function calculateRecurringIncomeForCalendarMonth(
   sources: IncomeSource[],
@@ -118,10 +162,11 @@ export function calculateRecurringIncomeForCalendarMonth(
   /** Any date falling inside the target month */
   monthDate: Date
 ): number {
+  const monthStart = startOfMonth(monthDate)
   const monthEnd = endOfMonth(monthDate)
   return sources.reduce((total, source) => {
     if (!source.isRecurring) return total
-    if (parseISO(source.createdAt) > monthEnd) return total
+    if (!recurringActiveForWindow(source, monthStart, monthEnd)) return total
     const monthlyEq = source.amount * incomeMonthlyMultiplier(source.recurringFrequency)
     return total + convertCurrency(monthlyEq, source.currency, baseCurrency, rates)
   }, 0)

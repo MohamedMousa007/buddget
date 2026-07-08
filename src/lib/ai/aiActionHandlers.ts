@@ -650,6 +650,9 @@ export function executeActionItem(
       typeof domRaw === 'number' && Number.isFinite(domRaw)
         ? Math.min(31, Math.max(1, Math.floor(domRaw)))
         : 1
+    // Optional effective start ("raise starting July") — accept a YYYY-MM-DD; else default (today).
+    const effRaw = String(getField(d, 'effectiveStart', 'effective_start', 'startDate') || '')
+    const effectiveStart = /^\d{4}-\d{2}-\d{2}$/.test(effRaw) ? effRaw : undefined
     ctx.addIncomeSource({
       name: String(getField(d, 'name') || 'Income'),
       amount,
@@ -660,6 +663,7 @@ export function executeActionItem(
       notes: getField(d, 'notes') as string | undefined,
       sourceType,
       paymentMethodId: pmId,
+      ...(effectiveStart ? { effectiveStart } : {}),
     })
     return
   }
@@ -671,6 +675,9 @@ export function executeActionItem(
     if (newAmt !== undefined) patch.amount = Number(newAmt)
     const newCur = getField(d, 'currency')
     if (newCur) patch.currency = String(newCur) as Currency
+    // "my salary ended in June" → set effectiveEnd so history stays intact.
+    const endRaw = String(getField(d, 'effectiveEnd', 'effective_end', 'endDate') || '')
+    if (/^\d{4}-\d{2}-\d{2}$/.test(endRaw)) patch.effectiveEnd = endRaw
     ctx.updateIncomeSource(inc.id, patch)
     return
   }

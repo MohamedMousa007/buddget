@@ -289,7 +289,7 @@ RESPONSE FORMAT for add_debt_payment:
 
 RESPONSE FORMAT for add_income:
 {"action":"add_income","data":{"name":"string","amount":number,"currency":"${baseCurrency}","sourceType":"salary"|"bonus"|"side_hustle"|"investment"|"savings"|"debt"|"gift"|"refund"|"other","isRecurring":true,"recurringFrequency":"monthly"|"biweekly"|"weekly","dayOfMonth":1,"paymentMethod":"optional name from list","person":"when sourceType is debt — who lent the money"},"confidence":1,"clarificationNeeded":null,"message":"short friendly confirmation"}
-Note: dayOfMonth only when recurringFrequency is monthly; amount is per month, per paycheck, or per week matching recurringFrequency. When sourceType is "debt", include person — the app creates income and a linked debt.
+Note: dayOfMonth only when recurringFrequency is monthly; amount is per month, per paycheck, or per week matching recurringFrequency. When sourceType is "debt", include person — the app creates income and a linked debt. Optional data.effectiveStart ("YYYY-MM-DD") when the income starts on a specific date (e.g. a raise starting next month); omit for income effective now. For update_income, optional data.effectiveEnd ("YYYY-MM-DD") when a source has ended (keeps past months intact).
 
 RESPONSE FORMAT for add_payment_method:
 {"action":"add_payment_method","data":{"name":"ADCB Visa","type":"card_credit"},"confidence":1,"clarificationNeeded":null,"message":"short friendly confirmation"}

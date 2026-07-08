@@ -81,6 +81,10 @@ export interface IncomeSource {
   /** When recurring: monthly = per month, biweekly = per paycheck, weekly = per week. Defaults to monthly if omitted. */
   recurringFrequency?: IncomeRecurringFrequency
   dayOfMonth?: number
+  /** `YYYY-MM-DD` the source starts counting for a month (defaults to creation date). */
+  effectiveStart: string
+  /** `YYYY-MM-DD` the source stops counting (inclusive); null/undefined = ongoing. */
+  effectiveEnd?: string | null
   notes?: string
   createdAt: string
   /** Last-modified timestamp; drives merge last-write-wins in {@link mergeById}. */
@@ -683,14 +687,21 @@ export interface FinanceStore {
   upsertServerReceipt: (receipt: Receipt) => void
   /** Server-row counterpart of {@link upsertServerExpense} for debt payments (SMS CC payoff). */
   upsertServerDebtPayment: (payment: DebtPayment) => void
-  addIncomeSource: (source: Omit<IncomeSource, 'id' | 'createdAt' | 'updatedAt'>) => void
+  addIncomeSource: (
+    source: Omit<IncomeSource, 'id' | 'createdAt' | 'updatedAt' | 'effectiveStart'> & {
+      effectiveStart?: string
+    }
+  ) => void
   /** Server-row counterpart of {@link upsertServerExpense} for income. */
   upsertServerIncome: (source: IncomeSource) => void
   /**
    * Adds income from borrowed money and creates a matching personal debt (`i_owe`) in one update.
    */
   addIncomeWithDebt: (
-    income: Omit<IncomeSource, 'id' | 'createdAt' | 'updatedAt' | 'linkedDebtId' | 'linkedSavingsAccountId' | 'sourceType'>,
+    income: Omit<
+      IncomeSource,
+      'id' | 'createdAt' | 'updatedAt' | 'effectiveStart' | 'linkedDebtId' | 'linkedSavingsAccountId' | 'sourceType'
+    >,
     debt: Omit<Debt, 'id' | 'createdAt'>
   ) => void
   updateIncomeSource: (id: string, updates: Partial<IncomeSource>) => void
