@@ -361,8 +361,9 @@ describe('nativeSocialSignIn — Google — iOS', () => {
     // returns cached/refreshed tokens whose nonce claim can't match.
     const arg = mocks.login.mock.calls[0][0] as { options: Record<string, unknown> }
     expect(arg.options.nonce).toBeUndefined()
-    // Cache cleared first so a stale nonce-carrying token can't be served.
-    expect(mocks.logout).toHaveBeenCalledWith({ provider: 'google' })
+    // forcePrompt bypasses capgo's restore path so a fresh nonce-less token is
+    // minted, deterministically matching the no-nonce Supabase exchange.
+    expect(arg.options.forcePrompt).toBe(true)
   })
 
   it('returns {error:null,cancelled:true} when user cancels', async () => {
