@@ -70,14 +70,14 @@ let lastPulledUserId: string | null = null
  */
 type TrackedSliceKey =
   | 'profile' | 'settings' | 'financialGoalsNotes'
-  | 'activeBudgetPlanId' | 'paymentMethods' | 'incomeSources' | 'expenses'
+  | 'activeBudgetPlanId' | 'paymentMethods' | 'incomeSources' | 'incomeEvents' | 'expenses'
   | 'recurringExpenses' | 'subscriptions' | 'debts' | 'debtPayments'
   | 'recurringDebtPayments' | 'savingsAccounts' | 'savingsHoldings'
   | 'savingsTransactions' | 'recurringSavingsDeposits' | 'goals' | 'budgetPlans'
 
 const TRACKED_SLICES: readonly TrackedSliceKey[] = [
   'profile', 'settings', 'financialGoalsNotes',
-  'activeBudgetPlanId', 'paymentMethods', 'incomeSources', 'expenses',
+  'activeBudgetPlanId', 'paymentMethods', 'incomeSources', 'incomeEvents', 'expenses',
   'recurringExpenses', 'subscriptions', 'debts', 'debtPayments',
   'recurringDebtPayments', 'savingsAccounts', 'savingsHoldings',
   'savingsTransactions', 'recurringSavingsDeposits', 'goals', 'budgetPlans',
@@ -372,6 +372,7 @@ async function runFullSync(
     activeBudgetPlanId: merged.activeBudgetPlanId,
     paymentMethods: merged.paymentMethods,
     incomeSources: merged.incomeSources,
+    incomeEvents: merged.incomeEvents,
     expenses: merged.expenses,
     recurringExpenses: merged.recurringExpenses,
     subscriptions: merged.subscriptions,

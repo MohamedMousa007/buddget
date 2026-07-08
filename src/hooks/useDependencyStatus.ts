@@ -15,7 +15,7 @@ const DEFAULT_CASH_ID = 'pm_default_cash'
 export function useDependencyStatus(): DependencyStatus {
   const snap = useFinanceStore(
     useShallow((s) => ({
-      incomeCount: s.incomeSources.length,
+      incomeCount: s.incomeSources.length + s.incomeEvents.length,
       activePlan: s.settings.baseCurrency, // truthy proxy; actual plan check via budgetCategories
       paymentCount: s.paymentMethods.filter((m) => m.id !== DEFAULT_CASH_ID).length,
       debtCount: s.debts.length,

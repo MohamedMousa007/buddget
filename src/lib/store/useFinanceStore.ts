@@ -140,6 +140,7 @@ export const useFinanceStore = create<FinanceStore>()(
       settings: DEFAULT_SETTINGS,
       financialGoalsNotes: '',
       incomeSources: DEFAULT_INCOME,
+      incomeEvents: [],
       expenses: [],
       receipts: [],
       recurringExpenses: [],
@@ -330,6 +331,42 @@ export const useFinanceStore = create<FinanceStore>()(
                 ? { ...state.settings, noIncomeDeclared: true }
                 : state.settings,
           }
+        }),
+
+      addIncomeEvent: (event) =>
+        set((state) => {
+          const now = new Date().toISOString()
+          return {
+            incomeEvents: [
+              ...state.incomeEvents,
+              { ...event, id: generateId(), createdAt: now, updatedAt: now },
+            ],
+            settings: { ...state.settings, noIncomeDeclared: false },
+          }
+        }),
+
+      updateIncomeEvent: (id, updates) =>
+        set((state) => ({
+          incomeEvents: state.incomeEvents.map((e) =>
+            e.id === id ? { ...e, ...updates, updatedAt: new Date().toISOString() } : e
+          ),
+        })),
+
+      deleteIncomeEvent: (id) =>
+        set((state) => ({ incomeEvents: state.incomeEvents.filter((e) => e.id !== id) })),
+
+      upsertServerIncomeEvent: (event) =>
+        set((state) => {
+          const i = state.incomeEvents.findIndex((e) => e.id === event.id)
+          if (i === -1) {
+            return {
+              incomeEvents: [...state.incomeEvents, event],
+              settings: { ...state.settings, noIncomeDeclared: false },
+            }
+          }
+          const next = state.incomeEvents.slice()
+          next[i] = event
+          return { incomeEvents: next }
         }),
 
       addPaymentMethod: (method) => {
@@ -1394,6 +1431,7 @@ export const useFinanceStore = create<FinanceStore>()(
           profile: createFreshDefaultProfile(),
           settings: { ...DEFAULT_SETTINGS },
           incomeSources: DEFAULT_INCOME,
+          incomeEvents: [],
           expenses: [],
           receipts: [],
           recurringExpenses: [],
@@ -1600,6 +1638,7 @@ export const useFinanceStore = create<FinanceStore>()(
           profile: DEFAULT_PROFILE,
           settings: { ...DEFAULT_SETTINGS, noIncomeDeclared: false },
           incomeSources: [],
+          incomeEvents: [],
           expenses: [],
           recurringExpenses: [],
           budgetCategories: DEFAULT_BUDGET,

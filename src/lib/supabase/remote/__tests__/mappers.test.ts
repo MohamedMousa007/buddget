@@ -5,6 +5,7 @@ import type {
   Expense,
   Goal,
   IncomeSource,
+  IncomeEvent,
   PaymentMethod,
   RecurringDebtPayment,
   RecurringExpense,
@@ -20,6 +21,7 @@ import { profileFromRow, profileToRow } from '@/lib/supabase/remote/mappers/prof
 import { settingsFromRow, settingsToRow } from '@/lib/supabase/remote/mappers/settingsMapper'
 import { paymentMethodFromRow, paymentMethodToRow } from '@/lib/supabase/remote/mappers/paymentMethodMapper'
 import { incomeSourceFromRow, incomeSourceToRow } from '@/lib/supabase/remote/mappers/incomeSourceMapper'
+import { incomeEventFromRow, incomeEventToRow } from '@/lib/supabase/remote/mappers/incomeEventMapper'
 import { expenseFromRow, expenseToRow } from '@/lib/supabase/remote/mappers/expenseMapper'
 import { recurringExpenseFromRow, recurringExpenseToRow } from '@/lib/supabase/remote/mappers/recurringExpenseMapper'
 import { subscriptionFromRow, subscriptionToRow } from '@/lib/supabase/remote/mappers/subscriptionMapper'
@@ -211,6 +213,34 @@ describe('income source mapper', () => {
     }
     const row = incomeSourceToRow(i, UID)
     expect(row.source_type).toBe('freelance')
+  })
+})
+
+describe('income event mapper', () => {
+  it('round-trips a confirmed event with links', () => {
+    const e: IncomeEvent = {
+      id: 'ie_1',
+      templateId: 'tmpl_1',
+      name: 'Paycheck',
+      amount: 2500,
+      currency: 'EGP',
+      sourceType: 'salary',
+      receivedDate: '2026-05-25',
+      status: 'confirmed',
+      paymentMethodId: 'pm_1',
+      linkedSavingsAccountId: 'sav_1',
+      smsLogId: 'log_1',
+      notes: 'May',
+      createdAt: '2026-05-25T00:00:00.000Z',
+      updatedAt: '2026-05-25T00:00:00.000Z',
+    }
+    const back = roundTrip(e, incomeEventToRow, incomeEventFromRow)
+    expect(back.amount).toBe(2500)
+    expect(back.status).toBe('confirmed')
+    expect(back.templateId).toBe('tmpl_1')
+    expect(back.receivedDate).toBe('2026-05-25')
+    expect(back.linkedSavingsAccountId).toBe('sav_1')
+    expect(back.smsLogId).toBe('log_1')
   })
 })
 

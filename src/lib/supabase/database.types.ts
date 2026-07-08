@@ -652,6 +652,69 @@ export type Database = {
           },
         ]
       }
+      income_events: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: Database["public"]["Enums"]["currency_code"]
+          deleted_at: string | null
+          id: string
+          linked_debt_id: string | null
+          linked_savings_account_id: string | null
+          name: string
+          notes: string | null
+          payment_method_id: string | null
+          received_date: string
+          shared_plan_id: string | null
+          sms_log_id: string | null
+          source_type: Database["public"]["Enums"]["income_source_type"]
+          status: Database["public"]["Enums"]["income_event_status"]
+          template_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency: Database["public"]["Enums"]["currency_code"]
+          deleted_at?: string | null
+          id?: string
+          linked_debt_id?: string | null
+          linked_savings_account_id?: string | null
+          name: string
+          notes?: string | null
+          payment_method_id?: string | null
+          received_date: string
+          shared_plan_id?: string | null
+          sms_log_id?: string | null
+          source_type?: Database["public"]["Enums"]["income_source_type"]
+          status?: Database["public"]["Enums"]["income_event_status"]
+          template_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: Database["public"]["Enums"]["currency_code"]
+          deleted_at?: string | null
+          id?: string
+          linked_debt_id?: string | null
+          linked_savings_account_id?: string | null
+          name?: string
+          notes?: string | null
+          payment_method_id?: string | null
+          received_date?: string
+          shared_plan_id?: string | null
+          sms_log_id?: string | null
+          source_type?: Database["public"]["Enums"]["income_source_type"]
+          status?: Database["public"]["Enums"]["income_event_status"]
+          template_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       live_market_data: {
         Row: {
           asset_name: string
@@ -2126,6 +2189,12 @@ export type Database = {
         | "other"
       goal_status: "active" | "paused" | "achieved"
       gold_karat: "18" | "21" | "22" | "24"
+      income_event_status:
+        | "confirmed"
+        | "projected"
+        | "late"
+        | "missed"
+        | "partial"
       income_source_type:
         | "salary"
         | "freelance"
@@ -2372,6 +2441,7 @@ export const Constants = {
       ],
       goal_status: ["active", "paused", "achieved"],
       gold_karat: ["18", "21", "22", "24"],
+      income_event_status: ["confirmed", "projected", "late", "missed", "partial"],
       income_source_type: [
         "salary",
         "freelance",

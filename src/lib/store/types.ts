@@ -99,6 +99,35 @@ export interface IncomeSource {
   paymentMethodId?: string
 }
 
+/** Lifecycle of an actual income event vs. its projected template occurrence. */
+export type IncomeEventStatus = 'confirmed' | 'projected' | 'late' | 'missed' | 'partial'
+
+/**
+ * An actual received-income event (the postable ledger). Recurring templates in
+ * {@link IncomeSource} project expected events; confirming/editing one persists a row here.
+ */
+export interface IncomeEvent {
+  id: string
+  /** The recurring {@link IncomeSource} this came from; null/undefined = one-time. */
+  templateId?: string | null
+  name: string
+  amount: number
+  currency: Currency
+  sourceType?: IncomeSourceType
+  /** `YYYY-MM-DD` the money was (or is expected to be) received. */
+  receivedDate: string
+  status: IncomeEventStatus
+  paymentMethodId?: string
+  linkedSavingsAccountId?: string
+  linkedDebtId?: string
+  sharedPlanId?: string | null
+  /** Provenance when ingested from an SMS credit (`sms_parse_log.id`). */
+  smsLogId?: string | null
+  notes?: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Expense {
   id: string
   date: string
@@ -627,6 +656,8 @@ export interface FinanceStore {
   /** Free-text financial goals from the plan builder; synced in finance payload. */
   financialGoalsNotes: string
   incomeSources: IncomeSource[]
+  /** Actual received-income ledger; projected occurrences are computed from templates. */
+  incomeEvents: IncomeEvent[]
   expenses: Expense[]
   /** Scanned-receipt breakdowns (items + charges); each links to one total expense via `receiptId`. */
   receipts: Receipt[]
@@ -706,6 +737,11 @@ export interface FinanceStore {
   ) => void
   updateIncomeSource: (id: string, updates: Partial<IncomeSource>) => void
   deleteIncomeSource: (id: string) => void
+  addIncomeEvent: (event: Omit<IncomeEvent, 'id' | 'createdAt' | 'updatedAt'>) => void
+  updateIncomeEvent: (id: string, updates: Partial<IncomeEvent>) => void
+  deleteIncomeEvent: (id: string) => void
+  /** Server-row counterpart for realtime/hydrate upserts. */
+  upsertServerIncomeEvent: (event: IncomeEvent) => void
   addPaymentMethod: (method: Omit<PaymentMethod, 'id'>) => void
   updatePaymentMethod: (id: string, updates: Partial<PaymentMethod>) => void
   deletePaymentMethod: (id: string) => void

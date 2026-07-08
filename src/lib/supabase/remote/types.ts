@@ -17,6 +17,9 @@ export type PaymentMethodInsert = Tables['payment_methods']['Insert']
 export type IncomeSourceRow = Tables['income_sources']['Row']
 export type IncomeSourceInsert = Tables['income_sources']['Insert']
 
+export type IncomeEventRow = Tables['income_events']['Row']
+export type IncomeEventInsert = Tables['income_events']['Insert']
+
 export type ExpenseRow = Tables['expenses']['Row']
 export type ExpenseInsert = Tables['expenses']['Insert']
 

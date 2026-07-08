@@ -34,6 +34,7 @@ const USER_ID_TABLES = [
   'savings_accounts',
   // Other domains
   'goals',
+  'income_events',
   'income_sources',
   'payment_methods',
   'notifications',
