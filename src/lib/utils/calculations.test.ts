@@ -23,6 +23,7 @@ function src(partial: Partial<IncomeSource> & Pick<IncomeSource, 'id' | 'name' |
     isRecurring: true,
     dayOfMonth: 1,
     createdAt: '2024-06-01T00:00:00.000Z',
+    updatedAt: '2024-06-01T00:00:00.000Z',
     ...partial,
   }
 }

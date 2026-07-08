@@ -3,19 +3,9 @@
 import type { Dictionary } from '@/lib/i18n/types'
 import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
 import { MANUAL_INCOME_SOURCE_TYPES, ALL_INCOME_SOURCE_TYPES } from '@/lib/constants/incomeSourceTypes'
+import { IncomeTypeIcon } from '@/components/features/income/IncomeTypeIcon'
+import { incomeTypeGridItem } from '@/lib/constants/categoryGrid'
 import type { IncomeSourceType } from '@/lib/store/types'
-
-const TYPE_EMOJI: Partial<Record<IncomeSourceType, string>> = {
-  salary: '💰',
-  bonus: '🎯',
-  side_hustle: '💼',
-  investment: '📈',
-  savings: '🏦',
-  debt: '💳',
-  gift: '🎁',
-  refund: '↩️',
-  other: '⋯',
-}
 
 export type IncomeSourceTypePickerProps = {
   value: IncomeSourceType
@@ -41,22 +31,23 @@ export function IncomeSourceTypePicker({
     <div className="flex flex-wrap gap-2">
       {list.map((st) => {
         const active = value === st
-        const emoji = TYPE_EMOJI[st] ?? ''
         return (
           <button
             key={st}
             type="button"
             disabled={disabled}
             onClick={() => onChange(st)}
-            className={`px-2.5 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium border transition-colors ${
               active
                 ? 'bg-[var(--color-brand-red)]/20 border-[var(--color-brand-red)] text-[var(--color-brand-text-primary)]'
                 : 'bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:border-[var(--color-brand-text-muted)]'
             } ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
           >
-            <span className="mr-1" aria-hidden>
-              {emoji}
-            </span>
+            <IncomeTypeIcon
+              type={st}
+              className="h-3.5 w-3.5"
+              style={active ? { color: incomeTypeGridItem(st).accent } : undefined}
+            />
             {incomeSourceTypeLabel(labels, st)}
           </button>
         )

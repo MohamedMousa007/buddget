@@ -83,6 +83,8 @@ export interface IncomeSource {
   dayOfMonth?: number
   notes?: string
   createdAt: string
+  /** Last-modified timestamp; drives merge last-write-wins in {@link mergeById}. */
+  updatedAt: string
   /** Type/source of income. Defaults to `other` for legacy data. */
   sourceType?: IncomeSourceType
   /** When `sourceType` is savings or investment, links to the savings account row. */
@@ -681,14 +683,14 @@ export interface FinanceStore {
   upsertServerReceipt: (receipt: Receipt) => void
   /** Server-row counterpart of {@link upsertServerExpense} for debt payments (SMS CC payoff). */
   upsertServerDebtPayment: (payment: DebtPayment) => void
-  addIncomeSource: (source: Omit<IncomeSource, 'id' | 'createdAt'>) => void
+  addIncomeSource: (source: Omit<IncomeSource, 'id' | 'createdAt' | 'updatedAt'>) => void
   /** Server-row counterpart of {@link upsertServerExpense} for income. */
   upsertServerIncome: (source: IncomeSource) => void
   /**
    * Adds income from borrowed money and creates a matching personal debt (`i_owe`) in one update.
    */
   addIncomeWithDebt: (
-    income: Omit<IncomeSource, 'id' | 'createdAt' | 'linkedDebtId' | 'linkedSavingsAccountId' | 'sourceType'>,
+    income: Omit<IncomeSource, 'id' | 'createdAt' | 'updatedAt' | 'linkedDebtId' | 'linkedSavingsAccountId' | 'sourceType'>,
     debt: Omit<Debt, 'id' | 'createdAt'>
   ) => void
   updateIncomeSource: (id: string, updates: Partial<IncomeSource>) => void

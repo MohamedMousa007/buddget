@@ -21,7 +21,16 @@ import {
   Coins,
   Ticket,
   Wallet,
+  Briefcase,
+  Award,
+  Laptop,
+  TrendingUp,
+  PiggyBank,
+  HandCoins,
+  Gift,
+  Undo2,
 } from 'lucide-react'
+import type { IncomeSourceType } from '@/lib/store/types'
 
 /**
  * Canonical category grid for the Add/Edit Expense sheet redesign. Order is
@@ -58,6 +67,36 @@ export const EXPENSE_CATEGORY_GRID: CategoryGridItem[] = [
   { id: 'CC Payoff', icon: CreditCard, accent: '#F0A0A0', nonspend: true },
   { id: 'Savings', icon: Coins, accent: '#F5C842', nonspend: true },
 ]
+
+/** Income source type → unique Lucide glyph + accent. Single source of truth for
+ * {@link import('@/components/features/income/IncomeTypeIcon').IncomeTypeIcon} and the
+ * income type picker. Every glyph and accent is distinct (no shared green/gold). */
+export interface IncomeTypeGridItem {
+  id: IncomeSourceType
+  icon: LucideIcon
+  accent: string
+}
+
+export const INCOME_TYPE_GRID: IncomeTypeGridItem[] = [
+  { id: 'salary', icon: Briefcase, accent: '#1DB954' },
+  { id: 'bonus', icon: Award, accent: '#F5C842' },
+  { id: 'side_hustle', icon: Laptop, accent: '#4DA3FF' },
+  { id: 'investment', icon: TrendingUp, accent: '#34D399' },
+  { id: 'savings', icon: PiggyBank, accent: '#F59E0B' },
+  { id: 'debt', icon: HandCoins, accent: '#FF5C5C' },
+  { id: 'gift', icon: Gift, accent: '#A78BFA' },
+  { id: 'refund', icon: Undo2, accent: '#60A5FA' },
+  { id: 'other', icon: Wallet, accent: '#9898B0' },
+]
+
+const INCOME_TYPE_BY_ID: Record<IncomeSourceType, IncomeTypeGridItem> = Object.fromEntries(
+  INCOME_TYPE_GRID.map((it) => [it.id, it]),
+) as Record<IncomeSourceType, IncomeTypeGridItem>
+
+/** Grid item for an income source type, falling back to `other`. */
+export function incomeTypeGridItem(type: IncomeSourceType | undefined): IncomeTypeGridItem {
+  return INCOME_TYPE_BY_ID[type ?? 'other'] ?? INCOME_TYPE_BY_ID.other
+}
 
 /** Payment-method type → Lucide swatch glyph (matches the payment dropdown spec). */
 export function paymentTypeIcon(type: string): LucideIcon {

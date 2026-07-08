@@ -260,6 +260,7 @@ export const useFinanceStore = create<FinanceStore>()(
               sourceType: source.sourceType ?? 'other',
               id: generateId(),
               createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
             },
           ],
           settings: { ...state.settings, noIncomeDeclared: false },
@@ -295,6 +296,7 @@ export const useFinanceStore = create<FinanceStore>()(
               sourceType: 'debt' as IncomeSourceType,
               linkedDebtId: debtId,
               createdAt: iso,
+              updatedAt: iso,
             },
           ],
           debts: [
@@ -312,14 +314,21 @@ export const useFinanceStore = create<FinanceStore>()(
       updateIncomeSource: (id, updates) =>
         set((state) => ({
           incomeSources: state.incomeSources.map((s) =>
-            s.id === id ? { ...s, ...updates } : s
+            s.id === id ? { ...s, ...updates, updatedAt: new Date().toISOString() } : s
           ),
         })),
 
       deleteIncomeSource: (id) =>
-        set((state) => ({
-          incomeSources: state.incomeSources.filter((s) => s.id !== id),
-        })),
+        set((state) => {
+          const incomeSources = state.incomeSources.filter((s) => s.id !== id)
+          return {
+            incomeSources,
+            settings:
+              incomeSources.length === 0
+                ? { ...state.settings, noIncomeDeclared: true }
+                : state.settings,
+          }
+        }),
 
       addPaymentMethod: (method) => {
         const pmId = generateId()
@@ -1201,6 +1210,7 @@ export const useFinanceStore = create<FinanceStore>()(
             linkedSavingsAccountId: accountId,
             notes: notes?.trim() || undefined,
             createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
           }
           const nextState: FinanceStore = {
             ...state,

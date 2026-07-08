@@ -47,7 +47,11 @@ export function incomeSourceToRow(i: IncomeSource, userId: string): IncomeSource
     notes: i.notes ?? null,
     payment_method_id:
       i.paymentMethodId && i.paymentMethodId !== DEFAULT_CASH_ID ? i.paymentMethodId : null,
+    linked_savings_account_id: i.linkedSavingsAccountId ?? null,
+    linked_debt_id: i.linkedDebtId ?? null,
+    shared_plan_id: i.sharedPlanId ?? null,
     created_at: i.createdAt,
+    updated_at: i.updatedAt,
   }
 }
 
@@ -64,7 +68,11 @@ export function incomeSourceFromRow(row: IncomeSourceRow): IncomeSource {
     dayOfMonth: row.day_of_month ?? undefined,
     notes: row.notes ?? undefined,
     paymentMethodId: row.payment_method_id ?? undefined,
+    linkedSavingsAccountId: row.linked_savings_account_id ?? undefined,
+    linkedDebtId: row.linked_debt_id ?? undefined,
+    sharedPlanId: row.shared_plan_id ?? undefined,
     sourceType: fromDbSourceType(row.source_type),
     createdAt: row.created_at,
+    updatedAt: row.updated_at ?? row.created_at,
   }
 }

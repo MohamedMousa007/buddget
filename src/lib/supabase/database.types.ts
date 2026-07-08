@@ -581,12 +581,15 @@ export type Database = {
           deleted_at: string | null
           id: string
           is_recurring: boolean
+          linked_debt_id: string | null
+          linked_savings_account_id: string | null
           name: string
           notes: string | null
           payment_method_id: string | null
           recurring_frequency:
             | Database["public"]["Enums"]["recurring_frequency"]
             | null
+          shared_plan_id: string | null
           source_type: Database["public"]["Enums"]["income_source_type"]
           updated_at: string
           user_id: string
@@ -599,12 +602,15 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           is_recurring?: boolean
+          linked_debt_id?: string | null
+          linked_savings_account_id?: string | null
           name: string
           notes?: string | null
           payment_method_id?: string | null
           recurring_frequency?:
             | Database["public"]["Enums"]["recurring_frequency"]
             | null
+          shared_plan_id?: string | null
           source_type?: Database["public"]["Enums"]["income_source_type"]
           updated_at?: string
           user_id: string
@@ -617,12 +623,15 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           is_recurring?: boolean
+          linked_debt_id?: string | null
+          linked_savings_account_id?: string | null
           name?: string
           notes?: string | null
           payment_method_id?: string | null
           recurring_frequency?:
             | Database["public"]["Enums"]["recurring_frequency"]
             | null
+          shared_plan_id?: string | null
           source_type?: Database["public"]["Enums"]["income_source_type"]
           updated_at?: string
           user_id?: string
