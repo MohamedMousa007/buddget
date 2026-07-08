@@ -4,6 +4,7 @@ import {
   calculateRecurringIncomeForCalendarMonth,
   sumRecurringIncomeOverDateRange,
   projectedIncomeForMonth,
+  actualIncomeForMonth,
   incomeMonthlyMultiplier,
   goldPurityFactor,
   goldGramsToMoney,
@@ -14,7 +15,7 @@ import {
   calculateTotalBudgetExcludingSavings,
   expenseAmountInBase,
 } from './calculations'
-import type { IncomeSource, Expense, BudgetCategory } from '@/lib/store/types'
+import type { IncomeSource, IncomeEvent, Expense, BudgetCategory } from '@/lib/store/types'
 import { DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
 
 const jan2025 = new Date('2025-01-15T12:00:00.000Z')
@@ -135,6 +136,64 @@ describe('projectedIncomeForMonth', () => {
     ]
     expect(projectedIncomeForMonth(sources, 'AED', {}, '2025-01', 15)).toBe(1000)
     expect(projectedIncomeForMonth(sources, 'AED', {}, '2025-02', 15)).toBe(0)
+  })
+})
+
+describe('actualIncomeForMonth', () => {
+  const jan = '2025-01'
+  const evt = (p: Partial<IncomeEvent> & Pick<IncomeEvent, 'id' | 'amount'>): IncomeEvent => ({
+    name: 'E',
+    currency: 'AED',
+    receivedDate: '2025-01-15',
+    status: 'confirmed',
+    createdAt: '2025-01-15T00:00:00.000Z',
+    updatedAt: '2025-01-15T00:00:00.000Z',
+    ...p,
+  })
+
+  it('with no events, a recurring template equals its projection', () => {
+    const tmpl = [src({ id: 't1', name: 'Salary', amount: 5000, currency: 'AED', effectiveStart: '2024-01-01' })]
+    expect(actualIncomeForMonth(tmpl, [], 'AED', {}, jan, 1)).toBe(
+      projectedIncomeForMonth(tmpl, 'AED', {}, jan, 1)
+    )
+  })
+
+  it('a confirmed event replaces the monthly projection', () => {
+    const tmpl = [src({ id: 't1', name: 'Salary', amount: 5000, currency: 'AED', effectiveStart: '2024-01-01' })]
+    const events = [evt({ id: 'e1', templateId: 't1', amount: 5200 })]
+    expect(actualIncomeForMonth(tmpl, events, 'AED', {}, jan, 1)).toBe(5200)
+  })
+
+  it('a missed event suppresses the projected fallback (counts 0)', () => {
+    const tmpl = [src({ id: 't1', name: 'Salary', amount: 5000, currency: 'AED', effectiveStart: '2024-01-01' })]
+    const events = [evt({ id: 'e1', templateId: 't1', amount: 5000, status: 'missed' })]
+    expect(actualIncomeForMonth(tmpl, events, 'AED', {}, jan, 1)).toBe(0)
+  })
+
+  it('bi-weekly: one confirmed paycheck + one projected fallback', () => {
+    const tmpl = [
+      src({ id: 't1', name: 'Wage', amount: 1000, currency: 'AED', recurringFrequency: 'biweekly', effectiveStart: '2024-01-01' }),
+    ]
+    const events = [evt({ id: 'e1', templateId: 't1', amount: 1000, receivedDate: '2025-01-05' })]
+    // round(26/12)=2 expected occurrences: 1 confirmed (1000) + 1 fallback (1000) = 2000.
+    expect(actualIncomeForMonth(tmpl, events, 'AED', {}, jan, 1)).toBe(2000)
+  })
+
+  it('does not double-count a one-time source backfilled to an event (same id)', () => {
+    const oneTime = src({
+      id: 's1', name: 'Bonus', amount: 800, currency: 'AED', isRecurring: false,
+      createdAt: '2025-01-10T00:00:00.000Z',
+    })
+    const event = evt({ id: 's1', templateId: null, amount: 800, receivedDate: '2025-01-10' })
+    expect(actualIncomeForMonth([oneTime], [event], 'AED', {}, jan, 1)).toBe(800)
+  })
+
+  it('counts a new one-time source that has no event yet', () => {
+    const oneTime = src({
+      id: 's2', name: 'Gift', amount: 300, currency: 'AED', isRecurring: false,
+      createdAt: '2025-01-20T00:00:00.000Z',
+    })
+    expect(actualIncomeForMonth([oneTime], [], 'AED', {}, jan, 1)).toBe(300)
   })
 })
 
