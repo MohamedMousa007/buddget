@@ -258,6 +258,7 @@ export const useFinanceStore = create<FinanceStore>()(
             {
               ...source,
               sourceType: source.sourceType ?? 'other',
+              effectiveStart: source.effectiveStart ?? new Date().toISOString().slice(0, 10),
               id: generateId(),
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
@@ -295,6 +296,7 @@ export const useFinanceStore = create<FinanceStore>()(
               currency: cur,
               sourceType: 'debt' as IncomeSourceType,
               linkedDebtId: debtId,
+              effectiveStart: iso.slice(0, 10),
               createdAt: iso,
               updatedAt: iso,
             },
@@ -1209,6 +1211,7 @@ export const useFinanceStore = create<FinanceStore>()(
             sourceType: isInvestment ? 'investment' : 'savings',
             linkedSavingsAccountId: accountId,
             notes: notes?.trim() || undefined,
+            effectiveStart: new Date().toISOString().slice(0, 10),
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           }

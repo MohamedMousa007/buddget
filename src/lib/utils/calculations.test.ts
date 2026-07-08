@@ -3,6 +3,7 @@ import {
   calculateMonthlyIncome,
   calculateRecurringIncomeForCalendarMonth,
   sumRecurringIncomeOverDateRange,
+  projectedIncomeForMonth,
   incomeMonthlyMultiplier,
   goldPurityFactor,
   goldGramsToMoney,
@@ -19,12 +20,15 @@ import { DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
 const jan2025 = new Date('2025-01-15T12:00:00.000Z')
 
 function src(partial: Partial<IncomeSource> & Pick<IncomeSource, 'id' | 'name' | 'amount' | 'currency'>): IncomeSource {
+  const createdAt = partial.createdAt ?? '2024-06-01T00:00:00.000Z'
   return {
     isRecurring: true,
     dayOfMonth: 1,
-    createdAt: '2024-06-01T00:00:00.000Z',
-    updatedAt: '2024-06-01T00:00:00.000Z',
     ...partial,
+    createdAt,
+    updatedAt: partial.updatedAt ?? createdAt,
+    // Default effective window to the creation date so createdAt-based tests keep their intent.
+    effectiveStart: partial.effectiveStart ?? createdAt.slice(0, 10),
   }
 }
 
@@ -87,6 +91,50 @@ describe('calculateMonthlyIncome', () => {
       }),
     ]
     expect(calculateMonthlyIncome(sources, 'AED', {})).toBeCloseTo(300 * (52 / 12), 5)
+  })
+})
+
+describe('projectedIncomeForMonth', () => {
+  it('counts an active recurring template at its monthly equivalent', () => {
+    const sources = [src({ id: '1', name: 'Salary', amount: 5000, currency: 'AED', effectiveStart: '2024-01-01' })]
+    expect(projectedIncomeForMonth(sources, 'AED', {}, '2025-01', 1)).toBe(5000)
+  })
+
+  it('excludes a source whose effectiveStart is after the month', () => {
+    const sources = [src({ id: '1', name: 'Future', amount: 5000, currency: 'AED', effectiveStart: '2025-03-01' })]
+    expect(projectedIncomeForMonth(sources, 'AED', {}, '2025-01', 1)).toBe(0)
+  })
+
+  it('excludes a source whose effectiveEnd is before the month', () => {
+    const sources = [
+      src({ id: '1', name: 'Old job', amount: 5000, currency: 'AED', effectiveStart: '2023-01-01', effectiveEnd: '2024-12-31' }),
+    ]
+    expect(projectedIncomeForMonth(sources, 'AED', {}, '2025-01', 1)).toBe(0)
+  })
+
+  it('models a raise: old ends June, new starts July', () => {
+    const sources = [
+      src({ id: 'old', name: 'Salary', amount: 5000, currency: 'AED', effectiveStart: '2024-01-01', effectiveEnd: '2025-06-30' }),
+      src({ id: 'new', name: 'Salary', amount: 6000, currency: 'AED', effectiveStart: '2025-07-01' }),
+    ]
+    expect(projectedIncomeForMonth(sources, 'AED', {}, '2025-06', 1)).toBe(5000)
+    expect(projectedIncomeForMonth(sources, 'AED', {}, '2025-07', 1)).toBe(6000)
+  })
+
+  it('includes one-time income received inside the month window', () => {
+    const sources = [
+      src({ id: '1', name: 'Bonus', amount: 1000, currency: 'AED', isRecurring: false, createdAt: '2025-01-10T00:00:00.000Z' }),
+    ]
+    expect(projectedIncomeForMonth(sources, 'AED', {}, '2025-01', 1)).toBe(1000)
+  })
+
+  it('respects a custom monthStartDay window for one-time income', () => {
+    // Cycle starting on the 15th: Jan-15 → Feb-14. A one-time on Feb-10 belongs to the "2025-01" cycle.
+    const sources = [
+      src({ id: '1', name: 'Late', amount: 1000, currency: 'AED', isRecurring: false, createdAt: '2025-02-10T00:00:00.000Z' }),
+    ]
+    expect(projectedIncomeForMonth(sources, 'AED', {}, '2025-01', 15)).toBe(1000)
+    expect(projectedIncomeForMonth(sources, 'AED', {}, '2025-02', 15)).toBe(0)
   })
 })
 

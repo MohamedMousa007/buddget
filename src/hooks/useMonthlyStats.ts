@@ -14,7 +14,7 @@ import {
 } from '@/lib/budget/budgetPlans'
 import {
   filterExpensesByMonth,
-  calculateMonthlyIncome,
+  projectedIncomeForMonth,
   calculateTotalSpent,
   calculateTotalSpentExcludingSavings,
   calculateCategorySpending,
@@ -134,7 +134,7 @@ export function useMonthlyStats() {
       }
     }
     const monthlyExpenses = filterExpensesByMonth(expenses, monthFilter, settings.monthStartDay)
-    const rawMonthlyIncome = calculateMonthlyIncome(
+    const rawMonthlyIncome = projectedIncomeForMonth(
       incomeSources,
       settings.baseCurrency,
       exchangeRates,

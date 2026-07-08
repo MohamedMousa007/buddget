@@ -579,6 +579,8 @@ export type Database = {
           currency: Database["public"]["Enums"]["currency_code"]
           day_of_month: number | null
           deleted_at: string | null
+          effective_end: string | null
+          effective_start: string
           id: string
           is_recurring: boolean
           linked_debt_id: string | null
@@ -600,6 +602,8 @@ export type Database = {
           currency?: Database["public"]["Enums"]["currency_code"]
           day_of_month?: number | null
           deleted_at?: string | null
+          effective_end?: string | null
+          effective_start?: string
           id?: string
           is_recurring?: boolean
           linked_debt_id?: string | null
@@ -621,6 +625,8 @@ export type Database = {
           currency?: Database["public"]["Enums"]["currency_code"]
           day_of_month?: number | null
           deleted_at?: string | null
+          effective_end?: string | null
+          effective_start?: string
           id?: string
           is_recurring?: boolean
           linked_debt_id?: string | null

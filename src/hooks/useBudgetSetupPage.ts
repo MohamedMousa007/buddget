@@ -6,7 +6,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
-import { calculateMonthlyIncome } from '@/lib/utils/calculations'
+import { projectedIncomeForMonth } from '@/lib/utils/calculations'
 import { totalPlannedExpensesForPlan } from '@/lib/budget/budgetPlans'
 
 /**
@@ -63,8 +63,16 @@ export function useBudgetSetupPage() {
 
   const totalIncome = useMemo(() => {
     if (settings.noIncomeDeclared && incomeSources.length === 0) return 0
-    return calculateMonthlyIncome(incomeSources, settings.baseCurrency, exchangeRates)
-  }, [incomeSources, settings.baseCurrency, settings.noIncomeDeclared, exchangeRates])
+    const now = new Date()
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    return projectedIncomeForMonth(
+      incomeSources,
+      settings.baseCurrency,
+      exchangeRates,
+      currentMonth,
+      settings.monthStartDay
+    )
+  }, [incomeSources, settings.baseCurrency, settings.noIncomeDeclared, settings.monthStartDay, exchangeRates])
 
   const totalPlanned = activePlan
     ? totalPlannedExpensesForPlan(activePlan, settings.baseCurrency, exchangeRates)

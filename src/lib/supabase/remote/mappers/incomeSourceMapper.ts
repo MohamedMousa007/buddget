@@ -44,6 +44,8 @@ export function incomeSourceToRow(i: IncomeSource, userId: string): IncomeSource
     recurring_frequency:
       i.isRecurring && i.recurringFrequency ? (i.recurringFrequency as IncomeSourceInsert['recurring_frequency']) : null,
     day_of_month: i.dayOfMonth ?? null,
+    effective_start: i.effectiveStart,
+    effective_end: i.effectiveEnd ?? null,
     notes: i.notes ?? null,
     payment_method_id:
       i.paymentMethodId && i.paymentMethodId !== DEFAULT_CASH_ID ? i.paymentMethodId : null,
@@ -66,6 +68,8 @@ export function incomeSourceFromRow(row: IncomeSourceRow): IncomeSource {
       ? (row.recurring_frequency as IncomeRecurringFrequency)
       : undefined,
     dayOfMonth: row.day_of_month ?? undefined,
+    effectiveStart: row.effective_start ?? row.created_at.slice(0, 10),
+    effectiveEnd: row.effective_end ?? undefined,
     notes: row.notes ?? undefined,
     paymentMethodId: row.payment_method_id ?? undefined,
     linkedSavingsAccountId: row.linked_savings_account_id ?? undefined,
