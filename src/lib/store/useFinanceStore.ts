@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { convertCurrency, tryConvertCurrency } from '@/lib/utils/currency'
+import { DEFAULT_CASH_ID } from './migrations/v17_uuid_remap'
 import { importDataSchema } from './financeImportSchema'
 import {
   DEFAULT_BUDGET,
@@ -447,14 +448,43 @@ export const useFinanceStore = create<FinanceStore>()(
       updatePaymentMethod: (id, updates) =>
         set((state) => ({
           paymentMethods: state.paymentMethods.map((m) =>
-            m.id === id ? { ...m, ...updates } : m
+            m.id === id
+              ? { ...m, ...updates }
+              : updates.isDefault
+                ? { ...m, isDefault: false } // one default at a time, mirroring addPaymentMethod
+                : m
           ),
         })),
 
       deletePaymentMethod: (id) =>
-        set((state) => ({
-          paymentMethods: state.paymentMethods.filter((m) => m.id !== id),
-        })),
+        set((state) => {
+          const deleted = state.paymentMethods.find((m) => m.id === id)
+          let paymentMethods = state.paymentMethods.filter((m) => m.id !== id)
+          // Promote a new default if we removed the only default one.
+          if (deleted?.isDefault && paymentMethods.length > 0 && !paymentMethods.some((m) => m.isDefault)) {
+            paymentMethods = paymentMethods.map((m, i) => (i === 0 ? { ...m, isDefault: true } : m))
+          }
+          return {
+            paymentMethods,
+            // Detach the auto-created credit-card debt so it stops pointing at a dead id.
+            debts: state.debts.map((d) =>
+              d.linkedPaymentMethodId === id ? { ...d, linkedPaymentMethodId: undefined } : d
+            ),
+            // Dependents fall back to cash / null, mirroring the server's ON DELETE SET NULL.
+            expenses: state.expenses.map((e) =>
+              e.paymentMethodId === id ? { ...e, paymentMethodId: DEFAULT_CASH_ID } : e
+            ),
+            subscriptions: state.subscriptions.map((s) =>
+              s.paymentMethodId === id ? { ...s, paymentMethodId: null } : s
+            ),
+            incomeSources: state.incomeSources.map((s) =>
+              s.paymentMethodId === id ? { ...s, paymentMethodId: undefined } : s
+            ),
+            incomeEvents: state.incomeEvents.map((ev) =>
+              ev.paymentMethodId === id ? { ...ev, paymentMethodId: undefined } : ev
+            ),
+          }
+        }),
 
       addDebt: (debt) => {
         const id = generateId()

@@ -551,6 +551,7 @@ export const en: Dictionary = {
     freqWeeklyShort: 'Weekly',
     effectiveStart: 'Starts',
     effectiveEnd: 'Ends (optional)',
+    receivedDate: 'Received',
     confirmDelete: 'Remove this income source? This will be gone for good.',
     sourceTypeSalary: 'Salary',
     sourceTypeBonus: 'Bonus',

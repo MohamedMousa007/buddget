@@ -112,13 +112,14 @@ export default function IncomePage() {
 
   // "Income this month": recurring received on their day-of-month + one-time created this month, grouped by day.
   const incomeGroups = useMemo(() => {
-    type Row = { id: string; name: string; source: IncomeLike; day: number; recurring: boolean; eventId?: string }
+    type Row = { id: string; name: string; source: IncomeLike; day: number; recurring: boolean; eventId?: string; sourceId?: string }
     const rows: Row[] = []
     for (const s of recurring) {
       rows.push({ id: `r-${s.id}`, name: s.name, source: s, day: s.dayOfMonth ?? 1, recurring: true })
     }
     for (const o of oneTimeThisMonth) {
-      rows.push({ id: `o-${o.id}`, name: o.name, source: o.payload, day: o.day, recurring: false, eventId: o.eventId })
+      // Legacy one-time sources (no event) open the source editor; events open the event editor.
+      rows.push({ id: `o-${o.id}`, name: o.name, source: o.payload, day: o.day, recurring: false, eventId: o.eventId, sourceId: o.eventId ? undefined : o.id })
     }
     rows.sort((a, b) => b.day - a.day)
     const monthIdx = (Number(monthFilter.split('-')[1]) || 1) - 1
@@ -250,13 +251,19 @@ export default function IncomePage() {
           <div className="mb-2.5 overflow-hidden rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
             {g.items.map((r, idx) => {
               const colors = incomeTypeColors(r.source.sourceType)
-              const clickable = Boolean(r.eventId)
+              const clickable = Boolean(r.eventId || r.sourceId)
               return (
                 <button
                   key={r.id}
                   type="button"
                   disabled={!clickable}
-                  onClick={clickable ? () => { setEditingIncomeEventId(r.eventId!); setActiveModal('editIncomeEvent') } : undefined}
+                  onClick={
+                    r.eventId
+                      ? () => { setEditingIncomeEventId(r.eventId!); setActiveModal('editIncomeEvent') }
+                      : r.sourceId
+                        ? () => { setEditingIncomeId(r.sourceId!); setActiveModal('editIncome') }
+                        : undefined
+                  }
                   className={`flex w-full items-center gap-3 px-3.5 py-2.5 text-start ${idx === 0 ? '' : 'border-t border-[var(--color-brand-border)]'} ${clickable ? 'hover:bg-[var(--color-brand-elevated)]' : 'cursor-default'}`}
                 >
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md" style={{ background: colors.bg, color: colors.fg }}>

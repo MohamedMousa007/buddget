@@ -10,7 +10,8 @@ export function paymentMethodToRow(pm: PaymentMethod, userId: string): PaymentMe
     currency: pm.currency,
     color: pm.color ?? '#A3A3A3',
     is_default: pm.isDefault,
-    balance: 0, // Client-side balances are derived. We don't mirror them here.
+    // balance intentionally omitted: the SMS path owns it (createSmsExpense). Emitting it
+    // here would reset the DB balance to 0 on every sync push. New rows default to 0.
     last4: pm.last4 ?? null,
     notes: null,
   }

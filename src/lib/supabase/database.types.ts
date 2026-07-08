@@ -1645,7 +1645,7 @@ export type Database = {
             foreignKeyName: "sms_parse_log_income_id_fkey"
             columns: ["income_id"]
             isOneToOne: false
-            referencedRelation: "income_sources"
+            referencedRelation: "income_events"
             referencedColumns: ["id"]
           },
         ]

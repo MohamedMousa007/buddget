@@ -116,7 +116,7 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
         </div>
 
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.income.effectiveStart}</Label>
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.income.receivedDate}</Label>
           <input type="date" value={receivedDate} onChange={(e) => setReceivedDate(e.target.value)} className={DATE_INPUT_CLASS} />
         </div>
 
