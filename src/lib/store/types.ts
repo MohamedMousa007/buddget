@@ -739,7 +739,7 @@ export interface FinanceStore {
   deleteIncomeSource: (id: string) => void
   addIncomeEvent: (event: Omit<IncomeEvent, 'id' | 'createdAt' | 'updatedAt'>) => void
   updateIncomeEvent: (id: string, updates: Partial<IncomeEvent>) => void
-  deleteIncomeEvent: (id: string) => void
+  deleteIncomeEvent: (id: string, deleteLinkedDebt?: boolean) => void
   /** Server-row counterpart for realtime/hydrate upserts. */
   upsertServerIncomeEvent: (event: IncomeEvent) => void
   addPaymentMethod: (method: Omit<PaymentMethod, 'id'>) => void

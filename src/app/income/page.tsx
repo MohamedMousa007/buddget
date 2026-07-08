@@ -13,8 +13,8 @@ import { useHydrateIncome, useHydrateIncomeEvents, useHydrateDebts, useHydrateSa
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
-import { getMonthRange, recurringActiveForWindow } from '@/lib/utils/calculations'
-import type { IncomeSource, IncomeSourceType, Currency } from '@/lib/store/types'
+import { getMonthRange, recurringActiveForWindow, isIncomeOccurrencePending } from '@/lib/utils/calculations'
+import type { IncomeSource, IncomeSourceType, IncomeEvent, IncomeEventStatus, Currency } from '@/lib/store/types'
 
 /** Fields the tab renders for both recurring templates and one-time events. */
 type IncomeLike = {
@@ -80,6 +80,18 @@ export default function IncomePage() {
     return t.income.freqMonthlyDay(s.dayOfMonth ?? 1)
   }
 
+  // Status chip copy + color for an actual event vs its expected occurrence.
+  const statusChip = (status: IncomeEventStatus): { label: string; cls: string } => {
+    switch (status) {
+      case 'late': return { label: t.income.statusLate, cls: 'bg-[rgba(245,200,66,0.16)] text-[var(--color-brand-gold)]' }
+      case 'partial': return { label: t.income.statusPartial, cls: 'bg-[rgba(245,200,66,0.16)] text-[var(--color-brand-gold)]' }
+      case 'missed': return { label: t.income.statusMissed, cls: 'bg-[rgba(229,9,20,0.14)] text-[var(--color-brand-red)]' }
+      case 'projected': return { label: t.income.statusPending, cls: 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]' }
+      default: return { label: t.income.statusReceived, cls: 'bg-[rgba(29,185,84,0.14)] text-[var(--color-brand-green)]' }
+    }
+  }
+  const today = new Date()
+
   // Recurring sources active for the selected month (respects effective start/end
   // so an ended source no longer inflates the total).
   const recurring = useMemo(() => {
@@ -100,6 +112,18 @@ export default function IncomePage() {
     return [...fromEvents, ...fromSources]
   }, [incomeEvents, incomeSources, monthFilter])
 
+  // Actual received events for the month, grouped by the template they fulfill.
+  const eventsByTemplate = useMemo(() => {
+    const m = new Map<string, IncomeEvent[]>()
+    for (const e of incomeEvents) {
+      if (!e.templateId || e.receivedDate.slice(0, 7) !== monthFilter) continue
+      const arr = m.get(e.templateId)
+      if (arr) arr.push(e)
+      else m.set(e.templateId, [e])
+    }
+    return m
+  }, [incomeEvents, monthFilter])
+
   const monthlyTotal = useMemo(
     () => recurring.reduce((sum, s) => sum + convertCurrency(monthlyEquivalent(s), s.currency, base, exchangeRates), 0),
     [recurring, base, exchangeRates],
@@ -110,13 +134,11 @@ export default function IncomePage() {
     ? formatCurrency(convertCurrency(monthlyTotal, base, secondary, exchangeRates), secondary)
     : null
 
-  // "Income this month": recurring received on their day-of-month + one-time created this month, grouped by day.
+  // "Other income this month": unlinked one-time events + legacy one-time sources, grouped by day.
+  // (Recurring income now renders with its actual events under the templates section above.)
   const incomeGroups = useMemo(() => {
     type Row = { id: string; name: string; source: IncomeLike; day: number; recurring: boolean; eventId?: string; sourceId?: string }
     const rows: Row[] = []
-    for (const s of recurring) {
-      rows.push({ id: `r-${s.id}`, name: s.name, source: s, day: s.dayOfMonth ?? 1, recurring: true })
-    }
     for (const o of oneTimeThisMonth) {
       // Legacy one-time sources (no event) open the source editor; events open the event editor.
       rows.push({ id: `o-${o.id}`, name: o.name, source: o.payload, day: o.day, recurring: false, eventId: o.eventId, sourceId: o.eventId ? undefined : o.id })
@@ -207,30 +229,59 @@ export default function IncomePage() {
       <div className="mb-5 flex flex-col gap-2.5">
         {recurring.map((s) => {
           const colors = incomeTypeColors(s.sourceType)
+          const events = eventsByTemplate.get(s.id) ?? []
+          const pending = events.length === 0 && isIncomeOccurrencePending(s, incomeEvents, monthFilter, today, settings.monthStartDay)
           return (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => { setEditingIncomeId(s.id); setActiveModal('editIncome') }}
-              className="flex items-center gap-3 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-3.5 text-start"
-            >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg" style={{ background: colors.bg, color: colors.fg }}>
-                <IncomeTypeIcon type={s.sourceType} className="h-5 w-5" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-[var(--color-brand-text-primary)]">{s.name}</p>
-                <p className="mt-0.5 truncate text-xs text-[var(--color-brand-text-muted)]">{freqLabel(s)} · → {accountLabel(s)}</p>
-              </div>
-              <div className="shrink-0 text-end">
-                <p className="font-mono-numbers text-base font-bold text-[var(--color-brand-text-primary)]">+{fmtNum(toBaseMonthly(s))}</p>
-                <p className="mt-px text-[10px] text-[var(--color-brand-text-muted)]">{base} {t.income.perMoSuffix}</p>
-                {(s.recurringFrequency ?? 'monthly') !== 'monthly' ? (
-                  <p className="font-mono-numbers mt-px text-[10px] text-[var(--color-brand-text-muted)]">
-                    {fmtNum(toBase(s))} {base}/{s.recurringFrequency === 'weekly' ? 'wk' : 'pay'}
-                  </p>
+            <div key={s.id} className="overflow-hidden rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
+              {/* Template header (projection) */}
+              <button
+                type="button"
+                onClick={() => { setEditingIncomeId(s.id); setActiveModal('editIncome') }}
+                className="flex w-full items-center gap-3 p-3.5 text-start hover:bg-[var(--color-brand-elevated)]"
+              >
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg" style={{ background: colors.bg, color: colors.fg }}>
+                  <IncomeTypeIcon type={s.sourceType} className="h-5 w-5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold text-[var(--color-brand-text-primary)]">{s.name}</p>
+                  <p className="mt-0.5 truncate text-xs text-[var(--color-brand-text-muted)]">{freqLabel(s)} · {t.income.expectedPerMonth(`${fmtNum(toBaseMonthly(s))} ${base}`)}</p>
+                </div>
+                {pending ? (
+                  <span className="shrink-0 rounded-full bg-[var(--color-brand-elevated)] px-2 py-0.5 text-xs font-bold uppercase tracking-[0.04em] text-[var(--color-brand-text-muted)]">
+                    {t.income.statusPending}
+                  </span>
                 ) : null}
-              </div>
-            </button>
+              </button>
+              {/* Actual received events for the month */}
+              {events.map((e) => {
+                const chip = statusChip(e.status)
+                const expected = convertCurrency(s.amount, s.currency, base, exchangeRates)
+                const actual = convertCurrency(e.amount, e.currency, base, exchangeRates)
+                const delta = Math.round(actual - expected)
+                return (
+                  <button
+                    key={e.id}
+                    type="button"
+                    onClick={() => { setEditingIncomeEventId(e.id); setActiveModal('editIncomeEvent') }}
+                    className="flex w-full items-center gap-3 border-t border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/40 px-3.5 py-2.5 text-start hover:bg-[var(--color-brand-elevated)]"
+                  >
+                    <span className="ms-3 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-brand-text-muted)]" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-semibold text-[var(--color-brand-text-secondary)]">{t.income.receivedDate} {e.receivedDate.slice(5)}</span>
+                        <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.03em] ${chip.cls}`}>{chip.label}</span>
+                      </div>
+                    </div>
+                    <div className="shrink-0 text-end">
+                      <p className="font-mono-numbers text-sm font-bold text-[var(--color-brand-text-primary)]">+{fmtNum(actual)} <span className="text-[10px] font-medium text-[var(--color-brand-text-muted)]">{base}</span></p>
+                      {delta !== 0 ? (
+                        <p className={`font-mono-numbers text-[10px] ${delta > 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red)]'}`}>{delta > 0 ? '+' : ''}{fmtNum(delta)}</p>
+                      ) : null}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
           )
         })}
         {recurring.length === 0 ? (
@@ -238,9 +289,9 @@ export default function IncomePage() {
         ) : null}
       </div>
 
-      {/* Income this month */}
+      {/* Other (one-time / unlinked) income this month */}
       <p className="mb-2.5 px-1 text-xs font-bold uppercase tracking-[0.06em] text-[var(--color-brand-text-muted)]">
-        {t.income.incomeThisMonthLabel}
+        {t.income.otherIncomeLabel}
       </p>
       {incomeGroups.map((g) => (
         <div key={g.day}>

@@ -68,7 +68,7 @@ function base(outcome: SmsTxOutcome): SmsTxResult {
 export async function createSmsTransaction(
   service: SupabaseClient,
   row: SmsRowData,
-  opts: { exchangeRates: Record<string, number> },
+  opts: { exchangeRates: Record<string, number>; userConfirmed?: boolean },
 ): Promise<SmsTxResult> {
   let kind: SmsExpenseKind = row.kind
 
@@ -133,9 +133,11 @@ export async function createSmsTransaction(
     }
   }
 
-  // 4. Income → salary dedup. A confident OR close match acknowledges receipt
-  //    without creating a row (the recurring salary is already counted once per
-  //    period); only a genuinely new credit is captured as one-time income.
+  // 4. Income → salary matching. A confident match posts the ACTUAL received
+  //    amount as an event LINKED to the recurring template (templateId), so the
+  //    income tab can show projected vs actual (on-time/late/±Δ). A close-but-off
+  //    match (e.g. a raise) asks the user first; on confirm we post it linked too.
+  //    Only a genuinely new credit is captured as unlinked one-time income.
   if (isIncomeKind(kind)) {
     const decision = await matchSalary(service, {
       userId: row.userId,
@@ -143,8 +145,9 @@ export async function createSmsTransaction(
       currency: row.currency,
       day: row.day,
     })
-    if (decision.outcome === 'matched') {
-      return { ...base('income_matched'), matchedSourceId: decision.sourceId }
+    if (decision.outcome === 'matched' || (decision.outcome === 'confirm' && opts.userConfirmed)) {
+      const res = await createSmsExpense(service, { ...row, kind, templateId: decision.sourceId })
+      return { ...base('income'), incomeId: res.incomeId, matchedSourceId: decision.sourceId, error: res.error }
     }
     if (decision.outcome === 'confirm') {
       return { ...base('income_matched'), matchedSourceId: decision.sourceId, confirmReason: 'salary' }

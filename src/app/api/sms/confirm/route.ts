@@ -45,7 +45,7 @@ export async function POST(request: Request) {
   // Fetch the pending row
   let query = service
     .from('sms_parse_log')
-    .select('id, kind, clean_title, merchant_normalized, merchant, bank_name, amount, currency, category, raw_sms_summary, source, raw_body, received_at, account_last4, counterparty_last4, new_balance, sender, expense_id, income_id, failure_code')
+    .select('id, kind, clean_title, merchant_normalized, merchant, bank_name, amount, currency, category, raw_sms_summary, source, raw_body, received_at, account_last4, counterparty_last4, sender, expense_id, income_id, failure_code')
     .eq('user_id', userId)
     .eq('awaiting_confirmation', true)
     .eq('parsed_ok', true)
@@ -118,8 +118,7 @@ export async function POST(request: Request) {
     counterpartyLast4: row.counterparty_last4 ?? null,
     receivedAtIso,
     logId: row.id,
-    newBalance: row.new_balance ?? null,
-  }, { exchangeRates: {} })
+  }, { exchangeRates: {}, userConfirmed: true })
 
   const { expenseId, incomeId, debtPaymentId } = tx
   const postedSomething = !!(expenseId || incomeId || debtPaymentId)

@@ -23,7 +23,6 @@ export interface PatternGroups {
   last4?: number
   /** Destination/counterparty account last4 (transfers, FX) for own-account matching. */
   counterpartyLast4?: number
-  balance?: number
   /** Transaction datetime as DD-MM-YYYY[ HH:mm] (Egyptian bank convention). */
   datetime?: number
 }
@@ -60,7 +59,6 @@ export interface CuratedMatch {
   last4: string | null
   /** Destination/counterparty account last4 (transfers, FX), else null. */
   counterpartyLast4: string | null
-  balance: number | null
   paymentInstrument: PaymentInstrument | null
   /** Transaction date from the SMS body (YYYY-MM-DD), else null. */
   txDay: string | null

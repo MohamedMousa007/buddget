@@ -107,8 +107,6 @@ function tryPattern(message: string, set: BankPatternSet, p: CuratedPattern): Cu
   const last4 = last4Raw ? last4Raw.replace(/\D/g, '').slice(-4) || null : null
   const cpLast4Raw = p.groups.counterpartyLast4 ? (m[p.groups.counterpartyLast4] ?? null) : null
   const counterpartyLast4 = cpLast4Raw ? cpLast4Raw.replace(/\D/g, '').slice(-4) || null : null
-  const balanceRaw = p.groups.balance ? (m[p.groups.balance] ?? '').replace(/,/g, '') : ''
-  const balance = balanceRaw ? parseFloat(balanceRaw) : null
   const txDay = parseSmsDay(p.groups.datetime ? (m[p.groups.datetime] ?? null) : null)
 
   return {
@@ -120,7 +118,6 @@ function tryPattern(message: string, set: BankPatternSet, p: CuratedPattern): Cu
     counterparty,
     last4,
     counterpartyLast4,
-    balance: balance != null && Number.isFinite(balance) ? balance : null,
     paymentInstrument: p.paymentInstrument ?? null,
     txDay,
     cleanTitle: buildCleanTitle(p.kind, set.bank, counterparty),

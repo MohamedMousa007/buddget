@@ -5,6 +5,8 @@ import {
   sumRecurringIncomeOverDateRange,
   projectedIncomeForMonth,
   actualIncomeForMonth,
+  isIncomeOccurrencePending,
+  suggestIncomeTemplate,
   incomeMonthlyMultiplier,
   goldPurityFactor,
   goldGramsToMoney,
@@ -194,6 +196,41 @@ describe('actualIncomeForMonth', () => {
       createdAt: '2025-01-20T00:00:00.000Z',
     })
     expect(actualIncomeForMonth([oneTime], [], 'AED', {}, jan, 1)).toBe(300)
+  })
+})
+
+describe('isIncomeOccurrencePending', () => {
+  const tmpl = src({ id: 't1', name: 'Salary', amount: 5000, currency: 'AED', dayOfMonth: 1, effectiveStart: '2024-01-01' })
+  const evt: IncomeEvent = {
+    id: 'e1', templateId: 't1', name: 'Salary', amount: 5000, currency: 'AED',
+    receivedDate: '2025-01-03', status: 'confirmed', createdAt: '2025-01-03', updatedAt: '2025-01-03',
+  }
+
+  it('is pending when the due day passed and no event landed', () => {
+    expect(isIncomeOccurrencePending(tmpl, [], '2025-01', new Date('2025-01-10'), 1)).toBe(true)
+  })
+  it('is not pending once a linked event exists in the month', () => {
+    expect(isIncomeOccurrencePending(tmpl, [evt], '2025-01', new Date('2025-01-10'), 1)).toBe(false)
+  })
+  it('is not pending for a future/not-yet-due occurrence', () => {
+    expect(isIncomeOccurrencePending(tmpl, [], '2025-02', new Date('2025-01-10'), 1)).toBe(false)
+  })
+  it('is not pending for a non-recurring source', () => {
+    const oneTime = src({ id: 'o1', name: 'Bonus', amount: 100, currency: 'AED', isRecurring: false })
+    expect(isIncomeOccurrencePending(oneTime, [], '2025-01', new Date('2025-01-10'), 1)).toBe(false)
+  })
+})
+
+describe('suggestIncomeTemplate', () => {
+  const salary = src({ id: 't1', name: 'Salary', amount: 5000, currency: 'AED' })
+  it('matches an amount within 15%, same currency', () => {
+    expect(suggestIncomeTemplate(5200, 'AED', [salary])?.id).toBe('t1')
+  })
+  it('returns null when outside tolerance', () => {
+    expect(suggestIncomeTemplate(9000, 'AED', [salary])).toBeNull()
+  })
+  it('returns null for a different currency', () => {
+    expect(suggestIncomeTemplate(5000, 'USD', [salary])).toBeNull()
   })
 })
 

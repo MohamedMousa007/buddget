@@ -421,6 +421,21 @@ export interface Dictionary {
     effectiveEnd: string
     receivedDate: string
     confirmDelete: string
+    deleteWithDebtTitle: string
+    deleteWithDebtBody: (debtName: string) => string
+    deleteBoth: string
+    keepDebt: string
+    linkToRecurring: string
+    notLinkedToRecurring: string
+    looksLikeTemplate: (name: string) => string
+    statusLabel: string
+    statusReceived: string
+    statusLate: string
+    statusPartial: string
+    statusMissed: string
+    statusPending: string
+    expectedPerMonth: (amount: string) => string
+    otherIncomeLabel: string
     sourceTypeSalary: string
     sourceTypeBonus: string
     sourceTypeSideHustle: string

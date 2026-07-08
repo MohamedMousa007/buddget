@@ -789,7 +789,6 @@ export type Database = {
       }
       payment_methods: {
         Row: {
-          balance: number
           color: string
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
@@ -804,7 +803,6 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          balance?: number
           color?: string
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
@@ -819,7 +817,6 @@ export type Database = {
           user_id: string
         }
         Update: {
-          balance?: number
           color?: string
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
@@ -1528,7 +1525,6 @@ export type Database = {
           learn_template_id: string | null
           merchant: string | null
           merchant_normalized: string | null
-          new_balance: number | null
           paired_log_id: string | null
           parse_method: string | null
           parsed_at: string | null
@@ -1571,7 +1567,6 @@ export type Database = {
           learn_template_id?: string | null
           merchant?: string | null
           merchant_normalized?: string | null
-          new_balance?: number | null
           paired_log_id?: string | null
           parse_method?: string | null
           parsed_at?: string | null
@@ -1614,7 +1609,6 @@ export type Database = {
           learn_template_id?: string | null
           merchant?: string | null
           merchant_normalized?: string | null
-          new_balance?: number | null
           paired_log_id?: string | null
           parse_method?: string | null
           parsed_at?: string | null

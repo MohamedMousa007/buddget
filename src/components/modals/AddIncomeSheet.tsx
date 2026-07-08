@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { ChevronDown } from 'lucide-react'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
@@ -9,7 +9,7 @@ import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
-import { incomeMonthlyMultiplier } from '@/lib/utils/calculations'
+import { incomeMonthlyMultiplier, suggestIncomeTemplate } from '@/lib/utils/calculations'
 import { useT } from '@/lib/i18n'
 import { useActionToast } from '@/components/ui/ActionToast'
 import type { Currency, IncomeRecurringFrequency, IncomeSourceType } from '@/lib/store/types'
@@ -19,6 +19,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
 import { IncomeSourceTypePicker } from '@/components/features/income/IncomeSourceTypePicker'
 import { EditIncomeRecurringBlock } from '@/components/features/income/EditIncomeRecurringBlock'
+import { IncomeTemplatePicker } from '@/components/features/income/IncomeTemplatePicker'
 import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
 import {
   MODAL_BODY_SCROLL_CLASS,
@@ -33,14 +34,16 @@ function fmtNum(n: number): string {
 
 export function AddIncomeSheet() {
   const showToast = useActionToast()
-  const { addIncomeSource, addIncomeEvent, settings, paymentMethods } = useFinanceStore(
+  const { addIncomeSource, addIncomeEvent, settings, paymentMethods, incomeSources } = useFinanceStore(
     useShallow((s) => ({
       addIncomeSource: s.addIncomeSource,
       addIncomeEvent: s.addIncomeEvent,
       settings: s.settings,
       paymentMethods: s.paymentMethods,
+      incomeSources: s.incomeSources,
     }))
   )
+  const recurringTemplates = useMemo(() => incomeSources.filter((s) => s.isRecurring), [incomeSources])
   const { activeModal, setActiveModal } = useSettingsStore()
   const t = useT()
   const isOpen = activeModal === 'addIncome'
@@ -55,6 +58,7 @@ export function AddIncomeSheet() {
   const [recurringFrequency, setRecurringFrequency] = useState<IncomeRecurringFrequency>('monthly')
   const [dayOfMonth, setDayOfMonth] = useState('1')
   const [receivedDate, setReceivedDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [templateId, setTemplateId] = useState('')
   const [paymentMethodId, setPaymentMethodId] = useState(defaultPmId)
   const [notes, setNotes] = useState('')
   const [notesOpen, setNotesOpen] = useState(false)
@@ -67,6 +71,7 @@ export function AddIncomeSheet() {
       setCurrency(settings.baseCurrency)
       setPaymentMethodId(defaultPmId)
       setReceivedDate(new Date().toISOString().slice(0, 10))
+      setTemplateId('')
     }
     prevIsOpen.current = isOpen
     /* eslint-enable react-hooks/set-state-in-effect */
@@ -81,6 +86,7 @@ export function AddIncomeSheet() {
     setRecurringFrequency('monthly')
     setDayOfMonth('1')
     setReceivedDate(new Date().toISOString().slice(0, 10))
+    setTemplateId('')
     setPaymentMethodId(defaultPmId)
     setNotes('')
     setNotesOpen(false)
@@ -88,6 +94,8 @@ export function AddIncomeSheet() {
 
   const amt = parseFloat(amount)
   const amtValid = !Number.isNaN(amt) && amt > 0
+  const suggestedTemplate =
+    !isRecurring && amtValid ? suggestIncomeTemplate(amt, clampFiatToAllowed(settings, currency), recurringTemplates) : null
   // Per-paycheck → per-month conversion so bi-weekly/weekly amounts aren't a surprise.
   const showMonthlyEq = isRecurring && amtValid && recurringFrequency !== 'monthly'
   const monthlyEq = amtValid ? amt * incomeMonthlyMultiplier(recurringFrequency) : 0
@@ -118,6 +126,7 @@ export function AddIncomeSheet() {
         receivedDate,
         status: 'confirmed',
         notes: notes.trim() || undefined,
+        ...(templateId ? { templateId } : {}),
         ...(paymentMethodId ? { paymentMethodId } : {}),
       })
     }
@@ -223,6 +232,19 @@ export function AddIncomeSheet() {
               />
             </div>
           )}
+
+          {/* link one-time income to a recurring template (optional) */}
+          {!isRecurring ? (
+            <IncomeTemplatePicker
+              value={templateId}
+              onChange={setTemplateId}
+              templates={recurringTemplates}
+              label={t.income.linkToRecurring}
+              noneLabel={t.income.notLinkedToRecurring}
+              suggestion={suggestedTemplate ? { id: suggestedTemplate.id, name: suggestedTemplate.name } : null}
+              suggestionLabel={t.income.looksLikeTemplate}
+            />
+          ) : null}
 
           {/* payment method */}
           <PaymentMethodPicker
