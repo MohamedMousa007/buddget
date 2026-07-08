@@ -139,6 +139,41 @@ export const importDataSchema = z.object({
         }))
     )
     .optional(),
+  incomeEvents: z
+    .array(
+      z.object({
+        id: z.string(),
+        templateId: z.string().nullable().optional(),
+        name: z.string(),
+        amount: z.number(),
+        currency: fiatCurrencySchema,
+        sourceType: z
+          .enum([
+            'salary',
+            'bonus',
+            'side_hustle',
+            'investment',
+            'savings',
+            'debt',
+            'gift',
+            'refund',
+            'other',
+          ])
+          .optional(),
+        receivedDate: z.string(),
+        status: z.enum(['confirmed', 'projected', 'late', 'missed', 'partial']),
+        paymentMethodId: z.string().optional(),
+        linkedSavingsAccountId: z.string().optional(),
+        linkedDebtId: z.string().optional(),
+        sharedPlanId: z.string().uuid().nullable().optional(),
+        smsLogId: z.string().nullable().optional(),
+        notes: z.string().optional(),
+        createdAt: z.string(),
+        updatedAt: z.string().optional(),
+      })
+        .transform((o) => ({ ...o, updatedAt: o.updatedAt ?? o.createdAt }))
+    )
+    .optional(),
   expenses: z
     .array(
       z.object({

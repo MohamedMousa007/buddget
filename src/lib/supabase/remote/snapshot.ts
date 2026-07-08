@@ -1,4 +1,4 @@
-import type { FinanceStore, UserProfile, AppSettings, PaymentMethod, IncomeSource, Expense, Receipt, RecurringExpense, Subscription, Debt, DebtPayment, RecurringDebtPayment, SavingsAccount, SavingsHolding, SavingsTransaction, RecurringSavingsDeposit, Goal, BudgetPlan } from '@/lib/store/types'
+import type { FinanceStore, UserProfile, AppSettings, PaymentMethod, IncomeSource, IncomeEvent, Expense, Receipt, RecurringExpense, Subscription, Debt, DebtPayment, RecurringDebtPayment, SavingsAccount, SavingsHolding, SavingsTransaction, RecurringSavingsDeposit, Goal, BudgetPlan } from '@/lib/store/types'
 
 /**
  * Mirror of the finance store slices we persist to Supabase. Used to compute diffs
@@ -11,6 +11,7 @@ export interface Snapshot {
   activeBudgetPlanId: string | null
   paymentMethods: PaymentMethod[]
   incomeSources: IncomeSource[]
+  incomeEvents: IncomeEvent[]
   expenses: Expense[]
   receipts: Receipt[]
   recurringExpenses: RecurringExpense[]
@@ -29,7 +30,7 @@ export interface Snapshot {
 /** Copy the parts of the Zustand store that map to DB rows. Plain JSON; safe to `deepEqual` on. */
 export function snapshot(state: Pick<FinanceStore,
   | 'profile' | 'settings' | 'financialGoalsNotes' | 'activeBudgetPlanId'
-  | 'paymentMethods' | 'incomeSources' | 'expenses' | 'receipts' | 'recurringExpenses'
+  | 'paymentMethods' | 'incomeSources' | 'incomeEvents' | 'expenses' | 'receipts' | 'recurringExpenses'
   | 'subscriptions' | 'debts' | 'debtPayments' | 'recurringDebtPayments'
   | 'savingsAccounts' | 'savingsHoldings' | 'savingsTransactions' | 'recurringSavingsDeposits'
   | 'goals' | 'budgetPlans'
@@ -41,6 +42,7 @@ export function snapshot(state: Pick<FinanceStore,
     activeBudgetPlanId: state.activeBudgetPlanId,
     paymentMethods: state.paymentMethods,
     incomeSources: state.incomeSources,
+    incomeEvents: state.incomeEvents,
     expenses: state.expenses,
     receipts: state.receipts,
     recurringExpenses: state.recurringExpenses,
@@ -84,6 +86,7 @@ export function emptySnapshot(): Snapshot {
     activeBudgetPlanId: null,
     paymentMethods: [],
     incomeSources: [],
+    incomeEvents: [],
     expenses: [],
     receipts: [],
     recurringExpenses: [],

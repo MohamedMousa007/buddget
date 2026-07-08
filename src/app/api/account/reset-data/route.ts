@@ -24,6 +24,7 @@ const FINANCIAL_TABLES = [
   'recurring_savings_deposits',
   'savings_accounts',
   'goals',
+  'income_events',
   'income_sources',
   'payment_methods',
   'notifications',

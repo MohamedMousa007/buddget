@@ -42,6 +42,7 @@ export function mergeSnapshots(local: Snapshot, server: Snapshot): Snapshot {
     // Array domains: union by id, newer `updatedAt`/`createdAt` wins.
     paymentMethods: mergeList(local.paymentMethods as WithId[], server.paymentMethods as WithId[]) as Snapshot['paymentMethods'],
     incomeSources: mergeList(local.incomeSources, server.incomeSources),
+    incomeEvents: mergeList(local.incomeEvents, server.incomeEvents),
     expenses: mergeList(local.expenses, server.expenses),
     receipts: mergeList(local.receipts, server.receipts),
     recurringExpenses: mergeList(local.recurringExpenses as WithId[], server.recurringExpenses as WithId[]) as Snapshot['recurringExpenses'],

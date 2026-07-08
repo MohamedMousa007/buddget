@@ -9,7 +9,7 @@ import { MonthNavigationControl } from '@/components/layout/MonthNavigationContr
 import { IncomeTypeIcon, incomeTypeColors } from '@/components/features/income/IncomeTypeIcon'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useT } from '@/lib/i18n'
-import { useHydrateIncome, useHydrateDebts, useHydrateSavings } from '@/hooks/remote'
+import { useHydrateIncome, useHydrateIncomeEvents, useHydrateDebts, useHydrateSavings } from '@/hooks/remote'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
@@ -31,6 +31,7 @@ function monthlyEquivalent(source: IncomeSource): number {
 
 export default function IncomePage() {
   useHydrateIncome()
+  useHydrateIncomeEvents()
   useHydrateDebts()
   useHydrateSavings()
   const dataReady = useFinanceStore((s) => s.dataReady)
