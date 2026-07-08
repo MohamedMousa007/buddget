@@ -216,6 +216,55 @@ export function actualIncomeForMonth(
 }
 
 /**
+ * Is a recurring template's expected income for `monthStr` still awaiting? True when
+ * the due date has passed (relative to `today`) and no linked event landed in the
+ * month window. Display-only — an overdue paycheck is shown as "awaiting", NEVER
+ * auto-counted as missed (only the user marks missed/partial).
+ */
+export function isIncomeOccurrencePending(
+  template: IncomeSource,
+  events: IncomeEvent[],
+  monthStr: string,
+  today: Date,
+  monthStartDay = 1
+): boolean {
+  if (!template.isRecurring) return false
+  const { start, end } = getMonthRange(monthStr, monthStartDay)
+  if (!recurringActiveForWindow(template, start, end)) return false
+  const hasEvent = events.some(
+    (e) => e.templateId === template.id && isWithinInterval(parseISO(e.receivedDate), { start, end })
+  )
+  if (hasEvent) return false
+  // Monthly: due on dayOfMonth. Non-monthly (weekly/biweekly): treat the month start as due.
+  const dueDay = template.recurringFrequency === 'monthly' ? template.dayOfMonth ?? 1 : 1
+  const due = parseISO(`${monthStr}-${String(dueDay).padStart(2, '0')}`)
+  return today >= due
+}
+
+/**
+ * Best recurring template a manually-entered amount likely fulfills: same currency,
+ * closest amount within 15% (mirrors matchSalary's CONFIRM tolerance). Used to
+ * smart-suggest a link in the add/edit income forms. Returns null if none close.
+ */
+export function suggestIncomeTemplate(
+  amount: number,
+  currency: Currency,
+  templates: IncomeSource[]
+): IncomeSource | null {
+  let best: IncomeSource | null = null
+  let bestDiff = 0.15
+  for (const t of templates) {
+    if (!t.isRecurring || t.currency !== currency || !t.amount) continue
+    const diff = Math.abs(amount - t.amount) / t.amount
+    if (diff <= bestDiff) {
+      best = t
+      bestDiff = diff
+    }
+  }
+  return best
+}
+
+/**
  * Recurring income that counts for a calendar month: sources whose effective window
  * overlaps that month. (New income sources added mid-timeline do not inflate earlier
  * months; ended sources stop counting after their `effectiveEnd`.)

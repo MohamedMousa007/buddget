@@ -10,12 +10,13 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useT } from '@/lib/i18n'
-import type { Currency, IncomeEvent, IncomeSourceType } from '@/lib/store/types'
+import type { Currency, IncomeEvent, IncomeEventStatus, IncomeSourceType } from '@/lib/store/types'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
 import { IncomeSourceTypePicker } from '@/components/features/income/IncomeSourceTypePicker'
+import { IncomeTemplatePicker } from '@/components/features/income/IncomeTemplatePicker'
 import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
 import {
   MODAL_BODY_SCROLL_CLASS,
@@ -30,14 +31,19 @@ const DATE_INPUT_CLASS =
 function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: () => void }) {
   useEscapeClose(true, onClose)
   const t = useT()
-  const { updateIncomeEvent, deleteIncomeEvent, settings, paymentMethods } = useFinanceStore(
+  const { updateIncomeEvent, deleteIncomeEvent, settings, paymentMethods, debts, incomeSources } = useFinanceStore(
     useShallow((s) => ({
       updateIncomeEvent: s.updateIncomeEvent,
       deleteIncomeEvent: s.deleteIncomeEvent,
       settings: s.settings,
       paymentMethods: s.paymentMethods,
+      debts: s.debts,
+      incomeSources: s.incomeSources,
     }))
   )
+  const recurringTemplates = incomeSources.filter((s) => s.isRecurring)
+  const linkedDebt = event.linkedDebtId ? debts.find((d) => d.id === event.linkedDebtId) : undefined
+  const [debtChoiceOpen, setDebtChoiceOpen] = useState(false)
   // Savings/investment/debt events are system-linked — keep their type read-only.
   const typeLocked = Boolean(event.linkedSavingsAccountId || event.linkedDebtId)
 
@@ -46,11 +52,22 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
   const [currency, setCurrency] = useState<Currency>(event.currency)
   const [sourceType, setSourceType] = useState<IncomeSourceType>(event.sourceType ?? 'other')
   const [receivedDate, setReceivedDate] = useState(event.receivedDate)
+  const [templateId, setTemplateId] = useState(event.templateId ?? '')
+  const [status, setStatus] = useState<IncomeEventStatus>(event.status)
   const [paymentMethodId, setPaymentMethodId] = useState(event.paymentMethodId ?? '')
   const [notes, setNotes] = useState(event.notes ?? '')
 
   const amt = parseFloat(amount)
   const valid = name.trim().length > 0 && !Number.isNaN(amt) && amt > 0
+  // Received-vs-expected status only makes sense for template-linked events.
+  const STATUS_CHOICES: IncomeEventStatus[] = ['confirmed', 'late', 'partial', 'missed']
+  const statusText: Record<IncomeEventStatus, string> = {
+    confirmed: t.income.statusReceived,
+    late: t.income.statusLate,
+    partial: t.income.statusPartial,
+    missed: t.income.statusMissed,
+    projected: t.income.statusPending,
+  }
 
   const handleSave = () => {
     if (!valid) return
@@ -61,18 +78,30 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
       receivedDate,
       notes: notes.trim() || undefined,
       paymentMethodId: paymentMethodId || undefined,
-      ...(typeLocked ? {} : { sourceType }),
+      ...(typeLocked ? {} : { sourceType, templateId: templateId || null, status }),
     })
     onClose()
   }
 
   const handleDelete = () => {
+    // Borrowed money → let the user decide the debt's fate; otherwise a plain confirm.
+    if (linkedDebt) {
+      setDebtChoiceOpen(true)
+      return
+    }
     if (!window.confirm(t.income.confirmDelete)) return
     deleteIncomeEvent(event.id)
     onClose()
   }
 
+  const finishDelete = (deleteLinkedDebt: boolean) => {
+    deleteIncomeEvent(event.id, deleteLinkedDebt)
+    setDebtChoiceOpen(false)
+    onClose()
+  }
+
   return (
+    <>
     <div className={`${MODAL_SHEET_OUTER_CLASS} p-5`}>
       <div className="shrink-0">
         <ModalSheetHeader title={t.editIncome.title} onClose={onClose} />
@@ -120,6 +149,41 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
           <input type="date" value={receivedDate} onChange={(e) => setReceivedDate(e.target.value)} className={DATE_INPUT_CLASS} />
         </div>
 
+        {!typeLocked ? (
+          <IncomeTemplatePicker
+            value={templateId}
+            onChange={setTemplateId}
+            templates={recurringTemplates}
+            label={t.income.linkToRecurring}
+            noneLabel={t.income.notLinkedToRecurring}
+          />
+        ) : null}
+
+        {!typeLocked && templateId ? (
+          <div>
+            <span className={MODAL_LABEL_CLASS}>{t.income.statusLabel}</span>
+            <div className="mt-1.5 grid grid-cols-4 gap-1.5">
+              {STATUS_CHOICES.map((sVal) => {
+                const on = status === sVal
+                return (
+                  <button
+                    key={sVal}
+                    type="button"
+                    onClick={() => setStatus(sVal)}
+                    className={`h-10 rounded-lg border text-xs font-semibold transition-colors ${
+                      on
+                        ? 'border-[var(--color-brand-red)] bg-[rgba(229,9,20,.1)] text-[var(--color-brand-text-primary)]'
+                        : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]'
+                    }`}
+                  >
+                    {statusText[sVal]}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ) : null}
+
         <PaymentMethodPicker
           value={paymentMethodId}
           onChange={setPaymentMethodId}
@@ -158,6 +222,39 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
         </button>
       </div>
     </div>
+
+    {debtChoiceOpen && linkedDebt ? (
+      <ModalShell open onBackdropClick={() => setDebtChoiceOpen(false)} zIndexClassName="z-[110]" dragToClose={false}>
+        <div className="w-full max-w-sm rounded-2xl bg-[var(--color-brand-card)] p-5">
+          <h2 className="text-base font-bold text-[var(--color-brand-text-primary)]">{t.income.deleteWithDebtTitle}</h2>
+          <p className="mt-2 text-sm text-[var(--color-brand-text-secondary)]">{t.income.deleteWithDebtBody(linkedDebt.name)}</p>
+          <div className="mt-5 flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => finishDelete(true)}
+              className="w-full py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold"
+            >
+              {t.income.deleteBoth}
+            </button>
+            <button
+              type="button"
+              onClick={() => finishDelete(false)}
+              className="w-full py-3 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)] text-sm font-semibold"
+            >
+              {t.income.keepDebt}
+            </button>
+            <button
+              type="button"
+              onClick={() => setDebtChoiceOpen(false)}
+              className="w-full py-2.5 text-sm text-[var(--color-brand-text-muted)]"
+            >
+              {t.common.cancel}
+            </button>
+          </div>
+        </div>
+      </ModalShell>
+    ) : null}
+    </>
   )
 }
 

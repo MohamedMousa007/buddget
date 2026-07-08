@@ -359,10 +359,32 @@ export const useFinanceStore = create<FinanceStore>()(
           ),
         })),
 
-      deleteIncomeEvent: (id) =>
+      deleteIncomeEvent: (id, deleteLinkedDebt) =>
         set((state) => {
           const event = state.incomeEvents.find((e) => e.id === id)
           const incomeEvents = state.incomeEvents.filter((e) => e.id !== id)
+          // Borrowed-money event: optionally cascade-delete the debt it created (mirrors deleteDebt).
+          if (deleteLinkedDebt && event?.linkedDebtId) {
+            const debtId = event.linkedDebtId
+            const nextState: FinanceStore = {
+              ...state,
+              incomeEvents,
+              debts: state.debts.filter((d) => d.id !== debtId),
+              debtPayments: state.debtPayments.filter((p) => p.debtId !== debtId),
+              recurringDebtPayments: state.recurringDebtPayments.filter((r) => r.debtId !== debtId),
+              goals: state.goals.map((g) => ({
+                ...g,
+                linkedDebtIds: g.linkedDebtIds.filter((x) => x !== debtId),
+              })),
+            }
+            return {
+              incomeEvents,
+              debts: nextState.debts,
+              debtPayments: nextState.debtPayments,
+              recurringDebtPayments: nextState.recurringDebtPayments,
+              goals: reconcileGoalsForState(nextState),
+            }
+          }
           // Reconcile a savings/investment withdrawal: put the money back and log the reversal.
           if (event?.linkedSavingsAccountId) {
             const acc = state.savingsAccounts.find((a) => a.id === event.linkedSavingsAccountId)

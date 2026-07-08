@@ -64,7 +64,6 @@ interface ParsedTx {
   rawSmsSummary: string | null
   detectedAccountLast4: string | null
   detectedCounterpartyLast4: string | null
-  newBalance: number | null
   merchantNormalized: string | null
 }
 
@@ -172,7 +171,7 @@ function applyTemplate(
         cleanTitle, rawSmsSummary: null,
         detectedAccountLast4: cleanLast4,
         detectedCounterpartyLast4: null,
-        newBalance: null, merchantNormalized: null,
+        merchantNormalized: null,
       },
     }
   } catch { return null }
@@ -602,7 +601,6 @@ export async function POST(request: Request) {
       rawSmsSummary: null,
       detectedAccountLast4: curated.last4,
       detectedCounterpartyLast4: curated.counterpartyLast4,
-      newBalance: curated.balance,
       merchantNormalized: null,
     }
   } else if (staticResult) {
@@ -740,7 +738,6 @@ export async function POST(request: Request) {
     counterpartyLast4: cleanCpLast4,
     receivedAtIso: nowIso,
     logId,
-    newBalance: parsed.newBalance ?? null,
   }, { exchangeRates: {} })
 
   const { expenseId, incomeId, debtPaymentId } = tx
@@ -803,7 +800,6 @@ export async function POST(request: Request) {
       kind: parsed.kind,
       clean_title: parsed.cleanTitle,
       raw_sms_summary: parsed.rawSmsSummary,
-      new_balance: parsed.newBalance ?? null,
       merchant_normalized: parsed.merchantNormalized ?? null,
       parse_method: parseMethod,
       pattern_id: patternId,
@@ -1059,7 +1055,6 @@ async function callGemini(apiKey: string, message: string): Promise<ParsedTx> {
     rawSmsSummary: parsed.rawSmsSummary ?? null,
     detectedAccountLast4: parsed.detectedAccountLast4 ?? null,
     detectedCounterpartyLast4: parsed.detectedCounterpartyLast4 ?? null,
-    newBalance: typeof parsed.newBalance === 'number' ? parsed.newBalance : null,
     merchantNormalized: parsed.merchantNormalized ?? null,
   }
 }

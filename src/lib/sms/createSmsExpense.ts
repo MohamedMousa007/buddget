@@ -67,10 +67,10 @@ export interface SmsRowData {
   receivedAtIso?: string | null
   /** sms_parse_log row id, stamped onto the expense for traceability/idempotency. */
   logId?: string | null
-  /** Post-transaction balance to persist onto the resolved payment method. */
-  newBalance?: number | null
   /** Set when this expense is linked to a tracked subscription. */
   linkedSubscriptionId?: string | null
+  /** Recurring income template this credit fulfills (salary match) → links the event. */
+  templateId?: string | null
   /** Force a specific category (overrides kind/hint mapping). */
   categoryOverride?: ExpenseCategory | null
 }
@@ -104,14 +104,12 @@ function smsTitle(row: SmsRowData): string | null {
 
 /**
  * Resolves the user's payment method from a card/account last4, falling back to
- * the default payment method. Returns the id or null. When a last4 matches, the
- * post-transaction balance (if provided) is persisted to that method.
+ * the default payment method. Returns the id or null.
  */
 export async function resolvePaymentMethodByLast4(
   service: SupabaseClient,
   userId: string,
   last4: string | null | undefined,
-  newBalance?: number | null,
 ): Promise<string | null> {
   if (last4) {
     const { data: byLast4 } = await service
@@ -122,12 +120,7 @@ export async function resolvePaymentMethodByLast4(
       .is('deleted_at', null)
       .limit(1)
       .maybeSingle()
-    if (byLast4?.id) {
-      if (typeof newBalance === 'number') {
-        await service.from('payment_methods').update({ balance: newBalance }).eq('id', byLast4.id)
-      }
-      return byLast4.id
-    }
+    if (byLast4?.id) return byLast4.id
   }
   const { data: def } = await service
     .from('payment_methods')
@@ -147,13 +140,16 @@ export async function createSmsExpense(
   const title = smsTitle(row)
 
   if (isIncomeKind(row.kind)) {
-    const sourceType = row.kind === 'refund' ? 'refund' : 'other'
-    // Bank credits are actual received income → the events ledger, not a template.
+    // A salary match links the event to its recurring template (source_type 'salary');
+    // otherwise it's a standalone credit in the events ledger.
+    const linked = !!row.templateId
+    const sourceType = linked ? 'salary' : row.kind === 'refund' ? 'refund' : 'other'
     const { data, error } = await service
       .from('income_events')
       .insert({
         user_id: row.userId,
-        name: title ?? 'Bank credit',
+        template_id: row.templateId ?? null,
+        name: title ?? (linked ? 'Salary' : 'Bank credit'),
         amount: row.amount,
         currency: row.currency,
         source_type: sourceType,
@@ -172,7 +168,7 @@ export async function createSmsExpense(
   const paymentMethodId =
     row.kind === 'cc_payoff'
       ? null
-      : await resolvePaymentMethodByLast4(service, row.userId, row.last4, row.newBalance)
+      : await resolvePaymentMethodByLast4(service, row.userId, row.last4)
   const mappedCategory = row.categoryOverride ?? mapKindToCategory(row.kind, row.categoryHint)
 
   const { data, error } = await service
