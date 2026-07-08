@@ -417,6 +417,8 @@ export interface Dictionary {
     freqMonthlyDay: (day: number) => string
     freqBiweeklyShort: string
     freqWeeklyShort: string
+    effectiveStart: string
+    effectiveEnd: string
     confirmDelete: string
     sourceTypeSalary: string
     sourceTypeBonus: string

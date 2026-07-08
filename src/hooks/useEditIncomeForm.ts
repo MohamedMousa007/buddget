@@ -37,6 +37,9 @@ export function useEditIncomeForm(source: IncomeSource, onClose: () => void) {
   )
   const [dayOfMonth, setDayOfMonth] = useState(String(source.dayOfMonth ?? 1))
   const [notes, setNotes] = useState(source.notes || '')
+  const [paymentMethodId, setPaymentMethodId] = useState(source.paymentMethodId ?? '')
+  const [effectiveStart, setEffectiveStart] = useState(source.effectiveStart)
+  const [effectiveEnd, setEffectiveEnd] = useState(source.effectiveEnd ?? '')
 
   const typeLocked = isIncomeSourceTypeLocked(source)
 
@@ -51,6 +54,9 @@ export function useEditIncomeForm(source: IncomeSource, onClose: () => void) {
       recurringFrequency: isRecurring ? recurringFrequency : undefined,
       dayOfMonth: isRecurring && recurringFrequency === 'monthly' ? parseInt(dayOfMonth, 10) || 1 : undefined,
       notes: notes || undefined,
+      effectiveStart: effectiveStart || source.effectiveStart,
+      effectiveEnd: effectiveEnd || null,
+      paymentMethodId: paymentMethodId || undefined,
       ...(typeLocked ? {} : { sourceType }),
     })
     onClose()
@@ -58,12 +64,16 @@ export function useEditIncomeForm(source: IncomeSource, onClose: () => void) {
     amount,
     currency,
     dayOfMonth,
+    effectiveEnd,
+    effectiveStart,
     isRecurring,
     name,
     notes,
     onClose,
+    paymentMethodId,
     recurringFrequency,
     settings,
+    source.effectiveStart,
     source.id,
     sourceType,
     typeLocked,
@@ -88,6 +98,12 @@ export function useEditIncomeForm(source: IncomeSource, onClose: () => void) {
     setDayOfMonth,
     notes,
     setNotes,
+    paymentMethodId,
+    setPaymentMethodId,
+    effectiveStart,
+    setEffectiveStart,
+    effectiveEnd,
+    setEffectiveEnd,
     handleSubmit,
     baseCurrency: settings.baseCurrency,
   }

@@ -27,8 +27,8 @@ export interface PaymentMethodPickerProps {
   value: string
   onChange: (id: string) => void
   paymentMethods: PaymentMethod[]
-  /** Opens the host's "add payment method" flow (expense sheet overlay, income modal, …). */
-  onAddNew: () => void
+  /** Opens the host's "add payment method" flow. When omitted, the add button is hidden. */
+  onAddNew?: () => void
   /** Optional uppercase micro-label above the trigger. */
   label?: string
 }
@@ -165,17 +165,19 @@ export function PaymentMethodPicker({
                   )
                 })}
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(false)
-                  onAddNew()
-                }}
-                className="mt-2 flex h-12 w-full items-center gap-2.5 rounded-xl border border-[rgba(229,9,20,.28)] bg-[rgba(229,9,20,.08)] px-3.5 text-sm font-semibold text-[var(--color-brand-red)] hover:bg-[rgba(229,9,20,.14)]"
-              >
-                <Plus className="w-5 h-5" />
-                {t.expenseForm.addPaymentMethod}
-              </button>
+              {onAddNew ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false)
+                    onAddNew()
+                  }}
+                  className="mt-2 flex h-12 w-full items-center gap-2.5 rounded-xl border border-[rgba(229,9,20,.28)] bg-[rgba(229,9,20,.08)] px-3.5 text-sm font-semibold text-[var(--color-brand-red)] hover:bg-[rgba(229,9,20,.14)]"
+                >
+                  <Plus className="w-5 h-5" />
+                  {t.expenseForm.addPaymentMethod}
+                </button>
+              ) : null}
             </div>
           </div>
         </Portal>
