@@ -188,17 +188,21 @@ describe('income source mapper', () => {
       dayOfMonth: 25,
       notes: 'gross',
       createdAt: '2026-04-01T00:00:00.000Z',
+      updatedAt: '2026-04-01T00:00:00.000Z',
       sourceType: 'salary',
+      linkedSavingsAccountId: 'sav_1',
     }
     const back = roundTrip(i, incomeSourceToRow, incomeSourceFromRow)
     expect(back.amount).toBe(10000)
     expect(back.recurringFrequency).toBe('monthly')
     expect(back.sourceType).toBe('salary')
+    expect(back.linkedSavingsAccountId).toBe('sav_1')
   })
   it('maps legacy side_hustle → freelance', () => {
     const i: IncomeSource = {
       id: 'inc_2', name: 'Freelance', amount: 500, currency: 'USD',
-      isRecurring: false, createdAt: '2026-04-01T00:00:00.000Z', sourceType: 'side_hustle',
+      isRecurring: false, createdAt: '2026-04-01T00:00:00.000Z',
+      updatedAt: '2026-04-01T00:00:00.000Z', sourceType: 'side_hustle',
     }
     const row = incomeSourceToRow(i, UID)
     expect(row.source_type).toBe('freelance')

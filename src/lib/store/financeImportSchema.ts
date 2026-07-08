@@ -110,6 +110,7 @@ export const importDataSchema = z.object({
         dayOfMonth: z.number().int().min(1).max(31).optional(),
         notes: z.string().optional(),
         createdAt: z.string(),
+        updatedAt: z.string().optional(),
         sharedPlanId: z.string().uuid().nullable().optional(),
         sourceType: z
           .enum([
@@ -128,6 +129,8 @@ export const importDataSchema = z.object({
         linkedDebtId: z.string().optional(),
         paymentMethodId: z.string().optional(),
       })
+        // Legacy backups predate `updatedAt`; backfill from `createdAt` so merge LWW works.
+        .transform((o) => ({ ...o, updatedAt: o.updatedAt ?? o.createdAt }))
     )
     .optional(),
   expenses: z
