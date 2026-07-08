@@ -149,6 +149,7 @@ function AmountRangeControl() {
             <input
               className="font-mono-numbers min-w-0 flex-1 border-none bg-transparent text-base font-bold text-[var(--color-brand-text-primary)] outline-none"
               type="number"
+              inputMode="decimal"
               min={0}
               max={AMOUNT_MAX}
               step={50}
@@ -166,6 +167,7 @@ function AmountRangeControl() {
             <input
               className="font-mono-numbers min-w-0 flex-1 border-none bg-transparent text-base font-bold text-[var(--color-brand-text-primary)] outline-none"
               type="number"
+              inputMode="decimal"
               min={0}
               max={AMOUNT_MAX}
               step={50}
