@@ -96,7 +96,7 @@ export async function POST(request: Request) {
     }
     if (logRow.income_id) {
       const { error: incErr } = await serviceClient
-        .from('income_sources')
+        .from('income_events')
         .delete()
         .eq('id', logRow.income_id)
         .eq('user_id', userId)
