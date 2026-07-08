@@ -15,6 +15,7 @@ import {
 import {
   filterExpensesByMonth,
   projectedIncomeForMonth,
+  actualIncomeForMonth,
   calculateTotalSpent,
   calculateTotalSpentExcludingSavings,
   calculateCategorySpending,
@@ -62,6 +63,7 @@ export function useMonthlyStats() {
   const {
     expenses,
     incomeSources,
+    incomeEvents,
     budgetCategories,
     budgetPlans,
     activeBudgetPlanId,
@@ -78,6 +80,7 @@ export function useMonthlyStats() {
     useShallow((s) => ({
       expenses: s.expenses,
       incomeSources: s.incomeSources,
+      incomeEvents: s.incomeEvents,
       budgetCategories: s.budgetCategories,
       budgetPlans: s.budgetPlans,
       activeBudgetPlanId: s.activeBudgetPlanId,
@@ -134,16 +137,27 @@ export function useMonthlyStats() {
       }
     }
     const monthlyExpenses = filterExpensesByMonth(expenses, monthFilter, settings.monthStartDay)
-    const rawMonthlyIncome = projectedIncomeForMonth(
+    // Two income numbers: `projectedIncome` (expected recurring — budgets scale on it)
+    // vs `totalIncome`/actual (events + projected fallback — the KPI + realized savings).
+    const rawProjectedIncome = projectedIncomeForMonth(
       incomeSources,
       settings.baseCurrency,
       exchangeRates,
       monthFilter,
       settings.monthStartDay
     )
+    const rawActualIncome = actualIncomeForMonth(
+      incomeSources,
+      incomeEvents,
+      settings.baseCurrency,
+      exchangeRates,
+      monthFilter,
+      settings.monthStartDay
+    )
     const incomeBlocked =
-      settings.noIncomeDeclared === true && incomeSources.length === 0
-    const totalIncome = incomeBlocked ? 0 : rawMonthlyIncome
+      settings.noIncomeDeclared === true && incomeSources.length === 0 && incomeEvents.length === 0
+    const projectedIncome = incomeBlocked ? 0 : rawProjectedIncome
+    const totalIncome = incomeBlocked ? 0 : rawActualIncome
     const totalSpent = calculateTotalSpent(monthlyExpenses, settings.baseCurrency, exchangeRates)
     const totalSpentForExpenseBudget = calculateTotalSpentExcludingSavings(
       monthlyExpenses,
@@ -160,15 +174,15 @@ export function useMonthlyStats() {
 
     const totalBudget = activePlan
       ? totalPlannedExpensesForPlan(activePlan, settings.baseCurrency, exchangeRates)
-      : calculateTotalBudget(budgetCategories, settings, totalIncome)
+      : calculateTotalBudget(budgetCategories, settings, projectedIncome)
     const totalExpenseBudget = activePlan
       ? totalExpenseBudgetFromPlan(activePlan, settings.baseCurrency, exchangeRates)
-      : calculateTotalBudgetExcludingSavings(budgetCategories, settings, totalIncome)
+      : calculateTotalBudgetExcludingSavings(budgetCategories, settings, projectedIncome)
     const plannedSavingsBudget = activePlan
       ? totalPlannedSavingsAllocationForPlan(activePlan, settings.baseCurrency, exchangeRates)
       : budgetCategories
           .filter((b) => b.category === 'Savings')
-          .reduce((s, b) => s + effectiveCategoryBudget(b, settings, totalIncome), 0)
+          .reduce((s, b) => s + effectiveCategoryBudget(b, settings, projectedIncome), 0)
     const remaining = totalExpenseBudget - totalSpentForExpenseBudget
     const budgetUsedPercent = calculateBudgetUsedPercent(totalSpentForExpenseBudget, totalExpenseBudget)
     const spendingByEnum = calculateCategorySpending(
@@ -222,7 +236,8 @@ export function useMonthlyStats() {
     // *actually* saved (income − actual spend). Both clamp at zero so a
     // shortfall reads as zero saved rather than a negative figure.
     const monthClosed = monthFilter < currentMonthString()
-    const projectedMonthSavings = Math.max(0, totalIncome - totalExpenseBudget)
+    // Projected savings plans on expected income; realized reconciles against actual.
+    const projectedMonthSavings = Math.max(0, projectedIncome - totalExpenseBudget)
     const realizedMonthSavings = Math.max(0, totalIncome - totalSpentForExpenseBudget)
     const savingsThisMonth = monthClosed ? realizedMonthSavings : projectedMonthSavings
 
@@ -231,6 +246,7 @@ export function useMonthlyStats() {
       monthStartDay: settings.monthStartDay,
       expenses,
       incomeSources,
+      incomeEvents,
       savingsTransactions,
       baseCurrency: settings.baseCurrency,
       exchangeRates,
@@ -243,7 +259,7 @@ export function useMonthlyStats() {
     const categoryBudgetCaps = Object.fromEntries(
       effectiveBudgetRows.map((b) => [
         b.category,
-        planForCategoryBar ? b.budgetedAmount : effectiveCategoryBudget(b, settings, totalIncome),
+        planForCategoryBar ? b.budgetedAmount : effectiveCategoryBudget(b, settings, projectedIncome),
       ])
     ) as Record<string, number>
 
@@ -313,6 +329,7 @@ export function useMonthlyStats() {
   }, [
     expenses,
     incomeSources,
+    incomeEvents,
     budgetCategories,
     budgetPlans,
     activeBudgetPlanId,

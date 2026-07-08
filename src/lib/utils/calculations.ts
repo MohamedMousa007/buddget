@@ -11,6 +11,7 @@ import {
 import type {
   Expense,
   IncomeSource,
+  IncomeEvent,
   IncomeRecurringFrequency,
   BudgetCategory,
   Debt,
@@ -145,6 +146,70 @@ export function projectedIncomeForMonth(
       total += convertCurrency(monthlyEq, source.currency, baseCurrency, rates)
     } else if (isWithinInterval(parseISO(source.createdAt), { start, end })) {
       total += convertCurrency(source.amount, source.currency, baseCurrency, rates)
+    }
+  }
+  return total
+}
+
+const REALIZED_EVENT_STATUSES = new Set<IncomeEvent['status']>(['confirmed', 'late', 'partial'])
+
+/**
+ * Actual income received in a month: confirmed/late/partial events count as-is;
+ * an active template occurrence with no event contributes its projected fallback
+ * (assume received unless explicitly marked missed/partial). Standalone one-time
+ * events count directly; one-time `income_sources` not yet superseded by an event
+ * (created before the ledger cutover) are counted once, de-duped by id.
+ *
+ * Budgets must NOT use this — they scale on {@link projectedIncomeForMonth}. This is
+ * for realized savings, the "income this month" KPI, reports history, and cash flow.
+ */
+export function actualIncomeForMonth(
+  templates: IncomeSource[],
+  events: IncomeEvent[],
+  baseCurrency: Currency,
+  rates: Record<string, number>,
+  monthStr: string,
+  monthStartDay = 1
+): number {
+  const { start, end } = getMonthRange(monthStr, monthStartDay)
+  const inWindow = (isoOrDate: string) => isWithinInterval(parseISO(isoOrDate), { start, end })
+  let total = 0
+
+  // One-time events. Track every covered source id (any status) so a backfilled or
+  // missed one-time source isn't also counted from income_sources below.
+  const coveredSourceIds = new Set<string>()
+  for (const e of events) {
+    if (e.templateId) continue
+    coveredSourceIds.add(e.id) // backfilled one-time events reuse their source id
+    if (!inWindow(e.receivedDate)) continue
+    if (REALIZED_EVENT_STATUSES.has(e.status)) {
+      total += convertCurrency(e.amount, e.currency, baseCurrency, rates)
+    }
+  }
+
+  for (const t of templates) {
+    if (t.isRecurring) {
+      if (!recurringActiveForWindow(t, start, end)) continue
+      const perOccurrence = convertCurrency(t.amount, t.currency, baseCurrency, rates)
+      const mult = incomeMonthlyMultiplier(t.recurringFrequency)
+      const evForT = events.filter((e) => e.templateId === t.id && inWindow(e.receivedDate))
+      if (evForT.length === 0) {
+        total += perOccurrence * mult // == projected; behavior preserved when no events exist
+      } else {
+        // Each event stands in for one occurrence: realized → its amount, projected →
+        // the projection, missed → nothing. Occurrences with no event fall back to projected.
+        let sub = 0
+        for (const e of evForT) {
+          if (REALIZED_EVENT_STATUSES.has(e.status)) sub += convertCurrency(e.amount, e.currency, baseCurrency, rates)
+          else if (e.status === 'projected') sub += perOccurrence
+          // 'missed' contributes nothing
+        }
+        const expected = Math.max(evForT.length, Math.round(mult))
+        total += sub + (expected - evForT.length) * perOccurrence
+      }
+    } else if (!coveredSourceIds.has(t.id) && inWindow(t.createdAt)) {
+      // One-time source with no event yet (added before Phase 6 wired event creation).
+      total += convertCurrency(t.amount, t.currency, baseCurrency, rates)
     }
   }
   return total
@@ -332,6 +397,7 @@ export function calculateLeftToSpendCashFlow(params: {
   monthStartDay: number
   expenses: Expense[]
   incomeSources: IncomeSource[]
+  incomeEvents: IncomeEvent[]
   savingsTransactions: SavingsTransaction[]
   baseCurrency: Currency
   exchangeRates: Record<string, number>
@@ -342,14 +408,16 @@ export function calculateLeftToSpendCashFlow(params: {
     monthStartDay,
     expenses,
     incomeSources,
+    incomeEvents,
     savingsTransactions,
     baseCurrency,
     exchangeRates,
     incomeBlocked,
   } = params
   const monthlyExpenses = filterExpensesByMonth(expenses, monthStr, monthStartDay)
-  const rawIncome = calculateMonthlyIncome(
+  const rawIncome = actualIncomeForMonth(
     incomeSources,
+    incomeEvents,
     baseCurrency,
     exchangeRates,
     monthStr,

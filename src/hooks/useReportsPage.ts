@@ -15,8 +15,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { formatCurrency, escapeCsvField } from '@/lib/utils/formatters'
 import {
-  calculateRecurringIncomeForCalendarMonth,
-  sumRecurringIncomeOverDateRange,
+  actualIncomeForMonth,
   getPaymentMethodBreakdown,
   expenseAmountInBase,
 } from '@/lib/utils/calculations'
@@ -34,11 +33,12 @@ function isDebtLinkedExpense(e: Expense): boolean {
  */
 export function useReportsPage() {
   const t = useT()
-  const { expenses, incomeSources, paymentMethods, settings, exchangeRates, savingsTransactions } =
+  const { expenses, incomeSources, incomeEvents, paymentMethods, settings, exchangeRates, savingsTransactions } =
     useFinanceStore(
       useShallow((s) => ({
         expenses: s.expenses,
         incomeSources: s.incomeSources,
+        incomeEvents: s.incomeEvents,
         paymentMethods: s.paymentMethods,
         settings: s.settings,
         exchangeRates: s.exchangeRates,
@@ -89,12 +89,23 @@ export function useReportsPage() {
     return { filteredExpenses: filtered, startDate: start, endDate: end }
   }, [expenses, dateRange, expenseDebtFilter])
 
-  const periodRecurringIncome = sumRecurringIncomeOverDateRange(
-    incomeSources,
-    settings.baseCurrency,
-    exchangeRates,
-    startDate,
-    endDate
+  // Actual income received across the period (events + projected fallback), summed
+  // over each calendar month the range touches.
+  const periodRecurringIncome = eachMonthOfInterval({
+    start: startOfMonth(startDate),
+    end: startOfMonth(endDate),
+  }).reduce(
+    (sum, m) =>
+      sum +
+      actualIncomeForMonth(
+        incomeSources,
+        incomeEvents,
+        settings.baseCurrency,
+        exchangeRates,
+        format(m, 'yyyy-MM'),
+        1
+      ),
+    0
   )
   const totalExpenses = filteredExpenses.reduce(
     (sum, e) => sum + expenseAmountInBase(e, settings.baseCurrency, exchangeRates),
@@ -122,11 +133,13 @@ export function useReportsPage() {
     return monthStarts.map((monthStart) => {
       const monthEnd = endOfMonth(monthStart)
       const monthLabel = format(monthStart, 'MMM yyyy')
-      const income = calculateRecurringIncomeForCalendarMonth(
+      const income = actualIncomeForMonth(
         incomeSources,
+        incomeEvents,
         settings.baseCurrency,
         exchangeRates,
-        monthStart
+        format(monthStart, 'yyyy-MM'),
+        1
       )
       let expSum = 0
       let savings = 0
@@ -139,7 +152,7 @@ export function useReportsPage() {
       }
       return { month: monthLabel, income, expenses: expSum, savings }
     })
-  }, [filteredExpenses, incomeSources, settings.baseCurrency, exchangeRates, startDate, endDate])
+  }, [filteredExpenses, incomeSources, incomeEvents, settings.baseCurrency, exchangeRates, startDate, endDate])
 
   const methodBreakdown = getPaymentMethodBreakdown(
     filteredExpenses,
