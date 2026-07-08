@@ -548,6 +548,8 @@ export const ar: Dictionary = {
     freqMonthlyDay: (day) => `شهري · ${day}`,
     freqBiweeklyShort: 'كل أسبوعين',
     freqWeeklyShort: 'أسبوعي',
+    effectiveStart: 'يبدأ',
+    effectiveEnd: 'ينتهي (اختياري)',
     confirmDelete: 'هل تريد حذف مصدر الدخل هذا؟ لا يمكن التراجع عن هذا.',
     sourceTypeSalary: 'راتب',
     sourceTypeBonus: 'مكافأة',

@@ -14,14 +14,30 @@ import { useShallow } from 'zustand/react/shallow'
 import { EditIncomeTypeSection } from '@/components/features/income/EditIncomeTypeSection'
 import { EditIncomeRecurringBlock } from '@/components/features/income/EditIncomeRecurringBlock'
 import { EditIncomeAmountCurrency } from '@/components/features/income/EditIncomeAmountCurrency'
+import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
+import { incomeMonthlyMultiplier } from '@/lib/utils/calculations'
+
+const DATE_INPUT_CLASS =
+  'mt-1 w-full h-11 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-sm text-[var(--color-brand-text-primary)] focus:border-[var(--color-brand-red)] focus:outline-none'
 
 export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onClose: () => void }) {
   useEscapeClose(true, onClose)
   const f = useEditIncomeForm(source, onClose)
   const t = useT()
-  const { savingsAccounts, debts, deleteIncomeSource } = useFinanceStore(
-    useShallow((s) => ({ savingsAccounts: s.savingsAccounts, debts: s.debts, deleteIncomeSource: s.deleteIncomeSource }))
+  const { savingsAccounts, debts, paymentMethods, deleteIncomeSource } = useFinanceStore(
+    useShallow((s) => ({
+      savingsAccounts: s.savingsAccounts,
+      debts: s.debts,
+      paymentMethods: s.paymentMethods,
+      deleteIncomeSource: s.deleteIncomeSource,
+    }))
   )
+
+  const amtNum = parseFloat(f.amount)
+  const showMonthlyEq =
+    f.isRecurring && !Number.isNaN(amtNum) && amtNum > 0 && f.recurringFrequency !== 'monthly'
+  const monthlyEq = showMonthlyEq ? amtNum * incomeMonthlyMultiplier(f.recurringFrequency) : 0
+  const fmtNum = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits: 0 })
 
   const handleDelete = () => {
     if (!window.confirm(t.income.confirmDelete)) return
@@ -60,6 +76,17 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
           currency={f.currency}
           setCurrency={f.setCurrency}
         />
+        {showMonthlyEq ? (
+          <p className="-mt-2 font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">
+            {fmtNum(amtNum)} {f.currency}{' '}
+            {t.income[f.recurringFrequency === 'weekly' ? 'freqWeeklyShort' : 'freqBiweeklyShort'].toLowerCase()}
+            {' → ≈ '}
+            <span className="font-semibold text-[var(--color-brand-green)]">
+              {fmtNum(monthlyEq)} {f.currency}
+            </span>{' '}
+            {t.income.perMoSuffix}
+          </p>
+        ) : null}
         <div className="flex items-center justify-between">
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.editIncome.labelRecurring}</Label>
           <Switch checked={f.isRecurring} onCheckedChange={f.setIsRecurring} disabled={f.typeLocked} />
@@ -72,6 +99,37 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
             dayOfMonth={f.dayOfMonth}
             setDayOfMonth={f.setDayOfMonth}
           />
+        )}
+
+        <PaymentMethodPicker
+          value={f.paymentMethodId}
+          onChange={f.setPaymentMethodId}
+          paymentMethods={paymentMethods}
+          label={t.addIncome.labelPaymentMethod}
+        />
+
+        {f.isRecurring && (
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.income.effectiveStart}</Label>
+              <input
+                type="date"
+                value={f.effectiveStart}
+                onChange={(e) => f.setEffectiveStart(e.target.value)}
+                className={DATE_INPUT_CLASS}
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.income.effectiveEnd}</Label>
+              <input
+                type="date"
+                value={f.effectiveEnd}
+                min={f.effectiveStart}
+                onChange={(e) => f.setEffectiveEnd(e.target.value)}
+                className={DATE_INPUT_CLASS}
+              />
+            </div>
+          </div>
         )}
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.editIncome.labelNotes}</Label>

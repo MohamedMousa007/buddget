@@ -549,6 +549,8 @@ export const en: Dictionary = {
     freqMonthlyDay: (day) => `Monthly \u00b7 ${day}`,
     freqBiweeklyShort: 'Bi-weekly',
     freqWeeklyShort: 'Weekly',
+    effectiveStart: 'Starts',
+    effectiveEnd: 'Ends (optional)',
     confirmDelete: 'Remove this income source? This will be gone for good.',
     sourceTypeSalary: 'Salary',
     sourceTypeBonus: 'Bonus',

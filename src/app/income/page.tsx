@@ -13,6 +13,7 @@ import { useHydrateIncome, useHydrateDebts, useHydrateSavings } from '@/hooks/re
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
+import { getMonthRange, recurringActiveForWindow } from '@/lib/utils/calculations'
 import type { IncomeSource } from '@/lib/store/types'
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
@@ -67,7 +68,12 @@ export default function IncomePage() {
     return t.income.freqMonthlyDay(s.dayOfMonth ?? 1)
   }
 
-  const recurring = useMemo(() => incomeSources.filter((s) => s.isRecurring), [incomeSources])
+  // Recurring sources active for the selected month (respects effective start/end
+  // so an ended source no longer inflates the total).
+  const recurring = useMemo(() => {
+    const { start, end } = getMonthRange(monthFilter, settings.monthStartDay)
+    return incomeSources.filter((s) => s.isRecurring && recurringActiveForWindow(s, start, end))
+  }, [incomeSources, monthFilter, settings.monthStartDay])
   const oneTimeThisMonth = useMemo(
     () => incomeSources.filter((s) => !s.isRecurring && s.createdAt.slice(0, 7) === monthFilter),
     [incomeSources, monthFilter],
@@ -77,6 +83,8 @@ export default function IncomePage() {
     () => recurring.reduce((sum, s) => sum + convertCurrency(monthlyEquivalent(s), s.currency, base, exchangeRates), 0),
     [recurring, base, exchangeRates],
   )
+  // Monthly-equivalent of a source in base currency (bi-weekly/weekly normalized to /mo).
+  const toBaseMonthly = (s: IncomeSource) => convertCurrency(monthlyEquivalent(s), s.currency, base, exchangeRates)
   const monthlyUsd = showSecondary && secondary
     ? formatCurrency(convertCurrency(monthlyTotal, base, secondary, exchangeRates), secondary)
     : null
@@ -192,8 +200,13 @@ export default function IncomePage() {
                 <p className="mt-0.5 truncate text-xs text-[var(--color-brand-text-muted)]">{freqLabel(s)} · → {accountLabel(s)}</p>
               </div>
               <div className="shrink-0 text-end">
-                <p className="font-mono-numbers text-base font-bold text-[var(--color-brand-text-primary)]">+{fmtNum(toBase(s))}</p>
+                <p className="font-mono-numbers text-base font-bold text-[var(--color-brand-text-primary)]">+{fmtNum(toBaseMonthly(s))}</p>
                 <p className="mt-px text-[10px] text-[var(--color-brand-text-muted)]">{base} {t.income.perMoSuffix}</p>
+                {(s.recurringFrequency ?? 'monthly') !== 'monthly' ? (
+                  <p className="font-mono-numbers mt-px text-[10px] text-[var(--color-brand-text-muted)]">
+                    {fmtNum(toBase(s))} {base}/{s.recurringFrequency === 'weekly' ? 'wk' : 'pay'}
+                  </p>
+                ) : null}
               </div>
             </button>
           )
