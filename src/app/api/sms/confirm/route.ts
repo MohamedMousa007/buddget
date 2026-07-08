@@ -74,7 +74,7 @@ export async function POST(request: Request) {
         await service.from('expenses').update({ currency: confirmedCurrency }).eq('id', row.expense_id).eq('user_id', userId)
       }
       if (row.income_id) {
-        await service.from('income_sources').update({ currency: confirmedCurrency }).eq('id', row.income_id).eq('user_id', userId)
+        await service.from('income_events').update({ currency: confirmedCurrency }).eq('id', row.income_id).eq('user_id', userId)
       }
       if (senderKey) {
         await service.rpc('learn_sms_sender_currency', {

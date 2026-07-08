@@ -218,6 +218,7 @@ export function buildAIActionHandlerContext(store: FinanceStore): AIActionHandle
     deleteDebt: store.deleteDebt,
     clearDebt: store.clearDebt,
     addIncomeSource: store.addIncomeSource,
+    addIncomeEvent: store.addIncomeEvent,
     addIncomeWithDebt: store.addIncomeWithDebt,
     updateIncomeSource: store.updateIncomeSource,
     deleteIncomeSource: store.deleteIncomeSource,
@@ -257,6 +258,7 @@ export interface AIActionHandlerContext {
   deleteDebt: FinanceStore['deleteDebt']
   clearDebt: FinanceStore['clearDebt']
   addIncomeSource: FinanceStore['addIncomeSource']
+  addIncomeEvent: FinanceStore['addIncomeEvent']
   addIncomeWithDebt: FinanceStore['addIncomeWithDebt']
   updateIncomeSource: FinanceStore['updateIncomeSource']
   deleteIncomeSource: FinanceStore['deleteIncomeSource']
@@ -650,21 +652,37 @@ export function executeActionItem(
       typeof domRaw === 'number' && Number.isFinite(domRaw)
         ? Math.min(31, Math.max(1, Math.floor(domRaw)))
         : 1
-    // Optional effective start ("raise starting July") — accept a YYYY-MM-DD; else default (today).
-    const effRaw = String(getField(d, 'effectiveStart', 'effective_start', 'startDate') || '')
-    const effectiveStart = /^\d{4}-\d{2}-\d{2}$/.test(effRaw) ? effRaw : undefined
-    ctx.addIncomeSource({
-      name: String(getField(d, 'name') || 'Income'),
-      amount,
-      currency,
-      isRecurring,
-      recurringFrequency: isRecurring ? recurringFrequency : undefined,
-      dayOfMonth: isRecurring && recurringFrequency === 'monthly' ? dayOfMonth : undefined,
-      notes: getField(d, 'notes') as string | undefined,
-      sourceType,
-      paymentMethodId: pmId,
-      ...(effectiveStart ? { effectiveStart } : {}),
-    })
+    if (isRecurring) {
+      // Recurring → a template. Optional effective start ("raise starting July").
+      const effRaw = String(getField(d, 'effectiveStart', 'effective_start', 'startDate') || '')
+      const effectiveStart = /^\d{4}-\d{2}-\d{2}$/.test(effRaw) ? effRaw : undefined
+      ctx.addIncomeSource({
+        name: String(getField(d, 'name') || 'Income'),
+        amount,
+        currency,
+        isRecurring: true,
+        recurringFrequency,
+        dayOfMonth: recurringFrequency === 'monthly' ? dayOfMonth : undefined,
+        notes: getField(d, 'notes') as string | undefined,
+        sourceType,
+        paymentMethodId: pmId,
+        ...(effectiveStart ? { effectiveStart } : {}),
+      })
+    } else {
+      // One-time → a confirmed event in the ledger.
+      const recRaw = String(getField(d, 'receivedDate', 'received_date', 'date') || '')
+      const receivedDate = /^\d{4}-\d{2}-\d{2}$/.test(recRaw) ? recRaw : new Date().toISOString().slice(0, 10)
+      ctx.addIncomeEvent({
+        name: String(getField(d, 'name') || 'Income'),
+        amount,
+        currency,
+        sourceType,
+        receivedDate,
+        status: 'confirmed',
+        notes: getField(d, 'notes') as string | undefined,
+        paymentMethodId: pmId,
+      })
+    }
     return
   }
   if (action === 'update_income') {

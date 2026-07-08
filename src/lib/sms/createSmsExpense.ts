@@ -148,15 +148,18 @@ export async function createSmsExpense(
 
   if (isIncomeKind(row.kind)) {
     const sourceType = row.kind === 'refund' ? 'refund' : 'other'
+    // Bank credits are actual received income → the events ledger, not a template.
     const { data, error } = await service
-      .from('income_sources')
+      .from('income_events')
       .insert({
         user_id: row.userId,
         name: title ?? 'Bank credit',
         amount: row.amount,
         currency: row.currency,
-        is_recurring: false,
         source_type: sourceType,
+        received_date: row.day || new Date().toISOString().slice(0, 10),
+        status: 'confirmed',
+        sms_log_id: row.logId ?? null,
         notes: autoNotes,
       })
       .select('id')

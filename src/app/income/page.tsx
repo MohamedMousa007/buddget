@@ -14,7 +14,17 @@ import { SkeletonList } from '@/components/ui/SkeletonList'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { getMonthRange, recurringActiveForWindow } from '@/lib/utils/calculations'
-import type { IncomeSource } from '@/lib/store/types'
+import type { IncomeSource, IncomeSourceType, Currency } from '@/lib/store/types'
+
+/** Fields the tab renders for both recurring templates and one-time events. */
+type IncomeLike = {
+  sourceType?: IncomeSourceType
+  amount: number
+  currency: Currency
+  linkedSavingsAccountId?: string
+  linkedDebtId?: string
+  paymentMethodId?: string
+}
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 
@@ -35,9 +45,10 @@ export default function IncomePage() {
   useHydrateDebts()
   useHydrateSavings()
   const dataReady = useFinanceStore((s) => s.dataReady)
-  const { incomeSources, savingsAccounts, debts, paymentMethods, settings, exchangeRates } = useFinanceStore(
+  const { incomeSources, incomeEvents, savingsAccounts, debts, paymentMethods, settings, exchangeRates } = useFinanceStore(
     useShallow((s) => ({
       incomeSources: s.incomeSources,
+      incomeEvents: s.incomeEvents,
       savingsAccounts: s.savingsAccounts,
       debts: s.debts,
       paymentMethods: s.paymentMethods,
@@ -45,7 +56,7 @@ export default function IncomePage() {
       exchangeRates: s.exchangeRates,
     })),
   )
-  const { monthFilter, setMonthFilter, setActiveModal, setEditingIncomeId } = useSettingsStore()
+  const { monthFilter, setMonthFilter, setActiveModal, setEditingIncomeId, setEditingIncomeEventId } = useSettingsStore()
   const requireAuth = useRequireAuthAction()
   const t = useT()
   const base = settings.baseCurrency
@@ -53,9 +64,9 @@ export default function IncomePage() {
   const showSecondary = settings.showSecondaryCurrency && secondary
 
   const openAddIncome = () => requireAuth(() => setActiveModal('addIncome'), t.income.requireAuth)
-  const toBase = (s: IncomeSource) => convertCurrency(s.amount, s.currency, base, exchangeRates)
+  const toBase = (s: IncomeLike) => convertCurrency(s.amount, s.currency, base, exchangeRates)
 
-  const accountLabel = (s: IncomeSource): string => {
+  const accountLabel = (s: IncomeLike): string => {
     if (s.linkedSavingsAccountId) return savingsAccounts.find((a) => a.id === s.linkedSavingsAccountId)?.name ?? t.income.mainAccount
     if (s.linkedDebtId) return debts.find((d) => d.id === s.linkedDebtId)?.name ?? t.income.mainAccount
     if (s.paymentMethodId) return paymentMethods.find((m) => m.id === s.paymentMethodId)?.name ?? t.income.mainAccount
@@ -75,10 +86,19 @@ export default function IncomePage() {
     const { start, end } = getMonthRange(monthFilter, settings.monthStartDay)
     return incomeSources.filter((s) => s.isRecurring && recurringActiveForWindow(s, start, end))
   }, [incomeSources, monthFilter, settings.monthStartDay])
-  const oneTimeThisMonth = useMemo(
-    () => incomeSources.filter((s) => !s.isRecurring && s.createdAt.slice(0, 7) === monthFilter),
-    [incomeSources, monthFilter],
-  )
+  // One-time income for the month: realized ledger events, plus any legacy one-time
+  // source not yet superseded by an event (de-duped by id, matching actualIncomeForMonth).
+  const oneTimeThisMonth = useMemo(() => {
+    const realized = new Set(['confirmed', 'late', 'partial'])
+    const covered = new Set(incomeEvents.filter((e) => !e.templateId).map((e) => e.id))
+    const fromEvents = incomeEvents
+      .filter((e) => !e.templateId && realized.has(e.status) && e.receivedDate.slice(0, 7) === monthFilter)
+      .map((e) => ({ id: e.id, name: e.name, payload: e as IncomeLike, day: Number(e.receivedDate.slice(8, 10)) || 1, sourceType: e.sourceType, eventId: e.id }))
+    const fromSources = incomeSources
+      .filter((s) => !s.isRecurring && !covered.has(s.id) && s.createdAt.slice(0, 7) === monthFilter)
+      .map((s) => ({ id: s.id, name: s.name, payload: s as IncomeLike, day: Number(s.createdAt.slice(8, 10)) || 1, sourceType: s.sourceType, eventId: undefined as string | undefined }))
+    return [...fromEvents, ...fromSources]
+  }, [incomeEvents, incomeSources, monthFilter])
 
   const monthlyTotal = useMemo(
     () => recurring.reduce((sum, s) => sum + convertCurrency(monthlyEquivalent(s), s.currency, base, exchangeRates), 0),
@@ -92,13 +112,13 @@ export default function IncomePage() {
 
   // "Income this month": recurring received on their day-of-month + one-time created this month, grouped by day.
   const incomeGroups = useMemo(() => {
-    type Row = { id: string; name: string; source: IncomeSource; day: number; recurring: boolean }
+    type Row = { id: string; name: string; source: IncomeLike; day: number; recurring: boolean; eventId?: string }
     const rows: Row[] = []
     for (const s of recurring) {
       rows.push({ id: `r-${s.id}`, name: s.name, source: s, day: s.dayOfMonth ?? 1, recurring: true })
     }
-    for (const s of oneTimeThisMonth) {
-      rows.push({ id: `o-${s.id}`, name: s.name, source: s, day: Number(s.createdAt.slice(8, 10)) || 1, recurring: false })
+    for (const o of oneTimeThisMonth) {
+      rows.push({ id: `o-${o.id}`, name: o.name, source: o.payload, day: o.day, recurring: false, eventId: o.eventId })
     }
     rows.sort((a, b) => b.day - a.day)
     const monthIdx = (Number(monthFilter.split('-')[1]) || 1) - 1
@@ -230,10 +250,14 @@ export default function IncomePage() {
           <div className="mb-2.5 overflow-hidden rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
             {g.items.map((r, idx) => {
               const colors = incomeTypeColors(r.source.sourceType)
+              const clickable = Boolean(r.eventId)
               return (
-                <div
+                <button
                   key={r.id}
-                  className={`flex items-center gap-3 px-3.5 py-2.5 ${idx === 0 ? '' : 'border-t border-[var(--color-brand-border)]'}`}
+                  type="button"
+                  disabled={!clickable}
+                  onClick={clickable ? () => { setEditingIncomeEventId(r.eventId!); setActiveModal('editIncomeEvent') } : undefined}
+                  className={`flex w-full items-center gap-3 px-3.5 py-2.5 text-start ${idx === 0 ? '' : 'border-t border-[var(--color-brand-border)]'} ${clickable ? 'hover:bg-[var(--color-brand-elevated)]' : 'cursor-default'}`}
                 >
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md" style={{ background: colors.bg, color: colors.fg }}>
                     <IncomeTypeIcon type={r.source.sourceType} className="h-4 w-4" />
@@ -250,7 +274,7 @@ export default function IncomePage() {
                     <span className="block truncate text-xs text-[var(--color-brand-text-muted)]">→ {accountLabel(r.source)}</span>
                   </div>
                   <span className="font-mono-numbers shrink-0 text-sm font-bold text-[var(--color-brand-text-primary)]">+{fmtNum(toBase(r.source))} <span className="text-[10px] font-medium text-[var(--color-brand-text-muted)]">{base}</span></span>
-                </div>
+                </button>
               )
             })}
           </div>

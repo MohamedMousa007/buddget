@@ -21,6 +21,7 @@ import type {
   FinanceStore,
   Goal,
   IncomeSource,
+  IncomeEvent,
   IncomeSourceType,
   PaymentMethod,
   RecurringSavingsDeposit,
@@ -289,15 +290,20 @@ export const useFinanceStore = create<FinanceStore>()(
         const cur = clampFiatToAllowed(get().settings, income.currency)
         const normalized = normalizeDebtIncoming(debtRow)
         set((state) => ({
-          incomeSources: [
-            ...state.incomeSources,
+          // Borrowed money is a received event (one-time), linked to the debt it created.
+          incomeEvents: [
+            ...state.incomeEvents,
             {
-              ...income,
               id: incomeId,
+              name: income.name,
+              amount: income.amount,
               currency: cur,
               sourceType: 'debt' as IncomeSourceType,
+              receivedDate: iso.slice(0, 10),
+              status: 'confirmed' as const,
+              paymentMethodId: income.paymentMethodId,
               linkedDebtId: debtId,
-              effectiveStart: iso.slice(0, 10),
+              notes: income.notes,
               createdAt: iso,
               updatedAt: iso,
             },
@@ -353,7 +359,39 @@ export const useFinanceStore = create<FinanceStore>()(
         })),
 
       deleteIncomeEvent: (id) =>
-        set((state) => ({ incomeEvents: state.incomeEvents.filter((e) => e.id !== id) })),
+        set((state) => {
+          const event = state.incomeEvents.find((e) => e.id === id)
+          const incomeEvents = state.incomeEvents.filter((e) => e.id !== id)
+          // Reconcile a savings/investment withdrawal: put the money back and log the reversal.
+          if (event?.linkedSavingsAccountId) {
+            const acc = state.savingsAccounts.find((a) => a.id === event.linkedSavingsAccountId)
+            if (acc) {
+              const back =
+                event.currency === acc.currency
+                  ? event.amount
+                  : convertCurrency(event.amount, event.currency, acc.currency, state.exchangeRates)
+              const tx: SavingsTransaction = {
+                id: generateId(),
+                accountId: acc.id,
+                type: 'deposit',
+                amount: back,
+                currency: acc.currency,
+                date: new Date().toISOString().slice(0, 10),
+                notes: `Reversed: ${event.name}`,
+              }
+              const nextState: FinanceStore = {
+                ...state,
+                incomeEvents,
+                savingsTransactions: [...state.savingsTransactions, tx],
+                savingsAccounts: state.savingsAccounts.map((a) =>
+                  a.id === acc.id ? { ...a, currentBalance: a.currentBalance + back } : a
+                ),
+              }
+              return { ...nextState, goals: reconcileGoalsForState(nextState) }
+            }
+          }
+          return { incomeEvents }
+        }),
 
       upsertServerIncomeEvent: (event) =>
         set((state) => {
@@ -1239,18 +1277,19 @@ export const useFinanceStore = create<FinanceStore>()(
             notes,
           }
           const isInvestment = acc.category === 'investment'
-          const incomeEntry: IncomeSource = {
+          const nowIso = new Date().toISOString()
+          const incomeEvent: IncomeEvent = {
             id: generateId(),
             name: isInvestment ? `Return from ${acc.name}` : `Withdrawal from ${acc.name}`,
             amount: amt,
             currency: acc.currency,
-            isRecurring: false,
             sourceType: isInvestment ? 'investment' : 'savings',
+            receivedDate: nowIso.slice(0, 10),
+            status: 'confirmed',
             linkedSavingsAccountId: accountId,
             notes: notes?.trim() || undefined,
-            effectiveStart: new Date().toISOString().slice(0, 10),
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: nowIso,
+            updatedAt: nowIso,
           }
           const nextState: FinanceStore = {
             ...state,
@@ -1258,7 +1297,7 @@ export const useFinanceStore = create<FinanceStore>()(
             savingsAccounts: state.savingsAccounts.map((a) =>
               a.id === accountId ? { ...a, currentBalance: Math.max(0, a.currentBalance - amt) } : a
             ),
-            incomeSources: [...state.incomeSources, incomeEntry],
+            incomeEvents: [...state.incomeEvents, incomeEvent],
             settings: { ...state.settings, noIncomeDeclared: false },
           }
           return {

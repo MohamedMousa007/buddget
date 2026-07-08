@@ -33,9 +33,10 @@ function fmtNum(n: number): string {
 
 export function AddIncomeSheet() {
   const showToast = useActionToast()
-  const { addIncomeSource, settings, paymentMethods } = useFinanceStore(
+  const { addIncomeSource, addIncomeEvent, settings, paymentMethods } = useFinanceStore(
     useShallow((s) => ({
       addIncomeSource: s.addIncomeSource,
+      addIncomeEvent: s.addIncomeEvent,
       settings: s.settings,
       paymentMethods: s.paymentMethods,
     }))
@@ -91,17 +92,32 @@ export function AddIncomeSheet() {
   const handleSubmit = () => {
     if (!name.trim() || !amtValid) return
     const cur = clampFiatToAllowed(settings, currency)
-    addIncomeSource({
-      name: name.trim(),
-      amount: amt,
-      currency: cur,
-      isRecurring,
-      recurringFrequency: isRecurring ? recurringFrequency : undefined,
-      dayOfMonth: isRecurring && recurringFrequency === 'monthly' ? parseInt(dayOfMonth, 10) || 1 : undefined,
-      sourceType,
-      notes: notes.trim() || undefined,
-      ...(paymentMethodId ? { paymentMethodId } : {}),
-    })
+    if (isRecurring) {
+      // Recurring income is a template that projects monthly.
+      addIncomeSource({
+        name: name.trim(),
+        amount: amt,
+        currency: cur,
+        isRecurring: true,
+        recurringFrequency,
+        dayOfMonth: recurringFrequency === 'monthly' ? parseInt(dayOfMonth, 10) || 1 : undefined,
+        sourceType,
+        notes: notes.trim() || undefined,
+        ...(paymentMethodId ? { paymentMethodId } : {}),
+      })
+    } else {
+      // One-time income is a confirmed event in the ledger.
+      addIncomeEvent({
+        name: name.trim(),
+        amount: amt,
+        currency: cur,
+        sourceType,
+        receivedDate: new Date().toISOString().slice(0, 10),
+        status: 'confirmed',
+        notes: notes.trim() || undefined,
+        ...(paymentMethodId ? { paymentMethodId } : {}),
+      })
+    }
 
     showToast(t.common.toastIncomeAdded)
     resetForm()

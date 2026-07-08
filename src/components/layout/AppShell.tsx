@@ -23,11 +23,11 @@ import { runBackGuards } from '@/lib/navigation/backGuard'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useT } from '@/lib/i18n'
 import { expenseFromRow } from '@/lib/supabase/remote/mappers/expenseMapper'
-import { incomeSourceFromRow } from '@/lib/supabase/remote/mappers/incomeSourceMapper'
+import { incomeEventFromRow } from '@/lib/supabase/remote/mappers/incomeEventMapper'
 import { debtPaymentFromRow } from '@/lib/supabase/remote/mappers/debtPaymentMapper'
 import { createClient } from '@/lib/supabase/client'
 import type { ExpenseRow } from '@/lib/supabase/remote/types'
-import type { IncomeSourceRow } from '@/lib/supabase/remote/types'
+import type { IncomeEventRow } from '@/lib/supabase/remote/types'
 import type { DebtPaymentRow } from '@/lib/supabase/remote/types'
 
 /**
@@ -99,8 +99,8 @@ function addExpenseIfMissing(row: ExpenseRow): void {
   useFinanceStore.getState().upsertServerExpense(expenseFromRow(row))
 }
 
-function addIncomeIfMissing(row: IncomeSourceRow): void {
-  useFinanceStore.getState().upsertServerIncome(incomeSourceFromRow(row))
+function addIncomeEventIfMissing(row: IncomeEventRow): void {
+  useFinanceStore.getState().upsertServerIncomeEvent(incomeEventFromRow(row))
 }
 
 function addDebtPaymentIfMissing(row: DebtPaymentRow): void {
@@ -154,11 +154,11 @@ function SmsRealtimeSync() {
       }
       if (row.income_id) {
         const { data } = await supabase
-          .from('income_sources')
+          .from('income_events')
           .select('*')
           .eq('id', row.income_id)
           .single()
-        if (data) { addIncomeIfMissing(data as IncomeSourceRow); rendered = true }
+        if (data) { addIncomeEventIfMissing(data as IncomeEventRow); rendered = true }
       }
       if (row.debt_payment_id) {
         // CC payoff: pull the debt payment so the card balance updates live.
@@ -381,8 +381,8 @@ function SmsPushActionHandler() {
       } else if (kind === 'sms_income_added' && data.incomeId) {
         void (async () => {
           const supabase = createClient()
-          const { data: row } = await supabase.from('income_sources').select('*').eq('id', data.incomeId).single()
-          if (row) { addIncomeIfMissing(row as IncomeSourceRow); void ackSms(data.logId) }
+          const { data: row } = await supabase.from('income_events').select('*').eq('id', data.incomeId).single()
+          if (row) { addIncomeEventIfMissing(row as IncomeEventRow); void ackSms(data.logId) }
           router.push('/income')
         })()
       } else if (kind === 'sms_salary_matched') {

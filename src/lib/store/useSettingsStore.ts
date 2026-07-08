@@ -30,6 +30,7 @@ interface SettingsState {
   /** Debt being edited in EditDebtSheet (separate from expense edit id). */
   editingDebtId: string | null
   editingIncomeId: string | null
+  editingIncomeEventId: string | null
   expensePrefill: ExpensePrefill | null
   pmPrefill: PmPrefill | null
   monthFilter: string
@@ -48,6 +49,7 @@ interface SettingsState {
   setEditingExpenseId: (expenseId: string | null) => void
   setEditingDebtId: (debtId: string | null) => void
   setEditingIncomeId: (incomeId: string | null) => void
+  setEditingIncomeEventId: (id: string | null) => void
   setExpensePrefill: (data: ExpensePrefill | null) => void
   openAddExpenseWithPrefill: (data: ExpensePrefill) => void
   openAddPaymentMethodWithPrefill: (data: PmPrefill) => void
@@ -78,6 +80,7 @@ export const useSettingsStore = create<SettingsState>()(
       editingExpenseId: null,
       editingDebtId: null,
       editingIncomeId: null,
+      editingIncomeEventId: null,
       expensePrefill: null,
       pmPrefill: null,
       monthFilter: getCurrentMonth(),
@@ -92,6 +95,7 @@ export const useSettingsStore = create<SettingsState>()(
       setEditingExpenseId: (expenseId) => set({ editingExpenseId: expenseId }),
       setEditingDebtId: (debtId) => set({ editingDebtId: debtId }),
       setEditingIncomeId: (incomeId) => set({ editingIncomeId: incomeId }),
+      setEditingIncomeEventId: (id) => set({ editingIncomeEventId: id }),
       setExpensePrefill: (data) => set({ expensePrefill: data }),
       openAddExpenseWithPrefill: (data) =>
         set({ activeModal: 'addExpense', expensePrefill: data }),
@@ -129,6 +133,7 @@ export const useSettingsStore = create<SettingsState>()(
           editingExpenseId: null,
           editingDebtId: null,
           editingIncomeId: null,
+      editingIncomeEventId: null,
           expensePrefill: null,
           pmPrefill: null,
           monthFilter: getCurrentMonth(),
