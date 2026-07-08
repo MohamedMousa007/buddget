@@ -1,10 +1,10 @@
 /** Shared add-* sheet field styling (see product modal polish spec). */
 export const MODAL_LABEL_CLASS =
-  'block text-xs font-normal uppercase tracking-wider text-[#5A5A72]'
+  'block text-xs font-normal uppercase tracking-wider text-[var(--color-brand-text-secondary)]'
 
 /** Primary text / number inputs inside modals. */
 export const MODAL_CONTROL_CLASS =
-  'w-full rounded-xl border border-[#2A2A38] bg-[#1A1A24] px-4 py-3 h-12 text-sm text-white placeholder:text-[#5A5A72] focus-visible:outline-none focus-visible:ring-0 focus:border-[#E50914] disabled:opacity-50'
+  'w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-4 py-3 h-12 text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus-visible:outline-none focus-visible:ring-0 focus:border-[var(--color-brand-red)] disabled:opacity-50'
 
 /** Prominent amount entry. */
 export const MODAL_AMOUNT_CLASS = `${MODAL_CONTROL_CLASS} text-2xl font-semibold font-mono-numbers`
