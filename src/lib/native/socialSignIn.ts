@@ -184,19 +184,16 @@ export async function nativeSocialSignIn(
     } else {
       // iOS: NO nonce — capgo's GoogleProvider short-circuits to
       // restorePreviousSignIn whenever GIDSignIn has a cached user, and the
-      // refreshed ID token carries no/stale nonce; sending one to Supabase then
-      // fails every retry after any first attempt. Same documented tradeoff as
-      // Apple-iOS above (token stays audience-bound + short-lived). Logout first
-      // so a poisoned cache from an old nonce-flow build can't serve a token
-      // whose stale nonce claim would still mismatch.
-      try {
-        await SocialLogin.logout?.({ provider: 'google' })
-      } catch {
-        /* best-effort: no prior session */
-      }
+      // refreshed ID token retains the nonce claim minted by an older nonce-flow
+      // build; sending no nonce to Supabase then fails with "Passed nonce and
+      // nonce in id_token should either both exist or not". forcePrompt:true is
+      // the deterministic fix: capgo's login gate is `hasPreviousSignIn() &&
+      // !forceAuthCode`, so this bypasses restore and always mints a FRESH
+      // interactive token with no nonce claim — matching our no-nonce exchange.
+      // (Not in capgo's TS type but read by the native GoogleProvider payload.)
       const { result } = await withTimeout(SocialLogin.login({
         provider: 'google',
-        options: { scopes: ['profile', 'email'] },
+        options: { scopes: ['profile', 'email'], forcePrompt: true } as { scopes: string[] },
       }), signal)
       idToken = 'idToken' in result ? result.idToken : null
     }
