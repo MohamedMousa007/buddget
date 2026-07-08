@@ -124,6 +124,20 @@ function isCancellation(e: unknown): boolean {
 }
 
 /**
+ * A nonce pair for Google id-token sign-in: the raw value goes to Supabase
+ * (`signInWithIdToken`), its SHA-256 goes to capgo so Google embeds it in the
+ * ID token. Supabase re-hashes the raw value and compares — they must round-trip.
+ */
+async function makeGoogleNoncePair(): Promise<{ raw: string; hashed: string }> {
+  const bytes = new Uint8Array(32)
+  crypto.getRandomValues(bytes)
+  const raw = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')
+  const hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw))
+  const hashed = Array.from(new Uint8Array(hashBuf), b => b.toString(16).padStart(2, '0')).join('')
+  return { raw, hashed }
+}
+
+/**
  * Fully native Apple / Google sign-in. Obtains an identity token from the OS
  * (Apple = native system sheet; Google = system auth sheet) and exchanges it
  * with Supabase via `signInWithIdToken` — the session lands directly in the app
@@ -170,30 +184,37 @@ export async function nativeSocialSignIn(
       // openid are the plugin's defaults, and passing ANY scopes array makes
       // capgo's GoogleProvider demand a ModifiedMainActivityForSocialLoginPlugin
       // and reject the call.
-      const bytes = new Uint8Array(32)
-      crypto.getRandomValues(bytes)
-      googleRawNonce = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')
-      const hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(googleRawNonce))
-      const hashedNonce = Array.from(new Uint8Array(hashBuf), b => b.toString(16).padStart(2, '0')).join('')
-
+      const nonce = await makeGoogleNoncePair()
+      googleRawNonce = nonce.raw
       const { result } = await withTimeout(SocialLogin.login({
         provider: 'google',
-        options: { nonce: hashedNonce },
+        options: { nonce: nonce.hashed },
       }), signal)
       idToken = 'idToken' in result ? result.idToken : null
     } else {
-      // iOS: NO nonce — capgo's GoogleProvider short-circuits to
-      // restorePreviousSignIn whenever GIDSignIn has a cached user, and the
-      // refreshed ID token retains the nonce claim minted by an older nonce-flow
-      // build; sending no nonce to Supabase then fails with "Passed nonce and
-      // nonce in id_token should either both exist or not". forcePrompt:true is
-      // the deterministic fix: capgo's login gate is `hasPreviousSignIn() &&
-      // !forceAuthCode`, so this bypasses restore and always mints a FRESH
-      // interactive token with no nonce claim — matching our no-nonce exchange.
-      // (Not in capgo's TS type but read by the native GoogleProvider payload.)
+      // iOS: mirror the Android nonce-parity contract. capgo's GoogleProvider
+      // short-circuits to restorePreviousSignIn whenever GIDSignIn has a cached
+      // user, refreshing a credential that RETAINS the nonce claim minted by an
+      // older nonce-flow build (commit cb15687). Sending no nonce then fails
+      // "Passed nonce and nonce in id_token should either both exist or not".
+      // So: (1) logout clears the stale keychain credential, (2) forcePrompt
+      // bypasses the `hasPreviousSignIn() && !forceAuthCode` restore gate as a
+      // backstop, (3) a fresh nonce pair makes GID embed OUR nonce which the
+      // Supabase exchange re-hashes and matches. forcePrompt/nonce are read by
+      // the native GoogleProvider payload but absent from capgo's TS type.
+      try {
+        await SocialLogin.logout?.({ provider: 'google' })
+      } catch {
+        /* best-effort: no prior session */
+      }
+      const nonce = await makeGoogleNoncePair()
+      googleRawNonce = nonce.raw
       const { result } = await withTimeout(SocialLogin.login({
         provider: 'google',
-        options: { scopes: ['profile', 'email'], forcePrompt: true } as { scopes: string[] },
+        options: { scopes: ['profile', 'email'], nonce: nonce.hashed, forcePrompt: true } as {
+          scopes: string[]
+          nonce: string
+        },
       }), signal)
       idToken = 'idToken' in result ? result.idToken : null
     }

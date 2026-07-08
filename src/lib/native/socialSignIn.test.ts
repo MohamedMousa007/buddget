@@ -349,21 +349,21 @@ describe('nativeSocialSignIn — Google — iOS', () => {
     expect(result).toEqual({ error: null, cancelled: false, user: null })
   })
 
-  it('passes the idToken WITHOUT nonce to supabase (iOS restore path drops nonces)', async () => {
+  it('forwards a matching nonce to supabase and forces a fresh sign-in', async () => {
     const { nativeSocialSignIn } = await freshModule({ android: false })
     mocks.login.mockResolvedValueOnce({ result: { idToken: 'g-ios-token' } })
     await nativeSocialSignIn('google')
-    expect(mocks.signInWithIdToken).toHaveBeenCalledWith({
-      provider: 'google',
-      token: 'g-ios-token',
-    })
-    // No nonce forwarded to login either — capgo's GIDSignIn restore path
-    // returns cached/refreshed tokens whose nonce claim can't match.
+    // Raw nonce is forwarded to Supabase; the hashed one is embedded via capgo.
+    const exchange = mocks.signInWithIdToken.mock.calls[0][0] as Record<string, unknown>
+    expect(exchange.provider).toBe('google')
+    expect(exchange.token).toBe('g-ios-token')
+    expect(exchange.nonce).toEqual(expect.any(String))
     const arg = mocks.login.mock.calls[0][0] as { options: Record<string, unknown> }
-    expect(arg.options.nonce).toBeUndefined()
-    // forcePrompt bypasses capgo's restore path so a fresh nonce-less token is
-    // minted, deterministically matching the no-nonce Supabase exchange.
+    expect(arg.options.nonce).toEqual(expect.any(String))
+    // forcePrompt bypasses capgo's restore gate; logout clears the stale
+    // nonce-bearing keychain credential so restore can't serve it.
     expect(arg.options.forcePrompt).toBe(true)
+    expect(mocks.logout).toHaveBeenCalledWith({ provider: 'google' })
   })
 
   it('returns {error:null,cancelled:true} when user cancels', async () => {
@@ -441,13 +441,13 @@ describe('nativeSocialSignIn — Google scopes per platform', () => {
     expect(arg.options.nonce).toEqual(expect.any(String))
   })
 
-  it('passes scopes but never a nonce on iOS', async () => {
+  it('passes scopes and a hashed nonce on iOS', async () => {
     const { nativeSocialSignIn } = await freshModule({ android: false })
     mocks.login.mockResolvedValueOnce({ result: { idToken: 't' } })
     await nativeSocialSignIn('google')
     const arg = mocks.login.mock.calls[0][0] as { options: Record<string, unknown> }
     expect(arg.options.scopes).toEqual(['profile', 'email'])
-    expect(arg.options.nonce).toBeUndefined()
+    expect(arg.options.nonce).toEqual(expect.any(String))
   })
 })
 
