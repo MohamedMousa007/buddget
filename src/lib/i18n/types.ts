@@ -419,6 +419,7 @@ export interface Dictionary {
     freqWeeklyShort: string
     effectiveStart: string
     effectiveEnd: string
+    receivedDate: string
     confirmDelete: string
     sourceTypeSalary: string
     sourceTypeBonus: string

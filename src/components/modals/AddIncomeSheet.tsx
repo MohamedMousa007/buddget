@@ -54,6 +54,7 @@ export function AddIncomeSheet() {
   const [sourceType, setSourceType] = useState<IncomeSourceType>('salary')
   const [recurringFrequency, setRecurringFrequency] = useState<IncomeRecurringFrequency>('monthly')
   const [dayOfMonth, setDayOfMonth] = useState('1')
+  const [receivedDate, setReceivedDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [paymentMethodId, setPaymentMethodId] = useState(defaultPmId)
   const [notes, setNotes] = useState('')
   const [notesOpen, setNotesOpen] = useState(false)
@@ -65,6 +66,7 @@ export function AddIncomeSheet() {
     if (isOpen && !prevIsOpen.current) {
       setCurrency(settings.baseCurrency)
       setPaymentMethodId(defaultPmId)
+      setReceivedDate(new Date().toISOString().slice(0, 10))
     }
     prevIsOpen.current = isOpen
     /* eslint-enable react-hooks/set-state-in-effect */
@@ -78,6 +80,7 @@ export function AddIncomeSheet() {
     setSourceType('salary')
     setRecurringFrequency('monthly')
     setDayOfMonth('1')
+    setReceivedDate(new Date().toISOString().slice(0, 10))
     setPaymentMethodId(defaultPmId)
     setNotes('')
     setNotesOpen(false)
@@ -112,7 +115,7 @@ export function AddIncomeSheet() {
         amount: amt,
         currency: cur,
         sourceType,
-        receivedDate: new Date().toISOString().slice(0, 10),
+        receivedDate,
         status: 'confirmed',
         notes: notes.trim() || undefined,
         ...(paymentMethodId ? { paymentMethodId } : {}),
@@ -209,7 +212,17 @@ export function AddIncomeSheet() {
               dayOfMonth={dayOfMonth}
               setDayOfMonth={setDayOfMonth}
             />
-          ) : null}
+          ) : (
+            <div>
+              <span className={MODAL_LABEL_CLASS}>{t.income.receivedDate}</span>
+              <input
+                type="date"
+                value={receivedDate}
+                onChange={(e) => setReceivedDate(e.target.value)}
+                className="mt-1.5 w-full h-12 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-sm text-[var(--color-brand-text-primary)] focus:border-[var(--color-brand-red)] focus:outline-none"
+              />
+            </div>
+          )}
 
           {/* payment method */}
           <PaymentMethodPicker

@@ -254,6 +254,8 @@ describe('expense mapper', () => {
     const back = roundTrip(e, expenseToRow, expenseFromRow)
     expect(back.category).toBe('Food')
     expect(back.amount).toBe(120)
+    // cash sentinel → null → cash sentinel (stable round-trip, not '')
+    expect(back.paymentMethodId).toBe('pm_default_cash')
 
     const wonky = { ...e, category: 'not-a-real-cat' }
     const row = expenseToRow(wonky, UID)

@@ -60,7 +60,7 @@ export function expenseFromRow(row: ExpenseRow): Expense {
     amount: row.amount,
     currency: row.currency as Currency,
     amountInBaseCurrency: row.amount, // Recomputed client-side via FX rates on hydrate if needed.
-    paymentMethodId: row.payment_method_id ?? '',
+    paymentMethodId: row.payment_method_id ?? DEFAULT_CASH_ID, // null == cash sentinel, stable round-trip
     isRecurring: false,
     notes: row.notes ?? undefined,
     isDebtPayment: row.is_debt_payment,

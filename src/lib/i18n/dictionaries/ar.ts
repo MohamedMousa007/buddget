@@ -550,6 +550,7 @@ export const ar: Dictionary = {
     freqWeeklyShort: 'أسبوعي',
     effectiveStart: 'يبدأ',
     effectiveEnd: 'ينتهي (اختياري)',
+    receivedDate: 'استُلم في',
     confirmDelete: 'هل تريد حذف مصدر الدخل هذا؟ لا يمكن التراجع عن هذا.',
     sourceTypeSalary: 'راتب',
     sourceTypeBonus: 'مكافأة',
