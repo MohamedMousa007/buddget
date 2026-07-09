@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { Input } from '@/components/ui/input'
+import { AmountField } from '@/components/ui/AmountField'
 import { Label } from '@/components/ui/label'
 import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import { INCOME_RECURRING_FREQ_OPTIONS } from '@/lib/constants/incomeRecurring'
@@ -49,12 +49,10 @@ export function EditIncomeRecurringBlock({
       {recurringFrequency === 'monthly' && (
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.editIncome.labelDayOfMonth}</Label>
-          <Input
-            type="number"
-            min={1}
-            max={31}
+          <AmountField
+            mode="integer"
             value={dayOfMonth}
-            onChange={(e) => setDayOfMonth(e.target.value)}
+            onChange={setDayOfMonth}
             className="mt-1 w-24 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers"
           />
         </div>

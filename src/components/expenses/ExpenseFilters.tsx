@@ -11,6 +11,7 @@ import {
   Check,
 } from 'lucide-react'
 import { CategoryIcon } from '@/components/dashboard/CategoryIcon'
+import { AmountField } from '@/components/ui/AmountField'
 import {
   useExpenseFilterStore,
   amountIsFiltered,
@@ -146,12 +147,11 @@ function AmountRangeControl() {
             {t.expenses.minimum}
           </p>
           <div className="flex items-center gap-1.5 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2.5">
-            <input
+            <AmountField
+              bare
               className="font-mono-numbers min-w-0 flex-1 border-none bg-transparent text-base font-bold text-[var(--color-brand-text-primary)] outline-none"
-              type="text"
-              inputMode="decimal"
-              value={amtMin}
-              onChange={(e) => setAmtMin(+e.target.value || 0)}
+              value={String(amtMin)}
+              onChange={(v) => setAmtMin(+v || 0)}
             />
             <span className="text-xs text-[var(--color-brand-text-muted)]">EGP</span>
           </div>
@@ -161,12 +161,11 @@ function AmountRangeControl() {
             {t.expenses.maximum}
           </p>
           <div className="flex items-center gap-1.5 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2.5">
-            <input
+            <AmountField
+              bare
               className="font-mono-numbers min-w-0 flex-1 border-none bg-transparent text-base font-bold text-[var(--color-brand-text-primary)] outline-none"
-              type="text"
-              inputMode="decimal"
-              value={amtMax}
-              onChange={(e) => setAmtMax(+e.target.value || 0)}
+              value={String(amtMax)}
+              onChange={(v) => setAmtMax(+v || 0)}
             />
             <span className="text-xs text-[var(--color-brand-text-muted)]">EGP</span>
           </div>

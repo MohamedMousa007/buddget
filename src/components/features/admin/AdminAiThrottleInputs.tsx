@@ -1,6 +1,6 @@
 'use client'
 
-import { Input } from '@/components/ui/input'
+import { AmountField } from '@/components/ui/AmountField'
 import { Switch } from '@/components/ui/switch'
 
 export function AdminAiThrottleInputs({
@@ -37,23 +37,19 @@ export function AdminAiThrottleInputs({
           <label className="text-xs text-[var(--color-brand-text-secondary)] block mb-1">
             Max requests / window (per device)
           </label>
-          <Input
-            type="number"
-            min={1}
-            max={1000}
-            value={rateLimitMax}
-            onChange={(e) => onRateLimitMax(Number(e.target.value))}
+          <AmountField
+            mode="integer"
+            value={String(rateLimitMax)}
+            onChange={(v) => onRateLimitMax(Number(v))}
             className="bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers"
           />
         </div>
         <div>
           <label className="text-xs text-[var(--color-brand-text-secondary)] block mb-1">Window (seconds)</label>
-          <Input
-            type="number"
-            min={1}
-            max={3600}
-            value={rateLimitWindowSec}
-            onChange={(e) => onRateLimitWindowSec(Number(e.target.value))}
+          <AmountField
+            mode="integer"
+            value={String(rateLimitWindowSec)}
+            onChange={(v) => onRateLimitWindowSec(Number(v))}
             className="bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers"
           />
         </div>

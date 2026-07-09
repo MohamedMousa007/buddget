@@ -25,6 +25,10 @@ interface AmountFieldProps {
   dir?: 'ltr' | 'rtl'
   /** Inherit a form's control classes (merged over the <Input> base). */
   className?: string
+  /** Use className verbatim without the <Input> base — for borderless inputs
+   *  living inside their own bordered wrapper (filters, inline table cells). */
+  bare?: boolean
+  disabled?: boolean
   id?: string
   'aria-label'?: string
 }
@@ -42,6 +46,8 @@ export function AmountField({
   label,
   dir = 'ltr',
   className,
+  bare,
+  disabled,
   id,
   'aria-label': ariaLabel,
 }: AmountFieldProps) {
@@ -56,8 +62,9 @@ export function AmountField({
         id={id}
         type="button"
         aria-label={ariaLabel}
+        disabled={disabled}
         onClick={openPad}
-        className={glass ? undefined : cn(BASE, className)}
+        className={glass ? undefined : bare ? className : cn(BASE, className)}
         dir={dir}
         style={
           glass

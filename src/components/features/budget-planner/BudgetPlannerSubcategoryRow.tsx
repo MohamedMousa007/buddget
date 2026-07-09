@@ -1,7 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Trash2 } from 'lucide-react'
+import { NumberPad } from '@/components/ui/NumberPad'
 import type { BudgetPlanSubcategory } from '@/lib/store/types'
 import { BudgetPlannerEmojiPicker } from '@/components/features/budget-planner/BudgetPlannerEmojiPicker'
 import type { BudgetPlannerCategoryRowLabels } from '@/components/features/budget-planner/budgetPlannerCategoryLabels'
@@ -48,16 +50,21 @@ export function BudgetPlannerSubcategoryRow({ sub, labels, onUpdate, onDelete }:
         placeholder={labels.subcategoryNamePlaceholder}
         className="flex-1 min-w-24 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1 text-xs text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)]"
       />
-      <input
-        type="text"
-        inputMode="decimal"
-        value={displayAmount}
-        onChange={(e) => setAmountStr(e.target.value)}
-        onFocus={focusAmount}
-        onBlur={blurAmount}
-        placeholder={labels.amountPlaceholder}
-        className="w-24 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1 text-xs text-[var(--color-brand-text-primary)] font-mono-numbers placeholder:text-[var(--color-brand-text-muted)]"
-      />
+      <button
+        type="button"
+        onClick={focusAmount}
+        className="w-24 flex items-center rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1 text-xs font-mono-numbers text-start"
+      >
+        <span className={displayAmount ? 'text-[var(--color-brand-text-primary)]' : 'text-[var(--color-brand-text-muted)]'}>
+          {displayAmount || labels.amountPlaceholder}
+        </span>
+      </button>
+      {amountFocused &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <NumberPad value={amountStr} onChange={setAmountStr} onDone={blurAmount} onClose={blurAmount} />,
+          document.body,
+        )}
       <button
         type="button"
         onClick={onDelete}

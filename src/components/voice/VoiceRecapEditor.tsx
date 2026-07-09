@@ -3,6 +3,7 @@
 import { Check, Trash2, Mic, X, AlertCircle } from 'lucide-react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { getField } from '@/lib/ai/aiActionHandlers'
+import { AmountField } from '@/components/ui/AmountField'
 import type { AIAction, AIActionItem } from '@/lib/ai/gemini'
 import { EXPENSE_ENTRY_CATEGORIES, FIAT_CURRENCIES } from '@/lib/constants/finance'
 
@@ -121,12 +122,11 @@ export function VoiceRecapEditor({
                 {showAmount ? (
                   <label className="block">
                     <span className="mb-0.5 block text-[10px] text-[var(--color-brand-text-muted)]">Amount</span>
-                    <input
-                      type="text"
-                      inputMode="decimal"
+                    <AmountField
+                      bare
                       className={FIELD_CLS}
                       value={String(getField(item.data, 'amount') ?? '')}
-                      onChange={(e) => onUpdateField(idx, 'amount', e.target.value === '' ? '' : Number(e.target.value))}
+                      onChange={(v) => onUpdateField(idx, 'amount', v === '' ? '' : Number(v))}
                     />
                   </label>
                 ) : null}
