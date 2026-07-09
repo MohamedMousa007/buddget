@@ -2,6 +2,7 @@
 
 import { useRef, type KeyboardEvent, type ClipboardEvent } from 'react'
 import { cn } from '@/lib/utils'
+import { useOtpAutofill } from '@/hooks/useOtpAutofill'
 import { inputFocus, inputStyle } from '@/components/features/auth-modal/authModalTokens'
 
 export interface AuthOtpRowProps {
@@ -18,13 +19,24 @@ export function AuthOtpRow({ value, onChange, disabled }: AuthOtpRowProps) {
   const digitsOnly = value.replace(/\D/g, '').slice(0, 6)
   const chars = (digitsOnly + '      ').slice(0, 6).split('')
 
+  // Android: pull a freshly-copied code from the clipboard on resume. iOS fills
+  // via the input's one-time-code autocomplete (handled as multi-char below).
+  useOtpAutofill((code) => onChange(code), digitsOnly.length < 6)
+
   const setDigit = (i: number, raw: string) => {
-    const digit = raw.replace(/\D/g, '').slice(-1)
+    const cleaned = raw.replace(/\D/g, '')
+    // Autofill / QuickType inserts the whole code into one box — distribute it.
+    if (cleaned.length > 1) {
+      const code = cleaned.slice(0, 6)
+      onChange(code)
+      refs.current[Math.min(code.length, 5)]?.focus()
+      return
+    }
     const padded = (digitsOnly + '      ').slice(0, 6).split('')
-    padded[i] = digit || ' '
+    padded[i] = cleaned || ' '
     const next = padded.join('').replace(/ /g, '')
     onChange(next)
-    if (digit && i < 5) refs.current[i + 1]?.focus()
+    if (cleaned && i < 5) refs.current[i + 1]?.focus()
   }
 
   const handleKeyDown = (i: number, e: KeyboardEvent<HTMLInputElement>) => {
@@ -55,9 +67,8 @@ export function AuthOtpRow({ value, onChange, disabled }: AuthOtpRowProps) {
             refs.current[i] = el
           }}
           inputMode="numeric"
-          autoComplete={i === 0 ? 'one-time-code' : 'off'}
+          autoComplete="one-time-code"
           disabled={disabled}
-          maxLength={1}
           value={chars[i]?.trim() ? chars[i] : ''}
           onChange={(e) => setDigit(i, e.target.value)}
           onKeyDown={(e) => handleKeyDown(i, e)}
