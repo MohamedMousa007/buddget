@@ -11,7 +11,7 @@
  *   {pad}
  */
 
-import { useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { NumberPad, type NumberPadMode } from '@/components/ui/NumberPad'
 
@@ -26,6 +26,23 @@ interface UseNumberPadOptions {
 
 export function useNumberPad({ value, onChange, mode, currency, label, dir }: UseNumberPadOptions) {
   const [isOpen, setOpen] = useState(false)
+  const triggerRef = useRef<HTMLElement | null>(null)
+
+  const openPad = (e?: { currentTarget?: EventTarget | null }) => {
+    const el = e?.currentTarget
+    if (el instanceof HTMLElement) triggerRef.current = el
+    setOpen(true)
+  }
+
+  // Once the pad is open and the modal has lifted (paddingBottom applied), scroll
+  // the trigger into the visible area above the pad so its value is never hidden.
+  useEffect(() => {
+    if (!isOpen) return
+    const t = window.setTimeout(() => {
+      triggerRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    }, 180)
+    return () => window.clearTimeout(t)
+  }, [isOpen])
 
   const pad: ReactNode =
     isOpen && typeof document !== 'undefined'
@@ -45,5 +62,5 @@ export function useNumberPad({ value, onChange, mode, currency, label, dir }: Us
         )
       : null
 
-  return { isOpen, openPad: () => setOpen(true), closePad: () => setOpen(false), pad }
+  return { isOpen, openPad, closePad: () => setOpen(false), pad }
 }

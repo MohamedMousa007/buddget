@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion, useDragControls } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { useNumpadInset } from '@/lib/ui/numpadInset'
 
 const OVERLAY_Z = 'z-[100]'
 
@@ -143,6 +144,10 @@ export function ModalShell({
 
   const desktopFadePanel = lgMotion
 
+  // Lift the panel above the OS keyboard OR the glass NumberPad (same code path).
+  const numpadInset = useNumpadInset()
+  const bottomInset = Math.max(keyboardOffset, numpadInset)
+
   return (
     <AnimatePresence>
       {open && (
@@ -189,8 +194,8 @@ export function ModalShell({
               panelClassName
             )}
             style={
-              keyboardOffset > 0 && !desktopFadePanel
-                ? { paddingBottom: `${keyboardOffset}px` }
+              bottomInset > 0 && !desktopFadePanel
+                ? { paddingBottom: `${bottomInset}px` }
                 : undefined
             }
           >
