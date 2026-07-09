@@ -253,11 +253,13 @@ function AndroidBackHandler() {
       const { App } = await import('@capacitor/app')
       if (cancelled) return
       handle = await App.addListener('backButton', ({ canGoBack }) => {
+        // Guards first: inner dismissable layers (number pad, unsaved-changes
+        // dialogs) must consume the back press before the modal itself closes.
+        if (runBackGuards()) return
         if (activeModalRef.current) {
           setActiveModalRef.current(null)
           return
         }
-        if (runBackGuards()) return
         if (pathnameRef.current !== '/') {
           if (canGoBack) window.history.back()
           else routerRef.current.push('/')

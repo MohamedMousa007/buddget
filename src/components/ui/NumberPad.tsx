@@ -10,8 +10,11 @@
  * each key press computes the full next string via nextValue() and calls onChange.
  */
 
+import { useEffect } from 'react'
+import { motion, useDragControls } from 'framer-motion'
 import { Delete } from 'lucide-react'
 import type { CSSProperties } from 'react'
+import { registerBackGuard } from '@/lib/navigation/backGuard'
 
 export type NumberPadMode = 'decimal' | 'integer' | 'pin'
 
@@ -96,29 +99,39 @@ export function NumberPad({
   }
   const backStyle: CSSProperties = { ...digitStyle, color: '#C9C9D6' }
 
+  const close = () => (onClose ?? onDone)()
+  const dragControls = useDragControls()
+
+  // Hardware back / edge-swipe closes the pad first (returns true = handled),
+  // so the modal behind it survives the first press — like a system keyboard.
+  useEffect(() => registerBackGuard(() => { close(); return true }))
+
   return (
     <div dir={dir} style={{ position: 'fixed', inset: 0, zIndex: 120, fontFamily: 'var(--font-sans)' }}>
-      {/* Scrim — mirrors the sign-in modal (bg-black/25 + backdrop-blur). Keeps the form visible above the pad. */}
+      {/* Scrim — transparent (no blur/dim) so the form and its live value stay
+          fully visible above the pad, exactly like the OS keyboard. Tap closes. */}
       <button
         type="button"
         aria-label="Close number pad"
-        onClick={() => (onClose ?? onDone)()}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          border: 'none',
-          cursor: 'default',
-          background: 'rgba(0,0,0,.25)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          animation: 'npFade .2s ease',
-        }}
+        onClick={close}
+        style={{ position: 'absolute', inset: 0, border: 'none', cursor: 'default', background: 'transparent' }}
       />
 
-      <div
+      <motion.div
         role="dialog"
         aria-modal="true"
         aria-label={caption}
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+        drag="y"
+        dragListener={false}
+        dragControls={dragControls}
+        dragConstraints={{ top: 0 }}
+        dragElastic={{ top: 0, bottom: 0.35 }}
+        onDragEnd={(_, info) => {
+          if (info.offset.y > 90 || info.velocity.y > 450) close()
+        }}
         style={{
           position: 'absolute',
           left: 0,
@@ -135,7 +148,6 @@ export function NumberPad({
           borderRadius: '28px 28px 0 0',
           padding: '8px 16px 20px',
           paddingBottom: 'calc(20px + env(safe-area-inset-bottom))',
-          animation: 'npUp .32s cubic-bezier(.22,1,.36,1)',
         }}
       >
         <div
@@ -157,7 +169,13 @@ export function NumberPad({
         />
 
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ width: 40, height: 4, borderRadius: 999, background: 'rgba(255,255,255,.22)', margin: '2px auto 8px' }} />
+          {/* Grab handle — the swipe-down-to-dismiss affordance. Enlarged hit area. */}
+          <div
+            onPointerDown={(e) => dragControls.start(e)}
+            style={{ display: 'flex', justifyContent: 'center', padding: '2px 0 6px', cursor: 'grab', touchAction: 'none' }}
+          >
+            <div style={{ width: 40, height: 4, borderRadius: 999, background: 'rgba(255,255,255,.22)' }} />
+          </div>
 
           {showDisplay && (
             <div style={{ padding: '6px 6px 14px' }}>
@@ -257,7 +275,7 @@ export function NumberPad({
             {dir === 'rtl' ? 'تم' : 'Done'}
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }
