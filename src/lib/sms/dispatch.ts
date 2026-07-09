@@ -16,6 +16,10 @@ import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js'
 import {
   createSmsExpense,
   createSmsDebtPayment,
+  matchOriginalExpense,
+  markExpenseRefunded,
+  findRefundedTwin,
+  mapKindToCategory,
   isIncomeKind,
   type SmsRowData,
   type SmsExpenseKind,
@@ -30,6 +34,7 @@ export type SmsTxOutcome =
   | 'atm'
   | 'income'
   | 'income_matched'
+  | 'refund_matched'
   | 'debt_payment'
   | 'transfer_single'
   | 'transfer_paired'
@@ -131,6 +136,41 @@ export async function createSmsTransaction(
       category: 'CC Payoff',
       error: res.error,
     }
+  }
+
+  // 3.5 Refund / decline → reverse the ORIGINAL expense instead of booking
+  //     one-time income. `declined`/reversal wording = no money moved.
+  if (kind === 'refund' || kind === 'declined') {
+    const refundKind: 'refunded' | 'declined' =
+      kind === 'declined' || /declin|revers|reject|مرفوض|رفض|عكس/i.test(row.rawBody)
+        ? 'declined'
+        : 'refunded'
+    // Duplicate guard: same refund re-sent as differently-worded SMS. If an
+    // equal-amount charge on the same card was already reversed within ±3 days,
+    // ack against it instead of reversing a second unrelated charge.
+    const twin = await findRefundedTwin(service, row)
+    if (twin) {
+      return { ...base('refund_matched'), expenseId: twin.id, category: twin.category }
+    }
+    const match = await matchOriginalExpense(service, row)
+    if (match) {
+      const { error } = await markExpenseRefunded(service, match.id, refundKind, row.day, row.logId)
+      return { ...base('refund_matched'), expenseId: match.id, category: match.category, error }
+    }
+    if (refundKind === 'declined') {
+      // No original to reverse, but a decline moved no money — track it as a
+      // net-zero expense so the user sees it (never income).
+      const res = await createSmsExpense(service, { ...row, kind, refundMark: { refundKind, day: row.day } })
+      return {
+        ...base('expense'),
+        expenseId: res.expenseId,
+        category: mapKindToCategory(kind, row.categoryHint),
+        error: res.error,
+      }
+    }
+    // Refunded with no match → one-time income (unchanged legacy behavior).
+    const res = await createSmsExpense(service, { ...row, kind: 'refund' })
+    return { ...base('income'), incomeId: res.incomeId, error: res.error }
   }
 
   // 4. Income → salary matching. A confident match posts the ACTUAL received

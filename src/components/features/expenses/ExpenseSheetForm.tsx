@@ -56,6 +56,9 @@ export interface ExpenseSheetFormProps {
   isDirty?: boolean
   /** Edit-only: revert every field to the loaded snapshot. */
   onDiscard?: () => void
+  /** Edit-only: set when this expense was reversed — shows a charged/refunded line. */
+  refundedAt?: string
+  refundKind?: 'refunded' | 'declined'
 }
 
 export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
@@ -82,6 +85,8 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
     onClose,
     isDirty,
     onDiscard,
+    refundedAt,
+    refundKind,
   } = props
   const t = useT()
   const { locale } = useLocale()
@@ -330,6 +335,23 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                 creditCardOutstandingHint.amountLabel,
               )}
             </p>
+          ) : null}
+
+          {/* reversal audit line — charged vs refunded/declined date */}
+          {refundKind ? (
+            <div className="flex items-center gap-1.5 text-xs text-[var(--color-brand-text-muted)]">
+              <Info className="h-3.5 w-3.5 shrink-0" />
+              <span>
+                {t.expenseForm.charged} {formatDatePillLabel(date, locale, t.expenseForm.today)}
+                {refundedAt ? (
+                  <>
+                    {' · '}
+                    {refundKind === 'declined' ? t.expenseForm.declined : t.expenseForm.refunded}{' '}
+                    {formatDatePillLabel(refundedAt.slice(0, 10), locale, t.expenseForm.today)}
+                  </>
+                ) : null}
+              </span>
+            </div>
           ) : null}
 
           {/* note */}

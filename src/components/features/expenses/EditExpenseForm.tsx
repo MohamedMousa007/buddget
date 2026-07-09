@@ -52,6 +52,8 @@ export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClos
       onClose={onClose}
       isDirty={isDirty}
       onDiscard={onDiscard}
+      refundedAt={expense.refundedAt}
+      refundKind={expense.refundKind}
     />
   )
 }

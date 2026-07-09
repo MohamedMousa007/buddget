@@ -334,6 +334,18 @@ describe('expenseAmountInBase', () => {
     expect(inEur).toBeCloseTo(100 * (3.6725 / 4.02), 4)
   })
 
+  it('a refunded/declined expense nets to zero in totals but shows gross when asked', () => {
+    const refunded: Pick<Expense, 'amount' | 'currency' | 'amountInBaseCurrency' | 'refundKind'> = {
+      amount: 100,
+      currency: 'AED',
+      amountInBaseCurrency: 100,
+      refundKind: 'refunded',
+    }
+    expect(expenseAmountInBase(refunded, 'AED', rates)).toBe(0)
+    expect(expenseAmountInBase({ ...refunded, refundKind: 'declined' }, 'AED', rates)).toBe(0)
+    expect(expenseAmountInBase(refunded, 'AED', rates, true)).toBe(100)
+  })
+
   it('calculateTotalSpent uses live conversion not stale amountInBaseCurrency', () => {
     const expenses: Expense[] = [
       {

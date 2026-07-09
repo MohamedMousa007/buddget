@@ -111,7 +111,6 @@ export async function POST(request: Request) {
     merchant: row.merchant ?? null,
     bankName: row.bank_name ?? null,
     categoryHint: row.category ?? null,
-    rawSmsSummary: row.raw_sms_summary ?? null,
     source: row.source ?? 'sms',
     rawBody: row.raw_body ?? '',
     last4: row.account_last4 ?? null,

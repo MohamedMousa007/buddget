@@ -111,8 +111,9 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
             {g.items.map((e, idx) => {
               const colors = categoryChipColors(e.category)
               const method = paymentMethods.find((m) => m.id === e.paymentMethodId)
-              const baseVal = expenseAmountInBase(e, base, exchangeRates)
-              const isSms = e.notes?.includes('[auto from sms]')
+              // Refunded/declined rows net to zero in totals; show the gross original here.
+              const baseVal = expenseAmountInBase(e, base, exchangeRates, !!e.refundKind)
+              const isSms = !!e.smsLogId
               const usd = showSecondary && secondary
                 ? formatCurrency(convertCurrency(baseVal, base, secondary, exchangeRates), secondary)
                 : null
@@ -140,7 +141,15 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                       <span className="truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">
                         {e.description}
                       </span>
-                      {isSms ? (
+                      {e.refundKind === 'declined' ? (
+                        <span className="shrink-0 rounded-full bg-[rgba(229,9,20,0.12)] px-1.5 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-[var(--color-brand-red-text)]">
+                          {t.expenses.badgeDeclined}
+                        </span>
+                      ) : e.refundKind === 'refunded' ? (
+                        <span className="shrink-0 rounded-full bg-[rgba(24,163,73,0.12)] px-1.5 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-[var(--color-brand-green)]">
+                          {t.expenses.badgeRefunded}
+                        </span>
+                      ) : isSms ? (
                         <span className="shrink-0 rounded-full bg-[rgba(29,185,84,0.12)] px-1.5 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-[var(--color-brand-green)]">
                           {t.expenses.badgeSms}
                         </span>
@@ -155,12 +164,14 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                     </span>
                   </span>
                   <span className="shrink-0 text-end">
-                    <span className="font-mono-numbers block text-sm font-bold text-[var(--color-brand-red-text)]">
+                    <span
+                      className={`font-mono-numbers block text-sm font-bold ${e.refundKind ? 'text-[var(--color-brand-text-muted)] line-through' : 'text-[var(--color-brand-red-text)]'}`}
+                    >
                       −{fmtNum(baseVal)}{' '}
                       <span className="text-[10px] font-medium text-[var(--color-brand-text-muted)]">{base}</span>
                     </span>
                     {usd ? (
-                      <span className="font-mono-numbers block text-xs text-[var(--color-brand-text-muted)]">
+                      <span className={`font-mono-numbers block text-xs text-[var(--color-brand-text-muted)] ${e.refundKind ? 'line-through' : ''}`}>
                         −{usd}
                       </span>
                     ) : null}
