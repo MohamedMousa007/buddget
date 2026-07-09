@@ -15,6 +15,7 @@ import { motion } from 'framer-motion'
 import { Delete } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import { registerBackGuard } from '@/lib/navigation/backGuard'
+import { setNumpadInset } from '@/lib/ui/numpadInset'
 
 export type NumberPadMode = 'decimal' | 'integer' | 'pin'
 
@@ -113,6 +114,22 @@ export function NumberPad({
     return () => { document.body.style.overflow = prev }
   }, [])
 
+  // Publish the pad's height so an open ModalShell lifts its content above it,
+  // reusing the keyboard-avoidance path (see numpadInset / ModalShell).
+  const sheetRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const el = sheetRef.current
+    if (!el) return
+    const measure = () => setNumpadInset(el.getBoundingClientRect().height)
+    const raf = requestAnimationFrame(measure)
+    window.addEventListener('resize', measure)
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('resize', measure)
+      setNumpadInset(0)
+    }
+  }, [])
+
   // Press-and-hold backspace: delete accelerating with the length of the hold,
   // like a keyboard. Track the freshest value locally so ticks don't wait on
   // React re-renders.
@@ -152,6 +169,7 @@ export function NumberPad({
       />
 
       <motion.div
+        ref={sheetRef}
         role="dialog"
         aria-modal="true"
         aria-label={caption}
