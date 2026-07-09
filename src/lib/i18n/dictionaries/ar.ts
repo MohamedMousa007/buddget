@@ -423,6 +423,7 @@ export const ar: Dictionary = {
     badgeSms: 'SMS',
     swipeDelete: 'حذف',
     expenseDeleted: 'تم حذف المصروف',
+    fileSaved: 'تم حفظ الملف في المستندات',
   },
 
   addExpense: {

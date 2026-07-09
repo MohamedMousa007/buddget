@@ -330,6 +330,7 @@ export interface Dictionary {
     badgeSms: string
     swipeDelete: string
     expenseDeleted: string
+    fileSaved: string
   }
 
   addExpense: {

@@ -423,6 +423,7 @@ export const en: Dictionary = {
     badgeSms: 'SMS',
     swipeDelete: 'Delete',
     expenseDeleted: 'Expense deleted',
+    fileSaved: 'File saved to Documents',
   },
 
   addExpense: {
