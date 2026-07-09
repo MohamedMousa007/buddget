@@ -14,6 +14,7 @@ import { useT, useLocale } from '@/lib/i18n'
 import { UnifiedDatePicker, formatDatePillLabel } from '@/components/ui/UnifiedDatePicker'
 import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
 import { rgba } from '@/lib/utils/color'
+import { numericInput } from '@/lib/ui/numericInput'
 
 const HIDE_SCROLL = '[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
 const ADD_PAY_TYPES: PaymentMethodType[] = ['cash', 'bank_transfer', 'nol', 'card_credit', 'card_debit']
@@ -197,7 +198,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                   value={amount}
                   onChange={(e) => setAmt(e.target.value)}
                   dir="ltr"
-                  inputMode="decimal"
+                  {...numericInput()}
                   placeholder="0.00"
                   className="w-full min-w-0 flex-1 border-none bg-transparent text-start font-bold text-2xl font-mono-numbers tracking-[-0.02em] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus:outline-none"
                 />
