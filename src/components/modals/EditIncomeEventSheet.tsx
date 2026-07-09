@@ -23,7 +23,6 @@ import {
   MODAL_BODY_SCROLL_CLASS,
   MODAL_CONTROL_CLASS,
   MODAL_LABEL_CLASS,
-  MODAL_SHEET_OUTER_CLASS,
 } from '@/lib/modals/modalFormClasses'
 
 const DATE_INPUT_CLASS =
@@ -103,11 +102,11 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
 
   return (
     <>
-    <div className={`${MODAL_SHEET_OUTER_CLASS} p-5`}>
-      <div className="shrink-0">
+    <div className="flex min-h-0 flex-1 flex-col outline-none">
+      <div className="shrink-0 px-5 pt-1">
         <ModalSheetHeader title={t.editIncome.title} onClose={onClose} />
       </div>
-      <div className={MODAL_BODY_SCROLL_CLASS}>
+      <div className={`${MODAL_BODY_SCROLL_CLASS} px-5`}>
         {!typeLocked ? (
           <div>
             <span className={MODAL_LABEL_CLASS}>{t.addIncome.labelSourceType}</span>
@@ -209,7 +208,7 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
         </button>
       </div>
 
-      <div className="shrink-0 pt-4">
+      <div className="shrink-0 px-5 pb-5 pt-4">
         <button
           type="button"
           onClick={handleSave}
@@ -268,7 +267,7 @@ export function EditIncomeEventSheet() {
   }
 
   return (
-    <ModalShell open={isOpen && !!event} onBackdropClick={close}>
+    <ModalShell open={isOpen && !!event} onBackdropClick={close} scrollChild>
       {event ? <EditIncomeEventForm key={event.id} event={event} onClose={close} /> : null}
     </ModalShell>
   )

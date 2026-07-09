@@ -131,7 +131,7 @@ export default function IncomePage() {
   // Monthly-equivalent of a source in base currency (bi-weekly/weekly normalized to /mo).
   const toBaseMonthly = (s: IncomeSource) => convertCurrency(monthlyEquivalent(s), s.currency, base, exchangeRates)
   const monthlyUsd = showSecondary && secondary
-    ? formatCurrency(convertCurrency(monthlyTotal, base, secondary, exchangeRates), secondary)
+    ? formatCurrency(convertCurrency(monthlyTotal, base, secondary, exchangeRates), secondary, false)
     : null
 
   // "Other income this month": unlinked one-time events + legacy one-time sources, grouped by day.
@@ -159,8 +159,8 @@ export default function IncomePage() {
         total: items.reduce((sum, r) => sum + toBase(r.source), 0),
         items,
       }))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recurring, oneTimeThisMonth, monthFilter, base, exchangeRates])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- toBase is an inline closure over base/exchangeRates
+  }, [oneTimeThisMonth, monthFilter, base, exchangeRates])
 
   if (!dataReady) return <div className="p-4"><SkeletonList /></div>
 
@@ -229,8 +229,21 @@ export default function IncomePage() {
       <div className="mb-5 flex flex-col gap-2.5">
         {recurring.map((s) => {
           const colors = incomeTypeColors(s.sourceType)
-          const events = eventsByTemplate.get(s.id) ?? []
+          const events = [...(eventsByTemplate.get(s.id) ?? [])].sort(
+            (a, b) => b.receivedDate.localeCompare(a.receivedDate) || b.createdAt.localeCompare(a.createdAt),
+          )
           const pending = events.length === 0 && isIncomeOccurrencePending(s, incomeEvents, monthFilter, today, settings.monthStartDay)
+          // Progress toward the month's expected amount (cumulative, base currency).
+          const expectedMonthly = toBaseMonthly(s)
+          const receivedTotal = events.reduce((sum, e) => sum + convertCurrency(e.amount, e.currency, base, exchangeRates), 0)
+          const remaining = Math.round(expectedMonthly - receivedTotal)
+          const receivedOfExpected = t.income.receivedOfExpected(`${fmtNum(receivedTotal)} ${base}`, `${fmtNum(expectedMonthly)} ${base}`)
+          const progressLabel =
+            remaining > 0
+              ? `${receivedOfExpected} · ${t.income.remainingLeft(`${fmtNum(remaining)} ${base}`)}`
+              : remaining === 0
+                ? `${receivedOfExpected} · ${t.income.fullyReceived}`
+                : `${receivedOfExpected} · ${t.income.extraReceived(`${fmtNum(-remaining)} ${base}`)}`
           return (
             <div key={s.id} className="overflow-hidden rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
               {/* Template header (projection) */}
@@ -244,7 +257,9 @@ export default function IncomePage() {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold text-[var(--color-brand-text-primary)]">{s.name}</p>
-                  <p className="mt-0.5 truncate text-xs text-[var(--color-brand-text-muted)]">{freqLabel(s)} · {t.income.expectedPerMonth(`${fmtNum(toBaseMonthly(s))} ${base}`)}</p>
+                  <p className="mt-0.5 truncate text-xs text-[var(--color-brand-text-muted)]">
+                    {events.length > 0 ? progressLabel : `${freqLabel(s)} · ${t.income.expectedPerMonth(`${fmtNum(expectedMonthly)} ${base}`)}`}
+                  </p>
                 </div>
                 {pending ? (
                   <span className="shrink-0 rounded-full bg-[var(--color-brand-elevated)] px-2 py-0.5 text-xs font-bold uppercase tracking-[0.04em] text-[var(--color-brand-text-muted)]">
@@ -255,9 +270,7 @@ export default function IncomePage() {
               {/* Actual received events for the month */}
               {events.map((e) => {
                 const chip = statusChip(e.status)
-                const expected = convertCurrency(s.amount, s.currency, base, exchangeRates)
                 const actual = convertCurrency(e.amount, e.currency, base, exchangeRates)
-                const delta = Math.round(actual - expected)
                 return (
                   <button
                     key={e.id}
@@ -268,15 +281,12 @@ export default function IncomePage() {
                     <span className="ms-3 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-brand-text-muted)]" />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-semibold text-[var(--color-brand-text-secondary)]">{t.income.receivedDate} {e.receivedDate.slice(5)}</span>
+                        <span className="text-xs font-semibold text-[var(--color-brand-text-secondary)]">{e.receivedDate.slice(5)}</span>
                         <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.03em] ${chip.cls}`}>{chip.label}</span>
                       </div>
                     </div>
                     <div className="shrink-0 text-end">
                       <p className="font-mono-numbers text-sm font-bold text-[var(--color-brand-text-primary)]">+{fmtNum(actual)} <span className="text-[10px] font-medium text-[var(--color-brand-text-muted)]">{base}</span></p>
-                      {delta !== 0 ? (
-                        <p className={`font-mono-numbers text-[10px] ${delta > 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red)]'}`}>{delta > 0 ? '+' : ''}{fmtNum(delta)}</p>
-                      ) : null}
                     </div>
                   </button>
                 )

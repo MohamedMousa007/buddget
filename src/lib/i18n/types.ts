@@ -441,6 +441,10 @@ export interface Dictionary {
     statusMissed: string
     statusPending: string
     expectedPerMonth: (amount: string) => string
+    receivedOfExpected: (received: string, expected: string) => string
+    remainingLeft: (amount: string) => string
+    fullyReceived: string
+    extraReceived: (amount: string) => string
     otherIncomeLabel: string
     sourceTypeSalary: string
     sourceTypeBonus: string
