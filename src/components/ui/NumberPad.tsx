@@ -10,8 +10,8 @@
  * each key press computes the full next string via nextValue() and calls onChange.
  */
 
-import { useEffect } from 'react'
-import { motion, useDragControls } from 'framer-motion'
+import { useEffect, useRef } from 'react'
+import { motion } from 'framer-motion'
 import { Delete } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import { registerBackGuard } from '@/lib/navigation/backGuard'
@@ -100,21 +100,55 @@ export function NumberPad({
   const backStyle: CSSProperties = { ...digitStyle, color: '#C9C9D6' }
 
   const close = () => (onClose ?? onDone)()
-  const dragControls = useDragControls()
 
   // Hardware back / edge-swipe closes the pad first (returns true = handled),
   // so the modal behind it survives the first press — like a system keyboard.
   useEffect(() => registerBackGuard(() => { close(); return true }))
 
+  // Lock background scroll while the pad is open — otherwise a touch drag over
+  // the transparent scrim scrolls the modal/page behind it.
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [])
+
+  // Press-and-hold backspace: delete accelerating with the length of the hold,
+  // like a keyboard. Track the freshest value locally so ticks don't wait on
+  // React re-renders.
+  const holdTimer = useRef<number | undefined>(undefined)
+  const stopHold = () => {
+    if (holdTimer.current !== undefined) {
+      window.clearTimeout(holdTimer.current)
+      holdTimer.current = undefined
+    }
+  }
+  useEffect(() => stopHold, [])
+  const startBackspace = () => {
+    stopHold()
+    let v = nextValue(value, 'back', mode)
+    onChange(v)
+    let delay = 320
+    const tick = () => {
+      if (!v) return stopHold()
+      v = nextValue(v, 'back', mode)
+      onChange(v)
+      delay = Math.max(45, delay * 0.78)
+      holdTimer.current = window.setTimeout(tick, delay)
+    }
+    holdTimer.current = window.setTimeout(tick, 380)
+  }
+
   return (
-    <div dir={dir} style={{ position: 'fixed', inset: 0, zIndex: 120, fontFamily: 'var(--font-sans)' }}>
+    <div dir={dir} style={{ position: 'fixed', inset: 0, zIndex: 120, fontFamily: 'var(--font-sans)', touchAction: 'none', overscrollBehavior: 'contain' }}>
       {/* Scrim — transparent (no blur/dim) so the form and its live value stay
           fully visible above the pad, exactly like the OS keyboard. Tap closes. */}
       <button
         type="button"
         aria-label="Close number pad"
         onClick={close}
-        style={{ position: 'absolute', inset: 0, border: 'none', cursor: 'default', background: 'transparent' }}
+        onTouchMove={(e) => e.preventDefault()}
+        style={{ position: 'absolute', inset: 0, border: 'none', cursor: 'default', background: 'transparent', touchAction: 'none' }}
       />
 
       <motion.div
@@ -125,12 +159,11 @@ export function NumberPad({
         animate={{ y: 0 }}
         transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
         drag="y"
-        dragListener={false}
-        dragControls={dragControls}
         dragConstraints={{ top: 0 }}
-        dragElastic={{ top: 0, bottom: 0.35 }}
+        dragElastic={{ top: 0, bottom: 0.5 }}
+        dragMomentum={false}
         onDragEnd={(_, info) => {
-          if (info.offset.y > 90 || info.velocity.y > 450) close()
+          if (info.offset.y > 70 || info.velocity.y > 380) close()
         }}
         style={{
           position: 'absolute',
@@ -169,12 +202,9 @@ export function NumberPad({
         />
 
         <div style={{ position: 'relative', zIndex: 1 }}>
-          {/* Grab handle — the swipe-down-to-dismiss affordance. Enlarged hit area. */}
-          <div
-            onPointerDown={(e) => dragControls.start(e)}
-            style={{ display: 'flex', justifyContent: 'center', padding: '2px 0 4px', cursor: 'grab', touchAction: 'none' }}
-          >
-            <div style={{ width: 40, height: 4, borderRadius: 999, background: 'rgba(255,255,255,.22)' }} />
+          {/* Grab handle — swipe anywhere on the pad down to dismiss (whole sheet drags). */}
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '2px 0 6px' }}>
+            <div style={{ width: 44, height: 5, borderRadius: 999, background: 'rgba(255,255,255,.28)' }} />
           </div>
 
           {showDisplay && (
@@ -234,46 +264,37 @@ export function NumberPad({
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 4, marginTop: 2 }}>
             {keys.map((k, i) => {
               if (k === 'blank') return <span key={i} aria-hidden />
-              const isBack = k === 'back'
+              if (k === 'back') {
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    className="np-key"
+                    onPointerDown={(e) => { e.preventDefault(); startBackspace() }}
+                    onPointerUp={stopHold}
+                    onPointerLeave={stopHold}
+                    onPointerCancel={stopHold}
+                    style={backStyle}
+                    aria-label="Delete"
+                  >
+                    <Delete size={22} strokeWidth={2} />
+                  </button>
+                )
+              }
               return (
                 <button
                   key={i}
                   type="button"
                   className="np-key"
                   onClick={() => onChange(nextValue(value, k, mode))}
-                  style={isBack ? backStyle : digitStyle}
-                  aria-label={isBack ? 'Delete' : k}
+                  style={digitStyle}
+                  aria-label={k}
                 >
-                  {isBack ? <Delete size={22} strokeWidth={2} /> : k}
+                  {k}
                 </button>
               )
             })}
           </div>
-
-          <button
-            type="button"
-            onClick={onDone}
-            onMouseDown={(e) => e.preventDefault()}
-            style={{
-              width: '100%',
-              height: 46,
-              marginTop: 8,
-              border: 'none',
-              borderRadius: 14,
-              background: 'linear-gradient(160deg,#F40612,#C5070F)',
-              color: '#fff',
-              fontFamily: 'var(--font-sans)',
-              fontWeight: 600,
-              fontSize: 15,
-              cursor: 'pointer',
-              boxShadow: '0 10px 26px -10px rgba(229,9,20,.7)',
-              transition: 'filter .15s',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.filter = 'brightness(1.08)')}
-            onMouseLeave={(e) => (e.currentTarget.style.filter = 'none')}
-          >
-            {dir === 'rtl' ? 'تم' : 'Done'}
-          </button>
         </div>
       </motion.div>
     </div>
