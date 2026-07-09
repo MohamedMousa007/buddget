@@ -2,6 +2,7 @@ import * as React from "react"
 import { Input as InputPrimitive } from "@base-ui/react/input"
 
 import { cn } from "@/lib/utils"
+import { isAndroid } from "@/lib/native/isNative"
 
 function Input({ className, type, inputMode, onClick, ...props }: React.ComponentProps<"input">) {
   const handleClick: React.MouseEventHandler<HTMLInputElement> = (e) => {
@@ -11,9 +12,12 @@ function Input({ className, type, inputMode, onClick, ...props }: React.Componen
     onClick?.(e)
   }
 
-  // ponytail: iOS WKWebView ignores inputMode for type="number"; text+decimal is the fix
-  const resolvedType = type === 'number' ? 'text' : type
-  const resolvedInputMode = inputMode ?? (type === 'number' ? 'decimal' : undefined)
+  // ponytail: Android enforces the numpad from type="number" regardless of keyboard app
+  // (Samsung/OEM keyboards ignore inputMode). iOS honors inputMode but shows a cluttered
+  // keypad for type="number", so keep text+decimal there. Split by platform.
+  const numeric = type === 'number'
+  const resolvedType = numeric && !isAndroid() ? 'text' : type
+  const resolvedInputMode = inputMode ?? (numeric ? 'decimal' : undefined)
 
   return (
     <InputPrimitive
