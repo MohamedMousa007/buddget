@@ -140,9 +140,9 @@ export function NumberPad({
           overflow: 'hidden',
           background:
             'radial-gradient(120% 82% at 50% -12%, rgba(229,9,20,.20) 0%, rgba(229,9,20,.05) 40%, rgba(20,18,26,0) 66%), ' +
-            'linear-gradient(180deg, rgba(30,25,34,.80) 0%, rgba(18,16,22,.86) 58%, rgba(12,10,16,.90) 100%)',
-          backdropFilter: 'blur(26px)',
-          WebkitBackdropFilter: 'blur(26px)',
+            'linear-gradient(180deg, rgba(30,25,34,.56) 0%, rgba(18,16,22,.62) 58%, rgba(12,10,16,.66) 100%)',
+          backdropFilter: 'blur(18px)',
+          WebkitBackdropFilter: 'blur(18px)',
           borderTop: '1px solid rgba(255,255,255,.12)',
           boxShadow: '0 -20px 50px -20px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.06)',
           borderRadius: '28px 28px 0 0',
