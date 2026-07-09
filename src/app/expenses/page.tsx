@@ -14,6 +14,7 @@ import { ExpenseFilters } from '@/components/expenses/ExpenseFilters'
 import { ExpenseDayList } from '@/components/expenses/ExpenseDayList'
 import { MonthNavigationControl } from '@/components/layout/MonthNavigationControl'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
+import { useActionToast } from '@/components/ui/ActionToast'
 import { useT } from '@/lib/i18n'
 import { useHydrateExpenses } from '@/hooks/remote'
 import { SkeletonList } from '@/components/ui/SkeletonList'
@@ -38,6 +39,7 @@ export default function ExpensesPage() {
     useShallow((s) => ({ cats: s.cats, methods: s.methods, amtMin: s.amtMin, amtMax: s.amtMax })),
   )
   const requireAuth = useRequireAuthAction()
+  const toast = useActionToast()
   const t = useT()
   const base = settings.baseCurrency
   const secondary = settings.secondaryCurrency
@@ -89,7 +91,7 @@ export default function ExpensesPage() {
     ? formatCurrency(convertCurrency(totalAmount, base, secondary, exchangeRates), secondary)
     : null
 
-  const handleExport = () => {
+  const handleExport = async () => {
     const headers = 'Date,Description,Category,Amount,Currency,Payment Method\n'
     const rows = filteredExpenses
       .map((e) =>
@@ -104,7 +106,8 @@ export default function ExpensesPage() {
       )
       .join('\n')
 
-    void downloadOrShareFile(`buddget-expenses-${monthFilter}.csv`, headers + rows, 'text/csv')
+    const result = await downloadOrShareFile(`buddget-expenses-${monthFilter}.csv`, headers + rows, 'text/csv')
+    if (result === 'saved') toast(t.expenses.fileSaved)
   }
 
   const addExpense = () =>
