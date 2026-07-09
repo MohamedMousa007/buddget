@@ -4,8 +4,11 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
+import { useActionToast } from '@/components/ui/ActionToast'
 import { useT } from '@/lib/i18n'
 import { apiFetchAuth } from '@/lib/apiBase'
+import { downloadOrShareFile } from '@/lib/utils/exportFile'
+import { escapeCsvField } from '@/lib/utils/formatters'
 
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 
@@ -22,6 +25,7 @@ export function useSettingsPage() {
 
   const { user, signOut, openAuthModal } = useAuth()
   const store = useFinanceStore()
+  const toast = useActionToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const supabaseConfigured = useMemo(
@@ -54,6 +58,30 @@ export function useSettingsPage() {
     a.download = `buddget-backup-${new Date().toISOString().slice(0, 10)}.json`
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  const handleExportExpensesCsv = async () => {
+    const methodName = (id: string) => store.paymentMethods.find((m) => m.id === id)?.name ?? id
+    const headers = 'Date,Description,Category,Amount,Currency,Payment Method\n'
+    const rows = store.expenses
+      .map((e) =>
+        [
+          escapeCsvField(e.date),
+          escapeCsvField(e.description),
+          escapeCsvField(e.category),
+          escapeCsvField(e.amount),
+          escapeCsvField(e.currency),
+          escapeCsvField(methodName(e.paymentMethodId)),
+        ].join(','),
+      )
+      .join('\n')
+
+    const result = await downloadOrShareFile(
+      `buddget-expenses-${new Date().toISOString().slice(0, 10)}.csv`,
+      headers + rows,
+      'text/csv',
+    )
+    if (result === 'saved') toast(t.expenses.fileSaved)
   }
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -107,6 +135,7 @@ export function useSettingsPage() {
     setShowResetConfirm,
     importBanner,
     handleExport,
+    handleExportExpensesCsv,
     handleImport,
     handleStartFresh,
   }

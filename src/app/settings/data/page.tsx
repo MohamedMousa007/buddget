@@ -18,6 +18,7 @@ export default function SettingsDataPage() {
         showResetConfirm={s.showResetConfirm}
         onShowResetConfirm={s.setShowResetConfirm}
         onExport={s.handleExport}
+        onExportExpenses={s.handleExportExpensesCsv}
         onImportChange={s.handleImport}
         onStartFresh={s.handleStartFresh}
       />
