@@ -430,6 +430,9 @@ export type Database = {
           notes: string | null
           payment_method_id: string | null
           receipt_id: string | null
+          refund_kind: string | null
+          refund_sms_log_id: string | null
+          refunded_at: string | null
           sms_log_id: string | null
           updated_at: string
           user_id: string
@@ -449,6 +452,9 @@ export type Database = {
           notes?: string | null
           payment_method_id?: string | null
           receipt_id?: string | null
+          refund_kind?: string | null
+          refund_sms_log_id?: string | null
+          refunded_at?: string | null
           sms_log_id?: string | null
           updated_at?: string
           user_id: string
@@ -468,11 +474,21 @@ export type Database = {
           notes?: string | null
           payment_method_id?: string | null
           receipt_id?: string | null
+          refund_kind?: string | null
+          refund_sms_log_id?: string | null
+          refunded_at?: string | null
           sms_log_id?: string | null
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "expenses_refund_sms_log_id_fkey"
+            columns: ["refund_sms_log_id"]
+            isOneToOne: false
+            referencedRelation: "sms_parse_log"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "expenses_linked_debt_payment_id_fkey"
             columns: ["linked_debt_payment_id"]

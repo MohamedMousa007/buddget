@@ -47,6 +47,8 @@ export function expenseToRow(e: Expense, userId: string): ExpenseInsert {
     notes: e.notes ?? null,
     receipt_id: e.receiptId ?? null,
     sms_log_id: e.smsLogId ?? null,
+    refunded_at: e.refundedAt ?? null,
+    refund_kind: e.refundKind ?? null,
     created_at: e.createdAt,
   }
 }
@@ -68,6 +70,8 @@ export function expenseFromRow(row: ExpenseRow): Expense {
     linkedDebtPaymentId: row.linked_debt_payment_id ?? undefined,
     smsLogId: row.sms_log_id ?? undefined,
     receiptId: row.receipt_id ?? undefined,
+    refundedAt: row.refunded_at ?? undefined,
+    refundKind: (row.refund_kind as 'refunded' | 'declined' | null) ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }

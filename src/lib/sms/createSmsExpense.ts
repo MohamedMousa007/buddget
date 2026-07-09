@@ -9,7 +9,7 @@ export type SmsExpenseKind =
   | 'purchase' | 'online_purchase' | 'atm_withdrawal'
   | 'instant_transfer_out' | 'instant_transfer_in'
   | 'cc_payoff' | 'own_transfer' | 'currency_exchange'
-  | 'income' | 'refund' | 'fee' | 'other'
+  | 'income' | 'refund' | 'declined' | 'fee' | 'other'
   | null
 
 export function mapKindToCategory(
@@ -55,7 +55,6 @@ export interface SmsRowData {
   merchant: string | null
   bankName: string | null
   categoryHint: string | null
-  rawSmsSummary: string | null
   source: string
   rawBody: string
   // --- Optional enrichment (set by the parse route) -----------------------
@@ -73,6 +72,8 @@ export interface SmsRowData {
   templateId?: string | null
   /** Force a specific category (overrides kind/hint mapping). */
   categoryOverride?: ExpenseCategory | null
+  /** When set, stamp the new expense as already reversed (standalone-declined case). */
+  refundMark?: { refundKind: 'refunded' | 'declined'; day: string } | null
 }
 
 export interface CreateSmsExpenseResult {
@@ -86,16 +87,6 @@ export interface CreateSmsExpenseResult {
 
 function emptyResult(): CreateSmsExpenseResult {
   return { expenseId: null, incomeId: null, debtPaymentId: null, savingsTransactionId: null, error: null }
-}
-
-function smsNotes(row: SmsRowData): string {
-  // Prefer the clean one-sentence AI summary. NEVER fall back to the raw SMS
-  // body — curated/template tiers don't produce a summary, and dumping the raw
-  // text (refs, account numbers, balances) into notes is noise/PII leakage.
-  if (row.rawSmsSummary) return row.rawSmsSummary
-  const label = row.cleanTitle ?? row.merchantNormalized ?? row.merchant ?? row.bankName
-  const bank = row.bankName && row.bankName !== label ? ` · ${row.bankName}` : ''
-  return label ? `Auto-tracked from ${row.source}: ${label}${bank}` : `Auto-tracked from ${row.source}`
 }
 
 function smsTitle(row: SmsRowData): string | null {
@@ -136,7 +127,6 @@ export async function createSmsExpense(
   service: SupabaseClient,
   row: SmsRowData,
 ): Promise<CreateSmsExpenseResult> {
-  const autoNotes = smsNotes(row)
   const title = smsTitle(row)
 
   if (isIncomeKind(row.kind)) {
@@ -156,7 +146,7 @@ export async function createSmsExpense(
         received_date: row.day || new Date().toISOString().slice(0, 10),
         status: 'confirmed',
         sms_log_id: row.logId ?? null,
-        notes: autoNotes,
+        notes: null,
       })
       .select('id')
       .single()
@@ -181,13 +171,133 @@ export async function createSmsExpense(
       amount: row.amount,
       currency: row.currency,
       payment_method_id: paymentMethodId,
-      notes: autoNotes,
+      notes: null,
       linked_subscription_id: row.linkedSubscriptionId ?? null,
       sms_log_id: row.logId ?? null,
+      refunded_at: row.refundMark ? row.refundMark.day : null,
+      refund_kind: row.refundMark?.refundKind ?? null,
+      refund_sms_log_id: row.refundMark ? row.logId ?? null : null,
     })
     .select('id')
     .single()
   return { ...emptyResult(), expenseId: data?.id ?? null, error }
+}
+
+/**
+ * Resolves a card last4 to a SPECIFIC payment method (no default fallback) —
+ * an over-broad default would let unrelated same-amount charges match.
+ */
+async function resolveExactPaymentMethod(
+  service: SupabaseClient,
+  userId: string,
+  last4: string | null | undefined,
+): Promise<string | null> {
+  if (!last4) return null
+  const { data } = await service
+    .from('payment_methods')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('last4', last4)
+    .is('deleted_at', null)
+    .limit(1)
+    .maybeSingle()
+  return data?.id ?? null
+}
+
+/** ± window (days) for treating a second refund SMS as a duplicate of the same event. */
+const REFUND_DEDUPE_DAYS = 3
+
+/**
+ * Duplicate guard: a bank may send the same refund as two differently-worded
+ * SMS (distinct sms_hash, so the route dedupe misses them). If an expense with
+ * the SAME amount + currency + card was ALREADY reversed within ±3 days, the new
+ * SMS is that same refund — return the twin so it acks without reversing a second
+ * unrelated charge (or creating a duplicate standalone-declined row).
+ */
+export async function findRefundedTwin(
+  service: SupabaseClient,
+  row: SmsRowData,
+): Promise<{ id: string; category: string } | null> {
+  const lo = new Date(row.day)
+  lo.setDate(lo.getDate() - REFUND_DEDUPE_DAYS)
+  const hi = new Date(row.day)
+  hi.setDate(hi.getDate() + REFUND_DEDUPE_DAYS + 1) // +1 so the far end includes its whole day
+  const pmId = await resolveExactPaymentMethod(service, row.userId, row.last4)
+
+  let q = service
+    .from('expenses')
+    .select('id, category')
+    .eq('user_id', row.userId)
+    .eq('currency', row.currency)
+    .eq('amount', row.amount)
+    .not('refunded_at', 'is', null)
+    .is('deleted_at', null)
+    .gte('refunded_at', lo.toISOString().slice(0, 10))
+    .lte('refunded_at', hi.toISOString().slice(0, 10))
+    .order('refunded_at', { ascending: false })
+    .limit(1)
+  if (pmId) q = q.eq('payment_method_id', pmId)
+
+  const { data } = await q
+  const best = data?.[0]
+  return best ? { id: best.id, category: best.category as string } : null
+}
+
+/**
+ * Finds the original expense a refund/decline SMS reverses. Requires an EXACT
+ * amount + currency match on an un-refunded row within a 90-day back-window;
+ * when the SMS carries a card last4 that resolves to a specific payment method,
+ * that must match too. Ties break toward a description matching the counterparty,
+ * then the most recent charge. Returns null when nothing qualifies (→ fallback).
+ */
+export async function matchOriginalExpense(
+  service: SupabaseClient,
+  row: SmsRowData,
+): Promise<{ id: string; category: string } | null> {
+  const from = new Date(row.day)
+  from.setDate(from.getDate() - 90)
+  const fromDay = from.toISOString().slice(0, 10)
+
+  const pmId = await resolveExactPaymentMethod(service, row.userId, row.last4)
+
+  let q = service
+    .from('expenses')
+    .select('id, category, description')
+    .eq('user_id', row.userId)
+    .eq('currency', row.currency)
+    .eq('amount', row.amount)
+    .is('refunded_at', null)
+    .is('deleted_at', null)
+    .gte('expense_date', fromDay)
+    .lte('expense_date', row.day)
+    .order('expense_date', { ascending: false })
+  if (pmId) q = q.eq('payment_method_id', pmId)
+
+  const { data } = await q
+  if (!data || data.length === 0) return null
+
+  // Rows arrive most-recent-first; a stable sort floats a counterparty-name
+  // match to the top without disturbing the recency order among equals.
+  const counterparty = (row.merchant ?? row.merchantNormalized ?? '').toLowerCase()
+  const best = counterparty
+    ? (data.find((e) => (e.description ?? '').toLowerCase().includes(counterparty)) ?? data[0])
+    : data[0]
+  return { id: best.id, category: best.category as string }
+}
+
+/** Stamps an existing expense as reversed. The updated_at trigger propagates it to clients. */
+export async function markExpenseRefunded(
+  service: SupabaseClient,
+  expenseId: string,
+  refundKind: 'refunded' | 'declined',
+  day: string,
+  logId: string | null | undefined,
+): Promise<{ error: PostgrestError | null }> {
+  const { error } = await service
+    .from('expenses')
+    .update({ refunded_at: day, refund_kind: refundKind, refund_sms_log_id: logId ?? null })
+    .eq('id', expenseId)
+  return { error }
 }
 
 /**
@@ -243,7 +353,7 @@ export async function createSmsDebtPayment(
       currency: (debt.currency as string) ?? row.currency,
       payment_date: row.day,
       payment_method_id: null,
-      notes: smsNotes(row),
+      notes: null,
     })
     .select('id')
     .single()
@@ -262,7 +372,7 @@ export async function createSmsDebtPayment(
       payment_method_id: null,
       is_debt_payment: true,
       linked_debt_payment_id: payRow.id,
-      notes: smsNotes(row),
+      notes: null,
       sms_log_id: row.logId ?? null,
     })
     .select('id')

@@ -59,9 +59,8 @@ interface ParsedTx {
   confidence: number
   kind: 'purchase' | 'online_purchase' | 'atm_withdrawal' | 'instant_transfer_out' |
         'instant_transfer_in' | 'cc_payoff' | 'own_transfer' | 'currency_exchange' |
-        'income' | 'refund' | 'fee' | 'other' | null
+        'income' | 'refund' | 'declined' | 'fee' | 'other' | null
   cleanTitle: string | null
-  rawSmsSummary: string | null
   detectedAccountLast4: string | null
   detectedCounterpartyLast4: string | null
   merchantNormalized: string | null
@@ -168,7 +167,7 @@ function applyTemplate(
         currency: currency as ParsedTx['currency'],
         merchant, bank_name: bankName,
         category: null, confidence: 1.0, kind,
-        cleanTitle, rawSmsSummary: null,
+        cleanTitle,
         detectedAccountLast4: cleanLast4,
         detectedCounterpartyLast4: null,
         merchantNormalized: null,
@@ -598,7 +597,6 @@ export async function POST(request: Request) {
       confidence: 1.0,
       kind: curated.kind,
       cleanTitle: curated.cleanTitle,
-      rawSmsSummary: null,
       detectedAccountLast4: curated.last4,
       detectedCounterpartyLast4: curated.counterpartyLast4,
       merchantNormalized: null,
@@ -731,7 +729,6 @@ export async function POST(request: Request) {
     merchant: parsed.merchant,
     bankName: parsed.bank_name,
     categoryHint: parsed.category,
-    rawSmsSummary: parsed.rawSmsSummary,
     source: source ?? 'sms',
     rawBody: message,
     last4: cleanLast4,
@@ -799,7 +796,6 @@ export async function POST(request: Request) {
       counterparty_last4: cleanCpLast4,
       kind: parsed.kind,
       clean_title: parsed.cleanTitle,
-      raw_sms_summary: parsed.rawSmsSummary,
       merchant_normalized: parsed.merchantNormalized ?? null,
       parse_method: parseMethod,
       pattern_id: patternId,
@@ -1052,7 +1048,6 @@ async function callGemini(apiKey: string, message: string): Promise<ParsedTx> {
     confidence: typeof parsed.confidence === 'number' ? Math.max(0, Math.min(1, parsed.confidence)) : 0,
     kind: parsed.kind ?? null,
     cleanTitle: parsed.cleanTitle ?? null,
-    rawSmsSummary: parsed.rawSmsSummary ?? null,
     detectedAccountLast4: parsed.detectedAccountLast4 ?? null,
     detectedCounterpartyLast4: parsed.detectedCounterpartyLast4 ?? null,
     merchantNormalized: parsed.merchantNormalized ?? null,

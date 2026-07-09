@@ -328,6 +328,8 @@ export interface Dictionary {
     selectMulti: string
     doneCta: string
     badgeSms: string
+    badgeRefunded: string
+    badgeDeclined: string
     swipeDelete: string
     expenseDeleted: string
     fileSaved: string
@@ -365,6 +367,9 @@ export interface Dictionary {
     paymentMethod: string
     addNote: string
     notePlaceholder: string
+    charged: string
+    refunded: string
+    declined: string
     nonSpendHint: string
     saveExpense: string
     saveChanges: string

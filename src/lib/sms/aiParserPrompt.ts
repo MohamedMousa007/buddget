@@ -21,9 +21,8 @@ Return ONLY a JSON object with this exact schema (no markdown, no commentary):
   "bank_name": string | null,
   "category": "Food" | "Groceries" | "Transport" | "Fuel" | "Enjoyment" | "Shopping" | "Health" | "Education" | "Utilities" | "Subscription" | "Rent" | "Other" | null,
   "confidence": number,
-  "kind": "purchase" | "online_purchase" | "atm_withdrawal" | "instant_transfer_out" | "instant_transfer_in" | "cc_payoff" | "own_transfer" | "currency_exchange" | "income" | "refund" | "fee" | "other" | null,
+  "kind": "purchase" | "online_purchase" | "atm_withdrawal" | "instant_transfer_out" | "instant_transfer_in" | "cc_payoff" | "own_transfer" | "currency_exchange" | "income" | "refund" | "declined" | "fee" | "other" | null,
   "cleanTitle": string | null,
-  "rawSmsSummary": string | null,
   "detectedAccountLast4": string | null,
   "detectedCounterpartyLast4": string | null,
   "merchantNormalized": string | null
@@ -47,7 +46,8 @@ Direction rules (use these to set "kind"):
 - "atm_withdrawal": cash withdrawal from ATM — "ATM Cash Withdrawal", "ATM withdrawal", "تم سحب نقدي".
 - "online_purchase": e-commerce / app / subscription payment — website, app store, online merchant.
 - "purchase": in-store / POS card purchase.
-- "refund": money returned — "refund", "reversal", "رد مبلغ".
+- "refund": money that WAS charged is returned — "refund", "reversal", "amount refunded", "رد مبلغ", "تم رد المبلغ".
+- "declined": a charge was blocked / rejected / reversed because it did not go through — "declined", "rejected", "transaction failed", "reversed due to", "مرفوض", "لم تتم العملية".
 - "fee": bank fee, service charge, interest.
 - For income/instant_transfer_in, "merchant" = sender name; "bank_name" = receiving bank.
 - Ambiguity: a card PURCHASE ("charged", "spent at", "purchase at MERCHANT") is never cc_payoff. A transfer to a named person is instant_transfer_out, never own_transfer.
@@ -62,14 +62,8 @@ cleanTitle rules (short human-readable title for the expense/income record):
 - purchase / online_purchase → merchant name only (e.g. "Carrefour Egypt", "EL Wahat for Oil")
 - fee → "Bank Fee — [bank name]"
 - refund → "Refund — [merchant/bank]"
+- declined → "[merchant/bank]" (the original merchant if present, else bank name)
 - Fallback chain: merchant → bank_name → null
-
-rawSmsSummary rules (one-sentence plain-English summary for the notes field):
-- ONE sentence only, max 160 characters. Never quote or repeat the raw SMS text verbatim.
-- Strip all reference numbers, full account numbers, URLs, balance lines, and technical codes.
-- Replace masked account patterns (e.g. ********0001) with "account ending XXXX".
-- Example: "HSBC account ending 0001 debited EGP 2.50 via InstaPay to Salma Samy on 08-Jun-2026."
-- Keep recipient/sender name, amount, currency, bank name, and transaction type.
 
 detectedAccountLast4 rules:
 - Extract ONLY the final 4 digits of the PRIMARY masked account or card number (the source the SMS is about).

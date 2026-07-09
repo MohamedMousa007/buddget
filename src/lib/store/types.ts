@@ -155,6 +155,10 @@ export interface Expense {
   smsLogId?: string
   /** When set, this expense is the total of a scanned receipt (`receipts.id`); breakdown lives there. */
   receiptId?: string
+  /** Set when a refund/decline SMS reversed this expense — excluded from spend, shown struck. */
+  refundedAt?: string
+  /** `refunded` = money returned; `declined` = charge blocked/reversed. Drives the card badge. */
+  refundKind?: 'refunded' | 'declined'
   createdAt: string
   updatedAt: string
 }
