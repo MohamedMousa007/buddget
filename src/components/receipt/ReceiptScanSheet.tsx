@@ -556,7 +556,14 @@ function normaliseReceipt(raw: Record<string, unknown>, fallbackCurrency: Curren
     : 'Other'
 
   const dateRaw = (raw.date as string | undefined)?.trim() ?? ''
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(dateRaw) ? dateRaw : ''
+  let date = /^\d{4}-\d{2}-\d{2}$/.test(dateRaw) ? dateRaw : ''
+  // Discard AI dates that are in the future or more than 30 days old: the AI
+  // often misreads old receipt photos or hallucinates future years. Dates
+  // outside this window silently land in the wrong month and appear "missing".
+  if (date) {
+    const diffDays = (Date.now() - new Date(date + 'T00:00:00').getTime()) / 86400000
+    if (diffDays < 0 || diffDays > 30) date = ''
+  }
 
   const confidenceRaw = typeof raw.confidence === 'number' ? raw.confidence : 0.5
   const confidence = Math.max(0, Math.min(1, confidenceRaw))

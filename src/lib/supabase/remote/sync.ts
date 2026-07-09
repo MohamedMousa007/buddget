@@ -166,8 +166,14 @@ export async function flushDiff(
   emitList(runner, 'payment_methods', nextPayments, prevPayments, paymentMethodToRow, userId)
   emitList(runner, 'income_sources', next.incomeSources, prev.incomeSources, incomeSourceToRow, userId)
   emitList(runner, 'income_events', next.incomeEvents, prev.incomeEvents, incomeEventToRow, userId)
-  // Receipts before expenses: the expense's receipt_id FK must resolve on upsert.
-  emitList(runner, 'receipts', next.receipts, prev.receipts, receiptToRow, userId)
+  // Receipts MUST commit before expenses: `expenses.receipt_id` FK will reject
+  // the expense insert if the receipt row isn't visible yet. Drain receipts in a
+  // dedicated pass so Postgres sees the committed row before the expense upsert runs.
+  const receiptRunner = new OpRunner(client)
+  emitList(receiptRunner, 'receipts', next.receipts, prev.receipts, receiptToRow, userId)
+  const receiptResult = await receiptRunner.drain()
+  runner.errors.push(...receiptResult.errors)
+  runner.writes += receiptResult.writes
   emitList(runner, 'expenses', next.expenses, prev.expenses, expenseToRow, userId)
   emitList(runner, 'recurring_expenses', next.recurringExpenses, prev.recurringExpenses, recurringExpenseToRow, userId)
   emitList(runner, 'subscriptions', next.subscriptions, prev.subscriptions, subscriptionToRow, userId)
