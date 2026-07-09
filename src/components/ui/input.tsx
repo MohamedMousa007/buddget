@@ -11,12 +11,13 @@ function Input({ className, type, inputMode, onClick, ...props }: React.Componen
     onClick?.(e)
   }
 
-  // ponytail: numeric inputs get the phone numpad; explicit inputMode still wins
+  // ponytail: iOS WKWebView ignores inputMode for type="number"; text+decimal is the fix
+  const resolvedType = type === 'number' ? 'text' : type
   const resolvedInputMode = inputMode ?? (type === 'number' ? 'decimal' : undefined)
 
   return (
     <InputPrimitive
-      type={type}
+      type={resolvedType}
       inputMode={resolvedInputMode}
       data-slot="input"
       className={cn(

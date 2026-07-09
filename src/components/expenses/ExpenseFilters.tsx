@@ -148,11 +148,8 @@ function AmountRangeControl() {
           <div className="flex items-center gap-1.5 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2.5">
             <input
               className="font-mono-numbers min-w-0 flex-1 border-none bg-transparent text-base font-bold text-[var(--color-brand-text-primary)] outline-none"
-              type="number"
+              type="text"
               inputMode="decimal"
-              min={0}
-              max={AMOUNT_MAX}
-              step={50}
               value={amtMin}
               onChange={(e) => setAmtMin(+e.target.value || 0)}
             />
@@ -166,11 +163,8 @@ function AmountRangeControl() {
           <div className="flex items-center gap-1.5 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2.5">
             <input
               className="font-mono-numbers min-w-0 flex-1 border-none bg-transparent text-base font-bold text-[var(--color-brand-text-primary)] outline-none"
-              type="number"
+              type="text"
               inputMode="decimal"
-              min={0}
-              max={AMOUNT_MAX}
-              step={50}
               value={amtMax}
               onChange={(e) => setAmtMax(+e.target.value || 0)}
             />
