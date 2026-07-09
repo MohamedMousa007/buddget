@@ -84,9 +84,9 @@ export function NumberPad({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 60,
+    height: 44,
     border: 'none',
-    borderRadius: 16,
+    borderRadius: 14,
     cursor: 'pointer',
     userSelect: 'none',
     WebkitUserSelect: 'none',
@@ -94,7 +94,7 @@ export function NumberPad({
     color: '#FFFFFF',
     fontFamily: 'var(--font-mono)',
     fontWeight: 500,
-    fontSize: 28,
+    fontSize: 23,
     transition: 'background .12s',
   }
   const backStyle: CSSProperties = { ...digitStyle, color: '#C9C9D6' }
@@ -145,9 +145,9 @@ export function NumberPad({
           WebkitBackdropFilter: 'blur(18px)',
           borderTop: '1px solid rgba(255,255,255,.12)',
           boxShadow: '0 -20px 50px -20px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.06)',
-          borderRadius: '28px 28px 0 0',
-          padding: '8px 16px 20px',
-          paddingBottom: 'calc(20px + env(safe-area-inset-bottom))',
+          borderRadius: '24px 24px 0 0',
+          padding: '6px 16px 14px',
+          paddingBottom: 'calc(14px + env(safe-area-inset-bottom))',
         }}
       >
         <div
@@ -172,7 +172,7 @@ export function NumberPad({
           {/* Grab handle — the swipe-down-to-dismiss affordance. Enlarged hit area. */}
           <div
             onPointerDown={(e) => dragControls.start(e)}
-            style={{ display: 'flex', justifyContent: 'center', padding: '2px 0 6px', cursor: 'grab', touchAction: 'none' }}
+            style={{ display: 'flex', justifyContent: 'center', padding: '2px 0 4px', cursor: 'grab', touchAction: 'none' }}
           >
             <div style={{ width: 40, height: 4, borderRadius: 999, background: 'rgba(255,255,255,.22)' }} />
           </div>
@@ -244,7 +244,7 @@ export function NumberPad({
                   style={isBack ? backStyle : digitStyle}
                   aria-label={isBack ? 'Delete' : k}
                 >
-                  {isBack ? <Delete size={26} strokeWidth={2} /> : k}
+                  {isBack ? <Delete size={22} strokeWidth={2} /> : k}
                 </button>
               )
             })}
@@ -256,15 +256,15 @@ export function NumberPad({
             onMouseDown={(e) => e.preventDefault()}
             style={{
               width: '100%',
-              height: 54,
-              marginTop: 10,
+              height: 46,
+              marginTop: 8,
               border: 'none',
-              borderRadius: 16,
+              borderRadius: 14,
               background: 'linear-gradient(160deg,#F40612,#C5070F)',
               color: '#fff',
               fontFamily: 'var(--font-sans)',
               fontWeight: 600,
-              fontSize: 16,
+              fontSize: 15,
               cursor: 'pointer',
               boxShadow: '0 10px 26px -10px rgba(229,9,20,.7)',
               transition: 'filter .15s',
