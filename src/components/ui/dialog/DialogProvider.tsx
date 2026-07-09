@@ -125,14 +125,14 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
         <AlertDialog.Portal>
           <AlertDialog.Backdrop
             className={cn(
-              'fixed inset-0 z-[70] bg-black/50 backdrop-blur-sm',
+              'fixed inset-0 z-[110] bg-black/50 backdrop-blur-sm',
               'data-[open]:animate-in data-[closed]:animate-out',
               'data-[open]:fade-in-0 data-[closed]:fade-out-0',
             )}
           />
           <AlertDialog.Popup
             className={cn(
-              'fixed left-1/2 top-1/2 z-[71] w-[min(92vw,24rem)] -translate-x-1/2 -translate-y-1/2',
+              'fixed left-1/2 top-1/2 z-[111] w-[min(92vw,24rem)] -translate-x-1/2 -translate-y-1/2',
               'rounded-2xl border p-5 shadow-2xl outline-none',
               'bg-[var(--color-brand-card)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]',
               'data-[open]:animate-in data-[closed]:animate-out',
