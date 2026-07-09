@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import { Input } from '@/components/ui/input'
+import { AmountField } from '@/components/ui/AmountField'
 import { Label } from '@/components/ui/label'
 import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
 import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
@@ -80,11 +81,9 @@ export function AddSubscriptionConfigureView({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.subscriptions.amountLabel}</Label>
-          <Input
-            type="number"
-            inputMode="decimal"
+          <AmountField
             value={form.amountStr}
-            onChange={(e) => form.setAmountStr(e.target.value)}
+            onChange={form.setAmountStr}
             className={cn('mt-1', inputClass)}
           />
           <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-1">{t.subscriptions.adjustPriceHint}</p>

@@ -8,6 +8,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import type { PmPrefill } from '@/lib/store/useSettingsStore'
 import { Input } from '@/components/ui/input'
+import { AmountField } from '@/components/ui/AmountField'
 import { Switch } from '@/components/ui/switch'
 import { PAYMENT_METHOD_TYPE_OPTIONS } from '@/lib/constants/finance'
 import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
@@ -160,16 +161,16 @@ export function AddPaymentMethodSheet() {
               <label htmlFor="pm-last4" className={MODAL_LABEL_CLASS}>
                 Last 4 digits
               </label>
-              <Input
+              <AmountField
                 id="pm-last4"
+                mode="pin"
+                label="Card last 4 digits"
                 placeholder="e.g. 0001"
                 value={last4}
-                onChange={(e) => {
-                  setLast4(e.target.value.replace(/\D/g, '').slice(0, 4))
+                onChange={(v) => {
+                  setLast4(v.replace(/\D/g, '').slice(0, 4))
                   setLast4Error(null)
                 }}
-                inputMode="numeric"
-                maxLength={4}
                 className={`mt-1.5 ${MODAL_CONTROL_CLASS}${last4Error ? ' border-red-500' : ''}`}
               />
               {last4Error && (

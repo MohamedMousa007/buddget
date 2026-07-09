@@ -5,6 +5,7 @@ import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { Input } from '@/components/ui/input'
+import { AmountField } from '@/components/ui/AmountField'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -104,13 +105,11 @@ export function HouseholdRentSheet() {
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">
             {t.onboarding.householdLabelRent}
           </Label>
-          <Input
-            type="number"
-            inputMode="decimal"
+          <AmountField
             value={rent}
-            onChange={(e) => setRent(e.target.value)}
+            onChange={setRent}
             placeholder={t.onboarding.householdRentPlaceholder}
-            className="mt-1 rounded-xl bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
+            className="mt-1 flex h-8 items-center rounded-xl bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] px-2.5 text-base text-[var(--color-brand-text-primary)]"
           />
         </div>
 

@@ -14,6 +14,7 @@ import { useT } from '@/lib/i18n'
 import { useActionToast } from '@/components/ui/ActionToast'
 import type { Currency, IncomeRecurringFrequency, IncomeSourceType } from '@/lib/store/types'
 import { Input } from '@/components/ui/input'
+import { AmountField } from '@/components/ui/AmountField'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
@@ -170,14 +171,11 @@ export function AddIncomeSheet() {
               <label htmlFor="income-amt" className={MODAL_LABEL_CLASS}>
                 {t.addIncome.labelAmount}
               </label>
-              <Input
+              <AmountField
                 id="income-amt"
-                type="number"
-                inputMode="decimal"
-                step="0.01"
                 placeholder={t.addIncome.placeholderAmount}
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={setAmount}
                 className={`mt-1.5 ${MODAL_CONTROL_CLASS} text-xl font-semibold font-mono-numbers`}
               />
             </div>

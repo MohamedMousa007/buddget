@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { Input } from '@/components/ui/input'
+import { AmountField } from '@/components/ui/AmountField'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
@@ -113,12 +113,10 @@ export function RecurringDebtPaymentForm({
       <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.recurringDebt.labelAmount}</Label>
         <div className="grid grid-cols-2 gap-3 mt-1">
-          <Input
-            type="number"
-            step="0.01"
+          <AmountField
             placeholder={t.recurringDebt.placeholderAmount}
             value={amount}
-            onChange={(e) => onAmountChange(e.target.value)}
+            onChange={onAmountChange}
             className="bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers"
           />
           <SelectField

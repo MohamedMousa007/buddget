@@ -1,6 +1,7 @@
 'use client'
 
 import { Input } from '@/components/ui/input'
+import { AmountField } from '@/components/ui/AmountField'
 import { Label } from '@/components/ui/label'
 import { DebtFiatCurrencySelect } from '@/components/ui/DebtFiatCurrencySelect'
 import type { DebtCurrency } from '@/lib/store/types'
@@ -58,19 +59,19 @@ export function CreditCardForm({
       </div>
       <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.last4Label}</Label>
-        <Input
+        <AmountField
+          mode="pin"
+          label={t.addDebt.last4Label}
           placeholder={t.addDebt.last4Placeholder}
-          inputMode="numeric"
-          maxLength={4}
           value={last4}
-          onChange={(e) => setLast4(e.target.value.replace(/\D/g, '').slice(0, 4))}
+          onChange={(v) => setLast4(v.replace(/\D/g, '').slice(0, 4))}
           className={input}
         />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.creditLimitLabel}</Label>
-          <Input type="number" step="0.01" value={creditLimit} onChange={(e) => setCreditLimit(e.target.value)} className={input} />
+          <AmountField value={creditLimit} onChange={setCreditLimit} className={input} />
         </div>
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelCurrency}</Label>
@@ -83,7 +84,7 @@ export function CreditCardForm({
       </div>
       <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.currentOutstandingLabel}</Label>
-        <Input type="number" step="0.01" value={outstanding} onChange={(e) => setOutstanding(e.target.value)} className={input} />
+        <AmountField value={outstanding} onChange={setOutstanding} className={input} />
         <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-0.5">{t.addDebt.currentOutstandingHint}</p>
       </div>
       <div className="grid grid-cols-2 gap-3">

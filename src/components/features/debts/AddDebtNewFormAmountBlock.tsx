@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { Input } from '@/components/ui/input'
+import { AmountField } from '@/components/ui/AmountField'
 import { DebtReceivedViaPills } from '@/components/features/debts/DebtReceivedViaPills'
 import { DebtFiatCurrencySelect } from '@/components/ui/DebtFiatCurrencySelect'
 import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
@@ -57,12 +57,10 @@ export function AddDebtNewFormAmountBlock({
           <span className={MODAL_LABEL_CLASS}>
             {isGold ? t.addDebt.labelTotalGrams : t.addDebt.labelTotalAmount}
           </span>
-          <Input
-            type="number"
-            step="0.01"
+          <AmountField
             placeholder={t.addDebt.placeholderAmount}
             value={startingBalance}
-            onChange={(e) => setStartingBalance(e.target.value)}
+            onChange={setStartingBalance}
             className={`mt-1.5 ${MODAL_CONTROL_CLASS} font-mono-numbers`}
           />
         </div>
