@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import { AuthModalBody } from '@/components/features/auth-modal/AuthModalBody'
-import { useT } from '@/lib/i18n'
+import { useT, useLocale } from '@/lib/i18n'
 
 function blurActive() {
   ;(document.activeElement as HTMLElement | null)?.blur?.()
@@ -38,6 +38,8 @@ const ACCENT: CSSProperties = { fontWeight: 700, color: '#E50914' }
  */
 export function LandingGate() {
   const t = useT()
+  const { locale } = useLocale()
+  const isArabic = locale === 'ar'
   const [keyboardOpen, setKeyboardOpen] = useState(false)
 
   // Hide the bottom ticker while the keyboard is up. Primary signal is the
@@ -179,21 +181,37 @@ export function LandingGate() {
             left: '36px',
             right: '36px',
             bottom: 'max(env(safe-area-inset-bottom, 0px), 24px)',
-            height: '48px',
+            height: isArabic ? '60px' : '48px',
             textAlign: 'center',
             zIndex: 20,
             pointerEvents: 'none',
           }}
         >
-          <p style={tickerItemStyle(0)}>
-            Track your money <span style={ACCENT}>without trying.</span>
-          </p>
-          <p style={tickerItemStyle(4.5)}>
-            Every expense, <span style={ACCENT}>caught</span> on its way.
-          </p>
-          <p style={tickerItemStyle(9)}>
-            <span style={ACCENT}>Private</span> by design, always.
-          </p>
+          {isArabic ? (
+            <>
+              <p style={tickerItemStyle(0)}>
+                تتبَّع أموالك <span style={ACCENT}>دون عناء.</span>
+              </p>
+              <p style={tickerItemStyle(4.5)}>
+                كل عملية شراء <span style={ACCENT}>تُرصَد</span> لحظة حدوثها.
+              </p>
+              <p style={tickerItemStyle(9)}>
+                <span style={ACCENT}>خصوصيتك</span> مصونة بالتصميم، دائمًا.
+              </p>
+            </>
+          ) : (
+            <>
+              <p style={tickerItemStyle(0)}>
+                Track your money <span style={ACCENT}>without trying.</span>
+              </p>
+              <p style={tickerItemStyle(4.5)}>
+                Every expense, <span style={ACCENT}>caught</span> on its way.
+              </p>
+              <p style={tickerItemStyle(9)}>
+                <span style={ACCENT}>Private</span> by design, always.
+              </p>
+            </>
+          )}
         </div>
       </div>
     </>
