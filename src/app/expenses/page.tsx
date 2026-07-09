@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { addMonths, subMonths, format } from 'date-fns'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -106,13 +106,6 @@ export default function ExpensesPage() {
   const days = daysElapsed(monthFilter)
   const avgPerDay = days > 0 ? totalAmount / days : 0
 
-  // Projected end-of-month spend at the current daily pace. Only meaningful for
-  // the in-progress month — a full past month's projection is just its total.
-  const [y, m] = monthFilter.split('-').map(Number)
-  const isCurrentMonth = new Date().getFullYear() === y && new Date().getMonth() === m - 1
-  const daysInMonth = new Date(y, m, 0).getDate()
-  const projected = isCurrentMonth && avgPerDay > 0 ? avgPerDay * daysInMonth : null
-
   const prevMonth = () => setMonthFilter(format(subMonths(parseLocalMonth(monthFilter), 1), 'yyyy-MM'))
   const nextMonth = () => setMonthFilter(format(addMonths(parseLocalMonth(monthFilter), 1), 'yyyy-MM'))
 
@@ -168,17 +161,6 @@ export default function ExpensesPage() {
             <p className="mt-[3px] whitespace-nowrap text-[11px] font-medium text-[var(--color-brand-text-muted)]">
               {base} · {t.expenses.daysCount.replace('{n}', String(days))}
             </p>
-            {projected != null ? (
-              <p className="mt-[9px] inline-flex items-center gap-[5px] whitespace-nowrap">
-                <TrendingUp className="h-[13px] w-[13px] text-[var(--color-brand-amber)]" />
-                <span className="font-mono-numbers text-[11px] font-semibold tabular-nums text-[var(--color-brand-amber)]">
-                  {fmtNum(projected)}
-                </span>
-                <span className="text-[11px] font-medium text-[var(--color-brand-text-muted)]">
-                  {t.expenses.projectedEom}
-                </span>
-              </p>
-            ) : null}
           </div>
         </div>
         <button
