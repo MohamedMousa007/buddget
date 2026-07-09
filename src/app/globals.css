@@ -484,3 +484,13 @@ html[data-locale='ar'] .prose-rtl {
 /* Compositor-driven spin: keeps rotating even when the main thread is blocked
    (e.g. a heavy sync during pull-to-refresh), unlike a rAF/JS-driven rotation. */
 @keyframes bg-spin { to { transform: rotate(360deg) } }
+
+/* Glass Numpad (in-app numeric entry) — design/design_handoff_glass_numpad */
+@keyframes npUp   { from { transform: translateY(100%) } to { transform: translateY(0) } }
+@keyframes npFade { from { opacity: 0 } to { opacity: 1 } }
+@keyframes npGlow { 0%,100% { transform: translate(-50%,0) scale(1); opacity:.7 } 50% { transform: translate(-50%,0) scale(1.16); opacity:1 } }
+@keyframes npBlink { 0%,50% { opacity:1 } 51%,100% { opacity:0 } }
+.np-key:active { background: rgba(255,255,255,.12) !important; }
+@media (prefers-reduced-motion: reduce) {
+  .np-glow { animation: none !important; opacity: .7 !important; }
+}

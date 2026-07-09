@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { SavingsProductTypePicker } from '@/components/modals/SavingsProductTypePicker'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 import { Input } from '@/components/ui/input'
+import { AmountField } from '@/components/ui/AmountField'
 import { Label } from '@/components/ui/label'
 import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import { OTHER_SAVINGS_ICON_KEYS, SAVINGS_TYPE_ICONS } from '@/lib/constants/savingsIcons'
@@ -167,11 +168,9 @@ export function AddSavingsAccountForm({ onDone }: AddSavingsAccountFormProps) {
               aria-label={t.savings.labelCurrency}
             />
           </div>
-          <Input
-            type="number"
-            step="0.01"
+          <AmountField
             value={openingBalance}
-            onChange={(e) => setOpeningBalance(e.target.value)}
+            onChange={setOpeningBalance}
             placeholder="0.00"
             className={cn('h-10 flex-1 font-mono-numbers', inputClass)}
           />

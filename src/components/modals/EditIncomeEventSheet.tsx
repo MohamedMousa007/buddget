@@ -12,6 +12,7 @@ import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useT } from '@/lib/i18n'
 import type { Currency, IncomeEvent, IncomeEventStatus, IncomeSourceType } from '@/lib/store/types'
 import { Input } from '@/components/ui/input'
+import { AmountField } from '@/components/ui/AmountField'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
@@ -124,13 +125,10 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
         <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
           <div className="min-w-0">
             <label htmlFor="ie-amt" className={MODAL_LABEL_CLASS}>{t.addIncome.labelAmount}</label>
-            <Input
+            <AmountField
               id="ie-amt"
-              type="number"
-              inputMode="decimal"
-              step="0.01"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={setAmount}
               className={`mt-1.5 ${MODAL_CONTROL_CLASS} text-xl font-semibold font-mono-numbers`}
             />
           </div>

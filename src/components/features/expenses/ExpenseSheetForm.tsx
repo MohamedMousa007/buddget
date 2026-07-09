@@ -14,7 +14,7 @@ import { useT, useLocale } from '@/lib/i18n'
 import { UnifiedDatePicker, formatDatePillLabel } from '@/components/ui/UnifiedDatePicker'
 import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
 import { rgba } from '@/lib/utils/color'
-import { numericInput } from '@/lib/ui/numericInput'
+import { useNumberPad } from '@/components/ui/useNumberPad'
 
 const HIDE_SCROLL = '[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
 const ADD_PAY_TYPES: PaymentMethodType[] = ['cash', 'bank_transfer', 'nol', 'card_credit', 'card_debit']
@@ -127,6 +127,14 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
     if (/^[0-9]*\.?[0-9]*$/.test(v)) setAmount(v)
   }
 
+  const amountPad = useNumberPad({ value: amount, onChange: setAmt, currency })
+  const last4Pad = useNumberPad({
+    value: apLast4,
+    onChange: (v) => setApLast4(v.replace(/\D/g, '').slice(0, 4)),
+    mode: 'pin',
+    label: t.expenseForm.last4,
+  })
+
   const handleX = () => {
     if (mode === 'edit' && isDirty) setConfirmOpen(true)
     else onClose()
@@ -192,17 +200,18 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
           <div className="grid grid-cols-[1fr_108px] gap-3 items-end">
             <div>
               <label htmlFor="ef-amount" className={`block ${microLabel} mb-2`}>{t.expenseForm.amount}</label>
-              <div className="flex h-12 items-center rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 focus-within:border-[var(--color-brand-red)]">
-                <input
-                  id="ef-amount"
-                  value={amount}
-                  onChange={(e) => setAmt(e.target.value)}
-                  dir="ltr"
-                  {...numericInput()}
-                  placeholder="0.00"
-                  className="w-full min-w-0 flex-1 border-none bg-transparent text-start font-bold text-2xl font-mono-numbers tracking-[-0.02em] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus:outline-none"
-                />
-              </div>
+              <button
+                id="ef-amount"
+                type="button"
+                onClick={amountPad.openPad}
+                dir="ltr"
+                className={`flex h-12 w-full items-center rounded-xl border bg-[var(--color-brand-elevated)] px-3.5 ${amountPad.isOpen ? 'border-[var(--color-brand-red)]' : 'border-[var(--color-brand-border)]'}`}
+              >
+                <span className={`min-w-0 flex-1 text-start font-bold text-2xl font-mono-numbers tracking-[-0.02em] ${amount ? 'text-[var(--color-brand-text-primary)]' : 'text-[var(--color-brand-text-muted)]'}`}>
+                  {amount || '0.00'}
+                </span>
+              </button>
+              {amountPad.pad}
             </div>
             <div>
               <div className={`${microLabel} mb-2`}>{t.expenseForm.currency}</div>
@@ -535,15 +544,15 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                   {LAST4_TYPES.includes(apType) ? (
                     <div>
                       <div className={`${microLabel} mb-2`}>{t.expenseForm.last4}</div>
-                      <input
-                        value={apLast4}
-                        onChange={(e) => setApLast4(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      <button
+                        type="button"
+                        onClick={last4Pad.openPad}
                         dir="ltr"
-                        inputMode="numeric"
-                        maxLength={4}
-                        placeholder="0001"
-                        className={`${INPUT} font-medium font-mono-numbers`}
-                      />
+                        className={`${INPUT} flex items-center font-medium font-mono-numbers ${last4Pad.isOpen ? 'border-[var(--color-brand-red)]' : ''}`}
+                      >
+                        <span className={apLast4 ? '' : 'text-[var(--color-brand-text-muted)]'}>{apLast4 || '0001'}</span>
+                      </button>
+                      {last4Pad.pad}
                     </div>
                   ) : null}
                 </div>

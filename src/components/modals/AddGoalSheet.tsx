@@ -5,6 +5,7 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { GoalCategoryPicker } from '@/components/features/goals/GoalCategoryPicker'
 import { Input } from '@/components/ui/input'
+import { AmountField } from '@/components/ui/AmountField'
 import { Label } from '@/components/ui/label'
 import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
 import { DatePickerField } from '@/components/ui/DatePickerField'
@@ -70,20 +71,18 @@ function AddGoalSheetForm({ editingGoal, onClose, title, selectClass, t }: Inner
             {form.category !== 'spending_control' ? (
               <div>
                 <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.goals.targetAmount}</Label>
-                <Input
-                  type="number"
+                <AmountField
                   value={form.targetAmount}
-                  onChange={(e) => form.setTargetAmount(e.target.value)}
+                  onChange={form.setTargetAmount}
                   className={cn('mt-1', inputClass)}
                 />
               </div>
             ) : (
               <div>
                 <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.goals.monthlyLimit}</Label>
-                <Input
-                  type="number"
+                <AmountField
                   value={form.monthlySpendingLimit}
-                  onChange={(e) => form.setMonthlySpendingLimit(e.target.value)}
+                  onChange={form.setMonthlySpendingLimit}
                   className={cn('mt-1', inputClass)}
                 />
               </div>
@@ -103,10 +102,9 @@ function AddGoalSheetForm({ editingGoal, onClose, title, selectClass, t }: Inner
                 <Label className="text-xs text-[var(--color-brand-text-secondary)]">
                   {t.goals.monthlyContribution}
                 </Label>
-                <Input
-                  type="number"
+                <AmountField
                   value={form.monthlyContribution}
-                  onChange={(e) => form.setMonthlyContribution(e.target.value)}
+                  onChange={form.setMonthlyContribution}
                   className={cn('mt-1', inputClass)}
                 />
               </div>
@@ -165,10 +163,9 @@ function AddGoalSheetForm({ editingGoal, onClose, title, selectClass, t }: Inner
             )}
             <div>
               <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.goals.manualProgress}</Label>
-              <Input
-                type="number"
+              <AmountField
                 value={form.manualCurrentAmount}
-                onChange={(e) => form.setManualCurrentAmount(e.target.value)}
+                onChange={form.setManualCurrentAmount}
                 className={cn('mt-1', inputClass)}
               />
               <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-1">{t.goals.manualProgressHint}</p>

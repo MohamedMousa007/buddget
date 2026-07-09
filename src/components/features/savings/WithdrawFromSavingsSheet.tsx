@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { Input } from '@/components/ui/input'
+import { AmountField } from '@/components/ui/AmountField'
 import { Label } from '@/components/ui/label'
 import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import type { Currency, SavingsAccount } from '@/lib/store/types'
@@ -82,11 +83,9 @@ export function WithdrawFromSavingsSheet({
               <span className="flex h-10 min-w-[4rem] items-center justify-center rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-sm font-mono-numbers">
                 {acc?.currency ?? '—'}
               </span>
-              <Input
-                type="number"
-                step="0.01"
+              <AmountField
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={setAmount}
                 className="h-10 flex-1 rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] font-mono-numbers"
               />
             </div>

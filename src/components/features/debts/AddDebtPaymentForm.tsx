@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { Input } from '@/components/ui/input'
+import { AmountField } from '@/components/ui/AmountField'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
@@ -189,14 +189,10 @@ export function AddDebtPaymentForm({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebtPayment.labelAmountPaid}</Label>
-          <Input
-            type="number"
-            step="0.01"
+          <AmountField
             placeholder={t.addDebtPayment.placeholderAmount}
             value={paymentAmount}
-            onChange={(e) => {
-              setPaymentAmount(e.target.value)
-            }}
+            onChange={setPaymentAmount}
             className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers"
           />
         </div>

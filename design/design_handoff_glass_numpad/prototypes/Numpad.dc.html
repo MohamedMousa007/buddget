@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/colors.css">
+<link rel="stylesheet" href="_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/typography.css">
+<style>
+  .np-root button { outline:none !important; -webkit-tap-highlight-color:transparent; }
+  @keyframes npUp { from { transform:translateY(100%) } to { transform:translateY(0) } }
+  @keyframes npFade { from { opacity:0 } to { opacity:1 } }
+  @keyframes npGlow { 0%,100% { transform:translate(-50%,0) scale(1); opacity:.7 } 50% { transform:translate(-50%,0) scale(1.16); opacity:1 } }
+</style>
+</helmet>
+<div class="np-root" dir="{{ dir }}" style="position:absolute;inset:0;z-index:20;font-family:{{ fontFam }};">
+  <div onClick="{{ onScrim }}" style="{{ scrimStyle }}"></div>
+
+  <div style="{{ sheetStyle }}">
+    <sc-if value="{{ isGlass }}" hint-placeholder-val="{{ false }}">
+      <div style="{{ glowStyle }}"></div>
+    </sc-if>
+
+    <div style="position:relative;z-index:1;">
+      <div style="{{ handleStyle }}"></div>
+
+      <sc-if value="{{ showDisplay }}" hint-placeholder-val="{{ true }}">
+        <div style="padding:6px 6px 14px;">
+          <div style="font:600 10px var(--font-sans);letter-spacing:.09em;text-transform:uppercase;color:#8E8EA6;text-align:center;margin-bottom:9px;">{{ label }}</div>
+          <sc-if value="{{ isDecimal }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;align-items:baseline;justify-content:center;gap:9px;">
+              <span style="font:600 17px var(--font-mono);color:#8A8AA0;">{{ dispCur }}</span>
+              <span style="font:700 42px var(--font-mono);letter-spacing:-0.02em;color:{{ amtColor }};line-height:1;">{{ dispAmount }}</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ isPin }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;justify-content:center;gap:16px;">
+              <sc-for list="{{ dots }}" as="d" hint-placeholder-count="4">
+                <span style="{{ d.style }}"></span>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:{{ gridGap }};margin-top:2px;">
+        <sc-for list="{{ keys }}" as="k" hint-placeholder-count="12">
+          <button onClick="{{ k.onClick }}" style="{{ k.style }}" style-active="{{ k.active }}">
+            <sc-if value="{{ k.isBack }}" hint-placeholder-val="{{ false }}">
+              <span style="width:26px;height:26px;display:inline-flex;">{{ icBack }}</span>
+            </sc-if>
+            <sc-if value="{{ k.isText }}" hint-placeholder-val="{{ true }}">{{ k.label }}</sc-if>
+          </button>
+        </sc-for>
+      </div>
+
+      <button onClick="{{ onDone }}" style="{{ doneStyle }}" style-hover="filter:brightness(1.08);">{{ doneLabel }}</button>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:430},&quot;variant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;bare&quot;,&quot;tiles&quot;,&quot;glass&quot;,&quot;glassBare&quot;],&quot;default&quot;:&quot;bare&quot;,&quot;tsType&quot;:&quot;'bare' | 'tiles' | 'glass' | 'glassBare'&quot;},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;decimal&quot;,&quot;pin&quot;],&quot;default&quot;:&quot;decimal&quot;,&quot;tsType&quot;:&quot;'decimal' | 'pin'&quot;},&quot;currency&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;EGP&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;label&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;showDisplay&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;lang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;en&quot;,&quot;ar&quot;],&quot;default&quot;:&quot;en&quot;,&quot;tsType&quot;:&quot;'en' | 'ar'&quot;},&quot;value&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;},&quot;onChange&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(v: string) =&gt; void&quot;},&quot;onDone&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(v: string) =&gt; void&quot;},&quot;onClose&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;}}">
+class Component extends DCLogic {
+  state = { internal: (this.props && this.props.value != null) ? String(this.props.value) : '' };
+
+  ICONS = {
+    back: '<path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Z"/><line x1="18" x2="12" y1="9" y2="15"/><line x1="12" x2="18" y1="9" y2="15"/>',
+  };
+  ico(name) {
+    const svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="100%" height="100%" style="display:block">' + (this.ICONS[name] || '') + '</svg>';
+    return React.createElement('span', { style: { display: 'inline-flex', width: '100%', height: '100%' }, dangerouslySetInnerHTML: { __html: svg } });
+  }
+
+  controlled() { const p = this.props || {}; return p.value !== undefined && p.value !== null; }
+  curVal() { return this.controlled() ? String(this.props.value) : this.state.internal; }
+  emit(v) {
+    const p = this.props || {};
+    if (p.onChange) p.onChange(v);
+    if (!this.controlled()) this.setState({ internal: v });
+  }
+
+  press(k) {
+    const mode = (this.props && this.props.mode) || 'decimal';
+    let v = this.curVal() || '';
+    if (k === 'back') {
+      v = v.slice(0, -1);
+    } else if (k === '.') {
+      if (mode !== 'pin' && !v.includes('.')) v = (v === '' ? '0.' : v + '.');
+    } else {
+      if (mode === 'pin') { if (v.length >= 4) return; v = v + k; }
+      else {
+        if (v.includes('.')) { const d = v.split('.')[1]; if (d.length >= 2) return; }
+        v = (v === '0') ? (k === '0' ? '0' : k) : v + k;
+      }
+    }
+    this.emit(v);
+  }
+
+  fmt(v) {
+    if (v === '' || v == null) return '0';
+    const parts = String(v).split('.');
+    const gi = Number(parts[0] || '0').toLocaleString('en-US');
+    return parts.length > 1 ? gi + '.' + parts[1] : gi;
+  }
+
+  renderVals() {
+    const p = this.props || {};
+    const mode = p.mode || 'decimal';
+    const variant = p.variant || 'bare';
+    const ar = p.lang === 'ar';
+    const tiles = variant === 'tiles';
+    const glass = variant === 'glass';
+    const glassBare = variant === 'glassBare';
+    const anyGlass = glass || glassBare;
+    const v = this.curVal();
+
+    const raw = mode === 'pin'
+      ? ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'blank', '0', 'back']
+      : ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'back'];
+
+    let digitStyle, backStyle, keyActive, gridGap;
+    if (glassBare) {
+      const base = 'display:flex;align-items:center;justify-content:center;height:60px;border:none;border-radius:16px;cursor:pointer;user-select:none;-webkit-user-select:none;transition:background .12s;';
+      digitStyle = base + 'background:transparent;color:#FFFFFF;font:500 28px var(--font-mono);';
+      backStyle = base + 'background:transparent;color:#C9C9D6;';
+      keyActive = 'background:rgba(255,255,255,.12);';
+      gridGap = '4px';
+    } else if (glass) {
+      const base = 'display:flex;align-items:center;justify-content:center;height:56px;border-radius:16px;cursor:pointer;user-select:none;-webkit-user-select:none;transition:transform .08s ease,background .14s;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);';
+      digitStyle = base + 'background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.11);color:#FFFFFF;font:600 24px var(--font-mono);box-shadow:inset 0 1px 0 rgba(255,255,255,.06);';
+      backStyle = base + 'background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);color:#C9C9D6;';
+      keyActive = 'transform:scale(.94);background:rgba(255,255,255,.16);';
+      gridGap = '9px';
+    } else if (tiles) {
+      const base = 'display:flex;align-items:center;justify-content:center;height:56px;border-radius:16px;cursor:pointer;user-select:none;-webkit-user-select:none;transition:transform .08s ease,background .12s;';
+      digitStyle = base + 'background:#1A1A24;border:1px solid #2A2A38;color:#F3F3F8;font:600 24px var(--font-mono);';
+      backStyle = base + 'background:#16161f;border:1px solid #26262f;color:#9898B0;';
+      keyActive = 'transform:scale(.94);background:#22222e;';
+      gridGap = '9px';
+    } else {
+      const base = 'display:flex;align-items:center;justify-content:center;height:60px;border:none;border-radius:16px;cursor:pointer;user-select:none;-webkit-user-select:none;transition:background .12s;';
+      digitStyle = base + 'background:transparent;color:#F3F3F8;font:500 28px var(--font-mono);';
+      backStyle = base + 'background:transparent;color:#9898B0;';
+      keyActive = 'background:rgba(255,255,255,.09);';
+      gridGap = '4px';
+    }
+
+    const keys = raw.map(k => {
+      if (k === 'blank') return { label: '', style: 'visibility:hidden;pointer-events:none;', active: '', isBack: false, isText: false, onClick: () => {} };
+      const isBack = k === 'back';
+      return { label: k, style: isBack ? backStyle : digitStyle, active: keyActive, isBack, isText: !isBack, onClick: () => this.press(k) };
+    });
+
+    const dots = [0, 1, 2, 3].map(i => ({
+      style: 'width:14px;height:14px;border-radius:999px;transition:all .15s;' + (i < v.length
+        ? 'background:#E50914;transform:scale(1);box-shadow:0 0 12px rgba(229,9,20,.5);'
+        : 'background:' + (anyGlass ? 'rgba(255,255,255,.16)' : '#2A2A38') + ';transform:scale(.82);'),
+    }));
+
+    // Surfaces
+    let scrimStyle, sheetStyle, handleStyle, doneStyle;
+    if (anyGlass) {
+      scrimStyle = 'position:absolute;inset:0;background:rgba(0,0,0,.25);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);animation:npFade .2s ease;';
+      sheetStyle = 'position:absolute;left:0;right:0;bottom:0;overflow:hidden;'
+        + 'background:radial-gradient(120% 82% at 50% -12%, rgba(229,9,20,.20) 0%, rgba(229,9,20,.05) 40%, rgba(20,18,26,0) 66%), linear-gradient(180deg, rgba(30,25,34,.80) 0%, rgba(18,16,22,.86) 58%, rgba(12,10,16,.90) 100%);'
+        + 'backdrop-filter:blur(26px);-webkit-backdrop-filter:blur(26px);'
+        + 'border-top:1px solid rgba(255,255,255,.12);box-shadow:0 -20px 50px -20px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.06);'
+        + 'border-radius:28px 28px 0 0;padding:8px 16px 20px;animation:npUp .32s cubic-bezier(.22,1,.36,1);';
+      handleStyle = 'width:40px;height:4px;border-radius:999px;background:rgba(255,255,255,.22);margin:2px auto 8px;';
+      doneStyle = 'width:100%;height:54px;margin-top:10px;border:none;border-radius:16px;background:linear-gradient(160deg,#F40612,#C5070F);color:#fff;font:600 16px var(--font-sans);cursor:pointer;box-shadow:0 10px 26px -10px rgba(229,9,20,.7);transition:filter .15s;';
+    } else {
+      scrimStyle = 'position:absolute;inset:0;background:rgba(0,0,0,.30);animation:npFade .18s ease;';
+      sheetStyle = 'position:absolute;left:0;right:0;bottom:0;background:#111118;border-top:1px solid #23232f;box-shadow:0 -18px 44px -18px rgba(0,0,0,.7);border-radius:26px 26px 0 0;padding:8px 16px 20px;animation:npUp .30s cubic-bezier(.22,1,.36,1);';
+      handleStyle = 'width:40px;height:4px;border-radius:999px;background:#2A2A38;margin:2px auto 8px;';
+      doneStyle = 'width:100%;height:54px;margin-top:' + (tiles ? '9px' : '8px') + ';border:none;border-radius:16px;background:#E50914;color:#fff;font:600 16px var(--font-sans);cursor:pointer;transition:filter .15s;';
+    }
+
+    const glowStyle = 'position:absolute;top:8%;left:50%;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle, rgba(229,9,20,.30), transparent 68%);filter:blur(10px);animation:npGlow 8s ease-in-out infinite;z-index:0;pointer-events:none;';
+
+    const done = () => { if (p.onDone) p.onDone(this.curVal()); else if (p.onClose) p.onClose(); };
+
+    return {
+      dir: ar ? 'rtl' : 'ltr',
+      fontFam: ar ? 'var(--font-sans-ar)' : 'var(--font-sans)',
+      showDisplay: p.showDisplay !== undefined ? p.showDisplay : (p.value === undefined),
+      label: p.label || (mode === 'pin' ? (ar ? 'آخر ٤ أرقام' : 'Card last 4 digits') : (ar ? 'المبلغ' : 'Amount')),
+      isDecimal: mode !== 'pin',
+      isPin: mode === 'pin',
+      isGlass: anyGlass,
+      dispCur: p.currency || 'EGP',
+      dispAmount: this.fmt(v),
+      amtColor: v ? '#FFFFFF' : (anyGlass ? 'rgba(255,255,255,.32)' : '#4A4A5C'),
+      dots, keys, gridGap, icBack: this.ico('back'),
+      scrimStyle, sheetStyle, handleStyle, glowStyle,
+      doneStyle, doneLabel: ar ? 'تم' : 'Done',
+      onDone: done,
+      onScrim: () => { if (p.onClose) p.onClose(); },
+    };
+  }
+}
+</script>
+</body>
+</html>

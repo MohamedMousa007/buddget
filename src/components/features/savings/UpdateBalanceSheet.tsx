@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { Input } from '@/components/ui/input'
+import { AmountField } from '@/components/ui/AmountField'
 import { Label } from '@/components/ui/label'
 import type { SavingsAccount } from '@/lib/store/types'
 import { formatCurrency } from '@/lib/utils/formatters'
@@ -55,11 +56,9 @@ export function UpdateBalanceSheet({ open, onClose, account, onCorrect }: Update
               <span className="flex h-10 min-w-[4rem] items-center justify-center rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-sm font-mono-numbers">
                 {account.currency}
               </span>
-              <Input
-                type="number"
-                step="0.01"
+              <AmountField
                 value={balance}
-                onChange={(e) => setBalance(e.target.value)}
+                onChange={setBalance}
                 className="h-10 flex-1 rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] font-mono-numbers"
               />
             </div>
