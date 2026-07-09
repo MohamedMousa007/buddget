@@ -1,7 +1,7 @@
 'use client'
 
 import { RefObject } from 'react'
-import { AlertTriangle, Database, Download, Trash2, Upload } from 'lucide-react'
+import { AlertTriangle, Database, Download, FileSpreadsheet, Trash2, Upload } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 
 export interface SettingsDataManagementSectionProps {
@@ -9,6 +9,7 @@ export interface SettingsDataManagementSectionProps {
   showResetConfirm: boolean
   onShowResetConfirm: (v: boolean) => void
   onExport: () => void
+  onExportExpenses: () => void
   onImportChange: (e: React.ChangeEvent<HTMLInputElement>) => void
   onStartFresh: () => void
 }
@@ -21,6 +22,7 @@ export function SettingsDataManagementSection({
   showResetConfirm,
   onShowResetConfirm,
   onExport,
+  onExportExpenses,
   onImportChange,
   onStartFresh,
 }: SettingsDataManagementSectionProps) {
@@ -41,6 +43,23 @@ export function SettingsDataManagementSection({
       <p className="text-xs text-[var(--color-brand-amber)]/95 rounded-xl border border-[var(--color-brand-amber)]/35 bg-[var(--color-brand-amber)]/10 px-3 py-2.5">
         {t.settings.dataDeviceOnlyNote}
       </p>
+
+      <button
+        type="button"
+        onClick={onExportExpenses}
+        className="flex w-full items-center gap-3 rounded-xl border border-[var(--color-brand-red)]/40 bg-[var(--color-brand-red)]/10 px-4 py-3 text-start transition-colors hover:bg-[var(--color-brand-red)]/15"
+      >
+        <FileSpreadsheet className="h-5 w-5 shrink-0 text-[var(--color-brand-red)]" />
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-[var(--color-brand-text-primary)]">
+            {t.settings.dataExportExpenses}
+          </span>
+          <span className="block text-xs text-[var(--color-brand-text-muted)]">
+            {t.settings.dataExportExpensesHint}
+          </span>
+        </span>
+        <Download className="h-4 w-4 shrink-0 text-[var(--color-brand-red)]" />
+      </button>
 
       <div className="flex flex-wrap gap-3">
         <button

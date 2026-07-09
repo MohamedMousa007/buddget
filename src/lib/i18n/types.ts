@@ -314,6 +314,13 @@ export interface Dictionary {
     badgeDebt: string
     spentThisMonth: string
     entries: string
+    avgPerDay: string
+    daysCount: string
+    rateFaster: string
+    rateSlower: string
+    rateVs: string
+    statusReturned: string
+    statusBlocked: string
     addExpenseCta: string
     filtersTitle: string
     resetAll: string
@@ -929,6 +936,8 @@ export interface Dictionary {
     dataTitle: string
     dataIntro: string
     dataDeviceOnlyNote: string
+    dataExportExpenses: string
+    dataExportExpensesHint: string
     dataDownload: string
     dataRestore: string
     dataStartFresh: string

@@ -2,25 +2,38 @@
 
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { Plus, Download } from 'lucide-react'
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react'
+import { addMonths, subMonths, format } from 'date-fns'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useExpenseFilterStore, amountIsFiltered } from '@/lib/store/useExpenseFilterStore'
 import { filterExpensesByMonth, expenseAmountInBase } from '@/lib/utils/calculations'
 import { convertCurrency } from '@/lib/utils/currency'
-import { formatCurrency, escapeCsvField } from '@/lib/utils/formatters'
-import { downloadOrShareFile } from '@/lib/utils/exportFile'
+import { formatCurrency } from '@/lib/utils/formatters'
 import { ExpenseFilters } from '@/components/expenses/ExpenseFilters'
 import { ExpenseDayList } from '@/components/expenses/ExpenseDayList'
-import { MonthNavigationControl } from '@/components/layout/MonthNavigationControl'
+import { MonthYearPicker } from '@/components/ui/MonthYearPicker'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
-import { useActionToast } from '@/components/ui/ActionToast'
 import { useT } from '@/lib/i18n'
 import { useHydrateExpenses } from '@/hooks/remote'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 
 function fmtNum(n: number): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function parseLocalMonth(yyyyMm: string): Date {
+  const [y, m] = yyyyMm.split('-').map(Number)
+  return new Date(y, m - 1, 1)
+}
+
+/** Days counted toward the Avg / day figure: elapsed days for the current month, full length otherwise. */
+// ponytail: ignores a non-1 monthStartDay offset — exact enough for the KPI.
+function daysElapsed(yyyyMm: string): number {
+  const [y, m] = yyyyMm.split('-').map(Number)
+  const now = new Date()
+  const isCurrent = now.getFullYear() === y && now.getMonth() === m - 1
+  return isCurrent ? now.getDate() : new Date(y, m, 0).getDate()
 }
 
 export default function ExpensesPage() {
@@ -39,7 +52,6 @@ export default function ExpensesPage() {
     useShallow((s) => ({ cats: s.cats, methods: s.methods, amtMin: s.amtMin, amtMax: s.amtMax })),
   )
   const requireAuth = useRequireAuthAction()
-  const toast = useActionToast()
   const t = useT()
   const base = settings.baseCurrency
   const secondary = settings.secondaryCurrency
@@ -91,80 +103,110 @@ export default function ExpensesPage() {
     ? formatCurrency(convertCurrency(totalAmount, base, secondary, exchangeRates), secondary)
     : null
 
-  const handleExport = async () => {
-    const headers = 'Date,Description,Category,Amount,Currency,Payment Method\n'
-    const rows = filteredExpenses
-      .map((e) =>
-        [
-          escapeCsvField(e.date),
-          escapeCsvField(e.description),
-          escapeCsvField(e.category),
-          escapeCsvField(e.amount),
-          escapeCsvField(e.currency),
-          escapeCsvField(e.paymentMethodId),
-        ].join(','),
-      )
-      .join('\n')
+  const days = daysElapsed(monthFilter)
+  const avgPerDay = days > 0 ? totalAmount / days : 0
 
-    const result = await downloadOrShareFile(`buddget-expenses-${monthFilter}.csv`, headers + rows, 'text/csv')
-    if (result === 'saved') toast(t.expenses.fileSaved)
-  }
+  // Spending-rate indicator: this month's avg/day vs the previous month's.
+  const rate = useMemo(() => {
+    const prevDate = subMonths(parseLocalMonth(monthFilter), 1)
+    const prevStr = format(prevDate, 'yyyy-MM')
+    const prevExpenses = filterExpensesByMonth(expenses, prevStr, settings.monthStartDay)
+    const prevTotal = prevExpenses.reduce((s, e) => s + expenseAmountInBase(e, base, exchangeRates), 0)
+    const prevDays = daysElapsed(prevStr)
+    const prevAvg = prevDays > 0 ? prevTotal / prevDays : 0
+    if (prevAvg <= 0) return null
+    const pct = Math.round(((avgPerDay - prevAvg) / prevAvg) * 100)
+    if (pct === 0) return null
+    return { pct: Math.abs(pct), faster: pct > 0, month: format(prevDate, 'MMMM') }
+  }, [expenses, monthFilter, settings.monthStartDay, base, exchangeRates, avgPerDay])
+
+  const prevMonth = () => setMonthFilter(format(subMonths(parseLocalMonth(monthFilter), 1), 'yyyy-MM'))
+  const nextMonth = () => setMonthFilter(format(addMonths(parseLocalMonth(monthFilter), 1), 'yyyy-MM'))
 
   const addExpense = () =>
     requireAuth(() => setActiveModal('addExpense'), t.expenses.requireAuth)
 
+  const navBtn =
+    'flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] transition-colors hover:text-[var(--color-brand-text-primary)] active:translate-y-px'
+
   if (!dataReady) return <div className="p-4"><SkeletonList /></div>
 
   return (
-    <div className="px-4 pb-32 pt-3.5">
-      {/* Header row: month switcher · export */}
-      <div className="mb-3.5 flex items-center justify-between gap-2">
-        <MonthNavigationControl monthFilter={monthFilter} onChange={setMonthFilter} compact />
-        <button
-          type="button"
-          onClick={handleExport}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[var(--color-brand-text-secondary)]"
-          aria-label={t.expenses.downloadData}
-        >
-          <Download className="h-4 w-4" />
-        </button>
+    <div className="pb-24 pt-2">
+      {/* Month selector row */}
+      <div className="flex items-center justify-between gap-2 px-[18px] pb-3 pt-2">
+        <MonthYearPicker monthFilter={monthFilter} onChange={setMonthFilter} heroLabel />
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button type="button" onClick={prevMonth} className={navBtn} aria-label="Previous month">
+            <ChevronLeft className="h-[17px] w-[17px]" />
+          </button>
+          <button type="button" onClick={nextMonth} className={navBtn} aria-label="Next month">
+            <ChevronRight className="h-[17px] w-[17px]" />
+          </button>
+        </div>
       </div>
 
-      {/* Stats card */}
-      <div className="mb-3.5 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-[16px_18px] dark:bg-[linear-gradient(150deg,#1d1416,#121017)]">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-[var(--color-brand-text-muted)]">
+      {/* Summary (hero) card */}
+      <div className="mx-4 rounded-[14px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-[18px] dark:bg-[linear-gradient(150deg,#1d1416,#121017)]">
+        <div className="flex items-start justify-between gap-4">
+          {/* Left: spent this month */}
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
               {t.expenses.spentThisMonth}
             </p>
-            <p className="font-mono-numbers mt-1.5 text-3xl font-bold leading-none tracking-[-0.5px] text-[var(--color-brand-text-primary)]">
-              {fmtNum(totalAmount)}{' '}
+            <p className="mt-2 flex items-baseline gap-2">
+              <span className="font-mono-numbers text-[34px] font-semibold leading-none tracking-[-0.02em] tabular-nums text-[var(--color-brand-text-primary)]">
+                {fmtNum(totalAmount)}
+              </span>
               <span className="text-sm font-medium text-[var(--color-brand-text-muted)]">{base}</span>
             </p>
             {totalUsd ? (
-              <p className="font-mono-numbers mt-1 text-xs text-[var(--color-brand-text-muted)]">≈ {totalUsd}</p>
+              <p className="font-mono-numbers mt-[5px] text-[13px] font-medium text-[var(--color-brand-text-muted)]">≈ {totalUsd}</p>
             ) : null}
           </div>
-          <div className="text-end">
-            <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-[var(--color-brand-text-muted)]">
-              {t.expenses.entries}
+          {/* Right: avg / day + spending rate */}
+          <div className="shrink-0 text-end">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
+              {t.expenses.avgPerDay}
             </p>
-            <p className="font-mono-numbers mt-1.5 text-lg font-bold text-[var(--color-brand-text-secondary)]">
-              {filteredExpenses.length}
+            <p className="font-mono-numbers mt-2 text-base font-medium tabular-nums text-[var(--color-brand-text-secondary)]">
+              {fmtNum(avgPerDay)}
             </p>
+            <p className="mt-[3px] whitespace-nowrap text-[11px] font-medium text-[var(--color-brand-text-muted)]">
+              {base} · {t.expenses.daysCount.replace('{n}', String(days))}
+            </p>
+            {rate ? (
+              <p className="mt-[9px] inline-flex items-center gap-[5px] whitespace-nowrap">
+                {rate.faster ? (
+                  <TrendingUp className="h-[13px] w-[13px] text-[var(--color-brand-amber)]" />
+                ) : (
+                  <TrendingDown className="h-[13px] w-[13px] text-[var(--color-brand-green)]" />
+                )}
+                <span
+                  className="text-[11px] font-semibold"
+                  style={{ color: rate.faster ? 'var(--color-brand-amber)' : 'var(--color-brand-green)' }}
+                >
+                  {rate.pct}% {rate.faster ? t.expenses.rateFaster : t.expenses.rateSlower}
+                </span>
+                <span className="text-[11px] font-medium text-[var(--color-brand-text-muted)]">
+                  {t.expenses.rateVs.replace('{month}', rate.month)}
+                </span>
+              </p>
+            ) : null}
           </div>
         </div>
         <button
           type="button"
           onClick={addExpense}
-          className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-brand-red)] text-sm font-bold text-white hover:bg-[var(--color-brand-red-hover)]"
+          className="mt-4 h-11 w-full rounded-xl bg-[var(--color-brand-red)] text-[15px] font-semibold tracking-[-0.005em] text-white shadow-[0_10px_24px_-10px_rgba(229,9,20,0.55)] transition-transform hover:bg-[var(--color-brand-red-hover)] active:translate-y-px"
         >
-          <Plus className="h-4 w-4" strokeWidth={2.4} />
           {t.expenses.addExpenseCta}
         </button>
       </div>
 
-      <ExpenseFilters categories={categoryOptions} methods={methodOptions} resultCount={filteredExpenses.length} />
+      <div className="mt-3.5 px-[18px]">
+        <ExpenseFilters categories={categoryOptions} methods={methodOptions} resultCount={filteredExpenses.length} />
+      </div>
 
       <ExpenseDayList expenses={filteredExpenses} />
     </div>
