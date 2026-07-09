@@ -316,7 +316,6 @@ export interface Dictionary {
     entries: string
     avgPerDay: string
     daysCount: string
-    projectedEom: string
     statusReturned: string
     statusBlocked: string
     addExpenseCta: string

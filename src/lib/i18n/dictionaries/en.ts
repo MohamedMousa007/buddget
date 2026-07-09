@@ -409,7 +409,6 @@ export const en: Dictionary = {
     entries: 'Entries',
     avgPerDay: 'Avg / day',
     daysCount: '{n} days',
-    projectedEom: 'projected',
     statusReturned: 'Returned',
     statusBlocked: 'Blocked',
     addExpenseCta: 'Add expense',

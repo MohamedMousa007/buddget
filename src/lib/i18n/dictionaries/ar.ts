@@ -409,7 +409,6 @@ export const ar: Dictionary = {
     entries: 'إدخالات',
     avgPerDay: 'المتوسط / يوم',
     daysCount: '{n} يوم',
-    projectedEom: 'متوقع',
     statusReturned: 'أُعيد',
     statusBlocked: 'محظور',
     addExpenseCta: 'أضف مصروفاً',
