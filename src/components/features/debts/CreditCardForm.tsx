@@ -90,24 +90,17 @@ export function CreditCardForm({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.paymentDueDayLabel}</Label>
-          <Input
-            type="number"
-            min={1}
-            max={31}
-            value={paymentDueDay}
-            onChange={(e) => setPaymentDueDay(e.target.value)}
-            className={input}
-          />
+          <AmountField mode="integer" value={paymentDueDay} onChange={setPaymentDueDay} className={input} />
         </div>
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.gracePeriodLabel}</Label>
-          <Input type="number" min={1} value={graceDays} onChange={(e) => setGraceDays(e.target.value)} className={input} />
+          <AmountField mode="integer" value={graceDays} onChange={setGraceDays} className={input} />
           <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-0.5">{t.addDebt.gracePeriodDays}</p>
         </div>
       </div>
       <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.minPaymentLabel}</Label>
-        <Input type="number" step="0.1" min={0} max={100} value={minPercent} onChange={(e) => setMinPercent(e.target.value)} className={input} />
+        <AmountField value={minPercent} onChange={setMinPercent} className={input} />
       </div>
     </div>
   )

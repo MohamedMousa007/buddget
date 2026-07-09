@@ -3,7 +3,7 @@
 import { Pencil } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { effectiveCategoryBudget } from '@/lib/utils/calculations'
-import { Input } from '@/components/ui/input'
+import { AmountField } from '@/components/ui/AmountField'
 import type { Dictionary } from '@/lib/i18n/types'
 import type { AppSettings, BudgetCategory } from '@/lib/store/types'
 
@@ -43,16 +43,10 @@ export function ProfileBudgetCategoryList({
           <span className="text-sm text-[var(--color-brand-text-primary)]">{budget.category}</span>
           {editingBudget === budget.category ? (
             <div className="flex items-center gap-2">
-              <Input
-                type="number"
+              <AmountField
                 value={budgetInput}
-                onChange={(e) => setBudgetInput(e.target.value)}
+                onChange={setBudgetInput}
                 className="w-28 h-8 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers text-sm"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') onSave(budget.category)
-                  if (e.key === 'Escape') setEditingBudget(null)
-                }}
               />
               <span className="text-[10px] text-[var(--color-brand-text-muted)]">
                 {budgetMode === 'percent_of_income' ? '%' : settings.baseCurrency}

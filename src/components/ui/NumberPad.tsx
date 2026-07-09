@@ -13,7 +13,7 @@
 import { Delete } from 'lucide-react'
 import type { CSSProperties } from 'react'
 
-export type NumberPadMode = 'decimal' | 'pin'
+export type NumberPadMode = 'decimal' | 'integer' | 'pin'
 
 export interface NumberPadProps {
   value: string
@@ -36,8 +36,8 @@ export function nextValue(value: string, key: string, mode: NumberPadMode): stri
   const v = value || ''
   if (key === 'back') return v.slice(0, -1)
   if (key === '.') {
-    if (mode !== 'pin' && !v.includes('.')) return v === '' ? '0.' : v + '.'
-    return v
+    if (mode === 'decimal' && !v.includes('.')) return v === '' ? '0.' : v + '.'
+    return v // integer / pin have no decimal key
   }
   if (mode === 'pin') {
     if (v.length >= 4) return v
@@ -60,7 +60,7 @@ export function formatAmount(v: string): string {
 }
 
 const KEYS_DECIMAL = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'back']
-const KEYS_PIN = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'blank', '0', 'back']
+const KEYS_NODOT = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'blank', '0', 'back']
 
 export function NumberPad({
   value,
@@ -74,7 +74,7 @@ export function NumberPad({
   dir = 'ltr',
 }: NumberPadProps) {
   const isPin = mode === 'pin'
-  const keys = isPin ? KEYS_PIN : KEYS_DECIMAL
+  const keys = mode === 'decimal' ? KEYS_DECIMAL : KEYS_NODOT
   const caption = label ?? (isPin ? 'Card last 4 digits' : 'Amount')
 
   const digitStyle: CSSProperties = {

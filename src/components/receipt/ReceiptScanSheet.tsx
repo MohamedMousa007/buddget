@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useShallow } from 'zustand/react/shallow'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { DatePickerField } from '@/components/ui/DatePickerField'
+import { AmountField } from '@/components/ui/AmountField'
 import { captureReceiptPhoto, ReceiptCaptureCancelled } from '@/lib/native/cameraScanner'
 import { isNative } from '@/lib/native/isNative'
 import { saveReceiptImage } from '@/lib/native/receiptImages'
@@ -388,10 +389,10 @@ function ResultView({
           />
         </Field>
         <Field label="Amount">
-          <input
+          <AmountField
+            bare
             value={String(result.amount)}
-            onChange={(e) => onChange({ amount: Number(e.target.value) || 0 })}
-            inputMode="decimal"
+            onChange={(v) => onChange({ amount: Number(v) || 0 })}
             className="w-full rounded-lg border border-[var(--color-brand-border)] bg-transparent px-2 py-1.5 text-sm text-[var(--color-brand-text-primary)]"
           />
         </Field>

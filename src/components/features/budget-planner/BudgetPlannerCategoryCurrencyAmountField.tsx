@@ -1,7 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { ChevronDown } from 'lucide-react'
+import { NumberPad } from '@/components/ui/NumberPad'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import type { AppSettings, BudgetPlanCategory, Currency } from '@/lib/store/types'
@@ -35,6 +37,7 @@ export function BudgetPlannerCategoryCurrencyAmountField({
   onCurrencyChange,
 }: BudgetPlannerCategoryCurrencyAmountFieldProps) {
   const [currencyOpen, setCurrencyOpen] = useState(false)
+  const [padOpen, setPadOpen] = useState(false)
   const rowCurrency = planCategoryCurrency(category, settings.baseCurrency)
   const fiatOpts = buildFiatCurrencyPickerOptions(settings)
   const codes = fiatOpts.map((o) => o.value)
@@ -84,21 +87,40 @@ export function BudgetPlannerCategoryCurrencyAmountField({
       {currencyTrigger}
       <div className="flex items-center gap-1">
         <span className="text-[10px] uppercase text-[var(--color-brand-text-muted)]">{amountLabel}</span>
-        <input
-          type="text"
-          inputMode="decimal"
+        <button
+          type="button"
           disabled={hasSubs}
-          value={categoryAmountInputValue}
-          onChange={(e) => !hasSubs && onAmountChange(e.target.value)}
-          onFocus={onAmountFocus}
-          onBlur={onAmountBlur}
-          placeholder={amountPlaceholder}
-          readOnly={hasSubs}
+          onClick={() => {
+            if (hasSubs) return
+            onAmountFocus()
+            setPadOpen(true)
+          }}
           className={cn(
-            'w-24 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1.5 font-mono text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)]',
+            'w-24 flex items-center rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1.5 font-mono text-sm text-start',
             hasSubs && 'cursor-not-allowed opacity-60'
           )}
-        />
+        >
+          <span className={categoryAmountInputValue ? 'text-[var(--color-brand-text-primary)]' : 'text-[var(--color-brand-text-muted)]'}>
+            {categoryAmountInputValue || amountPlaceholder}
+          </span>
+        </button>
+        {padOpen &&
+          typeof document !== 'undefined' &&
+          createPortal(
+            <NumberPad
+              value={categoryAmountInputValue}
+              onChange={onAmountChange}
+              onDone={() => {
+                onAmountBlur()
+                setPadOpen(false)
+              }}
+              onClose={() => {
+                onAmountBlur()
+                setPadOpen(false)
+              }}
+            />,
+            document.body,
+          )}
       </div>
     </div>
   )

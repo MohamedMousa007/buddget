@@ -13,6 +13,14 @@ describe('nextValue (decimal)', () => {
   it('backspace removes last char', () => expect(d('1.2', 'back')).toBe('1.'))
 })
 
+describe('nextValue (integer)', () => {
+  const i = (v: string, k: string) => nextValue(v, k, 'integer')
+  it('appends digits with no cap', () => expect(i('123456', '7')).toBe('1234567'))
+  it('collapses leading zero', () => expect(i('0', '5')).toBe('5'))
+  it('ignores the decimal key', () => expect(i('12', '.')).toBe('12'))
+  it('backspace removes last char', () => expect(i('12', 'back')).toBe('1'))
+})
+
 describe('nextValue (pin)', () => {
   const p = (v: string, k: string) => nextValue(v, k, 'pin')
   it('appends up to 4 digits', () => expect(p('123', '4')).toBe('1234'))

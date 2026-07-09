@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import { Input } from '@/components/ui/input'
+import { AmountField } from '@/components/ui/AmountField'
 import { Label } from '@/components/ui/label'
 import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import type { DebtKind, InstallmentProvider } from '@/lib/store/types'
@@ -173,11 +174,10 @@ export function AddDebtDebtTypeSection({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelInstallments}</Label>
-              <Input
-                type="number"
-                min={1}
+              <AmountField
+                mode="integer"
                 value={installmentCount}
-                onChange={(e) => setInstallmentCount(e.target.value)}
+                onChange={setInstallmentCount}
                 className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers"
               />
             </div>

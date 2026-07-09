@@ -109,12 +109,10 @@ export function AddSubscriptionConfigureView({
         </div>
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.subscriptions.billingDay}</Label>
-          <Input
-            type="number"
-            min={1}
-            max={31}
-            value={form.billingDay}
-            onChange={(e) => form.setBillingDay(Number(e.target.value))}
+          <AmountField
+            mode="integer"
+            value={String(form.billingDay)}
+            onChange={(v) => form.setBillingDay(Number(v))}
             className={cn('mt-1', inputClass)}
           />
         </div>
