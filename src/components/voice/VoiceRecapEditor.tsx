@@ -122,7 +122,7 @@ export function VoiceRecapEditor({
                   <label className="block">
                     <span className="mb-0.5 block text-[10px] text-[var(--color-brand-text-muted)]">Amount</span>
                     <input
-                      type="number"
+                      type="text"
                       inputMode="decimal"
                       className={FIELD_CLS}
                       value={String(getField(item.data, 'amount') ?? '')}
