@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react'
+import { ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react'
 import { addMonths, subMonths, format } from 'date-fns'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -106,19 +106,12 @@ export default function ExpensesPage() {
   const days = daysElapsed(monthFilter)
   const avgPerDay = days > 0 ? totalAmount / days : 0
 
-  // Spending-rate indicator: this month's avg/day vs the previous month's.
-  const rate = useMemo(() => {
-    const prevDate = subMonths(parseLocalMonth(monthFilter), 1)
-    const prevStr = format(prevDate, 'yyyy-MM')
-    const prevExpenses = filterExpensesByMonth(expenses, prevStr, settings.monthStartDay)
-    const prevTotal = prevExpenses.reduce((s, e) => s + expenseAmountInBase(e, base, exchangeRates), 0)
-    const prevDays = daysElapsed(prevStr)
-    const prevAvg = prevDays > 0 ? prevTotal / prevDays : 0
-    if (prevAvg <= 0) return null
-    const pct = Math.round(((avgPerDay - prevAvg) / prevAvg) * 100)
-    if (pct === 0) return null
-    return { pct: Math.abs(pct), faster: pct > 0, month: format(prevDate, 'MMMM') }
-  }, [expenses, monthFilter, settings.monthStartDay, base, exchangeRates, avgPerDay])
+  // Projected end-of-month spend at the current daily pace. Only meaningful for
+  // the in-progress month — a full past month's projection is just its total.
+  const [y, m] = monthFilter.split('-').map(Number)
+  const isCurrentMonth = new Date().getFullYear() === y && new Date().getMonth() === m - 1
+  const daysInMonth = new Date(y, m, 0).getDate()
+  const projected = isCurrentMonth && avgPerDay > 0 ? avgPerDay * daysInMonth : null
 
   const prevMonth = () => setMonthFilter(format(subMonths(parseLocalMonth(monthFilter), 1), 'yyyy-MM'))
   const nextMonth = () => setMonthFilter(format(addMonths(parseLocalMonth(monthFilter), 1), 'yyyy-MM'))
@@ -175,21 +168,14 @@ export default function ExpensesPage() {
             <p className="mt-[3px] whitespace-nowrap text-[11px] font-medium text-[var(--color-brand-text-muted)]">
               {base} · {t.expenses.daysCount.replace('{n}', String(days))}
             </p>
-            {rate ? (
+            {projected != null ? (
               <p className="mt-[9px] inline-flex items-center gap-[5px] whitespace-nowrap">
-                {rate.faster ? (
-                  <TrendingUp className="h-[13px] w-[13px] text-[var(--color-brand-amber)]" />
-                ) : (
-                  <TrendingDown className="h-[13px] w-[13px] text-[var(--color-brand-green)]" />
-                )}
-                <span
-                  className="text-[11px] font-semibold"
-                  style={{ color: rate.faster ? 'var(--color-brand-amber)' : 'var(--color-brand-green)' }}
-                >
-                  {rate.pct}% {rate.faster ? t.expenses.rateFaster : t.expenses.rateSlower}
+                <TrendingUp className="h-[13px] w-[13px] text-[var(--color-brand-amber)]" />
+                <span className="font-mono-numbers text-[11px] font-semibold tabular-nums text-[var(--color-brand-amber)]">
+                  {fmtNum(projected)}
                 </span>
                 <span className="text-[11px] font-medium text-[var(--color-brand-text-muted)]">
-                  {t.expenses.rateVs.replace('{month}', rate.month)}
+                  {t.expenses.projectedEom}
                 </span>
               </p>
             ) : null}

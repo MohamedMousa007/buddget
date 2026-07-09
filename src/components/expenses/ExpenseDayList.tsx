@@ -131,7 +131,7 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                     <button
                       type="button"
                       onClick={() => openEdit(e.id)}
-                      className="flex min-h-[72px] w-full items-center gap-3 px-4 py-3 text-start transition-colors hover:bg-[var(--color-brand-elevated)]"
+                      className="flex min-h-[60px] w-full items-center gap-3 px-4 py-2.5 text-start transition-colors hover:bg-[var(--color-brand-elevated)]"
                     >
                       {/* A. Icon column */}
                       <span className="flex w-[54px] shrink-0 flex-col items-center gap-[5px]">
