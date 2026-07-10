@@ -11,6 +11,7 @@ import {
 } from '@/lib/utils/calculations'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { isBnplPlan } from '@/lib/debt/bnpl'
+import { reconcileDebtSchedule } from '@/lib/debts/recurringDebtDueHandlers'
 import { clampDebtFiatToAllowed, clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import type {
   Currency,
@@ -454,6 +455,7 @@ export function useAddDebtSheet() {
         rateAtEntry,
         notes: paymentNotes || undefined,
       })
+      reconcileDebtSchedule(selectedDebtId)
       showToast(tI18n.common.toastDebtPaymentRecorded)
       resetForm()
       closeSheet()
@@ -486,6 +488,7 @@ export function useAddDebtSheet() {
         isDebtPayment: true,
       }
     )
+    reconcileDebtSchedule(selectedDebtId)
     showToast(tI18n.common.toastDebtPaymentRecorded)
     resetForm()
     closeSheet()

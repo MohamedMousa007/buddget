@@ -698,6 +698,7 @@ export interface Dictionary {
     minimumPayment: string
     thisMonthCharges: string
     payNow: string
+    payNextInstallment: string
     viewCharges: string
     creditCardSetupHint: string
   }

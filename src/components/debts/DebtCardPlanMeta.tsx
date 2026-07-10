@@ -12,16 +12,25 @@ type DebtCardPlanMetaProps = {
   payments: DebtPayment[]
   paidOff: boolean
   balanceCtx?: DebtBalanceContext
+  /** Active reminder's next due date (ISO) — preferred over the schedule-derived date. */
+  nextDueOverride?: string
 }
 
 /**
  * Debt type badge, installment segment bar, and payoff goal summary on the debt card.
  */
-export function DebtCardPlanMeta({ debt, payments, paidOff, balanceCtx }: DebtCardPlanMetaProps) {
+export function DebtCardPlanMeta({ debt, payments, paidOff, balanceCtx, nextDueOverride }: DebtCardPlanMetaProps) {
   const t = useT()
   const remaining = calculateDebtRemaining(debt, payments, balanceCtx)
   const completed = installmentPaymentsCompleted(debt, payments.length)
-  const nextDue = nextInstallmentDueFormatted(debt, payments.length)
+  const scheduleNextDue = nextInstallmentDueFormatted(debt, payments.length)
+  // Prefer the live reminder's next-due (reflects snoozes/advances/manual pays).
+  const nextDue =
+    completed >= (debt.installmentCount ?? 0)
+      ? null
+      : nextDueOverride
+        ? format(parseISO(nextDueOverride + 'T12:00:00'), 'MMM d, yyyy')
+        : scheduleNextDue
 
   const kindLabel =
     debt.debtType === 'personal'

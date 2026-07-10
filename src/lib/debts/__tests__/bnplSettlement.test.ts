@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { confirmRecurringDebtPayment } from '@/lib/debts/recurringDebtDueHandlers'
+import { confirmRecurringDebtPayment, reconcileDebtSchedule } from '@/lib/debts/recurringDebtDueHandlers'
 import { isBnplPlan } from '@/lib/debt/bnpl'
 import { calculateDebtRemainingRaw } from '@/lib/utils/calculations'
 import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
-import type { PaymentMethod, Debt, RecurringDebtPayment } from '@/lib/store/types'
+import type { PaymentMethod, Debt, RecurringDebtPayment, DebtPayment } from '@/lib/store/types'
 
 const base = () => useFinanceStore.getState().settings.baseCurrency
 
@@ -75,5 +75,38 @@ describe('BNPL installment settlement', () => {
     expect(s.debtPayments[0].amountPaid).toBeCloseTo(100) // clamped
     expect(s.recurringDebtPayments[0].isActive).toBe(false)
     expect(s.debts[0].status).toBe('cleared')
+  })
+})
+
+const pay = (amountPaid: number): DebtPayment =>
+  ({ id: 'p1', debtId: 'plan1', date: '2026-08-01', amountPaid, createdAt: '2026-08-01' }) as DebtPayment
+
+describe('reconcileDebtSchedule (manual pay keeps the reminder in sync)', () => {
+  it('advances next-due after a partial manual payment', () => {
+    seed(plan(1000), schedule())
+    useFinanceStore.setState({ debtPayments: [pay(250)] }) // paid one slice by hand
+    reconcileDebtSchedule('plan1')
+    const s = useFinanceStore.getState()
+    expect(s.recurringDebtPayments[0].isActive).toBe(true)
+    expect(s.recurringDebtPayments[0].nextDueDate).not.toBe('2026-08-01')
+    expect(s.debts[0].status).toBe('active')
+  })
+
+  it('deactivates + clears once a manual payment settles the plan', () => {
+    seed(plan(1000), schedule())
+    useFinanceStore.setState({ debtPayments: [pay(1000)] })
+    reconcileDebtSchedule('plan1')
+    const s = useFinanceStore.getState()
+    expect(s.recurringDebtPayments[0].isActive).toBe(false)
+    expect(s.debts[0].status).toBe('cleared')
+  })
+
+  it('is a no-op when the debt has no active template', () => {
+    useFinanceStore.setState({
+      paymentMethods: [bnplPm(), cashPm()], debts: [plan(1000)],
+      recurringDebtPayments: [], debtPayments: [], expenses: [], goals: [],
+    })
+    expect(() => reconcileDebtSchedule('plan1')).not.toThrow()
+    expect(useFinanceStore.getState().debts[0].status).toBe('active')
   })
 })

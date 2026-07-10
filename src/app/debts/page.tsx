@@ -10,6 +10,8 @@ import { CreditCardDebtCard } from '@/components/features/debts/CreditCardDebtCa
 import { AllDebtsPaymentHistory } from '@/components/features/debts/AllDebtsPaymentHistory'
 import { DebtHistoryTable } from '@/components/features/debts/DebtHistoryTable'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
+import { useActionToast } from '@/components/ui/ActionToast'
+import { confirmRecurringDebtPayment } from '@/lib/debts/recurringDebtDueHandlers'
 import { Landmark, Plus, Check } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { useHydrateDebts, useHydrateGoals } from '@/hooks/remote'
@@ -23,15 +25,17 @@ export default function DebtsPage() {
   const dataReady = useFinanceStore((s) => s.dataReady)
   const stats = useMonthlyStats()
   const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
-  const { debts, debtPayments } = useFinanceStore(
+  const { debts, debtPayments, recurringDebtPayments } = useFinanceStore(
     useShallow((s) => ({
       debts: s.debts,
       debtPayments: s.debtPayments,
+      recurringDebtPayments: s.recurringDebtPayments,
     }))
   )
   const { openDebtSheetNew, openPayDebtSheet, openDebtSheetRecordPayment, setActiveModal, setEditingDebtId } =
     useSettingsStore()
   const requireAuth = useRequireAuthAction()
+  const showToast = useActionToast()
   const t = useT()
 
   const activeDebts = useMemo(
@@ -54,6 +58,10 @@ export default function DebtsPage() {
       () => openDebtSheetRecordPayment(debtId),
       t.debts.requireAuthPayment
     )
+  const guardedPayInstallment = (scheduleId: string) =>
+    requireAuth(() => {
+      if (confirmRecurringDebtPayment(scheduleId)) showToast(t.common.toastDebtPaymentRecorded)
+    }, t.debts.requireAuthPayment)
 
   const handleEditDebt = (debtId: string) => {
     setEditingDebtId(debtId)
@@ -135,6 +143,10 @@ export default function DebtsPage() {
                       </div>
                     )
                   }
+                  const sched =
+                    debt.debtType === 'installment'
+                      ? recurringDebtPayments.find((r) => r.debtId === debt.id && r.isActive)
+                      : undefined
                   return (
                     <div key={debt.id}>
                       <DebtCard
@@ -142,6 +154,8 @@ export default function DebtsPage() {
                         payments={payments}
                         onRecordPayment={() => guardedRecordPayment(debt.id)}
                         onEdit={() => handleEditDebt(debt.id)}
+                        nextInstallmentDue={sched?.nextDueDate}
+                        onPayInstallment={sched ? () => guardedPayInstallment(sched.id) : undefined}
                       />
                     </div>
                   )
