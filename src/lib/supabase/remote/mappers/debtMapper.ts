@@ -64,6 +64,7 @@ export function debtToRow(d: Debt, userId: string): DebtInsert {
     started_at: d.startDate ?? null,
     installment_item_name: null,
     installment_count: d.installmentCount ?? null,
+    installment_amount: d.installmentAmount ?? null,
     installment_frequency: d.installmentFrequency
       ? (d.installmentFrequency as DebtInsert['installment_frequency'])
       : null,
@@ -106,6 +107,7 @@ export function debtFromRow(row: DebtRow): Debt {
     relationship: row.relationship ?? undefined,
     direction: (row.direction as 'i_owe' | 'they_owe') ?? undefined,
     installmentCount: row.installment_count ?? undefined,
+    installmentAmount: row.installment_amount ?? undefined,
     installmentFrequency: row.installment_frequency
       ? (row.installment_frequency as 'weekly' | 'monthly' | 'quarterly' | 'annually')
       : undefined,

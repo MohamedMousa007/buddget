@@ -1,8 +1,9 @@
 import { addDays, format, parseISO } from 'date-fns'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Currency } from '@/lib/store/types'
-import { computeDebtPaymentRecord, isDebtFullyPaid } from '@/lib/utils/calculations'
+import { calculateDebtRemainingRaw, computeDebtPaymentRecord, isDebtFullyPaid } from '@/lib/utils/calculations'
 import { advanceRecurringDebtDueDate } from '@/lib/utils/recurringDebtPayments'
+import { isBnplPlan } from '@/lib/debt/bnpl'
 
 /**
  * User confirmed a scheduled debt payment: log payment + expense, advance next due date.
@@ -23,9 +24,16 @@ export function confirmRecurringDebtPayment(scheduleId: string): boolean {
     return false
   }
 
+  // Clamp the final installment to the remaining balance — rounding of
+  // total ÷ count can make the last slice slightly exceed what's owed, which
+  // computeDebtPaymentRecord would reject. (Only same-currency, the common case.)
+  const remaining = calculateDebtRemainingRaw(debt, state.debtPayments, balanceCtx)
+  const payAmount =
+    due.currency === debt.currency && due.amount > remaining ? remaining : due.amount
+
   const result = computeDebtPaymentRecord(
     debt,
-    due.amount,
+    payAmount,
     due.currency,
     state.settings.baseCurrency,
     state.exchangeRates,
@@ -42,26 +50,30 @@ export function confirmRecurringDebtPayment(scheduleId: string): boolean {
     ''
 
   const paymentDate = due.nextDueDate
+  const bnpl = isBnplPlan(debt, state.paymentMethods)
 
   const paymentPayload = {
     debtId: due.debtId,
     date: paymentDate,
     amountPaid: result.amountInDebtUnit,
     paymentCurrency: due.currency,
-    originalAmount: due.amount,
+    originalAmount: payAmount,
     amountInPrimary: result.amountInBase,
     rateAtEntry: result.rateAtEntry,
     notes: due.notes ? `Recurring · ${due.notes}` : 'Recurring debt payment',
   }
 
   if (debt.debtType === 'credit_card') {
+    // Charge already lives on the card — payment only, no expense.
     state.addDebtPayment(paymentPayload)
   } else {
+    // BNPL plan: the purchase was counted as spend at checkout, so the settlement
+    // is non-spend (`Installment`). Bank/other installment plans keep `Debt` spend.
     state.addDebtPaymentWithExpense(paymentPayload, {
       date: paymentDate,
-      description: `${debt.name} — debt payment`,
-      category: 'Debt',
-      amount: due.amount,
+      description: `${debt.name} — ${bnpl ? 'installment' : 'debt payment'}`,
+      category: bnpl ? 'Installment' : 'Debt',
+      amount: payAmount,
       currency: due.currency as Currency,
       paymentMethodId: pmId,
       isRecurring: false,
@@ -71,8 +83,21 @@ export function confirmRecurringDebtPayment(scheduleId: string): boolean {
     })
   }
 
-  const next = advanceRecurringDebtDueDate(due.nextDueDate, due.frequency)
-  state.updateRecurringDebtPayment(scheduleId, { nextDueDate: next })
+  // Deactivate the schedule + clear the debt the moment it's fully paid, so no
+  // ghost reminder fires for a settled plan.
+  const after = useFinanceStore.getState()
+  const stillOwed = calculateDebtRemainingRaw(debt, after.debtPayments, {
+    expenses: after.expenses,
+    exchangeRates: after.exchangeRates,
+    allDebts: after.debts,
+  })
+  if (stillOwed <= 1e-6) {
+    after.updateRecurringDebtPayment(scheduleId, { isActive: false })
+    after.clearDebt(debt.id)
+  } else {
+    const next = advanceRecurringDebtDueDate(due.nextDueDate, due.frequency)
+    after.updateRecurringDebtPayment(scheduleId, { nextDueDate: next })
+  }
   return true
 }
 

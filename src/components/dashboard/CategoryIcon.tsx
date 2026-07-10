@@ -22,6 +22,7 @@ import {
   Banknote,
   ArrowLeftRight,
   WalletCards,
+  CalendarClock,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -65,6 +66,7 @@ export function CategoryIcon({ category, className }: CategoryIconProps) {
   if (key === 'currency_exchange') return <ArrowLeftRight className={c} />
   if (key === 'remittance' || key === 'transfer') return <Send className={c} />
   if (key === 'top_up') return <WalletCards className={c} />
+  if (key === 'installment') return <CalendarClock className={c} />
   if (key === 'other') return <Layers className={c} />
   return <Wallet className={c} />
 }

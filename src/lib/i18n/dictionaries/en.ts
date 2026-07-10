@@ -472,6 +472,10 @@ export const en: Dictionary = {
     saveChanges: 'Save changes',
     cueAmount: 'Enter an amount to continue',
     cueDescription: 'Add a description to continue',
+    splitInstallments: 'Split into installments',
+    installmentFirstDue: 'First payment due',
+    installmentPayFrom: 'Pay installments from',
+    installmentEach: 'each',
     currencyTitle: 'Currency',
     paymentTitle: 'Payment method',
     addPaymentMethod: 'Add payment method',
@@ -506,6 +510,7 @@ export const en: Dictionary = {
       'Currency Exchange': 'Exchange',
       'CC Payoff': 'CC Payoff',
       'Top up': 'Top up',
+      Installment: 'Installment',
       Savings: 'Savings',
     },
     currencyNames: {

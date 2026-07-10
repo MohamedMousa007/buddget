@@ -8,19 +8,36 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
-import type { Currency } from '@/lib/store/types'
+import type { Currency, PaymentMethod } from '@/lib/store/types'
 import { matchPaymentMethodForExpense } from '@/lib/modals/matchPaymentMethodForExpense'
 import { usePlanCategories } from '@/hooks/usePlanCategories'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useT } from '@/lib/i18n'
 
+/** Default BNPL first-installment due: same day next month. */
+function firstOfNextMonth(): string {
+  const d = new Date()
+  return new Date(d.getFullYear(), d.getMonth() + 1, d.getDate()).toISOString().slice(0, 10)
+}
+
+/** Default funding card for BNPL installments — a non-BNPL method (can't fund Tabby from Tabby). */
+function nonBnplDefaultId(pms: PaymentMethod[]): string {
+  return (
+    pms.find((m) => m.isDefault && m.type !== 'bnpl')?.id ||
+    pms.find((m) => m.type !== 'bnpl')?.id ||
+    ''
+  )
+}
+
 export function useAddExpenseSheet() {
   const showToast = useActionToast()
   const t = useT()
-  const { addExpense, paymentMethods, settings, debtPayments, debts, expenses, exchangeRates } =
+  const { addExpense, addDebt, addRecurringDebtPayment, paymentMethods, settings, debtPayments, debts, expenses, exchangeRates } =
     useFinanceStore(
       useShallow((s) => ({
         addExpense: s.addExpense,
+        addDebt: s.addDebt,
+        addRecurringDebtPayment: s.addRecurringDebtPayment,
         paymentMethods: s.paymentMethods,
         settings: s.settings,
         debtPayments: s.debtPayments,
@@ -45,6 +62,14 @@ export function useAddExpenseSheet() {
   const [notes, setNotes] = useState('')
   const [submitError, setSubmitError] = useState('')
   const skipNextDefaultCurrencySync = useRef(false)
+
+  // BNPL "split into installments" (only meaningful when the PM is a `bnpl` type).
+  const [splitInstallments, setSplitInstallments] = useState(false)
+  const [installmentCount, setInstallmentCount] = useState(4)
+  const [installmentFirstDue, setInstallmentFirstDue] = useState(firstOfNextMonth())
+  const [fundingMethodId, setFundingMethodId] = useState(nonBnplDefaultId(paymentMethods))
+  const selectedPm = paymentMethods.find((m) => m.id === paymentMethodId)
+  const isBnplPurchase = selectedPm?.type === 'bnpl'
 
   const creditCardOutstandingHint = useMemo(() => {
     const pm = paymentMethods.find((m) => m.id === paymentMethodId)
@@ -99,6 +124,10 @@ export function useAddExpenseSheet() {
     setPaymentMethodId(paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || '')
     setNotes('')
     setSubmitError('')
+    setSplitInstallments(false)
+    setInstallmentCount(4)
+    setInstallmentFirstDue(firstOfNextMonth())
+    setFundingMethodId(nonBnplDefaultId(paymentMethods))
   }, [paymentMethods, settings.baseCurrency, defaultCategory])
 
   const handleClose = useCallback(() => {
@@ -124,11 +153,52 @@ export function useAddExpenseSheet() {
       isRecurring: false,
       notes: notes || undefined,
     })
+
+    // BNPL purchase split into a plan: an `installment` debt (remaining =
+    // purchase − settlements) + a recurring template that drives the reminders.
+    // The purchase above already counts as spend once; installment settlements
+    // are non-spend (see recurringDebtDueHandlers / isBnplPlan).
+    const selPm = paymentMethods.find((m) => m.id === paymentMethodId)
+    if (selPm?.type === 'bnpl' && splitInstallments && installmentCount >= 2 && fundingMethodId) {
+      const perInstallment = Math.round((parsedAmount / installmentCount) * 100) / 100
+      const nm = selPm.name.toLowerCase()
+      const provider = nm.includes('tabby') ? 'tabby' : nm.includes('tamara') ? 'tamara' : 'other'
+      const debtId = addDebt({
+        name: description,
+        person: '',
+        startingBalance: parsedAmount,
+        currency: cur,
+        isGold: false,
+        receivedVia: 'card',
+        debtType: 'installment',
+        direction: 'i_owe',
+        status: 'active',
+        installmentProvider: provider,
+        installmentCount,
+        installmentFrequency: 'monthly',
+        installmentAmount: perInstallment,
+        startDate: date,
+        interestFree: true,
+        linkedPaymentMethodId: paymentMethodId,
+      })
+      addRecurringDebtPayment({
+        debtId,
+        amount: perInstallment,
+        currency: cur,
+        paymentMethodId: fundingMethodId,
+        frequency: 'monthly',
+        nextDueDate: installmentFirstDue,
+        isActive: true,
+      })
+    }
+
     showToast(t.common.toastExpenseLogged)
     resetForm()
     setActiveModal(null)
   }, [
     addExpense,
+    addDebt,
+    addRecurringDebtPayment,
     amount,
     category,
     subcategory,
@@ -142,6 +212,11 @@ export function useAddExpenseSheet() {
     currency,
     showToast,
     t,
+    paymentMethods,
+    splitInstallments,
+    installmentCount,
+    installmentFirstDue,
+    fundingMethodId,
   ])
 
   return {
@@ -169,5 +244,16 @@ export function useAddExpenseSheet() {
     categoryChipOptions,
     handleSubmit,
     creditCardOutstandingHint,
+    installment: {
+      isBnplPurchase,
+      enabled: splitInstallments,
+      setEnabled: setSplitInstallments,
+      count: installmentCount,
+      setCount: setInstallmentCount,
+      firstDue: installmentFirstDue,
+      setFirstDue: setInstallmentFirstDue,
+      fundingMethodId,
+      setFundingMethodId,
+    },
   }
 }

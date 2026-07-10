@@ -52,6 +52,18 @@ export interface ExpenseSheetFormProps {
   /** Edit-only: set when this expense was reversed — shows a charged/refunded line. */
   refundedAt?: string
   refundKind?: 'refunded' | 'declined'
+  /** Add-only: BNPL "split into installments" controls (shown when the PM is `bnpl`). */
+  installment?: {
+    isBnplPurchase: boolean
+    enabled: boolean
+    setEnabled: (v: boolean) => void
+    count: number
+    setCount: (n: number) => void
+    firstDue: string
+    setFirstDue: (v: string) => void
+    fundingMethodId: string
+    setFundingMethodId: (id: string) => void
+  }
 }
 
 export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
@@ -80,6 +92,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
     onDiscard,
     refundedAt,
     refundKind,
+    installment,
   } = props
   const t = useT()
   const { locale } = useLocale()
@@ -287,6 +300,65 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                 creditCardOutstandingHint.amountLabel,
               )}
             </p>
+          ) : null}
+
+          {/* BNPL: split this purchase into an installment plan */}
+          {mode === 'add' && installment?.isBnplPurchase ? (
+            <div className="rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/40 p-3">
+              <button
+                type="button"
+                onClick={() => installment.setEnabled(!installment.enabled)}
+                aria-pressed={installment.enabled}
+                className="flex w-full items-center justify-between"
+              >
+                <span className="text-sm font-medium text-[var(--color-brand-text-primary)]">
+                  {t.expenseForm.splitInstallments}
+                </span>
+                <span
+                  className={`relative h-6 w-10 shrink-0 rounded-full transition-colors ${installment.enabled ? 'bg-[var(--color-brand-red)]' : 'bg-[var(--color-brand-border)]'}`}
+                >
+                  <span
+                    className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${installment.enabled ? 'left-[18px]' : 'left-0.5'}`}
+                  />
+                </span>
+              </button>
+              {installment.enabled ? (
+                <div className="mt-3 space-y-3">
+                  <div className="flex gap-2">
+                    {[3, 4, 6, 12].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => installment.setCount(n)}
+                        className={`h-9 flex-1 rounded-lg border text-sm font-semibold transition-colors ${installment.count === n ? 'border-[var(--color-brand-red)] bg-[rgba(229,9,20,0.12)] text-[var(--color-brand-text-primary)]' : 'border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)]'}`}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">
+                    {installment.count} × {((parseFloat(amount) || 0) / installment.count).toFixed(2)} {currency} {t.expenseForm.installmentEach}
+                  </p>
+                  <label className="block">
+                    <span className="mb-1 block text-xs font-medium text-[var(--color-brand-text-muted)]">
+                      {t.expenseForm.installmentFirstDue}
+                    </span>
+                    <input
+                      type="date"
+                      value={installment.firstDue}
+                      onChange={(e) => installment.setFirstDue(e.target.value)}
+                      className="w-full rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-sm text-[var(--color-brand-text-primary)]"
+                    />
+                  </label>
+                  <PaymentMethodPicker
+                    value={installment.fundingMethodId}
+                    onChange={installment.setFundingMethodId}
+                    paymentMethods={paymentMethods.filter((m) => m.type !== 'bnpl')}
+                    label={t.expenseForm.installmentPayFrom}
+                  />
+                </div>
+              ) : null}
+            </div>
           ) : null}
 
           {/* reversal audit line — charged vs refunded/declined date */}

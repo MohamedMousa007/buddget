@@ -472,6 +472,10 @@ export const ar: Dictionary = {
     saveChanges: 'حفظ التغييرات',
     cueAmount: 'أدخل مبلغًا للمتابعة',
     cueDescription: 'أضف وصفًا للمتابعة',
+    splitInstallments: 'تقسيم إلى أقساط',
+    installmentFirstDue: 'أول قسط مستحق',
+    installmentPayFrom: 'سداد الأقساط من',
+    installmentEach: 'لكل قسط',
     currencyTitle: 'العملة',
     paymentTitle: 'طريقة الدفع',
     addPaymentMethod: 'إضافة طريقة دفع',
@@ -505,6 +509,7 @@ export const ar: Dictionary = {
       'Currency Exchange': 'صرافة',
       'CC Payoff': 'سداد بطاقة',
       'Top up': 'شحن',
+      Installment: 'قسط',
       Savings: 'ادّخار',
     },
     currencyNames: {
