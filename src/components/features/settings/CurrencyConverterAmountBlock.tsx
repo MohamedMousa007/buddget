@@ -1,8 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
-import { CURRENCY_INFO } from '@/components/features/settings/currencyConverterConstants'
-import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
+import { CurrencyField } from '@/components/ui/CurrencyField'
 import { AmountField } from '@/components/ui/AmountField'
 
 /** Single row: optional read-only numeric display, or editable amount + currency select. */
@@ -21,15 +19,6 @@ export function CurrencyConverterAmountBlock({
   onCurrencyChange: (v: string) => void
   availableCurrencies: readonly string[]
 }) {
-  const items = useMemo<ReadonlyArray<SelectFieldOption>>(
-    () =>
-      availableCurrencies.map((c) => ({
-        value: c,
-        label: `${CURRENCY_INFO[c]?.flag ?? ''} ${c}`.trim(),
-      })),
-    [availableCurrencies],
-  )
-
   return (
     <div className="relative">
       {variant === 'result' ? (
@@ -44,8 +33,14 @@ export function CurrencyConverterAmountBlock({
           className="w-full h-12 px-4 pr-28 rounded-xl bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-lg font-mono-numbers"
         />
       )}
-      <div className="absolute right-2 top-1/2 -translate-y-1/2 w-24">
-        <SelectField value={currency} onChange={onCurrencyChange} items={items} />
+      <div className="absolute right-2 top-1/2 -translate-y-1/2">
+        <CurrencyField
+          value={currency}
+          onChange={onCurrencyChange}
+          codes={availableCurrencies}
+          compact
+          className="h-9 px-2.5 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]"
+        />
       </div>
     </div>
   )

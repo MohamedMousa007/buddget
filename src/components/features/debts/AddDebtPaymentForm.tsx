@@ -5,10 +5,11 @@ import { AmountField } from '@/components/ui/AmountField'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
-import { buildFiatCurrencyPickerOptions } from '@/lib/utils/currencyPickerOptions'
 import { RECURRING_DEBT_FREQUENCIES } from '@/lib/constants/debtRecurring'
 import type { AppSettings, Debt, DebtRecurringFrequency, PaymentMethod } from '@/lib/store/types'
 import { DatePickerField } from '@/components/ui/DatePickerField'
+import { CurrencyField } from '@/components/ui/CurrencyField'
+import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
 import { useT } from '@/lib/i18n'
 
 export interface AddDebtPaymentFormProps {
@@ -46,7 +47,6 @@ export interface AddDebtPaymentFormProps {
  * Record a payment against an existing debt.
  */
 export function AddDebtPaymentForm({
-  settings,
   payableDebts,
   selectedDebtId,
   setSelectedDebtId,
@@ -92,16 +92,6 @@ export function AddDebtPaymentForm({
       })),
     [],
   )
-  const currencyItems = useMemo<ReadonlyArray<SelectFieldOption>>(() => {
-    const base = buildFiatCurrencyPickerOptions(settings).map<SelectFieldOption>((o) => ({
-      value: o.value,
-      label: o.value,
-      disabled: o.disabled,
-    }))
-    return selectedDebt?.isGold
-      ? [...base, { value: 'XAU', label: t.addDebtPayment.optionGoldGrams }]
-      : base
-  }, [settings, selectedDebt?.isGold, t.addDebtPayment.optionGoldGrams])
 
   if (payableDebts.length === 0) {
     return (
@@ -198,12 +188,11 @@ export function AddDebtPaymentForm({
         </div>
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebtPayment.labelPaymentCurrency}</Label>
-          <SelectField
+          <CurrencyField
             value={paymentCurrency}
             onChange={setPaymentCurrency}
-            items={currencyItems}
-            className="mt-1"
-            aria-label={t.addDebtPayment.labelPaymentCurrency}
+            includeGold={!!selectedDebt?.isGold}
+            className="mt-1 w-full h-11 px-3 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]"
           />
         </div>
       </div>
@@ -213,22 +202,11 @@ export function AddDebtPaymentForm({
       ) : null}
       <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)] mb-2 block">{t.addDebtPayment.labelPaidVia}</Label>
-        <div className="flex flex-wrap gap-2">
-          {paymentMethods.map((method) => (
-            <button
-              key={method.id}
-              type="button"
-              onClick={() => setPaymentMethodId(method.id)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                paymentMethodId === method.id
-                  ? 'bg-[var(--color-brand-red)] text-white'
-                  : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-border)]'
-              }`}
-            >
-              {method.name}
-            </button>
-          ))}
-        </div>
+        <PaymentMethodPicker
+          value={paymentMethodId}
+          onChange={setPaymentMethodId}
+          paymentMethods={paymentMethods}
+        />
       </div>
       <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebtPayment.labelNotes}</Label>

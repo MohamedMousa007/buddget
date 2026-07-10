@@ -1,12 +1,10 @@
 'use client'
 
-import { useMemo } from 'react'
 import { Globe } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
-import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
-import { FIAT_CURRENCIES } from '@/lib/constants/finance'
+import { FiatCurrencyField } from '@/components/ui/CurrencyField'
 import { useT } from '@/lib/i18n'
 import type { Currency, FinanceStore } from '@/lib/store/types'
 import { CurrencyConverter } from '@/components/features/settings/CurrencyConverter'
@@ -15,26 +13,14 @@ export interface SettingsCurrencySectionProps {
   store: FinanceStore
 }
 
+const CURRENCY_FIELD_CLASS =
+  'mt-1 w-full h-11 px-3 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]'
+
 /**
  * Primary/secondary currency, form picker restriction, and interactive rate converter.
  */
 export function SettingsCurrencySection({ store }: SettingsCurrencySectionProps) {
   const t = useT()
-
-  const baseItems = useMemo<ReadonlyArray<SelectFieldOption>>(
-    () => FIAT_CURRENCIES.map((c) => ({ value: c, label: c })),
-    [],
-  )
-  const secondaryItems = useMemo<ReadonlyArray<SelectFieldOption>>(
-    () => [
-      { value: '', label: t.settings.secondaryNone },
-      ...FIAT_CURRENCIES.filter((c) => c !== store.settings.baseCurrency).map((c) => ({
-        value: c,
-        label: c,
-      })),
-    ],
-    [store.settings.baseCurrency, t.settings.secondaryNone],
-  )
 
   return (
     <section className="glass-card rounded-2xl p-5 space-y-4">
@@ -46,12 +32,10 @@ export function SettingsCurrencySection({ store }: SettingsCurrencySectionProps)
       </div>
       <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.settings.mainCurrencyLabel}</Label>
-        <SelectField
+        <FiatCurrencyField
           value={store.settings.baseCurrency}
-          onChange={(next) => store.updateSettings({ baseCurrency: next as Currency })}
-          items={baseItems}
-          aria-label={t.settings.mainCurrencyLabel}
-          className="mt-1"
+          onChange={(next) => store.updateSettings({ baseCurrency: next })}
+          className={CURRENCY_FIELD_CLASS}
         />
         <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-1">
           {t.settings.mainCurrencyHint}
@@ -74,16 +58,10 @@ export function SettingsCurrencySection({ store }: SettingsCurrencySectionProps)
       {store.settings.showSecondaryCurrency ? (
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.settings.secondaryCurrencyLabel}</Label>
-          <SelectField
-            value={store.settings.secondaryCurrency ?? ''}
-            onChange={(next) =>
-              store.updateSettings({
-                secondaryCurrency: (next || null) as Currency | null,
-              })
-            }
-            items={secondaryItems}
-            aria-label={t.settings.secondaryCurrencyLabel}
-            className="mt-1"
+          <FiatCurrencyField
+            value={store.settings.secondaryCurrency ?? store.settings.baseCurrency}
+            onChange={(next) => store.updateSettings({ secondaryCurrency: next as Currency })}
+            className={CURRENCY_FIELD_CLASS}
           />
         </div>
       ) : null}
