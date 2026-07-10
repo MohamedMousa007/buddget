@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/fonts.css">
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/colors.css">
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/typography.css">
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/styles.css">
+  <style>
+    @keyframes v4Up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes v4Fade { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes v4Panel { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+    .v4-scroll::-webkit-scrollbar { display:none; } .v4-scroll { scrollbar-width:none; }
+    .v4-root, .v4-root * { -webkit-tap-highlight-color: transparent; }
+    .v4-root input:focus, .v4-root button:focus, .v4-root input:focus-visible, .v4-root button:focus-visible { outline:none; box-shadow:none; }
+    .v4-root input::placeholder { color:#6E6E85; }
+  </style>
+</helmet>
+
+<div class="v4-root" dir="{{ dir }}" style="position:relative;width:375px;height:812px;overflow:hidden;background:#0A0A0F;font-family:var(--font-sans);">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,.5);animation:v4Fade .18s ease;"></div>
+
+  <!-- ============ WALLET SCREEN ============ -->
+  <sc-if value="{{ isWallet }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;background:#111118;border-top:1px solid #2A2A38;border-radius:26px 26px 0 0;isolation:isolate;animation:v4Up .34s cubic-bezier(.22,1,.36,1);">
+      <div style="width:40px;height:4px;border-radius:999px;background:#2A2A38;margin:8px auto 4px;flex:none;"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 18px 8px;flex:none;">
+        <div style="font:600 18px var(--font-sans);color:#fff;">{{ t.walletTitle }}</div>
+        <button style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:none;background:#1A1A24;border-radius:999px;color:#9898B0;cursor:pointer;padding:9px;">{{ icX }}</button>
+      </div>
+      <div style="position:relative;height:224px;margin-top:10px;">
+        <sc-for list="{{ deck }}" as="k" hint-placeholder-count="4">
+          <div style="{{ k.wrapStyle }}">
+            <div style="{{ k.cardStyle }}">
+              <div style="position:absolute;inset:0;border-radius:20px;background:radial-gradient(120% 90% at 85% 8%,rgba(255,255,255,.16),transparent 60%);pointer-events:none;"></div>
+              <sc-if value="{{ k.isDefault }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;"><span style="font:800 32px var(--font-sans);letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.15);">{{ t.default }}</span></div></sc-if>
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;position:relative;">
+                <span style="width:42px;height:32px;border-radius:8px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#fff;padding:7px;flex:none;">{{ k.typeGlyph }}</span>
+                <button onClick="{{ k.onMenu }}" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:transparent;color:rgba(255,255,255,.92);cursor:pointer;padding:3px;margin:-2px -6px 0 0;">{{ icDots }}</button>
+              </div>
+              <div style="margin-top:auto;position:relative;text-align:start;">
+                <div style="font:700 21px var(--font-sans);letter-spacing:-0.01em;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ k.name }}</div>
+                <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:10px;"><span style="font:600 14px var(--font-mono);letter-spacing:.14em;color:rgba(255,255,255,.9);">{{ k.tail }}</span><span style="font:700 12px var(--font-mono);color:rgba(255,255,255,.82);">{{ k.cur }}</span></div>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:6px;"><sc-for list="{{ dots }}" as="d" hint-placeholder-count="4"><span style="{{ d.style }}"></span></sc-for></div>
+      <div style="text-align:center;font:500 12.5px var(--font-sans);color:#6E6E85;margin-top:12px;">{{ walletHint }}</div>
+      <div style="flex:none;padding:16px 18px calc(16px + env(safe-area-inset-bottom));">
+        <button onClick="{{ goAdd }}" style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;height:52px;background:#E50914;border:none;border-radius:14px;color:#fff;font:600 16px var(--font-sans);cursor:pointer;"><span style="width:19px;height:19px;display:inline-flex;">{{ icPlus }}</span>{{ t.addMethod }}</button>
+      </div>
+      <sc-if value="{{ cardMenuOpen }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ closeCardMenu }}" style="position:absolute;inset:0;z-index:30;"></div>
+        <div style="position:absolute;top:92px;inset-inline-end:50px;z-index:31;width:200px;background:#1E1E28;border:1px solid #34343f;border-radius:14px;overflow:hidden;box-shadow:0 18px 44px -10px rgba(0,0,0,.7);animation:v4Panel .14s ease;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 6px 9px 13px;border-bottom:1px solid #2A2A38;"><span style="font:600 11.5px var(--font-sans);color:#9898B0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ menuCardName }}</span><button onClick="{{ closeCardMenu }}" style="width:26px;height:26px;flex:none;display:flex;align-items:center;justify-content:center;border:none;background:transparent;color:#9898B0;cursor:pointer;padding:6px;">{{ icX }}</button></div>
+          <button onClick="{{ onEdit }}" style="display:flex;align-items:center;gap:11px;width:100%;padding:12px 14px;background:transparent;border:none;color:#fff;font:500 14px var(--font-sans);cursor:pointer;text-align:start;"><span style="width:17px;height:17px;display:inline-flex;color:#CFCFE0;">{{ icPencil }}</span>{{ t.edit }}</button>
+          <sc-if value="{{ menuCanDefault }}" hint-placeholder-val="{{ true }}"><div style="height:1px;background:#2A2A38;"></div><button onClick="{{ onSetDefault }}" style="display:flex;align-items:center;gap:11px;width:100%;padding:12px 14px;background:transparent;border:none;color:#fff;font:500 14px var(--font-sans);cursor:pointer;text-align:start;"><span style="width:17px;height:17px;display:inline-flex;color:#38D96B;">{{ icStar }}</span>{{ t.setDefaultShort }}</button></sc-if>
+          <div style="height:1px;background:#2A2A38;"></div>
+          <button onClick="{{ onDelete }}" style="display:flex;align-items:center;gap:11px;width:100%;padding:12px 14px;background:transparent;border:none;color:#FF6B6B;font:500 14px var(--font-sans);cursor:pointer;text-align:start;"><span style="width:17px;height:17px;display:inline-flex;">{{ icTrash }}</span>{{ t.delete }}</button>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <!-- ============ SETUP SCREEN ============ -->
+  <sc-if value="{{ isSetup }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:0;right:0;bottom:0;max-height:96%;display:flex;flex-direction:column;background:#111118;border-top:1px solid #2A2A38;border-radius:26px 26px 0 0;isolation:isolate;animation:v4Up .3s cubic-bezier(.22,1,.36,1);">
+      <div style="width:40px;height:4px;border-radius:999px;background:#2A2A38;margin:8px auto 4px;flex:none;"></div>
+      <div style="display:flex;align-items:center;gap:10px;padding:6px 16px 12px;flex:none;">
+        <button onClick="{{ goBack }}" style="width:34px;height:34px;flex:none;display:flex;align-items:center;justify-content:center;border:none;background:#1A1A24;border-radius:999px;color:#9898B0;cursor:pointer;padding:9px;">{{ icBack }}</button>
+        <div style="flex:1;min-width:0;font:600 18px var(--font-sans);color:#fff;">{{ setupTitle }}</div>
+        <button style="width:34px;height:34px;flex:none;display:flex;align-items:center;justify-content:center;border:none;background:#1A1A24;border-radius:999px;color:#9898B0;cursor:pointer;padding:9px;">{{ icX }}</button>
+      </div>
+
+      <div class="v4-scroll" style="flex:1;overflow-y:auto;padding:0 16px 18px;">
+        <!-- LIVE CARD -->
+        <div style="display:flex;justify-content:center;margin:2px 0 16px;">
+          <div style="{{ previewStyle }}">
+            <div style="position:absolute;inset:0;border-radius:20px;background:radial-gradient(120% 90% at 85% 8%,rgba(255,255,255,.16),transparent 60%);pointer-events:none;"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;position:relative;">
+              <span style="{{ previewChipStyle }}">{{ previewGlyph }}</span>
+              <span style="font:600 9px var(--font-sans);letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.82);">{{ previewType }}</span>
+            </div>
+            <div style="margin-top:auto;position:relative;text-align:start;">
+              <div style="font:700 22px var(--font-sans);letter-spacing:-0.01em;color:{{ previewNameColor }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ previewName }}</div>
+              <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:12px;"><span style="font:600 15px var(--font-mono);letter-spacing:.16em;color:rgba(255,255,255,.92);">{{ previewTail }}</span><span style="font:700 13px var(--font-mono);color:rgba(255,255,255,.85);">{{ curCode }}</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- COLOUR slider -->
+        <div style="margin-bottom:22px;">
+          <div style="font:600 10px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:#6E6E85;margin:0 2px 9px;">{{ t.colour }}</div>
+          <div class="v4-scroll" style="display:flex;gap:10px;overflow-x:auto;padding:2px 2px 4px;">
+            <sc-for list="{{ colours }}" as="c" hint-placeholder-count="12"><button onClick="{{ c.onSelect }}" style="{{ c.style }}"></button></sc-for>
+          </div>
+        </div>
+
+        <!-- PROVIDER browse (tweak: grid | sheet | search) -->
+        <div style="margin-bottom:20px;">
+          <sc-if value="{{ browseGrid }}" hint-placeholder-val="{{ true }}">
+            <div style="font:600 10px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:#6E6E85;margin:0 2px 11px;">{{ popularLabel }}</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:11px;">
+              <sc-for list="{{ popularTiles }}" as="p" hint-placeholder-count="8"><button onClick="{{ p.onSelect }}" style="{{ p.tileStyle }}"><span style="{{ p.chipStyle }}">{{ p.chip }}</span><span style="font:600 10.5px var(--font-sans);color:#CFCFE0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">{{ p.name }}</span></button></sc-for>
+            </div>
+            <button onClick="{{ openProviderSheet }}" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:46px;background:#1A1A24;border:1px solid #2A2A38;border-radius:12px;color:#CFCFE0;font:600 13.5px var(--font-sans);cursor:pointer;"><span style="width:16px;height:16px;display:inline-flex;">{{ icSearch }}</span>{{ t.searchAll }}</button>
+          </sc-if>
+
+          <sc-if value="{{ browseSheet }}" hint-placeholder-val="{{ false }}">
+            <div style="font:600 10px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:#6E6E85;margin:0 2px 9px;">{{ t.provider }}</div>
+            <button onClick="{{ openProviderSheet }}" style="display:flex;align-items:center;justify-content:space-between;width:100%;background:#1A1A24;border:1px solid #2A2A38;border-radius:12px;padding:10px 14px;cursor:pointer;">
+              <span style="display:flex;align-items:center;gap:11px;min-width:0;"><span style="{{ provFieldChipStyle }}">{{ provFieldChip }}</span><span style="font:600 15px var(--font-sans);color:{{ provFieldColor }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:start;">{{ provFieldValue }}</span></span>
+              <span style="width:16px;height:16px;flex:none;color:#9898B0;display:inline-flex;">{{ icChevD }}</span>
+            </button>
+          </sc-if>
+
+          <sc-if value="{{ browseSearch }}" hint-placeholder-val="{{ false }}">
+            <div style="font:600 10px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:#6E6E85;margin:0 2px 9px;">{{ t.provider }}</div>
+            <div style="position:relative;margin-bottom:11px;">
+              <span style="position:absolute;inset-inline-start:13px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:#9898B0;display:inline-flex;">{{ icSearch }}</span>
+              <input value="{{ inlineSearch }}" onChange="{{ onInlineSearch }}" placeholder="{{ t.searchProv }}" style="width:100%;height:48px;background:#1A1A24;border:1px solid #2A2A38;border-radius:12px;padding-inline-start:40px;padding-inline-end:12px;color:#fff;font:400 15px var(--font-sans);text-align:start;">
+            </div>
+            <sc-if value="{{ inlineIdle }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;align-items:center;gap:7px;margin:0 2px 8px;"><span style="font:600 9px var(--font-sans);letter-spacing:.1em;text-transform:uppercase;color:#6E6E85;">{{ popularLabel }}</span><span style="font-size:12px;">{{ popularFlag }}</span></div>
+              <div class="v4-scroll" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;"><sc-for list="{{ popularChips }}" as="p" hint-placeholder-count="6"><button onClick="{{ p.onSelect }}" style="{{ p.chipRowStyle }}"><span style="{{ p.chipStyle }}">{{ p.chip }}</span><span style="font:600 12.5px var(--font-sans);color:#CFCFE0;white-space:nowrap;">{{ p.name }}</span></button></sc-for></div>
+            </sc-if>
+            <sc-if value="{{ inlineResults }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:3px;">
+                <sc-for list="{{ inlineList }}" as="r" hint-placeholder-count="4"><button onClick="{{ r.onSelect }}" style="{{ r.rowStyle }}"><span style="{{ r.chipStyle }}">{{ r.chip }}</span><span style="flex:1;min-width:0;text-align:start;"><span style="display:block;font:600 14px var(--font-sans);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.name }}</span><span style="display:block;font:500 11px var(--font-sans);color:#8A8AA0;">{{ r.sub }}</span></span></button></sc-for>
+                <sc-if value="{{ inlineCustom }}" hint-placeholder-val="{{ false }}"><button onClick="{{ onInlineCustom }}" style="display:flex;align-items:center;gap:9px;width:100%;height:46px;margin-top:6px;background:rgba(229,9,20,.08);border:1px solid rgba(229,9,20,.28);border-radius:11px;color:#FF5C5C;font:600 13.5px var(--font-sans);cursor:pointer;padding:0 14px;"><span style="width:17px;height:17px;display:inline-flex;">{{ icPlus }}</span>{{ inlineCustomLabel }}</button></sc-if>
+              </div>
+            </sc-if>
+          </sc-if>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:17px;">
+          <!-- TYPE -->
+          <div>
+            <div style="font:600 10px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:#6E6E85;margin:0 2px 9px;">{{ t.type }}</div>
+            <div class="v4-scroll" style="display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;"><sc-for list="{{ typeChips }}" as="tc" hint-placeholder-count="7"><button onClick="{{ tc.onSelect }}" style="{{ tc.style }}"><span style="width:15px;height:15px;display:inline-flex;">{{ tc.glyph }}</span>{{ tc.label }}</button></sc-for></div>
+          </div>
+
+          <!-- IDENTIFIER (boxes consistent with the rest) -->
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin:0 2px 9px;"><div style="font:600 10px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:#6E6E85;">{{ t.identifier }}</div><div style="font:500 10px var(--font-sans);color:#8A8AA0;">{{ t.optional }}</div></div>
+            <div style="display:flex;gap:8px;">
+              <sc-for list="{{ identTabs }}" as="it" hint-placeholder-count="3"><button onClick="{{ it.onSelect }}" style="{{ it.style }}">{{ it.label }}</button></sc-for>
+            </div>
+            <sc-if value="{{ identLast4 }}" hint-placeholder-val="{{ false }}"><input value="{{ last4Val }}" onChange="{{ onLast4 }}" dir="ltr" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="e.g. 1234" style="{{ fieldStyle }}"><div style="font:400 11.5px var(--font-sans);color:#8A8AA0;margin-top:8px;padding:0 2px;">{{ last4Help }}</div></sc-if>
+            <sc-if value="{{ identTag }}" hint-placeholder-val="{{ false }}"><input value="{{ tagVal }}" onChange="{{ onTag }}" maxlength="18" placeholder="{{ t.tagPh }}" style="{{ fieldStyle }}"></sc-if>
+          </div>
+
+          <!-- CURRENCY (opens unified sheet) -->
+          <div>
+            <div style="font:600 10px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:#6E6E85;margin:0 2px 9px;">{{ t.currency }}</div>
+            <button onClick="{{ openCurrency }}" style="display:flex;align-items:center;justify-content:space-between;width:100%;height:52px;background:#1A1A24;border:1px solid #2A2A38;border-radius:12px;padding:0 14px;cursor:pointer;">
+              <span style="display:flex;align-items:center;gap:11px;"><span style="font-size:22px;line-height:1;">{{ curFlag }}</span><span style="font:700 15px var(--font-mono);color:#fff;">{{ curCode }}</span><span style="font:500 13px var(--font-sans);color:#9898B0;">{{ curName }}</span></span>
+              <span style="width:15px;height:15px;color:#9898B0;display:inline-flex;">{{ icChevD }}</span>
+            </button>
+          </div>
+
+          <!-- DEFAULT -->
+          <div style="display:flex;align-items:center;justify-content:space-between;background:#16161f;border:1px solid #24242f;border-radius:14px;padding:14px 16px;">
+            <span style="text-align:start;"><span style="display:block;font:600 14px var(--font-sans);color:#CFCFE0;">{{ t.setDefault }}</span><span style="display:block;font:400 11.5px var(--font-sans);color:#8A8AA0;margin-top:2px;">{{ t.setDefaultSub }}</span></span>
+            <button onClick="{{ toggleDef }}" style="{{ defTrack }}"><span style="{{ defKnob }}"></span></button>
+          </div>
+        </div>
+      </div>
+      <div style="flex:none;padding:12px 16px calc(16px + env(safe-area-inset-bottom));border-top:1px solid #1c1c26;">
+        <button style="{{ saveStyle }}">{{ saveLabel }}</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- PROVIDER PICKER sheet -->
+  <sc-if value="{{ providerSheetOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:9;display:flex;flex-direction:column;justify-content:flex-end;animation:v4Fade .16s ease;">
+      <div onClick="{{ closeProviderSheet }}" style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
+      <div style="position:relative;display:flex;flex-direction:column;max-height:86%;background:#14141b;border-top:1px solid #26262f;border-radius:26px 26px 0 0;padding:10px 16px 18px;animation:v4Up .28s cubic-bezier(.22,1,.36,1);">
+        <div style="width:40px;height:4px;border-radius:999px;background:#2A2A38;margin:2px auto 12px;flex:none;"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px 12px;flex:none;"><div style="font:600 18px var(--font-sans);color:#fff;">{{ t.chooseProvider }}</div><button onClick="{{ closeProviderSheet }}" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:none;background:#20202a;border-radius:999px;color:#9898B0;cursor:pointer;padding:9px;">{{ icX }}</button></div>
+        <div style="position:relative;margin:0 2px 10px;flex:none;"><span style="position:absolute;inset-inline-start:13px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:#9898B0;display:inline-flex;">{{ icSearch }}</span><input value="{{ sheetSearch }}" onChange="{{ onSheetSearch }}" placeholder="{{ t.searchProv }}" style="width:100%;height:44px;background:#0F0F16;border:1px solid #26262f;border-radius:12px;padding-inline-start:38px;padding-inline-end:12px;color:#fff;font:400 15px var(--font-sans);text-align:start;"></div>
+        <div class="v4-scroll" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:2px;">
+          <sc-for list="{{ sheetList }}" as="r" hint-placeholder-count="8">
+            <sc-if value="{{ r.isHeader }}" hint-placeholder-val="{{ false }}"><div style="font:600 9px var(--font-sans);letter-spacing:.1em;text-transform:uppercase;color:#6E6E85;padding:10px 6px 5px;">{{ r.label }}</div></sc-if>
+            <sc-if value="{{ r.isItem }}" hint-placeholder-val="{{ true }}"><button onClick="{{ r.onSelect }}" style="{{ r.rowStyle }}"><span style="{{ r.chipStyle }}">{{ r.chip }}</span><span style="flex:1;min-width:0;text-align:start;"><span style="display:block;font:600 14.5px var(--font-sans);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.name }}</span><span style="display:block;font:500 11px var(--font-sans);color:#8A8AA0;">{{ r.sub }}</span></span><sc-if value="{{ r.selected }}" hint-placeholder-val="{{ false }}"><span style="width:18px;height:18px;color:#E50914;display:inline-flex;">{{ icCheck }}</span></sc-if></button></sc-if>
+          </sc-for>
+        </div>
+        <button onClick="{{ onSheetCustom }}" style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;height:50px;margin-top:10px;flex:none;background:rgba(229,9,20,.08);border:1px solid rgba(229,9,20,.28);border-radius:13px;color:#FF5C5C;font:600 14px var(--font-sans);cursor:pointer;"><span style="width:18px;height:18px;display:inline-flex;">{{ icPlus }}</span>{{ sheetCustomLabel }}</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- CURRENCY sheet (unified, reused) -->
+  <sc-if value="{{ currencyOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:10;display:flex;flex-direction:column;justify-content:flex-end;animation:v4Fade .16s ease;">
+      <div onClick="{{ closeCurrency }}" style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
+      <div style="position:absolute;left:0;right:0;bottom:0;max-height:50%;display:flex;animation:v4Up .28s cubic-bezier(.22,1,.36,1);">
+        <dc-import name="Currency Sheet" value="{{ curCode }}" base="{{ baseCur }}" onSelect="{{ onCurrencyPick }}" onClose="{{ closeCurrency }}" lang="{{ lang }}" hint-size="375,560"></dc-import>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:375,&quot;height&quot;:812},&quot;country&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;EG&quot;,&quot;SA&quot;,&quot;AE&quot;],&quot;default&quot;:&quot;EG&quot;,&quot;tsType&quot;:&quot;'EG' | 'SA' | 'AE'&quot;},&quot;popularScope&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;user&quot;,&quot;all&quot;],&quot;default&quot;:&quot;user&quot;,&quot;tsType&quot;:&quot;'user' | 'all'&quot;,&quot;section&quot;:&quot;Tweaks&quot;},&quot;lang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;en&quot;,&quot;ar&quot;],&quot;default&quot;:&quot;en&quot;,&quot;tsType&quot;:&quot;'en' | 'ar'&quot;},&quot;demo&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;wallet&quot;,&quot;walletMenu&quot;,&quot;setup&quot;,&quot;setupFilled&quot;,&quot;providerPicker&quot;,&quot;currency&quot;],&quot;default&quot;:&quot;wallet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  CUR_NAMES = { AED:'UAE Dirham', USD:'US Dollar', EGP:'Egyptian Pound', EUR:'Euro', GBP:'Pound Sterling', SAR:'Saudi Riyal', KWD:'Kuwaiti Dinar', QAR:'Qatari Riyal' };
+  CUR_FLAG = { AED:'🇦🇪', USD:'🇺🇸', EGP:'🇪🇬', EUR:'🇪🇺', GBP:'🇬🇧', SAR:'🇸🇦', KWD:'🇰🇼', QAR:'🇶🇦' };
+  curName(c){ return this.CUR_NAMES[c]||c; }
+  curFlag(c){ return this.CUR_FLAG[c]||'🏳️'; }
+
+  TYPES = [
+    { v:'bank_account', l:'Bank account', icon:'landmark', color:'#22C55E' },
+    { v:'debit_card', l:'Debit card', icon:'card', color:'#A855F7' },
+    { v:'credit_card', l:'Credit card', icon:'card', color:'#3B82F6' },
+    { v:'prepaid_card', l:'Prepaid card', icon:'ticket', color:'#2DD4BF' },
+    { v:'wallet', l:'Wallet', icon:'wallet', color:'#FB923C' },
+    { v:'bnpl', l:'BNPL', icon:'split', color:'#EC4899' },
+    { v:'other', l:'Other', icon:'shapes', color:'#9CA3AF' },
+  ];
+
+  CAT = {
+    instapay:{name:'InstaPay',type:'wallet',colors:['#12A594','#0C6E63'],country:'EG'}, vodafone:{name:'Vodafone Cash',type:'wallet',colors:['#E60000','#8A1520'],country:'EG'}, nbe:{name:'NBE',full:'National Bank of Egypt',type:'bank_account',colors:['#2E8B57','#1C5A38'],country:'EG'}, cib:{name:'CIB',full:'Commercial International Bank',type:'bank_account',colors:['#2E5AAC','#B23A6B'],country:'EG'}, meeza:{name:'Meeza',type:'prepaid_card',colors:['#C6A24E','#7A6428'],country:'EG'}, valu:{name:'valU',type:'bnpl',colors:['#F04E23','#8A2A12'],country:'EG'}, fawry:{name:'Fawry',type:'wallet',colors:['#E8A200','#1B4B8A'],country:'EG'}, telda:{name:'Telda',type:'wallet',colors:['#8B7BF0','#4A3FA0'],country:'EG'},
+    mada:{name:'mada',type:'debit_card',colors:['#5E8B00','#3A5600'],country:'SA'}, stcpay:{name:'STC Pay',type:'wallet',colors:['#4F008C','#2A0050'],country:'SA'}, urpay:{name:'urpay',type:'wallet',colors:['#7A2E8E','#4A1A56'],country:'SA'}, alrajhi:{name:'Al Rajhi',full:'Al Rajhi Bank',type:'bank_account',colors:['#1E7E34','#0F4A1E'],country:'SA'}, tabby:{name:'Tabby',type:'bnpl',colors:['#1FA98A','#12705B'],country:'SA'}, tamara:{name:'Tamara',type:'bnpl',colors:['#C08A00','#7A5600'],country:'SA'},
+    enbd:{name:'Emirates NBD',type:'bank_account',colors:['#C8102E','#7A0A1C'],country:'AE'}, adcb:{name:'ADCB',type:'bank_account',colors:['#C4405A','#7A2838'],country:'AE'}, fab:{name:'FAB',full:'First Abu Dhabi Bank',type:'bank_account',colors:['#0B2C5F','#3E6BA8'],country:'AE'}, careempay:{name:'Careem Pay',type:'wallet',colors:['#2E9E58','#1F6F3C'],country:'AE'}, eand:{name:'e& money',type:'wallet',colors:['#E30613','#8A0A10'],country:'AE'}, nol:{name:'Nol',type:'prepaid_card',colors:['#0E86C0','#005C82'],country:'AE'},
+    applepay:{name:'Apple Pay',type:'wallet',colors:['#2E2E36','#5A5A66']}, visa:{name:'Visa card',type:'credit_card',colors:['#1A1F71','#4B4FA0']}, mastercard:{name:'Mastercard',type:'credit_card',colors:['#CF1F2E','#EB621D']}, amex:{name:'Amex',full:'American Express',type:'credit_card',colors:['#2E77BC','#1A4A7A']}, paypal:{name:'PayPal',type:'wallet',colors:['#003087','#009CDE']}, wise:{name:'Wise',type:'wallet',colors:['#37517E','#163300']},
+  };
+  QUICK = { EG:['instapay','vodafone','nbe','cib','meeza','valu','fawry','telda'], SA:['mada','stcpay','urpay','alrajhi','tabby','tamara','applepay'], AE:['enbd','adcb','fab','careempay','eand','nol','applepay'] };
+  BLEND = ['instapay','mada','enbd','vodafone','stcpay','cib','careempay','tabby','nbe','valu'];
+  COLORS = ['#2E5AAC','#3B82F6','#0E86C0','#0EA5E9','#12A594','#1FA98A','#2E8B57','#5E8B00','#84BD00','#C6A24E','#E8A200','#F59E0B','#F04E23','#E60000','#CF1F2E','#B23A6B','#EC4899','#D946A6','#8B7BF0','#7C3AED','#5B3FA0','#4F008C','#3A4256','#5A5A66','#22232E'];
+
+  METHODS = [
+    { id:'m2', provider:'CIB', type:'bank_account', cur:'EGP', last4:'2016', tag:'', color:'#2E5AAC', isDefault:true },
+    { id:'m3', provider:'NBE', type:'bank_account', cur:'EGP', last4:'0044', tag:'', color:'#2E8B57' },
+    { id:'m7', provider:'mada', type:'debit_card', cur:'SAR', last4:'7781', tag:'', color:'#5E8B00' },
+    { id:'m6', provider:'Vodafone Cash', type:'wallet', cur:'EGP', last4:'', tag:'Personal', color:'#E60000' },
+    { id:'m8', provider:'valU', type:'bnpl', cur:'EGP', last4:'', tag:'', color:'#F04E23' },
+  ];
+
+  STR = { en:{ walletTitle:'Payment methods', addMethod:'Add method', default:'Default', edit:'Edit', delete:'Delete', setDefaultShort:'Set as default', cancel:'Cancel', colour:'Card colour', provider:'Provider', searchAll:'Search all providers', searchProv:'Search banks, wallets, cards…', chooseProvider:'Choose provider', type:'Type', identifier:'Identifier', optional:'optional', tagPh:'e.g. Personal, Salary, Gold', currency:'Currency', setDefault:'Set as default', setDefaultSub:'Use for new expenses', save:'Save method', addTitle:'Add method', editTitle:'Edit method' } };
+
+  ICONS = {
+    x:'<path d="M18 6 6 18"/><path d="M6 6l12 12"/>', back:'<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>', chevD:'<path d="m6 9 6 6 6-6"/>', plus:'<path d="M5 12h14"/><path d="M12 5v14"/>', check:'<path d="M20 6 9 17l-5-5"/>', search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>', dots:'<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>', trash:'<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>', pencil:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>', star:'<path d="M11.5 2.6a.55.55 0 0 1 1 0l2.5 5.1 5.6.8a.55.55 0 0 1 .3.94l-4 3.9 1 5.6a.55.55 0 0 1-.8.58L12 17.9l-5 2.63a.55.55 0 0 1-.8-.58l1-5.6-4-3.9a.55.55 0 0 1 .3-.94l5.6-.8z"/>',
+    landmark:'<line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/>', card:'<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>', ticket:'<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>', wallet:'<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 1 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>', split:'<path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/>', shapes:'<path d="M8.3 10a.7.7 0 0 1-.626-1.079L11.4 3a.7.7 0 0 1 1.198-.043L16.3 8.9a.7.7 0 0 1-.572 1.1Z"/><rect x="3" y="14" width="7" height="7" rx="1"/><circle cx="17.5" cy="17.5" r="3.5"/>',
+  };
+
+  country(){ const c=(this.props||{}).country; return this.QUICK[c]?c:'EG'; }
+  ico(name){ const svg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="100%" height="100%" style="display:block">'+(this.ICONS[name]||'')+'</svg>'; return React.createElement('span',{style:{display:'inline-flex',width:'100%',height:'100%'},dangerouslySetInnerHTML:{__html:svg}}); }
+  fillIco(name){ const svg='<svg viewBox="0 0 24 24" fill="currentColor" width="100%" height="100%" style="display:block">'+(this.ICONS[name]||'')+'</svg>'; return React.createElement('span',{style:{display:'inline-flex',width:'100%',height:'100%'},dangerouslySetInnerHTML:{__html:svg}}); }
+  rgba(hex,a){ const h=hex.replace('#',''); return 'rgba('+parseInt(h.slice(0,2),16)+','+parseInt(h.slice(2,4),16)+','+parseInt(h.slice(4,6),16)+','+a+')'; }
+  shade(hex,f){ const h=hex.replace('#',''); const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16); const m=v=>Math.max(0,Math.min(255,Math.round(v*f))); return 'rgb('+m(r)+','+m(g)+','+m(b)+')'; }
+  initials(name){ const s=(name||'').replace(/[^a-z]/gi,''); return (s.slice(0,3)||'—').toUpperCase(); }
+  tMeta(v){ return this.TYPES.find(x=>x.v===v)||this.TYPES[6]; }
+  allowLast4(v){ return ['credit_card','debit_card','prepaid_card','bank_account'].indexOf(v)!==-1; }
+  initialsEl(name,color,size){ return React.createElement('span',{style:{font:'800 '+(size||11)+'px/1 var(--font-sans)',color:color,letterSpacing:'.02em'}},this.initials(name)); }
+
+  preset(demo){
+    const country=this.country(); const cur=country==='SA'?'SAR':country==='AE'?'AED':'EGP';
+    const setup={ provider:null, providerName:'', type:'wallet', disc:'none', last4:'', tag:'', curCode:cur, def:false, cardColor:null, inlineSearch:'', sheetSearch:'' };
+    const base={ screen:'wallet', active:0, cardMenuId:null, providerSheetOpen:false, currencyOpen:false, editing:false, ...setup };
+    if(demo==='walletMenu') return { ...base, cardMenuId:'m2' };
+    if(demo==='setup') return { ...base, screen:'setup' };
+    if(demo==='setupFilled') return { ...base, screen:'setup', provider:'cib', providerName:'CIB', type:'bank_account', disc:'last4', last4:'2016' };
+    if(demo==='providerPicker') return { ...base, screen:'setup', providerSheetOpen:true };
+    if(demo==='currency') return { ...base, screen:'setup', provider:'cib', providerName:'CIB', type:'bank_account', disc:'last4', last4:'2016', currencyOpen:true };
+    return base;
+  }
+  state = this.preset((this.props||{}).demo);
+
+  goAdd(){ this.setState({ ...this.preset('setup') }); }
+  goBack(){ this.setState({ screen:'wallet', providerSheetOpen:false, currencyOpen:false }); }
+  go(i){ const n=this.METHODS.length; if(i<0||i>=n) return; this.setState({ active:i }); }
+  openCardMenu(id){ this.setState({ cardMenuId:id }); }
+  closeCardMenu(){ this.setState({ cardMenuId:null }); }
+  openProviderSheet(){ this.setState({ providerSheetOpen:true, sheetSearch:'' }); }
+  closeProviderSheet(){ this.setState({ providerSheetOpen:false }); }
+  openCurrency(){ this.setState({ currencyOpen:true }); }
+  closeCurrency(){ this.setState({ currencyOpen:false }); }
+  pickBrand(id){ const b=this.CAT[id]; const cur=id==='nol'?'AED':(b.country==='SA'?'SAR':b.country==='AE'?'AED':this.state.curCode); this.setState({ provider:id, providerName:b.name, type:b.type, disc:this.allowLast4(b.type)?(b.type==='prepaid_card'?'none':'last4'):'none', cardColor:null, providerSheetOpen:false, inlineSearch:'', curCode:cur }); }
+  pickType(v){ const patch={ type:v }; if(this.state.disc==='last4'&&!this.allowLast4(v)) patch.disc='none'; this.setState(patch); }
+  setColor(c){ this.setState({ cardColor:c }); }
+  setDisc(k){ this.setState({ disc:k }); }
+  setLast4(v){ if(/^[0-9]{0,4}$/.test(v)) this.setState({ last4:v }); }
+  customFrom(term){ this.setState({ provider:'__custom', providerName:(term||'').trim(), type:this.state.type, disc:this.state.disc, providerSheetOpen:false, inlineSearch:'' }); }
+  canSave(){ if(!this.state.providerName.trim()) return false; if(this.state.disc==='last4'&&this.state.last4.length!==0&&this.state.last4.length!==4) return false; return true; }
+
+  popIds(){ return (this.props||{}).popularScope==='all'?this.BLEND:this.QUICK[this.country()]; }
+  provItem(id, big){ const b=this.CAT[id]; const col=b.colors[0]; return { isItem:true, name:b.name, sub:this.tMeta(b.type).l+(b.full?' · '+b.full:''), chip:this.initialsEl(b.name,col,big?12:11), chipStyle:'width:'+(big?38:34)+'px;height:'+(big?38:34)+'px;flex:none;border-radius:10px;background:'+this.rgba(col,.18)+';display:flex;align-items:center;justify-content:center;', selected:this.state.provider===id, onSelect:()=>this.pickBrand(id) }; }
+
+  renderVals(){
+    const s=this.state, t=this.STR.en, dir=(this.props||{}).lang==='ar'?'rtl':'ltr';
+    const country=this.country();
+    const brand=s.provider&&s.provider!=='__custom'?this.CAT[s.provider]:null;
+    const tMeta=this.tMeta(s.type);
+    const cardColor=s.cardColor||(brand?brand.colors[0]:'#26263a');
+    const hasProvider=!!s.providerName.trim();
+    const browse='grid';
+    const scope=(this.props||{}).popularScope==='all'?'all':'user';
+    const popularLabel='Popular options';
+    const popularFlag='';
+
+    // ---- WALLET deck ----
+    const CARD_W=252, CARD_H=158;
+    const deck=this.METHODS.map((m,i)=>{ const off=i-s.active, isActive=i===s.active, hidden=Math.abs(off)>2; const grad='linear-gradient(140deg,'+this.shade(m.color,1.18)+' 0%,'+m.color+' 48%,'+this.shade(m.color,0.6)+' 100%)';
+      return { wrapStyle:'position:absolute;left:50%;top:6px;width:'+CARD_W+'px;height:'+CARD_H+'px;margin-inline-start:-'+(CARD_W/2)+'px;transform:translateX('+(off*132)+'px) scale('+(isActive?1:0.82)+');opacity:'+(hidden?0:(isActive?1:0.4))+';z-index:'+(20-Math.abs(off))+';transition:transform .38s cubic-bezier(.22,1,.36,1),opacity .3s;pointer-events:'+(hidden?'none':'auto')+';',
+        cardStyle:'position:relative;width:100%;height:100%;display:flex;flex-direction:column;background:'+grad+';border-radius:20px;padding:16px 18px;box-shadow:0 18px 40px -14px '+this.shade(m.color,0.5)+',inset 0 1px 0 rgba(255,255,255,.16);text-align:start;',
+        typeGlyph:this.ico(this.tMeta(m.type).icon), isDefault:!!m.isDefault, name:m.provider, tail:m.last4?('•••• '+m.last4):(m.tag||'—'), cur:m.cur, onMenu:()=>this.openCardMenu(m.id) }; });
+    const dots=this.METHODS.map((m,i)=>({ style:'width:'+(i===s.active?'18px':'6px')+';height:6px;border-radius:999px;background:'+(i===s.active?'#E50914':'#2A2A38')+';transition:all .25s;' }));
+    const menuCard=this.METHODS.find(m=>m.id===s.cardMenuId);
+
+    // ---- SETUP ----
+    const grad='linear-gradient(140deg,'+this.shade(cardColor,1.18)+' 0%,'+cardColor+' 48%,'+this.shade(cardColor,0.6)+' 100%)';
+    const previewStyle='position:relative;width:262px;height:164px;border-radius:20px;padding:18px 20px;display:flex;flex-direction:column;background:'+(hasProvider?grad:'#161620')+';border:'+(hasProvider?'none':'1px dashed #33333f')+';box-shadow:'+(hasProvider?('0 20px 44px -16px '+this.shade(cardColor,0.5)):'none')+';overflow:hidden;';
+    const previewGlyph= hasProvider? this.ico(tMeta.icon) : this.ico('plus');
+    const previewChipStyle='width:44px;height:32px;border-radius:8px;background:rgba(255,255,255,'+(hasProvider?'.2':'.06')+');display:flex;align-items:center;justify-content:center;color:#fff;flex:none;padding:7px;';
+    const previewTail= s.disc==='last4'?(s.last4?'••••  '+s.last4:'••••  ••••'):(s.disc==='tag'&&s.tag.trim()?s.tag.trim():'——  ——');
+
+    const colours=this.COLORS.map(c=>{ const active=(s.cardColor||(brand?brand.colors[0]:null))===c; return { onSelect:()=>this.setColor(c), style:'width:34px;height:34px;flex:none;border-radius:10px;cursor:pointer;background:'+c+';border:2px solid '+(active?'#fff':'transparent')+';box-shadow:0 0 0 1px rgba(255,255,255,.12);' }; });
+
+    // provider browse (grid mode)
+    const popIds=this.popIds();
+    const popularTiles=popIds.slice(0,8).map(id=>{ const b=this.CAT[id]; const col=b.colors[0]; const sel=s.provider===id; return { name:b.name, chip:this.initialsEl(b.name,col,11), chipStyle:'width:34px;height:34px;flex:none;border-radius:10px;background:'+this.rgba(col,.18)+';display:flex;align-items:center;justify-content:center;', onSelect:()=>this.pickBrand(id), tileStyle:'display:flex;flex-direction:column;align-items:center;gap:7px;height:74px;padding:8px 4px;border-radius:13px;cursor:pointer;background:'+(sel?this.rgba(col,.14):'#1A1A24')+';border:1px solid '+(sel?this.rgba(col,.5):'#2A2A38')+';' }; });
+    const popularChips=popIds.map(id=>{ const b=this.CAT[id]; const col=b.colors[0]; const sel=s.provider===id; return { name:b.name, chip:this.initialsEl(b.name,col,10), chipStyle:'width:26px;height:26px;flex:none;border-radius:7px;background:'+this.rgba(col,.18)+';display:flex;align-items:center;justify-content:center;', onSelect:()=>this.pickBrand(id), chipRowStyle:'display:flex;align-items:center;gap:8px;flex:none;height:42px;padding:0 13px 0 7px;border-radius:999px;cursor:pointer;background:'+(sel?this.rgba(col,.16):'#1A1A24')+';border:1px solid '+(sel?this.rgba(col,.5):'#2A2A38')+';' }; });
+
+    // provider field (sheet mode)
+    const provFieldChipColor= brand?brand.colors[0]:'#9898B0';
+    const provFieldChip= hasProvider? this.initialsEl(s.providerName,provFieldChipColor,12) : this.ico('search');
+    const provFieldChipStyle='width:36px;height:36px;flex:none;border-radius:10px;background:'+this.rgba(hasProvider?provFieldChipColor:'#4A4A58',.16)+';display:flex;align-items:center;justify-content:center;color:'+(hasProvider?provFieldChipColor:'#9898B0')+';'+(hasProvider?'':'padding:9px;');
+
+    // inline search mode
+    const iq=s.inlineSearch.trim().toLowerCase();
+    const inlineResultsList= iq? Object.keys(this.CAT).filter(id=>(this.CAT[id].name+' '+(this.CAT[id].full||'')).toLowerCase().indexOf(iq)!==-1).map(id=>this.provItem(id,false)) : [];
+
+    // provider picker sheet
+    const sq=s.sheetSearch.trim().toLowerCase();
+    let sheetList=[];
+    if(sq){ Object.keys(this.CAT).filter(id=>(this.CAT[id].name+' '+(this.CAT[id].full||'')).toLowerCase().indexOf(sq)!==-1).forEach(id=>sheetList.push(this.provItemSheet(id))); }
+    else { sheetList.push({isHeader:true,label:popularLabel}); popIds.forEach(id=>sheetList.push(this.provItemSheet(id))); sheetList.push({isHeader:true,label:'All providers'}); Object.keys(this.CAT).filter(id=>popIds.indexOf(id)===-1).forEach(id=>sheetList.push(this.provItemSheet(id))); }
+
+    const typeChips=this.TYPES.map(tp=>{ const active=s.type===tp.v; return { label:tp.l, glyph:this.ico(tp.icon), onSelect:()=>this.pickType(tp.v), style:'display:flex;align-items:center;gap:7px;flex:none;height:38px;padding:0 14px;border-radius:999px;font:600 13px var(--font-sans);cursor:pointer;white-space:nowrap;background:'+(active?this.rgba(tp.color,.15):'#1A1A24')+';border:1px solid '+(active?this.rgba(tp.color,.5):'#2A2A38')+';color:'+(active?tp.color:'#9898B0')+';' }; });
+
+    const segKeys=this.allowLast4(s.type)?['last4','tag','none']:['tag','none'];
+    const segLbl={last4:'4-digits',tag:'Label',none:'None'};
+    const identTabs=segKeys.map(k=>({ label:segLbl[k], onSelect:()=>this.setDisc(k), style:'flex:1;height:44px;border-radius:12px;border:1px solid '+(s.disc===k?'#E50914':'#2A2A38')+';background:'+(s.disc===k?'#E50914':'#1A1A24')+';color:'+(s.disc===k?'#fff':'#CFCFE0')+';font:600 13px var(--font-sans);cursor:pointer;' }));
+    const fieldStyle='width:100%;height:52px;margin-top:10px;background:#1A1A24;border:1px solid #2A2A38;border-radius:12px;padding:0 14px;color:#fff;font:'+(s.disc==='last4'?'500 15px var(--font-mono);letter-spacing:.1em':'400 15px var(--font-sans)')+';text-align:start;';
+
+    const canSave=this.canSave();
+
+    return {
+      dir, t, lang:(this.props||{}).lang||'en', baseCur:country==='SA'?'SAR':country==='AE'?'AED':'EGP',
+      isWallet:s.screen==='wallet', isSetup:s.screen==='setup',
+      icX:this.ico('x'), icBack:this.ico('back'), icChevD:this.ico('chevD'), icPlus:this.ico('plus'), icCheck:this.ico('check'), icSearch:this.ico('search'), icDots:this.ico('dots'), icTrash:this.ico('trash'), icPencil:this.ico('pencil'), icStar:this.fillIco('star'),
+      // wallet
+      deck, dots, walletHint:'Swipe your cards · tap ⋯ to manage', goAdd:()=>this.goAdd(),
+      // card menu
+      cardMenuOpen:!!menuCard, menuCardName:menuCard?(menuCard.provider+(menuCard.last4?'  ••••'+menuCard.last4:'')):'', menuCanDefault:menuCard?!menuCard.isDefault:false, closeCardMenu:()=>this.closeCardMenu(), onEdit:()=>this.setState({ screen:'setup', editing:true, cardMenuId:null, provider:null, providerName:menuCard?menuCard.provider:'', type:menuCard?menuCard.type:'wallet', disc:menuCard&&menuCard.last4?'last4':(menuCard&&menuCard.tag?'tag':'none'), last4:menuCard?menuCard.last4:'', tag:menuCard?menuCard.tag:'', curCode:menuCard?menuCard.cur:s.curCode, cardColor:menuCard?menuCard.color:null, def:menuCard?!!menuCard.isDefault:false }), onSetDefault:()=>this.closeCardMenu(), onDelete:()=>this.closeCardMenu(),
+      // setup
+      goBack:()=>this.goBack(), setupTitle: s.editing? t.editTitle : t.addTitle,
+      previewStyle, previewGlyph, previewChipStyle, previewType: hasProvider?tMeta.l:'New method', previewName: hasProvider?s.providerName:'Add a method', previewNameColor: hasProvider?'#fff':'rgba(255,255,255,.45)', previewTail, curCode:s.curCode,
+      colours,
+      browseGrid:browse==='grid', browseSheet:browse==='sheet', browseSearch:browse==='search',
+      popularLabel, popularFlag, popularTiles, popularChips, openProviderSheet:()=>this.openProviderSheet(),
+      provFieldChip, provFieldChipStyle, provFieldValue: hasProvider?s.providerName:'Choose or search', provFieldColor: hasProvider?'#fff':'#9898B0',
+      inlineSearch:s.inlineSearch, onInlineSearch:e=>this.setState({inlineSearch:e.target.value}), inlineIdle:iq.length===0, inlineResults:iq.length>0, inlineList:inlineResultsList, inlineCustom:iq.length>0, inlineCustomLabel:'Add “'+s.inlineSearch.trim()+'” as custom', onInlineCustom:()=>this.customFrom(s.inlineSearch),
+      typeChips, identTabs, identLast4:s.disc==='last4', identTag:s.disc==='tag', last4Val:s.last4, onLast4:e=>this.setLast4(e.target.value), tagVal:s.tag, onTag:e=>this.setState({tag:e.target.value}), fieldStyle, last4Help:'Enter the last 4 digits of your card or account.',
+      curFlag:this.curFlag(s.curCode), curName:this.curName(s.curCode), openCurrency:()=>this.openCurrency(),
+      toggleDef:()=>this.setState({def:!s.def}), defTrack:'width:46px;height:28px;flex:none;border:none;border-radius:999px;cursor:pointer;padding:3px;display:flex;justify-content:'+(s.def?'flex-end':'flex-start')+';background:'+(s.def?'#E50914':'#2A2A38')+';transition:background .16s;', defKnob:'width:22px;height:22px;border-radius:999px;background:#fff;display:block;',
+      saveLabel:t.save, saveStyle:'width:100%;height:52px;border:none;border-radius:14px;font:600 16px var(--font-sans);cursor:'+(canSave?'pointer':'not-allowed')+';background:'+(canSave?'#E50914':'#1A1A24')+';color:'+(canSave?'#fff':'#6E6E85')+';',
+      // provider picker sheet
+      providerSheetOpen:s.providerSheetOpen, closeProviderSheet:()=>this.closeProviderSheet(), sheetSearch:s.sheetSearch, onSheetSearch:e=>this.setState({sheetSearch:e.target.value}), sheetList, onSheetCustom:()=>this.customFrom(s.sheetSearch), sheetCustomLabel: s.sheetSearch.trim()? ('Add “'+s.sheetSearch.trim()+'” as custom') : 'Add a custom provider',
+      // currency sheet
+      currencyOpen:s.currencyOpen, closeCurrency:()=>this.closeCurrency(), onCurrencyPick:(code)=>this.setState({curCode:code,currencyOpen:false}),
+    };
+  }
+  provItemSheet(id){ const b=this.CAT[id]; const col=b.colors[0]; return { isItem:true, name:b.name, sub:this.tMeta(b.type).l+(b.full?' · '+b.full:''), chip:this.initialsEl(b.name,col,12), chipStyle:'width:38px;height:38px;flex:none;border-radius:11px;background:'+this.rgba(col,.18)+';display:flex;align-items:center;justify-content:center;', selected:this.state.provider===id, onSelect:()=>this.pickBrand(id), rowStyle:'display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:8px 12px;border-radius:14px;cursor:pointer;background:'+(this.state.provider===id?'rgba(229,9,20,.10)':'transparent')+';border:1px solid '+(this.state.provider===id?'rgba(229,9,20,.4)':'transparent')+';' }; }
+}
+</script>
+</body>
+</html>

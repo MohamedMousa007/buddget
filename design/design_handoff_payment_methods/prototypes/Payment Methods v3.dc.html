@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/fonts.css">
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/styles.css">
+</helmet>
+
+<div style="min-width:max-content;background:#08080c;padding:64px;font-family:var(--font-sans);color:#fff;">
+  <div style="font:700 32px var(--font-sans);letter-spacing:-0.015em;margin-bottom:8px;">Payment methods · v3 (card-first)</div>
+  <div style="font:500 15px var(--font-sans);color:#9898B0;max-width:820px;line-height:1.5;">The card metaphor now runs the whole feature: a live card preview drives <b style="color:#fff;">setup</b>, and a card wallet is the <b style="color:#fff;">management page</b>. Provider browsing stays fast &amp; scannable (popular chips + searchable dropdown, not a card-swipe), because you can't skim 60 providers as cards.</div>
+
+  <div style="display:flex;gap:14px;flex-wrap:wrap;margin:30px 0 56px;max-width:1180px;">
+    <div style="background:#101018;border:1px solid #24242f;border-radius:14px;padding:16px 18px;font:400 13px var(--font-sans);color:#CFCFE0;line-height:1.5;max-width:270px;"><b style="color:#fff;">No flip.</b> The card never turns over — last-4 lives on the front, so nothing implies a CVV. Feels secure.</div>
+    <div style="background:#101018;border:1px solid #24242f;border-radius:14px;padding:16px 18px;font:400 13px var(--font-sans);color:#CFCFE0;line-height:1.5;max-width:270px;"><b style="color:#fff;">Brand colour, editable.</b> Each provider carries its 2 primary brand colours (in the catalogue); the card defaults to the primary, and a swatch row lets the user recolour.</div>
+    <div style="background:#101018;border:1px solid #24242f;border-radius:14px;padding:16px 18px;font:400 13px var(--font-sans);color:#CFCFE0;line-height:1.5;max-width:270px;"><b style="color:#fff;">Unified currency dropdown.</b> One searchable control everywhere: flag + code + full name.</div>
+    <div style="background:#101018;border:1px solid #24242f;border-radius:14px;padding:16px 18px;font:400 13px var(--font-sans);color:#CFCFE0;line-height:1.5;max-width:270px;"><b style="color:#fff;">No country switcher.</b> The app derives it from the user's base currency; "Popular in …" follows automatically.</div>
+    <div style="background:#101018;border:1px solid #24242f;border-radius:14px;padding:16px 18px;font:400 13px var(--font-sans);color:#CFCFE0;line-height:1.5;max-width:270px;"><b style="color:#fff;">Tweaks to compare.</b> Provider icon <i>glyph ↔ initials</i>, browse style <i>carousel ↔ list</i>, popular scope <i>user ↔ all</i>.</div>
+  </div>
+
+  <!-- SETUP -->
+  <div style="font:700 13px var(--font-sans);letter-spacing:.14em;text-transform:uppercase;color:#E50914;margin-bottom:26px;">Setup — live card preview + browsable picker</div>
+  <div style="display:flex;flex-wrap:wrap;gap:44px;margin-bottom:72px;">
+    <div id="s1" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">s1</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Empty card · provider dropdown (search + popular)</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Method Setup v3" country="EG" demo="providerOpen" providerIcon="glyph" popularScope="user" lang="en" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="s2" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">s2</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Auto-filled from CIB · card fills live</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Method Setup v3" country="EG" demo="filled" providerIcon="glyph" popularScope="user" lang="en" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="s3" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#2A6FDB;border-radius:6px;padding:3px 7px;">s3</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Tweak · initials instead of glyphs</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Method Setup v3" country="EG" demo="filled" providerIcon="initials" popularScope="user" lang="en" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="s4" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">s4</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">mada · Saudi (card recolour + currency below)</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Method Setup v3" country="SA" demo="currencyOpen" providerIcon="glyph" popularScope="user" lang="en" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="s5" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">s5</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Custom provider (from the dropdown)</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Method Setup v3" country="EG" demo="custom" providerIcon="glyph" popularScope="all" lang="en" hint-size="375,812"></dc-import></div>
+    </div>
+  </div>
+
+  <!-- WALLET -->
+  <div style="font:700 13px var(--font-sans);letter-spacing:.14em;text-transform:uppercase;color:#E50914;margin-bottom:26px;">Payment methods page — card wallet + list</div>
+  <div style="display:flex;flex-wrap:wrap;gap:44px;">
+    <div id="w1" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">w1</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Wallet · card carousel + actions</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Methods Wallet v3" browseStyle="carousel" variant="populated" providerIcon="glyph" demo="default" lang="en" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="w2" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#2A6FDB;border-radius:6px;padding:3px 7px;">w2</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Tweak · list instead of carousel</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Methods Wallet v3" browseStyle="list" variant="populated" providerIcon="glyph" demo="default" lang="en" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="w3" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">w3</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Row menu · edit / set default / delete</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Methods Wallet v3" browseStyle="list" variant="populated" providerIcon="glyph" demo="menu" lang="en" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="w4" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">w4</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Empty · only Cash</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Methods Wallet v3" browseStyle="carousel" variant="empty" providerIcon="glyph" demo="default" lang="en" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="w5" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#2A6FDB;border-radius:6px;padding:3px 7px;">w5</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Tweak · initials on the wallet</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Methods Wallet v3" browseStyle="list" variant="populated" providerIcon="initials" demo="default" lang="en" hint-size="375,812"></dc-import></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

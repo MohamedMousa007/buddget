@@ -44,7 +44,7 @@ const MAP: Record<string, CategoryChipColors> = {
   education: EDUCATION,
   subscription: SUBSCRIPTION,
   remittance: REMITTANCE,
-  transfer: TRANSFER, atm_cash_withdrawal: TRANSFER, currency_exchange: TRANSFER,
+  transfer: TRANSFER, atm_cash_withdrawal: TRANSFER, currency_exchange: TRANSFER, top_up: TRANSFER,
 }
 
 export function categoryChipColors(category: string): CategoryChipColors {

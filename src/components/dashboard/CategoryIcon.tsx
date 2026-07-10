@@ -21,6 +21,7 @@ import {
   Plug,
   Banknote,
   ArrowLeftRight,
+  WalletCards,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -63,6 +64,7 @@ export function CategoryIcon({ category, className }: CategoryIconProps) {
   if (key === 'atm_cash_withdrawal' || key === 'atm') return <Banknote className={c} />
   if (key === 'currency_exchange') return <ArrowLeftRight className={c} />
   if (key === 'remittance' || key === 'transfer') return <Send className={c} />
+  if (key === 'top_up') return <WalletCards className={c} />
   if (key === 'other') return <Layers className={c} />
   return <Wallet className={c} />
 }

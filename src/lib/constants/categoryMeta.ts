@@ -11,6 +11,8 @@ import type { ExpenseCategory } from '@/lib/store/types'
  * - `Transfer`: between the user's own accounts; nets to zero.
  * - `Currency Exchange`: FX between the user's own currency accounts; nets to zero.
  * - `CC Payoff`: settling a credit-card debt; spend was already recognised at purchase.
+ * - `Top up`: loading a prepaid card / wallet; money movement, not consumption —
+ *   the actual purchases made from that card/wallet are logged separately and count.
  */
 export const NON_SPEND_CATEGORIES: ReadonlySet<string> = new Set<ExpenseCategory>([
   'Savings',
@@ -18,6 +20,7 @@ export const NON_SPEND_CATEGORIES: ReadonlySet<string> = new Set<ExpenseCategory
   'Transfer',
   'Currency Exchange',
   'CC Payoff',
+  'Top up',
 ])
 
 /** True when a category is a money-movement (excluded from spend totals/budgets/charts). */

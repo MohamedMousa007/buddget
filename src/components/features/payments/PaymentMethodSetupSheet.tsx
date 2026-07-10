@@ -14,6 +14,7 @@ import { currencyFlag, currencyName } from '@/lib/constants/currencyMeta'
 import {
   PAYMENT_TYPE_META, SETUP_TYPES, PAYMENT_BRANDS, QUICK_ADD, QUICK_ADD_BLEND, CARD_COLORS,
   allowsLast4, providerInitials, composePaymentMethodName, decomposePaymentMethodName,
+  resolvePaymentBrandKey,
 } from '@/lib/payment/paymentMethodDefaults'
 import { cn } from '@/lib/utils'
 import type { Currency, PaymentMethod, PaymentMethodType } from '@/lib/store/types'
@@ -80,7 +81,12 @@ export function PaymentMethodSetupSheet({
         setDisc(editing.last4 ? 'last4' : decTag ? 'tag' : 'none')
         setCurCode(editing.currency); setCardColor(editing.color ?? null); setIsDefault(editing.isDefault)
       } else {
-        setBrandId(null); setProviderName(prefill?.name ?? ''); setType('bank_account')
+        // Resolve a detected bank/provider name to a catalogue brand so the SMS
+        // prefill lands on the right type/colours, not a generic bank_account.
+        const pfBrandId = prefill?.name ? resolvePaymentBrandKey(prefill.name) : null
+        const pfBrand = pfBrandId ? PAYMENT_BRANDS[pfBrandId] : null
+        setBrandId(pfBrandId); setProviderName(pfBrand?.name ?? prefill?.name ?? '')
+        setType(pfBrand?.type ?? 'bank_account')
         setLast4(prefill?.last4 ?? ''); setTag('')
         setDisc(prefill?.last4 ? 'last4' : 'none')
         setCurCode(baseCurrency); setCardColor(null); setIsDefault(false)

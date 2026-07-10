@@ -505,6 +505,7 @@ export const en: Dictionary = {
       Transfer: 'Transfer',
       'Currency Exchange': 'Exchange',
       'CC Payoff': 'CC Payoff',
+      'Top up': 'Top up',
       Savings: 'Savings',
     },
     currencyNames: {

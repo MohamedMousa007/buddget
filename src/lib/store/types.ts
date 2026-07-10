@@ -42,6 +42,7 @@ export type ExpenseCategory =
   | 'Transfer'
   | 'Currency Exchange'
   | 'CC Payoff'
+  | 'Top up'
 
 export type PaymentMethodType =
   | 'cash'

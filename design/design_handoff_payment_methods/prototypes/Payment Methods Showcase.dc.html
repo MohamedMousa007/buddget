@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/fonts.css">
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/styles.css">
+</helmet>
+
+<div style="min-width:max-content;background:#08080c;padding:64px;font-family:var(--font-sans);color:#fff;">
+  <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:8px;">
+    <div style="font:700 30px var(--font-sans);letter-spacing:-0.01em;">Buddget — Payment methods</div>
+    <div style="font:500 15px var(--font-sans);color:#9898B0;">Add / Edit modal + Settings page · all states</div>
+  </div>
+  <div style="font:500 13px var(--font-mono);color:#6E6E85;margin-bottom:52px;">375 × 812 · dark default · light + RTL references below</div>
+
+  <!-- SCREEN 1 -->
+  <div style="font:700 13px var(--font-sans);letter-spacing:.14em;text-transform:uppercase;color:#E50914;margin-bottom:26px;">Screen 1 — Add / Edit payment method</div>
+  <div style="display:flex;flex-wrap:wrap;gap:44px;margin-bottom:72px;">
+    <div id="1a" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">1a</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Quick-add · Egypt (default)</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Method Form" country="EG" demo="quickadd" mode="add" lang="en" theme="dark" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="1b" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">1b</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Quick-add · Saudi</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Method Form" country="SA" demo="quickadd" mode="add" lang="en" theme="dark" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="1c" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">1c</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Quick-add · UAE</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Method Form" country="AE" demo="quickadd" mode="add" lang="en" theme="dark" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="1d" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">1d</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Brand search · results</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Method Form" country="EG" demo="search" mode="add" lang="en" theme="dark" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="1e" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">1e</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Search empty → add custom</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Method Form" country="EG" demo="searchEmpty" mode="add" lang="en" theme="dark" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="1f" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">1f</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Details · card (last-4)</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Method Form" country="SA" demo="detailsCard" mode="add" lang="en" theme="dark" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="1g" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">1g</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Details · wallet (tag, no digits)</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Method Form" country="EG" demo="detailsWallet" mode="add" lang="en" theme="dark" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="1h" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">1h</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Details · credit + settles-from</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Method Form" country="EG" demo="detailsSettles" mode="add" lang="en" theme="dark" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="1i" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">1i</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Custom / Other</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Method Form" country="EG" demo="custom" mode="add" lang="en" theme="dark" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="1j" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">1j</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Last-4 validation error</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Method Form" country="SA" demo="error" mode="add" lang="en" theme="dark" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="1k" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">1k</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Edit existing (prefilled)</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Method Form" country="EG" demo="quickadd" mode="edit" lang="en" theme="dark" hint-size="375,812"></dc-import></div>
+    </div>
+  </div>
+
+  <!-- SCREEN 2 -->
+  <div style="font:700 13px var(--font-sans);letter-spacing:.14em;text-transform:uppercase;color:#E50914;margin-bottom:26px;">Screen 2 — Settings › Payment methods</div>
+  <div style="display:flex;flex-wrap:wrap;gap:44px;margin-bottom:72px;">
+    <div id="2a" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">2a</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Populated · grouped by type</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Methods Settings" variant="populated" affordance="none" lang="en" theme="dark" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="2b" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">2b</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Empty (only Cash)</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Methods Settings" variant="empty" affordance="none" lang="en" theme="dark" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="2c" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">2c</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Row menu (edit / default / delete)</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Methods Settings" variant="populated" affordance="menu" lang="en" theme="dark" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="2d" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">2d</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Swipe actions (default / delete)</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Methods Settings" variant="populated" affordance="swipe" lang="en" theme="dark" hint-size="375,812"></dc-import></div>
+    </div>
+  </div>
+
+  <!-- LIGHT -->
+  <div style="font:700 13px var(--font-sans);letter-spacing:.14em;text-transform:uppercase;color:#E50914;margin-bottom:26px;">Light theme — reference pair</div>
+  <div style="display:flex;flex-wrap:wrap;gap:44px;margin-bottom:72px;">
+    <div id="3a" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#fff;background:#5A5A72;border-radius:6px;padding:3px 7px;">3a</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Add modal · light</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #d4d4dc;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);"><dc-import name="Payment Method Form" country="EG" demo="quickadd" mode="add" lang="en" theme="light" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="3b" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#fff;background:#5A5A72;border-radius:6px;padding:3px 7px;">3b</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Settings · light</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #d4d4dc;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);"><dc-import name="Payment Methods Settings" variant="populated" affordance="none" lang="en" theme="light" hint-size="375,812"></dc-import></div>
+    </div>
+  </div>
+
+  <!-- ARABIC -->
+  <div style="font:700 13px var(--font-sans);letter-spacing:.14em;text-transform:uppercase;color:#E50914;margin-bottom:26px;">Arabic — RTL reference</div>
+  <div style="display:flex;flex-wrap:wrap;gap:44px;">
+    <div id="4a" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#1DB954;border-radius:6px;padding:3px 7px;">4a</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Add modal · العربية (RTL)</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Method Form" country="EG" demo="detailsWallet" mode="add" lang="ar" theme="dark" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="4b" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#1DB954;border-radius:6px;padding:3px 7px;">4b</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Settings · العربية (RTL)</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Methods Settings" variant="populated" affordance="none" lang="ar" theme="dark" hint-size="375,812"></dc-import></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

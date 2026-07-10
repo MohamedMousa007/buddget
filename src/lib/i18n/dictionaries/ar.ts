@@ -504,6 +504,7 @@ export const ar: Dictionary = {
       Transfer: 'تحويل',
       'Currency Exchange': 'صرافة',
       'CC Payoff': 'سداد بطاقة',
+      'Top up': 'شحن',
       Savings: 'ادّخار',
     },
     currencyNames: {

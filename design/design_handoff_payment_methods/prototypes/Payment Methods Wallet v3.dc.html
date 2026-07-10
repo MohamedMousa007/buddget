@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/fonts.css">
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/colors.css">
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/typography.css">
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/styles.css">
+  <style>
+    @keyframes w3Fade { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes w3Pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
+    .w3-scroll::-webkit-scrollbar { display: none; } .w3-scroll { scrollbar-width: none; }
+    .w3-root, .w3-root * { -webkit-tap-highlight-color: transparent; }
+    .w3-root button:focus, .w3-root button:focus-visible { outline: none; box-shadow: none; }
+  </style>
+</helmet>
+
+<div class="w3-root" dir="{{ dir }}" style="position:relative;width:375px;height:812px;overflow:hidden;background:#0A0A0F;font-family:var(--font-sans);color:#fff;display:flex;flex-direction:column;">
+  <!-- status bar -->
+  <div style="height:44px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 22px;">
+    <span style="font:600 15px var(--font-sans);color:#fff;">9:41</span>
+    <span style="display:flex;align-items:center;gap:6px;color:#fff;"><span style="width:17px;height:11px;display:inline-flex;">{{ icSignal }}</span><span style="width:16px;height:11px;display:inline-flex;">{{ icWifi }}</span><span style="width:24px;height:12px;display:inline-flex;">{{ icBattery }}</span></span>
+  </div>
+  <!-- header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 16px 10px;flex:none;">
+    <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+      <button style="width:36px;height:36px;flex:none;display:flex;align-items:center;justify-content:center;border:none;background:#1A1A24;border-radius:11px;color:#CFCFE0;cursor:pointer;padding:9px;">{{ icBack }}</button>
+      <div style="font:700 20px var(--font-sans);letter-spacing:-0.01em;">{{ t.title }}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;background:#1A1A24;border:1px solid #2A2A38;border-radius:10px;padding:4px;">
+      <button onClick="{{ setCarousel }}" style="{{ tabCarousel }}">{{ icCards }}</button>
+      <button onClick="{{ setList }}" style="{{ tabList }}">{{ icList }}</button>
+    </div>
+  </div>
+
+  <div class="w3-scroll" style="flex:1;overflow-y:auto;">
+    <!-- CAROUSEL VIEW -->
+    <sc-if value="{{ isCarousel }}" hint-placeholder-val="{{ true }}">
+      <div style="position:relative;height:210px;margin-top:16px;">
+        <sc-for list="{{ deck }}" as="k" hint-placeholder-count="4">
+          <div style="{{ k.wrapStyle }}">
+            <sc-if value="{{ k.isAdd }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ k.onTap }}" style="{{ k.addStyle }}"><span style="width:44px;height:44px;border-radius:999px;background:rgba(229,9,20,.12);display:flex;align-items:center;justify-content:center;color:#FF5C5C;"><span style="width:22px;height:22px;display:inline-flex;">{{ icPlus }}</span></span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">{{ t.addCard }}</span></button>
+            </sc-if>
+            <sc-if value="{{ k.isCard }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ k.onTap }}" style="{{ k.cardStyle }}">
+                <div style="position:absolute;inset:0;border-radius:20px;background:radial-gradient(120% 90% at 85% 8%,rgba(255,255,255,.16),transparent 60%);pointer-events:none;"></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;position:relative;">
+                  <span style="{{ k.chipStyle }}">{{ k.chip }}</span>
+                  <sc-if value="{{ k.isDefault }}" hint-placeholder-val="{{ false }}"><span style="font:700 8.5px var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:#fff;background:rgba(255,255,255,.22);border-radius:999px;padding:3px 8px;">{{ t.default }}</span></sc-if>
+                </div>
+                <div style="margin-top:auto;position:relative;text-align:start;">
+                  <div style="font:700 20px var(--font-sans);letter-spacing:-0.01em;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ k.name }}</div>
+                  <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:10px;"><span style="font:600 13px var(--font-mono);letter-spacing:.14em;color:rgba(255,255,255,.9);">{{ k.tail }}</span><span style="font:700 12px var(--font-mono);color:rgba(255,255,255,.82);">{{ k.cur }}</span></div>
+                </div>
+              </button>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px;"><sc-for list="{{ dots }}" as="d" hint-placeholder-count="4"><span style="{{ d.style }}"></span></sc-for></div>
+
+      <!-- focused actions -->
+      <sc-if value="{{ focusIsCard }}" hint-placeholder-val="{{ true }}">
+        <div style="margin:22px 18px 0;padding:16px 18px;background:#111118;border:1px solid #24242f;border-radius:16px;animation:w3Fade .2s ease;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+            <div style="min-width:0;"><div style="font:600 16px var(--font-sans);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ focusName }}</div><div style="font:500 12.5px var(--font-sans);color:#9898B0;margin-top:3px;">{{ focusSub }}</div></div>
+            <sc-if value="{{ focusDefault }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font:700 9px var(--font-sans);letter-spacing:.05em;text-transform:uppercase;color:#fff;background:#E50914;border-radius:999px;padding:3px 9px;">{{ t.default }}</span></sc-if>
+          </div>
+          <div style="display:flex;gap:9px;margin-top:16px;">
+            <sc-if value="{{ canSetDefault }}" hint-placeholder-val="{{ true }}"><button onClick="{{ onSetDefault }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;height:44px;background:rgba(29,185,84,.12);border:1px solid rgba(29,185,84,.3);border-radius:12px;color:#38D96B;font:600 13px var(--font-sans);cursor:pointer;"><span style="width:16px;height:16px;display:inline-flex;">{{ icStar }}</span>{{ t.setDefault }}</button></sc-if>
+            <button onClick="{{ onEdit }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;height:44px;background:#1A1A24;border:1px solid #2A2A38;border-radius:12px;color:#CFCFE0;font:600 13px var(--font-sans);cursor:pointer;"><span style="width:16px;height:16px;display:inline-flex;">{{ icPencil }}</span>{{ t.edit }}</button>
+            <button onClick="{{ onDelete }}" style="width:52px;flex:none;display:flex;align-items:center;justify-content:center;height:44px;background:rgba(229,9,20,.1);border:1px solid rgba(229,9,20,.28);border-radius:12px;color:#FF6B6B;cursor:pointer;"><span style="width:17px;height:17px;display:inline-flex;">{{ icTrash }}</span></button>
+          </div>
+        </div>
+      </sc-if>
+      <div style="height:24px;"></div>
+    </sc-if>
+
+    <!-- LIST VIEW -->
+    <sc-if value="{{ isList }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:14px 16px 30px;">
+        <button style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;height:50px;margin-bottom:20px;background:#E50914;border:none;border-radius:14px;color:#fff;font:600 15px var(--font-sans);cursor:pointer;box-shadow:0 10px 24px -12px rgba(229,9,20,.6);"><span style="width:18px;height:18px;display:inline-flex;">{{ icPlus }}</span>{{ t.addCta }}</button>
+        <div style="display:flex;flex-direction:column;gap:22px;">
+          <sc-for list="{{ groups }}" as="g" hint-placeholder-count="4">
+            <div>
+              <div style="display:flex;align-items:baseline;gap:8px;padding:0 2px 10px;"><span style="font:600 10px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:#6E6E85;">{{ g.label }}</span><span style="font:600 10px var(--font-mono);color:#9898B0;">{{ g.count }}</span></div>
+              <div style="background:#111118;border:1px solid #24242f;border-radius:14px;overflow:visible;">
+                <sc-for list="{{ g.rows }}" as="m" hint-placeholder-count="2">
+                  <div style="position:relative;">
+                    <div style="display:flex;align-items:center;gap:12px;padding:13px 12px 13px 14px;min-height:64px;">
+                      <span style="{{ m.chipStyle }}">{{ m.chip }}</span>
+                      <div style="flex:1;min-width:0;text-align:start;"><div style="display:flex;align-items:center;gap:8px;min-width:0;"><span style="font:600 15px var(--font-sans);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ m.name }}</span><sc-if value="{{ m.isDefault }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font:700 9px var(--font-sans);letter-spacing:.05em;text-transform:uppercase;color:#fff;background:#E50914;border-radius:999px;padding:3px 8px;">{{ t.default }}</span></sc-if></div><div style="font:500 12px var(--font-sans);color:#9898B0;margin-top:3px;">{{ m.sub }}</div></div>
+                      <button onClick="{{ m.onMenu }}" style="width:32px;height:32px;flex:none;display:flex;align-items:center;justify-content:center;border:none;background:transparent;color:#9898B0;cursor:pointer;padding:7px;">{{ icDots }}</button>
+                    </div>
+                    <sc-if value="{{ m.menuOpen }}" hint-placeholder-val="{{ false }}">
+                      <div style="position:absolute;top:50px;inset-inline-end:12px;z-index:5;width:184px;background:#15151f;border:1px solid #2A2A38;border-radius:13px;overflow:hidden;box-shadow:0 18px 40px -12px rgba(0,0,0,.6);animation:w3Pop .14s ease;">
+                        <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;color:#CFCFE0;font:500 14px var(--font-sans);"><span style="width:16px;height:16px;display:inline-flex;">{{ icPencil }}</span>{{ t.edit }}</div>
+                        <div style="height:1px;background:#2A2A38;"></div>
+                        <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;color:#CFCFE0;font:500 14px var(--font-sans);"><span style="width:16px;height:16px;display:inline-flex;color:#38D96B;">{{ icStar }}</span>{{ t.setDefault }}</div>
+                        <div style="height:1px;background:#2A2A38;"></div>
+                        <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;color:#FF6B6B;font:500 14px var(--font-sans);"><span style="width:16px;height:16px;display:inline-flex;">{{ icTrash }}</span>{{ t.delete }}</div>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ m.divider }}" hint-placeholder-val="{{ true }}"><div style="height:1px;background:#24242f;margin-inline-start:60px;"></div></sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- carousel bottom add -->
+  <sc-if value="{{ isCarousel }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:none;padding:12px 18px calc(16px + env(safe-area-inset-bottom));border-top:1px solid #1c1c26;">
+      <button style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;height:52px;background:#E50914;border:none;border-radius:14px;color:#fff;font:600 16px var(--font-sans);cursor:pointer;"><span style="width:19px;height:19px;display:inline-flex;">{{ icPlus }}</span>{{ t.addCta }}</button>
+    </div>
+  </sc-if>
+
+  <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:9px;width:134px;height:5px;border-radius:999px;background:#fff;opacity:.3;"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:375,&quot;height&quot;:812},&quot;browseStyle&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;carousel&quot;,&quot;list&quot;],&quot;default&quot;:&quot;carousel&quot;,&quot;tsType&quot;:&quot;'carousel' | 'list'&quot;,&quot;section&quot;:&quot;Tweaks&quot;},&quot;variant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;populated&quot;,&quot;empty&quot;],&quot;default&quot;:&quot;populated&quot;,&quot;tsType&quot;:&quot;'populated' | 'empty'&quot;},&quot;providerIcon&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;glyph&quot;,&quot;initials&quot;],&quot;default&quot;:&quot;glyph&quot;,&quot;tsType&quot;:&quot;'glyph' | 'initials'&quot;,&quot;section&quot;:&quot;Tweaks&quot;},&quot;lang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;en&quot;,&quot;ar&quot;],&quot;default&quot;:&quot;en&quot;,&quot;tsType&quot;:&quot;'en' | 'ar'&quot;},&quot;demo&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;default&quot;,&quot;menu&quot;],&quot;default&quot;:&quot;default&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  TYPES = {
+    cash:{l:'Cash',pl:'Cash',icon:'banknote',color:'#8A8A96'}, bank_account:{l:'Bank account',pl:'Bank accounts',icon:'landmark',color:'#22C55E'}, debit_card:{l:'Debit card',pl:'Debit cards',icon:'card',color:'#A855F7'}, credit_card:{l:'Credit card',pl:'Credit cards',icon:'card',color:'#3B82F6'}, prepaid_card:{l:'Prepaid card',pl:'Prepaid cards',icon:'ticket',color:'#2DD4BF'}, wallet:{l:'Wallet',pl:'Wallets',icon:'wallet',color:'#FB923C'}, bnpl:{l:'BNPL',pl:'Buy now, pay later',icon:'split',color:'#EC4899'}, other:{l:'Other',pl:'Other',icon:'shapes',color:'#9CA3AF'},
+  };
+  ORDER=['cash','bank_account','debit_card','credit_card','prepaid_card','wallet','bnpl','other'];
+
+  METHODS = [
+    { id:'m2', provider:'CIB', type:'bank_account', cur:'EGP', last4:'2016', tag:'', color:'#2E5AAC', isDefault:true },
+    { id:'m3', provider:'NBE', type:'bank_account', cur:'EGP', last4:'0044', tag:'', color:'#2E8B57' },
+    { id:'m7', provider:'mada', type:'debit_card', cur:'SAR', last4:'7781', tag:'', color:'#5E8B00' },
+    { id:'m4', provider:'Amex', type:'credit_card', cur:'USD', last4:'1005', tag:'', color:'#2E77BC' },
+    { id:'m6', provider:'Vodafone Cash', type:'wallet', cur:'EGP', last4:'', tag:'Personal', color:'#E60000' },
+    { id:'m5', provider:'InstaPay', type:'wallet', cur:'EGP', last4:'', tag:'', color:'#12A594' },
+    { id:'m8', provider:'valU', type:'bnpl', cur:'EGP', last4:'', tag:'', color:'#F04E23' },
+    { id:'m1', provider:'Cash', type:'cash', cur:'EGP', last4:'', tag:'', color:'#5A5A66' },
+  ];
+
+  STR = { en:{ title:'Payment methods', addCta:'Add payment method', addCard:'Add method', default:'Default', edit:'Edit', delete:'Delete', setDefault:'Set default' }, ar:{ title:'طرق الدفع', addCta:'إضافة طريقة دفع', addCard:'إضافة', default:'افتراضي', edit:'تعديل', delete:'حذف', setDefault:'تعيين افتراضي' } };
+
+  ICONS = {
+    back:'<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>', plus:'<path d="M5 12h14"/><path d="M12 5v14"/>', dots:'<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>', trash:'<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>', pencil:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>', star:'<path d="M11.5 2.6a.55.55 0 0 1 1 0l2.5 5.1 5.6.8a.55.55 0 0 1 .3.94l-4 3.9 1 5.6a.55.55 0 0 1-.8.58L12 17.9l-5 2.63a.55.55 0 0 1-.8-.58l1-5.6-4-3.9a.55.55 0 0 1 .3-.94l5.6-.8z"/>', cards:'<rect width="18" height="12" x="3" y="8" rx="2"/><path d="M7 8V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2"/>', list:'<line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/>',
+    banknote:'<rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01"/><path d="M18 12h.01"/>', landmark:'<line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/>', card:'<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>', ticket:'<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>', wallet:'<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 1 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>', split:'<path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/>', shapes:'<path d="M8.3 10a.7.7 0 0 1-.626-1.079L11.4 3a.7.7 0 0 1 1.198-.043L16.3 8.9a.7.7 0 0 1-.572 1.1Z"/><rect x="3" y="14" width="7" height="7" rx="1"/><circle cx="17.5" cy="17.5" r="3.5"/>',
+    signal:'<rect x="1" y="7" width="3" height="4" rx="1"/><rect x="6" y="5" width="3" height="6" rx="1"/><rect x="11" y="3" width="3" height="8" rx="1"/>', wifi:'<path d="M5 8a11 11 0 0 1 12 0"/><path d="M7.5 10.5a7 7 0 0 1 7 0"/><path d="M10 13a3 3 0 0 1 4 0"/><circle cx="12" cy="15.5" r="0.6"/>', battery:'<rect x="1" y="3" width="18" height="9" rx="2.2" fill="currentColor" opacity="0.9"/><rect x="20.5" y="6" width="1.6" height="3" rx="0.8" fill="currentColor"/>',
+  };
+
+  isAr(){ return (this.props||{}).lang==='ar'; }
+  useInitials(){ return (this.props||{}).providerIcon==='initials'; }
+  ico(name){ const svg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="100%" height="100%" style="display:block">'+(this.ICONS[name]||'')+'</svg>'; return React.createElement('span',{style:{display:'inline-flex',width:'100%',height:'100%'},dangerouslySetInnerHTML:{__html:svg}}); }
+  fillIco(name){ const svg='<svg viewBox="0 0 24 24" fill="currentColor" width="100%" height="100%" style="display:block">'+(this.ICONS[name]||'')+'</svg>'; return React.createElement('span',{style:{display:'inline-flex',width:'100%',height:'100%'},dangerouslySetInnerHTML:{__html:svg}}); }
+  rgba(hex,a){ const h=hex.replace('#',''); return 'rgba('+parseInt(h.slice(0,2),16)+','+parseInt(h.slice(2,4),16)+','+parseInt(h.slice(4,6),16)+','+a+')'; }
+  shade(hex,f){ const h=hex.replace('#',''); const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16); const m=v=>Math.max(0,Math.min(255,Math.round(v*f))); return 'rgb('+m(r)+','+m(g)+','+m(b)+')'; }
+  initials(name){ const s=(name||'').replace(/[^a-z]/gi,''); return (s.slice(0,3)||'—').toUpperCase(); }
+  tLabel(v){ const m=this.TYPES[v]; return this.isAr()?m.l:m.l; }
+  composed(m){ if(m.last4) return m.provider+'  ••••'+m.last4; if(m.tag) return m.provider+'  ·  '+m.tag; return m.provider; }
+  sub(m){ return this.TYPES[m.type].l+' · '+m.cur; }
+  chipEl(color,type,name,size){ if(this.useInitials()) return React.createElement('span',{style:{font:'800 '+(size||11)+'px/1 var(--font-sans)',color:color,letterSpacing:'.02em'}},this.initials(name)); return this.ico(this.TYPES[type].icon); }
+
+  methods(){ return (this.props||{}).variant==='empty' ? this.METHODS.filter(m=>m.type==='cash') : this.METHODS; }
+
+  preset(){ return { style:(this.props||{}).browseStyle==='list'?'list':'carousel', active:0, menuId:(this.props||{}).demo==='menu'?'m4':null }; }
+  state = this.preset();
+
+  go(i){ const n=this.methods().length; if(i<0||i>n) return; this.setState({ active:i }); }
+  toggleMenu(id){ this.setState(s=>({ menuId:s.menuId===id?null:id })); }
+
+  renderVals(){
+    const dir=this.isAr()?'rtl':'ltr', t=this.STR[this.isAr()?'ar':'en'];
+    const style=this.state.style;
+    const list=this.methods();
+    const CARD_W=250, CARD_H=156;
+
+    // deck = cards + add tile
+    const total=list.length+1;
+    const deck=list.map((m,i)=>{
+      const off=i-this.state.active, isActive=i===this.state.active;
+      const hidden=Math.abs(off)>2;
+      const tx=off*130, scale=isActive?1:0.82, op=hidden?0:(isActive?1:0.4);
+      const grad='linear-gradient(140deg,'+this.shade(m.color,1.18)+' 0%,'+m.color+' 48%,'+this.shade(m.color,0.6)+' 100%)';
+      return { isCard:true, isAdd:false, wrapStyle:'position:absolute;left:50%;top:6px;width:'+CARD_W+'px;height:'+CARD_H+'px;margin-inline-start:-'+(CARD_W/2)+'px;transform:translateX('+tx+'px) scale('+scale+');opacity:'+op+';z-index:'+(20-Math.abs(off))+';transition:transform .38s cubic-bezier(.22,1,.36,1),opacity .3s;pointer-events:'+(hidden?'none':'auto')+';',
+        cardStyle:'position:relative;width:100%;height:100%;display:flex;flex-direction:column;background:'+grad+';border:none;border-radius:20px;padding:16px 18px;cursor:pointer;box-shadow:0 18px 40px -14px '+this.shade(m.color,0.5)+',inset 0 1px 0 rgba(255,255,255,.16);text-align:start;',
+        chip:this.chipEl('#fff',m.type,m.provider,12), chipStyle:'width:40px;height:30px;border-radius:7px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#fff;flex:none;'+(this.useInitials()?'':'padding:6px;'),
+        isDefault:!!m.isDefault, name:m.provider, tail: m.last4?('•••• '+m.last4):(m.type==='cash'?'CASH':(m.tag||'—')), cur:m.cur, onTap:()=>this.go(i) };
+    });
+    deck.push({ isAdd:true, isCard:false, wrapStyle:'position:absolute;left:50%;top:6px;width:'+CARD_W+'px;height:'+CARD_H+'px;margin-inline-start:-'+(CARD_W/2)+'px;transform:translateX('+((list.length-this.state.active)*130)+'px) scale('+(this.state.active===list.length?1:0.82)+');opacity:'+(Math.abs(list.length-this.state.active)>2?0:(this.state.active===list.length?1:0.4))+';z-index:'+(20-Math.abs(list.length-this.state.active))+';transition:transform .38s cubic-bezier(.22,1,.36,1),opacity .3s;',
+      addStyle:'width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#141420;border:1.5px dashed #33333f;border-radius:20px;cursor:pointer;', onTap:()=>this.go(list.length) });
+
+    const dots=[]; for(let i=0;i<total;i++) dots.push({ style:'width:'+(i===this.state.active?'18px':'6px')+';height:6px;border-radius:999px;background:'+(i===this.state.active?'#E50914':'#2A2A38')+';transition:all .25s;' });
+
+    const focus=this.state.active<list.length?list[this.state.active]:null;
+
+    // list groups
+    const present=this.ORDER.filter(ty=>list.some(m=>m.type===ty));
+    const groups=present.map(ty=>{ const rows=list.filter(m=>m.type===ty); return { label:this.TYPES[ty].pl, count:String(rows.length), rows:rows.map((m,i)=>({ chip:this.chipEl(m.color,m.type,m.provider,12), chipStyle:'width:40px;height:40px;flex:none;border-radius:11px;background:'+this.rgba(m.color,.18)+';display:flex;align-items:center;justify-content:center;color:'+m.color+';'+(this.useInitials()?'':'padding:10px;'), name:this.composed(m), sub:this.sub(m), isDefault:!!m.isDefault, menuOpen:this.state.menuId===m.id, onMenu:()=>this.toggleMenu(m.id), divider:i<rows.length-1 })) }; });
+
+    const tab=(on)=>'width:34px;height:30px;display:flex;align-items:center;justify-content:center;border:none;border-radius:8px;cursor:pointer;padding:7px;background:'+(on?'#E50914':'transparent')+';color:'+(on?'#fff':'#9898B0')+';';
+
+    return {
+      dir, t, isCarousel:style==='carousel', isList:style==='list',
+      setCarousel:()=>this.setState({style:'carousel'}), setList:()=>this.setState({style:'list'}), tabCarousel:tab(style==='carousel'), tabList:tab(style==='list'),
+      deck, dots, focusIsCard:!!focus, focusName:focus?this.composed(focus):'', focusSub:focus?this.sub(focus):'', focusDefault:focus?!!focus.isDefault:false, canSetDefault:focus?!focus.isDefault:false,
+      onSetDefault:()=>{}, onEdit:()=>{}, onDelete:()=>{},
+      groups,
+      icBack:this.ico('back'), icPlus:this.ico('plus'), icDots:this.ico('dots'), icTrash:this.ico('trash'), icPencil:this.ico('pencil'), icStar:this.fillIco('star'), icCards:this.ico('cards'), icList:this.ico('list'),
+      icSignal:this.fillIco('signal'), icWifi:this.ico('wifi'), icBattery:this.ico('battery'),
+    };
+  }
+}
+</script>
+</body>
+</html>
