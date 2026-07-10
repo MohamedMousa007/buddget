@@ -1,7 +1,7 @@
 'use client'
 
 import { createElement, useRef, useState } from 'react'
-import { MoreVertical, Plus } from 'lucide-react'
+import { MoreVertical, Plus, Check } from 'lucide-react'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
 import { PAYMENT_TYPE_META, decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 import type { PaymentMethod, PaymentMethodType } from '@/lib/store/types'
@@ -136,7 +136,7 @@ export function PaymentCardCarousel({
                 className="relative flex h-full w-full flex-col rounded-[20px] p-4 px-[18px] text-start"
                 style={{
                   background: cardGradient(color),
-                  boxShadow: `0 18px 40px -14px ${shade(color, 0.5)}, inset 0 1px 0 rgba(255,255,255,.16)${isSelected ? ', 0 0 0 2px #E50914, 0 0 0 4px rgba(229,9,20,.35)' : ''}`,
+                  boxShadow: `0 18px 40px -14px ${shade(color, 0.5)}, inset 0 1px 0 rgba(255,255,255,.16)`,
                 }}
               >
                 <div
@@ -150,21 +150,30 @@ export function PaymentCardCarousel({
                     </span>
                   </div>
                 )}
-                <div className="relative flex items-start justify-between">
+                <div className="relative flex items-start justify-between gap-2">
                   <span className="flex h-8 w-[42px] shrink-0 items-center justify-center rounded-lg bg-white/20 p-[7px] text-white">
                     <TypeGlyph type={m.type} className="h-full w-full" />
                   </span>
-                  {onMenu && (
-                    <button
-                      type="button"
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onClick={(e) => { e.stopPropagation(); onMenu(m.id) }}
-                      aria-label="Manage"
-                      className="-mr-1.5 -mt-0.5 flex h-7 w-7 items-center justify-center bg-transparent p-[3px] text-white/90"
-                    >
-                      <MoreVertical className="h-full w-full" />
-                    </button>
-                  )}
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="truncate text-[9px] font-semibold uppercase tracking-[0.14em] text-white/80">
+                      {PAYMENT_TYPE_META[m.type].label}
+                    </span>
+                    {onMenu ? (
+                      <button
+                        type="button"
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => { e.stopPropagation(); onMenu(m.id) }}
+                        aria-label="Manage"
+                        className="-mr-1.5 -mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center bg-transparent p-[3px] text-white/90"
+                      >
+                        <MoreVertical className="h-full w-full" />
+                      </button>
+                    ) : isSelected ? (
+                      <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#38D96B] text-white shadow-[0_2px_6px_rgba(0,0,0,.25)]">
+                        <Check className="h-[14px] w-[14px]" strokeWidth={3} />
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
                 <div className="relative mt-auto text-start">
                   <div className="truncate text-[21px] font-bold tracking-[-0.01em] text-white">{provider}</div>
