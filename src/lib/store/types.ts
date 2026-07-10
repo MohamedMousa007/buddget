@@ -754,7 +754,7 @@ export interface FinanceStore {
   deleteIncomeEvent: (id: string, deleteLinkedDebt?: boolean) => void
   /** Server-row counterpart for realtime/hydrate upserts. */
   upsertServerIncomeEvent: (event: IncomeEvent) => void
-  addPaymentMethod: (method: Omit<PaymentMethod, 'id'>) => void
+  addPaymentMethod: (method: Omit<PaymentMethod, 'id'>) => string
   updatePaymentMethod: (id: string, updates: Partial<PaymentMethod>) => void
   deletePaymentMethod: (id: string) => void
   addDebt: (debt: Omit<Debt, 'id' | 'createdAt'>) => string

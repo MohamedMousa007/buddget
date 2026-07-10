@@ -18,22 +18,19 @@ export interface PaymentMethodPickerProps {
   value: string
   onChange: (id: string) => void
   paymentMethods: PaymentMethod[]
-  /** Opens the host's "add payment method" flow. When omitted, the add button is hidden. */
-  onAddNew?: () => void
   /** Optional uppercase micro-label above the trigger. */
   label?: string
 }
 
 /**
- * Shared payment-method trigger + bottom-sheet dropdown. Manages its own open
- * state and closes when the selection changes (covers add-then-select). Used by
- * the expense sheet and the income add/edit modals.
+ * Shared payment-method trigger + card-carousel picker. Manages its own open
+ * state; the picker sheet handles adding a new method inline (setup sheet). Used
+ * by the expense sheet and the income add/edit modals.
  */
 export function PaymentMethodPicker({
   value,
   onChange,
   paymentMethods,
-  onAddNew,
   label,
 }: PaymentMethodPickerProps) {
   const t = useT()
@@ -85,7 +82,6 @@ export function PaymentMethodPicker({
         paymentMethods={paymentMethods}
         onSelect={onChange}
         onClose={() => setOpen(false)}
-        onAddNew={onAddNew}
       />
     </div>
   )
