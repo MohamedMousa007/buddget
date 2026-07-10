@@ -151,11 +151,11 @@ export function PaymentMethodSetupSheet({
         open={open} z={z.shell}
         hasProvider={hasProvider} color={effectiveColor} type={type}
         name={hasProvider ? providerName : t.paymentMethods.addTitle}
-        typeLabel={hasProvider ? PAYMENT_TYPE_META[type].label : t.paymentMethods.newMethod}
+        typeLabel={PAYMENT_TYPE_META[type].label}
         tail={previewTail} curCode={curCode}
       />
 
-      <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={z.shell} panelClassName="h-[70vh]">
+      <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={z.shell} panelClassName="h-[58vh]">
         <div className="flex min-h-0 flex-1 flex-col outline-none">
           <div className="flex shrink-0 items-center gap-2.5 px-4 pb-3 pt-1">
             <button
@@ -402,10 +402,9 @@ function FloatingCardPreview({
 }) {
   if (typeof document === 'undefined') return null
 
+  // Always a live, coloured card (reflects colour/type/digits/currency immediately).
   // Static 3D treatment — no motion after the one-time entrance.
-  const cardShadow = hasProvider
-    ? `0 36px 64px -16px rgba(0,0,0,.72), 0 16px 32px -12px ${rgba(color, 0.5)}, inset 0 1px 0 rgba(255,255,255,.2)`
-    : '0 32px 58px -18px rgba(0,0,0,.78)'
+  const cardShadow = `0 36px 64px -16px rgba(0,0,0,.72), 0 16px 32px -12px ${rgba(color, 0.5)}, inset 0 1px 0 rgba(255,255,255,.2)`
 
   return createPortal(
     <AnimatePresence>
@@ -416,38 +415,36 @@ function FloatingCardPreview({
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.97 }}
           transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-          className={cn('pointer-events-none fixed left-1/2 w-[262px]', z)}
-          style={{ top: 'min(34px, calc(30vh - 188px))', marginLeft: -131 }}
+          className={cn('pointer-events-none fixed left-1/2 w-[280px]', z)}
+          // Centred in the space above the 58vh sheet; floor keeps it clear of the status bar.
+          style={{ top: 'max(46px, calc(21vh - 88px))', marginLeft: -140 }}
         >
-          {/* halo — provider selected only, static */}
-          {hasProvider && (
-            <div
-              aria-hidden
-              className="pointer-events-none absolute"
-              style={{
-                inset: -34, borderRadius: 46,
-                background: `radial-gradient(circle, ${rgba(color, 0.72)}, transparent 68%)`,
-                filter: 'blur(36px)', zIndex: 0,
-              }}
-            />
-          )}
+          {/* halo — static coloured glow */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute"
+            style={{
+              inset: -34, borderRadius: 46,
+              background: `radial-gradient(circle, ${rgba(color, 0.72)}, transparent 68%)`,
+              filter: 'blur(36px)', zIndex: 0,
+            }}
+          />
           {/* contact shadow — static ellipse beneath the card */}
           <div
             aria-hidden
             className="pointer-events-none absolute"
             style={{
               left: '50%', bottom: -20, transform: 'translateX(-50%)',
-              width: 210, height: 30, background: 'rgba(0,0,0,.55)',
+              width: 224, height: 30, background: 'rgba(0,0,0,.55)',
               borderRadius: '50%', filter: 'blur(20px)', zIndex: 0,
             }}
           />
           {/* card — static, subtle lift */}
           <div
-            className="relative flex h-[164px] w-[262px] flex-col overflow-hidden rounded-[20px]"
+            className="relative flex h-[176px] w-[280px] flex-col overflow-hidden rounded-[20px]"
             style={{
-              padding: '18px 20px',
-              background: hasProvider ? cardGradient(color) : '#161620',
-              border: hasProvider ? 'none' : '1px dashed #33333f',
+              padding: '19px 21px',
+              background: cardGradient(color),
               boxShadow: cardShadow,
               transform: 'translateY(-2px)',
             }}
@@ -457,18 +454,15 @@ function FloatingCardPreview({
               style={{ background: 'radial-gradient(120% 90% at 85% 8%, rgba(255,255,255,.16), transparent 60%)' }}
             />
             <div className="relative flex items-center justify-between">
-              <span
-                className="flex h-8 w-[44px] shrink-0 items-center justify-center rounded-lg p-[7px] text-white"
-                style={{ background: hasProvider ? 'rgba(255,255,255,.2)' : 'rgba(255,255,255,.06)' }}
-              >
-                {hasProvider ? <TypeGlyph type={type} className="h-full w-full" /> : <Plus className="h-full w-full" />}
+              <span className="flex h-8 w-[44px] shrink-0 items-center justify-center rounded-lg bg-white/20 p-[7px] text-white">
+                <TypeGlyph type={type} className="h-full w-full" />
               </span>
               <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/80">{typeLabel}</span>
             </div>
             <div className="relative mt-auto text-start">
               <div
-                className="truncate text-[22px] font-bold tracking-[-0.01em]"
-                style={{ color: hasProvider ? '#fff' : 'rgba(255,255,255,.45)' }}
+                className="truncate text-[23px] font-bold tracking-[-0.01em]"
+                style={{ color: hasProvider ? '#fff' : 'rgba(255,255,255,.55)' }}
               >
                 {name}
               </div>
