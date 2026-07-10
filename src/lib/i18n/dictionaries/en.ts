@@ -1636,6 +1636,8 @@ export const en: Dictionary = {
     selectCard: 'Select card',
     selectHint: 'Swipe your cards · tap to select',
     addNewMethod: 'Add new method',
+    provider: 'Provider',
+    providerPlaceholder: 'Select provider — e.g. CIB, InstaPay',
   },
 
   goldPurity: {

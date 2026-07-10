@@ -168,7 +168,7 @@ export function PaymentMethodsSheet() {
       </ModalShell>
 
       <PaymentMethodSetupSheet
-        open={setupOpen}
+        open={isOpen && setupOpen}
         editing={editingMethod}
         prefill={isAddModal ? pmPrefill : null}
         baseCurrency={baseCurrency}
