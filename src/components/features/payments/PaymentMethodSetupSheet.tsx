@@ -155,7 +155,7 @@ export function PaymentMethodSetupSheet({
         tail={previewTail} curCode={curCode}
       />
 
-      <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={z.shell} panelClassName="h-[58vh]">
+      <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={z.shell} panelClassName="h-[64vh]">
         <div className="flex min-h-0 flex-1 flex-col outline-none">
           <div className="flex shrink-0 items-center gap-2.5 px-4 pb-3 pt-1">
             <button
