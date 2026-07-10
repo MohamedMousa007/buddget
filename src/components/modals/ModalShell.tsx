@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion, useDragControls } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useNumpadInset } from '@/lib/ui/numpadInset'
+import { registerBackGuard } from '@/lib/navigation/backGuard'
 
 const OVERLAY_Z = 'z-[100]'
 
@@ -69,6 +70,16 @@ export function ModalShell({
     if (performance.now() - openedAtRef.current < OPEN_GRACE_MS) return
     onBackdropClick()
   }
+
+  // Android hardware-back: the topmost open sheet consumes the press and closes
+  // itself (LIFO), so back steps out one layer at a time instead of dismissing a
+  // whole modal stack at once. Registered once per open using a ref for the cb.
+  const onBackRef = useRef(onBackdropClick)
+  useEffect(() => { onBackRef.current = onBackdropClick })
+  useEffect(() => {
+    if (!open) return
+    return registerBackGuard(() => { onBackRef.current(); return true })
+  }, [open])
 
   useEffect(() => {
     if (!open) return
