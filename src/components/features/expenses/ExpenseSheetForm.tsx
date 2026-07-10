@@ -2,13 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Calendar, ChevronDown, X, Plus, Check, Info, ArrowLeftRight } from 'lucide-react'
+import { Calendar, X, Plus, Info, ArrowLeftRight } from 'lucide-react'
 import type { Currency, PaymentMethod } from '@/lib/store/types'
-import { FIAT_CURRENCIES } from '@/lib/constants/finance'
 import { EXPENSE_CATEGORY_GRID } from '@/lib/constants/categoryGrid'
 import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
 import { useT, useLocale } from '@/lib/i18n'
 import { UnifiedDatePicker, formatDatePillLabel } from '@/components/ui/UnifiedDatePicker'
+import { CurrencyField } from '@/components/ui/CurrencyField'
 import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
 import { rgba } from '@/lib/utils/color'
 import { useNumberPad } from '@/components/ui/useNumberPad'
@@ -18,8 +18,6 @@ const HIDE_SCROLL = '[-ms-overflow-style:none] [scrollbar-width:none] [&::-webki
 // shared surface/input recipes — all theme-driven via brand tokens
 const INPUT =
   'h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-start text-base font-normal text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus:outline-none focus:border-[var(--color-brand-red)]'
-const SHEET_SURFACE =
-  'absolute inset-x-0 bottom-0 rounded-t-2xl border-t border-[var(--color-brand-border)] bg-[var(--color-brand-card)]'
 
 function Portal({ children }: { children: React.ReactNode }) {
   if (typeof document === 'undefined') return null
@@ -88,7 +86,6 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
   const ar = locale === 'ar'
 
   const [calOpen, setCalOpen] = useState(false)
-  const [curOpen, setCurOpen] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [noteOpen, setNoteOpen] = useState(mode === 'edit' && Boolean(notes.trim()))
 
@@ -179,14 +176,11 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
             </div>
             <div>
               <div className={`${microLabel} mb-2`}>{t.expenseForm.currency}</div>
-              <button
-                type="button"
-                onClick={() => setCurOpen(true)}
-                className="flex h-12 w-full items-center justify-between rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-base font-semibold text-[var(--color-brand-text-secondary)] hover:border-[var(--color-brand-text-muted)]"
-              >
-                {currency}
-                <ChevronDown className="w-4 h-4 text-[var(--color-brand-text-muted)]" />
-              </button>
+              <CurrencyField
+                value={currency}
+                onChange={setCurrency}
+                className="h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-base font-semibold"
+              />
             </div>
           </div>
 
@@ -376,65 +370,6 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
 
       {/* ===== overlays (portalled above the sheet) ===== */}
 
-      {/* currency dropdown */}
-      {curOpen ? (
-        <Portal>
-          <div dir={ar ? 'rtl' : 'ltr'} className="fixed inset-0 z-[110]" style={{ animation: 'efFade .18s ease' }}>
-            <button
-              type="button"
-              aria-label={t.common.close}
-              onClick={() => setCurOpen(false)}
-              className="absolute inset-0 border-none bg-black/55"
-            />
-            <div
-              className={`${SHEET_SURFACE} px-4 pt-2.5 pb-6`}
-              style={{
-                animation: 'efUp .28s cubic-bezier(.22,1,.36,1)',
-                fontFamily: ar ? 'var(--font-sans-ar)' : 'var(--font-sans)',
-              }}
-            >
-              <div className="mx-auto mt-0.5 mb-2.5 h-1 w-10 rounded-full bg-[var(--color-brand-border)]" />
-              <div className="flex items-center justify-between px-1 pb-2">
-                <div className="text-base font-semibold text-[var(--color-brand-text-primary)]">{t.expenseForm.currencyTitle}</div>
-                <button
-                  type="button"
-                  onClick={() => setCurOpen(false)}
-                  aria-label={t.common.close}
-                  className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] p-3 text-[var(--color-brand-text-muted)]"
-                >
-                  {IcClose}
-                </button>
-              </div>
-              <div className={`flex max-h-96 flex-col gap-0.5 overflow-y-auto ${HIDE_SCROLL}`}>
-                {FIAT_CURRENCIES.map((code) => {
-                  const on = code === currency
-                  return (
-                    <button
-                      key={code}
-                      type="button"
-                      onClick={() => {
-                        setCurrency(code)
-                        setCurOpen(false)
-                      }}
-                      className="flex w-full items-center gap-2.5 rounded-xl border p-3 transition-all"
-                      style={{
-                        borderColor: on ? rgba('#E50914', 0.4) : 'transparent',
-                        background: on ? 'rgba(229,9,20,.07)' : 'transparent',
-                      }}
-                    >
-                      <span className="w-12 text-start text-base font-bold font-mono-numbers text-[var(--color-brand-text-primary)]">{code}</span>
-                      <span className="flex-1 text-start text-sm font-medium text-[var(--color-brand-text-muted)]">
-                        {t.expenseForm.currencyNames[code] ?? code}
-                      </span>
-                      {on ? <Check className="w-5 h-5 shrink-0 text-[var(--color-brand-red)]" /> : null}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-        </Portal>
-      ) : null}
 
       {/* calendar */}
       {calOpen ? (

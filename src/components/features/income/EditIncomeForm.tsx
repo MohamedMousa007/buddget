@@ -15,10 +15,10 @@ import { EditIncomeTypeSection } from '@/components/features/income/EditIncomeTy
 import { EditIncomeRecurringBlock } from '@/components/features/income/EditIncomeRecurringBlock'
 import { EditIncomeAmountCurrency } from '@/components/features/income/EditIncomeAmountCurrency'
 import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
+import { DatePickerField } from '@/components/ui/DatePickerField'
 import { incomeMonthlyMultiplier } from '@/lib/utils/calculations'
 
-const DATE_INPUT_CLASS =
-  'mt-1 w-full h-11 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-sm text-[var(--color-brand-text-primary)] focus:border-[var(--color-brand-red)] focus:outline-none'
+const DATE_FIELD_CLASS = 'mt-1 h-11 rounded-xl'
 
 export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onClose: () => void }) {
   useEscapeClose(true, onClose)
@@ -112,21 +112,18 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.income.effectiveStart}</Label>
-              <input
-                type="date"
+              <DatePickerField
                 value={f.effectiveStart}
-                onChange={(e) => f.setEffectiveStart(e.target.value)}
-                className={DATE_INPUT_CLASS}
+                onChange={f.setEffectiveStart}
+                className={DATE_FIELD_CLASS}
               />
             </div>
             <div>
               <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.income.effectiveEnd}</Label>
-              <input
-                type="date"
+              <DatePickerField
                 value={f.effectiveEnd}
-                min={f.effectiveStart}
-                onChange={(e) => f.setEffectiveEnd(e.target.value)}
-                className={DATE_INPUT_CLASS}
+                onChange={f.setEffectiveEnd}
+                className={DATE_FIELD_CLASS}
               />
             </div>
           </div>

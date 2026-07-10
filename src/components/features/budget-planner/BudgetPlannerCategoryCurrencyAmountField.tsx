@@ -2,9 +2,8 @@
 
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ChevronDown } from 'lucide-react'
 import { NumberPad } from '@/components/ui/NumberPad'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { CurrencyField } from '@/components/ui/CurrencyField'
 import { cn } from '@/lib/utils'
 import type { AppSettings, BudgetPlanCategory, Currency } from '@/lib/store/types'
 import { planCategoryCurrency } from '@/lib/budget/budgetPlans'
@@ -36,7 +35,6 @@ export function BudgetPlannerCategoryCurrencyAmountField({
   onAmountBlur,
   onCurrencyChange,
 }: BudgetPlannerCategoryCurrencyAmountFieldProps) {
-  const [currencyOpen, setCurrencyOpen] = useState(false)
   const [padOpen, setPadOpen] = useState(false)
   const rowCurrency = planCategoryCurrency(category, settings.baseCurrency)
   const fiatOpts = buildFiatCurrencyPickerOptions(settings)
@@ -48,38 +46,13 @@ export function BudgetPlannerCategoryCurrencyAmountField({
       {rowCurrency}
     </span>
   ) : (
-    <Popover open={currencyOpen} onOpenChange={setCurrencyOpen}>
-      <PopoverTrigger
-        type="button"
-        className="flex cursor-pointer items-center gap-0.5 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1 font-mono text-xs text-[var(--color-brand-text-secondary)] hover:border-[var(--color-brand-text-primary)]/20"
-      >
-        {rowCurrency}
-        <ChevronDown className="h-3 w-3 opacity-70" aria-hidden />
-      </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        className="min-w-[8rem] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-1 text-[var(--color-brand-text-primary)] shadow-xl"
-      >
-        <div className="flex flex-col gap-0.5">
-          {codes.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => {
-                onCurrencyChange(c)
-                setCurrencyOpen(false)
-              }}
-              className={cn(
-                'cursor-pointer rounded-lg px-2 py-1.5 text-left font-mono text-xs hover:bg-[var(--color-brand-border)]',
-                c === rowCurrency && 'bg-[var(--color-brand-border)]/80'
-              )}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
-      </PopoverContent>
-    </Popover>
+    <CurrencyField
+      value={rowCurrency}
+      onChange={onCurrencyChange}
+      codes={codes}
+      compact
+      className="rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1.5"
+    />
   )
 
   return (

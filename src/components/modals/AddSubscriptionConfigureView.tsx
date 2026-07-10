@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { AmountField } from '@/components/ui/AmountField'
 import { Label } from '@/components/ui/label'
 import { FiatCurrencyField } from '@/components/ui/CurrencyField'
+import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
 import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import { SubscriptionPlanPicker } from '@/components/features/subscriptions/SubscriptionPlanPicker'
 import type { AddSubscriptionFormReturn } from '@/hooks/useAddSubscriptionForm'
@@ -35,15 +36,6 @@ export function AddSubscriptionConfigureView({
       { value: 'yearly', label: t.subscriptions.billingYearly },
     ],
     [t.subscriptions],
-  )
-
-  const paymentMethodItems = useMemo<ReadonlyArray<SelectFieldOption>>(
-    () =>
-      form.paymentMethods.map((m) => ({
-        value: m.id,
-        label: m.last4 ? `${m.name} ••${m.last4}` : m.name,
-      })),
-    [form.paymentMethods],
   )
 
   return (
@@ -119,13 +111,11 @@ export function AddSubscriptionConfigureView({
       </div>
 
       <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.subscriptions.paymentMethod}</Label>
-        <SelectField
+        <Label className="text-xs text-[var(--color-brand-text-secondary)] mb-1 block">{t.subscriptions.paymentMethod}</Label>
+        <PaymentMethodPicker
           value={form.paymentMethodId}
           onChange={form.setPaymentMethodId}
-          items={paymentMethodItems}
-          className="mt-1"
-          aria-label={t.subscriptions.paymentMethod}
+          paymentMethods={form.paymentMethods}
         />
       </div>
 

@@ -6,9 +6,11 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
-import type { Debt, DebtRecurringFrequency } from '@/lib/store/types'
+import type { Debt, DebtRecurringFrequency, PaymentMethod } from '@/lib/store/types'
 import { RECURRING_DEBT_FREQUENCIES } from '@/lib/constants/debtRecurring'
 import { DatePickerField } from '@/components/ui/DatePickerField'
+import { CurrencyField } from '@/components/ui/CurrencyField'
+import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
 import { useT } from '@/lib/i18n'
 
 export interface RecurringDebtPaymentFormProps {
@@ -27,7 +29,7 @@ export interface RecurringDebtPaymentFormProps {
   onFrequencyChange: (f: DebtRecurringFrequency) => void
   nextDueDate: string
   onNextDueDateChange: (v: string) => void
-  paymentMethods: { id: string; name: string }[]
+  paymentMethods: PaymentMethod[]
   paymentMethodId: string
   onPaymentMethodChange: (id: string) => void
   isActive: boolean
@@ -46,7 +48,6 @@ export function RecurringDebtPaymentForm({
   onAmountChange,
   paymentCurrency,
   onPaymentCurrencyChange,
-  fiatOptions,
   selectedDebt,
   error,
   previewLine,
@@ -74,16 +75,6 @@ export function RecurringDebtPaymentForm({
       })),
     [payableDebts],
   )
-  const currencyItems = useMemo<ReadonlyArray<SelectFieldOption>>(() => {
-    const base = fiatOptions.map<SelectFieldOption>((o) => ({
-      value: o.value,
-      label: o.value,
-      disabled: o.disabled,
-    }))
-    return selectedDebt?.isGold
-      ? [...base, { value: 'XAU', label: t.addDebtPayment.optionGoldGrams }]
-      : base
-  }, [fiatOptions, selectedDebt?.isGold, t.addDebtPayment.optionGoldGrams])
   const freqItems = useMemo<ReadonlyArray<SelectFieldOption>>(
     () => RECURRING_DEBT_FREQUENCIES.map((f) => ({ value: f.value, label: f.label })),
     [],
@@ -119,11 +110,11 @@ export function RecurringDebtPaymentForm({
             onChange={onAmountChange}
             className="bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers"
           />
-          <SelectField
+          <CurrencyField
             value={paymentCurrency}
             onChange={onPaymentCurrencyChange}
-            items={currencyItems}
-            aria-label={t.recurringDebt.labelAmount}
+            includeGold={!!selectedDebt?.isGold}
+            className="w-full h-11 px-3 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]"
           />
         </div>
       </div>
@@ -149,22 +140,11 @@ export function RecurringDebtPaymentForm({
 
       <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)] mb-2 block">{t.recurringDebt.labelPaidVia}</Label>
-        <div className="flex flex-wrap gap-2">
-          {paymentMethods.map((method) => (
-            <button
-              key={method.id}
-              type="button"
-              onClick={() => onPaymentMethodChange(method.id)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                paymentMethodId === method.id
-                  ? 'bg-[var(--color-brand-red)] text-white'
-                  : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-border)]'
-              }`}
-            >
-              {method.name}
-            </button>
-          ))}
-        </div>
+        <PaymentMethodPicker
+          value={paymentMethodId}
+          onChange={onPaymentMethodChange}
+          paymentMethods={paymentMethods}
+        />
       </div>
 
       <div className="flex items-center justify-between">

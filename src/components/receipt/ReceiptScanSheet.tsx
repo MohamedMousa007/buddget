@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useShallow } from 'zustand/react/shallow'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { DatePickerField } from '@/components/ui/DatePickerField'
+import { CurrencyField } from '@/components/ui/CurrencyField'
 import { AmountField } from '@/components/ui/AmountField'
 import { captureReceiptPhoto, ReceiptCaptureCancelled } from '@/lib/native/cameraScanner'
 import { isNative } from '@/lib/native/isNative'
@@ -397,15 +398,12 @@ function ResultView({
           />
         </Field>
         <Field label="Currency">
-          <select
+          <CurrencyField
             value={result.currency}
-            onChange={(e) => onChange({ currency: e.target.value as Currency })}
-            className="w-full rounded-lg border border-[var(--color-brand-border)] bg-transparent px-2 py-1.5 text-sm text-[var(--color-brand-text-primary)]"
-          >
-            {SUPPORTED_CURRENCIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
+            onChange={(c) => onChange({ currency: c as Currency })}
+            codes={SUPPORTED_CURRENCIES}
+            className="w-full rounded-lg border border-[var(--color-brand-border)] bg-transparent px-2 py-1.5"
+          />
         </Field>
         <Field label="Category">
           <select

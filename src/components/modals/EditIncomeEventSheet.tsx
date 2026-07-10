@@ -16,6 +16,7 @@ import { AmountField } from '@/components/ui/AmountField'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { FiatCurrencyField } from '@/components/ui/CurrencyField'
+import { DatePickerField } from '@/components/ui/DatePickerField'
 import { IncomeSourceTypePicker } from '@/components/features/income/IncomeSourceTypePicker'
 import { IncomeTemplatePicker } from '@/components/features/income/IncomeTemplatePicker'
 import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
@@ -25,8 +26,7 @@ import {
   MODAL_LABEL_CLASS,
 } from '@/lib/modals/modalFormClasses'
 
-const DATE_INPUT_CLASS =
-  'mt-1.5 w-full h-12 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-sm text-[var(--color-brand-text-primary)] focus:border-[var(--color-brand-red)] focus:outline-none'
+const DATE_FIELD_CLASS = 'mt-1.5 h-12 rounded-xl'
 
 function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: () => void }) {
   useEscapeClose(true, onClose)
@@ -143,7 +143,7 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
 
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.income.receivedDate}</Label>
-          <input type="date" value={receivedDate} onChange={(e) => setReceivedDate(e.target.value)} className={DATE_INPUT_CLASS} />
+          <DatePickerField value={receivedDate} onChange={setReceivedDate} className={DATE_FIELD_CLASS} />
         </div>
 
         {!typeLocked ? (

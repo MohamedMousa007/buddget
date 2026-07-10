@@ -11,14 +11,11 @@ import {
   BarChart3,
   HandCoins,
 } from 'lucide-react'
-import { useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { FIAT_CURRENCIES } from '@/lib/constants/finance'
-import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
+import { FiatCurrencyField } from '@/components/ui/CurrencyField'
 import { localeInlineLabelClass, useLocale, useT } from '@/lib/i18n'
-import type { Currency } from '@/lib/store/types'
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -37,11 +34,6 @@ export function Sidebar() {
   const { settings, updateSettings } = useFinanceStore(
     useShallow((s) => ({ settings: s.settings, updateSettings: s.updateSettings }))
   )
-  const currencyItems = useMemo<ReadonlyArray<SelectFieldOption>>(
-    () => FIAT_CURRENCIES.map((c) => ({ value: c, label: c })),
-    [],
-  )
-
   return (
     <aside className="hidden lg:flex flex-col w-44 h-screen bg-[var(--color-brand-card)] border-e border-[var(--color-brand-border)] fixed start-0 top-0 z-40 overflow-hidden">
       <div className="p-4">
@@ -53,11 +45,10 @@ export function Sidebar() {
       </div>
 
       <div className="px-3 mb-3">
-        <SelectField
+        <FiatCurrencyField
           value={settings.baseCurrency}
-          onChange={(v) => updateSettings({ baseCurrency: v as Currency })}
-          items={currencyItems}
-          aria-label={t.settings.mainCurrencyLabel}
+          onChange={(v) => updateSettings({ baseCurrency: v })}
+          className="w-full h-9 px-3 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]"
         />
       </div>
 

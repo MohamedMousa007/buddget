@@ -5,7 +5,8 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { getField } from '@/lib/ai/aiActionHandlers'
 import { AmountField } from '@/components/ui/AmountField'
 import type { AIAction, AIActionItem } from '@/lib/ai/gemini'
-import { EXPENSE_ENTRY_CATEGORIES, FIAT_CURRENCIES } from '@/lib/constants/finance'
+import { EXPENSE_ENTRY_CATEGORIES } from '@/lib/constants/finance'
+import { CurrencyField } from '@/components/ui/CurrencyField'
 
 export interface VoiceRecapEditorProps {
   actions: AIActionItem[]
@@ -134,15 +135,11 @@ export function VoiceRecapEditor({
                 {showCurrency ? (
                   <label className="block">
                     <span className="mb-0.5 block text-[10px] text-[var(--color-brand-text-muted)]">Currency</span>
-                    <select
-                      className={FIELD_CLS}
+                    <CurrencyField
                       value={String(getField(item.data, 'currency') ?? baseCurrency)}
-                      onChange={(e) => onUpdateField(idx, 'currency', e.target.value)}
-                    >
-                      {FIAT_CURRENCIES.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
+                      onChange={(c) => onUpdateField(idx, 'currency', c)}
+                      className={`${FIELD_CLS} h-auto`}
+                    />
                   </label>
                 ) : null}
 

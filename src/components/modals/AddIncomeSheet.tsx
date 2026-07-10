@@ -18,6 +18,7 @@ import { AmountField } from '@/components/ui/AmountField'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { FiatCurrencyField } from '@/components/ui/CurrencyField'
+import { DatePickerField } from '@/components/ui/DatePickerField'
 import { IncomeSourceTypePicker } from '@/components/features/income/IncomeSourceTypePicker'
 import { EditIncomeRecurringBlock } from '@/components/features/income/EditIncomeRecurringBlock'
 import { IncomeTemplatePicker } from '@/components/features/income/IncomeTemplatePicker'
@@ -221,11 +222,10 @@ export function AddIncomeSheet() {
           ) : (
             <div>
               <span className={MODAL_LABEL_CLASS}>{t.income.receivedDate}</span>
-              <input
-                type="date"
+              <DatePickerField
                 value={receivedDate}
-                onChange={(e) => setReceivedDate(e.target.value)}
-                className="mt-1.5 w-full h-12 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-sm text-[var(--color-brand-text-primary)] focus:border-[var(--color-brand-red)] focus:outline-none"
+                onChange={setReceivedDate}
+                className="mt-1.5 h-12 rounded-xl"
               />
             </div>
           )}
