@@ -1,16 +1,16 @@
 'use client'
 
-import { createElement, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  X, ArrowLeft, MoreVertical, Plus, Search, ChevronDown, Check, Pencil, Star, Trash2,
+  X, ArrowLeft, Plus, Search, ChevronDown, Check, Pencil, Star, Trash2,
 } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { CurrencySheet } from '@/components/ui/CurrencySheet'
+import { PaymentCardCarousel, shade, cardGradient, TypeGlyph } from '@/components/features/payments/PaymentCardCarousel'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT } from '@/lib/i18n'
-import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
 import { currencyFlag, currencyName } from '@/lib/constants/currencyMeta'
 import {
   PAYMENT_TYPE_META, SETUP_TYPES, PAYMENT_BRANDS, QUICK_ADD, QUICK_ADD_BLEND, CARD_COLORS,
@@ -21,29 +21,15 @@ import type { Currency, PaymentMethod, PaymentMethodType } from '@/lib/store/typ
 
 type Disc = 'last4' | 'tag' | 'none'
 
-// ── colour helpers (match the prototype card gradient) ──────────────────────
-function shade(hex: string, f: number): string {
-  const h = hex.replace('#', '')
-  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16)
-  const m = (v: number) => Math.max(0, Math.min(255, Math.round(v * f)))
-  return `rgb(${m(r)},${m(g)},${m(b)})`
-}
 function rgba(hex: string, a: number): string {
   const h = hex.replace('#', '')
   return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${a})`
-}
-function cardGradient(color: string): string {
-  return `linear-gradient(140deg, ${shade(color, 1.18)} 0%, ${color} 48%, ${shade(color, 0.6)} 100%)`
 }
 function countryFromCurrency(cur: Currency): 'EG' | 'SA' | 'AE' | null {
   if (cur === 'EGP') return 'EG'
   if (cur === 'SAR') return 'SA'
   if (cur === 'AED') return 'AE'
   return null
-}
-
-function TypeGlyph({ type, className }: { type: PaymentMethodType; className?: string }) {
-  return createElement(paymentTypeIcon(type), { className })
 }
 
 export function PaymentMethodsSheet() {
@@ -119,7 +105,6 @@ export function PaymentMethodsSheet() {
 
   // ── wallet deck (cash is implicit — never a card) ─────────────────────────
   const deck = useMemo(() => paymentMethods.filter((m) => m.type !== 'cash'), [paymentMethods])
-  const safeActive = Math.min(active, Math.max(0, deck.length - 1))
 
   const openEdit = (m: PaymentMethod) => {
     const { provider, tag: decTag } = decomposePaymentMethodName(m.name, m.last4)
@@ -201,8 +186,6 @@ export function PaymentMethodsSheet() {
 
   const menuCard = deck.find((m) => m.id === cardMenuId) ?? null
 
-  const CARD_W = 252, CARD_H = 158
-
   return (
     <>
       <ModalShell open={isOpen} onBackdropClick={close} scrollChild>
@@ -227,95 +210,14 @@ export function PaymentMethodsSheet() {
                   {t.paymentMethods.emptyHint}
                 </div>
               ) : (
-                <div className="relative mt-2.5 h-[224px]">
-                  {deck.map((m, i) => {
-                    const off = i - safeActive
-                    const isActiveCard = i === safeActive
-                    const hidden = Math.abs(off) > 2
-                    const color = m.color ?? PAYMENT_TYPE_META[m.type].color
-                    const { provider, tag: decTag } = decomposePaymentMethodName(m.name, m.last4)
-                    const tail = m.last4 ? `•••• ${m.last4}` : decTag || '—'
-                    return (
-                      <div
-                        key={m.id}
-                        className="absolute start-1/2 top-1.5"
-                        style={{
-                          width: CARD_W, height: CARD_H, marginInlineStart: -CARD_W / 2,
-                          transform: `translateX(${off * 132}px) scale(${isActiveCard ? 1 : 0.82})`,
-                          opacity: hidden ? 0 : isActiveCard ? 1 : 0.4,
-                          zIndex: 20 - Math.abs(off),
-                          transition: 'transform .38s cubic-bezier(.22,1,.36,1), opacity .3s',
-                          pointerEvents: hidden ? 'none' : 'auto',
-                        }}
-                        onClick={() => !isActiveCard && setActive(i)}
-                      >
-                        <div
-                          className="relative flex h-full w-full flex-col rounded-[20px] p-4 px-[18px] text-start"
-                          style={{
-                            background: cardGradient(color),
-                            boxShadow: `0 18px 40px -14px ${shade(color, 0.5)}, inset 0 1px 0 rgba(255,255,255,.16)`,
-                          }}
-                        >
-                          <div
-                            className="pointer-events-none absolute inset-0 rounded-[20px]"
-                            style={{ background: 'radial-gradient(120% 90% at 85% 8%, rgba(255,255,255,.16), transparent 60%)' }}
-                          />
-                          {m.isDefault && (
-                            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                              <span className="font-sans text-[32px] font-extrabold uppercase tracking-[0.2em] text-white/15">
-                                {t.paymentMethods.default}
-                              </span>
-                            </div>
-                          )}
-                          <div className="relative flex items-start justify-between">
-                            <span className="flex h-8 w-[42px] shrink-0 items-center justify-center rounded-lg bg-white/20 p-[7px] text-white">
-                              <TypeGlyph type={m.type} className="h-full w-full" />
-                            </span>
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); setCardMenuId(m.id) }}
-                              aria-label="Manage"
-                              className="-mr-1.5 -mt-0.5 flex h-7 w-7 items-center justify-center bg-transparent p-[3px] text-white/90"
-                            >
-                              <MoreVertical className="h-full w-full" />
-                            </button>
-                          </div>
-                          <div className="relative mt-auto text-start">
-                            <div className="truncate text-[21px] font-bold tracking-[-0.01em] text-white">
-                              {provider}
-                            </div>
-                            <div className="mt-2.5 flex items-end justify-between">
-                              <span className="font-mono-numbers text-sm font-semibold tracking-[0.14em] text-white/90">
-                                {tail}
-                              </span>
-                              <span className="font-mono-numbers text-xs font-bold text-white/80">{m.currency}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-
-              {deck.length > 0 && (
-                <>
-                  <div className="mt-1.5 flex items-center justify-center gap-1.5">
-                    {deck.map((m, i) => (
-                      <span
-                        key={m.id}
-                        className="h-1.5 rounded-full transition-all"
-                        style={{
-                          width: i === safeActive ? 18 : 6,
-                          background: i === safeActive ? '#E50914' : 'var(--color-brand-border)',
-                        }}
-                      />
-                    ))}
-                  </div>
-                  <div className="mt-3 text-center text-[12.5px] font-medium text-[var(--color-brand-text-muted)]">
-                    {t.paymentMethods.walletHint}
-                  </div>
-                </>
+                <PaymentCardCarousel
+                  methods={deck}
+                  active={active}
+                  onActiveChange={setActive}
+                  defaultLabel={t.paymentMethods.default}
+                  hint={t.paymentMethods.walletHint}
+                  onMenu={setCardMenuId}
+                />
               )}
 
               <div className="shrink-0 px-[18px] pb-[calc(16px+env(safe-area-inset-bottom))] pt-4">

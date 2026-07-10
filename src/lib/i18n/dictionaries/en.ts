@@ -1633,6 +1633,9 @@ export const en: Dictionary = {
     addCustomNamed: 'Add “{q}” as custom',
     savedCount: '{n} saved',
     manageSubtitle: 'Add and manage your cards & wallets',
+    selectCard: 'Select card',
+    selectHint: 'Swipe your cards · tap to select',
+    addNewMethod: 'Add new method',
   },
 
   goldPurity: {

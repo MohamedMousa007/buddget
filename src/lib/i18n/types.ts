@@ -1486,6 +1486,9 @@ export interface Dictionary {
     addCustomNamed: string
     savedCount: string
     manageSubtitle: string
+    selectCard: string
+    selectHint: string
+    addNewMethod: string
   }
 
   goldPurity: {
