@@ -10,6 +10,7 @@ import {
   type DebtBalanceContext,
 } from '@/lib/utils/calculations'
 import { formatCurrency } from '@/lib/utils/formatters'
+import { isBnplPlan } from '@/lib/debt/bnpl'
 import { clampDebtFiatToAllowed, clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import type {
   Currency,
@@ -458,6 +459,9 @@ export function useAddDebtSheet() {
       closeSheet()
       return
     }
+    // BNPL plan: purchase counted as spend at checkout → settlement is non-spend
+    // (`Installment`). Bank/other installment + person debts keep `Debt` spend.
+    const bnpl = isBnplPlan(selectedDebt, paymentMethods)
     addDebtPaymentWithExpense(
       {
         debtId: selectedDebtId,
@@ -471,8 +475,8 @@ export function useAddDebtSheet() {
       },
       {
         date: paymentDate,
-        description: `${selectedDebt.name} — debt payment`,
-        category: 'Debt',
+        description: `${selectedDebt.name} — ${bnpl ? 'installment' : 'debt payment'}`,
+        category: bnpl ? 'Installment' : 'Debt',
         amount,
         currency: payCur as Currency,
         paymentMethodId: pmId,

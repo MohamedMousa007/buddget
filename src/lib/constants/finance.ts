@@ -40,6 +40,7 @@ export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   'Currency Exchange',
   'CC Payoff',
   'Top up',
+  'Installment',
 ]
 
 /**

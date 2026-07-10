@@ -291,6 +291,7 @@ export type Database = {
           due_date: string | null
           gold_karat: Database["public"]["Enums"]["gold_karat"] | null
           id: string
+          installment_amount: number | null
           installment_count: number | null
           installment_frequency:
             | Database["public"]["Enums"]["recurring_frequency"]
@@ -331,6 +332,7 @@ export type Database = {
           due_date?: string | null
           gold_karat?: Database["public"]["Enums"]["gold_karat"] | null
           id?: string
+          installment_amount?: number | null
           installment_count?: number | null
           installment_frequency?:
             | Database["public"]["Enums"]["recurring_frequency"]
@@ -371,6 +373,7 @@ export type Database = {
           due_date?: string | null
           gold_karat?: Database["public"]["Enums"]["gold_karat"] | null
           id?: string
+          installment_amount?: number | null
           installment_count?: number | null
           installment_frequency?:
             | Database["public"]["Enums"]["recurring_frequency"]

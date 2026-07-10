@@ -22,6 +22,7 @@ import {
   Ticket,
   Wallet,
   WalletCards,
+  CalendarClock,
   Split,
   Shapes,
   Briefcase,
@@ -69,6 +70,7 @@ export const EXPENSE_CATEGORY_GRID: CategoryGridItem[] = [
   { id: 'Currency Exchange', icon: BadgeDollarSign, accent: '#6FD4C0', nonspend: true },
   { id: 'CC Payoff', icon: CreditCard, accent: '#F0A0A0', nonspend: true },
   { id: 'Top up', icon: WalletCards, accent: '#2DD4BF', nonspend: true },
+  { id: 'Installment', icon: CalendarClock, accent: '#EC4899', nonspend: true },
   { id: 'Savings', icon: Coins, accent: '#F5C842', nonspend: true },
 ]
 

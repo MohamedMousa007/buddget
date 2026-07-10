@@ -379,6 +379,10 @@ export interface Dictionary {
     saveChanges: string
     cueAmount: string
     cueDescription: string
+    splitInstallments: string
+    installmentFirstDue: string
+    installmentPayFrom: string
+    installmentEach: string
     currencyTitle: string
     paymentTitle: string
     addPaymentMethod: string

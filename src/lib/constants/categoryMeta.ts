@@ -13,6 +13,8 @@ import type { ExpenseCategory } from '@/lib/store/types'
  * - `CC Payoff`: settling a credit-card debt; spend was already recognised at purchase.
  * - `Top up`: loading a prepaid card / wallet; money movement, not consumption —
  *   the actual purchases made from that card/wallet are logged separately and count.
+ * - `Installment`: settling a BNPL installment; the purchase was already counted as
+ *   spend at checkout, so each installment payment is a settlement, not new spend.
  */
 export const NON_SPEND_CATEGORIES: ReadonlySet<string> = new Set<ExpenseCategory>([
   'Savings',
@@ -21,6 +23,7 @@ export const NON_SPEND_CATEGORIES: ReadonlySet<string> = new Set<ExpenseCategory
   'Currency Exchange',
   'CC Payoff',
   'Top up',
+  'Installment',
 ])
 
 /** True when a category is a money-movement (excluded from spend totals/budgets/charts). */

@@ -35,6 +35,7 @@ export function AddExpenseSheet() {
         submitError={sheet.submitError}
         paymentMethods={sheet.paymentMethods}
         creditCardOutstandingHint={sheet.creditCardOutstandingHint}
+        installment={sheet.installment}
         onSubmit={sheet.handleSubmit}
         onClose={sheet.handleClose}
       />

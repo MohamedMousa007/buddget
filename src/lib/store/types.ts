@@ -43,6 +43,7 @@ export type ExpenseCategory =
   | 'Currency Exchange'
   | 'CC Payoff'
   | 'Top up'
+  | 'Installment'
 
 export type PaymentMethodType =
   | 'cash'
