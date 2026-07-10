@@ -6,6 +6,37 @@ import { advanceRecurringDebtDueDate } from '@/lib/utils/recurringDebtPayments'
 import { isBnplPlan } from '@/lib/debt/bnpl'
 
 /**
+ * After a payment posts, keep the debt's active recurring reminder in sync:
+ * once a non-revolving debt (installment/personal/general) is fully paid, deactivate
+ * its template + clear the debt; otherwise roll the next due date forward one period.
+ * Shared by the scheduled-confirm path and manual payments, so paying by hand also
+ * advances the reminder. Credit cards revolve — never clear/deactivate, just advance.
+ */
+export function reconcileDebtSchedule(debtId: string): void {
+  const state = useFinanceStore.getState()
+  // Only debts with an active reminder are reconciled here; debts without a
+  // template (e.g. a person debt paid by hand) are left to the debt card's own
+  // paid-off/celebration flow, so this must never clear them prematurely.
+  const sched = state.recurringDebtPayments.find((r) => r.debtId === debtId && r.isActive)
+  if (!sched) return
+  const debt = state.debts.find((d) => d.id === debtId)
+  if (!debt) return
+  const stillOwed = calculateDebtRemainingRaw(debt, state.debtPayments, {
+    expenses: state.expenses,
+    exchangeRates: state.exchangeRates,
+    allDebts: state.debts,
+  })
+  if (stillOwed <= 1e-6 && debt.debtType !== 'credit_card') {
+    state.updateRecurringDebtPayment(sched.id, { isActive: false })
+    if (debt.status !== 'cleared') state.clearDebt(debtId)
+    return
+  }
+  state.updateRecurringDebtPayment(sched.id, {
+    nextDueDate: advanceRecurringDebtDueDate(sched.nextDueDate, sched.frequency),
+  })
+}
+
+/**
  * User confirmed a scheduled debt payment: log payment + expense, advance next due date.
  */
 export function confirmRecurringDebtPayment(scheduleId: string): boolean {
@@ -83,21 +114,8 @@ export function confirmRecurringDebtPayment(scheduleId: string): boolean {
     })
   }
 
-  // Deactivate the schedule + clear the debt the moment it's fully paid, so no
-  // ghost reminder fires for a settled plan.
-  const after = useFinanceStore.getState()
-  const stillOwed = calculateDebtRemainingRaw(debt, after.debtPayments, {
-    expenses: after.expenses,
-    exchangeRates: after.exchangeRates,
-    allDebts: after.debts,
-  })
-  if (stillOwed <= 1e-6) {
-    after.updateRecurringDebtPayment(scheduleId, { isActive: false })
-    after.clearDebt(debt.id)
-  } else {
-    const next = advanceRecurringDebtDueDate(due.nextDueDate, due.frequency)
-    after.updateRecurringDebtPayment(scheduleId, { nextDueDate: next })
-  }
+  // Keep the reminder in sync: advance next-due, or deactivate + clear when settled.
+  reconcileDebtSchedule(debt.id)
   return true
 }
 

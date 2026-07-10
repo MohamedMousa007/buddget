@@ -835,6 +835,7 @@ export const ar: Dictionary = {
     minimumPayment: 'الحد الأدنى للدفع',
     thisMonthCharges: 'مصروفات هذا الشهر',
     payNow: 'ادفع الآن',
+    payNextInstallment: 'دفع القسط التالي',
     viewCharges: 'عرض المصروفات',
     creditCardSetupHint: 'عيّن الحد الائتماني وتاريخ الاستحقاق ←',
   },

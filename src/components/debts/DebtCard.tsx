@@ -23,9 +23,13 @@ interface DebtCardProps {
   payments: DebtPayment[]
   onRecordPayment: () => void
   onEdit: () => void
+  /** Installment plans: the active reminder's next due date (ISO) — shown + drives the CTA. */
+  nextInstallmentDue?: string
+  /** Installment plans with an active reminder: one-tap "pay next installment". */
+  onPayInstallment?: () => void
 }
 
-export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardProps) {
+export function DebtCard({ debt, payments, onRecordPayment, onEdit, nextInstallmentDue, onPayInstallment }: DebtCardProps) {
   const t = useT()
   const clearDebt = useFinanceStore((s) => s.clearDebt)
   const { settings, exchangeRates, goldPricePerGram, goldPriceAvailable, expenses, debts } =
@@ -191,7 +195,7 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
         </button>
       </div>
 
-      <DebtCardPlanMeta debt={debt} payments={payments} paidOff={paidOff} balanceCtx={balanceCtx} />
+      <DebtCardPlanMeta debt={debt} payments={payments} paidOff={paidOff} balanceCtx={balanceCtx} nextDueOverride={nextInstallmentDue} />
 
       <div className="space-y-3">
         <div className="flex justify-between text-sm">
@@ -288,6 +292,23 @@ export function DebtCard({ debt, payments, onRecordPayment, onEdit }: DebtCardPr
         <p className="w-full mt-4 py-2.5 rounded-xl border border-[var(--color-brand-border)] text-center text-sm text-[var(--color-brand-text-muted)]">
           {t.debts.clearedMessage}
         </p>
+      ) : onPayInstallment ? (
+        <div className="mt-4 space-y-2">
+          <button
+            type="button"
+            onClick={onPayInstallment}
+            className="w-full py-2.5 rounded-xl bg-[var(--color-brand-green)] hover:bg-[var(--color-brand-green-hover)] text-white text-sm font-medium transition-colors"
+          >
+            {t.debts.payNextInstallment}
+          </button>
+          <button
+            type="button"
+            onClick={onRecordPayment}
+            className="w-full py-2 rounded-xl border border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] text-sm font-medium transition-colors"
+          >
+            {t.debts.buttonLogPayment}
+          </button>
+        </div>
       ) : (
         <button
           type="button"

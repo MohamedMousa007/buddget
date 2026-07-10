@@ -836,6 +836,7 @@ export const en: Dictionary = {
     minimumPayment: 'Minimum payment',
     thisMonthCharges: "This month's charges",
     payNow: 'Pay now',
+    payNextInstallment: 'Pay next installment',
     viewCharges: 'View charges',
     creditCardSetupHint: 'Set your credit limit and due date →',
   },
