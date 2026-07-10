@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { X, ArrowLeft, Plus, Search, ChevronDown, Check } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { AnimatePresence, motion } from 'framer-motion'
+import { X, ArrowLeft, Plus, Search, ChevronDown, Check, CreditCard } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { CurrencySheet } from '@/components/ui/CurrencySheet'
 import { shade, cardGradient, TypeGlyph } from '@/components/features/payments/PaymentCardCarousel'
@@ -11,12 +13,13 @@ import { useT } from '@/lib/i18n'
 import { currencyFlag, currencyName } from '@/lib/constants/currencyMeta'
 import {
   PAYMENT_TYPE_META, SETUP_TYPES, PAYMENT_BRANDS, QUICK_ADD, QUICK_ADD_BLEND, CARD_COLORS,
-  allowsLast4, composePaymentMethodName, decomposePaymentMethodName,
+  allowsLast4, providerInitials, composePaymentMethodName, decomposePaymentMethodName,
 } from '@/lib/payment/paymentMethodDefaults'
 import { cn } from '@/lib/utils'
 import type { Currency, PaymentMethod, PaymentMethodType } from '@/lib/store/types'
 
 type Disc = 'last4' | 'tag' | 'none'
+type CardMotion = 'float' | 'static'
 
 function rgba(hex: string, a: number): string {
   const h = hex.replace('#', '')
@@ -38,15 +41,17 @@ interface Props {
   onSaved?: (id: string) => void
   /** Stack above another sheet (e.g. the picker). Bumps z-indices. */
   nested?: boolean
+  /** Card-preview motion. Defaults to a gentle float. */
+  cardMotion?: CardMotion
 }
 
 /**
- * Add / edit a payment method — live card preview + colour slider + provider
- * picker + type/identifier/currency/default. Reused by the wallet sheet and the
- * payment-method picker (self-contained add).
+ * Add / edit a payment method — floating live card preview (pinned above the
+ * sheet) + provider field + colour slider + type/identifier/currency/default.
+ * Reused by the wallet sheet and the payment-method picker (self-contained add).
  */
 export function PaymentMethodSetupSheet({
-  open, editing, prefill, baseCurrency, onClose, onSaved, nested = false,
+  open, editing, prefill, baseCurrency, onClose, onSaved, nested = false, cardMotion = 'float',
 }: Props) {
   const t = useT()
   const addPaymentMethod = useFinanceStore((s) => s.addPaymentMethod)
@@ -65,7 +70,7 @@ export function PaymentMethodSetupSheet({
   const [currencyOpen, setCurrencyOpen] = useState(false)
 
   const prevOpen = useRef(false)
-  useEscapeClose(open, onClose)
+  useEscapeClose(open && !providerSheetOpen && !currencyOpen, onClose)
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- initialise form when the sheet opens */
@@ -135,9 +140,25 @@ export function PaymentMethodSetupSheet({
     ? { shell: 'z-[120]', provider: 'z-[130]', currency: 'z-[140]' }
     : { shell: 'z-[110]', provider: 'z-[120]', currency: 'z-[130]' }
 
+  // provider-field chip (empty = muted card glyph; selected = brand initials)
+  const fieldChipColor = brand ? brand.colors[0] : '#9898B0'
+  const fieldInitials = brand ? brand.short : providerInitials(providerName)
+
+  const previewTail = disc === 'last4'
+    ? (last4 ? `••••  ${last4}` : '••••  ••••')
+    : disc === 'tag' && tag.trim() ? tag.trim() : '——  ——'
+
   return (
     <>
-      <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={z.shell}>
+      <FloatingCardPreview
+        open={open} z={z.shell} motion={cardMotion}
+        hasProvider={hasProvider} color={effectiveColor} type={type}
+        name={hasProvider ? providerName : t.paymentMethods.addTitle}
+        typeLabel={hasProvider ? PAYMENT_TYPE_META[type].label : t.paymentMethods.newMethod}
+        tail={previewTail} curCode={curCode}
+      />
+
+      <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={z.shell} panelClassName="h-[70vh]">
         <div className="flex min-h-0 flex-1 flex-col outline-none">
           <div className="flex shrink-0 items-center gap-2.5 px-4 pb-3 pt-1">
             <button
@@ -158,112 +179,59 @@ export function PaymentMethodSetupSheet({
           </div>
 
           <div className="native-scroll min-h-0 flex-1 overflow-y-auto px-4 pb-4">
-            {/* Live card preview — always reflects colour / type / fields */}
-            <div className="mb-4 mt-0.5 flex justify-center">
-              <div
-                className="relative flex flex-col overflow-hidden rounded-[20px]"
-                style={{
-                  width: 262, height: 164, padding: '18px 20px',
-                  background: cardGradient(effectiveColor),
-                  boxShadow: `0 20px 44px -16px ${shade(effectiveColor, 0.5)}`,
-                }}
-              >
-                <div
-                  className="pointer-events-none absolute inset-0 rounded-[20px]"
-                  style={{ background: 'radial-gradient(120% 90% at 85% 8%, rgba(255,255,255,.16), transparent 60%)' }}
-                />
-                <div className="relative flex items-center justify-between">
-                  <span className="flex h-8 w-[44px] shrink-0 items-center justify-center rounded-lg bg-white/20 p-[7px] text-white">
-                    <TypeGlyph type={type} className="h-full w-full" />
-                  </span>
-                  <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/80">
-                    {PAYMENT_TYPE_META[type].label}
-                  </span>
+            <div className="flex flex-col gap-[18px]">
+              {/* Provider */}
+              <div>
+                <div className="mx-0.5 mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
+                  {t.paymentMethods.provider}
                 </div>
-                <div className="relative mt-auto text-start">
-                  <div
-                    className="truncate text-[22px] font-bold tracking-[-0.01em]"
-                    style={{ color: hasProvider ? '#fff' : 'rgba(255,255,255,.6)' }}
+                <button
+                  type="button" onClick={() => setProviderSheetOpen(true)}
+                  className="flex h-[50px] w-full items-center gap-3 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3"
+                >
+                  <span
+                    className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] text-[11px] font-extrabold"
+                    style={hasProvider
+                      ? { background: rgba(fieldChipColor, 0.16), color: fieldChipColor }
+                      : { background: 'var(--color-brand-border)', color: 'var(--color-brand-text-muted)' }}
                   >
-                    {hasProvider ? providerName : t.paymentMethods.addTitle}
-                  </div>
-                  <div className="mt-3 flex items-end justify-between">
-                    <span className="font-mono-numbers text-[15px] font-semibold tracking-[0.16em] text-white/90">
-                      {disc === 'last4'
-                        ? (last4 ? `••••  ${last4}` : '••••  ••••')
-                        : disc === 'tag' && tag.trim() ? tag.trim() : '——  ——'}
-                    </span>
-                    <span className="font-mono-numbers text-[13px] font-bold text-white/85">{curCode}</span>
-                  </div>
+                    {hasProvider ? fieldInitials : <CreditCard className="h-4 w-4" />}
+                  </span>
+                  <span
+                    className={cn(
+                      'min-w-0 flex-1 truncate text-start text-[14.5px] font-semibold',
+                      hasProvider ? 'text-[var(--color-brand-text-primary)]' : 'text-[var(--color-brand-text-muted)]',
+                    )}
+                  >
+                    {hasProvider ? providerName : t.paymentMethods.providerPlaceholder}
+                  </span>
+                  <ChevronDown className="h-[15px] w-[15px] shrink-0 text-[var(--color-brand-text-muted)]" />
+                </button>
+              </div>
+
+              {/* Card colour */}
+              <div>
+                <div className="mx-0.5 mb-2.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
+                  {t.paymentMethods.cardColour}
+                </div>
+                <div className="native-scroll flex gap-2.5 overflow-x-auto px-0.5 pb-1">
+                  {CARD_COLORS.map((c) => {
+                    const activeSw = effectiveColor === c
+                    return (
+                      <button
+                        key={c} type="button" onClick={() => setCardColor(c)} aria-label={`Colour ${c}`}
+                        className="h-[34px] w-[34px] shrink-0 rounded-[10px]"
+                        style={{
+                          background: c,
+                          border: `2px solid ${activeSw ? '#fff' : 'transparent'}`,
+                          boxShadow: '0 0 0 1px rgba(255,255,255,.12)',
+                        }}
+                      />
+                    )
+                  })}
                 </div>
               </div>
-            </div>
 
-            {/* Card colour */}
-            <div className="mb-5">
-              <div className="mx-0.5 mb-2.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
-                {t.paymentMethods.cardColour}
-              </div>
-              <div className="native-scroll flex gap-2.5 overflow-x-auto px-0.5 pb-1">
-                {CARD_COLORS.map((c) => {
-                  const activeSw = effectiveColor === c
-                  return (
-                    <button
-                      key={c} type="button" onClick={() => setCardColor(c)} aria-label={`Colour ${c}`}
-                      className="h-[34px] w-[34px] shrink-0 rounded-[10px]"
-                      style={{
-                        background: c,
-                        border: `2px solid ${activeSw ? '#fff' : 'transparent'}`,
-                        boxShadow: '0 0 0 1px rgba(255,255,255,.12)',
-                      }}
-                    />
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Provider — popular grid + search all */}
-            <div className="mb-5">
-              <div className="mx-0.5 mb-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
-                {t.paymentMethods.popularOptions}
-              </div>
-              <div className="mb-3 grid grid-cols-4 gap-2.5">
-                {popularIds.slice(0, 8).map((id) => {
-                  const b = PAYMENT_BRANDS[id]
-                  const col = b.colors[0]
-                  const sel = brandId === id
-                  return (
-                    <button
-                      key={id} type="button" onClick={() => pickBrand(id)}
-                      className="flex h-[74px] flex-col items-center gap-[7px] rounded-[13px] p-2 px-1"
-                      style={{
-                        background: sel ? rgba(col, 0.14) : 'var(--color-brand-elevated)',
-                        border: `1px solid ${sel ? rgba(col, 0.5) : 'var(--color-brand-border)'}`,
-                      }}
-                    >
-                      <span
-                        className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] text-[11px] font-extrabold"
-                        style={{ background: rgba(col, 0.18), color: col }}
-                      >
-                        {b.short}
-                      </span>
-                      <span className="max-w-full truncate text-[10.5px] font-semibold text-[var(--color-brand-text-secondary)]">
-                        {b.name}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
-              <button
-                type="button" onClick={() => setProviderSheetOpen(true)}
-                className="flex h-[46px] w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[13.5px] font-semibold text-[var(--color-brand-text-secondary)]"
-              >
-                <Search className="h-4 w-4" />
-                {t.paymentMethods.searchAll}
-              </button>
-            </div>
-
-            <div className="flex flex-col gap-[17px]">
               {/* Type */}
               <div>
                 <div className="mx-0.5 mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
@@ -400,7 +368,7 @@ export function PaymentMethodSetupSheet({
       </ModalShell>
 
       <ProviderPickerSheet
-        open={providerSheetOpen}
+        open={open && providerSheetOpen}
         selectedId={brandId}
         popularIds={popularIds}
         zIndexClassName={z.provider}
@@ -410,7 +378,7 @@ export function PaymentMethodSetupSheet({
       />
 
       <CurrencySheet
-        open={currencyOpen}
+        open={open && currencyOpen}
         value={curCode}
         base={baseCurrency}
         zIndexClassName={z.currency}
@@ -418,6 +386,108 @@ export function PaymentMethodSetupSheet({
         onClose={() => setCurrencyOpen(false)}
       />
     </>
+  )
+}
+
+// ── Floating card preview (pinned above the sheet) ────────────────────────────
+function FloatingCardPreview({
+  open, z, motion: cardMotion, hasProvider, color, type, name, typeLabel, tail, curCode,
+}: {
+  open: boolean
+  z: string
+  motion: CardMotion
+  hasProvider: boolean
+  color: string
+  type: PaymentMethodType
+  name: string
+  typeLabel: string
+  tail: string
+  curCode: string
+}) {
+  if (typeof document === 'undefined') return null
+  const haloColor = hasProvider ? color : '#3A3A4A'
+  const isFloat = cardMotion === 'float'
+  const cardShadow = hasProvider
+    ? (isFloat
+        ? `0 20px 44px -16px ${shade(color, 0.5)}`
+        : `0 36px 64px -16px rgba(0,0,0,.72), 0 18px 40px -18px ${rgba(color, 0.55)}`)
+    : (isFloat ? 'none' : '0 30px 60px -18px rgba(0,0,0,.6)')
+
+  return createPortal(
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          key="pm-float-card"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 8 }}
+          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+          className={cn('pointer-events-none fixed left-1/2 w-[262px]', z)}
+          style={{ top: 'min(34px, calc(30vh - 188px))', transform: 'translateX(-50%)' }}
+        >
+          {/* halo */}
+          <motion.div
+            aria-hidden
+            className="absolute inset-0"
+            style={{
+              background: `radial-gradient(circle at 50% 45%, ${rgba(haloColor, isFloat ? 0.55 : 0.7)}, transparent 70%)`,
+              filter: 'blur(30px)', zIndex: 0,
+            }}
+            animate={isFloat ? { opacity: [0.55, 0.8, 0.55], scale: [1, 1.06, 1] } : { opacity: 1, scale: 1.05 }}
+            transition={isFloat ? { duration: 4.6, repeat: Infinity, ease: 'easeInOut' } : { duration: 0 }}
+          />
+          {/* fixed contact shadow — card parallaxes over it */}
+          <div
+            aria-hidden
+            className="absolute left-1/2 -translate-x-1/2"
+            style={{
+              bottom: -14, width: isFloat ? 190 : 210, height: isFloat ? 22 : 28,
+              background: `rgba(0,0,0,${isFloat ? 0.5 : 0.62})`, filter: `blur(${isFloat ? 12 : 16}px)`,
+              borderRadius: '50%', zIndex: 0,
+            }}
+          />
+          {/* card */}
+          <motion.div
+            className="relative flex h-[164px] w-[262px] flex-col overflow-hidden rounded-[20px]"
+            style={{
+              padding: '18px 20px',
+              background: hasProvider ? cardGradient(color) : '#161620',
+              border: hasProvider ? 'none' : '1px dashed #33333f',
+              boxShadow: cardShadow,
+            }}
+            animate={isFloat ? { y: [0, -5, 0] } : { y: 0 }}
+            transition={isFloat ? { duration: 4.6, repeat: Infinity, ease: 'easeInOut' } : { duration: 0 }}
+          >
+            <div
+              className="pointer-events-none absolute inset-0 rounded-[20px]"
+              style={{ background: 'radial-gradient(120% 90% at 85% 8%, rgba(255,255,255,.16), transparent 60%)' }}
+            />
+            <div className="relative flex items-center justify-between">
+              <span
+                className="flex h-8 w-[44px] shrink-0 items-center justify-center rounded-lg p-[7px] text-white"
+                style={{ background: hasProvider ? 'rgba(255,255,255,.2)' : 'rgba(255,255,255,.06)' }}
+              >
+                {hasProvider ? <TypeGlyph type={type} className="h-full w-full" /> : <Plus className="h-full w-full" />}
+              </span>
+              <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/80">{typeLabel}</span>
+            </div>
+            <div className="relative mt-auto text-start">
+              <div
+                className="truncate text-[22px] font-bold tracking-[-0.01em]"
+                style={{ color: hasProvider ? '#fff' : 'rgba(255,255,255,.45)' }}
+              >
+                {name}
+              </div>
+              <div className="mt-3 flex items-end justify-between">
+                <span className="font-mono-numbers text-[15px] font-semibold tracking-[0.16em] text-white/90">{tail}</span>
+                <span className="font-mono-numbers text-[13px] font-bold text-white/85">{curCode}</span>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body,
   )
 }
 
@@ -494,10 +564,10 @@ function ProviderPickerSheet({
             return (
               <button
                 key={`${r.id}-${i}`} type="button" onClick={() => onPick(r.id)}
-                className={cn(
-                  'flex min-h-14 w-full items-center gap-3 rounded-[14px] px-3 py-2 text-start',
-                  sel ? 'border border-[var(--color-brand-red)]/40 bg-[var(--color-brand-red)]/10' : 'border border-transparent',
-                )}
+                className="flex min-h-14 w-full items-center gap-3 rounded-[14px] border px-3 py-2 text-start"
+                style={sel
+                  ? { background: 'rgba(56,217,107,.12)', borderColor: 'rgba(56,217,107,.45)' }
+                  : { borderColor: 'transparent' }}
               >
                 <span
                   className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[11px] text-[12px] font-extrabold"
@@ -511,7 +581,7 @@ function ProviderPickerSheet({
                     {PAYMENT_TYPE_META[b.type].label}{b.full ? ` · ${b.full}` : ''}
                   </span>
                 </span>
-                {sel && <Check className="h-[18px] w-[18px] shrink-0 text-[var(--color-brand-red)]" />}
+                {sel && <Check className="h-[18px] w-[18px] shrink-0 text-[#38D96B]" />}
               </button>
             )
           })}

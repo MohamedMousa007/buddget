@@ -98,7 +98,7 @@ export function SelectPaymentMethodSheet({ open, value, paymentMethods, onSelect
       </ModalShell>
 
       <PaymentMethodSetupSheet
-        open={setupOpen}
+        open={open && setupOpen}
         editing={null}
         baseCurrency={baseCurrency}
         nested

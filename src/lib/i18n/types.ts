@@ -1489,6 +1489,8 @@ export interface Dictionary {
     selectCard: string
     selectHint: string
     addNewMethod: string
+    provider: string
+    providerPlaceholder: string
   }
 
   goldPurity: {
