@@ -3,13 +3,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Calendar, ChevronDown, X, Plus, Check, Info, ArrowLeftRight } from 'lucide-react'
-import type { Currency, PaymentMethod, PaymentMethodType } from '@/lib/store/types'
+import type { Currency, PaymentMethod } from '@/lib/store/types'
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
 import { EXPENSE_CATEGORY_GRID } from '@/lib/constants/categoryGrid'
 import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
-import { defaultColorForPaymentMethodType } from '@/lib/payment/paymentMethodDefaults'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { useT, useLocale } from '@/lib/i18n'
 import { UnifiedDatePicker, formatDatePillLabel } from '@/components/ui/UnifiedDatePicker'
 import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
@@ -17,8 +14,6 @@ import { rgba } from '@/lib/utils/color'
 import { useNumberPad } from '@/components/ui/useNumberPad'
 
 const HIDE_SCROLL = '[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
-const ADD_PAY_TYPES: PaymentMethodType[] = ['cash', 'bank_account', 'wallet', 'credit_card', 'debit_card']
-const LAST4_TYPES: PaymentMethodType[] = ['bank_account', 'credit_card', 'debit_card', 'prepaid_card']
 
 // shared surface/input recipes — all theme-driven via brand tokens
 const INPUT =
@@ -91,20 +86,11 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
   const t = useT()
   const { locale } = useLocale()
   const ar = locale === 'ar'
-  const { addPaymentMethod, settings } = useFinanceStore()
 
   const [calOpen, setCalOpen] = useState(false)
   const [curOpen, setCurOpen] = useState(false)
-  const [addPayOpen, setAddPayOpen] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [noteOpen, setNoteOpen] = useState(mode === 'edit' && Boolean(notes.trim()))
-
-  // add-payment inline form state
-  const [apName, setApName] = useState('')
-  const [apType, setApType] = useState<PaymentMethodType>('cash')
-  const [apCurrency, setApCurrency] = useState<Currency>(settings.baseCurrency)
-  const [apLast4, setApLast4] = useState('')
-  const [apDefault, setApDefault] = useState(false)
 
   // subtle scroll-position indicator for the category grid
   const catRef = useRef<HTMLDivElement>(null)
@@ -133,37 +119,10 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
   }
 
   const amountPad = useNumberPad({ value: amount, onChange: setAmt, currency })
-  const last4Pad = useNumberPad({
-    value: apLast4,
-    onChange: (v) => setApLast4(v.replace(/\D/g, '').slice(0, 4)),
-    mode: 'pin',
-    label: t.expenseForm.last4,
-  })
 
   const handleX = () => {
     if (mode === 'edit' && isDirty) setConfirmOpen(true)
     else onClose()
-  }
-
-  const saveAddPayment = () => {
-    if (!apName.trim()) return
-    const before = new Set(paymentMethods.map((m) => m.id))
-    addPaymentMethod({
-      name: apName.trim(),
-      type: apType,
-      currency: clampFiatToAllowed(settings, apCurrency),
-      color: defaultColorForPaymentMethodType(apType),
-      isDefault: apDefault,
-      ...(apLast4 && LAST4_TYPES.includes(apType) ? { last4: apLast4 } : {}),
-    })
-    const added = useFinanceStore.getState().paymentMethods.find((m) => !before.has(m.id))
-    if (added) setPaymentMethodId(added.id)
-    setApName('')
-    setApType('cash')
-    setApCurrency(settings.baseCurrency)
-    setApLast4('')
-    setApDefault(false)
-    setAddPayOpen(false)
   }
 
   const IcClose = <X className="w-full h-full" strokeWidth={2} />
@@ -323,7 +282,6 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
             value={paymentMethodId}
             onChange={setPaymentMethodId}
             paymentMethods={paymentMethods}
-            onAddNew={() => setAddPayOpen(true)}
             label={t.expenseForm.paymentMethod}
           />
 
@@ -472,137 +430,6 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                     </button>
                   )
                 })}
-              </div>
-            </div>
-          </div>
-        </Portal>
-      ) : null}
-
-      {/* add payment method */}
-      {addPayOpen ? (
-        <Portal>
-          <div dir={ar ? 'rtl' : 'ltr'} className="fixed inset-0 z-[120]" style={{ animation: 'efFade .18s ease' }}>
-            <button
-              type="button"
-              aria-label={t.common.close}
-              onClick={() => setAddPayOpen(false)}
-              className="absolute inset-0 border-none bg-black/60"
-            />
-            <div
-              className={`${SHEET_SURFACE} px-5 pt-2.5 pb-6`}
-              style={{
-                animation: 'efUp .28s cubic-bezier(.22,1,.36,1)',
-                fontFamily: ar ? 'var(--font-sans-ar)' : 'var(--font-sans)',
-              }}
-            >
-              <div className="mx-auto mt-0.5 mb-3 h-1 w-10 rounded-full bg-[var(--color-brand-border)]" />
-              <div className="mb-4 flex items-center justify-between">
-                <div className="text-lg font-semibold text-[var(--color-brand-text-primary)]">{t.expenseForm.addPaymentMethod}</div>
-                <button
-                  type="button"
-                  onClick={() => setAddPayOpen(false)}
-                  aria-label={t.common.close}
-                  className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] p-3 text-[var(--color-brand-text-muted)]"
-                >
-                  {IcClose}
-                </button>
-              </div>
-              <div className="flex flex-col gap-4">
-                <div>
-                  <div className={`${microLabel} mb-2`}>{t.expenseForm.name}</div>
-                  <input
-                    value={apName}
-                    onChange={(e) => setApName(e.target.value)}
-                    placeholder={t.expenseForm.namePlaceholder}
-                    className={INPUT}
-                  />
-                </div>
-                <div>
-                  <div className={`${microLabel} mb-2.5`}>{t.expenseForm.type}</div>
-                  <div className={`flex gap-2 overflow-x-auto ${HIDE_SCROLL}`}>
-                    {ADD_PAY_TYPES.map((ty) => {
-                      const on = apType === ty
-                      return (
-                        <button
-                          key={ty}
-                          type="button"
-                          onClick={() => setApType(ty)}
-                          aria-pressed={on}
-                          className="shrink-0 whitespace-nowrap rounded-full border px-3.5 py-2 text-xs font-semibold transition-all"
-                          style={
-                            on
-                              ? { background: 'var(--color-brand-red)', borderColor: 'var(--color-brand-red)', color: '#fff' }
-                              : {
-                                  background: 'var(--color-brand-elevated)',
-                                  borderColor: 'var(--color-brand-border)',
-                                  color: 'var(--color-brand-text-muted)',
-                                }
-                          }
-                        >
-                          {t.expenseForm.paymentTypeLabels[ty]}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-                <div
-                  className="grid gap-3"
-                  style={{ gridTemplateColumns: LAST4_TYPES.includes(apType) ? '1fr 1fr' : '1fr' }}
-                >
-                  <div>
-                    <div className={`${microLabel} mb-2`}>{t.expenseForm.currency}</div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const i = FIAT_CURRENCIES.indexOf(apCurrency)
-                        setApCurrency(FIAT_CURRENCIES[(i + 1) % FIAT_CURRENCIES.length])
-                      }}
-                      className="flex h-12 w-full items-center justify-between rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-base font-semibold text-[var(--color-brand-text-primary)]"
-                    >
-                      {apCurrency}
-                      <ChevronDown className="w-4 h-4 text-[var(--color-brand-text-muted)]" />
-                    </button>
-                  </div>
-                  {LAST4_TYPES.includes(apType) ? (
-                    <div>
-                      <div className={`${microLabel} mb-2`}>{t.expenseForm.last4}</div>
-                      <button
-                        type="button"
-                        onClick={last4Pad.openPad}
-                        dir="ltr"
-                        className={`${INPUT} flex items-center font-medium font-mono-numbers ${last4Pad.isOpen ? 'border-[var(--color-brand-red)]' : ''}`}
-                      >
-                        <span className={apLast4 ? '' : 'text-[var(--color-brand-text-muted)]'}>{apLast4 || '0001'}</span>
-                      </button>
-                      {last4Pad.pad}
-                    </div>
-                  ) : null}
-                </div>
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-sm font-medium text-[var(--color-brand-text-secondary)]">{t.expenseForm.setDefault}</span>
-                  <button
-                    type="button"
-                    onClick={() => setApDefault((v) => !v)}
-                    role="switch"
-                    aria-checked={apDefault}
-                    aria-label={t.expenseForm.setDefault}
-                    className="relative h-7 w-11 rounded-full border-none transition-colors"
-                    style={{ background: apDefault ? 'var(--color-brand-red)' : 'var(--color-brand-border)' }}
-                  >
-                    <span
-                      className="absolute top-1 h-5 w-5 rounded-full bg-white transition-transform start-1"
-                      style={{ transform: apDefault ? (ar ? 'translateX(-18px)' : 'translateX(18px)') : 'translateX(0)' }}
-                    />
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  onClick={saveAddPayment}
-                  disabled={!apName.trim()}
-                  className="mt-1 h-12 w-full rounded-xl bg-[var(--color-brand-red)] text-base font-semibold text-white hover:bg-[var(--color-brand-red-hover)] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {t.expenseForm.addPaymentMethod}
-                </button>
               </div>
             </div>
           </div>

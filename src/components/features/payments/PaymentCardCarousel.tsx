@@ -1,7 +1,7 @@
 'use client'
 
-import { createElement, useRef } from 'react'
-import { MoreVertical } from 'lucide-react'
+import { createElement, useRef, useState } from 'react'
+import { MoreVertical, Plus } from 'lucide-react'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
 import { PAYMENT_TYPE_META, decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 import type { PaymentMethod, PaymentMethodType } from '@/lib/store/types'
@@ -23,8 +23,8 @@ export function TypeGlyph({ type, className }: { type: PaymentMethodType; classN
 
 const CARD_W = 252
 const CARD_H = 158
-/** A horizontal swipe past this many px advances exactly one card (snappy, not loose). */
-const SWIPE_THRESHOLD = 45
+const STEP = 132 // px between adjacent card centres
+const TAP_SLOP = 6 // movement under this many px counts as a tap, not a drag
 
 interface Props {
   methods: PaymentMethod[]
@@ -38,35 +38,77 @@ interface Props {
   onMenu?: (id: string) => void
   /** Highlight the currently-selected method with a ring (select mode). */
   selectedId?: string
+  /** Append a dashed “+” add tile; tapping it (focused) fires this. */
+  onAddCard?: () => void
+  addLabel?: string
 }
 
 /**
- * Swipeable payment-card carousel. One card per swipe (snaps), peek neighbours,
- * tap a neighbour to focus it, tap the focused card to select. Shared by the
- * wallet management sheet and the payment-method picker.
+ * Swipeable payment-card carousel. The deck follows the finger live and snaps to
+ * the nearest card on release (like a slider) — you must drag past half a card to
+ * advance. Tap a neighbour to focus it, tap the focused card to select. Shared by
+ * the wallet management sheet and the payment-method picker.
  */
 export function PaymentCardCarousel({
-  methods, active, onActiveChange, defaultLabel, hint, onCardSelect, onMenu, selectedId,
+  methods, active, onActiveChange, defaultLabel, hint, onCardSelect, onMenu, selectedId, onAddCard, addLabel,
 }: Props) {
-  const gesture = useRef<{ x: number; y: number } | null>(null)
-  const swiped = useRef(false)
-  const safeActive = Math.min(active, Math.max(0, methods.length - 1))
+  const slotCount = methods.length + (onAddCard ? 1 : 0)
+  const start = useRef<{ x: number; y: number } | null>(null)
+  const didDrag = useRef(false)
+  const [dragX, setDragX] = useState(0)
+  const [dragging, setDragging] = useState(false)
+
+  const safeActive = Math.min(Math.max(active, 0), Math.max(0, slotCount - 1))
 
   const onPointerDown = (e: React.PointerEvent) => {
-    gesture.current = { x: e.clientX, y: e.clientY }
-    swiped.current = false
+    if (e.button !== 0 && e.pointerType === 'mouse') return
+    start.current = { x: e.clientX, y: e.clientY }
+    didDrag.current = false
+    setDragging(true)
   }
-  const onPointerUp = (e: React.PointerEvent) => {
-    const g = gesture.current
-    gesture.current = null
-    if (!g) return
-    const dx = e.clientX - g.x
-    const dy = e.clientY - g.y
-    if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)) {
-      swiped.current = true
-      const next = Math.max(0, Math.min(methods.length - 1, safeActive + (dx < 0 ? 1 : -1)))
-      if (next !== safeActive) onActiveChange(next)
+  const onPointerMove = (e: React.PointerEvent) => {
+    const s = start.current
+    if (!s) return
+    const dx = e.clientX - s.x
+    const dy = e.clientY - s.y
+    if (!didDrag.current) {
+      if (Math.abs(dx) < TAP_SLOP && Math.abs(dy) < TAP_SLOP) return
+      if (Math.abs(dy) > Math.abs(dx)) { start.current = null; setDragging(false); return } // vertical → let it scroll
+      didDrag.current = true
     }
+    setDragX(dx)
+  }
+  const endDrag = (e: React.PointerEvent) => {
+    const s = start.current
+    start.current = null
+    setDragging(false)
+    if (!s || !didDrag.current) { setDragX(0); return }
+    const pos = safeActive - (e.clientX - s.x) / STEP
+    const next = Math.min(Math.max(Math.round(pos), 0), slotCount - 1)
+    setDragX(0)
+    if (next !== safeActive) onActiveChange(next)
+  }
+
+  const pos = dragging
+    ? Math.min(Math.max(safeActive - dragX / STEP, -0.35), slotCount - 1 + 0.35)
+    : safeActive
+
+  const slotStyle = (i: number): React.CSSProperties => {
+    const off = i - pos
+    const abs = Math.abs(off)
+    return {
+      width: CARD_W, height: CARD_H, marginInlineStart: -CARD_W / 2,
+      transform: `translateX(${off * STEP}px) scale(${Math.max(0.82, 1 - abs * 0.18)})`,
+      opacity: abs > 2.2 ? 0 : Math.max(0, 1 - abs * 0.6),
+      zIndex: 20 - Math.round(abs),
+      transition: dragging ? 'none' : 'transform .38s cubic-bezier(.22,1,.36,1), opacity .3s',
+      pointerEvents: abs > 2.2 ? 'none' : 'auto',
+    }
+  }
+  const tapSlot = (i: number, action: () => void) => {
+    if (didDrag.current) return
+    if (i !== safeActive) onActiveChange(i)
+    else action()
   }
 
   return (
@@ -74,12 +116,11 @@ export function PaymentCardCarousel({
       <div
         className="relative mt-2.5 h-[224px] touch-pan-y select-none"
         onPointerDown={onPointerDown}
-        onPointerUp={onPointerUp}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
       >
         {methods.map((m, i) => {
-          const off = i - safeActive
-          const isActiveCard = i === safeActive
-          const hidden = Math.abs(off) > 2
           const color = m.color ?? PAYMENT_TYPE_META[m.type].color
           const { provider, tag } = decomposePaymentMethodName(m.name, m.last4)
           const tail = m.last4 ? `•••• ${m.last4}` : tag || '—'
@@ -88,19 +129,8 @@ export function PaymentCardCarousel({
             <div
               key={m.id}
               className="absolute start-1/2 top-1.5"
-              style={{
-                width: CARD_W, height: CARD_H, marginInlineStart: -CARD_W / 2,
-                transform: `translateX(${off * 132}px) scale(${isActiveCard ? 1 : 0.82})`,
-                opacity: hidden ? 0 : isActiveCard ? 1 : 0.4,
-                zIndex: 20 - Math.abs(off),
-                transition: 'transform .38s cubic-bezier(.22,1,.36,1), opacity .3s',
-                pointerEvents: hidden ? 'none' : 'auto',
-              }}
-              onClick={() => {
-                if (swiped.current) { swiped.current = false; return }
-                if (!isActiveCard) onActiveChange(i)
-                else onCardSelect?.(m)
-              }}
+              style={slotStyle(i)}
+              onClick={() => tapSlot(i, () => onCardSelect?.(m))}
             >
               <div
                 className="relative flex h-full w-full flex-col rounded-[20px] p-4 px-[18px] text-start"
@@ -127,6 +157,7 @@ export function PaymentCardCarousel({
                   {onMenu && (
                     <button
                       type="button"
+                      onPointerDown={(e) => e.stopPropagation()}
                       onClick={(e) => { e.stopPropagation(); onMenu(m.id) }}
                       aria-label="Manage"
                       className="-mr-1.5 -mt-0.5 flex h-7 w-7 items-center justify-center bg-transparent p-[3px] text-white/90"
@@ -146,12 +177,30 @@ export function PaymentCardCarousel({
             </div>
           )
         })}
+
+        {onAddCard && (
+          <div
+            key="__add"
+            className="absolute start-1/2 top-1.5"
+            style={slotStyle(methods.length)}
+            onClick={() => tapSlot(methods.length, onAddCard)}
+          >
+            <div className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-[20px] border border-dashed border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-brand-red)]/12 text-[var(--color-brand-red)]">
+                <Plus className="h-6 w-6" />
+              </span>
+              <span className="text-sm font-semibold text-[var(--color-brand-text-secondary)]">
+                {addLabel}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="mt-1.5 flex items-center justify-center gap-1.5">
-        {methods.map((m, i) => (
+        {Array.from({ length: slotCount }).map((_, i) => (
           <span
-            key={m.id}
+            key={i}
             className="h-1.5 rounded-full transition-all"
             style={{
               width: i === safeActive ? 18 : 6,

@@ -466,6 +466,7 @@ export const useFinanceStore = create<FinanceStore>()(
             debts: [...state.debts, { ...ccRow, id: debtId, createdAt: new Date().toISOString() }],
           }
         })
+        return pmId
       },
 
       updatePaymentMethod: (id, updates) =>
