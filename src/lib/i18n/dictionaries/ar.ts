@@ -1630,6 +1630,9 @@ export const ar: Dictionary = {
     addCustomNamed: 'أضِف «{q}» كطريقة مخصّصة',
     savedCount: '{n} محفوظة',
     manageSubtitle: 'أضِف وأدر بطاقاتك ومحافظك',
+    selectCard: 'اختر البطاقة',
+    selectHint: 'اسحب بطاقاتك · اضغط للاختيار',
+    addNewMethod: 'إضافة طريقة جديدة',
   },
 
   goldPurity: {
