@@ -47,7 +47,8 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { buildGoalProgressContext } from '@/lib/goals/computeGoalProgress'
 import { reconcileAchievedGoals } from '@/lib/goals/reconcileAchievedGoals'
 import { migrateIdsToUuid } from '@/lib/store/migrations/v17_uuid_remap'
-const PERSIST_VERSION = 18
+import { normalizePaymentMethodType } from '@/lib/payment/paymentMethodDefaults'
+const PERSIST_VERSION = 19
 
 function reconcileGoalsForState(state: FinanceStore): Goal[] {
   const ctx = buildGoalProgressContext(state, useSettingsStore.getState().monthFilter)
@@ -437,7 +438,7 @@ export const useFinanceStore = create<FinanceStore>()(
           const paymentMethods = method.isDefault
             ? [...state.paymentMethods.map((m) => ({ ...m, isDefault: false })), newMethod]
             : [...state.paymentMethods, newMethod]
-          if (method.type !== 'card_credit') {
+          if (method.type !== 'credit_card') {
             return { paymentMethods }
           }
           const hasDebtForPm = state.debts.some(
@@ -527,7 +528,7 @@ export const useFinanceStore = create<FinanceStore>()(
       addCreditCardDebt: (debtInput, paymentMethodInfo) => {
         const st = get()
         const matchPm = (pm: PaymentMethod) =>
-          pm.type === 'card_credit' &&
+          pm.type === 'credit_card' &&
           (pm.name.toLowerCase() === paymentMethodInfo.name.trim().toLowerCase() ||
             (!!paymentMethodInfo.last4 && pm.last4 === paymentMethodInfo.last4))
 
@@ -568,7 +569,7 @@ export const useFinanceStore = create<FinanceStore>()(
                   {
                     id: pmId,
                     name: paymentMethodInfo.name.trim(),
-                    type: 'card_credit',
+                    type: 'credit_card',
                     currency: merged.currency as Currency,
                     last4: paymentMethodInfo.last4,
                     isDefault: false,
@@ -597,7 +598,7 @@ export const useFinanceStore = create<FinanceStore>()(
                 {
                   id: pmId,
                   name: paymentMethodInfo.name.trim(),
-                  type: 'card_credit',
+                  type: 'credit_card',
                   currency: merged.currency as Currency,
                   last4: paymentMethodInfo.last4,
                   isDefault: false,
@@ -1561,6 +1562,14 @@ export const useFinanceStore = create<FinanceStore>()(
           persistedState && typeof persistedState === 'object'
             ? (persistedState as Record<string, unknown>)
             : {}
+        // v19: payment method types moved to the 8-value model. Remap the legacy
+        // enum strings on cached rows so they resolve to valid new types.
+        if (fromVersion < 19 && Array.isArray(base.paymentMethods)) {
+          base.paymentMethods = (base.paymentMethods as Record<string, unknown>[]).map((m) => ({
+            ...m,
+            type: normalizePaymentMethodType(m.type as string),
+          }))
+        }
         // v18: the onboarding gate is metadata-only (onboarding_version dropped)
         // and currency is settings-only (profile.baseCurrency removed). Strip both
         // dead keys from the persisted profile so they can't linger or mislead.

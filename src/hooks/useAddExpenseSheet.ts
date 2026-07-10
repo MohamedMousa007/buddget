@@ -48,7 +48,7 @@ export function useAddExpenseSheet() {
 
   const creditCardOutstandingHint = useMemo(() => {
     const pm = paymentMethods.find((m) => m.id === paymentMethodId)
-    if (!pm || pm.type !== 'card_credit') return null
+    if (!pm || pm.type !== 'credit_card') return null
     const cardDebt = debts.find((d) => d.debtType === 'credit_card' && d.linkedPaymentMethodId === pm.id)
     if (!cardDebt) return null
     const pays = debtPayments.filter((p) => p.debtId === cardDebt.id)

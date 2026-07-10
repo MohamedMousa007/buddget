@@ -96,9 +96,9 @@ export default function SettingsAccountPage() {
       {/* Payment methods */}
       <SettingsPaymentMethodsSection
         store={store}
-        onAddClick={() =>
+        onOpen={() =>
           requireAuth(
-            () => setActiveModal('addPaymentMethod'),
+            () => setActiveModal('paymentMethods'),
             t.modals.fabRequireAuth
           )
         }

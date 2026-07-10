@@ -43,7 +43,15 @@ export type ExpenseCategory =
   | 'Currency Exchange'
   | 'CC Payoff'
 
-export type PaymentMethodType = 'cash' | 'bank_transfer' | 'card_debit' | 'card_credit' | 'nol' | 'other'
+export type PaymentMethodType =
+  | 'cash'
+  | 'bank_account'
+  | 'debit_card'
+  | 'credit_card'
+  | 'prepaid_card'
+  | 'wallet'
+  | 'bnpl'
+  | 'other'
 
 export interface PaymentMethod {
   id: string

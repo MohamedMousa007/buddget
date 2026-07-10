@@ -7,7 +7,7 @@ import { GoalCategoryPicker } from '@/components/features/goals/GoalCategoryPick
 import { Input } from '@/components/ui/input'
 import { AmountField } from '@/components/ui/AmountField'
 import { Label } from '@/components/ui/label'
-import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
+import { FiatCurrencyField } from '@/components/ui/CurrencyField'
 import { DatePickerField } from '@/components/ui/DatePickerField'
 import { useAddGoalForm } from '@/hooks/useAddGoalForm'
 import type { Goal } from '@/lib/store/types'
@@ -90,7 +90,7 @@ function AddGoalSheetForm({ editingGoal, onClose, title, selectClass, t }: Inner
             <div>
               <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.goals.currency}</Label>
               <div className="mt-1">
-                <FiatCurrencySelect value={form.currency} onChange={form.setCurrency} className={selectClass} />
+                <FiatCurrencyField value={form.currency} onChange={form.setCurrency} className={selectClass} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">

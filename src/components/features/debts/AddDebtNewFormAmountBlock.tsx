@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { AmountField } from '@/components/ui/AmountField'
 import { DebtReceivedViaPills } from '@/components/features/debts/DebtReceivedViaPills'
-import { DebtFiatCurrencySelect } from '@/components/ui/DebtFiatCurrencySelect'
+import { DebtCurrencyField } from '@/components/ui/CurrencyField'
 import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import type { DebtCurrency, DebtKind, DebtReceivedVia, GoldKarat } from '@/lib/store/types'
 import { formatCurrency } from '@/lib/utils/formatters'
@@ -67,7 +67,7 @@ export function AddDebtNewFormAmountBlock({
         {!isGold ? (
           <div>
             <span className={MODAL_LABEL_CLASS}>{t.addDebt.labelCurrency}</span>
-            <DebtFiatCurrencySelect
+            <DebtCurrencyField
               value={currency}
               onChange={setCurrency}
               className="mt-1.5 w-full h-12 px-3 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)] text-sm focus:border-[var(--color-brand-red)]"

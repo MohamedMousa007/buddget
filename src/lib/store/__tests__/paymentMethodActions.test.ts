@@ -4,7 +4,7 @@ import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
 import type { PaymentMethod, Debt, Expense, Subscription } from '@/lib/store/types'
 
 const pm = (id: string, isDefault: boolean): PaymentMethod =>
-  ({ id, name: id, type: 'card_credit', currency: 'EGP', isDefault }) as PaymentMethod
+  ({ id, name: id, type: 'credit_card', currency: 'EGP', isDefault }) as PaymentMethod
 
 const seed = (over: Partial<Parameters<typeof useFinanceStore.setState>[0]> = {}) =>
   useFinanceStore.setState({

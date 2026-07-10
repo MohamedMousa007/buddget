@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import { Input } from '@/components/ui/input'
 import { AmountField } from '@/components/ui/AmountField'
 import { Label } from '@/components/ui/label'
-import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
+import { FiatCurrencyField } from '@/components/ui/CurrencyField'
 import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import { SubscriptionPlanPicker } from '@/components/features/subscriptions/SubscriptionPlanPicker'
 import type { AddSubscriptionFormReturn } from '@/hooks/useAddSubscriptionForm'
@@ -91,7 +91,7 @@ export function AddSubscriptionConfigureView({
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.goals.currency}</Label>
           <div className="mt-1">
-            <FiatCurrencySelect value={form.currency} onChange={form.setCurrency} className={selectClass} />
+            <FiatCurrencyField value={form.currency} onChange={form.setCurrency} className={selectClass} />
           </div>
         </div>
       </div>

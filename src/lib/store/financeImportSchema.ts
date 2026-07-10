@@ -49,10 +49,12 @@ const savingsTypeSchema = z.enum([
 
 const paymentMethodTypeSchema = z.enum([
   'cash',
-  'bank_transfer',
-  'card_debit',
-  'card_credit',
-  'nol',
+  'bank_account',
+  'debit_card',
+  'credit_card',
+  'prepaid_card',
+  'wallet',
+  'bnpl',
   'other',
 ])
 

@@ -1,5 +1,6 @@
-import type { PaymentMethod, Currency, PaymentMethodType } from '@/lib/store/types'
+import type { PaymentMethod, Currency } from '@/lib/store/types'
 import type { PaymentMethodRow, PaymentMethodInsert } from '@/lib/supabase/remote/types'
+import { normalizePaymentMethodType } from '@/lib/payment/paymentMethodDefaults'
 
 export function paymentMethodToRow(pm: PaymentMethod, userId: string): PaymentMethodInsert {
   return {
@@ -19,7 +20,7 @@ export function paymentMethodFromRow(row: PaymentMethodRow): PaymentMethod {
   return {
     id: row.id,
     name: row.name,
-    type: row.type as PaymentMethodType,
+    type: normalizePaymentMethodType(row.type),
     currency: row.currency as Currency,
     color: row.color ?? undefined,
     last4: row.last4 ?? undefined,

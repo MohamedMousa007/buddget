@@ -73,19 +73,23 @@ export const DEBT_FIAT_CURRENCIES: DebtCurrency[] = DEBT_CURRENCIES.filter((c) =
 
 export const PAYMENT_METHOD_TYPE_OPTIONS: { value: PaymentMethodType; label: string }[] = [
   { value: 'cash', label: 'Cash' },
-  { value: 'bank_transfer', label: 'Bank Transfer' },
-  { value: 'card_debit', label: 'Debit Card' },
-  { value: 'card_credit', label: 'Credit Card' },
-  { value: 'nol', label: 'Nol Card' },
+  { value: 'bank_account', label: 'Bank account' },
+  { value: 'debit_card', label: 'Debit card' },
+  { value: 'credit_card', label: 'Credit card' },
+  { value: 'prepaid_card', label: 'Prepaid card' },
+  { value: 'wallet', label: 'Wallet' },
+  { value: 'bnpl', label: 'BNPL' },
   { value: 'other', label: 'Other' },
 ]
 
 /** For AI coercion / validation (order matches PaymentMethodType union). */
 export const PAYMENT_METHOD_TYPES: PaymentMethodType[] = [
   'cash',
-  'bank_transfer',
-  'card_debit',
-  'card_credit',
-  'nol',
+  'bank_account',
+  'debit_card',
+  'credit_card',
+  'prepaid_card',
+  'wallet',
+  'bnpl',
   'other',
 ]
