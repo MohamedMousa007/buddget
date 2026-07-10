@@ -2227,10 +2227,12 @@ export type Database = {
       notification_type: "info" | "warning" | "success" | "error"
       payment_method_type:
         | "cash"
-        | "bank_transfer"
-        | "card_debit"
-        | "card_credit"
-        | "nol"
+        | "bank_account"
+        | "debit_card"
+        | "credit_card"
+        | "prepaid_card"
+        | "wallet"
+        | "bnpl"
         | "other"
       recurring_frequency:
         | "weekly"
@@ -2476,10 +2478,12 @@ export const Constants = {
       notification_type: ["info", "warning", "success", "error"],
       payment_method_type: [
         "cash",
-        "bank_transfer",
-        "card_debit",
-        "card_credit",
-        "nol",
+        "bank_account",
+        "debit_card",
+        "credit_card",
+        "prepaid_card",
+        "wallet",
+        "bnpl",
         "other",
       ],
       recurring_frequency: [

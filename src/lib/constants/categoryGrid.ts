@@ -21,6 +21,8 @@ import {
   Coins,
   Ticket,
   Wallet,
+  Split,
+  Shapes,
   Briefcase,
   Award,
   Laptop,
@@ -103,13 +105,19 @@ export function paymentTypeIcon(type: string): LucideIcon {
   switch (type) {
     case 'cash':
       return Banknote
-    case 'bank_transfer':
+    case 'bank_account':
       return Landmark
-    case 'card_credit':
-    case 'card_debit':
+    case 'credit_card':
+    case 'debit_card':
       return CreditCard
-    case 'nol':
+    case 'prepaid_card':
       return Ticket
+    case 'wallet':
+      return Wallet
+    case 'bnpl':
+      return Split
+    case 'other':
+      return Shapes
     default:
       return Wallet
   }

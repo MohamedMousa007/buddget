@@ -1443,11 +1443,49 @@ export interface Dictionary {
 
   paymentMethodTypes: {
     cash: string
-    bank_transfer: string
-    card_debit: string
-    card_credit: string
-    nol: string
+    bank_account: string
+    debit_card: string
+    credit_card: string
+    prepaid_card: string
+    wallet: string
+    bnpl: string
     other: string
+  }
+
+  /** Payment methods v4 wallet + setup sheet. */
+  paymentMethods: {
+    title: string
+    addMethod: string
+    default: string
+    walletHint: string
+    emptyHint: string
+    edit: string
+    delete: string
+    setDefault: string
+    addTitle: string
+    editTitle: string
+    newMethod: string
+    cardColour: string
+    popularOptions: string
+    searchAll: string
+    type: string
+    identifier: string
+    optional: string
+    fourDigits: string
+    label: string
+    none: string
+    last4Help: string
+    tagPlaceholder: string
+    currency: string
+    setDefaultSub: string
+    saveMethod: string
+    chooseProvider: string
+    searchProviderPlaceholder: string
+    allProviders: string
+    addCustom: string
+    addCustomNamed: string
+    savedCount: string
+    manageSubtitle: string
   }
 
   goldPurity: {

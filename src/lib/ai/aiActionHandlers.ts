@@ -61,10 +61,12 @@ export function coercePaymentMethodType(raw: unknown): PaymentMethodType {
     .trim()
     .replace(/\s+/g, '_')
   if (PAYMENT_METHOD_TYPES.includes(x as PaymentMethodType)) return x as PaymentMethodType
-  if (x.includes('credit')) return 'card_credit'
-  if (x.includes('debit')) return 'card_debit'
-  if (x.includes('nol')) return 'nol'
-  if (x.includes('bank') || x.includes('transfer')) return 'bank_transfer'
+  if (x.includes('credit')) return 'credit_card'
+  if (x.includes('debit')) return 'debit_card'
+  if (x.includes('prepaid') || x.includes('nol') || x.includes('meeza')) return 'prepaid_card'
+  if (x.includes('bnpl') || x.includes('installment') || x.includes('tabby') || x.includes('tamara')) return 'bnpl'
+  if (x.includes('wallet') || x.includes('instapay') || x.includes('vodafone')) return 'wallet'
+  if (x.includes('bank') || x.includes('transfer') || x.includes('account')) return 'bank_account'
   if (x.includes('cash')) return 'cash'
   return 'other'
 }
@@ -711,7 +713,7 @@ export function executeActionItem(
       name: pmName,
       type: typ,
       currency: ctx.settings.baseCurrency,
-      color: defaultColorForPaymentMethodType(typ, pmName),
+      color: defaultColorForPaymentMethodType(typ),
       icon: defaultIconEmojiForPaymentMethodType(typ),
       isDefault: false,
     })

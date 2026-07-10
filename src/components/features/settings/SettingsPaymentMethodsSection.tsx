@@ -1,73 +1,44 @@
 'use client'
 
-import { CreditCard, Trash2 } from 'lucide-react'
-import { useT } from '@/lib/i18n'
-import { useConfirm } from '@/components/ui/dialog/DialogProvider'
+import { CreditCard, ChevronRight, ChevronLeft } from 'lucide-react'
+import { useT, useLocale } from '@/lib/i18n'
 import type { FinanceStore } from '@/lib/store/types'
 
 export interface SettingsPaymentMethodsSectionProps {
   store: FinanceStore
-  onAddClick: () => void
+  onOpen: () => void
 }
 
 /**
- * List of payment methods with delete and gated add.
+ * Entry row into the Payment methods wallet sheet (management lives in the sheet
+ * — no list here, per the v4 handoff). Shows the saved-card count.
  */
-export function SettingsPaymentMethodsSection({ store, onAddClick }: SettingsPaymentMethodsSectionProps) {
+export function SettingsPaymentMethodsSection({ store, onOpen }: SettingsPaymentMethodsSectionProps) {
   const t = useT()
-  const confirm = useConfirm()
+  const { locale } = useLocale()
+  const count = store.paymentMethods.filter((m) => m.type !== 'cash').length
+  const Chevron = locale === 'ar' ? ChevronLeft : ChevronRight
 
   return (
-    <section className="glass-card rounded-2xl p-5 space-y-4">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <CreditCard className="w-5 h-5 text-[var(--color-brand-red)]" />
-          <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
-            {t.settings.paymentMethodsTitle}
-          </h2>
-        </div>
-        <button
-          type="button"
-          onClick={onAddClick}
-          className="text-xs text-[var(--color-brand-red)] hover:text-[var(--color-brand-red-hover)]"
-        >
-          {t.settings.paymentMethodsAdd}
-        </button>
-      </div>
-      <div className="space-y-2">
-        {store.paymentMethods.map((method) => (
-          <div
-            key={method.id}
-            className="flex items-center justify-between py-2 border-b border-[var(--color-brand-border)] last:border-0 group"
-          >
-            <div className="flex items-center gap-3">
-              <span className="w-3 h-3 rounded-full" style={{ backgroundColor: method.color || '#fff' }} />
-              <div>
-                <p className="text-sm text-[var(--color-brand-text-primary)]">{method.name}</p>
-                <p className="text-xs text-[var(--color-brand-text-muted)]">
-                  {method.type.replace('_', ' ')} · {method.currency}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={async () => {
-                if (
-                  await confirm({
-                    title: t.settings.paymentMethodsRemoveConfirm,
-                    destructive: true,
-                  })
-                ) {
-                  store.deletePaymentMethod(method.id)
-                }
-              }}
-              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-900/30"
-            >
-              <Trash2 className="w-3.5 h-3.5 text-[var(--color-brand-red)]" />
-            </button>
-          </div>
-        ))}
-      </div>
-    </section>
+    <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] overflow-hidden">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="flex w-full items-center gap-3 px-4 min-h-11 py-2.5 text-start transition-colors hover:bg-[var(--color-brand-elevated)]"
+      >
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-elevated)]">
+          <CreditCard className="h-4 w-4 text-[var(--color-brand-red)]" />
+        </span>
+        <span className="flex-1 min-w-0">
+          <span className="block text-sm font-medium text-[var(--color-brand-text-primary)]">
+            {t.paymentMethods.title}
+          </span>
+          <span className="block text-xs text-[var(--color-brand-text-muted)] mt-0.5">
+            {count > 0 ? t.paymentMethods.savedCount.replace('{n}', String(count)) : t.paymentMethods.manageSubtitle}
+          </span>
+        </span>
+        <Chevron className="h-4 w-4 shrink-0 text-[var(--color-brand-text-muted)]" />
+      </button>
+    </div>
   )
 }

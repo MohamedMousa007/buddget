@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input'
 import { AmountField } from '@/components/ui/AmountField'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
+import { FiatCurrencyField } from '@/components/ui/CurrencyField'
 import { IncomeSourceTypePicker } from '@/components/features/income/IncomeSourceTypePicker'
 import { EditIncomeRecurringBlock } from '@/components/features/income/EditIncomeRecurringBlock'
 import { IncomeTemplatePicker } from '@/components/features/income/IncomeTemplatePicker'
@@ -180,7 +180,7 @@ export function AddIncomeSheet() {
             </div>
             <div className="w-[7.5rem] shrink-0">
               <span className={MODAL_LABEL_CLASS}>{t.addIncome.labelCurrency}</span>
-              <FiatCurrencySelect
+              <FiatCurrencyField
                 value={currency}
                 onChange={setCurrency}
                 className="mt-1.5 w-full h-12 px-3 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)] text-sm focus:border-[var(--color-brand-red)]"

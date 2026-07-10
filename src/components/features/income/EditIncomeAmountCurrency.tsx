@@ -3,7 +3,7 @@
 import { Input } from '@/components/ui/input'
 import { AmountField } from '@/components/ui/AmountField'
 import { Label } from '@/components/ui/label'
-import { FiatCurrencySelect } from '@/components/ui/FiatCurrencySelect'
+import { FiatCurrencyField } from '@/components/ui/CurrencyField'
 import type { Dictionary } from '@/lib/i18n/types'
 import type { Currency } from '@/lib/store/types'
 
@@ -39,7 +39,7 @@ export function EditIncomeAmountCurrency({ t, name, setName, amount, setAmount, 
         </div>
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.editIncome.labelCurrency}</Label>
-          <FiatCurrencySelect
+          <FiatCurrencyField
             value={currency}
             onChange={setCurrency}
             className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"

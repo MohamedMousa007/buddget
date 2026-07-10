@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { DebtFiatCurrencySelect } from '@/components/ui/DebtFiatCurrencySelect'
+import { DebtCurrencyField } from '@/components/ui/CurrencyField'
 import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import type { Debt, DebtCurrency, GoldKarat } from '@/lib/store/types'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
@@ -91,7 +91,7 @@ export function EditDebtForm({
           {!f.isGold && (
             <div>
               <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelCurrency}</Label>
-              <DebtFiatCurrencySelect
+              <DebtCurrencyField
                 value={f.currency}
                 onChange={f.setCurrency}
                 className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"

@@ -3,7 +3,7 @@
 import { Input } from '@/components/ui/input'
 import { AmountField } from '@/components/ui/AmountField'
 import { Label } from '@/components/ui/label'
-import { DebtFiatCurrencySelect } from '@/components/ui/DebtFiatCurrencySelect'
+import { DebtCurrencyField } from '@/components/ui/CurrencyField'
 import type { DebtCurrency } from '@/lib/store/types'
 import { useT } from '@/lib/i18n'
 
@@ -75,7 +75,7 @@ export function CreditCardForm({
         </div>
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelCurrency}</Label>
-          <DebtFiatCurrencySelect
+          <DebtCurrencyField
             value={currency}
             onChange={setCurrency}
             className="mt-1 w-full h-8 px-3 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-sm"

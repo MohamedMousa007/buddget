@@ -14,7 +14,7 @@ const SHEET_SURFACE =
   'absolute inset-x-0 bottom-0 rounded-t-2xl border-t border-[var(--color-brand-border)] bg-[var(--color-brand-card)]'
 
 function swatchColor(pm: PaymentMethod): string {
-  return pm.color || defaultColorForPaymentMethodType(pm.type, pm.name)
+  return pm.color || defaultColorForPaymentMethodType(pm.type)
 }
 
 function Portal({ children }: { children: React.ReactNode }) {

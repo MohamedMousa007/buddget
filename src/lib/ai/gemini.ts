@@ -256,7 +256,7 @@ RULES:
 6. When user pays a debt (e.g. "paid mom 2000"), use action "add_debt_payment". Match "mom" to the debt with person "Mom", "dad" to "Dad", etc.
 7. IMPORTANT: Debt payments are always in CASH currencies (AED, EGP, USD, etc.), NEVER in XAU/gold — except when the UI explicitly records gold grams. The "currency" field in add_debt_payment must be the cash currency the user is paying in (e.g. "EGP", "AED"). If user says "paid dad 10000 EGP", currency MUST be "EGP".
 8. Set confidence to 1.0 when you have all required fields. Only set < 0.8 if truly ambiguous.
-9. For "add_payment_method", include data.name and optionally data.type as one of: cash, bank_transfer, card_debit, card_credit, nol, other.
+9. For "add_payment_method", include data.name and optionally data.type as one of: cash, bank_account, debit_card, credit_card, prepaid_card, wallet, bnpl, other.
 10. For "add_savings_holding", include data.name, data.amount, data.currency, data.bucket as "liquid" or "investment", data.subtype as bank, cash, gold, stocks, crypto, real_estate, other.
 11. For "update_budget_category", include data.category (one of the expense categories) and either data.budgetedAmount (number in ${baseCurrency}) OR data.percentOfIncome (0-100). If user sets a percent, use percentOfIncome; if a fixed amount, use budgetedAmount.
 
@@ -292,7 +292,7 @@ RESPONSE FORMAT for add_income:
 Note: dayOfMonth only when recurringFrequency is monthly; amount is per month, per paycheck, or per week matching recurringFrequency. When sourceType is "debt", include person — the app creates income and a linked debt. Optional data.effectiveStart ("YYYY-MM-DD") when the income starts on a specific date (e.g. a raise starting next month); omit for income effective now. For update_income, optional data.effectiveEnd ("YYYY-MM-DD") when a source has ended (keeps past months intact).
 
 RESPONSE FORMAT for add_payment_method:
-{"action":"add_payment_method","data":{"name":"ADCB Visa","type":"card_credit"},"confidence":1,"clarificationNeeded":null,"message":"short friendly confirmation"}
+{"action":"add_payment_method","data":{"name":"ADCB Visa","type":"credit_card"},"confidence":1,"clarificationNeeded":null,"message":"short friendly confirmation"}
 
 RESPONSE FORMAT for add_savings_holding:
 {"action":"add_savings_holding","data":{"name":"Emergency fund","amount":5000,"currency":"${baseCurrency}","bucket":"liquid","subtype":"bank"},"confidence":1,"clarificationNeeded":null,"message":"short friendly confirmation"}
@@ -309,7 +309,7 @@ COMPACT SCHEMA (one JSON object; "data" fields per action):
 - add_income: name, amount, currency, sourceType(salary|bonus|side_hustle|investment|savings|debt|gift|refund|other), isRecurring, recurringFrequency(monthly|biweekly|weekly), dayOfMonth, paymentMethod, person(when sourceType=debt)
 - add_debt: name, amount, currency, person, direction(i_owe|they_owe)
 - clear_debt: name|person
-- add_payment_method: name, type(cash|bank_transfer|card_debit|card_credit|nol|other)
+- add_payment_method: name, type(cash|bank_account|debit_card|credit_card|prepaid_card|wallet|bnpl|other)
 - add_savings_account: name, category(savings|investment), type(bank|cash|gold|stablecoin|crypto|stocks|real_estate|other), currency, openingBalance
 - deposit_savings / withdraw_savings: account, amount, currency
 - add_savings_holding: name, amount, currency, bucket(liquid|investment), subtype(bank|cash|gold|stocks|crypto|real_estate|other)
@@ -373,7 +373,7 @@ ACTIONS (the "data" fields for each):
 - add_debt_payment: debtName, person, amount, currency, date, paymentMethod
 - deposit_savings / withdraw_savings: account, amount, currency
 - add_savings_account: name, category(savings|investment), type(bank|cash|gold|stablecoin|crypto|stocks|real_estate|other), currency, openingBalance
-- add_payment_method: name, type(cash|bank_transfer|card_debit|card_credit|nol|other)
+- add_payment_method: name, type(cash|bank_account|debit_card|credit_card|prepaid_card|wallet|bnpl|other)
 
 FIELD NAMES — use these EXACT keys: description, amount, currency, category, paymentMethod, date, isRecurring, debtName, person, name, sourceType, recurringFrequency, dayOfMonth, direction, account, type, openingBalance.
 

@@ -6,7 +6,7 @@ import { EditIncomeSheet } from './EditIncomeSheet'
 import { EditIncomeEventSheet } from './EditIncomeEventSheet'
 import { AddDebtSheet } from './AddDebtSheet'
 import { AddRecurringDebtPaymentSheet } from './AddRecurringDebtPaymentSheet'
-import { AddPaymentMethodSheet } from './AddPaymentMethodSheet'
+import { PaymentMethodsSheet } from './PaymentMethodsSheet'
 import { AddGoalSheet } from './AddGoalSheet'
 import { LifestyleSheet } from './LifestyleSheet'
 import { HouseholdRentSheet } from './HouseholdRentSheet'
@@ -37,7 +37,7 @@ export function ModalProvider() {
       <EditIncomeEventSheet />
       <AddDebtSheet />
       <AddRecurringDebtPaymentSheet />
-      <AddPaymentMethodSheet />
+      <PaymentMethodsSheet />
       <AddGoalSheet
         open={activeModal === 'addGoal'}
         onClose={() => setActiveModal(null)}

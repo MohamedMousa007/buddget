@@ -17,8 +17,8 @@ import { rgba } from '@/lib/utils/color'
 import { useNumberPad } from '@/components/ui/useNumberPad'
 
 const HIDE_SCROLL = '[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
-const ADD_PAY_TYPES: PaymentMethodType[] = ['cash', 'bank_transfer', 'nol', 'card_credit', 'card_debit']
-const LAST4_TYPES: PaymentMethodType[] = ['bank_transfer', 'card_credit', 'card_debit']
+const ADD_PAY_TYPES: PaymentMethodType[] = ['cash', 'bank_account', 'wallet', 'credit_card', 'debit_card']
+const LAST4_TYPES: PaymentMethodType[] = ['bank_account', 'credit_card', 'debit_card', 'prepaid_card']
 
 // shared surface/input recipes — all theme-driven via brand tokens
 const INPUT =
@@ -152,7 +152,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
       name: apName.trim(),
       type: apType,
       currency: clampFiatToAllowed(settings, apCurrency),
-      color: defaultColorForPaymentMethodType(apType, apName.trim()),
+      color: defaultColorForPaymentMethodType(apType),
       isDefault: apDefault,
       ...(apLast4 && LAST4_TYPES.includes(apType) ? { last4: apLast4 } : {}),
     })
