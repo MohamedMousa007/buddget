@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/fonts.css">
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/styles.css">
+</helmet>
+
+<div style="min-width:max-content;background:#08080c;padding:64px;font-family:var(--font-sans);color:#fff;">
+  <div style="font:700 32px var(--font-sans);letter-spacing:-0.015em;margin-bottom:8px;">Payment methods · v4 (finalized)</div>
+  <div style="font:500 15px var(--font-sans);color:#9898B0;max-width:840px;line-height:1.5;">A single <b style="color:#fff;">bottom sheet</b> opened from a <b style="color:#fff;">Profile tab</b>. First it shows your saved cards as a carousel (manage each via the on-card ⋯); "Add method" slides in the setup sheet. No dedicated settings page, no list view.</div>
+
+  <div style="display:flex;gap:14px;flex-wrap:wrap;margin:30px 0 56px;max-width:1200px;">
+    <div style="background:#101018;border:1px solid #24242f;border-radius:14px;padding:15px 17px;font:400 12.5px var(--font-sans);color:#CFCFE0;line-height:1.5;max-width:250px;"><b style="color:#fff;">Sheet, not a page.</b> Lives as a tab in the Profile menu; opens as a bottom sheet. View + add/edit are two states of the same sheet.</div>
+    <div style="background:#101018;border:1px solid #24242f;border-radius:14px;padding:15px 17px;font:400 12.5px var(--font-sans);color:#CFCFE0;line-height:1.5;max-width:250px;"><b style="color:#fff;">Manage on the card.</b> A ⋯ on each card opens edit / set default / delete — no action bar, saves space.</div>
+    <div style="background:#101018;border:1px solid #24242f;border-radius:14px;padding:15px 17px;font:400 12.5px var(--font-sans);color:#CFCFE0;line-height:1.5;max-width:250px;"><b style="color:#fff;">Card = type icon + provider name.</b> Top-left glyph is the <i>type</i> (bank / card / wallet…); the provider is the big name. Provider <b style="color:#fff;">initials</b> (brand-coloured) are used in the pickers.</div>
+    <div style="background:#101018;border:1px solid #24242f;border-radius:14px;padding:15px 17px;font:400 12.5px var(--font-sans);color:#CFCFE0;line-height:1.5;max-width:250px;"><b style="color:#fff;">Cash is implicit.</b> Every user has Cash by default — it never appears as a card, a provider, or a type option.</div>
+    <div style="background:#101018;border:1px solid #24242f;border-radius:14px;padding:15px 17px;font:400 12.5px var(--font-sans);color:#CFCFE0;line-height:1.5;max-width:250px;"><b style="color:#fff;">Rich colour slider + brand default.</b> ~25 colours; the card defaults to the brand's primary and can be recoloured.</div>
+    <div style="background:#101018;border:1px solid #24242f;border-radius:14px;padding:15px 17px;font:400 12.5px var(--font-sans);color:#CFCFE0;line-height:1.5;max-width:250px;"><b style="color:#fff;">Unified currency sheet.</b> The real reused component (flags + full world list) — the same one that replaces every currency dropdown app-wide.</div>
+    <div style="background:#101018;border:1px solid #24242f;border-radius:14px;padding:15px 17px;font:400 12.5px var(--font-sans);color:#CFCFE0;line-height:1.5;max-width:250px;"><b style="color:#fff;">Browse = one pattern.</b> Popular grid + "Search all providers" (no row-vs-dropdown duplication). Only tweak: <i>popularScope</i> user / all.</div>
+  </div>
+
+  <!-- WALLET -->
+  <div style="font:700 13px var(--font-sans);letter-spacing:.14em;text-transform:uppercase;color:#E50914;margin-bottom:26px;">Sheet 1 — your cards (view &amp; manage)</div>
+  <div style="display:flex;flex-wrap:wrap;gap:44px;margin-bottom:72px;">
+    <div id="v1" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">v1</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Card carousel · ⋯ on each card</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Methods Sheet v4" country="EG" browseMode="grid" popularScope="user" demo="wallet" lang="en" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="v2" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">v2</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">On-card menu · edit / default / delete</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Methods Sheet v4" country="EG" browseMode="grid" popularScope="user" demo="walletMenu" lang="en" hint-size="375,812"></dc-import></div>
+    </div>
+  </div>
+
+  <!-- SETUP -->
+  <div style="font:700 13px var(--font-sans);letter-spacing:.14em;text-transform:uppercase;color:#E50914;margin-bottom:26px;">Sheet 2 — add / edit (live card)</div>
+  <div style="display:flex;flex-wrap:wrap;gap:44px;margin-bottom:72px;">
+    <div id="v3" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">v3</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Empty · colour slider + popular grid</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Methods Sheet v4" country="EG" browseMode="grid" popularScope="user" demo="setup" lang="en" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="v4" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">v4</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Filled from CIB · card fills live</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Methods Sheet v4" country="EG" browseMode="grid" popularScope="user" demo="setupFilled" lang="en" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="v5" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">v5</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Provider picker sheet (search + all)</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Methods Sheet v4" country="EG" browseMode="grid" popularScope="user" demo="providerPicker" lang="en" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="v6" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">v6</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Currency · unified sheet reused</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Methods Sheet v4" country="EG" browseMode="grid" popularScope="user" demo="currency" lang="en" hint-size="375,812"></dc-import></div>
+    </div>
+  </div>
+
+  <!-- POPULAR SCOPE -->
+  <div style="font:700 13px var(--font-sans);letter-spacing:.14em;text-transform:uppercase;color:#2A6FDB;margin-bottom:8px;">Provider browsing — final approach</div>
+  <div style="font:500 13.5px var(--font-sans);color:#9898B0;max-width:820px;line-height:1.5;margin-bottom:26px;">One pattern: a <b style="color:#CFCFE0;">popular grid + "Search all providers"</b> (shown in v3/v5) — popular appears in exactly one place, killing the old row-vs-dropdown duplication. The only tweak left is <b style="color:#CFCFE0;">popularScope</b> — whose "Popular options" it seeds.</div>
+  <div style="display:flex;flex-wrap:wrap;gap:44px;">
+    <div id="b1" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#2A6FDB;border-radius:6px;padding:3px 7px;">b1</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">popularScope = user (country known)</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Methods Sheet v4" country="EG" popularScope="user" demo="setup" lang="en" hint-size="375,812"></dc-import></div>
+    </div>
+    <div id="b2" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#2A6FDB;border-radius:6px;padding:3px 7px;">b2</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">popularScope = all (country not set)</span></div>
+      <div style="width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);"><dc-import name="Payment Methods Sheet v4" country="EG" popularScope="all" demo="setup" lang="en" hint-size="375,812"></dc-import></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/fonts.css">
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/colors.css">
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/typography.css">
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/radius.css">
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/effects.css">
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/styles.css">
+  <style>
+    .pms-scroll::-webkit-scrollbar { display: none; }
+    .pms-scroll { scrollbar-width: none; }
+    .pms-root, .pms-root * { -webkit-tap-highlight-color: transparent; }
+    .pms-root button:focus, .pms-root button:focus-visible { outline: none; box-shadow: none; }
+  </style>
+</helmet>
+
+<div class="pms-root" ref="{{ rootRef }}" dir="{{ dir }}" style="position:relative;width:375px;height:812px;overflow:hidden;background:var(--pm-canvas,#0A0A0F);font-family:var(--font-sans);color:var(--pm-tp,#fff);">
+  <!-- status bar -->
+  <div style="height:44px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 22px;">
+    <span style="font:600 15px var(--font-sans);color:var(--pm-tp,#fff);">9:41</span>
+    <span style="display:flex;align-items:center;gap:6px;color:var(--pm-tp,#fff);"><span style="width:17px;height:11px;display:inline-flex;">{{ icSignal }}</span><span style="width:16px;height:11px;display:inline-flex;">{{ icWifi }}</span><span style="width:24px;height:12px;display:inline-flex;">{{ icBattery }}</span></span>
+  </div>
+
+  <!-- header -->
+  <div style="display:flex;align-items:center;gap:12px;padding:6px 16px 12px;flex:none;">
+    <button style="width:36px;height:36px;flex:none;display:flex;align-items:center;justify-content:center;border:none;background:var(--pm-elev,#1A1A24);border-radius:11px;color:var(--pm-ts,#CFCFE0);cursor:pointer;padding:9px;">{{ icBack }}</button>
+    <div style="flex:1;min-width:0;"><div style="font:700 20px var(--font-sans);letter-spacing:-0.01em;color:var(--pm-tp,#fff);">{{ t.title }}</div></div>
+  </div>
+
+  <div class="pms-scroll" style="position:absolute;inset:100px 0 0;overflow-y:auto;padding:0 16px 40px;">
+    <!-- add CTA -->
+    <button style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;height:52px;margin-bottom:22px;background:#E50914;border:none;border-radius:14px;color:#fff;font:600 15px var(--font-sans);cursor:pointer;box-shadow:0 10px 24px -12px rgba(229,9,20,.6);"><span style="width:19px;height:19px;display:inline-flex;">{{ icPlus }}</span>{{ t.addCta }}</button>
+
+    <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="font:600 10px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--pm-micro,#6E6E85);padding:0 2px;">{{ emptyGroupLabel }}</div>
+        <div style="background:var(--pm-card,#111118);border:1px solid var(--pm-border,#2A2A38);border-radius:14px;overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:12px;padding:14px 14px;min-height:64px;">
+            <span style="{{ cashSwatch }}"><span style="width:19px;height:19px;display:inline-flex;">{{ icBanknote }}</span></span>
+            <div style="flex:1;min-width:0;text-align:start;"><div style="display:flex;align-items:center;gap:8px;"><span style="font:600 15px var(--font-sans);color:var(--pm-tp,#fff);">{{ t.cash }}</span><span style="{{ defPillStyle }}">{{ t.defaultBadge }}</span></div><div style="font:500 12px var(--font-sans);color:var(--pm-tm,#9898B0);margin-top:3px;">{{ cashSub }}</div></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:11px;align-items:flex-start;margin-top:6px;padding:14px;background:rgba(77,163,255,.08);border:1px solid rgba(77,163,255,.22);border-radius:14px;">
+          <span style="width:18px;height:18px;flex:none;color:#7EB3F5;display:inline-flex;margin-top:1px;">{{ icInfo }}</span>
+          <div style="font:400 12.5px var(--font-sans);color:#B9D3F5;line-height:1.5;text-align:start;">{{ t.emptyHint }}</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isPopulated }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:22px;">
+        <sc-for list="{{ groups }}" as="g" hint-placeholder-count="5">
+          <div>
+            <div style="display:flex;align-items:baseline;gap:8px;padding:0 2px 10px;">
+              <span style="font:600 10px var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--pm-micro,#6E6E85);">{{ g.label }}</span>
+              <span style="font:600 10px var(--font-mono);color:var(--pm-tm,#9898B0);">{{ g.count }}</span>
+            </div>
+            <div style="background:var(--pm-card,#111118);border:1px solid var(--pm-border,#2A2A38);border-radius:14px;overflow:hidden;">
+              <sc-for list="{{ g.rows }}" as="m" hint-placeholder-count="2">
+                <div style="{{ m.wrapStyle }}">
+                  <!-- swipe actions behind -->
+                  <sc-if value="{{ m.revealed }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ m.actionsStyle }}">
+                      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:70px;height:100%;background:#1DB954;color:#fff;"><span style="width:18px;height:18px;display:inline-flex;">{{ icStar }}</span><span style="font:600 9.5px var(--font-sans);">{{ t.setDefaultShort }}</span></div>
+                      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:70px;height:100%;background:#E50914;color:#fff;"><span style="width:18px;height:18px;display:inline-flex;">{{ icTrash }}</span><span style="font:600 9.5px var(--font-sans);">{{ t.deleteShort }}</span></div>
+                    </div>
+                  </sc-if>
+                  <!-- row front -->
+                  <div style="{{ m.frontStyle }}">
+                    <span style="{{ m.swatch }}"><span style="width:19px;height:19px;display:inline-flex;">{{ m.glyph }}</span></span>
+                    <div style="flex:1;min-width:0;text-align:start;">
+                      <div style="display:flex;align-items:center;gap:8px;min-width:0;"><span style="font:600 15px var(--font-sans);color:var(--pm-tp,#fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ m.name }}</span><sc-if value="{{ m.isDefault }}" hint-placeholder-val="{{ false }}"><span style="{{ defPillStyle }}">{{ t.defaultBadge }}</span></sc-if></div>
+                      <div style="font:500 12px var(--font-sans);color:var(--pm-tm,#9898B0);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ m.sub }}</div>
+                    </div>
+                    <button style="width:32px;height:32px;flex:none;display:flex;align-items:center;justify-content:center;border:none;background:transparent;color:var(--pm-tm,#9898B0);cursor:pointer;padding:7px;">{{ icDots }}</button>
+                  </div>
+                  <!-- menu popover -->
+                  <sc-if value="{{ m.menuOpen }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ menuStyle }}">
+                      <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;color:var(--pm-ts,#CFCFE0);font:500 14px var(--font-sans);"><span style="width:16px;height:16px;display:inline-flex;">{{ icPencil }}</span>{{ t.edit }}</div>
+                      <div style="height:1px;background:var(--pm-border,#2A2A38);"></div>
+                      <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;color:var(--pm-ts,#CFCFE0);font:500 14px var(--font-sans);"><span style="width:16px;height:16px;display:inline-flex;color:#1DB954;">{{ icStar }}</span>{{ t.setDefault }}</div>
+                      <div style="height:1px;background:var(--pm-border,#2A2A38);"></div>
+                      <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;color:#FF6B6B;font:500 14px var(--font-sans);"><span style="width:16px;height:16px;display:inline-flex;">{{ icTrash }}</span>{{ t.delete }}</div>
+                    </div>
+                  </sc-if>
+                </div>
+                <sc-if value="{{ m.divider }}" hint-placeholder-val="{{ true }}"><div style="height:1px;background:var(--pm-border,#2A2A38);margin-inline-start:62px;"></div></sc-if>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:9px;width:134px;height:5px;border-radius:999px;background:var(--pm-tp,#fff);opacity:.32;"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:375,&quot;height&quot;:812},&quot;variant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;populated&quot;,&quot;empty&quot;],&quot;default&quot;:&quot;populated&quot;,&quot;tsType&quot;:&quot;'populated' | 'empty'&quot;},&quot;lang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;en&quot;,&quot;ar&quot;],&quot;default&quot;:&quot;en&quot;,&quot;tsType&quot;:&quot;'en' | 'ar'&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;'dark' | 'light'&quot;},&quot;affordance&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;none&quot;,&quot;menu&quot;,&quot;swipe&quot;],&quot;default&quot;:&quot;none&quot;,&quot;tsType&quot;:&quot;'none' | 'menu' | 'swipe'&quot;}}">
+class Component extends DCLogic {
+  TYPES = {
+    cash:        { l:'Cash', ar:'نقد', pl:'Cash', plAr:'نقد', icon:'banknote', color:'#C9C9D4' },
+    bank_account:{ l:'Bank account', ar:'حساب بنكي', pl:'Bank accounts', plAr:'حسابات بنكية', icon:'landmark', color:'#22C55E' },
+    debit_card:  { l:'Debit card', ar:'بطاقة خصم', pl:'Debit cards', plAr:'بطاقات خصم', icon:'card', color:'#A855F7' },
+    credit_card: { l:'Credit card', ar:'بطاقة ائتمان', pl:'Credit cards', plAr:'بطاقات ائتمان', icon:'card', color:'#3B82F6' },
+    prepaid_card:{ l:'Prepaid card', ar:'بطاقة مسبقة', pl:'Prepaid cards', plAr:'بطاقات مسبقة', icon:'ticket', color:'#2DD4BF' },
+    wallet:      { l:'Wallet', ar:'محفظة', pl:'Wallets', plAr:'محافظ', icon:'wallet', color:'#FB923C' },
+    bnpl:        { l:'BNPL', ar:'اشترِ الآن وادفع لاحقًا', pl:'Buy now, pay later', plAr:'اشترِ الآن وادفع لاحقًا', icon:'split', color:'#EC4899' },
+    other:       { l:'Other', ar:'أخرى', pl:'Other', plAr:'أخرى', icon:'shapes', color:'#9CA3AF' },
+  };
+  ORDER = ['cash','bank_account','debit_card','credit_card','prepaid_card','wallet','bnpl','other'];
+
+  METHODS = [
+    { id:'m1', type:'cash', provider:'Cash', ar:'نقدًا', cur:'EGP', last4:'', tag:'' },
+    { id:'m2', type:'bank_account', provider:'NBE', cur:'EGP', last4:'0044', tag:'', color:'#2E8B57' },
+    { id:'m3', type:'debit_card', provider:'CIB', cur:'EGP', last4:'2016', tag:'', color:'#B23A6B', isDefault:true },
+    { id:'m4', type:'credit_card', provider:'Amex', cur:'USD', last4:'1005', tag:'', color:'#4A90C2' },
+    { id:'m5', type:'prepaid_card', provider:'Meeza', cur:'EGP', last4:'', tag:'', color:'#C6A24E' },
+    { id:'m6', type:'wallet', provider:'Vodafone Cash', cur:'EGP', last4:'', tag:'Personal', color:'#E60000' },
+    { id:'m7', type:'wallet', provider:'InstaPay', cur:'EGP', last4:'', tag:'', color:'#12A594' },
+    { id:'m8', type:'bnpl', provider:'valU', cur:'EGP', last4:'', tag:'', color:'#F04E23' },
+  ];
+
+  STR = {
+    en: { title:'Payment methods', addCta:'Add payment method', cash:'Cash', defaultBadge:'Default', edit:'Edit', delete:'Delete', setDefault:'Set as default', setDefaultShort:'Default', deleteShort:'Delete', emptyHint:'You only have cash so far. Add a bank, card, or wallet to track where each expense is paid from.' },
+    ar: { title:'طرق الدفع', addCta:'إضافة طريقة دفع', cash:'نقدًا', defaultBadge:'افتراضي', edit:'تعديل', delete:'حذف', setDefault:'تعيين كافتراضي', setDefaultShort:'افتراضي', deleteShort:'حذف', emptyHint:'لديك النقد فقط حتى الآن. أضِف بنكًا أو بطاقة أو محفظة لتتبّع مصدر دفع كل مصروف.' },
+  };
+
+  ICONS = {
+    back:'<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+    plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
+    info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+    dots:'<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>',
+    trash:'<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+    star:'<path d="M11.5 2.6a.55.55 0 0 1 1 0l2.5 5.1 5.6.8a.55.55 0 0 1 .3.94l-4 3.9 1 5.6a.55.55 0 0 1-.8.58L12 17.9l-5 2.63a.55.55 0 0 1-.8-.58l1-5.6-4-3.9a.55.55 0 0 1 .3-.94l5.6-.8z"/>',
+    pencil:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+    banknote:'<rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01"/><path d="M18 12h.01"/>',
+    landmark:'<line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/>',
+    card:'<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>',
+    ticket:'<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>',
+    wallet:'<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 1 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
+    split:'<path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/>',
+    shapes:'<path d="M8.3 10a.7.7 0 0 1-.626-1.079L11.4 3a.7.7 0 0 1 1.198-.043L16.3 8.9a.7.7 0 0 1-.572 1.1Z"/><rect x="3" y="14" width="7" height="7" rx="1"/><circle cx="17.5" cy="17.5" r="3.5"/>',
+    signal:'<rect x="1" y="7" width="3" height="4" rx="1"/><rect x="6" y="5" width="3" height="6" rx="1"/><rect x="11" y="3" width="3" height="8" rx="1"/>',
+    wifi:'<path d="M5 8a11 11 0 0 1 12 0"/><path d="M7.5 10.5a7 7 0 0 1 7 0"/><path d="M10 13a3 3 0 0 1 4 0"/><circle cx="12" cy="15.5" r="0.6"/>',
+    battery:'<rect x="1" y="3" width="18" height="9" rx="2.2" fill="currentColor" opacity="0.9"/><rect x="20.5" y="6" width="1.6" height="3" rx="0.8" fill="currentColor"/>',
+  };
+
+  isAr(){ return (this.props||{}).lang === 'ar'; }
+  ico(name, sw){ const svg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(sw||2)+'" stroke-linecap="round" stroke-linejoin="round" width="100%" height="100%" style="display:block">'+(this.ICONS[name]||'')+'</svg>'; return React.createElement('span',{ style:{ display:'inline-flex', width:'100%', height:'100%' }, dangerouslySetInnerHTML:{ __html:svg } }); }
+  fillIco(name){ const svg='<svg viewBox="0 0 24 24" fill="currentColor" width="100%" height="100%" style="display:block">'+(this.ICONS[name]||'')+'</svg>'; return React.createElement('span',{ style:{ display:'inline-flex', width:'100%', height:'100%' }, dangerouslySetInnerHTML:{ __html:svg } }); }
+  rgba(hex,a){ const h=hex.replace('#',''); return 'rgba('+parseInt(h.slice(0,2),16)+','+parseInt(h.slice(2,4),16)+','+parseInt(h.slice(4,6),16)+','+a+')'; }
+  swatch(color,size,r){ size=size||40; r=r||11; return 'width:'+size+'px;height:'+size+'px;flex:none;border-radius:'+r+'px;background:'+this.rgba(color,.16)+';display:flex;align-items:center;justify-content:center;color:'+color+';'; }
+  typeLabel(v){ const m=this.TYPES[v]; return this.isAr()?m.ar:m.l; }
+  composed(m){ const p=this.isAr()&&m.ar?m.ar:m.provider; if(m.last4) return p+'  ••••'+m.last4; if(m.tag) return p+'  ·  '+m.tag; return p; }
+  sub(m){ return this.typeLabel(m.type)+' · '+m.cur; }
+
+  rootRef = React.createRef();
+  applyTheme(){ const el=this.rootRef.current; if(!el) return; const L={ '--pm-canvas':'#F5F5F7','--pm-card':'#FFFFFF','--pm-elev':'#F0F0F4','--pm-border':'#D4D4DC','--pm-tp':'#1A1A24','--pm-ts':'#5A5A72','--pm-tm':'#8A8AA0','--pm-micro':'#8A8AA0' }; const keys=Object.keys(L); if((this.props||{}).theme==='light'){ keys.forEach(k=>el.style.setProperty(k,L[k])); } else { keys.forEach(k=>el.style.removeProperty(k)); } }
+  componentDidMount(){ this.applyTheme(); }
+  componentDidUpdate(prev){ if(prev.theme!==this.props.theme) this.applyTheme(); }
+
+  renderVals(){
+    const ar=this.isAr(), t=this.STR[ar?'ar':'en'], dir=ar?'rtl':'ltr';
+    const variant=(this.props||{}).variant==='empty'?'empty':'populated';
+    const affordance=(this.props||{}).affordance||'none';
+
+    const defPillStyle='flex:none;font:700 9px var(--font-sans);letter-spacing:.05em;text-transform:uppercase;color:#fff;background:#E50914;border-radius:999px;padding:3px 8px;';
+    const menuStyle='position:absolute;top:52px;inset-inline-end:12px;z-index:5;width:180px;background:var(--pm-card,#111118);border:1px solid var(--pm-border,#2A2A38);border-radius:13px;overflow:hidden;box-shadow:0 18px 40px -12px rgba(0,0,0,.6);';
+
+    // build groups
+    const present=this.ORDER.filter(ty=>this.METHODS.some(m=>m.type===ty));
+    const menuTargetId = affordance==='menu' ? 'm4' : null;   // Amex row
+    const swipeTargetId = affordance==='swipe' ? 'm6' : null;  // Vodafone row
+    const groups=present.map(ty=>{
+      const list=this.METHODS.filter(m=>m.type===ty);
+      const rows=list.map((m,i)=>{
+        const revealed = m.id===swipeTargetId;
+        const shift = revealed ? (ar?'translateX(140px)':'translateX(-140px)') : 'translateX(0)';
+        return {
+          wrapStyle:'position:relative;overflow:hidden;',
+          revealed,
+          actionsStyle:'position:absolute;top:0;bottom:0;inset-inline-end:0;display:flex;height:100%;',
+          frontStyle:'position:relative;z-index:2;display:flex;align-items:center;gap:12px;padding:13px 12px 13px 14px;min-height:66px;background:var(--pm-card,#111118);transform:'+shift+';transition:transform .2s cubic-bezier(.22,1,.36,1);',
+          swatch:this.swatch(m.color||this.TYPES[m.type].color,40,11),
+          glyph:this.ico(this.TYPES[m.type].icon),
+          name:this.composed(m), sub:this.sub(m), isDefault:!!m.isDefault,
+          menuOpen:m.id===menuTargetId,
+          divider:i<list.length-1,
+        };
+      });
+      return { label: ar?this.TYPES[ty].plAr:this.TYPES[ty].pl, count:String(list.length), rows };
+    });
+
+    return {
+      rootRef:this.rootRef, dir, t, defPillStyle, menuStyle,
+      isEmpty:variant==='empty', isPopulated:variant==='populated',
+      emptyGroupLabel: ar?this.TYPES.cash.plAr:this.TYPES.cash.pl,
+      cashSwatch:this.swatch('#C9C9D4',40,11), cashSub:this.typeLabel('cash')+' · EGP',
+      groups,
+      icBack:this.ico('back'), icPlus:this.ico('plus'), icInfo:this.ico('info'), icDots:this.ico('dots'), icTrash:this.ico('trash'), icStar:this.fillIco('star'), icPencil:this.ico('pencil'), icBanknote:this.ico('banknote'),
+      icSignal:this.fillIco('signal'), icWifi:this.ico('wifi'), icBattery:this.ico('battery'),
+    };
+  }
+}
+</script>
+</body>
+</html>

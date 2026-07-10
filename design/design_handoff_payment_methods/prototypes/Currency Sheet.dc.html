@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/fonts.css">
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/colors.css">
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/typography.css">
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/styles.css">
+  <style>
+    .cs-scroll::-webkit-scrollbar { display: none; } .cs-scroll { scrollbar-width: none; }
+    .cs-root, .cs-root * { -webkit-tap-highlight-color: transparent; }
+    .cs-root input:focus, .cs-root button:focus, .cs-root input:focus-visible, .cs-root button:focus-visible { outline: none; box-shadow: none; }
+    .cs-root input::placeholder { color: #6E6E85; }
+  </style>
+</helmet>
+
+<div class="cs-root" dir="{{ dir }}" style="width:100%;display:flex;flex-direction:column;background:#14141b;border-top:1px solid #26262f;border-radius:24px 24px 0 0;padding:8px 14px 12px;max-height:100%;font-family:var(--font-sans);">
+  <div style="width:38px;height:4px;border-radius:999px;background:#2A2A38;margin:2px auto 8px;flex:none;"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px 8px;flex:none;">
+    <div style="font:600 17px var(--font-sans);color:#fff;">{{ t.title }}</div>
+    <button onClick="{{ onClose }}" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:none;background:#20202a;border-radius:999px;color:#9898B0;cursor:pointer;padding:8px;">{{ icX }}</button>
+  </div>
+  <div style="position:relative;margin:0 2px 8px;flex:none;">
+    <span style="position:absolute;inset-inline-start:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:#9898B0;display:inline-flex;">{{ icSearch }}</span>
+    <input value="{{ query }}" onChange="{{ onQuery }}" placeholder="{{ t.searchPh }}" style="width:100%;height:40px;background:#0F0F16;border:1px solid #26262f;border-radius:11px;padding-inline-start:36px;padding-inline-end:12px;color:#fff;font:400 14px var(--font-sans);text-align:start;">
+  </div>
+  <div class="cs-scroll" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:3px;">
+    <sc-for list="{{ rows }}" as="r" hint-placeholder-count="10">
+      <sc-if value="{{ r.isHeader }}" hint-placeholder-val="{{ false }}">
+        <div style="font:600 9px var(--font-sans);letter-spacing:.1em;text-transform:uppercase;color:#6E6E85;padding:8px 6px 3px;">{{ r.label }}</div>
+      </sc-if>
+      <sc-if value="{{ r.isItem }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ r.onSelect }}" style="{{ r.rowStyle }}">
+          <span style="font-size:18px;line-height:1;flex:none;width:26px;text-align:center;">{{ r.flag }}</span>
+          <span style="font:700 14px var(--font-mono);color:#fff;width:44px;text-align:start;flex:none;">{{ r.code }}</span>
+          <span style="flex:1;text-align:start;font:500 13.5px var(--font-sans);color:#9898B0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.name }}</span>
+          <sc-if value="{{ r.selected }}" hint-placeholder-val="{{ false }}"><span style="width:18px;height:18px;flex:none;display:inline-flex;color:#E50914;">{{ icCheck }}</span></sc-if>
+        </button>
+      </sc-if>
+      <sc-if value="{{ r.isEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="text-align:center;padding:28px 12px;font:500 13px var(--font-sans);color:#6E6E85;">{{ r.label }}</div>
+      </sc-if>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:375,&quot;height&quot;:440},&quot;value&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;USD&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;base&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;EGP&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;onSelect&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(code: string) =&gt; void&quot;},&quot;onClose&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;lang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;en&quot;,&quot;ar&quot;],&quot;default&quot;:&quot;en&quot;,&quot;tsType&quot;:&quot;'en' | 'ar'&quot;}}">
+class Component extends DCLogic {
+  // code: [name, flag]
+  CUR = {
+    USD:['US Dollar','🇺🇸'], EUR:['Euro','🇪🇺'], GBP:['Pound Sterling','🇬🇧'], AED:['UAE Dirham','🇦🇪'], SAR:['Saudi Riyal','🇸🇦'], EGP:['Egyptian Pound','🇪🇬'], KWD:['Kuwaiti Dinar','🇰🇼'], QAR:['Qatari Riyal','🇶🇦'], BHD:['Bahraini Dinar','🇧🇭'], OMR:['Omani Rial','🇴🇲'], JOD:['Jordanian Dinar','🇯🇴'], LBP:['Lebanese Pound','🇱🇧'], IQD:['Iraqi Dinar','🇮🇶'], LYD:['Libyan Dinar','🇱🇾'], MAD:['Moroccan Dirham','🇲🇦'], TND:['Tunisian Dinar','🇹🇳'], DZD:['Algerian Dinar','🇩🇿'], SDG:['Sudanese Pound','🇸🇩'], SYP:['Syrian Pound','🇸🇾'], YER:['Yemeni Rial','🇾🇪'], TRY:['Turkish Lira','🇹🇷'], IRR:['Iranian Rial','🇮🇷'],
+    JPY:['Japanese Yen','🇯🇵'], CNY:['Chinese Yuan','🇨🇳'], INR:['Indian Rupee','🇮🇳'], PKR:['Pakistani Rupee','🇵🇰'], BDT:['Bangladeshi Taka','🇧🇩'], IDR:['Indonesian Rupiah','🇮🇩'], MYR:['Malaysian Ringgit','🇲🇾'], SGD:['Singapore Dollar','🇸🇬'], THB:['Thai Baht','🇹🇭'], PHP:['Philippine Peso','🇵🇭'], VND:['Vietnamese Dong','🇻🇳'], KRW:['South Korean Won','🇰🇷'], HKD:['Hong Kong Dollar','🇭🇰'], TWD:['Taiwan Dollar','🇹🇼'], LKR:['Sri Lankan Rupee','🇱🇰'], NPR:['Nepalese Rupee','🇳🇵'], AFN:['Afghan Afghani','🇦🇫'], KZT:['Kazakhstani Tenge','🇰🇿'], UZS:['Uzbekistani Som','🇺🇿'], MMK:['Myanmar Kyat','🇲🇲'],
+    CAD:['Canadian Dollar','🇨🇦'], AUD:['Australian Dollar','🇦🇺'], NZD:['New Zealand Dollar','🇳🇿'], CHF:['Swiss Franc','🇨🇭'], SEK:['Swedish Krona','🇸🇪'], NOK:['Norwegian Krone','🇳🇴'], DKK:['Danish Krone','🇩🇰'], PLN:['Polish Zloty','🇵🇱'], CZK:['Czech Koruna','🇨🇿'], HUF:['Hungarian Forint','🇭🇺'], RON:['Romanian Leu','🇷🇴'], RUB:['Russian Ruble','🇷🇺'], UAH:['Ukrainian Hryvnia','🇺🇦'],
+    ZAR:['South African Rand','🇿🇦'], NGN:['Nigerian Naira','🇳🇬'], KES:['Kenyan Shilling','🇰🇪'], GHS:['Ghanaian Cedi','🇬🇭'], ETB:['Ethiopian Birr','🇪🇹'], UGX:['Ugandan Shilling','🇺🇬'], TZS:['Tanzanian Shilling','🇹🇿'],
+    BRL:['Brazilian Real','🇧🇷'], MXN:['Mexican Peso','🇲🇽'], ARS:['Argentine Peso','🇦🇷'], CLP:['Chilean Peso','🇨🇱'], COP:['Colombian Peso','🇨🇴'], PEN:['Peruvian Sol','🇵🇪'],
+  };
+  COMMON = ['AED','USD','EGP','EUR','GBP','SAR'];
+
+  ICONS = { x:'<path d="M18 6 6 18"/><path d="M6 6l12 12"/>', check:'<path d="M20 6 9 17l-5-5"/>', search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>' };
+
+  isAr(){ return (this.props||{}).lang==='ar'; }
+  ico(name){ const svg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="100%" height="100%" style="display:block">'+(this.ICONS[name]||'')+'</svg>'; return React.createElement('span',{style:{display:'inline-flex',width:'100%',height:'100%'},dangerouslySetInnerHTML:{__html:svg}}); }
+
+  state = { query:'' };
+
+  select(code){ const cb=(this.props||{}).onSelect; if(typeof cb==='function') cb(code); }
+
+  renderVals(){
+    const dir=this.isAr()?'rtl':'ltr';
+    const t={ title:'Currency', searchPh:'Search currency or country…' };
+    const value=(this.props||{}).value||'AED';
+    const base=(this.props||{}).base;
+    const q=this.state.query.trim().toLowerCase();
+
+    const rowStyle=(sel)=>'display:flex;align-items:center;gap:11px;width:100%;min-height:40px;padding:4px 10px;border-radius:10px;cursor:pointer;background:'+(sel?'rgba(229,9,20,.10)':'transparent')+';border:1px solid '+(sel?'rgba(229,9,20,.45)':'transparent')+';';
+    const mkItem=(code)=>({ isItem:true, code, name:this.CUR[code][0], flag:this.CUR[code][1], selected:code===value, onSelect:()=>this.select(code), rowStyle:rowStyle(code===value) });
+
+    const allCodes=Object.keys(this.CUR);
+    let rows=[];
+    if(q){
+      const hits=allCodes.filter(c=>c.toLowerCase().indexOf(q)!==-1 || this.CUR[c][0].toLowerCase().indexOf(q)!==-1);
+      if(hits.length) hits.forEach(c=>rows.push(mkItem(c)));
+      else rows.push({ isEmpty:true, label:'No currency matches “'+this.state.query.trim()+'”' });
+    } else {
+      const common=[]; if(base && this.CUR[base] && this.COMMON.indexOf(base)===-1) common.push(base); this.COMMON.forEach(c=>{ if(this.CUR[c]) common.push(c); });
+      const seen={}; const commonU=common.filter(c=>{ if(seen[c])return false; seen[c]=1; return true; });
+      rows.push({ isHeader:true, label:'Common' }); commonU.forEach(c=>rows.push(mkItem(c)));
+      rows.push({ isHeader:true, label:'All currencies' });
+      allCodes.filter(c=>commonU.indexOf(c)===-1).sort().forEach(c=>rows.push(mkItem(c)));
+    }
+
+    return { dir, t, rows, query:this.state.query, onQuery:e=>this.setState({query:e.target.value}), onClose:(this.props||{}).onClose||(()=>{}), icX:this.ico('x'), icCheck:this.ico('check'), icSearch:this.ico('search') };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/fonts.css">
+  <link rel="stylesheet" href="../../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/styles.css">
+</helmet>
+
+<div style="min-width:max-content;background:#08080c;padding:64px;font-family:var(--font-sans);color:#fff;">
+  <div style="font:700 30px var(--font-sans);letter-spacing:-0.015em;margin-bottom:8px;">Unified currency selector</div>
+  <div style="font:500 15px var(--font-sans);color:#9898B0;max-width:760px;line-height:1.5;">One bottom-sheet selector — <b style="color:#fff;">flag + ISO code + full name</b>, searchable, common currencies pinned. It reuses the existing expense-modal currency sheet visual and <b style="color:#fff;">replaces every currency dropdown across the whole app</b> (expense, income, debts, savings, subscriptions, payment methods…). Component: <span style="font-family:var(--font-mono);color:#CFCFE0;">Currency Sheet.dc.html</span>.</div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:44px;margin-top:44px;">
+    <div id="c1" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">c1</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Currency sheet · USD selected</span></div>
+      <div style="position:relative;width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;background:#0A0A0F;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);">
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,.5);"></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;max-height:50%;display:flex;"><dc-import name="Currency Sheet" value="USD" base="EGP" lang="en" hint-size="375,600"></dc-import></div>
+      </div>
+    </div>
+    <div id="c2" style="display:flex;flex-direction:column;gap:13px;width:375px;">
+      <div style="display:flex;align-items:center;gap:9px;"><span style="font:700 11px var(--font-mono);color:#08080c;background:#E50914;border-radius:6px;padding:3px 7px;">c2</span><span style="font:600 14px var(--font-sans);color:#CFCFE0;">Search · filters code + country name</span></div>
+      <div style="position:relative;width:375px;height:812px;border-radius:40px;overflow:hidden;border:1px solid #23232f;background:#0A0A0F;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);">
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,.5);"></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;max-height:50%;display:flex;"><dc-import name="Currency Sheet" value="JPY" base="SAR" lang="en" hint-size="375,600"></dc-import></div>
+      </div>
+    </div>
+    <div style="width:360px;align-self:center;">
+      <div style="background:#101018;border:1px solid #24242f;border-radius:16px;padding:20px 22px;">
+        <div style="font:700 12px var(--font-sans);letter-spacing:.1em;text-transform:uppercase;color:#1DB954;margin-bottom:12px;">For handoff</div>
+        <ul style="margin:0;padding-inline-start:18px;display:flex;flex-direction:column;gap:9px;font:400 13.5px var(--font-sans);color:#CFCFE0;line-height:1.5;">
+          <li>Build once as <b style="color:#fff;">CurrencySheet</b>; props <span style="font-family:var(--font-mono);">value</span>, <span style="font-family:var(--font-mono);">onSelect</span>, <span style="font-family:var(--font-mono);">base</span>.</li>
+          <li>Row = <b style="color:#fff;">flag · ISO (mono) · full name</b>; selected = red-tint row + red border + check (matches today's sheet).</li>
+          <li>Pin <b style="color:#fff;">Common</b> (base currency + AED/USD/EGP/EUR/GBP/SAR), then all currencies A→Z. Include Gulf, Levant, Asian, European, African, American — the full ISO-4217 set.</li>
+          <li><b style="color:#fff;">Replace every currency dropdown app-wide</b> with this one sheet — no other currency pickers remain.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
