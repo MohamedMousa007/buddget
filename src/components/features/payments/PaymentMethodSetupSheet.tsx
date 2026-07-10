@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { X, ArrowLeft, Plus, Search, ChevronDown, Check, CreditCard } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { CurrencySheet } from '@/components/ui/CurrencySheet'
-import { shade, cardGradient, TypeGlyph } from '@/components/features/payments/PaymentCardCarousel'
+import { cardGradient, TypeGlyph } from '@/components/features/payments/PaymentCardCarousel'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
@@ -19,7 +19,6 @@ import { cn } from '@/lib/utils'
 import type { Currency, PaymentMethod, PaymentMethodType } from '@/lib/store/types'
 
 type Disc = 'last4' | 'tag' | 'none'
-type CardMotion = 'float' | 'static'
 
 function rgba(hex: string, a: number): string {
   const h = hex.replace('#', '')
@@ -41,8 +40,6 @@ interface Props {
   onSaved?: (id: string) => void
   /** Stack above another sheet (e.g. the picker). Bumps z-indices. */
   nested?: boolean
-  /** Card-preview motion. Defaults to a gentle float. */
-  cardMotion?: CardMotion
 }
 
 /**
@@ -51,7 +48,7 @@ interface Props {
  * Reused by the wallet sheet and the payment-method picker (self-contained add).
  */
 export function PaymentMethodSetupSheet({
-  open, editing, prefill, baseCurrency, onClose, onSaved, nested = false, cardMotion = 'float',
+  open, editing, prefill, baseCurrency, onClose, onSaved, nested = false,
 }: Props) {
   const t = useT()
   const addPaymentMethod = useFinanceStore((s) => s.addPaymentMethod)
@@ -151,7 +148,7 @@ export function PaymentMethodSetupSheet({
   return (
     <>
       <FloatingCardPreview
-        open={open} z={z.shell} motion={cardMotion}
+        open={open} z={z.shell}
         hasProvider={hasProvider} color={effectiveColor} type={type}
         name={hasProvider ? providerName : t.paymentMethods.addTitle}
         typeLabel={hasProvider ? PAYMENT_TYPE_META[type].label : t.paymentMethods.newMethod}
@@ -389,13 +386,12 @@ export function PaymentMethodSetupSheet({
   )
 }
 
-// ── Floating card preview (pinned above the sheet) ────────────────────────────
+// ── Floating card preview (pinned above the sheet, static/elevated) ───────────
 function FloatingCardPreview({
-  open, z, motion: cardMotion, hasProvider, color, type, name, typeLabel, tail, curCode,
+  open, z, hasProvider, color, type, name, typeLabel, tail, curCode,
 }: {
   open: boolean
   z: string
-  motion: CardMotion
   hasProvider: boolean
   color: string
   type: PaymentMethodType
@@ -405,58 +401,56 @@ function FloatingCardPreview({
   curCode: string
 }) {
   if (typeof document === 'undefined') return null
-  const haloColor = hasProvider ? color : '#3A3A4A'
-  const isFloat = cardMotion === 'float'
+
+  // Static 3D treatment — no motion after the one-time entrance.
   const cardShadow = hasProvider
-    ? (isFloat
-        ? `0 20px 44px -16px ${shade(color, 0.5)}`
-        : `0 36px 64px -16px rgba(0,0,0,.72), 0 18px 40px -18px ${rgba(color, 0.55)}`)
-    : (isFloat ? 'none' : '0 30px 60px -18px rgba(0,0,0,.6)')
+    ? `0 36px 64px -16px rgba(0,0,0,.72), 0 16px 32px -12px ${rgba(color, 0.5)}, inset 0 1px 0 rgba(255,255,255,.2)`
+    : '0 32px 58px -18px rgba(0,0,0,.78)'
 
   return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
           key="pm-float-card"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.97 }}
           transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           className={cn('pointer-events-none fixed left-1/2 w-[262px]', z)}
-          style={{ top: 'min(34px, calc(30vh - 188px))', transform: 'translateX(-50%)' }}
+          style={{ top: 'min(34px, calc(30vh - 188px))', marginLeft: -131 }}
         >
-          {/* halo */}
-          <motion.div
-            aria-hidden
-            className="absolute inset-0"
-            style={{
-              background: `radial-gradient(circle at 50% 45%, ${rgba(haloColor, isFloat ? 0.55 : 0.7)}, transparent 70%)`,
-              filter: 'blur(30px)', zIndex: 0,
-            }}
-            animate={isFloat ? { opacity: [0.55, 0.8, 0.55], scale: [1, 1.06, 1] } : { opacity: 1, scale: 1.05 }}
-            transition={isFloat ? { duration: 4.6, repeat: Infinity, ease: 'easeInOut' } : { duration: 0 }}
-          />
-          {/* fixed contact shadow — card parallaxes over it */}
+          {/* halo — provider selected only, static */}
+          {hasProvider && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute"
+              style={{
+                inset: -34, borderRadius: 46,
+                background: `radial-gradient(circle, ${rgba(color, 0.72)}, transparent 68%)`,
+                filter: 'blur(36px)', zIndex: 0,
+              }}
+            />
+          )}
+          {/* contact shadow — static ellipse beneath the card */}
           <div
             aria-hidden
-            className="absolute left-1/2 -translate-x-1/2"
+            className="pointer-events-none absolute"
             style={{
-              bottom: -14, width: isFloat ? 190 : 210, height: isFloat ? 22 : 28,
-              background: `rgba(0,0,0,${isFloat ? 0.5 : 0.62})`, filter: `blur(${isFloat ? 12 : 16}px)`,
-              borderRadius: '50%', zIndex: 0,
+              left: '50%', bottom: -20, transform: 'translateX(-50%)',
+              width: 210, height: 30, background: 'rgba(0,0,0,.55)',
+              borderRadius: '50%', filter: 'blur(20px)', zIndex: 0,
             }}
           />
-          {/* card */}
-          <motion.div
+          {/* card — static, subtle lift */}
+          <div
             className="relative flex h-[164px] w-[262px] flex-col overflow-hidden rounded-[20px]"
             style={{
               padding: '18px 20px',
               background: hasProvider ? cardGradient(color) : '#161620',
               border: hasProvider ? 'none' : '1px dashed #33333f',
               boxShadow: cardShadow,
+              transform: 'translateY(-2px)',
             }}
-            animate={isFloat ? { y: [0, -5, 0] } : { y: 0 }}
-            transition={isFloat ? { duration: 4.6, repeat: Infinity, ease: 'easeInOut' } : { duration: 0 }}
           >
             <div
               className="pointer-events-none absolute inset-0 rounded-[20px]"
@@ -483,7 +477,7 @@ function FloatingCardPreview({
                 <span className="font-mono-numbers text-[13px] font-bold text-white/85">{curCode}</span>
               </div>
             </div>
-          </motion.div>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>,
