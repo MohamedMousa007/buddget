@@ -586,7 +586,7 @@ export const en: Dictionary = {
     statusMissed: 'Missed',
     statusPending: 'Awaiting',
     expectedPerMonth: (amount: string) => `expected ${amount}/mo`,
-    receivedOfExpected: (received: string, expected: string) => `Received ${received} of ${expected}`,
+    receivedOfExpected: (received: string, expected: string) => `${received} of ${expected}`,
     remainingLeft: (amount: string) => `${amount} left`,
     fullyReceived: 'fully received',
     extraReceived: (amount: string) => `+${amount} extra`,

@@ -3,15 +3,17 @@
 import type { ReactNode } from 'react'
 import { Check } from 'lucide-react'
 import { IncomeTypeIcon, incomeTypeColors } from '@/components/features/income/IncomeTypeIcon'
-import { HERO_CARD, OCC_STATUS_COLOR } from '@/components/features/income/incomeGlass'
+import { heroCardStyle, OCC_STATUS_COLOR } from '@/components/features/income/incomeGlass'
 import type { IncomeOccurrence } from '@/lib/utils/incomeOccurrences'
 import type { IncomeSourceType } from '@/lib/store/types'
 
 interface Props {
   sourceType?: IncomeSourceType
   name: string
-  /** e.g. "Monthly · 5 · HSBC". */
+  /** First sub-line: e.g. "Monthly · 5". Cadence only — payment goes on its own line. */
   cadenceLine: string
+  /** Second sub-line: the payment method, abbreviated (glyph + last4 / label). */
+  paymentLine?: ReactNode
   /** Big monthly-equivalent figure, already formatted (no currency). */
   expectedBig: string
   expectedCurrency: string
@@ -19,7 +21,9 @@ interface Props {
   progressLine: ReactNode
   occurrences: IncomeOccurrence[]
   chipLabel: (occ: IncomeOccurrence) => string
-  /** Payday key that shows the neutral selection ring (page: tapped; assign: default/selected). */
+  /** Compact per-payday amount shown in the badge when cadence leaves room (≤2 paydays). */
+  amountLabel?: (occ: IncomeOccurrence) => string
+  /** Payday key that shows the neutral selection highlight (page: tapped; assign: default/selected). */
   selectedKey?: string | null
   /** Assign select mode: green tick top-right when this card is chosen (identical to the card carousel). */
   showTick?: boolean
@@ -27,30 +31,37 @@ interface Props {
   footer: ReactNode
 }
 
+const isReceived = (s: IncomeOccurrence['status']) => s === 'received' || s === 'late'
+
 /**
  * Unified recurring-income hero card. Fixed 213px height regardless of cadence —
- * the payday chip strip stays a single scrolling line and the footer slot is a
- * fixed height, so selecting a payday never reflows the card (handoff §4).
- * Presentational: the parent owns selection + footer.
+ * the payday strip adapts to frequency (monthly: one full-width row; biweekly:
+ * two badges with amounts; weekly: scrolling date pills) without ever reflowing
+ * the card. Presentational: the parent owns selection + footer.
  */
 export function RecurringIncomeCard({
   sourceType,
   name,
   cadenceLine,
+  paymentLine,
   expectedBig,
   expectedCurrency,
   progressPct,
   progressLine,
   occurrences,
   chipLabel,
+  amountLabel,
   selectedKey,
   showTick,
   onChipTap,
   footer,
 }: Props) {
   const colors = incomeTypeColors(sourceType)
+  const single = occurrences.length === 1
+  const withAmount = occurrences.length <= 2
+
   return (
-    <div className="relative flex h-[213px] flex-col p-4 text-white" style={HERO_CARD}>
+    <div className="relative flex h-[213px] flex-col p-4 text-white" style={heroCardStyle(colors.fg)}>
       {showTick ? (
         <span className="absolute end-3 top-3 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#38D96B] text-white shadow-[0_2px_6px_rgba(0,0,0,.25)]">
           <Check className="h-[14px] w-[14px]" strokeWidth={3} />
@@ -68,6 +79,9 @@ export function RecurringIncomeCard({
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold leading-tight">{name}</p>
           <p className="mt-0.5 truncate font-mono-numbers text-[11px] leading-tight text-white/65">{cadenceLine}</p>
+          {paymentLine ? (
+            <div className="mt-1 flex items-center gap-1.5 truncate text-[11px] leading-tight text-white/55">{paymentLine}</div>
+          ) : null}
         </div>
         <div className={`max-w-[38%] shrink-0 text-end ${showTick ? 'me-8' : ''}`}>
           <p className="truncate font-mono-numbers text-base font-bold leading-none tracking-[-0.5px]">
@@ -88,28 +102,36 @@ export function RecurringIncomeCard({
         <p className="mt-1.5 truncate font-mono-numbers text-[11px] text-white/70">{progressLine}</p>
       </div>
 
-      {/* Payday chip strip — single scrolling line */}
+      {/* Payday strip — adapts to cadence. Single monthly payday fills the width. */}
       <div className="hide-scrollbar mt-3 flex gap-2 overflow-x-auto overscroll-x-contain pb-0.5">
         {occurrences.map((occ) => {
           const selected = selectedKey === occ.key
+          const received = isReceived(occ.status)
           const filled = occ.status !== 'awaiting'
           const dot = OCC_STATUS_COLOR[occ.status]
+          const tone = received
+            ? 'border-[rgba(53,212,111,0.4)] bg-[rgba(53,212,111,0.16)] text-[#8FF0B4]'
+            : selected
+              ? 'border-transparent bg-white/[0.14] text-white'
+              : 'border-white/10 bg-white/[0.04] text-white/75'
           return (
             <button
               key={occ.key}
               type="button"
               onClick={onChipTap ? () => onChipTap(occ) : undefined}
-              className={`flex min-h-[30px] shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${
-                selected
-                  ? 'border-transparent bg-white/[0.08] text-white ring-2 ring-[var(--color-brand-focus)]'
-                  : 'border-white/10 bg-white/[0.04] text-white/75'
-              }`}
+              className={`flex min-h-[30px] shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${single ? 'w-full justify-start' : ''} ${tone}`}
             >
               <span
-                className="h-1.5 w-1.5 rounded-full"
+                className="h-1.5 w-1.5 shrink-0 rounded-full"
                 style={filled ? { background: dot } : { border: `1.5px solid ${dot}` }}
               />
               <span className="font-mono-numbers">{chipLabel(occ)}</span>
+              {withAmount && amountLabel ? (
+                <>
+                  <span className="text-white/35">·</span>
+                  <span className="truncate font-mono-numbers text-white/60">{amountLabel(occ)}</span>
+                </>
+              ) : null}
             </button>
           )
         })}

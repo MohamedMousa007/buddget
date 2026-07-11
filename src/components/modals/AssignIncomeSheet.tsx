@@ -7,7 +7,7 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT } from '@/lib/i18n'
-import { convertCurrency } from '@/lib/utils/currency'
+import { convertCurrency, fmtCompact } from '@/lib/utils/currency'
 import { getMonthRange, recurringActiveForWindow } from '@/lib/utils/calculations'
 import { buildOccurrences, monthlyEquivalent, nextAwaitingIndex } from '@/lib/utils/incomeOccurrences'
 import { RecurringIncomeCard } from '@/components/features/income/RecurringIncomeCard'
@@ -117,23 +117,33 @@ export function AssignIncomeSheet({ open, onClose, onAssign, zIndexClassName }: 
               const isActive = i === active
               const freq = source.recurringFrequency ?? 'monthly'
               const cad = freq === 'weekly' ? t.addIncome.freqWeekly : freq === 'biweekly' ? t.addIncome.freqBiweekly : `${t.addIncome.freqMonthly} · ${source.dayOfMonth ?? 1}`
+              const acct = accountLabel(source.paymentMethodId)
               return (
                 <RecurringIncomeCard
                   sourceType={source.sourceType}
                   name={source.name}
-                  cadenceLine={`${cad} · ${accountLabel(source.paymentMethodId)}`}
+                  cadenceLine={cad}
+                  paymentLine={
+                    <>
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] bg-white/12 text-[8.5px] font-bold text-white/80">
+                        {acct.trim().charAt(0).toUpperCase()}
+                      </span>
+                      <span className="truncate">{acct}</span>
+                    </>
+                  }
                   expectedBig={fmtNum(expectedBase)}
                   expectedCurrency={base}
                   progressPct={expectedBase > 0 ? (realizedBase / expectedBase) * 100 : 0}
                   progressLine={
                     <>
-                      {t.income.receivedOfExpected(`${fmtNum(realizedBase)} ${base}`, `${fmtNum(expectedBase)} ${base}`)}
+                      {t.income.receivedOfExpected(`${fmtCompact(realizedBase)} ${base}`, `${fmtCompact(expectedBase)} ${base}`)}
                       {' · '}
-                      {remaining <= 0 ? <span className="text-[#35D46F]">{t.income.fullyReceived}</span> : t.income.toCome(`${fmtNum(remaining)} ${base}`)}
+                      {remaining <= 0 ? <span className="text-[#35D46F]">{t.income.fullyReceived}</span> : t.income.toCome(`${fmtCompact(remaining)} ${base}`)}
                     </>
                   }
                   occurrences={occ}
                   chipLabel={(o) => fmtDay(o.date)}
+                  amountLabel={(o) => `${fmtCompact(o.amount)} ${o.currency}`}
                   selectedKey={isActive ? selKey : null}
                   showTick={isActive}
                   onChipTap={isActive ? (o) => setSelKey(o.key) : undefined}

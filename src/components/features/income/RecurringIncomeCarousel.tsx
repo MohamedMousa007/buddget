@@ -33,6 +33,9 @@ export function RecurringIncomeCarousel({ count, activeIndex, onActiveChange, re
     start.current = { x: e.clientX, y: e.clientY }
     axis.current = null
     setDragging(true)
+    // Capture so move/up keep firing even when the finger leaves the track —
+    // fixes swipes that "fail" mid-drag.
+    e.currentTarget.setPointerCapture?.(e.pointerId)
   }
   const onPointerMove = (e: PointerEvent) => {
     if (!start.current) return
