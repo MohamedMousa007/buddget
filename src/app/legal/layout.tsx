@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import Link from 'next/link'
+import { AppLink as Link } from '@/components/ui/AppLink'
 
 /**
  * Shared layout for all /legal/* pages (Terms, Privacy Policy).

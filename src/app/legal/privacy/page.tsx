@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
+import { AppLink as Link } from '@/components/ui/AppLink'
 import { PrivacyDataSections } from './sections/PrivacyDataSections'
 import { PrivacyRightsSections } from './sections/PrivacyRightsSections'
 import { PrivacyTechSections } from './sections/PrivacyTechSections'

@@ -1,10 +1,9 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { navigate } from '@/lib/navigation/navigate'
 
 export default function ProfilePage() {
-  const router = useRouter()
-  useEffect(() => { router.replace('/settings') }, [router])
+  useEffect(() => { navigate('/settings', { replace: true }) }, [])
   return null
 }

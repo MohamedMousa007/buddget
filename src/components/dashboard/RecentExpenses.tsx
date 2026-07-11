@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { AppLink as Link } from '@/components/ui/AppLink'
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import { useLocalizedFormatters } from '@/hooks/useLocalizedFormatters'
 import { useShallow } from 'zustand/react/shallow'

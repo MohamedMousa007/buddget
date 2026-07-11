@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { AppLink as Link } from '@/components/ui/AppLink'
 import { ArrowLeft, Shield } from 'lucide-react'
 import { PAGE_HEADER_SURFACE_CLASS } from '@/components/layout/PageHeader'
 

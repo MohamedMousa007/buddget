@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { AppLink as Link } from '@/components/ui/AppLink'
 import { useT } from '@/lib/i18n'
 import type { BudgetCategory } from '@/lib/store/types'
 import { CategoryBarSpendingBlock } from '@/components/dashboard/CategoryBarSpendingBlock'

@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { AppLink as Link } from '@/components/ui/AppLink'
 import { format, parseISO } from 'date-fns'
 import { Pencil } from 'lucide-react'
 import { useMemo } from 'react'

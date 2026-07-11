@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { navigate } from '@/lib/navigation/navigate'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useLocale, useT } from '@/lib/i18n'
@@ -23,7 +23,6 @@ export function useProfilePage() {
   const { locale } = useLocale()
   const { user, signOut } = useAuth()
   const store = useFinanceStore()
-  const router = useRouter()
 
   useEffect(() => {
     if (user?.email) {
@@ -77,8 +76,8 @@ export function useProfilePage() {
     // The user is already authenticated, so the reset-password page renders the
     // new-password form directly off the live session and updates via
     // updateUser — fully in-app, no email/OTP round-trip, works on native.
-    router.push('/reset-password/confirm')
-  }, [router])
+    navigate('/reset-password/confirm')
+  }, [])
 
   const handleSignOut = useCallback(async () => {
     // signOut owns ALL teardown (store wipe, push unregister, session clear).

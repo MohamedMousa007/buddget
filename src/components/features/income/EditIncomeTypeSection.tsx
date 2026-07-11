@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { AppLink as Link } from '@/components/ui/AppLink'
 import { Label } from '@/components/ui/label'
 import { IncomeSourceTypePicker } from '@/components/features/income/IncomeSourceTypePicker'
 import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'

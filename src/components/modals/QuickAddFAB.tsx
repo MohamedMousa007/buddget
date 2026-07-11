@@ -2,8 +2,8 @@
 
 import type { LucideIcon } from 'lucide-react'
 import { Plus, X, Receipt, DollarSign, CreditCard, Coins, Mic, Camera } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
+import { navigate } from '@/lib/navigation/navigate'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
@@ -23,7 +23,6 @@ type QuickAddTile = {
 }
 
 export function QuickAddFAB() {
-  const router = useRouter()
   const { activeModal, setActiveModal } = useSettingsStore()
   const requireAuth = useRequireAuthAction()
   const t = useT()
@@ -54,7 +53,7 @@ export function QuickAddFAB() {
     if (tileId === 'payDebt') {
       requireAuth(() => {
         setActiveModal(null)
-        router.push('/debts')
+        navigate('/debts')
       }, msg)
       return
     }

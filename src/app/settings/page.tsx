@@ -2,7 +2,7 @@
 
 import { User, Shield, CreditCard, Palette, Globe, MessageSquare, Database, Target, RefreshCw, FileText } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
-import Link from 'next/link'
+import { AppLink as Link } from '@/components/ui/AppLink'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'

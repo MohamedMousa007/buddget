@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { Shield, Lock } from 'lucide-react'
-import Link from 'next/link'
+import { AppLink as Link } from '@/components/ui/AppLink'
 import { Input } from '@/components/ui/input'
 
 export interface AdminLoginScreenProps {

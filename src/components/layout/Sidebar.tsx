@@ -1,7 +1,7 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { AppLink as Link } from '@/components/ui/AppLink'
+import { useNavPath } from '@/lib/navigation/navStore'
 import {
   LayoutDashboard,
   SlidersHorizontal,
@@ -18,7 +18,7 @@ import { FiatCurrencyField } from '@/components/ui/CurrencyField'
 import { localeInlineLabelClass, useLocale, useT } from '@/lib/i18n'
 
 export function Sidebar() {
-  const pathname = usePathname()
+  const pathname = useNavPath()
   const t = useT()
   const { locale } = useLocale()
 
