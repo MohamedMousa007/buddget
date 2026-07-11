@@ -82,7 +82,7 @@ export function SmsReviewSheet({ open, onClose, items, confirmItem, dismissItem 
                 {item.bank_name ? (
                   <span className={provisional ? 'ms-1.5' : undefined}>
                     {item.bank_name}
-                    {item.account_last4 ? ` ••••${item.account_last4}` : ''}
+                    {item.account_last4 ? ` ••${item.account_last4}` : ''}
                   </span>
                 ) : null}
               </p>

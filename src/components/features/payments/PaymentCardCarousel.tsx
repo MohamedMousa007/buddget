@@ -123,7 +123,7 @@ export function PaymentCardCarousel({
         {methods.map((m, i) => {
           const color = m.color ?? PAYMENT_TYPE_META[m.type].color
           const { provider, tag } = decomposePaymentMethodName(m.name, m.last4)
-          const tail = m.last4 ? `•••• ${m.last4}` : tag || '—'
+          const tail = m.last4 ? `•• ${m.last4}` : tag || '—'
           const isSelected = selectedId != null && m.id === selectedId
           return (
             <div

@@ -15,6 +15,7 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import { useLocalizedFormatters } from '@/hooks/useLocalizedFormatters'
 import type { Expense } from '@/lib/store/types'
 import { useT } from '@/lib/i18n'
+import { decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 
 function fmtNum(n: number): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -179,10 +180,10 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                             {method?.last4 ? (
                               <>
                                 <span className="font-mono-numbers truncate text-xs font-medium text-[var(--color-brand-text-muted)]">
-                                  {method.name}
+                                  {decomposePaymentMethodName(method.name, method.last4).provider}
                                 </span>
                                 <span className="font-mono-numbers ml-1 shrink-0 text-xs font-medium text-[var(--color-brand-text-muted)]">
-                                  ••••{method.last4}
+                                  ••{method.last4}
                                 </span>
                               </>
                             ) : (

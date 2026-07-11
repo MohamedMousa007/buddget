@@ -288,7 +288,7 @@ export function composePaymentMethodName(
   opts: { last4?: string; tag?: string } = {},
 ): string {
   const p = provider.trim()
-  if (opts.last4) return `${p} ••••${opts.last4}`
+  if (opts.last4) return `${p} ••${opts.last4}`
   if (opts.tag && opts.tag.trim()) return `${p} · ${opts.tag.trim()}`
   return p
 }
@@ -299,7 +299,9 @@ export function decomposePaymentMethodName(
   last4?: string,
 ): { provider: string; tag: string } {
   if (last4) {
-    const suffix = ` ••••${last4}`
+    const suffix4 = ` ••••${last4}`
+    const suffix = ` ••${last4}`
+    if (name.endsWith(suffix4)) return { provider: name.slice(0, -suffix4.length), tag: '' }
     if (name.endsWith(suffix)) return { provider: name.slice(0, -suffix.length), tag: '' }
     return { provider: name, tag: '' }
   }

@@ -27,7 +27,7 @@ export function SmsAccountDetectionBanner() {
         >
           <div className="flex items-start justify-between gap-2">
             <p className="text-xs font-medium text-[var(--color-brand-text-primary)]">
-              {bankName ? `${bankName} ` : ''}••••{last4} — new account detected
+              {bankName ? `${bankName} ` : ''}••{last4} — new account detected
             </p>
             <button
               type="button"
@@ -43,7 +43,7 @@ export function SmsAccountDetectionBanner() {
               type="button"
               onClick={() =>
                 openAddPaymentMethodWithPrefill({
-                  name: `${bankName ?? 'Bank'} ••••${last4}`,
+                  name: `${bankName ?? 'Bank'} ••${last4}`,
                   last4,
                 })
               }
