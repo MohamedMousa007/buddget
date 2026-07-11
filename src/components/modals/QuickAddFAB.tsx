@@ -1,7 +1,7 @@
 'use client'
 
 import type { LucideIcon } from 'lucide-react'
-import { Plus, X, Receipt, DollarSign, CreditCard, Coins, Mic, Camera } from 'lucide-react'
+import { Plus, X, Receipt, DollarSign, CreditCard, Coins, Mic, Camera, Wallet } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { navigate } from '@/lib/navigation/navigate'
 import { ModalShell } from '@/components/modals/ModalShell'
@@ -36,6 +36,7 @@ export function QuickAddFAB() {
     { id: 'addIncome', label: t.modals.fabTileIncome, icon: DollarSign, fg: 'var(--color-brand-green)', bg: 'rgba(29,185,84,.14)' },
     { id: 'payDebt', label: t.modals.fabTileDebt, icon: CreditCard, fg: '#FF5C5C', bg: 'rgba(255,92,92,.14)' },
     { id: 'addGoal', label: t.modals.fabTileSaving, icon: Coins, fg: 'var(--color-brand-gold)', bg: 'rgba(245,200,66,.14)' },
+    { id: 'addPaymentMethod', label: t.paymentMethods.addMethod, icon: Wallet, fg: '#2DD4BF', bg: 'rgba(45,212,191,.14)' },
   ]
 
   const openVoice = () => {

@@ -3,11 +3,13 @@
 import { useEffect, useRef, useCallback, type RefObject } from 'react'
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { useNavPath } from '@/lib/navigation/navStore'
-import { User, Settings, LogOut } from 'lucide-react'
+import { User, Settings, LogOut, CreditCard } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
+import { registerBackGuard } from '@/lib/navigation/backGuard'
 import { cn } from '@/lib/utils'
 import { localeInlineLabelClass, useLocale, useT } from '@/lib/i18n'
 
@@ -27,7 +29,14 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
   const { locale } = useLocale()
   const { user, signOut } = useAuth()
   const profile = useFinanceStore(useShallow((s) => s.profile))
+  const setActiveModal = useSettingsStore((s) => s.setActiveModal)
   const prevPathname = useRef(pathname)
+
+  // Hardware/gesture back closes the menu first instead of navigating the page.
+  useEffect(() => {
+    if (!open) return
+    return registerBackGuard(() => { onClose(); return true })
+  }, [open, onClose])
 
   useEffect(() => {
     if (!open) return
@@ -109,6 +118,15 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
         <User className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.profile.editProfile}</span>
       </Link>
+      <button
+        type="button"
+        onClick={() => { setActiveModal('paymentMethods'); onClose() }}
+        className={itemClass}
+        role="menuitem"
+      >
+        <CreditCard className="w-4 h-4 shrink-0" />
+        <span className={localeInlineLabelClass(locale)}>{t.paymentMethods.title}</span>
+      </button>
       <Link href="/settings/" onClick={delayedClose} className={itemClass} role="menuitem">
         <Settings className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.settings}</span>
