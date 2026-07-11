@@ -35,7 +35,7 @@ interface AmountFieldProps {
 
 // Mirrors the shared <Input> base so call-site classNames layer on identically.
 const BASE =
-  'h-8 w-full min-w-0 flex items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base text-start md:text-sm'
+  'h-8 w-full min-w-0 flex items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base text-start md:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]/55'
 
 export function AmountField({
   value,
@@ -75,13 +75,13 @@ export function AmountField({
                 width: '100%',
                 height: 52,
                 background: '#16161f',
-                border: `1px solid ${isOpen ? 'var(--color-brand-red)' : '#26262f'}`,
+                border: `1px solid ${isOpen ? 'var(--color-brand-focus)' : '#26262f'}`,
                 borderRadius: 14,
                 padding: '0 14px',
                 cursor: 'pointer',
                 transition: 'border-color .15s',
               }
-            : { cursor: 'pointer', borderColor: isOpen ? 'var(--color-brand-red)' : undefined }
+            : { cursor: 'pointer', borderColor: isOpen ? 'var(--color-brand-focus)' : undefined }
         }
       >
         {showPrefix && (

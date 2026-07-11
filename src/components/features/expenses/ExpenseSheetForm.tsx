@@ -17,7 +17,7 @@ const HIDE_SCROLL = '[-ms-overflow-style:none] [scrollbar-width:none] [&::-webki
 
 // shared surface/input recipes — all theme-driven via brand tokens
 const INPUT =
-  'h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-start text-base font-normal text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus:outline-none focus:border-[var(--color-brand-red)]'
+  'h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-start text-base font-normal text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus:outline-none focus:border-[var(--color-brand-focus)]'
 
 function Portal({ children }: { children: React.ReactNode }) {
   if (typeof document === 'undefined') return null

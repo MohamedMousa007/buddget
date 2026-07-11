@@ -187,7 +187,7 @@ export function AddSavingsAccountForm({ onDone }: AddSavingsAccountFormProps) {
           onChange={(e) => setNotes(e.target.value)}
           rows={3}
           className={cn(
-            'mt-1 w-full min-h-[4.5rem] resize-y px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-brand-red)]/30',
+            'mt-1 w-full min-h-[4.5rem] resize-y px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-brand-focus)]/30',
             inputClass
           )}
         />

@@ -93,6 +93,36 @@ describe('buildOccurrences', () => {
     expect(nextAwaitingIndex(occ)).toBe(1)
   })
 
+  it('merges multiple same-date receipts into ONE chip (summed), not duplicates', () => {
+    const occ = buildOccurrences(
+      source(),
+      [
+        event({ id: 'e1', receivedDate: '2026-07-09', amount: 40000, status: 'partial', createdAt: '2026-07-09T01:00:00Z' }),
+        event({ id: 'e2', receivedDate: '2026-07-09', amount: 30000, status: 'partial', createdAt: '2026-07-09T02:00:00Z' }),
+      ],
+      '2026-07',
+    )
+    expect(occ).toHaveLength(1) // one chip, not two
+    expect(occ[0].date).toBe('2026-07-09')
+    expect(occ[0].amount).toBe(70000) // 40k + 30k summed
+    expect(occ[0].status).toBe('received') // 70k >= expected 42k
+    expect(occ[0].eventId).toBe('e1') // first event drives the edit CTA
+  })
+
+  it('same-date receipts summing past expected read as received', () => {
+    const occ = buildOccurrences(
+      source(),
+      [
+        event({ id: 'e1', receivedDate: '2026-07-05', amount: 22000, createdAt: '2026-07-05T01:00:00Z' }),
+        event({ id: 'e2', receivedDate: '2026-07-05', amount: 21000, createdAt: '2026-07-05T02:00:00Z' }),
+      ],
+      '2026-07',
+    )
+    expect(occ).toHaveLength(1)
+    expect(occ[0].status).toBe('received') // 43000 >= 42000
+    expect(realizedForOccurrences(occ)).toBe(43000)
+  })
+
   it('returns nothing when the source is not active in the window', () => {
     const occ = buildOccurrences(source({ effectiveEnd: '2026-06-30' }), [], '2026-07')
     expect(occ).toHaveLength(0)

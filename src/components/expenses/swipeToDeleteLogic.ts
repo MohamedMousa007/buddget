@@ -13,3 +13,12 @@ export const OPEN_AT = 150 // px of leftward travel required to commit to open (
 export function resolveSwipe(x: number): boolean {
   return -x >= OPEN_AT
 }
+
+/**
+ * Mirror of {@link resolveSwipe} for a rightward reveal (e.g. Assign): whether a
+ * release at absolute x should open the right-edge action. Position-based, same
+ * deliberate threshold.
+ */
+export function resolveSwipeRight(x: number): boolean {
+  return x >= OPEN_AT
+}

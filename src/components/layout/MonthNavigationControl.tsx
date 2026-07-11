@@ -13,7 +13,7 @@ interface MonthNavigationControlProps {
 }
 
 const btnBase =
-  'inline-flex items-center justify-center shrink-0 rounded-lg text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-red)]/50'
+  'inline-flex items-center justify-center shrink-0 rounded-lg text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]/50'
 
 function parseLocalMonth(yyyyMm: string): Date {
   const [y, m] = yyyyMm.split('-').map(Number)

@@ -46,7 +46,7 @@ function primaryField(action: AIAction): { key: string; label: string } {
 }
 
 const FIELD_CLS =
-  'w-full rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-bg)] px-2.5 py-2 text-sm text-[var(--color-brand-text-primary)] focus:outline-none focus:border-[var(--color-brand-red)]'
+  'w-full rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-bg)] px-2.5 py-2 text-sm text-[var(--color-brand-text-primary)] focus:outline-none focus:border-[var(--color-brand-focus)]'
 
 /**
  * Editable recap shown after voice extraction: one card per detected transaction

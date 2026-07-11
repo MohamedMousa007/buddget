@@ -98,7 +98,7 @@ export function BudgetPlannerAddCategoryMenu({
                 setCustomNameOverride(null)
               }}
               placeholder="Search categories..."
-              className="w-full rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] pl-8 pr-3 py-1.5 text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-red)]/40"
+              className="w-full rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] pl-8 pr-3 py-1.5 text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-focus)]/40"
               autoFocus
             />
           </div>

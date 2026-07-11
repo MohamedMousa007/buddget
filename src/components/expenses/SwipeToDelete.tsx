@@ -1,9 +1,11 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { animate, motion, useMotionValue, type PanInfo } from 'framer-motion'
 import { Trash2 } from 'lucide-react'
-import { REVEAL, resolveSwipe } from './swipeToDeleteLogic'
+import { REVEAL, resolveSwipe, resolveSwipeRight } from './swipeToDeleteLogic'
+
+export type SwipeSide = 'left' | 'right'
 
 async function tapHaptic() {
   try {
@@ -12,6 +14,12 @@ async function tapHaptic() {
   } catch {
     /* web / haptics unavailable */
   }
+}
+
+interface RightAction {
+  label: string
+  icon: ReactNode
+  onAction: () => void
 }
 
 function DeletePanel({ deleteLabel, onDelete }: { deleteLabel: string; onDelete: () => void }) {
@@ -30,58 +38,82 @@ function DeletePanel({ deleteLabel, onDelete }: { deleteLabel: string; onDelete:
   )
 }
 
+function AssignPanel({ action }: { action: RightAction }) {
+  return (
+    <div className="absolute inset-y-0 start-0 flex" style={{ width: REVEAL }}>
+      <button
+        type="button"
+        aria-label={action.label}
+        onClick={() => { void tapHaptic(); action.onAction() }}
+        className="flex w-full flex-col items-center justify-center gap-0.5 bg-[var(--color-brand-green)] text-white active:opacity-90"
+      >
+        {action.icon}
+        <span className="text-[10px] font-semibold">{action.label}</span>
+      </button>
+    </div>
+  )
+}
+
 /**
- * One-direction (right-to-left) reveal-and-tap swipe-to-delete. A deliberate,
- * near-mid-card swipe snaps the row open to expose a Delete button (a fast flick
- * won't trip it — velocity is ignored); a tap on that button deletes. Only one
- * row stays open at a time via isOpen/onOpenChange.
+ * Reveal-and-tap swipe row. Swipe **left** past a deliberate (near-mid-card,
+ * velocity-ignored) threshold to expose the Delete button; optionally swipe
+ * **right** to expose {@link rightAction} (e.g. Assign). A tap on the revealed
+ * button confirms; one row stays open at a time via `openSide`/`onOpenChange`.
  */
 export function SwipeToDelete({
   children,
   onDelete,
-  isOpen,
+  openSide,
   onOpenChange,
   deleteLabel,
+  rightAction,
 }: {
-  children: React.ReactNode
+  children: ReactNode
   onDelete: () => void
-  isOpen: boolean
-  onOpenChange: (open: boolean) => void
+  openSide: SwipeSide | null
+  onOpenChange: (side: SwipeSide | null) => void
   deleteLabel: string
+  rightAction?: RightAction
 }) {
   const x = useMotionValue(0)
   const didDrag = useRef(false)
 
   // Follow external open state (another row opened → close this one).
   useEffect(() => {
-    const target = isOpen ? -REVEAL : 0
+    const target = openSide === 'left' ? -REVEAL : openSide === 'right' ? REVEAL : 0
     if (x.get() !== target) animate(x, target, { type: 'spring', stiffness: 500, damping: 40 })
-  }, [isOpen, x])
+  }, [openSide, x])
 
   const handleDragEnd = (_: unknown, _info: PanInfo) => {
-    const open = resolveSwipe(x.get())
-    if (open) void tapHaptic()
-    animate(x, open ? -REVEAL : 0, { type: 'spring', stiffness: 500, damping: 40 })
-    onOpenChange(open)
+    const pos = x.get()
+    const side: SwipeSide | null = resolveSwipe(pos)
+      ? 'left'
+      : rightAction && resolveSwipeRight(pos)
+        ? 'right'
+        : null
+    if (side) void tapHaptic()
+    animate(x, side === 'left' ? -REVEAL : side === 'right' ? REVEAL : 0, { type: 'spring', stiffness: 500, damping: 40 })
+    onOpenChange(side)
   }
 
   // Capture-phase guard: swallow the row tap when a drag just happened or the
   // row is open (first tap on an open row just closes it) — never a ghost edit.
   const handleClickCapture = (e: React.MouseEvent) => {
-    if (didDrag.current || isOpen) {
+    if (didDrag.current || openSide) {
       e.preventDefault()
       e.stopPropagation()
-      if (isOpen) onOpenChange(false)
+      if (openSide) onOpenChange(null)
     }
   }
 
   return (
     <div className="relative overflow-hidden" onPointerDownCapture={() => { didDrag.current = false }}>
       <DeletePanel deleteLabel={deleteLabel} onDelete={onDelete} />
+      {rightAction ? <AssignPanel action={rightAction} /> : null}
       <motion.div
         drag="x"
         dragDirectionLock
-        dragConstraints={{ left: -210, right: 0 }}
+        dragConstraints={{ left: -210, right: rightAction ? 210 : 0 }}
         dragElastic={0.06}
         onDragStart={() => { didDrag.current = true }}
         onDragEnd={handleDragEnd}

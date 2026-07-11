@@ -21,7 +21,7 @@ export function ProfilePersonalDetailsSection({ store, user }: ProfilePersonalDe
   const t = useT()
   const { locale } = useLocale()
   const inputClass =
-    'mt-1 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-sm text-[var(--color-brand-text-primary)] outline-none transition-colors focus:border-[var(--color-brand-red)]'
+    'mt-1 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-sm text-[var(--color-brand-text-primary)] outline-none transition-colors focus:border-[var(--color-brand-focus)]'
 
   const genderItems = useMemo<ReadonlyArray<SelectFieldOption>>(
     () => [

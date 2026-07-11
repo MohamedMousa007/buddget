@@ -11,21 +11,25 @@ export const GLASS_CARD: CSSProperties = {
   borderRadius: 16,
 }
 
+/**
+ * Recurring hero card — flat glassy surface with depth (no green gradient), so it
+ * reads distinct from the green summary hero. Inset top highlight + soft outer
+ * shadow give a subtle 3D lift.
+ */
+export const HERO_CARD: CSSProperties = {
+  background: 'linear-gradient(0deg, rgba(255,255,255,.045), rgba(255,255,255,.045)), #0f0f15',
+  border: '1px solid rgba(255,255,255,.08)',
+  backdropFilter: 'blur(14px)',
+  WebkitBackdropFilter: 'blur(14px)',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,.07), 0 8px 24px -12px rgba(0,0,0,.6)',
+  borderRadius: 16,
+}
+
 /** Glassy green CTA (Mark received, Save). */
 export const GLASS_GREEN_BTN: CSSProperties = {
   background: 'linear-gradient(160deg, rgba(29,185,84,.28), rgba(29,185,84,.12))',
   border: '1px solid rgba(53,212,111,.5)',
   color: '#8FF0B4',
-  backdropFilter: 'blur(10px)',
-  WebkitBackdropFilter: 'blur(10px)',
-  borderRadius: 14,
-}
-
-/** Glassy red CTA (Assign confirm). */
-export const GLASS_RED_BTN: CSSProperties = {
-  background: 'linear-gradient(160deg, rgba(229,9,20,.34), rgba(229,9,20,.15))',
-  border: '1px solid rgba(229,9,20,.55)',
-  color: '#FFAEB2',
   backdropFilter: 'blur(10px)',
   WebkitBackdropFilter: 'blur(10px)',
   borderRadius: 14,

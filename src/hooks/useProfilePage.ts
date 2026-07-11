@@ -11,7 +11,7 @@ import { apiFetchAuth } from '@/lib/apiBase'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 
 const INPUT_CLASS =
-  'bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] focus:border-[var(--color-brand-red)] rounded-xl px-3 py-2 text-[var(--color-brand-text-primary)] text-sm w-full outline-none transition-colors'
+  'bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] focus:border-[var(--color-brand-focus)] rounded-xl px-3 py-2 text-[var(--color-brand-text-primary)] text-sm w-full outline-none transition-colors'
 
 type ProfileForm = { name: string; email: string; phone: string; country: string; city: string }
 

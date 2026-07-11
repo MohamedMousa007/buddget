@@ -3,28 +3,25 @@
 import type { ReactNode } from 'react'
 import { Check } from 'lucide-react'
 import { IncomeTypeIcon, incomeTypeColors } from '@/components/features/income/IncomeTypeIcon'
-import { GLASS_CARD, OCC_STATUS_COLOR } from '@/components/features/income/incomeGlass'
+import { HERO_CARD, OCC_STATUS_COLOR } from '@/components/features/income/incomeGlass'
 import type { IncomeOccurrence } from '@/lib/utils/incomeOccurrences'
 import type { IncomeSourceType } from '@/lib/store/types'
 
 interface Props {
   sourceType?: IncomeSourceType
   name: string
-  /** e.g. "Monthly · day 5 · HSBC". */
+  /** e.g. "Monthly · 5 · HSBC". */
   cadenceLine: string
   /** Big monthly-equivalent figure, already formatted (no currency). */
   expectedBig: string
   expectedCurrency: string
-  /** e.g. "≈ $848". */
-  expectedSecondary?: string | null
   progressPct: number
   progressLine: ReactNode
   occurrences: IncomeOccurrence[]
   chipLabel: (occ: IncomeOccurrence) => string
+  /** Payday key that shows the neutral selection ring (page: tapped; assign: default/selected). */
   selectedKey?: string | null
-  /** Payday key that pulses with the next-awaiting green glow (assign default). */
-  glowKey?: string | null
-  /** Assign select mode: green tick top-right when this card is chosen. */
+  /** Assign select mode: green tick top-right when this card is chosen (identical to the card carousel). */
   showTick?: boolean
   onChipTap?: (occ: IncomeOccurrence) => void
   footer: ReactNode
@@ -32,8 +29,9 @@ interface Props {
 
 /**
  * Unified recurring-income hero card. Fixed 213px height regardless of cadence —
- * the payday chip strip stays a single scrolling line so every card matches
- * (handoff §4). Presentational: the parent owns selection + footer.
+ * the payday chip strip stays a single scrolling line and the footer slot is a
+ * fixed height, so selecting a payday never reflows the card (handoff §4).
+ * Presentational: the parent owns selection + footer.
  */
 export function RecurringIncomeCard({
   sourceType,
@@ -41,23 +39,21 @@ export function RecurringIncomeCard({
   cadenceLine,
   expectedBig,
   expectedCurrency,
-  expectedSecondary,
   progressPct,
   progressLine,
   occurrences,
   chipLabel,
   selectedKey,
-  glowKey,
   showTick,
   onChipTap,
   footer,
 }: Props) {
   const colors = incomeTypeColors(sourceType)
   return (
-    <div className="relative flex h-[213px] flex-col p-4 text-white" style={GLASS_CARD}>
+    <div className="relative flex h-[213px] flex-col p-4 text-white" style={HERO_CARD}>
       {showTick ? (
-        <span className="absolute end-3 top-3 flex h-[26px] w-[26px] items-center justify-center rounded-full bg-[#35D46F] text-[#04140a]">
-          <Check className="h-4 w-4" strokeWidth={3} />
+        <span className="absolute end-3 top-3 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#38D96B] text-white shadow-[0_2px_6px_rgba(0,0,0,.25)]">
+          <Check className="h-[14px] w-[14px]" strokeWidth={3} />
         </span>
       ) : null}
 
@@ -71,16 +67,13 @@ export function RecurringIncomeCard({
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold leading-tight">{name}</p>
-          <p className="mt-0.5 truncate font-mono-numbers text-[11px] leading-tight text-white/55">{cadenceLine}</p>
+          <p className="mt-0.5 truncate font-mono-numbers text-[11px] leading-tight text-white/65">{cadenceLine}</p>
         </div>
-        <div className={`shrink-0 text-end ${showTick ? 'me-8' : ''}`}>
-          <p className="font-mono-numbers text-lg font-bold leading-none tracking-[-0.5px]">
-            {expectedBig} <span className="text-[10px] font-medium text-white/50">{expectedCurrency}</span>
+        <div className={`max-w-[38%] shrink-0 text-end ${showTick ? 'me-8' : ''}`}>
+          <p className="truncate font-mono-numbers text-base font-bold leading-none tracking-[-0.5px]">
+            {expectedBig} <span className="text-[10px] font-medium text-white/55">{expectedCurrency}</span>
           </p>
-          <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.08em] text-white/45">Expected / mo</p>
-          {expectedSecondary ? (
-            <p className="mt-0.5 font-mono-numbers text-[10px] text-white/45">{expectedSecondary}</p>
-          ) : null}
+          <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.08em] text-white/55">Expected / mo</p>
         </div>
       </div>
 
@@ -92,14 +85,13 @@ export function RecurringIncomeCard({
             style={{ width: `${Math.max(0, Math.min(100, progressPct))}%` }}
           />
         </div>
-        <p className="mt-1.5 truncate font-mono-numbers text-[11px] text-white/60">{progressLine}</p>
+        <p className="mt-1.5 truncate font-mono-numbers text-[11px] text-white/70">{progressLine}</p>
       </div>
 
       {/* Payday chip strip — single scrolling line */}
       <div className="hide-scrollbar mt-3 flex gap-2 overflow-x-auto overscroll-x-contain pb-0.5">
         {occurrences.map((occ) => {
           const selected = selectedKey === occ.key
-          const glow = glowKey === occ.key
           const filled = occ.status !== 'awaiting'
           const dot = OCC_STATUS_COLOR[occ.status]
           return (
@@ -107,9 +99,11 @@ export function RecurringIncomeCard({
               key={occ.key}
               type="button"
               onClick={onChipTap ? () => onChipTap(occ) : undefined}
-              className={`flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
-                selected ? 'border-white/80 bg-white/10 text-white' : 'border-white/10 bg-white/[0.04] text-white/70'
-              } ${glow ? 'income-await-glow' : ''}`}
+              className={`flex min-h-[30px] shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${
+                selected
+                  ? 'border-transparent bg-white/[0.08] text-white ring-2 ring-[var(--color-brand-focus)]'
+                  : 'border-white/10 bg-white/[0.04] text-white/75'
+              }`}
             >
               <span
                 className="h-1.5 w-1.5 rounded-full"
@@ -121,8 +115,8 @@ export function RecurringIncomeCard({
         })}
       </div>
 
-      {/* Footer (tip / CTA) — parent-provided, fixed slot keeps height stable */}
-      <div className="mt-auto pt-3">{footer}</div>
+      {/* Footer (tip / CTA) — fixed-height slot so tip↔CTA swap never reflows the card. */}
+      <div className="mt-auto flex h-12 items-center pt-1">{footer}</div>
     </div>
   )
 }
