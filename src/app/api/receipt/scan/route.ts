@@ -18,6 +18,7 @@ const GEMINI_MODEL = 'gemini-2.5-flash'
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
 
 const SYSTEM_PROMPT = `You are extracting an itemized expense from a photographed receipt for a user in Egypt or the GCC.
+If multiple images are provided, they are all sections of the same receipt — combine them to produce a single result.
 
 Return ONLY a JSON object matching this exact schema:
 {
@@ -146,17 +147,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid form data' }, { status: 400 })
   }
 
-  const image = form.get('image')
-  if (!(image instanceof Blob)) {
+  const images = form.getAll('image').filter((f): f is File => f instanceof File)
+  if (images.length === 0) {
     return NextResponse.json({ error: 'Missing image' }, { status: 400 })
   }
-  if (image.size > 10 * 1024 * 1024) {
-    return NextResponse.json({ error: 'Image exceeds 10 MB' }, { status: 413 })
+  if (images.length > 5) {
+    return NextResponse.json({ error: 'Too many images (max 5)' }, { status: 400 })
   }
 
-  const buf = await image.arrayBuffer()
-  const base64 = Buffer.from(buf).toString('base64')
-  const mimeType = image.type || 'image/jpeg'
+  let totalSize = 0
+  const imageParts: { inlineData: { mimeType: string; data: string } }[] = []
+  for (const img of images) {
+    totalSize += img.size
+    const buf = await img.arrayBuffer()
+    imageParts.push({ inlineData: { mimeType: img.type || 'image/jpeg', data: Buffer.from(buf).toString('base64') } })
+  }
+  if (totalSize > 10 * 1024 * 1024) {
+    return NextResponse.json({ error: 'Images exceed 10 MB total' }, { status: 413 })
+  }
 
   const requestBody = {
     contents: [
@@ -164,12 +172,7 @@ export async function POST(request: NextRequest) {
         role: 'user',
         parts: [
           { text: SYSTEM_PROMPT },
-          {
-            inlineData: {
-              mimeType,
-              data: base64,
-            },
-          },
+          ...imageParts,
         ],
       },
     ],
