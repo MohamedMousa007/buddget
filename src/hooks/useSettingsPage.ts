@@ -11,6 +11,7 @@ import { downloadOrShareFile } from '@/lib/utils/exportFile'
 import { escapeCsvField } from '@/lib/utils/formatters'
 
 import { isSupabaseConfigured } from '@/lib/supabase/env'
+import { navigate } from '@/lib/navigation/navigate'
 
 export interface SettingsImportBannerState {
   variant: 'success' | 'error'
@@ -114,14 +115,18 @@ export function useSettingsPage() {
   }
 
   const handleStartFresh = async () => {
-    // Best-effort server wipe so data doesn't rehydrate from Supabase on next sign-in.
+    // ponytail: 8s abort so a hung network call doesn't block sign-out forever
+    const ac = new AbortController()
+    const abortTimer = setTimeout(() => ac.abort(), 8000)
     try {
-      await apiFetchAuth('/api/account/reset-data', { method: 'POST' })
+      await apiFetchAuth('/api/account/reset-data', { method: 'POST', signal: ac.signal })
     } catch (e) {
       console.error('[startFresh] server wipe failed', e)
+    } finally {
+      clearTimeout(abortTimer)
     }
-    // Sign out owns all teardown (clears local state + navigates to landing).
-    // Keeping the user authenticated here causes the sync to re-pull data immediately.
+    // Reset nav path so the user lands on dashboard (not /settings/data) after re-login.
+    navigate('/')
     await signOutAndHome()
   }
 
