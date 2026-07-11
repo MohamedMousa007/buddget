@@ -3,17 +3,18 @@
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { addMonths, subMonths, format, parse } from 'date-fns'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Link2 } from 'lucide-react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { MonthYearPicker } from '@/components/ui/MonthYearPicker'
 import { RecurringIncomeCard } from '@/components/features/income/RecurringIncomeCard'
 import { RecurringIncomeCarousel } from '@/components/features/income/RecurringIncomeCarousel'
-import { IncomeLedgerRow } from '@/components/features/income/IncomeLedgerRow'
+import { SwipeToDelete, type SwipeSide } from '@/components/expenses/SwipeToDelete'
 import { IncomeTypeIcon, incomeTypeColors } from '@/components/features/income/IncomeTypeIcon'
 import { GLASS_CARD, GLASS_GREEN_BTN } from '@/components/features/income/incomeGlass'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useT } from '@/lib/i18n'
+import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
 import { useHydrateIncome, useHydrateIncomeEvents, useHydrateDebts, useHydrateSavings } from '@/hooks/remote'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { convertCurrency } from '@/lib/utils/currency'
@@ -70,6 +71,7 @@ export default function IncomePage() {
 
   const [activeCard, setActiveCard] = useState(0)
   const [selected, setSelected] = useState<{ sourceId: string; occKey: string } | null>(null)
+  const [openRow, setOpenRow] = useState<{ id: string; side: SwipeSide } | null>(null)
 
   const parseMonth = (m: string) => parse(m, 'yyyy-MM', new Date())
   const prevMonth = () => setMonthFilter(format(subMonths(parseMonth(monthFilter), 1), 'yyyy-MM'))
@@ -92,7 +94,7 @@ export default function IncomePage() {
   const cadenceLine = (s: IncomeSource): string => {
     const freq = s.recurringFrequency ?? 'monthly'
     const cad =
-      freq === 'weekly' ? t.addIncome.freqWeekly : freq === 'biweekly' ? t.addIncome.freqBiweekly : `${t.addIncome.freqMonthly} · day ${s.dayOfMonth ?? 1}`
+      freq === 'weekly' ? t.addIncome.freqWeekly : freq === 'biweekly' ? t.addIncome.freqBiweekly : `${t.addIncome.freqMonthly} · ${s.dayOfMonth ?? 1}`
     return `${cad} · ${accountLabel(s)}`
   }
 
@@ -246,7 +248,6 @@ export default function IncomePage() {
                   cadenceLine={cadenceLine(source)}
                   expectedBig={fmtNum(expectedBase)}
                   expectedCurrency={base}
-                  expectedSecondary={secondaryOf(expectedBase)}
                   progressPct={expectedBase > 0 ? (realizedBase / expectedBase) * 100 : 0}
                   progressLine={progressLine}
                   occurrences={occ}
@@ -266,7 +267,7 @@ export default function IncomePage() {
                         {sel.status === 'awaiting' ? t.income.markDateReceived(fmtDay(sel.date)) : t.income.editDateAmount(fmtDay(sel.date))}
                       </button>
                     ) : (
-                      <p className="text-center text-[11px] text-white/45">{t.income.tapPaydayTip}</p>
+                      <p className="w-full text-center text-[11px] text-white/55">{t.income.tapPaydayTip}</p>
                     )
                   }
                 />
@@ -283,11 +284,11 @@ export default function IncomePage() {
       </div>
       {ledger.map((g) => (
         <div key={g.day}>
-          <div className="flex items-center justify-between px-1 pb-1.5 pt-2.5">
-            <span className="text-xs font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">{g.label}</span>
-            <span className="font-mono-numbers text-xs font-semibold text-[var(--color-brand-text-muted)]">+{fmtNum(g.total)} {base}</span>
+          <div className="flex items-baseline justify-between px-1 pb-2 pt-3">
+            <span className="text-[15px] font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{g.label}</span>
+            <span className="font-mono-numbers whitespace-nowrap text-[11px] font-medium tabular-nums text-[var(--color-brand-text-muted)]">+{fmtNum(g.total)} {base}</span>
           </div>
-          <div className="mb-2.5 overflow-hidden rounded-lg border border-[var(--color-brand-border)]">
+          <div className="mb-2.5 overflow-hidden rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
             {g.items.map((r, idx) => {
               const colors = incomeTypeColors(r.sourceType)
               const clickable = Boolean(r.eventId || r.sourceId)
@@ -297,37 +298,48 @@ export default function IncomePage() {
                   ? () => { setEditingIncomeId(r.sourceId!); setActiveModal('editIncome') }
                   : undefined
               return (
-                <IncomeLedgerRow
-                  key={r.id}
-                  onDelete={() => handleDelete(r)}
-                  canAssign={r.canAssign}
-                  onAssign={() => r.eventId && openAssignIncome({ eventId: r.eventId })}
-                  deleteLabel={t.income.swipeDelete}
-                  assignLabel={t.income.swipeAssign}
-                >
-                  <button
-                    type="button"
-                    disabled={!clickable}
-                    onClick={open}
-                    className={`flex w-full items-center gap-3 px-3.5 py-2.5 text-start ${idx === 0 ? '' : 'border-t border-[var(--color-brand-border)]'} ${clickable ? 'hover:bg-[var(--color-brand-elevated)]' : 'cursor-default'}`}
+                <div key={r.id}>
+                  {idx > 0 ? <div className="ml-[82px] h-px bg-[var(--color-brand-border)]" /> : null}
+                  <SwipeToDelete
+                    openSide={openRow?.id === r.id ? openRow.side : null}
+                    onOpenChange={(side) => setOpenRow(side ? { id: r.id, side } : null)}
+                    onDelete={() => handleDelete(r)}
+                    deleteLabel={t.income.swipeDelete}
+                    rightAction={
+                      r.canAssign
+                        ? { label: t.income.swipeAssign, icon: <Link2 className="h-5 w-5" />, onAction: () => r.eventId && openAssignIncome({ eventId: r.eventId }) }
+                        : undefined
+                    }
                   >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md" style={{ background: colors.bg, color: colors.fg }}>
-                      <IncomeTypeIcon type={r.sourceType} className="h-4 w-4" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{r.name}</span>
-                        <span
-                          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.04em] ${r.recurring ? 'bg-[rgba(29,185,84,0.16)] text-[var(--color-brand-green)]' : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]'}`}
-                        >
-                          {r.recurring ? t.income.recurringLabel : t.income.oneTimeLabel}
+                    <button
+                      type="button"
+                      disabled={!clickable}
+                      onClick={open}
+                      className={`flex min-h-[60px] w-full items-center gap-3 px-4 py-2.5 text-start transition-colors ${clickable ? 'hover:bg-[var(--color-brand-elevated)]' : 'cursor-default'}`}
+                    >
+                      <span className="flex w-[54px] flex-col items-center gap-[5px]">
+                        <span className="flex h-10 w-10 items-center justify-center rounded-[11px]" style={{ background: colors.bg, color: colors.fg }}>
+                          <IncomeTypeIcon type={r.sourceType} className="h-5 w-5" />
                         </span>
+                        <span className="max-w-[54px] truncate text-center text-[9.5px] font-semibold leading-none" style={{ color: colors.fg }}>
+                          {incomeSourceTypeLabel(t.income, r.sourceType)}
+                        </span>
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="truncate text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{r.name}</span>
+                          <span
+                            className={`shrink-0 rounded-full px-2 py-[2.5px] text-[9.5px] font-extrabold uppercase tracking-[0.05em] ${r.recurring ? 'bg-[rgba(29,185,84,0.16)] text-[var(--color-brand-green)]' : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]'}`}
+                          >
+                            {r.recurring ? t.income.recurringLabel : t.income.oneTimeLabel}
+                          </span>
+                        </div>
+                        <span className="mt-1.5 block truncate text-xs text-[var(--color-brand-text-muted)]">→ {accountLabel(r.acct)}</span>
                       </div>
-                      <span className="block truncate text-xs text-[var(--color-brand-text-muted)]">→ {accountLabel(r.acct)}</span>
-                    </div>
-                    <span className="font-mono-numbers shrink-0 text-sm font-bold text-[var(--color-brand-text-primary)]">+{fmtNum(r.amountBase)} <span className="text-[10px] font-medium text-[var(--color-brand-text-muted)]">{base}</span></span>
-                  </button>
-                </IncomeLedgerRow>
+                      <span className="font-mono-numbers shrink-0 text-end text-[15px] font-medium tabular-nums text-[var(--color-brand-text-primary)]">+{fmtNum(r.amountBase)} <span className="text-[10px] font-medium text-[var(--color-brand-text-muted)]">{base}</span></span>
+                    </button>
+                  </SwipeToDelete>
+                </div>
               )
             })}
           </div>

@@ -74,7 +74,7 @@ export default function BudgetSetupPage() {
                     if (e.key === 'Enter') p.commitNewPlan()
                     if (e.key === 'Escape') p.cancelNewPlan()
                   }}
-                  className="w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-red)]/40"
+                  className="w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-focus)]/40"
                   autoFocus
                 />
                 <div className="flex gap-2 justify-end">

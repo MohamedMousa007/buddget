@@ -158,7 +158,9 @@
   --destructive: #E50914;
   --border: #D4D4DC;
   --input: #D4D4DC;
-  --ring: #E50914;
+  /* Neutral focus ring — red is reserved for errors (--destructive). */
+  --color-brand-focus: #8A8A99;
+  --ring: var(--color-brand-focus);
   --chart-1: #E50914;
   --chart-2: #18A349;
   --chart-3: #D4A017;
@@ -254,7 +256,9 @@
   --destructive: #E50914;
   --border: #2A2A38;
   --input: #2A2A38;
-  --ring: #E50914;
+  /* Neutral focus ring — red is reserved for errors (--destructive). */
+  --color-brand-focus: #6E6E82;
+  --ring: var(--color-brand-focus);
   --chart-1: #E50914;
   --chart-2: #1DB954;
   --chart-3: #F5C842;
@@ -495,12 +499,3 @@ html[data-locale='ar'] .prose-rtl {
   .np-glow { animation: none !important; opacity: .7 !important; }
 }
 
-/* Income — next-awaiting payday soft green pulse (handoff §9). Never red. */
-@keyframes incomeAwaitGlow {
-  0%,100% { box-shadow: 0 0 0 2px rgba(53,212,111,.5); }
-  50%     { box-shadow: 0 0 0 5px rgba(53,212,111,.14); }
-}
-.income-await-glow { animation: incomeAwaitGlow 1.8s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) {
-  .income-await-glow { animation: none !important; box-shadow: 0 0 0 2px rgba(53,212,111,.5); }
-}

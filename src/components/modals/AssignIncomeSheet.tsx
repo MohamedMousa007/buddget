@@ -8,12 +8,10 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT } from '@/lib/i18n'
 import { convertCurrency } from '@/lib/utils/currency'
-import { formatCurrency } from '@/lib/utils/formatters'
 import { getMonthRange, recurringActiveForWindow } from '@/lib/utils/calculations'
 import { buildOccurrences, monthlyEquivalent, nextAwaitingIndex } from '@/lib/utils/incomeOccurrences'
 import { RecurringIncomeCard } from '@/components/features/income/RecurringIncomeCard'
 import { RecurringIncomeCarousel } from '@/components/features/income/RecurringIncomeCarousel'
-import { GLASS_RED_BTN } from '@/components/features/income/incomeGlass'
 
 const MON_TITLE = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const fmtNum = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -91,10 +89,6 @@ export function AssignIncomeSheet({ open, onClose, onAssign, zIndexClassName }: 
   useEscapeClose(open, onClose)
 
   const accountLabel = (pmId?: string) => paymentMethods.find((m) => m.id === pmId)?.name ?? t.income.mainAccount
-  const secondaryOf = (amountBase: number) =>
-    settings.showSecondaryCurrency && settings.secondaryCurrency
-      ? `≈ ${formatCurrency(convertCurrency(amountBase, base, settings.secondaryCurrency, exchangeRates), settings.secondaryCurrency, false)}`
-      : null
 
   const selOcc = activeCard?.occ.find((o) => o.key === selKey) ?? null
 
@@ -122,7 +116,7 @@ export function AssignIncomeSheet({ open, onClose, onAssign, zIndexClassName }: 
               const remaining = Math.round(expectedBase - realizedBase)
               const isActive = i === active
               const freq = source.recurringFrequency ?? 'monthly'
-              const cad = freq === 'weekly' ? t.addIncome.freqWeekly : freq === 'biweekly' ? t.addIncome.freqBiweekly : `${t.addIncome.freqMonthly} · day ${source.dayOfMonth ?? 1}`
+              const cad = freq === 'weekly' ? t.addIncome.freqWeekly : freq === 'biweekly' ? t.addIncome.freqBiweekly : `${t.addIncome.freqMonthly} · ${source.dayOfMonth ?? 1}`
               return (
                 <RecurringIncomeCard
                   sourceType={source.sourceType}
@@ -130,7 +124,6 @@ export function AssignIncomeSheet({ open, onClose, onAssign, zIndexClassName }: 
                   cadenceLine={`${cad} · ${accountLabel(source.paymentMethodId)}`}
                   expectedBig={fmtNum(expectedBase)}
                   expectedCurrency={base}
-                  expectedSecondary={secondaryOf(expectedBase)}
                   progressPct={expectedBase > 0 ? (realizedBase / expectedBase) * 100 : 0}
                   progressLine={
                     <>
@@ -141,17 +134,22 @@ export function AssignIncomeSheet({ open, onClose, onAssign, zIndexClassName }: 
                   }
                   occurrences={occ}
                   chipLabel={(o) => fmtDay(o.date)}
-                  glowKey={isActive ? selKey : null}
+                  selectedKey={isActive ? selKey : null}
                   showTick={isActive}
                   onChipTap={isActive ? (o) => setSelKey(o.key) : undefined}
-                  footer={<p className="text-center text-[11px] text-white/55">{isActive && selOcc ? t.income.fillsPayday(fmtDay(selOcc.date)) : ''}</p>}
+                  footer={<p className="w-full text-center text-[11px] text-white/55">{isActive && selOcc ? t.income.fillsPayday(fmtDay(selOcc.date)) : ''}</p>}
                 />
               )
             }}
           />
         </div>
 
-        <button type="button" onClick={confirm} disabled={!selOcc} className="mt-5 w-full py-3 text-sm font-bold disabled:opacity-50" style={GLASS_RED_BTN}>
+        <button
+          type="button"
+          onClick={confirm}
+          disabled={!selOcc}
+          className="mt-5 w-full rounded-[14px] bg-[var(--color-brand-red)] py-3 text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-red-hover)] disabled:opacity-50"
+        >
           {selOcc ? t.income.assignConfirm(activeCard.source.name, fmtDay(selOcc.date)) : t.income.assignTitle}
         </button>
       </div>

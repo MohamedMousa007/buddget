@@ -123,8 +123,8 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                 <div key={e.id}>
                   {idx > 0 ? <div className="ml-[82px] h-px bg-[var(--color-brand-border)]" /> : null}
                   <SwipeToDelete
-                    isOpen={openId === e.id}
-                    onOpenChange={(open) => setOpenId(open ? e.id : null)}
+                    openSide={openId === e.id ? 'left' : null}
+                    onOpenChange={(side) => setOpenId(side ? e.id : null)}
                     onDelete={() => handleDelete(e)}
                     deleteLabel={t.expenses.swipeDelete}
                   >

@@ -156,7 +156,7 @@ export function AddIncomeSheet() {
           </button>
         </div>
 
-        <div className={`${MODAL_BODY_SCROLL_CLASS} px-5`}>
+        <div className={`${MODAL_BODY_SCROLL_CLASS} px-5 pb-6`}>
           {/* Amount + currency */}
           <div className="grid grid-cols-[1fr_auto] items-end gap-3">
             <div className="min-w-0">
@@ -166,7 +166,7 @@ export function AddIncomeSheet() {
                 placeholder={t.addIncome.placeholderAmount}
                 value={amount}
                 onChange={setAmount}
-                className={`mt-1.5 ${MODAL_CONTROL_CLASS} font-mono-numbers text-xl font-semibold text-[var(--color-brand-green)]`}
+                className={`mt-1.5 ${MODAL_CONTROL_CLASS} font-mono-numbers text-xl font-semibold`}
               />
             </div>
             <div className="w-[7.5rem] shrink-0">
@@ -174,7 +174,7 @@ export function AddIncomeSheet() {
               <FiatCurrencyField
                 value={currency}
                 onChange={setCurrency}
-                className="mt-1.5 h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-sm text-[var(--color-brand-text-primary)] focus:border-[var(--color-brand-red)]"
+                className="mt-1.5 h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-sm text-[var(--color-brand-text-primary)] focus:border-[var(--color-brand-focus)]"
               />
             </div>
           </div>

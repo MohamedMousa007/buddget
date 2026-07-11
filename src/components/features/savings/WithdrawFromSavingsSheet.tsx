@@ -98,7 +98,7 @@ export function WithdrawFromSavingsSheet({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
-              className="mt-1 w-full min-h-[4.5rem] resize-y rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-brand-red)]/30"
+              className="mt-1 w-full min-h-[4.5rem] resize-y rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-brand-focus)]/30"
             />
           </div>
           <button

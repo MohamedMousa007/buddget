@@ -101,25 +101,55 @@ export function buildOccurrences(
 ): IncomeOccurrence[] {
   const { start, end } = getMonthRange(monthStr, monthStartDay)
   if (!recurringActiveForWindow(source, start, end)) return []
+  const expected = expectedPerPayday(source)
 
-  const realized = events
-    .filter((e) => e.templateId === source.id && EVENT_STATUS[e.status] !== null)
-    .filter((e) => isWithinInterval(parseISO(e.receivedDate), { start, end }))
-    .sort((a, b) => a.receivedDate.localeCompare(b.receivedDate) || a.createdAt.localeCompare(b.createdAt))
+  // Merge this source's in-window events by received date, so multiple receipts
+  // on the SAME day collapse into one chip (summed) instead of duplicate same-date
+  // chips. Progress is unchanged — the summed amount is preserved.
+  const byDate = new Map<string, IncomeEvent[]>()
+  for (const e of events) {
+    if (e.templateId !== source.id || EVENT_STATUS[e.status] === null) continue
+    if (!isWithinInterval(parseISO(e.receivedDate), { start, end })) continue
+    const arr = byDate.get(e.receivedDate)
+    if (arr) arr.push(e)
+    else byDate.set(e.receivedDate, [e])
+  }
+  const realized = [...byDate.entries()]
+    .map(([date, evs]) => {
+      evs.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+      // Single event: trust its stored status/amount verbatim.
+      if (evs.length === 1) {
+        return {
+          date,
+          status: EVENT_STATUS[evs[0].status] as IncomeOccurrenceStatus,
+          amount: evs[0].amount,
+          currency: evs[0].currency,
+          eventId: evs[0].id,
+        }
+      }
+      // Multiple receipts on the same day: sum realized money + derive one status.
+      const realizedSum = evs.reduce(
+        (s, e) => (REALIZED_STATUSES.has(EVENT_STATUS[e.status] as IncomeOccurrenceStatus) ? s + e.amount : s),
+        0,
+      )
+      const anyRealized = evs.some((e) => REALIZED_STATUSES.has(EVENT_STATUS[e.status] as IncomeOccurrenceStatus))
+      const allLate = evs.every((e) => e.status === 'late')
+      const status: IncomeOccurrenceStatus = !anyRealized
+        ? 'missed'
+        : realizedSum >= expected
+          ? allLate
+            ? 'late'
+            : 'received'
+          : 'partial'
+      return { date, status, amount: anyRealized ? realizedSum : evs[0].amount, currency: evs[0].currency, eventId: evs[0].id }
+    })
+    .sort((a, b) => a.date.localeCompare(b.date))
 
   const paydays = paydayDates(source, start, end)
-  const expected = expectedPerPayday(source)
   const occ: IncomeOccurrence[] = paydays.map((d, i) => {
     const ev = realized[i]
     if (ev) {
-      return {
-        key: ev.id,
-        date: ev.receivedDate,
-        status: EVENT_STATUS[ev.status] as IncomeOccurrenceStatus,
-        amount: ev.amount,
-        currency: ev.currency,
-        eventId: ev.id,
-      }
+      return { key: ev.eventId, date: ev.date, status: ev.status, amount: ev.amount, currency: ev.currency, eventId: ev.eventId }
     }
     return {
       key: `${source.id}@${toISO(d)}`,
@@ -130,17 +160,11 @@ export function buildOccurrences(
     }
   })
 
-  // Extra receipts beyond the payday count are still real money — show them.
+  // Extra received dates beyond the scheduled payday count are still real money —
+  // show them as their own (distinct-date) chips.
   for (let i = paydays.length; i < realized.length; i++) {
     const ev = realized[i]
-    occ.push({
-      key: ev.id,
-      date: ev.receivedDate,
-      status: EVENT_STATUS[ev.status] as IncomeOccurrenceStatus,
-      amount: ev.amount,
-      currency: ev.currency,
-      eventId: ev.id,
-    })
+    occ.push({ key: ev.eventId, date: ev.date, status: ev.status, amount: ev.amount, currency: ev.currency, eventId: ev.eventId })
   }
 
   return occ.sort((a, b) => a.date.localeCompare(b.date))

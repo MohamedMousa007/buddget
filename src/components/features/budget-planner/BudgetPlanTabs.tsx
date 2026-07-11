@@ -43,7 +43,7 @@ export function BudgetPlanTabs({
                 onChange={(e) => onEditingNameChange(e.target.value)}
                 onBlur={onCommitRename}
                 onKeyDown={(e) => e.key === 'Enter' && onCommitRename()}
-                className="min-w-[8rem] rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-sm text-[var(--color-brand-text-primary)] outline-none focus:border-[var(--color-brand-red)]"
+                className="min-w-[8rem] rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-sm text-[var(--color-brand-text-primary)] outline-none focus:border-[var(--color-brand-focus)]"
                 autoFocus
               />
             ) : (
