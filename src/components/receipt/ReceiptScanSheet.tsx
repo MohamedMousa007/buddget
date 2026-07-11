@@ -1,14 +1,14 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Camera, Check, X, Loader2, ReceiptText, RefreshCcw } from 'lucide-react'
+import { Camera, Check, X, Loader2, ReceiptText, RefreshCcw, Images } from 'lucide-react'
 import Image from 'next/image'
 import { useShallow } from 'zustand/react/shallow'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { DatePickerField } from '@/components/ui/DatePickerField'
 import { CurrencyField } from '@/components/ui/CurrencyField'
 import { AmountField } from '@/components/ui/AmountField'
-import { captureReceiptPhoto, ReceiptCaptureCancelled } from '@/lib/native/cameraScanner'
+import { capturePhoto, ReceiptCaptureCancelled, type CapturedImage } from '@/lib/native/cameraScanner'
 import { isNative } from '@/lib/native/isNative'
 import { saveReceiptImage } from '@/lib/native/receiptImages'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -18,7 +18,7 @@ import { newClientId } from '@/lib/store/useFinanceStore'
 import { usePendingAiJobs, savePendingMedia, deletePendingMedia } from '@/lib/store/usePendingAiJobs'
 import type { Currency, ExpenseCategory, ReceiptItem, ReceiptCharge } from '@/lib/store/types'
 
-type ScanState = 'idle' | 'scanning' | 'parsing' | 'result' | 'error' | 'queued'
+type ScanState = 'idle' | 'scanning' | 'captured' | 'parsing' | 'result' | 'error' | 'queued'
 
 interface ScannedReceipt {
   merchant: string
@@ -83,6 +83,7 @@ async function queueReceiptCapture(dataUrl: string): Promise<boolean> {
 
 export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptScanSheetProps) {
   const [state, setState] = useState<ScanState>('idle')
+  const [photos, setPhotos] = useState<CapturedImage[]>([])
   const [preview, setPreview] = useState<string | null>(null)
   const [result, setResult] = useState<ScannedReceipt | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -101,6 +102,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
     scanAbortRef.current?.abort()
     scanAbortRef.current = null
     setState('idle')
+    setPhotos([])
     setPreview(null)
     setResult(null)
     setError(null)
@@ -120,65 +122,55 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
     })
   }, [open, onClose])
 
-  const startScan = useCallback(async () => {
+  /** Captures one photo (camera or gallery) and appends it to the photos list. */
+  const captureOne = useCallback(async (source: 'camera' | 'gallery', currentPhotos: CapturedImage[]) => {
     setError(null)
     setState('scanning')
+    try {
+      const captured = await capturePhoto(source)
+      setPhotos(prev => [...prev, captured])
+      setState('captured')
+    } catch (e) {
+      if (e instanceof ReceiptCaptureCancelled) {
+        if (currentPhotos.length > 0) setState('captured')
+        else if (isNative()) onClose()
+        else setState('idle')
+        return
+      }
+      setError(e instanceof Error ? e.message : 'Could not capture photo')
+      setState('error')
+    }
+  }, [onClose])
+
+  /** Sends all captured photos to the API for parsing. */
+  const submitPhotos = useCallback(async (capturedPhotos: CapturedImage[]) => {
+    if (capturedPhotos.length === 0) return
     const ctrl = new AbortController()
     scanAbortRef.current = ctrl
-    let capturedDataUrl: string | null = null
+    setPreview(capturedPhotos[0].dataUrl)
+    setState('parsing')
     try {
-      // Seeded review of an offline-queued capture: reuse the stored photo.
-      const captured = seed
-        ? { dataUrl: seed.dataUrl, file: await (await fetch(seed.dataUrl)).blob() }
-        : await captureReceiptPhoto()
-      if (ctrl.signal.aborted) return
-      capturedDataUrl = captured.dataUrl
-      setPreview(captured.dataUrl)
-      setState('parsing')
-
       const form = new FormData()
-      form.append('image', captured.file)
+      for (const p of capturedPhotos) form.append('image', p.file)
       const { apiFetchAuth } = await import('@/lib/apiBase')
       const res = await apiFetchAuth('/api/receipt/scan', { method: 'POST', body: form, credentials: 'include', signal: ctrl.signal })
       if (!res.ok) {
-        if (res.status === 503) {
-          throw new Error('AI scanning is temporarily offline. Please set up manually or try again in a moment.')
-        }
-        if (res.status === 422) {
-          throw new Error('We had trouble reading this receipt image. Please ensure the total amount and merchant are clearly visible, then try again.')
-        }
-        if (res.status === 429) {
-          throw new Error('Receipt scanning limit reached. Please try again in a moment.')
-        }
-        if (res.status === 401) {
-          throw new Error('Please sign in to use receipt scanning.')
-        }
+        if (res.status === 503) throw new Error('AI scanning is temporarily offline. Please set up manually or try again in a moment.')
+        if (res.status === 422) throw new Error('We had trouble reading this receipt image. Please ensure the total amount and merchant are clearly visible, then try again.')
+        if (res.status === 429) throw new Error('Receipt scanning limit reached. Please try again in a moment.')
+        if (res.status === 401) throw new Error('Please sign in to use receipt scanning.')
         const err = (await res.json().catch(() => null)) as { error?: string } | null
         throw new Error(err?.error || `Scan failed (${res.status})`)
       }
       const data = (await res.json()) as { receipt?: Record<string, unknown> | null }
-      if (!data.receipt) {
-        throw new Error('We had trouble reading this receipt image. Please ensure the total amount and merchant are clearly visible, then try again.')
-      }
+      if (!data.receipt) throw new Error('We had trouble reading this receipt image. Please ensure the total amount and merchant are clearly visible, then try again.')
       if (ctrl.signal.aborted) return
-      const r = normaliseReceipt(data.receipt, baseCurrency)
-      setResult(r)
+      setResult(normaliseReceipt(data.receipt, baseCurrency))
       setState('result')
     } catch (e) {
       if (ctrl.signal.aborted) return
-      // Intentional cancel (backed out of camera/picker): no error. Native
-      // auto-opens the camera on `idle`, so resetting to idle would re-launch
-      // it in a loop — close the sheet instead. Web has no auto-start, so
-      // return to idle to allow another attempt.
-      if (e instanceof ReceiptCaptureCancelled) {
-        if (isNative()) onClose()
-        else setState('idle')
-        return
-      }
-      // Offline capture-now-process-later (native): keep the photo on device
-      // and queue it for the PendingCapturesChip instead of erroring. Seeded
-      // reviews stay queued anyway, so only fresh captures enqueue.
-      if (!seed && capturedDataUrl && isNative() && !isOnline() && (await queueReceiptCapture(capturedDataUrl))) {
+      // Offline queue: only for single-photo native captures (multi-photo can't be stored as one job).
+      if (capturedPhotos.length === 1 && !seed && isNative() && !isOnline() && (await queueReceiptCapture(capturedPhotos[0].dataUrl))) {
         setState('queued')
         return
       }
@@ -192,14 +184,42 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
       setError(msg)
       setState('error')
     }
-  }, [baseCurrency, seed, onClose])
+  }, [baseCurrency, seed])
+
+  /** Handles seeded (offline-queued) review: parses the stored photo immediately. */
+  const startSeedScan = useCallback(async () => {
+    if (!seed) return
+    setState('scanning')
+    const ctrl = new AbortController()
+    scanAbortRef.current = ctrl
+    try {
+      const blob = await fetch(seed.dataUrl).then(r => r.blob())
+      if (ctrl.signal.aborted) return
+      setPreview(seed.dataUrl)
+      setState('parsing')
+      const form = new FormData()
+      form.append('image', blob)
+      const { apiFetchAuth } = await import('@/lib/apiBase')
+      const res = await apiFetchAuth('/api/receipt/scan', { method: 'POST', body: form, credentials: 'include', signal: ctrl.signal })
+      if (!res.ok) throw new Error(`Scan failed (${res.status})`)
+      const data = (await res.json()) as { receipt?: Record<string, unknown> | null }
+      if (!data.receipt) throw new Error('Could not read the stored receipt image.')
+      if (ctrl.signal.aborted) return
+      setResult(normaliseReceipt(data.receipt, baseCurrency))
+      setState('result')
+    } catch (e) {
+      if (ctrl.signal.aborted) return
+      setError(e instanceof Error ? e.message : 'Could not scan that receipt')
+      setState('error')
+    }
+  }, [seed, baseCurrency])
 
   // ponytail: web auto-start skipped — input.click() from useEffect lacks user gesture on mobile browsers
   useEffect(() => {
-    if (open && state === 'idle' && isNative()) {
-      void startScan()
-    }
-  }, [open, state, startScan])
+    if (!open || state !== 'idle') return
+    if (seed) void startSeedScan()
+    else if (isNative()) void captureOne('camera', [])
+  }, [open, state, seed, startSeedScan, captureOne])
 
   const confirm = () => {
     if (!result) return
@@ -250,6 +270,69 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
       panelClassName="!max-h-[min(86vh,720px)]"
     >
       {state === 'scanning' ? <Centered><Loader2 className="h-8 w-8 animate-spin text-[var(--color-brand-red)]" /><p className="text-sm text-[var(--color-brand-text-secondary)]">Opening camera…</p></Centered> : null}
+
+      {state === 'captured' ? (
+        <div className="w-full">
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {photos.map((p, i) => (
+              <div key={i} className="relative flex-shrink-0">
+                <Image
+                  src={p.dataUrl}
+                  alt={`Receipt photo ${i + 1}`}
+                  width={80}
+                  height={120}
+                  unoptimized
+                  className="h-28 w-20 rounded-xl border border-[var(--color-brand-border)] object-cover"
+                />
+                {photos.length > 1 ? (
+                  <button
+                    type="button"
+                    aria-label={`Remove photo ${i + 1}`}
+                    onClick={() => setPhotos(prev => prev.filter((_, idx) => idx !== i))}
+                    className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]"
+                  >
+                    <X className="h-3 w-3 text-[var(--color-brand-text-muted)]" />
+                  </button>
+                ) : null}
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-[var(--color-brand-text-muted)]">
+            {photos.length === 1 ? 'Receipt too long? Add more photos before analyzing.' : `${photos.length} photos captured.`}
+          </p>
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => void captureOne('camera', photos)}
+              className="flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] px-3 py-2.5 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
+            >
+              <Camera className="h-4 w-4" /> Add photo
+            </button>
+            <button
+              type="button"
+              onClick={() => void captureOne('gallery', photos)}
+              aria-label="Add from gallery"
+              className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] px-3 py-2.5 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
+            >
+              <Images className="h-4 w-4" />
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => void submitPhotos(photos)}
+            className="mt-2 flex min-h-[44px] w-full items-center justify-center rounded-xl bg-[var(--color-brand-red)] px-4 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
+          >
+            Analyze receipt
+          </button>
+          <button
+            type="button"
+            onClick={reset}
+            className="mt-1 flex min-h-[44px] w-full items-center justify-center rounded-xl px-4 py-2 text-sm text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : null}
 
       {state === 'parsing' ? (
         <Centered>
@@ -303,13 +386,23 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
             </div>
             <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">Let&apos;s try that again</p>
             <p className="max-w-72 text-xs text-[var(--color-brand-text-muted)] text-center">{error}</p>
-            <button
-              type="button"
-              onClick={() => void startScan()}
-              className="mt-1 inline-flex items-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
-            >
-              <RefreshCcw className="h-4 w-4" /> Try again
-            </button>
+            {photos.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setState('captured')}
+                className="mt-1 inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
+              >
+                <RefreshCcw className="h-4 w-4" /> Back to photos
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void captureOne('camera', [])}
+                className="mt-1 inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
+              >
+                <RefreshCcw className="h-4 w-4" /> Try again
+              </button>
+            )}
           </Centered>
         </div>
       ) : null}
@@ -321,7 +414,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
           onConfirm={confirm}
           onRescan={() => {
             reset()
-            void startScan()
+            if (isNative()) void captureOne('camera', [])
           }}
           onCancel={onClose}
           onChange={(next) => setResult({ ...result, ...next })}
@@ -332,13 +425,22 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
         <Centered>
           <Camera className="h-8 w-8 text-[var(--color-brand-text-muted)]" />
           <p className="text-sm text-[var(--color-brand-text-secondary)]">Tap below to take a photo of your receipt.</p>
-          <button
-            type="button"
-            onClick={() => void startScan()}
-            className="rounded-xl bg-[var(--color-brand-red)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
-          >
-            Open camera
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => void captureOne('camera', [])}
+              className="flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-4 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
+            >
+              <Camera className="h-4 w-4" /> Camera
+            </button>
+            <button
+              type="button"
+              onClick={() => void captureOne('gallery', [])}
+              className="flex min-h-[44px] items-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] px-4 py-2.5 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
+            >
+              <Images className="h-4 w-4" /> Gallery
+            </button>
+          </div>
         </Centered>
       ) : null}
     </ModalShell>

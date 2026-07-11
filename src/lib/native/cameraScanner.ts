@@ -40,7 +40,7 @@ export async function captureReceiptPhoto(): Promise<CapturedImage> {
 /** Capture from a specific source — 'camera' or 'gallery'. */
 export async function capturePhoto(source: 'camera' | 'gallery'): Promise<CapturedImage> {
   if (isNative()) return captureNative(source)
-  return captureWeb()
+  return captureWeb(source)
 }
 
 async function captureNative(source: 'camera' | 'gallery'): Promise<CapturedImage> {
@@ -80,7 +80,7 @@ async function captureNative(source: 'camera' | 'gallery'): Promise<CapturedImag
   return downscaleCaptured(dataUrl, `receipt-${Date.now()}.jpg`)
 }
 
-async function captureWeb(): Promise<CapturedImage> {
+async function captureWeb(source: 'camera' | 'gallery' = 'camera'): Promise<CapturedImage> {
   if (typeof document === 'undefined') {
     throw new Error('Receipt scan is only available in the browser or app')
   }
@@ -89,7 +89,7 @@ async function captureWeb(): Promise<CapturedImage> {
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = 'image/*'
-    input.capture = 'environment'
+    if (source === 'camera') input.capture = 'environment'
     input.style.position = 'fixed'
     input.style.left = '-9999px'
 
