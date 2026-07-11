@@ -471,6 +471,35 @@ export interface Dictionary {
     linkedInvestmentNote: string
     linkedToDebt: (name: string) => string
     linkedAccountName: (name: string) => string
+    // redesigned income surface (page · cards · amount sheet · assign sheet)
+    expectedThisMonthLabel: string
+    receivedColLabel: string
+    oneTimeSuffix: (amount: string) => string
+    pctOfExpected: (pct: number) => string
+    toCome: (amount: string) => string
+    addIncomeCta: string
+    recurringHeading: string
+    sourcesCount: (n: number) => string
+    swipeHint: string
+    expectedPerMoLabel: string
+    tapPaydayTip: string
+    markDateReceived: (date: string) => string
+    editDateAmount: (date: string) => string
+    amountReceivedTitle: string
+    amountSheetSubtitle: (date: string, source: string, expected: string) => string
+    amountReceivedLabel: string
+    matchesExpected: string
+    shortOfExpected: (short: string, expected: string) => string
+    markReceivedBtn: string
+    saveAsPartialBtn: string
+    assignTitle: string
+    assignSubtitle: string
+    fillsPayday: (date: string) => string
+    assignConfirm: (source: string, date: string) => string
+    allIncomeHeading: string
+    thisMonthCount: (n: number) => string
+    swipeAssign: string
+    swipeDelete: string
   }
 
   editIncome: {
@@ -510,6 +539,25 @@ export interface Dictionary {
     debtDescriptionPlaceholder: string
     labelPaymentMethod: string
     debtUsesIncomeAmount: string
+    // redesigned add/edit modal
+    addSubtitleRecurring: string
+    addSubtitleOneTime: string
+    tabRecurring: string
+    tabOneTime: string
+    incomeTypeLabel: string
+    howOftenLabel: string
+    paydayLabel: string
+    freqMonthly: string
+    freqBiweekly: string
+    freqWeekly: string
+    namePlaceholder: string
+    todayLabel: string
+    assignCardTitle: string
+    assignCardBody: string
+    assignBtn: string
+    assignChange: string
+    assignRemove: string
+    assignedToSource: (name: string) => string
   }
 
   savings: {

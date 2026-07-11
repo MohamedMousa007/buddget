@@ -4,6 +4,8 @@ import { AddExpenseSheet } from './AddExpenseSheet'
 import { AddIncomeSheet } from './AddIncomeSheet'
 import { EditIncomeSheet } from './EditIncomeSheet'
 import { EditIncomeEventSheet } from './EditIncomeEventSheet'
+import { AmountReceivedSheet } from './AmountReceivedSheet'
+import { GlobalAssignIncomeSheet } from './AssignIncomeSheet'
 import { AddDebtSheet } from './AddDebtSheet'
 import { AddRecurringDebtPaymentSheet } from './AddRecurringDebtPaymentSheet'
 import { PaymentMethodsSheet } from './PaymentMethodsSheet'
@@ -35,6 +37,8 @@ export function ModalProvider() {
       <AddIncomeSheet />
       <EditIncomeSheet />
       <EditIncomeEventSheet />
+      <AmountReceivedSheet />
+      <GlobalAssignIncomeSheet />
       <AddDebtSheet />
       <AddRecurringDebtPaymentSheet />
       <PaymentMethodsSheet />

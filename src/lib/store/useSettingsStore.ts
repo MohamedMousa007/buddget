@@ -31,6 +31,10 @@ interface SettingsState {
   editingDebtId: string | null
   editingIncomeId: string | null
   editingIncomeEventId: string | null
+  /** Amount-received sheet: the recurring source + payday being marked. */
+  markingIncome: { sourceId: string; occKey: string } | null
+  /** Assign sheet target: the existing one-time event id being assigned from a row swipe. */
+  assignTarget: { eventId: string | null } | null
   expensePrefill: ExpensePrefill | null
   pmPrefill: PmPrefill | null
   monthFilter: string
@@ -50,6 +54,8 @@ interface SettingsState {
   setEditingDebtId: (debtId: string | null) => void
   setEditingIncomeId: (incomeId: string | null) => void
   setEditingIncomeEventId: (id: string | null) => void
+  openAmountReceived: (sourceId: string, occKey: string) => void
+  openAssignIncome: (target: { eventId: string | null }) => void
   setExpensePrefill: (data: ExpensePrefill | null) => void
   openAddExpenseWithPrefill: (data: ExpensePrefill) => void
   openAddPaymentMethodWithPrefill: (data: PmPrefill) => void
@@ -81,6 +87,8 @@ export const useSettingsStore = create<SettingsState>()(
       editingDebtId: null,
       editingIncomeId: null,
       editingIncomeEventId: null,
+      markingIncome: null,
+      assignTarget: null,
       expensePrefill: null,
       pmPrefill: null,
       monthFilter: getCurrentMonth(),
@@ -96,6 +104,9 @@ export const useSettingsStore = create<SettingsState>()(
       setEditingDebtId: (debtId) => set({ editingDebtId: debtId }),
       setEditingIncomeId: (incomeId) => set({ editingIncomeId: incomeId }),
       setEditingIncomeEventId: (id) => set({ editingIncomeEventId: id }),
+      openAmountReceived: (sourceId, occKey) =>
+        set({ markingIncome: { sourceId, occKey }, activeModal: 'amountReceived' }),
+      openAssignIncome: (target) => set({ assignTarget: target, activeModal: 'assignIncome' }),
       setExpensePrefill: (data) => set({ expensePrefill: data }),
       openAddExpenseWithPrefill: (data) =>
         set({ activeModal: 'addExpense', expensePrefill: data }),
@@ -134,6 +145,8 @@ export const useSettingsStore = create<SettingsState>()(
           editingDebtId: null,
           editingIncomeId: null,
       editingIncomeEventId: null,
+          markingIncome: null,
+          assignTarget: null,
           expensePrefill: null,
           pmPrefill: null,
           monthFilter: getCurrentMonth(),

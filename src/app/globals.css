@@ -494,3 +494,13 @@ html[data-locale='ar'] .prose-rtl {
 @media (prefers-reduced-motion: reduce) {
   .np-glow { animation: none !important; opacity: .7 !important; }
 }
+
+/* Income — next-awaiting payday soft green pulse (handoff §9). Never red. */
+@keyframes incomeAwaitGlow {
+  0%,100% { box-shadow: 0 0 0 2px rgba(53,212,111,.5); }
+  50%     { box-shadow: 0 0 0 5px rgba(53,212,111,.14); }
+}
+.income-await-glow { animation: incomeAwaitGlow 1.8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .income-await-glow { animation: none !important; box-shadow: 0 0 0 2px rgba(53,212,111,.5); }
+}
