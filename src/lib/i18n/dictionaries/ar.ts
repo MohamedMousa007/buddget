@@ -585,7 +585,7 @@ export const ar: Dictionary = {
     statusMissed: 'فائت',
     statusPending: 'بالانتظار',
     expectedPerMonth: (amount: string) => `متوقع ${amount}/شهر`,
-    receivedOfExpected: (received: string, expected: string) => `استُلم ${received} من ${expected}`,
+    receivedOfExpected: (received: string, expected: string) => `${received} من ${expected}`,
     remainingLeft: (amount: string) => `متبقٍ ${amount}`,
     fullyReceived: 'استُلم بالكامل',
     extraReceived: (amount: string) => `+${amount} إضافي`,

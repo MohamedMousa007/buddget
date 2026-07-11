@@ -85,7 +85,7 @@ export interface IncomeTypeGridItem {
 
 // Accents match the Income handoff §9 "Type colors" spec exactly.
 export const INCOME_TYPE_GRID: IncomeTypeGridItem[] = [
-  { id: 'salary', icon: Briefcase, accent: '#1DB954' },
+  { id: 'salary', icon: Briefcase, accent: '#6366F1' },
   { id: 'bonus', icon: Award, accent: '#F5C842' },
   { id: 'side_hustle', icon: Laptop, accent: '#4DA3FF' },
   { id: 'investment', icon: TrendingUp, accent: '#A78BFA' },

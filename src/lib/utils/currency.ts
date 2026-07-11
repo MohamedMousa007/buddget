@@ -99,3 +99,8 @@ export function getConversionRate(
   if (r === null) return 1
   return r
 }
+
+/** Compact number for tight labels: 100000 → "100K", 1250000 → "1.3M". */
+export function fmtCompact(n: number): string {
+  return Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(n)
+}
