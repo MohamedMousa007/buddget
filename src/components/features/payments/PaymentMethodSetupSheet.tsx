@@ -139,9 +139,14 @@ export function PaymentMethodSetupSheet({
   const country = countryFromCurrency(baseCurrency)
   const popularIds = country ? QUICK_ADD[country] : QUICK_ADD_BLEND
 
+  // `card` sits ABOVE the shell + provider backdrops so the floating preview
+  // stays crisp and in front of the sheets (not dimmed behind their scrims).
+  // It stays BELOW `currency` — picking a currency is a focused sub-task that
+  // may cover the card. The provider sheet is height-capped (see below) so its
+  // panel never rises into the card's zone.
   const z = nested
-    ? { shell: 'z-[120]', provider: 'z-[130]', currency: 'z-[140]' }
-    : { shell: 'z-[110]', provider: 'z-[120]', currency: 'z-[130]' }
+    ? { shell: 'z-[120]', provider: 'z-[130]', card: 'z-[135]', currency: 'z-[140]' }
+    : { shell: 'z-[110]', provider: 'z-[120]', card: 'z-[125]', currency: 'z-[130]' }
 
   // provider-field chip (empty = muted card glyph; selected = brand initials)
   const fieldChipColor = brand ? brand.colors[0] : '#9898B0'
@@ -154,7 +159,7 @@ export function PaymentMethodSetupSheet({
   return (
     <>
       <FloatingCardPreview
-        open={open} z={z.shell}
+        open={open} z={z.card}
         hasProvider={hasProvider} color={effectiveColor} type={type}
         name={hasProvider ? providerName : t.paymentMethods.addTitle}
         typeLabel={PAYMENT_TYPE_META[type].label}
@@ -522,7 +527,7 @@ function ProviderPickerSheet({
     : t.paymentMethods.addCustom
 
   return (
-    <ModalShell open={open} onBackdropClick={onClose} zIndexClassName={zIndexClassName} panelClassName="lg:w-[420px]">
+    <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={zIndexClassName} panelClassName="h-[64vh] lg:w-[420px]">
       <div className="flex min-h-0 flex-1 flex-col px-4 pb-4">
         <div className="flex shrink-0 items-center justify-between pb-3 pt-1">
           <span className="text-lg font-semibold text-[var(--color-brand-text-primary)]">
