@@ -1,11 +1,10 @@
 'use client'
 
-import { User, Shield, CreditCard, Palette, Globe, MessageSquare, Database, Target, RefreshCw, FileText } from 'lucide-react'
+import { User, Shield, Palette, Globe, MessageSquare, Database, Target, RefreshCw, FileText } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 import { SettingsRow } from '@/components/features/settings/SettingsRow'
 import { SkeletonList } from '@/components/ui/SkeletonList'
@@ -32,7 +31,6 @@ export default function SettingsPage() {
   const t = useT()
   const { locale } = useLocale()
   const { user } = useAuth()
-  const setActiveModal = useSettingsStore((s) => s.setActiveModal)
 
   const { profile, dataReady } = useFinanceStore(
     useShallow((s) => ({
@@ -78,7 +76,6 @@ export default function SettingsPage() {
             <SectionCard>
               <SettingsRow icon={User} title={t.settings.hub.profile} subtitle={t.settings.hub.profileSubtitle} href="/settings/profile" />
               <SettingsRow icon={Shield} title={t.settings.hub.account} subtitle={t.settings.hub.accountSubtitle} href="/settings/account" />
-              <SettingsRow icon={CreditCard} title={t.paymentMethods.title} subtitle={t.paymentMethods.manageSubtitle} onClick={() => setActiveModal('paymentMethods')} />
             </SectionCard>
           </>
         )}
