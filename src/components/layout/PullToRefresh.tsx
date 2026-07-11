@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { AnimatePresence, motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import { syncFinanceNow } from '@/components/sync/SupabaseFinanceSync'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { isScrollLocked } from '@/lib/ui/scrollLock'
 import { useT } from '@/lib/i18n'
 import { THRESHOLD, resistedPull, canEngage } from './pullToRefreshLogic'
 
@@ -52,7 +53,9 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
 
     const onStart = (e: TouchEvent) => {
       // Never engage behind an open sheet/modal — a pull there is not a refresh.
-      const modalOpen = useSettingsStore.getState().activeModal !== null
+      // `isScrollLocked()` covers every overlay (ModalShell sheets, the More
+      // sheet, numpad, date picker…), not just the ones that set `activeModal`.
+      const modalOpen = useSettingsStore.getState().activeModal !== null || isScrollLocked()
       if (active || modalOpen || e.touches.length !== 1 || !atTop()) { engaged = false; return }
       startX = e.touches[0].clientX
       startY = e.touches[0].clientY

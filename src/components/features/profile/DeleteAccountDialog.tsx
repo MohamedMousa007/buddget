@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Trash2, X, AlertTriangle } from 'lucide-react'
 import { useT } from '@/lib/i18n'
+import { useScrollLock } from '@/lib/ui/scrollLock'
 
 export interface DeleteAccountDialogProps {
   open: boolean
@@ -20,6 +21,7 @@ export interface DeleteAccountDialogProps {
  */
 export function DeleteAccountDialog({ open, onClose, onConfirm, inProgress, error }: DeleteAccountDialogProps) {
   const t = useT()
+  useScrollLock(open)
   const [typed, setTyped] = useState('')
   const expected = t.profile.deleteAccountConfirmWord
   const canConfirm = typed.trim().toUpperCase() === expected.toUpperCase() && !inProgress

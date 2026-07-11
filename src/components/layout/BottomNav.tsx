@@ -106,7 +106,7 @@ export function BottomNav() {
                     />
                   ) : null}
                   {moreOpen ? (
-                    <BottomNavMorePanel key="more-panel" pathname={pathname} items={BOTTOM_NAV_MORE_MENU} onNavigate={closeMore} />
+                    <BottomNavMorePanel key="more-panel" pathname={pathname} items={BOTTOM_NAV_MORE_MENU} onNavigate={closeMore} onClose={closeMore} />
                   ) : null}
                 </AnimatePresence>
                 <button
