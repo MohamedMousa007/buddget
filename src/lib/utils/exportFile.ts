@@ -1,15 +1,15 @@
 /**
  * Export a generated file cross-platform.
  *
- * - Native (Capacitor): writes to Directory.Documents via @capacitor/filesystem so
- *   the file is accessible. On iOS also attempts the Web Share sheet; on Android
- *   the file is saved silently and the caller shows a toast.
- * - Mobile/desktop web: prefers Web Share API with a File, falls back to <a download>.
+ * Native: tries Web Share API first — Android WebView (Chrome 75+) and iOS WKWebView
+ * both support file sharing via navigator.share. iOS fallback: write to app Documents
+ * (visible in Files app). Android fallback: write to app Documents (app-private).
+ * Web: prefers Web Share with File, falls back to <a download>.
  *
  * Returns 'shared' (share sheet used), 'saved' (written to device Documents),
  * or 'downloaded' (anchor download triggered).
  */
-import { isNative, isIOS } from '@/lib/native/isNative'
+import { isNative } from '@/lib/native/isNative'
 
 export async function downloadOrShareFile(
   filename: string,
@@ -17,28 +17,30 @@ export async function downloadOrShareFile(
   mime: string,
 ): Promise<'shared' | 'saved' | 'downloaded'> {
   if (isNative()) {
-    const { Filesystem, Directory } = await import('@capacitor/filesystem')
-    await Filesystem.writeFile({
-      path: filename,
-      data: new Blob([content], { type: mime }),
-      directory: Directory.Documents,
-      recursive: true,
-    })
-
-    // iOS WKWebView supports Web Share with File objects — opens the share/save sheet.
-    if (isIOS()) {
+    // Try Web Share API on all native platforms first.
+    // Android WebView (Chrome 75+) and iOS WKWebView both support file sharing.
+    const nav = navigator as Navigator & { share?: (data: ShareData) => Promise<void> }
+    if (nav.share) {
       try {
-        const nav = navigator as Navigator & { share?: (data: ShareData) => Promise<void> }
-        if (nav.share) {
-          const blob = new Blob([content], { type: mime })
-          await nav.share({ files: [new File([blob], filename, { type: mime })], title: filename })
-          return 'shared'
-        }
-      } catch {
-        // AbortError (cancelled) or unsupported — file is already written to Documents.
+        const blob = new Blob([content], { type: mime })
+        await nav.share({ files: [new File([blob], filename, { type: mime })], title: filename })
+        return 'shared'
+      } catch (err) {
+        // AbortError = user dismissed the share sheet; that is fine.
+        if ((err as Error)?.name === 'AbortError') return 'shared'
+        // Other errors: share unavailable — fall through to Filesystem.
       }
     }
 
+    // Filesystem fallback: iOS Documents is visible in the Files app;
+    // Android Documents is app-private but at least preserves the file.
+    const { Filesystem, Directory } = await import('@capacitor/filesystem')
+    await Filesystem.writeFile({
+      path: filename,
+      data: content,
+      directory: Directory.Documents,
+      recursive: true,
+    })
     return 'saved'
   }
 
