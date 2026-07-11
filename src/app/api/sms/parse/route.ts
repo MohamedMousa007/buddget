@@ -544,6 +544,24 @@ export async function POST(request: Request) {
     .single()
 
   if (!logRow) {
+    // Concurrent duplicate: two shortcuts with different keywords matched the same SMS
+    // body simultaneously. The unique index on (user_id, sms_hash) WHERE is_duplicate=false
+    // catches the second insert — return the same duplicate response as the sequential path.
+    if (logErr?.code === '23505') {
+      const { data: prior } = await service
+        .from('sms_parse_log')
+        .select('expense_id, income_id')
+        .eq('user_id', userId)
+        .eq('sms_hash', hash)
+        .eq('is_duplicate', false)
+        .maybeSingle()
+      return NextResponse.json({
+        ok: true,
+        duplicate: true,
+        expenseId: prior?.expense_id ?? null,
+        incomeId: prior?.income_id ?? null,
+      })
+    }
     console.error('[sms/parse] log insert failed', logErr)
     return NextResponse.json({ ok: false, reason: 'log_insert_failed' }, { status: 500 })
   }
