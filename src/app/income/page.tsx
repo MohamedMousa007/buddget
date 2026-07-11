@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
+import { addMonths, subMonths, format, parse } from 'date-fns'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { MonthNavigationControl } from '@/components/layout/MonthNavigationControl'
+import { MonthYearPicker } from '@/components/ui/MonthYearPicker'
 import { RecurringIncomeCard } from '@/components/features/income/RecurringIncomeCard'
 import { RecurringIncomeCarousel } from '@/components/features/income/RecurringIncomeCarousel'
 import { IncomeLedgerRow } from '@/components/features/income/IncomeLedgerRow'
@@ -68,6 +70,12 @@ export default function IncomePage() {
 
   const [activeCard, setActiveCard] = useState(0)
   const [selected, setSelected] = useState<{ sourceId: string; occKey: string } | null>(null)
+
+  const parseMonth = (m: string) => parse(m, 'yyyy-MM', new Date())
+  const prevMonth = () => setMonthFilter(format(subMonths(parseMonth(monthFilter), 1), 'yyyy-MM'))
+  const nextMonth = () => setMonthFilter(format(addMonths(parseMonth(monthFilter), 1), 'yyyy-MM'))
+  const navBtn =
+    'flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] transition-colors hover:text-[var(--color-brand-text-primary)] active:translate-y-px'
 
   const openAddIncome = () => requireAuth(() => setActiveModal('addIncome'), t.income.requireAuth)
 
@@ -160,9 +168,17 @@ export default function IncomePage() {
 
   return (
     <div className="px-4 pb-32 pt-3.5">
-      {/* Header: month switcher */}
-      <div className="mb-3.5">
-        <MonthNavigationControl monthFilter={monthFilter} onChange={setMonthFilter} compact />
+      {/* Header: editorial month control (reused verbatim from Expenses) */}
+      <div className="mb-3.5 flex items-center justify-between gap-2">
+        <MonthYearPicker monthFilter={monthFilter} onChange={setMonthFilter} heroLabel />
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button type="button" onClick={prevMonth} className={navBtn} aria-label="Previous month">
+            <ChevronLeft className="h-[17px] w-[17px]" />
+          </button>
+          <button type="button" onClick={nextMonth} className={navBtn} aria-label="Next month">
+            <ChevronRight className="h-[17px] w-[17px]" />
+          </button>
+        </div>
       </div>
 
       {/* Summary glass card — Expected vs Received (never merged) */}

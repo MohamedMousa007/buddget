@@ -22,6 +22,7 @@ import { readSplashDone, writeSplashDone } from '@/lib/auth/splashLatch'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { LandingGate } from '@/components/auth/LandingGate'
+import { DevAuthBypassSeed } from '@/components/auth/DevAuthBypassSeed'
 // Static import: lazy() made the FIRST sign-in suspend on the chunk fetch,
 // flashing the spinner splash before the welcome screen painted.
 import { WelcomeScreen } from '@/components/auth/WelcomeScreen'
@@ -451,13 +452,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const noopSignOut = useCallback(async () => {}, [])
 
-  const mode: AuthMode = !configured
-    ? 'landing'
-    : loading
-      ? 'loading'
-      : user
-        ? 'authenticated'
-        : 'landing'
+  // Dev-only auth bypass for local UI QA: renders the app (local store, no remote
+  // sync) without a real session. Double-gated — `NODE_ENV !== 'production'` means
+  // it is dead code in any production/Capacitor build, and it still needs the
+  // explicit `NEXT_PUBLIC_DEV_AUTH_BYPASS=1` env flag to activate.
+  const devBypass =
+    process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1'
+
+  const mode: AuthMode = devBypass
+    ? 'authenticated'
+    : !configured
+      ? 'landing'
+      : loading
+        ? 'loading'
+        : user
+          ? 'authenticated'
+          : 'landing'
 
   const value = useMemo<AuthContextValue>(
     () =>
@@ -549,7 +559,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const splashDone = gateUserId != null && splashDoneFor === gateUserId
   // True from the very first authenticated frame until the latch flips — the
   // homepage can never paint mid-splash (the latch only flips in a timeout).
-  const showWelcomeScreen = mode === 'authenticated' && !isBypassRoute && !splashDone
+  const showWelcomeScreen = mode === 'authenticated' && !isBypassRoute && !splashDone && !devBypass
 
   // Minimum 1.5 s display so the welcome screen doesn't flash on fast connections.
   // setState lives inside the timeout callback (react-compiler rule).
@@ -618,6 +628,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ) : (
           children
         )}
+        {devBypass ? <DevAuthBypassSeed /> : null}
         {configured && !loading && user ? (
           <>
             <SupabaseFinanceSync userId={user.id} />
