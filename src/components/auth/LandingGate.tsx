@@ -72,6 +72,9 @@ export function LandingGate() {
     document.addEventListener('focusin', onFocusIn)
     document.addEventListener('focusout', onFocusOut)
     onViewport()
+    // Child effects (AuthSignInUpStep .focus()) fire before this parent effect registers
+    // the focusin listener — check activeElement immediately to catch that race.
+    if (isField(document.activeElement)) { focusHidden = true; apply() }
     return () => {
       vv?.removeEventListener('resize', onViewport)
       vv?.removeEventListener('scroll', onViewport)
@@ -109,6 +112,9 @@ export function LandingGate() {
           .lg-ticker p:first-child { opacity: 1 !important; }
         }
         .lg-ticker-hide { display: none !important; }
+        /* ponytail: CSS :has() catches every focus path (programmatic, auto-focus on
+           back-nav, adjustPan WebViews) without event-timing races. JS is belt-and-suspenders. */
+        :has(input:focus, textarea:focus, select:focus) .lg-ticker { display: none !important; }
       `}</style>
 
       {/* Layout note: top-aligned on phones so the soft keyboard doesn't push the
