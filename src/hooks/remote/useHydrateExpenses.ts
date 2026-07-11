@@ -21,6 +21,9 @@ export function useHydrateExpenses(): void {
     const uid = user?.id
     if (!uid) return
     if (hasHydrated(uid, 'expenses')) return
+    // Warm cache already holds this user's data — don't refetch (would race the
+    // background reconcile and could overwrite unsynced local edits).
+    if (useFinanceStore.getState().profile.id === uid) { markHydrated(uid, 'expenses'); return }
     let cancelled = false
     const supabase = createClient()
 

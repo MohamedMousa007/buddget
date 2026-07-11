@@ -1767,7 +1767,10 @@ export const useFinanceStore = create<FinanceStore>()(
         return {
           ...current,
           ...p,
-          dataReady: false,
+          // Cache-first boot: a returning user's persisted store IS renderable
+          // data — don't blank it and force a network wait. Guests / fresh
+          // installs (no real profile) still start false and gate on the pull.
+          dataReady: !!(p.profile?.id && p.profile.id !== 'local'),
           goals: p.goals ?? current.goals,
           subscriptions: p.subscriptions ?? current.subscriptions,
           lastGoldFetch: p.lastGoldFetch ?? current.lastGoldFetch,

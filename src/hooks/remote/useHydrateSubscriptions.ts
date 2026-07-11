@@ -15,6 +15,8 @@ export function useHydrateSubscriptions(): void {
     const uid = user?.id
     if (!uid) return
     if (hasHydrated(uid, 'subscriptions')) return
+    // Warm cache already holds this user's data — skip the redundant refetch.
+    if (useFinanceStore.getState().profile.id === uid) { markHydrated(uid, 'subscriptions'); return }
     let cancelled = false
     const supabase = createClient()
 

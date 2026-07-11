@@ -131,6 +131,10 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
   const lastScheduleSnap = useRef<ReturnType<typeof sliceRefs> | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null)
+  // In-flight guard for the shared reconcile (mount warm-start, reconnect, PTR).
+  // With cache-first the UI is interactive during the background pull, so this
+  // replaces the old `dataReady=false` gate as the "don't double-diff" lock.
+  const reconciling = useRef(false)
 
   useEffect(() => {
     hydrated.current = false
@@ -143,6 +147,32 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     const supabase = supabaseRef.current
 
     async function pull() {
+      // Warm cache-first path: this user's data is already persisted in
+      // localStorage, so render it instantly and reconcile in the background.
+      // The reconcile goes through `syncFinanceNow()` (flush → pull → re-baseline)
+      // — flush-first is mandatory: it commits any pending delete/settings edit
+      // BEFORE pullAll reads, so the tombstone-less server snapshot can't
+      // resurrect a locally-deleted row and the server settings can't revert a
+      // local toggle. Requires the network; the offline case falls through to
+      // the offline fast-path below.
+      if (isOnline() && useFinanceStore.getState().profile.id === userId) {
+        prevSnap.current = snapshot(useFinanceStore.getState())
+        lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
+        hydrated.current = true
+        lastPulledUserId = userId
+        // Pre-seed the hydrate guard so per-page useHydrate* hooks skip their
+        // own fetches (they'd otherwise race the reconcile on first mount).
+        for (const slice of ['expenses','income','incomeEvents','debts','goals','savings','subscriptions','budget']) {
+          markHydrated(userId, slice)
+        }
+        useFinanceStore.getState().setDataReady(true)
+        void ensureMarketDataFresh().catch(() => { /* cached rates remain */ })
+        // Defer one tick so the sibling effect has assigned `pendingSync`.
+        setTimeout(() => {
+          void syncFinanceNow().catch((e) => console.error('[finance sync] warm reconcile failed', e))
+        }, 0)
+        return
+      }
       if (lastPulledUserId !== userId) useFinanceStore.getState().setDataReady(false)
       lastPulledUserId = userId
       // Offline fast-path: the persisted store IS the data — don't make the
@@ -246,10 +276,18 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     // Re-baseline the flush snapshots afterwards so merged server rows aren't
     // seen as fresh local writes.
     pendingSync = async () => {
-      await flush()
-      await runFullSync(supabase, userId)
-      prevSnap.current = snapshot(useFinanceStore.getState())
-      lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
+      // Single in-flight reconcile — mount warm-start, reconnect, and PTR all
+      // funnel here; overlapping runs would diff against a shifting baseline.
+      if (reconciling.current) return
+      reconciling.current = true
+      try {
+        await flush()
+        await runFullSync(supabase, userId)
+        prevSnap.current = snapshot(useFinanceStore.getState())
+        lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
+      } finally {
+        reconciling.current = false
+      }
     }
 
     const unsub = useFinanceStore.subscribe(() => {
@@ -374,6 +412,7 @@ async function runFullSync(
     incomeSources: merged.incomeSources,
     incomeEvents: merged.incomeEvents,
     expenses: merged.expenses,
+    receipts: merged.receipts,
     recurringExpenses: merged.recurringExpenses,
     subscriptions: merged.subscriptions,
     debts: merged.debts,
@@ -390,7 +429,7 @@ async function runFullSync(
   // correct before the loading splash is removed.
   applyTheme(merged.settings.theme)
   // Mark all slices as hydrated so per-page hooks skip redundant fetches.
-  for (const slice of ['expenses','income','debts','goals','savings','subscriptions','budget']) {
+  for (const slice of ['expenses','income','incomeEvents','debts','goals','savings','subscriptions','budget']) {
     markHydrated(userId, slice)
   }
 }

@@ -2,6 +2,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { clearPendingAiJobs } from '@/lib/store/usePendingAiJobs'
 import { resetHydrationGuard } from '@/hooks/remote/hydrateGuard'
+import { SPLASH_DONE_KEY } from '@/lib/auth/splashLatch'
 
 /**
  * Persisted localStorage keys used by Zustand + misc client caches. Wiped on
@@ -17,6 +18,7 @@ const STORAGE_KEYS = [
   'pwa-install-dismissed',
   'buddget_guest_nickname',
   'buddget_guest_next',
+  SPLASH_DONE_KEY,
 ] as const
 
 /**
