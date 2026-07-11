@@ -204,6 +204,12 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
               id="ef-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              // Some Android IMEs (e.g. Gboard Arabic) only fire `input`/onChange when the
+              // composition commits; sync mid-composition so the submit gate reflects the
+              // typed word live. Setting the identical value is a no-op DOM-write, so it
+              // doesn't disrupt the composing region.
+              onCompositionUpdate={(e) => setDescription(e.currentTarget.value)}
+              onCompositionEnd={(e) => setDescription(e.currentTarget.value)}
               placeholder={t.expenseForm.descriptionPlaceholder}
               className={INPUT}
             />

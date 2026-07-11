@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/fonts.css">
+<link rel="stylesheet" href="../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/colors.css">
+<link rel="stylesheet" href="../_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/tokens/typography.css">
+<style>
+  doc-page:not(:defined){ visibility:hidden; }
+  .hd { font-family:var(--font-sans); color:#17171f; }
+  .hd h1,.hd h2,.hd h3 { color:#0d0d12; letter-spacing:-0.01em; }
+  .hd h2 { font-size:24px; margin:38px 0 6px; padding-top:20px; border-top:2px solid #ECECEF; }
+  .hd h3 { font-size:16px; margin:24px 0 6px; }
+  .hd p,.hd li { font-size:13.5px; line-height:1.62; color:#33333d; }
+  .hd code { font-family:var(--font-mono); font-size:12px; background:#F3F3F6; color:#B0142B; padding:1px 5px; border-radius:5px; }
+  .hd pre { font-family:var(--font-mono); font-size:11.5px; line-height:1.55; background:#14141b; color:#E7E7EE; padding:14px 16px; border-radius:12px; overflow:auto; white-space:pre-wrap; }
+  .hd pre .k { color:#FF8A8F; } .hd pre .c { color:#7FA88F; }
+  .hd figure { margin:14px 0 6px; break-inside:avoid; }
+  .hd figure img { width:100%; display:block; border:1px solid #E2E2E8; border-radius:12px; background:#0A0A0F; }
+  .hd figcaption { font-size:11.5px; color:#7A7A88; margin-top:7px; }
+  .hd .rule { display:flex; gap:11px; padding:13px 15px; border-radius:12px; margin:9px 0; break-inside:avoid; }
+  .hd .rule.no { background:#FDECEE; border:1px solid #F4C9CE; }
+  .hd .rule.yes { background:#E9F7EF; border:1px solid #C4E7D2; }
+  .hd .rule .tag { font-family:var(--font-mono); font-weight:700; font-size:11px; flex:none; }
+  .hd .rule.no .tag { color:#B0142B; } .hd .rule.yes .tag { color:#0F7A43; }
+  .hd .rule p { margin:0; font-size:12.5px; }
+  .hd .pill { display:inline-block; font-family:var(--font-mono); font-size:10.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; padding:2px 8px; border-radius:999px; }
+  .hd table { width:100%; border-collapse:collapse; margin:10px 0; break-inside:avoid; }
+  .hd th,.hd td { text-align:left; font-size:12px; padding:7px 10px; border-bottom:1px solid #ECECEF; vertical-align:top; }
+  .hd th { color:#0d0d12; font-weight:700; background:#F7F7F9; }
+  .hd td code { font-size:11px; }
+  .hd .lead { font-size:15px; color:#33333d; line-height:1.6; }
+  .hd .kicker { font-family:var(--font-mono); font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#E50914; }
+  .hd .cols { columns:2; column-gap:26px; }
+  .hd .cols li { break-inside:avoid; }
+  .hd ul { padding-inline-start:20px; margin:8px 0; }
+</style>
+</helmet>
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="letter" margin="0.7in" hint-size="820,1060">
+<div class="hd">
+
+  <div class="kicker">Buddget · Developer Handoff</div>
+  <h1 style="font-size:34px;margin:6px 0 4px;">Income — Page &amp; Add-Income Modal</h1>
+  <p class="lead">This is the complete, binding spec for the redesigned Income page and its Add-Income flow. Build it to <strong>100% fidelity — zero deviation</strong>. Every visual, number, color, radius and interaction below is intentional. When something says <em>reuse</em>, do not rebuild it.</p>
+
+  <!-- ============ GOLDEN RULES ============ -->
+  <h2>0 · Golden rules (read first)</h2>
+  <div class="rule no"><span class="tag">DON'T</span><p><strong>Never recreate or redesign the Payment Method selector.</strong> The "Received into" step uses the app's existing <strong>payment-method card carousel</strong> component. Import and mount it as-is. Do not restyle it, do not fork it.</p></div>
+  <div class="rule no"><span class="tag">DON'T</span><p><strong>Never recreate the Calendar / date picker.</strong> The one-time "Received on" date uses the app's existing <strong>Unified Calendar</strong> popup. Reuse it verbatim.</p></div>
+  <div class="rule no"><span class="tag">DON'T</span><p><strong>Never recreate the Currency selector.</strong> The currency field opens the app's existing <strong>Unified Currency Sheet</strong>. Reuse it verbatim.</p></div>
+  <div class="rule yes"><span class="tag">DO</span><p>Reuse those three shared components exactly where the screenshots show them. This handoff only defines the <strong>Income-specific</strong> surfaces around them: the page, the recurring cards, the add/edit form, the assign sheet, and the amount sheet.</p></div>
+
+  <!-- ============ DATA MODEL ============ -->
+  <h2>1 · Data model</h2>
+  <p>Income is two parallel entities. Keep them distinct — <strong>projected vs actual must never be merged into one figure.</strong></p>
+
+  <h3>A · Income Source (a recurring template)</h3>
+  <pre><span class="c">// one recurring stream the user declares</span>
+Source {
+  id, name,                 <span class="c">// e.g. "Salary · Nexta" (type is encoded in the name, not a badge)</span>
+  type,                     <span class="c">// salary | bonus | side_hustle | debt | gift | refund | other</span>
+                            <span class="c">//   + system-only: savings | investment (read-only in editors)</span>
+  color, icon,              <span class="c">// per-type accent + Lucide glyph</span>
+  frequency,                <span class="c">// monthly | biweekly | weekly</span>
+  dom,                      <span class="c">// anchor payday (day-of-month). biweekly/weekly derive the rest</span>
+  paymentMethodId,          <span class="c">// "received into" account — shown on the card</span>
+  expected,                 <span class="c">// MONTHLY-EQUIVALENT expected amount (see §2)</span>
+  occ: [ Occurrence ]       <span class="c">// this month's paydays, computed on read</span>
+}</pre>
+
+  <h3>B · Occurrence / Income Event (an actual receipt)</h3>
+  <pre>Occurrence {
+  id, date,                 <span class="c">// "Jul 5"; becomes "Today" when confirmed off-schedule</span>
+  status,                   <span class="c">// received | late | partial | missed | awaiting</span>
+  amount                    <span class="c">// expected per-payday amount; overwritten with actual on partial</span>
+}</pre>
+
+  <table>
+    <thead><tr><th>Status</th><th>Chip</th><th>Counts toward actual income?</th><th>Who sets it</th></tr></thead>
+    <tbody>
+      <tr><td><code>received</code></td><td><span class="pill" style="background:rgba(29,185,84,.16);color:#0F7A43;">Received</span></td><td>Yes — full amount</td><td>User</td></tr>
+      <tr><td><code>late</code></td><td><span class="pill" style="background:rgba(255,159,10,.18);color:#9A6206;">Late</span></td><td>Yes — full amount</td><td>Auto (arrived after payday) / user</td></tr>
+      <tr><td><code>partial</code></td><td><span class="pill" style="background:rgba(77,163,255,.18);color:#1E5A9E;">Partial</span></td><td>Yes — at the entered amount</td><td>User (via amount sheet)</td></tr>
+      <tr><td><code>missed</code></td><td><span class="pill" style="background:rgba(229,9,20,.14);color:#B0142B;">Missed</span></td><td>No — counts as nothing</td><td>User only</td></tr>
+      <tr><td><code>awaiting</code></td><td><span class="pill" style="background:#EDEDF1;color:#5A5A66;">Awaiting</span></td><td>No — pending, display-only</td><td>System (overdue never auto-flips to missed)</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ============ MONEY MATH ============ -->
+  <h2>2 · Money math (do not change)</h2>
+  <ul>
+    <li><strong>Monthly-equivalent</strong> for a source's <code>expected</code>: weekly → <code>amount × 52/12</code>; biweekly → <code>amount × 26/12</code>; monthly → <code>amount × 1</code>. Non-monthly sources display the per-paycheck figure in the cadence line and the monthly equivalent as the big number.</li>
+    <li><strong>Per-source progress</strong>: <code>realized = Σ occ.amount where status ∈ {received, late, partial}</code>. Bar = <code>min(100, realized/expected)</code>. Line = <code>"Received {realized} of {expected} · {fully received | {expected−realized} to come}"</code>.</li>
+    <li><strong>Summary — Expected</strong> = <code>Σ source.expected</code> (projected recurring only). <strong>Received</strong> = <code>Σ realized recurring occ</code>. <strong>+one-time</strong> = <code>Σ standalone one-time receipts</code>, shown separately, <em>never folded into Expected.</em></li>
+    <li><strong>Secondary currency</strong> (toggle <code>showSecondary</code>): <code>≈ $ = amount × 0.0202</code> shown under EGP figures.</li>
+  </ul>
+
+  <!-- ============ THE PAGE ============ -->
+  <h2>3 · The Income page</h2>
+  <figure><img src="screens/01-income-page.png" alt="Income page"><figcaption>The full Income page. Editorial month header (reused from Expenses), glass summary card, recurring carousel, all-income ledger.</figcaption></figure>
+  <ul>
+    <li><strong>Header</strong>: the exact editorial month control from the Expenses screen — <code>July</code> (700/21px sans) + <code>2026</code> (mono, muted) + chevron, and two square arrow buttons (prev/next). Reuse verbatim.</li>
+    <li><strong>Summary card</strong> — glass gradient (see §8). Two columns, never merged: <em>Expected this month</em> (white, 34px mono) with <code>≈ $</code> under it; <em>Received</em> (green #35D46F, 22px mono) with <code>+{oneTime} one-time</code> under it. Green progress bar = % received, with <code>{pct}% of expected received</code> and <code>{toCome} to come</code>. Red solid <strong>Add income</strong> CTA.</li>
+    <li><strong>Recurring</strong> — a <strong>one-card-per-swipe carousel</strong> (horizontal drag + red dots). Every card is a <strong>fixed 213px height</strong> regardless of monthly/biweekly/weekly. See §4.</li>
+    <li><strong>All income</strong> — every income transaction (recurring receipts + one-time), grouped by day like Expenses, each with a <span class="pill" style="background:rgba(29,185,84,.16);color:#0F7A43;">Recurring</span> or <span class="pill" style="background:#EDEDF1;color:#5A5A66;">One-time</span> badge. Rows are swipeable (§6).</li>
+  </ul>
+
+  <!-- ============ PAYDAY ACTIONS ============ -->
+  <h2>4 · Recurring card &amp; payday actions</h2>
+  <figure><img src="screens/02-payday-selected-mark.png" alt="Payday selected"><figcaption>Card contents are unified: header (icon · name · <code>cadence · payment method</code> · expected/mo · ≈$), progress bar + line, a <strong>single-line payday chip strip</strong>, then the action row.</figcaption></figure>
+  <ul>
+    <li>The chip strip scrolls horizontally and stays <strong>one line for any payday count</strong> (weekly = 4 chips still fits) — this is what keeps every card the same height. Received chip = filled colored dot; awaiting = hollow dot.</li>
+    <li><strong>No 3-button row.</strong> When no payday is selected the action row shows a tip: <em>"Tap a payday to update it"</em>. Tapping a chip selects it (white ring) and reveals a <strong>single glassy CTA</strong>: <code>Mark {date} as received</code> for awaiting, or <code>Edit {date} amount</code> for an already-logged one.</li>
+    <li>That CTA opens the <strong>Amount received sheet</strong> — it never marks silently.</li>
+  </ul>
+
+  <figure><img src="screens/03-amount-received-sheet.png" alt="Amount received sheet"><figcaption>Amount sheet: prefilled to the expected amount. This one sheet handles Received AND Partial.</figcaption></figure>
+  <ul>
+    <li><strong>Input color is meaningful:</strong> <span style="color:#111;font-weight:700;">white</span> while typing → <span style="color:#0F7A43;font-weight:700;">green</span> when it equals/exceeds expected → <span style="color:#1E5A9E;font-weight:700;">blue</span> (partial color) when it is less than expected.</li>
+    <li>Shortfall line under the input: <code>−{short} short of {expected}</code> (amber) / <code>Matches expected</code>.</li>
+    <li>Save logic: <code>amount ≥ expected → status "received"</code>; <code>amount &lt; expected → status "partial"</code> (stores the lower amount). Button label mirrors this (<code>Mark received</code> / <code>Save as partial</code>). <strong>Missed</strong> is not a button — it is a rare, user-only action; overdue paydays stay <em>awaiting</em>, never auto-missed.</li>
+    <li>Confirming an awaiting payday sets its date to <strong>Today</strong> (money that arrived off-SMS, e.g. via Deel) and pushes it into the ledger; the summary Received + progress recompute live.</li>
+  </ul>
+
+  <!-- ============ ASSIGN ============ -->
+  <h2>5 · Assign a one-time receipt to a source</h2>
+  <figure><img src="screens/02-04-assign-sheet.png" alt="Assign sheet"><figcaption>Assign sheet reached by swiping an income row right, or from the modal's Assign button. It is the <strong>same recurring hero-card slider</strong> as the page — a live preview, not a credit-card carousel.</figcaption></figure>
+  <ul>
+    <li>The sheet shows the recurring cards in the identical one-per-swipe slider. Swipe to move between sources; <strong>red</strong> page-dots.</li>
+    <li><strong>Tap-to-select with a tick</strong>, exactly like the payment-method selector: the chosen card shows a green circular check (top-right). The centered card is selected by default.</li>
+    <li>The payday chips are selectable; the <strong>next awaiting payday is auto-selected by default</strong> and highlighted with a <em>soft green glow</em> (never red). The footer reads <code>Fills the {date} payday</code>; that selected payday is what the receipt is assigned to.</li>
+    <li>Confirm CTA is a <strong>glassy red</strong> button: <code>Assign to {source} · {date}</code>.</li>
+  </ul>
+
+  <!-- ============ ADD MODAL ============ -->
+  <h2>6 · Add / Edit income modal</h2>
+  <figure><img src="screens/02-05-add-recurring.png" alt="Add income - recurring"><figcaption>Add income, Recurring tab. Field order top-to-bottom is fixed.</figcaption></figure>
+  <ul>
+    <li><strong>Amount + Currency</strong> — amount input is green mono; currency button opens the <strong>reused Currency Sheet</strong>. Keep exactly.</li>
+    <li><strong>Name</strong> — placeholder clarifies it differs from type: <code>e.g. Nexta payroll, Mom, Upwork client</code>.</li>
+    <li><strong>Recurring / One-time</strong> — a two-tab segmented control (not a switch), placed <em>above</em> Type. Type and recurrence are <strong>independent</strong>: selecting a type must never auto-toggle recurring.</li>
+    <li><strong>Income type</strong> — horizontal chip slider, all 7 manual types, shown in both tabs.</li>
+    <li><strong>How often</strong> (recurring) — Monthly / Bi-weekly / Weekly. <strong>Payday</strong> = a <strong>3-row calendar grid, days 1–31</strong>. Tap the first payday; for biweekly/weekly the derived paydays auto-light in soft red. No "lands on" caption text.</li>
+    <li><strong>Received into</strong> — the <strong>reused payment-method card carousel</strong> (§7).</li>
+  </ul>
+
+  <figure><img src="screens/02-06-add-onetime-assign.png" alt="Add income - one-time"><figcaption>One-time tab: the "Received on" date becomes a small pill in the top-right of the header (like the Expense modal). The Assign card is a green question + Assign button; there is <strong>no manual status control</strong>.</figcaption></figure>
+  <ul>
+    <li><strong>Received on</strong> moves to a compact header pill; tapping it opens the reused Calendar.</li>
+    <li><strong>Assign card</strong>: <em>"Assign to a recurring income?"</em> with a green <strong>Assign</strong> button → opens the assign hero slider (§5). Once assigned, the card shows the source + Change/Remove.</li>
+    <li><strong>Status is removed entirely</strong> from one-time — it's derived automatically (received vs expected date, and partial from the amount). Do not add a status picker.</li>
+    <li>The modal's one-time <strong>Assign</strong> confirm button is <strong>red</strong> (glassy), matching the page.</li>
+  </ul>
+
+  <!-- ============ REUSED ============ -->
+  <h2>7 · Reused components (mount, don't rebuild)</h2>
+  <div class="rule no"><span class="tag">REUSE</span><p>These three are existing app components. The screenshots show them <em>in the income context</em> only so you place them correctly.</p></div>
+  <figure><img src="screens/02-07-payment-carousel.png" alt="Payment carousel"><figcaption><strong>Payment-method card carousel</strong> — "Received into". Swipeable account cards, green tick on the selected one, "Add account" CTA. This is the app's existing selector; mount as-is.</figcaption></figure>
+  <figure><img src="screens/02-08-currency-sheet.png" alt="Currency sheet"><figcaption><strong>Unified Currency Sheet</strong> — searchable, Common + All groups. Existing component; reuse.</figcaption></figure>
+  <figure><img src="screens/02-09-calendar.png" alt="Calendar"><figcaption><strong>Unified Calendar</strong> popup — one-time "Received on". Existing component; reuse.</figcaption></figure>
+
+  <!-- ============ INTERACTIONS / MODAL BEHAVIOR ============ -->
+  <h2>8 · Interaction &amp; modal-behavior requirements</h2>
+  <p>Every sheet (primary modal and secondary sub-sheets) must obey all of these:</p>
+  <ul>
+    <li><strong>Tap-out to close</strong>: tapping the dimmed scrim behind a sheet dismisses that sheet.</li>
+    <li><strong>Swipe-down to close</strong>: dragging the sheet (or its grabber handle) down past a threshold dismisses it, with a rubber-band follow during the drag.</li>
+    <li><strong>Background scroll lock</strong>: while <em>any</em> sheet is open, the page body underneath must not scroll or receive taps. (In this prototype the full-frame scrim already blocks it; in production apply a scroll-lock on the body.)</li>
+    <li><strong>Hardware/gesture back closes one layer at a time</strong>: Android back / iOS back-swipe dismisses the <em>topmost</em> sheet only — a secondary sheet (assign, currency, payment, calendar, amount) closes first and returns to the primary Add-income sheet; a second back closes the primary sheet; only then does it leave the screen. Push a history entry per open sheet and pop on back.</li>
+    <li><strong>Stacking order</strong>: primary Add-income sheet, then secondary sheets on top with their own scrims. Each secondary must render above the primary and dim it.</li>
+    <li><strong>Recurring carousel</strong>: horizontal drag pages one card at a time; dots reflect index; vertical scroll of the page still works when not dragging a card.</li>
+    <li><strong>Row swipe (All income)</strong>: swipe <strong>left → Delete</strong> (red), swipe <strong>right → Assign</strong> (green, opens the assign slider). Past threshold triggers the action; otherwise snaps back.</li>
+  </ul>
+
+  <!-- ============ TOKENS ============ -->
+  <h2>9 · Visual tokens</h2>
+  <div class="cols">
+  <ul>
+    <li><strong>Glass card</strong> (summary, recurring, assign cards):<br><code>background: linear-gradient(158deg, rgba(29,185,84,.09), rgba(18,18,24,.72) 54%), #0f0f15;</code> · <code>border: 1px solid rgba(255,255,255,.08);</code> · <code>backdrop-filter: blur(14px);</code> · <code>box-shadow: inset 0 1px 0 rgba(255,255,255,.06);</code> · radius 16px.</li>
+    <li><strong>Glass green button</strong> (Mark received, Save):<br><code>background: linear-gradient(160deg, rgba(29,185,84,.28), rgba(29,185,84,.12));</code> · <code>border: 1px solid rgba(53,212,111,.5);</code> · <code>color:#8FF0B4;</code> · <code>backdrop-filter: blur(10px);</code> · radius 14px.</li>
+    <li><strong>Glass red button</strong> (Assign confirm):<br><code>background: linear-gradient(160deg, rgba(229,9,20,.34), rgba(229,9,20,.15));</code> · <code>border:1px solid rgba(229,9,20,.55);</code> · <code>color:#FFAEB2;</code> · <code>backdrop-filter: blur(10px);</code>.</li>
+    <li><strong>Selected tick</strong>: 26px circle, <code>background:#35D46F; color:#04140a;</code> check, top-right.</li>
+    <li><strong>Next-awaiting glow</strong>: soft pulsing green ring — <code>box-shadow 0 0 0 2px rgba(53,212,111,.5)</code> animating to a wider faint ring. Never red.</li>
+    <li><strong>Accents</strong>: brand red <code>#E50914</code> (CTAs, active nav, page dots on assign); income green <code>#35D46F / #1DB954</code>; late amber <code>#FFB13D</code>; partial blue <code>#7DB6FF</code>.</li>
+    <li><strong>Type colors</strong>: salary <code>#1DB954</code>, bonus <code>#F5C842</code>, side hustle <code>#4DA3FF</code>, borrowed <code>#FF6B6B</code>, gift <code>#F472B6</code>, refund <code>#38BDF8</code>, other <code>#9898B0</code>; savings <code>#F5C842</code>, investment <code>#A78BFA</code> (system).</li>
+    <li><strong>Type</strong>: DM Sans for UI, JetBrains Mono for every figure/date/percentage (<code>tabular-nums</code>). Micro-labels 10px, uppercase, .08em tracking.</li>
+    <li><strong>Radii</strong>: cards 16px, buttons 14px, chips/pills full, icon chips 11px.</li>
+  </ul>
+  </div>
+
+  <h2>10 · Acceptance checklist</h2>
+  <ul>
+    <li>☐ Payment carousel, Calendar, Currency sheet are the existing shared components — not rebuilt.</li>
+    <li>☐ Projected (Expected) and Actual (Received) are never merged; one-time shown separately.</li>
+    <li>☐ Recurring cards are a one-per-swipe carousel, all equal height, chip strip on one line.</li>
+    <li>☐ Payday select → single glassy Mark CTA → amount sheet; input color white/green/blue; partial derived from amount.</li>
+    <li>☐ Assign = recurring hero slider with tap-to-select tick, next-awaiting soft-glow default, red glassy CTA, red dots.</li>
+    <li>☐ Add modal: Recurring/One-time tabs above an independent Type; 3-row payday grid; one-time date pill; no status control.</li>
+    <li>☐ Glass gradient on hero, recurring, and assign cards. Glassy buttons where specified.</li>
+    <li>☐ All sheets: tap-out + swipe-down close; background locked; back closes one layer at a time.</li>
+  </ul>
+
+  <p style="margin-top:26px;color:#7A7A88;font-size:12px;">Source of truth for pixel values &amp; logic: <code>Buddget Income.dc.html</code> and <code>Income Form.dc.html</code>. When in doubt, match those files exactly.</p>
+
+</div>
+</x-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:820,&quot;height&quot;:1060}}"></script>
+</body>
+</html>
