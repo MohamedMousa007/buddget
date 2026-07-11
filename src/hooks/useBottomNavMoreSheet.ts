@@ -1,15 +1,15 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useScrollLock } from '@/lib/ui/scrollLock'
 
 export function useBottomNavMoreSheet() {
   const [moreOpen, setMoreOpen] = useState(false)
   const moreWrapRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    document.body.style.overflow = moreOpen ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
-  }, [moreOpen])
+  // Ref-counted so it composes with any modal open behind the More sheet
+  // (the old `= ''` restore clobbered a still-open modal's lock).
+  useScrollLock(moreOpen)
 
   useEffect(() => {
     if (!moreOpen) return

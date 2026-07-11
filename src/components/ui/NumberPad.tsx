@@ -11,11 +11,12 @@
  */
 
 import { useEffect, useRef } from 'react'
-import { motion } from 'framer-motion'
+import { motion, useDragControls } from 'framer-motion'
 import { Delete } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import { registerBackGuard } from '@/lib/navigation/backGuard'
 import { setNumpadInset } from '@/lib/ui/numpadInset'
+import { useScrollLock } from '@/lib/ui/scrollLock'
 
 export type NumberPadMode = 'decimal' | 'integer' | 'pin'
 
@@ -107,12 +108,12 @@ export function NumberPad({
   useEffect(() => registerBackGuard(() => { close(); return true }))
 
   // Lock background scroll while the pad is open — otherwise a touch drag over
-  // the transparent scrim scrolls the modal/page behind it.
-  useEffect(() => {
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
-  }, [])
+  // the transparent scrim scrolls the modal/page behind it. Ref-counted so it
+  // composes with the ModalShell behind the pad.
+  useScrollLock(true)
+
+  // Drag only from the top handle (below) — never from the keys.
+  const dragControls = useDragControls()
 
   // Publish the pad's height so an open ModalShell lifts its content above it,
   // reusing the keyboard-avoidance path (see numpadInset / ModalShell).
@@ -177,6 +178,8 @@ export function NumberPad({
         animate={{ y: 0 }}
         transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
         drag="y"
+        dragListener={false}
+        dragControls={dragControls}
         dragConstraints={{ top: 0 }}
         dragElastic={{ top: 0, bottom: 0.5 }}
         dragMomentum={false}
@@ -220,8 +223,14 @@ export function NumberPad({
         />
 
         <div style={{ position: 'relative', zIndex: 1 }}>
-          {/* Grab handle — swipe anywhere on the pad down to dismiss (whole sheet drags). */}
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '2px 0 6px' }}>
+          {/* Grab handle — the SOLE drag initiator, so keys never move the pad.
+              Generous ≥44px hit area; swipe it down to dismiss. */}
+          <div
+            onPointerDown={(e) => dragControls.start(e)}
+            role="presentation"
+            aria-hidden
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 44, cursor: 'grab', touchAction: 'none', userSelect: 'none' }}
+          >
             <div style={{ width: 44, height: 5, borderRadius: 999, background: 'rgba(255,255,255,.28)' }} />
           </div>
 

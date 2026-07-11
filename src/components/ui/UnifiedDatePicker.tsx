@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { ChevronDown, ChevronLeft, ChevronRight, X, Search } from 'lucide-react'
 import { useLocale } from '@/lib/i18n'
+import { useScrollLock } from '@/lib/ui/scrollLock'
 
 const MONS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const MON_AR = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
@@ -79,7 +81,10 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
     if (mode === 'years') selYearRef.current?.scrollIntoView({ block: 'center' })
   }, [mode])
 
-  if (!open) return null
+  // Lock background scroll while open (issue 5).
+  useScrollLock(open)
+
+  if (!open || typeof document === 'undefined') return null
 
   const { y, m } = view
   const isDays = mode === 'days'
@@ -137,7 +142,9 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
   const headerBtn =
     'w-7 h-7 flex items-center justify-center border-none rounded-md text-white cursor-pointer bg-white/[0.16] hover:bg-white/30'
 
-  return (
+  // Portal to <body> so `fixed` isn't trapped by a transformed ancestor when the
+  // picker opens from inside a form sheet (same class as the currency-sheet bug).
+  return createPortal(
     <div
       dir={ar ? 'rtl' : 'ltr'}
       className="fixed inset-0 z-[130] flex items-center justify-center p-6"
@@ -327,6 +334,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
           ) : null}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

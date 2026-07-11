@@ -7,6 +7,7 @@ import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 import { isValidImageDataUrl } from '@/lib/profile/validImageDataUrl'
 import { cn } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
+import { useScrollLock } from '@/lib/ui/scrollLock'
 import { useAlert } from '@/components/ui/dialog/DialogProvider'
 import type { FinanceStore } from '@/lib/store/types'
 
@@ -23,6 +24,7 @@ interface AvatarPickerModalProps {
 export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalProps) {
   const t = useT()
   const alert = useAlert()
+  useScrollLock(open)
   const [tab, setTab] = useState<Tab>('choose')
   const [selectedPreset, setSelectedPreset] = useState<string | undefined>(store.profile.avatarPresetId)
   const [uploadPreview, setUploadPreview] = useState<string | null>(null)

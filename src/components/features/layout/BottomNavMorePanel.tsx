@@ -1,7 +1,7 @@
 'use client'
 
 import { AppLink as Link } from '@/components/ui/AppLink'
-import { motion } from 'framer-motion'
+import { motion, useDragControls } from 'framer-motion'
 import { ChevronRight } from 'lucide-react'
 import type { MoreMenuItem } from '@/lib/navigation/bottomNavConfig'
 import { cn } from '@/lib/utils'
@@ -12,23 +12,42 @@ export function BottomNavMorePanel({
   pathname,
   items,
   onNavigate,
+  onClose,
 }: {
   pathname: string
   items: MoreMenuItem[]
   onNavigate: () => void
+  onClose: () => void
 }) {
   const t = useT()
   const { locale } = useLocale()
+  const dragControls = useDragControls()
   return (
     <motion.div
       initial={{ y: '110%' }}
       animate={{ y: 0 }}
       exit={{ y: '110%' }}
       transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+      drag="y"
+      dragListener={false}
+      dragControls={dragControls}
+      dragConstraints={{ top: 0 }}
+      dragElastic={{ top: 0, bottom: 0.4 }}
+      onDragEnd={(_, info) => {
+        if (info.offset.y > 72 || info.velocity.y > 450) onClose()
+      }}
       className="fixed start-0 end-0 bottom-0 z-[56] rounded-t-3xl border-t border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 pt-2.5 shadow-[0_-20px_50px_-20px_rgba(0,0,0,0.7)]"
       style={{ paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))' }}
     >
-      <div className="mx-auto mt-0.5 mb-3 h-1.5 w-11 rounded-sm bg-[var(--color-brand-border)]" />
+      {/* Grab handle — sole drag initiator (swipe down to close); ≥44px hit area. */}
+      <div
+        onPointerDown={(e) => dragControls.start(e)}
+        role="presentation"
+        aria-hidden
+        className="mx-auto -mt-2 mb-1 flex min-h-11 w-full cursor-grab touch-none select-none items-center justify-center"
+      >
+        <div className="h-1.5 w-11 rounded-sm bg-[var(--color-brand-border)]" />
+      </div>
       <p
         className={cn(
           'px-1 pb-2 text-xs font-bold uppercase tracking-[0.06em] text-[var(--color-brand-text-muted)]',

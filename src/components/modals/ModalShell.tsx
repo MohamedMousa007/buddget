@@ -1,9 +1,11 @@
 'use client'
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, useDragControls } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useNumpadInset } from '@/lib/ui/numpadInset'
+import { useScrollLock } from '@/lib/ui/scrollLock'
 import { registerBackGuard } from '@/lib/navigation/backGuard'
 
 const OVERLAY_Z = 'z-[100]'
@@ -61,6 +63,10 @@ export function ModalShell({
   const dragControls = useDragControls()
   const zStack = zIndexClassName ?? OVERLAY_Z
   const panelRef = useRef<HTMLDivElement>(null)
+
+  // Lock the background scroll while open so a touch-drag on the backdrop /
+  // non-scrolling chrome can't scroll the page behind the sheet.
+  useScrollLock(open)
 
   const openedAtRef = useRef(0)
   useEffect(() => {
@@ -159,7 +165,13 @@ export function ModalShell({
   const numpadInset = useNumpadInset()
   const bottomInset = Math.max(keyboardOffset, numpadInset)
 
-  return (
+  // Portal to <body> so the sheet's `position: fixed` always resolves against
+  // the viewport — a CSS transform on any ancestor (a parent framer-drag panel,
+  // an `-translate-y` wrapper) would otherwise trap it in that ancestor's box
+  // and stacking context (the payment-preview overlap + narrow currency sheet).
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
@@ -240,6 +252,7 @@ export function ModalShell({
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   )
 }

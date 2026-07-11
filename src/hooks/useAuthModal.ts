@@ -9,6 +9,7 @@ import { useAuth } from '@/components/auth/auth-context'
 import { useT } from '@/lib/i18n'
 import { apiFetch, apiFetchAuth } from '@/lib/apiBase'
 import { navigateAfterAuth } from '@/lib/auth/postAuthRedirect'
+import { lockScroll, unlockScroll } from '@/lib/ui/scrollLock'
 import { isNative } from '@/lib/native/isNative'
 import { MIN_PASSWORD_LEN } from '@/components/features/auth-modal/authModalTokens'
 import { markSessionEphemeral } from '@/hooks/useEphemeralSessionGuard'
@@ -589,11 +590,10 @@ export function useAuthModal() {
       if (e.key === 'Escape') closeAuthModal()
     }
     window.addEventListener('keydown', onKey)
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    lockScroll()
     return () => {
       window.removeEventListener('keydown', onKey)
-      document.body.style.overflow = prevOverflow
+      unlockScroll()
     }
   }, [closeAuthModal])
 

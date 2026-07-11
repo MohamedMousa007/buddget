@@ -7,6 +7,7 @@ import { useAIChat } from '@/hooks/useAIChat'
 import { useT } from '@/lib/i18n'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { useScrollLock } from '@/lib/ui/scrollLock'
 import { AIChatHeader } from '@/components/features/ai-chat/AIChatHeader'
 import { AIChatEmptyState } from '@/components/features/ai-chat/AIChatEmptyState'
 import { AIChatMessageList } from '@/components/features/ai-chat/AIChatMessageList'
@@ -108,6 +109,8 @@ export function AIChat() {
     window.addEventListener('resize', recompute)
     return () => window.removeEventListener('resize', recompute)
   }, [orb])
+
+  useScrollLock(isOpen)
 
   return (
     <AnimatePresence>

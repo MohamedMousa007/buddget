@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useScrollLock } from '@/lib/ui/scrollLock'
 import {
   LayoutGrid,
   CreditCard,
@@ -45,6 +46,7 @@ function FilterSheet({
   children: ReactNode
   maxHeightClass?: string
 }) {
+  useScrollLock(open)
   return (
     <AnimatePresence>
       {open ? (
