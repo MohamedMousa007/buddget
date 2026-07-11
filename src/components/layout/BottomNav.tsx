@@ -1,7 +1,7 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { AppLink as Link } from '@/components/ui/AppLink'
+import { useNavPath } from '@/lib/navigation/navStore'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -21,7 +21,7 @@ import { VoiceRecordOverlay } from '@/components/voice/VoiceRecordOverlay'
 import { useRef } from 'react'
 
 export function BottomNav() {
-  const pathname = usePathname()
+  const pathname = useNavPath()
   const t = useT()
   const { setActiveModal } = useSettingsStore()
   const { moreOpen, setMoreOpen, moreWrapRef } = useBottomNavMoreSheet()

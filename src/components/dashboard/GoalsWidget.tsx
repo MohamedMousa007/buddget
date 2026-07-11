@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import Link from 'next/link'
+import { AppLink as Link } from '@/components/ui/AppLink'
 import { useShallow } from 'zustand/react/shallow'
 import { Target } from 'lucide-react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'

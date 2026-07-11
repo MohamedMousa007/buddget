@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useCallback, type RefObject } from 'react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { AppLink as Link } from '@/components/ui/AppLink'
+import { useNavPath } from '@/lib/navigation/navStore'
 import { User, Settings, LogOut } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -22,7 +22,7 @@ const itemClass =
   'flex items-center gap-3 px-4 py-3 text-sm font-medium text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors duration-150 cursor-pointer w-full text-start'
 
 export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdownProps) {
-  const pathname = usePathname()
+  const pathname = useNavPath()
   const t = useT()
   const { locale } = useLocale()
   const { user, signOut } = useAuth()

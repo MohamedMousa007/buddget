@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { AppLink as Link } from '@/components/ui/AppLink'
 import { ChevronRight, ChevronLeft } from 'lucide-react'
 import { useLocale } from '@/lib/i18n'
 import type { LucideIcon } from 'lucide-react'

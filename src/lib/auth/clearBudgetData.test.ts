@@ -30,6 +30,7 @@ const STORAGE_KEYS = [
   'pwa-install-dismissed',
   'buddget_guest_nickname',
   'buddget_guest_next',
+  'buddget_splash_done',
 ]
 
 describe('clearBudgetData', () => {

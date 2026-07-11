@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Loader2, Lock, AlertTriangle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
@@ -44,7 +43,6 @@ function errorCode(e: { code?: string; message?: string } | null | undefined): s
 }
 
 export default function ResetPasswordConfirmPage() {
-  const router = useRouter()
   const t = useT()
   const supabase = useMemo(
     () => (isSupabaseConfigured() ? createClient() : null),
@@ -94,7 +92,7 @@ export default function ResetPasswordConfirmPage() {
       subscription.unsubscribe()
       window.clearTimeout(timeoutId)
     }
-  }, [supabase, router])
+  }, [supabase])
 
   if (!supabase) {
     return (
@@ -124,7 +122,8 @@ export default function ResetPasswordConfirmPage() {
     } catch {
       /* ignore */
     }
-    router.replace('/?requestReset=1')
+    // Leaves the bare reset-password context → full load into the app shell.
+    window.location.replace('/?requestReset=1')
   }
 
   const submit = async () => {
@@ -172,8 +171,8 @@ export default function ResetPasswordConfirmPage() {
     } catch (e) {
       console.error('[reset-password] password-updated cookie failed', e)
     }
-    router.replace('/')
-    router.refresh()
+    // Leaves the bare reset-password context → full load into the app shell.
+    window.location.replace('/')
   }
 
   if (checking) {

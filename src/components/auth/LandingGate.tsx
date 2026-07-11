@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import type { CSSProperties } from 'react'
-import Link from 'next/link'
+import { AppLink as Link } from '@/components/ui/AppLink'
 import { AuthModalBody } from '@/components/features/auth-modal/AuthModalBody'
 import { useT, useLocale } from '@/lib/i18n'
 

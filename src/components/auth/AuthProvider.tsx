@@ -18,6 +18,7 @@ import { AuthModal } from '@/components/auth/AuthModal'
 import { LockScreen } from '@/components/auth/LockScreen'
 import { AuthContext, type AuthContextValue, type AuthMode, useAuth } from '@/components/auth/auth-context'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
+import { readSplashDone, writeSplashDone } from '@/lib/auth/splashLatch'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { LandingGate } from '@/components/auth/LandingGate'
@@ -178,7 +179,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authModalInitialStep, setAuthModalInitialStep] = useState<'form' | 'forgot'>('form')
   // One-shot splash latch state — see the gate block below for semantics.
   // Declared here so the SIGNED_OUT handler and signOut() can reset it.
-  const [splashDoneFor, setSplashDoneFor] = useState<string | null>(null)
+  // Seed from localStorage so a cold reopen of an already-signed-in account
+  // skips the welcome splash entirely (straight to instant cached content).
+  const [splashDoneFor, setSplashDoneFor] = useState<string | null>(() => readSplashDone())
   const [minElapsedFor, setMinElapsedFor] = useState<string | null>(null)
   const [dataPullTimedOut, setDataPullTimedOut] = useState(false)
 
@@ -568,7 +571,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!showWelcomeScreen || gateUserId == null) return
     if (!(dataReady || dataPullTimedOut)) return
     if (minElapsedFor !== gateUserId) return
-    const id = setTimeout(() => setSplashDoneFor(gateUserId), 0)
+    const id = setTimeout(() => { setSplashDoneFor(gateUserId); writeSplashDone(gateUserId) }, 0)
     return () => clearTimeout(id)
   }, [showWelcomeScreen, gateUserId, dataReady, dataPullTimedOut, minElapsedFor])
 

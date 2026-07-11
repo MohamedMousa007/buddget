@@ -1,11 +1,14 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { apiUrl } from '@/lib/apiBase'
 import { Sidebar } from './Sidebar'
 import { BottomNav } from './BottomNav'
+import { AppViewRouter } from './AppViewRouter'
 import { PullToRefresh } from './PullToRefresh'
+import { navigate } from '@/lib/navigation/navigate'
+import { useNavPath, bindPopState } from '@/lib/navigation/navStore'
 import { ModalProvider } from '@/components/modals/ModalProvider'
 import { SyncFailureBanner } from '@/components/layout/SyncFailureBanner'
 import { PendingCapturesChip } from '@/components/features/pending/PendingCapturesChip'
@@ -225,8 +228,7 @@ function MarketRatesSync() {
 function AndroidBackHandler() {
   const activeModal = useSettingsStore((s) => s.activeModal)
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
-  const pathname = usePathname()
-  const router = useRouter()
+  const pathname = useNavPath()
   const showToast = useActionToast()
   const t = useT()
   const exitPending = useRef(false)
@@ -237,13 +239,11 @@ function AndroidBackHandler() {
   const pathnameRef = useRef(pathname)
   const showToastRef = useRef(showToast)
   const tRef = useRef(t)
-  const routerRef = useRef(router)
 
   useEffect(() => { activeModalRef.current = activeModal }, [activeModal])
   useEffect(() => { pathnameRef.current = pathname }, [pathname])
   useEffect(() => { showToastRef.current = showToast }, [showToast])
   useEffect(() => { tRef.current = t }, [t])
-  useEffect(() => { routerRef.current = router }, [router])
 
   useEffect(() => {
     if (!isAndroid()) return
@@ -262,7 +262,7 @@ function AndroidBackHandler() {
         }
         if (pathnameRef.current !== '/') {
           if (canGoBack) window.history.back()
-          else routerRef.current.push('/')
+          else navigate('/')
           return
         }
         if (exitPending.current) {
@@ -297,6 +297,9 @@ export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname()
   const bare = isBareAuthRoute(pathname)
 
+  // Keep the in-memory shell in sync with browser back/forward + iOS swipe-back.
+  useEffect(() => bindPopState(), [])
+
   if (bare) {
     return (
       <div className="min-h-[100dvh] bg-[var(--color-brand-bg)]">
@@ -316,7 +319,7 @@ export function AppShell({ children }: AppShellProps) {
           <SyncFailureBanner />
           <PendingCapturesChip />
           <PendingSmsCards />
-          {children}
+          <AppViewRouter>{children}</AppViewRouter>
         </PullToRefresh>
       </main>
       <BottomNav />
@@ -336,7 +339,6 @@ export function AppShell({ children }: AppShellProps) {
  * Renders nothing — side-effect only.
  */
 function SmsPushActionHandler() {
-  const router = useRouter()
   useEffect(() => {
     if (!isNative()) return
     const handler = (e: Event): void => {
@@ -354,9 +356,9 @@ function SmsPushActionHandler() {
         })
           .then((r) => r.json())
           .then((res: { expenseId?: string }) => {
-            router.push(res.expenseId ? `/expenses?highlight=${res.expenseId}` : '/')
+            navigate(res.expenseId ? `/expenses?highlight=${res.expenseId}` : '/')
           })
-          .catch(() => router.push('/'))
+          .catch(() => navigate('/'))
       } else if (
         (kind === 'sms_auto_added' ||
           kind === 'sms_transfer' ||
@@ -374,27 +376,27 @@ function SmsPushActionHandler() {
           const { data: row } = await supabase.from('expenses').select('*').eq('id', data.expenseId).single()
           if (row) { addExpenseIfMissing(row as ExpenseRow); void ackSms(data.logId) }
           // CC payoff also affects the debt ledger — send the user there.
-          router.push(kind === 'sms_cc_payoff' ? '/debts' : `/expenses?highlight=${data.expenseId}`)
+          navigate(kind === 'sms_cc_payoff' ? '/debts' : `/expenses?highlight=${data.expenseId}`)
         })()
       } else if (kind === 'sms_cc_payoff') {
         // Ambiguous CC payoff posted no expense id — just open debts.
         void ackSms(data.logId)
-        router.push('/debts')
+        navigate('/debts')
       } else if (kind === 'sms_income_added' && data.incomeId) {
         void (async () => {
           const supabase = createClient()
           const { data: row } = await supabase.from('income_events').select('*').eq('id', data.incomeId).single()
           if (row) { addIncomeEventIfMissing(row as IncomeEventRow); void ackSms(data.logId) }
-          router.push('/income')
+          navigate('/income')
         })()
       } else if (kind === 'sms_salary_matched') {
         // No row created (matched to declared salary) — acknowledge + open income.
         void ackSms(data.logId)
-        router.push('/income')
+        navigate('/income')
       }
     }
     window.addEventListener('buddget:push-action', handler)
     return () => window.removeEventListener('buddget:push-action', handler)
-  }, [router])
+  }, [])
   return null
 }

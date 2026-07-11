@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
+import { navigate } from '@/lib/navigation/navigate'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { SettingsSaveButton } from '@/components/features/settings/SettingsSaveButton'
@@ -23,7 +23,6 @@ export function SettingsSubPageShell({ title, children, showSave = true }: Props
   const { locale } = useLocale()
   const t = useT()
   const isRtl = locale === 'ar'
-  const router = useRouter()
   const showToast = useActionToast()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const confirmOpenRef = useRef(confirmOpen)
@@ -49,7 +48,7 @@ export function SettingsSubPageShell({ title, children, showSave = true }: Props
     return true
   }), [])
 
-  const goBack = () => router.push('/settings')
+  const goBack = () => navigate('/settings')
 
   const onBackClick = () => {
     if (isDirty()) setConfirmOpen(true)

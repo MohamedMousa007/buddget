@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { AppLink as Link } from '@/components/ui/AppLink'
 import { useMemo } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'

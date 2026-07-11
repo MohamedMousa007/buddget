@@ -1,7 +1,7 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { AppLink as Link } from '@/components/ui/AppLink'
+import { useNavPath } from '@/lib/navigation/navStore'
 import { BarChart3 } from 'lucide-react'
 import { AuthNavButtons } from '@/components/layout/AuthNavButtons'
 import { MonthNavigationControl } from '@/components/layout/MonthNavigationControl'
@@ -12,7 +12,7 @@ import { sectionTitleNavKey } from '@/lib/navigation/bottomNavConfig'
 
 export function DesktopHeaderBar() {
   const { monthFilter, setMonthFilter } = useSettingsStore()
-  const pathname = usePathname()
+  const pathname = useNavPath()
   const t = useT()
   const { locale } = useLocale()
   const sectionKey = sectionTitleNavKey(pathname)

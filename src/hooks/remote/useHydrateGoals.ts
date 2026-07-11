@@ -15,6 +15,8 @@ export function useHydrateGoals(): void {
     const uid = user?.id
     if (!uid) return
     if (hasHydrated(uid, 'goals')) return
+    // Warm cache already holds this user's data — skip the redundant refetch.
+    if (useFinanceStore.getState().profile.id === uid) { markHydrated(uid, 'goals'); return }
     let cancelled = false
     const supabase = createClient()
 

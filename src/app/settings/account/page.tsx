@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { Lock, LogOut, Trash2 } from 'lucide-react'
 import { SettingsSubPageShell } from '@/components/features/settings/SettingsSubPageShell'
 import { SettingsSecuritySection } from '@/components/features/settings/SettingsSecuritySection'
@@ -14,6 +13,7 @@ import { ProfileFieldRow } from '@/components/profile/ProfileFieldRow'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useProfilePage } from '@/hooks/useProfilePage'
+import { navigate } from '@/lib/navigation/navigate'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 
 export default function SettingsAccountPage() {
@@ -22,11 +22,10 @@ export default function SettingsAccountPage() {
   const store = useFinanceStore()
   const { setActiveModal } = useSettingsStore()
   const requireAuth = useRequireAuthAction()
-  const router = useRouter()
 
   useEffect(() => {
-    if (p.user === null) router.replace('/settings')
-  }, [p.user, router])
+    if (p.user === null) navigate('/settings', { replace: true })
+  }, [p.user])
 
   if (!p.user) return null
 
