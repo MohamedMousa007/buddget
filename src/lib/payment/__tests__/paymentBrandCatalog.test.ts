@@ -49,7 +49,7 @@ describe('catalogue integrity', () => {
 
 describe('composePaymentMethodName', () => {
   it('composes name with last4, tag, or neither', () => {
-    expect(composePaymentMethodName('HSBC', { last4: '0001' })).toBe('HSBC ••••0001')
+    expect(composePaymentMethodName('HSBC', { last4: '0001' })).toBe('HSBC ••0001')
     expect(composePaymentMethodName('Cash', { tag: 'Personal' })).toBe('Cash · Personal')
     expect(composePaymentMethodName('Vodafone Cash')).toBe('Vodafone Cash')
   })

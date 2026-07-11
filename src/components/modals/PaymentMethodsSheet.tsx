@@ -123,7 +123,7 @@ export function PaymentMethodsSheet() {
                 <div className="flex items-center justify-between border-b border-[var(--color-brand-border)] py-2 pe-1.5 ps-3">
                   <span className="truncate text-[11.5px] font-semibold text-[var(--color-brand-text-muted)]">
                     {decomposePaymentMethodName(menuCard.name, menuCard.last4).provider}
-                    {menuCard.last4 ? ` ••••${menuCard.last4}` : ''}
+                    {menuCard.last4 ? ` ••${menuCard.last4}` : ''}
                   </span>
                   <button
                     type="button" aria-label="Close" onClick={() => setCardMenuId(null)}

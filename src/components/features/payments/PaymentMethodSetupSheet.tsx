@@ -153,7 +153,7 @@ export function PaymentMethodSetupSheet({
   const fieldInitials = brand ? brand.short : providerInitials(providerName)
 
   const previewTail = disc === 'last4'
-    ? (last4 ? `••••  ${last4}` : '••••  ••••')
+    ? (last4 ? `••  ${last4}` : '••  ••••')
     : disc === 'tag' && tag.trim() ? tag.trim() : '——  ——'
 
   return (
