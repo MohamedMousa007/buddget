@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Camera, Check, X, Loader2, ReceiptText, RefreshCcw, Images, ImageOff } from 'lucide-react'
+import { Camera, Check, X, ScanLine, ReceiptText, RefreshCcw, Images, ImageOff } from 'lucide-react'
 import Image from 'next/image'
 import { useShallow } from 'zustand/react/shallow'
 import { ModalShell } from '@/components/modals/ModalShell'
@@ -263,7 +263,9 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
       padContent
       panelClassName="!max-h-[min(86vh,720px)]"
     >
-      {state === 'scanning' ? <Centered><Loader2 className="h-8 w-8 animate-spin text-[var(--color-brand-red)]" /><p className="text-sm text-[var(--color-brand-text-secondary)]">Opening scanner…</p></Centered> : null}
+      {state === 'scanning' ? (
+        <ProcessingView preview={null} title="Opening camera…" subtitle="Line up your receipt and capture it." />
+      ) : null}
 
       {state === 'review' ? (
         <ReviewGrid
@@ -277,20 +279,11 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
       ) : null}
 
       {state === 'parsing' ? (
-        <Centered>
-          {preview ? (
-            <Image
-              src={preview}
-              alt="Captured receipt"
-              width={240}
-              height={320}
-              unoptimized
-              className="h-40 w-auto rounded-xl border border-[var(--color-brand-border)] object-cover"
-            />
-          ) : null}
-          <Loader2 className="h-6 w-6 animate-spin text-[var(--color-brand-red)]" />
-          <p className="text-sm text-[var(--color-brand-text-secondary)]">Reading the receipt…</p>
-        </Centered>
+        <ProcessingView
+          preview={preview}
+          title="Reading your receipt…"
+          subtitle="Pulling out the merchant, total, and items."
+        />
       ) : null}
 
       {state === 'queued' ? (
@@ -719,4 +712,35 @@ function Field({ label, children, className = '' }: { label: string; children: R
 
 function Centered({ children }: { children: React.ReactNode }) {
   return <div className="flex flex-col items-center gap-3 py-6">{children}</div>
+}
+
+/** Framed scan-line loader for the opening-camera and reading states. */
+function ProcessingView({ preview, title, subtitle }: { preview: string | null; title: string; subtitle: string }) {
+  return (
+    <div className="flex flex-col items-center gap-4 py-8">
+      <div className="relative h-44 w-32 overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]">
+        {preview ? (
+          <Image src={preview} alt="Receipt" fill unoptimized className="object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
+            <ScanLine className="h-10 w-10 text-[var(--color-brand-text-muted)]" />
+          </div>
+        )}
+        <span className="rsl-sweep" aria-hidden />
+      </div>
+      <div className="text-center">
+        <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{title}</p>
+        <p className="mt-1 max-w-64 text-xs text-[var(--color-brand-text-muted)]">{subtitle}</p>
+      </div>
+      <style>{`
+        .rsl-sweep {
+          position: absolute; left: 0; right: 0; top: -45%; height: 45%;
+          background: linear-gradient(to bottom, transparent, rgba(229,9,20,.28), rgba(229,9,20,.55), rgba(229,9,20,.28), transparent);
+          animation: rslSweep 1.5s cubic-bezier(.4,0,.6,1) infinite;
+        }
+        @keyframes rslSweep { 0% { top: -45%; } 100% { top: 100%; } }
+        @media (prefers-reduced-motion: reduce) { .rsl-sweep { animation: none; opacity: .5; top: 45%; } }
+      `}</style>
+    </div>
+  )
 }

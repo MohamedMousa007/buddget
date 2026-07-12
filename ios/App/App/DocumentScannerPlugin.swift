@@ -44,6 +44,22 @@ public class DocumentScannerPlugin: CAPInstancePlugin, CAPBridgedPlugin {
     private func finish(_ call: CAPPluginCall, images: [String]) {
         call.resolve(["images": images])
     }
+
+    /// `UIImage.jpegData` ignores `imageOrientation`, so a non-`.up` scanned page
+    /// would encode rotated/flipped. Redraw into an upright bitmap first.
+    private static func uprightJpeg(_ image: UIImage) -> Data? {
+        let upright: UIImage
+        if image.imageOrientation == .up {
+            upright = image
+        } else {
+            let format = UIGraphicsImageRendererFormat.default()
+            format.scale = image.scale
+            upright = UIGraphicsImageRenderer(size: image.size, format: format).image { _ in
+                image.draw(in: CGRect(origin: .zero, size: image.size))
+            }
+        }
+        return upright.jpegData(compressionQuality: 0.8)
+    }
 }
 
 extension DocumentScannerPlugin: VNDocumentCameraViewControllerDelegate {
@@ -54,7 +70,7 @@ extension DocumentScannerPlugin: VNDocumentCameraViewControllerDelegate {
         var images: [String] = []
         for i in 0..<scan.pageCount {
             let page = scan.imageOfPage(at: i)
-            if let jpeg = page.jpegData(compressionQuality: 0.8) {
+            if let jpeg = Self.uprightJpeg(page) {
                 images.append(jpeg.base64EncodedString())
             }
         }
