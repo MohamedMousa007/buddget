@@ -36,6 +36,26 @@ export const GLASS_GREEN_BTN: CSSProperties = {
   borderRadius: 14,
 }
 
+/** Brand-red glass CTA — the primary "Mark received" action on the recurring card. */
+export const GLASS_RED_BTN: CSSProperties = {
+  background: 'linear-gradient(160deg, rgba(229,9,20,.30), rgba(229,9,20,.12))',
+  border: '1px solid rgba(229,9,20,.55)',
+  color: '#FFB4B8',
+  backdropFilter: 'blur(10px)',
+  WebkitBackdropFilter: 'blur(10px)',
+  borderRadius: 14,
+}
+
+/** Darker red glass CTA — missed-payday context (log/acknowledge a missed payment). */
+export const GLASS_RED_DARK_BTN: CSSProperties = {
+  background: 'linear-gradient(160deg, rgba(140,8,14,.45), rgba(140,8,14,.20))',
+  border: '1px solid rgba(180,10,18,.55)',
+  color: '#FF9B9B',
+  backdropFilter: 'blur(10px)',
+  WebkitBackdropFilter: 'blur(10px)',
+  borderRadius: 14,
+}
+
 /**
  * Neutral glass CTA — for edit/adjust actions on an already-received payday,
  * so the button never clashes with the green (received) chip above it.

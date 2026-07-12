@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
+import { deriveDefaultPaydays } from '@/lib/utils/paydaySchedule'
 import type {
   Currency,
   IncomeRecurringFrequency,
@@ -32,10 +33,21 @@ export function useEditIncomeForm(source: IncomeSource, onClose: () => void) {
   const [currency, setCurrency] = useState<Currency>(source.currency)
   const [sourceType, setSourceType] = useState<IncomeSourceType>(source.sourceType ?? 'other')
   const [isRecurring, setIsRecurring] = useState(source.isRecurring)
-  const [recurringFrequency, setRecurringFrequency] = useState<IncomeRecurringFrequency>(
+  const [recurringFrequency, setRecurringFrequencyState] = useState<IncomeRecurringFrequency>(
     source.recurringFrequency ?? 'monthly'
   )
-  const [dayOfMonth, setDayOfMonth] = useState(String(source.dayOfMonth ?? 1))
+  const [paydayDays, setPaydayDays] = useState<number[]>(
+    source.paydayDays?.length
+      ? [...source.paydayDays].sort((a, b) => a - b)
+      : deriveDefaultPaydays(source.dayOfMonth ?? 1, source.recurringFrequency ?? 'monthly')
+  )
+  const setRecurringFrequency = useCallback(
+    (freq: IncomeRecurringFrequency) => {
+      setRecurringFrequencyState(freq)
+      setPaydayDays((days) => deriveDefaultPaydays(days[0] ?? source.dayOfMonth ?? 1, freq))
+    },
+    [source.dayOfMonth]
+  )
   const [notes, setNotes] = useState(source.notes || '')
   const [paymentMethodId, setPaymentMethodId] = useState(source.paymentMethodId ?? '')
   const [effectiveStart, setEffectiveStart] = useState(source.effectiveStart)
@@ -52,7 +64,8 @@ export function useEditIncomeForm(source: IncomeSource, onClose: () => void) {
       currency: cur,
       isRecurring,
       recurringFrequency: isRecurring ? recurringFrequency : undefined,
-      dayOfMonth: isRecurring && recurringFrequency === 'monthly' ? parseInt(dayOfMonth, 10) || 1 : undefined,
+      dayOfMonth: isRecurring ? paydayDays[0] ?? 1 : undefined,
+      paydayDays: isRecurring && recurringFrequency !== 'monthly' && paydayDays.length ? paydayDays : undefined,
       notes: notes || undefined,
       effectiveStart: effectiveStart || source.effectiveStart,
       effectiveEnd: effectiveEnd || null,
@@ -63,7 +76,7 @@ export function useEditIncomeForm(source: IncomeSource, onClose: () => void) {
   }, [
     amount,
     currency,
-    dayOfMonth,
+    paydayDays,
     effectiveEnd,
     effectiveStart,
     isRecurring,
@@ -94,8 +107,8 @@ export function useEditIncomeForm(source: IncomeSource, onClose: () => void) {
     setIsRecurring,
     recurringFrequency,
     setRecurringFrequency,
-    dayOfMonth,
-    setDayOfMonth,
+    paydayDays,
+    setPaydayDays,
     notes,
     setNotes,
     paymentMethodId,

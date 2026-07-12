@@ -20,6 +20,8 @@ import { PaymentMethodPicker } from '@/components/features/payments/PaymentMetho
 import { AssignIncomeSheet } from '@/components/modals/AssignIncomeSheet'
 import { IncomeTypeChipSlider } from '@/components/features/income/IncomeTypeChipSlider'
 import { IncomePaydayGrid } from '@/components/features/income/IncomePaydayGrid'
+import { deriveDefaultPaydays } from '@/lib/utils/paydaySchedule'
+import { incomeMonthlyMultiplier } from '@/lib/utils/calculations'
 import { MODAL_BODY_SCROLL_CLASS, MODAL_CONTROL_CLASS, MODAL_LABEL_CLASS } from '@/lib/modals/modalFormClasses'
 
 const FREQS: IncomeRecurringFrequency[] = ['monthly', 'biweekly', 'weekly']
@@ -49,7 +51,7 @@ export function AddIncomeSheet() {
   const [isRecurring, setIsRecurring] = useState(true)
   const [sourceType, setSourceType] = useState<IncomeSourceType>('salary')
   const [frequency, setFrequency] = useState<IncomeRecurringFrequency>('monthly')
-  const [payday, setPayday] = useState(() => new Date().getDate())
+  const [paydays, setPaydays] = useState<number[]>(() => [new Date().getDate()])
   const [receivedDate, setReceivedDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [assigned, setAssigned] = useState<{ templateId: string; date: string } | null>(null)
   const [paymentMethodId, setPaymentMethodId] = useState(defaultPmId)
@@ -63,7 +65,7 @@ export function AddIncomeSheet() {
       setCurrency(settings.baseCurrency)
       setPaymentMethodId(defaultPmId)
       setReceivedDate(new Date().toISOString().slice(0, 10))
-      setPayday(new Date().getDate())
+      setPaydays([new Date().getDate()])
       setAssigned(null)
     }
     prevIsOpen.current = isOpen
@@ -77,7 +79,7 @@ export function AddIncomeSheet() {
     setIsRecurring(true)
     setSourceType('salary')
     setFrequency('monthly')
-    setPayday(new Date().getDate())
+    setPaydays([new Date().getDate()])
     setReceivedDate(new Date().toISOString().slice(0, 10))
     setAssigned(null)
     setPaymentMethodId(defaultPmId)
@@ -99,7 +101,8 @@ export function AddIncomeSheet() {
         currency: cur,
         isRecurring: true,
         recurringFrequency: frequency,
-        dayOfMonth: payday,
+        dayOfMonth: paydays[0] ?? 1,
+        ...(frequency !== 'monthly' && paydays.length ? { paydayDays: paydays } : {}),
         sourceType,
         notes: notes.trim() || undefined,
         ...(paymentMethodId ? { paymentMethodId } : {}),
@@ -111,6 +114,7 @@ export function AddIncomeSheet() {
         currency: cur,
         sourceType,
         receivedDate: assigned ? assigned.date : receivedDate,
+        ...(assigned ? { occurrenceDate: assigned.date } : {}),
         status: 'confirmed',
         notes: notes.trim() || undefined,
         ...(assigned ? { templateId: assigned.templateId } : {}),
@@ -160,7 +164,9 @@ export function AddIncomeSheet() {
           {/* Amount + currency */}
           <div className="grid grid-cols-[1fr_auto] items-end gap-3">
             <div className="min-w-0">
-              <label htmlFor="income-amt" className={MODAL_LABEL_CLASS}>{t.addIncome.labelAmount}</label>
+              <label htmlFor="income-amt" className={MODAL_LABEL_CLASS}>
+                {isRecurring && frequency !== 'monthly' ? t.addIncome.amountPerPaycheckLabel : t.addIncome.labelAmount}
+              </label>
               <AmountField
                 id="income-amt"
                 placeholder={t.addIncome.placeholderAmount}
@@ -178,6 +184,11 @@ export function AddIncomeSheet() {
               />
             </div>
           </div>
+          {isRecurring && frequency !== 'monthly' && amtValid ? (
+            <p className="-mt-2 font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">
+              {t.addIncome.perMonthEquiv(`${Math.round(amt * incomeMonthlyMultiplier(frequency)).toLocaleString('en-US')} ${currency}`)}
+            </p>
+          ) : null}
 
           {/* Name */}
           <div>
@@ -232,7 +243,10 @@ export function AddIncomeSheet() {
                       <button
                         key={f}
                         type="button"
-                        onClick={() => setFrequency(f)}
+                        onClick={() => {
+                          setFrequency(f)
+                          setPaydays(deriveDefaultPaydays(paydays[0] ?? new Date().getDate(), f))
+                        }}
                         className={`rounded-xl py-2.5 text-sm font-semibold transition-colors ${
                           on ? 'bg-[var(--color-brand-red)] text-white' : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
                         }`}
@@ -245,9 +259,16 @@ export function AddIncomeSheet() {
               </div>
               {/* Payday grid */}
               <div>
-                <span className={MODAL_LABEL_CLASS}>{t.addIncome.paydayLabel}</span>
+                <div className="flex items-baseline gap-2">
+                  <span className={MODAL_LABEL_CLASS}>{t.addIncome.paydayLabel}</span>
+                  {frequency !== 'monthly' ? (
+                    <span className="text-[10px] text-[var(--color-brand-text-muted)]">
+                      {t.addIncome.paydayHelper(frequency === 'biweekly' ? 2 : 4)}
+                    </span>
+                  ) : null}
+                </div>
                 <div className="mt-1.5">
-                  <IncomePaydayGrid frequency={frequency} value={payday} onChange={setPayday} />
+                  <IncomePaydayGrid frequency={frequency} days={paydays} onChange={setPaydays} />
                 </div>
               </div>
             </>

@@ -26,6 +26,7 @@ import type {
 import { computeCreditCardOutstanding } from '@/lib/debt/computeCreditCardBalance'
 import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
 import { convertCurrency, tryConvertCurrency } from './currency'
+import { paydayDatesForWindow } from './paydaySchedule'
 
 /** When set, credit card outstanding is derived from expenses + payments. */
 export type DebtBalanceContext = {
@@ -53,12 +54,28 @@ export function expenseAmountInBase(
   return expense.amountInBaseCurrency
 }
 
-/** Converts per-period recurring income to an equivalent monthly amount for budgets and KPIs. */
+/**
+ * Converts per-paycheck recurring income to a *typical* monthly amount. Only for
+ * contexts with no month window ({@link calculateMonthlyIncome}, form previews) —
+ * month-scoped figures use the physical payday count via
+ * {@link expectedRecurringForMonth} instead.
+ */
 export function incomeMonthlyMultiplier(freq: IncomeRecurringFrequency | undefined): number {
   const f = freq ?? 'monthly'
   if (f === 'weekly') return 52 / 12
   if (f === 'biweekly') return 26 / 12
   return 1
+}
+
+/**
+ * Expected income for a recurring source in a month, physical basis: paydays
+ * actually inside the window × per-paycheck amount (source currency). This is
+ * what the income surface, budgets and reports scale on — Received can reach
+ * exactly 100% of it.
+ */
+export function expectedRecurringForMonth(source: IncomeSource, monthStr: string, monthStartDay = 1): number {
+  const { start, end } = getMonthRange(monthStr, monthStartDay)
+  return paydayDatesForWindow(source, start, end).length * source.amount
 }
 
 export function getMonthRange(monthStr: string, monthStartDay = 1): { start: Date; end: Date } {
@@ -146,8 +163,8 @@ export function projectedIncomeForMonth(
   for (const source of sources) {
     if (source.isRecurring) {
       if (!recurringActiveForWindow(source, start, end)) continue
-      const monthlyEq = source.amount * incomeMonthlyMultiplier(source.recurringFrequency)
-      total += convertCurrency(monthlyEq, source.currency, baseCurrency, rates)
+      const expected = paydayDatesForWindow(source, start, end).length * source.amount
+      total += convertCurrency(expected, source.currency, baseCurrency, rates)
     } else if (isWithinInterval(parseISO(source.createdAt), { start, end })) {
       total += convertCurrency(source.amount, source.currency, baseCurrency, rates)
     }
@@ -195,21 +212,32 @@ export function actualIncomeForMonth(
     if (t.isRecurring) {
       if (!recurringActiveForWindow(t, start, end)) continue
       const perOccurrence = convertCurrency(t.amount, t.currency, baseCurrency, rates)
-      const mult = incomeMonthlyMultiplier(t.recurringFrequency)
-      const evForT = events.filter((e) => e.templateId === t.id && inWindow(e.receivedDate))
+      const paydayCount = paydayDatesForWindow(t, start, end).length
+      // Window-test by the fulfilled payday when stamped, else by received date.
+      const evForT = events.filter((e) => e.templateId === t.id && inWindow(e.occurrenceDate ?? e.receivedDate))
       if (evForT.length === 0) {
-        total += perOccurrence * mult // == projected; behavior preserved when no events exist
+        total += perOccurrence * paydayCount // == projected; behavior preserved when no events exist
       } else {
-        // Each event stands in for one occurrence: realized → its amount, projected →
-        // the projection, missed → nothing. Occurrences with no event fall back to projected.
-        let sub = 0
+        // Dedupe by fulfilled payday (latest edit wins) so re-marking an occurrence
+        // can never double-count; legacy events without occurrence_date count as-is.
+        const byOcc = new Map<string, IncomeEvent>()
+        const counted: IncomeEvent[] = []
         for (const e of evForT) {
+          if (!e.occurrenceDate) counted.push(e)
+          else {
+            const prev = byOcc.get(e.occurrenceDate)
+            if (!prev || e.updatedAt.localeCompare(prev.updatedAt) > 0) byOcc.set(e.occurrenceDate, e)
+          }
+        }
+        counted.push(...byOcc.values())
+        // Each event stands in for one occurrence: realized → its amount, projected →
+        // the projection, missed → nothing. Paydays with no event fall back to projected.
+        let sub = 0
+        for (const e of counted) {
           if (REALIZED_EVENT_STATUSES.has(e.status)) sub += convertCurrency(e.amount, e.currency, baseCurrency, rates)
           else if (e.status === 'projected') sub += perOccurrence
-          // 'missed' contributes nothing
         }
-        const expected = Math.max(evForT.length, Math.round(mult))
-        total += sub + (expected - evForT.length) * perOccurrence
+        total += sub + Math.max(0, paydayCount - counted.length) * perOccurrence
       }
     } else if (!coveredSourceIds.has(t.id) && inWindow(t.createdAt)) {
       // One-time source with no event yet (added before Phase 6 wired event creation).
@@ -222,8 +250,8 @@ export function actualIncomeForMonth(
 /**
  * Is a recurring template's expected income for `monthStr` still awaiting? True when
  * the due date has passed (relative to `today`) and no linked event landed in the
- * month window. Display-only — an overdue paycheck is shown as "awaiting", NEVER
- * auto-counted as missed (only the user marks missed/partial).
+ * month window. Display-only; money totals never change here. (The income surface
+ * additionally auto-displays paydays overdue >5 days as missed — see incomeOccurrences.)
  */
 export function isIncomeOccurrencePending(
   template: IncomeSource,

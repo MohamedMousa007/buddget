@@ -606,6 +606,7 @@ export type Database = {
           linked_savings_account_id: string | null
           name: string
           notes: string | null
+          payday_days: number[] | null
           payment_method_id: string | null
           recurring_frequency:
             | Database["public"]["Enums"]["recurring_frequency"]
@@ -629,6 +630,7 @@ export type Database = {
           linked_savings_account_id?: string | null
           name: string
           notes?: string | null
+          payday_days?: number[] | null
           payment_method_id?: string | null
           recurring_frequency?:
             | Database["public"]["Enums"]["recurring_frequency"]
@@ -652,6 +654,7 @@ export type Database = {
           linked_savings_account_id?: string | null
           name?: string
           notes?: string | null
+          payday_days?: number[] | null
           payment_method_id?: string | null
           recurring_frequency?:
             | Database["public"]["Enums"]["recurring_frequency"]
@@ -682,6 +685,7 @@ export type Database = {
           linked_savings_account_id: string | null
           name: string
           notes: string | null
+          occurrence_date: string | null
           payment_method_id: string | null
           received_date: string
           shared_plan_id: string | null
@@ -702,6 +706,7 @@ export type Database = {
           linked_savings_account_id?: string | null
           name: string
           notes?: string | null
+          occurrence_date?: string | null
           payment_method_id?: string | null
           received_date: string
           shared_plan_id?: string | null
@@ -722,6 +727,7 @@ export type Database = {
           linked_savings_account_id?: string | null
           name?: string
           notes?: string | null
+          occurrence_date?: string | null
           payment_method_id?: string | null
           received_date?: string
           shared_plan_id?: string | null

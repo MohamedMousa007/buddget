@@ -24,12 +24,13 @@ const todayISO = () => new Date().toISOString().slice(0, 10)
  */
 export function AmountReceivedSheet() {
   const showToast = useActionToast()
-  const { incomeSources, incomeEvents, addIncomeEvent, updateIncomeEvent } = useFinanceStore(
+  const { incomeSources, incomeEvents, addIncomeEvent, updateIncomeEvent, deleteIncomeEvent } = useFinanceStore(
     useShallow((s) => ({
       incomeSources: s.incomeSources,
       incomeEvents: s.incomeEvents,
       addIncomeEvent: s.addIncomeEvent,
       updateIncomeEvent: s.updateIncomeEvent,
+      deleteIncomeEvent: s.deleteIncomeEvent,
     })),
   )
   const { activeModal, setActiveModal, markingIncome, monthFilter } = useSettingsStore(
@@ -75,11 +76,25 @@ export function AmountReceivedSheet() {
   // expected → blue (partial) when it is less (handoff §4).
   const inputColorDisplay = !valid ? '#FFFFFF' : meetsExpected ? '#35D46F' : '#7DB6FF'
 
+  // Belt-and-braces dedupe: even if the occurrence pairing missed it, an event
+  // already stamped for this payday means we UPDATE, never add a second row.
+  const targetEventId =
+    current?.eventId ??
+    (source && current
+      ? incomeEvents.find((e) => e.templateId === source.id && e.occurrenceDate === current.dueDate)?.id
+      : undefined)
+  const isEdit = Boolean(targetEventId)
+  // Re-marking a settled payday with the same amount is a no-op — keep the CTA dimmed.
+  const unchanged = isEdit && valid && !!current && amt === current.amount
+  const blocked = !!current && !current.actionable && !isEdit
+  const savingRef = useRef(false)
+
   const save = () => {
-    if (!valid || !source) return
+    if (!valid || !source || !current || blocked || savingRef.current) return
+    savingRef.current = true
     const status = meetsExpected ? 'confirmed' : 'partial'
-    if (current?.eventId) {
-      updateIncomeEvent(current.eventId, { amount: amt, status })
+    if (targetEventId) {
+      updateIncomeEvent(targetEventId, { amount: amt, status, occurrenceDate: current.dueDate })
     } else {
       addIncomeEvent({
         templateId: source.id,
@@ -88,6 +103,7 @@ export function AmountReceivedSheet() {
         currency,
         sourceType: source.sourceType,
         receivedDate: todayISO(),
+        occurrenceDate: current.dueDate,
         status,
         ...(source.paymentMethodId ? { paymentMethodId: source.paymentMethodId } : {}),
       })
@@ -97,11 +113,24 @@ export function AmountReceivedSheet() {
   }
 
   const markMissed = () => {
-    if (!source) return
-    if (current?.eventId) updateIncomeEvent(current.eventId, { status: 'missed' })
-    else addIncomeEvent({ templateId: source.id, name: source.name, amount: expected, currency, sourceType: source.sourceType, receivedDate: current?.date ?? todayISO(), status: 'missed' })
+    if (!source || !current || savingRef.current) return
+    savingRef.current = true
+    if (targetEventId) updateIncomeEvent(targetEventId, { status: 'missed', occurrenceDate: current.dueDate })
+    else addIncomeEvent({ templateId: source.id, name: source.name, amount: expected, currency, sourceType: source.sourceType, receivedDate: current.dueDate, occurrenceDate: current.dueDate, status: 'missed' })
     close()
   }
+
+  const deletePayment = () => {
+    if (!targetEventId || savingRef.current) return
+    savingRef.current = true
+    deleteIncomeEvent(targetEventId)
+    close()
+  }
+
+  // Re-arm the guard each time the sheet opens.
+  useEffect(() => {
+    if (isOpen) savingRef.current = false
+  }, [isOpen])
 
   if (!isOpen || !source || !current) return null
 
@@ -135,13 +164,28 @@ export function AmountReceivedSheet() {
           {!valid || meetsExpected ? t.income.matchesExpected : t.income.shortOfExpected(`${fmtNum(short)} ${currency}`, `${fmtNum(expected)} ${currency}`)}
         </p>
 
-        <button type="button" onClick={save} disabled={!valid} className="mt-4 w-full py-3 text-sm font-bold disabled:opacity-50" style={GLASS_GREEN_BTN}>
-          {meetsExpected ? t.income.markReceivedBtn : t.income.saveAsPartialBtn}
+        <button
+          type="button"
+          onClick={save}
+          disabled={!valid || unchanged || blocked}
+          className="mt-4 w-full py-3 text-sm font-bold disabled:opacity-50"
+          style={GLASS_GREEN_BTN}
+        >
+          {isEdit ? t.income.saveChangesBtn : meetsExpected ? t.income.markReceivedBtn : t.income.saveAsPartialBtn}
         </button>
+        {blocked ? (
+          <p className="mt-2 text-center text-xs text-[var(--color-brand-text-muted)]">{t.income.earlierPaydayFirst}</p>
+        ) : null}
 
-        {current.status === 'awaiting' ? (
+        {/* Awaiting/late (no money logged) → Missed; settled → Delete payment. */}
+        {!isEdit && !blocked && (current.status === 'awaiting' || current.status === 'late' || current.status === 'missed') ? (
           <button type="button" onClick={markMissed} className="mt-2 w-full py-1.5 text-center text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-red)]">
             {t.income.statusMissed}
+          </button>
+        ) : null}
+        {isEdit ? (
+          <button type="button" onClick={deletePayment} className="mt-2 w-full py-1.5 text-center text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-red)]">
+            {t.income.deletePaymentBtn}
           </button>
         ) : null}
       </div>

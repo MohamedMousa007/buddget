@@ -91,6 +91,11 @@ export interface IncomeSource {
   /** When recurring: monthly = per month, biweekly = per paycheck, weekly = per week. Defaults to monthly if omitted. */
   recurringFrequency?: IncomeRecurringFrequency
   dayOfMonth?: number
+  /**
+   * Sorted 1–31 days of month the paychecks land on: monthly 1, biweekly 2,
+   * weekly 4 (max). Legacy rows omit it → derived from {@link dayOfMonth}.
+   */
+  paydayDays?: number[]
   /** `YYYY-MM-DD` the source starts counting for a month (defaults to creation date). */
   effectiveStart: string
   /** `YYYY-MM-DD` the source stops counting (inclusive); null/undefined = ongoing. */
@@ -126,6 +131,8 @@ export interface IncomeEvent {
   sourceType?: IncomeSourceType
   /** `YYYY-MM-DD` the money was (or is expected to be) received. */
   receivedDate: string
+  /** `YYYY-MM-DD` scheduled payday this event fulfills; null/undefined = legacy or one-time. */
+  occurrenceDate?: string | null
   status: IncomeEventStatus
   paymentMethodId?: string
   linkedSavingsAccountId?: string

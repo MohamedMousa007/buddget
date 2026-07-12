@@ -8,10 +8,11 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT } from '@/lib/i18n'
 import { convertCurrency, fmtCompact } from '@/lib/utils/currency'
-import { getMonthRange, recurringActiveForWindow } from '@/lib/utils/calculations'
-import { buildOccurrences, monthlyEquivalent, nextAwaitingIndex } from '@/lib/utils/incomeOccurrences'
+import { expectedRecurringForMonth, getMonthRange, recurringActiveForWindow } from '@/lib/utils/calculations'
+import { buildOccurrences, isRealizedOccurrence, nextAwaitingIndex } from '@/lib/utils/incomeOccurrences'
 import { RecurringIncomeCard } from '@/components/features/income/RecurringIncomeCard'
 import { RecurringIncomeCarousel } from '@/components/features/income/RecurringIncomeCarousel'
+import { AccountChip } from '@/components/features/income/AccountChip'
 
 const MON_TITLE = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const fmtNum = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -20,7 +21,7 @@ const fmtDay = (iso: string) => `${MON_TITLE[Number(iso.slice(5, 7)) - 1]} ${Num
 interface Props {
   open: boolean
   onClose: () => void
-  /** Chosen source + payday. */
+  /** Chosen source + payday (`date` = scheduled payday it fulfills). */
   onAssign: (result: { templateId: string; date: string }) => void
   /** Nested over the add modal needs a higher layer; the page opens it at the default. */
   zIndexClassName?: string
@@ -56,9 +57,9 @@ export function AssignIncomeSheet({ open, onClose, onAssign, zIndexClassName }: 
     () =>
       sources.map((source) => {
         const occ = buildOccurrences(source, incomeEvents, monthFilter, settings.monthStartDay)
-        const expectedBase = convertCurrency(monthlyEquivalent(source), source.currency, base, exchangeRates)
+        const expectedBase = convertCurrency(expectedRecurringForMonth(source, monthFilter, settings.monthStartDay), source.currency, base, exchangeRates)
         const realizedBase = occ.reduce(
-          (sum, o) => (o.status !== 'awaiting' && o.status !== 'missed' ? sum + convertCurrency(o.amount, o.currency, base, exchangeRates) : sum),
+          (sum, o) => (isRealizedOccurrence(o) ? sum + convertCurrency(o.amount, o.currency, base, exchangeRates) : sum),
           0,
         )
         return { source, occ, expectedBase, realizedBase }
@@ -94,7 +95,7 @@ export function AssignIncomeSheet({ open, onClose, onAssign, zIndexClassName }: 
 
   const confirm = () => {
     if (!activeCard || !selOcc) return
-    onAssign({ templateId: activeCard.source.id, date: selOcc.date })
+    onAssign({ templateId: activeCard.source.id, date: selOcc.dueDate })
     onClose()
   }
 
@@ -123,16 +124,10 @@ export function AssignIncomeSheet({ open, onClose, onAssign, zIndexClassName }: 
                   sourceType={source.sourceType}
                   name={source.name}
                   cadenceLine={cad}
-                  paymentLine={
-                    <>
-                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] bg-white/12 text-[8.5px] font-bold text-white/80">
-                        {acct.trim().charAt(0).toUpperCase()}
-                      </span>
-                      <span className="truncate">{acct}</span>
-                    </>
-                  }
+                  paymentLine={<AccountChip label={acct} acct={{ paymentMethodId: source.paymentMethodId }} paymentMethods={paymentMethods} />}
                   expectedBig={fmtNum(expectedBase)}
                   expectedCurrency={base}
+                  expectedTag={t.income.expectedPerMoLabel}
                   progressPct={expectedBase > 0 ? (realizedBase / expectedBase) * 100 : 0}
                   progressLine={
                     <>
@@ -142,7 +137,7 @@ export function AssignIncomeSheet({ open, onClose, onAssign, zIndexClassName }: 
                     </>
                   }
                   occurrences={occ}
-                  chipLabel={(o) => fmtDay(o.date)}
+                  dateLabel={(o) => fmtDay(o.date)}
                   amountLabel={(o) => `${fmtCompact(o.amount)} ${o.currency}`}
                   selectedKey={isActive ? selKey : null}
                   showTick={isActive}
@@ -182,7 +177,10 @@ export function GlobalAssignIncomeSheet() {
       open={open}
       onClose={() => setActiveModal(null)}
       onAssign={({ templateId, date }) => {
-        if (assignTarget?.eventId) updateIncomeEvent(assignTarget.eventId, { templateId, receivedDate: date, status: 'confirmed' })
+        // `date` is the scheduled payday — stamp it as occurrenceDate so the
+        // assigned event joins the dedupe pairing; receivedDate keeps the payday
+        // too (legacy behavior for the ledger's day grouping).
+        if (assignTarget?.eventId) updateIncomeEvent(assignTarget.eventId, { templateId, receivedDate: date, occurrenceDate: date, status: 'confirmed' })
       }}
     />
   )

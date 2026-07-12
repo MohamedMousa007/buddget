@@ -56,6 +56,20 @@ export function AmountField({
   const showPrefix = mode === 'decimal' && !!currency
   const glass = !className
 
+  const caret = (
+    <span
+      style={{
+        width: 2,
+        height: 26,
+        borderRadius: 2,
+        flexShrink: 0,
+        background: 'var(--color-brand-red)',
+        display: isOpen ? 'block' : 'none',
+        animation: 'npBlink 1.1s steps(1) infinite',
+      }}
+    />
+  )
+
   return (
     <>
       <button
@@ -95,11 +109,15 @@ export function AmountField({
             {currency}
           </span>
         )}
+        {/* Caret precedes the placeholder when empty (like a real input) and
+            follows the digits once typing starts — the value span shrink-wraps
+            so the caret hugs the text instead of the field's far edge. */}
+        {!value && caret}
         <span
           style={
             glass
               ? {
-                  flex: 1,
+                  flex: '0 1 auto',
                   minWidth: 0,
                   textAlign: 'start',
                   fontFamily: 'var(--font-mono)',
@@ -111,21 +129,12 @@ export function AmountField({
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                 }
-              : { flex: 1, minWidth: 0, textAlign: 'start', opacity: value ? 1 : 0.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
+              : { flex: '0 1 auto', minWidth: 0, textAlign: 'start', opacity: value ? 1 : 0.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
           }
         >
           {value || ph}
         </span>
-        <span
-          style={{
-            width: 2,
-            height: 26,
-            borderRadius: 2,
-            background: 'var(--color-brand-red)',
-            display: isOpen ? 'block' : 'none',
-            animation: 'npBlink 1.1s steps(1) infinite',
-          }}
-        />
+        {value ? caret : null}
       </button>
       {pad}
     </>

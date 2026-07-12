@@ -1,9 +1,9 @@
 'use client'
 
 import { useMemo } from 'react'
-import { AmountField } from '@/components/ui/AmountField'
 import { Label } from '@/components/ui/label'
 import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
+import { IncomePaydayGrid } from '@/components/features/income/IncomePaydayGrid'
 import { INCOME_RECURRING_FREQ_OPTIONS } from '@/lib/constants/incomeRecurring'
 import type { Dictionary } from '@/lib/i18n/types'
 import type { IncomeRecurringFrequency } from '@/lib/store/types'
@@ -12,17 +12,17 @@ type Props = {
   t: Dictionary
   recurringFrequency: IncomeRecurringFrequency
   setRecurringFrequency: (v: IncomeRecurringFrequency) => void
-  dayOfMonth: string
-  setDayOfMonth: (v: string) => void
+  paydayDays: number[]
+  setPaydayDays: (days: number[]) => void
 }
 
-/** Frequency + day-of-month block for edit income. */
+/** Frequency + payday-days block for edit income. */
 export function EditIncomeRecurringBlock({
   t,
   recurringFrequency,
   setRecurringFrequency,
-  dayOfMonth,
-  setDayOfMonth,
+  paydayDays,
+  setPaydayDays,
 }: Props) {
   const freqItems = useMemo<ReadonlyArray<SelectFieldOption>>(
     () => INCOME_RECURRING_FREQ_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label })),
@@ -46,17 +46,19 @@ export function EditIncomeRecurringBlock({
           {t.editIncome.freqHint}
         </p>
       </div>
-      {recurringFrequency === 'monthly' && (
-        <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.editIncome.labelDayOfMonth}</Label>
-          <AmountField
-            mode="integer"
-            value={dayOfMonth}
-            onChange={setDayOfMonth}
-            className="mt-1 w-24 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers"
-          />
+      <div>
+        <div className="flex items-baseline gap-2">
+          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addIncome.paydayLabel}</Label>
+          {recurringFrequency !== 'monthly' ? (
+            <span className="text-[10px] text-[var(--color-brand-text-muted)]">
+              {t.addIncome.paydayHelper(recurringFrequency === 'biweekly' ? 2 : 4)}
+            </span>
+          ) : null}
         </div>
-      )}
+        <div className="mt-1.5">
+          <IncomePaydayGrid frequency={recurringFrequency} days={paydayDays} onChange={setPaydayDays} />
+        </div>
+      </div>
     </>
   )
 }

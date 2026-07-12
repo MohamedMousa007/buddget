@@ -131,6 +131,14 @@ describe('projectedIncomeForMonth', () => {
     expect(projectedIncomeForMonth(sources, 'AED', {}, '2025-01', 1)).toBe(1000)
   })
 
+  it('bi-weekly counts the physical paydays in the month (2 × per-paycheck)', () => {
+    const sources = [
+      src({ id: '1', name: 'Wage', amount: 50000, currency: 'AED', recurringFrequency: 'biweekly', dayOfMonth: 5, effectiveStart: '2024-01-01' }),
+    ]
+    // Semi-monthly days [5, 20] → exactly 2 paydays, not 26/12 × amount.
+    expect(projectedIncomeForMonth(sources, 'AED', {}, '2026-07', 1)).toBe(100000)
+  })
+
   it('respects a custom monthStartDay window for one-time income', () => {
     // Cycle starting on the 15th: Jan-15 → Feb-14. A one-time on Feb-10 belongs to the "2025-01" cycle.
     const sources = [
@@ -179,6 +187,22 @@ describe('actualIncomeForMonth', () => {
     const events = [evt({ id: 'e1', templateId: 't1', amount: 1000, receivedDate: '2025-01-05' })]
     // round(26/12)=2 expected occurrences: 1 confirmed (1000) + 1 fallback (1000) = 2000.
     expect(actualIncomeForMonth(tmpl, events, 'AED', {}, jan, 1)).toBe(2000)
+  })
+
+  it('duplicate events on the same occurrenceDate count once (latest edit wins)', () => {
+    const tmpl = [src({ id: 't1', name: 'Salary', amount: 5000, currency: 'AED', effectiveStart: '2024-01-01' })]
+    const events = [
+      evt({ id: 'e1', templateId: 't1', amount: 5000, occurrenceDate: '2025-01-01', updatedAt: '2025-01-15T01:00:00.000Z' }),
+      evt({ id: 'e2', templateId: 't1', amount: 5000, occurrenceDate: '2025-01-01', updatedAt: '2025-01-15T02:00:00.000Z' }),
+    ]
+    expect(actualIncomeForMonth(tmpl, events, 'AED', {}, jan, 1)).toBe(5000)
+  })
+
+  it('an occurrence-dated event in the window counts even when received later', () => {
+    const tmpl = [src({ id: 't1', name: 'Salary', amount: 5000, currency: 'AED', effectiveStart: '2024-01-01' })]
+    const events = [evt({ id: 'e1', templateId: 't1', amount: 5000, occurrenceDate: '2025-01-01', receivedDate: '2025-02-03' })]
+    expect(actualIncomeForMonth(tmpl, events, 'AED', {}, jan, 1)).toBe(5000)
+    expect(actualIncomeForMonth(tmpl, events, 'AED', {}, '2025-02', 1)).toBe(5000) // Feb has its own payday fallback
   })
 
   it('does not double-count a one-time source backfilled to an event (same id)', () => {

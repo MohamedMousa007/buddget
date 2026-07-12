@@ -36,6 +36,7 @@ export function incomeEventToRow(e: IncomeEvent, userId: string): IncomeEventIns
     currency: e.currency,
     source_type: toDbSourceType(e.sourceType),
     received_date: e.receivedDate,
+    occurrence_date: e.occurrenceDate ?? null,
     status: e.status,
     payment_method_id:
       e.paymentMethodId && e.paymentMethodId !== DEFAULT_CASH_ID ? e.paymentMethodId : null,
@@ -58,6 +59,7 @@ export function incomeEventFromRow(row: IncomeEventRow): IncomeEvent {
     currency: row.currency as Currency,
     sourceType: fromDbSourceType(row.source_type),
     receivedDate: row.received_date,
+    occurrenceDate: row.occurrence_date ?? undefined,
     status: row.status as IncomeEventStatus,
     paymentMethodId: row.payment_method_id ?? undefined,
     linkedSavingsAccountId: row.linked_savings_account_id ?? undefined,

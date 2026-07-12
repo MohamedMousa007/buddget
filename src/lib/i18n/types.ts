@@ -492,6 +492,15 @@ export interface Dictionary {
     shortOfExpected: (short: string, expected: string) => string
     markReceivedBtn: string
     saveAsPartialBtn: string
+    /** Primary CTA when editing an already-logged payment. */
+    saveChangesBtn: string
+    deletePaymentBtn: string
+    /** Hint when tapping a payday that is not yet in turn (sequential settling). */
+    earlierPaydayFirst: string
+    /** Card CTA for a payday auto-displayed as missed. */
+    logMissedPayday: (date: string) => string
+    /** aria-label for the card's pencil (edit source) button. */
+    editSourceAria: string
     assignTitle: string
     assignSubtitle: string
     fillsPayday: (date: string) => string
@@ -547,6 +556,14 @@ export interface Dictionary {
     incomeTypeLabel: string
     howOftenLabel: string
     paydayLabel: string
+    /** Beside the Payday title for biweekly/weekly: guides picking the 2 or 4 days. */
+    paydayHelper: (count: number) => string
+    /** Toggle in the payday grid's spare cells: manual multi-day selection. */
+    paydayEditBtn: string
+    /** Amount label when the source is biweekly/weekly (per paycheck, not per month). */
+    amountPerPaycheckLabel: string
+    /** Live preview under the amount: typical monthly equivalent. */
+    perMonthEquiv: (amount: string) => string
     freqMonthly: string
     freqBiweekly: string
     freqWeekly: string
