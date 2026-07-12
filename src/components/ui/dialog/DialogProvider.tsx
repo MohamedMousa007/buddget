@@ -168,10 +168,10 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
                     type="button"
                     onClick={() => resolveCurrent(true)}
                     className={cn(
-                      'h-9 rounded-lg px-4 text-sm font-semibold text-white transition-colors',
+                      'h-9 rounded-lg px-4 text-sm font-semibold transition-colors',
                       destructive
-                        ? 'bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)]'
-                        : 'bg-[var(--color-brand-text-primary)] hover:opacity-90',
+                        ? 'text-white bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)]'
+                        : 'text-[var(--color-brand-bg)] bg-[var(--color-brand-text-primary)] hover:opacity-90',
                     )}
                   >
                     {confirmLabel}
