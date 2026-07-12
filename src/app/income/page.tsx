@@ -11,7 +11,8 @@ import { RecurringIncomeCard } from '@/components/features/income/RecurringIncom
 import { RecurringIncomeCarousel } from '@/components/features/income/RecurringIncomeCarousel'
 import { SwipeToDelete, type SwipeSide } from '@/components/expenses/SwipeToDelete'
 import { IncomeTypeIcon, incomeTypeColors } from '@/components/features/income/IncomeTypeIcon'
-import { GLASS_CARD, GLASS_GREEN_BTN, GLASS_NEUTRAL_BTN } from '@/components/features/income/incomeGlass'
+import { AccountChip } from '@/components/features/income/AccountChip'
+import { GLASS_CARD, GLASS_NEUTRAL_BTN, GLASS_RED_BTN, GLASS_RED_DARK_BTN } from '@/components/features/income/incomeGlass'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useT } from '@/lib/i18n'
 import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
@@ -19,8 +20,8 @@ import { useHydrateIncome, useHydrateIncomeEvents, useHydrateDebts, useHydrateSa
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { convertCurrency, fmtCompact } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
-import { getMonthRange, recurringActiveForWindow } from '@/lib/utils/calculations'
-import { buildOccurrences, monthlyEquivalent } from '@/lib/utils/incomeOccurrences'
+import { expectedRecurringForMonth, getMonthRange, recurringActiveForWindow } from '@/lib/utils/calculations'
+import { buildOccurrences, isRealizedOccurrence } from '@/lib/utils/incomeOccurrences'
 import type { IncomeSource, IncomeSourceType } from '@/lib/store/types'
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
@@ -93,20 +94,12 @@ export default function IncomePage() {
 
   const cadenceLine = (s: IncomeSource): string => {
     const freq = s.recurringFrequency ?? 'monthly'
-    return freq === 'weekly' ? t.addIncome.freqWeekly : freq === 'biweekly' ? t.addIncome.freqBiweekly : `${t.addIncome.freqMonthly} · ${s.dayOfMonth ?? 1}`
+    if (freq === 'monthly') return `${t.addIncome.freqMonthly} · ${s.dayOfMonth ?? 1}`
+    const label = freq === 'weekly' ? t.addIncome.freqWeekly : t.addIncome.freqBiweekly
+    return s.paydayDays?.length ? `${label} · ${s.paydayDays.join(' / ')}` : label
   }
 
-  const paymentLine = (s: IncomeSource) => {
-    const label = accountLabel(s)
-    return (
-      <>
-        <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] bg-white/12 text-[8.5px] font-bold text-white/80">
-          {label.trim().charAt(0).toUpperCase()}
-        </span>
-        <span className="truncate">{label}</span>
-      </>
-    )
-  }
+  const paymentLine = (s: IncomeSource) => <AccountChip label={accountLabel(s)} acct={s} paymentMethods={paymentMethods} />
 
   // Recurring sources active for the selected month.
   const recurring = useMemo(() => {
@@ -118,9 +111,9 @@ export default function IncomePage() {
   const cards = useMemo(() => {
     return recurring.map((s) => {
       const occ = buildOccurrences(s, incomeEvents, monthFilter, settings.monthStartDay)
-      const expectedBase = convertCurrency(monthlyEquivalent(s), s.currency, base, exchangeRates)
+      const expectedBase = convertCurrency(expectedRecurringForMonth(s, monthFilter, settings.monthStartDay), s.currency, base, exchangeRates)
       const realizedBase = occ.reduce(
-        (sum, o) => (o.status !== 'awaiting' && o.status !== 'missed' ? sum + convertCurrency(o.amount, o.currency, base, exchangeRates) : sum),
+        (sum, o) => (isRealizedOccurrence(o) ? sum + convertCurrency(o.amount, o.currency, base, exchangeRates) : sum),
         0,
       )
       return { source: s, occ, expectedBase, realizedBase }
@@ -251,6 +244,16 @@ export default function IncomePage() {
                   {remaining <= 0 ? <span className="text-[#35D46F]">{t.income.fullyReceived}</span> : t.income.toCome(`${fmtCompact(remaining)} ${base}`)}
                 </>
               )
+              // CTA per selection: settled → neutral edit; missed → dark red log;
+              // in-turn awaiting/late → brand-red mark received; out of turn → disabled + hint.
+              const ctaStyle = sel ? (sel.eventId ? GLASS_NEUTRAL_BTN : sel.status === 'missed' ? GLASS_RED_DARK_BTN : GLASS_RED_BTN) : undefined
+              const ctaLabel = sel
+                ? sel.eventId
+                  ? t.income.editDateAmount(fmtDay(sel.date))
+                  : sel.status === 'missed'
+                    ? t.income.logMissedPayday(fmtDay(sel.date))
+                    : t.income.markDateReceived(fmtDay(sel.date))
+                : ''
               return (
                 <RecurringIncomeCard
                   sourceType={source.sourceType}
@@ -259,27 +262,31 @@ export default function IncomePage() {
                   paymentLine={paymentLine(source)}
                   expectedBig={fmtNum(expectedBase)}
                   expectedCurrency={base}
+                  expectedTag={t.income.expectedPerMoLabel}
                   progressPct={expectedBase > 0 ? (realizedBase / expectedBase) * 100 : 0}
                   progressLine={progressLine}
                   occurrences={occ}
-                  chipLabel={(o) => fmtDay(o.date)}
+                  dateLabel={(o) => fmtDay(o.date)}
                   amountLabel={(o) => `${fmtCompact(o.amount)} ${o.currency}`}
                   selectedKey={selected?.sourceId === source.id ? selected.occKey : null}
                   onChipTap={(o) =>
                     setSelected((prev) => (prev?.sourceId === source.id && prev.occKey === o.key ? null : { sourceId: source.id, occKey: o.key }))
                   }
+                  onEdit={() => {
+                    setEditingIncomeId(source.id)
+                    setActiveModal('editIncome')
+                  }}
+                  editAriaLabel={t.income.editSourceAria}
                   footer={
                     sel ? (
                       <button
                         type="button"
                         onClick={() => openAmountReceived(source.id, sel.key)}
-                        className="w-full py-2.5 text-sm font-bold"
-                        // Green is reserved for the positive "Mark received"; editing an
-                        // already-received payday uses neutral glass so it never blends
-                        // with the green chip above it.
-                        style={sel.status === 'awaiting' ? GLASS_GREEN_BTN : GLASS_NEUTRAL_BTN}
+                        disabled={!sel.actionable}
+                        className="w-full py-2.5 text-sm font-bold disabled:opacity-50"
+                        style={ctaStyle}
                       >
-                        {sel.status === 'awaiting' ? t.income.markDateReceived(fmtDay(sel.date)) : t.income.editDateAmount(fmtDay(sel.date))}
+                        {sel.actionable ? ctaLabel : t.income.earlierPaydayFirst}
                       </button>
                     ) : (
                       <p className="w-full text-center text-[11px] text-white/55">{t.income.tapPaydayTip}</p>

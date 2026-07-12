@@ -96,8 +96,8 @@ export function EditIncomeForm({ source, onClose }: { source: IncomeSource; onCl
             t={t}
             recurringFrequency={f.recurringFrequency}
             setRecurringFrequency={f.setRecurringFrequency}
-            dayOfMonth={f.dayOfMonth}
-            setDayOfMonth={f.setDayOfMonth}
+            paydayDays={f.paydayDays}
+            setPaydayDays={f.setPaydayDays}
           />
         )}
 

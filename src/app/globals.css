@@ -494,6 +494,14 @@ html[data-locale='ar'] .prose-rtl {
 @keyframes npFade { from { opacity: 0 } to { opacity: 1 } }
 @keyframes npGlow { 0%,100% { transform: translate(-50%,0) scale(1); opacity:.7 } 50% { transform: translate(-50%,0) scale(1.16); opacity:1 } }
 @keyframes npBlink { 0%,50% { opacity:1 } 51%,100% { opacity:0 } }
+
+/* Income payday timeline — pulse travelling from the last received payday to the next */
+@keyframes incomeTimelinePulse {
+  0% { inset-inline-start: 0%; opacity: 0 }
+  15% { opacity: 1 }
+  85% { opacity: 1 }
+  100% { inset-inline-start: calc(100% - 6px); opacity: 0 }
+}
 .np-key:active { background: rgba(255,255,255,.12) !important; }
 @media (prefers-reduced-motion: reduce) {
   .np-glow { animation: none !important; opacity: .7 !important; }
