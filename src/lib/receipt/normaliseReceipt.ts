@@ -41,6 +41,47 @@ export const SUPPORTED_CATEGORIES: ExpenseCategory[] = [
 
 const CHARGE_TYPES: ReceiptCharge['type'][] = ['tax', 'service', 'tip', 'discount', 'other']
 
+/** Placeholder names the AI emits for lines whose NAME it couldn't read. */
+export const UNKNOWN_ITEM_NAMES = ['غير معروف', 'Unknown']
+
+/** True for AI placeholder lines: unreadable name, or unreadable price (0). */
+export function isUnknownItem(it: ReceiptItem): boolean {
+  return it.price === 0 || UNKNOWN_ITEM_NAMES.includes(it.name)
+}
+
+/**
+ * Fills the gap between the confirmed total and the breakdown so the saved
+ * receipt always reconciles. Positive deficit is distributed equally across
+ * unknown-PRICE placeholders (price 0); with none, a single "غير معروف" filler
+ * line absorbs it. A breakdown that EXCEEDS the total is left untouched (a
+ * duplicated line or missed discount — shrinking lines would hide real data).
+ * ponytail: a genuinely-free promo line (real 0.00) is indistinguishable from
+ * an unreadable price and may absorb part of the deficit.
+ */
+export function reconcileMissingItems(
+  items: ReceiptItem[],
+  charges: ReceiptCharge[],
+  amount: number,
+): ReceiptItem[] {
+  const sum = items.reduce((s, it) => s + it.price, 0) + charges.reduce((s, c) => s + c.amount, 0)
+  const deficit = Math.round((amount - sum) * 100) / 100
+  if (deficit <= 0.01) return items
+
+  const zeroIdx = items.map((it, i) => (it.price === 0 ? i : -1)).filter((i) => i >= 0)
+  if (zeroIdx.length === 0) {
+    return [...items, { name: UNKNOWN_ITEM_NAMES[0], price: deficit }]
+  }
+
+  const share = Math.floor((deficit / zeroIdx.length) * 100) / 100
+  const next = [...items]
+  zeroIdx.forEach((idx, n) => {
+    const isLast = n === zeroIdx.length - 1
+    const price = isLast ? Math.round((deficit - share * (zeroIdx.length - 1)) * 100) / 100 : share
+    next[idx] = { ...next[idx], price }
+  })
+  return next
+}
+
 /** Coerces raw Gemini output into a safe, typed receipt for the review UI. */
 export function normaliseReceipt(raw: Record<string, unknown>, fallbackCurrency: Currency): ScannedReceipt {
   const merchant = (raw.merchant as string | undefined)?.trim().slice(0, 60) ?? ''
