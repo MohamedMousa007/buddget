@@ -80,6 +80,7 @@ async function callGeminiText(apiKey: string, requestBody: unknown): Promise<str
 
     const payload = (await res.json().catch(() => null)) as {
       candidates?: Array<{ content?: { parts?: Array<{ text?: string }> }; finishReason?: string }>
+      usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number; totalTokenCount?: number }
       error?: { message?: string }
     } | null
 
@@ -92,9 +93,25 @@ async function callGeminiText(apiKey: string, requestBody: unknown): Promise<str
     }
 
     const candidate = payload.candidates?.[0]
-    const raw = candidate?.content?.parts?.[0]?.text?.trim()
+    const finishReason = candidate?.finishReason
+    const raw = candidate?.content?.parts?.map((p) => p.text ?? '').join('').trim()
+
+    // Log token usage (incl. thinking tokens) so truncation vs thinking-token
+    // consumption is diagnosable from real scans instead of guessed at.
+    if (payload.usageMetadata) {
+      console.log('[receipt/scan] usage', JSON.stringify(payload.usageMetadata), 'finish', finishReason ?? 'none')
+    }
+
+    // Output hit the token ceiling → the JSON is truncated and unparseable.
+    // Retrying with the same budget won't help; fail with an actionable message.
+    if (finishReason === 'MAX_TOKENS') {
+      throw new GeminiError('This receipt was too long to read in one pass. Try splitting it into fewer, clearer photos.', 422, false)
+    }
+    if (finishReason === 'SAFETY' || finishReason === 'RECITATION' || finishReason === 'PROHIBITED_CONTENT') {
+      throw new GeminiError("We couldn't process this image. Please try a clearer photo of the receipt.", 422, false)
+    }
     if (!raw) {
-      // Empty text or MAX_TOKENS/safety truncation — retry, then surface as unreadable.
+      // Empty candidate (transient block / no content) — retry, then surface.
       lastErr = new GeminiError('No structured output from AI', 502, true)
       continue
     }
@@ -175,11 +192,14 @@ export async function POST(request: NextRequest) {
     generationConfig: {
       temperature: 0,
       responseMimeType: 'application/json',
-      // Long itemized receipts overflow 2048 → truncated JSON → parse failure.
+      // Root cause of the "trouble reading" failures: 2.5-flash "thinking" tokens
+      // share the output budget, so a low ceiling let thinking starve the JSON →
+      // truncated → parse failure (even on short receipts). Give the answer ample
+      // room (8192) and cap thinking (2048) so it stays for accuracy but can never
+      // consume the whole budget. Both are ceilings — billing is on tokens actually
+      // produced, so this doesn't raise cost on normal receipts.
       maxOutputTokens: 8192,
-      // Disable 2.5-flash "thinking" — pure extraction doesn't need it and it
-      // adds seconds of latency per scan.
-      thinkingConfig: { thinkingBudget: 0 },
+      thinkingConfig: { thinkingBudget: 2048 },
     },
   }
 
