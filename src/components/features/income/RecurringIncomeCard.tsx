@@ -109,17 +109,23 @@ export function RecurringIncomeCard({
           const received = isReceived(occ.status)
           const filled = occ.status !== 'awaiting'
           const dot = OCC_STATUS_COLOR[occ.status]
-          const tone = received
-            ? 'border-[rgba(53,212,111,0.4)] bg-[rgba(53,212,111,0.16)] text-[#8FF0B4]'
-            : selected
-              ? 'border-transparent bg-white/[0.14] text-white'
-              : 'border-white/10 bg-white/[0.04] text-white/75'
+          // Fill is status-driven; selection is a ring layered on top so it reads
+          // on EVERY chip — including received (green) ones, which otherwise show
+          // no selected state at all.
+          const fill = received
+            ? 'bg-[rgba(53,212,111,0.16)] text-[#8FF0B4]'
+            : 'bg-white/[0.06] text-white/80'
+          const edge = selected
+            ? 'border border-transparent ring-2 ring-inset ring-white/75'
+            : received
+              ? 'border border-[rgba(53,212,111,0.4)]'
+              : 'border border-white/10'
           return (
             <button
               key={occ.key}
               type="button"
               onClick={onChipTap ? () => onChipTap(occ) : undefined}
-              className={`flex min-h-[30px] shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${single ? 'w-full justify-start' : ''} ${tone}`}
+              className={`flex min-h-[30px] shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${single ? 'w-full justify-start' : ''} ${fill} ${edge}`}
             >
               <span
                 className="h-1.5 w-1.5 shrink-0 rounded-full"
@@ -127,10 +133,15 @@ export function RecurringIncomeCard({
               />
               <span className="font-mono-numbers">{chipLabel(occ)}</span>
               {withAmount && amountLabel ? (
-                <>
-                  <span className="text-white/35">·</span>
-                  <span className="truncate font-mono-numbers text-white/60">{amountLabel(occ)}</span>
-                </>
+                single ? (
+                  // Single payday: push the amount to the far edge to use the row.
+                  <span className="ms-auto truncate font-mono-numbers text-white/70">{amountLabel(occ)}</span>
+                ) : (
+                  <>
+                    <span className="text-white/35">·</span>
+                    <span className="truncate font-mono-numbers text-white/60">{amountLabel(occ)}</span>
+                  </>
+                )
               ) : null}
             </button>
           )

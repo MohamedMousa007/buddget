@@ -11,7 +11,7 @@ import { RecurringIncomeCard } from '@/components/features/income/RecurringIncom
 import { RecurringIncomeCarousel } from '@/components/features/income/RecurringIncomeCarousel'
 import { SwipeToDelete, type SwipeSide } from '@/components/expenses/SwipeToDelete'
 import { IncomeTypeIcon, incomeTypeColors } from '@/components/features/income/IncomeTypeIcon'
-import { GLASS_CARD, GLASS_GREEN_BTN } from '@/components/features/income/incomeGlass'
+import { GLASS_CARD, GLASS_GREEN_BTN, GLASS_NEUTRAL_BTN } from '@/components/features/income/incomeGlass'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useT } from '@/lib/i18n'
 import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
@@ -274,7 +274,10 @@ export default function IncomePage() {
                         type="button"
                         onClick={() => openAmountReceived(source.id, sel.key)}
                         className="w-full py-2.5 text-sm font-bold"
-                        style={GLASS_GREEN_BTN}
+                        // Green is reserved for the positive "Mark received"; editing an
+                        // already-received payday uses neutral glass so it never blends
+                        // with the green chip above it.
+                        style={sel.status === 'awaiting' ? GLASS_GREEN_BTN : GLASS_NEUTRAL_BTN}
                       >
                         {sel.status === 'awaiting' ? t.income.markDateReceived(fmtDay(sel.date)) : t.income.editDateAmount(fmtDay(sel.date))}
                       </button>

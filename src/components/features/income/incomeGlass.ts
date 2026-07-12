@@ -27,11 +27,24 @@ export function heroCardStyle(accent: string): CSSProperties {
   }
 }
 
-/** Glassy green CTA (Mark received, Save). */
+/** Glassy green CTA — reserved for the positive "Mark received" action. */
 export const GLASS_GREEN_BTN: CSSProperties = {
   background: 'linear-gradient(160deg, rgba(29,185,84,.28), rgba(29,185,84,.12))',
   border: '1px solid rgba(53,212,111,.5)',
   color: '#8FF0B4',
+  backdropFilter: 'blur(10px)',
+  WebkitBackdropFilter: 'blur(10px)',
+  borderRadius: 14,
+}
+
+/**
+ * Neutral glass CTA — for edit/adjust actions on an already-received payday,
+ * so the button never clashes with the green (received) chip above it.
+ */
+export const GLASS_NEUTRAL_BTN: CSSProperties = {
+  background: 'linear-gradient(160deg, rgba(255,255,255,.15), rgba(255,255,255,.06))',
+  border: '1px solid rgba(255,255,255,.2)',
+  color: '#ECECF2',
   backdropFilter: 'blur(10px)',
   WebkitBackdropFilter: 'blur(10px)',
   borderRadius: 14,
