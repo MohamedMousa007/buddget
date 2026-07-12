@@ -5,6 +5,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { isNative } from '@/lib/native/isNative'
+import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
 import { updateWidgetData, type WidgetSnapshot } from '@/lib/native/widgetBridge'
 
 const DEBOUNCE_MS = 600
@@ -29,10 +30,11 @@ export function WidgetSync() {
 
   const snapshot = useMemo<WidgetSnapshot>(() => {
     const monthExpenses = expenses.filter((e) => e.date.startsWith(monthFilter))
-    const spentThisMonth = monthExpenses.reduce((sum, e) => sum + (e.amountInBaseCurrency || 0), 0)
+    const spendExpenses = monthExpenses.filter((e) => !isNonSpendCategory(e.category))
+    const spentThisMonth = spendExpenses.reduce((sum, e) => sum + (e.amountInBaseCurrency || 0), 0)
 
     const byCategory = new Map<string, number>()
-    for (const e of monthExpenses) {
+    for (const e of spendExpenses) {
       byCategory.set(e.category, (byCategory.get(e.category) ?? 0) + (e.amountInBaseCurrency || 0))
     }
     const topCategories = Array.from(byCategory.entries())
