@@ -14,6 +14,7 @@
 		B0DD0000000000000000B001 /* SmsCapacitorPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0DD0000000000000000A001 /* SmsCapacitorPlugin.swift */; };
 		B0DD0000000000000000B002 /* CatchBankSmsIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0DD0000000000000000A002 /* CatchBankSmsIntent.swift */; };
 		B0DD0000000000000000B003 /* BuddgetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0DD0000000000000000A003 /* BuddgetViewController.swift */; };
+		B0DD0000000000000000B004 /* DocumentScannerPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0DD0000000000000000A004 /* DocumentScannerPlugin.swift */; };
 		504EC30D1FED79650016851F /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30B1FED79650016851F /* Main.storyboard */; };
 		504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
@@ -29,6 +30,7 @@
 		B0DD0000000000000000A001 /* SmsCapacitorPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmsCapacitorPlugin.swift; sourceTree = "<group>"; };
 		B0DD0000000000000000A002 /* CatchBankSmsIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatchBankSmsIntent.swift; sourceTree = "<group>"; };
 		B0DD0000000000000000A003 /* BuddgetViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuddgetViewController.swift; sourceTree = "<group>"; };
+		B0DD0000000000000000A004 /* DocumentScannerPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentScannerPlugin.swift; sourceTree = "<group>"; };
 		504EC30C1FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		504EC30E1FED79650016851F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		504EC3111FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
@@ -78,6 +80,7 @@
 				B0DD0000000000000000A001 /* SmsCapacitorPlugin.swift */,
 				B0DD0000000000000000A002 /* CatchBankSmsIntent.swift */,
 				B0DD0000000000000000A003 /* BuddgetViewController.swift */,
+				B0DD0000000000000000A004 /* DocumentScannerPlugin.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
 				504EC3101FED79650016851F /* LaunchScreen.storyboard */,
@@ -174,6 +177,7 @@
 				B0DD0000000000000000B001 /* SmsCapacitorPlugin.swift in Sources */,
 				B0DD0000000000000000B002 /* CatchBankSmsIntent.swift in Sources */,
 				B0DD0000000000000000B003 /* BuddgetViewController.swift in Sources */,
+				B0DD0000000000000000B004 /* DocumentScannerPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

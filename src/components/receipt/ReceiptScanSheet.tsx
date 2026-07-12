@@ -1,14 +1,14 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Camera, Check, X, Loader2, ReceiptText, RefreshCcw, Images } from 'lucide-react'
+import { Camera, Check, X, Loader2, ReceiptText, RefreshCcw, Images, ImageOff } from 'lucide-react'
 import Image from 'next/image'
 import { useShallow } from 'zustand/react/shallow'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { DatePickerField } from '@/components/ui/DatePickerField'
 import { CurrencyField } from '@/components/ui/CurrencyField'
 import { AmountField } from '@/components/ui/AmountField'
-import { capturePhoto, ReceiptCaptureCancelled, type CapturedImage } from '@/lib/native/cameraScanner'
+import { scanDocument, ReceiptCaptureCancelled, type CapturedImage } from '@/lib/native/cameraScanner'
 import { isNative } from '@/lib/native/isNative'
 import { saveReceiptImage } from '@/lib/native/receiptImages'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -16,23 +16,17 @@ import { isOnline } from '@/hooks/useNetworkStatus'
 import { registerBackGuard } from '@/lib/navigation/backGuard'
 import { newClientId } from '@/lib/store/useFinanceStore'
 import { usePendingAiJobs, savePendingMedia, deletePendingMedia } from '@/lib/store/usePendingAiJobs'
-import type { Currency, ExpenseCategory, ReceiptItem, ReceiptCharge } from '@/lib/store/types'
+import type { Currency, ExpenseCategory } from '@/lib/store/types'
+import {
+  normaliseReceipt,
+  SUPPORTED_CURRENCIES,
+  SUPPORTED_CATEGORIES,
+  type ScannedReceipt,
+} from '@/lib/receipt/normaliseReceipt'
 
-type ScanState = 'idle' | 'scanning' | 'captured' | 'parsing' | 'result' | 'error' | 'queued'
+type ScanState = 'idle' | 'scanning' | 'review' | 'parsing' | 'result' | 'notReceipt' | 'error' | 'queued'
 
-interface ScannedReceipt {
-  merchant: string
-  amount: number
-  currency: Currency
-  date: string
-  category: ExpenseCategory
-  confidence: number
-  items: ReceiptItem[]
-  charges: ReceiptCharge[]
-  notes: string
-}
-
-const CHARGE_TYPES: ReceiptCharge['type'][] = ['tax', 'service', 'tip', 'discount', 'other']
+const MAX_PAGES = 5
 
 interface ReceiptScanSheetProps {
   open: boolean
@@ -43,24 +37,16 @@ interface ReceiptScanSheetProps {
   onConfirmed?: () => void
 }
 
-const SUPPORTED_CURRENCIES: Currency[] = [
-  'EGP',
-  'AED',
-  'SAR',
-  'QAR',
-  'KWD',
-  'OMR',
-  'BHD',
-  'USD',
-]
-
-const SUPPORTED_CATEGORIES: ExpenseCategory[] = [
-  'Food',
-  'Transport',
-  'Enjoyment',
-  'Rent',
-  'Other',
-]
+/** Light impact when a scan lands or an expense saves. Native-only, best-effort. */
+async function haptic() {
+  if (!isNative()) return
+  try {
+    const { Haptics, ImpactStyle } = await import('@capacitor/haptics')
+    await Haptics.impact({ style: ImpactStyle.Light })
+  } catch {
+    /* haptics are cosmetic — ignore failures */
+  }
+}
 
 /** Stores the photo on-device and enqueues a pending receipt job. */
 async function queueReceiptCapture(dataUrl: string): Promise<boolean> {
@@ -122,22 +108,27 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
     })
   }, [open, onClose])
 
-  /** Captures one photo (camera or gallery) and appends it to the photos list. */
-  const captureOne = useCallback(async (source: 'camera' | 'gallery', currentPhotos: CapturedImage[]) => {
+  /**
+   * Runs the native document scanner (multi-page) and appends the returned pages
+   * to the review grid. `existing` are the photos already captured, used to
+   * decide where a cancel lands.
+   */
+  const runScan = useCallback(async (source: 'camera' | 'gallery', existing: CapturedImage[]) => {
     setError(null)
     setState('scanning')
     try {
-      const captured = await capturePhoto(source)
-      setPhotos(prev => [...prev, captured])
-      setState('captured')
+      const captured = await scanDocument(source)
+      void haptic()
+      setPhotos(prev => [...prev, ...captured].slice(0, MAX_PAGES))
+      setState('review')
     } catch (e) {
       if (e instanceof ReceiptCaptureCancelled) {
-        if (currentPhotos.length > 0) setState('captured')
+        if (existing.length > 0) setState('review')
         else if (isNative()) onClose()
         else setState('idle')
         return
       }
-      setError(e instanceof Error ? e.message : 'Could not capture photo')
+      setError(e instanceof Error ? e.message : 'Could not open the scanner')
       setState('error')
     }
   }, [onClose])
@@ -156,17 +147,18 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
       const res = await apiFetchAuth('/api/receipt/scan', { method: 'POST', body: form, credentials: 'include', signal: ctrl.signal })
       if (!res.ok) {
         if (res.status === 503) throw new Error('AI scanning is temporarily offline. Please set up manually or try again in a moment.')
-        if (res.status === 422) throw new Error('We had trouble reading this receipt image. Please ensure the total amount and merchant are clearly visible, then try again.')
+        if (res.status === 422) throw new Error('We had trouble reading this receipt. Make sure the total and merchant are clearly visible, then try again.')
         if (res.status === 429) throw new Error('Receipt scanning limit reached. Please try again in a moment.')
         if (res.status === 401) throw new Error('Please sign in to use receipt scanning.')
         const err = (await res.json().catch(() => null)) as { error?: string } | null
         throw new Error(err?.error || `Scan failed (${res.status})`)
       }
       const data = (await res.json()) as { receipt?: Record<string, unknown> | null }
-      if (!data.receipt) throw new Error('We had trouble reading this receipt image. Please ensure the total amount and merchant are clearly visible, then try again.')
+      if (!data.receipt) throw new Error('We had trouble reading this receipt. Make sure the total and merchant are clearly visible, then try again.')
       if (ctrl.signal.aborted) return
-      setResult(normaliseReceipt(data.receipt, baseCurrency))
-      setState('result')
+      const normalised = normaliseReceipt(data.receipt, baseCurrency)
+      setResult(normalised)
+      setState(normalised.isReceipt ? 'result' : 'notReceipt')
     } catch (e) {
       if (ctrl.signal.aborted) return
       // Offline queue: only for single-photo native captures (multi-photo can't be stored as one job).
@@ -205,8 +197,9 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
       const data = (await res.json()) as { receipt?: Record<string, unknown> | null }
       if (!data.receipt) throw new Error('Could not read the stored receipt image.')
       if (ctrl.signal.aborted) return
-      setResult(normaliseReceipt(data.receipt, baseCurrency))
-      setState('result')
+      const normalised = normaliseReceipt(data.receipt, baseCurrency)
+      setResult(normalised)
+      setState(normalised.isReceipt ? 'result' : 'notReceipt')
     } catch (e) {
       if (ctrl.signal.aborted) return
       setError(e instanceof Error ? e.message : 'Could not scan that receipt')
@@ -218,8 +211,8 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
   useEffect(() => {
     if (!open || state !== 'idle') return
     if (seed) void startSeedScan()
-    else if (isNative()) void captureOne('camera', [])
-  }, [open, state, seed, startSeedScan, captureOne])
+    else if (isNative()) void runScan('camera', [])
+  }, [open, state, seed, startSeedScan, runScan])
 
   const confirm = () => {
     if (!result) return
@@ -258,6 +251,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
       notes: result.notes ? `receipt: ${result.notes}` : 'receipt scan',
       ...(receiptId ? { receiptId } : {}),
     })
+    void haptic()
     onConfirmed?.()
     onClose()
   }
@@ -269,69 +263,17 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
       padContent
       panelClassName="!max-h-[min(86vh,720px)]"
     >
-      {state === 'scanning' ? <Centered><Loader2 className="h-8 w-8 animate-spin text-[var(--color-brand-red)]" /><p className="text-sm text-[var(--color-brand-text-secondary)]">Opening camera…</p></Centered> : null}
+      {state === 'scanning' ? <Centered><Loader2 className="h-8 w-8 animate-spin text-[var(--color-brand-red)]" /><p className="text-sm text-[var(--color-brand-text-secondary)]">Opening scanner…</p></Centered> : null}
 
-      {state === 'captured' ? (
-        <div className="w-full">
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {photos.map((p, i) => (
-              <div key={i} className="relative flex-shrink-0">
-                <Image
-                  src={p.dataUrl}
-                  alt={`Receipt photo ${i + 1}`}
-                  width={80}
-                  height={120}
-                  unoptimized
-                  className="h-28 w-20 rounded-xl border border-[var(--color-brand-border)] object-cover"
-                />
-                {photos.length > 1 ? (
-                  <button
-                    type="button"
-                    aria-label={`Remove photo ${i + 1}`}
-                    onClick={() => setPhotos(prev => prev.filter((_, idx) => idx !== i))}
-                    className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]"
-                  >
-                    <X className="h-3 w-3 text-[var(--color-brand-text-muted)]" />
-                  </button>
-                ) : null}
-              </div>
-            ))}
-          </div>
-          <p className="mt-3 text-xs text-[var(--color-brand-text-muted)]">
-            {photos.length === 1 ? 'Receipt too long? Add more photos before analyzing.' : `${photos.length} photos captured.`}
-          </p>
-          <div className="mt-2 flex gap-2">
-            <button
-              type="button"
-              onClick={() => void captureOne('camera', photos)}
-              className="flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] px-3 py-2.5 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
-            >
-              <Camera className="h-4 w-4" /> Add photo
-            </button>
-            <button
-              type="button"
-              onClick={() => void captureOne('gallery', photos)}
-              aria-label="Add from gallery"
-              className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] px-3 py-2.5 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
-            >
-              <Images className="h-4 w-4" />
-            </button>
-          </div>
-          <button
-            type="button"
-            onClick={() => void submitPhotos(photos)}
-            className="mt-2 flex min-h-[44px] w-full items-center justify-center rounded-xl bg-[var(--color-brand-red)] px-4 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
-          >
-            Analyze receipt
-          </button>
-          <button
-            type="button"
-            onClick={reset}
-            className="mt-1 flex min-h-[44px] w-full items-center justify-center rounded-xl px-4 py-2 text-sm text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
-          >
-            Cancel
-          </button>
-        </div>
+      {state === 'review' ? (
+        <ReviewGrid
+          photos={photos}
+          onRemove={(i) => setPhotos(prev => prev.filter((_, idx) => idx !== i))}
+          onAddMore={() => void runScan('camera', photos)}
+          onGallery={() => void runScan('gallery', photos)}
+          onAnalyze={() => void submitPhotos(photos)}
+          onCancel={reset}
+        />
       ) : null}
 
       {state === 'parsing' ? (
@@ -363,11 +305,50 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
           <button
             type="button"
             onClick={onClose}
-            className="mt-2 rounded-xl bg-[var(--color-brand-red)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
+            className="mt-2 min-h-[44px] rounded-xl bg-[var(--color-brand-red)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
           >
             Done
           </button>
         </Centered>
+      ) : null}
+
+      {state === 'notReceipt' ? (
+        <div className="relative">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="absolute end-0 top-0 inline-flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <Centered>
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-brand-elevated)]">
+              <ImageOff className="h-7 w-7 text-[var(--color-brand-text-muted)]" />
+            </div>
+            <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">That doesn&apos;t look like a receipt</p>
+            <p className="max-w-72 text-xs text-[var(--color-brand-text-muted)] text-center">
+              We couldn&apos;t find a total or merchant. Point the camera at a printed
+              receipt, or pick a clearer photo.
+            </p>
+            <div className="mt-1 flex flex-col items-stretch gap-2">
+              <button
+                type="button"
+                onClick={() => { reset(); void runScan('camera', []) }}
+                className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
+              >
+                <Camera className="h-4 w-4" /> Scan again
+              </button>
+              <button
+                type="button"
+                onClick={() => { reset(); void runScan('gallery', []) }}
+                className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] px-5 py-2.5 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
+              >
+                <Images className="h-4 w-4" /> Choose from gallery
+              </button>
+            </div>
+          </Centered>
+        </div>
       ) : null}
 
       {state === 'error' ? (
@@ -389,7 +370,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
             {photos.length > 0 ? (
               <button
                 type="button"
-                onClick={() => setState('captured')}
+                onClick={() => setState('review')}
                 className="mt-1 inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
               >
                 <RefreshCcw className="h-4 w-4" /> Back to photos
@@ -397,7 +378,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
             ) : (
               <button
                 type="button"
-                onClick={() => void captureOne('camera', [])}
+                onClick={() => void runScan('camera', [])}
                 className="mt-1 inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
               >
                 <RefreshCcw className="h-4 w-4" /> Try again
@@ -411,10 +392,11 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
         <ResultView
           result={result}
           preview={preview}
+          pageCount={photos.length}
           onConfirm={confirm}
           onRescan={() => {
             reset()
-            if (isNative()) void captureOne('camera', [])
+            if (isNative()) void runScan('camera', [])
           }}
           onCancel={onClose}
           onChange={(next) => setResult({ ...result, ...next })}
@@ -424,18 +406,18 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
       {state === 'idle' ? (
         <Centered>
           <Camera className="h-8 w-8 text-[var(--color-brand-text-muted)]" />
-          <p className="text-sm text-[var(--color-brand-text-secondary)]">Tap below to take a photo of your receipt.</p>
+          <p className="text-sm text-[var(--color-brand-text-secondary)]">Scan a receipt to add it as an expense.</p>
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => void captureOne('camera', [])}
+              onClick={() => void runScan('camera', [])}
               className="flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-4 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
             >
-              <Camera className="h-4 w-4" /> Camera
+              <Camera className="h-4 w-4" /> Scan
             </button>
             <button
               type="button"
-              onClick={() => void captureOne('gallery', [])}
+              onClick={() => void runScan('gallery', [])}
               className="flex min-h-[44px] items-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] px-4 py-2.5 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
             >
               <Images className="h-4 w-4" /> Gallery
@@ -447,9 +429,100 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
   )
 }
 
+/** 2×2 grid of captured pages with per-page remove, add-more, and analyze. */
+function ReviewGrid({
+  photos,
+  onRemove,
+  onAddMore,
+  onGallery,
+  onAnalyze,
+  onCancel,
+}: {
+  photos: CapturedImage[]
+  onRemove: (i: number) => void
+  onAddMore: () => void
+  onGallery: () => void
+  onAnalyze: () => void
+  onCancel: () => void
+}) {
+  const canAddMore = photos.length < MAX_PAGES
+  return (
+    <div className="w-full">
+      <div className="flex items-center justify-between">
+        <p className="text-base font-semibold text-[var(--color-brand-text-primary)]">
+          {photos.length === 1 ? 'Review your scan' : `${photos.length} pages`}
+        </p>
+        <button
+          type="button"
+          onClick={onCancel}
+          aria-label="Close"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        {photos.map((p, i) => (
+          <div key={i} className="relative overflow-hidden rounded-xl border border-[var(--color-brand-border)]">
+            <Image
+              src={p.dataUrl}
+              alt={`Receipt page ${i + 1}`}
+              width={200}
+              height={260}
+              unoptimized
+              className="h-36 w-full object-cover"
+            />
+            <button
+              type="button"
+              aria-label={`Remove page ${i + 1}`}
+              onClick={() => onRemove(i)}
+              className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 backdrop-blur-sm"
+            >
+              <X className="h-4 w-4 text-white" />
+            </button>
+          </div>
+        ))}
+        {canAddMore ? (
+          <button
+            type="button"
+            onClick={onAddMore}
+            className="flex h-36 flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-[var(--color-brand-border)] text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+          >
+            <Camera className="h-6 w-6" />
+            <span className="text-xs">Add page</span>
+          </button>
+        ) : null}
+      </div>
+
+      <p className="mt-3 text-xs text-[var(--color-brand-text-muted)]">
+        {photos.length === 1
+          ? 'Long receipt? Add more pages before analyzing.'
+          : 'Tap ✕ to drop a page, or add more.'}
+      </p>
+
+      <button
+        type="button"
+        onClick={onAnalyze}
+        className="mt-3 flex min-h-[48px] w-full items-center justify-center rounded-xl bg-[var(--color-brand-red)] px-4 py-3 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
+      >
+        Analyze receipt
+      </button>
+      <button
+        type="button"
+        onClick={onGallery}
+        className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] px-4 py-2.5 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
+      >
+        <Images className="h-4 w-4" /> Add from gallery
+      </button>
+    </div>
+  )
+}
+
 function ResultView({
   result,
   preview,
+  pageCount,
   onConfirm,
   onRescan,
   onCancel,
@@ -457,6 +530,7 @@ function ResultView({
 }: {
   result: ScannedReceipt
   preview: string | null
+  pageCount: number
   onConfirm: () => void
   onRescan: () => void
   onCancel: () => void
@@ -464,89 +538,99 @@ function ResultView({
 }) {
   return (
     <div className="w-full">
-      <div className="flex items-start gap-3">
+      <div className="flex items-center justify-between">
+        <p className="text-base font-semibold text-[var(--color-brand-text-primary)]">Review &amp; save</p>
+        <button
+          type="button"
+          onClick={onCancel}
+          aria-label="Close"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* Hero: the amount is the focal point. */}
+      <div className="mt-2 flex items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
         {preview ? (
-          <Image
-            src={preview}
-            alt="Receipt preview"
-            width={96}
-            height={128}
-            unoptimized
-            className="h-24 w-20 rounded-xl border border-[var(--color-brand-border)] object-cover"
-          />
+          <div className="relative flex-shrink-0">
+            <Image
+              src={preview}
+              alt="Receipt preview"
+              width={64}
+              height={88}
+              unoptimized
+              className="h-20 w-16 rounded-lg border border-[var(--color-brand-border)] object-cover"
+            />
+            {pageCount > 1 ? (
+              <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--color-brand-red)] px-1 text-[10px] font-semibold text-white">
+                {pageCount}
+              </span>
+            ) : null}
+          </div>
         ) : null}
-        <div className="flex-1">
-          <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">Looks like an expense</p>
-          <p className="text-xs text-[var(--color-brand-text-muted)]">
-            AI confidence: {Math.round(result.confidence * 100)}%
-          </p>
+        <div className="min-w-0 flex-1">
+          <span className="mb-0.5 block text-xs text-[var(--color-brand-text-muted)]">Total amount</span>
+          <div className="flex items-center gap-2">
+            <AmountField
+              bare
+              value={String(result.amount)}
+              onChange={(v) => onChange({ amount: Number(v) || 0 })}
+              className="w-full bg-transparent text-2xl font-semibold text-[var(--color-brand-text-primary)] outline-none"
+            />
+            <CurrencyField
+              value={result.currency}
+              onChange={(c) => onChange({ currency: c as Currency })}
+              codes={SUPPORTED_CURRENCIES}
+              className="rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1.5 text-sm"
+            />
+          </div>
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-2">
+      <div className="mt-3 space-y-2">
         <Field label="Merchant">
           <input
             value={result.merchant}
             onChange={(e) => onChange({ merchant: e.target.value })}
-            className="w-full rounded-lg border border-[var(--color-brand-border)] bg-transparent px-2 py-1.5 text-sm text-[var(--color-brand-text-primary)]"
+            placeholder="Where you spent"
+            className="h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-sm text-[var(--color-brand-text-primary)]"
           />
         </Field>
-        <Field label="Amount">
-          <AmountField
-            bare
-            value={String(result.amount)}
-            onChange={(v) => onChange({ amount: Number(v) || 0 })}
-            className="w-full rounded-lg border border-[var(--color-brand-border)] bg-transparent px-2 py-1.5 text-sm text-[var(--color-brand-text-primary)]"
-          />
-        </Field>
-        <Field label="Currency">
-          <CurrencyField
-            value={result.currency}
-            onChange={(c) => onChange({ currency: c as Currency })}
-            codes={SUPPORTED_CURRENCIES}
-            className="w-full rounded-lg border border-[var(--color-brand-border)] bg-transparent px-2 py-1.5"
-          />
-        </Field>
-        <Field label="Category">
-          <select
-            value={result.category}
-            onChange={(e) => onChange({ category: e.target.value as ExpenseCategory })}
-            className="w-full rounded-lg border border-[var(--color-brand-border)] bg-transparent px-2 py-1.5 text-sm text-[var(--color-brand-text-primary)]"
-          >
-            {SUPPORTED_CATEGORIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Date" className="col-span-2">
-          <DatePickerField value={result.date} onChange={(date) => onChange({ date })} />
-        </Field>
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="Category">
+            <select
+              value={result.category}
+              onChange={(e) => onChange({ category: e.target.value as ExpenseCategory })}
+              className="h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-sm text-[var(--color-brand-text-primary)]"
+            >
+              {SUPPORTED_CATEGORIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Date">
+            <DatePickerField value={result.date} onChange={(date) => onChange({ date })} />
+          </Field>
+        </div>
       </div>
 
       <ReceiptBreakdown result={result} onChange={onChange} />
 
-      <div className="mt-4 flex gap-2">
+      <div className="mt-4 flex flex-col gap-2">
         <button
           type="button"
           onClick={onConfirm}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-4 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
+          className="flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-4 py-3 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
         >
           <Check className="h-4 w-4" /> Save expense
         </button>
         <button
           type="button"
           onClick={onRescan}
-          className="rounded-xl border border-[var(--color-brand-border)] px-3 py-2.5 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
+          className="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] px-4 py-2.5 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
         >
-          Rescan
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-xl px-3 py-2.5 text-sm text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
-          aria-label="Close"
-        >
-          <X className="h-4 w-4" />
+          <RefreshCcw className="h-4 w-4" /> Rescan
         </button>
       </div>
     </div>
@@ -572,7 +656,7 @@ function ReceiptBreakdown({
   const fmt = (n: number) => `${n.toFixed(2)} ${currency}`
 
   return (
-    <div className="mt-4 rounded-xl border border-[var(--color-brand-border)] p-3">
+    <div className="mt-3 rounded-xl border border-[var(--color-brand-border)] p-3">
       <p className="mb-2 text-xs font-semibold text-[var(--color-brand-text-secondary)]">Breakdown</p>
 
       {items.length > 0 ? (
@@ -635,93 +719,4 @@ function Field({ label, children, className = '' }: { label: string; children: R
 
 function Centered({ children }: { children: React.ReactNode }) {
   return <div className="flex flex-col items-center gap-3 py-6">{children}</div>
-}
-
-function normaliseReceipt(raw: Record<string, unknown>, fallbackCurrency: Currency): ScannedReceipt {
-  const merchant = (raw.merchant as string | undefined)?.trim().slice(0, 60) ?? ''
-  const amountRaw = raw.amount
-  const amount = typeof amountRaw === 'number'
-    ? amountRaw
-    : Number(typeof amountRaw === 'string' ? amountRaw.replace(/[^0-9.]/g, '') : 0)
-
-  const currencyRaw = (raw.currency as string | undefined)?.trim().toUpperCase()
-  const currency = (SUPPORTED_CURRENCIES as string[]).includes(currencyRaw ?? '')
-    ? (currencyRaw as Currency)
-    : ((SUPPORTED_CURRENCIES as string[]).includes(fallbackCurrency)
-      ? fallbackCurrency
-      : 'EGP')
-
-  const categoryRaw = raw.category as string | undefined
-  const category = (SUPPORTED_CATEGORIES as string[]).includes(categoryRaw ?? '')
-    ? (categoryRaw as ExpenseCategory)
-    : 'Other'
-
-  const dateRaw = (raw.date as string | undefined)?.trim() ?? ''
-  let date = /^\d{4}-\d{2}-\d{2}$/.test(dateRaw) ? dateRaw : ''
-  // Discard AI dates that are in the future or more than 30 days old: the AI
-  // often misreads old receipt photos or hallucinates future years. Dates
-  // outside this window silently land in the wrong month and appear "missing".
-  if (date) {
-    const diffDays = (Date.now() - new Date(date + 'T00:00:00').getTime()) / 86400000
-    if (diffDays < 0 || diffDays > 30) date = ''
-  }
-
-  const confidenceRaw = typeof raw.confidence === 'number' ? raw.confidence : 0.5
-  const confidence = Math.max(0, Math.min(1, confidenceRaw))
-
-  return {
-    merchant,
-    amount: Number.isFinite(amount) && amount > 0 ? amount : 0,
-    currency,
-    date,
-    category,
-    confidence,
-    items: normaliseItems(raw.items),
-    charges: normaliseCharges(raw.charges),
-    notes: (raw.notes as string | undefined)?.toString().slice(0, 120) ?? '',
-  }
-}
-
-function toNumber(value: unknown): number {
-  if (typeof value === 'number') return value
-  if (typeof value === 'string') return Number(value.replace(/[^0-9.-]/g, ''))
-  return NaN
-}
-
-function normaliseItems(raw: unknown): ReceiptItem[] {
-  if (!Array.isArray(raw)) return []
-  return raw
-    .flatMap((entry) => {
-      if (!entry || typeof entry !== 'object') return []
-      const e = entry as Record<string, unknown>
-      let name = (typeof e.name === 'string' ? e.name : '').trim().slice(0, 60)
-      const price = toNumber(e.price)
-      if (!name || !Number.isFinite(price)) return []
-      let qty = toNumber(e.qty)
-      // Safety net when the model leaves a quantity marker in the name ("2x Water", "x2 Water").
-      const m = name.match(/^(?:x\s*(\d{1,3})|(\d{1,3})\s*[x×])\s+(.+)/i)
-      if (m && !(Number.isFinite(qty) && qty > 0)) {
-        qty = Number(m[1] ?? m[2])
-        name = m[3].trim()
-      }
-      return [{ name, price, ...(Number.isFinite(qty) && qty > 0 ? { qty } : {}) }]
-    })
-    .slice(0, 100)
-}
-
-function normaliseCharges(raw: unknown): ReceiptCharge[] {
-  if (!Array.isArray(raw)) return []
-  return raw
-    .flatMap((entry) => {
-      if (!entry || typeof entry !== 'object') return []
-      const e = entry as Record<string, unknown>
-      const amount = toNumber(e.amount)
-      if (!Number.isFinite(amount) || amount === 0) return []
-      const type = CHARGE_TYPES.includes(e.type as ReceiptCharge['type'])
-        ? (e.type as ReceiptCharge['type'])
-        : 'other'
-      const label = (typeof e.label === 'string' ? e.label : type).trim().slice(0, 40) || type
-      return [{ type, label, amount }]
-    })
-    .slice(0, 20)
 }

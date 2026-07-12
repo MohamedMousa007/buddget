@@ -22,6 +22,7 @@ If multiple images are provided, they are all sections of the same receipt — c
 
 Return ONLY a JSON object matching this exact schema:
 {
+  "isReceipt": boolean (true only if the image is a purchase receipt, invoice, or bill),
   "merchant": string (max 60 chars),
   "amount": number (positive, the FINAL printed grand total the customer paid),
   "currency": "EGP" | "AED" | "SAR" | "QAR" | "KWD" | "OMR" | "BHD" | "USD",
@@ -34,6 +35,7 @@ Return ONLY a JSON object matching this exact schema:
 }
 
 Rules:
+- "isReceipt" is false when the image is NOT a purchase receipt/invoice/bill (e.g. a person, landscape, screenshot, random object, menu, or document). When false, set merchant to "", amount to 0, items and charges to [], and confidence to 0.
 - "amount" is the FINAL printed grand total (what the customer actually paid). Read it directly; do NOT sum the items yourself.
 - "items" are the purchased line items only — each with its own printed price. "price" is the LINE TOTAL for that line (unit price × quantity), exactly as printed. Set "qty" when the receipt shows a quantity. If the item name contains a quantity marker like "2x", "x2" or "2 ×", set "qty" to that number and REMOVE the marker from "name". Exclude taxes, service, tips, and discounts from items.
 - "charges" hold every non-item line that affects the total: VAT/tax, service charge, tip/gratuity, delivery, and discounts (use a NEGATIVE amount for discounts). Use type "other" if none fit.

@@ -13,6 +13,7 @@ class MainActivity : BridgeActivity() {
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         registerPlugin(SmsCapacitorPlugin::class.java)
         registerPlugin(SocialLoginPlugin::class.java)
+        registerPlugin(DocumentScannerPlugin::class.java)
         super.onCreate(savedInstanceState)
         // Android WebView denies getUserMedia unless the host app grants the
         // RESOURCE_AUDIO_CAPTURE resource here — even when RECORD_AUDIO is held.
