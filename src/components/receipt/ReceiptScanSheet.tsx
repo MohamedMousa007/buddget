@@ -24,9 +24,7 @@ import {
   type ScannedReceipt,
 } from '@/lib/receipt/normaliseReceipt'
 
-type ScanState = 'idle' | 'scanning' | 'review' | 'parsing' | 'result' | 'notReceipt' | 'error' | 'queued'
-
-const MAX_PAGES = 5
+type ScanState = 'idle' | 'scanning' | 'parsing' | 'result' | 'notReceipt' | 'error' | 'queued'
 
 interface ReceiptScanSheetProps {
   open: boolean
@@ -108,31 +106,6 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
     })
   }, [open, onClose])
 
-  /**
-   * Runs the native document scanner (multi-page) and appends the returned pages
-   * to the review grid. `existing` are the photos already captured, used to
-   * decide where a cancel lands.
-   */
-  const runScan = useCallback(async (source: 'camera' | 'gallery', existing: CapturedImage[]) => {
-    setError(null)
-    setState('scanning')
-    try {
-      const captured = await scanDocument(source)
-      void haptic()
-      setPhotos(prev => [...prev, ...captured].slice(0, MAX_PAGES))
-      setState('review')
-    } catch (e) {
-      if (e instanceof ReceiptCaptureCancelled) {
-        if (existing.length > 0) setState('review')
-        else if (isNative()) onClose()
-        else setState('idle')
-        return
-      }
-      setError(e instanceof Error ? e.message : 'Could not open the scanner')
-      setState('error')
-    }
-  }, [onClose])
-
   /** Sends all captured photos to the API for parsing. */
   const submitPhotos = useCallback(async (capturedPhotos: CapturedImage[]) => {
     if (capturedPhotos.length === 0) return
@@ -178,6 +151,32 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
     }
   }, [baseCurrency, seed])
 
+  /**
+   * Opens the native document scanner and sends the captured pages straight to
+   * the AI. The scanner already owns multi-page capture, cropping and gallery
+   * import, so there's no separate in-app review step.
+   */
+  const runScan = useCallback(async (source: 'camera' | 'gallery') => {
+    setError(null)
+    setState('scanning')
+    try {
+      const captured = await scanDocument(source)
+      if (captured.length === 0) throw new ReceiptCaptureCancelled()
+      void haptic()
+      setPhotos(captured)
+      await submitPhotos(captured)
+    } catch (e) {
+      if (e instanceof ReceiptCaptureCancelled) {
+        // Intentional back-out: close on native, return to idle on web. Show nothing.
+        if (isNative()) onClose()
+        else setState('idle')
+        return
+      }
+      setError(e instanceof Error ? e.message : 'Could not open the scanner')
+      setState('error')
+    }
+  }, [onClose, submitPhotos])
+
   /** Handles seeded (offline-queued) review: parses the stored photo immediately. */
   const startSeedScan = useCallback(async () => {
     if (!seed) return
@@ -211,7 +210,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
   useEffect(() => {
     if (!open || state !== 'idle') return
     if (seed) void startSeedScan()
-    else if (isNative()) void runScan('camera', [])
+    else if (isNative()) void runScan('camera')
   }, [open, state, seed, startSeedScan, runScan])
 
   const confirm = () => {
@@ -267,17 +266,6 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
         <ProcessingView preview={null} title="Opening camera…" subtitle="Line up your receipt and capture it." />
       ) : null}
 
-      {state === 'review' ? (
-        <ReviewGrid
-          photos={photos}
-          onRemove={(i) => setPhotos(prev => prev.filter((_, idx) => idx !== i))}
-          onAddMore={() => void runScan('camera', photos)}
-          onGallery={() => void runScan('gallery', photos)}
-          onAnalyze={() => void submitPhotos(photos)}
-          onCancel={reset}
-        />
-      ) : null}
-
       {state === 'parsing' ? (
         <ProcessingView
           preview={preview}
@@ -327,14 +315,14 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
             <div className="mt-1 flex flex-col items-stretch gap-2">
               <button
                 type="button"
-                onClick={() => { reset(); void runScan('camera', []) }}
+                onClick={() => { reset(); void runScan('camera') }}
                 className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
               >
                 <Camera className="h-4 w-4" /> Scan again
               </button>
               <button
                 type="button"
-                onClick={() => { reset(); void runScan('gallery', []) }}
+                onClick={() => { reset(); void runScan('gallery') }}
                 className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] px-5 py-2.5 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
               >
                 <Images className="h-4 w-4" /> Choose from gallery
@@ -363,18 +351,18 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
             {photos.length > 0 ? (
               <button
                 type="button"
-                onClick={() => setState('review')}
+                onClick={() => void submitPhotos(photos)}
                 className="mt-1 inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
               >
-                <RefreshCcw className="h-4 w-4" /> Back to photos
+                <RefreshCcw className="h-4 w-4" /> Try again
               </button>
             ) : (
               <button
                 type="button"
-                onClick={() => void runScan('camera', [])}
+                onClick={() => void runScan('camera')}
                 className="mt-1 inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
               >
-                <RefreshCcw className="h-4 w-4" /> Try again
+                <RefreshCcw className="h-4 w-4" /> Scan again
               </button>
             )}
           </Centered>
@@ -389,7 +377,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
           onConfirm={confirm}
           onRescan={() => {
             reset()
-            if (isNative()) void runScan('camera', [])
+            if (isNative()) void runScan('camera')
           }}
           onCancel={onClose}
           onChange={(next) => setResult({ ...result, ...next })}
@@ -403,14 +391,14 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => void runScan('camera', [])}
+              onClick={() => void runScan('camera')}
               className="flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-4 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
             >
               <Camera className="h-4 w-4" /> Scan
             </button>
             <button
               type="button"
-              onClick={() => void runScan('gallery', [])}
+              onClick={() => void runScan('gallery')}
               className="flex min-h-[44px] items-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] px-4 py-2.5 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
             >
               <Images className="h-4 w-4" /> Gallery
@@ -419,96 +407,6 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
         </Centered>
       ) : null}
     </ModalShell>
-  )
-}
-
-/** 2×2 grid of captured pages with per-page remove, add-more, and analyze. */
-function ReviewGrid({
-  photos,
-  onRemove,
-  onAddMore,
-  onGallery,
-  onAnalyze,
-  onCancel,
-}: {
-  photos: CapturedImage[]
-  onRemove: (i: number) => void
-  onAddMore: () => void
-  onGallery: () => void
-  onAnalyze: () => void
-  onCancel: () => void
-}) {
-  const canAddMore = photos.length < MAX_PAGES
-  return (
-    <div className="w-full">
-      <div className="flex items-center justify-between">
-        <p className="text-base font-semibold text-[var(--color-brand-text-primary)]">
-          {photos.length === 1 ? 'Review your scan' : `${photos.length} pages`}
-        </p>
-        <button
-          type="button"
-          onClick={onCancel}
-          aria-label="Close"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
-
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        {photos.map((p, i) => (
-          <div key={i} className="relative overflow-hidden rounded-xl border border-[var(--color-brand-border)]">
-            <Image
-              src={p.dataUrl}
-              alt={`Receipt page ${i + 1}`}
-              width={200}
-              height={260}
-              unoptimized
-              className="h-36 w-full object-cover"
-            />
-            <button
-              type="button"
-              aria-label={`Remove page ${i + 1}`}
-              onClick={() => onRemove(i)}
-              className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 backdrop-blur-sm"
-            >
-              <X className="h-4 w-4 text-white" />
-            </button>
-          </div>
-        ))}
-        {canAddMore ? (
-          <button
-            type="button"
-            onClick={onAddMore}
-            className="flex h-36 flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-[var(--color-brand-border)] text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
-          >
-            <Camera className="h-6 w-6" />
-            <span className="text-xs">Add page</span>
-          </button>
-        ) : null}
-      </div>
-
-      <p className="mt-3 text-xs text-[var(--color-brand-text-muted)]">
-        {photos.length === 1
-          ? 'Long receipt? Add more pages before analyzing.'
-          : 'Tap ✕ to drop a page, or add more.'}
-      </p>
-
-      <button
-        type="button"
-        onClick={onAnalyze}
-        className="mt-3 flex min-h-[48px] w-full items-center justify-center rounded-xl bg-[var(--color-brand-red)] px-4 py-3 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
-      >
-        Analyze receipt
-      </button>
-      <button
-        type="button"
-        onClick={onGallery}
-        className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] px-4 py-2.5 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
-      >
-        <Images className="h-4 w-4" /> Add from gallery
-      </button>
-    </div>
   )
 }
 
@@ -532,53 +430,55 @@ function ResultView({
   return (
     <div className="w-full">
       <div className="flex items-center justify-between">
-        <p className="text-base font-semibold text-[var(--color-brand-text-primary)]">Review &amp; save</p>
+        <div className="flex min-w-0 items-center gap-2.5">
+          {preview ? (
+            <div className="relative flex-shrink-0">
+              <Image
+                src={preview}
+                alt="Receipt preview"
+                width={44}
+                height={60}
+                unoptimized
+                className="h-12 w-9 rounded-lg border border-[var(--color-brand-border)] object-cover"
+              />
+              {pageCount > 1 ? (
+                <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--color-brand-red)] px-1 text-[9px] font-semibold text-white">
+                  {pageCount}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+          <p className="truncate text-base font-semibold text-[var(--color-brand-text-primary)]">Review &amp; save</p>
+        </div>
         <button
           type="button"
           onClick={onCancel}
           aria-label="Close"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
         >
           <X className="h-5 w-5" />
         </button>
       </div>
 
-      {/* Hero: the amount is the focal point. */}
-      <div className="mt-2 flex items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
-        {preview ? (
-          <div className="relative flex-shrink-0">
-            <Image
-              src={preview}
-              alt="Receipt preview"
-              width={64}
-              height={88}
-              unoptimized
-              className="h-20 w-16 rounded-lg border border-[var(--color-brand-border)] object-cover"
-            />
-            {pageCount > 1 ? (
-              <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--color-brand-red)] px-1 text-[10px] font-semibold text-white">
-                {pageCount}
-              </span>
-            ) : null}
-          </div>
-        ) : null}
-        <div className="min-w-0 flex-1">
-          <span className="mb-0.5 block text-xs text-[var(--color-brand-text-muted)]">Total amount</span>
-          <div className="flex items-center gap-2">
-            <AmountField
-              bare
-              value={String(result.amount)}
-              onChange={(v) => onChange({ amount: Number(v) || 0 })}
-              className="w-full bg-transparent text-2xl font-semibold text-[var(--color-brand-text-primary)] outline-none"
-            />
-            <CurrencyField
-              value={result.currency}
-              onChange={(c) => onChange({ currency: c as Currency })}
-              codes={SUPPORTED_CURRENCIES}
-              className="rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1.5 text-sm"
-            />
-          </div>
-        </div>
+      {/* Amount + currency — mirrors the expense sheet's field pattern. */}
+      <div className="mt-4 grid grid-cols-[1fr_112px] items-end gap-3">
+        <Field label="Amount">
+          <AmountField
+            bare
+            value={String(result.amount)}
+            onChange={(v) => onChange({ amount: Number(v) || 0 })}
+            className="flex h-12 w-full items-center rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-start font-mono-numbers text-2xl font-bold tracking-[-0.02em] text-[var(--color-brand-text-primary)]"
+          />
+        </Field>
+        <Field label="Currency">
+          <CurrencyField
+            value={result.currency}
+            onChange={(c) => onChange({ currency: c as Currency })}
+            codes={SUPPORTED_CURRENCIES}
+            compact
+            className="h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-base font-semibold"
+          />
+        </Field>
       </div>
 
       <div className="mt-3 space-y-2">
@@ -587,7 +487,7 @@ function ResultView({
             value={result.merchant}
             onChange={(e) => onChange({ merchant: e.target.value })}
             placeholder="Where you spent"
-            className="h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-sm text-[var(--color-brand-text-primary)]"
+            className="h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-sm text-[var(--color-brand-text-primary)]"
           />
         </Field>
         <div className="grid grid-cols-2 gap-2">

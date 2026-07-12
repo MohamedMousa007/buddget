@@ -7,10 +7,17 @@ export interface ScannedReceipt {
   currency: Currency
   date: string
   category: ExpenseCategory
+  /** Whether VAT/tax is already baked into the item prices (vs added on top). */
+  taxIncluded: boolean
   confidence: number
   items: ReceiptItem[]
   charges: ReceiptCharge[]
   notes: string
+}
+
+/** ISO date (YYYY-MM-DD) for today, local time. */
+function todayISO(): string {
+  return new Date().toISOString().slice(0, 10)
 }
 
 export const SUPPORTED_CURRENCIES: Currency[] = [
@@ -56,28 +63,42 @@ export function normaliseReceipt(raw: Record<string, unknown>, fallbackCurrency:
 
   const dateRaw = (raw.date as string | undefined)?.trim() ?? ''
   let date = /^\d{4}-\d{2}-\d{2}$/.test(dateRaw) ? dateRaw : ''
-  // Discard AI dates that are in the future or more than 30 days old: the AI
-  // often misreads old receipt photos or hallucinates future years. Dates
-  // outside this window silently land in the wrong month and appear "missing".
+  // Discard AI dates that are in the future or more than 30 days old (misread
+  // photos / hallucinated years), then fall back to today's scan date — a
+  // missing receipt date is fine, today is the sensible default.
   if (date) {
     const diffDays = (Date.now() - new Date(date + 'T00:00:00').getTime()) / 86400000
     if (diffDays < 0 || diffDays > 30) date = ''
   }
+  if (!date) date = todayISO()
 
   const confidenceRaw = typeof raw.confidence === 'number' ? raw.confidence : 0.5
   const confidence = Math.max(0, Math.min(1, confidenceRaw))
+
+  const items = normaliseItems(raw.items)
+  const charges = normaliseCharges(raw.charges)
+
+  // Trust the AI's grand total; if it couldn't read one, sum the breakdown
+  // ourselves (items + charges, discounts already negative) so a missing total
+  // never blocks the save.
+  let finalAmount = Number.isFinite(amount) && amount > 0 ? amount : 0
+  if (finalAmount <= 0 && items.length > 0) {
+    const sum = items.reduce((s, it) => s + it.price, 0) + charges.reduce((s, c) => s + c.amount, 0)
+    if (sum > 0) finalAmount = Math.round(sum * 100) / 100
+  }
 
   return {
     // Default true for back-compat with responses parsed before the flag existed.
     isReceipt: raw.isReceipt !== false,
     merchant,
-    amount: Number.isFinite(amount) && amount > 0 ? amount : 0,
+    amount: finalAmount,
     currency,
     date,
     category,
+    taxIncluded: raw.taxIncluded !== false,
     confidence,
-    items: normaliseItems(raw.items),
-    charges: normaliseCharges(raw.charges),
+    items,
+    charges,
     notes: (raw.notes as string | undefined)?.toString().slice(0, 120) ?? '',
   }
 }

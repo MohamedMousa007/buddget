@@ -31,10 +31,34 @@ describe('normaliseReceipt', () => {
     expect(r.amount).toBe(0)
   })
 
-  it('drops out-of-window dates (future / older than 30 days)', () => {
+  it('replaces out-of-window dates (future / older than 30 days) with today', () => {
+    const today = new Date().toISOString().slice(0, 10)
     const future = new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10)
     const old = new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10)
-    expect(normaliseReceipt({ amount: 1, date: future }, 'EGP').date).toBe('')
-    expect(normaliseReceipt({ amount: 1, date: old }, 'EGP').date).toBe('')
+    expect(normaliseReceipt({ amount: 1, date: future }, 'EGP').date).toBe(today)
+    expect(normaliseReceipt({ amount: 1, date: old }, 'EGP').date).toBe(today)
+    expect(normaliseReceipt({ amount: 1 }, 'EGP').date).toBe(today)
+  })
+
+  it('sums items + charges when the total is missing', () => {
+    const r = normaliseReceipt(
+      {
+        amount: 0,
+        items: [{ name: 'A', price: 10 }, { name: 'B', price: 5 }],
+        charges: [{ type: 'tax', label: 'VAT', amount: 2 }, { type: 'discount', label: 'Promo', amount: -3 }],
+      },
+      'EGP',
+    )
+    expect(r.amount).toBe(14)
+  })
+
+  it('trusts the printed total over a summed breakdown', () => {
+    const r = normaliseReceipt({ amount: 100, items: [{ name: 'A', price: 10 }] }, 'EGP')
+    expect(r.amount).toBe(100)
+  })
+
+  it('carries taxIncluded (default true)', () => {
+    expect(normaliseReceipt({ amount: 1 }, 'EGP').taxIncluded).toBe(true)
+    expect(normaliseReceipt({ amount: 1, taxIncluded: false }, 'EGP').taxIncluded).toBe(false)
   })
 })

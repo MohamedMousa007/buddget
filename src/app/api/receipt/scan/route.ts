@@ -17,41 +17,35 @@ import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
 const GEMINI_MODEL = 'gemini-2.5-flash'
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
 
-const SYSTEM_PROMPT = `You are extracting an itemized expense from a photographed receipt for a user in Egypt or the GCC.
-If multiple images are provided, they are all sections of the same receipt — combine them to produce a single result.
+const SYSTEM_PROMPT = `You extract an itemized expense from photos of a receipt for a user in Egypt or the GCC.
+If multiple images are provided, they are CONSECUTIVE sections of the SAME receipt — stitch them into ONE result. Do not duplicate a line that spans a page break, and do not treat the images as separate receipts.
 
-Return ONLY a JSON object matching this exact schema:
+Return ONLY this JSON object (no markdown fences):
 {
-  "isReceipt": boolean (true only if the image is a purchase receipt, invoice, or bill),
-  "merchant": string (max 60 chars),
-  "amount": number (positive, the FINAL printed grand total the customer paid),
+  "isReceipt": boolean,
+  "merchant": string (max 60, "" if unclear),
+  "amount": number (the grand total — see rules),
   "currency": "EGP" | "AED" | "SAR" | "QAR" | "KWD" | "OMR" | "BHD" | "USD",
-  "date": string in YYYY-MM-DD or "" if unknown,
+  "date": "YYYY-MM-DD" or "",
   "category": "Food" | "Transport" | "Enjoyment" | "Rent" | "Other",
+  "taxIncluded": boolean,
   "confidence": number in [0,1],
-  "items": [ { "name": string (max 60 chars), "price": number, "qty": number (optional) } ],
-  "charges": [ { "type": "tax" | "service" | "tip" | "discount" | "other", "label": string (max 40 chars), "amount": number } ],
-  "notes": string (max 120 chars; supplementary detail, can be empty)
+  "items": [ { "name": string (max 60), "price": number, "qty": number (optional) } ],
+  "charges": [ { "type": "tax" | "service" | "tip" | "discount" | "other", "label": string (max 40), "amount": number } ],
+  "notes": string (max 120, can be "")
 }
 
-Rules:
-- "isReceipt" is false when the image is NOT a purchase receipt/invoice/bill (e.g. a person, landscape, screenshot, random object, menu, or document). When false, set merchant to "", amount to 0, items and charges to [], and confidence to 0.
-- "amount" is the FINAL printed grand total (what the customer actually paid). Read it directly; do NOT sum the items yourself.
-- "items" are the purchased line items only — each with its own printed price. "price" is the LINE TOTAL for that line (unit price × quantity), exactly as printed. Set "qty" when the receipt shows a quantity. If the item name contains a quantity marker like "2x", "x2" or "2 ×", set "qty" to that number and REMOVE the marker from "name". Exclude taxes, service, tips, and discounts from items.
-- "charges" hold every non-item line that affects the total: VAT/tax, service charge, tip/gratuity, delivery, and discounts (use a NEGATIVE amount for discounts). Use type "other" if none fit.
-- There is ONE category for the WHOLE receipt — do NOT categorise individual items (saves tokens).
-- If items or charges are not legible, return them as empty arrays []. Never invent lines.
-- Currency priority: EGP first (Egypt-first), then AED / SAR / QAR / KWD / OMR / BHD / USD. If ambiguous, default to "EGP".
-- Category guidance:
-  - Food = restaurants, cafes, groceries, delivery (Talabat, Otlob, Carrefour Egypt, Spinneys, Gourmet, Seoudi, Metro Market).
-  - Transport = Uber, Careem, taxi, fuel, metro, bus.
-  - Enjoyment = cinemas, gaming, leisure shopping.
-  - Rent = housing payments / utility bills.
-  - Other = anything else.
-- All numbers must be plain numbers (no currency symbol, no thousands separators).
-- "date" should be ISO-formatted or "".
-- "confidence" should reflect how sure you are about merchant + total.
-- Do NOT wrap the JSON in markdown fences. Output the JSON object only.`
+"isReceipt" is false when the image is NOT a purchase receipt/invoice/bill (person, landscape, screenshot, menu, random object). When false, set merchant "", amount 0, empty arrays, confidence 0.
+
+Priorities, in this order — get these right above all else:
+1. ITEMS — capture EVERY purchased line with its printed LINE TOTAL in "price" (unit price × qty, exactly as printed). If the name has a quantity marker ("2x", "x2", "2 ×"), move it to "qty" and remove it from "name". Exclude tax/service/tip/discount from items.
+2. TOTAL — "amount" is the final printed grand total the customer paid. If NO grand total is printed, COMPUTE it: sum the item line totals, add any tax/service charged ON TOP, subtract discounts.
+3. TAX — "taxIncluded" is true if VAT/tax is already baked into the item prices (sum of items ≈ total), false if it is added on top (sum of items + tax ≈ total). Put every non-item line in "charges": VAT/tax, service, tip, delivery, and discounts (discounts as NEGATIVE amounts).
+
+Never fail the whole read because a field is missing. If merchant or date is unclear, return "" — items and total matter most. Never invent lines; if items are illegible, return [].
+
+Category (one for the whole receipt): Food (restaurants, cafes, groceries, delivery — Talabat, Carrefour, Spinneys, Gourmet, Seoudi), Transport (Uber, Careem, fuel, metro), Enjoyment (cinema, gaming, leisure), Rent (housing, utilities), Other.
+Currency: Egypt-first (EGP) unless clearly otherwise. All numbers plain (no symbols or thousands separators).`
 
 const MAX_ATTEMPTS = 3
 
@@ -181,7 +175,11 @@ export async function POST(request: NextRequest) {
     generationConfig: {
       temperature: 0,
       responseMimeType: 'application/json',
-      maxOutputTokens: 2048,
+      // Long itemized receipts overflow 2048 → truncated JSON → parse failure.
+      maxOutputTokens: 8192,
+      // Disable 2.5-flash "thinking" — pure extraction doesn't need it and it
+      // adds seconds of latency per scan.
+      thinkingConfig: { thinkingBudget: 0 },
     },
   }
 
