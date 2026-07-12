@@ -1,11 +1,24 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { Check } from 'lucide-react'
+import { Check, Clock, Contrast, AlertCircle, Hourglass, type LucideIcon } from 'lucide-react'
 import { IncomeTypeIcon, incomeTypeColors } from '@/components/features/income/IncomeTypeIcon'
-import { heroCardStyle, OCC_STATUS_COLOR } from '@/components/features/income/incomeGlass'
-import type { IncomeOccurrence } from '@/lib/utils/incomeOccurrences'
+import { heroCardStyle } from '@/components/features/income/incomeGlass'
+import type { IncomeOccurrence, IncomeOccurrenceStatus } from '@/lib/utils/incomeOccurrences'
 import type { IncomeSourceType } from '@/lib/store/types'
+
+/**
+ * Per-status chip palette. Each payday status owns a color that tints the whole
+ * badge (bg + border + text + icon) — selection just brightens the same fill, so
+ * the status color always stays legible. `rgb` drives the alpha tints.
+ */
+const STATUS_STYLE: Record<IncomeOccurrenceStatus, { rgb: string; text: string; Icon: LucideIcon }> = {
+  received: { rgb: '53,212,111', text: '#8FF0B4', Icon: Check },
+  late: { rgb: '255,177,61', text: '#FFD68A', Icon: Clock },
+  partial: { rgb: '125,182,255', text: '#BFD4FF', Icon: Contrast },
+  missed: { rgb: '229,9,20', text: '#FF9B9B', Icon: AlertCircle },
+  awaiting: { rgb: '138,138,150', text: '#C7C7D2', Icon: Hourglass },
+}
 
 interface Props {
   sourceType?: IncomeSourceType
@@ -30,8 +43,6 @@ interface Props {
   onChipTap?: (occ: IncomeOccurrence) => void
   footer: ReactNode
 }
-
-const isReceived = (s: IncomeOccurrence['status']) => s === 'received' || s === 'late'
 
 /**
  * Unified recurring-income hero card. Fixed 213px height regardless of cadence —
@@ -106,40 +117,31 @@ export function RecurringIncomeCard({
       <div className="hide-scrollbar mt-3 flex gap-2 overflow-x-auto overscroll-x-contain pb-0.5">
         {occurrences.map((occ) => {
           const selected = selectedKey === occ.key
-          const received = isReceived(occ.status)
-          const filled = occ.status !== 'awaiting'
-          const dot = OCC_STATUS_COLOR[occ.status]
-          // Fill is status-driven; selection is a ring layered on top so it reads
-          // on EVERY chip — including received (green) ones, which otherwise show
-          // no selected state at all.
-          const fill = received
-            ? 'bg-[rgba(53,212,111,0.16)] text-[#8FF0B4]'
-            : 'bg-white/[0.06] text-white/80'
-          const edge = selected
-            ? 'border border-transparent ring-2 ring-inset ring-white/75'
-            : received
-              ? 'border border-[rgba(53,212,111,0.4)]'
-              : 'border border-white/10'
+          const st = STATUS_STYLE[occ.status]
+          // Selection = a brighter fill of the same status color (no ring).
+          const StatusIcon = st.Icon
           return (
             <button
               key={occ.key}
               type="button"
               onClick={onChipTap ? () => onChipTap(occ) : undefined}
-              className={`flex min-h-[30px] shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${single ? 'w-full justify-start' : ''} ${fill} ${edge}`}
+              className={`flex min-h-[30px] shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${single ? 'w-full justify-start' : ''}`}
+              style={{
+                background: `rgba(${st.rgb},${selected ? 0.3 : 0.14})`,
+                borderColor: `rgba(${st.rgb},${selected ? 0.65 : 0.32})`,
+                color: st.text,
+              }}
             >
-              <span
-                className="h-1.5 w-1.5 shrink-0 rounded-full"
-                style={filled ? { background: dot } : { border: `1.5px solid ${dot}` }}
-              />
+              <StatusIcon className="h-3 w-3 shrink-0" />
               <span className="font-mono-numbers">{chipLabel(occ)}</span>
               {withAmount && amountLabel ? (
                 single ? (
                   // Single payday: push the amount to the far edge to use the row.
-                  <span className="ms-auto truncate font-mono-numbers text-white/70">{amountLabel(occ)}</span>
+                  <span className="ms-auto truncate font-mono-numbers opacity-80">{amountLabel(occ)}</span>
                 ) : (
                   <>
-                    <span className="text-white/35">·</span>
-                    <span className="truncate font-mono-numbers text-white/60">{amountLabel(occ)}</span>
+                    <span className="opacity-40">·</span>
+                    <span className="truncate font-mono-numbers opacity-75">{amountLabel(occ)}</span>
                   </>
                 )
               ) : null}

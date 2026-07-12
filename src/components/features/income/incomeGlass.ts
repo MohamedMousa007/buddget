@@ -1,5 +1,4 @@
 import type { CSSProperties } from 'react'
-import type { IncomeOccurrenceStatus } from '@/lib/utils/incomeOccurrences'
 
 /** Glass card surface (summary, recurring, assign cards). Handoff §9. */
 export const GLASS_CARD: CSSProperties = {
@@ -48,13 +47,4 @@ export const GLASS_NEUTRAL_BTN: CSSProperties = {
   backdropFilter: 'blur(10px)',
   WebkitBackdropFilter: 'blur(10px)',
   borderRadius: 14,
-}
-
-/** Accent per payday status — filled dot color; awaiting renders hollow. */
-export const OCC_STATUS_COLOR: Record<IncomeOccurrenceStatus, string> = {
-  received: '#35D46F',
-  late: '#FFB13D',
-  partial: '#7DB6FF',
-  missed: '#E50914',
-  awaiting: '#5A5A66',
 }
