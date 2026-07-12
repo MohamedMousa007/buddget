@@ -414,8 +414,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Remaining best-effort cleanup — non-blocking, session is already gone.
     void (async () => {
-      // Wipe per-device SMS bridge state so the next user starts with tracking OFF.
-      try { const { clearSmsNative } = await import('@/lib/native/smsTracker'); await clearSmsNative() } catch (e) { console.error('[auth] clearSmsNative failed', e) }
+      // NOTE: clearSmsNative() intentionally NOT called here. Native SMS bridge
+      // state (enabled/token) must survive sign-out so tracking resumes
+      // automatically on the next sign-in without user intervention.
+      // SmsStartupSync re-arms the ingest token on SIGNED_IN for the new session.
       if (accessToken) {
         try { await unregisterPushToken(accessToken) } catch (e) { console.error('[auth] push unregister failed', e) }
       }
