@@ -1,6 +1,11 @@
 'use client'
 
 import { isNative } from '@/lib/native/isNative'
+import {
+  isDocumentScannerAvailable,
+  scanDocumentPages,
+  scannerSupportsGallery,
+} from '@/lib/native/documentScanner'
 
 export interface CapturedImage {
   /** Browser-native File suitable for FormData. */
@@ -41,6 +46,35 @@ export async function captureReceiptPhoto(): Promise<CapturedImage> {
 export async function capturePhoto(source: 'camera' | 'gallery'): Promise<CapturedImage> {
   if (isNative()) return captureNative(source)
   return captureWeb(source)
+}
+
+/**
+ * Scans a receipt with the native document scanner (iOS VisionKit / Android
+ * ML Kit) — auto edge-detect, perspective correction, manual crop, multi-page.
+ * Returns one {@link CapturedImage} per page. Falls back to {@link capturePhoto}
+ * (single image) on web, on iOS gallery requests, and on devices where the
+ * scanner isn't available.
+ */
+export async function scanDocument(source: 'camera' | 'gallery'): Promise<CapturedImage[]> {
+  const galleryFallback = source === 'gallery' && !scannerSupportsGallery()
+  if (!galleryFallback && (await isDocumentScannerAvailable())) {
+    try {
+      const pages = await scanDocumentPages(source)
+      if (pages.length === 0) throw new ReceiptCaptureCancelled()
+      return Promise.all(
+        pages.map((b64, i) =>
+          downscaleCaptured(`data:image/jpeg;base64,${b64}`, `receipt-${Date.now()}-${i}.jpg`),
+        ),
+      )
+    } catch (e) {
+      if (e instanceof ReceiptCaptureCancelled) throw e
+      if (String(e instanceof Error ? e.message : e).toLowerCase().includes('cancel')) {
+        throw new ReceiptCaptureCancelled()
+      }
+      // 'unsupported' or a runtime scanner failure → fall back to the plain camera.
+    }
+  }
+  return [await capturePhoto(source)]
 }
 
 async function captureNative(source: 'camera' | 'gallery'): Promise<CapturedImage> {
