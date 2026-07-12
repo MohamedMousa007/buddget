@@ -10,6 +10,7 @@ import { categoryChipColors } from '@/lib/expenses/categoryChip'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { expenseAmountInBase } from '@/lib/utils/calculations'
+import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useLocalizedFormatters } from '@/hooks/useLocalizedFormatters'
@@ -68,7 +69,7 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
       key,
       rel: key === todayKey ? t.common.today : key === yesterdayKey ? t.common.yesterday : null,
       abs: format(parseISO(key), 'MMM d'),
-      total: items.reduce((sum, e) => sum + expenseAmountInBase(e, base, exchangeRates), 0),
+      total: items.reduce((sum, e) => isNonSpendCategory(e.category) ? sum : sum + expenseAmountInBase(e, base, exchangeRates), 0),
       items,
     }))
   }, [expenses, base, exchangeRates, t])
@@ -120,6 +121,7 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                 ? formatCurrency(convertCurrency(baseVal, base, secondary, exchangeRates), secondary)
                 : null
               const statusDate = format(parseISO(e.refundedAt ?? e.date), 'MMM d')
+              const nonSpend = isNonSpendCategory(e.category)
               return (
                 <div key={e.id}>
                   {idx > 0 ? <div className="ml-[82px] h-px bg-[var(--color-brand-border)]" /> : null}
@@ -170,6 +172,13 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                             >
                               {t.expenses.badgeRefunded}
                             </span>
+                          ) : nonSpend ? (
+                            <span
+                              className="shrink-0 rounded-full px-2 py-[2.5px] text-[9.5px] font-extrabold uppercase tracking-[0.05em]"
+                              style={{ background: 'rgba(120,120,120,0.14)', color: 'var(--color-brand-text-muted)' }}
+                            >
+                              Transfer
+                            </span>
                           ) : null}
                         </span>
                         <span className="mt-1.5 flex items-center whitespace-nowrap">
@@ -198,7 +207,7 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                       {/* C. Amount column */}
                       <span className="shrink-0 text-end">
                         <span
-                          className={`font-mono-numbers block text-[15px] font-medium tabular-nums ${netZero ? 'text-[var(--color-brand-text-secondary)] line-through' : 'text-[var(--color-brand-text-primary)]'}`}
+                          className={`font-mono-numbers block text-[15px] font-medium tabular-nums ${netZero ? 'text-[var(--color-brand-text-secondary)] line-through' : nonSpend ? 'text-[var(--color-brand-text-muted)]' : 'text-[var(--color-brand-text-primary)]'}`}
                         >
                           −{fmtNum(baseVal)}
                         </span>

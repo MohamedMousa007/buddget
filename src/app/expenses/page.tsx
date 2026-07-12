@@ -8,6 +8,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useExpenseFilterStore, amountIsFiltered } from '@/lib/store/useExpenseFilterStore'
 import { filterExpensesByMonth, expenseAmountInBase } from '@/lib/utils/calculations'
+import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { ExpenseFilters } from '@/components/expenses/ExpenseFilters'
@@ -95,10 +96,9 @@ export default function ExpensesPage() {
     return [...result].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
   }, [monthExpenses, cats, methods, amtMin, amtMax, base, exchangeRates])
 
-  const totalAmount = filteredExpenses.reduce(
-    (sum, e) => sum + expenseAmountInBase(e, base, exchangeRates),
-    0,
-  )
+  const totalAmount = filteredExpenses
+    .filter((e) => !isNonSpendCategory(e.category))
+    .reduce((sum, e) => sum + expenseAmountInBase(e, base, exchangeRates), 0)
   const totalUsd = showSecondary && secondary
     ? formatCurrency(convertCurrency(totalAmount, base, secondary, exchangeRates), secondary)
     : null
