@@ -152,8 +152,10 @@ async function captureWeb(source: 'camera' | 'gallery' = 'camera'): Promise<Capt
   })
 }
 
-const MAX_EDGE = 1600
-const JPEG_QUALITY = 0.8
+// 2048px keeps Arabic item lines legible inside Gemini's 768px tiles — 1600px
+// left dense receipt text too small to OCR reliably (misread Arabic, missed lines).
+const MAX_EDGE = 2048
+const JPEG_QUALITY = 0.85
 
 /**
  * Downscales a captured image to a JPEG with its longest edge ≤ {@link MAX_EDGE}.

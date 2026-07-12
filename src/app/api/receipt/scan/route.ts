@@ -14,38 +14,77 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
 
+// Gemini thinking + a long itemized output + one retry can exceed Vercel's
+// short default function duration — sibling AI routes all set this too.
+export const maxDuration = 60
+
 const GEMINI_MODEL = 'gemini-2.5-flash'
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
 
 const SYSTEM_PROMPT = `You extract an itemized expense from photos of a receipt for a user in Egypt or the GCC.
 If multiple images are provided, they are CONSECUTIVE sections of the SAME receipt — stitch them into ONE result. Do not duplicate a line that spans a page break, and do not treat the images as separate receipts.
 
-Return ONLY this JSON object (no markdown fences):
-{
-  "isReceipt": boolean,
-  "merchant": string (max 60, "" if unclear),
-  "amount": number (the grand total — see rules),
-  "currency": "EGP" | "AED" | "SAR" | "QAR" | "KWD" | "OMR" | "BHD" | "USD",
-  "date": "YYYY-MM-DD" or "",
-  "category": "Food" | "Transport" | "Enjoyment" | "Rent" | "Other",
-  "taxIncluded": boolean,
-  "confidence": number in [0,1],
-  "items": [ { "name": string (max 60), "price": number, "qty": number (optional) } ],
-  "charges": [ { "type": "tax" | "service" | "tip" | "discount" | "other", "label": string (max 40), "amount": number } ],
-  "notes": string (max 120, can be "")
-}
-
 "isReceipt" is false when the image is NOT a purchase receipt/invoice/bill (person, landscape, screenshot, menu, random object). When false, set merchant "", amount 0, empty arrays, confidence 0.
 
 Priorities, in this order — get these right above all else:
-1. ITEMS — capture EVERY purchased line with its printed LINE TOTAL in "price" (unit price × qty, exactly as printed). If the name has a quantity marker ("2x", "x2", "2 ×"), move it to "qty" and remove it from "name". Exclude tax/service/tip/discount from items.
+1. ITEMS — capture EVERY printed line item, in printed order, with its printed LINE TOTAL in "price" (unit price × qty, exactly as printed). A line you cannot fully read still MUST appear: unreadable name → use "غير معروف" on Arabic receipts or "Unknown" otherwise, with its printed price; unreadable price → the real name with price 0. Never skip a line because part of it is unreadable. If the name has a quantity marker ("2x", "x2", "2 ×"), move it to "qty" and remove it from "name". Exclude tax/service/tip/discount from items.
 2. TOTAL — "amount" is the final printed grand total the customer paid. If NO grand total is printed, COMPUTE it: sum the item line totals, add any tax/service charged ON TOP, subtract discounts.
 3. TAX — "taxIncluded" is true if VAT/tax is already baked into the item prices (sum of items ≈ total), false if it is added on top (sum of items + tax ≈ total). Put every non-item line in "charges": VAT/tax, service, tip, delivery, and discounts (discounts as NEGATIVE amounts).
 
-Never fail the whole read because a field is missing. If merchant or date is unclear, return "" — items and total matter most. Never invent lines; if items are illegible, return [].
+Arabic fidelity: item names and merchants are often printed in Arabic. Transcribe Arabic text EXACTLY as printed, in Arabic script — never transliterate to Latin letters, never translate to English.
+
+Self-check before answering: items plus charges must reconcile with the printed total (respecting taxIncluded). If they fall short, re-examine the images for lines you missed.
+
+Never fail the whole read because a field is missing. If merchant or date is unclear, return "" — items and total matter most. Never invent lines that are not printed.
 
 Category (one for the whole receipt): Food (restaurants, cafes, groceries, delivery — Talabat, Carrefour, Spinneys, Gourmet, Seoudi), Transport (Uber, Careem, fuel, metro), Enjoyment (cinema, gaming, leisure), Rent (housing, utilities), Other.
-Currency: Egypt-first (EGP) unless clearly otherwise. All numbers plain (no symbols or thousands separators).`
+Currency: Egypt-first (EGP) unless clearly otherwise. All numbers plain (no symbols or thousands separators). "date" is YYYY-MM-DD or "".`
+
+/** OpenAPI-subset schema enforced by the API — the model cannot omit fields or drift from enums. */
+const RESPONSE_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    isReceipt: { type: 'BOOLEAN' },
+    merchant: { type: 'STRING' },
+    amount: { type: 'NUMBER' },
+    currency: { type: 'STRING', enum: ['EGP', 'AED', 'SAR', 'QAR', 'KWD', 'OMR', 'BHD', 'USD'] },
+    date: { type: 'STRING' },
+    category: { type: 'STRING', enum: ['Food', 'Transport', 'Enjoyment', 'Rent', 'Other'] },
+    taxIncluded: { type: 'BOOLEAN' },
+    confidence: { type: 'NUMBER' },
+    items: {
+      type: 'ARRAY',
+      maxItems: 150,
+      items: {
+        type: 'OBJECT',
+        properties: {
+          name: { type: 'STRING' },
+          price: { type: 'NUMBER' },
+          qty: { type: 'NUMBER' },
+        },
+        required: ['name', 'price'],
+        propertyOrdering: ['name', 'price', 'qty'],
+      },
+    },
+    charges: {
+      type: 'ARRAY',
+      maxItems: 20,
+      items: {
+        type: 'OBJECT',
+        properties: {
+          type: { type: 'STRING', enum: ['tax', 'service', 'tip', 'discount', 'other'] },
+          label: { type: 'STRING' },
+          amount: { type: 'NUMBER' },
+        },
+        required: ['type', 'label', 'amount'],
+        propertyOrdering: ['type', 'label', 'amount'],
+      },
+    },
+    notes: { type: 'STRING' },
+  },
+  required: ['isReceipt', 'merchant', 'amount', 'currency', 'date', 'category', 'taxIncluded', 'confidence', 'items', 'charges', 'notes'],
+  propertyOrdering: ['isReceipt', 'merchant', 'amount', 'currency', 'date', 'category', 'taxIncluded', 'confidence', 'items', 'charges', 'notes'],
+} as const
 
 const MAX_ATTEMPTS = 3
 
@@ -200,12 +239,15 @@ export async function POST(request: NextRequest) {
       // produced, so this doesn't raise cost on normal receipts.
       maxOutputTokens: 8192,
       thinkingConfig: { thinkingBudget: 2048 },
+      responseSchema: RESPONSE_SCHEMA,
     },
   }
 
+  const startedAt = Date.now()
   let raw: string
   try {
     raw = await callGeminiText(apiKey, requestBody)
+    console.log(`[receipt/scan] elapsed ${Date.now() - startedAt}ms images ${images.length}`)
   } catch (e) {
     const err = e instanceof GeminiError ? e : new GeminiError('AI service error', 502, false)
     console.error('[receipt/scan] gemini error', err.message)

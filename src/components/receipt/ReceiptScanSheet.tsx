@@ -19,6 +19,8 @@ import { usePendingAiJobs, savePendingMedia, deletePendingMedia } from '@/lib/st
 import type { Currency, ExpenseCategory } from '@/lib/store/types'
 import {
   normaliseReceipt,
+  reconcileMissingItems,
+  isUnknownItem,
   SUPPORTED_CURRENCIES,
   SUPPORTED_CATEGORIES,
   type ScannedReceipt,
@@ -221,6 +223,8 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
 
     // When the scan produced a breakdown, persist it as one receipt row and link
     // the single total expense to it. No breakdown → behave exactly as before.
+    // Saving = the user confirmed the total, so fill any breakdown shortfall
+    // into the unknown/unread placeholder lines to make the receipt reconcile.
     const hasBreakdown = result.items.length > 0 || result.charges.length > 0
     const receiptId = hasBreakdown
       ? addReceipt({
@@ -231,7 +235,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
           category: result.category,
           paymentMethodId,
           confidence: result.confidence,
-          items: result.items,
+          items: reconcileMissingItems(result.items, result.charges, result.amount),
           charges: result.charges,
           notes: result.notes || undefined,
         })
@@ -554,22 +558,27 @@ function ReceiptBreakdown({
 
       {items.length > 0 ? (
         <ul className="space-y-1">
-          {items.map((it, i) => (
-            <li key={`item-${i}`} className="flex items-center gap-2 text-sm">
-              <span className="flex-1 truncate text-[var(--color-brand-text-primary)]">
-                {it.qty && it.qty > 1 ? `${it.qty}× ` : ''}{it.name}
-              </span>
-              <span className="tabular-nums text-[var(--color-brand-text-secondary)]">{fmt(it.price)}</span>
-              <button
-                type="button"
-                aria-label={`Remove ${it.name}`}
-                onClick={() => onChange({ items: items.filter((_, idx) => idx !== i) })}
-                className="text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-red)]"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </li>
-          ))}
+          {items.map((it, i) => {
+            const unknown = isUnknownItem(it)
+            return (
+              <li key={`item-${i}`} className="flex items-center gap-2 text-sm">
+                <span className={`flex-1 truncate ${unknown ? 'text-[var(--color-brand-amber)]' : 'text-[var(--color-brand-text-primary)]'}`}>
+                  {it.qty && it.qty > 1 ? `${it.qty}× ` : ''}{it.name}
+                </span>
+                <span className={`tabular-nums ${unknown ? 'text-[var(--color-brand-amber)]' : 'text-[var(--color-brand-text-secondary)]'}`}>
+                  {it.price === 0 ? '—' : fmt(it.price)}
+                </span>
+                <button
+                  type="button"
+                  aria-label={`Remove ${it.name}`}
+                  onClick={() => onChange({ items: items.filter((_, idx) => idx !== i) })}
+                  className="text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-red)]"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </li>
+            )
+          })}
         </ul>
       ) : null}
 
@@ -594,7 +603,9 @@ function ReceiptBreakdown({
 
       {mismatch ? (
         <p className="mt-2 text-xs text-[var(--color-brand-amber)]">
-          Breakdown sums to {fmt(breakdownSum)} but the total reads {fmt(amount)}. The total is what gets saved.
+          {breakdownSum < amount
+            ? `${fmt(Math.round((amount - breakdownSum) * 100) / 100)} unassigned — it will be saved under the unread items so the breakdown matches the total.`
+            : `Breakdown sums to ${fmt(breakdownSum)} but the total reads ${fmt(amount)}. The total is what gets saved.`}
         </p>
       ) : null}
     </div>
