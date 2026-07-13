@@ -115,16 +115,12 @@ export function useSettingsPage() {
   }
 
   const handleStartFresh = async () => {
-    // ponytail: 8s abort so a hung network call doesn't block sign-out forever
+    // ponytail: fire reset concurrently — signOut() drops UI immediately, server wipe finishes in background
     const ac = new AbortController()
     const abortTimer = setTimeout(() => ac.abort(), 8000)
-    try {
-      await apiFetchAuth('/api/account/reset-data', { method: 'POST', signal: ac.signal })
-    } catch (e) {
-      console.error('[startFresh] server wipe failed', e)
-    } finally {
-      clearTimeout(abortTimer)
-    }
+    void apiFetchAuth('/api/account/reset-data', { method: 'POST', signal: ac.signal })
+      .catch(e => console.error('[startFresh] server wipe failed', e))
+      .finally(() => clearTimeout(abortTimer))
     // Reset nav path so the user lands on dashboard (not /settings/data) after re-login.
     navigate('/')
     await signOutAndHome()
