@@ -42,44 +42,20 @@ export function LandingGate() {
   const isArabic = locale === 'ar'
   const [keyboardOpen, setKeyboardOpen] = useState(false)
 
-  // Hide the bottom ticker while the keyboard is up. Primary signal is the
-  // visualViewport shrinking (reliable when the WebView resizes for the
-  // keyboard); focus events are a secondary trigger for cases where the viewport
-  // doesn't shrink. keyboardOpen = either fired. Touch devices only.
+  // Hide the bottom ticker only when the keyboard physically reduces the viewport
+  // (i.e. it overlaps the ticker). Focus alone must not affect the ticker.
   useEffect(() => {
     if (!window.matchMedia?.('(pointer: coarse)').matches) return
-    const isField = (el: EventTarget | null) =>
-      el instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)
-
     const vv = window.visualViewport
-    let viewportHidden = false
-    let focusHidden = false
-    const apply = () => setKeyboardOpen(viewportHidden || focusHidden)
-
     const onViewport = () => {
-      viewportHidden = vv ? window.innerHeight - vv.height > 120 : false
-      apply()
+      setKeyboardOpen(vv ? window.innerHeight - vv.height > 120 : false)
     }
-    const onFocusIn = (e: FocusEvent) => {
-      if (isField(e.target)) { focusHidden = true; apply() }
-    }
-    const onFocusOut = () => {
-      queueMicrotask(() => { focusHidden = isField(document.activeElement); apply() })
-    }
-
     vv?.addEventListener('resize', onViewport)
     vv?.addEventListener('scroll', onViewport)
-    document.addEventListener('focusin', onFocusIn)
-    document.addEventListener('focusout', onFocusOut)
     onViewport()
-    // Child effects (AuthSignInUpStep .focus()) fire before this parent effect registers
-    // the focusin listener — check activeElement immediately to catch that race.
-    if (isField(document.activeElement)) { focusHidden = true; apply() }
     return () => {
       vv?.removeEventListener('resize', onViewport)
       vv?.removeEventListener('scroll', onViewport)
-      document.removeEventListener('focusin', onFocusIn)
-      document.removeEventListener('focusout', onFocusOut)
     }
   }, [])
 
@@ -112,9 +88,6 @@ export function LandingGate() {
           .lg-ticker p:first-child { opacity: 1 !important; }
         }
         .lg-ticker-hide { display: none !important; }
-        /* ponytail: CSS :has() catches every focus path (programmatic, auto-focus on
-           back-nav, adjustPan WebViews) without event-timing races. JS is belt-and-suspenders. */
-        :has(input:focus, textarea:focus, select:focus) .lg-ticker { display: none !important; }
       `}</style>
 
       {/* Layout note: top-aligned on phones so the soft keyboard doesn't push the
