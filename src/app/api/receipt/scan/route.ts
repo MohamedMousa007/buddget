@@ -54,7 +54,6 @@ const RESPONSE_SCHEMA = {
     confidence: { type: 'NUMBER' },
     items: {
       type: 'ARRAY',
-      maxItems: 150,
       items: {
         type: 'OBJECT',
         properties: {
@@ -68,7 +67,6 @@ const RESPONSE_SCHEMA = {
     },
     charges: {
       type: 'ARRAY',
-      maxItems: 20,
       items: {
         type: 'OBJECT',
         properties: {
