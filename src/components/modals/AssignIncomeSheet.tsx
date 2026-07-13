@@ -9,7 +9,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT } from '@/lib/i18n'
 import { convertCurrency, fmtCompact } from '@/lib/utils/currency'
 import { expectedRecurringForMonth, getMonthRange, recurringActiveForWindow } from '@/lib/utils/calculations'
-import { buildOccurrences, isRealizedOccurrence, nextAwaitingIndex } from '@/lib/utils/incomeOccurrences'
+import { buildOccurrences, isRealizedOccurrence, nextAwaitingIndex, type IncomeOccurrence } from '@/lib/utils/incomeOccurrences'
 import { RecurringIncomeCard } from '@/components/features/income/RecurringIncomeCard'
 import { RecurringIncomeCarousel } from '@/components/features/income/RecurringIncomeCarousel'
 import { AccountChip } from '@/components/features/income/AccountChip'
@@ -72,26 +72,37 @@ export function AssignIncomeSheet({ open, onClose, onAssign, zIndexClassName }: 
   const prevOpen = useRef(false)
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- reset to the first source on open */
-    if (open && !prevOpen.current) setActive(0)
+    if (open && !prevOpen.current) {
+      setActive(0)
+      setSelKey(null)
+    }
     prevOpen.current = open
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [open])
 
   const activeCard = cards[active]
-  // Default the selected payday to the next awaiting one whenever the active source changes.
-  useEffect(() => {
-    if (!activeCard) return
-    const idx = nextAwaitingIndex(activeCard.occ)
-    const def = activeCard.occ[idx >= 0 ? idx : 0]
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- follow the centred card
-    setSelKey(def ? def.key : null)
-  }, [activeCard])
+  // Swiping to a new source drops the explicit pick so the default re-derives.
+  const onActiveChange = (i: number) => {
+    setActive(i)
+    setSelKey(null)
+  }
 
   useEscapeClose(open, onClose)
 
   const accountLabel = (pmId?: string) => paymentMethods.find((m) => m.id === pmId)?.name ?? t.income.mainAccount
 
-  const selOcc = activeCard?.occ.find((o) => o.key === selKey) ?? null
+  // Derived synchronously so the tick + CTA update in the same frame as the swipe
+  // settles (no effect lag): the explicit tap if it still matches, else the
+  // next-awaiting default for the centred source.
+  const selOcc = useMemo(() => {
+    if (!activeCard) return null
+    const explicit = selKey ? activeCard.occ.find((o) => o.key === selKey) : null
+    if (explicit) return explicit
+    const idx = nextAwaitingIndex(activeCard.occ)
+    return activeCard.occ[idx >= 0 ? idx : 0] ?? null
+  }, [activeCard, selKey])
+  const statusBracket = (o: IncomeOccurrence): string =>
+    o.status === 'late' ? ` ${t.income.bracketLate}` : o.status === 'missed' ? ` ${t.income.bracketMissed}` : o.status === 'partial' ? ` ${t.income.bracketPartial}` : ''
 
   const confirm = () => {
     if (!activeCard || !selOcc) return
@@ -111,7 +122,7 @@ export function AssignIncomeSheet({ open, onClose, onAssign, zIndexClassName }: 
           <RecurringIncomeCarousel
             count={cards.length}
             activeIndex={active}
-            onActiveChange={setActive}
+            onActiveChange={onActiveChange}
             renderItem={(i) => {
               const { source, occ, expectedBase, realizedBase } = cards[i]
               const remaining = Math.round(expectedBase - realizedBase)
@@ -139,7 +150,8 @@ export function AssignIncomeSheet({ open, onClose, onAssign, zIndexClassName }: 
                   occurrences={occ}
                   dateLabel={(o) => fmtDay(o.date)}
                   amountLabel={(o) => `${fmtCompact(o.amount)} ${o.currency}`}
-                  selectedKey={isActive ? selKey : null}
+                  statusBracket={statusBracket}
+                  selectedKey={isActive ? selOcc?.key ?? null : null}
                   showTick={isActive}
                   onChipTap={isActive ? (o) => setSelKey(o.key) : undefined}
                   footer={<p className="w-full text-center text-[11px] text-white/55">{isActive && selOcc ? t.income.fillsPayday(fmtDay(selOcc.date)) : ''}</p>}

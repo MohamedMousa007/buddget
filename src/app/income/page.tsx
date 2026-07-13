@@ -12,7 +12,7 @@ import { RecurringIncomeCarousel } from '@/components/features/income/RecurringI
 import { SwipeToDelete, type SwipeSide } from '@/components/expenses/SwipeToDelete'
 import { IncomeTypeIcon, incomeTypeColors } from '@/components/features/income/IncomeTypeIcon'
 import { AccountChip } from '@/components/features/income/AccountChip'
-import { GLASS_CARD, GLASS_NEUTRAL_BTN, GLASS_RED_BTN, GLASS_RED_DARK_BTN } from '@/components/features/income/incomeGlass'
+import { GLASS_CARD } from '@/components/features/income/incomeGlass'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useT } from '@/lib/i18n'
 import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
@@ -21,7 +21,7 @@ import { SkeletonList } from '@/components/ui/SkeletonList'
 import { convertCurrency, fmtCompact } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { expectedRecurringForMonth, getMonthRange, recurringActiveForWindow } from '@/lib/utils/calculations'
-import { buildOccurrences, isRealizedOccurrence } from '@/lib/utils/incomeOccurrences'
+import { buildOccurrences, isRealizedOccurrence, type IncomeOccurrence } from '@/lib/utils/incomeOccurrences'
 import type { IncomeSource, IncomeSourceType } from '@/lib/store/types'
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
@@ -100,6 +100,10 @@ export default function IncomePage() {
   }
 
   const paymentLine = (s: IncomeSource) => <AccountChip label={accountLabel(s)} acct={s} paymentMethods={paymentMethods} />
+
+  // Status suffix on a payday's date label — only the states that need flagging.
+  const statusBracket = (o: IncomeOccurrence): string =>
+    o.status === 'late' ? ` ${t.income.bracketLate}` : o.status === 'missed' ? ` ${t.income.bracketMissed}` : o.status === 'partial' ? ` ${t.income.bracketPartial}` : ''
 
   // Recurring sources active for the selected month.
   const recurring = useMemo(() => {
@@ -244,16 +248,6 @@ export default function IncomePage() {
                   {remaining <= 0 ? <span className="text-[#35D46F]">{t.income.fullyReceived}</span> : t.income.toCome(`${fmtCompact(remaining)} ${base}`)}
                 </>
               )
-              // CTA per selection: settled → neutral edit; missed → dark red log;
-              // in-turn awaiting/late → brand-red mark received; out of turn → disabled + hint.
-              const ctaStyle = sel ? (sel.eventId ? GLASS_NEUTRAL_BTN : sel.status === 'missed' ? GLASS_RED_DARK_BTN : GLASS_RED_BTN) : undefined
-              const ctaLabel = sel
-                ? sel.eventId
-                  ? t.income.editDateAmount(fmtDay(sel.date))
-                  : sel.status === 'missed'
-                    ? t.income.logMissedPayday(fmtDay(sel.date))
-                    : t.income.markDateReceived(fmtDay(sel.date))
-                : ''
               return (
                 <RecurringIncomeCard
                   sourceType={source.sourceType}
@@ -268,6 +262,7 @@ export default function IncomePage() {
                   occurrences={occ}
                   dateLabel={(o) => fmtDay(o.date)}
                   amountLabel={(o) => `${fmtCompact(o.amount)} ${o.currency}`}
+                  statusBracket={statusBracket}
                   selectedKey={selected?.sourceId === source.id ? selected.occKey : null}
                   onChipTap={(o) =>
                     setSelected((prev) => (prev?.sourceId === source.id && prev.occKey === o.key ? null : { sourceId: source.id, occKey: o.key }))
@@ -278,18 +273,28 @@ export default function IncomePage() {
                   }}
                   editAriaLabel={t.income.editSourceAria}
                   footer={
-                    sel ? (
-                      <button
-                        type="button"
-                        onClick={() => openAmountReceived(source.id, sel.key)}
-                        disabled={!sel.actionable}
-                        className="w-full py-2.5 text-sm font-bold disabled:opacity-50"
-                        style={ctaStyle}
-                      >
-                        {sel.actionable ? ctaLabel : t.income.earlierPaydayFirst}
-                      </button>
-                    ) : (
+                    !sel ? (
                       <p className="w-full text-center text-[11px] text-white/55">{t.income.tapPaydayTip}</p>
+                    ) : !sel.actionable ? (
+                      <p className="w-full text-center text-[11px] text-white/55">{t.income.earlierPaydayFirst}</p>
+                    ) : (
+                      <div className="grid w-full grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          disabled={!sel.eventId}
+                          onClick={sel.eventId ? () => { deleteIncomeEvent(sel.eventId!); setSelected(null) } : undefined}
+                          className="rounded-[14px] py-2.5 text-sm font-bold transition-colors disabled:cursor-not-allowed enabled:bg-[var(--color-brand-red)] enabled:text-white enabled:hover:bg-[var(--color-brand-red-hover)] disabled:bg-white/[0.06] disabled:text-white/35"
+                        >
+                          {t.common.delete}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openAmountReceived(source.id, sel.key)}
+                          className="rounded-[14px] bg-[var(--color-brand-green)] py-2.5 text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-green-hover)]"
+                        >
+                          {sel.eventId ? t.common.edit : t.income.receivedBtn}
+                        </button>
+                      </div>
                     )
                   }
                 />

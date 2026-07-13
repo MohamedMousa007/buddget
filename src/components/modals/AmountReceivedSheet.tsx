@@ -9,7 +9,6 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT } from '@/lib/i18n'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { buildOccurrences, expectedPerPayday } from '@/lib/utils/incomeOccurrences'
-import { GLASS_GREEN_BTN } from '@/components/features/income/incomeGlass'
 
 const MON_TITLE = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const fmtNum = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -24,13 +23,12 @@ const todayISO = () => new Date().toISOString().slice(0, 10)
  */
 export function AmountReceivedSheet() {
   const showToast = useActionToast()
-  const { incomeSources, incomeEvents, addIncomeEvent, updateIncomeEvent, deleteIncomeEvent } = useFinanceStore(
+  const { incomeSources, incomeEvents, addIncomeEvent, updateIncomeEvent } = useFinanceStore(
     useShallow((s) => ({
       incomeSources: s.incomeSources,
       incomeEvents: s.incomeEvents,
       addIncomeEvent: s.addIncomeEvent,
       updateIncomeEvent: s.updateIncomeEvent,
-      deleteIncomeEvent: s.deleteIncomeEvent,
     })),
   )
   const { activeModal, setActiveModal, markingIncome, monthFilter } = useSettingsStore(
@@ -112,21 +110,6 @@ export function AmountReceivedSheet() {
     close()
   }
 
-  const markMissed = () => {
-    if (!source || !current || savingRef.current) return
-    savingRef.current = true
-    if (targetEventId) updateIncomeEvent(targetEventId, { status: 'missed', occurrenceDate: current.dueDate })
-    else addIncomeEvent({ templateId: source.id, name: source.name, amount: expected, currency, sourceType: source.sourceType, receivedDate: current.dueDate, occurrenceDate: current.dueDate, status: 'missed' })
-    close()
-  }
-
-  const deletePayment = () => {
-    if (!targetEventId || savingRef.current) return
-    savingRef.current = true
-    deleteIncomeEvent(targetEventId)
-    close()
-  }
-
   // Re-arm the guard each time the sheet opens.
   useEffect(() => {
     if (isOpen) savingRef.current = false
@@ -168,25 +151,12 @@ export function AmountReceivedSheet() {
           type="button"
           onClick={save}
           disabled={!valid || unchanged || blocked}
-          className="mt-4 w-full py-3 text-sm font-bold disabled:opacity-50"
-          style={GLASS_GREEN_BTN}
+          className="mt-4 w-full rounded-[14px] bg-[var(--color-brand-green)] py-3 text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-green-hover)] disabled:opacity-50"
         >
           {isEdit ? t.income.saveChangesBtn : meetsExpected ? t.income.markReceivedBtn : t.income.saveAsPartialBtn}
         </button>
         {blocked ? (
           <p className="mt-2 text-center text-xs text-[var(--color-brand-text-muted)]">{t.income.earlierPaydayFirst}</p>
-        ) : null}
-
-        {/* Awaiting/late (no money logged) → Missed; settled → Delete payment. */}
-        {!isEdit && !blocked && (current.status === 'awaiting' || current.status === 'late' || current.status === 'missed') ? (
-          <button type="button" onClick={markMissed} className="mt-2 w-full py-1.5 text-center text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-red)]">
-            {t.income.statusMissed}
-          </button>
-        ) : null}
-        {isEdit ? (
-          <button type="button" onClick={deletePayment} className="mt-2 w-full py-1.5 text-center text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-red)]">
-            {t.income.deletePaymentBtn}
-          </button>
         ) : null}
       </div>
     </ModalShell>

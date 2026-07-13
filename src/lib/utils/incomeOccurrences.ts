@@ -176,6 +176,25 @@ export function buildOccurrences(
   }
   occ.sort((a, b) => a.date.localeCompare(b.date))
 
+  // Skip detection: an *overdue, unpaid* payday with any realized payday after it
+  // was skipped over — it displays missed and locks (you can't settle a past gap
+  // once a later paycheck landed). Future (awaiting) paydays are never touched,
+  // even if a later one was paid early. Deleting a paid payday flows through here:
+  // if money was received later it re-derives as missed, otherwise it keeps its
+  // date-based pending status (late/awaiting = still the in-turn one).
+  let realizedAfter = false
+  for (let i = occ.length - 1; i >= 0; i--) {
+    const o = occ[i]
+    if (isRealizedOccurrence(o)) {
+      realizedAfter = true
+      continue
+    }
+    if (realizedAfter && !o.eventId && o.status === 'late') {
+      o.status = 'missed'
+      o.actionable = false
+    }
+  }
+
   // Sequential settling: the earliest pending (awaiting/late) payday is the one
   // in turn; later event-less paydays wait. Auto-missed ones stay actionable so
   // the user can still log them.

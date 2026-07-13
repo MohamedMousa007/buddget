@@ -166,6 +166,23 @@ describe('buildOccurrences', () => {
     expect(occ[1].actionable).toBe(true)
   })
 
+  it('an overdue unpaid payday with a paid payday after it re-derives as missed and locks', () => {
+    const s = source({ recurringFrequency: 'biweekly', paydayDays: [3, 20] })
+    // Today Jul 7: Jul 3 is overdue (late) and Jul 20 already received → Jul 3 was skipped → missed.
+    const occ = buildOccurrences(s, [event({ occurrenceDate: '2026-07-20' })], '2026-07', 1, new Date(2026, 6, 7))
+    expect(occ[0].status).toBe('missed')
+    expect(occ[0].actionable).toBe(false)
+    expect(occ[1].status).toBe('received')
+  })
+
+  it('a future payday is never marked missed even if a later payday was paid early', () => {
+    const s = source({ recurringFrequency: 'biweekly', paydayDays: [5, 20] })
+    // Today Jul 1: Jul 3 payday still in the future → stays awaiting despite Jul 20 paid.
+    const occ = buildOccurrences(s, [event({ occurrenceDate: '2026-07-20' })], '2026-07', 1, T0)
+    expect(occ[0].status).toBe('awaiting')
+    expect(occ[1].status).toBe('received')
+  })
+
   it('partial event stores the lower amount and is realized', () => {
     const occ = buildOccurrences(source(), [event({ status: 'partial', amount: 30000 })], '2026-07', 1, T0)
     expect(occ[0].status).toBe('partial')

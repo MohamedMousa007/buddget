@@ -14,57 +14,14 @@ export const GLASS_CARD: CSSProperties = {
  * Recurring hero card — glassy surface tinted by the income-type accent (never
  * green; that's reserved for received/summary). Inset top highlight + soft outer
  * shadow give a subtle 3D lift. `accent` is the type's solid color (`colors.fg`).
+ * No `backdrop-filter`: the card sits on an opaque surface, so the blur bought
+ * nothing but repaint jank while the carousel translated (assign-swipe glitch).
  */
 export function heroCardStyle(accent: string): CSSProperties {
   return {
     background: `linear-gradient(158deg, ${accent}22, rgba(255,255,255,.045) 55%), #0f0f15`,
     border: '1px solid rgba(255,255,255,.08)',
-    backdropFilter: 'blur(14px)',
-    WebkitBackdropFilter: 'blur(14px)',
     boxShadow: 'inset 0 1px 0 rgba(255,255,255,.07), 0 8px 24px -12px rgba(0,0,0,.6)',
     borderRadius: 16,
   }
-}
-
-/** Glassy green CTA — reserved for the positive "Mark received" action. */
-export const GLASS_GREEN_BTN: CSSProperties = {
-  background: 'linear-gradient(160deg, rgba(29,185,84,.28), rgba(29,185,84,.12))',
-  border: '1px solid rgba(53,212,111,.5)',
-  color: '#8FF0B4',
-  backdropFilter: 'blur(10px)',
-  WebkitBackdropFilter: 'blur(10px)',
-  borderRadius: 14,
-}
-
-/** Brand-red glass CTA — the primary "Mark received" action on the recurring card. */
-export const GLASS_RED_BTN: CSSProperties = {
-  background: 'linear-gradient(160deg, rgba(229,9,20,.30), rgba(229,9,20,.12))',
-  border: '1px solid rgba(229,9,20,.55)',
-  color: '#FFB4B8',
-  backdropFilter: 'blur(10px)',
-  WebkitBackdropFilter: 'blur(10px)',
-  borderRadius: 14,
-}
-
-/** Darker red glass CTA — missed-payday context (log/acknowledge a missed payment). */
-export const GLASS_RED_DARK_BTN: CSSProperties = {
-  background: 'linear-gradient(160deg, rgba(140,8,14,.45), rgba(140,8,14,.20))',
-  border: '1px solid rgba(180,10,18,.55)',
-  color: '#FF9B9B',
-  backdropFilter: 'blur(10px)',
-  WebkitBackdropFilter: 'blur(10px)',
-  borderRadius: 14,
-}
-
-/**
- * Neutral glass CTA — for edit/adjust actions on an already-received payday,
- * so the button never clashes with the green (received) chip above it.
- */
-export const GLASS_NEUTRAL_BTN: CSSProperties = {
-  background: 'linear-gradient(160deg, rgba(255,255,255,.15), rgba(255,255,255,.06))',
-  border: '1px solid rgba(255,255,255,.2)',
-  color: '#ECECF2',
-  backdropFilter: 'blur(10px)',
-  WebkitBackdropFilter: 'blur(10px)',
-  borderRadius: 14,
 }
