@@ -515,7 +515,8 @@ export async function POST(request: Request) {
       r.income_id ||
       r.debt_payment_id ||
       r.awaiting_confirmation ||
-      r.paired_log_id,
+      r.paired_log_id ||
+      r.status === 'processing',
   )
   if (dupe) {
     return NextResponse.json({
