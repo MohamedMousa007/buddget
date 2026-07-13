@@ -142,6 +142,15 @@ export function AmountReceivedSheet() {
             className="w-full bg-transparent py-3.5 font-mono-numbers text-2xl font-bold outline-none"
             style={{ color: inputColorDisplay }}
           />
+          {!meetsExpected && expected > 0 ? (
+            <button
+              type="button"
+              onClick={() => setAmount(String(expected))}
+              className="shrink-0 rounded-lg bg-[rgba(29,185,84,0.16)] px-2.5 py-1.5 text-xs font-bold text-[var(--color-brand-green)] transition-colors hover:bg-[rgba(29,185,84,0.24)]"
+            >
+              {t.income.fullBtn}
+            </button>
+          ) : null}
         </div>
         <p className="mt-2 font-mono-numbers text-xs" style={{ color: meetsExpected ? 'var(--color-brand-text-muted)' : '#FFB13D' }}>
           {!valid || meetsExpected ? t.income.matchesExpected : t.income.shortOfExpected(`${fmtNum(short)} ${currency}`, `${fmtNum(expected)} ${currency}`)}

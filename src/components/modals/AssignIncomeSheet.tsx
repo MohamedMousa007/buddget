@@ -23,18 +23,19 @@ interface Props {
   onClose: () => void
   /** Chosen source + payday (`date` = scheduled payday it fulfills). */
   onAssign: (result: { templateId: string; date: string }) => void
+  /** Preselect a source (its card shows a tick on open), when already assigned. */
+  initialTemplateId?: string
   /** Nested over the add modal needs a higher layer; the page opens it at the default. */
   zIndexClassName?: string
 }
 
 /**
- * Assign a receipt to a recurring source + payday (handoff §5). The same recurring
- * hero slider as the page: swipe between sources (red dots), the centred card shows
- * a green tick, and the next-awaiting payday is pre-selected with a soft green glow.
- * Controlled — the caller owns open state and applies the result (mirrors the app's
- * payment/currency sub-sheets so the sheet underneath stays mounted).
+ * Assign a receipt to a recurring source (handoff §5). Swipe between sources; like
+ * the payment-method picker, no card is ticked until you tap one to choose it. The
+ * chosen card shows a tick and its next-awaiting payday fills; the CTA names the
+ * source (the payday is shown in the card caption, not the button).
  */
-export function AssignIncomeSheet({ open, onClose, onAssign, zIndexClassName }: Props) {
+export function AssignIncomeSheet({ open, onClose, onAssign, initialTemplateId, zIndexClassName }: Props) {
   const { incomeSources, incomeEvents, paymentMethods, settings, exchangeRates } = useFinanceStore(
     useShallow((s) => ({
       incomeSources: s.incomeSources,
@@ -68,45 +69,47 @@ export function AssignIncomeSheet({ open, onClose, onAssign, zIndexClassName }: 
   )
 
   const [active, setActive] = useState(0)
-  const [selKey, setSelKey] = useState<string | null>(null)
+  // Nothing is chosen until the user taps a card (like the payment-method picker).
+  const [chosen, setChosen] = useState<string | null>(null)
+  const [paydayKey, setPaydayKey] = useState<string | null>(null)
   const prevOpen = useRef(false)
   useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect -- reset to the first source on open */
+    /* eslint-disable react-hooks/set-state-in-effect -- seed selection when the sheet opens */
     if (open && !prevOpen.current) {
-      setActive(0)
-      setSelKey(null)
+      const idx = initialTemplateId ? sources.findIndex((s) => s.id === initialTemplateId) : -1
+      setActive(idx >= 0 ? idx : 0)
+      setChosen(initialTemplateId ?? null)
+      setPaydayKey(null)
     }
     prevOpen.current = open
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [open])
+  }, [open, initialTemplateId, sources])
 
   const activeCard = cards[active]
-  // Swiping to a new source drops the explicit pick so the default re-derives.
-  const onActiveChange = (i: number) => {
-    setActive(i)
-    setSelKey(null)
-  }
-
   useEscapeClose(open, onClose)
 
   const accountLabel = (pmId?: string) => paymentMethods.find((m) => m.id === pmId)?.name ?? t.income.mainAccount
 
-  // Derived synchronously so the tick + CTA update in the same frame as the swipe
-  // settles (no effect lag): the explicit tap if it still matches, else the
-  // next-awaiting default for the centred source.
-  const selOcc = useMemo(() => {
-    if (!activeCard) return null
-    const explicit = selKey ? activeCard.occ.find((o) => o.key === selKey) : null
+  const chosenCard = chosen ? cards.find((c) => c.source.id === chosen) ?? null : null
+  // The payday the receipt fills: an explicit dot tap, else the chosen source's next awaiting.
+  const targetOcc = useMemo(() => {
+    if (!chosenCard) return null
+    const explicit = paydayKey ? chosenCard.occ.find((o) => o.key === paydayKey) : null
     if (explicit) return explicit
-    const idx = nextAwaitingIndex(activeCard.occ)
-    return activeCard.occ[idx >= 0 ? idx : 0] ?? null
-  }, [activeCard, selKey])
+    const idx = nextAwaitingIndex(chosenCard.occ)
+    return chosenCard.occ[idx >= 0 ? idx : 0] ?? null
+  }, [chosenCard, paydayKey])
+
+  const selectSource = (id: string) => {
+    setChosen(id)
+    setPaydayKey(null)
+  }
   const statusBracket = (o: IncomeOccurrence): string =>
     o.status === 'late' ? ` ${t.income.bracketLate}` : o.status === 'missed' ? ` ${t.income.bracketMissed}` : o.status === 'partial' ? ` ${t.income.bracketPartial}` : ''
 
   const confirm = () => {
-    if (!activeCard || !selOcc) return
-    onAssign({ templateId: activeCard.source.id, date: selOcc.dueDate })
+    if (!chosen || !targetOcc) return
+    onAssign({ templateId: chosen, date: targetOcc.dueDate })
     onClose()
   }
 
@@ -122,11 +125,12 @@ export function AssignIncomeSheet({ open, onClose, onAssign, zIndexClassName }: 
           <RecurringIncomeCarousel
             count={cards.length}
             activeIndex={active}
-            onActiveChange={onActiveChange}
+            onActiveChange={setActive}
             renderItem={(i) => {
               const { source, occ, expectedBase, realizedBase } = cards[i]
               const remaining = Math.round(expectedBase - realizedBase)
               const isActive = i === active
+              const isChosen = chosen === source.id
               const freq = source.recurringFrequency ?? 'monthly'
               const cad = freq === 'weekly' ? t.addIncome.freqWeekly : freq === 'biweekly' ? t.addIncome.freqBiweekly : `${t.addIncome.freqMonthly} · ${source.dayOfMonth ?? 1}`
               const acct = accountLabel(source.paymentMethodId)
@@ -151,10 +155,11 @@ export function AssignIncomeSheet({ open, onClose, onAssign, zIndexClassName }: 
                   dateLabel={(o) => fmtDay(o.date)}
                   amountLabel={(o) => `${fmtCompact(o.amount)} ${o.currency}`}
                   statusBracket={statusBracket}
-                  selectedKey={isActive ? selOcc?.key ?? null : null}
-                  showTick={isActive}
-                  onChipTap={isActive ? (o) => setSelKey(o.key) : undefined}
-                  footer={<p className="w-full text-center text-[11px] text-white/55">{isActive && selOcc ? t.income.fillsPayday(fmtDay(selOcc.date)) : ''}</p>}
+                  selectedKey={isChosen ? targetOcc?.key ?? null : null}
+                  showTick={isChosen}
+                  onCardTap={isActive ? () => selectSource(source.id) : undefined}
+                  onChipTap={isActive ? (o) => { setChosen(source.id); setPaydayKey(o.key) } : undefined}
+                  footer={<p className="w-full text-center text-[11px] text-white/55">{isChosen && targetOcc ? t.income.fillsPayday(fmtDay(targetOcc.date)) : t.income.assignTapHint}</p>}
                 />
               )
             }}
@@ -164,10 +169,10 @@ export function AssignIncomeSheet({ open, onClose, onAssign, zIndexClassName }: 
         <button
           type="button"
           onClick={confirm}
-          disabled={!selOcc}
+          disabled={!chosen || !targetOcc}
           className="mt-5 w-full rounded-[14px] bg-[var(--color-brand-red)] py-3 text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-red-hover)] disabled:opacity-50"
         >
-          {selOcc ? t.income.assignConfirm(activeCard.source.name, fmtDay(selOcc.date)) : t.income.assignTitle}
+          {chosenCard ? t.income.assignConfirm(chosenCard.source.name) : t.income.assignTitle}
         </button>
       </div>
     </ModalShell>

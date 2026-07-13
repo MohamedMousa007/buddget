@@ -33,6 +33,8 @@ interface Props {
   /** Assign select mode: green tick top-right when this card is chosen (identical to the card carousel). */
   showTick?: boolean
   onChipTap?: (occ: IncomeOccurrence) => void
+  /** When set, tapping the card body selects it (assign flow); dots stop propagation. */
+  onCardTap?: () => void
   /** When set, a pencil button (top-right) opens the source editor. */
   onEdit?: () => void
   editAriaLabel?: string
@@ -63,6 +65,7 @@ export function RecurringIncomeCard({
   selectedKey,
   showTick,
   onChipTap,
+  onCardTap,
   onEdit,
   editAriaLabel,
   footer,
@@ -71,7 +74,11 @@ export function RecurringIncomeCard({
   const cornered = showTick || Boolean(onEdit)
 
   return (
-    <div className="relative flex h-[213px] flex-col p-4 text-white" style={heroCardStyle(colors.fg)}>
+    <div
+      onClick={onCardTap}
+      className={`relative flex h-[224px] flex-col p-4 text-white ${onCardTap ? 'cursor-pointer' : ''}`}
+      style={heroCardStyle(colors.fg)}
+    >
       {showTick ? (
         <span className="absolute end-3 top-3 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#38D96B] text-white shadow-[0_2px_6px_rgba(0,0,0,.25)]">
           <Check className="h-[14px] w-[14px]" strokeWidth={3} />
