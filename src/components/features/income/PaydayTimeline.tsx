@@ -1,13 +1,12 @@
 'use client'
 
-import { Fragment } from 'react'
 import { Check, Clock, Contrast, AlertCircle, Hourglass, type LucideIcon } from 'lucide-react'
-import { REALIZED_STATUSES, type IncomeOccurrence, type IncomeOccurrenceStatus } from '@/lib/utils/incomeOccurrences'
+import { isRealizedOccurrence, type IncomeOccurrence, type IncomeOccurrenceStatus } from '@/lib/utils/incomeOccurrences'
 
 /**
- * Per-status palette. Each payday status owns a color that tints its dot/pill;
- * selection brightens the same fill and adds a glow, so the status color always
- * stays legible. `rgb` drives the alpha tints.
+ * Per-status palette. Each payday status owns a color that tints its dot and the
+ * status icon inside it; selection brightens the same fill and adds a glow, so
+ * the status color always stays legible. `rgb` drives the alpha tints.
  */
 export const STATUS_STYLE: Record<IncomeOccurrenceStatus, { rgb: string; text: string; Icon: LucideIcon }> = {
   received: { rgb: '53,212,111', text: '#8FF0B4', Icon: Check },
@@ -17,117 +16,137 @@ export const STATUS_STYLE: Record<IncomeOccurrenceStatus, { rgb: string; text: s
   awaiting: { rgb: '138,138,150', text: '#C7C7D2', Icon: Hourglass },
 }
 
+const GREEN = '53,212,111'
+const RED = '229,9,20'
+const FAINT = 'rgba(255,255,255,.14)'
+
 interface Props {
   occurrences: IncomeOccurrence[]
   dateLabel: (occ: IncomeOccurrence) => string
-  /** Compact per-payday amount, shown inline when cadence leaves room (≤2 paydays). */
+  /** Compact per-payday amount, shown below the dot when cadence leaves room (≤2 paydays). */
   amountLabel?: (occ: IncomeOccurrence) => string
+  /** Status suffix appended to the date label — e.g. " (Late!)". Empty for received/awaiting. */
+  statusBracket?: (occ: IncomeOccurrence) => string
   selectedKey?: string | null
   onSelect?: (occ: IncomeOccurrence) => void
 }
 
 /**
- * Payday strip for the recurring card. ≤2 paydays render as wide status pills
- * with inline amounts; 3+ render as a connected dot timeline (dates alternating
- * above/below, no horizontal scroll ever) with a pulse travelling along the
- * connector from the latest received payday to the next one. No pointer capture
- * or overflow here — drags bubble up so the carousel swipes from anywhere.
+ * One timeline model for every cadence. Dots sit on a single faded-end rail: a
+ * lone monthly payday centres on a full "runway", biweekly/weekly space evenly.
+ * A green progress fill runs from the first payday to the last *paid* one; the
+ * leading edge pulses toward the next awaiting payday (static once fully paid).
+ * Each dot carries its status icon; a missed dot gets a soft red glow bracketing
+ * it on the rail, faded into the surrounding green. No overflow/pointer capture
+ * here — drags bubble up so the carousel swipes from anywhere.
  */
-export function PaydayTimeline({ occurrences, dateLabel, amountLabel, selectedKey, onSelect }: Props) {
-  if (occurrences.length <= 2) {
-    return <PillRow occurrences={occurrences} dateLabel={dateLabel} amountLabel={amountLabel} selectedKey={selectedKey} onSelect={onSelect} />
+export function PaydayTimeline({ occurrences, dateLabel, amountLabel, statusBracket, selectedKey, onSelect }: Props) {
+  const n = occurrences.length
+  if (n === 0) return null
+  const single = n === 1
+  const EDGE = single ? 50 : 9
+  const pos = (i: number) => (single ? 50 : EDGE + (i * (100 - 2 * EDGE)) / (n - 1))
+
+  let lastRealized = -1
+  for (let i = 0; i < n; i++) if (isRealizedOccurrence(occurrences[i])) lastRealized = i
+  let nextIdx = -1
+  for (let i = lastRealized + 1; i < n; i++) {
+    const o = occurrences[i]
+    if (!o.eventId && (o.status === 'awaiting' || o.status === 'late')) {
+      nextIdx = i
+      break
+    }
   }
 
-  const realized = (o: IncomeOccurrence) => Boolean(o.eventId) && REALIZED_STATUSES.has(o.status)
-  let pulseFrom = -1
-  for (let i = 0; i < occurrences.length; i++) if (realized(occurrences[i])) pulseFrom = i
-  const pulseTo = pulseFrom >= 0 && pulseFrom + 1 < occurrences.length && !occurrences[pulseFrom + 1].eventId ? pulseFrom + 1 : -1
+  // Green fill spans the runway/first payday up to the last paid one. The pulse
+  // sweeps from the fill front (or the previous dot) toward the next awaiting one.
+  const fillStart = single ? 0 : pos(0)
+  const greenEnd = lastRealized >= 0 ? pos(lastRealized) : null
+  const pulseFrom = lastRealized >= 0 ? pos(lastRealized) : nextIdx >= 1 ? pos(nextIdx - 1) : 0
+  const pulseTo = nextIdx >= 0 ? pos(nextIdx) : null
 
   return (
-    <div className="flex h-10 items-center">
+    <div className="relative h-12">
+      {/* Base rail — faded ends give every cadence a runway look. */}
+      <div
+        className="absolute inset-x-0 top-1/2 h-[2px] -translate-y-1/2 rounded-full"
+        style={{
+          background: FAINT,
+          maskImage: 'linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)',
+          WebkitMaskImage: 'linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)',
+        }}
+      />
+      {/* Green progress fill up to the last paid payday. */}
+      {greenEnd !== null && greenEnd > fillStart ? (
+        <div
+          className="absolute top-1/2 h-[2px] -translate-y-1/2 rounded-full"
+          style={{ left: `${fillStart}%`, width: `${greenEnd - fillStart}%`, background: `rgba(${GREEN},.45)` }}
+        />
+      ) : null}
+      {/* Red glow bracketing each missed payday, faded into the surrounding rail. */}
+      {occurrences.map((o, i) =>
+        o.status === 'missed' ? (
+          <div
+            key={`m-${o.key}`}
+            className="pointer-events-none absolute top-1/2 h-[3px] -translate-y-1/2 rounded-full"
+            style={{ left: `calc(${pos(i)}% - 7%)`, width: '14%', background: `linear-gradient(90deg, transparent, rgba(${RED},.7) 50%, transparent)` }}
+          />
+        ) : null,
+      )}
+      {/* Pulse travelling toward the next awaiting payday. */}
+      {pulseTo !== null && pulseTo > pulseFrom ? (
+        <div className="pointer-events-none absolute top-1/2 h-[6px] -translate-y-1/2" style={{ left: `${pulseFrom}%`, width: `${pulseTo - pulseFrom}%` }}>
+          <span
+            className="absolute top-1/2 h-[6px] w-[6px] -translate-y-1/2 rounded-full"
+            style={{ background: `rgba(${GREEN},.9)`, animation: 'incomeTimelinePulse 1.8s ease-in-out infinite' }}
+          />
+        </div>
+      ) : null}
+
+      {/* Dots + labels. */}
       {occurrences.map((occ, i) => {
         const st = STATUS_STYLE[occ.status]
+        const Icon = st.Icon
         const selected = selectedKey === occ.key
         const dimmed = !occ.actionable && !occ.eventId && !selected
-        const prev = occurrences[i - 1]
-        const segmentDone = i > 0 && realized(prev) && realized(occ)
-        const pulses = i > 0 && i - 1 === pulseFrom && i === pulseTo
-        return (
-          <Fragment key={occ.key}>
-            {i > 0 ? (
-              <div className="relative h-[2px] min-w-3 flex-1 rounded-full" style={{ background: segmentDone ? 'rgba(53,212,111,.4)' : 'rgba(255,255,255,.14)' }}>
-                {pulses ? (
-                  <span
-                    className="absolute top-1/2 h-[6px] w-[6px] -translate-y-1/2 rounded-full"
-                    style={{ background: `rgba(${STATUS_STYLE.received.rgb},.9)`, animation: 'incomeTimelinePulse 1.8s ease-in-out infinite' }}
-                  />
-                ) : null}
-              </div>
-            ) : null}
-            <button
-              type="button"
-              onClick={onSelect ? () => onSelect(occ) : undefined}
-              aria-label={dateLabel(occ)}
-              aria-pressed={selected}
-              // -my-1 grows the hit area to 44px+ without growing the 40px visual block.
-              className={`relative -my-1 flex h-12 min-w-[44px] flex-col items-center justify-center transition-opacity ${dimmed ? 'opacity-45' : ''}`}
-            >
-              <span
-                className={`absolute font-mono-numbers text-[9px] leading-none ${i % 2 === 0 ? 'top-0.5' : 'bottom-0.5'}`}
-                style={{ left: '50%', transform: 'translateX(-50%)', color: selected ? st.text : 'rgba(255,255,255,.6)', whiteSpace: 'nowrap' }}
-                dir="ltr"
-              >
-                {dateLabel(occ)}
-              </span>
-              <span
-                className="h-3.5 w-3.5 rounded-full border transition-shadow"
-                style={{
-                  background: `rgba(${st.rgb},${selected ? 0.55 : 0.28})`,
-                  borderColor: `rgba(${st.rgb},${selected ? 0.95 : 0.55})`,
-                  boxShadow: selected ? `0 0 0 3px rgba(${st.rgb},.22), 0 0 10px rgba(${st.rgb},.55)` : undefined,
-                }}
-              />
-            </button>
-          </Fragment>
-        )
-      })}
-    </div>
-  )
-}
-
-function PillRow({ occurrences, dateLabel, amountLabel, selectedKey, onSelect }: Props) {
-  const single = occurrences.length === 1
-  return (
-    <div className="flex gap-2">
-      {occurrences.map((occ) => {
-        const selected = selectedKey === occ.key
-        const st = STATUS_STYLE[occ.status]
-        const StatusIcon = st.Icon
-        const dimmed = !occ.actionable && !occ.eventId && !selected
+        const above = single || n <= 2 ? true : i % 2 === 0
+        const showAmount = Boolean(amountLabel) && n <= 2
         return (
           <button
             key={occ.key}
             type="button"
             onClick={onSelect ? () => onSelect(occ) : undefined}
-            className={`flex min-h-[30px] min-w-0 flex-1 items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${single ? 'justify-start' : ''} ${dimmed ? 'opacity-45' : ''}`}
-            style={{
-              background: `rgba(${st.rgb},${selected ? 0.3 : 0.14})`,
-              borderColor: `rgba(${st.rgb},${selected ? 0.65 : 0.32})`,
-              color: st.text,
-              boxShadow: selected ? `0 0 8px rgba(${st.rgb},.35)` : undefined,
-            }}
+            aria-label={dateLabel(occ)}
+            aria-pressed={selected}
+            className={`absolute top-1/2 flex h-11 min-w-[44px] -translate-x-1/2 -translate-y-1/2 items-center justify-center transition-opacity ${dimmed ? 'opacity-45' : ''}`}
+            style={{ left: `${pos(i)}%` }}
           >
-            <StatusIcon className="h-3 w-3 shrink-0" />
-            <span className="font-mono-numbers">{dateLabel(occ)}</span>
-            {amountLabel ? (
-              single ? (
-                <span className="ms-auto truncate font-mono-numbers opacity-80">{amountLabel(occ)}</span>
-              ) : (
-                <>
-                  <span className="opacity-40">·</span>
-                  <span className="truncate font-mono-numbers opacity-75">{amountLabel(occ)}</span>
-                </>
-              )
+            <span
+              className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap font-mono-numbers text-[9px] leading-none"
+              style={{ [above ? 'bottom' : 'top']: 'calc(50% + 13px)', color: selected ? st.text : 'rgba(255,255,255,.62)' }}
+              dir="ltr"
+            >
+              {dateLabel(occ)}
+              {statusBracket ? statusBracket(occ) : ''}
+            </span>
+            <span
+              className="flex h-5 w-5 items-center justify-center rounded-full border"
+              style={{
+                background: `rgba(${st.rgb},${selected ? 0.5 : 0.24})`,
+                borderColor: `rgba(${st.rgb},${selected ? 0.95 : 0.5})`,
+                boxShadow: selected ? `0 0 0 3px rgba(${st.rgb},.2), 0 0 10px rgba(${st.rgb},.5)` : undefined,
+              }}
+            >
+              <Icon className="h-3 w-3" strokeWidth={2.5} style={{ color: st.text }} />
+            </span>
+            {showAmount && amountLabel ? (
+              <span
+                className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap font-mono-numbers text-[9px] leading-none text-white/55"
+                style={{ top: 'calc(50% + 13px)' }}
+                dir="ltr"
+              >
+                {amountLabel(occ)}
+              </span>
             ) : null}
           </button>
         )

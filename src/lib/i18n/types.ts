@@ -483,8 +483,12 @@ export interface Dictionary {
     swipeHint: string
     expectedPerMoLabel: string
     tapPaydayTip: string
-    markDateReceived: (date: string) => string
-    editDateAmount: (date: string) => string
+    /** Card CTA to log/adjust a payday's received amount. */
+    receivedBtn: string
+    /** Status suffixes appended to a payday's date label. */
+    bracketLate: string
+    bracketMissed: string
+    bracketPartial: string
     amountReceivedTitle: string
     amountSheetSubtitle: (date: string, source: string, expected: string) => string
     amountReceivedLabel: string
@@ -494,11 +498,8 @@ export interface Dictionary {
     saveAsPartialBtn: string
     /** Primary CTA when editing an already-logged payment. */
     saveChangesBtn: string
-    deletePaymentBtn: string
     /** Hint when tapping a payday that is not yet in turn (sequential settling). */
     earlierPaydayFirst: string
-    /** Card CTA for a payday auto-displayed as missed. */
-    logMissedPayday: (date: string) => string
     /** aria-label for the card's pencil (edit source) button. */
     editSourceAria: string
     assignTitle: string

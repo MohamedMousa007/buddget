@@ -76,6 +76,8 @@ export function FiatCurrencyField(props: {
   onChange: (c: Currency) => void
   className?: string
   id?: string
+  /** Hide the full name in the trigger (narrow contexts like the income sheets). */
+  compact?: boolean
 }) {
   return <CurrencyField {...props} />
 }

@@ -26,6 +26,8 @@ interface Props {
   dateLabel: (occ: IncomeOccurrence) => string
   /** Compact per-payday amount shown when cadence leaves room (≤2 paydays). */
   amountLabel?: (occ: IncomeOccurrence) => string
+  /** Status suffix appended to the date label (e.g. " (Late!)"). */
+  statusBracket?: (occ: IncomeOccurrence) => string
   /** Payday key that shows the selection highlight (page: tapped; assign: default/selected). */
   selectedKey?: string | null
   /** Assign select mode: green tick top-right when this card is chosen (identical to the card carousel). */
@@ -57,6 +59,7 @@ export function RecurringIncomeCard({
   occurrences,
   dateLabel,
   amountLabel,
+  statusBracket,
   selectedKey,
   showTick,
   onChipTap,
@@ -126,6 +129,7 @@ export function RecurringIncomeCard({
           occurrences={occurrences}
           dateLabel={dateLabel}
           amountLabel={amountLabel}
+          statusBracket={statusBracket}
           selectedKey={selectedKey}
           onSelect={onChipTap}
         />
