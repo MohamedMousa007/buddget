@@ -48,7 +48,7 @@ export default function IncomePage() {
   useHydrateDebts()
   useHydrateSavings()
   const dataReady = useFinanceStore((s) => s.dataReady)
-  const { incomeSources, incomeEvents, savingsAccounts, debts, paymentMethods, settings, exchangeRates, deleteIncomeEvent, deleteIncomeSource } =
+  const { incomeSources, incomeEvents, savingsAccounts, debts, paymentMethods, settings, exchangeRates, addIncomeEvent, deleteIncomeEvent, deleteIncomeSource } =
     useFinanceStore(
       useShallow((s) => ({
         incomeSources: s.incomeSources,
@@ -58,6 +58,7 @@ export default function IncomePage() {
         paymentMethods: s.paymentMethods,
         settings: s.settings,
         exchangeRates: s.exchangeRates,
+        addIncomeEvent: s.addIncomeEvent,
         deleteIncomeEvent: s.deleteIncomeEvent,
         deleteIncomeSource: s.deleteIncomeSource,
       })),
@@ -104,6 +105,22 @@ export default function IncomePage() {
   // Status suffix on a payday's date label — only the states that need flagging.
   const statusBracket = (o: IncomeOccurrence): string =>
     o.status === 'late' ? ` ${t.income.bracketLate}` : o.status === 'missed' ? ` ${t.income.bracketMissed}` : o.status === 'partial' ? ` ${t.income.bracketPartial}` : ''
+
+  // Explicitly skip an unpaid payday — persists a missed event so it stops nagging.
+  const markPaydayMissed = (s: IncomeSource, dueDate: string) => {
+    addIncomeEvent({
+      templateId: s.id,
+      name: s.name,
+      amount: s.amount,
+      currency: s.currency,
+      sourceType: s.sourceType,
+      receivedDate: dueDate,
+      occurrenceDate: dueDate,
+      status: 'missed',
+      ...(s.paymentMethodId ? { paymentMethodId: s.paymentMethodId } : {}),
+    })
+    setSelected(null)
+  }
 
   // Recurring sources active for the selected month.
   const recurring = useMemo(() => {
@@ -277,13 +294,13 @@ export default function IncomePage() {
                       <p className="w-full text-center text-[11px] text-white/55">{t.income.tapPaydayTip}</p>
                     ) : !sel.actionable ? (
                       <p className="w-full text-center text-[11px] text-white/55">{t.income.earlierPaydayFirst}</p>
-                    ) : (
+                    ) : isRealizedOccurrence(sel) ? (
+                      // Settled → Delete the money + Edit the amount.
                       <div className="grid w-full grid-cols-2 gap-2">
                         <button
                           type="button"
-                          disabled={!sel.eventId}
-                          onClick={sel.eventId ? () => { deleteIncomeEvent(sel.eventId!); setSelected(null) } : undefined}
-                          className="rounded-[14px] py-2.5 text-sm font-bold transition-colors disabled:cursor-not-allowed enabled:bg-[var(--color-brand-red)] enabled:text-white enabled:hover:bg-[var(--color-brand-red-hover)] disabled:bg-white/[0.06] disabled:text-white/35"
+                          onClick={() => { deleteIncomeEvent(sel.eventId!); setSelected(null) }}
+                          className="rounded-[14px] bg-[var(--color-brand-red)] py-2.5 text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-red-hover)]"
                         >
                           {t.common.delete}
                         </button>
@@ -292,7 +309,26 @@ export default function IncomePage() {
                           onClick={() => openAmountReceived(source.id, sel.key)}
                           className="rounded-[14px] bg-[var(--color-brand-green)] py-2.5 text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-green-hover)]"
                         >
-                          {sel.eventId ? t.common.edit : t.income.receivedBtn}
+                          {t.common.edit}
+                        </button>
+                      </div>
+                    ) : (
+                      // Open → skip it (Missed) or log money (Received). Missed dims once set.
+                      <div className="grid w-full grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          disabled={sel.status === 'missed'}
+                          onClick={sel.status === 'missed' ? undefined : () => markPaydayMissed(source, sel.dueDate)}
+                          className="rounded-[14px] py-2.5 text-sm font-bold transition-colors disabled:cursor-not-allowed enabled:bg-white/[0.08] enabled:text-white/75 enabled:hover:bg-white/[0.12] disabled:bg-white/[0.05] disabled:text-white/30"
+                        >
+                          {t.income.missedBtn}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openAmountReceived(source.id, sel.key)}
+                          className="rounded-[14px] bg-[var(--color-brand-green)] py-2.5 text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-green-hover)]"
+                        >
+                          {t.income.receivedBtn}
                         </button>
                       </div>
                     )

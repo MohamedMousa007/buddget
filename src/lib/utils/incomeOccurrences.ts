@@ -176,12 +176,10 @@ export function buildOccurrences(
   }
   occ.sort((a, b) => a.date.localeCompare(b.date))
 
-  // Skip detection: an *overdue, unpaid* payday with any realized payday after it
-  // was skipped over — it displays missed and locks (you can't settle a past gap
-  // once a later paycheck landed). Future (awaiting) paydays are never touched,
-  // even if a later one was paid early. Deleting a paid payday flows through here:
-  // if money was received later it re-derives as missed, otherwise it keeps its
-  // date-based pending status (late/awaiting = still the in-turn one).
+  // Skip display: an overdue unpaid payday with a realized payday after it was
+  // skipped over — show it missed (not just late). Future awaiting paydays are
+  // never touched, even if a later one was paid early. Display only — actionability
+  // below still lets the user backfill it.
   let realizedAfter = false
   for (let i = occ.length - 1; i >= 0; i--) {
     const o = occ[i]
@@ -189,20 +187,24 @@ export function buildOccurrences(
       realizedAfter = true
       continue
     }
-    if (realizedAfter && !o.eventId && o.status === 'late') {
-      o.status = 'missed'
-      o.actionable = false
-    }
+    if (realizedAfter && !o.eventId && o.status === 'late') o.status = 'missed'
   }
 
-  // Sequential settling: the earliest pending (awaiting/late) payday is the one
-  // in turn; later event-less paydays wait. Auto-missed ones stay actionable so
-  // the user can still log them.
-  let turnTaken = false
+  // Actionability. Settled paydays are always editable/deletable, and any *past*
+  // open payday (late/missed) can always be backfilled or marked missed — you can
+  // catch up a historical gap regardless of what landed after it. Only *future*
+  // awaiting paydays settle in order: just the earliest awaiting one is in turn,
+  // later future paydays wait (can't receive tomorrow's money before today's).
+  let awaitingTaken = false
   for (const o of occ) {
-    if (o.eventId || o.status === 'missed') continue
-    if (turnTaken) o.actionable = false
-    else turnTaken = true
+    if (o.eventId) {
+      o.actionable = true
+    } else if (o.status === 'awaiting') {
+      o.actionable = !awaitingTaken
+      awaitingTaken = true
+    } else {
+      o.actionable = true
+    }
   }
   return occ
 }

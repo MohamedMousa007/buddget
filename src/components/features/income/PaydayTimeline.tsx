@@ -115,7 +115,7 @@ export function PaydayTimeline({ occurrences, dateLabel, amountLabel, statusBrac
           <button
             key={occ.key}
             type="button"
-            onClick={onSelect ? () => onSelect(occ) : undefined}
+            onClick={onSelect ? (e) => { e.stopPropagation(); onSelect(occ) } : undefined}
             aria-label={dateLabel(occ)}
             aria-pressed={selected}
             className={`absolute top-1/2 flex h-11 min-w-[44px] -translate-x-1/2 -translate-y-1/2 items-center justify-center transition-opacity ${dimmed ? 'opacity-45' : ''}`}
@@ -123,7 +123,7 @@ export function PaydayTimeline({ occurrences, dateLabel, amountLabel, statusBrac
           >
             <span
               className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap font-mono-numbers text-[9px] leading-none"
-              style={{ [above ? 'bottom' : 'top']: 'calc(50% + 13px)', color: selected ? st.text : 'rgba(255,255,255,.62)' }}
+              style={{ [above ? 'bottom' : 'top']: 'calc(50% + 13px)', color: st.text, opacity: selected ? 1 : 0.82, fontWeight: selected ? 600 : 500 }}
               dir="ltr"
             >
               {dateLabel(occ)}

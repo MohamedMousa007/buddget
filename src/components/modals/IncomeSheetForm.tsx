@@ -401,7 +401,7 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
       </div>
 
       {/* Nested assign hero slider (add one-time only). */}
-      {!edit ? <AssignIncomeSheet open={assignOpen} onClose={() => setAssignOpen(false)} onAssign={setAssigned} zIndexClassName="z-[120]" /> : null}
+      {!edit ? <AssignIncomeSheet open={assignOpen} onClose={() => setAssignOpen(false)} onAssign={setAssigned} initialTemplateId={assigned?.templateId} zIndexClassName="z-[120]" /> : null}
     </ModalShell>
   )
 }

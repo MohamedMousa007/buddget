@@ -166,12 +166,13 @@ describe('buildOccurrences', () => {
     expect(occ[1].actionable).toBe(true)
   })
 
-  it('an overdue unpaid payday with a paid payday after it re-derives as missed and locks', () => {
+  it('an overdue unpaid payday with a paid payday after it displays missed but stays backfillable', () => {
     const s = source({ recurringFrequency: 'biweekly', paydayDays: [3, 20] })
-    // Today Jul 7: Jul 3 is overdue (late) and Jul 20 already received → Jul 3 was skipped → missed.
+    // Today Jul 7: Jul 3 is overdue (late) and Jul 20 already received → Jul 3 shows missed,
+    // but a past gap can always be caught up, so it stays actionable.
     const occ = buildOccurrences(s, [event({ occurrenceDate: '2026-07-20' })], '2026-07', 1, new Date(2026, 6, 7))
     expect(occ[0].status).toBe('missed')
-    expect(occ[0].actionable).toBe(false)
+    expect(occ[0].actionable).toBe(true)
     expect(occ[1].status).toBe('received')
   })
 

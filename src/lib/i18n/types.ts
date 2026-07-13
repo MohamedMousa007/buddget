@@ -485,6 +485,10 @@ export interface Dictionary {
     tapPaydayTip: string
     /** Card CTA to log/adjust a payday's received amount. */
     receivedBtn: string
+    /** Card CTA to skip an unpaid payday (mark it missed). */
+    missedBtn: string
+    /** Amount-sheet chip that fills the input with the full expected amount. */
+    fullBtn: string
     /** Status suffixes appended to a payday's date label. */
     bracketLate: string
     bracketMissed: string
@@ -505,7 +509,9 @@ export interface Dictionary {
     assignTitle: string
     assignSubtitle: string
     fillsPayday: (date: string) => string
-    assignConfirm: (source: string, date: string) => string
+    /** Card caption prompting the user to tap a source before assigning. */
+    assignTapHint: string
+    assignConfirm: (source: string) => string
     allIncomeHeading: string
     thisMonthCount: (n: number) => string
     swipeAssign: string
