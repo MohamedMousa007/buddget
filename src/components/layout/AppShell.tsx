@@ -145,7 +145,7 @@ function SmsRealtimeSync() {
   useEffect(() => {
     if (!dataReady || !smsEnabled) return
     const supabase = createClient()
-    const onRow = async (payload: { new: { id?: string; expense_id?: string | null; income_id?: string | null; debt_payment_id?: string | null } }) => {
+    const onRow = async (payload: { new: { id?: string; expense_id?: string | null; income_id?: string | null; debt_payment_id?: string | null; awaiting_confirmation?: boolean } }) => {
       const row = payload.new
       let rendered = false
       if (row.expense_id) {
@@ -173,7 +173,10 @@ function SmsRealtimeSync() {
           .single()
         if (data) { addDebtPaymentIfMissing(data as DebtPaymentRow); rendered = true }
       }
-      if (rendered) void ackSms(row.id)
+      // Skip ack for rows still awaiting user action (currency_provisional, add_failed).
+      // sms_mark_acked sets status='confirmed' without clearing awaiting_confirmation,
+      // which permanently traps those rows in the SMS review sheet.
+      if (rendered && !row.awaiting_confirmation) void ackSms(row.id)
     }
 
     // ponytail: catch-up ack — rows processed while app was closed/backgrounded
@@ -186,6 +189,7 @@ function SmsRealtimeSync() {
         .from('sms_parse_log')
         .select('id')
         .in('status', ['logged', 'notified'])
+        .eq('awaiting_confirmation', false)
         .or('expense_id.not.is.null,income_id.not.is.null,debt_payment_id.not.is.null')
         .gte('received_at', cutoff)
         .limit(50)
@@ -375,7 +379,11 @@ function SmsPushActionHandler() {
         void (async () => {
           const supabase = createClient()
           const { data: row } = await supabase.from('expenses').select('*').eq('id', data.expenseId).single()
-          if (row) { addExpenseIfMissing(row as ExpenseRow); void ackSms(data.logId) }
+          if (row) {
+            addExpenseIfMissing(row as ExpenseRow)
+            // sms_currency_confirm: currency still needs user confirmation in-app — don't ack yet.
+            if (kind !== 'sms_currency_confirm') void ackSms(data.logId)
+          }
           // CC payoff also affects the debt ledger — send the user there.
           navigate(kind === 'sms_cc_payoff' ? '/debts' : `/expenses?highlight=${data.expenseId}`)
         })()
