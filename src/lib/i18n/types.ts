@@ -1073,6 +1073,20 @@ export interface Dictionary {
       subscriptionsSubtitle: string
       terms: string
       privacy: string
+      feedback: string
+      feedbackSubtitle: string
+    }
+    feedback: {
+      typeBug: string
+      typeFeature: string
+      labelTitle: string
+      placeholderTitle: string
+      labelDescription: string
+      placeholderDescription: string
+      submit: string
+      submitting: string
+      successTitle: string
+      successBody: string
     }
   }
 
