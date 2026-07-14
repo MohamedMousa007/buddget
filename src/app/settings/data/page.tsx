@@ -21,6 +21,7 @@ export default function SettingsDataPage() {
         onExportExpenses={s.handleExportExpensesCsv}
         onImportChange={s.handleImport}
         onStartFresh={s.handleStartFresh}
+        isResetting={s.isResetting}
       />
     </SettingsSubPageShell>
   )

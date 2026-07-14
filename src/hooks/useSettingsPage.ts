@@ -37,6 +37,7 @@ export function useSettingsPage() {
 
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [importBanner, setImportBanner] = useState<SettingsImportBannerState | null>(null)
+  const [isResetting, setIsResetting] = useState(false)
 
   useEffect(() => {
     if (user?.email) {
@@ -115,6 +116,11 @@ export function useSettingsPage() {
   }
 
   const handleStartFresh = async () => {
+    // Show loading state immediately so the user sees feedback before the sign-out
+    // batch fires. The setTimeout(0) yields to React so it can paint isResetting=true
+    // before setUser(null) batches in — eliminating the "ambiguous" blank window.
+    setIsResetting(true)
+    await new Promise<void>(r => setTimeout(r, 0))
     // ponytail: fire reset concurrently — signOut() drops UI immediately, server wipe finishes in background
     const ac = new AbortController()
     const abortTimer = setTimeout(() => ac.abort(), 8000)
@@ -139,5 +145,6 @@ export function useSettingsPage() {
     handleExportExpensesCsv,
     handleImport,
     handleStartFresh,
+    isResetting,
   }
 }
