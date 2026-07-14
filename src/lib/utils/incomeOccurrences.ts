@@ -65,8 +65,12 @@ export function expectedPerPayday(source: IncomeSource): number {
   return source.amount
 }
 
-/** Computed display status for a payday with no ledger event yet. */
-function pendingStatus(dueISO: string, todayISO: string): IncomeOccurrenceStatus {
+/**
+ * Computed display status for a payday with no ledger event yet. Exported so the
+ * income page can tell a still-reversible payday (awaiting/late) from an old one
+ * that is naturally missed — the latter can only ever be received, not un-marked.
+ */
+export function pendingStatus(dueISO: string, todayISO: string): IncomeOccurrenceStatus {
   if (todayISO <= dueISO) return 'awaiting'
   const overdueDays = Math.round((parseISO(todayISO).getTime() - parseISO(dueISO).getTime()) / 86_400_000)
   return overdueDays <= MISSED_AFTER_DAYS ? 'late' : 'missed'

@@ -620,6 +620,7 @@ export const ar: Dictionary = {
     tapPaydayTip: 'اضغط على يوم دفع لتحديثه',
     receivedBtn: 'استلام',
     missedBtn: 'فائت',
+    awaitingBtn: 'منتظر',
     fullBtn: 'كامل',
     bracketLate: '(متأخر!)',
     bracketMissed: '(فائت!)',
@@ -646,7 +647,7 @@ export const ar: Dictionary = {
   },
 
   editIncome: {
-    title: 'تعديل المصدر',
+    title: 'تعديل الدخل',
     labelSource: 'من أين يأتي؟',
     labelAmount: 'كم المبلغ؟',
     labelCurrency: 'بأي عملة؟',
