@@ -12,6 +12,7 @@ export interface SettingsDataManagementSectionProps {
   onExportExpenses: () => void
   onImportChange: (e: React.ChangeEvent<HTMLInputElement>) => void
   onStartFresh: () => void
+  isResetting?: boolean
 }
 
 /**
@@ -25,6 +26,7 @@ export function SettingsDataManagementSection({
   onExportExpenses,
   onImportChange,
   onStartFresh,
+  isResetting = false,
 }: SettingsDataManagementSectionProps) {
   const t = useT()
 
@@ -81,7 +83,16 @@ export function SettingsDataManagementSection({
         </button>
         <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={onImportChange} />
 
-        {!showResetConfirm ? (
+        {isResetting ? (
+          <button
+            type="button"
+            disabled
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-900/50 text-sm text-[var(--color-brand-red)] opacity-60 cursor-not-allowed"
+          >
+            <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            {t.settings.dataStartFresh}
+          </button>
+        ) : !showResetConfirm ? (
           <button
             type="button"
             onClick={() => onShowResetConfirm(true)}
