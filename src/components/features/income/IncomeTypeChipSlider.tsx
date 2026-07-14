@@ -1,5 +1,6 @@
 'use client'
 
+import { ChevronRight } from 'lucide-react'
 import type { Dictionary } from '@/lib/i18n/types'
 import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
 import { MANUAL_INCOME_SOURCE_TYPES } from '@/lib/constants/incomeSourceTypes'
@@ -18,8 +19,9 @@ interface Props {
  */
 export function IncomeTypeChipSlider({ value, onChange, labels }: Props) {
   return (
-    <div className="hide-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5">
-      {MANUAL_INCOME_SOURCE_TYPES.map((st) => {
+    <div className="relative">
+      <div className="hide-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5">
+        {MANUAL_INCOME_SOURCE_TYPES.map((st) => {
         const active = value === st
         const colors = incomeTypeColors(st)
         return (
@@ -37,6 +39,11 @@ export function IncomeTypeChipSlider({ value, onChange, labels }: Props) {
           </button>
         )
       })}
+      </div>
+      {/* Right-edge fade + chevron — hints the row scrolls horizontally (7 types overflow). */}
+      <div className="pointer-events-none absolute inset-y-0 end-0 flex w-10 items-center justify-end pe-0.5 bg-[linear-gradient(to_left,var(--color-brand-card),transparent)] rtl:bg-[linear-gradient(to_right,var(--color-brand-card),transparent)]">
+        <ChevronRight className="h-4 w-4 text-[var(--color-brand-text-muted)] rtl:rotate-180" />
+      </div>
     </div>
   )
 }

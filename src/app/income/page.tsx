@@ -21,12 +21,13 @@ import { SkeletonList } from '@/components/ui/SkeletonList'
 import { convertCurrency, fmtCompact } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { expectedRecurringForMonth, getMonthRange, recurringActiveForWindow } from '@/lib/utils/calculations'
-import { buildOccurrences, isRealizedOccurrence, type IncomeOccurrence } from '@/lib/utils/incomeOccurrences'
+import { buildOccurrences, isRealizedOccurrence, pendingStatus, type IncomeOccurrence } from '@/lib/utils/incomeOccurrences'
 import type { IncomeSource, IncomeSourceType } from '@/lib/store/types'
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 const MON_TITLE = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const REALIZED_EVENT = new Set(['confirmed', 'late', 'partial'])
+const todayISO = () => new Date().toISOString().slice(0, 10)
 
 function fmtNum(n: number): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -312,14 +313,43 @@ export default function IncomePage() {
                           {t.common.edit}
                         </button>
                       </div>
+                    ) : sel.status === 'missed' ? (
+                      // Marked/auto missed. An old payday (naturally missed by date) can only
+                      // ever be Received — one full-width CTA. A future/due one is reversible:
+                      // Awaiting un-marks it (deletes the missed event) back to awaiting/late.
+                      pendingStatus(sel.dueDate, todayISO()) === 'missed' || !sel.eventId ? (
+                        <button
+                          type="button"
+                          onClick={() => openAmountReceived(source.id, sel.key)}
+                          className="w-full rounded-[14px] bg-[var(--color-brand-green)] py-2.5 text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-green-hover)]"
+                        >
+                          {t.income.receivedBtn}
+                        </button>
+                      ) : (
+                        <div className="grid w-full grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => { deleteIncomeEvent(sel.eventId!); setSelected(null) }}
+                            className="rounded-[14px] bg-white/[0.08] py-2.5 text-sm font-bold text-white/75 transition-colors hover:bg-white/[0.12]"
+                          >
+                            {t.income.awaitingBtn}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openAmountReceived(source.id, sel.key)}
+                            className="rounded-[14px] bg-[var(--color-brand-green)] py-2.5 text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-green-hover)]"
+                          >
+                            {t.income.receivedBtn}
+                          </button>
+                        </div>
+                      )
                     ) : (
-                      // Open → skip it (Missed) or log money (Received). Missed dims once set.
+                      // Open (awaiting/late) → skip it (Missed, solid red CTA) or log money (Received).
                       <div className="grid w-full grid-cols-2 gap-2">
                         <button
                           type="button"
-                          disabled={sel.status === 'missed'}
-                          onClick={sel.status === 'missed' ? undefined : () => markPaydayMissed(source, sel.dueDate)}
-                          className="rounded-[14px] py-2.5 text-sm font-bold transition-colors disabled:cursor-not-allowed enabled:bg-white/[0.08] enabled:text-white/75 enabled:hover:bg-white/[0.12] disabled:bg-white/[0.05] disabled:text-white/30"
+                          onClick={() => markPaydayMissed(source, sel.dueDate)}
+                          className="rounded-[14px] bg-[var(--color-brand-red)] py-2.5 text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-red-hover)]"
                         >
                           {t.income.missedBtn}
                         </button>

@@ -487,6 +487,8 @@ export interface Dictionary {
     receivedBtn: string
     /** Card CTA to skip an unpaid payday (mark it missed). */
     missedBtn: string
+    /** Card CTA to revert a marked-missed future/due payday back to its open state. */
+    awaitingBtn: string
     /** Amount-sheet chip that fills the input with the full expected amount. */
     fullBtn: string
     /** Status suffixes appended to a payday's date label. */

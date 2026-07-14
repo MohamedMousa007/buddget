@@ -621,6 +621,7 @@ export const en: Dictionary = {
     tapPaydayTip: 'Tap a payday to update it',
     receivedBtn: 'Received',
     missedBtn: 'Missed',
+    awaitingBtn: 'Awaiting',
     fullBtn: 'Full',
     bracketLate: '(Late!)',
     bracketMissed: '(Missed!)',
@@ -647,7 +648,7 @@ export const en: Dictionary = {
   },
 
   editIncome: {
-    title: 'Edit Source',
+    title: 'Edit Income',
     labelSource: 'Where does it come from?',
     labelAmount: 'How much?',
     labelCurrency: 'In which currency?',

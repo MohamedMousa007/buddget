@@ -374,20 +374,10 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
               {t.addIncome.labelNotes}
             </button>
           )}
-
-          {/* Delete (edit only, non-shared sources) */}
-          {edit && source && !source.sharedPlanId ? (
-            <button
-              type="button"
-              onClick={handleDelete}
-              className="flex w-full items-center justify-center gap-2 py-3 text-sm text-[var(--color-brand-red)] opacity-80 hover:opacity-100"
-            >
-              <Trash2 className="h-4 w-4" />
-              {t.common.delete}
-            </button>
-          ) : null}
         </div>
 
+        {/* Pinned footer: full-width Save CTA, with Delete as a distinct, less
+            prominent action directly below it (edit only, non-shared sources). */}
         <div className="shrink-0 px-5 pb-5 pt-4">
           <button
             type="button"
@@ -397,6 +387,16 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
           >
             {edit ? t.editIncome.buttonSave : isRecurring ? t.addIncome.buttonSubmit : t.income.addIncomeCta}
           </button>
+          {edit && source && !source.sharedPlanId ? (
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="mt-2 flex w-full items-center justify-center gap-2 py-2.5 text-sm text-[var(--color-brand-red)] opacity-80 hover:opacity-100"
+            >
+              <Trash2 className="h-4 w-4" />
+              {t.common.delete}
+            </button>
+          ) : null}
         </div>
       </div>
 
