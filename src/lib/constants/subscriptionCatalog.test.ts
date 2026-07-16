@@ -163,6 +163,42 @@ describe('catalog data integrity', () => {
     }
   })
 
+  it('gives the same plan the same id in every region — the cross-region join key', () => {
+    for (const b of SUBSCRIPTION_CATALOG) {
+      const byName = new Map<string, string>()
+      for (const plans of Object.values(b.plans)) {
+        for (const p of plans ?? []) {
+          const seen = byName.get(p.name)
+          if (seen) expect(p.id, `${b.key} plan "${p.name}" has ids ${seen} and ${p.id}`).toBe(seen)
+          else byName.set(p.name, p.id)
+        }
+      }
+    }
+  })
+
+  it('never reuses one plan id for two different plans of a brand', () => {
+    for (const b of SUBSCRIPTION_CATALOG) {
+      const idToName = new Map<string, string>()
+      for (const plans of Object.values(b.plans)) {
+        for (const p of plans ?? []) {
+          const seen = idToName.get(p.id)
+          if (seen) expect(p.name, `${b.key} id "${p.id}" maps to ${seen} and ${p.name}`).toBe(seen)
+          else idToName.set(p.id, p.name)
+        }
+      }
+    }
+  })
+
+  it('scopes every plan id to its own brand, so ids cannot collide across brands', () => {
+    for (const b of SUBSCRIPTION_CATALOG) {
+      for (const plans of Object.values(b.plans)) {
+        for (const p of plans ?? []) {
+          expect(p.id.startsWith(`${b.key}_`), `${b.key} has foreign plan id ${p.id}`).toBe(true)
+        }
+      }
+    }
+  })
+
   it('never prices a region the brand is not available in', () => {
     for (const b of SUBSCRIPTION_CATALOG) {
       for (const region of Object.keys(b.plans) as (keyof typeof b.plans)[]) {

@@ -1,10 +1,25 @@
 import type { SubscriptionBillingCycle } from '@/lib/store/types'
 
 export interface SubscriptionPlan {
+  /**
+   * Stable identity, SHARED across regions — `netflix_standard` is the same plan whether
+   * priced in EGP or SAR. That is what makes "which plan is this?" answerable when the
+   * user's region changes, and it is the join key the server-side price table needs.
+   *
+   * Plans were positional (`brand.plans[region][idx]`) and subscriptions persisted only a
+   * plan NAME, so reordering the array or editing a label silently repointed or orphaned
+   * every stored subscription.
+   */
+  id: string
   name: string
   amount: number
   cycle: SubscriptionBillingCycle
   description?: string
+  /**
+   * ISO date the price was last confirmed against a primary source. Absent means the
+   * price predates verification — treat it as a hint, not a fact.
+   */
+  verifiedAt?: string
 }
 
 /**
@@ -256,14 +271,14 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     availability: ['uae', 'egypt'],
     plans: {
       uae: [
-        { name: 'Basic', amount: 35, cycle: 'monthly', description: 'HD, 1 screen' },
-        { name: 'Standard', amount: 49, cycle: 'monthly', description: 'Full HD, 2 screens' },
-        { name: 'Premium', amount: 71, cycle: 'monthly', description: '4K UHD, 4 screens' },
+        { id: 'netflix_basic', name: 'Basic', amount: 35, cycle: 'monthly', description: 'HD, 1 screen' },
+        { id: 'netflix_standard', name: 'Standard', amount: 49, cycle: 'monthly', description: 'Full HD, 2 screens' },
+        { id: 'netflix_premium', name: 'Premium', amount: 71, cycle: 'monthly', description: '4K UHD, 4 screens' },
       ],
       egypt: [
-        { name: 'Basic', amount: 70, cycle: 'monthly', description: 'HD, 1 screen' },
-        { name: 'Standard', amount: 120, cycle: 'monthly', description: 'Full HD, 2 screens' },
-        { name: 'Premium', amount: 165, cycle: 'monthly', description: '4K UHD, 4 screens' },
+        { id: 'netflix_basic', name: 'Basic', amount: 70, cycle: 'monthly', description: 'HD, 1 screen' },
+        { id: 'netflix_standard', name: 'Standard', amount: 120, cycle: 'monthly', description: 'Full HD, 2 screens' },
+        { id: 'netflix_premium', name: 'Premium', amount: 165, cycle: 'monthly', description: '4K UHD, 4 screens' },
       ],
     },
   },
@@ -278,14 +293,14 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     availability: ['uae', 'egypt'],
     plans: {
       uae: [
-        { name: 'VIP', amount: 24, cycle: 'monthly' },
-        { name: 'VIP Sports', amount: 45, cycle: 'monthly' },
-        { name: 'VIP Annual', amount: 240, cycle: 'yearly' },
+        { id: 'shahid_vip_vip', name: 'VIP', amount: 24, cycle: 'monthly' },
+        { id: 'shahid_vip_vip_sports', name: 'VIP Sports', amount: 45, cycle: 'monthly' },
+        { id: 'shahid_vip_vip_annual', name: 'VIP Annual', amount: 240, cycle: 'yearly' },
       ],
       egypt: [
-        { name: 'VIP', amount: 100, cycle: 'monthly' },
-        { name: 'VIP Sports', amount: 200, cycle: 'monthly' },
-        { name: 'VIP Annual', amount: 1000, cycle: 'yearly' },
+        { id: 'shahid_vip_vip', name: 'VIP', amount: 100, cycle: 'monthly' },
+        { id: 'shahid_vip_vip_sports', name: 'VIP Sports', amount: 200, cycle: 'monthly' },
+        { id: 'shahid_vip_vip_annual', name: 'VIP Annual', amount: 1000, cycle: 'yearly' },
       ],
     },
   },
@@ -301,8 +316,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     plans: {
       uae: [],
       egypt: [
-        { name: 'Basic', amount: 120, cycle: 'monthly' },
-        { name: 'Premium', amount: 200, cycle: 'monthly' },
+        { id: 'watchit_basic', name: 'Basic', amount: 120, cycle: 'monthly' },
+        { id: 'watchit_premium', name: 'Premium', amount: 200, cycle: 'monthly' },
       ],
     },
   },
@@ -317,12 +332,12 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     availability: ['uae', 'egypt'],
     plans: {
       uae: [
-        { name: 'Standard', amount: 30, cycle: 'monthly' },
-        { name: 'Premium', amount: 40, cycle: 'monthly' },
+        { id: 'disney_plus_standard', name: 'Standard', amount: 30, cycle: 'monthly' },
+        { id: 'disney_plus_premium', name: 'Premium', amount: 40, cycle: 'monthly' },
       ],
       egypt: [
-        { name: 'Standard', amount: 120, cycle: 'monthly' },
-        { name: 'Premium', amount: 170, cycle: 'monthly' },
+        { id: 'disney_plus_standard', name: 'Standard', amount: 120, cycle: 'monthly' },
+        { id: 'disney_plus_premium', name: 'Premium', amount: 170, cycle: 'monthly' },
       ],
     },
   },
@@ -337,12 +352,12 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     availability: ['uae', 'egypt'],
     plans: {
       uae: [
-        { name: 'Monthly', amount: 30, cycle: 'monthly' },
-        { name: 'Annual', amount: 300, cycle: 'yearly' },
+        { id: 'osn_plus_monthly', name: 'Monthly', amount: 30, cycle: 'monthly' },
+        { id: 'osn_plus_annual', name: 'Annual', amount: 300, cycle: 'yearly' },
       ],
       egypt: [
-        { name: 'Monthly', amount: 120, cycle: 'monthly' },
-        { name: 'Annual', amount: 1200, cycle: 'yearly' },
+        { id: 'osn_plus_monthly', name: 'Monthly', amount: 120, cycle: 'monthly' },
+        { id: 'osn_plus_annual', name: 'Annual', amount: 1200, cycle: 'yearly' },
       ],
     },
   },
@@ -357,12 +372,12 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     availability: ['uae', 'egypt'],
     plans: {
       uae: [
-        { name: 'Individual', amount: 23, cycle: 'monthly' },
-        { name: 'Family', amount: 35, cycle: 'monthly' },
+        { id: 'youtube_premium_individual', name: 'Individual', amount: 23, cycle: 'monthly' },
+        { id: 'youtube_premium_family', name: 'Family', amount: 35, cycle: 'monthly' },
       ],
       egypt: [
-        { name: 'Individual', amount: 66, cycle: 'monthly' },
-        { name: 'Family', amount: 100, cycle: 'monthly' },
+        { id: 'youtube_premium_individual', name: 'Individual', amount: 66, cycle: 'monthly' },
+        { id: 'youtube_premium_family', name: 'Family', amount: 100, cycle: 'monthly' },
       ],
     },
   },
@@ -377,15 +392,15 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     availability: ['uae', 'egypt'],
     plans: {
       uae: [
-        { name: 'Individual', amount: 20, cycle: 'monthly' },
-        { name: 'Duo', amount: 26, cycle: 'monthly' },
-        { name: 'Family', amount: 33, cycle: 'monthly' },
+        { id: 'spotify_individual', name: 'Individual', amount: 20, cycle: 'monthly' },
+        { id: 'spotify_duo', name: 'Duo', amount: 26, cycle: 'monthly' },
+        { id: 'spotify_family', name: 'Family', amount: 33, cycle: 'monthly' },
       ],
       egypt: [
-        { name: 'Individual', amount: 79, cycle: 'monthly' },
-        { name: 'Duo', amount: 109, cycle: 'monthly' },
-        { name: 'Family', amount: 139, cycle: 'monthly' },
-        { name: 'Student', amount: 39, cycle: 'monthly' },
+        { id: 'spotify_individual', name: 'Individual', amount: 79, cycle: 'monthly' },
+        { id: 'spotify_duo', name: 'Duo', amount: 109, cycle: 'monthly' },
+        { id: 'spotify_family', name: 'Family', amount: 139, cycle: 'monthly' },
+        { id: 'spotify_student', name: 'Student', amount: 39, cycle: 'monthly' },
       ],
     },
   },
@@ -400,12 +415,12 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     availability: ['uae', 'egypt'],
     plans: {
       uae: [
-        { name: 'Individual', amount: 17, cycle: 'monthly' },
-        { name: 'Family', amount: 26, cycle: 'monthly' },
+        { id: 'apple_music_individual', name: 'Individual', amount: 17, cycle: 'monthly' },
+        { id: 'apple_music_family', name: 'Family', amount: 26, cycle: 'monthly' },
       ],
       egypt: [
-        { name: 'Individual', amount: 50, cycle: 'monthly' },
-        { name: 'Family', amount: 80, cycle: 'monthly' },
+        { id: 'apple_music_individual', name: 'Individual', amount: 50, cycle: 'monthly' },
+        { id: 'apple_music_family', name: 'Family', amount: 80, cycle: 'monthly' },
       ],
     },
   },
@@ -419,8 +434,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Enjoyment',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Monthly', amount: 20, cycle: 'monthly' }],
-      egypt: [{ name: 'Monthly', amount: 50, cycle: 'monthly' }],
+      uae: [{ id: 'apple_tv_plus_monthly', name: 'Monthly', amount: 20, cycle: 'monthly' }],
+      egypt: [{ id: 'apple_tv_plus_monthly', name: 'Monthly', amount: 50, cycle: 'monthly' }],
     },
   },
   {
@@ -433,8 +448,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Enjoyment',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Monthly', amount: 16, cycle: 'monthly' }],
-      egypt: [{ name: 'Monthly', amount: 50, cycle: 'monthly' }],
+      uae: [{ id: 'prime_video_monthly', name: 'Monthly', amount: 16, cycle: 'monthly' }],
+      egypt: [{ id: 'prime_video_monthly', name: 'Monthly', amount: 50, cycle: 'monthly' }],
     },
   },
   {
@@ -448,18 +463,18 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     availability: ['uae', 'egypt'],
     plans: {
       uae: [
-        { name: '50 GB', amount: 4, cycle: 'monthly' },
-        { name: '200 GB', amount: 11, cycle: 'monthly' },
-        { name: '2 TB', amount: 37, cycle: 'monthly' },
-        { name: '6 TB', amount: 110, cycle: 'monthly' },
-        { name: '12 TB', amount: 220, cycle: 'monthly' },
+        { id: 'icloud_50_gb', name: '50 GB', amount: 4, cycle: 'monthly' },
+        { id: 'icloud_200_gb', name: '200 GB', amount: 11, cycle: 'monthly' },
+        { id: 'icloud_2_tb', name: '2 TB', amount: 37, cycle: 'monthly' },
+        { id: 'icloud_6_tb', name: '6 TB', amount: 110, cycle: 'monthly' },
+        { id: 'icloud_12_tb', name: '12 TB', amount: 220, cycle: 'monthly' },
       ],
       egypt: [
-        { name: '50 GB', amount: 16, cycle: 'monthly' },
-        { name: '200 GB', amount: 45, cycle: 'monthly' },
-        { name: '2 TB', amount: 150, cycle: 'monthly' },
-        { name: '6 TB', amount: 450, cycle: 'monthly' },
-        { name: '12 TB', amount: 900, cycle: 'monthly' },
+        { id: 'icloud_50_gb', name: '50 GB', amount: 16, cycle: 'monthly' },
+        { id: 'icloud_200_gb', name: '200 GB', amount: 45, cycle: 'monthly' },
+        { id: 'icloud_2_tb', name: '2 TB', amount: 150, cycle: 'monthly' },
+        { id: 'icloud_6_tb', name: '6 TB', amount: 450, cycle: 'monthly' },
+        { id: 'icloud_12_tb', name: '12 TB', amount: 900, cycle: 'monthly' },
       ],
     },
   },
@@ -474,12 +489,12 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     availability: ['uae', 'egypt'],
     plans: {
       uae: [
-        { name: '100 GB', amount: 7, cycle: 'monthly' },
-        { name: '2 TB', amount: 37, cycle: 'monthly' },
+        { id: 'google_one_100_gb', name: '100 GB', amount: 7, cycle: 'monthly' },
+        { id: 'google_one_2_tb', name: '2 TB', amount: 37, cycle: 'monthly' },
       ],
       egypt: [
-        { name: '100 GB', amount: 30, cycle: 'monthly' },
-        { name: '2 TB', amount: 150, cycle: 'monthly' },
+        { id: 'google_one_100_gb', name: '100 GB', amount: 30, cycle: 'monthly' },
+        { id: 'google_one_2_tb', name: '2 TB', amount: 150, cycle: 'monthly' },
       ],
     },
   },
@@ -494,12 +509,12 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     availability: ['uae', 'egypt'],
     plans: {
       uae: [
-        { name: 'Plus', amount: 73, cycle: 'monthly' },
-        { name: 'Pro', amount: 733, cycle: 'monthly' },
+        { id: 'chatgpt_plus_plus', name: 'Plus', amount: 73, cycle: 'monthly' },
+        { id: 'chatgpt_plus_pro', name: 'Pro', amount: 733, cycle: 'monthly' },
       ],
       egypt: [
-        { name: 'Plus', amount: 300, cycle: 'monthly' },
-        { name: 'Pro', amount: 3000, cycle: 'monthly' },
+        { id: 'chatgpt_plus_plus', name: 'Plus', amount: 300, cycle: 'monthly' },
+        { id: 'chatgpt_plus_pro', name: 'Pro', amount: 3000, cycle: 'monthly' },
       ],
     },
   },
@@ -513,8 +528,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Other',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Pro', amount: 73, cycle: 'monthly' }],
-      egypt: [{ name: 'Pro', amount: 300, cycle: 'monthly' }],
+      uae: [{ id: 'claude_pro_pro', name: 'Pro', amount: 73, cycle: 'monthly' }],
+      egypt: [{ id: 'claude_pro_pro', name: 'Pro', amount: 300, cycle: 'monthly' }],
     },
   },
   {
@@ -527,8 +542,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Other',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Plus', amount: 37, cycle: 'monthly' }],
-      egypt: [{ name: 'Plus', amount: 150, cycle: 'monthly' }],
+      uae: [{ id: 'notion_plus', name: 'Plus', amount: 37, cycle: 'monthly' }],
+      egypt: [{ id: 'notion_plus', name: 'Plus', amount: 150, cycle: 'monthly' }],
     },
   },
   {
@@ -541,8 +556,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Enjoyment',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Monthly', amount: 200, cycle: 'monthly', description: 'Adjust to your gym price' }],
-      egypt: [{ name: 'Monthly', amount: 500, cycle: 'monthly', description: 'Adjust to your gym price' }],
+      uae: [{ id: 'gym_monthly', name: 'Monthly', amount: 200, cycle: 'monthly', description: 'Adjust to your gym price' }],
+      egypt: [{ id: 'gym_monthly', name: 'Monthly', amount: 500, cycle: 'monthly', description: 'Adjust to your gym price' }],
     },
   },
   {
@@ -556,14 +571,14 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     availability: ['uae', 'egypt'],
     plans: {
       uae: [
-        { name: 'Essential', amount: 20, cycle: 'monthly' },
-        { name: 'Extra', amount: 52, cycle: 'monthly' },
-        { name: 'Premium', amount: 63, cycle: 'monthly' },
+        { id: 'playstation_plus_essential', name: 'Essential', amount: 20, cycle: 'monthly' },
+        { id: 'playstation_plus_extra', name: 'Extra', amount: 52, cycle: 'monthly' },
+        { id: 'playstation_plus_premium', name: 'Premium', amount: 63, cycle: 'monthly' },
       ],
       egypt: [
-        { name: 'Essential', amount: 80, cycle: 'monthly' },
-        { name: 'Extra', amount: 215, cycle: 'monthly' },
-        { name: 'Premium', amount: 260, cycle: 'monthly' },
+        { id: 'playstation_plus_essential', name: 'Essential', amount: 80, cycle: 'monthly' },
+        { id: 'playstation_plus_extra', name: 'Extra', amount: 215, cycle: 'monthly' },
+        { id: 'playstation_plus_premium', name: 'Premium', amount: 260, cycle: 'monthly' },
       ],
     },
   },
@@ -578,14 +593,14 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     availability: ['uae', 'egypt'],
     plans: {
       uae: [
-        { name: 'Core', amount: 28, cycle: 'monthly' },
-        { name: 'Standard', amount: 55, cycle: 'monthly' },
-        { name: 'Ultimate', amount: 68, cycle: 'monthly' },
+        { id: 'xbox_gamepass_core', name: 'Core', amount: 28, cycle: 'monthly' },
+        { id: 'xbox_gamepass_standard', name: 'Standard', amount: 55, cycle: 'monthly' },
+        { id: 'xbox_gamepass_ultimate', name: 'Ultimate', amount: 68, cycle: 'monthly' },
       ],
       egypt: [
-        { name: 'Core', amount: 115, cycle: 'monthly' },
-        { name: 'Standard', amount: 230, cycle: 'monthly' },
-        { name: 'Ultimate', amount: 280, cycle: 'monthly' },
+        { id: 'xbox_gamepass_core', name: 'Core', amount: 115, cycle: 'monthly' },
+        { id: 'xbox_gamepass_standard', name: 'Standard', amount: 230, cycle: 'monthly' },
+        { id: 'xbox_gamepass_ultimate', name: 'Ultimate', amount: 280, cycle: 'monthly' },
       ],
     },
   },
@@ -599,8 +614,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Other',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Monthly', amount: 46, cycle: 'monthly' }],
-      egypt: [{ name: 'Monthly', amount: 190, cycle: 'monthly' }],
+      uae: [{ id: 'nordvpn_monthly', name: 'Monthly', amount: 46, cycle: 'monthly' }],
+      egypt: [{ id: 'nordvpn_monthly', name: 'Monthly', amount: 190, cycle: 'monthly' }],
     },
   },
   {
@@ -615,9 +630,9 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     plans: {
       uae: [],
       egypt: [
-        { name: '140 GB', amount: 250, cycle: 'monthly' },
-        { name: '250 GB', amount: 400, cycle: 'monthly' },
-        { name: '500 GB', amount: 600, cycle: 'monthly' },
+        { id: 'we_internet_140_gb', name: '140 GB', amount: 250, cycle: 'monthly' },
+        { id: 'we_internet_250_gb', name: '250 GB', amount: 400, cycle: 'monthly' },
+        { id: 'we_internet_500_gb', name: '500 GB', amount: 600, cycle: 'monthly' },
       ],
     },
   },
@@ -633,9 +648,9 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     plans: {
       uae: [],
       egypt: [
-        { name: 'Flex 100', amount: 100, cycle: 'monthly' },
-        { name: 'Flex 200', amount: 200, cycle: 'monthly' },
-        { name: 'Flex 350', amount: 350, cycle: 'monthly' },
+        { id: 'vodafone_eg_flex_100', name: 'Flex 100', amount: 100, cycle: 'monthly' },
+        { id: 'vodafone_eg_flex_200', name: 'Flex 200', amount: 200, cycle: 'monthly' },
+        { id: 'vodafone_eg_flex_350', name: 'Flex 350', amount: 350, cycle: 'monthly' },
       ],
     },
   },
@@ -651,8 +666,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     plans: {
       uae: [],
       egypt: [
-        { name: 'Air 100', amount: 100, cycle: 'monthly' },
-        { name: 'Air 200', amount: 200, cycle: 'monthly' },
+        { id: 'orange_eg_air_100', name: 'Air 100', amount: 100, cycle: 'monthly' },
+        { id: 'orange_eg_air_200', name: 'Air 200', amount: 200, cycle: 'monthly' },
       ],
     },
   },
@@ -668,8 +683,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     plans: {
       uae: [],
       egypt: [
-        { name: 'Super 100', amount: 100, cycle: 'monthly' },
-        { name: 'Super 200', amount: 200, cycle: 'monthly' },
+        { id: 'etisalat_eg_super_100', name: 'Super 100', amount: 100, cycle: 'monthly' },
+        { id: 'etisalat_eg_super_200', name: 'Super 200', amount: 200, cycle: 'monthly' },
       ],
     },
   },
@@ -684,8 +699,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     availability: ['uae'],
     plans: {
       uae: [
-        { name: 'Starter', amount: 299, cycle: 'monthly' },
-        { name: 'Plus', amount: 449, cycle: 'monthly' },
+        { id: 'du_home_starter', name: 'Starter', amount: 299, cycle: 'monthly' },
+        { id: 'du_home_plus', name: 'Plus', amount: 449, cycle: 'monthly' },
       ],
       egypt: [],
     },
@@ -701,8 +716,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     availability: ['uae'],
     plans: {
       uae: [
-        { name: 'eLife Basic', amount: 319, cycle: 'monthly' },
-        { name: 'eLife Plus', amount: 449, cycle: 'monthly' },
+        { id: 'etisalat_uae_elife_basic', name: 'eLife Basic', amount: 319, cycle: 'monthly' },
+        { id: 'etisalat_uae_elife_plus', name: 'eLife Plus', amount: 449, cycle: 'monthly' },
       ],
       egypt: [],
     },
@@ -718,8 +733,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     availability: ['uae'],
     plans: {
       uae: [
-        { name: 'Postpaid 125', amount: 125, cycle: 'monthly' },
-        { name: 'Postpaid 200', amount: 200, cycle: 'monthly' },
+        { id: 'du_mobile_postpaid_125', name: 'Postpaid 125', amount: 125, cycle: 'monthly' },
+        { id: 'du_mobile_postpaid_200', name: 'Postpaid 200', amount: 200, cycle: 'monthly' },
       ],
       egypt: [],
     },
@@ -735,14 +750,14 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     availability: ['uae', 'egypt'],
     plans: {
       uae: [
-        { name: 'Mobile', amount: 20, cycle: 'monthly', description: 'HD, 1 screen' },
-        { name: 'Basic', amount: 35, cycle: 'monthly', description: 'Full HD, 2 screens' },
-        { name: 'Platinum', amount: 50, cycle: 'monthly', description: '4K, 4 screens' },
+        { id: 'hbo_max_mobile', name: 'Mobile', amount: 20, cycle: 'monthly', description: 'HD, 1 screen' },
+        { id: 'hbo_max_basic', name: 'Basic', amount: 35, cycle: 'monthly', description: 'Full HD, 2 screens' },
+        { id: 'hbo_max_platinum', name: 'Platinum', amount: 50, cycle: 'monthly', description: '4K, 4 screens' },
       ],
       egypt: [
-        { name: 'Mobile', amount: 80, cycle: 'monthly', description: 'HD, 1 screen' },
-        { name: 'Basic', amount: 140, cycle: 'monthly', description: 'Full HD, 2 screens' },
-        { name: 'Platinum', amount: 200, cycle: 'monthly', description: '4K, 4 screens' },
+        { id: 'hbo_max_mobile', name: 'Mobile', amount: 80, cycle: 'monthly', description: 'HD, 1 screen' },
+        { id: 'hbo_max_basic', name: 'Basic', amount: 140, cycle: 'monthly', description: 'Full HD, 2 screens' },
+        { id: 'hbo_max_platinum', name: 'Platinum', amount: 200, cycle: 'monthly', description: '4K, 4 screens' },
       ],
     },
   },
@@ -757,12 +772,12 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     availability: ['uae', 'egypt'],
     plans: {
       uae: [
-        { name: 'Fan', amount: 25, cycle: 'monthly' },
-        { name: 'Mega Fan', amount: 35, cycle: 'monthly' },
+        { id: 'crunchyroll_fan', name: 'Fan', amount: 25, cycle: 'monthly' },
+        { id: 'crunchyroll_mega_fan', name: 'Mega Fan', amount: 35, cycle: 'monthly' },
       ],
       egypt: [
-        { name: 'Fan', amount: 100, cycle: 'monthly' },
-        { name: 'Mega Fan', amount: 140, cycle: 'monthly' },
+        { id: 'crunchyroll_fan', name: 'Fan', amount: 100, cycle: 'monthly' },
+        { id: 'crunchyroll_mega_fan', name: 'Mega Fan', amount: 140, cycle: 'monthly' },
       ],
     },
   },
@@ -776,8 +791,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Enjoyment',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'With ads', amount: 35, cycle: 'monthly' }, { name: 'No ads', amount: 55, cycle: 'monthly' }],
-      egypt: [{ name: 'With ads', amount: 140, cycle: 'monthly' }, { name: 'No ads', amount: 220, cycle: 'monthly' }],
+      uae: [{ id: 'hulu_with_ads', name: 'With ads', amount: 35, cycle: 'monthly' }, { id: 'hulu_no_ads', name: 'No ads', amount: 55, cycle: 'monthly' }],
+      egypt: [{ id: 'hulu_with_ads', name: 'With ads', amount: 140, cycle: 'monthly' }, { id: 'hulu_no_ads', name: 'No ads', amount: 220, cycle: 'monthly' }],
     },
   },
   {
@@ -790,8 +805,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Enjoyment',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Essential', amount: 20, cycle: 'monthly' }, { name: 'Premium', amount: 35, cycle: 'monthly' }],
-      egypt: [{ name: 'Essential', amount: 80, cycle: 'monthly' }, { name: 'Premium', amount: 140, cycle: 'monthly' }],
+      uae: [{ id: 'paramount_plus_essential', name: 'Essential', amount: 20, cycle: 'monthly' }, { id: 'paramount_plus_premium', name: 'Premium', amount: 35, cycle: 'monthly' }],
+      egypt: [{ id: 'paramount_plus_essential', name: 'Essential', amount: 80, cycle: 'monthly' }, { id: 'paramount_plus_premium', name: 'Premium', amount: 140, cycle: 'monthly' }],
     },
   },
   {
@@ -804,8 +819,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Enjoyment',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Premium', amount: 25, cycle: 'monthly' }, { name: 'Plus', amount: 40, cycle: 'monthly' }],
-      egypt: [{ name: 'Premium', amount: 100, cycle: 'monthly' }, { name: 'Plus', amount: 160, cycle: 'monthly' }],
+      uae: [{ id: 'peacock_premium', name: 'Premium', amount: 25, cycle: 'monthly' }, { id: 'peacock_plus', name: 'Plus', amount: 40, cycle: 'monthly' }],
+      egypt: [{ id: 'peacock_premium', name: 'Premium', amount: 100, cycle: 'monthly' }, { id: 'peacock_plus', name: 'Plus', amount: 160, cycle: 'monthly' }],
     },
   },
   {
@@ -818,8 +833,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Enjoyment',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Monthly', amount: 40, cycle: 'monthly' }],
-      egypt: [{ name: 'Monthly', amount: 160, cycle: 'monthly' }],
+      uae: [{ id: 'mubi_monthly', name: 'Monthly', amount: 40, cycle: 'monthly' }],
+      egypt: [{ id: 'mubi_monthly', name: 'Monthly', amount: 160, cycle: 'monthly' }],
     },
   },
   {
@@ -832,8 +847,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Enjoyment',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Monthly', amount: 40, cycle: 'monthly' }],
-      egypt: [{ name: 'Monthly', amount: 160, cycle: 'monthly' }],
+      uae: [{ id: 'starzplay_monthly', name: 'Monthly', amount: 40, cycle: 'monthly' }],
+      egypt: [{ id: 'starzplay_monthly', name: 'Monthly', amount: 160, cycle: 'monthly' }],
     },
   },
   {
@@ -847,12 +862,12 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     availability: ['uae', 'egypt'],
     plans: {
       uae: [
-        { name: 'Plus', amount: 15, cycle: 'monthly' },
-        { name: 'Platinum', amount: 25, cycle: 'monthly' },
+        { id: 'anghami_plus', name: 'Plus', amount: 15, cycle: 'monthly' },
+        { id: 'anghami_platinum', name: 'Platinum', amount: 25, cycle: 'monthly' },
       ],
       egypt: [
-        { name: 'Plus', amount: 60, cycle: 'monthly' },
-        { name: 'Platinum', amount: 100, cycle: 'monthly' },
+        { id: 'anghami_plus', name: 'Plus', amount: 60, cycle: 'monthly' },
+        { id: 'anghami_platinum', name: 'Platinum', amount: 100, cycle: 'monthly' },
       ],
     },
   },
@@ -866,8 +881,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Enjoyment',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Entertainment', amount: 35, cycle: 'monthly' }, { name: 'Sports', amount: 55, cycle: 'monthly' }],
-      egypt: [{ name: 'Entertainment', amount: 140, cycle: 'monthly' }, { name: 'Sports', amount: 220, cycle: 'monthly' }],
+      uae: [{ id: 'tod_entertainment', name: 'Entertainment', amount: 35, cycle: 'monthly' }, { id: 'tod_sports', name: 'Sports', amount: 55, cycle: 'monthly' }],
+      egypt: [{ id: 'tod_entertainment', name: 'Entertainment', amount: 140, cycle: 'monthly' }, { id: 'tod_sports', name: 'Sports', amount: 220, cycle: 'monthly' }],
     },
   },
   {
@@ -880,8 +895,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Enjoyment',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Basic', amount: 30, cycle: 'monthly' }],
-      egypt: [{ name: 'Basic', amount: 120, cycle: 'monthly' }],
+      uae: [{ id: 'jawwy_tv_basic', name: 'Basic', amount: 30, cycle: 'monthly' }],
+      egypt: [{ id: 'jawwy_tv_basic', name: 'Basic', amount: 120, cycle: 'monthly' }],
     },
   },
   {
@@ -894,8 +909,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Enjoyment',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Monthly', amount: 25, cycle: 'monthly' }],
-      egypt: [{ name: 'Monthly', amount: 100, cycle: 'monthly' }],
+      uae: [{ id: 'yango_play_monthly', name: 'Monthly', amount: 25, cycle: 'monthly' }],
+      egypt: [{ id: 'yango_play_monthly', name: 'Monthly', amount: 100, cycle: 'monthly' }],
     },
   },
   {
@@ -908,8 +923,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Enjoyment',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Premium', amount: 20, cycle: 'monthly' }],
-      egypt: [{ name: 'Premium', amount: 80, cycle: 'monthly' }],
+      uae: [{ id: 'viu_premium', name: 'Premium', amount: 20, cycle: 'monthly' }],
+      egypt: [{ id: 'viu_premium', name: 'Premium', amount: 80, cycle: 'monthly' }],
     },
   },
   {
@@ -922,8 +937,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Enjoyment',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Monthly', amount: 25, cycle: 'monthly' }],
-      egypt: [{ name: 'Monthly', amount: 100, cycle: 'monthly' }],
+      uae: [{ id: 'weyyak_monthly', name: 'Monthly', amount: 25, cycle: 'monthly' }],
+      egypt: [{ id: 'weyyak_monthly', name: 'Monthly', amount: 100, cycle: 'monthly' }],
     },
   },
   {
@@ -936,8 +951,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Other',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Pro', amount: 80, cycle: 'monthly' }, { name: 'Business', amount: 120, cycle: 'monthly' }],
-      egypt: [{ name: 'Pro', amount: 320, cycle: 'monthly' }, { name: 'Business', amount: 480, cycle: 'monthly' }],
+      uae: [{ id: 'cursor_pro', name: 'Pro', amount: 80, cycle: 'monthly' }, { id: 'cursor_business', name: 'Business', amount: 120, cycle: 'monthly' }],
+      egypt: [{ id: 'cursor_pro', name: 'Pro', amount: 320, cycle: 'monthly' }, { id: 'cursor_business', name: 'Business', amount: 480, cycle: 'monthly' }],
     },
   },
   {
@@ -950,8 +965,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Other',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Individual', amount: 40, cycle: 'monthly' }, { name: 'Business', amount: 60, cycle: 'monthly' }],
-      egypt: [{ name: 'Individual', amount: 160, cycle: 'monthly' }, { name: 'Business', amount: 240, cycle: 'monthly' }],
+      uae: [{ id: 'github_copilot_individual', name: 'Individual', amount: 40, cycle: 'monthly' }, { id: 'github_copilot_business', name: 'Business', amount: 60, cycle: 'monthly' }],
+      egypt: [{ id: 'github_copilot_individual', name: 'Individual', amount: 160, cycle: 'monthly' }, { id: 'github_copilot_business', name: 'Business', amount: 240, cycle: 'monthly' }],
     },
   },
   {
@@ -964,8 +979,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Other',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Basic', amount: 40, cycle: 'monthly' }, { name: 'Standard', amount: 80, cycle: 'monthly' }],
-      egypt: [{ name: 'Basic', amount: 160, cycle: 'monthly' }, { name: 'Standard', amount: 320, cycle: 'monthly' }],
+      uae: [{ id: 'midjourney_basic', name: 'Basic', amount: 40, cycle: 'monthly' }, { id: 'midjourney_standard', name: 'Standard', amount: 80, cycle: 'monthly' }],
+      egypt: [{ id: 'midjourney_basic', name: 'Basic', amount: 160, cycle: 'monthly' }, { id: 'midjourney_standard', name: 'Standard', amount: 320, cycle: 'monthly' }],
     },
   },
   {
@@ -978,8 +993,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Other',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Pro', amount: 80, cycle: 'monthly' }],
-      egypt: [{ name: 'Pro', amount: 320, cycle: 'monthly' }],
+      uae: [{ id: 'perplexity_pro_pro', name: 'Pro', amount: 80, cycle: 'monthly' }],
+      egypt: [{ id: 'perplexity_pro_pro', name: 'Pro', amount: 320, cycle: 'monthly' }],
     },
   },
   {
@@ -992,8 +1007,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Other',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Google AI Pro', amount: 75, cycle: 'monthly' }],
-      egypt: [{ name: 'Google AI Pro', amount: 300, cycle: 'monthly' }],
+      uae: [{ id: 'google_gemini_google_ai_pro', name: 'Google AI Pro', amount: 75, cycle: 'monthly' }],
+      egypt: [{ id: 'google_gemini_google_ai_pro', name: 'Google AI Pro', amount: 300, cycle: 'monthly' }],
     },
   },
   {
@@ -1006,8 +1021,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Other',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Premium', amount: 45, cycle: 'monthly' }],
-      egypt: [{ name: 'Premium', amount: 180, cycle: 'monthly' }],
+      uae: [{ id: 'grammarly_premium', name: 'Premium', amount: 45, cycle: 'monthly' }],
+      egypt: [{ id: 'grammarly_premium', name: 'Premium', amount: 180, cycle: 'monthly' }],
     },
   },
   {
@@ -1020,8 +1035,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Other',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Plus', amount: 45, cycle: 'monthly' }, { name: 'Professional', amount: 120, cycle: 'monthly' }],
-      egypt: [{ name: 'Plus', amount: 180, cycle: 'monthly' }, { name: 'Professional', amount: 480, cycle: 'monthly' }],
+      uae: [{ id: 'dropbox_plus', name: 'Plus', amount: 45, cycle: 'monthly' }, { id: 'dropbox_professional', name: 'Professional', amount: 120, cycle: 'monthly' }],
+      egypt: [{ id: 'dropbox_plus', name: 'Plus', amount: 180, cycle: 'monthly' }, { id: 'dropbox_professional', name: 'Professional', amount: 480, cycle: 'monthly' }],
     },
   },
   {
@@ -1034,8 +1049,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Other',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Personal', amount: 35, cycle: 'monthly' }, { name: 'Family', amount: 55, cycle: 'monthly' }],
-      egypt: [{ name: 'Personal', amount: 140, cycle: 'monthly' }, { name: 'Family', amount: 220, cycle: 'monthly' }],
+      uae: [{ id: 'microsoft_365_personal', name: 'Personal', amount: 35, cycle: 'monthly' }, { id: 'microsoft_365_family', name: 'Family', amount: 55, cycle: 'monthly' }],
+      egypt: [{ id: 'microsoft_365_personal', name: 'Personal', amount: 140, cycle: 'monthly' }, { id: 'microsoft_365_family', name: 'Family', amount: 220, cycle: 'monthly' }],
     },
   },
   {
@@ -1048,8 +1063,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Enjoyment',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Monthly', amount: 35, cycle: 'monthly' }],
-      egypt: [{ name: 'Monthly', amount: 100, cycle: 'monthly' }],
+      uae: [{ id: 'apple_fitness_monthly', name: 'Monthly', amount: 35, cycle: 'monthly' }],
+      egypt: [{ id: 'apple_fitness_monthly', name: 'Monthly', amount: 100, cycle: 'monthly' }],
     },
   },
   {
@@ -1062,8 +1077,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Enjoyment',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Premium', amount: 40, cycle: 'monthly' }],
-      egypt: [{ name: 'Premium', amount: 160, cycle: 'monthly' }],
+      uae: [{ id: 'myfitnesspal_premium', name: 'Premium', amount: 40, cycle: 'monthly' }],
+      egypt: [{ id: 'myfitnesspal_premium', name: 'Premium', amount: 160, cycle: 'monthly' }],
     },
   },
   {
@@ -1076,8 +1091,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Enjoyment',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Summit', amount: 40, cycle: 'monthly' }],
-      egypt: [{ name: 'Summit', amount: 160, cycle: 'monthly' }],
+      uae: [{ id: 'strava_summit', name: 'Summit', amount: 40, cycle: 'monthly' }],
+      egypt: [{ id: 'strava_summit', name: 'Summit', amount: 160, cycle: 'monthly' }],
     },
   },
   {
@@ -1090,8 +1105,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Other',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Pro', amount: 55, cycle: 'monthly' }],
-      egypt: [{ name: 'Pro', amount: 220, cycle: 'monthly' }],
+      uae: [{ id: 'zoom_pro_pro', name: 'Pro', amount: 55, cycle: 'monthly' }],
+      egypt: [{ id: 'zoom_pro_pro', name: 'Pro', amount: 220, cycle: 'monthly' }],
     },
   },
   {
@@ -1104,8 +1119,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Other',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Pro', amount: 35, cycle: 'monthly' }],
-      egypt: [{ name: 'Pro', amount: 140, cycle: 'monthly' }],
+      uae: [{ id: 'slack_pro_pro', name: 'Pro', amount: 35, cycle: 'monthly' }],
+      egypt: [{ id: 'slack_pro_pro', name: 'Pro', amount: 140, cycle: 'monthly' }],
     },
   },
   {
@@ -1118,8 +1133,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Enjoyment',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Monthly', amount: 35, cycle: 'monthly' }],
-      egypt: [{ name: 'Monthly', amount: 140, cycle: 'monthly' }],
+      uae: [{ id: 'kindle_unlimited_monthly', name: 'Monthly', amount: 35, cycle: 'monthly' }],
+      egypt: [{ id: 'kindle_unlimited_monthly', name: 'Monthly', amount: 140, cycle: 'monthly' }],
     },
   },
   {
@@ -1132,8 +1147,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Enjoyment',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Plus', amount: 45, cycle: 'monthly' }],
-      egypt: [{ name: 'Plus', amount: 180, cycle: 'monthly' }],
+      uae: [{ id: 'audible_plus', name: 'Plus', amount: 45, cycle: 'monthly' }],
+      egypt: [{ id: 'audible_plus', name: 'Plus', amount: 180, cycle: 'monthly' }],
     },
   },
   {
@@ -1146,8 +1161,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Enjoyment',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Monthly', amount: 40, cycle: 'monthly' }],
-      egypt: [{ name: 'Monthly', amount: 160, cycle: 'monthly' }],
+      uae: [{ id: 'scribd_monthly', name: 'Monthly', amount: 40, cycle: 'monthly' }],
+      egypt: [{ id: 'scribd_monthly', name: 'Monthly', amount: 160, cycle: 'monthly' }],
     },
   },
   {
@@ -1160,8 +1175,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Other',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Monthly', amount: 50, cycle: 'monthly' }],
-      egypt: [{ name: 'Monthly', amount: 200, cycle: 'monthly' }],
+      uae: [{ id: 'expressvpn_monthly', name: 'Monthly', amount: 50, cycle: 'monthly' }],
+      egypt: [{ id: 'expressvpn_monthly', name: 'Monthly', amount: 200, cycle: 'monthly' }],
     },
   },
   {
@@ -1174,8 +1189,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Other',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Monthly', amount: 35, cycle: 'monthly' }],
-      egypt: [{ name: 'Monthly', amount: 140, cycle: 'monthly' }],
+      uae: [{ id: 'surfshark_monthly', name: 'Monthly', amount: 35, cycle: 'monthly' }],
+      egypt: [{ id: 'surfshark_monthly', name: 'Monthly', amount: 140, cycle: 'monthly' }],
     },
   },
   {
@@ -1188,8 +1203,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Enjoyment',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Individual', amount: 20, cycle: 'monthly' }, { name: 'Family', amount: 35, cycle: 'monthly' }],
-      egypt: [{ name: 'Individual', amount: 80, cycle: 'monthly' }, { name: 'Family', amount: 140, cycle: 'monthly' }],
+      uae: [{ id: 'nintendo_switch_online_individual', name: 'Individual', amount: 20, cycle: 'monthly' }, { id: 'nintendo_switch_online_family', name: 'Family', amount: 35, cycle: 'monthly' }],
+      egypt: [{ id: 'nintendo_switch_online_individual', name: 'Individual', amount: 80, cycle: 'monthly' }, { id: 'nintendo_switch_online_family', name: 'Family', amount: 140, cycle: 'monthly' }],
     },
   },
   {
@@ -1202,8 +1217,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Enjoyment',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'EA Play', amount: 20, cycle: 'monthly' }, { name: 'EA Play Pro', amount: 55, cycle: 'monthly' }],
-      egypt: [{ name: 'EA Play', amount: 80, cycle: 'monthly' }, { name: 'EA Play Pro', amount: 220, cycle: 'monthly' }],
+      uae: [{ id: 'ea_play_ea_play', name: 'EA Play', amount: 20, cycle: 'monthly' }, { id: 'ea_play_ea_play_pro', name: 'EA Play Pro', amount: 55, cycle: 'monthly' }],
+      egypt: [{ id: 'ea_play_ea_play', name: 'EA Play', amount: 80, cycle: 'monthly' }, { id: 'ea_play_ea_play_pro', name: 'EA Play Pro', amount: 220, cycle: 'monthly' }],
     },
   },
   {
@@ -1216,8 +1231,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     defaultCategory: 'Enjoyment',
     availability: ['uae', 'egypt'],
     plans: {
-      uae: [{ name: 'Individual', amount: 23, cycle: 'monthly' }, { name: 'Family', amount: 35, cycle: 'monthly' }],
-      egypt: [{ name: 'Individual', amount: 66, cycle: 'monthly' }, { name: 'Family', amount: 100, cycle: 'monthly' }],
+      uae: [{ id: 'youtube_music_individual', name: 'Individual', amount: 23, cycle: 'monthly' }, { id: 'youtube_music_family', name: 'Family', amount: 35, cycle: 'monthly' }],
+      egypt: [{ id: 'youtube_music_individual', name: 'Individual', amount: 66, cycle: 'monthly' }, { id: 'youtube_music_family', name: 'Family', amount: 100, cycle: 'monthly' }],
     },
   },
 ]
