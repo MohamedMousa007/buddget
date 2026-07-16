@@ -23,6 +23,53 @@ describe('resolvePaymentBrandKey', () => {
     expect(resolvePaymentBrandKey('Al Rajhi Bank')).toBe('alrajhi')
   })
 
+  it('resolves short sender IDs that are a word of the brand name', () => {
+    expect(resolvePaymentBrandKey('NBD')).toBe('enbd')
+    expect(resolvePaymentBrandKey('MISR')).toBe('banquemisr')
+    expect(resolvePaymentBrandKey('WE')).toBe('wepay')
+  })
+
+  it('rejects generic words shared by several brands', () => {
+    for (const generic of ['Cash', 'Bank', 'Card', 'Money', 'Pay']) {
+      expect(resolvePaymentBrandKey(generic)).toBeNull()
+    }
+  })
+
+  it('needs a word boundary for a short token, not bare containment', () => {
+    expect(resolvePaymentBrandKey('Dinner at Nolans')).toBeNull()
+    expect(resolvePaymentBrandKey('NOL card top-up')).toBe('nol')
+  })
+
+  it('prefers the most specific brand when names nest', () => {
+    expect(resolvePaymentBrandKey('HSBC Egypt purchase alert')).toBe('hsbceg')
+    expect(resolvePaymentBrandKey('Meeza debit card')).toBe('meezadebit')
+  })
+
+  // Every distinct sender / bank_name in sms_parse_log, with the id each one
+  // resolved to before the generic-word hardening. Pins the live corpus so a
+  // future matcher change has to answer for any sender it moves.
+  it.each([
+    ['CIB', 'cib'],
+    ['HSBC', 'hsbceg'],
+    ['HSBC Egypt', 'hsbceg'],
+    ['NBE', 'nbe'],
+    ['QNB EGYPT', 'qnbeg'],
+    ['Barq', 'barq'],
+    ['Vodafone', 'vodafone'],
+    ['Vodafone Cash', 'vodafone'],
+    ['we', 'wepay'],
+    ['WE Pay', 'wepay'],
+    // Telecom/misc senders that are not payment providers.
+    ['NTRA', null],
+    ['STENG', null],
+    ['Tawsilla', null],
+    ['we-Landline', null],
+    ['WE Feedback', null],
+    ['VF-Cash', 'vodafone'],
+  ])('live sender %s resolves to %s', (sender, expected) => {
+    expect(resolvePaymentBrandKey(sender)).toBe(expected)
+  })
+
   it('returns null for unknown or empty input', () => {
     expect(resolvePaymentBrandKey('Some Random Merchant XYZ')).toBeNull()
     expect(resolvePaymentBrandKey('')).toBeNull()

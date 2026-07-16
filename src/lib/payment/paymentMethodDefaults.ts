@@ -136,7 +136,7 @@ const CAT_RAW: Record<string, CatEntry> = {
   // ── Egypt ──────────────────────────────────────────────────────────────────
   // The CBE's instant bank-to-bank rail (IPN), addressed by IPA — not a balance.
   instapay: { name: 'InstaPay', type: 'wallet', colors: ['#12A594', '#0C6E63'], country: 'EG', aliases: ['instant payment', 'ipn'], passThrough: true },
-  vodafone: { name: 'Vodafone Cash', type: 'wallet', colors: ['#E60000', '#8A1520'], country: 'EG', aliases: ['vodafone', 'فودافون كاش'], alsoMerchant: true },
+  vodafone: { name: 'Vodafone Cash', type: 'wallet', colors: ['#E60000', '#8A1520'], country: 'EG', aliases: ['vodafone', 'vf cash', 'فودافون كاش'], alsoMerchant: true },
   orangecash: { name: 'Orange Cash', type: 'wallet', colors: ['#FF7900', '#B35500'], country: 'EG', aliases: ['orange money', 'اورنج كاش'], alsoMerchant: true },
   wepay: { name: 'WE Pay', type: 'wallet', country: 'EG', aliases: ['we pay', 'telecom egypt'], alsoMerchant: true },
   etisalatcash: { name: 'e& Cash', type: 'wallet', country: 'EG', aliases: ['etisalat cash', 'e& money egypt'], alsoMerchant: true },
@@ -276,6 +276,15 @@ export function normalizeBrandToken(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
+const MIN_CONTAINMENT_TOKEN = 3
+const SHORT_TOKEN_MAX = 5
+
+/** A short token must land on a word boundary; a long one may match anywhere. */
+function textMentions(raw: string, norm: string, token: string): boolean {
+  if (token.length > SHORT_TOKEN_MAX) return norm.includes(token)
+  return new RegExp(`\\b${token}\\b`, 'i').test(raw)
+}
+
 export function resolvePaymentBrandKey(text: string | null | undefined): string | null {
   if (!text) return null
   const norm = normalizeBrandToken(text)
@@ -287,15 +296,28 @@ export function resolvePaymentBrandKey(text: string | null | undefined): string 
       if (t && normalizeBrandToken(t) === norm) return b.id
     }
   }
-  // Length-guarded substring pass (either direction).
-  for (const b of brands) {
-    for (const t of [b.name, b.full, ...(b.aliases ?? [])]) {
-      if (!t) continue
-      const tk = normalizeBrandToken(t)
-      if (tk.length >= 3 && (norm.includes(tk) || tk.includes(norm))) return b.id
-    }
-  }
-  return null
+
+  const candidates = brands
+    .flatMap((b) =>
+      [b.name, b.full, ...(b.aliases ?? [])]
+        .filter((t): t is string => Boolean(t))
+        .map((t) => ({ raw: t, token: normalizeBrandToken(t), id: b.id })),
+    )
+    .filter((c) => c.token.length >= MIN_CONTAINMENT_TOKEN)
+    .sort((a, b) => b.token.length - a.token.length)
+
+  // Forward: the text mentions a brand token ("Emirates NBD purchase" → enbd).
+  // Longest-first so the most specific brand wins.
+  for (const c of candidates) if (textMentions(text, norm, c.token)) return c.id
+
+  // Reverse: the text is a word of a brand name. Load-bearing for short SMS
+  // sender IDs ("NBD" → Emirates NBD, "MISR" → Banque Misr). Guarded twice: the
+  // sender must be a whole word of the name (so "NBD" skips "Liv by ENBD"), and
+  // it must point at one brand — a generic word ("Cash", "Bank") is a word of
+  // many names and resolves to none of them.
+  const word = new RegExp(`\\b${norm}\\b`, 'i')
+  const ids = new Set(candidates.filter((c) => word.test(c.raw)).map((c) => c.id))
+  return ids.size === 1 ? [...ids][0] : null
 }
 
 /**
