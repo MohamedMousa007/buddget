@@ -30,6 +30,7 @@ import {
   tryPairLeg,
   reconcileSibling,
   reconcileCcPayoffFundingLeg,
+  attributeFundingToPayoff,
   type CcPayoffFundingLeg,
 } from './pairing'
 import { matchSalary } from './matchSalary'
@@ -73,15 +74,20 @@ const MIN_FEE = 0.5
  * non-spend — the purchases it settles were already counted — but the fee is money
  * genuinely consumed and must hit spend. Splitting them keeps one payoff transaction
  * while staying accurate; the fee is knowable only by differencing the two legs.
+ *
+ * Takes both sides explicitly rather than reading them off `row`, because `row` is the
+ * payoff leg in one arrival order and the funding leg in the other.
  */
 async function postTransferFee(
   service: SupabaseClient,
   row: SmsRowData,
-  funding: CcPayoffFundingLeg | null,
+  pair: { fundingLast4: string | null; fundingAmount: number | null; payoffAmount: number | null },
 ): Promise<void> {
-  if (funding?.fundingAmount == null) return
-  const fee = funding.fundingAmount - row.amount
-  if (fee < MIN_FEE) return
+  if (pair.fundingAmount == null || pair.payoffAmount == null) return
+  const fee = pair.fundingAmount - pair.payoffAmount
+  // Guard the sign too: a negative difference means the legs are not what we think, and
+  // inventing a refund would be worse than skipping the fee.
+  if (!(fee >= MIN_FEE)) return
 
   await service.from('expenses').insert({
     user_id: row.userId,
@@ -90,7 +96,7 @@ async function postTransferFee(
     category: 'Other',
     amount: fee,
     currency: row.currency,
-    payment_method_id: await resolveExactPaymentMethod(service, row.userId, funding.fundingLast4),
+    payment_method_id: await resolveExactPaymentMethod(service, row.userId, pair.fundingLast4),
     sms_log_id: row.logId ?? null,
   })
 }
@@ -136,6 +142,22 @@ export async function createSmsTransaction(
         kind,
       })
       if (sibling) {
+        // This leg funded a credit-card payoff that already posted. The payoff row is the
+        // better representation (it drives the debt payment), so post no Transfer row —
+        // otherwise the user sees the same money twice, which is the whole bug. Back-fill
+        // the funding account the payoff could not know, and keep the fee it took on top.
+        if (sibling.siblingKind === 'cc_payoff') {
+          const fundingPmId = await resolveExactPaymentMethod(service, row.userId, row.last4)
+          const { payoffAmount } = await attributeFundingToPayoff(service, sibling, fundingPmId)
+          await postTransferFee(service, row, {
+            fundingLast4: row.last4 ?? null,
+            // This leg IS the funding side, so the fee is what it debited beyond the payoff.
+            fundingAmount: row.amount,
+            payoffAmount,
+          })
+          return base('transfer_paired')
+        }
+
         const { needsPost } = await reconcileSibling(service, sibling)
         if (!needsPost) return base('transfer_paired')
         // Income sibling was removed — post a single visible non-spend row.
@@ -187,8 +209,12 @@ export async function createSmsTransaction(
     }
 
     // The fee the funding bank took on top. It is real spend and must count — only the
-    // payoff itself is non-spend. Derivable only from the pair.
-    await postTransferFee(service, row, funding)
+    // payoff itself is non-spend. Derivable only from the pair. Here `row` is the payoff.
+    await postTransferFee(service, row, {
+      fundingLast4: funding?.fundingLast4 ?? null,
+      fundingAmount: funding?.fundingAmount ?? null,
+      payoffAmount: row.amount,
+    })
 
     return {
       ...base('debt_payment'),

@@ -44,37 +44,42 @@ export interface PairSibling {
 }
 
 /**
- * Absolute slack when matching two legs of the same movement.
+ * Absolute slack for two reports of the SAME movement that a transfer fee separates.
  *
- * A CC payoff by Instapay debits the funding bank for the amount PLUS a transfer fee
- * (e.g. 12,012 vs 12,000), so exact equality never matches. Bounded so it stays a fee
- * allowance and cannot start pairing unrelated same-ish amounts.
+ * A CC payoff by Instapay debits the funding bank for the amount PLUS a fee (12,012 vs
+ * 12,000), so exact equality never matches. Bounded so it stays a fee allowance and cannot
+ * start pairing unrelated similar amounts.
+ *
+ * Deliberately NOT keyed on the caller's kind: the tolerance belongs to the PAIR, and the
+ * caller cannot know what it will be paired with. The RPC applies it only when one of the
+ * two legs is a `cc_payoff`, so own_transfer <-> own_transfer still matches exactly.
  */
-export function pairAmountTolerance(kind: SmsExpenseKind, amount: number): number {
-  if (kind !== 'cc_payoff') return 0
+export function transferFeeTolerance(amount: number): number {
   return Math.min(Math.max(amount * 0.02, 25), 250)
 }
 
 /**
- * Atomically claims an unpaired sibling leg. `own_transfer` requires an equal amount;
- * `cc_payoff` allows a fee-sized difference; `currency_exchange` does not constrain the
- * amount at all (cross-currency legs differ by the rate).
+ * Atomically claims an unpaired sibling leg.
+ *
+ * Symmetric by design — either leg of a CC payoff may arrive first. SMS delivery order is
+ * not guaranteed: SmsForwardWorker retries with WorkManager backoff on a 502 or on network
+ * loss, so the leg the bank sent first can land second.
  */
 export async function tryPairLeg(
   service: SupabaseClient,
   params: { userId: string; logId: string; receivedAtIso: string; amount: number; kind: SmsExpenseKind },
 ): Promise<PairSibling | null> {
   const requireEqual = params.kind === 'own_transfer' || params.kind === 'cc_payoff'
-  // FX pairs with FX. An own_transfer pairs with the opposite-direction transfer legs.
-  // A cc_payoff pairs with the funding leg, which the bank reports as an outbound
-  // transfer — and which dispatch reclassifies to own_transfer when the counterparty
-  // last4 matches the user's own registered card.
+  // FX pairs with FX. Everything else pairs across the transfer/payoff family, in both
+  // directions: a cc_payoff finds its funding leg, and a funding leg finds its payoff.
+  // The funding leg reports as an outbound transfer, which dispatch reclassifies to
+  // own_transfer when the counterparty last4 is the user's own registered card.
   const matchKinds =
     params.kind === 'currency_exchange'
       ? ['currency_exchange']
       : params.kind === 'cc_payoff'
         ? ['own_transfer', 'instant_transfer_out']
-        : ['own_transfer', 'instant_transfer_in', 'instant_transfer_out']
+        : ['own_transfer', 'instant_transfer_in', 'instant_transfer_out', 'cc_payoff']
 
   const { data, error } = await service.rpc('sms_try_pair', {
     p_user_id: params.userId,
@@ -84,7 +89,9 @@ export async function tryPairLeg(
     p_amount: params.amount,
     p_require_equal_amount: requireEqual,
     p_match_kinds: matchKinds,
-    p_amount_tolerance: pairAmountTolerance(params.kind, params.amount),
+    // Always offered; the RPC ignores it unless a cc_payoff is on one side of the pair.
+    p_amount_tolerance: transferFeeTolerance(params.amount),
+    p_self_kind: params.kind ?? null,
   })
   if (error) {
     console.warn('[sms/pairing] sms_try_pair failed', error)
@@ -157,6 +164,49 @@ export async function reconcileCcPayoffFundingLeg(
     fundingLast4: (log?.account_last4 as string | null) ?? null,
     fundingAmount: (log?.amount as number | null) ?? null,
   }
+}
+
+export interface PayoffAttribution {
+  /** The payoff's own amount, so the caller can difference out the fee. */
+  payoffAmount: number | null
+}
+
+/**
+ * Mirror of {@link reconcileCcPayoffFundingLeg}, for when the FUNDING leg arrives second.
+ *
+ * The payoff leg already posted its CC Payoff expense + debt payment, but had no sibling
+ * at the time — so it could not know the funding account and fell back to null ("Cash").
+ * This leg is the only place that account appears, so it is back-filled onto both rows
+ * here. The result is identical whichever leg lands first.
+ */
+export async function attributeFundingToPayoff(
+  service: SupabaseClient,
+  sibling: PairSibling,
+  fundingPaymentMethodId: string | null,
+): Promise<PayoffAttribution> {
+  const { data: log } = await service
+    .from('sms_parse_log')
+    .select('amount, debt_payment_id')
+    .eq('id', sibling.siblingId)
+    .maybeSingle()
+
+  if (fundingPaymentMethodId) {
+    if (sibling.siblingExpenseId) {
+      await service
+        .from('expenses')
+        .update({ payment_method_id: fundingPaymentMethodId })
+        .eq('id', sibling.siblingExpenseId)
+    }
+    const debtPaymentId = log?.debt_payment_id as string | null | undefined
+    if (debtPaymentId) {
+      await service
+        .from('debt_payments')
+        .update({ payment_method_id: fundingPaymentMethodId })
+        .eq('id', debtPaymentId)
+    }
+  }
+
+  return { payoffAmount: (log?.amount as number | null) ?? null }
 }
 
 /**
