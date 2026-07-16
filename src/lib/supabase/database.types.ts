@@ -2196,6 +2196,8 @@ export type Database = {
         | "Transfer"
         | "Currency Exchange"
         | "CC Payoff"
+        | "Top up"
+        | "Installment"
       goal_category:
         | "spending_control"
         | "emergency"
@@ -2448,6 +2450,8 @@ export const Constants = {
         "Transfer",
         "Currency Exchange",
         "CC Payoff",
+        "Top up",
+        "Installment",
       ],
       goal_category: [
         "spending_control",

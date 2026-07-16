@@ -1,33 +1,10 @@
-import type { Expense, Currency, ExpenseCategory } from '@/lib/store/types'
+import type { Expense, Currency } from '@/lib/store/types'
 import type { ExpenseRow, ExpenseInsert } from '@/lib/supabase/remote/types'
 import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
-
-const VALID_CATEGORIES: readonly ExpenseCategory[] = [
-  'Rent',
-  'Transport',
-  'Food',
-  'Enjoyment',
-  'Savings',
-  'Debt',
-  'Remittance',
-  'Other',
-  'Groceries',
-  'Fuel',
-  'Health',
-  'Shopping',
-  'Education',
-  'Utilities',
-  'Subscription',
-  'ATM Cash Withdrawal',
-  'Transfer',
-  'Currency Exchange',
-  'CC Payoff',
-]
+import { toDbExpenseCategory } from './expenseCategoryCoercion'
 
 function toDbCategory(category: string): ExpenseInsert['category'] {
-  return (VALID_CATEGORIES as readonly string[]).includes(category)
-    ? (category as ExpenseInsert['category'])
-    : 'Other'
+  return toDbExpenseCategory(category, 'Other')
 }
 
 export function expenseToRow(e: Expense, userId: string): ExpenseInsert {
@@ -61,7 +38,10 @@ export function expenseFromRow(row: ExpenseRow): Expense {
     category: row.category as string,
     amount: row.amount,
     currency: row.currency as Currency,
-    amountInBaseCurrency: row.amount, // Recomputed client-side via FX rates on hydrate if needed.
+    // Mirrors the store's own fallback (`converted ?? expense.amount`) for a row we can't
+    // convert without rates. Only ever read by `expenseAmountInBase` when live conversion
+    // fails — never sum this field directly, it is the raw foreign amount for hydrated rows.
+    amountInBaseCurrency: row.amount,
     paymentMethodId: row.payment_method_id ?? DEFAULT_CASH_ID, // null == cash sentinel, stable round-trip
     isRecurring: false,
     notes: row.notes ?? undefined,

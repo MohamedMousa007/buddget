@@ -17,6 +17,9 @@ import type {
   UserProfile,
 } from '@/lib/store/types'
 
+import { EXPENSE_CATEGORIES } from '@/lib/constants/finance'
+import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
+import { toDbExpenseCategory } from '@/lib/supabase/remote/mappers/expenseCategoryCoercion'
 import { profileFromRow, profileToRow } from '@/lib/supabase/remote/mappers/profileMapper'
 import { settingsFromRow, settingsToRow } from '@/lib/supabase/remote/mappers/settingsMapper'
 import { paymentMethodFromRow, paymentMethodToRow } from '@/lib/supabase/remote/mappers/paymentMethodMapper'
@@ -260,6 +263,35 @@ describe('expense mapper', () => {
     const wonky = { ...e, category: 'not-a-real-cat' }
     const row = expenseToRow(wonky, UID)
     expect(row.category).toBe('Other')
+  })
+
+  // Regression: these were coerced to 'Other' — a SPEND category — so every BNPL
+  // installment settlement double-counted the purchase after a sync round-trip.
+  it.each(['Installment', 'Top up'] as const)('preserves the non-spend category %s', (category) => {
+    const e: Expense = {
+      id: 'exp_2', date: '2026-04-10', description: 'Settlement', category,
+      amount: 500, currency: 'EGP', amountInBaseCurrency: 500, paymentMethodId: 'pm_default_cash',
+      isRecurring: false, createdAt: '2026-04-10T00:00:00.000Z', updatedAt: '2026-04-10T00:00:00.000Z',
+    }
+    expect(expenseToRow(e, UID).category).toBe(category)
+    expect(isNonSpendCategory(roundTrip(e, expenseToRow, expenseFromRow).category)).toBe(true)
+  })
+})
+
+describe('expense category coercion', () => {
+  // The four mappers each kept a hand-copied list; three still stopped at the original
+  // 8 values, silently flattening every category added since.
+  it('accepts every category the DB enum accepts, across all mappers', () => {
+    for (const category of EXPENSE_CATEGORIES) {
+      expect(toDbExpenseCategory(category, 'Other')).toBe(category)
+    }
+  })
+
+  it('falls back only for genuinely unknown values, preserving each caller default', () => {
+    expect(toDbExpenseCategory('not-a-real-cat', 'Other')).toBe('Other')
+    expect(toDbExpenseCategory('not-a-real-cat', 'Enjoyment')).toBe('Enjoyment')
+    // 'Subscription' used to hit subscriptionMapper's 'Enjoyment' fallback.
+    expect(toDbExpenseCategory('Subscription', 'Enjoyment')).toBe('Subscription')
   })
 })
 

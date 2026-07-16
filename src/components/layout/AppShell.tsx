@@ -378,7 +378,14 @@ function SmsPushActionHandler() {
         // might have missed it if the channel wasn't open yet).
         void (async () => {
           const supabase = createClient()
-          const { data: row } = await supabase.from('expenses').select('*').eq('id', data.expenseId).single()
+          // `.is('deleted_at', null)`: a tombstoned row must never re-enter the store —
+          // the next flushDiff would upsert it back and un-delete it server-side.
+          const { data: row } = await supabase
+            .from('expenses')
+            .select('*')
+            .eq('id', data.expenseId)
+            .is('deleted_at', null)
+            .maybeSingle()
           if (row) {
             addExpenseIfMissing(row as ExpenseRow)
             // sms_currency_confirm: currency still needs user confirmation in-app — don't ack yet.
@@ -394,7 +401,12 @@ function SmsPushActionHandler() {
       } else if (kind === 'sms_income_added' && data.incomeId) {
         void (async () => {
           const supabase = createClient()
-          const { data: row } = await supabase.from('income_events').select('*').eq('id', data.incomeId).single()
+          const { data: row } = await supabase
+            .from('income_events')
+            .select('*')
+            .eq('id', data.incomeId)
+            .is('deleted_at', null)
+            .maybeSingle()
           if (row) { addIncomeEventIfMissing(row as IncomeEventRow); void ackSms(data.logId) }
           navigate('/income')
         })()

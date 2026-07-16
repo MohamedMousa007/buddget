@@ -1,22 +1,11 @@
-import type { Subscription, Currency, SubscriptionStatus, SubscriptionBillingCycle, ExpenseCategory } from '@/lib/store/types'
+import type { Subscription, Currency, SubscriptionStatus, SubscriptionBillingCycle } from '@/lib/store/types'
 import type { SubscriptionRow, SubscriptionInsert } from '@/lib/supabase/remote/types'
 import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
+import { toDbExpenseCategory } from './expenseCategoryCoercion'
 
-const VALID_CATEGORIES: readonly ExpenseCategory[] = [
-  'Rent',
-  'Transport',
-  'Food',
-  'Enjoyment',
-  'Savings',
-  'Debt',
-  'Remittance',
-  'Other',
-]
-
+/** Falls back to Enjoyment (not Other) — a subscription is discretionary spend by default. */
 function toDbCategory(category: string): SubscriptionInsert['expense_category'] {
-  return (VALID_CATEGORIES as readonly string[]).includes(category)
-    ? (category as SubscriptionInsert['expense_category'])
-    : 'Enjoyment'
+  return toDbExpenseCategory(category, 'Enjoyment')
 }
 
 export function subscriptionToRow(s: Subscription, userId: string): SubscriptionInsert {

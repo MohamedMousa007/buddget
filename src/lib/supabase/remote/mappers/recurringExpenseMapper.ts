@@ -1,22 +1,10 @@
-import type { RecurringExpense, Currency, ExpenseCategory } from '@/lib/store/types'
+import type { RecurringExpense, Currency } from '@/lib/store/types'
 import type { RecurringExpenseRow, RecurringExpenseInsert } from '@/lib/supabase/remote/types'
 import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
-
-const VALID_CATEGORIES: readonly ExpenseCategory[] = [
-  'Rent',
-  'Transport',
-  'Food',
-  'Enjoyment',
-  'Savings',
-  'Debt',
-  'Remittance',
-  'Other',
-]
+import { toDbExpenseCategory } from './expenseCategoryCoercion'
 
 function toDbCategory(category: string): RecurringExpenseInsert['category'] {
-  return (VALID_CATEGORIES as readonly string[]).includes(category)
-    ? (category as RecurringExpenseInsert['category'])
-    : 'Other'
+  return toDbExpenseCategory(category, 'Other')
 }
 
 export function recurringExpenseToRow(

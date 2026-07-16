@@ -6,6 +6,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { isNative } from '@/lib/native/isNative'
 import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
+import { expenseAmountInBase, filterExpensesByMonth } from '@/lib/utils/calculations'
 import { updateWidgetData, type WidgetSnapshot } from '@/lib/native/widgetBridge'
 
 const DEBOUNCE_MS = 600
@@ -16,26 +17,41 @@ const DEBOUNCE_MS = 600
  * inside the Capacitor shell.
  */
 export function WidgetSync() {
-  const { expenses, baseCurrency, language, monthlyBudgetTotal, monthlyBudgetCurrency } =
-    useFinanceStore(
-      useShallow((s) => ({
-        expenses: s.expenses,
-        baseCurrency: s.settings.baseCurrency,
-        language: s.settings.language,
-        monthlyBudgetTotal: sumBudget(s.budgetCategories),
-        monthlyBudgetCurrency: s.settings.baseCurrency,
-      })),
-    )
+  const {
+    expenses,
+    baseCurrency,
+    language,
+    monthlyBudgetTotal,
+    monthlyBudgetCurrency,
+    monthStartDay,
+    exchangeRates,
+  } = useFinanceStore(
+    useShallow((s) => ({
+      expenses: s.expenses,
+      baseCurrency: s.settings.baseCurrency,
+      language: s.settings.language,
+      monthlyBudgetTotal: sumBudget(s.budgetCategories),
+      monthlyBudgetCurrency: s.settings.baseCurrency,
+      monthStartDay: s.settings.monthStartDay,
+      exchangeRates: s.exchangeRates,
+    })),
+  )
   const monthFilter = useSettingsStore((s) => s.monthFilter)
 
   const snapshot = useMemo<WidgetSnapshot>(() => {
-    const monthExpenses = expenses.filter((e) => e.date.startsWith(monthFilter))
+    // Honour a custom pay-cycle start, as every other surface does — a raw
+    // `date.startsWith(monthFilter)` disagreed with the app for monthStartDay != 1.
+    const monthExpenses = filterExpensesByMonth(expenses, monthFilter, monthStartDay)
     const spendExpenses = monthExpenses.filter((e) => !isNonSpendCategory(e.category))
-    const spentThisMonth = spendExpenses.reduce((sum, e) => sum + (e.amountInBaseCurrency || 0), 0)
+    // Convert with live rates rather than the cached `amountInBaseCurrency`, which is
+    // captured at entry time and is the raw foreign amount for rows hydrated from the DB.
+    const amountOf = (e: (typeof expenses)[number]) =>
+      expenseAmountInBase(e, baseCurrency, exchangeRates)
+    const spentThisMonth = spendExpenses.reduce((sum, e) => sum + amountOf(e), 0)
 
     const byCategory = new Map<string, number>()
     for (const e of spendExpenses) {
-      byCategory.set(e.category, (byCategory.get(e.category) ?? 0) + (e.amountInBaseCurrency || 0))
+      byCategory.set(e.category, (byCategory.get(e.category) ?? 0) + amountOf(e))
     }
     const topCategories = Array.from(byCategory.entries())
       .map(([category, amount]) => ({ category, amount }))
@@ -61,7 +77,7 @@ export function WidgetSync() {
       locale,
       updatedAt: new Date().toISOString(),
     }
-  }, [expenses, monthFilter, baseCurrency, language, monthlyBudgetTotal])
+  }, [expenses, monthFilter, monthStartDay, exchangeRates, baseCurrency, language, monthlyBudgetTotal])
 
   // We intentionally don't use the cross-currency value but keep the field
   // present in the union for future expansion.
@@ -89,6 +105,6 @@ export function WidgetSync() {
 
 function sumBudget(rows: Array<{ budgetedAmount: number; category: string }>): number {
   return rows
-    .filter((r) => r.category !== 'Savings' && r.category !== 'Debt' && r.category !== 'Remittance')
+    .filter((r) => !isNonSpendCategory(r.category) && r.category !== 'Debt' && r.category !== 'Remittance')
     .reduce((sum, r) => sum + (r.budgetedAmount || 0), 0)
 }

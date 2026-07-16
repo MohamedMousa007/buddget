@@ -1,23 +1,11 @@
-import type { Receipt, ReceiptItem, ReceiptCharge, Currency, ExpenseCategory } from '@/lib/store/types'
+import type { Receipt, ReceiptItem, ReceiptCharge, Currency } from '@/lib/store/types'
 import type { ReceiptRow, ReceiptInsert } from '@/lib/supabase/remote/types'
 import type { Json } from '@/lib/supabase/database.types'
 import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
-
-const VALID_CATEGORIES: readonly ExpenseCategory[] = [
-  'Rent',
-  'Transport',
-  'Food',
-  'Enjoyment',
-  'Savings',
-  'Debt',
-  'Remittance',
-  'Other',
-]
+import { toDbExpenseCategory } from './expenseCategoryCoercion'
 
 function toDbCategory(category: string): ReceiptInsert['category'] {
-  return (VALID_CATEGORIES as readonly string[]).includes(category)
-    ? (category as ReceiptInsert['category'])
-    : 'Other'
+  return toDbExpenseCategory(category, 'Other')
 }
 
 const CHARGE_TYPES: readonly ReceiptCharge['type'][] = ['tax', 'service', 'tip', 'discount', 'other']
