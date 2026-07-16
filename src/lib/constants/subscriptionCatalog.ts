@@ -7,7 +7,15 @@ export interface SubscriptionPlan {
   description?: string
 }
 
-export type CatalogRegion = 'uae' | 'egypt'
+/**
+ * The catalog's regions, as data. Everything region-shaped derives from this array so a
+ * new region cannot be silently half-added: `REGION_CURRENCY` becomes a compile error
+ * until it is given an entry, and `filterVisibleBrands` picks it up automatically instead
+ * of hardcoding which regions count as "global".
+ */
+export const CATALOG_REGIONS = ['uae', 'egypt', 'saudi'] as const
+
+export type CatalogRegion = (typeof CATALOG_REGIONS)[number]
 
 export type CatalogSectionKey =
   | 'catAiProductivity'
@@ -30,8 +38,13 @@ export interface SubscriptionBrand {
   initial: string
   defaultCategory: string
   catalogSection: CatalogSectionKey
-  availability: ('uae' | 'egypt')[]
-  plans: Record<CatalogRegion, SubscriptionPlan[]>
+  availability: CatalogRegion[]
+  /**
+   * Partial on purpose: a brand may be available in a region whose pricing we have not
+   * verified yet. It degrades to "no prefill", not to a wrong price. (Also the only way to
+   * add a region without rewriting all 61 brand literals at once.)
+   */
+  plans: Partial<Record<CatalogRegion, SubscriptionPlan[]>>
 }
 
 /** Resolve which catalog region to use based on user profile. Returns null if unknown. */
@@ -58,13 +71,25 @@ export function detectCatalogRegion(profile: { city?: string; country?: string }
     return 'egypt'
   }
 
+  if (
+    country.includes('saudi') ||
+    country === 'ksa' ||
+    country.includes('السعود') ||
+    ['riyadh', 'jeddah', 'mecca', 'makkah', 'medina', 'madinah', 'dammam', 'khobar', 'dhahran', 'tabuk', 'abha'].some(
+      (c) => city.includes(c)
+    )
+  ) {
+    return 'saudi'
+  }
+
   return null
 }
 
-/** Currency for each catalog region */
+/** Currency for each catalog region. Total, so a new region cannot be forgotten. */
 export const REGION_CURRENCY: Record<CatalogRegion, string> = {
   uae: 'AED',
   egypt: 'EGP',
+  saudi: 'SAR',
 }
 
 /** Shown first in the catalog (order preserved; only brands also in the filtered list appear). */
@@ -83,7 +108,13 @@ export const POPULAR_BRAND_KEYS: readonly string[] = [
 
 /**
  * When region is set: only brands available in that region.
- * When region is null: brands available in both UAE and Egypt (global / MENA-wide in catalog).
+ * When region is null (we could not detect where the user is): only brands available
+ * EVERYWHERE, since we cannot know which region's availability to trust.
+ *
+ * Derived from {@link CATALOG_REGIONS} rather than naming regions here. The old version
+ * hardcoded `uae && egypt`, which kept compiling after a third region was added while
+ * silently meaning the wrong thing — a brand available in all three ranked the same as one
+ * available in two, and a Saudi-only brand could never appear.
  */
 export function filterVisibleBrands(
   catalog: SubscriptionBrand[],
@@ -92,7 +123,7 @@ export function filterVisibleBrands(
   if (region) {
     return catalog.filter((b) => b.availability.includes(region))
   }
-  return catalog.filter((b) => b.availability.includes('uae') && b.availability.includes('egypt'))
+  return catalog.filter((b) => CATALOG_REGIONS.every((r) => b.availability.includes(r)))
 }
 
 export const CATALOG_SECTION_ORDER: CatalogSectionKey[] = [
@@ -112,6 +143,20 @@ export const CATALOG_SECTION_ORDER: CatalogSectionKey[] = [
 export function findBrandByKey(key: string | null): SubscriptionBrand | undefined {
   if (!key) return undefined
   return SUBSCRIPTION_CATALOG.find((b) => b.key === key)
+}
+
+/**
+ * Verified plans for a region, or none.
+ *
+ * A brand can be available in a region whose pricing has not been researched yet, so
+ * `plans` is partial. Missing pricing must degrade to "no prefill" — the user types the
+ * amount, which is what they would verify anyway — never to another region's price.
+ */
+export function plansForRegion(
+  brand: SubscriptionBrand,
+  region: CatalogRegion | null
+): SubscriptionPlan[] {
+  return (region && brand.plans[region]) || []
 }
 
 /**

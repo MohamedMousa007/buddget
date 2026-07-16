@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { resolveBrandKeyFromMerchant } from './subscriptionCatalog'
+import {
+  CATALOG_REGIONS,
+  REGION_CURRENCY,
+  SUBSCRIPTION_CATALOG,
+  detectCatalogRegion,
+  filterVisibleBrands,
+  plansForRegion,
+  resolveBrandKeyFromMerchant,
+  type SubscriptionBrand,
+} from './subscriptionCatalog'
 
 /**
  * A false brand match is expensive: dispatch force-overrides the category to
@@ -45,5 +54,121 @@ describe('resolveBrandKeyFromMerchant', () => {
 
   it.each([null, undefined, '', '   ', '!!!'])('returns null for %p', (input) => {
     expect(resolveBrandKeyFromMerchant(input)).toBeNull()
+  })
+})
+
+describe('detectCatalogRegion', () => {
+  it.each([
+    ['Saudi Arabia', '', 'saudi'],
+    ['KSA', '', 'saudi'],
+    ['', 'Riyadh', 'saudi'],
+    ['', 'Jeddah', 'saudi'],
+    ['', 'Dammam', 'saudi'],
+    ['السعودية', '', 'saudi'],
+    ['UAE', '', 'uae'],
+    ['', 'Dubai', 'uae'],
+    ['Egypt', '', 'egypt'],
+    ['', 'Cairo', 'egypt'],
+    ['مصر', '', 'egypt'],
+  ])('country=%p city=%p -> %s', (country, city, expected) => {
+    expect(detectCatalogRegion({ country, city })).toBe(expected)
+  })
+
+  it('returns null when it genuinely cannot tell', () => {
+    expect(detectCatalogRegion({ country: 'France', city: 'Paris' })).toBeNull()
+    expect(detectCatalogRegion({})).toBeNull()
+  })
+
+  // Without a branch here, adding 'saudi' to the type makes the region unreachable and
+  // every Saudi brand becomes dead data.
+  it('can reach every region it declares', () => {
+    const reachable = new Set(
+      [
+        detectCatalogRegion({ country: 'UAE' }),
+        detectCatalogRegion({ country: 'Egypt' }),
+        detectCatalogRegion({ country: 'Saudi Arabia' }),
+      ].filter(Boolean),
+    )
+    expect([...reachable].sort()).toEqual([...CATALOG_REGIONS].sort())
+  })
+})
+
+describe('REGION_CURRENCY', () => {
+  it('covers every region — a missing entry must not be silently undefined', () => {
+    for (const region of CATALOG_REGIONS) {
+      expect(REGION_CURRENCY[region]).toBeTruthy()
+    }
+  })
+
+  it('maps saudi to SAR', () => {
+    expect(REGION_CURRENCY.saudi).toBe('SAR')
+  })
+})
+
+describe('filterVisibleBrands', () => {
+  const brand = (availability: SubscriptionBrand['availability']): SubscriptionBrand =>
+    ({ key: 'k', name: 'n', color: '', emoji: '', initial: '', defaultCategory: 'Enjoyment',
+       catalogSection: 'catOther', availability, plans: {} }) as SubscriptionBrand
+
+  it('filters to the requested region', () => {
+    const all = [brand(['saudi']), brand(['egypt'])]
+    expect(filterVisibleBrands(all, 'saudi')).toHaveLength(1)
+  })
+
+  it('shows a Saudi-only brand to a Saudi user', () => {
+    // The old hardcoded `uae && egypt` global rule made this unreachable.
+    expect(filterVisibleBrands([brand(['saudi'])], 'saudi')).toHaveLength(1)
+  })
+
+  it('with no known region, shows only brands available in EVERY region', () => {
+    const everywhere = brand([...CATALOG_REGIONS])
+    const twoOfThree = brand(['uae', 'egypt'])
+    expect(filterVisibleBrands([everywhere, twoOfThree], null)).toEqual([everywhere])
+  })
+})
+
+describe('plansForRegion', () => {
+  const b = { plans: { egypt: [{ name: 'Std', amount: 200, cycle: 'monthly' }] } } as unknown as SubscriptionBrand
+
+  it('returns the region plans', () => {
+    expect(plansForRegion(b, 'egypt')).toHaveLength(1)
+  })
+
+  it('degrades to none for an unpriced region rather than another region price', () => {
+    expect(plansForRegion(b, 'saudi')).toEqual([])
+  })
+
+  it('degrades to none when the region is unknown', () => {
+    expect(plansForRegion(b, null)).toEqual([])
+  })
+})
+
+describe('catalog data integrity', () => {
+  it('every brand key is unique', () => {
+    const keys = SUBSCRIPTION_CATALOG.map((b) => b.key)
+    expect(new Set(keys).size).toBe(keys.length)
+  })
+
+  it('every brand declares at least one region', () => {
+    for (const b of SUBSCRIPTION_CATALOG) {
+      expect(b.availability.length, `${b.key} has no availability`).toBeGreaterThan(0)
+    }
+  })
+
+  it('every declared availability is a real region', () => {
+    for (const b of SUBSCRIPTION_CATALOG) {
+      for (const r of b.availability) {
+        expect(CATALOG_REGIONS, `${b.key} declares ${r}`).toContain(r)
+      }
+    }
+  })
+
+  it('never prices a region the brand is not available in', () => {
+    for (const b of SUBSCRIPTION_CATALOG) {
+      for (const region of Object.keys(b.plans) as (keyof typeof b.plans)[]) {
+        if ((b.plans[region] ?? []).length === 0) continue
+        expect(b.availability, `${b.key} prices ${region} but is not available there`).toContain(region)
+      }
+    }
   })
 })

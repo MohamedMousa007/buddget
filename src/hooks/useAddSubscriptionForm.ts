@@ -7,6 +7,7 @@ import {
   detectCatalogRegion,
   filterVisibleBrands,
   findBrandByKey,
+  plansForRegion,
   REGION_CURRENCY,
   SUBSCRIPTION_CATALOG,
   type SubscriptionBrand,
@@ -103,7 +104,7 @@ export function useAddSubscriptionForm(editing: Subscription | null, onClose: ()
   const applyPlan = useCallback(
     (brand: SubscriptionBrand, idx: number, targetCur: Currency) => {
       if (!region) return
-      const plan = brand.plans[region][idx]
+      const plan = plansForRegion(brand, region)[idx]
       if (!plan) return
       setPlanIndex(idx)
       setPlanName(plan.name)
@@ -137,7 +138,7 @@ export function useAddSubscriptionForm(editing: Subscription | null, onClose: ()
       setName(b.name)
       setExpenseCategory(b.defaultCategory)
       setPlanIndex(0)
-      if (region && b.plans[region].length > 0) {
+      if (region && plansForRegion(b, region).length > 0) {
         const cur = clampFiatToAllowed(settings, REGION_CURRENCY[region] as Currency)
         setCurrency(cur)
         applyPlan(b, 0, cur)
@@ -208,9 +209,7 @@ export function useAddSubscriptionForm(editing: Subscription | null, onClose: ()
   ])
 
   const plansForPicker =
-    pickedBrand && pickedBrand !== 'custom' && region && pickedBrand.plans[region].length > 0
-      ? pickedBrand.plans[region]
-      : []
+    pickedBrand && pickedBrand !== 'custom' ? plansForRegion(pickedBrand, region) : []
 
   return {
     region,
