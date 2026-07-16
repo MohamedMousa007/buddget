@@ -1,5 +1,6 @@
 import { addDays, addMonths, differenceInCalendarDays, format, getDaysInMonth, parseISO, setDate, startOfDay } from 'date-fns'
 import type { Currency, Debt, DebtPayment, Expense } from '@/lib/store/types'
+import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 
 function paidToward(debtId: string, payments: DebtPayment[]): number {
@@ -7,31 +8,33 @@ function paidToward(debtId: string, payments: DebtPayment[]): number {
 }
 
 /**
- * Categories that SETTLE a debt rather than add to it. Only these may be excluded from the
- * card balance.
- *
- * Deliberately not `isNonSpendCategory`: that was too broad and lost real debt. Non-spend
- * means "not consumption", NOT "not owed" — a `Top up`, a cash advance
- * (`ATM Cash Withdrawal`) or a `Currency Exchange` put on a credit card is money you
- * genuinely owe the bank, even though you consumed nothing. Filtering those out made a 500
- * card top-up vanish from the balance AND from spend, so it left net worth entirely.
- */
-const SETTLEMENT_CATEGORIES: ReadonlySet<string> = new Set(['CC Payoff', 'Installment'])
-
-/**
  * True for a row that genuinely adds to what is owed on the card.
  *
  * Excludes:
  *  - refunded/declined rows — the charge was reversed, so it must not inflate the balance
  *    forever (`expenseAmountInBase` already zeroes these everywhere else);
- *  - settlements — above all a `CC Payoff` posted against the card itself, which would
- *    otherwise cancel out its own payment.
+ *  - non-spend money movement, for two distinct reasons:
+ *      · a `CC Payoff` posted against the card itself would cancel out its own payment;
+ *      · every other non-spend category is money MOVING, whose consumption is recognised
+ *        later, when it is actually spent. Loading a wallet (`Top up`) or taking cash out
+ *        (`ATM Cash Withdrawal`) moves value you still hold; the purchase you eventually
+ *        make from that wallet or cash is what counts. Adding the movement here as well
+ *        would count the same money twice:
+ *
+ *            Top up 500 -> +500 owed  ... then spend 500 from the wallet -> −500 spend
+ *            = −1000 for 500 of real consumption.
+ *
+ * A previous version narrowed this to settlements only, on the argument that a card
+ * top-up is "money you owe". True of the DEBT DISPLAY in isolation, and wrong for net
+ * worth — the offsetting value you now hold is exactly what the later spend records. This
+ * matches `categoryMeta`'s definition and the wallet-transfer model: one movement, booked
+ * once, counted when consumed.
  */
 function chargesToCard(e: Expense, linkedPaymentMethodId: string): boolean {
   return (
     e.paymentMethodId === linkedPaymentMethodId &&
     !e.refundKind &&
-    !SETTLEMENT_CATEGORIES.has(e.category)
+    !isNonSpendCategory(e.category)
   )
 }
 

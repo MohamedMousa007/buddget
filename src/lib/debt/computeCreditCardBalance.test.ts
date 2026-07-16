@@ -48,12 +48,12 @@ describe('computeCreditCardOutstanding', () => {
     ).toBe(0)
   })
 
-  // Non-spend means "not consumption", NOT "not owed". A cash advance or a top-up put on
-  // the card is money genuinely owed the bank — excluding it lost the debt AND, since it
-  // is also excluded from spend, dropped it out of net worth altogether.
-  it.each(['ATM Cash Withdrawal', 'Top up', 'Currency Exchange', 'Transfer'] as const)(
-    'still owes a %s charged to the card', (category) => {
-      expect(outstanding([charge({ amount: 1_000, category })])).toBe(1_000)
+  // Money MOVING is not consumption, and must not be booked as debt on top: the value is
+  // still held, and the purchase eventually made from that wallet/cash is what counts.
+  // Counting the movement here too would give −1000 for 500 of real consumption.
+  it.each(['ATM Cash Withdrawal', 'Top up', 'Currency Exchange', 'Transfer', 'Savings'] as const)(
+    'excludes %s — the movement is recognised when the money is actually spent', (category) => {
+      expect(outstanding([charge({ amount: 1_000, category })])).toBe(0)
     })
 
   it('excludes an Installment settlement — it pays a debt down, it is not a charge', () => {
