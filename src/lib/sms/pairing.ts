@@ -10,6 +10,11 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { SmsExpenseKind } from './createSmsExpense'
+import {
+  decomposePaymentMethodName,
+  isPassThroughBrand,
+  normalizeBrandToken,
+} from '@/lib/payment/paymentMethodDefaults'
 
 const PAIR_WINDOW_SECONDS = 300
 
@@ -36,12 +41,62 @@ export async function isOwnAccountTransfer(
 }
 
 /**
- * True when `text` names one of the user's own registered wallets.
+ * The user's own wallets that actually hold a balance, by provider name.
  *
  * Wallets carry no last4 (PAYMENT_TYPE_META.wallet.allowsLast4 is false), so the
- * counterparty-last4 join above can never identify one — the wallet's NAME is the
- * only handle an SMS gives us. Word-boundary matched so "Barq" doesn't fire on
- * "Barqawi"; names under 3 chars are skipped as too generic to match safely.
+ * counterparty-last4 join above can never identify one — the NAME is the only handle
+ * an SMS gives us. Two filters keep that handle honest:
+ *  - pass-through brands are dropped: Apple Pay and InstaPay are `type: 'wallet'` and
+ *    sit in the SA/AE/EG quick-add lists, but they hold no balance, so "topping one up"
+ *    is not a thing and treating a payment through one as a transfer would erase it.
+ *  - the " · tag" suffix is stripped, so "Barq · Personal" still matches as "Barq".
+ */
+async function ownStoredValueWallets(
+  service: SupabaseClient,
+  userId: string,
+): Promise<string[]> {
+  const { data } = await service
+    .from('payment_methods')
+    .select('name')
+    .eq('user_id', userId)
+    .eq('type', 'wallet')
+    .is('deleted_at', null)
+  return (data ?? [])
+    .map((w) => decomposePaymentMethodName((w.name as string | null)?.trim() ?? '').provider)
+    .filter((p) => p.length >= 3 && !isPassThroughBrand(p))
+}
+
+/**
+ * True when `merchant` IS one of the user's own stored-value wallets — the card leg
+ * of a top-up.
+ *
+ * Compares the WHOLE merchant string, never a substring, and never via brand aliases.
+ * Several wallet brands are also merchants you can genuinely buy from: a Careem ride vs
+ * the Careem Pay wallet, fuel at ADNOC, a shop called "Lucky", a Fawry kiosk. Loose
+ * matching would reclassify those purchases as transfers and silently erase real spend.
+ * Exact matching fails safe instead — an unrecognised top-up stays spend, which is only
+ * the status quo. Nobody buys FROM their own wallet, so an exact hit is unambiguous.
+ */
+export async function isOwnWalletMerchant(
+  service: SupabaseClient,
+  userId: string,
+  merchant: string | null,
+): Promise<boolean> {
+  if (!merchant) return false
+  const norm = normalizeBrandToken(merchant)
+  if (!norm) return false
+  const wallets = await ownStoredValueWallets(service, userId)
+  return wallets.some((p) => normalizeBrandToken(p) === norm)
+}
+
+/**
+ * True when `text` mentions one of the user's own stored-value wallets — the wallet's
+ * own credit SMS ("Money Added to your Barq wallet").
+ *
+ * Word-boundary rather than exact, because here the name sits inside a sentence ("Barq"
+ * must not fire on "Barqawi"). Safe to be lenient where {@link isOwnWalletMerchant} is
+ * not: the caller only treats this leg as a transfer once a funding sibling proves the
+ * pair, and otherwise books it as income.
  */
 export async function namesOwnWallet(
   service: SupabaseClient,
@@ -49,16 +104,9 @@ export async function namesOwnWallet(
   text: string | null,
 ): Promise<boolean> {
   if (!text) return false
-  const { data } = await service
-    .from('payment_methods')
-    .select('name')
-    .eq('user_id', userId)
-    .eq('type', 'wallet')
-    .is('deleted_at', null)
-  return (data ?? []).some((w) => {
-    const name = (w.name as string | null)?.trim()
-    if (!name || name.length < 3) return false
-    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const wallets = await ownStoredValueWallets(service, userId)
+  return wallets.some((p) => {
+    const escaped = p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     return new RegExp(`(^|\\W)${escaped}(\\W|$)`, 'i').test(text)
   })
 }
@@ -179,7 +227,7 @@ export async function reconcileCcPayoffFundingLeg(
   // A funding leg misread as income would inflate income; retire it too.
   if (sibling.siblingIncomeId) {
     await service
-      .from('income_sources')
+      .from('income_events')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', sibling.siblingIncomeId)
     await service
@@ -250,8 +298,12 @@ export async function reconcileSibling(
   sibling: PairSibling,
 ): Promise<{ needsPost: boolean }> {
   if (sibling.siblingIncomeId) {
+    // income_events, NOT income_sources: sms_parse_log.income_id points at the EVENT
+    // (the money actually received); income_sources holds the recurring templates.
+    // Soft-deleting the template table matched zero rows and reported no error, so the
+    // phantom income leg survived every pairing this function was written to retract.
     await service
-      .from('income_sources')
+      .from('income_events')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', sibling.siblingIncomeId)
     await service

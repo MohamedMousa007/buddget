@@ -143,6 +143,9 @@ export async function POST(request: Request) {
       status: 'tapped',
       failure_code: null,
       category: tx.category ?? row.category,
+      // Applied kind, like the category — sms_try_pair matches siblings on it, so a
+      // confirmed leg must carry its reclassified kind to stay pairable.
+      kind: tx.kind ?? row.kind,
       expense_id: expenseId,
       income_id: incomeId,
       debt_payment_id: debtPaymentId,

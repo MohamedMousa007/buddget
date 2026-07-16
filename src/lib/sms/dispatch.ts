@@ -28,6 +28,7 @@ import {
 } from './createSmsExpense'
 import {
   isOwnAccountTransfer,
+  isOwnWalletMerchant,
   namesOwnWallet,
   tryPairLeg,
   reconcileSibling,
@@ -52,6 +53,15 @@ export type SmsTxOutcome =
 
 export interface SmsTxResult {
   outcome: SmsTxOutcome
+  /**
+   * The kind AFTER reclassification, for the caller to persist.
+   *
+   * Load-bearing, not bookkeeping: `sms_try_pair` matches candidate legs on the
+   * `kind` COLUMN, so a leg reclassified here is invisible to its own sibling
+   * unless the new kind reaches the row. Persisting only `parsed.kind` silently
+   * disables pairing for every leg step 0 or step 1 relabels.
+   */
+  kind: SmsExpenseKind
   expenseId: string | null
   incomeId: string | null
   debtPaymentId: string | null
@@ -103,9 +113,10 @@ async function postTransferFee(
   })
 }
 
-function base(outcome: SmsTxOutcome): SmsTxResult {
+function base(outcome: SmsTxOutcome, kind: SmsExpenseKind): SmsTxResult {
   return {
     outcome,
+    kind,
     expenseId: null,
     incomeId: null,
     debtPaymentId: null,
@@ -124,27 +135,54 @@ export async function createSmsTransaction(
 ): Promise<SmsTxResult> {
   let kind: SmsExpenseKind = row.kind
 
-  // 0. Own-wallet top-up. Loading your own wallet (Barq, STC Pay) is neither spend
-  //    nor income, but it emits two SMS that look like both:
+  // 0. Own-wallet top-up. Loading your own wallet (Barq, STC Pay) is neither spend nor
+  //    income, but it emits two SMS that look like both:
   //      the funding card's bank: "Online Purchase ... From: barq"   (merchant)
   //      the wallet itself:       "Money Added to your Barq wallet"  (body)
-  //    A wallet has no last4, so step 1's counterparty join can never recognise
-  //    either leg — the wallet's NAME is the only handle. This step only puts both
-  //    legs in the transfer family; step 2 does the actual merging.
+  //    A wallet has no last4, so step 1's counterparty join can never recognise either
+  //    leg — the wallet's NAME is the only handle.
   if (
     (kind === 'purchase' || kind === 'online_purchase') &&
-    (await namesOwnWallet(service, row.userId, row.merchant))
+    (await isOwnWalletMerchant(service, row.userId, row.merchant))
   ) {
-    // Matched on MERCHANT, never the body: paying a shop FROM the wallet also names
-    // the wallet in the body, and that is real spend. Nobody buys from their own
-    // wallet, so a purchase whose merchant IS the wallet can only be a top-up.
+    // Nobody buys FROM their own wallet, so this leg is unambiguous. It becomes a
+    // transfer whether or not the wallet's own SMS ever arrives, and — because the
+    // caller persists `kind` — becomes findable as a sibling by that SMS when it does.
     kind = 'own_transfer'
-  } else if (kind === 'income' && (await namesOwnWallet(service, row.userId, row.rawBody))) {
-    // Deliberately not a verdict: money added to your own wallet is genuine income
-    // when no card of yours funded it (a friend sent it). This only lets step 1 check
-    // the funding card and step 2 look for the sibling — if neither fires, this kind
-    // is still an isIncomeKind and books as income exactly as before.
-    kind = 'instant_transfer_in'
+  } else if (
+    (kind === 'income' || kind === 'instant_transfer_in') &&
+    (await namesOwnWallet(service, row.userId, row.rawBody))
+  ) {
+    // The wallet's own credit SMS. NOT unambiguous: money added to your wallet is real
+    // income when no card of yours funded it (a friend sent it). So this leg only
+    // becomes a transfer if the funding sibling is actually there.
+    //
+    // It has to ask here rather than fall through to step 2, which is reachable only
+    // from own_transfer — and step 1 cannot promote it, because a wallet credit carries
+    // the FUNDING card's number, which the template tier never maps to
+    // counterpartyLast4 at all.
+    kind = 'instant_transfer_in' // pairable by the funding leg in the other arrival order
+    if (row.logId && row.receivedAtIso) {
+      const sibling = await tryPairLeg(service, {
+        userId: row.userId,
+        logId: row.logId,
+        receivedAtIso: row.receivedAtIso,
+        amount: row.amount,
+        kind: 'own_transfer',
+      })
+      if (sibling) {
+        const { needsPost } = await reconcileSibling(service, sibling)
+        if (!needsPost) return base('transfer_paired', kind)
+        const posted = await createSmsExpense(service, { ...row, kind: 'own_transfer' })
+        return {
+          ...base('transfer_paired', 'own_transfer'),
+          expenseId: posted.expenseId,
+          category: 'Transfer',
+          error: posted.error,
+        }
+      }
+    }
+    // No funding leg: genuine income. Falls through to step 4 as an isIncomeKind.
   }
 
   // 1. Own-account reclassification — an inbound/outbound transfer whose
@@ -180,15 +218,15 @@ export async function createSmsTransaction(
             fundingAmount: row.amount,
             payoffAmount,
           })
-          return base('transfer_paired')
+          return base('transfer_paired', kind)
         }
 
         const { needsPost } = await reconcileSibling(service, sibling)
-        if (!needsPost) return base('transfer_paired')
+        if (!needsPost) return base('transfer_paired', kind)
         // Income sibling was removed — post a single visible non-spend row.
         const posted = await createSmsExpense(service, { ...row, kind })
         return {
-          ...base('transfer_paired'),
+          ...base('transfer_paired', kind),
           expenseId: posted.expenseId,
           category: kind === 'currency_exchange' ? 'Currency Exchange' : 'Transfer',
           error: posted.error,
@@ -197,7 +235,7 @@ export async function createSmsTransaction(
     }
     const res = await createSmsExpense(service, { ...row, kind })
     return {
-      ...base('transfer_single'),
+      ...base('transfer_single', kind),
       expenseId: res.expenseId,
       category: kind === 'currency_exchange' ? 'Currency Exchange' : 'Transfer',
       error: res.error,
@@ -230,7 +268,7 @@ export async function createSmsTransaction(
       // totals stay correct and the card balance isn't wrongly inflated. The
       // debt is not auto-reduced in this rare case; the user can attach it.
       const fb = await createSmsExpense(service, { ...row, kind, last4: null })
-      return { ...base('expense'), expenseId: fb.expenseId, category: 'CC Payoff', error: fb.error }
+      return { ...base('expense', kind), expenseId: fb.expenseId, category: 'CC Payoff', error: fb.error }
     }
 
     // The fee the funding bank took on top. It is real spend and must count — only the
@@ -242,7 +280,7 @@ export async function createSmsTransaction(
     })
 
     return {
-      ...base('debt_payment'),
+      ...base('debt_payment', kind),
       expenseId: res.expenseId,
       debtPaymentId: res.debtPaymentId,
       category: 'CC Payoff',
@@ -262,19 +300,19 @@ export async function createSmsTransaction(
     // ack against it instead of reversing a second unrelated charge.
     const twin = await findRefundedTwin(service, row)
     if (twin) {
-      return { ...base('refund_matched'), expenseId: twin.id, category: twin.category }
+      return { ...base('refund_matched', kind), expenseId: twin.id, category: twin.category }
     }
     const match = await matchOriginalExpense(service, row)
     if (match) {
       const { error } = await markExpenseRefunded(service, match.id, refundKind, row.day, row.logId)
-      return { ...base('refund_matched'), expenseId: match.id, category: match.category, error }
+      return { ...base('refund_matched', kind), expenseId: match.id, category: match.category, error }
     }
     if (refundKind === 'declined') {
       // No original to reverse, but a decline moved no money — track it as a
       // net-zero expense so the user sees it (never income).
       const res = await createSmsExpense(service, { ...row, kind, refundMark: { refundKind, day: row.day } })
       return {
-        ...base('expense'),
+        ...base('expense', kind),
         expenseId: res.expenseId,
         category: mapKindToCategory(kind, row.categoryHint),
         error: res.error,
@@ -282,7 +320,7 @@ export async function createSmsTransaction(
     }
     // Refunded with no match → one-time income (unchanged legacy behavior).
     const res = await createSmsExpense(service, { ...row, kind: 'refund' })
-    return { ...base('income'), incomeId: res.incomeId, error: res.error }
+    return { ...base('income', kind), incomeId: res.incomeId, error: res.error }
   }
 
   // 4. Income → salary matching. A confident match posts the ACTUAL received
@@ -299,19 +337,19 @@ export async function createSmsTransaction(
     })
     if (decision.outcome === 'matched' || (decision.outcome === 'confirm' && opts.userConfirmed)) {
       const res = await createSmsExpense(service, { ...row, kind, templateId: decision.sourceId })
-      return { ...base('income'), incomeId: res.incomeId, matchedSourceId: decision.sourceId, error: res.error }
+      return { ...base('income', kind), incomeId: res.incomeId, matchedSourceId: decision.sourceId, error: res.error }
     }
     if (decision.outcome === 'confirm') {
-      return { ...base('income_matched'), matchedSourceId: decision.sourceId, confirmReason: 'salary' }
+      return { ...base('income_matched', kind), matchedSourceId: decision.sourceId, confirmReason: 'salary' }
     }
     const res = await createSmsExpense(service, { ...row, kind })
-    return { ...base('income'), incomeId: res.incomeId, error: res.error }
+    return { ...base('income', kind), incomeId: res.incomeId, error: res.error }
   }
 
   // 5. ATM withdrawal → non-spend (category mapped in createSmsExpense).
   if (kind === 'atm_withdrawal') {
     const res = await createSmsExpense(service, { ...row, kind })
-    return { ...base('atm'), expenseId: res.expenseId, category: 'ATM Cash Withdrawal', error: res.error }
+    return { ...base('atm', kind), expenseId: res.expenseId, category: 'ATM Cash Withdrawal', error: res.error }
   }
 
   // 6. Purchase / online purchase → subscription linking, then expense.
@@ -336,7 +374,7 @@ export async function createSmsTransaction(
     categoryOverride: linkedSubscriptionId ? 'Subscription' : null,
   })
   return {
-    ...base(linkedSubscriptionId ? 'subscription' : 'expense'),
+    ...base(linkedSubscriptionId ? 'subscription' : 'expense', kind),
     expenseId: res.expenseId,
     category: linkedSubscriptionId ? 'Subscription' : null,
     linkedSubscriptionId,

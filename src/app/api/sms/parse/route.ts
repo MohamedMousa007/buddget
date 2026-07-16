@@ -813,7 +813,10 @@ export async function POST(request: Request) {
       category: tx.category ?? parsed.category,
       account_last4: cleanLast4,
       counterparty_last4: cleanCpLast4,
-      kind: parsed.kind,
+      // The APPLIED kind, for the same reason as the category above — and this one is
+      // load-bearing: sms_try_pair matches siblings on this column, so writing the raw
+      // parser kind would leave every reclassified leg unpairable by its own sibling.
+      kind: tx.kind ?? parsed.kind,
       clean_title: parsed.cleanTitle,
       merchant_normalized: parsed.merchantNormalized ?? null,
       parse_method: parseMethod,

@@ -79,6 +79,16 @@ export function normalizePaymentMethodType(raw: string | null | undefined): Paym
 // searchable regardless of the user's country.
 export type BrandCountry = 'EG' | 'SA' | 'AE' | 'KW' | 'QA' | 'BH' | 'OM' | 'JO'
 
+/**
+ * Moves money but never holds it. `type: 'wallet'` covers two different things —
+ * a stored-value wallet you top up and spend down (Barq, STC Pay, Vodafone Cash),
+ * and a rail that only forwards an underlying card/account (Apple Pay tokenises a
+ * card; InstaPay is the CBE's bank-to-bank rail). Both are "wallets" to a user, so
+ * they stay one picker type, but only the first can be topped up — an Apple Pay
+ * balance does not exist. Money-movement logic must branch on this, not on `type`.
+ */
+export type PassThroughBrand = true
+
 export interface PaymentBrand {
   id: string
   name: string
@@ -89,6 +99,8 @@ export interface PaymentBrand {
   full?: string
   /** Extra name variants (EN/AR/bank-SMS-sender) for search + provider matching. */
   aliases?: string[]
+  /** See {@link PassThroughBrand}. Absent = the brand really holds a balance. */
+  passThrough?: PassThroughBrand
 }
 
 type CatEntry = {
@@ -98,11 +110,13 @@ type CatEntry = {
   country?: BrandCountry
   full?: string
   aliases?: string[]
+  passThrough?: PassThroughBrand
 }
 
 const CAT_RAW: Record<string, CatEntry> = {
   // ── Egypt ──────────────────────────────────────────────────────────────────
-  instapay: { name: 'InstaPay', type: 'wallet', colors: ['#12A594', '#0C6E63'], country: 'EG', aliases: ['instant payment', 'ipn'] },
+  // The CBE's instant bank-to-bank rail (IPN), addressed by IPA — not a balance.
+  instapay: { name: 'InstaPay', type: 'wallet', colors: ['#12A594', '#0C6E63'], country: 'EG', aliases: ['instant payment', 'ipn'], passThrough: true },
   vodafone: { name: 'Vodafone Cash', type: 'wallet', colors: ['#E60000', '#8A1520'], country: 'EG', aliases: ['vodafone', 'فودافون كاش'] },
   orangecash: { name: 'Orange Cash', type: 'wallet', colors: ['#FF7900', '#B35500'], country: 'EG', aliases: ['orange money', 'اورنج كاش'] },
   wepay: { name: 'WE Pay', type: 'wallet', country: 'EG', aliases: ['we pay', 'telecom egypt'] },
@@ -201,9 +215,10 @@ const CAT_RAW: Record<string, CatEntry> = {
   bankdhofar: { name: 'Bank Dhofar', type: 'bank_account', country: 'OM' },
   thawani: { name: 'Thawani', type: 'wallet', country: 'OM', aliases: ['thawani pay'] },
   // ── Global schemes, wallets & rails ──────────────────────────────────────────
-  applepay: { name: 'Apple Pay', type: 'wallet', colors: ['#2E2E36', '#5A5A66'], aliases: ['apple wallet'] },
-  googlepay: { name: 'Google Pay', type: 'wallet', colors: ['#1A73E8', '#34A853'], aliases: ['gpay', 'google wallet'] },
-  samsungpay: { name: 'Samsung Pay', type: 'wallet', colors: ['#1428A0', '#0A1560'], aliases: ['samsung wallet'] },
+  // Tokenisation rails: "paid with Apple Pay" is really the underlying card paying.
+  applepay: { name: 'Apple Pay', type: 'wallet', colors: ['#2E2E36', '#5A5A66'], aliases: ['apple wallet'], passThrough: true },
+  googlepay: { name: 'Google Pay', type: 'wallet', colors: ['#1A73E8', '#34A853'], aliases: ['gpay', 'google wallet'], passThrough: true },
+  samsungpay: { name: 'Samsung Pay', type: 'wallet', colors: ['#1428A0', '#0A1560'], aliases: ['samsung wallet'], passThrough: true },
   visa: { name: 'Visa card', type: 'credit_card', colors: ['#1A1F71', '#4B4FA0'], aliases: ['visa'] },
   mastercard: { name: 'Mastercard', type: 'credit_card', colors: ['#CF1F2E', '#EB621D'], aliases: ['master card', 'mc'] },
   amex: { name: 'Amex', full: 'American Express', type: 'credit_card', colors: ['#2E77BC', '#1A4A7A'], aliases: ['american express'] },
@@ -238,7 +253,7 @@ export const PAYMENT_BRANDS: Record<string, PaymentBrand> = Object.fromEntries(
  * add-method form from a detected bank name). Exact id/name/alias first, then a
  * length-guarded substring pass. Mirrors `resolveBrandKeyFromMerchant` for subs.
  */
-function normalizeBrandToken(s: string): string {
+export function normalizeBrandToken(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
@@ -262,6 +277,17 @@ export function resolvePaymentBrandKey(text: string | null | undefined): string 
     }
   }
   return null
+}
+
+/**
+ * True when `text` names a brand that only forwards money (see {@link PassThroughBrand}).
+ * Lenient on purpose — it is applied to the user's OWN method name to EXCLUDE it from
+ * top-up handling, so a loose match errs toward treating money as spend, never toward
+ * erasing it.
+ */
+export function isPassThroughBrand(text: string | null | undefined): boolean {
+  const key = resolvePaymentBrandKey(text)
+  return key ? PAYMENT_BRANDS[key].passThrough === true : false
 }
 
 export const QUICK_ADD: Record<'EG' | 'SA' | 'AE', string[]> = {
