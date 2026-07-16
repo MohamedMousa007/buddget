@@ -30,6 +30,9 @@ import {
   effectiveCategoryBudget,
   totalDebtRemainingInBase,
   expenseAmountInBase,
+  calculateCashOutflow,
+  cashSavingsDepositsInBaseForMonth,
+  filterDebtPaymentsByMonth,
 } from '@/lib/utils/calculations'
 import {
   daysElapsedInMonth,
@@ -106,6 +109,7 @@ export function useMonthlyStats() {
         totalIncome: 0,
         totalSpent: 0,
         totalSpentExcludingSavings: 0,
+        cashOutflow: 0,
         totalBudget: 0,
         totalExpenseBudget: 0,
         remaining: 0,
@@ -273,6 +277,24 @@ export function useMonthlyStats() {
       expenses
     )
 
+    // Cash that actually left the account this month — the flow side of net worth.
+    // Distinct from `totalSpentExcludingSavings` (consumption), which every budget/pace
+    // figure below must keep using. See calculateCashOutflow for why they differ.
+    const cashOutflow = calculateCashOutflow({
+      monthExpenses: monthlyExpenses,
+      monthDebtPayments: filterDebtPaymentsByMonth(debtPayments, monthFilter, settings.monthStartDay),
+      debts,
+      monthSavingsDeposits: cashSavingsDepositsInBaseForMonth(
+        savingsTransactions,
+        monthFilter,
+        settings.monthStartDay,
+        settings.baseCurrency,
+        exchangeRates
+      ),
+      baseCurrency: settings.baseCurrency,
+      exchangeRates,
+    })
+
     const elapsed = daysElapsedInMonth(monthFilter, settings.monthStartDay)
     const totalDays = totalDaysInMonth(monthFilter, settings.monthStartDay)
     const dailyRate = dailySpendingRate(totalSpentForExpenseBudget, elapsed)
@@ -316,6 +338,7 @@ export function useMonthlyStats() {
       leftToSpend,
       categoryBudgetCaps,
       debtRemainingTotal,
+      cashOutflow,
       baseCurrency: settings.baseCurrency,
       incomeBlocked,
       daysElapsed: elapsed,

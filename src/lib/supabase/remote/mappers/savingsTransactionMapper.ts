@@ -15,6 +15,7 @@ export function savingsTransactionToRow(
     balance_after: null,
     transaction_date: t.date,
     notes: t.notes ?? null,
+    is_cash_flow: t.isCashFlow ?? true,
   }
 }
 
@@ -31,5 +32,6 @@ export function savingsTransactionFromRow(row: SavingsTransactionRow): SavingsTr
     currency: row.currency as Currency,
     date: row.transaction_date,
     notes: row.notes ?? undefined,
+    isCashFlow: row.is_cash_flow ?? true,
   }
 }

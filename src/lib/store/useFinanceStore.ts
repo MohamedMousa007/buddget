@@ -96,6 +96,7 @@ function migrateSavingsHoldingsToLedger(
         currency: h.currency,
         date: (h.asOfDate || h.createdAt).slice(0, 10),
         notes: 'Balance from previous savings record',
+        isCashFlow: false, // Imported prior balance, not new cash.
       })
     }
   }
@@ -1212,6 +1213,9 @@ export const useFinanceStore = create<FinanceStore>()(
                     currency: row.currency,
                     date: today,
                     notes: 'Opening balance',
+                    // Declaring what already exists — no cash moved, so it must not be
+                    // netted out of monthlyFlow (that would zero out the account).
+                    isCashFlow: false,
                   },
                 ]
               : state.savingsTransactions
@@ -1377,6 +1381,9 @@ export const useFinanceStore = create<FinanceStore>()(
             currency: acc.currency,
             date: new Date().toISOString().slice(0, 10),
             notes: notes?.trim() || 'Manual balance correction',
+            // A revaluation (e.g. investment gains), not cash — netting it out of
+            // monthlyFlow would cancel the gain. `type` still carries the direction.
+            isCashFlow: false,
           }
           const nextState: FinanceStore = {
             ...state,

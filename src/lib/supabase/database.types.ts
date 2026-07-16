@@ -1352,6 +1352,7 @@ export type Database = {
           currency: Database["public"]["Enums"]["currency_code"]
           deleted_at: string | null
           id: string
+          is_cash_flow: boolean
           kind: Database["public"]["Enums"]["savings_transaction_kind"]
           notes: string | null
           transaction_date: string
@@ -1366,6 +1367,7 @@ export type Database = {
           currency?: Database["public"]["Enums"]["currency_code"]
           deleted_at?: string | null
           id?: string
+          is_cash_flow?: boolean
           kind: Database["public"]["Enums"]["savings_transaction_kind"]
           notes?: string | null
           transaction_date?: string
@@ -1380,6 +1382,7 @@ export type Database = {
           currency?: Database["public"]["Enums"]["currency_code"]
           deleted_at?: string | null
           id?: string
+          is_cash_flow?: boolean
           kind?: Database["public"]["Enums"]["savings_transaction_kind"]
           notes?: string | null
           transaction_date?: string

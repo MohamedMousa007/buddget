@@ -429,6 +429,17 @@ export interface SavingsTransaction {
   source?: string
   notes?: string
   isAutoSave?: boolean
+  /**
+   * False when the balance moved but cash did NOT: an account's opening balance, an
+   * imported prior balance, or a correction/revaluation (e.g. investment gains). Only
+   * true rows are netted out of net worth's `monthlyFlow` — subtracting an opening
+   * balance would zero out a pre-existing account, and subtracting a revaluation would
+   * cancel the gain. Defaults to true (a real deposit/withdrawal).
+   *
+   * Separate from `type` because `type` carries the DIRECTION, and a correction can go
+   * either way — the two are independent axes.
+   */
+  isCashFlow?: boolean
 }
 
 export type DebtCurrency = 'EGP' | 'XAU' | Currency

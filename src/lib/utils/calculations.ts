@@ -456,9 +456,33 @@ export function netSavingsLedgerInBaseForMonth(
 ): number {
   const rows = filterSavingsTransactionsByMonth(transactions, monthStr, monthStartDay)
   return rows.reduce((sum, t) => {
+    // Opening balances and corrections move a balance without moving cash. Declaring a
+    // pre-existing 50k account used to wipe out `leftToSpend` for the month.
+    if (t.isCashFlow === false) return sum
     const inBase = convertCurrency(t.amount, t.currency, baseCurrency, rates)
     return sum + (t.type === 'deposit' ? inBase : -inBase)
   }, 0)
+}
+
+/**
+ * This month's savings/investment deposits that were REAL cash leaving the user's
+ * accounts — excludes opening balances, imported prior balances and corrections
+ * (`isCashFlow === false`), which move a balance without moving money.
+ *
+ * Deposits only, never the net ledger: `withdrawFromSavings` already posts a confirmed
+ * IncomeEvent that `actualIncomeForMonth` counts, so a withdrawal already nets to zero.
+ * Subtracting `deposits − withdrawals` would add withdrawals back a second time.
+ */
+export function cashSavingsDepositsInBaseForMonth(
+  transactions: SavingsTransaction[],
+  monthStr: string,
+  monthStartDay: number,
+  baseCurrency: Currency,
+  rates: Record<string, number>
+): number {
+  return filterSavingsTransactionsByMonth(transactions, monthStr, monthStartDay)
+    .filter((t) => t.type === 'deposit' && t.isCashFlow !== false)
+    .reduce((sum, t) => sum + convertCurrency(t.amount, t.currency, baseCurrency, rates), 0)
 }
 
 export function totalSavingsAccountsBalanceInBase(
@@ -525,6 +549,91 @@ export function calculateLeftToSpendCashFlow(params: {
     exchangeRates
   )
   return totalIncome - nonSav - savTagged - netLedger
+}
+
+/** Debt payments inside a month window. `date` may be date-only or a full ISO stamp. */
+export function filterDebtPaymentsByMonth(
+  payments: DebtPayment[],
+  monthStr: string,
+  monthStartDay = 1
+): DebtPayment[] {
+  const { start, end } = getMonthRange(monthStr, monthStartDay)
+  return payments.filter((p) => isWithinInterval(parseISO(p.date.slice(0, 10)), { start, end }))
+}
+
+/**
+ * Cash that actually left the user's accounts this month — the flow side of net worth.
+ *
+ * NOT the same question as {@link calculateTotalSpentExcludingSavings} ("what did I
+ * consume?"), which must keep counting card purchases so budgets stay honest. Both are
+ * correct; they answer different questions on different bases:
+ *
+ * | Event               | Spent (accrual) | cashOutflow | Debt/Assets  | Net worth |
+ * |---------------------|-----------------|-------------|--------------|-----------|
+ * | Buy 240 on CC       | +240            | 0           | debt +240    | −240      |
+ * | Pay off 240         | 0               | +240        | debt −240    | 0         |
+ * | Buy 240 on debit    | +240            | +240        | —            | −240      |
+ * | Deposit 300 savings | 0               | +300        | savings +300 | 0         |
+ *
+ * A credit purchase is recognised through the LIABILITY, not the flow. Counting it in
+ * both — which is what `monthlyFlow = income − totalSpentExcludingSavings` did — moved
+ * net worth by −480 for a 240 charge.
+ */
+export function calculateCashOutflow(params: {
+  monthExpenses: Expense[]
+  monthDebtPayments: DebtPayment[]
+  debts: Debt[]
+  /** This month's savings/investment deposits, already in base. Cash leaving for an asset. */
+  monthSavingsDeposits: number
+  baseCurrency: Currency
+  exchangeRates: Record<string, number>
+}): number {
+  const { monthExpenses, monthDebtPayments, debts, monthSavingsDeposits, baseCurrency, exchangeRates } = params
+
+  // Spend on these is recognised via a debt instead of via cash. Gated on a debt
+  // EXISTING (mirroring what computeCreditCardOutstanding actually counts) rather than
+  // on `pm.type` — an unsplit BNPL purchase, or a card with no linked debt, creates no
+  // liability, so excluding it by type would erase it from net worth entirely.
+  const deferredPmIds = new Set<string>()
+  const deferredDebtIds = new Set<string>()
+  const installmentDebtIds = new Set<string>()
+  for (const d of debts) {
+    if (d.debtType === 'credit_card') {
+      deferredDebtIds.add(d.id)
+      if (d.linkedPaymentMethodId) deferredPmIds.add(d.linkedPaymentMethodId)
+    } else if (d.debtType === 'installment') {
+      deferredDebtIds.add(d.id)
+      installmentDebtIds.add(d.id)
+    }
+  }
+
+  let outflow = 0
+  for (const e of monthExpenses) {
+    // Non-spend rows are money movement; the settlement ones are counted from
+    // debtPayments below, which is the only source that sees ALL payoffs.
+    if (isNonSpendCategory(e.category)) continue
+    if (e.paymentMethodId && deferredPmIds.has(e.paymentMethodId)) continue
+    if (e.linkedDebtId && installmentDebtIds.has(e.linkedDebtId)) continue
+    outflow += expenseAmountInBase(e, baseCurrency, exchangeRates)
+  }
+
+  // Settling a deferred debt IS the cash movement. Sourced from debtPayments, never from
+  // `CC Payoff` expense rows: the manual (useAddDebtSheet) and recurring
+  // (recurringDebtDueHandlers) payoff paths create a payment with NO expense — only the
+  // SMS path writes one — so keying on expenses would miss most payoffs and let net
+  // worth rebound to zero while real cash left the bank.
+  //
+  // Personal/general debts are deliberately excluded: their repayment already posts a
+  // `Debt`-category (spend) expense, so the loop above carries them.
+  const debtById = new Map(debts.map((d) => [d.id, d]))
+  for (const p of monthDebtPayments) {
+    const debt = debtById.get(p.debtId)
+    if (!debt || !deferredDebtIds.has(debt.id)) continue
+    const inBase = tryConvertCurrency(p.amountPaid, debt.currency as Currency, baseCurrency, exchangeRates)
+    outflow += inBase ?? p.amountPaid
+  }
+
+  return outflow + monthSavingsDeposits
 }
 
 export function totalDebtRemainingInBase(

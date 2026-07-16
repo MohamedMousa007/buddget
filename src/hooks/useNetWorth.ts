@@ -9,8 +9,14 @@ import { savingsAccountBalanceInBase } from '@/lib/savings/savingsConversions'
 import { convertCurrency } from '@/lib/utils/currency'
 
 /**
- * Net worth snapshot: savings + investments (account balances) + this month’s cash flow − debt.
- * Cash flow uses income minus expenses excluding savings-tagged expense lines (see `useMonthlyStats`).
+ * Net worth snapshot: savings + investments (account balances) + this month's cash flow − debt.
+ *
+ * The flow term is CASH movement (`stats.cashOutflow`), not accrual spend. It used
+ * `totalSpentExcludingSavings`, which double-counted anything already carried by the
+ * balance sheet: a 240 credit-card charge hit flow AND outstanding (−480), a BNPL
+ * purchase hit flow AND its installment debt (−600), and a savings deposit raised the
+ * balance while its income never left flow (+300 from nothing). Each event now moves net
+ * worth exactly once — see {@link calculateCashOutflow}.
  */
 export function useNetWorth() {
   useRates()
@@ -44,7 +50,7 @@ export function useNetWorth() {
       else totalSavings += v
     }
 
-    const monthlyFlow = stats.totalIncome - stats.totalSpentExcludingSavings
+    const monthlyFlow = stats.totalIncome - stats.cashOutflow
     const netWorth = totalSavings + totalInvestments + monthlyFlow - stats.debtRemainingTotal
 
     const netWorthSecondary =
@@ -63,7 +69,6 @@ export function useNetWorth() {
       totalInvestments,
       totalDebt: stats.debtRemainingTotal,
       monthlyIncome: stats.totalIncome,
-      monthlyExpenses: stats.totalSpentExcludingSavings,
       monthlyFlow,
       baseCurrency: base,
       netWorthGoldIncomplete,
@@ -78,7 +83,7 @@ export function useNetWorth() {
     goldPricePerGram,
     goldPriceAvailable,
     stats.totalIncome,
-    stats.totalSpentExcludingSavings,
+    stats.cashOutflow,
     stats.debtRemainingTotal,
   ])
 }
