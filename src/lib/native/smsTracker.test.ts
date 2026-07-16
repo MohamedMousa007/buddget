@@ -15,7 +15,7 @@ const mocks = vi.hoisted(() => ({
   getStatus: vi.fn(() => Promise.resolve({ enabled: true, tokenSaved: true, setupCompleted: true, permission: true })),
   peekPendingQueue: vi.fn(() => Promise.resolve({ items: [] as unknown[] })),
   removePending: vi.fn(() => Promise.resolve()),
-  fetch: vi.fn<[], Promise<Response>>(),
+  fetch: vi.fn<typeof globalThis.fetch>(),
 }))
 
 vi.mock('@/lib/native/isNative', () => ({
@@ -151,7 +151,8 @@ describe('drainAndSubmitPendingSms', () => {
     mocks.fetch.mockResolvedValue(new Response('{}', { status: 200 }))
     const sms = await freshModule()
     await sms.drainAndSubmitPendingSms('jwt')
-    expect(JSON.parse(mocks.fetch.mock.calls[0][1].body)).toEqual({
+    const init = mocks.fetch.mock.calls[0][1] as RequestInit
+    expect(JSON.parse(init.body as string)).toEqual({
       message: 'txn 1',
       sender: 'CIB',
       receivedAt: '2026-07-01T00:00:00Z',

@@ -35,6 +35,34 @@ export async function isOwnAccountTransfer(
   return !!data?.id
 }
 
+/**
+ * True when `text` names one of the user's own registered wallets.
+ *
+ * Wallets carry no last4 (PAYMENT_TYPE_META.wallet.allowsLast4 is false), so the
+ * counterparty-last4 join above can never identify one — the wallet's NAME is the
+ * only handle an SMS gives us. Word-boundary matched so "Barq" doesn't fire on
+ * "Barqawi"; names under 3 chars are skipped as too generic to match safely.
+ */
+export async function namesOwnWallet(
+  service: SupabaseClient,
+  userId: string,
+  text: string | null,
+): Promise<boolean> {
+  if (!text) return false
+  const { data } = await service
+    .from('payment_methods')
+    .select('name')
+    .eq('user_id', userId)
+    .eq('type', 'wallet')
+    .is('deleted_at', null)
+  return (data ?? []).some((w) => {
+    const name = (w.name as string | null)?.trim()
+    if (!name || name.length < 3) return false
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(`(^|\\W)${escaped}(\\W|$)`, 'i').test(text)
+  })
+}
+
 export interface PairSibling {
   siblingId: string
   siblingKind: string

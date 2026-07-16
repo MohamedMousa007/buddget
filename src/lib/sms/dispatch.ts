@@ -2,6 +2,7 @@
  * createSmsTransaction — the single classification dispatcher for SMS-parsed
  * transactions. Evaluates in a strict order so money-movements are never
  * mis-booked as spend or income:
+ *   0. own-wallet top-up (puts both legs in the transfer family)
  *   1. own-account reclassification (before the income branch)
  *   2. transfer / FX pairing (two-leg reconciliation)
  *   3. CC payoff → debt payment
@@ -27,6 +28,7 @@ import {
 } from './createSmsExpense'
 import {
   isOwnAccountTransfer,
+  namesOwnWallet,
   tryPairLeg,
   reconcileSibling,
   reconcileCcPayoffFundingLeg,
@@ -121,6 +123,29 @@ export async function createSmsTransaction(
   opts: { exchangeRates: Record<string, number>; userConfirmed?: boolean },
 ): Promise<SmsTxResult> {
   let kind: SmsExpenseKind = row.kind
+
+  // 0. Own-wallet top-up. Loading your own wallet (Barq, STC Pay) is neither spend
+  //    nor income, but it emits two SMS that look like both:
+  //      the funding card's bank: "Online Purchase ... From: barq"   (merchant)
+  //      the wallet itself:       "Money Added to your Barq wallet"  (body)
+  //    A wallet has no last4, so step 1's counterparty join can never recognise
+  //    either leg — the wallet's NAME is the only handle. This step only puts both
+  //    legs in the transfer family; step 2 does the actual merging.
+  if (
+    (kind === 'purchase' || kind === 'online_purchase') &&
+    (await namesOwnWallet(service, row.userId, row.merchant))
+  ) {
+    // Matched on MERCHANT, never the body: paying a shop FROM the wallet also names
+    // the wallet in the body, and that is real spend. Nobody buys from their own
+    // wallet, so a purchase whose merchant IS the wallet can only be a top-up.
+    kind = 'own_transfer'
+  } else if (kind === 'income' && (await namesOwnWallet(service, row.userId, row.rawBody))) {
+    // Deliberately not a verdict: money added to your own wallet is genuine income
+    // when no card of yours funded it (a friend sent it). This only lets step 1 check
+    // the funding card and step 2 look for the sibling — if neither fires, this kind
+    // is still an isIncomeKind and books as income exactly as before.
+    kind = 'instant_transfer_in'
+  }
 
   // 1. Own-account reclassification — an inbound/outbound transfer whose
   //    counterparty is a registered own account is a Transfer, not income/spend.
