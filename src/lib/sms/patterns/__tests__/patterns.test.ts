@@ -213,6 +213,20 @@ describe('Vodafone Cash + generic bank patterns', () => {
     expect(m?.kind).toBe('instant_transfer_out')
   })
 
+  it('parses QNB Egypt debit card transaction (body never names the bank)', () => {
+    const body =
+      'Your Debit Card **6831 had a Successful transaction of EGP 1884.50 @EL SALAM SHOPPING CE,your available bal.EGP160.17 for lost/stolen card call 16607'
+    const m = matchCuratedPattern(body, 'QNB EGYPT')
+    expect(m?.patternId).toBe('qnb-card-trx-en')
+    expect(m?.bank).toBe('QNB Alahli')
+    expect(m?.kind).toBe('purchase')
+    expect(m?.amount).toBe(1884.5)
+    expect(m?.currency).toBe('EGP')
+    expect(m?.counterparty).toBe('EL SALAM SHOPPING CE')
+    expect(m?.last4).toBe('6831')
+    expect(m?.paymentInstrument).toBe('card')
+  })
+
   it('parses NBE Instapay card credit with empty/null sender (iOS bridge)', () => {
     // The iOS Shortcuts bridge sends sender as "" — must still match.
     for (const sender of ['', null] as const) {

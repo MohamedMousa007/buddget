@@ -17,6 +17,7 @@ import {
   resolvePaymentBrandKey,
 } from '@/lib/payment/paymentMethodDefaults'
 import { cn } from '@/lib/utils'
+import type { PmPrefill } from '@/lib/store/useSettingsStore'
 import type { Currency, PaymentMethod, PaymentMethodType } from '@/lib/store/types'
 
 type Disc = 'last4' | 'tag' | 'none'
@@ -35,7 +36,7 @@ function countryFromCurrency(cur: Currency): 'EG' | 'SA' | 'AE' | null {
 interface Props {
   open: boolean
   editing: PaymentMethod | null
-  prefill?: { name: string; last4: string } | null
+  prefill?: PmPrefill | null
   baseCurrency: Currency
   onClose: () => void
   onSaved?: (id: string) => void
@@ -83,10 +84,12 @@ export function PaymentMethodSetupSheet({
       } else {
         // Resolve a detected bank/provider name to a catalogue brand so the SMS
         // prefill lands on the right type/colours, not a generic bank_account.
+        // An explicit prefill type (the SMS said "Debit Card") beats the brand's
+        // default (QNB's brand type is bank_account).
         const pfBrandId = prefill?.name ? resolvePaymentBrandKey(prefill.name) : null
         const pfBrand = pfBrandId ? PAYMENT_BRANDS[pfBrandId] : null
         setBrandId(pfBrandId); setProviderName(pfBrand?.name ?? prefill?.name ?? '')
-        setType(pfBrand?.type ?? 'bank_account')
+        setType(prefill?.type ?? pfBrand?.type ?? 'bank_account')
         setLast4(prefill?.last4 ?? ''); setTag('')
         setDisc(prefill?.last4 ? 'last4' : 'none')
         setCurCode(baseCurrency); setCardColor(null); setIsDefault(false)

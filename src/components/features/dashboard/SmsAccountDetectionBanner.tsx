@@ -20,14 +20,14 @@ export function SmsAccountDetectionBanner() {
   // anchored below the safe-area inset, stacks when multiple accounts appear.
   return (
     <div className="fixed inset-x-4 top-[calc(env(safe-area-inset-top)+12px)] z-50 space-y-2 sm:left-auto sm:right-4 sm:w-96">
-      {visible.map(({ last4, bankName }) => (
+      {visible.map(({ last4, provider, type }) => (
         <div
           key={last4}
           className="animate-in slide-in-from-top-4 fade-in rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-3 shadow-lg"
         >
           <div className="flex items-start justify-between gap-2">
             <p className="text-xs font-medium text-[var(--color-brand-text-primary)]">
-              {bankName ? `${bankName} ` : ''}••{last4} — new account detected
+              {provider ? `${provider} ` : ''}••{last4} — new account detected
             </p>
             <button
               type="button"
@@ -43,8 +43,9 @@ export function SmsAccountDetectionBanner() {
               type="button"
               onClick={() =>
                 openAddPaymentMethodWithPrefill({
-                  name: `${bankName ?? 'Bank'} ••${last4}`,
+                  name: provider ?? '',
                   last4,
+                  ...(type ? { type } : {}),
                 })
               }
               className="flex items-center gap-1.5 rounded-xl bg-[var(--color-brand-green)]/10 px-3 py-1.5 text-xs text-[var(--color-brand-green)]"

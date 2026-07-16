@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { createSafeLocalStorage } from '@/lib/store/safeLocalStorage'
+import type { PaymentMethodType } from '@/lib/store/types'
 
 export interface ExpensePrefill {
   date?: string
@@ -13,8 +14,11 @@ export interface ExpensePrefill {
 }
 
 export interface PmPrefill {
+  /** Bare provider name (no ••last4 suffix) — the sheet composes the display name. */
   name: string
   last4: string
+  /** Type implied by the source (e.g. an SMS card transaction); overrides the brand default. */
+  type?: PaymentMethodType
 }
 
 /** Persisted resting position of the draggable Buddgy orb. */

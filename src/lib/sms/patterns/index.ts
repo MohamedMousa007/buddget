@@ -11,6 +11,7 @@ import type { BankPatternSet, CuratedMatch, CuratedPattern, SmsKind } from './ty
 import { HSBC_PATTERNS } from './hsbc'
 import { CIB_PATTERNS } from './cib'
 import { NBE_PATTERNS } from './nbe'
+import { QNB_PATTERNS } from './qnb'
 import { VODAFONE_CASH_PATTERNS } from './vodafoneCash'
 import { GENERIC_BANK_PATTERNS } from './genericBank'
 import { EMIRATES_NBD_PATTERNS } from './emiratesNBD'
@@ -30,6 +31,7 @@ export const ALL_PATTERN_SETS: BankPatternSet[] = [
   HSBC_PATTERNS,
   CIB_PATTERNS,
   NBE_PATTERNS,
+  QNB_PATTERNS,
   VODAFONE_CASH_PATTERNS,
   GENERIC_BANK_PATTERNS,
   // Gulf (GCC) — body-only matches; sender often absent on the iOS bridge.
