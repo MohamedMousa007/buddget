@@ -80,6 +80,9 @@ export function useAddSubscriptionForm(
 
   const [name, setName] = useState(() => editing?.name ?? seedBrand?.name ?? '')
   const [planName, setPlanName] = useState<string | null>(() => editing?.planName ?? null)
+  // The label is what we SHOW; the id is what we STORE. A label can be edited in the
+  // catalog, so it cannot identify the plan later.
+  const [planId, setPlanId] = useState<string | null>(() => editing?.planId ?? null)
   const [amountStr, setAmountStr] = useState(() =>
     editing ? String(editing.amount) : prefill?.amount ? String(prefill.amount) : ''
   )
@@ -122,6 +125,7 @@ export function useAddSubscriptionForm(
       if (!plan) return
       setPlanIndex(idx)
       setPlanName(plan.name)
+      setPlanId(plan.id)
       setBillingCycle(plan.cycle)
       const raw = plan.amount
       // A plan may be billed in a fixed currency worldwide (USD for most global
@@ -188,6 +192,8 @@ export function useAddSubscriptionForm(
       name: name.trim(),
       brandKey,
       planName: planName?.trim() || null,
+      planId: brandKey ? planId : null,
+      catalogRegion: brandKey ? region : null,
       amount,
       currency: cur,
       billingCycle,
@@ -209,6 +215,8 @@ export function useAddSubscriptionForm(
     amountStr,
     name,
     planName,
+    planId,
+    region,
     currency,
     billingCycle,
     billingDay,

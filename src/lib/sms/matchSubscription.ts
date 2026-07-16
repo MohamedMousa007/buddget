@@ -14,7 +14,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getDaysInMonth, parseISO } from 'date-fns'
 import { resolveBrandKeyFromMerchant } from '@/lib/constants/subscriptionCatalog'
+import { detectPlanChange } from '@/lib/subscriptions/planChange'
+import type { Currency } from '@/lib/store/types'
 import { tryConvertCurrency } from '@/lib/utils/currency'
+
+export interface SubscriptionMatch {
+  subscriptionId: string
+  /** A different plan the charge matches. PROPOSED — the caller prompts, never applies. */
+  planChange: { planId: string; planName: string; direction: 'upgrade' | 'downgrade' } | null
+}
 
 const AMOUNT_TOLERANCE = 0.05 // ±5%
 /** How far from the billing day a charge may land and still be that cycle's charge. */
@@ -45,7 +53,7 @@ export async function matchSubscription(
     day?: string | null
     exchangeRates: Record<string, number>
   },
-): Promise<{ subscriptionId: string } | null> {
+): Promise<SubscriptionMatch | null> {
   const brandKey =
     resolveBrandKeyFromMerchant(params.merchantNormalized) ??
     resolveBrandKeyFromMerchant(params.merchant)
@@ -53,7 +61,7 @@ export async function matchSubscription(
 
   const { data: subs } = await service
     .from('subscriptions')
-    .select('id, amount, currency, brand_key, billing_day, status')
+    .select('id, amount, currency, brand_key, billing_day, status, plan_id, catalog_region')
     .eq('user_id', params.userId)
     .eq('brand_key', brandKey)
     .eq('status', 'active')
@@ -64,24 +72,50 @@ export async function matchSubscription(
 
   for (const sub of candidates) {
     // No amount recorded — the brand match is all we have to go on.
-    if (!sub.amount) return { subscriptionId: sub.id }
+    if (!sub.amount) return { subscriptionId: sub.id, planChange: null }
 
     const smsInSubCurrency =
       sub.currency === params.currency
         ? params.amount
         : tryConvertCurrency(params.amount, params.currency, sub.currency as string, params.exchangeRates)
     // No FX path: a strong brand match stands alone rather than guessing on the amount.
-    if (smsInSubCurrency == null) return { subscriptionId: sub.id }
+    if (smsInSubCurrency == null) return { subscriptionId: sub.id, planChange: null }
 
-    if (Math.abs(smsInSubCurrency - sub.amount) / sub.amount > AMOUNT_TOLERANCE) continue
+    const agrees = Math.abs(smsInSubCurrency - sub.amount) / sub.amount <= AMOUNT_TOLERANCE
 
-    // Same brand AND same amount, but nowhere near the billing date — a repeat purchase
-    // that happens to cost the subscription price, not the subscription renewing.
+    // The amount diverged — but if it lands squarely on ANOTHER plan of the same brand,
+    // this is the user changing plan, not an unrelated purchase. Without this, the ±5%
+    // gate would drop a real Netflix upgrade (190 -> 270 is 43% off) and the charge would
+    // lose its Subscription category too.
+    const planChange = agrees
+      ? null
+      : detectPlanChange(
+          {
+            brandKey: sub.brand_key as string | null,
+            catalogRegion: (sub.catalog_region as string | null) ?? null,
+            currency: sub.currency as Currency,
+            planId: (sub.plan_id as string | null) ?? null,
+            amount: sub.amount,
+          },
+          smsInSubCurrency,
+        )
+    if (!agrees && !planChange) continue
+
+    // Same brand AND a plausible amount, but nowhere near the billing date — a repeat
+    // purchase that happens to cost the subscription price, not the subscription renewing.
     if (params.day && sub.billing_day && daysFromBillingDay(params.day, sub.billing_day) > BILLING_DAY_TOLERANCE) {
       continue
     }
 
-    return { subscriptionId: sub.id }
+    return {
+      subscriptionId: sub.id,
+      // Proposed only. The caller must ask — a proration or a provider price rise is not
+      // the user switching plan, and silently rewriting their plan would be worse than
+      // saying nothing.
+      planChange: planChange
+        ? { planId: planChange.plan.id, planName: planChange.plan.name, direction: planChange.direction }
+        : null,
+    }
   }
 
   // Brand matched but nothing agreed. Previously this returned the sole candidate anyway,

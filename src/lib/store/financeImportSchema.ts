@@ -447,6 +447,8 @@ export const importDataSchema = z.object({
         name: z.string(),
         brandKey: z.string().nullable(),
         planName: z.string().nullable(),
+        planId: z.string().nullable().default(null),
+        catalogRegion: z.string().nullable().default(null),
         amount: z.number(),
         currency: fiatCurrencySchema,
         billingCycle: z.enum(['monthly', 'quarterly', 'yearly', 'weekly']),

@@ -250,6 +250,18 @@ export interface Subscription {
   /** Selected plan name (e.g., "Premium", "200GB") */
   planName: string | null
 
+  /**
+   * Stable catalog plan id (e.g. `netflix_standard`), shared across regions. Null for a
+   * custom subscription, or one created before plan ids existed.
+   *
+   * `planName` alone could not identify a plan: it is a label that can be edited, and
+   * matching it meant string-comparing against whichever region the user is in NOW.
+   */
+  planId: string | null
+
+  /** Catalog region this was priced against — so a later comparison uses the right column. */
+  catalogRegion: string | null
+
   amount: number
   currency: Currency
 

@@ -1862,6 +1862,8 @@ export type Database = {
           next_billing_date: string | null
           notes: string | null
           payment_method_id: string | null
+          catalog_region: string | null
+          plan_id: string | null
           plan_name: string | null
           start_date: string
           status: Database["public"]["Enums"]["subscription_status"]
@@ -1884,6 +1886,8 @@ export type Database = {
           next_billing_date?: string | null
           notes?: string | null
           payment_method_id?: string | null
+          catalog_region?: string | null
+          plan_id?: string | null
           plan_name?: string | null
           start_date?: string
           status?: Database["public"]["Enums"]["subscription_status"]
@@ -1906,6 +1910,8 @@ export type Database = {
           next_billing_date?: string | null
           notes?: string | null
           payment_method_id?: string | null
+          catalog_region?: string | null
+          plan_id?: string | null
           plan_name?: string | null
           start_date?: string
           status?: Database["public"]["Enums"]["subscription_status"]
