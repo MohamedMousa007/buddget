@@ -149,9 +149,18 @@ describe('catalog data integrity', () => {
     expect(new Set(keys).size).toBe(keys.length)
   })
 
-  it('every brand declares at least one region', () => {
+  // An EMPTY availability is legal and meaningful: the brand is not sold in any region we
+  // serve (Hulu/Peacock are US-only; HBO Max is blocked across MENA by OSN's exclusive
+  // rights). filterVisibleBrands hides it, while findBrandByKey still resolves it so an
+  // existing subscription keeps its name and icon.
+  it('hides a brand that is not sold in any region we serve', () => {
     for (const b of SUBSCRIPTION_CATALOG) {
-      expect(b.availability.length, `${b.key} has no availability`).toBeGreaterThan(0)
+      if (b.availability.length > 0) continue
+      for (const region of CATALOG_REGIONS) {
+        expect(filterVisibleBrands([b], region), `${b.key} is unavailable but shown in ${region}`).toEqual([])
+      }
+      expect(filterVisibleBrands([b], null)).toEqual([])
+      expect(Object.keys(b.plans), `${b.key} is unavailable but priced`).toEqual([])
     }
   })
 

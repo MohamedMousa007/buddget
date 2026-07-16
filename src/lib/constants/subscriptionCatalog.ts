@@ -279,17 +279,22 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     emoji: '🎬',
     initial: 'N',
     defaultCategory: 'Enjoyment',
-    availability: ['uae', 'egypt'],
+    availability: ['uae', 'egypt', 'saudi'],
     plans: {
       uae: [
-        { id: 'netflix_basic', name: 'Basic', amount: 35, cycle: 'monthly', description: 'HD, 1 screen' },
-        { id: 'netflix_standard', name: 'Standard', amount: 49, cycle: 'monthly', description: 'Full HD, 2 screens' },
-        { id: 'netflix_premium', name: 'Premium', amount: 71, cycle: 'monthly', description: '4K UHD, 4 screens' },
+        { id: 'netflix_basic', name: 'Basic', amount: 35, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'netflix_standard', name: 'Standard', amount: 49, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'netflix_premium', name: 'Premium', amount: 71, cycle: 'monthly', verifiedAt: '2026-07-17' },
       ],
       egypt: [
-        { id: 'netflix_basic', name: 'Basic', amount: 70, cycle: 'monthly', description: 'HD, 1 screen' },
-        { id: 'netflix_standard', name: 'Standard', amount: 120, cycle: 'monthly', description: 'Full HD, 2 screens' },
-        { id: 'netflix_premium', name: 'Premium', amount: 165, cycle: 'monthly', description: '4K UHD, 4 screens' },
+        { id: 'netflix_basic', name: 'Basic', amount: 110, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'netflix_standard', name: 'Standard', amount: 190, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'netflix_premium', name: 'Premium', amount: 270, cycle: 'monthly', verifiedAt: '2026-07-17' },
+      ],
+      saudi: [
+        { id: 'netflix_basic', name: 'Basic', amount: 35, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'netflix_standard', name: 'Standard', amount: 49, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'netflix_premium', name: 'Premium', amount: 71, cycle: 'monthly', verifiedAt: '2026-07-17' },
       ],
     },
   },
@@ -301,17 +306,14 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     emoji: '📺',
     initial: 'S',
     defaultCategory: 'Enjoyment',
-    availability: ['uae', 'egypt'],
+    availability: ['uae', 'egypt', 'saudi'],
     plans: {
-      uae: [
-        { id: 'shahid_vip_vip', name: 'VIP', amount: 24, cycle: 'monthly' },
-        { id: 'shahid_vip_vip_sports', name: 'VIP Sports', amount: 45, cycle: 'monthly' },
-        { id: 'shahid_vip_vip_annual', name: 'VIP Annual', amount: 240, cycle: 'yearly' },
-      ],
       egypt: [
-        { id: 'shahid_vip_vip', name: 'VIP', amount: 100, cycle: 'monthly' },
-        { id: 'shahid_vip_vip_sports', name: 'VIP Sports', amount: 200, cycle: 'monthly' },
-        { id: 'shahid_vip_vip_annual', name: 'VIP Annual', amount: 1000, cycle: 'yearly' },
+        { id: 'shahid_vip_vip_mobile', name: 'VIP Mobile', amount: 52.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'shahid_vip_vip', name: 'VIP', amount: 159.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'shahid_vip_vip_bigtime', name: 'VIP BigTime', amount: 289.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'shahid_vip_vip_sports', name: 'VIP Sports', amount: 439.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'shahid_vip_ultimate', name: 'Ultimate', amount: 639.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
       ],
     },
   },
@@ -324,13 +326,7 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     initial: 'W',
     defaultCategory: 'Enjoyment',
     availability: ['egypt'],
-    plans: {
-      uae: [],
-      egypt: [
-        { id: 'watchit_basic', name: 'Basic', amount: 120, cycle: 'monthly' },
-        { id: 'watchit_premium', name: 'Premium', amount: 200, cycle: 'monthly' },
-      ],
-    },
+    plans: {},
   },
   {
     catalogSection: 'catStreaming',
@@ -340,15 +336,19 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     emoji: '✨',
     initial: 'D+',
     defaultCategory: 'Enjoyment',
-    availability: ['uae', 'egypt'],
+    availability: ['uae', 'egypt', 'saudi'],
     plans: {
       uae: [
-        { id: 'disney_plus_standard', name: 'Standard', amount: 30, cycle: 'monthly' },
-        { id: 'disney_plus_premium', name: 'Premium', amount: 40, cycle: 'monthly' },
+        { id: 'disney_plus_monthly', name: 'Monthly', amount: 49.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'disney_plus_yearly', name: 'Yearly', amount: 449.9, cycle: 'yearly', verifiedAt: '2026-07-17' },
       ],
       egypt: [
-        { id: 'disney_plus_standard', name: 'Standard', amount: 120, cycle: 'monthly' },
-        { id: 'disney_plus_premium', name: 'Premium', amount: 170, cycle: 'monthly' },
+        { id: 'disney_plus_monthly', name: 'Monthly', amount: 170, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'disney_plus_yearly', name: 'Yearly', amount: 1700, cycle: 'yearly', verifiedAt: '2026-07-17' },
+      ],
+      saudi: [
+        { id: 'disney_plus_monthly', name: 'Monthly', amount: 49.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'disney_plus_yearly', name: 'Yearly', amount: 449.9, cycle: 'yearly', verifiedAt: '2026-07-17' },
       ],
     },
   },
@@ -450,29 +450,46 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
   {
     catalogSection: 'catStreaming',
     key: 'apple_tv_plus',
-    name: 'Apple TV+',
+    name: 'Apple TV',
     color: '#000000',
     emoji: '📺',
     initial: 'tv+',
     defaultCategory: 'Enjoyment',
-    availability: ['uae', 'egypt'],
+    availability: ['uae', 'egypt', 'saudi'],
     plans: {
-      uae: [{ id: 'apple_tv_plus_monthly', name: 'Monthly', amount: 20, cycle: 'monthly' }],
-      egypt: [{ id: 'apple_tv_plus_monthly', name: 'Monthly', amount: 50, cycle: 'monthly' }],
+      uae: [
+        { id: 'apple_tv_plus_apple_tv', name: 'Apple TV', amount: 27.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+      ],
+      egypt: [
+        { id: 'apple_tv_plus_apple_tv', name: 'Apple TV', amount: 119.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+      ],
+      saudi: [
+        { id: 'apple_tv_plus_apple_tv', name: 'Apple TV', amount: 29.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+      ],
     },
   },
   {
     catalogSection: 'catStreaming',
     key: 'prime_video',
-    name: 'Amazon Prime Video',
+    name: 'Amazon Prime',
     color: '#00A8E1',
     emoji: '📦',
     initial: 'P',
     defaultCategory: 'Enjoyment',
-    availability: ['uae', 'egypt'],
+    availability: ['uae', 'egypt', 'saudi'],
     plans: {
-      uae: [{ id: 'prime_video_monthly', name: 'Monthly', amount: 16, cycle: 'monthly' }],
-      egypt: [{ id: 'prime_video_monthly', name: 'Monthly', amount: 50, cycle: 'monthly' }],
+      uae: [
+        { id: 'prime_video_monthly', name: 'Monthly', amount: 16, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'prime_video_yearly', name: 'Yearly', amount: 140, cycle: 'yearly', verifiedAt: '2026-07-17' },
+      ],
+      egypt: [
+        { id: 'prime_video_monthly', name: 'Monthly', amount: 29, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'prime_video_yearly', name: 'Yearly', amount: 249, cycle: 'yearly', verifiedAt: '2026-07-17' },
+      ],
+      saudi: [
+        { id: 'prime_video_monthly', name: 'Monthly', amount: 16, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'prime_video_yearly', name: 'Yearly', amount: 140, cycle: 'yearly', verifiedAt: '2026-07-17' },
+      ],
     },
   },
   {
@@ -798,19 +815,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     emoji: '🎬',
     initial: 'H',
     defaultCategory: 'Enjoyment',
-    availability: ['uae', 'egypt'],
-    plans: {
-      uae: [
-        { id: 'hbo_max_mobile', name: 'Mobile', amount: 20, cycle: 'monthly', description: 'HD, 1 screen' },
-        { id: 'hbo_max_basic', name: 'Basic', amount: 35, cycle: 'monthly', description: 'Full HD, 2 screens' },
-        { id: 'hbo_max_platinum', name: 'Platinum', amount: 50, cycle: 'monthly', description: '4K, 4 screens' },
-      ],
-      egypt: [
-        { id: 'hbo_max_mobile', name: 'Mobile', amount: 80, cycle: 'monthly', description: 'HD, 1 screen' },
-        { id: 'hbo_max_basic', name: 'Basic', amount: 140, cycle: 'monthly', description: 'Full HD, 2 screens' },
-        { id: 'hbo_max_platinum', name: 'Platinum', amount: 200, cycle: 'monthly', description: '4K, 4 screens' },
-      ],
-    },
+    availability: [],
+    plans: {},
   },
   {
     catalogSection: 'catStreaming',
@@ -840,11 +846,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     emoji: '📺',
     initial: 'H',
     defaultCategory: 'Enjoyment',
-    availability: ['uae', 'egypt'],
-    plans: {
-      uae: [{ id: 'hulu_with_ads', name: 'With ads', amount: 35, cycle: 'monthly' }, { id: 'hulu_no_ads', name: 'No ads', amount: 55, cycle: 'monthly' }],
-      egypt: [{ id: 'hulu_with_ads', name: 'With ads', amount: 140, cycle: 'monthly' }, { id: 'hulu_no_ads', name: 'No ads', amount: 220, cycle: 'monthly' }],
-    },
+    availability: [],
+    plans: {},
   },
   {
     catalogSection: 'catStreaming',
@@ -854,11 +857,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     emoji: '▶️',
     initial: 'P',
     defaultCategory: 'Enjoyment',
-    availability: ['uae', 'egypt'],
-    plans: {
-      uae: [{ id: 'paramount_plus_essential', name: 'Essential', amount: 20, cycle: 'monthly' }, { id: 'paramount_plus_premium', name: 'Premium', amount: 35, cycle: 'monthly' }],
-      egypt: [{ id: 'paramount_plus_essential', name: 'Essential', amount: 80, cycle: 'monthly' }, { id: 'paramount_plus_premium', name: 'Premium', amount: 140, cycle: 'monthly' }],
-    },
+    availability: [],
+    plans: {},
   },
   {
     catalogSection: 'catStreaming',
@@ -868,11 +868,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     emoji: '🦚',
     initial: 'P',
     defaultCategory: 'Enjoyment',
-    availability: ['uae', 'egypt'],
-    plans: {
-      uae: [{ id: 'peacock_premium', name: 'Premium', amount: 25, cycle: 'monthly' }, { id: 'peacock_plus', name: 'Plus', amount: 40, cycle: 'monthly' }],
-      egypt: [{ id: 'peacock_premium', name: 'Premium', amount: 100, cycle: 'monthly' }, { id: 'peacock_plus', name: 'Plus', amount: 160, cycle: 'monthly' }],
-    },
+    availability: [],
+    plans: {},
   },
   {
     catalogSection: 'catStreaming',
@@ -944,11 +941,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     emoji: '📡',
     initial: 'J',
     defaultCategory: 'Enjoyment',
-    availability: ['uae', 'egypt'],
-    plans: {
-      uae: [{ id: 'jawwy_tv_basic', name: 'Basic', amount: 30, cycle: 'monthly' }],
-      egypt: [{ id: 'jawwy_tv_basic', name: 'Basic', amount: 120, cycle: 'monthly' }],
-    },
+    availability: ['saudi'],
+    plans: {},
   },
   {
     catalogSection: 'catStreaming',
