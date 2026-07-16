@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { resolvePaymentBrandKey } from '@/lib/payment/paymentMethodDefaults'
+import { paymentTypeFromSms } from '@/lib/payment/smsPaymentType'
 import type { PaymentMethodType } from '@/lib/store/types'
 import { useShallow } from 'zustand/react/shallow'
 
@@ -10,16 +11,8 @@ export interface DetectedAccount {
   /** Best provider token — SMS sender ID ("QNB EGYPT") or parsed bank name. Bare provider, never composed with the last4. */
   provider: string | null
   last4: string
-  /** Type implied by the SMS instrument, else null (the sheet falls back to the brand's type). */
+  /** Type implied by the SMS, else null (the sheet falls back to the brand's type). */
   type: PaymentMethodType | null
-}
-
-const INSTRUMENT_TYPE: Record<string, PaymentMethodType> = {
-  // ponytail: card → debit_card; the instrument doesn't carry debit/credit, and
-  // debit is the common case. The user can flip it in the sheet.
-  card: 'debit_card',
-  account: 'bank_account',
-  wallet: 'wallet',
 }
 
 /** Most frequent non-empty value, else null. */
@@ -46,7 +39,13 @@ export function pickProvider(sender: string | null, bankName: string | null): st
   )
 }
 
-type Row = { account_last4: string | null; bank_name: string | null; sender: string | null; payment_instrument: string | null }
+type Row = {
+  account_last4: string | null
+  bank_name: string | null
+  sender: string | null
+  payment_instrument: string | null
+  raw_body: string | null
+}
 
 export function usePaymentMethodDetector(): DetectedAccount[] {
   const { smsEnabled, paymentMethods } = useFinanceStore(
@@ -62,7 +61,7 @@ export function usePaymentMethodDetector(): DetectedAccount[] {
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
     void createClient()
       .from('sms_parse_log')
-      .select('account_last4, bank_name, sender, payment_instrument')
+      .select('account_last4, bank_name, sender, payment_instrument, raw_body')
       .eq('parsed_ok', true)
       .not('account_last4', 'is', null)
       .gte('created_at', since)
@@ -84,12 +83,12 @@ export function usePaymentMethodDetector(): DetectedAccount[] {
             mode(rows.map((r) => r.sender)),
             mode(rows.map((r) => r.bank_name)),
           )
-          const instrument = mode(rows.map((r) => r.payment_instrument))
-          result.push({
-            last4: l4,
-            provider,
-            type: instrument ? INSTRUMENT_TYPE[instrument] ?? null : null,
-          })
+          // Most frequent inference across this account's messages — one oddly
+          // worded SMS shouldn't decide the type.
+          const type = mode(
+            rows.map((r) => paymentTypeFromSms(r.raw_body, r.payment_instrument)),
+          ) as PaymentMethodType | null
+          result.push({ last4: l4, provider, type })
         }
         setDetected(result)
       })
