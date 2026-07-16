@@ -4,6 +4,7 @@
  */
 import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js'
 import type { ExpenseCategory } from '@/lib/store/types'
+import { normalizeMerchant } from './merchantNormalizer'
 
 export type SmsExpenseKind =
   | 'purchase' | 'online_purchase' | 'atm_withdrawal'
@@ -89,8 +90,14 @@ function emptyResult(): CreateSmsExpenseResult {
   return { expenseId: null, incomeId: null, debtPaymentId: null, savingsTransactionId: null, error: null }
 }
 
+/**
+ * The single chokepoint for what a transaction is called. Every parse tier (curated,
+ * learned template, AI) and the user-confirm path reach the DB through here, which is why
+ * normalisation belongs at this line rather than in any one tier's title builder.
+ */
 function smsTitle(row: SmsRowData): string | null {
-  return row.cleanTitle ?? row.merchantNormalized ?? row.merchant ?? row.bankName
+  const raw = row.cleanTitle ?? row.merchantNormalized ?? row.merchant
+  return normalizeMerchant(raw, row.kind) ?? row.bankName
 }
 
 /**
