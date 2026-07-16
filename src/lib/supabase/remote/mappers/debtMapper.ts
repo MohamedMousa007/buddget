@@ -75,6 +75,12 @@ export function debtToRow(d: Debt, userId: string): DebtInsert {
     linked_credit_card_debt_id: d.linkedCreditCardDebtId ?? null,
     linked_payment_method_id: d.linkedPaymentMethodId ?? null,
     credit_limit: d.creditLimit ?? null,
+    // Drive the billing cycle / next due date / minimum payment. Without these the card
+    // is unusable on a second device — getCurrentBillingCycleExpenses bails and the card
+    // shows its setup banner forever.
+    payment_due_day: d.paymentDueDay ?? null,
+    grace_period_days: d.gracePeriodDays ?? null,
+    minimum_payment_percent: d.minimumPaymentPercent ?? null,
     status: d.status ?? 'active',
     cleared_at: d.clearedAt ?? null,
     received_via: toDbReceivedVia(d.receivedVia),
@@ -103,6 +109,9 @@ export function debtFromRow(row: DebtRow): Debt {
     clearedAt: row.cleared_at ?? undefined,
     linkedPaymentMethodId: row.linked_payment_method_id ?? undefined,
     creditLimit: row.credit_limit ?? undefined,
+    paymentDueDay: row.payment_due_day ?? undefined,
+    gracePeriodDays: row.grace_period_days ?? undefined,
+    minimumPaymentPercent: row.minimum_payment_percent ?? undefined,
     debtType: fromDbDebtKind(row.debt_type),
     relationship: row.relationship ?? undefined,
     direction: (row.direction as 'i_owe' | 'they_owe') ?? undefined,

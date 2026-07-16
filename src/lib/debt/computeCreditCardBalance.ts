@@ -1,5 +1,6 @@
 import { addDays, addMonths, differenceInCalendarDays, format, getDaysInMonth, parseISO, setDate, startOfDay } from 'date-fns'
 import type { Currency, Debt, DebtPayment, Expense } from '@/lib/store/types'
+import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 
 function paidToward(debtId: string, payments: DebtPayment[]): number {
@@ -7,7 +8,24 @@ function paidToward(debtId: string, payments: DebtPayment[]): number {
 }
 
 /**
- * Outstanding revolving balance: starting balance + card expenses (converted to debt currency) − payments.
+ * True for a row that genuinely adds to what is owed on the card.
+ *
+ * Excludes:
+ *  - refunded/declined rows — the charge was reversed, so it must not inflate the balance
+ *    forever (`expenseAmountInBase` already zeroes these everywhere else);
+ *  - non-spend money movement — above all a `CC Payoff` posted against the card itself,
+ *    which would otherwise cancel out its own payment.
+ */
+function chargesToCard(e: Expense, linkedPaymentMethodId: string): boolean {
+  return (
+    e.paymentMethodId === linkedPaymentMethodId &&
+    !e.refundKind &&
+    !isNonSpendCategory(e.category)
+  )
+}
+
+/**
+ * Outstanding revolving balance: starting balance + card charges (converted to debt currency) − payments.
  */
 export function computeCreditCardOutstanding(
   debt: Debt,
@@ -20,9 +38,10 @@ export function computeCreditCardOutstanding(
   let balance = debt.startingBalance
   const debtCur = debt.currency as Currency
 
-  if (debt.linkedPaymentMethodId) {
-    const cardExpenses = expenses.filter((e) => e.paymentMethodId === debt.linkedPaymentMethodId)
-    for (const e of cardExpenses) {
+  const linked = debt.linkedPaymentMethodId
+  if (linked) {
+    for (const e of expenses) {
+      if (!chargesToCard(e, linked)) continue
       const conv = tryConvertCurrency(e.amount, e.currency, debtCur, exchangeRates)
       balance += conv ?? e.amount
     }
@@ -70,8 +89,11 @@ export function getCurrentBillingCycleExpenses(
     cycleEnd.setHours(0, 0, 0, 0)
   }
 
+  const linked = debt.linkedPaymentMethodId
   const list = expenses.filter((e) => {
-    if (e.paymentMethodId !== debt.linkedPaymentMethodId) return false
+    // Same predicate as the balance: once payoffs carry a real funding method, a payoff
+    // made from the card's own bank would otherwise show up here as a *charge*.
+    if (!chargesToCard(e, linked)) return false
     const d = startOfDay(parseISO(e.date.slice(0, 10)))
     return d >= cycleStart && d <= cycleEnd
   })

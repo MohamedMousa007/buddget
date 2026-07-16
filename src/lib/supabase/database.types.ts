@@ -282,6 +282,9 @@ export type Database = {
           cleared_at: string | null
           created_at: string
           credit_limit: number | null
+          grace_period_days: number | null
+          minimum_payment_percent: number | null
+          payment_due_day: number | null
           creditor: string | null
           currency: Database["public"]["Enums"]["currency_code"]
           debt_type: Database["public"]["Enums"]["debt_kind"]
@@ -323,6 +326,9 @@ export type Database = {
           cleared_at?: string | null
           created_at?: string
           credit_limit?: number | null
+          grace_period_days?: number | null
+          minimum_payment_percent?: number | null
+          payment_due_day?: number | null
           creditor?: string | null
           currency?: Database["public"]["Enums"]["currency_code"]
           debt_type?: Database["public"]["Enums"]["debt_kind"]
@@ -364,6 +370,9 @@ export type Database = {
           cleared_at?: string | null
           created_at?: string
           credit_limit?: number | null
+          grace_period_days?: number | null
+          minimum_payment_percent?: number | null
+          payment_due_day?: number | null
           creditor?: string | null
           currency?: Database["public"]["Enums"]["currency_code"]
           debt_type?: Database["public"]["Enums"]["debt_kind"]

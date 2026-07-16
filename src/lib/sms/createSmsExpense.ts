@@ -187,7 +187,7 @@ export async function createSmsExpense(
  * Resolves a card last4 to a SPECIFIC payment method (no default fallback) —
  * an over-broad default would let unrelated same-amount charges match.
  */
-async function resolveExactPaymentMethod(
+export async function resolveExactPaymentMethod(
   service: SupabaseClient,
   userId: string,
   last4: string | null | undefined,
@@ -302,9 +302,13 @@ export async function markExpenseRefunded(
 
 /**
  * CC payoff → records a debt payment against the user's credit-card debt and a
- * non-spend "CC Payoff" expense linked to it. The expense is funded from the
- * bank/cash source (payment_method_id = null) — NEVER the card itself, or
- * `computeCreditCardOutstanding` would re-add it and cancel the payoff.
+ * non-spend "CC Payoff" expense linked to it.
+ *
+ * The expense carries the FUNDING account (the bank the money left), not the card.
+ * `fundingLast4` comes from the paired funding leg, because the card bank's SMS reports
+ * the CARD's last4 — it cannot tell us where the money came from. Attaching it is safe
+ * only because `computeCreditCardOutstanding` now skips non-spend rows; before that it
+ * would have re-added the payoff to the balance and cancelled its own payment.
  *
  * Resolution: match the card debt by linked payment method last4; else, if
  * exactly one active credit-card debt exists, use it. When ambiguous (multiple
@@ -313,6 +317,7 @@ export async function markExpenseRefunded(
 export async function createSmsDebtPayment(
   service: SupabaseClient,
   row: SmsRowData,
+  opts: { fundingLast4?: string | null } = {},
 ): Promise<CreateSmsExpenseResult & { needsConfirm?: boolean }> {
   // Active credit-card debts for this user.
   const { data: ccDebts } = await service
@@ -343,6 +348,12 @@ export async function createSmsDebtPayment(
 
   if (!debt) return { ...emptyResult(), needsConfirm: true }
 
+  // The account the money LEFT. `resolveExactPaymentMethod` (no default fallback) is
+  // deliberate: `resolvePaymentMethodByLast4` falls back to the is_default method, which
+  // would silently stamp an arbitrary card as the funding source. Unknown must stay null
+  // (renders as Cash) rather than becoming a confident wrong answer.
+  const fundingPaymentMethodId = await resolveExactPaymentMethod(service, row.userId, opts.fundingLast4)
+
   // Record payment in the debt's own currency to keep balance arithmetic correct.
   const { data: payRow, error: payErr } = await service
     .from('debt_payments')
@@ -352,14 +363,14 @@ export async function createSmsDebtPayment(
       amount: row.amount,
       currency: (debt.currency as string) ?? row.currency,
       payment_date: row.day,
-      payment_method_id: null,
+      payment_method_id: fundingPaymentMethodId,
       notes: null,
     })
     .select('id')
     .single()
   if (payErr || !payRow) return { ...emptyResult(), error: payErr }
 
-  // Non-spend CC Payoff expense, funded from bank/cash (never the card).
+  // Non-spend CC Payoff expense, attributed to the funding account.
   const { data: expRow, error: expErr } = await service
     .from('expenses')
     .insert({
@@ -369,7 +380,7 @@ export async function createSmsDebtPayment(
       category: 'CC Payoff',
       amount: row.amount,
       currency: row.currency,
-      payment_method_id: null,
+      payment_method_id: fundingPaymentMethodId,
       is_debt_payment: true,
       linked_debt_payment_id: payRow.id,
       notes: null,

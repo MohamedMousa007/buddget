@@ -21,10 +21,17 @@ import {
   findRefundedTwin,
   mapKindToCategory,
   isIncomeKind,
+  resolveExactPaymentMethod,
   type SmsRowData,
   type SmsExpenseKind,
 } from './createSmsExpense'
-import { isOwnAccountTransfer, tryPairLeg, reconcileSibling } from './pairing'
+import {
+  isOwnAccountTransfer,
+  tryPairLeg,
+  reconcileSibling,
+  reconcileCcPayoffFundingLeg,
+  type CcPayoffFundingLeg,
+} from './pairing'
 import { matchSalary } from './matchSalary'
 import { matchSubscription } from './matchSubscription'
 
@@ -54,6 +61,38 @@ export interface SmsTxResult {
   /** Subscription the expense was linked to, if any. */
   linkedSubscriptionId: string | null
   error: PostgrestError | null
+}
+
+/** Ignore rounding noise; only post a fee that is actually a fee. */
+const MIN_FEE = 0.5
+
+/**
+ * Posts the funding bank's transfer fee as its own row.
+ *
+ * The funding leg debits payoff + fee (12,012 for a 12,000 payoff). The payoff is
+ * non-spend — the purchases it settles were already counted — but the fee is money
+ * genuinely consumed and must hit spend. Splitting them keeps one payoff transaction
+ * while staying accurate; the fee is knowable only by differencing the two legs.
+ */
+async function postTransferFee(
+  service: SupabaseClient,
+  row: SmsRowData,
+  funding: CcPayoffFundingLeg | null,
+): Promise<void> {
+  if (funding?.fundingAmount == null) return
+  const fee = funding.fundingAmount - row.amount
+  if (fee < MIN_FEE) return
+
+  await service.from('expenses').insert({
+    user_id: row.userId,
+    expense_date: row.day,
+    description: 'Transfer fee',
+    category: 'Other',
+    amount: fee,
+    currency: row.currency,
+    payment_method_id: await resolveExactPaymentMethod(service, row.userId, funding.fundingLast4),
+    sms_log_id: row.logId ?? null,
+  })
 }
 
 function base(outcome: SmsTxOutcome): SmsTxResult {
@@ -118,9 +157,26 @@ export async function createSmsTransaction(
     }
   }
 
-  // 3. CC payoff → debt payment (funded from bank/cash, never the card).
+  // 3. CC payoff → debt payment, funded from the paired bank leg.
   if (kind === 'cc_payoff') {
-    const res = await createSmsDebtPayment(service, row)
+    // Claim the funding leg. Paying a card by Instapay emits two SMS — the funding bank
+    // ("12,012 sent to ••2016", which step 1 reclassifies to own_transfer because the
+    // counterparty is the user's own card) and the card bank ("12,000 received"). They
+    // are the same money, so without this the user sees the payoff twice; the amounts
+    // differ only by the transfer fee, which `pairAmountTolerance` allows for.
+    let funding: CcPayoffFundingLeg | null = null
+    if (row.logId && row.receivedAtIso) {
+      const sibling = await tryPairLeg(service, {
+        userId: row.userId,
+        logId: row.logId,
+        receivedAtIso: row.receivedAtIso,
+        amount: row.amount,
+        kind,
+      })
+      if (sibling) funding = await reconcileCcPayoffFundingLeg(service, sibling)
+    }
+
+    const res = await createSmsDebtPayment(service, row, { fundingLast4: funding?.fundingLast4 })
     if (res.needsConfirm) {
       // Ambiguous (multiple cards, no last4 match): degrade gracefully — post a
       // non-spend CC Payoff expense with NO card linkage (last4 null) so spend
@@ -129,6 +185,11 @@ export async function createSmsTransaction(
       const fb = await createSmsExpense(service, { ...row, kind, last4: null })
       return { ...base('expense'), expenseId: fb.expenseId, category: 'CC Payoff', error: fb.error }
     }
+
+    // The fee the funding bank took on top. It is real spend and must count — only the
+    // payoff itself is non-spend. Derivable only from the pair.
+    await postTransferFee(service, row, funding)
+
     return {
       ...base('debt_payment'),
       expenseId: res.expenseId,
