@@ -113,6 +113,7 @@ export interface Dictionary {
     remove: string
     loading: string
     unknown: string
+    dismiss: string
     undo: string
     dash: string
     signIn: string
@@ -962,6 +963,11 @@ export interface Dictionary {
   }
 
   settings: {
+    /** SMS account-detection banner (was hardcoded English). */
+    accountDetected: string
+    createPaymentMethod: string
+    linkToExisting: string
+    linkCta: string
     unsavedTitle: string
     unsavedBody: string
     pageTitle: string
@@ -1636,6 +1642,9 @@ export interface Dictionary {
     /** Badge: this billing cycle's charge has landed. */
     paidThisCycle: string
     trial: string
+    /** Banner: a recurring charge was spotted for a brand the user does not track. */
+    detectedTitle: string
+    detectedCta: string
     searchPlaceholder: string
     customSubscription: string
     selectPlan: string

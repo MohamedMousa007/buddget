@@ -8,6 +8,7 @@ import { SubscriptionBrandIcon } from '@/components/features/subscriptions/Subsc
 import { SubscriptionCatalogGrid } from '@/components/features/subscriptions/SubscriptionCatalogGrid'
 import { useAddSubscriptionForm } from '@/hooks/useAddSubscriptionForm'
 import { useT } from '@/lib/i18n'
+import type { SubscriptionPrefill } from '@/lib/store/useSettingsStore'
 import type { Subscription } from '@/lib/store/types'
 import { cn } from '@/lib/utils'
 
@@ -17,13 +18,15 @@ const selectClass = cn(
 
 function AddSubscriptionSheetInner({
   editing,
+  prefill,
   onClose,
 }: {
   editing: Subscription | null
+  prefill?: SubscriptionPrefill | null
   onClose: () => void
 }) {
   const t = useT()
-  const form = useAddSubscriptionForm(editing, onClose)
+  const form = useAddSubscriptionForm(editing, onClose, prefill)
 
   const headerTitle = editing ? t.subscriptions.editSubscription : t.subscriptions.addSubscription
 
@@ -106,19 +109,22 @@ export type AddSubscriptionSheetProps = {
   editing: Subscription | null
   /** Increment when opening add (not edit) so the form resets between opens. */
   instanceKey: number
+  /** Seed from a detected recurring charge (banner -> subscriptions page). */
+  prefill?: SubscriptionPrefill | null
 }
 
 /**
  * Catalog → configure sheet for new subscriptions; edit opens configure only.
  */
-export function AddSubscriptionSheet({ open, onClose, editing, instanceKey }: AddSubscriptionSheetProps) {
+export function AddSubscriptionSheet({ open, onClose, editing, instanceKey, prefill }: AddSubscriptionSheetProps) {
   if (!open) return null
   return (
     <ModalShell open={open} onBackdropClick={onClose} padContent>
       <div className="pt-1">
         <AddSubscriptionSheetInner
-          key={`${editing?.id ?? 'new'}-${instanceKey}`}
+          key={`${editing?.id ?? prefill?.brandKey ?? 'new'}-${instanceKey}`}
           editing={editing}
+          prefill={prefill}
           onClose={onClose}
         />
       </div>

@@ -210,6 +210,7 @@ export const ar: Dictionary = {
     remove: 'إزالة',
     loading: 'جارٍ التحميل…',
     unknown: 'غير معروف',
+    dismiss: 'إغلاق',
     undo: 'تراجع',
     dash: '–',
     signIn: 'تسجيل الدخول',
@@ -1082,6 +1083,10 @@ export const ar: Dictionary = {
   },
 
   settings: {
+    accountDetected: '— تم اكتشاف حساب جديد',
+    createPaymentMethod: 'إنشاء وسيلة دفع',
+    linkToExisting: 'الربط بحساب موجود…',
+    linkCta: 'ربط',
     unsavedTitle: 'تغييرات غير محفوظة',
     unsavedBody: 'قمت بتغيير بعض الإعدادات. هل تريد حفظها قبل المغادرة؟',
     pageTitle: 'تفضيلاتك',
@@ -1763,6 +1768,8 @@ export const ar: Dictionary = {
     paused: 'موقوف',
     paidThisCycle: 'مدفوع',
     trial: 'تجربة مجانية',
+    detectedTitle: 'رسوم متكررة من {brand} — هل تريد تتبعها؟',
+    detectedCta: 'أضف اشتراكاً',
     searchPlaceholder: 'ابحث عن خدمة…',
     customSubscription: 'اشتراك مخصّص',
     customSubscriptionHint: 'أضف أي خدمة يدويًا',

@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { format } from 'date-fns'
 import { useShallow } from 'zustand/react/shallow'
+import type { SubscriptionPrefill } from '@/lib/store/useSettingsStore'
 import {
   detectCatalogRegion,
   filterVisibleBrands,
@@ -45,7 +46,14 @@ function computeStartDateFromBillingDay(billingDay: number): string {
  * maps to UAE/Egypt; otherwise the user enters amount manually. Edit opens configure directly.
  * `startDate` on save is derived from `billingDay` (see `computeStartDateFromBillingDay`).
  */
-export function useAddSubscriptionForm(editing: Subscription | null, onClose: () => void) {
+export function useAddSubscriptionForm(
+  editing: Subscription | null,
+  onClose: () => void,
+  /** Seed from a detected charge. The amount is what was ACTUALLY billed, so it beats
+   *  the catalog price — never overwrite it with a plan default. */
+  prefill?: SubscriptionPrefill | null,
+) {
+  const seedBrand = prefill?.brandKey ? findBrandByKey(prefill.brandKey) : undefined
   const { profile, settings, exchangeRates, paymentMethods, addSubscription, updateSubscription } =
     useFinanceStore(
       useShallow((s) => ({
@@ -61,30 +69,36 @@ export function useAddSubscriptionForm(editing: Subscription | null, onClose: ()
   const region = useMemo(() => detectCatalogRegion(profile), [profile])
   const showCatalog = !editing
 
-  const [step, setStep] = useState(() => (editing ? 2 : 1))
+  const [step, setStep] = useState(() => (editing || seedBrand ? 2 : 1))
   const [search, setSearch] = useState('')
   const [pickedBrand, setPickedBrand] = useState<SubscriptionBrand | 'custom' | null>(() => {
-    if (!editing) return null
+    if (!editing) return seedBrand ?? null
     if (!editing.brandKey) return 'custom'
     return findBrandByKey(editing.brandKey) ?? 'custom'
   })
   const [customMode, setCustomMode] = useState(() => editing !== null && !editing.brandKey)
 
-  const [name, setName] = useState(() => editing?.name ?? '')
+  const [name, setName] = useState(() => editing?.name ?? seedBrand?.name ?? '')
   const [planName, setPlanName] = useState<string | null>(() => editing?.planName ?? null)
-  const [amountStr, setAmountStr] = useState(() => (editing ? String(editing.amount) : ''))
-  const [currency, setCurrency] = useState<Currency>(() => editing?.currency ?? settings.baseCurrency)
+  const [amountStr, setAmountStr] = useState(() =>
+    editing ? String(editing.amount) : prefill?.amount ? String(prefill.amount) : ''
+  )
+  const [currency, setCurrency] = useState<Currency>(
+    () => editing?.currency ?? (prefill?.currency as Currency | undefined) ?? settings.baseCurrency
+  )
   const [billingCycle, setBillingCycle] = useState<SubscriptionBillingCycle>(
     () => editing?.billingCycle ?? 'monthly'
   )
   const [billingDay, setBillingDay] = useState(() => {
-    const d = editing?.billingDay ?? new Date().getDate()
+    const d = editing?.billingDay ?? prefill?.billingDay ?? new Date().getDate()
     return Math.min(31, Math.max(1, d))
   })
   const [paymentMethodId, setPaymentMethodId] = useState(() =>
     editing?.paymentMethodId ?? defaultPmId(paymentMethods)
   )
-  const [expenseCategory, setExpenseCategory] = useState(() => editing?.expenseCategory ?? 'Enjoyment')
+  const [expenseCategory, setExpenseCategory] = useState(
+    () => editing?.expenseCategory ?? seedBrand?.defaultCategory ?? 'Enjoyment'
+  )
   const [notes, setNotes] = useState(() => editing?.notes ?? '')
   const [planIndex, setPlanIndex] = useState(0)
 

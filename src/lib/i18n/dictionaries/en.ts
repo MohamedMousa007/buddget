@@ -209,6 +209,7 @@ export const en: Dictionary = {
     remove: 'Remove',
     loading: 'Loading…',
     unknown: 'Unknown',
+    dismiss: 'Dismiss',
     undo: 'Undo',
     dash: '–',
     signIn: 'Sign in',
@@ -1083,6 +1084,10 @@ export const en: Dictionary = {
   },
 
   settings: {
+    accountDetected: '— new account detected',
+    createPaymentMethod: 'Create payment method',
+    linkToExisting: 'Link to existing…',
+    linkCta: 'Link',
     unsavedTitle: 'Unsaved changes',
     unsavedBody: 'You changed some settings. Save them before leaving?',
     pageTitle: 'Your Preferences',
@@ -1766,6 +1771,8 @@ export const en: Dictionary = {
     paused: 'Paused',
     paidThisCycle: 'Paid',
     trial: 'Free trial',
+    detectedTitle: 'Recurring {brand} charge — track it?',
+    detectedCta: 'Add subscription',
     searchPlaceholder: 'Search services…',
     customSubscription: 'Custom subscription',
     customSubscriptionHint: 'Add any service manually',

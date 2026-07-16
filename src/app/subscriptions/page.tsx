@@ -9,6 +9,7 @@ import { AddSubscriptionSheet } from '@/components/modals/AddSubscriptionSheet'
 import { MoneyDisplay } from '@/components/ui/MoneyDisplay'
 import { useSubscriptionsMonthlyBaseTotal } from '@/hooks/useSubscriptionsMonthlyTotal'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT } from '@/lib/i18n'
 import type { Subscription } from '@/lib/store/types'
 import { useHydrateSubscriptions, useHydrateExpenses } from '@/hooks/remote'
@@ -26,6 +27,12 @@ export default function SubscriptionsPage() {
   const { subscriptions, settings } = useFinanceStore(
     useShallow((s) => ({ subscriptions: s.subscriptions, settings: s.settings }))
   )
+  const { subscriptionPrefill, clearSubscriptionPrefill } = useSettingsStore(
+    useShallow((s) => ({
+      subscriptionPrefill: s.subscriptionPrefill,
+      clearSubscriptionPrefill: s.clearSubscriptionPrefill,
+    }))
+  )
 
   const { active, cancelled } = useMemo(() => {
     const a = subscriptions.filter((s) => s.status === 'active' || s.status === 'trial' || s.status === 'paused')
@@ -39,14 +46,22 @@ export default function SubscriptionsPage() {
     setSheetOpen(true)
   }
 
+
   const openEdit = (s: Subscription) => {
     setEditing(s)
     setSheetOpen(true)
   }
 
+  // Derived, not synced: a prefill arriving from the detection banner IS the sheet being
+  // open. Mirroring it into state via an effect would cascade renders (and trips
+  // react-hooks/set-state-in-effect).
+  const isSheetOpen = sheetOpen || subscriptionPrefill != null
+
   const closeSheet = () => {
     setSheetOpen(false)
     setEditing(null)
+    // Consume it: without this the effect below would reopen the sheet on every render.
+    clearSubscriptionPrefill()
   }
 
   if (!dataReady) return <div className="p-4"><SkeletonList /></div>
@@ -123,10 +138,11 @@ export default function SubscriptionsPage() {
       </div>
 
       <AddSubscriptionSheet
-        open={sheetOpen}
+        open={isSheetOpen}
         onClose={closeSheet}
         editing={editing}
         instanceKey={instanceKey}
+        prefill={subscriptionPrefill}
       />
     </div>
   )
