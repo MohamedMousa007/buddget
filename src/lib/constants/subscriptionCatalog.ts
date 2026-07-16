@@ -1,4 +1,4 @@
-import type { SubscriptionBillingCycle } from '@/lib/store/types'
+import type { Currency, SubscriptionBillingCycle } from '@/lib/store/types'
 
 export interface SubscriptionPlan {
   /**
@@ -13,6 +13,17 @@ export interface SubscriptionPlan {
   id: string
   name: string
   amount: number
+  /**
+   * Currency `amount` is quoted in. Defaults to the region's currency
+   * ({@link REGION_CURRENCY}) — set it only when the provider bills a FIXED currency
+   * everywhere, as most global software does (ChatGPT, Claude, Slack: USD).
+   *
+   * Without this, a USD-billed service had to be hand-converted into each region, and
+   * those numbers rot as FX moves: ChatGPT Plus sat at 300 EGP for a $20 plan — roughly a
+   * third of the truth after the EGP devalued. Storing `{ amount: 20, currency: 'USD' }`
+   * once stays correct, and the picker converts at live rates.
+   */
+  currency?: Currency
   cycle: SubscriptionBillingCycle
   description?: string
   /**
@@ -389,18 +400,23 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     emoji: '🎵',
     initial: 'S',
     defaultCategory: 'Enjoyment',
-    availability: ['uae', 'egypt'],
+    availability: ['uae', 'egypt', 'saudi'],
     plans: {
       uae: [
-        { id: 'spotify_individual', name: 'Individual', amount: 20, cycle: 'monthly' },
-        { id: 'spotify_duo', name: 'Duo', amount: 26, cycle: 'monthly' },
-        { id: 'spotify_family', name: 'Family', amount: 33, cycle: 'monthly' },
+        { id: 'spotify_standard', name: 'Standard', amount: 23.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'spotify_platinum', name: 'Platinum', amount: 59.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'spotify_student', name: 'Student', amount: 12.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
       ],
       egypt: [
-        { id: 'spotify_individual', name: 'Individual', amount: 79, cycle: 'monthly' },
-        { id: 'spotify_duo', name: 'Duo', amount: 109, cycle: 'monthly' },
-        { id: 'spotify_family', name: 'Family', amount: 139, cycle: 'monthly' },
-        { id: 'spotify_student', name: 'Student', amount: 39, cycle: 'monthly' },
+        { id: 'spotify_individual', name: 'Individual', amount: 79, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'spotify_duo', name: 'Duo', amount: 109, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'spotify_family', name: 'Family', amount: 139, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'spotify_student', name: 'Student', amount: 39, cycle: 'monthly', verifiedAt: '2026-07-17' },
+      ],
+      saudi: [
+        { id: 'spotify_standard', name: 'Standard', amount: 23.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'spotify_platinum', name: 'Platinum', amount: 59.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'spotify_student', name: 'Student', amount: 12.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
       ],
     },
   },
@@ -412,15 +428,22 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     emoji: '🎶',
     initial: 'AM',
     defaultCategory: 'Enjoyment',
-    availability: ['uae', 'egypt'],
+    availability: ['uae', 'egypt', 'saudi'],
     plans: {
       uae: [
-        { id: 'apple_music_individual', name: 'Individual', amount: 17, cycle: 'monthly' },
-        { id: 'apple_music_family', name: 'Family', amount: 26, cycle: 'monthly' },
+        { id: 'apple_music_individual', name: 'Individual', amount: 21.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'apple_music_family', name: 'Family', amount: 33.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'apple_music_student', name: 'Student', amount: 11.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
       ],
       egypt: [
-        { id: 'apple_music_individual', name: 'Individual', amount: 50, cycle: 'monthly' },
-        { id: 'apple_music_family', name: 'Family', amount: 80, cycle: 'monthly' },
+        { id: 'apple_music_individual', name: 'Individual', amount: 69.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'apple_music_family', name: 'Family', amount: 109.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'apple_music_student', name: 'Student', amount: 34.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+      ],
+      saudi: [
+        { id: 'apple_music_individual', name: 'Individual', amount: 21.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'apple_music_family', name: 'Family', amount: 33.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'apple_music_student', name: 'Student', amount: 12.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
       ],
     },
   },
@@ -460,21 +483,28 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     emoji: '☁️',
     initial: 'iC',
     defaultCategory: 'Other',
-    availability: ['uae', 'egypt'],
+    availability: ['uae', 'egypt', 'saudi'],
     plans: {
       uae: [
-        { id: 'icloud_50_gb', name: '50 GB', amount: 4, cycle: 'monthly' },
-        { id: 'icloud_200_gb', name: '200 GB', amount: 11, cycle: 'monthly' },
-        { id: 'icloud_2_tb', name: '2 TB', amount: 37, cycle: 'monthly' },
-        { id: 'icloud_6_tb', name: '6 TB', amount: 110, cycle: 'monthly' },
-        { id: 'icloud_12_tb', name: '12 TB', amount: 220, cycle: 'monthly' },
+        { id: 'icloud_50gb', name: '50GB', amount: 3.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'icloud_200gb', name: '200GB', amount: 11.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'icloud_2tb', name: '2TB', amount: 39.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'icloud_6tb', name: '6TB', amount: 119.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'icloud_12tb', name: '12TB', amount: 239.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
       ],
       egypt: [
-        { id: 'icloud_50_gb', name: '50 GB', amount: 16, cycle: 'monthly' },
-        { id: 'icloud_200_gb', name: '200 GB', amount: 45, cycle: 'monthly' },
-        { id: 'icloud_2_tb', name: '2 TB', amount: 150, cycle: 'monthly' },
-        { id: 'icloud_6_tb', name: '6 TB', amount: 450, cycle: 'monthly' },
-        { id: 'icloud_12_tb', name: '12 TB', amount: 900, cycle: 'monthly' },
+        { id: 'icloud_50gb', name: '50GB', amount: 39.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'icloud_200gb', name: '200GB', amount: 149.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'icloud_2tb', name: '2TB', amount: 499.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'icloud_6tb', name: '6TB', amount: 1499.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'icloud_12tb', name: '12TB', amount: 2999.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+      ],
+      saudi: [
+        { id: 'icloud_50gb', name: '50GB', amount: 3.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'icloud_200gb', name: '200GB', amount: 12.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'icloud_2tb', name: '2TB', amount: 44.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'icloud_6tb', name: '6TB', amount: 129.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'icloud_12tb', name: '12TB', amount: 269.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
       ],
     },
   },
@@ -506,15 +536,16 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     emoji: '🤖',
     initial: 'AI',
     defaultCategory: 'Other',
-    availability: ['uae', 'egypt'],
+    availability: ['uae', 'egypt', 'saudi'],
     plans: {
       uae: [
-        { id: 'chatgpt_plus_plus', name: 'Plus', amount: 73, cycle: 'monthly' },
-        { id: 'chatgpt_plus_pro', name: 'Pro', amount: 733, cycle: 'monthly' },
+        { id: 'chatgpt_plus_plus', name: 'Plus', amount: 20, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
       ],
       egypt: [
-        { id: 'chatgpt_plus_plus', name: 'Plus', amount: 300, cycle: 'monthly' },
-        { id: 'chatgpt_plus_pro', name: 'Pro', amount: 3000, cycle: 'monthly' },
+        { id: 'chatgpt_plus_plus', name: 'Plus', amount: 20, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+      ],
+      saudi: [
+        { id: 'chatgpt_plus_plus', name: 'Plus', amount: 20, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
       ],
     },
   },
@@ -526,10 +557,20 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     emoji: '🧠',
     initial: 'C',
     defaultCategory: 'Other',
-    availability: ['uae', 'egypt'],
+    availability: ['uae', 'egypt', 'saudi'],
     plans: {
-      uae: [{ id: 'claude_pro_pro', name: 'Pro', amount: 73, cycle: 'monthly' }],
-      egypt: [{ id: 'claude_pro_pro', name: 'Pro', amount: 300, cycle: 'monthly' }],
+      uae: [
+        { id: 'claude_pro_pro', name: 'Pro', amount: 20, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'claude_pro_pro_annual', name: 'Pro (annual)', amount: 17, currency: 'USD', cycle: 'monthly', description: 'Billed yearly', verifiedAt: '2026-07-17' },
+      ],
+      egypt: [
+        { id: 'claude_pro_pro', name: 'Pro', amount: 20, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'claude_pro_pro_annual', name: 'Pro (annual)', amount: 17, currency: 'USD', cycle: 'monthly', description: 'Billed yearly', verifiedAt: '2026-07-17' },
+      ],
+      saudi: [
+        { id: 'claude_pro_pro', name: 'Pro', amount: 20, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'claude_pro_pro_annual', name: 'Pro (annual)', amount: 17, currency: 'USD', cycle: 'monthly', description: 'Billed yearly', verifiedAt: '2026-07-17' },
+      ],
     },
   },
   {
@@ -540,10 +581,20 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     emoji: '📝',
     initial: 'N',
     defaultCategory: 'Other',
-    availability: ['uae', 'egypt'],
+    availability: ['uae', 'egypt', 'saudi'],
     plans: {
-      uae: [{ id: 'notion_plus', name: 'Plus', amount: 37, cycle: 'monthly' }],
-      egypt: [{ id: 'notion_plus', name: 'Plus', amount: 150, cycle: 'monthly' }],
+      uae: [
+        { id: 'notion_plus', name: 'Plus', amount: 10, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'notion_business', name: 'Business', amount: 20, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+      ],
+      egypt: [
+        { id: 'notion_plus', name: 'Plus', amount: 10, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'notion_business', name: 'Business', amount: 20, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+      ],
+      saudi: [
+        { id: 'notion_plus', name: 'Plus', amount: 10, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'notion_business', name: 'Business', amount: 20, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+      ],
     },
   },
   {
@@ -963,10 +1014,23 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     emoji: '🐙',
     initial: 'GH',
     defaultCategory: 'Other',
-    availability: ['uae', 'egypt'],
+    availability: ['uae', 'egypt', 'saudi'],
     plans: {
-      uae: [{ id: 'github_copilot_individual', name: 'Individual', amount: 40, cycle: 'monthly' }, { id: 'github_copilot_business', name: 'Business', amount: 60, cycle: 'monthly' }],
-      egypt: [{ id: 'github_copilot_individual', name: 'Individual', amount: 160, cycle: 'monthly' }, { id: 'github_copilot_business', name: 'Business', amount: 240, cycle: 'monthly' }],
+      uae: [
+        { id: 'github_copilot_pro', name: 'Pro', amount: 10, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'github_copilot_pro_plus', name: 'Pro+', amount: 39, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'github_copilot_max', name: 'Max', amount: 100, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+      ],
+      egypt: [
+        { id: 'github_copilot_pro', name: 'Pro', amount: 10, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'github_copilot_pro_plus', name: 'Pro+', amount: 39, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'github_copilot_max', name: 'Max', amount: 100, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+      ],
+      saudi: [
+        { id: 'github_copilot_pro', name: 'Pro', amount: 10, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'github_copilot_pro_plus', name: 'Pro+', amount: 39, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'github_copilot_max', name: 'Max', amount: 100, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+      ],
     },
   },
   {
@@ -1117,10 +1181,20 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     emoji: '💬',
     initial: 'S',
     defaultCategory: 'Other',
-    availability: ['uae', 'egypt'],
+    availability: ['uae', 'egypt', 'saudi'],
     plans: {
-      uae: [{ id: 'slack_pro_pro', name: 'Pro', amount: 35, cycle: 'monthly' }],
-      egypt: [{ id: 'slack_pro_pro', name: 'Pro', amount: 140, cycle: 'monthly' }],
+      uae: [
+        { id: 'slack_pro_pro', name: 'Pro', amount: 8.75, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'slack_pro_business_plus', name: 'Business+', amount: 18, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+      ],
+      egypt: [
+        { id: 'slack_pro_pro', name: 'Pro', amount: 8.75, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'slack_pro_business_plus', name: 'Business+', amount: 18, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+      ],
+      saudi: [
+        { id: 'slack_pro_pro', name: 'Pro', amount: 8.75, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'slack_pro_business_plus', name: 'Business+', amount: 18, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+      ],
     },
   },
   {

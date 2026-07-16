@@ -110,7 +110,9 @@ export function useAddSubscriptionForm(editing: Subscription | null, onClose: ()
       setPlanName(plan.name)
       setBillingCycle(plan.cycle)
       const raw = plan.amount
-      const catCur = REGION_CURRENCY[region] as Currency
+      // A plan may be billed in a fixed currency worldwide (USD for most global
+      // software); otherwise it is quoted in the region's own currency.
+      const catCur = plan.currency ?? (REGION_CURRENCY[region] as Currency)
       const converted =
         catCur === targetCur ? raw : convertCurrency(raw, catCur, targetCur, exchangeRates)
       setAmountStr(String(Math.round(converted * 100) / 100))

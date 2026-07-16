@@ -199,6 +199,34 @@ describe('catalog data integrity', () => {
     }
   })
 
+  it('quotes a fixed-currency plan identically in every region', () => {
+    // A plan billed in a fixed currency worldwide (USD software) cannot have a different
+    // number per region — that would mean someone hand-converted it, which is the FX rot
+    // the currency field exists to end (ChatGPT Plus sat at 300 EGP for a $20 plan).
+    for (const b of SUBSCRIPTION_CATALOG) {
+      const byId = new Map<string, number>()
+      for (const plans of Object.values(b.plans)) {
+        for (const p of plans ?? []) {
+          if (!p.currency) continue
+          const seen = byId.get(p.id)
+          if (seen !== undefined) expect(p.amount, `${p.id} differs by region despite a fixed currency`).toBe(seen)
+          else byId.set(p.id, p.amount)
+        }
+      }
+    }
+  })
+
+  it('dates every price it claims to have verified', () => {
+    for (const b of SUBSCRIPTION_CATALOG) {
+      for (const plans of Object.values(b.plans)) {
+        for (const p of plans ?? []) {
+          if (!p.verifiedAt) continue
+          expect(p.verifiedAt, `${p.id} has a malformed verifiedAt`).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+        }
+      }
+    }
+  })
+
   it('never prices a region the brand is not available in', () => {
     for (const b of SUBSCRIPTION_CATALOG) {
       for (const region of Object.keys(b.plans) as (keyof typeof b.plans)[]) {
