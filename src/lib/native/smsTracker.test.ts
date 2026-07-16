@@ -142,6 +142,22 @@ describe('drainAndSubmitPendingSms', () => {
     expect(mocks.fetch).not.toHaveBeenCalled()
     expect(mocks.removePending).not.toHaveBeenCalled()
   })
+
+  it('replays the SMS arrival time, not the drain time', async () => {
+    // A queued SMS can post days after it arrived. Without receivedAt the server
+    // stamps its own clock, filing the expense under the drain date and skewing
+    // the pairing window that merges two-leg transfers.
+    mocks.peekPendingQueue.mockResolvedValue({ items: [items[0]] })
+    mocks.fetch.mockResolvedValue(new Response('{}', { status: 200 }))
+    const sms = await freshModule()
+    await sms.drainAndSubmitPendingSms('jwt')
+    expect(JSON.parse(mocks.fetch.mock.calls[0][1].body)).toEqual({
+      message: 'txn 1',
+      sender: 'CIB',
+      receivedAt: '2026-07-01T00:00:00Z',
+      source: 'sms',
+    })
+  })
 })
 
 describe('token-write surface', () => {

@@ -298,6 +298,7 @@ export async function createSmsTransaction(
       merchantNormalized: row.merchantNormalized,
       amount: row.amount,
       currency: row.currency,
+      day: row.day,
       exchangeRates: opts.exchangeRates,
     })
     if (sub) linkedSubscriptionId = sub.subscriptionId

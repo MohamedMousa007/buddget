@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { resolvePaymentBrandKey } from '@/lib/payment/paymentMethodDefaults'
+import { PAYMENT_BRANDS, resolvePaymentBrandKey } from '@/lib/payment/paymentMethodDefaults'
 import { paymentTypeFromSms } from '@/lib/payment/smsPaymentType'
 import type { PaymentMethodType } from '@/lib/store/types'
 import { useShallow } from 'zustand/react/shallow'
@@ -23,20 +23,26 @@ function mode(values: (string | null)[]): string | null {
 }
 
 /**
- * Best provider token for a detected account. Many banks omit their own name
- * from the SMS body, so the sender ID is often the only institution signal —
- * prefer it whenever the brand catalogue recognises it. 'Bank' is the
- * generic-pattern placeholder, not a real provider; a numeric sender is a
- * shortcode, not a name.
+ * Best provider name for a detected account. Many banks omit their own name from
+ * the SMS body, so the sender ID is often the only institution signal — prefer
+ * it whenever the brand catalogue recognises it. 'Bank' is the generic-pattern
+ * placeholder (GENERIC_BANK_PATTERNS.bank), not a real provider; a numeric
+ * sender is a shortcode, not a name.
+ *
+ * Resolvable tokens come back as the catalogue's canonical name ("QNB EGYPT" →
+ * "QNB Alahli") so the banner and the setup sheet — which resolves the name
+ * again — always show the same provider.
  */
 export function pickProvider(sender: string | null, bankName: string | null): string | null {
   const namedBank = bankName && bankName !== 'Bank' ? bankName : null
   const namedSender = sender && !/^\d+$/.test(sender) ? sender : null
-  return (
+  const best =
     (namedSender && resolvePaymentBrandKey(namedSender) ? namedSender : null) ??
     namedBank ??
     namedSender
-  )
+  if (!best) return null
+  const brandId = resolvePaymentBrandKey(best)
+  return brandId ? PAYMENT_BRANDS[brandId].name : best
 }
 
 type Row = {

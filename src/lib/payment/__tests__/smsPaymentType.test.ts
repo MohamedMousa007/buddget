@@ -30,6 +30,13 @@ describe('paymentTypeFromSms', () => {
     ).toBe('debit_card')
   })
 
+  it('reads only card-adjacent phrasing, not bare brand names', () => {
+    // A merchant called "MADA STORE" must not turn an account SMS into a card.
+    expect(paymentTypeFromSms('Adding money to account\nAmount: 400 SAR\nAt: MADA STORE', null)).toBe('bank_account')
+    // Brand -> type is the catalogue's job, and it types Meeza as prepaid.
+    expect(paymentTypeFromSms('Meeza purchase of EGP 50 at Talabat', null)).toBeNull()
+  })
+
   it('falls back to the curated instrument when the body says nothing', () => {
     expect(paymentTypeFromSms('EGP 200 spent at Talabat', 'wallet')).toBe('wallet')
     expect(paymentTypeFromSms('EGP 200 spent at Talabat', null)).toBeNull()

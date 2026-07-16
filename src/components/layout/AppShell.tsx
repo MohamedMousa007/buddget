@@ -40,15 +40,21 @@ import type { DebtPaymentRow } from '@/lib/supabase/remote/types'
  *   written to SharedPreferences — a stored JWT would expire in ~1h and every
  *   later SMS POST would 401 and be silently dropped).
  *
- * iOS: drains the offline-pending queue populated by CatchBankSmsIntent when
- *   the device had no network at SMS arrival time. Each queued message is
- *   re-submitted to /api/sms/parse with the current session JWT.
+ * iOS: drains the pending queue that CatchBankSmsIntent writes for EVERY caught
+ *   SMS up front (not just offline ones — the intent can be killed mid-send, so
+ *   the queue is the durability guarantee and delivery merely removes entries).
+ *   Each queued message is re-submitted to /api/sms/parse with the current
+ *   session JWT; the server dedupes by sms_hash, so replaying a message that
+ *   actually landed is harmless.
  */
 function SmsStartupSync() {
   useEffect(() => {
     if (!isNative()) return
 
-    const tryStart = async (token: string) => {
+    // refreshToken=false on resume: ensureIngestToken is a network round-trip with
+    // retries, and the token never expires — refreshing it on every foreground buys
+    // nothing. The drain itself is free when the queue is empty.
+    const tryStart = async (token: string, refreshToken = true) => {
       if (!token) return
       // Gate on the NATIVE per-device flag, not the store setting — the store
       // may not be rehydrated yet on cold start (the old gate silently skipped
@@ -57,20 +63,23 @@ function SmsStartupSync() {
       const { getSmsBridgeStatus, ensureIngestToken, drainAndSubmitPendingSms } =
         await import('@/lib/native/smsTracker')
       const { isOnline } = await import('@/hooks/useNetworkStatus')
-      const status = await getSmsBridgeStatus()
-      // Refresh the stored ingest token BEFORE draining, so queued items that
-      // failed on a stale token replay with a valid one (self-heal). Also
-      // re-arms the token after sign-out/sign-in without wiping native state.
-      if (status?.enabled) await ensureIngestToken(token)
-      // Replay SMS the native path couldn't deliver (offline / stale token).
-      // NOT gated on `enabled` — SMS queued before the user disabled tracking
-      // must still reach the server instead of stranding as pending cards.
-      // Skip while offline — items stay queued for the next online open.
+      if (refreshToken) {
+        const status = await getSmsBridgeStatus()
+        // Refresh the stored ingest token BEFORE draining, so queued items that
+        // failed on a stale token replay with a valid one (self-heal). Also
+        // re-arms the token after sign-out/sign-in without wiping native state.
+        if (status?.enabled) await ensureIngestToken(token)
+      }
+      // Replay SMS the native path couldn't deliver (offline / stale token / a
+      // background kill mid-send). NOT gated on `enabled` — SMS queued before the
+      // user disabled tracking must still reach the server instead of stranding as
+      // pending cards. Skip while offline — items stay queued for the next open.
       if (!isOnline()) return
       await drainAndSubmitPendingSms(token)
     }
 
     let unsub: (() => void) | null = null
+    let removeResume: (() => void) | null = null
     void (async () => {
       const { createClient } = await import('@/lib/supabase/client')
       const client = createClient()
@@ -83,10 +92,24 @@ function SmsStartupSync() {
         if (event === 'SIGNED_IN') void tryStart(token)
       })
       unsub = listener.subscription.unsubscribe
+
+      // Resume — the SMS automation background-launches the app to run the intent,
+      // which can leave the process alive with a queued SMS. Bringing the app
+      // forward then never remounts, so mount+SIGNED_IN alone would strand it
+      // until the next cold start.
+      const { App } = await import('@capacitor/app')
+      const handle = await App.addListener('appStateChange', ({ isActive }) => {
+        if (!isActive) return
+        void (async () => {
+          const { data: s } = await client.auth.getSession()
+          void tryStart(s.session?.access_token ?? '', false)
+        })()
+      })
+      removeResume = () => { void handle.remove() }
     })()
 
-    return () => { unsub?.() }
-  }, []) // mount only — auth listener covers the rest
+    return () => { unsub?.(); removeResume?.() }
+  }, []) // mount only — auth + resume listeners cover the rest
   return null
 }
 

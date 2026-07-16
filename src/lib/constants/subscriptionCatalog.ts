@@ -142,24 +142,59 @@ function normalizeBrandToken(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
+/** Below this a token is not distinctive enough to identify a brand by containment. */
+const MIN_CONTAINMENT_TOKEN = 3
+/** At/below this a token must land on a word boundary in the ORIGINAL merchant text. */
+const SHORT_TOKEN_MAX = 5
+
+/**
+ * True when `merchant` genuinely mentions `token`.
+ *
+ * Short tokens are the danger: `osn` (an alias for OSN+) is a substring of "bosnia", so a
+ * plain `includes` resolved a Bosnian merchant to a streaming brand — and because
+ * dispatch then force-overrides the category to `Subscription`, a false hit silently
+ * miscategorises a real purchase AND corrupts a subscription's payment history. For those,
+ * require a word boundary in the raw text, where the spacing still exists: "OSN PLUS" hits,
+ * "Bosnia Air" does not.
+ */
+function merchantMentions(rawMerchant: string, normMerchant: string, token: string): boolean {
+  if (token.length < MIN_CONTAINMENT_TOKEN) return false
+  if (token.length > SHORT_TOKEN_MAX) return normMerchant.includes(token)
+  return new RegExp(`\\b${token}\\b`, 'i').test(rawMerchant)
+}
+
 /**
  * Resolves a merchant string (from a parsed SMS) to a catalog brand key, or null.
- * Matches explicit aliases first, then substring against each brand's normalised
- * key and name.
+ *
+ * Exact match first, then a guarded containment pass over aliases + catalog key/name,
+ * longest token first so the most specific brand wins ("amazonprime" before "prime").
+ *
+ * Containment is ONE-DIRECTIONAL: the merchant must contain the brand token, never the
+ * reverse. The old `keyToken.includes(norm)` direction let a merchant that is merely a
+ * fragment of a brand name ("net") claim that brand.
  */
 export function resolveBrandKeyFromMerchant(merchant: string | null | undefined): string | null {
   if (!merchant) return null
   const norm = normalizeBrandToken(merchant)
   if (!norm) return null
+
   if (MERCHANT_BRAND_ALIASES[norm]) return MERCHANT_BRAND_ALIASES[norm]
-  for (const [alias, key] of Object.entries(MERCHANT_BRAND_ALIASES)) {
-    if (norm.includes(alias)) return key
-  }
   for (const b of SUBSCRIPTION_CATALOG) {
-    const keyToken = normalizeBrandToken(b.key)
-    const nameToken = normalizeBrandToken(b.name)
-    if (keyToken && (norm.includes(keyToken) || keyToken.includes(norm))) return b.key
-    if (nameToken && (norm.includes(nameToken) || nameToken.includes(norm))) return b.key
+    if (normalizeBrandToken(b.key) === norm || normalizeBrandToken(b.name) === norm) return b.key
+  }
+
+  const candidates: { token: string; key: string }[] = [
+    ...Object.entries(MERCHANT_BRAND_ALIASES).map(([token, key]) => ({ token, key })),
+    ...SUBSCRIPTION_CATALOG.flatMap((b) => [
+      { token: normalizeBrandToken(b.key), key: b.key },
+      { token: normalizeBrandToken(b.name), key: b.key },
+    ]),
+  ]
+    .filter((c) => c.token)
+    .sort((a, b) => b.token.length - a.token.length)
+
+  for (const { token, key } of candidates) {
+    if (merchantMentions(merchant, norm, token)) return key
   }
   return null
 }

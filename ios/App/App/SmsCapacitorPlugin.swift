@@ -100,6 +100,10 @@ public class SmsCapacitorPlugin: CAPInstancePlugin, CAPBridgedPlugin {
 
 /// Shared between the Capacitor plugin and CatchBankSmsIntent — both run in
 /// the app process, so plain UserDefaults.standard works (no App Group).
+/// CONSTRAINT: CatchBankSmsIntent must stay in the main app target. Moving it to
+/// an App Intents Extension gives it a separate UserDefaults container, and the
+/// pending queue — the only thing standing between a killed intent and a lost
+/// transaction — would silently stop reaching the drain. Add an App Group first.
 enum SmsCredentialStore {
     private static let tokenKey = "buddget.sms.ingest_token"
     private static let apiUrlKey = "buddget.sms.api_url"

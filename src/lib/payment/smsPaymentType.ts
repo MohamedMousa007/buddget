@@ -11,10 +11,21 @@ import type { PaymentMethodType } from '@/lib/store/types'
  * curated `paymentInstrument: 'card'` it distinguishes debit from credit.
  */
 
-/** Ordered — first hit wins. Card before account: a "Mada card … A/C: **207" SMS is a card transaction. */
+/**
+ * Ordered — first hit wins. Card before account: a "Mada card … A/C: **207" SMS
+ * is a card transaction, and the last4 we matched it to is the card's.
+ *
+ * Every token here must be *card-adjacent* phrasing, never a bare brand name: a
+ * bare `mada`/`meeza` would fire on a merchant like "MADA STORE" in an
+ * otherwise account-only SMS, and `meeza` alone would contradict the brand
+ * catalogue, which types Meeza as prepaid. Brand-name → type is the
+ * catalogue's job (see resolvePaymentBrandKey); this function only reads what
+ * the SMS says about the instrument. Dropping those two tokens changes no row
+ * in the live parse log.
+ */
 const TYPE_RULES: [RegExp, PaymentMethodType][] = [
   [/credit\s*card|بطاقة\s*(?:ال)?ائتمان|بطاقة\s+ائتمانية/i, 'credit_card'],
-  [/debit\s*card|mada\s*card|\bmada\b|meeza|بطاقة\s*(?:ال)?خصم|بطاقة\s+الخصم\s+المباشر|ميزة/i, 'debit_card'],
+  [/debit\s*card|mada\s*card|بطاقة\s*(?:ال)?خصم|بطاقة\s+الخصم\s+المباشر/i, 'debit_card'],
   [/prepaid\s*card|بطاقة\s+مسبقة\s+الدفع/i, 'prepaid_card'],
   [/\bwallet\b|محفظة|cash\s*wallet/i, 'wallet'],
   [/\bcard\b|بطاقة/i, 'debit_card'],

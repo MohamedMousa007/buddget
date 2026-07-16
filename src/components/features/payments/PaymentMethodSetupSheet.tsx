@@ -88,10 +88,14 @@ export function PaymentMethodSetupSheet({
         // default (QNB's brand type is bank_account).
         const pfBrandId = prefill?.name ? resolvePaymentBrandKey(prefill.name) : null
         const pfBrand = pfBrandId ? PAYMENT_BRANDS[pfBrandId] : null
+        const pfType = prefill?.type ?? pfBrand?.type ?? 'bank_account'
         setBrandId(pfBrandId); setProviderName(pfBrand?.name ?? prefill?.name ?? '')
-        setType(prefill?.type ?? pfBrand?.type ?? 'bank_account')
+        setType(pfType)
         setLast4(prefill?.last4 ?? ''); setTag('')
-        setDisc(prefill?.last4 ? 'last4' : 'none')
+        // Same guard as pickBrand/pickType: a type that takes no last4 (wallet,
+        // bnpl) must not land on the last4 identifier — the tab row wouldn't
+        // even offer it, and handleSave would persist a last4 anyway.
+        setDisc(prefill?.last4 && allowsLast4(pfType) ? 'last4' : 'none')
         setCurCode(baseCurrency); setCardColor(null); setIsDefault(false)
       }
     }
