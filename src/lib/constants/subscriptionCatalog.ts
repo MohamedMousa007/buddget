@@ -636,19 +636,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     emoji: '🎮',
     initial: 'PS',
     defaultCategory: 'Enjoyment',
-    availability: ['uae', 'egypt'],
-    plans: {
-      uae: [
-        { id: 'playstation_plus_essential', name: 'Essential', amount: 20, cycle: 'monthly' },
-        { id: 'playstation_plus_extra', name: 'Extra', amount: 52, cycle: 'monthly' },
-        { id: 'playstation_plus_premium', name: 'Premium', amount: 63, cycle: 'monthly' },
-      ],
-      egypt: [
-        { id: 'playstation_plus_essential', name: 'Essential', amount: 80, cycle: 'monthly' },
-        { id: 'playstation_plus_extra', name: 'Extra', amount: 215, cycle: 'monthly' },
-        { id: 'playstation_plus_premium', name: 'Premium', amount: 260, cycle: 'monthly' },
-      ],
-    },
+    availability: ['uae', 'egypt', 'saudi'],
+    plans: {},
   },
   {
     catalogSection: 'catGaming',
@@ -658,17 +647,17 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     emoji: '🎮',
     initial: 'XB',
     defaultCategory: 'Enjoyment',
-    availability: ['uae', 'egypt'],
+    availability: ['uae', 'saudi'],
     plans: {
       uae: [
-        { id: 'xbox_gamepass_core', name: 'Core', amount: 28, cycle: 'monthly' },
-        { id: 'xbox_gamepass_standard', name: 'Standard', amount: 55, cycle: 'monthly' },
-        { id: 'xbox_gamepass_ultimate', name: 'Ultimate', amount: 68, cycle: 'monthly' },
+        { id: 'xbox_gamepass_essential', name: 'Essential', amount: 7.99, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'xbox_gamepass_premium', name: 'Premium', amount: 10.99, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'xbox_gamepass_ultimate', name: 'Ultimate', amount: 15.99, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
       ],
-      egypt: [
-        { id: 'xbox_gamepass_core', name: 'Core', amount: 115, cycle: 'monthly' },
-        { id: 'xbox_gamepass_standard', name: 'Standard', amount: 230, cycle: 'monthly' },
-        { id: 'xbox_gamepass_ultimate', name: 'Ultimate', amount: 280, cycle: 'monthly' },
+      saudi: [
+        { id: 'xbox_gamepass_essential', name: 'Essential', amount: 29.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'xbox_gamepass_premium', name: 'Premium', amount: 39.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'xbox_gamepass_ultimate', name: 'Ultimate', amount: 60.99, cycle: 'monthly', verifiedAt: '2026-07-17' },
       ],
     },
   },
@@ -805,6 +794,74 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
         { id: 'du_mobile_postpaid_200', name: 'Postpaid 200', amount: 200, cycle: 'monthly' },
       ],
       egypt: [],
+    },
+  },
+  {
+    catalogSection: 'catTelecom',
+    key: 'stc',
+    name: 'stc',
+    color: '#4F008C',
+    emoji: '📱',
+    initial: 'S',
+    defaultCategory: 'Utilities',
+    // Mofawtar postpaid, SAR incl. 15% VAT. Verified from stc's own store, not blogs: every blog said MAX = 575; it is 920.
+    availability: ['saudi'],
+    plans: {
+      saudi: [
+        { id: 'stc_mofawtar_basic_plus', name: 'Mofawtar Basic Plus', amount: 90, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'stc_mofawtar_2', name: 'Mofawtar 2', amount: 138, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'stc_mofawtar_2_plus', name: 'Mofawtar 2 Plus', amount: 172.5, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'stc_mofawtar_3_plus', name: 'Mofawtar 3 Plus', amount: 264.5, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'stc_mofawtar_flex', name: 'Mofawtar Flex', amount: 370, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'stc_mofawtar_4', name: 'Mofawtar 4', amount: 517.5, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'stc_mofawtar_max', name: 'Mofawtar MAX', amount: 920, cycle: 'monthly', verifiedAt: '2026-07-17' },
+      ],
+    },
+  },
+  {
+    catalogSection: 'catTelecom',
+    key: 'mobily',
+    name: 'Mobily',
+    color: '#00A651',
+    emoji: '📱',
+    initial: 'M',
+    defaultCategory: 'Utilities',
+    // SAR incl. 15% VAT. NOTE: the plan NAME is the pre-VAT figure, the billed amount is +15% (65 -> 74.75).
+    availability: ['saudi'],
+    plans: {
+      saudi: [
+        { id: 'mobily_postpaid_65', name: 'Postpaid 65', amount: 74.75, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'mobily_postpaid_100', name: 'Postpaid 100', amount: 115, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'mobily_postpaid_150', name: 'Postpaid 150', amount: 172.5, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'mobily_postpaid_200', name: 'Postpaid 200', amount: 230, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'mobily_postpaid_300', name: 'Postpaid 300', amount: 345, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'mobily_postpaid_400', name: 'Postpaid 400', amount: 460, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'mobily_postpaid_xstream', name: 'Postpaid XStream', amount: 255, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'mobily_postpaid_xstream_plus', name: 'Postpaid XStream Plus', amount: 370, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'mobily_postpaid_xstream_max', name: 'Postpaid XStream Max', amount: 570, cycle: 'monthly', verifiedAt: '2026-07-17' },
+      ],
+    },
+  },
+  {
+    catalogSection: 'catTelecom',
+    key: 'zain_ksa',
+    name: 'Zain KSA',
+    color: '#7B2D8E',
+    emoji: '📱',
+    initial: 'Z',
+    defaultCategory: 'Utilities',
+    // SAR incl. 15% VAT. Unlike Mobily, Zain's plan name equals the billed price.
+    availability: ['saudi'],
+    plans: {
+      saudi: [
+        { id: 'zain_ksa_postpaid_75', name: 'Postpaid 75', amount: 75, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'zain_ksa_postpaid_120', name: 'Postpaid 120', amount: 120, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'zain_ksa_postpaid_180', name: 'Postpaid 180', amount: 180, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'zain_ksa_postpaid_250', name: 'Postpaid 250', amount: 250, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'zain_ksa_postpaid_420', name: 'Postpaid 420', amount: 420, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'zain_ksa_postpaid_650', name: 'Postpaid 650', amount: 650, cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'zain_ksa_black', name: 'Black', amount: 1000, cycle: 'monthly', verifiedAt: '2026-07-17' },
+      ],
     },
   },
   {
@@ -1269,11 +1326,8 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     emoji: '🎮',
     initial: 'N',
     defaultCategory: 'Enjoyment',
-    availability: ['uae', 'egypt'],
-    plans: {
-      uae: [{ id: 'nintendo_switch_online_individual', name: 'Individual', amount: 20, cycle: 'monthly' }, { id: 'nintendo_switch_online_family', name: 'Family', amount: 35, cycle: 'monthly' }],
-      egypt: [{ id: 'nintendo_switch_online_individual', name: 'Individual', amount: 80, cycle: 'monthly' }, { id: 'nintendo_switch_online_family', name: 'Family', amount: 140, cycle: 'monthly' }],
-    },
+    availability: [],
+    plans: {},
   },
   {
     catalogSection: 'catGaming',
@@ -1283,10 +1337,14 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     emoji: '🎯',
     initial: 'EA',
     defaultCategory: 'Enjoyment',
-    availability: ['uae', 'egypt'],
+    availability: ['uae', 'saudi'],
     plans: {
-      uae: [{ id: 'ea_play_ea_play', name: 'EA Play', amount: 20, cycle: 'monthly' }, { id: 'ea_play_ea_play_pro', name: 'EA Play Pro', amount: 55, cycle: 'monthly' }],
-      egypt: [{ id: 'ea_play_ea_play', name: 'EA Play', amount: 80, cycle: 'monthly' }, { id: 'ea_play_ea_play_pro', name: 'EA Play Pro', amount: 220, cycle: 'monthly' }],
+      uae: [
+        { id: 'ea_play_monthly', name: 'Monthly', amount: 5.99, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+      ],
+      saudi: [
+        { id: 'ea_play_monthly', name: 'Monthly', amount: 24, cycle: 'monthly', verifiedAt: '2026-07-17' },
+      ],
     },
   },
   {
