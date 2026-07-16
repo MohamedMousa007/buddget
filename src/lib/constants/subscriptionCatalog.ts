@@ -636,8 +636,38 @@ export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [
     emoji: '🎮',
     initial: 'PS',
     defaultCategory: 'Enjoyment',
-    availability: ['uae', 'egypt', 'saudi'],
-    plans: {},
+    // Egypt has NO PlayStation Store locale: store.playstation.com/en-eg 302s to en-us
+    // and playstation.com/en-eg/ps-plus 404s. Earlier research reported Egypt prices —
+    // they were the US page's, read through that silent redirect.
+    availability: ['uae', 'saudi'],
+    // USD everywhere in MENA, and SA/AE are identical. Every price is RECURRING: all
+    // SKUs report basePrice == discountedPrice with promo fields null, so there is no
+    // intro price. The '$7.99' seen elsewhere is a stale pre-hike ld+json blob (frozen
+    // one hike behind in EVERY locale) and a Ubisoft+ perk blurb — not a PS Plus price.
+    plans: {
+      uae: [
+        { id: 'playstation_plus_essential', name: 'Essential', amount: 8.99, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'playstation_plus_essential_quarterly', name: 'Essential (3 months)', amount: 22.99, currency: 'USD', cycle: 'quarterly', verifiedAt: '2026-07-17' },
+        { id: 'playstation_plus_essential_yearly', name: 'Essential (12 months)', amount: 64.99, currency: 'USD', cycle: 'yearly', verifiedAt: '2026-07-17' },
+        { id: 'playstation_plus_extra', name: 'Extra', amount: 13.49, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'playstation_plus_extra_quarterly', name: 'Extra (3 months)', amount: 37.99, currency: 'USD', cycle: 'quarterly', verifiedAt: '2026-07-17' },
+        { id: 'playstation_plus_extra_yearly', name: 'Extra (12 months)', amount: 107.99, currency: 'USD', cycle: 'yearly', verifiedAt: '2026-07-17' },
+        { id: 'playstation_plus_deluxe', name: 'Deluxe', amount: 15.99, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'playstation_plus_deluxe_quarterly', name: 'Deluxe (3 months)', amount: 43.99, currency: 'USD', cycle: 'quarterly', verifiedAt: '2026-07-17' },
+        { id: 'playstation_plus_deluxe_yearly', name: 'Deluxe (12 months)', amount: 124.99, currency: 'USD', cycle: 'yearly', verifiedAt: '2026-07-17' },
+      ],
+      saudi: [
+        { id: 'playstation_plus_essential', name: 'Essential', amount: 8.99, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'playstation_plus_essential_quarterly', name: 'Essential (3 months)', amount: 22.99, currency: 'USD', cycle: 'quarterly', verifiedAt: '2026-07-17' },
+        { id: 'playstation_plus_essential_yearly', name: 'Essential (12 months)', amount: 64.99, currency: 'USD', cycle: 'yearly', verifiedAt: '2026-07-17' },
+        { id: 'playstation_plus_extra', name: 'Extra', amount: 13.49, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'playstation_plus_extra_quarterly', name: 'Extra (3 months)', amount: 37.99, currency: 'USD', cycle: 'quarterly', verifiedAt: '2026-07-17' },
+        { id: 'playstation_plus_extra_yearly', name: 'Extra (12 months)', amount: 107.99, currency: 'USD', cycle: 'yearly', verifiedAt: '2026-07-17' },
+        { id: 'playstation_plus_deluxe', name: 'Deluxe', amount: 15.99, currency: 'USD', cycle: 'monthly', verifiedAt: '2026-07-17' },
+        { id: 'playstation_plus_deluxe_quarterly', name: 'Deluxe (3 months)', amount: 43.99, currency: 'USD', cycle: 'quarterly', verifiedAt: '2026-07-17' },
+        { id: 'playstation_plus_deluxe_yearly', name: 'Deluxe (12 months)', amount: 124.99, currency: 'USD', cycle: 'yearly', verifiedAt: '2026-07-17' },
+      ],
+    },
   },
   {
     catalogSection: 'catGaming',
