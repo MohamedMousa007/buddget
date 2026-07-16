@@ -1633,6 +1633,8 @@ export interface Dictionary {
     active: string
     cancelled: string
     paused: string
+    /** Badge: this billing cycle's charge has landed. */
+    paidThisCycle: string
     trial: string
     searchPlaceholder: string
     customSubscription: string

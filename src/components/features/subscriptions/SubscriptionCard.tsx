@@ -4,6 +4,7 @@ import { MoreHorizontal } from 'lucide-react'
 import { useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { findBrandByKey } from '@/lib/constants/subscriptionCatalog'
+import { isCyclePaid } from '@/lib/subscriptions/subscriptionOccurrence'
 import { SubscriptionCardInfo } from '@/components/features/subscriptions/SubscriptionCardInfo'
 import { SubscriptionCardMenu } from '@/components/features/subscriptions/SubscriptionCardMenu'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -28,15 +29,20 @@ export function SubscriptionCard({
   const t = useT()
   const { formatDateShort } = useLocalizedFormatters()
   const [menuOpen, setMenuOpen] = useState(false)
-  const { paymentMethods, cancelSubscription, deleteSubscription, reactivateSubscription } =
+  const { paymentMethods, expenses, cancelSubscription, deleteSubscription, reactivateSubscription } =
     useFinanceStore(
       useShallow((s) => ({
         paymentMethods: s.paymentMethods,
+        expenses: s.expenses,
         cancelSubscription: s.cancelSubscription,
         deleteSubscription: s.deleteSubscription,
         reactivateSubscription: s.reactivateSubscription,
       }))
     )
+
+  // Only an active subscription can be "paid this cycle" — a trial isn't charged, and a
+  // paused/cancelled one shouldn't claim it was.
+  const paidThisCycle = sub.status === 'active' && isCyclePaid(sub, expenses)
 
   const brand = findBrandByKey(sub.brandKey)
   const pm = sub.paymentMethodId ? paymentMethods.find((m) => m.id === sub.paymentMethodId) : null
@@ -62,6 +68,7 @@ export function SubscriptionCard({
         sub={sub}
         brand={brand}
         pmLabel={pmLabel}
+        paidThisCycle={paidThisCycle}
         formatDateShort={formatDateShort}
         t={t.subscriptions}
       />

@@ -1764,6 +1764,7 @@ export const en: Dictionary = {
     active: 'Active',
     cancelled: 'Cancelled',
     paused: 'Paused',
+    paidThisCycle: 'Paid',
     trial: 'Free trial',
     searchPlaceholder: 'Search services…',
     customSubscription: 'Custom subscription',

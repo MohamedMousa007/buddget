@@ -1761,6 +1761,7 @@ export const ar: Dictionary = {
     active: 'نشط',
     cancelled: 'ملغى',
     paused: 'موقوف',
+    paidThisCycle: 'مدفوع',
     trial: 'تجربة مجانية',
     searchPlaceholder: 'ابحث عن خدمة…',
     customSubscription: 'اشتراك مخصّص',

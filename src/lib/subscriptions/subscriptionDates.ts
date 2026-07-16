@@ -12,7 +12,7 @@ function withBillingDay(base: Date, billingDay: number): Date {
   return new Date(y, m, clampDay(y, m, billingDay))
 }
 
-function firstBillingOnOrAfter(start: Date, billingDay: number): Date {
+export function firstBillingOnOrAfter(start: Date, billingDay: number): Date {
   let candidate = withBillingDay(start, billingDay)
   if (candidate < startOfDay(start)) {
     candidate = withBillingDay(addMonths(start, 1), billingDay)
@@ -20,7 +20,7 @@ function firstBillingOnOrAfter(start: Date, billingDay: number): Date {
   return candidate
 }
 
-function advanceCycle(from: Date, billingDay: number, cycle: SubscriptionBillingCycle): Date {
+export function advanceCycle(from: Date, billingDay: number, cycle: SubscriptionBillingCycle): Date {
   switch (cycle) {
     case 'weekly':
       return addWeeks(from, 1)

@@ -9,12 +9,15 @@ export function SubscriptionCardInfo({
   sub,
   brand,
   pmLabel,
+  paidThisCycle,
   formatDateShort,
   t,
 }: {
   sub: Subscription
   brand: SubscriptionBrand | undefined
   pmLabel: string
+  /** This cycle's charge has landed — derived from linked expenses, never from the date. */
+  paidThisCycle?: boolean
   formatDateShort: (dateStr: string) => string
   t: Dictionary['subscriptions']
 }) {
@@ -49,6 +52,11 @@ export function SubscriptionCardInfo({
           {sub.status === 'paused' ? (
             <span className="text-[10px] uppercase px-2 py-0.5 rounded-full bg-[var(--color-brand-card)] border border-[var(--color-brand-border)]">
               {t.paused}
+            </span>
+          ) : null}
+          {paidThisCycle ? (
+            <span className="text-[10px] uppercase px-2 py-0.5 rounded-full bg-[var(--color-brand-green)]/10 border border-[var(--color-brand-green)]/30 text-[var(--color-brand-green)]">
+              {t.paidThisCycle}
             </span>
           ) : null}
         </div>
