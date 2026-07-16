@@ -8,16 +8,19 @@ import {
   CreditCard,
   DollarSign,
   ArrowUpDown,
+  CalendarRange,
   SlidersHorizontal,
   Check,
 } from 'lucide-react'
 import { CategoryIcon } from '@/components/dashboard/CategoryIcon'
 import { AmountField } from '@/components/ui/AmountField'
+import { DatePickerField } from '@/components/ui/DatePickerField'
 import {
   useExpenseFilterStore,
   amountIsFiltered,
   AMOUNT_MAX,
 } from '@/lib/store/useExpenseFilterStore'
+import { RANGE_PRESETS, type RangePreset } from '@/lib/expenses/dateRange'
 import { useShallow } from 'zustand/react/shallow'
 import { cn } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
@@ -32,7 +35,7 @@ export interface FilterMethodOption {
   color: string
 }
 
-type DropdownKey = 'cat' | 'method' | 'amount' | 'all' | null
+type DropdownKey = 'period' | 'cat' | 'method' | 'amount' | 'all' | null
 
 /** Lightweight bottom-sheet shell matching the redesign (26px radius, slide-up). */
 function FilterSheet({
@@ -103,6 +106,88 @@ function selRowClass(selected: boolean) {
     selected
       ? 'border-[var(--color-brand-red)] bg-[rgba(229,9,20,0.1)]'
       : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]',
+  )
+}
+
+/**
+ * Period presets + a custom From/To. Single-select, so it is a radiogroup — the
+ * selected state must not be conveyed by colour alone.
+ */
+function PeriodControl() {
+  const t = useT()
+  const { range, setRangePreset, setCustomRange } = useExpenseFilterStore(
+    useShallow((s) => ({
+      range: s.range,
+      setRangePreset: s.setRangePreset,
+      setCustomRange: s.setCustomRange,
+    })),
+  )
+
+  const presetLabel: Record<RangePreset, string> = {
+    today: t.common.today,
+    yesterday: t.common.yesterday,
+    week: t.expenses.periodThisWeek,
+    month: t.expenses.periodThisMonth,
+    custom: t.expenses.periodCustom,
+  }
+
+  const today = new Date().toISOString().slice(0, 10)
+  const from = range.from ?? today
+  const to = range.to ?? today
+
+  return (
+    <>
+      <div role="radiogroup" aria-label={t.expenses.periodTitle} className="flex flex-col gap-2">
+        {RANGE_PRESETS.map((preset) => {
+          const selected = range.preset === preset
+          return (
+            <button
+              key={preset}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => (preset === 'custom' ? setCustomRange(from, to) : setRangePreset(preset))}
+              className={cn(
+                selRowClass(selected),
+                'min-h-[44px] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]/55',
+              )}
+            >
+              <CheckBox selected={selected} />
+              <span className="text-sm font-semibold text-[var(--color-brand-text-primary)]">
+                {presetLabel[preset]}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      {range.preset === 'custom' ? (
+        <div className="mt-3 flex items-end gap-3">
+          <label className="min-w-0 flex-1">
+            <span className="mb-1.5 block text-xs font-medium text-[var(--color-brand-text-muted)]">
+              {t.expenses.periodFrom}
+            </span>
+            {/* Clamp `to` forward: UnifiedDatePicker has no min/max, so nothing else
+                stops an inverted range. */}
+            <DatePickerField
+              value={from}
+              onChange={(v) => setCustomRange(v, v > to ? v : to)}
+              className="h-12"
+            />
+          </label>
+          <label className="min-w-0 flex-1">
+            <span className="mb-1.5 block text-xs font-medium text-[var(--color-brand-text-muted)]">
+              {t.expenses.periodTo}
+            </span>
+            <DatePickerField
+              value={to}
+              onChange={(v) => setCustomRange(v < from ? v : from, v)}
+              className="h-12"
+            />
+          </label>
+        </div>
+      ) : null}
+    </>
   )
 }
 
@@ -184,25 +269,30 @@ export function ExpenseFilters({
   categories,
   methods,
   resultCount,
+  rangeLabel,
 }: {
   categories: FilterCategoryOption[]
   methods: FilterMethodOption[]
   resultCount: number
+  /** Active period label, resolved by the page so header and chip can't disagree. */
+  rangeLabel: string
 }) {
   const t = useT()
   const [dropdown, setDropdown] = useState<DropdownKey>(null)
   const close = () => setDropdown(null)
-  const { cats, methodsSel, amtMin, amtMax, toggleCat, toggleMethod, reset } = useExpenseFilterStore(
-    useShallow((s) => ({
-      cats: s.cats,
-      methodsSel: s.methods,
-      amtMin: s.amtMin,
-      amtMax: s.amtMax,
-      toggleCat: s.toggleCat,
-      toggleMethod: s.toggleMethod,
-      reset: s.reset,
-    })),
-  )
+  const { cats, methodsSel, amtMin, amtMax, rangePreset, toggleCat, toggleMethod, reset } =
+    useExpenseFilterStore(
+      useShallow((s) => ({
+        cats: s.cats,
+        methodsSel: s.methods,
+        amtMin: s.amtMin,
+        amtMax: s.amtMax,
+        rangePreset: s.range.preset,
+        toggleCat: s.toggleCat,
+        toggleMethod: s.toggleMethod,
+        reset: s.reset,
+      })),
+    )
 
   const amtActive = amountIsFiltered(amtMin, amtMax)
   const filterCount = (cats.length ? 1 : 0) + (methodsSel.length ? 1 : 0) + (amtActive ? 1 : 0)
@@ -236,6 +326,18 @@ export function ExpenseFilters({
   return (
     <div className="mb-3 flex items-center gap-2">
       <div className="hide-scrollbar flex min-w-0 flex-1 gap-2 overflow-x-auto py-0.5 [touch-action:pan-x]">
+        {/* First so it stays visible — the strip already scrolls at 375px. */}
+        <button
+          type="button"
+          onClick={() => setDropdown('period')}
+          className={chip(rangePreset !== 'month')}
+          aria-haspopup="dialog"
+          aria-expanded={dropdown === 'period'}
+        >
+          <CalendarRange className="h-3.5 w-3.5" />
+          {rangeLabel}
+          <ArrowUpDown className="h-3.5 w-3.5 opacity-55" />
+        </button>
         <button type="button" onClick={() => setDropdown('cat')} className={chip(cats.length > 0)}>
           <LayoutGrid className="h-3.5 w-3.5" />
           {catChipLabel}
@@ -265,6 +367,17 @@ export function ExpenseFilters({
           </span>
         ) : null}
       </button>
+
+      {/* Period dropdown */}
+      <FilterSheet open={dropdown === 'period'} onClose={close} maxHeightClass="max-h-[80%]">
+        <div className="mb-3.5 flex items-center justify-between">
+          <h3 className="text-base font-extrabold text-[var(--color-brand-text-primary)]">{t.expenses.periodTitle}</h3>
+        </div>
+        <div className="mb-3.5">
+          <PeriodControl />
+        </div>
+        <button type="button" onClick={close} className={redDoneBtn}>{t.expenses.doneCta}</button>
+      </FilterSheet>
 
       {/* Category dropdown */}
       <FilterSheet open={dropdown === 'cat'} onClose={close} maxHeightClass="max-h-[80%]">

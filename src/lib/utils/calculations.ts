@@ -99,11 +99,19 @@ export function getMonthRange(monthStr: string, monthStartDay = 1): { start: Dat
 }
 
 export function filterExpensesByMonth(expenses: Expense[], monthStr: string, monthStartDay = 1): Expense[] {
-  const { start, end } = getMonthRange(monthStr, monthStartDay)
-  return expenses.filter((e) => {
-    const date = parseISO(e.date)
-    return isWithinInterval(date, { start, end })
-  })
+  return filterExpensesByRange(expenses, getMonthRange(monthStr, monthStartDay))
+}
+
+/**
+ * Filters to an arbitrary date window. `e.date` is a local date-only string, so
+ * `parseISO` yields local midnight — callers must pass an `end` at end-of-day (or a
+ * month end from {@link getMonthRange}) for the last day to be included.
+ */
+export function filterExpensesByRange(
+  expenses: Expense[],
+  { start, end }: { start: Date; end: Date },
+): Expense[] {
+  return expenses.filter((e) => isWithinInterval(parseISO(e.date), { start, end }))
 }
 
 export function calculateMonthlyIncome(

@@ -2,18 +2,19 @@
 
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { format, parseISO } from 'date-fns'
+import { format, parseISO, subDays } from 'date-fns'
+import { CircleSlash } from 'lucide-react'
 import { CategoryIcon } from '@/components/dashboard/CategoryIcon'
 import { SwipeToDelete } from '@/components/expenses/SwipeToDelete'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { categoryChipColors } from '@/lib/expenses/categoryChip'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { useExpenseFilterStore, amountIsFiltered } from '@/lib/store/useExpenseFilterStore'
 import { expenseAmountInBase } from '@/lib/utils/calculations'
 import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
-import { useLocalizedFormatters } from '@/hooks/useLocalizedFormatters'
 import type { Expense } from '@/lib/store/types'
 import { useT } from '@/lib/i18n'
 import { decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
@@ -44,7 +45,17 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
     })),
   )
   const { setEditingExpenseId, setActiveModal } = useSettingsStore()
-  const { formatTime } = useLocalizedFormatters()
+  const { isMonthRange, hasFilters, resetFilters } = useExpenseFilterStore(
+    useShallow((s) => ({
+      isMonthRange: s.range.preset === 'month',
+      hasFilters:
+        s.cats.length > 0 ||
+        s.methods.length > 0 ||
+        s.range.preset !== 'month' ||
+        amountIsFiltered(s.amtMin, s.amtMax),
+      resetFilters: s.reset,
+    })),
+  )
   const toast = useActionToast()
   const [openId, setOpenId] = useState<string | null>(null)
   const base = settings.baseCurrency
@@ -52,11 +63,11 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
   const showSecondary = settings.showSecondaryCurrency && secondary
 
   const groups = useMemo<DayGroup[]>(() => {
+    // Local, not UTC: `e.date` is a local date-only string, so a UTC key mislabels
+    // "Today" as a plain date between midnight and dawn at UTC+2/+3.
     const now = new Date()
-    const todayKey = now.toISOString().slice(0, 10)
-    const yest = new Date(now)
-    yest.setDate(now.getDate() - 1)
-    const yesterdayKey = yest.toISOString().slice(0, 10)
+    const todayKey = format(now, 'yyyy-MM-dd')
+    const yesterdayKey = format(subDays(now, 1), 'yyyy-MM-dd')
 
     const map = new Map<string, Expense[]>()
     for (const e of expenses) {
@@ -87,9 +98,22 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
 
   if (expenses.length === 0) {
     return (
-      <p className="px-1 py-10 text-center text-sm text-[var(--color-brand-text-muted)]">
-        {t.expenses.emptyTitle}
-      </p>
+      <div className="px-1 py-10 text-center">
+        {/* `emptyTitle` hardcodes "this month" — with a Today/week/custom range it would
+            contradict the hero directly above it. */}
+        <p className="text-sm text-[var(--color-brand-text-muted)]">
+          {isMonthRange ? t.expenses.emptyTitle : t.expenses.emptyInRange}
+        </p>
+        {hasFilters ? (
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="mt-3 min-h-[44px] rounded-xl px-4 text-sm font-semibold text-[var(--color-brand-red-text)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]/55"
+          >
+            {t.expenses.clearFilters}
+          </button>
+        ) : null}
+      </div>
     )
   }
 
@@ -173,19 +197,18 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                               {t.expenses.badgeRefunded}
                             </span>
                           ) : nonSpend ? (
-                            <span
-                              className="shrink-0 rounded-full px-2 py-[2.5px] text-[9.5px] font-extrabold uppercase tracking-[0.05em]"
-                              style={{ background: 'rgba(120,120,120,0.14)', color: 'var(--color-brand-text-muted)' }}
-                            >
-                              Transfer
-                            </span>
+                            // Money movement, not consumption. An icon (not a word) because the
+                            // icon column already names the category — a text badge would repeat
+                            // it and eat ~90px of the description.
+                            <CircleSlash
+                              role="img"
+                              aria-label={t.expenses.badgeNotCounted}
+                              className="h-3.5 w-3.5 shrink-0 text-[var(--color-brand-text-muted)]"
+                            />
                           ) : null}
                         </span>
                         <span className="mt-1.5 flex items-center whitespace-nowrap">
-                          <span className="font-mono-numbers text-xs font-semibold text-[var(--color-brand-text-secondary)]">
-                            {formatTime(e.date)}
-                          </span>
-                          <span className="ml-[9px] flex min-w-0 items-center border-l border-[var(--color-brand-border)] pl-[9px]">
+                          <span className="flex min-w-0 items-center">
                             {method?.last4 ? (
                               <>
                                 <span className="font-mono-numbers truncate text-xs font-medium text-[var(--color-brand-text-muted)]">

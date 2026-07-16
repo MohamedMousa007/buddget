@@ -133,6 +133,8 @@ export interface Dictionary {
     seeAll: string
     today: string
     yesterday: string
+    previousMonth: string
+    nextMonth: string
     daysLeft: (n: number) => string
     selected: (n: number) => string
     pickAtLeast: (n: number) => string
@@ -313,9 +315,24 @@ export interface Dictionary {
     confirmDelete: string
     badgeDebt: string
     spentThisMonth: string
+    spentToday: string
+    spentYesterday: string
+    spentThisWeek: string
+    /** Custom-range hero label; the dates render separately in font-mono-numbers. */
+    spentRange: string
     entries: string
     avgPerDay: string
     daysCount: string
+    /** Singular form — "{n} days" reads "1 days" for the Today preset. */
+    daysCountOne: string
+    periodTitle: string
+    periodThisWeek: string
+    periodThisMonth: string
+    periodCustom: string
+    periodFrom: string
+    periodTo: string
+    emptyInRange: string
+    clearFilters: string
     statusReturned: string
     statusBlocked: string
     addExpenseCta: string
@@ -334,6 +351,8 @@ export interface Dictionary {
     badgeSms: string
     badgeRefunded: string
     badgeDeclined: string
+    /** Accessible label for the non-spend marker on money-movement rows. */
+    badgeNotCounted: string
     swipeDelete: string
     expenseDeleted: string
     fileSaved: string
