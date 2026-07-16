@@ -1,6 +1,5 @@
 import { addDays, addMonths, differenceInCalendarDays, format, getDaysInMonth, parseISO, setDate, startOfDay } from 'date-fns'
 import type { Currency, Debt, DebtPayment, Expense } from '@/lib/store/types'
-import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 
 function paidToward(debtId: string, payments: DebtPayment[]): number {
@@ -8,19 +7,31 @@ function paidToward(debtId: string, payments: DebtPayment[]): number {
 }
 
 /**
+ * Categories that SETTLE a debt rather than add to it. Only these may be excluded from the
+ * card balance.
+ *
+ * Deliberately not `isNonSpendCategory`: that was too broad and lost real debt. Non-spend
+ * means "not consumption", NOT "not owed" — a `Top up`, a cash advance
+ * (`ATM Cash Withdrawal`) or a `Currency Exchange` put on a credit card is money you
+ * genuinely owe the bank, even though you consumed nothing. Filtering those out made a 500
+ * card top-up vanish from the balance AND from spend, so it left net worth entirely.
+ */
+const SETTLEMENT_CATEGORIES: ReadonlySet<string> = new Set(['CC Payoff', 'Installment'])
+
+/**
  * True for a row that genuinely adds to what is owed on the card.
  *
  * Excludes:
  *  - refunded/declined rows — the charge was reversed, so it must not inflate the balance
  *    forever (`expenseAmountInBase` already zeroes these everywhere else);
- *  - non-spend money movement — above all a `CC Payoff` posted against the card itself,
- *    which would otherwise cancel out its own payment.
+ *  - settlements — above all a `CC Payoff` posted against the card itself, which would
+ *    otherwise cancel out its own payment.
  */
 function chargesToCard(e: Expense, linkedPaymentMethodId: string): boolean {
   return (
     e.paymentMethodId === linkedPaymentMethodId &&
     !e.refundKind &&
-    !isNonSpendCategory(e.category)
+    !SETTLEMENT_CATEGORIES.has(e.category)
   )
 }
 

@@ -70,16 +70,26 @@ export async function matchSubscription(
   const candidates = subs ?? []
   if (candidates.length === 0) return null
 
+  // Held back, not returned early: with two subs on one brand, a candidate we merely
+  // cannot check must never win over one that actually agrees on the amount.
+  let unverifiable: SubscriptionMatch | null = null
+
   for (const sub of candidates) {
     // No amount recorded — the brand match is all we have to go on.
-    if (!sub.amount) return { subscriptionId: sub.id, planChange: null }
+    if (!sub.amount) {
+      unverifiable ??= { subscriptionId: sub.id, planChange: null }
+      continue
+    }
 
     const smsInSubCurrency =
       sub.currency === params.currency
         ? params.amount
         : tryConvertCurrency(params.amount, params.currency, sub.currency as string, params.exchangeRates)
     // No FX path: a strong brand match stands alone rather than guessing on the amount.
-    if (smsInSubCurrency == null) return { subscriptionId: sub.id, planChange: null }
+    if (smsInSubCurrency == null) {
+      unverifiable ??= { subscriptionId: sub.id, planChange: null }
+      continue
+    }
 
     const agrees = Math.abs(smsInSubCurrency - sub.amount) / sub.amount <= AMOUNT_TOLERANCE
 
@@ -118,8 +128,9 @@ export async function matchSubscription(
     }
   }
 
-  // Brand matched but nothing agreed. Previously this returned the sole candidate anyway,
-  // which made the amount check above dead code for the common one-sub-per-brand case: a
-  // 2,000 EGP purchase would link to a 200 EGP Netflix sub and be booked as its payment.
-  return null
+  // Nothing agreed. Fall back only to a candidate we genuinely could not check (no amount
+  // recorded, or no FX path) — never to one whose amount actively disagreed. That
+  // fallthrough made the amount check above dead code for the common one-sub-per-brand
+  // case: a 2,000 EGP purchase linked to a 200 EGP Netflix sub as its payment.
+  return unverifiable
 }

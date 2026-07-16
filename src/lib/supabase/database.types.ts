@@ -437,6 +437,7 @@ export type Database = {
           expense_date: string
           id: string
           is_debt_payment: boolean
+          linked_debt_id: string | null
           linked_debt_payment_id: string | null
           linked_subscription_id: string | null
           notes: string | null
@@ -459,6 +460,7 @@ export type Database = {
           expense_date?: string
           id?: string
           is_debt_payment?: boolean
+          linked_debt_id?: string | null
           linked_debt_payment_id?: string | null
           linked_subscription_id?: string | null
           notes?: string | null
@@ -481,6 +483,7 @@ export type Database = {
           expense_date?: string
           id?: string
           is_debt_payment?: boolean
+          linked_debt_id?: string | null
           linked_debt_payment_id?: string | null
           linked_subscription_id?: string | null
           notes?: string | null

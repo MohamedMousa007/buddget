@@ -105,6 +105,12 @@ describe('matchSubscription', () => {
       .resolves.toEqual({ subscriptionId: 'sub_netflix', planChange: null })
   })
 
+  it('prefers a candidate that agrees over one it merely cannot check', async () => {
+    // The unverifiable one is listed FIRST; returning early on it would link the wrong sub.
+    const rows = [netflix({ id: 'sub_no_amount', amount: null }), netflix({ id: 'sub_right', amount: 200 })]
+    await expect(match(rows)).resolves.toEqual({ subscriptionId: 'sub_right', planChange: null })
+  })
+
   it('picks the candidate that actually agrees, not merely the first', async () => {
     const rows = [netflix({ id: 'sub_wrong', amount: 999 }), netflix({ id: 'sub_right', amount: 200 })]
     await expect(match(rows)).resolves.toEqual({ subscriptionId: 'sub_right', planChange: null })

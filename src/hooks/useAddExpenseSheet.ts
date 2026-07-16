@@ -142,22 +142,16 @@ export function useAddExpenseSheet() {
     const parsedAmount = parseFloat(amount)
     setSubmitError('')
     const cur = clampFiatToAllowed(settings, currency)
-    addExpense({
-      date,
-      description,
-      category,
-      subcategory,
-      amount: parsedAmount,
-      currency: cur,
-      paymentMethodId,
-      isRecurring: false,
-      notes: notes || undefined,
-    })
-
     // BNPL purchase split into a plan: an `installment` debt (remaining =
     // purchase − settlements) + a recurring template that drives the reminders.
-    // The purchase above already counts as spend once; installment settlements
-    // are non-spend (see recurringDebtDueHandlers / isBnplPlan).
+    // The purchase counts as spend once; installment settlements are non-spend
+    // (see recurringDebtDueHandlers / isBnplPlan).
+    //
+    // The debt is created BEFORE the expense so the purchase can point at it. That link is
+    // what stops net worth counting the purchase twice — once as cash and once as the debt
+    // it created — and it cannot be inferred from the payment method, because an unsplit
+    // BNPL purchase creates no debt at all.
+    let linkedDebtId: string | undefined
     const selPm = paymentMethods.find((m) => m.id === paymentMethodId)
     if (selPm?.type === 'bnpl' && splitInstallments && installmentCount >= 2 && fundingMethodId) {
       const perInstallment = Math.round((parsedAmount / installmentCount) * 100) / 100
@@ -190,7 +184,21 @@ export function useAddExpenseSheet() {
         nextDueDate: installmentFirstDue,
         isActive: true,
       })
+      linkedDebtId = debtId
     }
+
+    addExpense({
+      date,
+      description,
+      category,
+      subcategory,
+      amount: parsedAmount,
+      currency: cur,
+      paymentMethodId,
+      isRecurring: false,
+      notes: notes || undefined,
+      linkedDebtId,
+    })
 
     showToast(t.common.toastExpenseLogged)
     resetForm()

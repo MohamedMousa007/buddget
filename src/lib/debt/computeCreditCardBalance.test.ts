@@ -48,8 +48,16 @@ describe('computeCreditCardOutstanding', () => {
     ).toBe(0)
   })
 
-  it('excludes other non-spend movement on the card', () => {
-    expect(outstanding([charge({ amount: 1_000, category: 'ATM Cash Withdrawal' })])).toBe(0)
+  // Non-spend means "not consumption", NOT "not owed". A cash advance or a top-up put on
+  // the card is money genuinely owed the bank — excluding it lost the debt AND, since it
+  // is also excluded from spend, dropped it out of net worth altogether.
+  it.each(['ATM Cash Withdrawal', 'Top up', 'Currency Exchange', 'Transfer'] as const)(
+    'still owes a %s charged to the card', (category) => {
+      expect(outstanding([charge({ amount: 1_000, category })])).toBe(1_000)
+    })
+
+  it('excludes an Installment settlement — it pays a debt down, it is not a charge', () => {
+    expect(outstanding([charge({ amount: 500, category: 'Installment' })])).toBe(0)
   })
 
   it('subtracts payments and never goes negative', () => {

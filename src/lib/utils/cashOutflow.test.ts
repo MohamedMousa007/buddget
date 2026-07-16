@@ -38,6 +38,9 @@ const CARD_PM: PaymentMethod = {
 const BANK_PM: PaymentMethod = {
   id: 'pm_bank', name: 'HSBC ••0001', type: 'bank_account', currency: 'EGP', isDefault: true,
 }
+const BNPL_PM: PaymentMethod = {
+  id: 'pm_bnpl', name: 'Tabby', type: 'bnpl', currency: 'EGP', isDefault: false,
+}
 
 const debt = (over: Partial<Debt> = {}): Debt => ({
   id: 'debt_x', name: 'Debt', debtType: 'general', direction: 'i_owe', person: '',
@@ -132,18 +135,48 @@ describe('net worth — each event must move it exactly once', () => {
   })
 
   it('a 300 BNPL purchase moves net worth by −300, not −600', () => {
-    const bnplDebt = debt({ id: 'debt_bnpl', name: 'Tabby', debtType: 'installment', startingBalance: 300 })
+    // Mirrors what useAddExpenseSheet ACTUALLY writes at a split BNPL checkout: the
+    // purchase on the BNPL method, carrying linkedDebtId, plus an installment debt for the
+    // full amount. An earlier version of this test invented linkedDebtId on a row the real
+    // checkout never set it on, so it passed while BNPL still double-counted in production.
+    const bnplDebt = debt({
+      id: 'debt_bnpl', name: 'Tabby', debtType: 'installment', startingBalance: 300,
+      linkedPaymentMethodId: BNPL_PM.id,
+    })
     const nw = netWorthOf({
-      expenses: [expense({ amount: 300, amountInBaseCurrency: 300, linkedDebtId: 'debt_bnpl' })],
+      expenses: [expense({
+        amount: 300, amountInBaseCurrency: 300,
+        paymentMethodId: BNPL_PM.id, linkedDebtId: 'debt_bnpl',
+      })],
       debts: [bnplDebt],
     })
     expect(nw).toBe(BASELINE - 300)
   })
 
-  it('an UNSPLIT bnpl-ish purchase with no debt still counts — exclusion is gated on the debt, not the method', () => {
-    // Excluding by pm.type would erase this from net worth entirely: no debt exists to carry it.
-    expect(netWorthOf({ expenses: [expense({ amount: 300, amountInBaseCurrency: 300, linkedDebtId: undefined })] }))
-      .toBe(BASELINE - 300)
+  it('settling a BNPL installment nets to zero — cash out, debt down', () => {
+    const bnplDebt = debt({
+      id: 'debt_bnpl', name: 'Tabby', debtType: 'installment', startingBalance: 300,
+      linkedPaymentMethodId: BNPL_PM.id,
+    })
+    const purchase = expense({
+      amount: 300, amountInBaseCurrency: 300, paymentMethodId: BNPL_PM.id, linkedDebtId: 'debt_bnpl',
+    })
+    const settlement = expense({ amount: 100, amountInBaseCurrency: 100, category: 'Installment' })
+    const before = netWorthOf({ expenses: [purchase], debts: [bnplDebt] })
+    const after = netWorthOf({
+      expenses: [purchase, settlement],
+      debts: [bnplDebt],
+      debtPayments: [payment({ debtId: 'debt_bnpl', amountPaid: 100 })],
+    })
+    expect(after).toBe(before)
+  })
+
+  it('an UNSPLIT BNPL purchase still counts — no debt exists to carry it', () => {
+    // The reason the exclusion is gated on the LINK and not on pm.type: this purchase was
+    // not split, so no debt was created. Excluding it by method would erase it entirely.
+    expect(netWorthOf({
+      expenses: [expense({ amount: 300, amountInBaseCurrency: 300, paymentMethodId: BNPL_PM.id })],
+    })).toBe(BASELINE - 300)
   })
 
   it('card spend with NO linked debt still counts — nothing else would record it', () => {
