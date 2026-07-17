@@ -1,43 +1,29 @@
 import type { Goal, Currency, GoalCategory, GoalStatus } from '@/lib/store/types'
 import type { GoalRow, GoalInsert } from '@/lib/supabase/remote/types'
 
-/** Domain category list is wider than the DB enum; map + fallback. */
+/**
+ * The DB enum now carries all 16 categories (migration 0092), so this is 1:1 apart from
+ * three historical name differences (emergency_fund↔emergency, house↔home, custom↔other).
+ * The seven that used to collapse to 'other' — phone_device, family_support,
+ * sadaqah_charity, gift, investment, debt_freedom, quality_of_life — now round-trip intact.
+ */
+const TO_DB: Partial<Record<GoalCategory, GoalInsert['category']>> = {
+  emergency_fund: 'emergency',
+  house: 'home',
+  custom: 'other',
+}
+const FROM_DB: Partial<Record<string, GoalCategory>> = {
+  emergency: 'emergency_fund',
+  home: 'house',
+  other: 'custom',
+}
+
 function toDbCategory(c: GoalCategory): GoalInsert['category'] {
-  // DB enum: spending_control | emergency | vacation | home | car | education | wedding | retirement | other
-  const map: Record<GoalCategory, GoalInsert['category']> = {
-    emergency_fund: 'emergency',
-    house: 'home',
-    car: 'car',
-    vacation: 'vacation',
-    education: 'education',
-    wedding: 'wedding',
-    phone_device: 'other',
-    family_support: 'other',
-    sadaqah_charity: 'other',
-    gift: 'other',
-    investment: 'other',
-    debt_freedom: 'other',
-    quality_of_life: 'other',
-    spending_control: 'spending_control',
-    retirement: 'retirement',
-    custom: 'other',
-  }
-  return map[c] ?? 'other'
+  return TO_DB[c] ?? (c as GoalInsert['category'])
 }
 
 function fromDbCategory(c: GoalRow['category']): GoalCategory {
-  const map: Record<string, GoalCategory> = {
-    spending_control: 'spending_control',
-    emergency: 'emergency_fund',
-    vacation: 'vacation',
-    home: 'house',
-    car: 'car',
-    education: 'education',
-    wedding: 'wedding',
-    retirement: 'retirement',
-    other: 'custom',
-  }
-  return map[c] ?? 'custom'
+  return FROM_DB[c] ?? (c as GoalCategory)
 }
 
 function toDbStatus(s: GoalStatus): GoalInsert['status'] {

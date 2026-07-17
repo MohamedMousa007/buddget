@@ -452,4 +452,22 @@ describe('goal mapper', () => {
     expect(row.category).toBe('emergency')
     expect(goalFromRow({ ...row, updated_at: '' } as never).category).toBe('emergency_fund')
   })
+
+  // These seven used to collapse to 'other' on write and read back as 'custom', losing the
+  // category (and, for debt_freedom, its dedicated card UI) after one sync. Migration 0092
+  // added them to the enum; they must now survive the round-trip.
+  it.each([
+    'phone_device', 'family_support', 'sadaqah_charity', 'gift',
+    'investment', 'debt_freedom', 'quality_of_life',
+  ] as const)('preserves the %s category across a round-trip', (category) => {
+    const g: Goal = {
+      id: `g_${category}`, name: 'x', emoji: '🎯', category,
+      targetAmount: 1000, currency: 'AED', manualCurrentAmount: 0, targetDate: null,
+      linkedSavingsAccountIds: [], linkedDebtIds: [], monthlySpendingLimit: null,
+      priority: 0, status: 'active', monthlyContribution: null, notes: null,
+      createdAt: '2026-07-17T00:00:00.000Z', achievedAt: null,
+    }
+    expect(goalToRow(g, UID).category).toBe(category)
+    expect(roundTrip(g, goalToRow, goalFromRow).category).toBe(category)
+  })
 })

@@ -2232,6 +2232,13 @@ export type Database = {
         | "wedding"
         | "retirement"
         | "other"
+        | "phone_device"
+        | "family_support"
+        | "sadaqah_charity"
+        | "gift"
+        | "investment"
+        | "debt_freedom"
+        | "quality_of_life"
       goal_status: "active" | "paused" | "achieved"
       gold_karat: "18" | "21" | "22" | "24"
       income_event_status:
@@ -2487,6 +2494,13 @@ export const Constants = {
         "wedding",
         "retirement",
         "other",
+        "phone_device",
+        "family_support",
+        "sadaqah_charity",
+        "gift",
+        "investment",
+        "debt_freedom",
+        "quality_of_life",
       ],
       goal_status: ["active", "paused", "achieved"],
       gold_karat: ["18", "21", "22", "24"],
