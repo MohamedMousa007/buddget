@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { localTodayISO } from '@/lib/utils/localDate'
 
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -57,7 +58,7 @@ export function useSettingsPage() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `buddget-backup-${new Date().toISOString().slice(0, 10)}.json`
+    a.download = `buddget-backup-${localTodayISO()}.json`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -79,7 +80,7 @@ export function useSettingsPage() {
       .join('\n')
 
     const result = await downloadOrShareFile(
-      `buddget-expenses-${new Date().toISOString().slice(0, 10)}.csv`,
+      `buddget-expenses-${localTodayISO()}.csv`,
       headers + rows,
       'text/csv',
     )

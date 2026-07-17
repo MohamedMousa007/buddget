@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { localTodayISO } from '@/lib/utils/localDate'
 import { useShallow } from 'zustand/react/shallow'
 import { addMonths, subMonths, format, parse } from 'date-fns'
 import { ChevronLeft, ChevronRight, Link2 } from 'lucide-react'
@@ -27,7 +28,7 @@ import type { IncomeSource, IncomeSourceType } from '@/lib/store/types'
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 const MON_TITLE = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const REALIZED_EVENT = new Set(['confirmed', 'late', 'partial'])
-const todayISO = () => new Date().toISOString().slice(0, 10)
+const todayISO = () => localTodayISO()
 
 function fmtNum(n: number): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })

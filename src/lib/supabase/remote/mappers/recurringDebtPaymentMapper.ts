@@ -1,4 +1,5 @@
 import type { RecurringDebtPayment, Currency, DebtRecurringFrequency } from '@/lib/store/types'
+import { localTodayISO } from '@/lib/utils/localDate'
 import type { RecurringDebtPaymentRow, RecurringDebtPaymentInsert } from '@/lib/supabase/remote/types'
 import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
 
@@ -36,7 +37,7 @@ export function recurringDebtPaymentFromRow(row: RecurringDebtPaymentRow): Recur
     currency: row.currency as Currency,
     paymentMethodId: row.payment_method_id ?? '',
     frequency: row.frequency as DebtRecurringFrequency,
-    nextDueDate: row.next_due_date ?? new Date().toISOString().slice(0, 10),
+    nextDueDate: row.next_due_date ?? localTodayISO(),
     isActive: row.is_active,
     notes: row.notes ?? undefined,
     createdAt: row.created_at,

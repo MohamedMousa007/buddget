@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { localTodayISO } from '@/lib/utils/localDate'
 import { usePathname } from 'next/navigation'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore, type ExpensePrefill } from '@/lib/store/useSettingsStore'
@@ -179,7 +180,7 @@ export function useAIChat() {
 
       const d = forEdit.data as Record<string, unknown>
       const prefill: ExpensePrefill = {
-        date: String(getField(d, 'date') || new Date().toISOString().slice(0, 10)),
+        date: String(getField(d, 'date') || localTodayISO()),
         description: String(getField(d, 'description') || ''),
         amount: String(Number(getField(d, 'amount')) || ''),
         currency: String(getField(d, 'currency') || store.settings.baseCurrency),

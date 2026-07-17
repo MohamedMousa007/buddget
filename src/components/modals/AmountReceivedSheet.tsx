@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { localTodayISO } from '@/lib/utils/localDate'
 import { useShallow } from 'zustand/react/shallow'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { ModalShell } from '@/components/modals/ModalShell'
@@ -13,7 +14,7 @@ import { buildOccurrences, expectedPerPayday } from '@/lib/utils/incomeOccurrenc
 const MON_TITLE = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const fmtNum = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 const fmtDay = (iso: string) => `${MON_TITLE[Number(iso.slice(5, 7)) - 1]} ${Number(iso.slice(8, 10))}`
-const todayISO = () => new Date().toISOString().slice(0, 10)
+const todayISO = () => localTodayISO()
 
 /**
  * Amount-received sheet (handoff §4). Prefilled to the expected per-payday; the

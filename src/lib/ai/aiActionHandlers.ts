@@ -1,4 +1,5 @@
 import type { AIAction } from '@/lib/ai/gemini'
+import { localTodayISO } from '@/lib/utils/localDate'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import {
   calculateMonthlyIncome,
@@ -477,7 +478,7 @@ export function executeActionItem(
         ? 'Other'
         : requestedCat
     ctx.addExpense({
-      date: String(getField(d, 'date') || new Date().toISOString().slice(0, 10)),
+      date: String(getField(d, 'date') || localTodayISO()),
       description: String(getField(d, 'description') || 'Expense'),
       category,
       amount,
@@ -526,7 +527,7 @@ export function executeActionItem(
     if (!debt) return
     const rawCurrency = String(getField(d, 'currency') || ctx.settings.baseCurrency)
     const paymentCurrency = rawCurrency === 'XAU' ? ctx.settings.baseCurrency : rawCurrency
-    const dateStr = String(getField(d, 'date') || new Date().toISOString().slice(0, 10))
+    const dateStr = String(getField(d, 'date') || localTodayISO())
     const amountInBase = tryConvertCurrency(
       originalAmount,
       paymentCurrency,
@@ -673,7 +674,7 @@ export function executeActionItem(
     } else {
       // One-time → a confirmed event in the ledger.
       const recRaw = String(getField(d, 'receivedDate', 'received_date', 'date') || '')
-      const receivedDate = /^\d{4}-\d{2}-\d{2}$/.test(recRaw) ? recRaw : new Date().toISOString().slice(0, 10)
+      const receivedDate = /^\d{4}-\d{2}-\d{2}$/.test(recRaw) ? recRaw : localTodayISO()
       ctx.addIncomeEvent({
         name: String(getField(d, 'name') || 'Income'),
         amount,

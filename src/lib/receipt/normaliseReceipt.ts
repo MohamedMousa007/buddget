@@ -1,4 +1,5 @@
 import type { Currency, ExpenseCategory, ReceiptItem, ReceiptCharge } from '@/lib/store/types'
+import { localTodayISO } from '@/lib/utils/localDate'
 
 export interface ScannedReceipt {
   isReceipt: boolean
@@ -17,7 +18,7 @@ export interface ScannedReceipt {
 
 /** ISO date (YYYY-MM-DD) for today, local time. */
 function todayISO(): string {
-  return new Date().toISOString().slice(0, 10)
+  return localTodayISO()
 }
 
 export const SUPPORTED_CURRENCIES: Currency[] = [

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { localTodayISO } from '@/lib/utils/localDate'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -57,7 +58,7 @@ export function useRecurringDebtPaymentSheet() {
   const [amount, setAmount] = useState('')
   const [paymentCurrency, setPaymentCurrency] = useState<string>(settings.baseCurrency)
   const [frequency, setFrequency] = useState<DebtRecurringFrequency>('monthly')
-  const [nextDueDate, setNextDueDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [nextDueDate, setNextDueDate] = useState(() => localTodayISO())
   const [paymentMethodId, setPaymentMethodId] = useState(
     () => paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || ''
   )
@@ -81,7 +82,7 @@ export function useRecurringDebtPaymentSheet() {
     setAmount('')
     setPaymentCurrency(settings.baseCurrency)
     setFrequency('monthly')
-    setNextDueDate(new Date().toISOString().slice(0, 10))
+    setNextDueDate(localTodayISO())
     setPaymentMethodId(paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || '')
     setIsActive(true)
     setNotes('')

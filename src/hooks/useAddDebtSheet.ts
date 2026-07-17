@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { localTodayISO } from '@/lib/utils/localDate'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import {
@@ -84,7 +85,7 @@ export function useAddDebtSheet() {
     'weekly' | 'monthly' | 'quarterly' | 'annually'
   >('monthly')
   const [installmentStartDate, setInstallmentStartDate] = useState(() =>
-    new Date().toISOString().slice(0, 10)
+    localTodayISO()
   )
   const [interestFree, setInterestFree] = useState(true)
   const [ccLast4, setCcLast4] = useState('')
@@ -98,7 +99,7 @@ export function useAddDebtSheet() {
   const [selectedDebtId, setSelectedDebtId] = useState(debts[0]?.id || '')
   const [paymentAmount, setPaymentAmount] = useState('')
   const [paymentCurrency, setPaymentCurrency] = useState<string>(settings.baseCurrency)
-  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10))
+  const [paymentDate, setPaymentDate] = useState(localTodayISO())
   const [paymentNotes, setPaymentNotes] = useState('')
   const [paymentMethodId, setPaymentMethodId] = useState(
     () => paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || ''
@@ -243,11 +244,11 @@ export function useAddDebtSheet() {
     setInstallmentItemName('')
     setInstallmentCount('12')
     setInstallmentFrequency('monthly')
-    setInstallmentStartDate(new Date().toISOString().slice(0, 10))
+    setInstallmentStartDate(localTodayISO())
     setInterestFree(true)
     setPaymentAmount('')
     setPaymentCurrency(settings.baseCurrency)
-    setPaymentDate(new Date().toISOString().slice(0, 10))
+    setPaymentDate(localTodayISO())
     setPaymentNotes('')
     setPaymentRateError('')
     setPaymentScheduleMode('one_time')

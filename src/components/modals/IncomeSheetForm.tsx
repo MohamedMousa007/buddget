@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { localTodayISO } from '@/lib/utils/localDate'
 import { useShallow } from 'zustand/react/shallow'
 import { X, Repeat, CalendarDays, ChevronDown, Link2, Trash2 } from 'lucide-react'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
@@ -75,7 +76,7 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
   const [sourceType, setSourceType] = useState<IncomeSourceType>(source?.sourceType ?? 'salary')
   const [frequency, setFrequency] = useState<IncomeRecurringFrequency>(source?.recurringFrequency ?? 'monthly')
   const [paydays, setPaydays] = useState<number[]>(seedPaydays)
-  const [receivedDate, setReceivedDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [receivedDate, setReceivedDate] = useState(() => localTodayISO())
   const [assigned, setAssigned] = useState<{ templateId: string; date: string } | null>(null)
   const [paymentMethodId, setPaymentMethodId] = useState(source?.paymentMethodId ?? defaultPmId)
   const [notes, setNotes] = useState(source?.notes ?? '')
@@ -91,7 +92,7 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
     if (!edit && open && !prevIsOpen.current) {
       setCurrency(settings.baseCurrency)
       setPaymentMethodId(defaultPmId)
-      setReceivedDate(new Date().toISOString().slice(0, 10))
+      setReceivedDate(localTodayISO())
       setPaydays([new Date().getDate()])
       setAssigned(null)
     }
@@ -107,7 +108,7 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
     setSourceType('salary')
     setFrequency('monthly')
     setPaydays([new Date().getDate()])
-    setReceivedDate(new Date().toISOString().slice(0, 10))
+    setReceivedDate(localTodayISO())
     setAssigned(null)
     setPaymentMethodId(defaultPmId)
     setNotes('')

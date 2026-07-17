@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { localTodayISO } from '@/lib/utils/localDate'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { computeCreditCardOutstanding } from '@/lib/debt/computeCreditCardBalance'
@@ -50,7 +51,7 @@ export function useAddExpenseSheet() {
   const isOpen = activeModal === 'addExpense'
   const { categoryChipOptions, defaultCategory } = usePlanCategories()
 
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
+  const [date, setDate] = useState(localTodayISO())
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
   const [currency, setCurrency] = useState<Currency>(settings.baseCurrency)
@@ -115,7 +116,7 @@ export function useAddExpenseSheet() {
   }, [isOpen, expensePrefill, settings.baseCurrency])
 
   const resetForm = useCallback(() => {
-    setDate(new Date().toISOString().slice(0, 10))
+    setDate(localTodayISO())
     setDescription('')
     setAmount('')
     setCurrency(settings.baseCurrency)

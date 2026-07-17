@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { localTodayISO } from '@/lib/utils/localDate'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { convertCurrency, tryConvertCurrency } from '@/lib/utils/currency'
 import { DEFAULT_CASH_ID } from './migrations/v17_uuid_remap'
@@ -263,7 +264,7 @@ export const useFinanceStore = create<FinanceStore>()(
             {
               ...source,
               sourceType: source.sourceType ?? 'other',
-              effectiveStart: source.effectiveStart ?? new Date().toISOString().slice(0, 10),
+              effectiveStart: source.effectiveStart ?? localTodayISO(),
               id: generateId(),
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
@@ -401,7 +402,7 @@ export const useFinanceStore = create<FinanceStore>()(
                 type: 'deposit',
                 amount: back,
                 currency: acc.currency,
-                date: new Date().toISOString().slice(0, 10),
+                date: localTodayISO(),
                 notes: `Reversed: ${event.name}`,
               }
               const nextState: FinanceStore = {
@@ -626,7 +627,7 @@ export const useFinanceStore = create<FinanceStore>()(
               ? {
                   ...d,
                   status: 'cleared',
-                  clearedAt: clearedAtIsoDate ?? new Date().toISOString().slice(0, 10),
+                  clearedAt: clearedAtIsoDate ?? localTodayISO(),
                 }
               : d
           ),
@@ -1193,7 +1194,7 @@ export const useFinanceStore = create<FinanceStore>()(
         const { openingBalance: openingField, ...rest } = input
         const openingBalance = Math.max(0, Number(openingField) || 0)
         const id = generateId()
-        const today = new Date().toISOString().slice(0, 10)
+        const today = localTodayISO()
         set((state) => {
           const row: SavingsAccount = {
             ...rest,
@@ -1295,7 +1296,7 @@ export const useFinanceStore = create<FinanceStore>()(
             type: 'deposit',
             amount: amt,
             currency: acc.currency,
-            date: new Date().toISOString().slice(0, 10),
+            date: localTodayISO(),
             notes,
             source: opts?.source,
             isAutoSave: opts?.isAutoSave,
@@ -1332,7 +1333,7 @@ export const useFinanceStore = create<FinanceStore>()(
             type: 'withdrawal',
             amount: amt,
             currency: acc.currency,
-            date: new Date().toISOString().slice(0, 10),
+            date: localTodayISO(),
             notes,
           }
           const isInvestment = acc.category === 'investment'
@@ -1380,7 +1381,7 @@ export const useFinanceStore = create<FinanceStore>()(
             type,
             amount: Math.abs(diff),
             currency: acc.currency,
-            date: new Date().toISOString().slice(0, 10),
+            date: localTodayISO(),
             notes: notes?.trim() || 'Manual balance correction',
             // A revaluation (e.g. investment gains), not cash — netting it out of
             // monthlyFlow would cancel the gain. `type` still carries the direction.

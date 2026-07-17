@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { localTodayISO } from '@/lib/utils/localDate'
 import type {
   Currency,
   PaymentMethod,
@@ -215,7 +216,7 @@ export function buildSystemPrompt(
     savingsAccounts,
     goals,
   )
-  const today = new Date().toISOString().slice(0, 10)
+  const today = localTodayISO()
 
   const live = liveDataBlock
     ? `\n\nLIVE_APP_DATA (for action "query" you MUST use these exact numbers; do not invent totals):\n${liveDataBlock}\n`
@@ -353,7 +354,7 @@ export function buildVoiceExtractPrompt(
     savingsAccounts,
     [],
   )
-  const today = new Date().toISOString().slice(0, 10)
+  const today = localTodayISO()
 
   return `You are Buddgy's quick-entry voice parser. Turn the user's spoken words into NEW transaction entries as JSON. You ONLY create entries.
 

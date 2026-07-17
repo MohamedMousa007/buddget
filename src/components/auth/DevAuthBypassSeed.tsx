@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { localTodayISO } from '@/lib/utils/localDate'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 
@@ -21,7 +22,7 @@ export function DevAuthBypassSeed() {
     if (st.incomeSources.length === 0) {
       st.addIncomeSource({ name: 'Salary · Nexta', amount: 42000, currency: 'EGP', isRecurring: true, recurringFrequency: 'monthly', dayOfMonth: 5, sourceType: 'salary' })
       st.addIncomeSource({ name: 'Upwork', amount: 6000, currency: 'EGP', isRecurring: true, recurringFrequency: 'biweekly', dayOfMonth: 3, sourceType: 'side_hustle' })
-      st.addIncomeEvent({ name: 'Refund · Amazon', amount: 8240, currency: 'EGP', sourceType: 'refund', receivedDate: new Date().toISOString().slice(0, 10), status: 'confirmed' })
+      st.addIncomeEvent({ name: 'Refund · Amazon', amount: 8240, currency: 'EGP', sourceType: 'refund', receivedDate: localTodayISO(), status: 'confirmed' })
     }
   }, [])
   return null

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { localTodayISO } from '@/lib/utils/localDate'
 import { Camera, Check, X, ScanLine, ReceiptText, RefreshCcw, Images, ImageOff } from 'lucide-react'
 import Image from 'next/image'
 import { useShallow } from 'zustand/react/shallow'
@@ -219,7 +220,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
     if (!result) return
     const defaultPm = paymentMethods.find((pm) => pm.isDefault) ?? paymentMethods[0]
     const paymentMethodId = defaultPm?.id ?? ''
-    const date = result.date || new Date().toISOString().slice(0, 10)
+    const date = result.date || localTodayISO()
 
     // When the scan produced a breakdown, persist it as one receipt row and link
     // the single total expense to it. No breakdown → behave exactly as before.

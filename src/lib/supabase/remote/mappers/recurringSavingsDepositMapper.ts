@@ -1,4 +1,5 @@
 import type { RecurringSavingsDeposit, Currency } from '@/lib/store/types'
+import { localTodayISO } from '@/lib/utils/localDate'
 import type { RecurringSavingsDepositRow, RecurringSavingsDepositInsert } from '@/lib/supabase/remote/types'
 
 export function recurringSavingsDepositToRow(
@@ -30,7 +31,7 @@ export function recurringSavingsDepositFromRow(
     currency: row.currency as Currency,
     frequency: 'monthly',
     dayOfMonth: row.day_of_month ?? 1,
-    nextDueDate: row.next_due_date ?? new Date().toISOString().slice(0, 10),
+    nextDueDate: row.next_due_date ?? localTodayISO(),
     isActive: row.is_active,
     notes: row.notes ?? undefined,
     createdAt: row.created_at,

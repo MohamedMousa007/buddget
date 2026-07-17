@@ -3,6 +3,7 @@
  * Used by both /api/sms/parse (auto-add) and /api/sms/confirm (user confirm).
  */
 import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js'
+import { localTodayISO } from '@/lib/utils/localDate'
 import type { ExpenseCategory } from '@/lib/store/types'
 import {
   PAYMENT_BRANDS,
@@ -218,7 +219,7 @@ export async function createSmsExpense(
         amount: row.amount,
         currency: row.currency,
         source_type: sourceType,
-        received_date: row.day || new Date().toISOString().slice(0, 10),
+        received_date: row.day || localTodayISO(),
         status: 'confirmed',
         sms_log_id: row.logId ?? null,
         notes: null,

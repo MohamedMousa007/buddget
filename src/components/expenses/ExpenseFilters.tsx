@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
+import { localTodayISO } from '@/lib/utils/localDate'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useScrollLock } from '@/lib/ui/scrollLock'
 import {
@@ -131,7 +132,7 @@ function PeriodControl() {
     custom: t.expenses.periodCustom,
   }
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = localTodayISO()
   const from = range.from ?? today
   const to = range.to ?? today
 
