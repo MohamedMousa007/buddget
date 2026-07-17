@@ -14,7 +14,7 @@ import { currencyFlag, currencyName } from '@/lib/constants/currencyMeta'
 import {
   PAYMENT_TYPE_META, SETUP_TYPES, PAYMENT_BRANDS, QUICK_ADD, QUICK_ADD_BLEND, CARD_COLORS,
   allowsLast4, providerInitials, composePaymentMethodName, decomposePaymentMethodName,
-  resolvePaymentBrandKey,
+  resolvePaymentBrandKey, prefillPaymentType,
 } from '@/lib/payment/paymentMethodDefaults'
 import { cn } from '@/lib/utils'
 import type { PmPrefill } from '@/lib/store/useSettingsStore'
@@ -88,7 +88,8 @@ export function PaymentMethodSetupSheet({
         // default (QNB's brand type is bank_account).
         const pfBrandId = prefill?.name ? resolvePaymentBrandKey(prefill.name) : null
         const pfBrand = pfBrandId ? PAYMENT_BRANDS[pfBrandId] : null
-        const pfType = prefill?.type ?? pfBrand?.type ?? 'bank_account'
+        // ...except for a wallet brand — see prefillPaymentType.
+        const pfType = prefillPaymentType(prefill?.type, pfBrand)
         setBrandId(pfBrandId); setProviderName(pfBrand?.name ?? prefill?.name ?? '')
         setType(pfType)
         setLast4(prefill?.last4 ?? ''); setTag('')

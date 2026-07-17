@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { pickProvider } from '../usePaymentMethodDetector'
 import { GENERIC_BANK_PATTERNS } from '@/lib/sms/patterns/genericBank'
+import { PAYMENT_BRANDS, prefillPaymentType } from '@/lib/payment/paymentMethodDefaults'
 
 describe('pickProvider', () => {
   it('prefers a catalogue-resolvable sender over the parsed bank name', () => {
@@ -34,5 +35,35 @@ describe('pickProvider', () => {
 
   it('passes through an unrecognised provider unchanged', () => {
     expect(pickProvider('SOME BANK', 'Bank')).toBe('SOME BANK')
+  })
+})
+
+/**
+ * What the detected-account banner offers as the TYPE. The SMS is normally the more
+ * specific signal, but a wallet brand is the exception — Barq's spend SMS says "Mada card"
+ * (the card its wallet issued), which the SMS rules read as debit. Accepting that would
+ * register Barq as a debit_card and silently disable every wallet behaviour, since they all
+ * gate on type === 'wallet'.
+ */
+describe('prefillPaymentType', () => {
+  const wallet = PAYMENT_BRANDS.barq
+  const bank = PAYMENT_BRANDS.qnbeg
+
+  it('a wallet brand stays a wallet, whatever card its SMS names', () => {
+    expect(prefillPaymentType('debit_card', wallet)).toBe('wallet')
+  })
+
+  it("the SMS still wins for a bank — it names the actual instrument", () => {
+    // QNB's brand type is bank_account, but this message is about a debit card.
+    expect(prefillPaymentType('debit_card', bank)).toBe('debit_card')
+  })
+
+  it('falls back to the brand when the SMS implies nothing', () => {
+    expect(prefillPaymentType(null, bank)).toBe('bank_account')
+    expect(prefillPaymentType(null, wallet)).toBe('wallet')
+  })
+
+  it('falls back to bank_account when neither knows', () => {
+    expect(prefillPaymentType(null, null)).toBe('bank_account')
   })
 })

@@ -309,6 +309,27 @@ export function isPassThroughBrand(text: string | null | undefined): boolean {
   return key ? PAYMENT_BRANDS[key].passThrough === true : false
 }
 
+/**
+ * The type a detected account should prefill as, given what the SMS implied and which
+ * brand it resolved to.
+ *
+ * The SMS normally wins: a bank issues many instrument types, so "Debit Card" in the body
+ * is more specific than QNB's brand default of bank_account.
+ *
+ * A WALLET brand is the exception — it IS a wallet, whatever card it prints. Barq's SMS
+ * says "Mada card" because that is the card its wallet issued, not because the account is
+ * a debit card, and the SMS rules read that as debit. A wallet is one balance, so there the
+ * brand is the more specific signal. Getting this backwards silently disables every wallet
+ * behaviour, which all gate on type === 'wallet'.
+ */
+export function prefillPaymentType(
+  smsType: PaymentMethodType | null | undefined,
+  brand: Pick<PaymentBrand, 'type'> | null | undefined,
+): PaymentMethodType {
+  if (brand?.type === 'wallet') return brand.type
+  return smsType ?? brand?.type ?? 'bank_account'
+}
+
 export const QUICK_ADD: Record<'EG' | 'SA' | 'AE', string[]> = {
   EG: ['instapay', 'vodafone', 'nbe', 'cib', 'meeza', 'valu', 'fawry', 'telda'],
   SA: ['mada', 'stcpay', 'urpay', 'alrajhi', 'tabby', 'tamara', 'applepay'],
