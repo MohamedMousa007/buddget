@@ -32,7 +32,11 @@ type Step = {
 };
 
 // ── step data (DO NOT reinterpret — these coordinates are hand-tuned) ───────
-const STEPS: Step[] = [
+// PARALLEL to the `steps` copy array in the dictionaries — index N here pairs with index N
+// there. Adding copy without adding an entry silently shifts every screenshot after it and
+// makes the last step unreachable (`total` comes from THIS array). smsGuideSteps.test.ts
+// pins the lengths together.
+export const STEPS: Step[] = [
   { img: '01.jpg', r: { x: 50, y: 96.3, w: 24, h: 4.2 }, a: { x: 50, y: 93.6, dir: 'down' } },
   { img: '02.jpg', r: { x: 50, y: 60.7, w: 42, h: 5 }, a: { x: 50, y: 57.6, dir: 'down' } },
   { img: '03.jpg', r: { x: 34, y: 88, w: 56, h: 5 }, a: { x: 34, y: 85, dir: 'down' } },
@@ -46,6 +50,9 @@ const STEPS: Step[] = [
   { img: '10.jpg', r: { x: 44, y: 33, w: 40, h: 4.6 }, a: { x: 44, y: 30, dir: 'down' } },
   { img: '11.jpg', r: { x: 17, y: 63, w: 30, h: 3.8 }, a: { x: 17, y: 60, dir: 'down' } },
   { img: '12.jpg', r: { x: 49, y: 34.5, w: 36, h: 3.8 }, a: { x: 49, y: 31.5, dir: 'down' } },
+  // Reuses 11.jpg: it is the same action screen, and the Sender chip is already visible on
+  // it. Replace with a dedicated shot (Bank Message filled, Sender focused) when we have one.
+  { img: '11.jpg', r: { x: 16, y: 38.3, w: 22, h: 3.6 }, a: { x: 16, y: 35.3, dir: 'down' } },
   { img: '13.jpg', r: { x: 91, y: 6.5, w: 16, h: 3.6 }, a: { x: 88, y: 9, dir: 'up' } },
   { img: '14.jpg', r: null, a: null, done: true },
 ];
