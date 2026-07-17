@@ -84,7 +84,12 @@ export function AmountReceivedSheet() {
       : undefined)
   const isEdit = Boolean(targetEventId)
   // Re-marking a settled payday with the same amount is a no-op — keep the CTA dimmed.
-  const unchanged = isEdit && valid && !!current && amt === current.amount
+  // But a MISSED payday is not settled: receiving it flips status missed → confirmed even
+  // at the same amount (markPaydayMissed stores the full expected amount), so it must never
+  // count as unchanged — otherwise the only way to enable Save is to enter a *different*,
+  // necessarily partial, amount, and the full amount can never be received.
+  const unchanged =
+    isEdit && valid && !!current && amt === current.amount && current.status !== 'missed'
   const blocked = !!current && !current.actionable && !isEdit
   const savingRef = useRef(false)
 
