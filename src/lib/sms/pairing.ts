@@ -11,9 +11,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { SmsExpenseKind } from './createSmsExpense'
 import {
+  PAYMENT_BRANDS,
   decomposePaymentMethodName,
   isPassThroughBrand,
   normalizeBrandToken,
+  resolvePaymentBrandKey,
 } from '@/lib/payment/paymentMethodDefaults'
 
 const PAIR_WINDOW_SECONDS = 300
@@ -41,74 +43,130 @@ export async function isOwnAccountTransfer(
 }
 
 /**
- * The user's own wallets that actually hold a balance, by provider name.
- *
- * Wallets carry no last4 (PAYMENT_TYPE_META.wallet.allowsLast4 is false), so the
- * counterparty-last4 join above can never identify one — the NAME is the only handle
- * an SMS gives us. Two filters keep that handle honest:
- *  - pass-through brands are dropped: Apple Pay and InstaPay are `type: 'wallet'` and
- *    sit in the SA/AE/EG quick-add lists, but they hold no balance, so "topping one up"
- *    is not a thing and treating a payment through one as a transfer would erase it.
- *  - the " · tag" suffix is stripped, so "Barq · Personal" still matches as "Barq".
+ * Explicit "money is being loaded" wording, EN + AR. Only consulted for brands you can
+ * also buy from (see {@link AlsoMerchantBrand}) — a tank of fuel and a card reload both
+ * come from ADNOC, and only this tells them apart. Deliberately excludes a bare "load",
+ * which shows up in unrelated wording too often to be a signal.
  */
-async function ownStoredValueWallets(
-  service: SupabaseClient,
-  userId: string,
-): Promise<string[]> {
-  const { data } = await service
-    .from('payment_methods')
-    .select('name')
-    .eq('user_id', userId)
-    .eq('type', 'wallet')
-    .is('deleted_at', null)
-  return (data ?? [])
-    .map((w) => decomposePaymentMethodName((w.name as string | null)?.trim() ?? '').provider)
-    .filter((p) => p.length >= 3 && !isPassThroughBrand(p))
+const TOP_UP_WORDING = /\btop[\s-]?up\b|\btopup\b|\breload\b|\brecharge\b|شحن|تعبئة/i
+
+interface StoredValueMethod {
+  provider: string
+  alsoMerchant: boolean
 }
 
 /**
- * True when `merchant` IS one of the user's own stored-value wallets — the card leg
- * of a top-up.
+ * The user's own methods that actually HOLD a balance — wallets and prepaid cards.
  *
- * Compares the WHOLE merchant string, never a substring, and never via brand aliases.
- * Several wallet brands are also merchants you can genuinely buy from: a Careem ride vs
- * the Careem Pay wallet, fuel at ADNOC, a shop called "Lucky", a Fawry kiosk. Loose
- * matching would reclassify those purchases as transfers and silently erase real spend.
- * Exact matching fails safe instead — an unrecognised top-up stays spend, which is only
- * the status quo. Nobody buys FROM their own wallet, so an exact hit is unambiguous.
+ * These are the only things that can be topped up, and the only ones whose top-up needs
+ * name matching at all: a bank or card leg is identified by last4 via
+ * {@link isOwnAccountTransfer}. A wallet may have no card, so the NAME is often the only
+ * handle an SMS gives us. Three filters keep that handle honest:
+ *  - pass-through brands are dropped: Apple Pay and InstaPay are `type: 'wallet'` and sit
+ *    in the SA/AE/EG quick-add lists, but hold no balance, so "topping one up" is not a
+ *    thing and treating a payment through one as a transfer would erase real spend.
+ *  - the " · tag" and " ••1234" suffixes are stripped, so "Barq · Personal" and
+ *    "Telda ••1234" still match as "Barq" / "Telda". Wallets carry a last4 now, because a
+ *    wallet's card is part of the wallet — so the last4 form is normal, not an edge case.
+ *  - names under 3 chars are too generic to match safely.
  */
-export async function isOwnWalletMerchant(
+async function ownStoredValueMethods(
+  service: SupabaseClient,
+  userId: string,
+): Promise<StoredValueMethod[]> {
+  const { data } = await service
+    .from('payment_methods')
+    .select('name, last4')
+    .eq('user_id', userId)
+    .in('type', ['wallet', 'prepaid_card'])
+    .is('deleted_at', null)
+  return (data ?? [])
+    .map((m) => {
+      const raw = (m.name as string | null)?.trim() ?? ''
+      const provider = decomposePaymentMethodName(raw, (m.last4 as string | null) ?? undefined).provider
+      const brandId = resolvePaymentBrandKey(provider)
+      return {
+        provider,
+        alsoMerchant: brandId ? PAYMENT_BRANDS[brandId].alsoMerchant === true : false,
+        passThrough: isPassThroughBrand(provider),
+      }
+    })
+    .filter((m) => m.provider.length >= 3 && !m.passThrough)
+}
+
+/**
+ * True when `merchant` IS one of the user's own stored-value methods — i.e. this leg is
+ * the funding side of a top-up rather than a purchase.
+ *
+ * Compares the WHOLE merchant string, never a substring and never via brand aliases:
+ * `careem` is a catalogue alias of the Careem Pay wallet, so alias matching would turn
+ * every ride into a transfer, and substring matching would do the same to a shop called
+ * "Lucky Market". Exact matching fails safe — an unrecognised top-up just stays spend,
+ * which is only the status quo.
+ *
+ * For a brand you can also buy FROM, an exact merchant hit is still ambiguous (fuel at
+ * ADNOC vs reloading the ADNOC card), so those additionally require {@link TOP_UP_WORDING}.
+ * For everything else the hit is unambiguous: nobody buys goods from their own wallet.
+ */
+export async function isOwnTopUpTarget(
   service: SupabaseClient,
   userId: string,
   merchant: string | null,
+  body: string | null,
 ): Promise<boolean> {
   if (!merchant) return false
   const norm = normalizeBrandToken(merchant)
   if (!norm) return false
-  const wallets = await ownStoredValueWallets(service, userId)
-  return wallets.some((p) => normalizeBrandToken(p) === norm)
+  const hit = (await ownStoredValueMethods(service, userId)).find(
+    (m) => normalizeBrandToken(m.provider) === norm,
+  )
+  if (!hit) return false
+  return hit.alsoMerchant ? TOP_UP_WORDING.test(body ?? '') : true
 }
 
 /**
- * True when `text` mentions one of the user's own stored-value wallets — the wallet's
- * own credit SMS ("Money Added to your Barq wallet").
+ * True when `text` mentions one of the user's own stored-value methods — the wallet's own
+ * SMS ("Money Added to your Barq wallet", "Withdrawal from your Barq wallet").
  *
  * Word-boundary rather than exact, because here the name sits inside a sentence ("Barq"
- * must not fire on "Barqawi"). Safe to be lenient where {@link isOwnWalletMerchant} is
- * not: the caller only treats this leg as a transfer once a funding sibling proves the
- * pair, and otherwise books it as income.
+ * must not fire on "Barqawi"). Safe to be lenient where {@link isOwnTopUpTarget} is not:
+ * the caller treats this leg as a transfer only once a sibling proves the pair, and
+ * otherwise books it as income or a remittance exactly as before.
  */
-export async function namesOwnWallet(
+export async function namesOwnStoredValue(
   service: SupabaseClient,
   userId: string,
   text: string | null,
 ): Promise<boolean> {
   if (!text) return false
-  const wallets = await ownStoredValueWallets(service, userId)
-  return wallets.some((p) => {
-    const escaped = p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const methods = await ownStoredValueMethods(service, userId)
+  return methods.some((m) => {
+    const escaped = m.provider.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     return new RegExp(`(^|\\W)${escaped}(\\W|$)`, 'i').test(text)
   })
+}
+
+/**
+ * Retags a sibling's expense as a non-spend Transfer.
+ *
+ * Needed because the FIRST leg of a two-leg movement must commit before it can know: a
+ * wallet debit is booked `Remittance` (spend) on the assumption it went to a real person,
+ * which is the safe guess — most do. When the matching credit into the user's OWN account
+ * lands, that guess is disproved, and the surviving row would otherwise count a withdrawal
+ * to your own bank as spending.
+ *
+ * Scoped to the caller's `instant_transfer_out` case on purpose: an FX sibling must stay
+ * `Currency Exchange`, and a `cc_payoff` sibling must stay a payoff.
+ */
+export async function retagSiblingAsTransfer(
+  service: SupabaseClient,
+  sibling: PairSibling,
+): Promise<void> {
+  if (!sibling.siblingExpenseId) return
+  await service
+    .from('expenses')
+    .update({ category: 'Transfer' })
+    .eq('id', sibling.siblingExpenseId)
 }
 
 export interface PairSibling {

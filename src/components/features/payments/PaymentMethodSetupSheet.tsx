@@ -108,7 +108,10 @@ export function PaymentMethodSetupSheet({
     const cur: Currency = id === 'nol' ? 'AED'
       : b.country === 'SA' ? 'SAR' : b.country === 'AE' ? 'AED' : b.country === 'EG' ? 'EGP' : curCode
     setBrandId(id); setProviderName(b.name); setType(b.type)
-    setDisc(allowsLast4(b.type) ? (b.type === 'prepaid_card' ? 'none' : 'last4') : 'none')
+    // Stored-value types keep the last4 field available but do not default to it: a
+    // prepaid card may be unnumbered, and only some wallets issue a card at all.
+    const storedValue = b.type === 'prepaid_card' || b.type === 'wallet'
+    setDisc(allowsLast4(b.type) && !storedValue ? 'last4' : 'none')
     setCardColor(null); setCurCode(cur); setProviderSheetOpen(false)
   }
   const pickType = (v: PaymentMethodType) => {

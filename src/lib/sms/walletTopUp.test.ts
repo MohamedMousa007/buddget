@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { namesOwnWallet, isOwnWalletMerchant } from './pairing'
+import { namesOwnStoredValue, isOwnTopUpTarget } from './pairing'
 import { createSmsTransaction } from './dispatch'
 import type { SmsRowData } from './createSmsExpense'
 
@@ -52,6 +52,7 @@ function makeService(state: FakeState) {
       select: () => chain,
       eq: (_c?: string, _v?: unknown) => chain,
       neq: () => chain,
+      in: () => chain,
       is: () => chain,
       not: () => chain,
       gte: () => chain,
@@ -89,10 +90,10 @@ function makeService(state: FakeState) {
           return id
         },
         (patch, id) => {
-          if (patch.deleted_at) {
-            const e = state.expenses.find((x) => x.id === id)
-            if (e) e.deleted = true
-          }
+          const e = state.expenses.find((x) => x.id === id)
+          if (!e) return
+          if (patch.deleted_at) e.deleted = true
+          if (typeof patch.category === 'string') e.category = patch.category
         },
       )
     // income_events is where a one-time SMS income actually lands, and what
@@ -215,69 +216,160 @@ describe('own-wallet top-up — end state, both arrival orders', () => {
   })
 })
 
+/**
+ * Cashing out to your own bank is not spending. The wallet's debit leg has to commit
+ * before it can know — `instant_transfer_out` books `Remittance` (spend), the right guess
+ * for the common case of sending a person money. The bank credit disproves it.
+ */
+const WALLET_DEBIT = 'Withdrawal of 2.00 SAR from your Barq wallet to your bank account'
+const BANK_CREDIT = 'Your account has been credited with 2.00 SAR from BARQ'
+
+const walletDebitLeg = (): SmsRowData =>
+  leg({ kind: 'instant_transfer_out', merchant: null, rawBody: WALLET_DEBIT, last4: null, logId: 'log-wallet-out' })
+const bankCreditLeg = (): SmsRowData =>
+  leg({ kind: 'income', merchant: 'BARQ', rawBody: BANK_CREDIT, last4: '1313', logId: 'log-bank-in' })
+
+describe('wallet cash-out — both arrival orders', () => {
+  it('wallet debit first → the provisional Remittance is retagged, not left as spend', async () => {
+    const svc = makeService(state)
+
+    const a = await createSmsTransaction(svc, walletDebitLeg(), opts)
+    expect(a.kind).toBe('instant_transfer_out') // pairable, and still spend for now
+    expect(state.expenses[0].category).toBe('Remittance')
+    persist(state, 'log-wallet-out', a)
+
+    const b = await createSmsTransaction(svc, bankCreditLeg(), opts)
+    expect(b.outcome).toBe('transfer_paired')
+
+    const live = state.expenses.filter((e) => !e.deleted)
+    expect(live).toHaveLength(1)
+    expect(live[0].category).toBe('Transfer') // retagged — a cash-out is not spending
+    expect(state.incomes.filter((i) => !i.deleted)).toHaveLength(0)
+  })
+
+  it('bank credit first → one non-spend Transfer, no phantom income', async () => {
+    const svc = makeService(state)
+
+    const a = await createSmsTransaction(svc, bankCreditLeg(), opts)
+    expect(a.outcome).toBe('income') // provisional — nothing proves it is internal yet
+    persist(state, 'log-bank-in', a)
+
+    const b = await createSmsTransaction(svc, walletDebitLeg(), opts)
+    expect(b.outcome).toBe('transfer_paired')
+
+    const live = state.expenses.filter((e) => !e.deleted)
+    expect(live).toHaveLength(1)
+    expect(live[0].category).toBe('Transfer')
+    expect(state.incomes.filter((i) => !i.deleted)).toHaveLength(0)
+  })
+
+  it('sending money to a person from the wallet stays a Remittance', async () => {
+    const svc = makeService(state)
+    const res = await createSmsTransaction(
+      svc,
+      leg({ kind: 'instant_transfer_out', merchant: null, logId: 'log-x', last4: null,
+            rawBody: 'You sent 2.00 SAR from your Barq wallet to Ahmed' }),
+      opts,
+    )
+    expect(res.outcome).toBe('expense')
+    const live = state.expenses.filter((e) => !e.deleted)
+    expect(live).toHaveLength(1)
+    expect(live[0].category).toBe('Remittance') // no sibling credit — real money left
+  })
+})
+
 // ── Matchers ────────────────────────────────────────────────────────────────────
-function stub(wallets: Array<{ name: string }>): SupabaseClient {
+function stub(methods: Array<{ name: string; last4?: string }>): SupabaseClient {
   const chain: Record<string, unknown> = {
     select: () => chain,
     eq: () => chain,
-    is: () => Promise.resolve({ data: wallets }),
+    in: () => chain,
+    is: () => Promise.resolve({ data: methods }),
   }
   return { from: () => chain } as unknown as SupabaseClient
 }
 
-describe('isOwnWalletMerchant — strict, because a wallet brand can also be a merchant', () => {
+describe('isOwnTopUpTarget — strict, because a payment brand can also be a merchant', () => {
   it('matches the funding leg whose merchant IS the wallet', async () => {
-    expect(await isOwnWalletMerchant(stub([{ name: 'Barq' }]), 'u1', 'barq')).toBe(true)
+    expect(await isOwnTopUpTarget(stub([{ name: 'Barq' }]), 'u1', 'barq', 'anything')).toBe(true)
   })
 
   it('still matches when the user tagged the method', async () => {
-    expect(await isOwnWalletMerchant(stub([{ name: 'Barq · Personal' }]), 'u1', 'barq')).toBe(true)
+    expect(await isOwnTopUpTarget(stub([{ name: 'Barq · Personal' }]), 'u1', 'barq', '')).toBe(true)
+  })
+
+  it("still matches a wallet that issues a card, whose name carries the card's last4", async () => {
+    // A wallet's card is part of the wallet, so "Telda ••1234" is a normal shape now.
+    expect(await isOwnTopUpTarget(stub([{ name: 'Telda ••1234', last4: '1234' }]), 'u1', 'Telda', '')).toBe(true)
   })
 
   it('does not turn a Careem ride into a transfer', async () => {
     // 'careem' is a catalogue alias of the Careem Pay wallet; alias matching here would
     // erase every ride from spend.
-    expect(await isOwnWalletMerchant(stub([{ name: 'Careem Pay' }]), 'u1', 'Careem')).toBe(false)
+    expect(await isOwnTopUpTarget(stub([{ name: 'Careem Pay' }]), 'u1', 'Careem', '')).toBe(false)
   })
 
   it('does not turn a shop whose name contains the wallet into a transfer', async () => {
-    expect(await isOwnWalletMerchant(stub([{ name: 'Lucky' }]), 'u1', 'Lucky Market')).toBe(false)
+    expect(await isOwnTopUpTarget(stub([{ name: 'Lucky' }]), 'u1', 'Lucky Market', '')).toBe(false)
   })
 
   it('ignores pass-through rails, which hold no balance to top up', async () => {
     // Apple Pay is type:'wallet' and sits in the SA/AE quick-add lists, so this is a
     // configuration real users will have.
-    expect(await isOwnWalletMerchant(stub([{ name: 'Apple Pay' }]), 'u1', 'Apple Pay')).toBe(false)
-    expect(await isOwnWalletMerchant(stub([{ name: 'InstaPay' }]), 'u1', 'InstaPay')).toBe(false)
+    expect(await isOwnTopUpTarget(stub([{ name: 'Apple Pay' }]), 'u1', 'Apple Pay', '')).toBe(false)
+    expect(await isOwnTopUpTarget(stub([{ name: 'InstaPay' }]), 'u1', 'InstaPay', '')).toBe(false)
+  })
+
+  describe('brands you can also buy from need explicit top-up wording', () => {
+    const adnoc = stub([{ name: 'ADNOC' }])
+
+    it('does NOT erase a tank of fuel bought at ADNOC', async () => {
+      expect(await isOwnTopUpTarget(adnoc, 'u1', 'ADNOC', 'Purchase at ADNOC 120 AED')).toBe(false)
+    })
+
+    it('does recognise an actual ADNOC card reload', async () => {
+      expect(await isOwnTopUpTarget(adnoc, 'u1', 'ADNOC', 'Top up ADNOC card 120 AED')).toBe(true)
+      expect(await isOwnTopUpTarget(adnoc, 'u1', 'ADNOC', 'Recharge 120 AED')).toBe(true)
+    })
+
+    it('accepts Arabic top-up wording', async () => {
+      expect(await isOwnTopUpTarget(adnoc, 'u1', 'ADNOC', 'شحن بطاقة 120')).toBe(true)
+    })
+
+    it('a nol reload is a transfer; a nol-branded fare is not', async () => {
+      const nol = stub([{ name: 'Nol' }])
+      expect(await isOwnTopUpTarget(nol, 'u1', 'nol', 'NOL TOPUP 50 AED')).toBe(true)
+      expect(await isOwnTopUpTarget(nol, 'u1', 'nol', 'Purchase 5 AED')).toBe(false)
+    })
   })
 })
 
 describe('namesOwnWallet — lenient, because the name sits inside a sentence', () => {
   it("matches the wallet's own credit SMS", async () => {
-    expect(await namesOwnWallet(stub([{ name: 'Barq' }]), 'u1', BARQ_CREDIT)).toBe(true)
+    expect(await namesOwnStoredValue(stub([{ name: 'Barq' }]), 'u1', BARQ_CREDIT)).toBe(true)
   })
 
   it('does not match a longer word that merely contains the name', async () => {
-    expect(await namesOwnWallet(stub([{ name: 'Barq' }]), 'u1', 'POS Purchase at Barqawi Restaurant')).toBe(false)
+    expect(await namesOwnStoredValue(stub([{ name: 'Barq' }]), 'u1', 'POS Purchase at Barqawi Restaurant')).toBe(false)
   })
 
   it('ignores names too short to match safely', async () => {
-    expect(await namesOwnWallet(stub([{ name: 'Q' }]), 'u1', 'Online Purchase Q8 fuel')).toBe(false)
+    expect(await namesOwnStoredValue(stub([{ name: 'Q' }]), 'u1', 'Online Purchase Q8 fuel')).toBe(false)
   })
 
   it('is false when the user has registered no wallet', async () => {
-    expect(await namesOwnWallet(stub([]), 'u1', BARQ_CREDIT)).toBe(false)
+    expect(await namesOwnStoredValue(stub([]), 'u1', BARQ_CREDIT)).toBe(false)
   })
 
   it('does not treat regex metacharacters in a name as a pattern', async () => {
     // Deliberately a name no catalogue brand resolves to: isPassThroughBrand is lenient
     // (e.g. "Pay.Me" resolves to InstaPay via the alias "instant payment") and would
     // filter the wallet out before the regex ever ran, hiding what this asserts.
-    expect(await namesOwnWallet(stub([{ name: 'Mint.Box' }]), 'u1', 'Money added to MintXBox')).toBe(false)
-    expect(await namesOwnWallet(stub([{ name: 'Mint.Box' }]), 'u1', 'Money added to Mint.Box')).toBe(true)
+    expect(await namesOwnStoredValue(stub([{ name: 'Mint.Box' }]), 'u1', 'Money added to MintXBox')).toBe(false)
+    expect(await namesOwnStoredValue(stub([{ name: 'Mint.Box' }]), 'u1', 'Money added to Mint.Box')).toBe(true)
   })
 
   it('ignores pass-through rails', async () => {
-    expect(await namesOwnWallet(stub([{ name: 'Apple Pay' }]), 'u1', BARQ_CREDIT)).toBe(false)
+    expect(await namesOwnStoredValue(stub([{ name: 'Apple Pay' }]), 'u1', BARQ_CREDIT)).toBe(false)
   })
 })

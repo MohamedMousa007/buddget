@@ -10,7 +10,11 @@ export const PAYMENT_TYPE_META: Record<
   debit_card: { label: 'Debit card', color: '#A855F7', allowsLast4: true },
   credit_card: { label: 'Credit card', color: '#3B82F6', allowsLast4: true },
   prepaid_card: { label: 'Prepaid card', color: '#2DD4BF', allowsLast4: true },
-  wallet: { label: 'Wallet', color: '#FB923C', allowsLast4: false },
+  // Wallets that issue a card (Telda, Barq, STC Pay) are still ONE wallet — the card is
+  // part of it, not a separate prepaid_card. The optional last4 is what lets that card's
+  // SMS attribute back to the wallet. Wallets without a card (Vodafone Cash) just leave it
+  // empty, which is why the setup sheet does not default to it.
+  wallet: { label: 'Wallet', color: '#FB923C', allowsLast4: true },
   bnpl: { label: 'BNPL', color: '#EC4899', allowsLast4: false },
   other: { label: 'Other', color: '#9CA3AF', allowsLast4: false },
 }
@@ -89,6 +93,18 @@ export type BrandCountry = 'EG' | 'SA' | 'AE' | 'KW' | 'QA' | 'BH' | 'OM' | 'JO'
  */
 export type PassThroughBrand = true
 
+/**
+ * A brand you can genuinely BUY from, as well as pay with: fuel at ADNOC, bills at Fawry,
+ * a ride on nol. For these, "the merchant is my own method" cannot mean top-up on its own —
+ * it is equally likely to be an ordinary purchase, and calling it a transfer would drop a
+ * real expense out of spend entirely. They need explicit top-up wording as a second signal.
+ *
+ * Brands whose registered NAME already differs from their merchant name (a "Careem Pay"
+ * wallet vs a "Careem" ride, "Vodafone Cash" vs a "Vodafone" bill) are protected by exact
+ * matching alone; the flag is belt-and-braces for when a user renames the method.
+ */
+export type AlsoMerchantBrand = true
+
 export interface PaymentBrand {
   id: string
   name: string
@@ -101,6 +117,8 @@ export interface PaymentBrand {
   aliases?: string[]
   /** See {@link PassThroughBrand}. Absent = the brand really holds a balance. */
   passThrough?: PassThroughBrand
+  /** See {@link AlsoMerchantBrand}. Absent = you cannot buy goods from this brand. */
+  alsoMerchant?: AlsoMerchantBrand
 }
 
 type CatEntry = {
@@ -111,6 +129,7 @@ type CatEntry = {
   full?: string
   aliases?: string[]
   passThrough?: PassThroughBrand
+  alsoMerchant?: AlsoMerchantBrand
 }
 
 const CAT_RAW: Record<string, CatEntry> = {
@@ -138,11 +157,11 @@ const CAT_RAW: Record<string, CatEntry> = {
   sympl: { name: 'Sympl', type: 'bnpl', country: 'EG', aliases: ['simple'] },
   aman: { name: 'Aman', type: 'bnpl', country: 'EG', aliases: ['aman installments'] },
   contact: { name: 'Contact', type: 'bnpl', country: 'EG', aliases: ['contact installments', 'sarwa'] },
-  halan: { name: 'MNT-Halan', type: 'wallet', country: 'EG', aliases: ['halan', 'mnt halan'] },
+  halan: { name: 'MNT-Halan', type: 'wallet', country: 'EG', aliases: ['halan', 'mnt halan'], alsoMerchant: true },
   khazna: { name: 'Khazna', type: 'wallet', country: 'EG', aliases: ['خزنة'] },
-  lucky: { name: 'Lucky', type: 'wallet', country: 'EG', aliases: ['lucky one'] },
+  lucky: { name: 'Lucky', type: 'wallet', country: 'EG', aliases: ['lucky one'], alsoMerchant: true },
   opay: { name: 'OPay', type: 'wallet', country: 'EG' },
-  fawry: { name: 'Fawry', type: 'wallet', colors: ['#E8A200', '#1B4B8A'], country: 'EG', aliases: ['فوري', 'myfawry'] },
+  fawry: { name: 'Fawry', type: 'wallet', colors: ['#E8A200', '#1B4B8A'], country: 'EG', aliases: ['فوري', 'myfawry'], alsoMerchant: true },
   telda: { name: 'Telda', type: 'wallet', colors: ['#8B7BF0', '#4A3FA0'], country: 'EG', aliases: ['telda card'] },
   // ── Saudi Arabia ─────────────────────────────────────────────────────────────
   mada: { name: 'mada', type: 'debit_card', colors: ['#5E8B00', '#3A5600'], country: 'SA', aliases: ['مدى', 'mada card'] },
@@ -172,18 +191,18 @@ const CAT_RAW: Record<string, CatEntry> = {
   liv: { name: 'Liv', type: 'bank_account', country: 'AE', aliases: ['liv bank', 'liv by enbd'] },
   wio: { name: 'Wio', type: 'bank_account', country: 'AE', aliases: ['wio bank'] },
   zand: { name: 'Zand', type: 'bank_account', country: 'AE', aliases: ['zand bank'] },
-  careempay: { name: 'Careem Pay', type: 'wallet', colors: ['#2E9E58', '#1F6F3C'], country: 'AE', aliases: ['careem'] },
+  careempay: { name: 'Careem Pay', type: 'wallet', colors: ['#2E9E58', '#1F6F3C'], country: 'AE', aliases: ['careem'], alsoMerchant: true },
   eand: { name: 'e& money', type: 'wallet', colors: ['#E30613', '#8A0A10'], country: 'AE', aliases: ['etisalat', 'e and money'] },
   payit: { name: 'Payit', type: 'wallet', country: 'AE', aliases: ['payit fab'] },
   botim: { name: 'Botim Pay', type: 'wallet', country: 'AE', aliases: ['botim', 'payby'] },
   ziina: { name: 'Ziina', type: 'wallet', country: 'AE' },
-  nol: { name: 'Nol', type: 'prepaid_card', colors: ['#0E86C0', '#005C82'], country: 'AE', aliases: ['nol card'] },
-  hafilat: { name: 'Hafilat', type: 'prepaid_card', country: 'AE', aliases: ['hafilat card'] },
-  sayer: { name: 'Sayer', type: 'prepaid_card', country: 'AE', aliases: ['sayer card'] },
+  nol: { name: 'Nol', type: 'prepaid_card', colors: ['#0E86C0', '#005C82'], country: 'AE', aliases: ['nol card'], alsoMerchant: true },
+  hafilat: { name: 'Hafilat', type: 'prepaid_card', country: 'AE', aliases: ['hafilat card'], alsoMerchant: true },
+  sayer: { name: 'Sayer', type: 'prepaid_card', country: 'AE', aliases: ['sayer card'], alsoMerchant: true },
   jaywan: { name: 'Jaywan', type: 'debit_card', country: 'AE', aliases: ['jaywan card'] },
-  adnoc: { name: 'ADNOC', type: 'prepaid_card', country: 'AE', aliases: ['adnoc rewards', 'adnoc fuel'] },
-  enoc: { name: 'ENOC', type: 'prepaid_card', country: 'AE', aliases: ['eppco', 'yes rewards'] },
-  emarat: { name: 'Emarat', type: 'prepaid_card', country: 'AE', aliases: ['safeer', 'atheer'] },
+  adnoc: { name: 'ADNOC', type: 'prepaid_card', country: 'AE', aliases: ['adnoc rewards', 'adnoc fuel'], alsoMerchant: true },
+  enoc: { name: 'ENOC', type: 'prepaid_card', country: 'AE', aliases: ['eppco', 'yes rewards'], alsoMerchant: true },
+  emarat: { name: 'Emarat', type: 'prepaid_card', country: 'AE', aliases: ['safeer', 'atheer'], alsoMerchant: true },
   postpay: { name: 'Postpay', type: 'bnpl', country: 'AE' },
   cashew: { name: 'Cashew', type: 'bnpl', country: 'AE', aliases: ['cashew payments'] },
   spotii: { name: 'Spotii', type: 'bnpl', country: 'AE' },
@@ -201,7 +220,7 @@ const CAT_RAW: Record<string, CatEntry> = {
   qib: { name: 'QIB', full: 'Qatar Islamic Bank', type: 'bank_account', country: 'QA' },
   cbq: { name: 'CBQ', full: 'Commercial Bank of Qatar', type: 'bank_account', country: 'QA' },
   dohabank: { name: 'Doha Bank', type: 'bank_account', country: 'QA' },
-  ooredoomoney: { name: 'Ooredoo Money', type: 'wallet', country: 'QA', aliases: ['ooredoo'] },
+  ooredoomoney: { name: 'Ooredoo Money', type: 'wallet', country: 'QA', aliases: ['ooredoo'], alsoMerchant: true },
   // ── Bahrain ──────────────────────────────────────────────────────────────────
   benefit: { name: 'BENEFIT', type: 'debit_card', country: 'BH', aliases: ['benefitpay', 'benefit pay'] },
   bbk: { name: 'BBK', full: 'Bank of Bahrain and Kuwait', type: 'bank_account', country: 'BH' },
@@ -213,7 +232,7 @@ const CAT_RAW: Record<string, CatEntry> = {
   bankmuscat: { name: 'Bank Muscat', type: 'bank_account', country: 'OM' },
   nbo: { name: 'NBO', full: 'National Bank of Oman', type: 'bank_account', country: 'OM' },
   bankdhofar: { name: 'Bank Dhofar', type: 'bank_account', country: 'OM' },
-  thawani: { name: 'Thawani', type: 'wallet', country: 'OM', aliases: ['thawani pay'] },
+  thawani: { name: 'Thawani', type: 'wallet', country: 'OM', aliases: ['thawani pay'], alsoMerchant: true },
   // ── Global schemes, wallets & rails ──────────────────────────────────────────
   // Tokenisation rails: "paid with Apple Pay" is really the underlying card paying.
   applepay: { name: 'Apple Pay', type: 'wallet', colors: ['#2E2E36', '#5A5A66'], aliases: ['apple wallet'], passThrough: true },

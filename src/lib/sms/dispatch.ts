@@ -28,8 +28,9 @@ import {
 } from './createSmsExpense'
 import {
   isOwnAccountTransfer,
-  isOwnWalletMerchant,
-  namesOwnWallet,
+  isOwnTopUpTarget,
+  namesOwnStoredValue,
+  retagSiblingAsTransfer,
   tryPairLeg,
   reconcileSibling,
   reconcileCcPayoffFundingLeg,
@@ -135,33 +136,37 @@ export async function createSmsTransaction(
 ): Promise<SmsTxResult> {
   let kind: SmsExpenseKind = row.kind
 
-  // 0. Own-wallet top-up. Loading your own wallet (Barq, STC Pay) is neither spend nor
-  //    income, but it emits two SMS that look like both:
-  //      the funding card's bank: "Online Purchase ... From: barq"   (merchant)
-  //      the wallet itself:       "Money Added to your Barq wallet"  (body)
-  //    A wallet has no last4, so step 1's counterparty join can never recognise either
-  //    leg — the wallet's NAME is the only handle.
+  // 0. Movements involving the user's own STORED-VALUE methods (wallets, prepaid cards).
+  //    Topping one up, and cashing one out, are neither spend nor income — but each emits
+  //    two SMS that look like both:
+  //      top-up:     bank "Online Purchase ... From: barq" + wallet "Money Added ..."
+  //      withdrawal: wallet "Withdrawal ... to your bank" + bank "... credited from Barq"
+  //    A wallet may have no card, so step 1's counterparty-last4 join often cannot see
+  //    either leg — the method's NAME is the only handle. See docs/MONEY_MOVEMENT.md.
   if (
     (kind === 'purchase' || kind === 'online_purchase') &&
-    (await isOwnWalletMerchant(service, row.userId, row.merchant))
+    (await isOwnTopUpTarget(service, row.userId, row.merchant, row.rawBody))
   ) {
-    // Nobody buys FROM their own wallet, so this leg is unambiguous. It becomes a
-    // transfer whether or not the wallet's own SMS ever arrives, and — because the
-    // caller persists `kind` — becomes findable as a sibling by that SMS when it does.
+    // Nobody buys goods from their own wallet, so this leg is unambiguous. It becomes a
+    // transfer whether or not the wallet's own SMS ever arrives, and — because the caller
+    // persists `kind` — becomes findable as a sibling by that SMS when it does.
     kind = 'own_transfer'
   } else if (
-    (kind === 'income' || kind === 'instant_transfer_in') &&
-    (await namesOwnWallet(service, row.userId, row.rawBody))
+    (kind === 'income' || kind === 'instant_transfer_in' || kind === 'instant_transfer_out') &&
+    (await namesOwnStoredValue(service, row.userId, row.rawBody))
   ) {
-    // The wallet's own credit SMS. NOT unambiguous: money added to your wallet is real
-    // income when no card of yours funded it (a friend sent it). So this leg only
-    // becomes a transfer if the funding sibling is actually there.
+    // The stored-value method's OWN SMS. Not unambiguous in either direction: money added
+    // to your wallet is real income when no card of yours funded it, and money leaving it
+    // is a real remittance when it went to a person rather than to your own bank. So this
+    // leg only becomes a transfer if the sibling is actually there to prove it.
     //
-    // It has to ask here rather than fall through to step 2, which is reachable only
-    // from own_transfer — and step 1 cannot promote it, because a wallet credit carries
-    // the FUNDING card's number, which the template tier never maps to
-    // counterpartyLast4 at all.
-    kind = 'instant_transfer_in' // pairable by the funding leg in the other arrival order
+    // It has to ask here rather than fall through to step 2, which is reachable only from
+    // own_transfer — and step 1 cannot promote it, because these SMS carry the OTHER
+    // side's card number, which the template tier never maps to counterpartyLast4 at all.
+    const outbound = kind === 'instant_transfer_out'
+    // Keep a kind that is in matchKinds either way, so the sibling can find THIS leg in
+    // the opposite arrival order.
+    if (!outbound) kind = 'instant_transfer_in'
     if (row.logId && row.receivedAtIso) {
       const sibling = await tryPairLeg(service, {
         userId: row.userId,
@@ -170,9 +175,17 @@ export async function createSmsTransaction(
         amount: row.amount,
         kind: 'own_transfer',
       })
-      if (sibling) {
+      if (sibling && sibling.siblingKind !== 'cc_payoff') {
         const { needsPost } = await reconcileSibling(service, sibling)
-        if (!needsPost) return base('transfer_paired', kind)
+        if (!needsPost) {
+          // The sibling already carries the row. If it was the provisional Remittance of a
+          // withdrawal, that guess is now disproved — retag it, or a cash-out to your own
+          // bank stays booked as spending.
+          if (sibling.siblingKind === 'instant_transfer_out') {
+            await retagSiblingAsTransfer(service, sibling)
+          }
+          return base('transfer_paired', kind)
+        }
         const posted = await createSmsExpense(service, { ...row, kind: 'own_transfer' })
         return {
           ...base('transfer_paired', 'own_transfer'),
@@ -182,7 +195,7 @@ export async function createSmsTransaction(
         }
       }
     }
-    // No funding leg: genuine income. Falls through to step 4 as an isIncomeKind.
+    // No sibling: genuine income (inbound) or a real remittance (outbound). Falls through.
   }
 
   // 1. Own-account reclassification — an inbound/outbound transfer whose
