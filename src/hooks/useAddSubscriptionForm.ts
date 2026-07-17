@@ -145,6 +145,7 @@ export function useAddSubscriptionForm(
         setCustomMode(true)
         setName('')
         setPlanName(null)
+        setPlanId(null)
         setPlanIndex(0)
         setAmountStr('')
         setBillingCycle('monthly')
@@ -163,7 +164,11 @@ export function useAddSubscriptionForm(
         setCurrency(cur)
         applyPlan(b, 0, cur)
       } else {
+        // Brand has no catalog plans in this region — clear any plan carried over from a
+        // previously-picked brand, or submit persists a foreign planId (e.g. Watch iT with
+        // netflix_standard).
         setPlanName(null)
+        setPlanId(null)
         setAmountStr('')
         setBillingCycle('monthly')
         setCurrency(clampFiatToAllowed(settings, settings.baseCurrency))

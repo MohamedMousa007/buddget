@@ -58,5 +58,10 @@ export function patchRecurringFromSubscription(
   return {
     ...built,
     sharedPlanId: prev.sharedPlanId,
+    // Rebuilding from scratch would drop the timestamps and null updatedAt, which makes
+    // this edit tie-LOSE to the server on the next merge (server > '' is always true).
+    // Preserve creation, stamp the edit.
+    createdAt: prev.createdAt,
+    updatedAt: new Date().toISOString(),
   }
 }

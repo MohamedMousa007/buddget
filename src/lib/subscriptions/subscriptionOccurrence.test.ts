@@ -91,4 +91,12 @@ describe('isCyclePaid', () => {
   it('is unpaid before the first charge ever lands', () => {
     expect(isCyclePaid(sub({ startDate: '2026-07-01', billingDay: 25 }), [], new Date('2026-07-05'))).toBe(false)
   })
+
+  it('does not throw on a future-dated start — returns unpaid instead of an inverted interval', () => {
+    // A future start makes cycleWindow return end === start; subMilliseconds would invert
+    // the interval and crash date-fns isWithinInterval, taking down the card render.
+    const future = sub({ startDate: '2027-01-01', billingCycle: 'weekly' })
+    expect(() => isCyclePaid(future, [], new Date('2026-07-15'))).not.toThrow()
+    expect(isCyclePaid(future, [], new Date('2026-07-15'))).toBe(false)
+  })
 })

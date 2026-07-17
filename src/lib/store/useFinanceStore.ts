@@ -404,6 +404,11 @@ export const useFinanceStore = create<FinanceStore>()(
                 currency: acc.currency,
                 date: localTodayISO(),
                 notes: `Reversed: ${event.name}`,
+                // Undoing a withdrawal, not fresh cash into savings — the withdrawal's
+                // income event is being removed in the same action, so this deposit must
+                // NOT reduce left-to-spend / cash outflow (both count deposits where
+                // isCashFlow !== false). Without this the undo double-subtracts the amount.
+                isCashFlow: false,
               }
               const nextState: FinanceStore = {
                 ...state,
@@ -438,8 +443,10 @@ export const useFinanceStore = create<FinanceStore>()(
         const nowIso = new Date().toISOString()
         const newMethod: PaymentMethod = { ...method, id: pmId, createdAt: nowIso, updatedAt: nowIso }
         set((state) => {
+          // Demoting the old default is an edit too — stamp it, or the demotion tie-loses
+          // to the server on the next merge and you end up with two default cards.
           const paymentMethods = method.isDefault
-            ? [...state.paymentMethods.map((m) => ({ ...m, isDefault: false })), newMethod]
+            ? [...state.paymentMethods.map((m) => (m.isDefault ? { ...m, isDefault: false, updatedAt: nowIso } : m)), newMethod]
             : [...state.paymentMethods, newMethod]
           if (method.type !== 'credit_card') {
             return { paymentMethods }
@@ -477,8 +484,8 @@ export const useFinanceStore = create<FinanceStore>()(
           paymentMethods: state.paymentMethods.map((m) =>
             m.id === id
               ? { ...m, ...updates, updatedAt: new Date().toISOString() }
-              : updates.isDefault
-                ? { ...m, isDefault: false } // one default at a time, mirroring addPaymentMethod
+              : updates.isDefault && m.isDefault
+                ? { ...m, isDefault: false, updatedAt: new Date().toISOString() } // demotion is an edit; stamp it or it tie-loses
                 : m
           ),
         })),
@@ -489,7 +496,11 @@ export const useFinanceStore = create<FinanceStore>()(
           let paymentMethods = state.paymentMethods.filter((m) => m.id !== id)
           // Promote a new default if we removed the only default one.
           if (deleted?.isDefault && paymentMethods.length > 0 && !paymentMethods.some((m) => m.isDefault)) {
-            paymentMethods = paymentMethods.map((m, i) => (i === 0 ? { ...m, isDefault: true } : m))
+            // Auto-promotion is an edit; stamp it or the promotion tie-loses and you sync
+            // back with no default card.
+            paymentMethods = paymentMethods.map((m, i) =>
+              i === 0 ? { ...m, isDefault: true, updatedAt: new Date().toISOString() } : m
+            )
           }
           return {
             paymentMethods,
@@ -837,7 +848,9 @@ export const useFinanceStore = create<FinanceStore>()(
           let recurring = state.recurringExpenses
           if (sub?.linkedRecurringExpenseId) {
             recurring = state.recurringExpenses.map((re) =>
-              re.id === sub.linkedRecurringExpenseId ? { ...re, isActive: false } : re
+              re.id === sub.linkedRecurringExpenseId
+                ? { ...re, isActive: false, updatedAt: new Date().toISOString() }
+                : re
             )
           }
           return { subscriptions: subs, recurringExpenses: recurring }
@@ -1344,7 +1357,9 @@ export const useFinanceStore = create<FinanceStore>()(
             amount: amt,
             currency: acc.currency,
             sourceType: isInvestment ? 'investment' : 'savings',
-            receivedDate: nowIso.slice(0, 10),
+            // Local, to match the paired ledger row's `date` — the same movement must not
+            // straddle two calendar days in the Cairo-before-dawn window.
+            receivedDate: localTodayISO(),
             status: 'confirmed',
             linkedSavingsAccountId: accountId,
             notes: notes?.trim() || undefined,

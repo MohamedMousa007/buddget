@@ -205,6 +205,10 @@ const MERCHANT_BRAND_ALIASES: Record<string, string> = {
   youtubepremium: 'youtube_premium',
   shahid: 'shahid_vip',
   osn: 'osn_plus',
+  // "Zain" alone is a strict prefix of the catalog name "Zain KSA". Safe as an alias
+  // because the resolver word-boundary-guards short tokens: `\bzain\b` hits "ZAIN KSA" but
+  // not "Zainab". (Mobily/STC already resolve via their catalog names.)
+  zain: 'zain_ksa',
   ms365: 'microsoft_365',
   office365: 'microsoft_365',
 }

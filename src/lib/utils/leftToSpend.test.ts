@@ -67,6 +67,17 @@ describe('calculateLeftToSpendCashFlow — savings', () => {
     expect(withdrawal).toBe(10_300)
   })
 
+  it('REGRESSION: undoing a withdrawal returns to baseline, not baseline − amount', () => {
+    // deleteIncomeEvent removes the withdrawal's income event AND posts a reversal deposit.
+    // That deposit must be isCashFlow:false, or the deposits term subtracts it while the
+    // income is already gone → 9,700 instead of 10,000. Modelled here as the post-undo state.
+    const afterUndo = leftToSpend({
+      incomeEvents: [event({ amount: 10_000, sourceType: 'salary' })], // withdrawal event removed
+      savingsTransactions: [tx({ type: 'deposit', amount: 300, isCashFlow: false })], // reversal
+    })
+    expect(afterUndo).toBe(10_000)
+  })
+
   it('an opening balance does not reduce left-to-spend — no cash moved', () => {
     // Declaring a pre-existing account must not look like spending this month's income.
     expect(

@@ -57,6 +57,10 @@ export function isCyclePaid(
   ref: Date = new Date()
 ): boolean {
   const { start, end } = cycleWindow(sub, ref)
+  // A future-dated / not-yet-started sub yields end === start; subtracting 1ms would invert
+  // the interval and make date-fns `isWithinInterval` throw, crashing the card. Nothing can
+  // be paid before the first cycle opens.
+  if (end <= start) return false
   // `end` is exclusive — a charge on the next billing date opens the next cycle.
   const interval = { start, end: subMilliseconds(end, 1) }
   return expenses.some(

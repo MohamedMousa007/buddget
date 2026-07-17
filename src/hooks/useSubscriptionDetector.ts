@@ -65,6 +65,9 @@ export function useSubscriptionDetector(): DetectedSubscription[] {
       .eq('parsed_ok', true)
       .in('kind', ['purchase', 'online_purchase'])
       .gte('created_at', since)
+      // Ascending so `days[days.length - 1]` is genuinely the LATEST sighting's billing day,
+      // not an arbitrary DB order.
+      .order('day', { ascending: true })
       .then(({ data }) => {
         if (!data) return
         // Already tracked — including cancelled, so a cancelled sub isn't re-suggested.

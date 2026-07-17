@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { localTodayISO } from '@/lib/utils/localDate'
 import { normaliseReceipt, reconcileMissingItems, isUnknownItem, UNKNOWN_ITEM_NAMES } from './normaliseReceipt'
 
 describe('normaliseReceipt', () => {
@@ -32,7 +33,9 @@ describe('normaliseReceipt', () => {
   })
 
   it('replaces out-of-window dates (future / older than 30 days) with today', () => {
-    const today = new Date().toISOString().slice(0, 10)
+    // Local, to match the implementation (normaliseReceipt now returns the local day) — a
+    // UTC `today` here is flaky for anyone running tests outside UTC.
+    const today = localTodayISO()
     const future = new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10)
     const old = new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10)
     expect(normaliseReceipt({ amount: 1, date: future }, 'EGP').date).toBe(today)
