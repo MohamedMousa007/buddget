@@ -750,6 +750,7 @@ export async function POST(request: Request) {
     categoryHint: parsed.category,
     source: source ?? 'sms',
     rawBody: message,
+    sender: sender ?? null,
     last4: cleanLast4,
     counterpartyLast4: cleanCpLast4,
     receivedAtIso: nowIso,

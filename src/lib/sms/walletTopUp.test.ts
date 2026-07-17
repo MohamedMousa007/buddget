@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { namesOwnStoredValue, isOwnTopUpTarget } from './pairing'
 import { createSmsTransaction } from './dispatch'
-import type { SmsRowData } from './createSmsExpense'
+import { resolvePaymentMethodByLast4, type SmsRowData } from './createSmsExpense'
 
 /**
  * Loading your own wallet emits two SMS and Buddget believed both: the funding card's
@@ -341,6 +341,83 @@ describe('isOwnTopUpTarget — strict, because a payment brand can also be a mer
       expect(await isOwnTopUpTarget(nol, 'u1', 'nol', 'NOL TOPUP 50 AED')).toBe(true)
       expect(await isOwnTopUpTarget(nol, 'u1', 'nol', 'Purchase 5 AED')).toBe(false)
     })
+  })
+})
+
+/**
+ * A wallet is one balance but hands out several cards — Barq prints its physical mada card
+ * on a POS purchase and a virtual card on an online one, and those numbers change. The
+ * sender identifies the WALLET, so "Barq" is registered once and everything it sends
+ * attributes to it, with no card bookkeeping.
+ */
+describe('resolvePaymentMethodByLast4 — provider fallback', () => {
+  function svc(methods: Array<{ id: string; name: string; type: string; last4?: string | null; is_default?: boolean }>) {
+    const from = () => {
+      const filters: Record<string, unknown> = {}
+      const chain: Record<string, unknown> = {
+        select: () => chain,
+        eq: (c: string, v: unknown) => { filters[c] = v; return chain },
+        is: () => chain,
+        limit: () => chain,
+        maybeSingle: () => {
+          const hit = methods.find((m) =>
+            Object.entries(filters).every(([k, v]) =>
+              k === 'user_id' ? true : (m as unknown as Record<string, unknown>)[k] === v),
+          )
+          return Promise.resolve({ data: hit ? { id: hit.id } : null })
+        },
+        then: (r: (v: unknown) => unknown) =>
+          r({ data: methods.filter((m) => !filters.type || m.type === filters.type), error: null }),
+      }
+      return chain
+    }
+    return { from } as unknown as SupabaseClient
+  }
+
+  const barqOnly = [{ id: 'w1', name: 'Barq', type: 'wallet', last4: null }]
+
+  it('attributes a Barq POS purchase to the Barq wallet with NO card registered', async () => {
+    // "POS Purchase | Mada card: **6774" — 6774 is Barq's card and is not a payment method.
+    const id = await resolvePaymentMethodByLast4(svc(barqOnly), 'u1', '6774', { sender: 'barq app' })
+    expect(id).toBe('w1')
+  })
+
+  it("attributes Barq's virtual card too — same wallet, different number", async () => {
+    const id = await resolvePaymentMethodByLast4(svc(barqOnly), 'u1', '0678', { sender: 'barq app' })
+    expect(id).toBe('w1')
+  })
+
+  it('falls back to bankName when the sender is empty (iOS before the Shortcut binds it)', async () => {
+    const id = await resolvePaymentMethodByLast4(svc(barqOnly), 'u1', null, { sender: '', bankName: 'Barq' })
+    expect(id).toBe('w1')
+  })
+
+  it('a registered card still wins — it is the more specific signal', async () => {
+    const methods = [...barqOnly, { id: 'c1', name: 'STC ••8639', type: 'debit_card', last4: '8639' }]
+    const id = await resolvePaymentMethodByLast4(svc(methods), 'u1', '8639', { sender: 'barq app' })
+    expect(id).toBe('c1')
+  })
+
+  it('does not attribute a Vodafone BILL to the Vodafone Cash wallet', async () => {
+    // The telco sells you service AND runs a wallet under one brand; a bill is paid by card.
+    const vf = [{ id: 'w2', name: 'Vodafone Cash', type: 'wallet', last4: null },
+                { id: 'd1', name: 'Default', type: 'cash', is_default: true }]
+    const id = await resolvePaymentMethodByLast4(svc(vf), 'u1', null, { sender: 'Vodafone' })
+    expect(id).toBe('d1') // default, not the wallet
+  })
+
+  it('does not attribute a bank sender to a wallet — a bank names the institution, not the card', async () => {
+    const mix = [{ id: 'w3', name: 'Barq', type: 'wallet', last4: null },
+                 { id: 'd1', name: 'Default', type: 'cash', is_default: true }]
+    const id = await resolvePaymentMethodByLast4(svc(mix), 'u1', null, { sender: 'AlRajhiBank' })
+    expect(id).toBe('d1')
+  })
+
+  it('ignores a pass-through rail as a sender', async () => {
+    const ap = [{ id: 'w4', name: 'Apple Pay', type: 'wallet', last4: null },
+                { id: 'd1', name: 'Default', type: 'cash', is_default: true }]
+    const id = await resolvePaymentMethodByLast4(svc(ap), 'u1', null, { sender: 'Apple Pay' })
+    expect(id).toBe('d1')
   })
 })
 

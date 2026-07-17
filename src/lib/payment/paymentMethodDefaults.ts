@@ -136,10 +136,10 @@ const CAT_RAW: Record<string, CatEntry> = {
   // ── Egypt ──────────────────────────────────────────────────────────────────
   // The CBE's instant bank-to-bank rail (IPN), addressed by IPA — not a balance.
   instapay: { name: 'InstaPay', type: 'wallet', colors: ['#12A594', '#0C6E63'], country: 'EG', aliases: ['instant payment', 'ipn'], passThrough: true },
-  vodafone: { name: 'Vodafone Cash', type: 'wallet', colors: ['#E60000', '#8A1520'], country: 'EG', aliases: ['vodafone', 'فودافون كاش'] },
-  orangecash: { name: 'Orange Cash', type: 'wallet', colors: ['#FF7900', '#B35500'], country: 'EG', aliases: ['orange money', 'اورنج كاش'] },
-  wepay: { name: 'WE Pay', type: 'wallet', country: 'EG', aliases: ['we pay', 'telecom egypt'] },
-  etisalatcash: { name: 'e& Cash', type: 'wallet', country: 'EG', aliases: ['etisalat cash', 'e& money egypt'] },
+  vodafone: { name: 'Vodafone Cash', type: 'wallet', colors: ['#E60000', '#8A1520'], country: 'EG', aliases: ['vodafone', 'فودافون كاش'], alsoMerchant: true },
+  orangecash: { name: 'Orange Cash', type: 'wallet', colors: ['#FF7900', '#B35500'], country: 'EG', aliases: ['orange money', 'اورنج كاش'], alsoMerchant: true },
+  wepay: { name: 'WE Pay', type: 'wallet', country: 'EG', aliases: ['we pay', 'telecom egypt'], alsoMerchant: true },
+  etisalatcash: { name: 'e& Cash', type: 'wallet', country: 'EG', aliases: ['etisalat cash', 'e& money egypt'], alsoMerchant: true },
   nbe: { name: 'NBE', full: 'National Bank of Egypt', type: 'bank_account', colors: ['#2E8B57', '#1C5A38'], country: 'EG', aliases: ['al ahly', 'ahly', 'البنك الاهلي'] },
   cib: { name: 'CIB', full: 'Commercial International Bank', type: 'bank_account', colors: ['#2E5AAC', '#B23A6B'], country: 'EG', aliases: ['commercial international bank'] },
   banquemisr: { name: 'Banque Misr', type: 'bank_account', colors: ['#0E7A3B', '#0A4F26'], country: 'EG', aliases: ['بنك مصر', 'bm'] },
@@ -192,7 +192,7 @@ const CAT_RAW: Record<string, CatEntry> = {
   wio: { name: 'Wio', type: 'bank_account', country: 'AE', aliases: ['wio bank'] },
   zand: { name: 'Zand', type: 'bank_account', country: 'AE', aliases: ['zand bank'] },
   careempay: { name: 'Careem Pay', type: 'wallet', colors: ['#2E9E58', '#1F6F3C'], country: 'AE', aliases: ['careem'], alsoMerchant: true },
-  eand: { name: 'e& money', type: 'wallet', colors: ['#E30613', '#8A0A10'], country: 'AE', aliases: ['etisalat', 'e and money'] },
+  eand: { name: 'e& money', type: 'wallet', colors: ['#E30613', '#8A0A10'], country: 'AE', aliases: ['etisalat', 'e and money'], alsoMerchant: true },
   payit: { name: 'Payit', type: 'wallet', country: 'AE', aliases: ['payit fab'] },
   botim: { name: 'Botim Pay', type: 'wallet', country: 'AE', aliases: ['botim', 'payby'] },
   ziina: { name: 'Ziina', type: 'wallet', country: 'AE' },
@@ -249,7 +249,7 @@ const CAT_RAW: Record<string, CatEntry> = {
   binancepay: { name: 'Binance Pay', type: 'wallet', colors: ['#F0B90B', '#8A6A06'], aliases: ['binance'] },
   edenred: { name: 'Edenred', type: 'prepaid_card', aliases: ['edenred card', 'meal card'] },
   pluxee: { name: 'Pluxee', type: 'prepaid_card', aliases: ['sodexo', 'meal voucher'] },
-  zaincash: { name: 'ZainCash', type: 'wallet', country: 'JO', aliases: ['zain cash'] },
+  zaincash: { name: 'ZainCash', type: 'wallet', country: 'JO', aliases: ['zain cash'], alsoMerchant: true },
 }
 
 /** First 2–3 letters of a provider name, uppercased (card/picker chip). */

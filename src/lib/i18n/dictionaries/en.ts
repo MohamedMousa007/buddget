@@ -2012,6 +2012,7 @@ export const en: Dictionary = {
         { title: 'Open the message field', desc: 'Tap the blue *Bank Message* field to choose what gets passed in.' },
         { title: 'Choose Select Variable', desc: 'In the options bar above the keyboard, tap *Select Variable*.' },
         { title: 'Pick Shortcut Input', desc: 'Tap *Shortcut Input* so Buddget receives the full SMS text.' },
+        { title: 'Pass the sender too', desc: 'Tap the *Sender* field and pick the *Sender* variable. This is how Buddget knows *who* sent the SMS — it names the bank or wallet for you, and links a wallet like Barq to its transactions even when the message only shows a card number you never added. If your iOS offers no Sender variable, leave it empty; everything else still works.' },
         { title: 'Save the shortcut', desc: 'Tap *Done* — your automation is now ready.' },
         { title: "You're all set", desc: '*Important:* One keyword only catches SMS that include it. Add a second automation with another keyword (e.g. *USD* or *جنيه*) so differently-phrased messages are caught too — nothing slips through.' },
       ],

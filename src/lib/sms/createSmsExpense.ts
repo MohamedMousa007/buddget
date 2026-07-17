@@ -4,6 +4,11 @@
  */
 import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js'
 import type { ExpenseCategory } from '@/lib/store/types'
+import {
+  PAYMENT_BRANDS,
+  decomposePaymentMethodName,
+  resolvePaymentBrandKey,
+} from '@/lib/payment/paymentMethodDefaults'
 import { normalizeMerchant } from './merchantNormalizer'
 
 export type SmsExpenseKind =
@@ -58,6 +63,12 @@ export interface SmsRowData {
   categoryHint: string | null
   source: string
   rawBody: string
+  /**
+   * SMS sender ID ("barq app", "AlRajhiBank"). Identifies the PROVIDER when no registered
+   * last4 does — the only way to attribute a wallet whose cards the user never registered.
+   * Empty on iOS until the Shortcut binds its Sender field.
+   */
+  sender?: string | null
   // --- Optional enrichment (set by the parse route) -----------------------
   /** Source account/card last4 from the SMS — used to resolve the payment method. */
   last4?: string | null
@@ -101,13 +112,63 @@ function smsTitle(row: SmsRowData): string | null {
 }
 
 /**
- * Resolves the user's payment method from a card/account last4, falling back to
- * the default payment method. Returns the id or null.
+ * Resolves the payment method from WHO SENT the SMS — "barq app" → the user's Barq wallet.
+ *
+ * A wallet is a single balance, but its messages name whichever card was used, and a wallet
+ * hands out several: Barq prints its physical mada card on a POS purchase and a virtual card
+ * on an online one. Registering every card would be endless bookkeeping and the numbers
+ * change. The sender identifies the wallet ITSELF, so "Barq" is registered once and every
+ * Barq message — top-up, POS, virtual card — attributes to it, last4 or not.
+ *
+ * Gated to brands that only hold money:
+ *  - banks are excluded by the wallet check: a bank sender names the institution, not which
+ *    of its many cards was used.
+ *  - pass-through rails hold no balance to attribute to.
+ *  - a brand you can also BUY from would mis-attribute: "Vodafone" sends telecom bills as
+ *    well as Vodafone Cash notices, and a bill is paid from a card, not from the wallet.
+ */
+async function resolvePaymentMethodByProvider(
+  service: SupabaseClient,
+  userId: string,
+  ...tokens: (string | null | undefined)[]
+): Promise<string | null> {
+  for (const token of tokens) {
+    const brandId = resolvePaymentBrandKey(token)
+    if (!brandId) continue
+    const brand = PAYMENT_BRANDS[brandId]
+    if (brand.type !== 'wallet' || brand.passThrough || brand.alsoMerchant) continue
+    const { data } = await service
+      .from('payment_methods')
+      .select('id, name, last4')
+      .eq('user_id', userId)
+      .eq('type', 'wallet')
+      .is('deleted_at', null)
+    const hit = (data ?? []).find((m) => {
+      const provider = decomposePaymentMethodName(
+        ((m.name as string | null) ?? '').trim(),
+        (m.last4 as string | null) ?? undefined,
+      ).provider
+      return resolvePaymentBrandKey(provider) === brandId
+    })
+    if (hit?.id) return hit.id as string
+  }
+  return null
+}
+
+/**
+ * Resolves the user's payment method for an SMS, most specific signal first:
+ *   1. the account/card last4 the SMS names — exact, when the user registered that card
+ *   2. the provider that sent it — see {@link resolvePaymentMethodByProvider}
+ *   3. the default method
+ *
+ * `sender` before `bankName` mirrors pickProvider: many banks omit their own name from the
+ * body, so the sender ID is often the only institution signal.
  */
 export async function resolvePaymentMethodByLast4(
   service: SupabaseClient,
   userId: string,
   last4: string | null | undefined,
+  provider?: { sender?: string | null; bankName?: string | null },
 ): Promise<string | null> {
   if (last4) {
     const { data: byLast4 } = await service
@@ -120,6 +181,13 @@ export async function resolvePaymentMethodByLast4(
       .maybeSingle()
     if (byLast4?.id) return byLast4.id
   }
+  const byProvider = await resolvePaymentMethodByProvider(
+    service,
+    userId,
+    provider?.sender,
+    provider?.bankName,
+  )
+  if (byProvider) return byProvider
   const { data: def } = await service
     .from('payment_methods')
     .select('id')
@@ -165,7 +233,10 @@ export async function createSmsExpense(
   const paymentMethodId =
     row.kind === 'cc_payoff'
       ? null
-      : await resolvePaymentMethodByLast4(service, row.userId, row.last4)
+      : await resolvePaymentMethodByLast4(service, row.userId, row.last4, {
+          sender: row.sender,
+          bankName: row.bankName,
+        })
   const mappedCategory = row.categoryOverride ?? mapKindToCategory(row.kind, row.categoryHint)
 
   const { data, error } = await service

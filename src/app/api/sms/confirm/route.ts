@@ -113,6 +113,7 @@ export async function POST(request: Request) {
     categoryHint: row.category ?? null,
     source: row.source ?? 'sms',
     rawBody: row.raw_body ?? '',
+    sender: row.sender ?? null,
     last4: row.account_last4 ?? null,
     counterpartyLast4: row.counterparty_last4 ?? null,
     receivedAtIso,
