@@ -2005,7 +2005,7 @@ export const en: Dictionary = {
         { title: 'Open Message Contains', desc: 'Leave Sender empty, then tap *Choose* next to *Message Contains*.' },
         { title: 'Think of a keyword', desc: 'Pick the word your bank *always* includes — usually the currency.' },
         { title: 'Enter your bank keyword', desc: 'Type the keyword you picked, then tap *Done*.' },
-        { title: 'Confirm and continue', desc: 'Tick *Run Immediately* and tap *Next*. To silence the "shortcut running" banner, also turn off *Notify When Run* — on iOS 16.1 or older, go to Settings → Notifications → *Shortcuts* instead.' },
+        { title: 'Confirm and continue', desc: 'Tick *Run Immediately* and tap *Next* — never *Run After Confirmation*, or every bank SMS waits on a tap. There is no notification switch on this screen; if you ever see a "running your automation" banner, silence it in Settings → Notifications → *Shortcuts*.' },
         { title: 'Create a blank automation', desc: 'Tap *New Blank Automation* so you can add the Buddget action.' },
         { title: 'Search for an action', desc: 'Tap the *Search Actions* bar at the bottom.' },
         { title: 'Add Catch Bank SMS', desc: 'Type “Catch”, then tap *Catch Bank SMS* — the Buddget action.' },
