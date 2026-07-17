@@ -201,7 +201,19 @@ export function transferFeeTolerance(amount: number): number {
  */
 export async function tryPairLeg(
   service: SupabaseClient,
-  params: { userId: string; logId: string; receivedAtIso: string; amount: number; kind: SmsExpenseKind },
+  params: {
+    userId: string
+    logId: string
+    receivedAtIso: string
+    amount: number
+    kind: SmsExpenseKind
+    /**
+     * Narrows what this leg may pair with. The RPC CLAIMS the sibling it finds, so a caller
+     * that would refuse a match must exclude it here rather than ignore the result —
+     * ignoring it still consumes the sibling's one pairing slot and strands it forever.
+     */
+    matchKinds?: string[]
+  },
 ): Promise<PairSibling | null> {
   const requireEqual = params.kind === 'own_transfer' || params.kind === 'cc_payoff'
   // FX pairs with FX. Everything else pairs across the transfer/payoff family, in both
@@ -209,11 +221,12 @@ export async function tryPairLeg(
   // The funding leg reports as an outbound transfer, which dispatch reclassifies to
   // own_transfer when the counterparty last4 is the user's own registered card.
   const matchKinds =
-    params.kind === 'currency_exchange'
+    params.matchKinds ??
+    (params.kind === 'currency_exchange'
       ? ['currency_exchange']
       : params.kind === 'cc_payoff'
         ? ['own_transfer', 'instant_transfer_out']
-        : ['own_transfer', 'instant_transfer_in', 'instant_transfer_out', 'cc_payoff']
+        : ['own_transfer', 'instant_transfer_in', 'instant_transfer_out', 'cc_payoff'])
 
   const { data, error } = await service.rpc('sms_try_pair', {
     p_user_id: params.userId,

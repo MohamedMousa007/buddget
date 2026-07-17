@@ -173,9 +173,15 @@ export async function createSmsTransaction(
         logId: row.logId,
         receivedAtIso: row.receivedAtIso,
         amount: row.amount,
+        // 'own_transfer' for the exact-amount rule; a wallet movement has no fee to absorb.
         kind: 'own_transfer',
+        // No cc_payoff: a payoff is settled by step 3, which needs its own funding leg. The
+        // RPC claims whatever it matches, so merely ignoring a payoff here would still burn
+        // its one pairing slot and leave it unable to ever find that leg — the double-count
+        // a34d517 fixed. Excluding it means it is never claimed in the first place.
+        matchKinds: ['own_transfer', 'instant_transfer_in', 'instant_transfer_out'],
       })
-      if (sibling && sibling.siblingKind !== 'cc_payoff') {
+      if (sibling) {
         const { needsPost } = await reconcileSibling(service, sibling)
         if (!needsPost) {
           // The sibling already carries the row. If it was the provisional Remittance of a

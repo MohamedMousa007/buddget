@@ -263,6 +263,19 @@ describe('wallet cash-out — both arrival orders', () => {
     expect(state.incomes.filter((i) => !i.deleted)).toHaveLength(0)
   })
 
+  it('never claims a cc_payoff as its sibling, even on an exact amount match', async () => {
+    // sms_try_pair CLAIMS whatever it matches. If a wallet leg could match a payoff, it
+    // would burn the payoff's one pairing slot and strand it from its real funding leg —
+    // silently resurrecting the double-count a34d517 fixed. So it must never be offered.
+    state.logs.push({ id: 'log-payoff', kind: 'cc_payoff', amount: 2, expense_id: 'e-payoff', income_id: null, paired: false })
+    const svc = makeService(state)
+
+    const res = await createSmsTransaction(svc, walletLeg(), opts)
+
+    expect(res.outcome).toBe('income') // fell through, as if no sibling existed
+    expect(state.logs.find((l) => l.id === 'log-payoff')!.paired).toBe(false) // untouched
+  })
+
   it('sending money to a person from the wallet stays a Remittance', async () => {
     const svc = makeService(state)
     const res = await createSmsTransaction(
@@ -421,7 +434,7 @@ describe('resolvePaymentMethodByLast4 — provider fallback', () => {
   })
 })
 
-describe('namesOwnWallet — lenient, because the name sits inside a sentence', () => {
+describe('namesOwnStoredValue — lenient, because the name sits inside a sentence', () => {
   it("matches the wallet's own credit SMS", async () => {
     expect(await namesOwnStoredValue(stub([{ name: 'Barq' }]), 'u1', BARQ_CREDIT)).toBe(true)
   })
