@@ -449,6 +449,8 @@ export const importDataSchema = z.object({
         planName: z.string().nullable(),
         planId: z.string().nullable().default(null),
         catalogRegion: z.string().nullable().default(null),
+        pendingPlanId: z.string().nullable().default(null),
+        pendingAmount: z.number().nullable().default(null),
         amount: z.number(),
         currency: fiatCurrencySchema,
         billingCycle: z.enum(['monthly', 'quarterly', 'yearly', 'weekly']),

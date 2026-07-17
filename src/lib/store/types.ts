@@ -270,6 +270,15 @@ export interface Subscription {
   /** Catalog region this was priced against — so a later comparison uses the right column. */
   catalogRegion: string | null
 
+  /**
+   * A plan the user may have switched to, DETECTED from a tracked payment but not yet
+   * confirmed. Drives the "looks like you moved to Premium — update?" prompt. Null when
+   * there is nothing pending. Applied or dismissed clears both.
+   */
+  pendingPlanId: string | null
+  /** The charged amount behind {@link pendingPlanId}, in this subscription's currency. */
+  pendingAmount: number | null
+
   amount: number
   currency: Currency
 
@@ -833,6 +842,10 @@ export interface FinanceStore {
     sub: Omit<Subscription, 'id' | 'createdAt' | 'cancelledAt' | 'linkedRecurringExpenseId'>
   ) => string
   updateSubscription: (id: string, updates: Partial<Subscription>) => void
+  /** Confirm a detected plan change: adopt pendingPlanId/pendingAmount, clear both. */
+  applyPendingPlanChange: (id: string) => void
+  /** Reject a detected plan change: clear the pending fields, change nothing else. */
+  dismissPendingPlanChange: (id: string) => void
   cancelSubscription: (id: string) => void
   deleteSubscription: (id: string) => void
   reactivateSubscription: (id: string) => void

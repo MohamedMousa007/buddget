@@ -14,6 +14,7 @@ import { DashboardSummaryTrio } from '@/components/dashboard/DashboardSummaryTri
 import { DashboardGoalsStrip } from '@/components/dashboard/DashboardGoalsStrip'
 import { SmsAccountDetectionBanner } from '@/components/features/dashboard/SmsAccountDetectionBanner'
 import { SmsSubscriptionDetectionBanner } from '@/components/features/dashboard/SmsSubscriptionDetectionBanner'
+import { SubscriptionPlanChangeBanner } from '@/components/features/dashboard/SubscriptionPlanChangeBanner'
 import { BannerStack } from '@/components/features/dashboard/BannerStack'
 import { SmsReviewChip } from '@/components/features/dashboard/SmsReviewChip'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
@@ -63,6 +64,7 @@ export default function DashboardPage() {
         <BannerStack>
           <SmsAccountDetectionBanner />
           <SmsSubscriptionDetectionBanner />
+          <SubscriptionPlanChangeBanner />
         </BannerStack>
 
         {isMinimal ? (

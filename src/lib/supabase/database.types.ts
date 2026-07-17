@@ -1869,6 +1869,8 @@ export type Database = {
           notes: string | null
           payment_method_id: string | null
           catalog_region: string | null
+          pending_amount: number | null
+          pending_plan_id: string | null
           plan_id: string | null
           plan_name: string | null
           start_date: string
@@ -1893,6 +1895,8 @@ export type Database = {
           notes?: string | null
           payment_method_id?: string | null
           catalog_region?: string | null
+          pending_amount?: number | null
+          pending_plan_id?: string | null
           plan_id?: string | null
           plan_name?: string | null
           start_date?: string
@@ -1917,6 +1921,8 @@ export type Database = {
           notes?: string | null
           payment_method_id?: string | null
           catalog_region?: string | null
+          pending_amount?: number | null
+          pending_plan_id?: string | null
           plan_id?: string | null
           plan_name?: string | null
           start_date?: string

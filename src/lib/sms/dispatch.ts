@@ -383,7 +383,19 @@ export async function createSmsTransaction(
       day: row.day,
       exchangeRates: opts.exchangeRates,
     })
-    if (sub) linkedSubscriptionId = sub.subscriptionId
+    if (sub) {
+      linkedSubscriptionId = sub.subscriptionId
+      // The charge matched a DIFFERENT catalog plan. Never auto-applied (a proration or
+      // promo can look like a switch) — park it on the row so the app can prompt, and only
+      // when nothing is already pending so a re-charge doesn't overwrite an earlier detection.
+      if (sub.planChange) {
+        await service
+          .from('subscriptions')
+          .update({ pending_plan_id: sub.planChange.planId, pending_amount: row.amount })
+          .eq('id', sub.subscriptionId)
+          .is('pending_plan_id', null)
+      }
+    }
   }
 
   const res = await createSmsExpense(service, {

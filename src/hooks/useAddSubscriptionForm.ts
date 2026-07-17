@@ -199,6 +199,8 @@ export function useAddSubscriptionForm(
       planName: planName?.trim() || null,
       planId: brandKey ? planId : null,
       catalogRegion: brandKey ? region : null,
+      pendingPlanId: null,
+      pendingAmount: null,
       amount,
       currency: cur,
       billingCycle,

@@ -1645,6 +1645,9 @@ export interface Dictionary {
     /** Banner: a recurring charge was spotted for a brand the user does not track. */
     detectedTitle: string
     detectedCta: string
+    planChangeUpgrade: string
+    planChangeDowngrade: string
+    planChangeApply: string
     searchPlaceholder: string
     customSubscription: string
     selectPlan: string

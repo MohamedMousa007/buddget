@@ -311,7 +311,7 @@ describe('subscription mapper', () => {
   it('round-trips', () => {
     const s: Subscription = {
       id: 'sub_1', name: 'Netflix', brandKey: 'netflix', planName: 'Basic',
-      planId: 'netflix_basic', catalogRegion: 'egypt',
+      planId: 'netflix_basic', catalogRegion: 'egypt', pendingPlanId: null, pendingAmount: null,
       amount: 70, currency: 'EGP', billingCycle: 'monthly', billingDay: 15,
       startDate: '2026-04-15', nextBillingDate: '2026-05-15', paymentMethodId: null,
       expenseCategory: 'Enjoyment', linkedRecurringExpenseId: 're_1',

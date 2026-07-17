@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { findBrandByKey, plansForRegion, type CatalogRegion } from '@/lib/constants/subscriptionCatalog'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { convertCurrency, tryConvertCurrency } from '@/lib/utils/currency'
@@ -837,6 +838,32 @@ export const useFinanceStore = create<FinanceStore>()(
           }
           return { subscriptions: updatedSubs, recurringExpenses: recurring }
         }),
+
+      applyPendingPlanChange: (id) => {
+        const sub = get().subscriptions.find((s) => s.id === id)
+        if (!sub?.pendingPlanId) return
+        const brand = findBrandByKey(sub.brandKey)
+        const plan = brand && sub.catalogRegion
+          ? plansForRegion(brand, sub.catalogRegion as CatalogRegion).find((p) => p.id === sub.pendingPlanId)
+          : undefined
+        // Adopt the tracked amount (what the user actually pays), the new plan id, and its
+        // label; clear pending. Routed through updateSubscription so the linked recurring
+        // expense's amount stays in sync.
+        get().updateSubscription(id, {
+          planId: sub.pendingPlanId,
+          planName: plan?.name ?? sub.planName,
+          amount: sub.pendingAmount ?? sub.amount,
+          pendingPlanId: null,
+          pendingAmount: null,
+        })
+      },
+
+      dismissPendingPlanChange: (id) =>
+        set((state) => ({
+          subscriptions: state.subscriptions.map((s) =>
+            s.id === id ? { ...s, pendingPlanId: null, pendingAmount: null } : s
+          ),
+        })),
 
       cancelSubscription: (id) =>
         set((state) => {
