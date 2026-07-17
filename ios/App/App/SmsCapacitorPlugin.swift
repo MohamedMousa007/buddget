@@ -16,6 +16,7 @@ public class SmsCapacitorPlugin: CAPInstancePlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "setEnabled", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setSetupCompleted", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setForwardMode", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "clearCredentials", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "clearState", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getStatus", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "healthCheck", returnType: CAPPluginReturnPromise),
@@ -31,7 +32,7 @@ public class SmsCapacitorPlugin: CAPInstancePlugin, CAPBridgedPlugin {
             call.reject("token and apiUrl are required")
             return
         }
-        SmsCredentialStore.save(token: token, apiUrl: apiUrl)
+        SmsCredentialStore.save(token: token, apiUrl: apiUrl, userId: call.getString("userId") ?? "")
         call.resolve()
     }
 
@@ -51,7 +52,16 @@ public class SmsCapacitorPlugin: CAPInstancePlugin, CAPBridgedPlugin {
     /// Present for bridge parity with Android so the JS layer can call it freely.
     @objc func setForwardMode(_ call: CAPPluginCall) { call.resolve() }
 
-    /// Sign-out / account switch: wipe per-device SMS state so the next user starts OFF.
+    /// Account switch: drop the stored ingest token/owner + disarm, but KEEP the
+    /// device capability (setupCompleted/lastRunAt/queue) so the switch never
+    /// regresses to the setup CTA and another account's queued SMS survive.
+    @objc func clearCredentials(_ call: CAPPluginCall) {
+        SmsCredentialStore.clearCredentials()
+        call.resolve()
+    }
+
+    /// Full device wipe (fresh install / forget device): also clears the device
+    /// capability + queue so the next user starts from the setup CTA.
     @objc func clearState(_ call: CAPPluginCall) {
         SmsCredentialStore.clear()
         call.resolve()
@@ -62,6 +72,8 @@ public class SmsCapacitorPlugin: CAPInstancePlugin, CAPBridgedPlugin {
             "tokenSaved": SmsCredentialStore.token != nil,
             "enabled": SmsCredentialStore.isEnabled,
             "setupCompleted": SmsCredentialStore.isSetupCompleted,
+            "wired": SmsCredentialStore.isWired,
+            "tokenUserId": SmsCredentialStore.tokenUserId ?? "",
             "permission": true,
             "lastRunAt": SmsCredentialStore.lastRunAt ?? "",
             "lastResult": SmsCredentialStore.lastResult ?? "",
@@ -106,6 +118,7 @@ public class SmsCapacitorPlugin: CAPInstancePlugin, CAPBridgedPlugin {
 /// transaction — would silently stop reaching the drain. Add an App Group first.
 enum SmsCredentialStore {
     private static let tokenKey = "buddget.sms.ingest_token"
+    private static let tokenUserIdKey = "buddget.sms.token_user_id"
     private static let apiUrlKey = "buddget.sms.api_url"
     private static let enabledKey = "buddget.sms.enabled"
     private static let setupCompletedKey = "buddget.sms.setup_completed"
@@ -118,11 +131,13 @@ enum SmsCredentialStore {
     /// an unlocked interleave could drop a freshly-enqueued SMS.
     private static let queueLock = NSLock()
 
-    static func enqueuePending(message: String, sender: String, receivedAt: String) {
+    static func enqueuePending(message: String, sender: String, receivedAt: String, userId: String) {
         queueLock.lock(); defer { queueLock.unlock() }
         let d = UserDefaults.standard
         var queue = (d.array(forKey: pendingQueueKey) as? [[String: String]]) ?? []
-        queue.append(["message": message, "sender": sender, "receivedAt": receivedAt, "source": "sms"])
+        // Stamp the owning account so an account switch can't drain this SMS into
+        // the wrong user (the JS drain filters by userId before POSTing).
+        queue.append(["message": message, "sender": sender, "receivedAt": receivedAt, "source": "sms", "userId": userId])
         if queue.count > 50 { queue = Array(queue.suffix(50)) }
         d.set(queue, forKey: pendingQueueKey)
     }
@@ -152,10 +167,11 @@ enum SmsCredentialStore {
         return ((UserDefaults.standard.array(forKey: pendingQueueKey) as? [[String: String]]) ?? []).count
     }
 
-    static func save(token: String, apiUrl: String) {
+    static func save(token: String, apiUrl: String, userId: String) {
         let d = UserDefaults.standard
         d.set(token, forKey: tokenKey)
         d.set(apiUrl, forKey: apiUrlKey)
+        d.set(userId, forKey: tokenUserIdKey)
     }
 
     static func setEnabled(_ enabled: Bool) {
@@ -166,10 +182,22 @@ enum SmsCredentialStore {
         UserDefaults.standard.set(completed, forKey: setupCompletedKey)
     }
 
+    /// Account switch: forget the token/owner and disarm. Preserves setupCompleted,
+    /// lastRunAt and the pending queue — the Shortcut still physically exists here,
+    /// and the previous account's undelivered SMS wait for that user to return.
+    static func clearCredentials() {
+        let d = UserDefaults.standard
+        d.removeObject(forKey: tokenKey)
+        d.removeObject(forKey: apiUrlKey)
+        d.removeObject(forKey: tokenUserIdKey)
+        d.set(false, forKey: enabledKey)
+    }
+
     static func clear() {
         let d = UserDefaults.standard
         d.removeObject(forKey: tokenKey)
         d.removeObject(forKey: apiUrlKey)
+        d.removeObject(forKey: tokenUserIdKey)
         d.set(false, forKey: enabledKey)
         d.set(false, forKey: setupCompletedKey)
         d.removeObject(forKey: pendingQueueKey)
@@ -182,9 +210,14 @@ enum SmsCredentialStore {
     }
 
     static var token: String? { UserDefaults.standard.string(forKey: tokenKey) }
+    static var tokenUserId: String? { UserDefaults.standard.string(forKey: tokenUserIdKey) }
     static var apiUrl: String? { UserDefaults.standard.string(forKey: apiUrlKey) }
     static var isEnabled: Bool { UserDefaults.standard.bool(forKey: enabledKey) }
     static var isSetupCompleted: Bool { UserDefaults.standard.bool(forKey: setupCompletedKey) }
+    /// The device capability: a Shortcut physically exists here. True once setup
+    /// finished, the bridge ever fired, or a token is stored. Survives account
+    /// switches (clearCredentials keeps setupCompleted + lastRunAt).
+    static var isWired: Bool { isSetupCompleted || lastRunAt != nil || token != nil }
     static var lastRunAt: String? { UserDefaults.standard.string(forKey: lastRunAtKey) }
     static var lastResult: String? { UserDefaults.standard.string(forKey: lastResultKey) }
 }

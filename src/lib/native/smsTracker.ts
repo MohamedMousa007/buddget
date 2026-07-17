@@ -7,6 +7,15 @@ export interface SmsBridgeStatus {
   enabled: boolean
   /** iOS: Shortcut setup guide finished. Android: == tokenSaved (no guide). */
   setupCompleted: boolean
+  /**
+   * The device capability: a Shortcut (iOS) / receiver (Android) physically
+   * exists here. True once setup finished, the bridge ever fired, or a token is
+   * stored. DEVICE truth — survives account switches; only a fresh install
+   * clears it. Gates whether Settings shows the switch vs. the setup CTA.
+   */
+  wired: boolean
+  /** Which account the stored ingest token belongs to ('' if none). */
+  tokenUserId?: string
   /** Android: live RECEIVE_SMS permission. iOS: always true (no OS SMS perm). */
   permission: boolean
   lastRunAt?: string
@@ -20,6 +29,8 @@ export interface PendingSmsItem {
   sender: string
   receivedAt: string
   source: string
+  /** Account that owned the bridge when this SMS was captured ('' / absent = legacy). */
+  userId?: string
 }
 
 export interface SmsHealthResult {
@@ -31,15 +42,18 @@ export interface SmsHealthResult {
 interface SmsCapacitorPlugin {
   checkPermission(): Promise<{ granted: boolean }>
   requestPermission(): Promise<{ granted: boolean }>
-  /** Persists token natively (SharedPreferences / UserDefaults) so the killed-app forwarding path stays armed. */
-  saveToken(opts: { token: string; apiUrl: string }): Promise<void>
+  /** Persists token + owning user natively (SharedPreferences / UserDefaults) so the killed-app forwarding path stays armed and account-attributed. */
+  saveToken(opts: { token: string; apiUrl: string; userId: string }): Promise<void>
   /** Gates native forwarding — Android SmsReceiver / iOS CatchBankSmsIntent. */
   setEnabled(opts: { enabled: boolean }): Promise<void>
   /** iOS: marks the Shortcut setup guide as finished (gates switch visibility). */
   setSetupCompleted(opts: { completed: boolean }): Promise<void>
   /** Android forwarding mode: "sender" (Phase 1) or "keyword" (legacy/Phase 2). iOS no-op. */
   setForwardMode(opts: { mode: string }): Promise<void>
-  /** Sign-out: wipe per-device SMS state (token/enabled/setupCompleted). */
+  /** Account switch: drop the stored ingest token/owner + disarm, KEEPING the device
+   *  capability (setupCompleted/lastRunAt/queue) so the switch never regresses to the CTA. */
+  clearCredentials(): Promise<void>
+  /** Full device wipe (fresh install / forget device): also clears setupCompleted + queue. */
   clearState(): Promise<void>
   /** Per-device bridge state — authoritative for the UI. */
   getStatus(): Promise<SmsBridgeStatus>
@@ -105,18 +119,21 @@ export async function requestSmsPermission(): Promise<boolean> {
  * failed fetch must leave the previously-stored ingest token untouched: it
  * never expires, so stale-but-valid beats clobbered.
  */
-export async function ensureIngestToken(accessToken: string): Promise<boolean> {
-  if (!isNative() || !accessToken) return false
-  const { apiUrl: buildUrl } = await import('@/lib/apiBase')
+export async function ensureIngestToken(accessToken: string, userId: string): Promise<boolean> {
+  if (!isNative() || !accessToken || !userId) return false
+  const { apiFetchAuth } = await import('@/lib/apiBase')
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const res = await fetch(buildUrl('/api/sms/setup-token'), {
+      // apiFetchAuth carries the device-id header, so the server can scope the
+      // ingest token to THIS device (per-device rotation/revocation). The explicit
+      // Authorization wins over the session lookup inside buildAuthHeaders.
+      const res = await apiFetchAuth('/api/sms/setup-token', {
         headers: { Authorization: `Bearer ${accessToken}` },
       })
       if (res.ok) {
         const data = (await res.json()) as { token?: string }
         if (data.token) {
-          await saveSmsToken(data.token)
+          await saveSmsToken(data.token, userId)
           return true
         }
       }
@@ -141,13 +158,38 @@ export async function stopSMSTracking(): Promise<void> {
  * Called from useSmsTracking whenever the ingest token is fetched or rotated.
  * resolveUserId in /api/sms/parse accepts this token as Bearer.
  */
-export async function saveSmsToken(ingestToken: string): Promise<void> {
+export async function saveSmsToken(ingestToken: string, userId: string): Promise<void> {
   if (!(await ensurePlugin()) || !_plugin) return
   try {
     const { apiUrl: buildUrl } = await import('@/lib/apiBase')
     const base = buildUrl('').replace(/\/$/, '')
-    await _plugin.saveToken({ token: ingestToken, apiUrl: base })
+    await _plugin.saveToken({ token: ingestToken, apiUrl: base, userId })
   } catch { /* non-fatal */ }
+}
+
+/**
+ * Account switch guard: if the natively-stored ingest token belongs to a
+ * different user than the one now signed in, drop it (and disarm) BEFORE any
+ * SMS can be forwarded with the wrong account's credentials. Keeps the device
+ * capability (setupCompleted/lastRunAt) intact — the Shortcut/receiver still
+ * physically exists; only the account binding is wrong. Called on SIGNED_IN.
+ */
+export async function reconcileSmsOwner(userId: string): Promise<void> {
+  if (!isNative() || !userId) return
+  const status = await getSmsBridgeStatus()
+  // Clear whenever a token is stored whose owner is NOT the current user — this
+  // includes legacy tokens saved before owner-stamping existed (tokenUserId ''),
+  // which have unknown ownership and must be re-established for this account
+  // rather than trusted. Same-user tokens are kept (no needless re-arm).
+  if (status?.tokenSaved && status.tokenUserId !== userId) {
+    await clearSmsCredentials()
+  }
+}
+
+/** Account switch: drop the stored token/owner + disarm, keep the device capability. */
+export async function clearSmsCredentials(): Promise<void> {
+  if (!(await ensurePlugin()) || !_plugin) return
+  try { await _plugin.clearCredentials() } catch { /* noop */ }
 }
 
 /** Gates native forwarding without touching the stored token. */
@@ -168,7 +210,7 @@ export async function setSmsForwardMode(mode: 'sender' | 'keyword'): Promise<voi
   try { await _plugin.setForwardMode({ mode }) } catch { /* noop */ }
 }
 
-/** Sign-out / account switch: wipe per-device SMS state so the next user starts OFF. */
+/** Full device wipe (forget this device): clears token, queue, setupCompleted, enabled. */
 export async function clearSmsNative(): Promise<void> {
   if (!(await ensurePlugin()) || !_plugin) return
   try { await _plugin.clearState() } catch { /* noop */ }
@@ -183,8 +225,8 @@ export async function clearSmsNative(): Promise<void> {
  * queued for the next drain. The server dedups by sms_hash, so re-delivering
  * an item whose removal didn't land is harmless.
  */
-export async function drainAndSubmitPendingSms(accessToken: string): Promise<void> {
-  if (!isNative() || !accessToken) return
+export async function drainAndSubmitPendingSms(accessToken: string, userId: string): Promise<void> {
+  if (!isNative() || !accessToken || !userId) return
   if (!(await ensurePlugin()) || !_plugin) return
   let items: PendingSmsItem[]
   try {
@@ -192,6 +234,12 @@ export async function drainAndSubmitPendingSms(accessToken: string): Promise<voi
   } catch {
     return
   }
+  // Only replay SMS captured under the CURRENT account. Items owned by a previous
+  // account (item.userId set and different) stay queued for when that user returns
+  // — draining them now would file them under the wrong account (the server
+  // resolves the user from this session's JWT, not the item). Legacy items (no
+  // owner stamp) deliver to the current user, matching pre-owner-stamp behavior.
+  items = items.filter((i) => !i.userId || i.userId === userId)
   if (items.length === 0) return
 
   const { apiUrl: buildUrl } = await import('@/lib/apiBase')

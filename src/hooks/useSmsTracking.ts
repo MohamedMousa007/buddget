@@ -42,12 +42,21 @@ export function useSmsTracking() {
   // setting from another device must not show "on" until this device is armed).
   // On web there is no bridge — the synced setting is the source.
   const isEnabled = isNative() ? deviceStatus?.enabled ?? false : settings.smsTrackingEnabled
-  // iOS hides the switch until the Shortcut guide is finished. Android/web always show it.
-  const isSetup = isNative() && isIOS() ? deviceStatus?.setupCompleted ?? false : true
+  // iOS shows the switch once the device is WIRED (a Shortcut exists here), which
+  // survives account switches — so switching accounts on a set-up phone never
+  // regresses to the setup CTA. Android/web always show it.
+  const isSetup = isNative() && isIOS() ? deviceStatus?.wired ?? false : true
 
   const refreshStatus = useCallback(async () => {
     if (!isNative()) return
     setDeviceStatus(await getSmsBridgeStatus())
+  }, [])
+
+  // Current account id — owner-stamps the natively stored ingest token so an
+  // account switch can detect and drop a token that belongs to the old user.
+  const currentUserId = useCallback(async (): Promise<string | null> => {
+    const { data } = await createClient().auth.getSession()
+    return data.session?.user?.id ?? null
   }, [])
 
   useEffect(() => {
@@ -65,16 +74,22 @@ export function useSmsTracking() {
         setTokenInfo(data)
         // Save the non-expiring ingest token natively (Android SmsForwardWorker /
         // iOS CatchBankSmsIntent) so the bridge survives the 1-hour JWT TTL.
-        if (isNative()) void saveSmsToken(data.token)
+        const uid = await currentUserId()
+        if (isNative() && uid) void saveSmsToken(data.token, uid)
       }
     }
 
-    // Newest received SMS — the "bridge is alive" signal for the iOS pill.
+    // Newest received SMS for THIS account — the "bridge is alive" signal for the
+    // iOS pill. Scoped by user_id so a multi-device account never reads another
+    // phone's forwarded SMS as this device's connection.
     const fetchLastReceived = async () => {
       const supabase = createClient()
+      const { data: userRes } = await supabase.auth.getUser()
+      if (!userRes?.user) return
       const { data } = await supabase
         .from('sms_parse_log')
         .select('received_at')
+        .eq('user_id', userRes.user.id)
         .order('received_at', { ascending: false })
         .limit(1)
         .maybeSingle()
@@ -96,7 +111,7 @@ export function useSmsTracking() {
     fetchTokenOnMount()
     void fetchLastReceived()
     void fetchTodayCount()
-  }, [isEnabled])
+  }, [isEnabled, currentUserId])
 
   const toggle = useCallback(async (value: boolean) => {
     setLoading(true)
@@ -113,7 +128,10 @@ export function useSmsTracking() {
           // Store the non-expiring ingest token (never the 1-hour JWT), then
           // flip the native gate — same order as the iOS path below.
           const session = await createClient().auth.getSession()
-          const armed = await ensureIngestToken(session.data.session?.access_token ?? '')
+          const armed = await ensureIngestToken(
+            session.data.session?.access_token ?? '',
+            session.data.session?.user?.id ?? '',
+          )
           if (!armed) {
             setError('SMS tracking failed to start. Please check your connection and try again.')
             return // do not flip switch on
@@ -133,15 +151,22 @@ export function useSmsTracking() {
       // native enabled gate the App Intent checks before forwarding.
       if (isNative() && isIOS()) {
         if (value) {
+          // Arm only if the token actually lands — mirror the Android guard, so a
+          // failed fetch never flips the switch green over an absent/stale token.
+          const uid = await currentUserId()
           const res = await apiFetchAuth('/api/sms/setup-token')
-          if (res.ok) {
-            const data = await res.json() as TokenInfo
-            setTokenInfo(data)
-            await saveSmsToken(data.token)
+          if (!res.ok || !uid) {
+            setError('SMS tracking failed to start. Please check your connection and try again.')
+            return
           }
+          const data = await res.json() as TokenInfo
+          setTokenInfo(data)
+          await saveSmsToken(data.token, uid)
           await setSmsEnabled(true)
+          setError(null)
         } else {
           await setSmsEnabled(false)
+          setError(null)
         }
         updateSettings({ smsTrackingEnabled: value })
         return
@@ -164,11 +189,12 @@ export function useSmsTracking() {
   const completeIosSetup = useCallback(async () => {
     setLoading(true)
     try {
+      const uid = await currentUserId()
       const res = await apiFetchAuth('/api/sms/setup-token')
-      if (res.ok) {
+      if (res.ok && uid) {
         const data = await res.json() as TokenInfo
         setTokenInfo(data)
-        await saveSmsToken(data.token)
+        await saveSmsToken(data.token, uid)
       }
       await setIosSetupCompleted(true)
       await setSmsEnabled(true)
@@ -177,25 +203,27 @@ export function useSmsTracking() {
     } finally {
       setLoading(false)
     }
-  }, [updateSettings, refreshStatus])
+  }, [updateSettings, refreshStatus, currentUserId])
 
   const fetchToken = useCallback(async () => {
+    const uid = await currentUserId()
     const res = await apiFetchAuth('/api/sms/setup-token')
     if (res.ok) {
       const data = await res.json() as TokenInfo
       setTokenInfo(data)
-      if (isNative()) void saveSmsToken(data.token)
+      if (isNative() && uid) void saveSmsToken(data.token, uid)
     }
-  }, [])
+  }, [currentUserId])
 
   const rotateToken = useCallback(async () => {
+    const uid = await currentUserId()
     const res = await apiFetchAuth('/api/sms/setup-token', { method: 'DELETE' })
     if (res.ok) {
       const data = await res.json() as TokenInfo
       setTokenInfo(data)
-      if (isNative()) void saveSmsToken(data.token)
+      if (isNative() && uid) void saveSmsToken(data.token, uid)
     }
-  }, [])
+  }, [currentUserId])
 
   return {
     isEnabled,

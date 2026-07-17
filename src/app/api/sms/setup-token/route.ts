@@ -11,6 +11,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
+import { DEVICE_ID_HEADER } from '@/lib/auth/deviceIdConstants'
 
 export async function GET(request: Request) {
   const userId = await resolveApiUserId(request)
@@ -20,28 +21,30 @@ export async function GET(request: Request) {
   }
 
   const serviceClient = createServiceRoleClient()
+  // Native shell sends its device id; web sends none. Scope the token to the
+  // device so per-device rotation/revocation never de-arms a user's other phone.
+  const deviceId = request.headers.get(DEVICE_ID_HEADER)
 
-  // Check for an existing active token.
-  const { data: existing } = await serviceClient
+  // Check for an existing active token for this scope.
+  let existingQuery = serviceClient
     .from('sms_ingest_tokens')
     .select('token')
     .eq('user_id', userId)
     .eq('is_active', true)
     .order('created_at', { ascending: false })
     .limit(1)
-    .single()
+  if (deviceId) existingQuery = existingQuery.eq('device_id', deviceId)
+  const { data: existing } = await existingQuery.maybeSingle()
 
-  const token = existing?.token ?? null
-
-  if (token) {
+  if (existing?.token) {
     const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/sms/ingest`
-    return NextResponse.json({ token, webhookUrl })
+    return NextResponse.json({ token: existing.token, webhookUrl })
   }
 
-  // Create a new token.
+  // Create a new token bound to this device (null for web).
   const { data: newToken, error } = await serviceClient
     .from('sms_ingest_tokens')
-    .insert({ user_id: userId })
+    .insert({ user_id: userId, device_id: deviceId })
     .select('token')
     .single()
 
@@ -63,18 +66,23 @@ export async function DELETE(request: Request) {
   }
 
   const serviceClient = createServiceRoleClient()
+  const deviceId = request.headers.get(DEVICE_ID_HEADER)
 
-  // Deactivate all existing active tokens.
-  await serviceClient
+  // Deactivate active tokens for this scope — only THIS device when the native
+  // shell identifies itself, so rotating on one phone never de-arms another.
+  // Web (no device id) rotates all of the user's tokens, as before.
+  let deactivate = serviceClient
     .from('sms_ingest_tokens')
     .update({ is_active: false })
     .eq('user_id', userId)
     .eq('is_active', true)
+  if (deviceId) deactivate = deactivate.eq('device_id', deviceId)
+  await deactivate
 
-  // Issue a new token.
+  // Issue a new token bound to this device (null for web).
   const { data: newToken, error } = await serviceClient
     .from('sms_ingest_tokens')
-    .insert({ user_id: userId })
+    .insert({ user_id: userId, device_id: deviceId })
     .select('token')
     .single()
 

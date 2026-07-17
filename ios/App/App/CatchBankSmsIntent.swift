@@ -23,6 +23,11 @@ struct CatchBankSmsIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult {
+        // Stamp that the Shortcut fired BEFORE the enable gate — this is the only
+        // on-device proof the automation exists (iOS exposes no API to enumerate
+        // Shortcuts), so it must be recorded even when tracking is off, feeding
+        // the "wired" capability that gates the Settings switch vs. setup CTA.
+        SmsCredentialStore.recordRun(result: "detected")
         guard SmsCredentialStore.isEnabled else { return .result() }
 
         // Ledger-first, mirroring Android's SmsReceiver/SmsForwardWorker split: the
@@ -35,7 +40,8 @@ struct CatchBankSmsIntent: AppIntent {
         // into a delay: the app-open drain replays whatever is still queued.
         let receivedAt = ISO8601DateFormatter().string(from: Date())
         let from = sender ?? ""
-        SmsCredentialStore.enqueuePending(message: message, sender: from, receivedAt: receivedAt)
+        SmsCredentialStore.enqueuePending(message: message, sender: from, receivedAt: receivedAt,
+                                          userId: SmsCredentialStore.tokenUserId ?? "")
 
         guard let token = SmsCredentialStore.token,
               let base = SmsCredentialStore.apiUrl,

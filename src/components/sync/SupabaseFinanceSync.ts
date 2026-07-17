@@ -362,9 +362,10 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
           try {
             const { data } = await supabase.auth.getSession()
             const token = data.session?.access_token
-            if (token) {
+            const uid = data.session?.user?.id
+            if (token && uid) {
               const { drainAndSubmitPendingSms } = await import('@/lib/native/smsTracker')
-              await drainAndSubmitPendingSms(token)
+              await drainAndSubmitPendingSms(token, uid)
             }
           } catch { /* next app open drains */ }
         })()

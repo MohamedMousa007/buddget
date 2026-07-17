@@ -27,13 +27,16 @@ object PendingSmsQueue {
     private const val CAP = 50
 
     @Synchronized
-    fun enqueue(context: Context, message: String, sender: String, receivedAt: String) {
+    fun enqueue(context: Context, message: String, sender: String, receivedAt: String, userId: String) {
         val items = read(context)
         items.put(JSONObject().apply {
             put("message", message)
             put("sender", sender)
             put("receivedAt", receivedAt)
             put("source", "sms")
+            // Owner-stamp: the JS drain filters by userId so an account switch
+            // can't forward this SMS into the wrong user's account.
+            put("userId", userId)
         })
         write(context, trim(items))
     }

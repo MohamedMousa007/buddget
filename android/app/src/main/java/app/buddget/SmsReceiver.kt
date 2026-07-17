@@ -73,8 +73,10 @@ class SmsReceiver : BroadcastReceiver() {
         // actually arrived, not when the POST finally ran.
         val receivedAt = SmsTime.nowIso()
         // Ledger-first: the SMS is "pending" until the worker's POST succeeds.
-        // The app renders this as a waiting-to-sync card while offline.
-        PendingSmsQueue.enqueue(context, fullBody, sender ?: "", receivedAt)
+        // The app renders this as a waiting-to-sync card while offline. Stamp the
+        // owning account so an account switch can't drain it into the wrong user.
+        val tokenUserId = prefs.getString("token_user_id", "") ?: ""
+        PendingSmsQueue.enqueue(context, fullBody, sender ?: "", receivedAt, tokenUserId)
         val data = workDataOf(
             SmsForwardWorker.KEY_MESSAGE     to fullBody,
             SmsForwardWorker.KEY_SENDER      to (sender ?: ""),

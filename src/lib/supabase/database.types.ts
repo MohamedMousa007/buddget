@@ -1495,6 +1495,7 @@ export type Database = {
       sms_ingest_tokens: {
         Row: {
           created_at: string
+          device_id: string | null
           id: string
           is_active: boolean
           token: string
@@ -1502,6 +1503,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          device_id?: string | null
           id?: string
           is_active?: boolean
           token?: string
@@ -1509,6 +1511,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          device_id?: string | null
           id?: string
           is_active?: boolean
           token?: string

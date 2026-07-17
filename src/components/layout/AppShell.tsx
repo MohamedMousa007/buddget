@@ -54,28 +54,63 @@ function SmsStartupSync() {
     // refreshToken=false on resume: ensureIngestToken is a network round-trip with
     // retries, and the token never expires — refreshing it on every foreground buys
     // nothing. The drain itself is free when the queue is empty.
-    const tryStart = async (token: string, refreshToken = true) => {
-      if (!token) return
-      // Gate on the NATIVE per-device flag, not the store setting — the store
-      // may not be rehydrated yet on cold start (the old gate silently skipped
-      // the token refresh), and a setting synced from another device must not
-      // arm this one.
-      const { getSmsBridgeStatus, ensureIngestToken, drainAndSubmitPendingSms } =
+    // Server-side account intent (user_settings.sms_tracking_enabled) — the
+    // authoritative "does this account want tracking". Read from the server, not
+    // the store, so it's correct even before the store rehydrates on cold start.
+    // null on read failure ⇒ leave device state untouched (never disarm a working
+    // device over a transient hiccup).
+    const fetchAccountSmsIntent = async (userId: string): Promise<boolean | null> => {
+      try {
+        const { createClient } = await import('@/lib/supabase/client')
+        const { data, error } = await createClient()
+          .from('user_settings')
+          .select('sms_tracking_enabled')
+          .eq('user_id', userId)
+          .maybeSingle()
+        if (error) return null
+        return Boolean((data as { sms_tracking_enabled?: boolean } | null)?.sms_tracking_enabled)
+      } catch {
+        return null
+      }
+    }
+
+    // refreshToken=false on resume: skip the account-intent reconcile (a network
+    // round-trip) — resume never changes accounts, and the token never expires.
+    const tryStart = async (token: string, userId: string, refreshToken = true) => {
+      if (!token || !userId) return
+      const { getSmsBridgeStatus, ensureIngestToken, drainAndSubmitPendingSms, reconcileSmsOwner, setSmsEnabled } =
         await import('@/lib/native/smsTracker')
       const { isOnline } = await import('@/hooks/useNetworkStatus')
-      if (refreshToken) {
-        const status = await getSmsBridgeStatus()
-        // Refresh the stored ingest token BEFORE draining, so queued items that
-        // failed on a stale token replay with a valid one (self-heal). Also
-        // re-arms the token after sign-out/sign-in without wiping native state.
-        if (status?.enabled) await ensureIngestToken(token)
+
+      // 1. Account-switch guard FIRST (no network): if the stored ingest token
+      //    belongs to a previous account, drop it + disarm before any SMS can be
+      //    forwarded into the wrong account. Keeps the device capability intact.
+      await reconcileSmsOwner(userId)
+
+      const status = await getSmsBridgeStatus()
+      // No Shortcut/receiver physically on this device → nothing to arm or drain.
+      if (!status?.wired) return
+
+      // 2. Reconcile armed-state to the account's remembered intent — this is what
+      //    makes on/off follow the ACCOUNT across sign-out/in: A stays armed, B
+      //    starts off, A auto-resumes on return. Online-only (both reads need the
+      //    network); offline leaves current device state as-is.
+      if (refreshToken && isOnline()) {
+        const intent = await fetchAccountSmsIntent(userId)
+        if (intent === true) {
+          // ensureIngestToken re-stamps the token to this account (self-heal).
+          if (await ensureIngestToken(token, userId)) await setSmsEnabled(true)
+        } else if (intent === false) {
+          await setSmsEnabled(false)
+        }
+        // intent === null (read failed): leave device state untouched.
       }
-      // Replay SMS the native path couldn't deliver (offline / stale token / a
-      // background kill mid-send). NOT gated on `enabled` — SMS queued before the
-      // user disabled tracking must still reach the server instead of stranding as
-      // pending cards. Skip while offline — items stay queued for the next open.
+
+      // 3. Replay SMS this account captured offline (owner-filtered inside). NOT
+      //    gated on `enabled` — SMS queued before the user disabled tracking must
+      //    still reach the server. Skip while offline — items stay queued.
       if (!isOnline()) return
-      await drainAndSubmitPendingSms(token)
+      await drainAndSubmitPendingSms(token, userId)
     }
 
     let unsub: (() => void) | null = null
@@ -85,11 +120,10 @@ function SmsStartupSync() {
       const client = createClient()
       // Initial mount — handles re-launch while already logged in
       const { data } = await client.auth.getSession()
-      void tryStart(data.session?.access_token ?? '')
-      // Auth state changes — handles login after fresh install
+      void tryStart(data.session?.access_token ?? '', data.session?.user?.id ?? '')
+      // Auth state changes — handles login after fresh install / account switch
       const { data: listener } = client.auth.onAuthStateChange((event, session) => {
-        const token = session?.access_token ?? ''
-        if (event === 'SIGNED_IN') void tryStart(token)
+        if (event === 'SIGNED_IN') void tryStart(session?.access_token ?? '', session?.user?.id ?? '')
       })
       unsub = listener.subscription.unsubscribe
 
@@ -102,7 +136,7 @@ function SmsStartupSync() {
         if (!isActive) return
         void (async () => {
           const { data: s } = await client.auth.getSession()
-          void tryStart(s.session?.access_token ?? '', false)
+          void tryStart(s.session?.access_token ?? '', s.session?.user?.id ?? '', false)
         })()
       })
       removeResume = () => { void handle.remove() }

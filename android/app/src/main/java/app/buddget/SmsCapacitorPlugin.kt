@@ -52,10 +52,14 @@ class SmsCapacitorPlugin : Plugin() {
     fun saveToken(call: PluginCall) {
         val token  = call.getString("token")  ?: run { call.reject("token required"); return }
         val apiUrl = call.getString("apiUrl") ?: ""
+        val userId = call.getString("userId") ?: ""
         activity.getSharedPreferences("buddget_sms", Context.MODE_PRIVATE)
             .edit()
             .putString("access_token", token)
             .putString("api_url", apiUrl)
+            // Owner-stamp the token so an account switch can detect + drop a token
+            // that belongs to the previous user before SmsReceiver forwards with it.
+            .putString("token_user_id", userId)
             .apply()
         call.resolve()
     }
@@ -82,12 +86,17 @@ class SmsCapacitorPlugin : Plugin() {
         val tokenSaved = prefs.getString("access_token", null) != null
         val enabled = prefs.getBoolean("sms_enabled", false)
         val permission = getPermissionState("sms")?.name == "GRANTED"
+        val lastRunAt = prefs.getString("last_run_at", "") ?: ""
         call.resolve(JSObject().apply {
             put("tokenSaved", tokenSaved)
             put("enabled", enabled)
             put("setupCompleted", tokenSaved)
+            // Device capability: a receiver is armed here (token saved) or has fired.
+            // Survives account switches (clearCredentials keeps last_run_at).
+            put("wired", tokenSaved || lastRunAt.isNotEmpty())
+            put("tokenUserId", prefs.getString("token_user_id", "") ?: "")
             put("permission", permission)
-            put("lastRunAt", prefs.getString("last_run_at", "") ?: "")
+            put("lastRunAt", lastRunAt)
             put("lastResult", prefs.getString("last_result", "") ?: "")
             put("pendingCount", PendingSmsQueue.count(activity))
         })
@@ -123,13 +132,32 @@ class SmsCapacitorPlugin : Plugin() {
         call.resolve()
     }
 
-    /** Sign-out / account switch: wipe per-device SMS state so the next user starts OFF. */
+    /**
+     * Account switch: drop the stored token/owner + disarm, but KEEP last_run_at
+     * and the pending queue. The receiver still exists on this device (so the UI
+     * keeps the switch, not the setup CTA), and the previous account's queued SMS
+     * wait for that user to return rather than being forwarded into the new one.
+     */
+    @PluginMethod
+    fun clearCredentials(call: PluginCall) {
+        activity.getSharedPreferences("buddget_sms", Context.MODE_PRIVATE)
+            .edit()
+            .remove("access_token")
+            .remove("api_url")
+            .remove("token_user_id")
+            .putBoolean("sms_enabled", false)
+            .apply()
+        call.resolve()
+    }
+
+    /** Full device wipe (forget device): also clears the queue + owner. */
     @PluginMethod
     fun clearState(call: PluginCall) {
         activity.getSharedPreferences("buddget_sms", Context.MODE_PRIVATE)
             .edit()
             .remove("access_token")
             .remove("api_url")
+            .remove("token_user_id")
             .remove("pending_queue")
             .putBoolean("sms_enabled", false)
             .apply()
