@@ -40,5 +40,7 @@ export function recurringExpenseFromRow(row: RecurringExpenseRow): RecurringExpe
     dayOfMonth: row.day_of_month ?? 1,
     isActive: row.is_active,
     notes: row.notes ?? undefined,
+    createdAt: row.created_at ?? undefined,
+    updatedAt: row.updated_at ?? undefined,
   }
 }

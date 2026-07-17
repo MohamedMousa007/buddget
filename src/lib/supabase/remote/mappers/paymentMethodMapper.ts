@@ -25,5 +25,7 @@ export function paymentMethodFromRow(row: PaymentMethodRow): PaymentMethod {
     color: row.color ?? undefined,
     last4: row.last4 ?? undefined,
     isDefault: row.is_default,
+    createdAt: row.created_at ?? undefined,
+    updatedAt: row.updated_at ?? undefined,
   }
 }

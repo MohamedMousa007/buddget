@@ -64,6 +64,10 @@ export interface PaymentMethod {
   icon?: string
   last4?: string
   isDefault: boolean
+  /** Last local edit (ISO). Powers the offline-merge tiebreak — without it an
+   *  offline edit to this row loses to the server on every sign-in. */
+  updatedAt?: string
+  createdAt?: string
 }
 
 /** How often recurring income is received; amount is per that period (e.g. weekly = per week). */
@@ -232,6 +236,10 @@ export interface RecurringExpense {
   isActive: boolean
   notes?: string
   sharedPlanId?: string | null
+  /** Last local edit (ISO). Powers the offline-merge tiebreak — without it an
+   *  offline edit to this row loses to the server on every sign-in. */
+  updatedAt?: string
+  createdAt?: string
 }
 
 export type SubscriptionBillingCycle = 'monthly' | 'quarterly' | 'yearly' | 'weekly'
@@ -452,6 +460,10 @@ export interface SavingsTransaction {
    * either way — the two are independent axes.
    */
   isCashFlow?: boolean
+  /** Last local edit (ISO). Powers the offline-merge tiebreak — without it an
+   *  offline edit to this row loses to the server on every sign-in. */
+  updatedAt?: string
+  createdAt?: string
 }
 
 export type DebtCurrency = 'EGP' | 'XAU' | Currency

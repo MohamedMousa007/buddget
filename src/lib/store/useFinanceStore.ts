@@ -434,7 +434,8 @@ export const useFinanceStore = create<FinanceStore>()(
 
       addPaymentMethod: (method) => {
         const pmId = generateId()
-        const newMethod: PaymentMethod = { ...method, id: pmId }
+        const nowIso = new Date().toISOString()
+        const newMethod: PaymentMethod = { ...method, id: pmId, createdAt: nowIso, updatedAt: nowIso }
         set((state) => {
           const paymentMethods = method.isDefault
             ? [...state.paymentMethods.map((m) => ({ ...m, isDefault: false })), newMethod]
@@ -474,7 +475,7 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => ({
           paymentMethods: state.paymentMethods.map((m) =>
             m.id === id
-              ? { ...m, ...updates }
+              ? { ...m, ...updates, updatedAt: new Date().toISOString() }
               : updates.isDefault
                 ? { ...m, isDefault: false } // one default at a time, mirroring addPaymentMethod
                 : m
@@ -752,14 +753,14 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => ({
           recurringExpenses: [
             ...state.recurringExpenses,
-            { ...expense, id: generateId() },
+            { ...expense, id: generateId(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
           ],
         })),
 
       updateRecurringExpense: (id, updates) =>
         set((state) => ({
           recurringExpenses: state.recurringExpenses.map((e) =>
-            e.id === id ? { ...e, ...updates } : e
+            e.id === id ? { ...e, ...updates, updatedAt: new Date().toISOString() } : e
           ),
         })),
 

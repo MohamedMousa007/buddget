@@ -9,7 +9,7 @@ type WithId = { id: string; updatedAt?: string; createdAt?: string }
  *  - If the same id appears in both lists, keep the one with the newer `updatedAt`
  *    (falling back to `createdAt`, then to `server` as the safer default).
  */
-function mergeList<T extends WithId>(local: T[], server: T[]): T[] {
+export function mergeList<T extends WithId>(local: T[], server: T[]): T[] {
   const byId = new Map<string, T>()
   for (const r of server) byId.set(r.id, r)
   for (const l of local) {

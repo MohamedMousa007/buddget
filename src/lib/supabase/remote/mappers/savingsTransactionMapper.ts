@@ -33,5 +33,7 @@ export function savingsTransactionFromRow(row: SavingsTransactionRow): SavingsTr
     date: row.transaction_date,
     notes: row.notes ?? undefined,
     isCashFlow: row.is_cash_flow ?? true,
+    createdAt: row.created_at ?? undefined,
+    updatedAt: row.updated_at ?? undefined,
   }
 }
