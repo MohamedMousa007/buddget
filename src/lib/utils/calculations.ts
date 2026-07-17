@@ -541,14 +541,18 @@ export function calculateLeftToSpendCashFlow(params: {
   const savTagged = monthlyExpenses
     .filter((e) => e.category === 'Savings')
     .reduce((sum, e) => sum + expenseAmountInBase(e, baseCurrency, exchangeRates), 0)
-  const netLedger = netSavingsLedgerInBaseForMonth(
+  // DEPOSITS only, not the net ledger. A withdrawal already returns to spendable income as
+  // a confirmed IncomeEvent (withdrawFromSavings), which `totalIncome` counts — subtracting
+  // the net (deposits − withdrawals) added a withdrawal back a SECOND time (+600 for 300).
+  // Excludes opening balances / corrections (isCashFlow === false), which move no cash.
+  const savingsDeposits = cashSavingsDepositsInBaseForMonth(
     savingsTransactions,
     monthStr,
     monthStartDay,
     baseCurrency,
     exchangeRates
   )
-  return totalIncome - nonSav - savTagged - netLedger
+  return totalIncome - nonSav - savTagged - savingsDeposits
 }
 
 /** Debt payments inside a month window. `date` may be date-only or a full ISO stamp. */
