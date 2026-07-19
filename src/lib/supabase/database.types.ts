@@ -2135,10 +2135,14 @@ export type Database = {
       sms_try_pair: {
         Args: {
           p_amount: number
+          p_amount_tolerance?: number
           p_log_id: string
           p_match_kinds: string[]
           p_received_at: string
+          p_reference?: string
           p_require_equal_amount: boolean
+          p_require_registered_sibling?: boolean
+          p_self_kind?: string
           p_user_id: string
           p_window_seconds: number
         }

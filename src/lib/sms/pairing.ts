@@ -213,9 +213,21 @@ export async function tryPairLeg(
      * ignoring it still consumes the sibling's one pairing slot and strands it forever.
      */
     matchKinds?: string[]
+    /**
+     * IPN reference shared by both legs of an account-to-account transfer. When set, the RPC
+     * claims the sibling whose raw_body contains it and ignores the amount (the fee differs).
+     */
+    reference?: string
+    /**
+     * Fallback for a garbled/absent reference: require the sibling's own account to be a
+     * registered payment method (the caller checks its own the same way), and apply the fee
+     * tolerance to the amount.
+     */
+    requireRegisteredSibling?: boolean
   },
 ): Promise<PairSibling | null> {
-  const requireEqual = params.kind === 'own_transfer' || params.kind === 'cc_payoff'
+  const requireEqual =
+    params.requireRegisteredSibling || params.kind === 'own_transfer' || params.kind === 'cc_payoff'
   // FX pairs with FX. Everything else pairs across the transfer/payoff family, in both
   // directions: a cc_payoff finds its funding leg, and a funding leg finds its payoff.
   // The funding leg reports as an outbound transfer, which dispatch reclassifies to
@@ -236,9 +248,12 @@ export async function tryPairLeg(
     p_amount: params.amount,
     p_require_equal_amount: requireEqual,
     p_match_kinds: matchKinds,
-    // Always offered; the RPC ignores it unless a cc_payoff is on one side of the pair.
+    // Always offered; the RPC ignores it unless a cc_payoff is on one side of the pair, or the
+    // registered-sibling fallback is in play.
     p_amount_tolerance: transferFeeTolerance(params.amount),
     p_self_kind: params.kind ?? null,
+    p_reference: params.reference ?? null,
+    p_require_registered_sibling: params.requireRegisteredSibling ?? false,
   })
   if (error) {
     console.warn('[sms/pairing] sms_try_pair failed', error)

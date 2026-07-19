@@ -36,6 +36,7 @@ import {
   reconcileCcPayoffFundingLeg,
   attributeFundingToPayoff,
   type CcPayoffFundingLeg,
+  type PairSibling,
 } from './pairing'
 import { matchSalary } from './matchSalary'
 import { matchSubscription } from './matchSubscription'
@@ -129,6 +130,45 @@ function base(outcome: SmsTxOutcome, kind: SmsExpenseKind): SmsTxResult {
   }
 }
 
+/**
+ * The IPN reference both legs of an account-to-account transfer carry ("with reference
+ * b3abc23b", "Ref# b3abc23b"). Anchored on the keyword so amounts and phone numbers
+ * ("call 16607") never match; 6+ chars keeps it collision-safe (real refs are 8-hex).
+ */
+const IPN_REFERENCE = /\bref(?:erence)?\s*#?\s*:?\s*([a-z0-9]{6,})/i
+function extractIpnReference(body: string): string | null {
+  return body.match(IPN_REFERENCE)?.[1] ?? null
+}
+
+/**
+ * Reconciles a claimed sibling into a single non-spend Transfer, whichever leg arrived first.
+ * Shared by the wallet-movement block (step 0) and the IPN reference/fallback steps (1b/1c).
+ */
+async function finalizeOwnTransferPair(
+  service: SupabaseClient,
+  row: SmsRowData,
+  sibling: PairSibling,
+): Promise<SmsTxResult> {
+  const { needsPost } = await reconcileSibling(service, sibling)
+  if (!needsPost) {
+    // The sibling already carries the row. If it was the provisional Remittance of an outbound
+    // leg, that guess is now disproved — retag it, or a transfer to your own account stays
+    // booked as spending.
+    if (sibling.siblingKind === 'instant_transfer_out') {
+      await retagSiblingAsTransfer(service, sibling)
+    }
+    return base('transfer_paired', 'own_transfer')
+  }
+  // Sibling was booked as income (now soft-deleted) — post one visible non-spend row.
+  const posted = await createSmsExpense(service, { ...row, kind: 'own_transfer' })
+  return {
+    ...base('transfer_paired', 'own_transfer'),
+    expenseId: posted.expenseId,
+    category: 'Transfer',
+    error: posted.error,
+  }
+}
+
 export async function createSmsTransaction(
   service: SupabaseClient,
   row: SmsRowData,
@@ -181,25 +221,7 @@ export async function createSmsTransaction(
         // a34d517 fixed. Excluding it means it is never claimed in the first place.
         matchKinds: ['own_transfer', 'instant_transfer_in', 'instant_transfer_out'],
       })
-      if (sibling) {
-        const { needsPost } = await reconcileSibling(service, sibling)
-        if (!needsPost) {
-          // The sibling already carries the row. If it was the provisional Remittance of a
-          // withdrawal, that guess is now disproved — retag it, or a cash-out to your own
-          // bank stays booked as spending.
-          if (sibling.siblingKind === 'instant_transfer_out') {
-            await retagSiblingAsTransfer(service, sibling)
-          }
-          return base('transfer_paired', kind)
-        }
-        const posted = await createSmsExpense(service, { ...row, kind: 'own_transfer' })
-        return {
-          ...base('transfer_paired', 'own_transfer'),
-          expenseId: posted.expenseId,
-          category: 'Transfer',
-          error: posted.error,
-        }
-      }
+      if (sibling) return finalizeOwnTransferPair(service, row, sibling)
     }
     // No sibling: genuine income (inbound) or a real remittance (outbound). Falls through.
   }
@@ -211,6 +233,58 @@ export async function createSmsTransaction(
     (await isOwnAccountTransfer(service, row.userId, row.counterpartyLast4 ?? null))
   ) {
     kind = 'own_transfer'
+  }
+
+  // 1b/1c. Account-to-account IPN transfer between the user's OWN accounts. IPN SMS identify the
+  //   counterparty only by name (outbound) or not at all (inbound), so step 1's last4 join never
+  //   sees them and the transfer was booked as Remittance + income. Both paths below only claim
+  //   a sibling that actually exists — a real remittance to someone else has no inbound leg on
+  //   this phone, so it stays spend.
+  if (
+    (kind === 'instant_transfer_in' || kind === 'instant_transfer_out') &&
+    row.logId &&
+    row.receivedAtIso
+  ) {
+    // Opposite direction only, plus own_transfer (a sibling the last4 path already promoted).
+    // Never cc_payoff (step 3 owns its funding leg) or plain income (a salary is not a transfer).
+    const matchKinds =
+      kind === 'instant_transfer_out'
+        ? ['instant_transfer_in', 'own_transfer']
+        : ['instant_transfer_out', 'own_transfer']
+
+    // 1b. Same IPN reference on both legs — definitive; only the user's own account receives
+    //     the inbound SMS, so an out+in leg sharing a reference is an own transfer for certain.
+    const reference = extractIpnReference(row.rawBody)
+    let sibling = reference
+      ? await tryPairLeg(service, {
+          userId: row.userId,
+          logId: row.logId,
+          receivedAtIso: row.receivedAtIso,
+          amount: row.amount,
+          kind,
+          matchKinds,
+          reference,
+        })
+      : null
+
+    // 1c. Fallback for a garbled/absent reference: this leg's own account AND the sibling's are
+    //     both registered payment methods, within the window, amounts within the transfer fee.
+    // ponytail: can in theory pair two unrelated IPN transfers colliding within the window and
+    // fee tolerance — rare, and 1b handles the normal case first.
+    if (!sibling && (await resolveExactPaymentMethod(service, row.userId, row.last4))) {
+      sibling = await tryPairLeg(service, {
+        userId: row.userId,
+        logId: row.logId,
+        receivedAtIso: row.receivedAtIso,
+        amount: row.amount,
+        kind,
+        matchKinds,
+        requireRegisteredSibling: true,
+      })
+    }
+
+    if (sibling) return finalizeOwnTransferPair(service, row, sibling)
+    // No sibling: genuine income (inbound) or a real remittance (outbound). Falls through.
   }
 
   // 2. Transfer / FX — pair the two legs, represent the pair once (non-spend).
