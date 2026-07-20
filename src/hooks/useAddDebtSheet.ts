@@ -94,6 +94,8 @@ export function useAddDebtSheet() {
   const [ccGraceDays, setCcGraceDays] = useState('55')
   const [ccMinPercent, setCcMinPercent] = useState('5')
   const [installmentProvider, setInstallmentProvider] = useState<InstallmentProvider>('other')
+  const [installmentProviderName, setInstallmentProviderName] = useState('')
+  const [installmentProviderSlug, setInstallmentProviderSlug] = useState<string | undefined>(undefined)
   const [linkedCreditCardDebtId, setLinkedCreditCardDebtId] = useState('')
 
   const [selectedDebtId, setSelectedDebtId] = useState(debts[0]?.id || '')
@@ -272,6 +274,8 @@ export function useAddDebtSheet() {
     setCcGraceDays('55')
     setCcMinPercent('5')
     setInstallmentProvider('other')
+    setInstallmentProviderName('')
+    setInstallmentProviderSlug(undefined)
     setLinkedCreditCardDebtId('')
   }, [settings.baseCurrency])
 
@@ -367,7 +371,7 @@ export function useAddDebtSheet() {
       payload.startDate = installmentStartDate
       payload.installmentAmount = Math.round(per * 100) / 100
       payload.installmentProvider = installmentProvider
-      payload.installmentProviderName = findInstallmentProviderMeta(installmentProvider)?.name
+      payload.installmentProviderName = installmentProviderName || findInstallmentProviderMeta(installmentProvider)?.name
       if (installmentProvider === 'credit_card' && linkedCreditCardDebtId) {
         payload.linkedCreditCardDebtId = linkedCreditCardDebtId
       }
@@ -399,6 +403,7 @@ export function useAddDebtSheet() {
     installmentFrequency,
     installmentItemName,
     installmentProvider,
+    installmentProviderName,
     installmentStartDate,
     isGold,
     linkedCreditCardDebtId,
@@ -643,6 +648,10 @@ export function useAddDebtSheet() {
     creditCardDebts,
     installmentProvider,
     setInstallmentProvider,
+    installmentProviderName,
+    setInstallmentProviderName,
+    installmentProviderSlug,
+    setInstallmentProviderSlug,
     linkedCreditCardDebtId,
     setLinkedCreditCardDebtId,
     installmentItemName,

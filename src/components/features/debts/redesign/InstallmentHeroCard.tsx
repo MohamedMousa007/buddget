@@ -4,6 +4,7 @@ import { CreditCard as CardIcon } from 'lucide-react'
 import { heroCardStyle } from '@/components/features/income/incomeGlass'
 import type { InstallmentVM } from '@/hooks/useDebtTabData'
 import { EditPin, fmtWhole } from './heroCardShared'
+import { ProviderBadge } from './ProviderBadge'
 
 export interface InstallmentHeroCardProps {
   vm: InstallmentVM
@@ -22,14 +23,11 @@ export function InstallmentHeroCard({ vm, onEdit, onPay }: InstallmentHeroCardPr
 
       {/* Header: provider mark + card tag */}
       <div className="flex items-center gap-2 pe-9">
-        {/* ponytail: brand lettermark; swap for real provider logo when assets exist (handoff §9). */}
         <span
-          className="flex h-9 items-center gap-1.5 rounded-[10px] px-2.5 text-[13px] font-extrabold"
+          className="flex h-9 items-center gap-1.5 rounded-[10px] px-1.5 pe-2.5 text-[13px] font-extrabold"
           style={{ background: `${accent}26`, color: accent }}
         >
-          <span className="flex h-6 w-6 items-center justify-center rounded-[7px] text-[11px] font-extrabold text-white" style={{ background: accent }}>
-            {vm.providerName.slice(0, 3).toUpperCase()}
-          </span>
+          <ProviderBadge slug={vm.logoSlug} name={vm.providerName} color={accent} size={26} />
           {vm.providerName}
         </span>
         {vm.onCardLast4 ? (

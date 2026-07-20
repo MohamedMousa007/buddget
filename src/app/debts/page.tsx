@@ -4,8 +4,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { navigate } from '@/lib/navigation/navigate'
-import { useExpenseFilterStore } from '@/lib/store/useExpenseFilterStore'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { RecurringIncomeCarousel } from '@/components/features/income/RecurringIncomeCarousel'
 import { DebtPortfolioHero } from '@/components/features/debts/redesign/DebtPortfolioHero'
@@ -15,6 +13,7 @@ import { CreditCardHeroCard } from '@/components/features/debts/redesign/CreditC
 import { InstallmentHeroCard } from '@/components/features/debts/redesign/InstallmentHeroCard'
 import { DebtPaymentsFeed } from '@/components/features/debts/redesign/DebtPaymentsFeed'
 import { ClearedVaultSheet } from '@/components/features/debts/redesign/ClearedVaultSheet'
+import { ChargesSheet, type ChargesSheetTarget } from '@/components/features/debts/redesign/ChargesSheet'
 import { AssignPaymentBanner } from '@/components/features/debts/redesign/AssignPaymentBanner'
 import { useDebtTabData } from '@/hooks/useDebtTabData'
 import { firstNonEmptyFamily, type DebtFamily } from '@/lib/debts/debtFamily'
@@ -46,6 +45,7 @@ export default function DebtsPage() {
   const [tab, setTab] = useState<DebtFamily>('borrow')
   const [index, setIndex] = useState(0)
   const [dismissedAssign, setDismissedAssign] = useState<string | null>(null)
+  const [chargesTarget, setChargesTarget] = useState<ChargesSheetTarget | null>(null)
   const pickedDefault = useRef(false)
 
   // Smart default: land on the first non-empty family (once, when data is ready).
@@ -74,19 +74,16 @@ export default function DebtsPage() {
     setEditingDebtId(id)
     setActiveModal('editDebt')
   }
-  const viewCharges = (pmId?: string) => {
+  const viewCharges = (vm: { id: string; bank: string; last4?: string }) => {
+    const pmId = useFinanceStore.getState().debts.find((d) => d.id === vm.id)?.linkedPaymentMethodId
     if (!pmId) return
-    useExpenseFilterStore.getState().reset()
-    useExpenseFilterStore.setState({ methods: [pmId] })
-    navigate('/expenses')
+    setChargesTarget({ pmId, name: vm.bank, last4: vm.last4 })
   }
 
   if (!dataReady) return <div className="p-4"><SkeletonList /></div>
 
   const listLen =
     tab === 'borrow' ? data.borrow.length : tab === 'credit_card' ? data.cards.length : data.installments.length
-  const cardPmId = (i: number) =>
-    useFinanceStore.getState().debts.find((d) => d.id === data.cards[i]?.id)?.linkedPaymentMethodId
 
   const renderCard = (i: number) => {
     if (tab === 'borrow') {
@@ -100,7 +97,7 @@ export default function DebtsPage() {
           vm={vm}
           onEdit={() => editDebt(vm.id)}
           onPay={() => guardPay(vm.id)}
-          onCharges={() => viewCharges(cardPmId(i))}
+          onCharges={() => viewCharges(vm)}
         />
       )
     }
@@ -174,6 +171,8 @@ export default function DebtsPage() {
         cleared={data.cleared}
         base={data.base}
       />
+
+      <ChargesSheet open={chargesTarget !== null} onClose={() => setChargesTarget(null)} target={chargesTarget} />
     </div>
   )
 }

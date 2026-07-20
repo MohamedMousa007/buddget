@@ -34,6 +34,10 @@ export interface AddDebtNewFormProps {
   creditCardDebts: { id: string; name: string }[]
   installmentProvider: InstallmentProvider
   setInstallmentProvider: (k: InstallmentProvider) => void
+  installmentProviderName: string
+  setInstallmentProviderName: (v: string) => void
+  installmentProviderSlug?: string
+  setInstallmentProviderSlug: (v: string | undefined) => void
   linkedCreditCardDebtId: string
   setLinkedCreditCardDebtId: (id: string) => void
   installmentItemName: string

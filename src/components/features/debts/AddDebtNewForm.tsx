@@ -26,6 +26,10 @@ export function AddDebtNewForm(props: AddDebtNewFormProps) {
         setInstallmentStartDate={props.setInstallmentStartDate}
         installmentProvider={props.installmentProvider}
         setInstallmentProvider={props.setInstallmentProvider}
+        installmentProviderName={props.installmentProviderName}
+        setInstallmentProviderName={props.setInstallmentProviderName}
+        installmentProviderSlug={props.installmentProviderSlug}
+        setInstallmentProviderSlug={props.setInstallmentProviderSlug}
         linkedCreditCardDebtId={props.linkedCreditCardDebtId}
         setLinkedCreditCardDebtId={props.setLinkedCreditCardDebtId}
         creditCardDebts={props.creditCardDebts}

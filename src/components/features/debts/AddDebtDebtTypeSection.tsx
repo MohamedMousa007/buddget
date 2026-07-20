@@ -1,13 +1,17 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { AmountField } from '@/components/ui/AmountField'
 import { Label } from '@/components/ui/label'
 import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import type { DebtKind, InstallmentProvider } from '@/lib/store/types'
-import { InstallmentProviderPicker } from '@/components/features/debts/InstallmentProviderPicker'
+import { InstallmentProviderPickerSheet } from '@/components/features/debts/redesign/InstallmentProviderPickerSheet'
+import { ProviderBadge } from '@/components/features/debts/redesign/ProviderBadge'
+import { coarseProvider } from '@/lib/constants/installmentProviders'
 import { DatePickerField } from '@/components/ui/DatePickerField'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT } from '@/lib/i18n'
 
 interface AddDebtDebtTypeSectionProps {
@@ -24,6 +28,10 @@ interface AddDebtDebtTypeSectionProps {
   setInstallmentStartDate: (v: string) => void
   installmentProvider: InstallmentProvider
   setInstallmentProvider: (k: InstallmentProvider) => void
+  installmentProviderName: string
+  setInstallmentProviderName: (v: string) => void
+  installmentProviderSlug?: string
+  setInstallmentProviderSlug: (v: string | undefined) => void
   linkedCreditCardDebtId: string
   setLinkedCreditCardDebtId: (id: string) => void
   creditCardDebts: { id: string; name: string }[]
@@ -53,6 +61,10 @@ export function AddDebtDebtTypeSection({
   setInstallmentStartDate,
   installmentProvider,
   setInstallmentProvider,
+  installmentProviderName,
+  setInstallmentProviderName,
+  installmentProviderSlug,
+  setInstallmentProviderSlug,
   linkedCreditCardDebtId,
   setLinkedCreditCardDebtId,
   creditCardDebts,
@@ -65,6 +77,13 @@ export function AddDebtDebtTypeSection({
   hidePersonalDirection,
 }: AddDebtDebtTypeSectionProps) {
   const t = useT()
+  const setActiveModal = useSettingsStore((s) => s.setActiveModal)
+  const [providerSheetOpen, setProviderSheetOpen] = useState(false)
+
+  const providerLabel =
+    installmentProvider === 'credit_card'
+      ? (creditCardDebts.find((c) => c.id === linkedCreditCardDebtId)?.name ?? 'Credit card')
+      : installmentProviderName || t.addDebt.installmentProviderLabel
 
   const directionItems = useMemo<ReadonlyArray<SelectFieldOption>>(
     () => [
@@ -72,13 +91,6 @@ export function AddDebtDebtTypeSection({
       { value: 'they_owe', label: t.addDebt.directionTheyOwe },
     ],
     [t.addDebt],
-  )
-  const creditCardItems = useMemo<ReadonlyArray<SelectFieldOption>>(
-    () => [
-      { value: '', label: t.addDebt.whichCreditCardPlaceholder },
-      ...creditCardDebts.map((d) => ({ value: d.id, label: d.name })),
-    ],
-    [creditCardDebts, t.addDebt.whichCreditCardPlaceholder],
   )
   const installmentFreqItems = useMemo<ReadonlyArray<SelectFieldOption>>(
     () => [
@@ -150,19 +162,49 @@ export function AddDebtDebtTypeSection({
 
       {debtType === 'installment' ? (
         <>
-          <InstallmentProviderPicker value={installmentProvider} onChange={setInstallmentProvider} />
-          {installmentProvider === 'credit_card' ? (
-            <div>
-              <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.whichCreditCard}</Label>
-              <SelectField
-                value={linkedCreditCardDebtId}
-                onChange={setLinkedCreditCardDebtId}
-                items={creditCardItems}
-                className="mt-1"
-                aria-label={t.addDebt.whichCreditCard}
-              />
-            </div>
-          ) : null}
+          {/* Provider field → opens the 2-col brand-grid picker sheet (handoff §7) */}
+          <div>
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.installmentProviderLabel}</Label>
+            <button
+              type="button"
+              onClick={() => setProviderSheetOpen(true)}
+              className="mt-1 flex h-12 w-full items-center gap-3 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-start"
+            >
+              {installmentProvider === 'credit_card' ? (
+                <span className="flex h-7 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[#8A5CF6]/22 text-[11px] font-extrabold text-[#8A5CF6]">CC</span>
+              ) : installmentProviderName ? (
+                <ProviderBadge slug={installmentProviderSlug} name={installmentProviderName} size={28} />
+              ) : null}
+              <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{providerLabel}</span>
+              <ChevronDown className="h-4 w-4 shrink-0 text-[var(--color-brand-text-muted)]" />
+            </button>
+          </div>
+          <InstallmentProviderPickerSheet
+            open={providerSheetOpen}
+            valueSlug={installmentProviderSlug}
+            valueCardId={installmentProvider === 'credit_card' ? linkedCreditCardDebtId : undefined}
+            creditCardDebts={creditCardDebts}
+            onPickBrand={(slug, name) => {
+              setInstallmentProvider(coarseProvider(slug))
+              setInstallmentProviderName(name)
+              setInstallmentProviderSlug(slug)
+              setLinkedCreditCardDebtId('')
+            }}
+            onPickCard={(cardId, name) => {
+              setInstallmentProvider('credit_card')
+              setInstallmentProviderName(name)
+              setInstallmentProviderSlug(undefined)
+              setLinkedCreditCardDebtId(cardId)
+            }}
+            onCustom={(name) => {
+              setInstallmentProvider('other')
+              setInstallmentProviderName(name)
+              setInstallmentProviderSlug(undefined)
+              setLinkedCreditCardDebtId('')
+            }}
+            onAddCreditCard={() => setActiveModal('addCreditCard')}
+            onClose={() => setProviderSheetOpen(false)}
+          />
           <div>
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.addDebt.labelItemName}</Label>
             <Input
