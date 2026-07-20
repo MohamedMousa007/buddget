@@ -303,6 +303,7 @@ export type Database = {
           installment_provider:
             | Database["public"]["Enums"]["installment_provider"]
             | null
+          installment_provider_name: string | null
           installment_start_date: string | null
           interest_free: boolean
           interest_rate: number
@@ -347,6 +348,7 @@ export type Database = {
           installment_provider?:
             | Database["public"]["Enums"]["installment_provider"]
             | null
+          installment_provider_name?: string | null
           installment_start_date?: string | null
           interest_free?: boolean
           interest_rate?: number
@@ -391,6 +393,7 @@ export type Database = {
           installment_provider?:
             | Database["public"]["Enums"]["installment_provider"]
             | null
+          installment_provider_name?: string | null
           installment_start_date?: string | null
           interest_free?: boolean
           interest_rate?: number

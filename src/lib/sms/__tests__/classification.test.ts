@@ -9,6 +9,7 @@ describe('mapKindToCategory', () => {
     expect(mapKindToCategory('cc_payoff', null)).toBe('CC Payoff')
     expect(mapKindToCategory('own_transfer', null)).toBe('Transfer')
     expect(mapKindToCategory('currency_exchange', null)).toBe('Currency Exchange')
+    expect(mapKindToCategory('installment_payment', null)).toBe('Installment')
   })
 
   it('keeps external instant transfers as spend (Remittance)', () => {

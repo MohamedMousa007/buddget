@@ -1,10 +1,11 @@
 'use client'
 
-import { AppLink as Link } from '@/components/ui/AppLink'
 import { format, parseISO } from 'date-fns'
 import { Pencil } from 'lucide-react'
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
+import { navigate } from '@/lib/navigation/navigate'
+import { useExpenseFilterStore } from '@/lib/store/useExpenseFilterStore'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import {
   computeCreditCardOutstanding,
@@ -145,12 +146,19 @@ export function CreditCardDebtCard({ debt, payments, onRecordPayment, onEdit }: 
             {t.debts.payNow}
           </button>
           {debt.linkedPaymentMethodId ? (
-            <Link
-              href={`/expenses?pm=${encodeURIComponent(debt.linkedPaymentMethodId)}`}
+            <button
+              type="button"
+              onClick={() => {
+                // SPA router drops query params, so seed the session filter store directly.
+                const pmId = debt.linkedPaymentMethodId!
+                useExpenseFilterStore.getState().reset()
+                useExpenseFilterStore.setState({ methods: [pmId] })
+                navigate('/expenses')
+              }}
               className="flex-1 py-2.5 rounded-xl border border-[var(--color-brand-border)] text-center text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
             >
               {t.debts.viewCharges}
-            </Link>
+            </button>
           ) : null}
         </div>
       </div>

@@ -73,12 +73,12 @@ export function buildDebtFromIncomeFlow(
     payload.personName = input.personStr.trim()
   }
   if (debtType === 'installment') {
+    // Shariaa: fixed figures only — per-installment is total ÷ count, never a rate.
     const n = Math.max(1, parseInt(input.installmentCount, 10) || 1)
-    const per = input.interestFree ? total / n : total / n
+    const per = total / n
     payload.installmentCount = n
     payload.installmentFrequency = input.installmentFrequency
     payload.startDate = input.installmentStartDate
-    payload.interestFree = input.interestFree
     payload.installmentAmount = Math.round(per * 100) / 100
     if (input.installmentProvider) {
       payload.installmentProvider = input.installmentProvider

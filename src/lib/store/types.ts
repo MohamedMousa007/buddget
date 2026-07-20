@@ -510,6 +510,8 @@ export interface Debt {
   notes?: string
   sharedPlanId?: string | null
   createdAt: string
+  /** Last local edit; drives offline last-writer-wins merge (falls back to createdAt). */
+  updatedAt?: string
   /** Optional lifecycle; omitted legacy rows are treated as active until migrated. */
   status?: DebtLifecycleStatus
   /** ISO date (YYYY-MM-DD) when fully cleared. */
@@ -536,8 +538,10 @@ export interface Debt {
   linkedPaymentMethodId?: string
   minimumPaymentPercent?: number
 
-  /** Installment / BNPL provider (Tabby, Tamara, bank card plan, etc.). */
+  /** Installment / BNPL provider coarse category (Tabby, Tamara, bank card plan, etc.). */
   installmentProvider?: InstallmentProvider
+  /** Free-text provider brand slug from the catalogue (valU, Sympl, Souhoola…); shown in UI. */
+  installmentProviderName?: string
   /** When provider is `credit_card`, links to the card debt row. */
   linkedCreditCardDebtId?: string
 }
@@ -547,6 +551,8 @@ export interface DebtPayment {
   debtId: string
   date: string
   amountPaid: number
+  /** Funding account for this payment (which method paid it). */
+  paymentMethodId?: string
   paymentCurrency?: string
   originalAmount?: number
   amountInPrimary?: number

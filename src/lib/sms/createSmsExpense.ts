@@ -15,7 +15,7 @@ import { normalizeMerchant } from './merchantNormalizer'
 export type SmsExpenseKind =
   | 'purchase' | 'online_purchase' | 'atm_withdrawal'
   | 'instant_transfer_out' | 'instant_transfer_in'
-  | 'cc_payoff' | 'own_transfer' | 'currency_exchange'
+  | 'cc_payoff' | 'installment_payment' | 'own_transfer' | 'currency_exchange'
   | 'income' | 'refund' | 'declined' | 'fee' | 'other'
   | null
 
@@ -26,6 +26,7 @@ export function mapKindToCategory(
   // Money-movement kinds map to fixed non-spend categories (see categoryMeta).
   if (kind === 'atm_withdrawal') return 'ATM Cash Withdrawal'
   if (kind === 'cc_payoff') return 'CC Payoff'
+  if (kind === 'installment_payment') return 'Installment'
   if (kind === 'own_transfer') return 'Transfer'
   if (kind === 'currency_exchange') return 'Currency Exchange'
   if (kind === 'instant_transfer_out') return 'Remittance' // external person — still spend
@@ -260,6 +261,113 @@ export async function createSmsExpense(
     .select('id')
     .single()
   return { ...emptyResult(), expenseId: data?.id ?? null, error }
+}
+
+/** ± fraction the SMS amount may differ from a plan's installment amount and still match. */
+const INSTALLMENT_AMOUNT_TOLERANCE = 0.02
+
+/**
+ * Installment payment → records a debt payment against a matching installment plan
+ * and a settlement expense (non-spend `Installment` for BNPL, `Debt` spend otherwise —
+ * mirroring the manual/recurring settlement split so net worth moves exactly once).
+ *
+ * Resolution, most specific first:
+ *   1. a plan whose provider brand the SMS names AND whose installment amount matches
+ *   2. exactly one active installment plan → use it
+ *   3. otherwise ambiguous → `needsConfirm: true`, posts nothing (surfaced to review UI /
+ *      the in-view assign banner). Deliberately conservative: never auto-assign on a
+ *      guess, so a stray provider SMS can't silently reduce the wrong plan.
+ */
+export async function createSmsInstallmentPayment(
+  service: SupabaseClient,
+  row: SmsRowData,
+): Promise<CreateSmsExpenseResult & { needsConfirm?: boolean }> {
+  const { data: plans } = await service
+    .from('debts')
+    .select('id, currency, installment_amount, installment_provider_name, linked_payment_method_id')
+    .eq('user_id', row.userId)
+    .eq('debt_type', 'installment')
+    .eq('status', 'active')
+    .is('deleted_at', null)
+
+  const list = plans ?? []
+  if (list.length === 0) return { ...emptyResult(), needsConfirm: true }
+
+  const amountMatches = (planAmount: number | null) =>
+    planAmount != null && planAmount > 0 &&
+    Math.abs(planAmount - row.amount) <= planAmount * INSTALLMENT_AMOUNT_TOLERANCE
+
+  // Provider brand as named anywhere in the SMS (sender > bank > body).
+  const haystack = `${row.sender ?? ''} ${row.bankName ?? ''} ${row.merchant ?? ''} ${row.rawBody ?? ''}`.toLowerCase()
+  const byProvider = list.filter((p) => {
+    const brand = ((p.installment_provider_name as string | null) ?? '').trim().toLowerCase()
+    return brand.length >= 3 && haystack.includes(brand)
+  })
+
+  let plan: (typeof list)[number] | undefined
+  const providerAndAmount = byProvider.filter((p) => amountMatches(p.installment_amount as number | null))
+  if (providerAndAmount.length === 1) plan = providerAndAmount[0]
+  else if (byProvider.length === 1) plan = byProvider[0]
+  else if (list.length === 1) plan = list[0]
+
+  if (!plan) return { ...emptyResult(), needsConfirm: true }
+
+  // BNPL plan (funded from a `bnpl` method) → the purchase was booked at checkout,
+  // so the settlement is non-spend `Installment`; bank/other plans keep `Debt` spend.
+  let isBnpl = false
+  if (plan.linked_payment_method_id) {
+    const { data: pm } = await service
+      .from('payment_methods')
+      .select('type')
+      .eq('id', plan.linked_payment_method_id as string)
+      .is('deleted_at', null)
+      .maybeSingle()
+    isBnpl = pm?.type === 'bnpl'
+  }
+
+  // The SMS from an installment provider usually names the funding card directly.
+  const fundingPaymentMethodId = await resolveExactPaymentMethod(service, row.userId, row.last4)
+
+  const { data: payRow, error: payErr } = await service
+    .from('debt_payments')
+    .insert({
+      user_id: row.userId,
+      debt_id: plan.id,
+      amount: row.amount,
+      currency: (plan.currency as string) ?? row.currency,
+      payment_date: row.day,
+      payment_method_id: fundingPaymentMethodId,
+      notes: null,
+    })
+    .select('id')
+    .single()
+  if (payErr || !payRow) return { ...emptyResult(), error: payErr }
+
+  const { data: expRow, error: expErr } = await service
+    .from('expenses')
+    .insert({
+      user_id: row.userId,
+      expense_date: row.day,
+      description: smsTitle(row) ?? 'Installment payment',
+      category: isBnpl ? 'Installment' : 'Debt',
+      amount: row.amount,
+      currency: row.currency,
+      payment_method_id: fundingPaymentMethodId,
+      is_debt_payment: true,
+      linked_debt_id: plan.id,
+      linked_debt_payment_id: payRow.id,
+      notes: null,
+      sms_log_id: row.logId ?? null,
+    })
+    .select('id')
+    .single()
+
+  return {
+    ...emptyResult(),
+    expenseId: expRow?.id ?? null,
+    debtPaymentId: payRow.id,
+    error: expErr,
+  }
 }
 
 /**

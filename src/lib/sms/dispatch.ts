@@ -17,6 +17,7 @@ import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js'
 import {
   createSmsExpense,
   createSmsDebtPayment,
+  createSmsInstallmentPayment,
   matchOriginalExpense,
   markExpenseRefunded,
   findRefundedTwin,
@@ -377,6 +378,25 @@ export async function createSmsTransaction(
       expenseId: res.expenseId,
       debtPaymentId: res.debtPaymentId,
       category: 'CC Payoff',
+      error: res.error,
+    }
+  }
+
+  // 3b. Installment payment → debt payment against a matching installment plan.
+  if (kind === 'installment_payment') {
+    const res = await createSmsInstallmentPayment(service, row)
+    if (res.needsConfirm) {
+      // Couldn't confidently pick a plan: book a plain non-spend Installment expense
+      // (no debt reduced) so totals stay correct; the user assigns it to a plan via
+      // the in-view banner / review UI. Never guess which plan a payment belongs to.
+      const fb = await createSmsExpense(service, { ...row, kind, last4: null })
+      return { ...base('expense', kind), expenseId: fb.expenseId, category: 'Installment', error: fb.error }
+    }
+    return {
+      ...base('debt_payment', kind),
+      expenseId: res.expenseId,
+      debtPaymentId: res.debtPaymentId,
+      category: 'Installment',
       error: res.error,
     }
   }

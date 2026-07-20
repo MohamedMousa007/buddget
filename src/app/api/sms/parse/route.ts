@@ -58,7 +58,7 @@ interface ParsedTx {
   category: string | null
   confidence: number
   kind: 'purchase' | 'online_purchase' | 'atm_withdrawal' | 'instant_transfer_out' |
-        'instant_transfer_in' | 'cc_payoff' | 'own_transfer' | 'currency_exchange' |
+        'instant_transfer_in' | 'cc_payoff' | 'installment_payment' | 'own_transfer' | 'currency_exchange' |
         'income' | 'refund' | 'declined' | 'fee' | 'other' | null
   cleanTitle: string | null
   detectedAccountLast4: string | null

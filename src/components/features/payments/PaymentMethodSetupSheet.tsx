@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { X, ArrowLeft, Plus, Search, ChevronDown, Check, CreditCard } from 'lucide-react'
+import { X, ArrowLeft, Plus, Search, ChevronDown, Check, CreditCard, Lock } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { CurrencySheet } from '@/components/ui/CurrencySheet'
 import { cardGradient, TypeGlyph } from '@/components/features/payments/PaymentCardCarousel'
@@ -42,6 +42,10 @@ interface Props {
   onSaved?: (id: string) => void
   /** Stack above another sheet (e.g. the picker). Bumps z-indices. */
   nested?: boolean
+  /** Lock the type (e.g. the Debt tab opens this locked to `credit_card`). */
+  lockType?: PaymentMethodType
+  /** Override the sheet title (e.g. "Add credit card" from the Debt tab). */
+  titleOverride?: string
 }
 
 /**
@@ -50,11 +54,12 @@ interface Props {
  * Reused by the wallet sheet and the payment-method picker (self-contained add).
  */
 export function PaymentMethodSetupSheet({
-  open, editing, prefill, baseCurrency, onClose, onSaved, nested = false,
+  open, editing, prefill, baseCurrency, onClose, onSaved, nested = false, lockType, titleOverride,
 }: Props) {
   const t = useT()
   const addPaymentMethod = useFinanceStore((s) => s.addPaymentMethod)
   const updatePaymentMethod = useFinanceStore((s) => s.updatePaymentMethod)
+  const updateDebt = useFinanceStore((s) => s.updateDebt)
 
   const [brandId, setBrandId] = useState<string | null>(null)
   const [providerName, setProviderName] = useState('')
@@ -67,6 +72,11 @@ export function PaymentMethodSetupSheet({
   const [isDefault, setIsDefault] = useState(false)
   const [providerSheetOpen, setProviderSheetOpen] = useState(false)
   const [currencyOpen, setCurrencyOpen] = useState(false)
+  // Credit-card debt terms (only when type === 'credit_card').
+  const [ccLimit, setCcLimit] = useState('')
+  const [ccOutstanding, setCcOutstanding] = useState('')
+  const [ccStatementDay, setCcStatementDay] = useState('')
+  const [ccGrace, setCcGrace] = useState('55')
 
   const prevOpen = useRef(false)
   useEscapeClose(open && !providerSheetOpen && !currencyOpen, onClose)
@@ -81,7 +91,14 @@ export function PaymentMethodSetupSheet({
         setLast4(editing.last4 ?? ''); setTag(decTag)
         setDisc(editing.last4 ? 'last4' : decTag ? 'tag' : 'none')
         setCurCode(editing.currency); setCardColor(editing.color ?? null); setIsDefault(editing.isDefault)
+        // Load the linked credit-card debt's terms so they're editable here.
+        const linked = useFinanceStore.getState().debts.find((d) => d.debtType === 'credit_card' && d.linkedPaymentMethodId === editing.id)
+        setCcLimit(linked?.creditLimit != null ? String(linked.creditLimit) : '')
+        setCcOutstanding(linked?.startingBalance ? String(linked.startingBalance) : '')
+        setCcStatementDay(linked?.paymentDueDay != null ? String(linked.paymentDueDay) : '')
+        setCcGrace(linked?.gracePeriodDays != null ? String(linked.gracePeriodDays) : '55')
       } else {
+        setCcLimit(''); setCcOutstanding(''); setCcStatementDay(''); setCcGrace('55')
         // Resolve a detected bank/provider name to a catalogue brand so the SMS
         // prefill lands on the right type/colours, not a generic bank_account.
         // An explicit prefill type (the SMS said "Debit Card") beats the brand's
@@ -99,10 +116,11 @@ export function PaymentMethodSetupSheet({
         setDisc(prefill?.last4 && allowsLast4(pfType) ? 'last4' : 'none')
         setCurCode(baseCurrency); setCardColor(null); setIsDefault(false)
       }
+      if (lockType) setType(lockType)
     }
     prevOpen.current = open
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [open, editing, prefill, baseCurrency])
+  }, [open, editing, prefill, baseCurrency, lockType])
 
   const pickBrand = (id: string) => {
     const b = PAYMENT_BRANDS[id]
@@ -138,12 +156,28 @@ export function PaymentMethodSetupSheet({
       tag: useTag ? tag : undefined,
     })
     const payload = { name, type, currency: curCode, color: effectiveColor, isDefault, ...(use4 ? { last4 } : {}) }
+    let pmId: string
     if (editing) {
       updatePaymentMethod(editing.id, { ...payload, last4: use4 ? last4 : undefined })
-      onSaved?.(editing.id)
+      pmId = editing.id
     } else {
-      onSaved?.(addPaymentMethod(payload))
+      // A credit_card PM auto-creates its linked credit-card debt in the store.
+      pmId = addPaymentMethod(payload)
     }
+    // Persist the credit-card terms onto the linked credit-card debt.
+    if (type === 'credit_card') {
+      const linked = useFinanceStore.getState().debts.find((d) => d.debtType === 'credit_card' && d.linkedPaymentMethodId === pmId)
+      if (linked) {
+        const num = (s: string) => (s.trim() === '' ? undefined : parseFloat(s))
+        updateDebt(linked.id, {
+          creditLimit: num(ccLimit),
+          startingBalance: num(ccOutstanding) ?? linked.startingBalance,
+          paymentDueDay: ccStatementDay.trim() ? parseInt(ccStatementDay, 10) : undefined,
+          gracePeriodDays: ccGrace.trim() ? parseInt(ccGrace, 10) : undefined,
+        })
+      }
+    }
+    onSaved?.(pmId)
     onClose()
   }
 
@@ -187,7 +221,7 @@ export function PaymentMethodSetupSheet({
               <ArrowLeft className="h-full w-full" />
             </button>
             <span className="min-w-0 flex-1 text-lg font-semibold text-[var(--color-brand-text-primary)]">
-              {editing ? t.paymentMethods.editTitle : t.paymentMethods.addTitle}
+              {editing ? t.paymentMethods.editTitle : (titleOverride ?? t.paymentMethods.addTitle)}
             </span>
             <button
               type="button" aria-label="Close" onClick={onClose}
@@ -251,32 +285,75 @@ export function PaymentMethodSetupSheet({
                 </div>
               </div>
 
-              {/* Type */}
+              {/* Type — locked to a single chip when lockType is set (e.g. Debt → credit card) */}
               <div>
                 <div className="mx-0.5 mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
                   {t.paymentMethods.type}
                 </div>
-                <div className="native-scroll flex gap-1.5 overflow-x-auto pb-0.5">
-                  {SETUP_TYPES.map((tp) => {
-                    const meta = PAYMENT_TYPE_META[tp]
-                    const activeChip = type === tp
-                    return (
-                      <button
-                        key={tp} type="button" onClick={() => pickType(tp)}
-                        className="flex h-[38px] shrink-0 items-center gap-[7px] whitespace-nowrap rounded-full px-3.5 text-[13px] font-semibold"
-                        style={{
-                          background: activeChip ? rgba(meta.color, 0.15) : 'var(--color-brand-elevated)',
-                          border: `1px solid ${activeChip ? rgba(meta.color, 0.5) : 'var(--color-brand-border)'}`,
-                          color: activeChip ? meta.color : 'var(--color-brand-text-muted)',
-                        }}
-                      >
-                        <TypeGlyph type={tp} className="h-[15px] w-[15px]" />
-                        {meta.label}
-                      </button>
-                    )
-                  })}
-                </div>
+                {lockType ? (
+                  <div
+                    className="flex h-[38px] w-fit items-center gap-[7px] rounded-full px-3.5 text-[13px] font-semibold"
+                    style={{
+                      background: rgba(PAYMENT_TYPE_META[lockType].color, 0.15),
+                      border: `1px solid ${rgba(PAYMENT_TYPE_META[lockType].color, 0.5)}`,
+                      color: PAYMENT_TYPE_META[lockType].color,
+                    }}
+                  >
+                    <TypeGlyph type={lockType} className="h-[15px] w-[15px]" />
+                    {PAYMENT_TYPE_META[lockType].label}
+                    <Lock className="h-3.5 w-3.5 opacity-70" />
+                  </div>
+                ) : (
+                  <div className="native-scroll flex gap-1.5 overflow-x-auto pb-0.5">
+                    {SETUP_TYPES.map((tp) => {
+                      const meta = PAYMENT_TYPE_META[tp]
+                      const activeChip = type === tp
+                      return (
+                        <button
+                          key={tp} type="button" onClick={() => pickType(tp)}
+                          className="flex h-[38px] shrink-0 items-center gap-[7px] whitespace-nowrap rounded-full px-3.5 text-[13px] font-semibold"
+                          style={{
+                            background: activeChip ? rgba(meta.color, 0.15) : 'var(--color-brand-elevated)',
+                            border: `1px solid ${activeChip ? rgba(meta.color, 0.5) : 'var(--color-brand-border)'}`,
+                            color: activeChip ? meta.color : 'var(--color-brand-text-muted)',
+                          }}
+                        >
+                          <TypeGlyph type={tp} className="h-[15px] w-[15px]" />
+                          {meta.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
+
+              {/* Credit-card terms (debt fields) — only for the credit_card type */}
+              {type === 'credit_card' && (
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="block">
+                    <span className="mx-0.5 mb-2 block text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">Limit</span>
+                    <div className="flex h-[52px] items-center gap-2 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5">
+                      <span className="font-mono-numbers text-[13px] text-[var(--color-brand-text-muted)]">{curCode}</span>
+                      <input value={ccLimit} onChange={(e) => setCcLimit(e.target.value.replace(/[^\d.]/g, ''))} inputMode="decimal" placeholder="30,000" className="min-w-0 flex-1 bg-transparent font-mono-numbers text-[15px] text-[var(--color-brand-text-primary)] outline-none" />
+                    </div>
+                  </label>
+                  <label className="block">
+                    <span className="mx-0.5 mb-2 block text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">Current outstanding</span>
+                    <div className="flex h-[52px] items-center gap-2 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5">
+                      <span className="font-mono-numbers text-[13px] text-[var(--color-brand-text-muted)]">{curCode}</span>
+                      <input value={ccOutstanding} onChange={(e) => setCcOutstanding(e.target.value.replace(/[^\d.]/g, ''))} inputMode="decimal" placeholder="8,420" className="min-w-0 flex-1 bg-transparent font-mono-numbers text-[15px] text-[var(--color-brand-text-primary)] outline-none" />
+                    </div>
+                  </label>
+                  <label className="block">
+                    <span className="mx-0.5 mb-2 block text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">Statement day</span>
+                    <input value={ccStatementDay} onChange={(e) => setCcStatementDay(e.target.value.replace(/\D/g, '').slice(0, 2))} inputMode="numeric" placeholder="15" className="h-[52px] w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 font-mono-numbers text-[15px] text-[var(--color-brand-text-primary)] outline-none" />
+                  </label>
+                  <label className="block">
+                    <span className="mx-0.5 mb-2 block text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">Grace days</span>
+                    <input value={ccGrace} onChange={(e) => setCcGrace(e.target.value.replace(/\D/g, '').slice(0, 3))} inputMode="numeric" placeholder="55" className="h-[52px] w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 font-mono-numbers text-[15px] text-[var(--color-brand-text-primary)] outline-none" />
+                  </label>
+                </div>
+              )}
 
               {/* Identifier */}
               <div>

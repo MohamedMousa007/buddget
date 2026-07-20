@@ -1,173 +1,179 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { navigate } from '@/lib/navigation/navigate'
+import { useExpenseFilterStore } from '@/lib/store/useExpenseFilterStore'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { DebtCard } from '@/components/debts/DebtCard'
-import { CreditCardDebtCard } from '@/components/features/debts/CreditCardDebtCard'
-import { AllDebtsPaymentHistory } from '@/components/features/debts/AllDebtsPaymentHistory'
-import { DebtHistoryTable } from '@/components/features/debts/DebtHistoryTable'
+import { RecurringIncomeCarousel } from '@/components/features/income/RecurringIncomeCarousel'
+import { DebtPortfolioHero } from '@/components/features/debts/redesign/DebtPortfolioHero'
+import { DebtFamilyTabs } from '@/components/features/debts/redesign/DebtFamilyTabs'
+import { BorrowHeroCard } from '@/components/features/debts/redesign/BorrowHeroCard'
+import { CreditCardHeroCard } from '@/components/features/debts/redesign/CreditCardHeroCard'
+import { InstallmentHeroCard } from '@/components/features/debts/redesign/InstallmentHeroCard'
+import { DebtPaymentsFeed } from '@/components/features/debts/redesign/DebtPaymentsFeed'
+import { ClearedVaultSheet } from '@/components/features/debts/redesign/ClearedVaultSheet'
+import { AssignPaymentBanner } from '@/components/features/debts/redesign/AssignPaymentBanner'
+import { useDebtTabData } from '@/hooks/useDebtTabData'
+import { firstNonEmptyFamily, type DebtFamily } from '@/lib/debts/debtFamily'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
-import { useActionToast } from '@/components/ui/ActionToast'
-import { confirmRecurringDebtPayment } from '@/lib/debts/recurringDebtDueHandlers'
-import { Landmark, Plus, Check } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { useHydrateDebts, useHydrateGoals } from '@/hooks/remote'
 import { SkeletonList } from '@/components/ui/SkeletonList'
-import { useMonthlyStats } from '@/hooks/useMonthlyStats'
+import { convertCurrency } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
+
+const FAMILY_LABEL: Record<DebtFamily, string> = {
+  borrow: 'Borrow',
+  credit_card: 'Your cards',
+  installment: 'Installment plans',
+}
 
 export default function DebtsPage() {
   useHydrateDebts()
   useHydrateGoals()
   const dataReady = useFinanceStore((s) => s.dataReady)
-  const stats = useMonthlyStats()
-  const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
-  const { debts, debtPayments, recurringDebtPayments } = useFinanceStore(
-    useShallow((s) => ({
-      debts: s.debts,
-      debtPayments: s.debtPayments,
-      recurringDebtPayments: s.recurringDebtPayments,
-    }))
+  const { settings, exchangeRates } = useFinanceStore(
+    useShallow((s) => ({ settings: s.settings, exchangeRates: s.exchangeRates })),
   )
-  const { openDebtSheetNew, openPayDebtSheet, openDebtSheetRecordPayment, setActiveModal, setEditingDebtId } =
-    useSettingsStore()
+  const { activeModal, setActiveModal, setEditingDebtId, openDebtSheetNew, openDebtSheetRecordPayment, openPayDebtSheet } = useSettingsStore()
   const requireAuth = useRequireAuthAction()
-  const showToast = useActionToast()
   const t = useT()
+  const data = useDebtTabData()
 
-  const activeDebts = useMemo(
-    () => debts.filter((d) => d.status !== 'cleared'),
-    [debts]
-  )
+  const [tab, setTab] = useState<DebtFamily>('borrow')
+  const [index, setIndex] = useState(0)
+  const [dismissedAssign, setDismissedAssign] = useState<string | null>(null)
+  const pickedDefault = useRef(false)
 
-  const guardedNewDebt = () =>
-    requireAuth(
-      () => openDebtSheetNew(),
-      t.debts.requireAuthNew
-    )
-  const guardedPayDebt = () =>
-    requireAuth(
-      () => openPayDebtSheet(),
-      t.debts.requireAuthPayment
-    )
-  const guardedRecordPayment = (debtId: string) =>
-    requireAuth(
-      () => openDebtSheetRecordPayment(debtId),
-      t.debts.requireAuthPayment
-    )
-  const guardedPayInstallment = (scheduleId: string) =>
-    requireAuth(() => {
-      if (confirmRecurringDebtPayment(scheduleId)) showToast(t.common.toastDebtPaymentRecorded)
-    }, t.debts.requireAuthPayment)
+  // Smart default: land on the first non-empty family (once, when data is ready).
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- one-time landing tab from store */
+    if (pickedDefault.current || !dataReady) return
+    pickedDefault.current = true
+    setTab(firstNonEmptyFamily(useFinanceStore.getState().debts))
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [dataReady])
 
-  const handleEditDebt = (debtId: string) => {
-    setEditingDebtId(debtId)
+  const changeTab = (f: DebtFamily) => {
+    setTab(f)
+    setIndex(0)
+  }
+
+  const secondaryText = useMemo(() => {
+    if (!settings.showSecondaryCurrency || !settings.secondaryCurrency) return null
+    return formatCurrency(convertCurrency(data.owed, data.base, settings.secondaryCurrency, exchangeRates), settings.secondaryCurrency)
+  }, [settings.showSecondaryCurrency, settings.secondaryCurrency, data.owed, data.base, exchangeRates])
+
+  const guardNew = () => requireAuth(() => openDebtSheetNew(), t.debts.requireAuthNew)
+  const guardAddCard = () => requireAuth(() => setActiveModal('addCreditCard'), t.debts.requireAuthNew)
+  const guardPay = (id: string) => requireAuth(() => openDebtSheetRecordPayment(id), t.debts.requireAuthPayment)
+  const editDebt = (id: string) => {
+    setEditingDebtId(id)
     setActiveModal('editDebt')
+  }
+  const viewCharges = (pmId?: string) => {
+    if (!pmId) return
+    useExpenseFilterStore.getState().reset()
+    useExpenseFilterStore.setState({ methods: [pmId] })
+    navigate('/expenses')
   }
 
   if (!dataReady) return <div className="p-4"><SkeletonList /></div>
 
+  const listLen =
+    tab === 'borrow' ? data.borrow.length : tab === 'credit_card' ? data.cards.length : data.installments.length
+  const cardPmId = (i: number) =>
+    useFinanceStore.getState().debts.find((d) => d.id === data.cards[i]?.id)?.linkedPaymentMethodId
+
+  const renderCard = (i: number) => {
+    if (tab === 'borrow') {
+      const vm = data.borrow[i]
+      return <BorrowHeroCard vm={vm} onEdit={() => editDebt(vm.id)} onPay={() => guardPay(vm.id)} />
+    }
+    if (tab === 'credit_card') {
+      const vm = data.cards[i]
+      return (
+        <CreditCardHeroCard
+          vm={vm}
+          onEdit={() => editDebt(vm.id)}
+          onPay={() => guardPay(vm.id)}
+          onCharges={() => viewCharges(cardPmId(i))}
+        />
+      )
+    }
+    const vm = data.installments[i]
+    return <InstallmentHeroCard vm={vm} onEdit={() => editDebt(vm.id)} onPay={() => guardPay(vm.id)} />
+  }
+
   return (
-    <div>
-      <div className="px-4 pt-3.5 pb-4 lg:px-6 space-y-5 max-w-6xl mx-auto">
-        {/* Overview card: total still owed + active-debts pill + actions */}
-        <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-5 dark:bg-[linear-gradient(150deg,#1d1416,#121017)]">
-          <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-[var(--color-brand-text-muted)]">
-            {t.debts.totalStillOwed}
-          </p>
-          <p className="font-mono-numbers mt-2 text-3xl font-bold leading-none tracking-[-0.5px] text-[var(--color-brand-text-primary)]">
-            {formatCurrency(stats.debtRemainingTotal, baseCurrency)}
-          </p>
-          <span className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-[rgba(255,92,92,0.12)] px-3 py-1 text-xs font-bold text-[#FF5C5C]">
-            <Landmark className="h-3.5 w-3.5" strokeWidth={2.2} />
-            {t.debts.activeDebtsCount(activeDebts.length)}
-          </span>
-          <div className="mt-3.5 flex gap-2.5">
-            <button
-              type="button"
-              onClick={() => guardedPayDebt()}
-              className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-[var(--color-brand-green)] text-sm font-bold text-white hover:bg-[var(--color-brand-green-hover)]"
-            >
-              <Check className="h-4 w-4" strokeWidth={2.2} />
-              {t.debts.buttonPayDebt}
-            </button>
-            <button
-              type="button"
-              onClick={() => guardedNewDebt()}
-              className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-[var(--color-brand-red)] text-sm font-bold text-white hover:bg-[var(--color-brand-red-hover)]"
-            >
-              <Plus className="h-4 w-4" strokeWidth={2.2} />
-              {t.debts.buttonAddDebt.replace(/^\+\s*/, '')}
-            </button>
-          </div>
+    <div className="pb-24">
+      <div className="mx-auto max-w-screen-sm px-4 pt-3 lg:px-6">
+        <DebtPortfolioHero
+          owed={data.owed}
+          base={data.base}
+          secondaryText={secondaryText}
+          clearedPct={data.clearedPct}
+          paidOff={data.paidOff}
+          everBorrowed={data.everBorrowed}
+          counts={data.counts}
+          onAddDebt={guardNew}
+        />
+
+        <div className="mt-5">
+          <DebtFamilyTabs active={tab} onChange={changeTab} />
         </div>
 
-        {debts.length === 0 ? (
-          <EmptyState
-            icon={t.debts.emptyIcon}
-            title={t.debts.emptyTitle}
-            description={t.debts.emptyDesc}
-            action={
-              <button
-                type="button"
-                onClick={() => guardedNewDebt()}
-                className="px-6 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
-              >
-                {t.debts.emptyButton}
-              </button>
-            }
-          />
-        ) : (
-          <>
-            {activeDebts.length === 0 ? (
-              <div className="glass-card rounded-2xl p-5 text-center space-y-2">
-                <p className="text-lg font-semibold text-[var(--color-brand-text-primary)]">{t.debts.emptyActiveTitle}</p>
-                <p className="text-sm text-[var(--color-brand-text-muted)]">{t.debts.emptyActiveDesc}</p>
-              </div>
-            ) : (
-              <div className={`grid gap-4 ${activeDebts.length === 1 ? 'grid-cols-1 max-w-lg mx-auto' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'}`}>
-                {activeDebts.map((debt) => {
-                  const payments = debtPayments.filter((p) => p.debtId === debt.id)
-                  if (debt.debtType === 'credit_card') {
-                    return (
-                      <div key={debt.id}>
-                        <CreditCardDebtCard
-                          debt={debt}
-                          payments={payments}
-                          onRecordPayment={() => guardedRecordPayment(debt.id)}
-                          onEdit={() => handleEditDebt(debt.id)}
-                        />
-                      </div>
-                    )
-                  }
-                  const sched =
-                    debt.debtType === 'installment'
-                      ? recurringDebtPayments.find((r) => r.debtId === debt.id && r.isActive)
-                      : undefined
-                  return (
-                    <div key={debt.id}>
-                      <DebtCard
-                        debt={debt}
-                        payments={payments}
-                        onRecordPayment={() => guardedRecordPayment(debt.id)}
-                        onEdit={() => handleEditDebt(debt.id)}
-                        nextInstallmentDue={sched?.nextDueDate}
-                        onPayInstallment={sched ? () => guardedPayInstallment(sched.id) : undefined}
-                      />
-                    </div>
-                  )
-                })}
-              </div>
-            )}
+        {tab === 'installment' && data.assignCandidate && data.assignCandidate.id !== dismissedAssign ? (
+          <div className="mt-4">
+            <AssignPaymentBanner
+              candidate={data.assignCandidate}
+              onAssign={() => requireAuth(() => openPayDebtSheet(), t.debts.requireAuthPayment)}
+              onDismiss={(id) => setDismissedAssign(id)}
+            />
+          </div>
+        ) : null}
 
-            <AllDebtsPaymentHistory debts={debts} debtPayments={debtPayments} />
-            <DebtHistoryTable debts={debts} debtPayments={debtPayments} />
-          </>
+        {listLen === 0 ? (
+          <div className="mt-6">
+            <EmptyState
+              icon="🎉"
+              title={`No active ${FAMILY_LABEL[tab].toLowerCase()}`}
+              description="Nothing to track here right now."
+              action={
+                <button
+                  type="button"
+                  onClick={tab === 'credit_card' ? guardAddCard : guardNew}
+                  className="rounded-xl bg-[var(--color-brand-red)] px-6 py-3 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)]"
+                >
+                  {tab === 'credit_card' ? 'Add credit card' : 'Add debt'}
+                </button>
+              }
+            />
+          </div>
+        ) : (
+          <div className="mt-5">
+            <div className="mb-3 flex items-baseline justify-between px-1">
+              <h2 className="text-[17px] font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">
+                {FAMILY_LABEL[tab]} <span className="ml-1 text-sm font-medium text-[var(--color-brand-text-muted)]">{listLen} active</span>
+              </h2>
+              {listLen > 1 ? <span className="text-[13px] text-[var(--color-brand-text-muted)]">swipe →</span> : null}
+            </div>
+            <RecurringIncomeCarousel count={listLen} activeIndex={Math.min(index, listLen - 1)} onActiveChange={setIndex} renderItem={renderCard} />
+          </div>
         )}
+
+        <DebtPaymentsFeed payments={data.payments} currentFamily={tab} />
       </div>
+
+      <ClearedVaultSheet
+        open={activeModal === 'clearedVault'}
+        onClose={() => setActiveModal(null)}
+        cleared={data.cleared}
+        base={data.base}
+      />
     </div>
   )
 }

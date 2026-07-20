@@ -162,9 +162,10 @@ export function EditDebtForm({
             <button
               type="button"
               onClick={() => f.handleDelete(onClose)}
-              className="py-3 px-4 rounded-xl border border-red-900/50 text-sm text-[var(--color-brand-red)] hover:bg-red-900/20 transition-colors"
+              className="flex items-center gap-1.5 py-3 px-2 text-sm font-semibold text-[var(--color-brand-red)] transition-opacity hover:opacity-80"
             >
               <Trash2 className="w-4 h-4" />
+              {t.common.delete}
             </button>
             <button
               type="button"

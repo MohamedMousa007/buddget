@@ -9,7 +9,7 @@
 export type SmsKind =
   | 'purchase' | 'online_purchase' | 'atm_withdrawal'
   | 'instant_transfer_out' | 'instant_transfer_in'
-  | 'cc_payoff' | 'own_transfer' | 'currency_exchange'
+  | 'cc_payoff' | 'installment_payment' | 'own_transfer' | 'currency_exchange'
   | 'income' | 'refund' | 'fee' | 'other'
 
 export type PaymentInstrument = 'card' | 'account' | 'wallet'

@@ -14,6 +14,7 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import { isBnplPlan } from '@/lib/debt/bnpl'
 import { reconcileDebtSchedule } from '@/lib/debts/recurringDebtDueHandlers'
 import { clampDebtFiatToAllowed, clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
+import { findInstallmentProviderMeta } from '@/lib/constants/installmentProviders'
 import type {
   Currency,
   Debt,
@@ -87,7 +88,6 @@ export function useAddDebtSheet() {
   const [installmentStartDate, setInstallmentStartDate] = useState(() =>
     localTodayISO()
   )
-  const [interestFree, setInterestFree] = useState(true)
   const [ccLast4, setCcLast4] = useState('')
   const [ccCreditLimit, setCcCreditLimit] = useState('')
   const [ccPaymentDueDay, setCcPaymentDueDay] = useState('15')
@@ -130,6 +130,20 @@ export function useAddDebtSheet() {
     setActiveModal(null)
     setPayDebtStep('select')
   }, [resetDebtSheetIntent, setActiveModal])
+
+  // §6: adding a credit card must use the unified payment-method sheet (locked to
+  // Credit card), never a duplicate form. Redirect the family choice there.
+  const chooseDebtType = useCallback(
+    (k: DebtKind) => {
+      if (k === 'credit_card') {
+        closeSheet()
+        setActiveModal('addCreditCard')
+        return
+      }
+      setDebtType(k)
+    },
+    [closeSheet, setActiveModal],
+  )
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- sync selected debt when list loads or id is empty */
@@ -245,7 +259,6 @@ export function useAddDebtSheet() {
     setInstallmentCount('12')
     setInstallmentFrequency('monthly')
     setInstallmentStartDate(localTodayISO())
-    setInterestFree(true)
     setPaymentAmount('')
     setPaymentCurrency(settings.baseCurrency)
     setPaymentDate(localTodayISO())
@@ -345,14 +358,16 @@ export function useAddDebtSheet() {
       payload.personName = person.trim()
     }
     if (debtType === 'installment') {
+      // Shariaa: track only fixed figures — the per-installment slice is total ÷ count,
+      // never a rate. No interest is computed, stored, or displayed anywhere.
       const n = Math.max(1, parseInt(installmentCount, 10) || 1)
-      const per = interestFree ? total / n : total / n
+      const per = total / n
       payload.installmentCount = n
       payload.installmentFrequency = installmentFrequency
       payload.startDate = installmentStartDate
-      payload.interestFree = interestFree
       payload.installmentAmount = Math.round(per * 100) / 100
       payload.installmentProvider = installmentProvider
+      payload.installmentProviderName = findInstallmentProviderMeta(installmentProvider)?.name
       if (installmentProvider === 'credit_card' && linkedCreditCardDebtId) {
         payload.linkedCreditCardDebtId = linkedCreditCardDebtId
       }
@@ -385,7 +400,6 @@ export function useAddDebtSheet() {
     installmentItemName,
     installmentProvider,
     installmentStartDate,
-    interestFree,
     isGold,
     linkedCreditCardDebtId,
     receivedVia,
@@ -450,6 +464,7 @@ export function useAddDebtSheet() {
         debtId: selectedDebtId,
         date: paymentDate,
         amountPaid: amountInDebtUnit,
+        paymentMethodId: pmId,
         paymentCurrency: payCur,
         originalAmount: amount,
         amountInPrimary: amountInBase,
@@ -470,6 +485,7 @@ export function useAddDebtSheet() {
         debtId: selectedDebtId,
         date: paymentDate,
         amountPaid: amountInDebtUnit,
+        paymentMethodId: pmId,
         paymentCurrency: payCur,
         originalAmount: amount,
         amountInPrimary: amountInBase,
@@ -578,9 +594,9 @@ export function useAddDebtSheet() {
     const total = parseFloat(startingBalance)
     const n = parseInt(installmentCount, 10)
     if (!startingBalance || Number.isNaN(total) || Number.isNaN(n) || n <= 0) return null
-    const per = interestFree ? total / n : total / n
+    const per = total / n
     return Math.round(per * 100) / 100
-  }, [installmentCount, interestFree, startingBalance])
+  }, [installmentCount, startingBalance])
 
   const creditCardDebts = useMemo(() => debts.filter((d) => d.debtType === 'credit_card'), [debts])
 
@@ -595,7 +611,7 @@ export function useAddDebtSheet() {
     mode,
     setMode,
     debtType,
-    setDebtType,
+    setDebtType: chooseDebtType,
     name,
     setName,
     person,

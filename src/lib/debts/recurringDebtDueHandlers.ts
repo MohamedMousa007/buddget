@@ -87,6 +87,7 @@ export function confirmRecurringDebtPayment(scheduleId: string): boolean {
     debtId: due.debtId,
     date: paymentDate,
     amountPaid: result.amountInDebtUnit,
+    paymentMethodId: pmId,
     paymentCurrency: due.currency,
     originalAmount: payAmount,
     amountInPrimary: result.amountInBase,

@@ -2,22 +2,25 @@
 
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { useNavPath } from '@/lib/navigation/navStore'
-import { BarChart3 } from 'lucide-react'
+import { BarChart3, Award } from 'lucide-react'
 import { AuthNavButtons } from '@/components/layout/AuthNavButtons'
 import { MonthNavigationControl } from '@/components/layout/MonthNavigationControl'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useLocale, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { sectionTitleNavKey } from '@/lib/navigation/bottomNavConfig'
 
 export function DesktopHeaderBar() {
-  const { monthFilter, setMonthFilter } = useSettingsStore()
+  const { monthFilter, setMonthFilter, setActiveModal } = useSettingsStore()
   const pathname = useNavPath()
   const t = useT()
   const { locale } = useLocale()
   const sectionKey = sectionTitleNavKey(pathname)
   const sectionTitle = sectionKey ? t.nav[sectionKey] : ''
   const isHome = pathname === '/'
+  const isDebts = pathname === '/debts'
+  const clearedCount = useFinanceStore((s) => s.debts.filter((d) => d.status === 'cleared').length)
 
   return (
     <>
@@ -71,7 +74,20 @@ export function DesktopHeaderBar() {
             </div>
           )}
 
-          <div className={cn('flex shrink-0 items-center', isHome ? 'ms-2' : 'ms-auto')}>
+          {/* Debt tab: cleared-vault pill (one tap to the celebratory archive). */}
+          {isDebts && (
+            <button
+              type="button"
+              onClick={() => setActiveModal('clearedVault')}
+              aria-label="Cleared vault"
+              className="ms-auto flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-[#1DB954]/40 bg-[rgba(29,185,84,.1)] px-3 text-[#35D46F]"
+            >
+              <Award className="h-4 w-4" />
+              <span className="font-mono-numbers text-sm font-bold">{clearedCount}</span>
+            </button>
+          )}
+
+          <div className={cn('flex shrink-0 items-center', isHome || isDebts ? 'ms-2' : 'ms-auto')}>
             <AuthNavButtons layout="mobile" />
           </div>
         </div>

@@ -21,7 +21,7 @@ Return ONLY a JSON object with this exact schema (no markdown, no commentary):
   "bank_name": string | null,
   "category": "Food" | "Groceries" | "Transport" | "Fuel" | "Enjoyment" | "Shopping" | "Health" | "Education" | "Utilities" | "Subscription" | "Rent" | "Other" | null,
   "confidence": number,
-  "kind": "purchase" | "online_purchase" | "atm_withdrawal" | "instant_transfer_out" | "instant_transfer_in" | "cc_payoff" | "own_transfer" | "currency_exchange" | "income" | "refund" | "declined" | "fee" | "other" | null,
+  "kind": "purchase" | "online_purchase" | "atm_withdrawal" | "instant_transfer_out" | "instant_transfer_in" | "cc_payoff" | "installment_payment" | "own_transfer" | "currency_exchange" | "income" | "refund" | "declined" | "fee" | "other" | null,
   "cleanTitle": string | null,
   "detectedAccountLast4": string | null,
   "detectedCounterpartyLast4": string | null,
@@ -41,6 +41,7 @@ Direction rules (use these to set "kind"):
 - "instant_transfer_in" / "income": money ARRIVES — "credited with", "inward transfer", "IPN received", "deposit of", "received from", "transferred to your account", "تم إيداع", "تم إضافة مبلغ", "تم استلام".
 - "instant_transfer_out": outward IPN / InstaPay / Vodafone Cash transfer to another PERSON — "IPN outward transfer", "InstaPay to [name]", "transferred to [name]".
 - "cc_payoff": a payment TOWARD a credit card (settling the statement), NOT a card purchase — "credit card payment received", "payment received for your credit card", "thank you for your credit card payment", "تم سداد بطاقتك الائتمانية". Do NOT use for card purchases.
+- "installment_payment": a BNPL / installment plan collecting one scheduled installment — the message names an installment provider (Tabby, Tamara, Postpay, Cashew, Spotii, MisPay, valU, Sympl, Souhoola, Aman, Contact, MNT-Halan / Halan, Shahry, Forsa) or says "installment" / "قسط" — e.g. "Your Tabby installment of AED 250 has been charged", "تم خصم قسط valU بقيمة 500 جنيه", "Tamara: payment 2 of 4 collected". Set "merchant" to the provider name. Do NOT use for a normal one-off card purchase, even at those merchants.
 - "own_transfer": a transfer between the user's OWN accounts at the same bank — "from your account ****X to your account ****Y", "transfer between your accounts", "تحويل بين حساباتك", "من حسابك ... إلى حسابك". Set detectedCounterpartyLast4 to the destination account last4.
 - "currency_exchange": converting between the user's own currency accounts — "exchanged USD ... to EGP", "currency conversion", "FX deal", "تحويل عملة". Banks may send two messages (debit + credit); classify each leg as currency_exchange.
 - "atm_withdrawal": cash withdrawal from ATM — "ATM Cash Withdrawal", "ATM withdrawal", "تم سحب نقدي".
@@ -55,6 +56,7 @@ Direction rules (use these to set "kind"):
 cleanTitle rules (short human-readable title for the expense/income record):
 - atm_withdrawal → "ATM Withdrawal — [Bank Name] [Location if present]" (e.g. "ATM Withdrawal — HSBC Heliopolis")
 - cc_payoff → "Credit Card Payment — [Bank Name]"
+- installment_payment → "[Provider] installment" (e.g. "Tabby installment", "valU installment")
 - own_transfer → "Transfer between accounts — [Bank Name]"
 - currency_exchange → "Currency Exchange — [Bank Name]"
 - instant_transfer_out → "Transfer to [Recipient Full Name]" (e.g. "Transfer to Salma Samy Elsayed")

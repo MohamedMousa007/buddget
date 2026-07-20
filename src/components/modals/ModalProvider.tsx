@@ -8,6 +8,7 @@ import { AmountReceivedSheet } from './AmountReceivedSheet'
 import { GlobalAssignIncomeSheet } from './AssignIncomeSheet'
 import { AddDebtSheet } from './AddDebtSheet'
 import { AddRecurringDebtPaymentSheet } from './AddRecurringDebtPaymentSheet'
+import { AddCreditCardSheet } from './AddCreditCardSheet'
 import { PaymentMethodsSheet } from './PaymentMethodsSheet'
 import { AddGoalSheet } from './AddGoalSheet'
 import { LifestyleSheet } from './LifestyleSheet'
@@ -21,14 +22,12 @@ import { GoalAchievementListener } from '@/components/features/goals/GoalAchieve
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT } from '@/lib/i18n'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
-import { useRecurringDebtPaymentScheduler } from '@/hooks/useRecurringDebtPaymentScheduler'
 import { useRecurringSavingsScheduler } from '@/hooks/useRecurringSavingsScheduler'
 
 export function ModalProvider() {
   const { setActiveModal, activeModal } = useSettingsStore()
   const t = useT()
   const requireAuth = useRequireAuthAction()
-  useRecurringDebtPaymentScheduler()
   useRecurringSavingsScheduler()
 
   return (
@@ -41,6 +40,7 @@ export function ModalProvider() {
       <GlobalAssignIncomeSheet />
       <AddDebtSheet />
       <AddRecurringDebtPaymentSheet />
+      <AddCreditCardSheet />
       <PaymentMethodsSheet />
       <AddGoalSheet
         open={activeModal === 'addGoal'}

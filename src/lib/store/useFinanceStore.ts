@@ -628,7 +628,7 @@ export const useFinanceStore = create<FinanceStore>()(
       updateDebt: (id, updates) =>
         set((state) => ({
           debts: state.debts.map((d) =>
-            d.id === id ? { ...d, ...updates } : d
+            d.id === id ? { ...d, ...updates, updatedAt: new Date().toISOString() } : d
           ),
         })),
 
@@ -640,6 +640,7 @@ export const useFinanceStore = create<FinanceStore>()(
                   ...d,
                   status: 'cleared',
                   clearedAt: clearedAtIsoDate ?? localTodayISO(),
+                  updatedAt: new Date().toISOString(),
                 }
               : d
           ),
@@ -721,23 +722,19 @@ export const useFinanceStore = create<FinanceStore>()(
           const payment = state.debtPayments.find((p) => p.id === id)
           const remainingPayments = state.debtPayments.filter((p) => p.id !== id)
           if (!payment) return { debtPayments: remainingPayments }
-          const debtStillHasPayments = remainingPayments.some((p) => p.debtId === payment.debtId)
-          if (debtStillHasPayments) return { debtPayments: remainingPayments }
-          // Last payment deleted — cascade-delete the parent debt
-          const nextState: FinanceStore = {
-            ...state,
-            debts: state.debts.filter((d) => d.id !== payment.debtId),
-            debtPayments: remainingPayments,
-            recurringDebtPayments: state.recurringDebtPayments.filter((r) => r.debtId !== payment.debtId),
-            goals: state.goals.map((g) => ({
-              ...g,
-              linkedDebtIds: g.linkedDebtIds.filter((x) => x !== payment.debtId),
-            })),
-          }
+          // Removing a payment never deletes the parent debt — a debt with zero
+          // payments is just unpaid. If the removed payment had cleared the debt,
+          // reopen it (the balance is owed again). Deleting the debt itself is a
+          // separate, explicit action (deleteDebt).
+          const debts = state.debts.map((d) =>
+            d.id === payment.debtId && d.status === 'cleared'
+              ? { ...d, status: 'active' as const, clearedAt: undefined, updatedAt: new Date().toISOString() }
+              : d
+          )
+          const nextState: FinanceStore = { ...state, debts, debtPayments: remainingPayments }
           return {
-            debts: nextState.debts,
-            debtPayments: nextState.debtPayments,
-            recurringDebtPayments: nextState.recurringDebtPayments,
+            debts,
+            debtPayments: remainingPayments,
             goals: reconcileGoalsForState(nextState),
           }
         }),

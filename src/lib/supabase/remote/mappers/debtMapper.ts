@@ -72,6 +72,7 @@ export function debtToRow(d: Debt, userId: string): DebtInsert {
     installment_provider: d.installmentProvider
       ? (d.installmentProvider as DebtInsert['installment_provider'])
       : null,
+    installment_provider_name: d.installmentProviderName ?? null,
     linked_credit_card_debt_id: d.linkedCreditCardDebtId ?? null,
     linked_payment_method_id: d.linkedPaymentMethodId ?? null,
     credit_limit: d.creditLimit ?? null,
@@ -88,6 +89,7 @@ export function debtToRow(d: Debt, userId: string): DebtInsert {
     is_gold: d.isGold,
     notes: d.notes ?? null,
     created_at: d.createdAt,
+    updated_at: d.updatedAt ?? d.createdAt,
   }
 }
 
@@ -126,6 +128,8 @@ export function debtFromRow(row: DebtRow): Debt {
     installmentProvider: row.installment_provider
       ? (row.installment_provider as InstallmentProvider)
       : undefined,
+    installmentProviderName: row.installment_provider_name ?? undefined,
     linkedCreditCardDebtId: row.linked_credit_card_debt_id ?? undefined,
+    updatedAt: row.updated_at ?? undefined,
   }
 }
