@@ -10,8 +10,25 @@ import { findProviderBrand } from '@/lib/constants/installmentProviders'
  * the picker, and on the installment card (handoff §9, one-file swap).
  */
 
-/** Drop official brand SVGs here (viewBox 0 0 24 24 recommended). Empty by default. */
-const OFFICIAL_LOGOS: Record<string, ReactNode> = {}
+/**
+ * Official brand logos — ONE-FILE DROP-IN.
+ *
+ * Displaying a provider's logo to identify that provider's plan is nominative
+ * (referential) use and generally permitted; obtain each asset from the provider's
+ * OFFICIAL brand/press kit, follow its usage guidelines, don't recolor/distort it,
+ * and never imply the provider endorses this app. Paste the official SVG as JSX
+ * (viewBox "0 0 24 24" recommended) against its catalogue slug below and it renders
+ * everywhere — the installment card, the provider-picker grid, and the provider field.
+ * Until an entry exists, the provider falls back to an original brand-coloured badge.
+ *
+ * Example:
+ *   valu: <svg viewBox="0 0 24 24"><path d="…" fill="#F04E23" /></svg>,
+ */
+const OFFICIAL_LOGOS: Record<string, ReactNode> = {
+  // valu: …,   tabby: …,   tamara: …,   sympl: …,
+  // postpay: …, cashew: …, spotii: …, mispay: …,
+  // souhoola: …, aman: …, contact: …, halan: …, shahry: …, forsa: …,
+}
 
 function shade(hex: string, f: number): string {
   const h = hex.replace('#', '')

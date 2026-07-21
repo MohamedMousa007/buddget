@@ -47,7 +47,12 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
           open={providerOpen}
           valueSlug={d.installmentProviderSlug}
           valueCardId={d.installmentProvider === 'credit_card' ? d.linkedCreditCardDebtId : undefined}
-          creditCardDebts={d.creditCardDebts}
+          creditCards={d.creditCardDebts
+            .map((cd) => {
+              const pm = d.paymentMethods.find((m) => m.id === cd.linkedPaymentMethodId)
+              return pm ? { debtId: cd.id, pm } : null
+            })
+            .filter((x): x is { debtId: string; pm: (typeof d.paymentMethods)[number] } => x !== null)}
           onPickBrand={(slug, name) => { d.setInstallmentProvider(coarseProvider(slug)); d.setInstallmentProviderName(name); d.setInstallmentProviderSlug(slug); d.setLinkedCreditCardDebtId('') }}
           onPickCard={(cardId, name) => { d.setInstallmentProvider('credit_card'); d.setInstallmentProviderName(name); d.setInstallmentProviderSlug(undefined); d.setLinkedCreditCardDebtId(cardId) }}
           onCustom={(name) => { d.setInstallmentProvider('other'); d.setInstallmentProviderName(name); d.setInstallmentProviderSlug(undefined); d.setLinkedCreditCardDebtId('') }}

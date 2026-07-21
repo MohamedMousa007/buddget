@@ -1,16 +1,23 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ArrowLeft, Check, CreditCard, Plus, Search, X } from 'lucide-react'
+import { CreditCard, Plus, Search, X, ArrowLeft, Check } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { INSTALLMENT_PROVIDER_CATALOGUE } from '@/lib/constants/installmentProviders'
+import { PaymentCardCarousel } from '@/components/features/payments/PaymentCardCarousel'
+import type { PaymentMethod } from '@/lib/store/types'
 import { ProviderBadge } from './ProviderBadge'
+
+export interface CreditCardOption {
+  debtId: string
+  pm: PaymentMethod
+}
 
 export interface InstallmentProviderPickerSheetProps {
   open: boolean
   valueSlug?: string
   valueCardId?: string
-  creditCardDebts: { id: string; name: string; last4?: string }[]
+  creditCards: CreditCardOption[]
   onPickBrand: (slug: string, name: string) => void
   onPickCard: (cardId: string, name: string, last4?: string) => void
   onCustom: (name: string) => void
@@ -26,7 +33,7 @@ export function InstallmentProviderPickerSheet({
   open,
   valueSlug,
   valueCardId,
-  creditCardDebts,
+  creditCards,
   onPickBrand,
   onPickCard,
   onCustom,
@@ -36,6 +43,7 @@ export function InstallmentProviderPickerSheet({
   const [view, setView] = useState<'grid' | 'card' | 'custom'>('grid')
   const [query, setQuery] = useState('')
   const [customName, setCustomName] = useState('')
+  const [cardIdx, setCardIdx] = useState(0)
 
   const tiles = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -127,49 +135,28 @@ export function InstallmentProviderPickerSheet({
         ) : null}
 
         {view === 'card' ? (
-          <div className="native-scroll -mx-1 min-h-0 flex-1 overflow-y-auto px-1">
-            {creditCardDebts.length === 0 ? (
-              <div className="flex flex-col items-center gap-3 py-10 text-center">
-                <p className="text-sm text-white/55">No credit cards yet.</p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    close()
-                    onAddCreditCard()
-                  }}
-                  className="rounded-xl bg-[var(--color-brand-red)] px-5 py-3 text-sm font-bold text-white"
-                >
-                  Add credit card
-                </button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {creditCardDebts.map((c) => {
-                  const sel = valueCardId === c.id
-                  return (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => {
-                        onPickCard(c.id, c.name, c.last4)
-                        close()
-                      }}
-                      className="flex items-center gap-3 rounded-[14px] border p-3.5 text-start"
-                      style={sel ? { borderColor: '#8A5CF6', background: 'rgba(138,92,246,.12)' } : { borderColor: 'rgba(255,255,255,.1)' }}
-                    >
-                      <span className="flex h-10 w-11 shrink-0 items-center justify-center rounded-[10px] bg-[#8A5CF6]/22 text-[13px] font-extrabold text-[#8A5CF6]">
-                        {c.name.replace(/[^A-Za-z ]/g, '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || 'CC'}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[15px] font-bold text-white">{c.name}</span>
-                        {c.last4 ? <span className="block font-mono-numbers text-[12px] text-white/45">•••• {c.last4}</span> : null}
-                      </span>
-                      {sel ? <Check className="h-4 w-4 shrink-0 text-[#8A5CF6]" /> : null}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
+          <div className="min-h-0 flex-1">
+            {/* §7: the credit-card carousel filtered to the user's cards (reuses §5 deck). */}
+            <PaymentCardCarousel
+              methods={creditCards.map((c) => c.pm)}
+              active={cardIdx}
+              onActiveChange={setCardIdx}
+              defaultLabel="Credit card"
+              hint={creditCards.length ? 'Tap your card to link this plan to it' : 'Add a credit card to link this plan'}
+              selectedId={valueCardId ? creditCards.find((c) => c.debtId === valueCardId)?.pm.id : undefined}
+              onCardSelect={(m) => {
+                const c = creditCards.find((x) => x.pm.id === m.id)
+                if (c) {
+                  onPickCard(c.debtId, m.name, m.last4 ?? undefined)
+                  close()
+                }
+              }}
+              onAddCard={() => {
+                close()
+                onAddCreditCard()
+              }}
+              addLabel="Add credit card"
+            />
           </div>
         ) : null}
 
