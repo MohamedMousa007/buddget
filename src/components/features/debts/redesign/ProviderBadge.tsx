@@ -1,33 +1,32 @@
 'use client'
 
-import type { ReactNode } from 'react'
 import { findProviderBrand } from '@/lib/constants/installmentProviders'
 
 /**
- * Provider logo badge. Renders an ORIGINAL brand-coloured mark per provider
- * (our own artwork, not a copy of any official logo). To use an official logo,
- * register its inline SVG in `OFFICIAL_LOGOS[slug]` — it then renders here, in
- * the picker, and on the installment card (handoff §9, one-file swap).
- */
-
-/**
- * Official brand logos — ONE-FILE DROP-IN.
+ * Provider logo badge. Renders the provider's OFFICIAL logo (from `public/providers/`)
+ * when one exists — used for nominative identification of the user's plan — else an
+ * original brand-coloured monogram badge. Shown on the installment card, the
+ * provider-picker grid, and the Add-installment provider field.
  *
- * Displaying a provider's logo to identify that provider's plan is nominative
- * (referential) use and generally permitted; obtain each asset from the provider's
- * OFFICIAL brand/press kit, follow its usage guidelines, don't recolor/distort it,
- * and never imply the provider endorses this app. Paste the official SVG as JSX
- * (viewBox "0 0 24 24" recommended) against its catalogue slug below and it renders
- * everywhere — the installment card, the provider-picker grid, and the provider field.
- * Until an entry exists, the provider falls back to an original brand-coloured badge.
- *
- * Example:
- *   valu: <svg viewBox="0 0 24 24"><path d="…" fill="#F04E23" /></svg>,
+ * To add/replace a logo: drop the file in `public/providers/<slug>.<ext>` and add the
+ * slug → path entry below. Prefer the provider's official brand-kit asset; follow its
+ * usage guidelines, don't recolor/distort it, and never imply an endorsement.
  */
-const OFFICIAL_LOGOS: Record<string, ReactNode> = {
-  // valu: …,   tabby: …,   tamara: …,   sympl: …,
-  // postpay: …, cashew: …, spotii: …, mispay: …,
-  // souhoola: …, aman: …, contact: …, halan: …, shahry: …, forsa: …,
+const OFFICIAL_LOGOS: Record<string, string> = {
+  tabby: '/providers/tabby.svg',
+  tamara: '/providers/tamara.png',
+  valu: '/providers/valu.jpg',
+  sympl: '/providers/sympl.png',
+  souhoola: '/providers/souhoola.png',
+  halan: '/providers/halan.svg',
+  spotii: '/providers/spotii.svg',
+  mispay: '/providers/mispay.png',
+  cashew: '/providers/cashew.png',
+  forsa: '/providers/forsa.png',
+  aman: '/providers/aman.jpg',
+  shahry: '/providers/shahry.webp',
+  contact: '/providers/contact.png',
+  // postpay: missing — add '/providers/postpay.<ext>' once obtained.
 }
 
 function shade(hex: string, f: number): string {
@@ -38,7 +37,7 @@ function shade(hex: string, f: number): string {
   return `rgb(${r},${g},${b})`
 }
 
-/** Short monogram for a provider (original wordmark-style). */
+/** Short monogram for a provider (original wordmark-style fallback). */
 function monogram(name: string): string {
   const clean = name.replace(/[^A-Za-z ]/g, '').trim()
   if (!clean) return '•'
@@ -59,15 +58,16 @@ export function ProviderBadge({ slug, name, color, size = 40, className }: Provi
   const brand = findProviderBrand(slug)
   const label = name ?? brand?.name ?? 'Other'
   const c = color ?? brand?.color ?? '#6B7280'
-  const official = slug ? OFFICIAL_LOGOS[slug] : undefined
+  const logo = slug ? OFFICIAL_LOGOS[slug] : undefined
 
-  if (official) {
+  if (logo) {
     return (
       <span
-        className={`flex shrink-0 items-center justify-center overflow-hidden ${className ?? ''}`}
-        style={{ width: size, height: size, borderRadius: size * 0.26, background: '#fff' }}
+        className={`flex shrink-0 items-center justify-center overflow-hidden bg-white ${className ?? ''}`}
+        style={{ width: size, height: size, borderRadius: size * 0.26 }}
       >
-        {official}
+        {/* eslint-disable-next-line @next/next/no-img-element -- static provider logo, no optimization needed */}
+        <img src={logo} alt={`${label} logo`} className="h-full w-full object-contain" style={{ padding: size * 0.12 }} />
       </span>
     )
   }
