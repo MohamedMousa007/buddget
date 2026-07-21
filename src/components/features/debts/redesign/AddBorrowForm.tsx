@@ -5,6 +5,7 @@ import { ChevronDown, Lock } from 'lucide-react'
 import type { AddDebtHook } from '@/hooks/useAddDebtSheet'
 import type { Currency, GoldKarat } from '@/lib/store/types'
 import { CurrencySheet } from '@/components/ui/CurrencySheet'
+import { AmountField } from '@/components/ui/AmountField'
 import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { currencyFlag } from '@/lib/constants/currencyMeta'
@@ -114,7 +115,7 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
           </div>
           <div>
             <div className={`${MICRO} mb-2`}>Grams</div>
-            <input value={d.startingBalance} onChange={(e) => d.setStartingBalance(e.target.value.replace(/[^\d.]/g, ''))} inputMode="decimal" placeholder="e.g. 12.5" className={`${FIELD} font-mono-numbers`} />
+            <AmountField value={d.startingBalance} onChange={d.setStartingBalance} mode="decimal" placeholder="e.g. 12.5" />
             {goldValue != null ? (
               <p className="mt-2 px-0.5 font-mono-numbers text-[12px] text-[#F5C842]">≈ {goldValue.toLocaleString()} EGP at {GOLD_PRICE[d.goldKarat].toLocaleString()}/g</p>
             ) : null}
@@ -125,8 +126,8 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
           <div>
             <div className={`${MICRO} mb-2`}>Amount</div>
             <div className="flex gap-2">
-              <input value={d.startingBalance} onChange={(e) => d.setStartingBalance(e.target.value.replace(/[^\d.]/g, ''))} inputMode="decimal" placeholder="0" className={`${FIELD} flex-1 font-mono-numbers`} />
-              <button type="button" onClick={() => setCurOpen(true)} className="flex h-12 shrink-0 items-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3">
+              <div className="min-w-0 flex-1"><AmountField value={d.startingBalance} onChange={d.setStartingBalance} mode="decimal" placeholder="0" /></div>
+              <button type="button" onClick={() => setCurOpen(true)} className="flex h-[52px] shrink-0 items-center gap-1.5 rounded-[14px] border border-[#26262f] bg-[#16161f] px-3">
                 <span className="text-[18px] leading-none">{currencyFlag(d.currency as Currency)}</span>
                 <span className="font-mono-numbers text-[14px] font-bold text-[var(--color-brand-text-primary)]">{d.currency}</span>
                 <ChevronDown className="h-4 w-4 text-[var(--color-brand-text-muted)]" />

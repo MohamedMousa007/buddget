@@ -63,10 +63,10 @@ export function DebtPaymentsFeed({ payments, currentFamily }: { payments: Paymen
 
   return (
     <div className="mt-6">
-      <div className="flex items-center justify-between px-1">
+      <div className="flex items-center justify-between px-[18px]">
         <h2 className="text-[17px] font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">All debt payments</h2>
       </div>
-      <div className="mt-3 flex gap-2 px-1">
+      <div className="mt-3 flex gap-2 px-[18px]">
         {chip('all', 'All')}
         {chip(currentFamily, FAMILY_META[currentFamily].label)}
       </div>
@@ -80,7 +80,7 @@ export function DebtPaymentsFeed({ payments, currentFamily }: { payments: Paymen
                 −{fmtWhole(g.total)}
               </span>
             </div>
-            <div className="overflow-hidden border-y border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
+            <div className="border-y border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
               {g.items.map((p, i) => {
                 const meta = FAMILY_META[p.family]
                 const accent = FAMILY_ACCENT[p.family]

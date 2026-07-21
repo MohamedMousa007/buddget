@@ -7,6 +7,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import {
   convertPaymentToDebtUnit,
   computeDebtPaymentRecord,
+  calculateDebtRemaining,
   isDebtFullyPaid,
   type DebtBalanceContext,
 } from '@/lib/utils/calculations'
@@ -174,6 +175,7 @@ export function useAddDebtSheet() {
 
   const selectedDebt = debts.find((d) => d.id === selectedDebtId)
   const selectedPayable = payableDebts.find((d) => d.id === selectedDebtId)
+  const selectedRemaining = selectedDebt ? calculateDebtRemaining(selectedDebt, debtPayments, debtBalanceCtx) : 0
 
   const closeSheet = useCallback(() => {
     resetDebtSheetIntent()
@@ -285,6 +287,21 @@ export function useAddDebtSheet() {
     setPaymentMethodId(paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || '')
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [isOpen, debtSheetPaymentOnly, debtSheetPrefillDebtId, paymentMethods, isPayDebtFlow])
+
+  // Default the pay amount to what's sensible per family (installment → per, else remaining).
+  const payAmountPrefilled = useRef<string | null>(null)
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- prefill default pay amount once per debt */
+    const inPayForm = (isPayDebtFlow && payDebtStep === 'form') || debtSheetPaymentOnly
+    if (!isOpen || !inPayForm || !selectedDebt) { if (!isOpen) payAmountPrefilled.current = null; return }
+    if (payAmountPrefilled.current === selectedDebt.id) return
+    payAmountPrefilled.current = selectedDebt.id
+    const def = selectedDebt.debtType === 'installment' && selectedDebt.installmentAmount
+      ? Math.min(selectedDebt.installmentAmount, selectedRemaining)
+      : selectedRemaining
+    if (def > 0) setPaymentAmount(String(Math.round(def * 100) / 100))
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [isOpen, isPayDebtFlow, payDebtStep, debtSheetPaymentOnly, selectedDebt, selectedRemaining])
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- default payment currency to selected debt */
@@ -778,6 +795,7 @@ export function useAddDebtSheet() {
     payableDebts,
     selectedDebt,
     selectedPayable,
+    selectedRemaining,
     paymentMethods,
     settings,
     handleAddDebt,

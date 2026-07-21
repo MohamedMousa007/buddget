@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { X, ChevronRight, Trash2 } from 'lucide-react'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useAddDebtSheet } from '@/hooks/useAddDebtSheet'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { DebtFamilyStep } from '@/components/features/debts/redesign/DebtFamilyStep'
@@ -26,29 +27,36 @@ export function AddDebtSheet() {
   const open = d.isOpen && !isCardEdit
   useEscapeClose(open, d.closeSheet)
 
+  const presetFamily = useSettingsStore((s) => s.debtSheetPresetFamily)
   const [familyStep, setFamilyStep] = useState<'pick' | 'form'>('pick')
   useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect -- reset to step 1 when the sheet closes */
-    if (!d.isOpen) setFamilyStep('pick')
+    /* eslint-disable react-hooks/set-state-in-effect -- reset/preset step when the sheet toggles */
+    if (!d.isOpen) { setFamilyStep('pick'); return }
+    // A preset (e.g. the Installments empty-state CTA) jumps straight to that form.
+    if (presetFamily) { d.setDebtType(presetFamily); setFamilyStep('form') }
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [d.isOpen])
+  }, [d.isOpen, presetFamily]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const isPayUI = d.isPayDebtFlow || d.debtSheetPaymentOnly
   const isFormUI = d.isEditFlow || (!isPayUI && familyStep === 'form')
 
+  const payShowsForm = isPayUI && !(d.isPayDebtFlow && d.payDebtStep === 'select')
   const title = isPayUI
-    ? 'Pay debt'
+    ? payShowsForm ? 'Make a payment' : 'Pay a debt'
     : d.isEditFlow
       ? d.debtType === 'installment' ? 'Edit installment' : 'Edit borrow'
       : familyStep === 'pick'
         ? 'Add debt'
         : d.debtType === 'installment' ? 'New installment' : 'New borrow'
 
+  const payAmt = parseFloat(d.paymentAmount)
   const canSubmit = isPayUI
-    ? !!(d.selectedDebtId && d.paymentAmount && parseFloat(d.paymentAmount) > 0)
+    ? !!(d.selectedDebtId && d.paymentAmount && payAmt > 0)
     : d.canSubmitNewDebt
   const cta = isPayUI
-    ? d.paymentScheduleMode === 'recurring' ? 'Schedule payment' : 'Confirm payment'
+    ? d.paymentScheduleMode === 'recurring'
+      ? 'Schedule payment'
+      : `Pay ${!Number.isNaN(payAmt) && payAmt > 0 ? fmtWhole(payAmt) : ''} ${d.paymentCurrency}`.replace(/\s+/g, ' ').trim()
     : d.isEditFlow ? 'Save changes' : d.debtType === 'installment' ? 'Add plan' : 'Add borrow'
 
   const onSubmit = isPayUI ? d.handleAddPayment : d.handleAddDebt
@@ -67,11 +75,6 @@ export function AddDebtSheet() {
         {/* Header */}
         <div className="flex shrink-0 items-center gap-2.5 px-5 pb-3 pt-4">
           <span className="min-w-0 flex-1 text-xl font-bold text-[var(--color-brand-text-primary)]">{title}</span>
-          {isFormUI && d.debtType === 'installment' ? (
-            <span className="rounded-full bg-[var(--color-brand-elevated)] px-3 py-1.5 font-mono-numbers text-[12px] font-semibold text-[var(--color-brand-text-secondary)]">
-              {d.installmentStartDate}
-            </span>
-          ) : null}
           <button type="button" aria-label="Close" onClick={d.closeSheet} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]">
             <X className="h-4 w-4" />
           </button>

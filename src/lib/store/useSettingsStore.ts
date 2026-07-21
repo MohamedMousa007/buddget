@@ -66,6 +66,8 @@ interface SettingsState {
   /** When opening add-debt sheet from "Record payment" on a card */
   debtSheetPaymentOnly: boolean
   debtSheetPrefillDebtId: string | null
+  /** When opening add-debt, jump straight to this family's form (skip the picker). */
+  debtSheetPresetFamily: 'personal' | 'installment' | null
   /** Draggable Buddgy orb resting position (persisted). */
   buddgyOrb: BuddgyOrbPosition
   setBuddgyOrb: (pos: BuddgyOrbPosition) => void
@@ -88,7 +90,7 @@ interface SettingsState {
   openAiChatWithSeed: (text: string) => void
   clearAiChatSeed: () => void
   setVoiceSpeakMuted: (muted: boolean) => void
-  openDebtSheetNew: () => void
+  openDebtSheetNew: (family?: 'personal' | 'installment') => void
   openPayDebtSheet: () => void
   openDebtSheetRecordPayment: (debtId: string) => void
   resetDebtSheetIntent: () => void
@@ -122,6 +124,7 @@ export const useSettingsStore = create<SettingsState>()(
       voiceSpeakMuted: false,
       debtSheetPaymentOnly: false,
       debtSheetPrefillDebtId: null,
+      debtSheetPresetFamily: null,
       buddgyOrb: { side: 'right', top: 620 },
       setBuddgyOrb: (pos) => set({ buddgyOrb: pos }),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
@@ -147,10 +150,11 @@ export const useSettingsStore = create<SettingsState>()(
       openAiChatWithSeed: (text) => set({ activeModal: 'aiChat', aiChatSeed: text }),
       clearAiChatSeed: () => set({ aiChatSeed: null }),
       setVoiceSpeakMuted: (muted) => set({ voiceSpeakMuted: muted }),
-      openDebtSheetNew: () =>
+      openDebtSheetNew: (family) =>
         set({
           debtSheetPaymentOnly: false,
           debtSheetPrefillDebtId: null,
+          debtSheetPresetFamily: family ?? null,
           activeModal: 'addDebt',
         }),
       openPayDebtSheet: () =>
@@ -166,7 +170,7 @@ export const useSettingsStore = create<SettingsState>()(
           activeModal: 'addDebt',
         }),
       resetDebtSheetIntent: () =>
-        set({ debtSheetPaymentOnly: false, debtSheetPrefillDebtId: null }),
+        set({ debtSheetPaymentOnly: false, debtSheetPrefillDebtId: null, debtSheetPresetFamily: null }),
       resetSettings: () =>
         set({
           sidebarOpen: false,

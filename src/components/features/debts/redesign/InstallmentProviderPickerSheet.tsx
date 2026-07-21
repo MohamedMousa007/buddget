@@ -25,8 +25,8 @@ export interface InstallmentProviderPickerSheetProps {
   onClose: () => void
 }
 
-// The distinctive set shown as tiles (handoff §7); rest reachable via search. Card + Custom pinned last.
-const TILE_SLUGS = ['valu', 'tabby', 'tamara', 'sympl']
+// All catalogue brands shown as tiles (search still filters). Card + Custom pinned after.
+const TILE_SLUGS = ['valu', 'tabby', 'tamara', 'sympl', 'souhoola', 'aman', 'contact', 'halan', 'shahry', 'forsa', 'postpay', 'cashew', 'spotii', 'mispay']
 
 /** Installment provider picker — 2-col brand grid + credit-card sub-view + custom (handoff §7). */
 export function InstallmentProviderPickerSheet({
@@ -61,7 +61,7 @@ export function InstallmentProviderPickerSheet({
   }
 
   return (
-    <ModalShell open={open} onBackdropClick={close} scrollChild zIndexClassName="z-[120]" panelClassName="h-[70vh] bg-[#14141b]">
+    <ModalShell open={open} onBackdropClick={close} scrollChild zIndexClassName="z-[120]" panelClassName={`${view === 'card' ? 'h-[50vh]' : 'h-[72vh]'} bg-[#14141b]`}>
       <div className="flex min-h-0 flex-1 flex-col px-4 pb-4">
         <div className="flex shrink-0 items-center gap-2.5 pb-3 pt-1">
           {view !== 'grid' ? (

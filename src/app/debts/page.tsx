@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { CreditCard, Layers, HandCoins } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -69,6 +70,7 @@ export default function DebtsPage() {
 
   const guardNew = () => requireAuth(() => openDebtSheetNew(), t.debts.requireAuthNew)
   const guardAddCard = () => requireAuth(() => setActiveModal('addCreditCard'), t.debts.requireAuthNew)
+  const guardAddInstallment = () => requireAuth(() => openDebtSheetNew('installment'), t.debts.requireAuthNew)
   const guardPay = (id: string) => requireAuth(() => openDebtSheetRecordPayment(id), t.debts.requireAuthPayment)
   const editDebt = (id: string) => {
     setEditingDebtId(id)
@@ -113,8 +115,6 @@ export default function DebtsPage() {
           base={data.base}
           secondaryText={secondaryText}
           clearedPct={data.clearedPct}
-          paidOff={data.paidOff}
-          everBorrowed={data.everBorrowed}
           counts={data.counts}
           onAddDebt={guardNew}
         />
@@ -136,16 +136,19 @@ export default function DebtsPage() {
         {listLen === 0 ? (
           <div className="mt-6">
             <EmptyState
-              icon="🎉"
+              icon={(() => {
+                const Icon = tab === 'credit_card' ? CreditCard : tab === 'installment' ? Layers : HandCoins
+                return <Icon className="h-8 w-8 text-[var(--color-brand-text-muted)]" strokeWidth={1.6} />
+              })()}
               title={`No active ${FAMILY_LABEL[tab].toLowerCase()}`}
               description="Nothing to track here right now."
               action={
                 <button
                   type="button"
-                  onClick={tab === 'credit_card' ? guardAddCard : guardNew}
+                  onClick={tab === 'credit_card' ? guardAddCard : tab === 'installment' ? guardAddInstallment : guardNew}
                   className="rounded-xl bg-[var(--color-brand-red)] px-6 py-3 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)]"
                 >
-                  {tab === 'credit_card' ? 'Add credit card' : 'Add debt'}
+                  {tab === 'credit_card' ? 'Add credit card' : tab === 'installment' ? 'Add installment' : 'Add debt'}
                 </button>
               }
             />
@@ -161,7 +164,10 @@ export default function DebtsPage() {
             <RecurringIncomeCarousel count={listLen} activeIndex={Math.min(index, listLen - 1)} onActiveChange={setIndex} renderItem={renderCard} activeDotWidth={18} />
           </div>
         )}
+      </div>
 
+      {/* Full-bleed ledger — identical to the Expenses/Income lists (no side inset). */}
+      <div className="mx-auto max-w-screen-sm">
         <DebtPaymentsFeed payments={data.payments} currentFamily={tab} />
       </div>
 

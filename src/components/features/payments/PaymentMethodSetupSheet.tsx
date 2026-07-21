@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { X, ArrowLeft, Plus, Search, ChevronDown, Check, CreditCard, Lock } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { CurrencySheet } from '@/components/ui/CurrencySheet'
+import { AmountField } from '@/components/ui/AmountField'
 import { cardGradient, TypeGlyph } from '@/components/features/payments/PaymentCardCarousel'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -211,7 +212,7 @@ export function PaymentMethodSetupSheet({
         tail={previewTail} curCode={curCode}
       />
 
-      <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={z.shell} panelClassName={lockType ? 'h-[72vh]' : 'h-[64vh]'}>
+      <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={z.shell} panelClassName="h-[64vh]">
         <div className="flex min-h-0 flex-1 flex-col outline-none">
           <div className="flex shrink-0 items-center gap-2.5 px-4 pb-3 pt-1">
             {/* Debt context (lockType) follows the debt-sheet rule: X + swipe only, no Back. */}
@@ -333,28 +334,22 @@ export function PaymentMethodSetupSheet({
               {/* Credit-card terms (debt fields) — only for the credit_card type */}
               {type === 'credit_card' && (
                 <div className="grid grid-cols-2 gap-3">
-                  <label className="block">
+                  <div>
                     <span className="mx-0.5 mb-2 block text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">Limit</span>
-                    <div className="flex h-[52px] items-center gap-2 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5">
-                      <span className="font-mono-numbers text-[13px] text-[var(--color-brand-text-muted)]">{curCode}</span>
-                      <input value={ccLimit} onChange={(e) => setCcLimit(e.target.value.replace(/[^\d.]/g, ''))} inputMode="decimal" placeholder="30,000" className="min-w-0 flex-1 bg-transparent font-mono-numbers text-[15px] text-[var(--color-brand-text-primary)] outline-none" />
-                    </div>
-                  </label>
-                  <label className="block">
+                    <AmountField value={ccLimit} onChange={setCcLimit} mode="decimal" currency={curCode} placeholder="30,000" />
+                  </div>
+                  <div>
                     <span className="mx-0.5 mb-2 block text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">Current outstanding</span>
-                    <div className="flex h-[52px] items-center gap-2 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5">
-                      <span className="font-mono-numbers text-[13px] text-[var(--color-brand-text-muted)]">{curCode}</span>
-                      <input value={ccOutstanding} onChange={(e) => setCcOutstanding(e.target.value.replace(/[^\d.]/g, ''))} inputMode="decimal" placeholder="8,420" className="min-w-0 flex-1 bg-transparent font-mono-numbers text-[15px] text-[var(--color-brand-text-primary)] outline-none" />
-                    </div>
-                  </label>
-                  <label className="block">
+                    <AmountField value={ccOutstanding} onChange={setCcOutstanding} mode="decimal" currency={curCode} placeholder="8,420" />
+                  </div>
+                  <div>
                     <span className="mx-0.5 mb-2 block text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">Statement day</span>
-                    <input value={ccStatementDay} onChange={(e) => setCcStatementDay(e.target.value.replace(/\D/g, '').slice(0, 2))} inputMode="numeric" placeholder="15" className="h-[52px] w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 font-mono-numbers text-[15px] text-[var(--color-brand-text-primary)] outline-none" />
-                  </label>
-                  <label className="block">
+                    <AmountField value={ccStatementDay} onChange={(v) => setCcStatementDay(v.slice(0, 2))} mode="integer" placeholder="15" />
+                  </div>
+                  <div>
                     <span className="mx-0.5 mb-2 block text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">Grace days</span>
-                    <input value={ccGrace} onChange={(e) => setCcGrace(e.target.value.replace(/\D/g, '').slice(0, 3))} inputMode="numeric" placeholder="55" className="h-[52px] w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 font-mono-numbers text-[15px] text-[var(--color-brand-text-primary)] outline-none" />
-                  </label>
+                    <AmountField value={ccGrace} onChange={(v) => setCcGrace(v.slice(0, 3))} mode="integer" placeholder="55" />
+                  </div>
                 </div>
               )}
 

@@ -5,6 +5,8 @@ import { ChevronDown, Lock } from 'lucide-react'
 import type { AddDebtHook } from '@/hooks/useAddDebtSheet'
 import type { Currency } from '@/lib/store/types'
 import { CurrencySheet } from '@/components/ui/CurrencySheet'
+import { AmountField } from '@/components/ui/AmountField'
+import { DatePickerField } from '@/components/ui/DatePickerField'
 import { InstallmentProviderPickerSheet } from './InstallmentProviderPickerSheet'
 import { ProviderBadge } from './ProviderBadge'
 import { coarseProvider } from '@/lib/constants/installmentProviders'
@@ -71,8 +73,8 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
       <div>
         <div className={`${MICRO} mb-2`}>Total amount</div>
         <div className="flex gap-2">
-          <input value={d.startingBalance} onChange={(e) => d.setStartingBalance(e.target.value.replace(/[^\d.]/g, ''))} inputMode="decimal" placeholder="0" className={`${FIELD} flex-1 font-mono-numbers`} />
-          <button type="button" onClick={() => setCurOpen(true)} className="flex h-12 shrink-0 items-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3">
+          <div className="min-w-0 flex-1"><AmountField value={d.startingBalance} onChange={d.setStartingBalance} mode="decimal" placeholder="0" /></div>
+          <button type="button" onClick={() => setCurOpen(true)} className="flex h-[52px] shrink-0 items-center gap-1.5 rounded-[14px] border border-[#26262f] bg-[#16161f] px-3">
             <span className="text-[18px] leading-none">{currencyFlag(d.currency as Currency)}</span>
             <span className="font-mono-numbers text-[14px] font-bold text-[var(--color-brand-text-primary)]">{d.currency}</span>
             <ChevronDown className="h-4 w-4 text-[var(--color-brand-text-muted)]" />
@@ -81,11 +83,17 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
         <CurrencySheet open={curOpen} value={d.currency as Currency} base={d.settings.baseCurrency} onSelect={(c) => { d.setCurrency(c as Currency); setCurOpen(false) }} onClose={() => setCurOpen(false)} />
       </div>
 
+      {/* Start date */}
+      <div>
+        <div className={`${MICRO} mb-2`}>Start date</div>
+        <DatePickerField value={d.installmentStartDate} onChange={d.setInstallmentStartDate} />
+      </div>
+
       {/* Count + frequency */}
       <div className="grid grid-cols-2 gap-3">
         <div>
           <div className={`${MICRO} mb-2`}># of installments</div>
-          <input value={d.installmentCount} onChange={(e) => d.setInstallmentCount(e.target.value.replace(/\D/g, ''))} inputMode="numeric" placeholder="12" className={`${FIELD} font-mono-numbers`} />
+          <AmountField value={d.installmentCount} onChange={d.setInstallmentCount} mode="integer" placeholder="12" />
         </div>
         <div>
           <div className={`${MICRO} mb-2`}>Frequency</div>
