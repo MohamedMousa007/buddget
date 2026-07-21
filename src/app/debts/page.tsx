@@ -5,7 +5,6 @@ import { CreditCard, Layers, HandCoins } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { EmptyState } from '@/components/ui/EmptyState'
 import { RecurringIncomeCarousel } from '@/components/features/income/RecurringIncomeCarousel'
 import { DebtPortfolioHero } from '@/components/features/debts/redesign/DebtPortfolioHero'
 import { DebtFamilyTabs } from '@/components/features/debts/redesign/DebtFamilyTabs'
@@ -69,8 +68,6 @@ export default function DebtsPage() {
   }, [settings.showSecondaryCurrency, settings.secondaryCurrency, data.owed, data.base, exchangeRates])
 
   const guardNew = () => requireAuth(() => openDebtSheetNew(), t.debts.requireAuthNew)
-  const guardAddCard = () => requireAuth(() => setActiveModal('addCreditCard'), t.debts.requireAuthNew)
-  const guardAddInstallment = () => requireAuth(() => openDebtSheetNew('installment'), t.debts.requireAuthNew)
   const guardPay = (id: string) => requireAuth(() => openDebtSheetRecordPayment(id), t.debts.requireAuthPayment)
   const editDebt = (id: string) => {
     setEditingDebtId(id)
@@ -134,24 +131,12 @@ export default function DebtsPage() {
         ) : null}
 
         {listLen === 0 ? (
-          <div className="mt-6">
-            <EmptyState
-              icon={(() => {
-                const Icon = tab === 'credit_card' ? CreditCard : tab === 'installment' ? Layers : HandCoins
-                return <Icon className="h-8 w-8 text-[var(--color-brand-text-muted)]" strokeWidth={1.6} />
-              })()}
-              title={`No active ${FAMILY_LABEL[tab].toLowerCase()}`}
-              description="Nothing to track here right now."
-              action={
-                <button
-                  type="button"
-                  onClick={tab === 'credit_card' ? guardAddCard : tab === 'installment' ? guardAddInstallment : guardNew}
-                  className="rounded-xl bg-[var(--color-brand-red)] px-6 py-3 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)]"
-                >
-                  {tab === 'credit_card' ? 'Add credit card' : tab === 'installment' ? 'Add installment' : 'Add debt'}
-                </button>
-              }
-            />
+          <div className="mt-3 flex flex-col items-center gap-1.5 py-4 text-center">
+            {(() => {
+              const Icon = tab === 'credit_card' ? CreditCard : tab === 'installment' ? Layers : HandCoins
+              return <Icon className="h-6 w-6 text-[var(--color-brand-text-muted)]" strokeWidth={1.6} />
+            })()}
+            <p className="text-sm font-semibold text-[var(--color-brand-text-secondary)]">No active {FAMILY_LABEL[tab].toLowerCase()}</p>
           </div>
         ) : (
           <div className="mt-5">

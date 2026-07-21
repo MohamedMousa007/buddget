@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import { useNumpadInset } from '@/lib/ui/numpadInset'
 import { useScrollLock } from '@/lib/ui/scrollLock'
 import { registerBackGuard } from '@/lib/navigation/backGuard'
+import { useEscapeClose } from '@/hooks/useEscapeClose'
 
 const OVERLAY_Z = 'z-[100]'
 
@@ -86,6 +87,10 @@ export function ModalShell({
     if (!open) return
     return registerBackGuard(() => { onBackRef.current(); return true })
   }, [open])
+
+  // Keyboard Escape shares the same LIFO stack as Android back, so both dismiss
+  // only the topmost layer — a nested sheet no longer closes the parent behind it.
+  useEscapeClose(open, () => onBackRef.current())
 
   useEffect(() => {
     if (!open) return
