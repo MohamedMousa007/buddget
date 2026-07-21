@@ -26,7 +26,7 @@ const OFFICIAL_LOGOS: Record<string, string> = {
   aman: '/providers/aman.png',
   shahry: '/providers/shahry.webp',
   contact: '/providers/contact.png',
-  // postpay: missing — add '/providers/postpay.<ext>' once obtained.
+  postpay: '/providers/postpay.png',
 }
 
 function shade(hex: string, f: number): string {
