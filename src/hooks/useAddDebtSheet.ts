@@ -30,6 +30,8 @@ import { useT } from '@/lib/i18n'
 
 type NewDebtPayload = Omit<Debt, 'id' | 'createdAt'>
 
+export type AddDebtHook = ReturnType<typeof useAddDebtSheet>
+
 function isDebtListedAsActive(d: { status?: 'active' | 'cleared' }): boolean {
   return d.status !== 'cleared'
 }
@@ -97,6 +99,10 @@ export function useAddDebtSheet() {
   const [installmentProviderName, setInstallmentProviderName] = useState('')
   const [installmentProviderSlug, setInstallmentProviderSlug] = useState<string | undefined>(undefined)
   const [linkedCreditCardDebtId, setLinkedCreditCardDebtId] = useState('')
+  // Payoff goal (borrow only) — set inline in the add-borrow sheet (§4).
+  const [goalEnabled, setGoalEnabled] = useState(false)
+  const [goalMonth, setGoalMonth] = useState('') // YYYY-MM
+  const [goalCadence, setGoalCadence] = useState<'weekly' | 'monthly'>('monthly')
 
   const [selectedDebtId, setSelectedDebtId] = useState(debts[0]?.id || '')
   const [paymentAmount, setPaymentAmount] = useState('')
@@ -277,6 +283,9 @@ export function useAddDebtSheet() {
     setInstallmentProviderName('')
     setInstallmentProviderSlug(undefined)
     setLinkedCreditCardDebtId('')
+    setGoalEnabled(false)
+    setGoalMonth('')
+    setGoalCadence('monthly')
   }, [settings.baseCurrency])
 
   const canSubmitNewDebt = useMemo(() => {
@@ -360,6 +369,20 @@ export function useAddDebtSheet() {
       payload.relationship = relationship.trim() || undefined
       payload.direction = direction
       payload.personName = person.trim()
+      // Inline payoff goal (borrow only): back-solve a per-period amount from the
+      // target month + cadence. Fixed amounts only — never a rate.
+      if (goalEnabled && goalMonth && direction === 'i_owe') {
+        const targetDate = `${goalMonth}-01`
+        const now = new Date()
+        const target = new Date(`${goalMonth}-01T00:00:00`)
+        const months = Math.max(1, (target.getFullYear() - now.getFullYear()) * 12 + (target.getMonth() - now.getMonth()))
+        const periods = goalCadence === 'weekly' ? Math.max(1, Math.round(months * 4.345)) : months
+        payload.goal = {
+          targetDate,
+          paymentFrequency: goalCadence,
+          calculatedAmount: Math.round((total / periods) * 100) / 100,
+        }
+      }
     }
     if (debtType === 'installment') {
       // Shariaa: track only fixed figures — the per-installment slice is total ÷ count,
@@ -399,6 +422,9 @@ export function useAddDebtSheet() {
     currency,
     debtType,
     direction,
+    goalEnabled,
+    goalMonth,
+    goalCadence,
     installmentCount,
     installmentFrequency,
     installmentItemName,
@@ -652,6 +678,12 @@ export function useAddDebtSheet() {
     setInstallmentProviderName,
     installmentProviderSlug,
     setInstallmentProviderSlug,
+    goalEnabled,
+    setGoalEnabled,
+    goalMonth,
+    setGoalMonth,
+    goalCadence,
+    setGoalCadence,
     linkedCreditCardDebtId,
     setLinkedCreditCardDebtId,
     installmentItemName,
