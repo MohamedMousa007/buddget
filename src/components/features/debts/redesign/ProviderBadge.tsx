@@ -15,7 +15,7 @@ import { findProviderBrand } from '@/lib/constants/installmentProviders'
 const OFFICIAL_LOGOS: Record<string, string> = {
   tabby: '/providers/tabby.svg',
   tamara: '/providers/tamara.png',
-  valu: '/providers/valu.jpg',
+  valu: '/providers/valu.png',
   sympl: '/providers/sympl.png',
   souhoola: '/providers/souhoola.png',
   halan: '/providers/halan.svg',
@@ -23,7 +23,7 @@ const OFFICIAL_LOGOS: Record<string, string> = {
   mispay: '/providers/mispay.png',
   cashew: '/providers/cashew.png',
   forsa: '/providers/forsa.png',
-  aman: '/providers/aman.jpg',
+  aman: '/providers/aman.png',
   shahry: '/providers/shahry.webp',
   contact: '/providers/contact.png',
   // postpay: missing — add '/providers/postpay.<ext>' once obtained.
