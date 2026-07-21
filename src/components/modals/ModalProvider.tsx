@@ -14,7 +14,6 @@ import { AddGoalSheet } from './AddGoalSheet'
 import { LifestyleSheet } from './LifestyleSheet'
 import { HouseholdRentSheet } from './HouseholdRentSheet'
 import { EditExpenseSheet } from './EditExpenseSheet'
-import { EditDebtSheet } from './EditDebtSheet'
 import { AIChat } from '@/components/features/ai-chat/AIChat'
 import { AIChatBubble } from '@/components/ai/AIChatBubble'
 import { QuickAddFAB } from '@/components/modals/QuickAddFAB'
@@ -50,7 +49,6 @@ export function ModalProvider() {
       <LifestyleSheet />
       <HouseholdRentSheet />
       <EditExpenseSheet />
-      <EditDebtSheet />
       <AIChat />
       <QuickAddFAB />
       <GoalAchievementListener />

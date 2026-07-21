@@ -74,6 +74,7 @@ export function InstallmentHeroCard({ vm, onEdit, onPay }: InstallmentHeroCardPr
           <div className="shrink-0 pb-1 text-end">
             <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-white/45">Next cycle</p>
             <p className="mt-1 font-mono-numbers text-sm font-bold">{vm.next}</p>
+            {vm.method ? <p className="mt-0.5 truncate text-[11px] font-medium text-white/55">{vm.method}</p> : null}
           </div>
         ) : null}
       </div>

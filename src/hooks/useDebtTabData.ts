@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { format, parseISO } from 'date-fns'
+import { format, parseISO, addMonths, addWeeks, differenceInCalendarMonths, differenceInCalendarWeeks } from 'date-fns'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { debtFamily, type DebtFamily } from '@/lib/debts/debtFamily'
@@ -77,6 +77,7 @@ export interface InstallmentVM {
   remaining: number
   currency: string
   next?: string
+  method?: string
   onCardLast4?: string
 }
 
@@ -176,15 +177,30 @@ export function useDebtTabData() {
           currency: d.currency,
           accent: d.isGold ? '#F5C842' : d.direction === 'they_owe' ? '#1DB954' : '#E50914',
           gold: d.isGold && d.goldKarat ? { grams: remaining, karat: d.goldKarat } : undefined,
-          goal: g
-            ? {
-                by: format(parseISO(g.targetDate), 'MMM'),
-                per: g.calculatedAmount,
-                cadence: g.paymentFrequency,
-                remaining: g.calculatedAmount > 0 ? Math.ceil(remaining / g.calculatedAmount) : 0,
-                onTrack: true,
-              }
-            : undefined,
+          goal: g ? ((): BorrowVM['goal'] => {
+            const start = parseISO(d.createdAt)
+            const now = new Date()
+            const monthsPer = g.paymentFrequency === 'quarterly' ? 3 : g.paymentFrequency === 'annually' ? 12 : 1
+            let elapsed: number
+            let nextDate: Date
+            if (g.paymentFrequency === 'weekly') {
+              elapsed = Math.max(0, differenceInCalendarWeeks(now, start))
+              nextDate = addWeeks(start, elapsed + 1)
+            } else {
+              elapsed = Math.floor(Math.max(0, differenceInCalendarMonths(now, start)) / monthsPer)
+              nextDate = addMonths(start, (elapsed + 1) * monthsPer)
+            }
+            // On track = paid at least what the schedule expects by now (capped at total).
+            const expected = Math.min(g.calculatedAmount * elapsed, d.startingBalance)
+            return {
+              by: format(parseISO(g.targetDate), 'MMM'),
+              per: g.calculatedAmount,
+              cadence: g.paymentFrequency,
+              remaining: g.calculatedAmount > 0 ? Math.ceil(remaining / g.calculatedAmount) : 0,
+              next: format(nextDate, 'MMM d'),
+              onTrack: paid + 1e-6 >= expected,
+            }
+          })() : undefined,
         }
       })
 
@@ -234,6 +250,11 @@ export function useDebtTabData() {
         const cardLast4 = d.linkedCreditCardDebtId
           ? last4Of(debts.find((x) => x.id === d.linkedCreditCardDebtId)?.linkedPaymentMethodId)
           : undefined
+        const lastPay = pays.length ? [...pays].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0] : undefined
+        const method =
+          (d.linkedPaymentMethodId && paymentMethods.find((m) => m.id === d.linkedPaymentMethodId)?.name) ||
+          (lastPay?.paymentMethodId && paymentMethods.find((m) => m.id === lastPay.paymentMethodId)?.name) ||
+          undefined
         return {
           id: d.id,
           item: d.name,
@@ -246,6 +267,7 @@ export function useDebtTabData() {
           remaining: Math.max(0, (count - paid) * per),
           currency: d.currency,
           next: nextInstallmentDueFormatted(d, paid) ?? undefined,
+          method,
           onCardLast4: cardLast4 ?? undefined,
         }
       })
@@ -259,7 +281,7 @@ export function useDebtTabData() {
           id: p.id,
           family: d ? debtFamily(d) : 'borrow',
           name: d?.name || d?.person || '—',
-          method: last4Of(p.paymentMethodId) ? paymentMethods.find((m) => m.id === p.paymentMethodId)?.name : undefined,
+          method: p.paymentMethodId ? paymentMethods.find((m) => m.id === p.paymentMethodId)?.name : undefined,
           amount: p.amountPaid,
           currency: p.paymentCurrency ?? d?.currency ?? base,
           date: p.date,
@@ -281,7 +303,7 @@ export function useDebtTabData() {
           .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
           .map((p) => ({
             date: p.date,
-            method: last4Of(p.paymentMethodId) ? paymentMethods.find((m) => m.id === p.paymentMethodId)?.name : undefined,
+            method: p.paymentMethodId ? paymentMethods.find((m) => m.id === p.paymentMethodId)?.name : undefined,
             amount: p.amountPaid,
             currency: p.paymentCurrency ?? d.currency,
           })),

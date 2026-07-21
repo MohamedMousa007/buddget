@@ -62,14 +62,14 @@ export interface InstallmentProviderBrand {
 }
 
 export const INSTALLMENT_PROVIDER_CATALOGUE: InstallmentProviderBrand[] = [
-  { slug: 'tabby', name: 'Tabby', category: 'bnpl_short', countries: ['SA', 'AE'], color: '#3BFFC1', emoji: '🟢', defaultFrequency: 'monthly' },
-  { slug: 'tamara', name: 'Tamara', category: 'bnpl_short', countries: ['SA', 'AE'], color: '#FF6B9D', emoji: '🩷', defaultFrequency: 'monthly' },
+  { slug: 'tabby', name: 'Tabby', category: 'bnpl_short', countries: ['SA', 'AE'], color: '#2FCFA5', emoji: '🟢', defaultFrequency: 'monthly' },
+  { slug: 'tamara', name: 'Tamara', category: 'bnpl_short', countries: ['SA', 'AE'], color: '#E0A400', emoji: '🟡', defaultFrequency: 'monthly' },
   { slug: 'postpay', name: 'Postpay', category: 'bnpl_short', countries: ['AE'], color: '#2D6CDF', emoji: '🔵', defaultFrequency: 'monthly' },
   { slug: 'cashew', name: 'Cashew', category: 'bnpl_short', countries: ['AE'], color: '#E8A33D', emoji: '🥜', defaultFrequency: 'monthly' },
   { slug: 'spotii', name: 'Spotii', category: 'bnpl_short', countries: ['AE', 'SA'], color: '#7B61FF', emoji: '🟣', defaultFrequency: 'monthly' },
   { slug: 'mispay', name: 'MisPay', category: 'bnpl_short', countries: ['SA'], color: '#0EA5A5', emoji: '🟩', defaultFrequency: 'monthly' },
-  { slug: 'valu', name: 'valU', category: 'installment_long', countries: ['EG'], color: '#00A88E', emoji: '🟢', defaultFrequency: 'monthly' },
-  { slug: 'sympl', name: 'Sympl', category: 'bnpl_short', countries: ['EG'], color: '#111827', emoji: '⚫', defaultFrequency: 'monthly' },
+  { slug: 'valu', name: 'valU', category: 'installment_long', countries: ['EG'], color: '#F04E23', emoji: '🟠', defaultFrequency: 'monthly' },
+  { slug: 'sympl', name: 'Sympl', category: 'bnpl_short', countries: ['EG'], color: '#7A6CF0', emoji: '🟣', defaultFrequency: 'monthly' },
   { slug: 'souhoola', name: 'Souhoola', category: 'installment_long', countries: ['EG'], color: '#F04E37', emoji: '🟠', defaultFrequency: 'monthly' },
   { slug: 'aman', name: 'Aman', category: 'installment_long', countries: ['EG'], color: '#1E88E5', emoji: '🔷', defaultFrequency: 'monthly' },
   { slug: 'contact', name: 'Contact', category: 'installment_long', countries: ['EG'], color: '#6D28D9', emoji: '🟪', defaultFrequency: 'monthly' },

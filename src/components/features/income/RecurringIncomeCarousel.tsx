@@ -9,6 +9,8 @@ interface Props {
   renderItem: (index: number) => ReactNode
   /** Page-dot color. Red on the page + assign slider. */
   dotColor?: string
+  /** Active page-dot width (px). Income uses 16; debt spec wants 18. */
+  activeDotWidth?: number
 }
 
 const TAP_SLOP = 6
@@ -20,7 +22,7 @@ const TAP_SLOP = 6
  * too (the assign sheet auto-centres the default source). Vertical page scroll is
  * preserved via `touch-action: pan-y` and a vertical-intent bail-out.
  */
-export function RecurringIncomeCarousel({ count, activeIndex, onActiveChange, renderItem, dotColor = '#E50914' }: Props) {
+export function RecurringIncomeCarousel({ count, activeIndex, onActiveChange, renderItem, dotColor = '#E50914', activeDotWidth = 16 }: Props) {
   const trackRef = useRef<HTMLDivElement>(null)
   const start = useRef<{ x: number; y: number } | null>(null)
   const axis = useRef<'h' | 'v' | null>(null)
@@ -107,7 +109,7 @@ export function RecurringIncomeCarousel({ count, activeIndex, onActiveChange, re
               aria-label={`Go to ${i + 1}`}
               onClick={() => onActiveChange(i)}
               className="h-1.5 rounded-full transition-all"
-              style={{ width: i === activeIndex ? 16 : 6, background: i === activeIndex ? dotColor : 'rgba(255,255,255,0.22)' }}
+              style={{ width: i === activeIndex ? activeDotWidth : 6, background: i === activeIndex ? dotColor : 'rgba(255,255,255,0.22)' }}
             />
           ))}
         </div>

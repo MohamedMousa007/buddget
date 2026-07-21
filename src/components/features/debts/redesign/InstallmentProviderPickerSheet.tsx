@@ -18,8 +18,8 @@ export interface InstallmentProviderPickerSheetProps {
   onClose: () => void
 }
 
-// The distinctive set shown as tiles (rest reachable via search). Card + Custom pinned last.
-const TILE_SLUGS = ['valu', 'tabby', 'tamara', 'sympl', 'postpay', 'souhoola']
+// The distinctive set shown as tiles (handoff §7); rest reachable via search. Card + Custom pinned last.
+const TILE_SLUGS = ['valu', 'tabby', 'tamara', 'sympl']
 
 /** Installment provider picker — 2-col brand grid + credit-card sub-view + custom (handoff §7). */
 export function InstallmentProviderPickerSheet({

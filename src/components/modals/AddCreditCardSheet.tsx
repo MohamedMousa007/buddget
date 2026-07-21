@@ -5,23 +5,39 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 
 /**
- * Debt-tab "Add credit card" — the SAME payment-method setup sheet (§6 unify),
- * locked to the Credit card type. Adding a card auto-creates its credit-card debt
- * and the sheet persists the limit / outstanding / statement day / grace terms.
+ * Debt-tab credit-card add & edit — the SAME payment-method setup sheet (§6 unify),
+ * locked to the Credit card type. Add auto-creates the card's debt + persists terms;
+ * Edit opens the linked payment method prefilled (card edit routes here, not to the
+ * generic debt form).
  */
 export function AddCreditCardSheet() {
   const activeModal = useSettingsStore((s) => s.activeModal)
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
+  const editingDebtId = useSettingsStore((s) => s.editingDebtId)
+  const setEditingDebtId = useSettingsStore((s) => s.setEditingDebtId)
   const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
+  const debts = useFinanceStore((s) => s.debts)
+  const paymentMethods = useFinanceStore((s) => s.paymentMethods)
+
+  const editingDebt = activeModal === 'editDebt' ? debts.find((d) => d.id === editingDebtId) : undefined
+  const isCardEdit = editingDebt?.debtType === 'credit_card'
+  const editingPm = isCardEdit ? paymentMethods.find((m) => m.id === editingDebt?.linkedPaymentMethodId) ?? null : null
+
+  const open = activeModal === 'addCreditCard' || isCardEdit
+
+  const close = () => {
+    setEditingDebtId(null)
+    setActiveModal(null)
+  }
 
   return (
     <PaymentMethodSetupSheet
-      open={activeModal === 'addCreditCard'}
-      editing={null}
+      open={open}
+      editing={editingPm}
       baseCurrency={baseCurrency}
       lockType="credit_card"
-      titleOverride="Add credit card"
-      onClose={() => setActiveModal(null)}
+      titleOverride={isCardEdit ? 'Edit credit card' : 'Add credit card'}
+      onClose={close}
     />
   )
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Lock } from 'lucide-react'
 import type { AddDebtHook } from '@/hooks/useAddDebtSheet'
 import type { Currency } from '@/lib/store/types'
 import { CurrencySheet } from '@/components/ui/CurrencySheet'
@@ -19,7 +19,7 @@ const FREQS = [
   { v: 'quarterly' as const, label: 'Quarterly' },
 ]
 
-export function AddInstallmentForm({ d }: { d: AddDebtHook }) {
+export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; locked?: boolean }) {
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
   const [providerOpen, setProviderOpen] = useState(false)
   const [curOpen, setCurOpen] = useState(false)
@@ -31,10 +31,10 @@ export function AddInstallmentForm({ d }: { d: AddDebtHook }) {
 
   return (
     <div className="flex flex-col gap-[18px] pt-1">
-      {/* Provider */}
+      {/* Provider (locked in Edit) */}
       <div>
-        <div className={`${MICRO} mb-2`}>Provider</div>
-        <button type="button" onClick={() => setProviderOpen(true)} className="flex h-12 w-full items-center gap-3 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-start">
+        <div className={`${MICRO} mb-2 flex items-center gap-1.5`}>Provider {locked ? <Lock className="h-3 w-3" /> : null}</div>
+        <button type="button" disabled={locked} onClick={() => setProviderOpen(true)} className="flex h-12 w-full items-center gap-3 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-start disabled:opacity-70">
           {d.installmentProvider === 'credit_card' ? (
             <span className="flex h-7 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[#8A5CF6]/22 text-[11px] font-extrabold text-[#8A5CF6]">CC</span>
           ) : d.installmentProviderName ? (

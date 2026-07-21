@@ -158,7 +158,7 @@ export default function DebtsPage() {
               </h2>
               {listLen > 1 ? <span className="text-[13px] text-[var(--color-brand-text-muted)]">swipe →</span> : null}
             </div>
-            <RecurringIncomeCarousel count={listLen} activeIndex={Math.min(index, listLen - 1)} onActiveChange={setIndex} renderItem={renderCard} />
+            <RecurringIncomeCarousel count={listLen} activeIndex={Math.min(index, listLen - 1)} onActiveChange={setIndex} renderItem={renderCard} activeDotWidth={18} />
           </div>
         )}
 

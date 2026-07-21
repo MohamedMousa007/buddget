@@ -14,7 +14,7 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import { isBnplPlan } from '@/lib/debt/bnpl'
 import { reconcileDebtSchedule } from '@/lib/debts/recurringDebtDueHandlers'
 import { clampDebtFiatToAllowed, clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
-import { findInstallmentProviderMeta } from '@/lib/constants/installmentProviders'
+import { findInstallmentProviderMeta, findProviderBrand } from '@/lib/constants/installmentProviders'
 import type {
   Currency,
   Debt,
@@ -46,6 +46,8 @@ export function useAddDebtSheet() {
   const {
     addDebt,
     addCreditCardDebt,
+    updateDebt,
+    deleteDebt,
     addDebtPayment,
     addDebtPaymentWithExpense,
     addRecurringDebtPayment,
@@ -63,9 +65,13 @@ export function useAddDebtSheet() {
     debtSheetPaymentOnly,
     debtSheetPrefillDebtId,
     resetDebtSheetIntent,
+    editingDebtId,
+    setEditingDebtId,
   } = useSettingsStore()
   const isPayDebtFlow = activeModal === 'payDebt'
-  const isOpen = activeModal === 'addDebt' || activeModal === 'payDebt'
+  const isEditFlow = activeModal === 'editDebt'
+  const isOpen = activeModal === 'addDebt' || activeModal === 'payDebt' || activeModal === 'editDebt'
+  const editingDebt = isEditFlow ? debts.find((d) => d.id === editingDebtId) : undefined
 
   const [payDebtStep, setPayDebtStep] = useState<'select' | 'form'>('select')
   const [mode, setMode] = useState<'new' | 'payment'>('new')
@@ -116,6 +122,42 @@ export function useAddDebtSheet() {
   const [paymentScheduleMode, setPaymentScheduleMode] = useState<'one_time' | 'recurring'>('one_time')
   const [recurringFrequency, setRecurringFrequency] = useState<DebtRecurringFrequency>('monthly')
   const prevIsOpen = useRef(false)
+  const prefilledId = useRef<string | null>(null)
+
+  // Edit flow: prefill the same per-type Add form from the debt being edited (§4).
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- one-time prefill when the edit sheet opens */
+    if (!isOpen) { prefilledId.current = null; return }
+    if (!isEditFlow || !editingDebt || prefilledId.current === editingDebt.id) return
+    prefilledId.current = editingDebt.id
+    const dd = editingDebt
+    setDebtType(dd.debtType ?? 'personal')
+    setName(dd.name ?? '')
+    setPerson(dd.personName ?? dd.person ?? '')
+    setRelationship(dd.relationship ?? '')
+    setDirection(dd.direction ?? 'i_owe')
+    setReceivedVia(dd.receivedVia ?? 'cash')
+    setCurrency(dd.currency)
+    if (dd.goldKarat) setGoldKarat(dd.goldKarat)
+    setStartingBalance(String(dd.startingBalance ?? ''))
+    setCreditor(dd.creditor ?? '')
+    if (dd.debtType === 'installment') {
+      setInstallmentItemName(dd.name ?? '')
+      setInstallmentCount(String(dd.installmentCount ?? 12))
+      if (dd.installmentFrequency) setInstallmentFrequency(dd.installmentFrequency)
+      setInstallmentStartDate(dd.startDate ?? localTodayISO())
+      setInstallmentProvider(dd.installmentProvider ?? 'other')
+      setInstallmentProviderName(dd.installmentProviderName ?? '')
+      setInstallmentProviderSlug(findProviderBrand((dd.installmentProviderName ?? '').toLowerCase().replace(/\s+/g, ''))?.slug)
+      setLinkedCreditCardDebtId(dd.linkedCreditCardDebtId ?? '')
+    }
+    if (dd.goal) {
+      setGoalEnabled(true)
+      setGoalMonth(dd.goal.targetDate.slice(0, 7))
+      setGoalCadence(dd.goal.paymentFrequency === 'weekly' ? 'weekly' : 'monthly')
+    }
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [isOpen, isEditFlow, editingDebt])
 
   const debtBalanceCtx: DebtBalanceContext | undefined = useMemo(
     () => ({ expenses, exchangeRates, allDebts: debts }),
@@ -135,9 +177,10 @@ export function useAddDebtSheet() {
 
   const closeSheet = useCallback(() => {
     resetDebtSheetIntent()
+    setEditingDebtId(null)
     setActiveModal(null)
     setPayDebtStep('select')
-  }, [resetDebtSheetIntent, setActiveModal])
+  }, [resetDebtSheetIntent, setActiveModal, setEditingDebtId])
 
   // §6: adding a credit card must use the unified payment-method sheet (locked to
   // Credit card), never a duplicate form. Redirect the family choice there.
@@ -403,12 +446,21 @@ export function useAddDebtSheet() {
       payload.creditor = creditor.trim() || undefined
     }
 
-    addDebt(payload)
+    if (isEditFlow && editingDebt) {
+      const { status: _status, emoji: _emoji, ...rest } = payload
+      void _status; void _emoji
+      updateDebt(editingDebt.id, rest)
+    } else {
+      addDebt(payload)
+    }
 
     showToast(tI18n.common.toastDebtAdded)
     resetForm()
     closeSheet()
   }, [
+    isEditFlow,
+    editingDebt,
+    updateDebt,
     addCreditCardDebt,
     addDebt,
     canSubmitNewDebt,
@@ -631,11 +683,20 @@ export function useAddDebtSheet() {
 
   const creditCardDebts = useMemo(() => debts.filter((d) => d.debtType === 'credit_card'), [debts])
 
+  const handleDeleteDebt = useCallback(() => {
+    if (editingDebt) deleteDebt(editingDebt.id)
+    resetForm()
+    closeSheet()
+  }, [editingDebt, deleteDebt, resetForm, closeSheet])
+
   return {
     isOpen,
     closeSheet,
     debtSheetPaymentOnly,
     isPayDebtFlow,
+    isEditFlow,
+    editingDebt,
+    handleDeleteDebt,
     payDebtStep,
     selectDebtForPayFlow,
     backToPayDebtList,
