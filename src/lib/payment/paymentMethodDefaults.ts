@@ -34,6 +34,40 @@ export function allowsLast4(type: PaymentMethodType): boolean {
   return PAYMENT_TYPE_META[type].allowsLast4
 }
 
+/**
+ * Which method types a provider can plausibly issue. A brand carries ONE primary
+ * `type` (its most common product), but real providers span several: a bank issues
+ * accounts, debit AND credit cards; a wallet may ship a card. Derived from the
+ * primary type so the ~120-entry catalogue stays untouched.
+ *
+ * Used to (a) offer the right type choices once a brand is picked, and (b) filter
+ * the brand grid when the context locks a type (Add credit card → only issuers).
+ */
+const TYPES_BY_PRIMARY: Record<PaymentMethodType, PaymentMethodType[]> = {
+  // Banks are full-service: account + cards, and several now ship a wallet.
+  bank_account: ['bank_account', 'debit_card', 'credit_card', 'prepaid_card', 'wallet'],
+  // National debit schemes (mada, Meeza, KNET) also badge credit/prepaid products.
+  debit_card: ['debit_card', 'credit_card', 'prepaid_card'],
+  // Card schemes (Visa, Mastercard, Amex) appear on every card product.
+  credit_card: ['credit_card', 'debit_card', 'prepaid_card'],
+  prepaid_card: ['prepaid_card', 'wallet'],
+  // Wallets that issue a card (Telda, Barq, STC Pay) still register as one wallet.
+  wallet: ['wallet', 'prepaid_card', 'debit_card'],
+  bnpl: ['bnpl'],
+  cash: ['cash'],
+  other: SETUP_TYPES,
+}
+
+export function typesForBrand(brand: { type: PaymentMethodType } | null | undefined): PaymentMethodType[] {
+  if (!brand) return SETUP_TYPES
+  return TYPES_BY_PRIMARY[brand.type] ?? SETUP_TYPES
+}
+
+/** Can this brand issue `type`? Drives the locked-context brand grid filter. */
+export function brandIssuesType(brand: { type: PaymentMethodType }, type: PaymentMethodType): boolean {
+  return typesForBrand(brand).includes(type)
+}
+
 /** Theme color for a payment method type (card/chip tint fallback). */
 export function defaultColorForPaymentMethodType(type: PaymentMethodType): string {
   return PAYMENT_TYPE_META[type]?.color ?? PAYMENT_TYPE_META.other.color

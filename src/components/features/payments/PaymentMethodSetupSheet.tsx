@@ -15,7 +15,7 @@ import { currencyFlag, currencyName } from '@/lib/constants/currencyMeta'
 import {
   PAYMENT_TYPE_META, SETUP_TYPES, PAYMENT_BRANDS, QUICK_ADD, QUICK_ADD_BLEND, CARD_COLORS,
   allowsLast4, providerInitials, composePaymentMethodName, decomposePaymentMethodName,
-  resolvePaymentBrandKey, prefillPaymentType,
+  resolvePaymentBrandKey, prefillPaymentType, typesForBrand, brandIssuesType,
 } from '@/lib/payment/paymentMethodDefaults'
 import { cn } from '@/lib/utils'
 import type { PmPrefill } from '@/lib/store/useSettingsStore'
@@ -127,13 +127,25 @@ export function PaymentMethodSetupSheet({
     const b = PAYMENT_BRANDS[id]
     const cur: Currency = id === 'nol' ? 'AED'
       : b.country === 'SA' ? 'SAR' : b.country === 'AE' ? 'AED' : b.country === 'EG' ? 'EGP' : curCode
-    setBrandId(id); setProviderName(b.name); setType(b.type)
+    // A locked context (Add credit card) wins over the brand's primary type: picking
+    // a bank there means "the credit card this bank issues", not a bank account.
+    const t = lockType ?? b.type
+    setBrandId(id); setProviderName(b.name); setType(t)
     // Stored-value types keep the last4 field available but do not default to it: a
     // prepaid card may be unnumbered, and only some wallets issue a card at all.
-    const storedValue = b.type === 'prepaid_card' || b.type === 'wallet'
-    setDisc(allowsLast4(b.type) && !storedValue ? 'last4' : 'none')
+    const storedValue = t === 'prepaid_card' || t === 'wallet'
+    setDisc(allowsLast4(t) && !storedValue ? 'last4' : 'none')
     setCardColor(null); setCurCode(cur); setProviderSheetOpen(false)
   }
+  // Types the chosen provider can plausibly issue (a bank offers account + cards,
+  // Tabby only BNPL). Custom providers keep the full list. The current type is always
+  // included so an existing method can never render with no matching chip.
+  const offeredTypes = useMemo(() => {
+    const brand = brandId && brandId !== '__custom' ? PAYMENT_BRANDS[brandId] : null
+    const allowed = typesForBrand(brand)
+    return SETUP_TYPES.filter((t) => allowed.includes(t) || t === type)
+  }, [brandId, type])
+
   const pickType = (v: PaymentMethodType) => {
     setType(v)
     if (disc === 'last4' && !allowsLast4(v)) setDisc('none')
@@ -309,7 +321,7 @@ export function PaymentMethodSetupSheet({
                   </div>
                 ) : (
                   <div className="native-scroll flex gap-1.5 overflow-x-auto pb-0.5">
-                    {SETUP_TYPES.map((tp) => {
+                    {offeredTypes.map((tp) => {
                       const meta = PAYMENT_TYPE_META[tp]
                       const activeChip = type === tp
                       return (
@@ -469,6 +481,7 @@ export function PaymentMethodSetupSheet({
         onPick={pickBrand}
         onCustom={setCustomProvider}
         onClose={() => setProviderSheetOpen(false)}
+        issuesType={lockType}
       />
 
       <CurrencySheet
@@ -578,7 +591,7 @@ function FloatingCardPreview({
 
 // ── Provider picker sheet ─────────────────────────────────────────────────
 function ProviderPickerSheet({
-  open, selectedId, popularIds, zIndexClassName, onPick, onCustom, onClose,
+  open, selectedId, popularIds, zIndexClassName, onPick, onCustom, onClose, issuesType,
 }: {
   open: boolean
   selectedId: string | null
@@ -587,6 +600,8 @@ function ProviderPickerSheet({
   onPick: (id: string) => void
   onCustom: (term: string) => void
   onClose: () => void
+  /** Locked context (e.g. Add credit card): only show providers that issue this type. */
+  issuesType?: PaymentMethodType
 }) {
   const t = useT()
   const [query, setQuery] = useState('')
@@ -594,19 +609,26 @@ function ProviderPickerSheet({
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase()
-    const ids = Object.keys(PAYMENT_BRANDS)
+    const ids = Object.keys(PAYMENT_BRANDS).filter(
+      (id) => !issuesType || brandIssuesType(PAYMENT_BRANDS[id], issuesType),
+    )
     if (q) {
       const hits = ids.filter((id) => (`${PAYMENT_BRANDS[id].name} ${PAYMENT_BRANDS[id].full ?? ''}`).toLowerCase().includes(q))
       return hits.map((id) => ({ kind: 'item' as const, id }))
     }
-    const rest = ids.filter((id) => !popularIds.includes(id))
+    const popular = popularIds.filter((id) => ids.includes(id))
+    const rest = ids.filter((id) => !popular.includes(id))
     return [
-      { kind: 'header' as const, label: t.paymentMethods.popularOptions },
-      ...popularIds.map((id) => ({ kind: 'item' as const, id })),
+      ...(popular.length
+        ? [
+            { kind: 'header' as const, label: t.paymentMethods.popularOptions },
+            ...popular.map((id) => ({ kind: 'item' as const, id })),
+          ]
+        : []),
       { kind: 'header' as const, label: t.paymentMethods.allProviders },
       ...rest.map((id) => ({ kind: 'item' as const, id })),
     ]
-  }, [query, popularIds, t])
+  }, [query, popularIds, t, issuesType])
 
   const customLabel = query.trim()
     ? t.paymentMethods.addCustomNamed.replace('{q}', query.trim())
@@ -663,7 +685,7 @@ function ProviderPickerSheet({
                 <span className="min-w-0 flex-1 text-start">
                   <span className="block truncate text-[14.5px] font-semibold text-[var(--color-brand-text-primary)]">{b.name}</span>
                   <span className="block text-[11px] font-medium text-[var(--color-brand-text-muted)]">
-                    {PAYMENT_TYPE_META[b.type].label}{b.full ? ` · ${b.full}` : ''}
+                    {PAYMENT_TYPE_META[issuesType ?? b.type].label}{b.full ? ` · ${b.full}` : ''}
                   </span>
                 </span>
                 {sel && <Check className="h-[18px] w-[18px] shrink-0 text-[#38D96B]" />}

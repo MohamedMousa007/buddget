@@ -46,12 +46,12 @@ export function ChargesSheet({ open, onClose, target }: { open: boolean; onClose
           <span className="inline-flex items-center gap-2 rounded-full border border-[#8A5CF6]/45 bg-[#8A5CF6]/12 px-3 py-1.5 text-[13px] font-semibold text-[#8A5CF6]">
             <CreditCard className="h-3.5 w-3.5" />
             Payment · {target.name}
-            {target.last4 ? <span className="font-mono-numbers">•••• {target.last4}</span> : null}
+            {target.last4 ? <span className="font-mono-numbers">••{target.last4}</span> : null}
           </span>
         </div>
       ) : null}
 
-      <div className="min-h-0 flex-1 pt-1">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain touch-pan-y pt-1">
         {filtered.length === 0 ? (
           <p className="px-5 py-10 text-center text-sm text-[var(--color-brand-text-muted)]">No charges on this card yet.</p>
         ) : (

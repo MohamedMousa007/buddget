@@ -41,7 +41,7 @@ export function CreditCardHeroCard({ vm, onEdit, onPay, onCharges }: CreditCardH
         <div className="min-w-0 flex-1">
           <p className="truncate text-lg font-bold leading-tight">{vm.bank}</p>
           <p className="truncate font-mono-numbers text-[13px] text-white/55">
-            {vm.last4 ? `•••• ${vm.last4}` : '••••'} · Debt
+            {vm.last4 ? `••${vm.last4}` : '••••'} · Debt
           </p>
         </div>
       </div>

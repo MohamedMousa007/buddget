@@ -5,6 +5,9 @@ import {
   resolvePaymentBrandKey,
   composePaymentMethodName,
   PAYMENT_TYPE_META,
+  SETUP_TYPES,
+  typesForBrand,
+  brandIssuesType,
 } from '@/lib/payment/paymentMethodDefaults'
 
 describe('resolvePaymentBrandKey', () => {
@@ -99,5 +102,24 @@ describe('composePaymentMethodName', () => {
     expect(composePaymentMethodName('HSBC', { last4: '0001' })).toBe('HSBC ••0001')
     expect(composePaymentMethodName('Cash', { tag: 'Personal' })).toBe('Cash · Personal')
     expect(composePaymentMethodName('Vodafone Cash')).toBe('Vodafone Cash')
+  })
+})
+
+describe('typesForBrand / brandIssuesType', () => {
+  it('lets a bank issue credit cards, so a locked credit-card context keeps the bank', () => {
+    // The bug: picking CIB (primary type bank_account) in Add-credit-card silently
+    // saved a bank account. A bank must be a valid credit-card issuer.
+    expect(brandIssuesType(PAYMENT_BRANDS.cib, 'credit_card')).toBe(true)
+    expect(brandIssuesType(PAYMENT_BRANDS.cib, 'debit_card')).toBe(true)
+    expect(typesForBrand(PAYMENT_BRANDS.cib)).toContain('bank_account')
+  })
+
+  it('keeps BNPL providers out of card contexts', () => {
+    expect(typesForBrand(PAYMENT_BRANDS.tabby)).toEqual(['bnpl'])
+    expect(brandIssuesType(PAYMENT_BRANDS.tabby, 'credit_card')).toBe(false)
+  })
+
+  it('falls back to every setup type for a custom (unmatched) provider', () => {
+    expect(typesForBrand(null)).toEqual(SETUP_TYPES)
   })
 })

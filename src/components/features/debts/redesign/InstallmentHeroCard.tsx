@@ -33,7 +33,7 @@ export function InstallmentHeroCard({ vm, onEdit, onPay }: InstallmentHeroCardPr
         {vm.onCardLast4 ? (
           <span className="flex h-9 items-center gap-1.5 rounded-[10px] border border-white/12 px-2.5 text-[11px] font-semibold text-white/70">
             <CardIcon className="h-3.5 w-3.5" />
-            <span className="font-mono-numbers">CARD ••••{vm.onCardLast4}</span>
+            <span className="font-mono-numbers">CARD ••{vm.onCardLast4}</span>
           </span>
         ) : null}
       </div>

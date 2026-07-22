@@ -22,6 +22,7 @@ import {
 } from '@/lib/debt/computeCreditCardBalance'
 import { installmentPaymentsCompleted, nextInstallmentDueFormatted } from '@/lib/debts/installmentSchedule'
 import { findProviderBrand } from '@/lib/constants/installmentProviders'
+import { decomposePaymentMethodName, providerInitials } from '@/lib/payment/paymentMethodDefaults'
 import type { Currency, Debt, DebtPayment, GoldKarat } from '@/lib/store/types'
 
 /** Family accent colors (handoff §1). */
@@ -216,10 +217,13 @@ export function useDebtTabData() {
         const allDue = regularDue + installmentDue
         const dueIso = getNextCreditCardDueDate(d, new Date())
         const pm = paymentMethods.find((m) => m.id === d.linkedPaymentMethodId)
+        // The stored name already carries the `••1234` suffix (composePaymentMethodName),
+        // so strip it here — surfaces render the provider + `••last4` exactly once.
+        const bank = decomposePaymentMethodName(d.name, pm?.last4 ?? undefined).provider
         return {
           id: d.id,
-          bank: d.name,
-          initials: d.name.replace(/[^A-Za-z ]/g, '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || 'CC',
+          bank,
+          initials: providerInitials(bank) || 'CC',
           last4: pm?.last4 ?? undefined,
           color: '#8A5CF6',
           currency: d.currency,
