@@ -5,7 +5,7 @@ import type { AddDebtHook } from '@/hooks/useAddDebtSheet'
 import { AmountField } from '@/components/ui/AmountField'
 import { DatePickerField } from '@/components/ui/DatePickerField'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
-import { defaultColorForPaymentMethodType } from '@/lib/payment/paymentMethodDefaults'
+import { defaultColorForPaymentMethodType, decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 import { rgba } from '@/lib/utils/color'
 import { fmtWhole } from './heroCardShared'
 
@@ -76,7 +76,7 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
                 <span className="flex h-6 w-6 items-center justify-center rounded-md" style={{ background: rgba(c, 0.18), color: c }}>
                   <Icon className="h-3.5 w-3.5" />
                 </span>
-                {m.name}
+                {decomposePaymentMethodName(m.name, m.last4).provider}
                 {m.last4 ? <span className="font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]">••{m.last4}</span> : null}
               </button>
             )

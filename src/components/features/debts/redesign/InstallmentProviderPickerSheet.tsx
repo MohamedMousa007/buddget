@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { CreditCard, Plus, Search, X, ArrowLeft, Check } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
+import { decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 import { INSTALLMENT_PROVIDER_CATALOGUE } from '@/lib/constants/installmentProviders'
 import { PaymentCardCarousel } from '@/components/features/payments/PaymentCardCarousel'
 import type { PaymentMethod } from '@/lib/store/types'
@@ -147,7 +148,8 @@ export function InstallmentProviderPickerSheet({
               onCardSelect={(m) => {
                 const c = creditCards.find((x) => x.pm.id === m.id)
                 if (c) {
-                  onPickCard(c.debtId, m.name, m.last4 ?? undefined)
+                  // Pass the bare provider — the card label appends `••last4` itself.
+                  onPickCard(c.debtId, decomposePaymentMethodName(m.name, m.last4).provider, m.last4 ?? undefined)
                   close()
                 }
               }}

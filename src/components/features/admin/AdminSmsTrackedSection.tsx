@@ -329,7 +329,7 @@ export function AdminSmsTrackedSection({ admin }: Props) {
                             {row.confidence != null ? `${Math.round(row.confidence * 100)}% conf` : ''}
                             {row.kind ? ` · ${row.kind}` : ''}
                             {row.source ? ` · via ${row.source}` : ''}
-                            {row.account_last4 ? ` · ••••${row.account_last4}` : ''}
+                            {row.account_last4 ? ` · ••${row.account_last4}` : ''}
                             {row.payment_instrument ? ` · ${row.payment_instrument}` : ''}
                             {row.pattern_id ? ` · pattern: ${row.pattern_id}` : ''}
                             {row.expense_id ? ' · expense linked' : ''}

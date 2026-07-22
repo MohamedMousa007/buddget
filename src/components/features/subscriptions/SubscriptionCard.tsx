@@ -8,6 +8,7 @@ import { isCyclePaid } from '@/lib/subscriptions/subscriptionOccurrence'
 import { SubscriptionCardInfo } from '@/components/features/subscriptions/SubscriptionCardInfo'
 import { SubscriptionCardMenu } from '@/components/features/subscriptions/SubscriptionCardMenu'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 import { useLocalizedFormatters } from '@/hooks/useLocalizedFormatters'
 import { useT } from '@/lib/i18n'
 import type { Subscription } from '@/lib/store/types'
@@ -46,7 +47,10 @@ export function SubscriptionCard({
 
   const brand = findBrandByKey(sub.brandKey)
   const pm = sub.paymentMethodId ? paymentMethods.find((m) => m.id === sub.paymentMethodId) : null
-  const pmLabel = pm ? `${pm.name}${pm.last4 ? ` ••${pm.last4}` : ''}` : '—'
+  // pm.name already carries the `••1234` suffix — strip it so it renders once.
+  const pmLabel = pm
+    ? `${decomposePaymentMethodName(pm.name, pm.last4).provider}${pm.last4 ? ` ••${pm.last4}` : ''}`
+    : '—'
 
   const cycleLabel =
     sub.billingCycle === 'yearly'
