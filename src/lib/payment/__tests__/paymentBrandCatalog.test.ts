@@ -114,9 +114,42 @@ describe('typesForBrand / brandIssuesType', () => {
     expect(typesForBrand(PAYMENT_BRANDS.cib)).toContain('bank_account')
   })
 
-  it('keeps BNPL providers out of card contexts', () => {
-    expect(typesForBrand(PAYMENT_BRANDS.tabby)).toEqual(['bnpl'])
+  it('never offers a credit card for a national debit scheme', () => {
+    // mada/Meeza/KNET issue debit + prepaid only; a "mada credit card" cannot exist.
+    for (const id of ['mada', 'knet', 'benefit', 'jaywan']) {
+      expect(brandIssuesType(PAYMENT_BRANDS[id], 'credit_card')).toBe(false)
+    }
+  })
+
+  it('allows the cards that card-issuing BNPL providers really ship', () => {
+    // Tabby Card (Visa), Tamara/valU/Postpay/Spotii prepaid cards.
+    for (const id of ['tabby', 'tamara', 'valu', 'postpay', 'spotii']) {
+      expect(brandIssuesType(PAYMENT_BRANDS[id], 'prepaid_card')).toBe(true)
+    }
+    // ...but none of them issues a credit card.
     expect(brandIssuesType(PAYMENT_BRANDS.tabby, 'credit_card')).toBe(false)
+    // A BNPL with no own-brand card stays BNPL-only.
+    expect(typesForBrand(PAYMENT_BRANDS.sympl)).toEqual(['bnpl'])
+  })
+
+  it('treats STC Pay as the licensed bank it became', () => {
+    expect(brandIssuesType(PAYMENT_BRANDS.stcpay, 'bank_account')).toBe(true)
+  })
+
+  it('keeps closed-loop and e-money cards out of the wrong grids', () => {
+    // Transit/fuel/meal cards are stored value, not wallets or bank products.
+    expect(typesForBrand(PAYMENT_BRANDS.nol)).toEqual(['prepaid_card'])
+    // Wallets issue prepaid cards, never debit (no IBAN behind them).
+    expect(brandIssuesType(PAYMENT_BRANDS.telda, 'debit_card')).toBe(false)
+    expect(brandIssuesType(PAYMENT_BRANDS.telda, 'prepaid_card')).toBe(true)
+  })
+
+  it('excludes tokenisation rails from every card context', () => {
+    // You add the underlying card, never "an Apple Pay credit card".
+    for (const id of ['applepay', 'googlepay', 'samsungpay']) {
+      expect(brandIssuesType(PAYMENT_BRANDS[id], 'credit_card')).toBe(false)
+      expect(brandIssuesType(PAYMENT_BRANDS[id], 'wallet')).toBe(true)
+    }
   })
 
   it('falls back to every setup type for a custom (unmatched) provider', () => {

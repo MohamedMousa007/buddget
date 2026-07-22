@@ -44,27 +44,57 @@ export function allowsLast4(type: PaymentMethodType): boolean {
  * the brand grid when the context locks a type (Add credit card → only issuers).
  */
 const TYPES_BY_PRIMARY: Record<PaymentMethodType, PaymentMethodType[]> = {
-  // Banks are full-service: account + cards, and several now ship a wallet.
-  bank_account: ['bank_account', 'debit_card', 'credit_card', 'prepaid_card', 'wallet'],
-  // National debit schemes (mada, Meeza, KNET) also badge credit/prepaid products.
-  debit_card: ['debit_card', 'credit_card', 'prepaid_card'],
-  // Card schemes (Visa, Mastercard, Amex) appear on every card product.
+  // A bank issues an account plus all three card types. NOT a wallet: every bank
+  // wallet here is already its own brand (urpay, Liv, Payit, Weyay).
+  bank_account: ['bank_account', 'debit_card', 'credit_card', 'prepaid_card'],
+  // National debit schemes (mada, Meeza, KNET, BENEFIT, NAPS, OmanNet, Jaywan) badge
+  // debit + prepaid only — none carries a credit product, so they must never appear
+  // as credit-card issuers.
+  debit_card: ['debit_card', 'prepaid_card'],
+  // Global schemes (Visa, Mastercard, Amex, UnionPay) appear on every card product.
   credit_card: ['credit_card', 'debit_card', 'prepaid_card'],
-  prepaid_card: ['prepaid_card', 'wallet'],
-  // Wallets that issue a card (Telda, Barq, STC Pay) still register as one wallet.
-  wallet: ['wallet', 'prepaid_card', 'debit_card'],
+  // Closed-loop transit / fuel / meal cards (nol, Hafilat, ADNOC, Edenred). Not wallets.
+  prepaid_card: ['prepaid_card'],
+  // E-money wallets issue PREPAID cards, never debit — there is no IBAN behind them.
+  wallet: ['wallet', 'prepaid_card'],
   bnpl: ['bnpl'],
   cash: ['cash'],
   other: SETUP_TYPES,
 }
 
-export function typesForBrand(brand: { type: PaymentMethodType } | null | undefined): PaymentMethodType[] {
+/**
+ * Brands whose real product range the primary-type rule cannot express. Mostly BNPL
+ * providers that now issue their own card, plus one wallet that became a bank.
+ */
+const TYPE_OVERRIDES: Record<string, PaymentMethodType[]> = {
+  // Tabby Card (Visa) + the Tweeq EMI acquisition + a CBUAE stored-value licence.
+  tabby: ['bnpl', 'prepaid_card', 'wallet'],
+  tamara: ['bnpl', 'prepaid_card'], // Tamara × Mastercard virtual prepaid card
+  valu: ['bnpl', 'prepaid_card'], // Valu × Visa prepaid card (Egypt)
+  postpay: ['bnpl', 'prepaid_card'], // Postpay × Mastercard × CBD virtual card
+  spotii: ['bnpl', 'prepaid_card'], // ADIB × Spotii virtual BNPL prepaid card
+  // STC Pay is now STC Bank (SAMA-licensed): the wallet upgrades to a real IBAN.
+  stcpay: ['wallet', 'bank_account', 'debit_card', 'prepaid_card'],
+  // Typed prepaid, but Meeza is a scheme with both prepaid and debit products.
+  meeza: ['prepaid_card', 'debit_card'],
+}
+
+export function typesForBrand(
+  brand: { id?: string; type: PaymentMethodType } | null | undefined,
+): PaymentMethodType[] {
   if (!brand) return SETUP_TYPES
+  if (brand.id && TYPE_OVERRIDES[brand.id]) return TYPE_OVERRIDES[brand.id]
   return TYPES_BY_PRIMARY[brand.type] ?? SETUP_TYPES
 }
 
 /** Can this brand issue `type`? Drives the locked-context brand grid filter. */
-export function brandIssuesType(brand: { type: PaymentMethodType }, type: PaymentMethodType): boolean {
+export function brandIssuesType(
+  brand: { id?: string; type: PaymentMethodType; passThrough?: boolean },
+  type: PaymentMethodType,
+): boolean {
+  // Tokenisation rails (Apple/Google/Samsung Pay) issue nothing — they present an
+  // underlying card. You never "add an Apple Pay credit card", you add the card.
+  if (brand.passThrough && type !== 'wallet') return false
   return typesForBrand(brand).includes(type)
 }
 
