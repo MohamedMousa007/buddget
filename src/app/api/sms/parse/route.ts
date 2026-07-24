@@ -25,6 +25,7 @@ import { isNonTransaction } from '@/lib/sms/patterns/preFilter'
 import { checkAndAutoPromote } from '@/lib/sms/promotionChecker'
 import { lookupKeys, effectiveSender } from '@/lib/sms/routingKey'
 import { createSmsTransaction, type SmsTxResult } from '@/lib/sms/dispatch'
+import { DEFAULT_MARKET_RATES } from '@/lib/store/defaultFinanceData'
 import { resolveCurrency } from '@/lib/sms/currencyResolver'
 import { extractKeywords } from '@/lib/sms/keywordExtractor'
 import { getServerDictionary } from '@/lib/i18n/getServerDictionary'
@@ -755,7 +756,7 @@ export async function POST(request: Request) {
     counterpartyLast4: cleanCpLast4,
     receivedAtIso: nowIso,
     logId,
-  }, { exchangeRates: {} })
+  }, { exchangeRates: DEFAULT_MARKET_RATES })
 
   const { expenseId, incomeId, debtPaymentId } = tx
   const isIncome = tx.outcome === 'income'

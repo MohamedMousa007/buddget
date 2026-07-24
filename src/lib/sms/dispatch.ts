@@ -179,11 +179,21 @@ export async function createSmsTransaction(
 ): Promise<SmsTxResult> {
   // -1. The bank's own ledger sign beats the tier's reading of the wording. A tier that got
   //     the direction wrong also wrote a title describing that wrong direction ("Transfer to
-  //     103-104***-110" for an inbound wire), so the title is dropped with it and smsTitle
-  //     falls back to the merchant/bank.
+  //     103-104***-110" for an inbound wire), so the title goes with it. A named counterparty
+  //     is still true either way and keeps precedence; only when there is none does the bank
+  //     name get a direction-correct wrapper, so the row doesn't land in the ledger as "HSBC".
   const guardedKind = guardDirection(parsedRow.kind, parsedRow.rawBody)
   const row: SmsRowData =
-    guardedKind === parsedRow.kind ? parsedRow : { ...parsedRow, kind: guardedKind, cleanTitle: null }
+    guardedKind === parsedRow.kind
+      ? parsedRow
+      : {
+          ...parsedRow,
+          kind: guardedKind,
+          cleanTitle:
+            guardedKind === 'instant_transfer_in' && !parsedRow.merchant && parsedRow.bankName
+              ? `Transfer from ${parsedRow.bankName}`
+              : null,
+        }
 
   let kind: SmsExpenseKind = row.kind
 
@@ -457,9 +467,18 @@ export async function createSmsTransaction(
       amount: row.amount,
       currency: row.currency,
       day: row.day,
+      exchangeRates: opts.exchangeRates,
     })
     if (decision.outcome === 'matched' || (decision.outcome === 'confirm' && opts.userConfirmed)) {
-      const res = await createSmsExpense(service, { ...row, kind, templateId: decision.sourceId })
+      // Stamping the payday is what makes the event pair deterministically. Without it
+      // `buildOccurrences` falls back to POSITIONAL pairing, and a paycheck banked days
+      // late fills the wrong month's payday while its own shows as missed.
+      const res = await createSmsExpense(service, {
+        ...row,
+        kind,
+        templateId: decision.sourceId,
+        occurrenceDate: decision.occurrenceDate,
+      })
       return { ...base('income', kind), incomeId: res.incomeId, matchedSourceId: decision.sourceId, error: res.error }
     }
     if (decision.outcome === 'confirm') {

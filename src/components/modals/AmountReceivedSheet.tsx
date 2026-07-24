@@ -7,9 +7,11 @@ import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { useT } from '@/lib/i18n'
+import { useT, useLocale } from '@/lib/i18n'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { buildOccurrences, expectedPerPayday } from '@/lib/utils/incomeOccurrences'
+import { UnifiedDatePicker, formatDatePillLabel } from '@/components/ui/UnifiedDatePicker'
+import { Calendar } from 'lucide-react'
 
 const MON_TITLE = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const fmtNum = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -19,8 +21,10 @@ const todayISO = () => localTodayISO()
 /**
  * Amount-received sheet (handoff §4). Prefilled to the expected per-payday; the
  * input colour is meaningful (white → green when it meets/exceeds expected → blue
- * when partial). Save derives the status from the amount; confirming an awaiting
- * payday stamps it Today. This one sheet handles both Received and Partial.
+ * when partial). Save derives the status from the amount. The received date defaults
+ * to today but is editable: a backfilled payday logged months later would otherwise
+ * read as months late, since the drift chip measures received-minus-payday.
+ * This one sheet handles both Received and Partial.
  */
 export function AmountReceivedSheet() {
   const showToast = useActionToast()
@@ -42,6 +46,7 @@ export function AmountReceivedSheet() {
   )
   const monthStartDay = useFinanceStore((s) => s.settings.monthStartDay)
   const t = useT()
+  const { locale } = useLocale()
   const isOpen = activeModal === 'amountReceived' && !!markingIncome
 
   const source = markingIncome ? incomeSources.find((s) => s.id === markingIncome.sourceId) : undefined
@@ -53,16 +58,34 @@ export function AmountReceivedSheet() {
   const expected = source ? expectedPerPayday(source) : 0
   const currency = source?.currency ?? 'EGP'
 
+  // Belt-and-braces dedupe: even if the occurrence pairing missed it, an event
+  // already stamped for this payday means we UPDATE, never add a second row.
+  const targetEventId =
+    current?.eventId ??
+    (source && current
+      ? incomeEvents.find((e) => e.templateId === source.id && e.occurrenceDate === current.dueDate)?.id
+      : undefined)
+  const isEdit = Boolean(targetEventId)
+  /** The date already on file for this payday — the prefill, and the baseline for `unchanged`. */
+  const currentReceivedDate = targetEventId
+    ? incomeEvents.find((e) => e.id === targetEventId)?.receivedDate ?? null
+    : null
+
   const [amount, setAmount] = useState('')
+  const [receivedDate, setReceivedDate] = useState(todayISO)
+  const [calOpen, setCalOpen] = useState(false)
   const prevOpen = useRef(false)
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- prefill when the sheet opens */
     if (isOpen && !prevOpen.current) {
       setAmount(current ? String(current.amount) : '')
+      // A payday still in the future can only have been received early or today; anything
+      // already logged keeps the date it was logged with.
+      setReceivedDate(currentReceivedDate ?? todayISO())
     }
     prevOpen.current = isOpen
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [isOpen, current])
+  }, [isOpen, current, currentReceivedDate])
 
   const close = () => setActiveModal(null)
   useEscapeClose(isOpen, close)
@@ -75,21 +98,18 @@ export function AmountReceivedSheet() {
   // expected → blue (partial) when it is less (handoff §4).
   const inputColorDisplay = !valid ? '#FFFFFF' : meetsExpected ? '#35D46F' : '#7DB6FF'
 
-  // Belt-and-braces dedupe: even if the occurrence pairing missed it, an event
-  // already stamped for this payday means we UPDATE, never add a second row.
-  const targetEventId =
-    current?.eventId ??
-    (source && current
-      ? incomeEvents.find((e) => e.templateId === source.id && e.occurrenceDate === current.dueDate)?.id
-      : undefined)
-  const isEdit = Boolean(targetEventId)
   // Re-marking a settled payday with the same amount is a no-op — keep the CTA dimmed.
   // But a MISSED payday is not settled: receiving it flips status missed → confirmed even
   // at the same amount (markPaydayMissed stores the full expected amount), so it must never
   // count as unchanged — otherwise the only way to enable Save is to enter a *different*,
   // necessarily partial, amount, and the full amount can never be received.
   const unchanged =
-    isEdit && valid && !!current && amt === current.amount && current.status !== 'missed'
+    isEdit &&
+    valid &&
+    !!current &&
+    amt === current.amount &&
+    receivedDate === currentReceivedDate &&
+    current.status !== 'missed'
   const blocked = !!current && !current.actionable && !isEdit
   const savingRef = useRef(false)
 
@@ -98,7 +118,7 @@ export function AmountReceivedSheet() {
     savingRef.current = true
     const status = meetsExpected ? 'confirmed' : 'partial'
     if (targetEventId) {
-      updateIncomeEvent(targetEventId, { amount: amt, status, occurrenceDate: current.dueDate })
+      updateIncomeEvent(targetEventId, { amount: amt, status, receivedDate, occurrenceDate: current.dueDate })
     } else {
       addIncomeEvent({
         templateId: source.id,
@@ -106,7 +126,7 @@ export function AmountReceivedSheet() {
         amount: amt,
         currency,
         sourceType: source.sourceType,
-        receivedDate: todayISO(),
+        receivedDate,
         occurrenceDate: current.dueDate,
         status,
         ...(source.paymentMethodId ? { paymentMethodId: source.paymentMethodId } : {}),
@@ -130,6 +150,18 @@ export function AmountReceivedSheet() {
         <p className="mt-1 font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">
           {t.income.amountSheetSubtitle(fmtDay(current.date), source.name, `${fmtNum(expected)} ${currency}`)}
         </p>
+
+        <label className="mt-4 block text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
+          {t.income.receivedOnLabel}
+        </label>
+        <button
+          type="button"
+          onClick={() => setCalOpen(true)}
+          className="mt-1.5 inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-sm font-semibold text-[var(--color-brand-text-secondary)] hover:border-[var(--color-brand-text-muted)]"
+        >
+          <Calendar className="h-4 w-4 text-[var(--color-brand-text-muted)]" />
+          {formatDatePillLabel(receivedDate, locale, t.common.today)}
+        </button>
 
         <label className="mt-4 block text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
           {t.income.amountReceivedLabel}
@@ -174,6 +206,14 @@ export function AmountReceivedSheet() {
           <p className="mt-2 text-center text-xs text-[var(--color-brand-text-muted)]">{t.income.earlierPaydayFirst}</p>
         ) : null}
       </div>
+
+      {/* UnifiedDatePicker portals itself above the sheet — no wrapper needed. */}
+      <UnifiedDatePicker
+        open={calOpen}
+        value={receivedDate}
+        onConfirm={setReceivedDate}
+        onClose={() => setCalOpen(false)}
+      />
     </ModalShell>
   )
 }

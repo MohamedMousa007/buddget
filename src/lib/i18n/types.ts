@@ -515,6 +515,11 @@ export interface Dictionary {
     bracketLate: string
     bracketMissed: string
     bracketPartial: string
+    /** Drift suffix on a settled payday's timeline label, e.g. "(+3 days)". */
+    bracketDaysLate: (days: number) => string
+    /** Chip on an All-income row when the money landed after its payday. */
+    daysLateChip: (days: number) => string
+    receivedOnLabel: string
     amountReceivedTitle: string
     amountSheetSubtitle: (date: string, source: string, expected: string) => string
     amountReceivedLabel: string
@@ -589,6 +594,11 @@ export interface Dictionary {
     paydayHelper: (count: number) => string
     /** Toggle in the payday grid's spare cells: manual multi-day selection. */
     paydayEditBtn: string
+    driftLabel: string
+    driftHelper: string
+    driftExact: string
+    driftWeek: string
+    driftLoose: string
     /** Amount label when the source is biweekly/weekly (per paycheck, not per month). */
     amountPerPaycheckLabel: string
     /** Live preview under the amount: typical monthly equivalent. */

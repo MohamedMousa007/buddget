@@ -6,9 +6,9 @@ import type { Currency, IncomeEvent, IncomeSource } from '@/lib/store/types'
 /**
  * Display status of a single payday. Distinct from {@link IncomeEvent.status}
  * (which has no `awaiting`): an awaiting occurrence has no ledger event yet.
- * An overdue payday turns `late` (1–5 days past due) and then auto-displays as
- * `missed` (> {@link MISSED_AFTER_DAYS} days) — display-only, nothing persists
- * until the user acts.
+ * An overdue payday turns `late` and then auto-displays as `missed` once it is past
+ * the source's grace ({@link IncomeSource.paydayDriftDays}, else {@link MISSED_AFTER_DAYS})
+ * — display-only, nothing persists until the user acts.
  */
 export type IncomeOccurrenceStatus = 'received' | 'late' | 'partial' | 'missed' | 'awaiting'
 
@@ -29,10 +29,36 @@ export interface IncomeOccurrence {
   /** Ledger row this occurrence resolves to, when logged. */
   eventId?: string
   /**
+   * Days between the payday and the day the money actually landed, when that is
+   * knowable and worth showing. Undefined for on-time, unpaid, and stale backfills.
+   */
+  daysLate?: number
+  /**
    * Paydays are settled in sequence: only the earliest still-unactioned payday
    * (plus every event-backed or auto-missed one) can be status-actioned.
    */
   actionable: boolean
+}
+
+/**
+ * Above this, a "late" figure is measuring the day the user got round to logging the
+ * payday, not the day the employer paid it — `AmountReceivedSheet` stamps the received
+ * date, so backfilling a June payday in October would otherwise read "112 days late".
+ */
+export const MAX_DISPLAYED_LATE_DAYS = 31
+
+/**
+ * How many days after its payday a paycheck arrived, or null when there is nothing
+ * honest to show. Derived rather than stored: the `late` event status has no writer
+ * (`AmountReceivedSheet` writes confirmed/partial, the income page writes missed), and
+ * adding a fourth writer to that field would be the bug, not the fix.
+ */
+export function eventDaysLate(e: Pick<IncomeEvent, 'receivedDate' | 'occurrenceDate'>): number | null {
+  if (!e.occurrenceDate || !e.receivedDate || e.receivedDate <= e.occurrenceDate) return null
+  const days = Math.round(
+    (parseISO(e.receivedDate).getTime() - parseISO(e.occurrenceDate).getTime()) / 86_400_000,
+  )
+  return days > 0 && days <= MAX_DISPLAYED_LATE_DAYS ? days : null
 }
 
 const EVENT_STATUS: Record<IncomeEvent['status'], IncomeOccurrenceStatus | null> = {
@@ -70,10 +96,20 @@ export function expectedPerPayday(source: IncomeSource): number {
  * income page can tell a still-reversible payday (awaiting/late) from an old one
  * that is naturally missed — the latter can only ever be received, not un-marked.
  */
-export function pendingStatus(dueISO: string, todayISO: string): IncomeOccurrenceStatus {
+export function pendingStatus(
+  dueISO: string,
+  todayISO: string,
+  /** Per-source grace (`IncomeSource.paydayDriftDays`); omit for the app default. */
+  missedAfterDays: number = MISSED_AFTER_DAYS,
+): IncomeOccurrenceStatus {
   if (todayISO <= dueISO) return 'awaiting'
   const overdueDays = Math.round((parseISO(todayISO).getTime() - parseISO(dueISO).getTime()) / 86_400_000)
-  return overdueDays <= MISSED_AFTER_DAYS ? 'late' : 'missed'
+  return overdueDays <= missedAfterDays ? 'late' : 'missed'
+}
+
+/** The grace a source gets before an unpaid payday reads as missed. */
+export function missedAfterDaysFor(source: Pick<IncomeSource, 'paydayDriftDays'>): number {
+  return source.paydayDriftDays ?? MISSED_AFTER_DAYS
 }
 
 interface Realized {
@@ -82,6 +118,7 @@ interface Realized {
   amount: number
   currency: Currency
   eventId: string
+  daysLate?: number
 }
 
 /** Collapse legacy (no occurrenceDate) same-day receipts into one entry, like the old chips. */
@@ -96,7 +133,7 @@ function mergeLegacyByDate(events: IncomeEvent[], expected: number): Realized[] 
     .map(([date, evs]) => {
       evs.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
       if (evs.length === 1) {
-        return { date, status: EVENT_STATUS[evs[0].status] as IncomeOccurrenceStatus, amount: evs[0].amount, currency: evs[0].currency, eventId: evs[0].id }
+        return { date, status: EVENT_STATUS[evs[0].status] as IncomeOccurrenceStatus, amount: evs[0].amount, currency: evs[0].currency, eventId: evs[0].id, daysLate: eventDaysLate(evs[0]) ?? undefined }
       }
       const realizedSum = evs.reduce(
         (s, e) => (REALIZED_STATUSES.has(EVENT_STATUS[e.status] as IncomeOccurrenceStatus) ? s + e.amount : s),
@@ -150,16 +187,16 @@ export function buildOccurrences(
     const iso = toISODate(d)
     const direct = byOcc.get(iso)
     const ev: Realized | undefined = direct
-      ? { date: iso, status: EVENT_STATUS[direct.status] as IncomeOccurrenceStatus, amount: direct.amount, currency: direct.currency, eventId: direct.id }
+      ? { date: iso, status: EVENT_STATUS[direct.status] as IncomeOccurrenceStatus, amount: direct.amount, currency: direct.currency, eventId: direct.id, daysLate: eventDaysLate(direct) ?? undefined }
       : legacyMerged[li++]
     if (ev) {
-      return { key: ev.eventId, date: iso, dueDate: iso, status: ev.status, amount: ev.amount, currency: ev.currency, eventId: ev.eventId, actionable: true }
+      return { key: ev.eventId, date: iso, dueDate: iso, status: ev.status, amount: ev.amount, currency: ev.currency, eventId: ev.eventId, daysLate: ev.daysLate, actionable: true }
     }
     return {
       key: `${source.id}@${iso}`,
       date: iso,
       dueDate: iso,
-      status: pendingStatus(iso, todayISO),
+      status: pendingStatus(iso, todayISO, missedAfterDaysFor(source)),
       amount: expected,
       currency: source.currency,
       actionable: true, // sequence pass below demotes later pending paydays
@@ -172,11 +209,11 @@ export function buildOccurrences(
   const pairedIds = new Set(occ.map((o) => o.eventId).filter(Boolean))
   for (const e of byOcc.values()) {
     if (pairedIds.has(e.id)) continue
-    occ.push({ key: e.id, date: e.occurrenceDate!, dueDate: e.occurrenceDate!, status: EVENT_STATUS[e.status] as IncomeOccurrenceStatus, amount: e.amount, currency: e.currency, eventId: e.id, actionable: true })
+    occ.push({ key: e.id, date: e.occurrenceDate!, dueDate: e.occurrenceDate!, status: EVENT_STATUS[e.status] as IncomeOccurrenceStatus, amount: e.amount, currency: e.currency, eventId: e.id, daysLate: eventDaysLate(e) ?? undefined, actionable: true })
   }
   for (; li < legacyMerged.length; li++) {
     const ev = legacyMerged[li]
-    occ.push({ key: ev.eventId, date: ev.date, dueDate: ev.date, status: ev.status, amount: ev.amount, currency: ev.currency, eventId: ev.eventId, actionable: true })
+    occ.push({ key: ev.eventId, date: ev.date, dueDate: ev.date, status: ev.status, amount: ev.amount, currency: ev.currency, eventId: ev.eventId, daysLate: ev.daysLate, actionable: true })
   }
   occ.sort((a, b) => a.date.localeCompare(b.date))
 

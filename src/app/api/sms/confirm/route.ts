@@ -13,6 +13,7 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
 import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
 import type { SmsExpenseKind } from '@/lib/sms/createSmsExpense'
 import { createSmsTransaction } from '@/lib/sms/dispatch'
+import { DEFAULT_MARKET_RATES } from '@/lib/store/defaultFinanceData'
 import { effectiveSender } from '@/lib/sms/routingKey'
 
 const bodySchema = z
@@ -118,7 +119,7 @@ export async function POST(request: Request) {
     counterpartyLast4: row.counterparty_last4 ?? null,
     receivedAtIso,
     logId: row.id,
-  }, { exchangeRates: {}, userConfirmed: true })
+  }, { exchangeRates: DEFAULT_MARKET_RATES, userConfirmed: true })
 
   const { expenseId, incomeId, debtPaymentId } = tx
   const postedSomething = !!(expenseId || incomeId || debtPaymentId)

@@ -26,6 +26,24 @@ import { MODAL_BODY_SCROLL_CLASS, MODAL_CONTROL_CLASS, MODAL_LABEL_CLASS } from 
 
 const FREQS: IncomeRecurringFrequency[] = ['monthly', 'biweekly', 'weekly']
 
+/**
+ * Payday-drift presets. The stored value is a day count so the matcher and the
+ * late→missed threshold can both use it directly; the labels keep the user out of
+ * guessing a number.
+ */
+const DRIFT_PRESETS = [
+  { days: 0, key: 'driftExact' },
+  { days: 7, key: 'driftWeek' },
+  { days: 14, key: 'driftLoose' },
+] as const
+/**
+ * What an unset source shows, and what saving writes when the user never touches the
+ * control. Always written explicitly: leaving it null would mean the highlighted preset
+ * ("Up to a week") lies about the late→missed threshold, which reads the app default of 5
+ * for null. Legacy rows keep null and keep exactly their current behaviour.
+ */
+const DEFAULT_DRIFT_PRESET = 7
+
 /** Linked debt/savings sources may not have their type reassigned. */
 function typeIsLocked(source?: IncomeSource): boolean {
   if (!source) return false
@@ -76,6 +94,7 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
   const [sourceType, setSourceType] = useState<IncomeSourceType>(source?.sourceType ?? 'salary')
   const [frequency, setFrequency] = useState<IncomeRecurringFrequency>(source?.recurringFrequency ?? 'monthly')
   const [paydays, setPaydays] = useState<number[]>(seedPaydays)
+  const [driftDays, setDriftDays] = useState<number | null>(source?.paydayDriftDays ?? null)
   const [receivedDate, setReceivedDate] = useState(() => localTodayISO())
   const [assigned, setAssigned] = useState<{ templateId: string; date: string } | null>(null)
   const [paymentMethodId, setPaymentMethodId] = useState(source?.paymentMethodId ?? defaultPmId)
@@ -131,6 +150,7 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
         recurringFrequency: frequency,
         dayOfMonth: paydays[0] ?? 1,
         paydayDays: frequency !== 'monthly' && paydays.length ? paydays : undefined,
+        paydayDriftDays: driftDays ?? DEFAULT_DRIFT_PRESET,
         notes: notes.trim() || undefined,
         paymentMethodId: paymentMethodId || undefined,
         ...(typeLocked ? {} : { sourceType }),
@@ -147,6 +167,7 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
         recurringFrequency: frequency,
         dayOfMonth: paydays[0] ?? 1,
         ...(frequency !== 'monthly' && paydays.length ? { paydayDays: paydays } : {}),
+        paydayDriftDays: driftDays ?? DEFAULT_DRIFT_PRESET,
         sourceType,
         notes: notes.trim() || undefined,
         ...(paymentMethodId ? { paymentMethodId } : {}),
@@ -318,6 +339,32 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
                 </div>
                 <div className="mt-1.5">
                   <IncomePaydayGrid frequency={frequency} days={paydays} onChange={setPaydays} />
+                </div>
+              </div>
+              {/* Payday accuracy — how far a paycheck may drift and still be that payday.
+                  Widens SMS matching and the grace before an unpaid payday reads as missed.
+                  Presets, not a number field: nobody knows their employer's drift to the day. */}
+              <div>
+                {/* Helper on its own line: "Payday accuracy" is long enough that a
+                    beside-the-label helper wraps the uppercase label onto two lines. */}
+                <span className={MODAL_LABEL_CLASS}>{t.addIncome.driftLabel}</span>
+                <p className="mt-0.5 text-[10px] text-[var(--color-brand-text-muted)]">{t.addIncome.driftHelper}</p>
+                <div className="mt-1.5 grid grid-cols-3 gap-2">
+                  {DRIFT_PRESETS.map(({ days, key }) => {
+                    const on = (driftDays ?? DEFAULT_DRIFT_PRESET) === days
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setDriftDays(days)}
+                        className={`rounded-xl py-2.5 text-sm font-semibold transition-colors ${
+                          on ? 'bg-[var(--color-brand-red)] text-white' : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
+                        }`}
+                      >
+                        {t.addIncome[key]}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             </>

@@ -84,6 +84,12 @@ export interface SmsRowData {
   linkedSubscriptionId?: string | null
   /** Recurring income template this credit fulfills (salary match) → links the event. */
   templateId?: string | null
+  /**
+   * `YYYY-MM-DD` scheduled payday this credit fulfills. Load-bearing: `buildOccurrences`
+   * pairs on this column and falls back to POSITIONAL pairing without it, so an unstamped
+   * late paycheck fills the wrong month's payday. Only meaningful alongside `templateId`.
+   */
+  occurrenceDate?: string | null
   /** Force a specific category (overrides kind/hint mapping). */
   categoryOverride?: ExpenseCategory | null
   /** When set, stamp the new expense as already reversed (standalone-declined case). */
@@ -221,6 +227,9 @@ export async function createSmsExpense(
         currency: row.currency,
         source_type: sourceType,
         received_date: row.day || localTodayISO(),
+        // The payday fulfilled, when the matcher could name one. Never set without a
+        // template — an unlinked credit belongs to no schedule.
+        occurrence_date: linked ? row.occurrenceDate ?? null : null,
         status: 'confirmed',
         sms_log_id: row.logId ?? null,
         notes: null,

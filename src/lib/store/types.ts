@@ -100,6 +100,13 @@ export interface IncomeSource {
    * weekly 4 (max). Legacy rows omit it → derived from {@link dayOfMonth}.
    */
   paydayDays?: number[]
+  /**
+   * Days a paycheck may drift from its scheduled payday and still be that payday.
+   * Drives how far an SMS credit looks for the payday it fulfils, and how long an
+   * unpaid payday stays "late" before it reads as "missed".
+   * Undefined/null = app default (7 matching, {@link MISSED_AFTER_DAYS} before missed).
+   */
+  paydayDriftDays?: number | null
   /** `YYYY-MM-DD` the source starts counting for a month (defaults to creation date). */
   effectiveStart: string
   /** `YYYY-MM-DD` the source stops counting (inclusive); null/undefined = ongoing. */

@@ -22,7 +22,7 @@ import { SkeletonList } from '@/components/ui/SkeletonList'
 import { convertCurrency, fmtCompact } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { expectedRecurringForMonth, getMonthRange, recurringActiveForWindow } from '@/lib/utils/calculations'
-import { buildOccurrences, isRealizedOccurrence, pendingStatus, type IncomeOccurrence } from '@/lib/utils/incomeOccurrences'
+import { buildOccurrences, eventDaysLate, isRealizedOccurrence, missedAfterDaysFor, pendingStatus, type IncomeOccurrence } from '@/lib/utils/incomeOccurrences'
 import type { IncomeSource, IncomeSourceType } from '@/lib/store/types'
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
@@ -106,6 +106,8 @@ export default function IncomePage() {
 
   // Status suffix on a payday's date label — only the states that need flagging.
   const statusBracket = (o: IncomeOccurrence): string =>
+    // A paid-but-drifted payday reports the drift; "(Late!)" is for one still unpaid.
+    o.daysLate ? ` ${t.income.bracketDaysLate(o.daysLate)}` :
     o.status === 'late' ? ` ${t.income.bracketLate}` : o.status === 'missed' ? ` ${t.income.bracketMissed}` : o.status === 'partial' ? ` ${t.income.bracketPartial}` : ''
 
   // Explicitly skip an unpaid payday — persists a missed event so it stops nagging.
@@ -164,11 +166,11 @@ export default function IncomePage() {
 
   // All-income ledger: recurring receipts + one-time, grouped by day (desc).
   const ledger = useMemo(() => {
-    type Row = { id: string; name: string; sourceType?: IncomeSourceType; acct: AcctLike; amountBase: number; day: number; recurring: boolean; eventId?: string; sourceId?: string; canAssign: boolean }
+    type Row = { id: string; name: string; sourceType?: IncomeSourceType; acct: AcctLike; amountBase: number; day: number; recurring: boolean; eventId?: string; sourceId?: string; canAssign: boolean; daysLate?: number }
     const rows: Row[] = []
     for (const e of incomeEvents) {
       if (!e.templateId || !REALIZED_EVENT.has(e.status) || e.receivedDate.slice(0, 7) !== monthFilter) continue
-      rows.push({ id: `r-${e.id}`, name: e.name, sourceType: e.sourceType, acct: e as AcctLike, amountBase: convertCurrency(e.amount, e.currency, base, exchangeRates), day: Number(e.receivedDate.slice(8, 10)) || 1, recurring: true, eventId: e.id, canAssign: false })
+      rows.push({ id: `r-${e.id}`, name: e.name, sourceType: e.sourceType, acct: e as AcctLike, amountBase: convertCurrency(e.amount, e.currency, base, exchangeRates), day: Number(e.receivedDate.slice(8, 10)) || 1, recurring: true, eventId: e.id, canAssign: false, daysLate: eventDaysLate(e) ?? undefined })
     }
     for (const o of oneTime) {
       rows.push({ id: `o-${o.id}`, name: o.name, sourceType: o.sourceType, acct: o.acct, amountBase: o.amountBase, day: o.day, recurring: false, eventId: o.eventId, sourceId: o.sourceId, canAssign: Boolean(o.eventId) })
@@ -330,7 +332,7 @@ export default function IncomePage() {
                       // Marked/auto missed. An old payday (naturally missed by date) can only
                       // ever be Received — one full-width CTA. A future/due one is reversible:
                       // Awaiting un-marks it (deletes the missed event) back to awaiting/late.
-                      pendingStatus(sel.dueDate, todayISO()) === 'missed' || !sel.eventId ? (
+                      pendingStatus(sel.dueDate, todayISO(), missedAfterDaysFor(source)) === 'missed' || !sel.eventId ? (
                         <button
                           type="button"
                           onClick={() => openAmountReceived(source.id, sel.key)}
@@ -444,6 +446,13 @@ export default function IncomePage() {
                           >
                             {r.recurring ? t.income.recurringLabel : t.income.oneTimeLabel}
                           </span>
+                          {/* Drift between the payday and the day the money landed — the Deel-to-bank
+                              hop. Amber, matching the `late` status colour on the payday timeline. */}
+                          {r.daysLate ? (
+                            <span className="shrink-0 rounded-full bg-[rgba(255,177,61,0.16)] px-2 py-[2.5px] text-[9.5px] font-extrabold uppercase tracking-[0.05em] text-[#FFD68A]">
+                              {t.income.daysLateChip(r.daysLate)}
+                            </span>
+                          ) : null}
                         </div>
                         <span className="mt-1.5 block truncate text-xs text-[var(--color-brand-text-muted)]">→ {accountLabel(r.acct)}</span>
                       </div>
