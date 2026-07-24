@@ -1572,6 +1572,7 @@ export type Database = {
           kind: string | null
           learn_status: string | null
           learn_template_id: string | null
+          matched_template_id: string | null
           merchant: string | null
           merchant_normalized: string | null
           paired_log_id: string | null
@@ -1614,6 +1615,7 @@ export type Database = {
           kind?: string | null
           learn_status?: string | null
           learn_template_id?: string | null
+          matched_template_id?: string | null
           merchant?: string | null
           merchant_normalized?: string | null
           paired_log_id?: string | null
@@ -1656,6 +1658,7 @@ export type Database = {
           kind?: string | null
           learn_status?: string | null
           learn_template_id?: string | null
+          matched_template_id?: string | null
           merchant?: string | null
           merchant_normalized?: string | null
           paired_log_id?: string | null
@@ -1700,6 +1703,10 @@ export type Database = {
           min_age_days: number
           min_avg_confidence: number
           min_match_count: number
+          min_matches_before_retire: number
+          quarantine_exonerate_after: number
+          signals_before_adjudication: number
+          max_user_signals_per_day: number
           min_unique_users: number
           updated_at: string
         }
@@ -1709,6 +1716,10 @@ export type Database = {
           min_age_days?: number
           min_avg_confidence?: number
           min_match_count?: number
+          min_matches_before_retire?: number
+          quarantine_exonerate_after?: number
+          signals_before_adjudication?: number
+          max_user_signals_per_day?: number
           min_unique_users?: number
           updated_at?: string
         }
@@ -1718,6 +1729,10 @@ export type Database = {
           min_age_days?: number
           min_avg_confidence?: number
           min_match_count?: number
+          min_matches_before_retire?: number
+          quarantine_exonerate_after?: number
+          signals_before_adjudication?: number
+          max_user_signals_per_day?: number
           min_unique_users?: number
           updated_at?: string
         }
@@ -1813,6 +1828,14 @@ export type Database = {
           sender: string
           template_sample: string
           tier: string
+          status: string
+          failure_count: number
+          hard_fail: boolean
+          prev_tier: string | null
+          merged_into: string | null
+          quarantined_at: string | null
+          retired_at: string | null
+          exported_at: string | null
           unique_user_count: number
           updated_at: string
           user_id: string | null
@@ -1832,6 +1855,14 @@ export type Database = {
           sender: string
           template_sample: string
           tier?: string
+          status?: string
+          failure_count?: number
+          hard_fail?: boolean
+          prev_tier?: string | null
+          merged_into?: string | null
+          quarantined_at?: string | null
+          retired_at?: string | null
+          exported_at?: string | null
           unique_user_count?: number
           updated_at?: string
           user_id?: string | null
@@ -1851,6 +1882,14 @@ export type Database = {
           sender?: string
           template_sample?: string
           tier?: string
+          status?: string
+          failure_count?: number
+          hard_fail?: boolean
+          prev_tier?: string | null
+          merged_into?: string | null
+          quarantined_at?: string | null
+          retired_at?: string | null
+          exported_at?: string | null
           unique_user_count?: number
           updated_at?: string
           user_id?: string | null

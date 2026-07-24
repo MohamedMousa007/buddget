@@ -26,13 +26,21 @@ const FAILURE_LABELS: Record<string, string> = {
   not_configured: 'AI not configured',
 }
 
+/**
+ * The four stages of a template's journey, as they appear on a parse-log row:
+ * Fully Curated (code) → Curated DB (global) → Template (author-scoped) → AI - new SMS.
+ * Legacy keys are retained so rows written before migration 0097 still render.
+ */
 const METHOD_CHIPS: Record<string, { label: string; cls: string }> = {
-  curated:  { label: 'Curated',  cls: 'border-green-500/20 text-green-400 bg-green-500/10' },
-  template: { label: 'Template', cls: 'border-blue-500/20 text-blue-400 bg-blue-500/10' },
-  // legacy values for rows recorded before simplification
-  promoted: { label: 'Template', cls: 'border-blue-500/20 text-blue-400 bg-blue-500/10' },
-  static:   { label: 'Template', cls: 'border-blue-500/20 text-blue-400 bg-blue-500/10' },
-  ai:       { label: 'AI',       cls: 'border-amber-500/20 text-amber-400 bg-amber-500/10' },
+  fully_curated: { label: 'Fully Curated', cls: 'border-green-500/20 text-green-400 bg-green-500/10' },
+  curated_db:    { label: 'Curated DB',    cls: 'border-teal-500/20 text-teal-400 bg-teal-500/10' },
+  template:      { label: 'Template',      cls: 'border-blue-500/20 text-blue-400 bg-blue-500/10' },
+  ai_new:        { label: 'AI - new SMS',  cls: 'border-amber-500/20 text-amber-400 bg-amber-500/10' },
+  // Pre-0097 rows.
+  curated:  { label: 'Fully Curated', cls: 'border-green-500/20 text-green-400 bg-green-500/10' },
+  promoted: { label: 'Curated DB',    cls: 'border-teal-500/20 text-teal-400 bg-teal-500/10' },
+  static:   { label: 'Template',      cls: 'border-blue-500/20 text-blue-400 bg-blue-500/10' },
+  ai:       { label: 'AI - new SMS',  cls: 'border-amber-500/20 text-amber-400 bg-amber-500/10' },
 }
 
 /** AI template-learning outcome chip (shown under the AI method chip). */

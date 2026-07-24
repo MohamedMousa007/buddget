@@ -20,7 +20,7 @@ import crypto from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { SMS_PARSER_SYSTEM_PROMPT, MASKED_ACCOUNT_CLASS } from '@/lib/sms/aiParserPrompt'
 import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNativePush'
-import { matchCuratedPattern } from '@/lib/sms/patterns'
+import { matchCuratedPattern, parseSmsDay } from '@/lib/sms/patterns'
 import { isNonTransaction } from '@/lib/sms/patterns/preFilter'
 import { checkAndAutoPromote } from '@/lib/sms/promotionChecker'
 import { lookupKeys, effectiveSender } from '@/lib/sms/routingKey'
@@ -76,6 +76,18 @@ interface MappingRules {
   currency?: { group: number } | { literal: string }
   merchant?: { group: number }
   last4?:    { group: number }
+  /**
+   * Transaction date printed in the SMS. Without it a template-parsed row is dated by ARRIVAL,
+   * which is wrong for any delayed or offline delivery — a code pattern has always captured it.
+   */
+  datetime?: { group: number }
+  /**
+   * Destination/counterparty account last4. Dispatch's own-account transfer detection keys on
+   * this, so a template that cannot capture it can never be recognised as an own transfer.
+   */
+  counterparty_last4?: { group: number }
+  /** card | account | wallet — drives payment-method resolution. */
+  payment_instrument?: { literal: string }
   kind:      string
   bank_name?:{ literal: string }
 }
@@ -118,11 +130,21 @@ function extractJson(text: string): string | null {
 // Static template bypass (cache-backed)
 // ---------------------------------------------------------------------------
 
-interface TemplateMatch { parsed: ParsedTx; templateId: string }
+interface TemplateMatch {
+  parsed: ParsedTx
+  templateId: string
+  tier: TemplateTier
+  /** Transaction date from the SMS body (YYYY-MM-DD), else null. */
+  txDay: string | null
+  paymentInstrument: string | null
+}
+
+/** Reach of a DB template: author-scoped (supervised) vs global (trusted). */
+type TemplateTier = 'template' | 'curated_db'
 
 function applyTemplate(
   message: string,
-  tpl: { id: string; regex_pattern: string; mapping_rules: Record<string, unknown>; match_count: number },
+  tpl: { id: string; regex_pattern: string; mapping_rules: Record<string, unknown>; match_count: number; tier?: string | null },
 ): TemplateMatch | null {
   let re: RegExp
   try { re = new RegExp(tpl.regex_pattern) } catch { return null }
@@ -146,6 +168,9 @@ function applyTemplate(
     const merchant  = rules.merchant ? (m[rules.merchant.group] ?? null) : null
     const last4Raw  = rules.last4    ? (m[rules.last4.group]    ?? null) : null
     const cleanLast4 = last4Raw ? last4Raw.replace(/\D/g, '').slice(-4) || null : null
+    const cpLast4Raw = rules.counterparty_last4 ? (m[rules.counterparty_last4.group] ?? null) : null
+    const cleanCpLast4 = cpLast4Raw ? cpLast4Raw.replace(/\D/g, '').slice(-4) || null : null
+    const txDay = parseSmsDay(rules.datetime ? (m[rules.datetime.group] ?? null) : null)
     const bankName  = rules.bank_name ? rules.bank_name.literal : null
     const kind      = rules.kind as ParsedTx['kind']
 
@@ -160,6 +185,9 @@ function applyTemplate(
 
     return {
       templateId: tpl.id,
+      tier: tpl.tier === 'curated_db' ? 'curated_db' : 'template',
+      txDay,
+      paymentInstrument: rules.payment_instrument?.literal ?? null,
       parsed: {
         is_transaction: true, amount,
         currency: currency as ParsedTx['currency'],
@@ -167,7 +195,7 @@ function applyTemplate(
         category: null, confidence: 1.0, kind,
         cleanTitle,
         detectedAccountLast4: cleanLast4,
-        detectedCounterpartyLast4: null,
+        detectedCounterpartyLast4: cleanCpLast4,
         merchantNormalized: null,
       },
     }
@@ -183,9 +211,11 @@ async function tryStaticParse(
 ): Promise<TemplateMatch | null> {
   const { data } = await service
     .from('sms_tracking_templates_ai')
-    .select('id, regex_pattern, mapping_rules, match_count, kind')
+    .select('id, regex_pattern, mapping_rules, match_count, kind, tier, status')
     .in('sender', keys)
     .eq('ai_enabled', true)
+    .eq('status', 'active')
+    .is('merged_into', null)
     .order('match_count', { ascending: false })
     .limit(10)
   for (const tpl of data ?? []) {
@@ -204,8 +234,10 @@ async function tryStaticParseAny(
 ): Promise<TemplateMatch | null> {
   const { data } = await service
     .from('sms_tracking_templates_ai')
-    .select('id, regex_pattern, mapping_rules, match_count, kind')
+    .select('id, regex_pattern, mapping_rules, match_count, kind, tier, status')
     .eq('ai_enabled', true)
+    .eq('status', 'active')
+    .is('merged_into', null)
     .order('match_count', { ascending: false })
     .limit(50)
   for (const tpl of data ?? []) {
@@ -404,7 +436,7 @@ function buildRegexLearningPrompt(message: string, sender: string, parsed: Parse
 
 SMS: ${JSON.stringify(message)}
 Sender: ${JSON.stringify(sender)}
-Extracted: amount=${parsed.amount}, currency=${parsed.currency}, merchant=${JSON.stringify(parsed.merchant)}, kind=${parsed.kind}, last4=${parsed.detectedAccountLast4}
+Extracted: amount=${parsed.amount}, currency=${parsed.currency}, merchant=${JSON.stringify(parsed.merchant)}, kind=${parsed.kind}, last4=${parsed.detectedAccountLast4}, counterpartyLast4=${parsed.detectedCounterpartyLast4}
 
 Rules:
 - Use numbered capture groups (NOT named groups)
@@ -415,7 +447,11 @@ Rules:
 - Replace transaction-specific values (names, amounts, reference numbers, dates, times) with flexible patterns like \\S+, .+?, or \\d+
 - Do NOT use ^ or $ anchors
 - Keep Arabic words exactly as literals
-- The generated regex MUST match the exact SMS shown above when tested with new RegExp(regex_pattern).test(message) — verify it matches before responding
+- ALSO capture, when the SMS contains them, in their own groups:
+  * the TRANSACTION DATE exactly as printed (e.g. 20-07-2026, 23/07/26, 20JUL26) -> "datetime"
+  * a SECOND masked account (the destination/counterparty of a transfer) -> "counterparty_last4"
+  Omit either key from mapping_rules when the SMS does not contain that value.
+- The generated regex MUST match the exact SMS shown above when tested with new RegExp(regex_pattern).test(message), AND each capture group must yield exactly the extracted value listed above — verify BOTH before responding
 
 Return JSON only (no markdown fences):
 {
@@ -425,12 +461,14 @@ Return JSON only (no markdown fences):
     "currency": { "literal": "${parsed.currency ?? 'EGP'}" },
     "merchant": { "group": 2 },
     "last4": { "group": 3 },
+    "datetime": { "group": 4 },
+    "counterparty_last4": { "group": 5 },
     "kind": "${parsed.kind ?? 'purchase'}",
     "bank_name": { "literal": "${parsed.bank_name ?? ''}" }
   }
 }
 
-Omit "merchant" and "last4" from mapping_rules if those fields were null. Only include a "group" reference for values that vary per transaction.`
+Omit "merchant", "last4", "datetime" and "counterparty_last4" from mapping_rules when the SMS has no such value. Only include a "group" reference for values that vary per transaction.`
 }
 
 // ---------------------------------------------------------------------------
@@ -572,7 +610,7 @@ export async function POST(request: Request) {
   const rejectReason = isNonTransaction(message)
   if (rejectReason) {
     await service.from('sms_parse_log')
-      .update({ status: 'rejected', failure_code: 'not_transaction', parse_method: 'curated' })
+      .update({ status: 'rejected', failure_code: 'not_transaction', parse_method: 'fully_curated' })
       .eq('id', logId)
     return NextResponse.json({ ok: false, reason: 'not_transaction', rejected: rejectReason })
   }
@@ -620,14 +658,18 @@ export async function POST(request: Request) {
       detectedCounterpartyLast4: curated.counterpartyLast4,
       merchantNormalized: null,
     }
-  } else if (staticResult) {
+  } else if (staticResult && staticMatch) {
     parsed = staticResult
+    // Parity with the curated tier: a Curated DB / Template match now carries the SMS's own
+    // transaction date and payment instrument too, instead of falling back to arrival time.
+    txDay = staticMatch.txDay
+    paymentInstrument = staticMatch.paymentInstrument
   } else {
     // Gemini path: API key required, rate-limited.
     const apiKey = process.env.GEMINI_API_KEY?.trim()
     if (!apiKey) {
       await service.from('sms_parse_log')
-        .update({ status: 'failed', failure_code: 'not_configured', parse_method: 'ai' })
+        .update({ status: 'failed', failure_code: 'not_configured', parse_method: 'ai_new' })
         .eq('id', logId)
       return NextResponse.json(
         { error: 'AI is not configured. Admin needs to set GEMINI_API_KEY.' },
@@ -644,7 +686,7 @@ export async function POST(request: Request) {
 
     if ((usage?.parsed_count_today ?? 0) >= RATE_LIMIT_PER_DAY) {
       await service.from('sms_parse_log')
-        .update({ status: 'failed', failure_code: 'rate_limited', parse_method: 'ai' })
+        .update({ status: 'failed', failure_code: 'rate_limited', parse_method: 'ai_new' })
         .eq('id', logId)
       return NextResponse.json(
         { error: 'Daily SMS parse quota reached', limit: RATE_LIMIT_PER_DAY },
@@ -658,7 +700,7 @@ export async function POST(request: Request) {
     } catch (e) {
       console.error('[sms/parse] gemini failed', e)
       await service.from('sms_parse_log')
-        .update({ status: 'failed', failure_code: 'gemini_error', parse_method: 'ai' })
+        .update({ status: 'failed', failure_code: 'gemini_error', parse_method: 'ai_new' })
         .eq('id', logId)
       // 502 → WorkManager retries with a fresh request (new log row).
       return NextResponse.json({ ok: false, reason: 'ai_failed' }, { status: 502 })
@@ -678,9 +720,10 @@ export async function POST(request: Request) {
     }
   }
 
-  // Which tier parsed this row — stamped for the admin audit loop.
-  const parseMethod: 'curated' | 'template' | 'ai' =
-    curated ? 'curated' : staticResult ? 'template' : 'ai'
+  // Which stage of the journey parsed this row — stamped for the admin audit loop.
+  // Fully Curated (code) -> Curated DB (global) -> Template (author-scoped) -> AI - new SMS.
+  const parseMethod: 'fully_curated' | 'curated_db' | 'template' | 'ai_new' =
+    curated ? 'fully_curated' : staticMatch ? staticMatch.tier : 'ai_new'
 
   // Stable sender identity (hotline → sender → bank) for currency learning + pooling.
   const senderKey = effectiveSender(sender, message, parsed.bank_name)
@@ -822,6 +865,9 @@ export async function POST(request: Request) {
       merchant_normalized: parsed.merchantNormalized ?? null,
       parse_method: parseMethod,
       pattern_id: patternId,
+      // B1: without this a template-parsed row has no link to the template that produced it,
+      // and no failure signal can ever be attributed.
+      matched_template_id: matchedTemplateId,
       payment_instrument: paymentInstrument,
       learn_status: learnStatus,
       awaiting_confirmation: addFailed || provisionalConfirm,

@@ -15,6 +15,11 @@ const DEFAULTS: Omit<SmsPromotionConfig, 'id' | 'updated_at'> = {
   min_age_days: 7,
   max_failure_rate: 0.05,
   min_avg_confidence: 0.90,
+  // Retirement side of the same funnel — see migration 0097.
+  min_matches_before_retire: 5,
+  quarantine_exonerate_after: 3,
+  signals_before_adjudication: 2,
+  max_user_signals_per_day: 10,
 }
 
 export function AdminSmsPromotionSection({ admin }: Props) {

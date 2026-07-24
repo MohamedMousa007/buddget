@@ -46,11 +46,12 @@ const MON_TO_NUM: Record<string, string> = {
 }
 
 /**
- * Parses SMS date strings into YYYY-MM-DD.
+ * Parses SMS date strings into YYYY-MM-DD. Exported so the learned-template tier can
+ * extract the transaction date too — without it a template-parsed SMS is dated by arrival.
  * Formats: DD-MM-YYYY, DD/MM/YYYY, DD/MM/YY (Egyptian banks)
  *          DDMMMYY / DDMMMYYYY (e.g. "13JUN26", "13JUN2026" — HSBC Phone Banking)
  */
-function parseSmsDay(raw: string | null): string | null {
+export function parseSmsDay(raw: string | null): string | null {
   if (!raw) return null
   const s = raw.trim()
 

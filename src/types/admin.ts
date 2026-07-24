@@ -68,13 +68,27 @@ export interface SmsTemplateRow {
   created_at: string
   updated_at: string
   user_id: string | null
-  tier: 'learned' | 'promoted'
+  /** Reach: author-scoped (supervised) vs global (trusted). */
+  tier: 'template' | 'curated_db'
+  /** Health. `quarantined` = still matches but its result is unused while AI adjudicates. */
+  status: 'active' | 'quarantined' | 'retired' | 'exported'
   kind: string | null
   unique_user_count: number
   avg_ai_confidence: number | null
   last_matched_at: string | null
   promoted_at: string | null
   auto_promoted: boolean
+  /** Soft-signal accumulation; judged as a rate against `match_count`, never absolute. */
+  failure_count: number
+  /** A hard oracle (directionGuard override, zero-variance amount) fired at least once. */
+  hard_fail: boolean
+  /** Tier to restore when a quarantined template is exonerated. */
+  prev_tier: string | null
+  /** Set when this row was soft-merged into a behaviourally equivalent sibling. */
+  merged_into: string | null
+  quarantined_at: string | null
+  retired_at: string | null
+  exported_at: string | null
 }
 
 export interface SmsPromotionConfig {
@@ -84,6 +98,14 @@ export interface SmsPromotionConfig {
   min_age_days: number
   max_failure_rate: number
   min_avg_confidence: number
+  /** Minimum sample before a soft-signal rate can retire a template. */
+  min_matches_before_retire: number
+  /** Consecutive shadow agreements that exonerate a quarantined template. */
+  quarantine_exonerate_after: number
+  /** Raw user signals on one template before the AI adjudicator is spent. */
+  signals_before_adjudication: number
+  /** Guard against a bulk delete cascading into mass quarantine. */
+  max_user_signals_per_day: number
   updated_at: string
 }
 
@@ -128,6 +150,8 @@ export interface SmsTrackedRow {
   /** AI template-learning outcome (only meaningful when parse_method='ai'). */
   learn_status: string | null
   learn_template_id: string | null
+  /** The DB template that PARSED this SMS (vs learn_template_id, learned FROM it). */
+  matched_template_id: string | null
   email: string | null
 }
 
