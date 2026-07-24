@@ -25,13 +25,14 @@ import { matchCuratedPattern } from '@/lib/sms/patterns'
 import { applyMappingRules, type MappingRules } from '@/lib/sms/templateApply'
 import { runLearnGates } from '@/lib/sms/learnGates'
 import { runAdjudication, runZeroVarianceCheck } from '@/lib/sms/runAdjudication'
-import { checkPlausibility, checkCurrencyAgainstAccount } from '@/lib/sms/templateHealth'
+import { checkPlausibility, checkCurrencyAgainstAccount, checkCrossTemplateContradiction } from '@/lib/sms/templateHealth'
 import { getCuratedDbTemplates, TEMPLATE_COLUMNS } from '@/lib/sms/curatedDbCache'
 import {
   partitionByScope,
   validateAgainstAiParse,
   behaviourallyEquivalent,
   objectiveFieldsAgree,
+  extractionToObjective,
   type TemplateCandidate,
 } from '@/lib/sms/templateScope'
 import { isNonTransaction } from '@/lib/sms/patterns/preFilter'
@@ -1129,43 +1130,76 @@ export async function POST(request: Request) {
     })
   }
 
-  // Soft health checks on what a TEMPLATE extracted. Free, deterministic, no user and no AI.
-  // Judged as a rate (see bump_sms_template_failure), never acted on individually — each of
-  // these can be legitimately wrong once, and punishing a single occurrence would retire
-  // templates that work.
+  // Soft health checks on what a TEMPLATE extracted. Free, deterministic, no user and no AI,
+  // and judged as a rate — never acted on individually, since each can be legitimately wrong
+  // once. Runs entirely in after(): none of it affects the response, and R4's payment_methods
+  // read must not add a query to the hot path.
   if (matchedTemplateId) {
-    const soft = checkPlausibility(
-      { amount: parsed.amount, last4: cleanLast4, txDay },
-      nowIso,
-    )
-    const { data: accounts } = await service
-      .from('payment_methods')
-      .select('last4, currency')
-      .eq('user_id', userId)
-      .is('deleted_at', null)
-    const ccyMismatch = checkCurrencyAgainstAccount(
-      parsed.currency,
-      cleanLast4,
-      (accounts ?? []) as Array<{ last4: string | null; currency: string | null }>,
-    )
-    if (ccyMismatch) soft.push(ccyMismatch)
-
-    if (soft.length > 0) {
-      const tid = matchedTemplateId
-      after(async () => {
-        for (const sig of soft) {
-          try {
-            await service.rpc('bump_sms_template_failure', {
-              p_template_id: tid,
-              p_hard: false,
-              p_reason: `${sig.code}: ${sig.detail}`.slice(0, 200),
-            })
-          } catch (e) {
-            console.warn('[sms/health] soft signal failed', e)
-          }
-        }
-      })
+    const tid = matchedTemplateId
+    const softInputs = {
+      amount: parsed.amount,
+      currency: parsed.currency,
+      last4: cleanLast4,
+      txDay,
+      receivedAt: nowIso,
     }
+    // Snapshot the bucket for R3 now (the candidates are already in memory); the DB work is deferred.
+    const r3Extractions = staticMatch
+      ? [
+          {
+            templateId: staticMatch.templateId,
+            fields: {
+              amount: staticMatch.parsed.amount,
+              currency: staticMatch.parsed.currency,
+              kind: staticMatch.parsed.kind,
+              last4: staticMatch.parsed.detectedAccountLast4,
+            },
+          },
+          ...validationCandidates.flatMap((c) => {
+            const rules = c.mapping_rules as unknown as MappingRules
+            if (!rules?.amount) return []
+            const got = applyMappingRules(message, c.regex_pattern, rules)
+            return got ? [{ templateId: c.id, fields: extractionToObjective(got) }] : []
+          }),
+        ]
+      : []
+
+    after(async () => {
+      const soft = checkPlausibility(softInputs, softInputs.receivedAt)
+      // R4: currency vs the account it names — needs the user's registered methods.
+      const { data: accounts } = await service
+        .from('payment_methods')
+        .select('last4, currency')
+        .eq('user_id', userId)
+        .is('deleted_at', null)
+      const ccyMismatch = checkCurrencyAgainstAccount(
+        softInputs.currency,
+        softInputs.last4,
+        (accounts ?? []) as Array<{ last4: string | null; currency: string | null }>,
+      )
+      if (ccyMismatch) soft.push(ccyMismatch)
+
+      // R3: a template parsed this SMS, so no AI arbitrated. If another bucket template also
+      // matched and extracted a different amount, one is provably wrong — both flagged, since
+      // we can't tell which, and the rate decides.
+      const contradictions = checkCrossTemplateContradiction(r3Extractions)
+
+      const signals: Array<{ templateId: string; reason: string }> = [
+        ...soft.map((s) => ({ templateId: tid, reason: `${s.code}: ${s.detail}` })),
+        ...contradictions.map((c) => ({ templateId: c.templateId, reason: `${c.signal.code}: ${c.signal.detail}` })),
+      ]
+      for (const sig of signals) {
+        try {
+          await service.rpc('bump_sms_template_failure', {
+            p_template_id: sig.templateId,
+            p_hard: false,
+            p_reason: sig.reason.slice(0, 200),
+          })
+        } catch (e) {
+          console.warn('[sms/health] soft signal failed', e)
+        }
+      }
+    })
   }
 
   // Shadow mode. A quarantined template still matched this message, but its result was NOT
