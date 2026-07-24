@@ -24,6 +24,7 @@ import { matchCuratedPattern } from '@/lib/sms/patterns'
 import { applyMappingRules, type MappingRules } from '@/lib/sms/templateApply'
 import { runLearnGates } from '@/lib/sms/learnGates'
 import { runAdjudication } from '@/lib/sms/runAdjudication'
+import { getCuratedDbTemplates, TEMPLATE_COLUMNS } from '@/lib/sms/curatedDbCache'
 import {
   partitionByScope,
   validateAgainstAiParse,
@@ -33,7 +34,7 @@ import {
 } from '@/lib/sms/templateScope'
 import { isNonTransaction } from '@/lib/sms/patterns/preFilter'
 import { checkAndAutoPromote } from '@/lib/sms/promotionChecker'
-import { lookupKeys, effectiveSender } from '@/lib/sms/routingKey'
+import { lookupKeys, effectiveSender, bodyShapeKey } from '@/lib/sms/routingKey'
 import { createSmsTransaction, type SmsTxResult } from '@/lib/sms/dispatch'
 import { DEFAULT_MARKET_RATES } from '@/lib/store/defaultFinanceData'
 import { resolveCurrency } from '@/lib/sms/currencyResolver'
@@ -171,9 +172,6 @@ function applyTemplate(
 
 // Tier 2: DB templates for any of these routing keys (indexed `IN` query).
 // `keys` are the transport sender and/or the body hotline — see routingKey.ts.
-const TEMPLATE_COLUMNS =
-  'id, regex_pattern, mapping_rules, match_count, kind, tier, status, template_sample'
-
 /**
  * Template ids this user has contributed to. A `template`-tier row applies only to its
  * contributors; `curated_db` applies to everyone.
@@ -208,6 +206,12 @@ async function fetchTemplateCandidates(
   /** Quarantined templates that MATCH this message — evaluated in shadow, never used. */
   shadow: TemplateMatch[]
 }> {
+  // Trusted tier first, straight from memory — no query on the common path.
+  for (const tpl of await getCuratedDbTemplates(service)) {
+    const result = applyTemplate(message, tpl)
+    if (result) return { match: result, validationOnly: [], shadow: [] }
+  }
+
   const query = service
     .from('sms_tracking_templates_ai')
     .select(TEMPLATE_COLUMNS)
@@ -773,9 +777,15 @@ export async function POST(request: Request) {
       )
     }
 
+    // The system's memory. If a user previously corrected a parse of this same message SHAPE,
+    // that correction is injected into the prompt — otherwise the model has no recollection and
+    // reproduces the identical mistake for the next user, which is exactly what made retiring a
+    // template insufficient on its own.
+    const exemplar = await fetchCorrectionExemplar(service, message)
+
     // Call Gemini.
     try {
-      parsed = await callGemini(apiKey, message)
+      parsed = await callGemini(apiKey, message, exemplar)
     } catch (e) {
       console.error('[sms/parse] gemini failed', e)
       await service.from('sms_parse_log')
@@ -1291,13 +1301,44 @@ async function askModelJson(apiKey: string, system: string, user: string): Promi
   }
 }
 
-async function callGemini(apiKey: string, message: string): Promise<ParsedTx> {
+/**
+ * A previously-confirmed correction for this message shape, formatted for the prompt.
+ *
+ * Keyed by `bodyShapeKey` — the same grouping key the template tier routes on — so a correction
+ * learned from one user's message applies to everyone who receives that bank's template.
+ * Revoked corrections are excluded, so a wrong "correction" can be withdrawn rather than
+ * biasing the shape forever.
+ */
+async function fetchCorrectionExemplar(
+  service: ReturnType<typeof createServiceRoleClient>,
+  message: string,
+): Promise<string | null> {
+  const shape = bodyShapeKey(message)
+  if (!shape) return null
+  try {
+    const { data } = await service
+      .from('sms_corrections')
+      .select('corrected_fields, redacted_body')
+      .eq('body_shape_key', shape)
+      .is('revoked_at', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (!data?.corrected_fields) return null
+    return `A user previously corrected an automated parse of this same message format. For a message shaped like:\n${data.redacted_body}\nthe correct extraction was:\n${JSON.stringify(data.corrected_fields)}\nApply the same reading here unless this message plainly differs.`
+  } catch {
+    return null
+  }
+}
+
+async function callGemini(apiKey: string, message: string, exemplar?: string | null): Promise<ParsedTx> {
   const body = {
     contents: [
       {
         role: 'user',
         parts: [
           { text: SMS_PARSER_SYSTEM_PROMPT },
+          ...(exemplar ? [{ text: exemplar }] : []),
           { text: `\nSMS / notification text:\n${message}` },
         ],
       },

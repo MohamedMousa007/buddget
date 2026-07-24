@@ -1,4 +1,5 @@
 import type { createServiceRoleClient } from '@/lib/supabase/service'
+import { invalidateCuratedDbCache } from '@/lib/sms/curatedDbCache'
 
 type ServiceClient = ReturnType<typeof createServiceRoleClient>
 
@@ -58,13 +59,16 @@ export async function checkAndAutoPromote(
       const { error } = await service
         .from('sms_tracking_templates_ai')
         .update({
-          tier: 'promoted',
+          tier: 'curated_db',
           auto_promoted: true,
           promoted_at: new Date().toISOString(),
         })
         .eq('id', row.template_id)
 
       if (!error) {
+        // Promotion changes REACH (author-scoped -> global), so the cached trusted set is now
+        // stale and would keep excluding this template until the TTL expired.
+        invalidateCuratedDbCache()
         console.log('[promotionChecker] auto-promoted template', { template_id: row.template_id, sender })
       }
     }

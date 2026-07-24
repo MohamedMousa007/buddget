@@ -95,7 +95,7 @@ export async function POST(req: Request) {
     if (op === 'promote' && typeof id === 'string' && typeof sender === 'string') {
       const { error } = await service
         .from('sms_tracking_templates_ai')
-        .update({ tier: 'promoted', promoted_at: new Date().toISOString(), auto_promoted: false, updated_at: new Date().toISOString() })
+        .update({ tier: 'curated_db', promoted_at: new Date().toISOString(), auto_promoted: false, updated_at: new Date().toISOString() })
         .eq('id', id)
 
       if (error) {
@@ -108,7 +108,7 @@ export async function POST(req: Request) {
     if (op === 'demote' && typeof id === 'string' && typeof sender === 'string') {
       const { error } = await service
         .from('sms_tracking_templates_ai')
-        .update({ tier: 'learned', promoted_at: null, auto_promoted: false, updated_at: new Date().toISOString() })
+        .update({ tier: 'template', promoted_at: null, auto_promoted: false, updated_at: new Date().toISOString() })
         .eq('id', id)
 
       if (error) {

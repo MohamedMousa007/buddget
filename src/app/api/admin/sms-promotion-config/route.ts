@@ -100,7 +100,7 @@ export async function POST(req: Request) {
         const { error } = await service
           .from('sms_tracking_templates_ai')
           .update({
-            tier: 'promoted',
+            tier: 'curated_db',
             auto_promoted: true,
             promoted_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
