@@ -15,7 +15,7 @@ interface PushPayload {
   body?: string
   icon?: string
   badge?: string
-  smsEventId?: string
+  parseLogId?: string
   expenseId?: string
 }
 
@@ -28,14 +28,14 @@ self.addEventListener('push', (event: PushEvent) => {
     icon: data.icon ?? '/icons/icon-192.png',
     badge: data.badge ?? '/icons/icon-32.png',
     data: {
-      smsEventId: data.smsEventId,
+      parseLogId: data.parseLogId,
       expenseId: data.expenseId,
     },
     actions: [
       { action: 'undo', title: 'Undo' },
       { action: 'view', title: 'View' },
     ],
-    tag: data.smsEventId ? `sms-${data.smsEventId}` : 'buddget',
+    tag: data.parseLogId ? `sms-${data.parseLogId}` : 'buddget',
     renotify: true,
     requireInteraction: false,
   }
@@ -47,18 +47,18 @@ self.addEventListener('push', (event: PushEvent) => {
 
 self.addEventListener('notificationclick', (event: NotificationEvent) => {
   const { action, notification } = event
-  const notifData = notification.data as { smsEventId?: string; expenseId?: string } | undefined
-  const smsEventId = notifData?.smsEventId
+  const notifData = notification.data as { parseLogId?: string; expenseId?: string } | undefined
+  const parseLogId = notifData?.parseLogId
   const expenseId = notifData?.expenseId
 
   notification.close()
 
-  if (action === 'undo' && smsEventId) {
+  if (action === 'undo' && parseLogId) {
     event.waitUntil(
       fetch('/api/sms/undo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ smsEventId }),
+        body: JSON.stringify({ parseLogId }),
         credentials: 'include',
       }).catch((err: unknown) => {
         console.warn('[sw] undo fetch failed', err)

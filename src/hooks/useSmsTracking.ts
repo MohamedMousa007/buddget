@@ -3,7 +3,7 @@
  *
  * Handles:
  *   - toggling smsTrackingEnabled (store + push subscription)
- *   - fetching the user's ingest token + webhook URL
+ *   - fetching the user's ingest token
  *   - last-received timestamp (feeds the iOS connection pill)
  *   - token rotation
  */
@@ -20,7 +20,6 @@ import { saveSmsToken, setSmsEnabled, setIosSetupCompleted, getSmsBridgeStatus, 
 
 export interface TokenInfo {
   token: string
-  webhookUrl: string
 }
 
 export function useSmsTracking() {

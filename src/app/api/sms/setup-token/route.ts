@@ -37,8 +37,7 @@ export async function GET(request: Request) {
   const { data: existing } = await existingQuery.maybeSingle()
 
   if (existing?.token) {
-    const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/sms/ingest`
-    return NextResponse.json({ token: existing.token, webhookUrl })
+    return NextResponse.json({ token: existing.token })
   }
 
   // Create a new token bound to this device (null for web).
@@ -53,8 +52,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Failed to create token' }, { status: 500 })
   }
 
-  const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/sms/ingest`
-  return NextResponse.json({ token: newToken.token, webhookUrl })
+  return NextResponse.json({ token: newToken.token })
 }
 
 /** DELETE — rotates the token (deactivates current, issues new). */
@@ -90,6 +88,5 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: 'Failed to rotate token' }, { status: 500 })
   }
 
-  const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/sms/ingest`
-  return NextResponse.json({ token: newToken.token, webhookUrl, rotated: true })
+  return NextResponse.json({ token: newToken.token, rotated: true })
 }
