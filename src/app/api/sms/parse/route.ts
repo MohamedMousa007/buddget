@@ -23,10 +23,12 @@ import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNative
 import { matchCuratedPattern } from '@/lib/sms/patterns'
 import { applyMappingRules, type MappingRules } from '@/lib/sms/templateApply'
 import { runLearnGates } from '@/lib/sms/learnGates'
+import { runAdjudication } from '@/lib/sms/runAdjudication'
 import {
   partitionByScope,
   validateAgainstAiParse,
   behaviourallyEquivalent,
+  objectiveFieldsAgree,
   type TemplateCandidate,
 } from '@/lib/sms/templateScope'
 import { isNonTransaction } from '@/lib/sms/patterns/preFilter'
@@ -200,12 +202,20 @@ async function fetchTemplateCandidates(
   keys: string[],
   service: ReturnType<typeof createServiceRoleClient>,
   userId: string,
-): Promise<{ match: TemplateMatch | null; validationOnly: TemplateCandidate[] }> {
+): Promise<{
+  match: TemplateMatch | null
+  validationOnly: TemplateCandidate[]
+  /** Quarantined templates that MATCH this message — evaluated in shadow, never used. */
+  shadow: TemplateMatch[]
+}> {
   const query = service
     .from('sms_tracking_templates_ai')
     .select(TEMPLATE_COLUMNS)
     .eq('ai_enabled', true)
-    .eq('status', 'active')
+    // Quarantined rows are fetched too: they must not PARSE, but their would-be output is
+    // compared against the AI's reading so shadow mode can exonerate or retire them with no
+    // user friction at all.
+    .in('status', ['active', 'quarantined'])
     .is('merged_into', null)
     .order('match_count', { ascending: false })
 
@@ -222,13 +232,22 @@ async function fetchTemplateCandidates(
       .from('sms_tracking_templates_ai')
       .select(TEMPLATE_COLUMNS)
       .eq('ai_enabled', true)
-      .eq('status', 'active')
+      .in('status', ['active', 'quarantined'])
       .is('merged_into', null)
       .order('match_count', { ascending: false })
       .limit(50)
     candidates = (broad ?? []) as unknown as TemplateCandidate[]
   }
-  if (candidates.length === 0) return { match: null, validationOnly: [] }
+  if (candidates.length === 0) return { match: null, validationOnly: [], shadow: [] }
+
+  const quarantined = candidates.filter((c) => c.status === 'quarantined')
+  candidates = candidates.filter((c) => c.status === 'active')
+
+  const shadow: TemplateMatch[] = []
+  for (const q of quarantined) {
+    const r = applyTemplate(message, q)
+    if (r) shadow.push(r)
+  }
 
   const contributed = await contributedTemplateIds(
     service,
@@ -239,9 +258,9 @@ async function fetchTemplateCandidates(
 
   for (const tpl of usable) {
     const result = applyTemplate(message, tpl)
-    if (result) return { match: result, validationOnly }
+    if (result) return { match: result, validationOnly, shadow }
   }
-  return { match: null, validationOnly }
+  return { match: null, validationOnly, shadow }
 }
 
 /**
@@ -665,6 +684,8 @@ export async function POST(request: Request) {
   let txDay: string | null = null
   // AI template-learning outcome, persisted on the log row for admin visibility.
   let learnStatus: string | null = null
+  /** Set when a quarantined template had to stand in because AI was unavailable (C4). */
+  let quarantinedFallback = false
 
   const curated = matchCuratedPattern(message, sender ?? null)
 
@@ -682,6 +703,7 @@ export async function POST(request: Request) {
   // Templates this user may not parse with — tested later against the AI's own reading, which
   // is how a supervised template earns the cross-user agreement that promotes it.
   const validationCandidates = templateLookup?.validationOnly ?? []
+  const shadowMatches = templateLookup?.shadow ?? []
 
   const staticResult = staticMatch?.parsed ?? null
   const matchedTemplateId = staticMatch?.templateId ?? null
@@ -710,6 +732,17 @@ export async function POST(request: Request) {
     // transaction date and payment instrument too, instead of falling back to arrival time.
     txDay = staticMatch.txDay
     paymentInstrument = staticMatch.paymentInstrument
+  } else if (shadowMatches.length > 0 && !aiAvailable(await geminiBudget(service, userId))) {
+    // C4 — quarantine must never cost the user a transaction. Shadow mode routes this SMS to AI,
+    // but if AI is unavailable (no key, or the user is at their daily cap) the only reading we
+    // have is the quarantined template's. Use it rather than dropping the SMS, and flag the row
+    // for confirmation so the uncertainty is visible instead of silent. No shadow verdict is
+    // recorded: there was nothing to compare against.
+    const fallback = shadowMatches[0]
+    parsed = fallback.parsed
+    txDay = fallback.txDay
+    paymentInstrument = fallback.paymentInstrument
+    quarantinedFallback = true
   } else {
     // Gemini path: API key required, rate-limited.
     const apiKey = process.env.GEMINI_API_KEY?.trim()
@@ -858,7 +891,11 @@ export async function POST(request: Request) {
 
   // Provisional currency: the row IS added (auto-when-confident), but the value
   // was a guess — flag it so the user confirms the currency once.
-  const provisionalConfirm = currencyProvisional && !addFailed && postedSomething
+  // Also true when a QUARANTINED template had to stand in (C4): the row is added so the user
+  // keeps their transaction, but the template producing it is under suspicion, so the row is
+  // surfaced for confirmation rather than trusted silently.
+  const provisionalConfirm =
+    (currencyProvisional || quarantinedFallback) && !addFailed && postedSomething
 
   // Learn the (user, sender) currency for next time — confirmed when it came from
   // a literal/known mapping, provisional otherwise. Best-effort, after response.
@@ -1079,6 +1116,43 @@ export async function POST(request: Request) {
     })
   }
 
+  // Shadow mode. A quarantined template still matched this message, but its result was NOT
+  // used — the SMS was parsed by AI instead. Comparing the two is what decides its fate:
+  // consecutive agreements restore it to its previous tier, one disagreement retires it. The
+  // user sees nothing either way, and the cost is bounded to a handful of comparisons.
+  if (shadowMatches.length > 0 && parsed.is_transaction && parsed.amount) {
+    const aiFields = {
+      amount: parsed.amount,
+      currency: parsed.currency,
+      kind: tx.kind ?? parsed.kind,
+      last4: cleanLast4,
+    }
+    const verdicts = shadowMatches.map((m) => ({
+      templateId: m.templateId,
+      agreed: objectiveFieldsAgree(
+        {
+          amount: m.parsed.amount,
+          currency: m.parsed.currency,
+          kind: m.parsed.kind,
+          last4: m.parsed.detectedAccountLast4,
+        },
+        aiFields,
+      ),
+    }))
+    after(async () => {
+      for (const v of verdicts) {
+        try {
+          await service.rpc('record_sms_template_shadow', {
+            p_template_id: v.templateId,
+            p_agreed: v.agreed,
+          })
+        } catch (e) {
+          console.warn('[sms/parse] shadow verdict failed', e)
+        }
+      }
+    })
+  }
+
   // Cross-user validation. This user's SMS reached the AI tier, so the AI's reading is an
   // INDEPENDENT second opinion on every supervised template in the bucket that this user is not
   // a contributor to. A template that matches and agrees has just proved itself on someone
@@ -1130,6 +1204,22 @@ export async function POST(request: Request) {
     })
   }
 
+  // Drain pending user signals into verdicts. Rides on this request's after() rather than a
+  // cron: any SMS for any user is a fine moment for a little background work, and the RPC it
+  // starts from is cheap and usually returns nothing. It writes no parse-log row, so it can
+  // never consume anyone's daily AI quota (which is derived from that table).
+  {
+    const key = process.env.GEMINI_API_KEY?.trim()
+    if (key) {
+      after(async () => {
+        const res = await runAdjudication(service, {
+          askModel: (system, user) => askModelJson(key, system, user),
+        })
+        if (res.adjudicated > 0) console.log('[sms/adjudication]', res)
+      })
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     autoAdded: !addFailed,
@@ -1151,6 +1241,53 @@ export async function POST(request: Request) {
         .eq('id', logId)
     } catch { /* best-effort */ }
     return NextResponse.json({ ok: false, reason: 'parse_exception' }, { status: 500 })
+  }
+}
+
+/**
+ * Generic JSON completion, used by background quality work (adjudication).
+ *
+ * Deliberately NOT routed through `callGemini`, which is bound to the parser prompt and the
+ * ParsedTx shape. Returns null on any failure so the caller can leave its work pending rather
+ * than record a wrong verdict.
+ */
+/** Remaining AI headroom for a user: null when unconfigured, else calls left today. */
+async function geminiBudget(
+  service: ReturnType<typeof createServiceRoleClient>,
+  userId: string,
+): Promise<number | null> {
+  if (!process.env.GEMINI_API_KEY?.trim()) return null
+  const { data } = await service
+    .from('sms_parse_today')
+    .select('parsed_count_today')
+    .eq('user_id', userId)
+    .maybeSingle()
+  return RATE_LIMIT_PER_DAY - (data?.parsed_count_today ?? 0)
+}
+
+function aiAvailable(budget: number | null): boolean {
+  return budget !== null && budget > 0
+}
+
+async function askModelJson(apiKey: string, system: string, user: string): Promise<unknown | null> {
+  try {
+    const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(20_000),
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: system }, { text: user }] }],
+        generationConfig: { temperature: 0, responseMimeType: 'application/json' },
+      }),
+    })
+    if (!res.ok) return null
+    const payload = (await res.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> }
+    const text = payload.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
+    if (!text) return null
+    const json = extractJson(text)
+    return json ? JSON.parse(json) : null
+  } catch {
+    return null
   }
 }
 
