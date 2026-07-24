@@ -23,6 +23,12 @@ import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNative
 import { matchCuratedPattern } from '@/lib/sms/patterns'
 import { applyMappingRules, type MappingRules } from '@/lib/sms/templateApply'
 import { runLearnGates } from '@/lib/sms/learnGates'
+import {
+  partitionByScope,
+  validateAgainstAiParse,
+  behaviourallyEquivalent,
+  type TemplateCandidate,
+} from '@/lib/sms/templateScope'
 import { isNonTransaction } from '@/lib/sms/patterns/preFilter'
 import { checkAndAutoPromote } from '@/lib/sms/promotionChecker'
 import { lookupKeys, effectiveSender } from '@/lib/sms/routingKey'
@@ -163,47 +169,79 @@ function applyTemplate(
 
 // Tier 2: DB templates for any of these routing keys (indexed `IN` query).
 // `keys` are the transport sender and/or the body hotline — see routingKey.ts.
-async function tryStaticParse(
+const TEMPLATE_COLUMNS =
+  'id, regex_pattern, mapping_rules, match_count, kind, tier, status, template_sample'
+
+/**
+ * Template ids this user has contributed to. A `template`-tier row applies only to its
+ * contributors; `curated_db` applies to everyone.
+ */
+async function contributedTemplateIds(
+  service: ReturnType<typeof createServiceRoleClient>,
+  userId: string,
+  candidateIds: string[],
+): Promise<Set<string>> {
+  if (candidateIds.length === 0) return new Set()
+  const { data } = await service
+    .from('sms_template_users')
+    .select('template_id')
+    .eq('user_id', userId)
+    .in('template_id', candidateIds)
+  return new Set((data ?? []).map((r) => r.template_id as string))
+}
+
+/**
+ * Tier-2 candidates for these routing keys. Returns BOTH what the user may parse with and what
+ * may only be tested for validation evidence — a `template`-tier row this user has not
+ * contributed to is exactly the row that needs independent validation, so one fetch serves both.
+ */
+async function fetchTemplateCandidates(
   message: string,
   keys: string[],
   service: ReturnType<typeof createServiceRoleClient>,
-): Promise<TemplateMatch | null> {
-  const { data } = await service
+  userId: string,
+): Promise<{ match: TemplateMatch | null; validationOnly: TemplateCandidate[] }> {
+  const query = service
     .from('sms_tracking_templates_ai')
-    .select('id, regex_pattern, mapping_rules, match_count, kind, tier, status')
-    .in('sender', keys)
+    .select(TEMPLATE_COLUMNS)
     .eq('ai_enabled', true)
     .eq('status', 'active')
     .is('merged_into', null)
     .order('match_count', { ascending: false })
-    .limit(10)
-  for (const tpl of data ?? []) {
-    const result = applyTemplate(message, tpl)
-    if (result) return result
-  }
-  return null
-}
 
-// Tier 2 fallback when no routing key is available (sender-less SMS with no
-// hotline): scan the most-matched enabled templates and try each regex, the
-// same way curated patterns scan all sets. Bounded to keep cost predictable.
-async function tryStaticParseAny(
-  message: string,
-  service: ReturnType<typeof createServiceRoleClient>,
-): Promise<TemplateMatch | null> {
-  const { data } = await service
-    .from('sms_tracking_templates_ai')
-    .select('id, regex_pattern, mapping_rules, match_count, kind, tier, status')
-    .eq('ai_enabled', true)
-    .eq('status', 'active')
-    .is('merged_into', null)
-    .order('match_count', { ascending: false })
-    .limit(50)
-  for (const tpl of data ?? []) {
-    const result = applyTemplate(message, tpl)
-    if (result) return result
+  // Keyed lookup first; the broad scan is a FALLBACK, not an alternative — a template Android
+  // learned under its transport sender is invisible to the keyed lookup for the same SMS
+  // arriving sender-less from the iOS bridge.
+  const { data } = keys.length
+    ? await query.in('sender', keys).limit(10)
+    : await query.limit(50)
+
+  let candidates = (data ?? []) as unknown as TemplateCandidate[]
+  if (keys.length && candidates.length === 0) {
+    const { data: broad } = await service
+      .from('sms_tracking_templates_ai')
+      .select(TEMPLATE_COLUMNS)
+      .eq('ai_enabled', true)
+      .eq('status', 'active')
+      .is('merged_into', null)
+      .order('match_count', { ascending: false })
+      .limit(50)
+    candidates = (broad ?? []) as unknown as TemplateCandidate[]
   }
-  return null
+  if (candidates.length === 0) return { match: null, validationOnly: [] }
+
+  const contributed = await contributedTemplateIds(
+    service,
+    userId,
+    candidates.filter((c) => c.tier !== 'curated_db').map((c) => c.id),
+  )
+  const { usable, validationOnly } = partitionByScope(candidates, contributed)
+
+  for (const tpl of usable) {
+    const result = applyTemplate(message, tpl)
+    if (result) return { match: result, validationOnly }
+  }
+  return { match: null, validationOnly }
 }
 
 /**
@@ -338,13 +376,6 @@ async function learnPattern(
   logId: string,
 ): Promise<void> {
   try {
-    // Global cap: 10 templates per sender prevents runaway growth
-    const { count } = await service
-      .from('sms_tracking_templates_ai')
-      .select('*', { count: 'exact', head: true })
-      .eq('sender', sender)
-    if ((count ?? 0) >= 10) return recordLearnOutcome(service, logId, 'cap_reached')
-
     // The LLM is non-deterministic — a single call routinely returns no JSON or
     // a regex that doesn't match its own sample. Retry up to 3× and keep the
     // first attempt that compiles AND matches; record the last failure otherwise.
@@ -357,6 +388,45 @@ async function learnPattern(
       console.warn('[sms/parse] pattern learning: no matching regex after retries', { sender, status: attempt.status })
       return recordLearnOutcome(service, logId, attempt.status)
     }
+
+    const { data: bucket } = await service
+      .from('sms_tracking_templates_ai')
+      .select('id, regex_pattern, mapping_rules, template_sample, status')
+      .eq('sender', sender)
+
+    const siblings = bucket ?? []
+
+    // C1 — never resurrect a retired regex. Without this the loop is: retire -> falls to AI ->
+    // AI re-learns the same wrong regex -> stored again. The retirement would be undone by the
+    // very mechanism it was meant to protect against.
+    const retiredTwin = siblings.find(
+      (t) => t.status === 'retired' && t.regex_pattern === attempt.regex,
+    )
+    if (retiredTwin) return recordLearnOutcome(service, logId, 'blocked_retired', retiredTwin.id)
+
+    // C2 — behavioural merge BEFORE the cap check. Regex generation is non-deterministic, so
+    // the same template arrives as many cosmetic variants; storing each one fills the
+    // 10-per-key cap and then blocks the very contributors whose agreement drives promotion.
+    // An equivalent sibling absorbs this user instead of adding a row.
+    const twin = siblings.find((t) => {
+      if (t.status === 'retired' || !t.template_sample) return false
+      try {
+        return behaviourallyEquivalent(
+          { regex: attempt.ok ? attempt.regex : '', rules: (attempt.ok ? attempt.mapping : {}) as MappingRules, sample: message },
+          { regex: t.regex_pattern, rules: t.mapping_rules as unknown as MappingRules, sample: t.template_sample },
+        )
+      } catch {
+        return false
+      }
+    })
+    if (twin) {
+      await recordTemplateUser(twin.id, userId, service)
+      await checkAndAutoPromote(sender, service)
+      return recordLearnOutcome(service, logId, 'merged_equivalent', twin.id)
+    }
+
+    // Global cap: 10 templates per sender prevents runaway growth.
+    if (siblings.length >= 10) return recordLearnOutcome(service, logId, 'cap_reached')
 
     // UNIQUE INDEX on (sender, md5(regex_pattern)) silently ignores exact duplicates.
     // user_id null = global — learned templates serve every user.
@@ -605,10 +675,13 @@ export async function POST(request: Request) {
   // Android learned under its transport sender is invisible to the keyed lookup for the
   // same SMS arriving sender-less from the iOS bridge, and the scan is what still finds it.
   const candidateKeys = lookupKeys(sender, message)
-  const staticMatch = curated
+  const templateLookup = curated
     ? null
-    : (candidateKeys.length ? await tryStaticParse(message, candidateKeys, service) : null) ??
-      (await tryStaticParseAny(message, service))
+    : await fetchTemplateCandidates(message, candidateKeys, service, userId)
+  const staticMatch = templateLookup?.match ?? null
+  // Templates this user may not parse with — tested later against the AI's own reading, which
+  // is how a supervised template earns the cross-user agreement that promotes it.
+  const validationCandidates = templateLookup?.validationOnly ?? []
 
   const staticResult = staticMatch?.parsed ?? null
   const matchedTemplateId = staticMatch?.templateId ?? null
@@ -1005,8 +1078,45 @@ export async function POST(request: Request) {
     })
   }
 
-  // Record this user against the matched learned/promoted template for an
-  // accurate distinct-user count (drives the promotion min_unique_users gate).
+  // Cross-user validation. This user's SMS reached the AI tier, so the AI's reading is an
+  // INDEPENDENT second opinion on every supervised template in the bucket that this user is not
+  // a contributor to. A template that matches and agrees has just proved itself on someone
+  // else's real message — which is the evidence `min_unique_users` gates promotion on, and the
+  // only kind obtainable, since regex generation is too non-deterministic for byte-identity to
+  // ever recur. The AI call was already paid for; the second opinion is free.
+  if (validationCandidates.length > 0 && parsed.is_transaction && parsed.amount) {
+    const aiFields = {
+      amount: parsed.amount,
+      currency: parsed.currency,
+      kind: tx.kind ?? parsed.kind,
+      last4: cleanLast4,
+    }
+    const outcomes = validateAgainstAiParse(message, aiFields, validationCandidates)
+    if (outcomes.length > 0) {
+      after(async () => {
+        for (const o of outcomes) {
+          try {
+            if (o.result === 'agreed') {
+              await recordTemplateUser(o.templateId, userId, service)
+            } else {
+              // Matched but extracted something else — a defect in that template, recorded as a
+              // soft signal. Judged as a RATE against match_count, never as an absolute count.
+              await service.rpc('bump_sms_template_failure', {
+                p_template_id: o.templateId,
+                p_hard: false,
+                p_reason: `cross_user_disagreement: ${o.detail}`.slice(0, 200),
+              })
+            }
+          } catch (e) {
+            console.warn('[sms/parse] cross-user validation failed', e)
+          }
+        }
+      })
+    }
+  }
+
+  // Record this user against the matched template for an accurate distinct-user count
+  // (drives the promotion min_unique_users gate).
   if (matchedTemplateId) {
     const tid = matchedTemplateId
     after(async () => {

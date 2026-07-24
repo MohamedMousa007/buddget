@@ -61,6 +61,16 @@ const LEARN_CHIPS: Record<string, { label: string; cls: string }> = {
   no_regex_or_amount: { label: 'bad-rule', cls: RED },
   regex_invalid: { label: 'bad-regex', cls: RED },
   regex_no_match: { label: 'no-match', cls: RED },
+  merged_equivalent: { label: 'merged', cls: GREEN },
+  blocked_retired: { label: 'blocked', cls: AMBER },
+  // Learn-time gate rejections — a regex that matched but captured the wrong tokens.
+  gate_amount_mismatch: { label: 'gate:amount', cls: RED },
+  gate_currency_mismatch: { label: 'gate:ccy', cls: RED },
+  gate_last4_mismatch: { label: 'gate:last4', cls: RED },
+  gate_wrong_token_balance: { label: 'gate:balance', cls: RED },
+  gate_capture_unsound: { label: 'gate:capture', cls: RED },
+  gate_regex_too_greedy: { label: 'gate:greedy', cls: RED },
+  gate_no_match: { label: 'gate:no-match', cls: RED },
   insert_failed: { label: 'ins-fail', cls: RED },
   exception: { label: 'exc', cls: RED },
 }
