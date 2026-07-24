@@ -21,7 +21,8 @@ const INBOUND_WIRE =
   'From HSBC: 20JUL26 TT Payment to 103-104***-110 USD 3,097.24+ Your available balance is USD 7,546.11'
 
 function makeService() {
-  const rpc = vi.fn(async () => ({ data: [], error: null }))
+  // Typed params so `mock.calls` is inspectable — a zero-arg vi.fn yields an empty tuple type.
+  const rpc = vi.fn(async (_name: string, _params?: Record<string, unknown>) => ({ data: [], error: null }))
 
   // Minimal query chain: everything resolves empty so dispatch takes the simplest path and we
   // only observe the RPC the oracle fires.
@@ -65,8 +66,9 @@ describe('directionGuard as a template-health oracle', () => {
 
     const call = rpc.mock.calls.find((c) => c[0] === 'bump_sms_template_failure')
     expect(call, 'oracle did not fire').toBeDefined()
-    expect(call![1]).toMatchObject({ p_template_id: 'tpl-1', p_hard: true })
-    expect(String((call![1] as Record<string, unknown>).p_reason)).toContain('direction_guard_override')
+    const params = call![1] as Record<string, unknown>
+    expect(params).toMatchObject({ p_template_id: 'tpl-1', p_hard: true })
+    expect(String(params.p_reason)).toContain('direction_guard_override')
   })
 
   it('stays silent for a curated or AI parse — there is no template to blame', async () => {
@@ -91,7 +93,7 @@ describe('directionGuard as a template-health oracle', () => {
     // The oracle's RPC throwing must not propagate — the user's transaction still matters more.
     const throwing = {
       ...service,
-      rpc: vi.fn(async (name: string) => {
+      rpc: vi.fn(async (name: string, _params?: Record<string, unknown>) => {
         if (name === 'bump_sms_template_failure') throw new Error('db down')
         return { data: [], error: null }
       }),

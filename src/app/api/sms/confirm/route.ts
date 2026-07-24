@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   // Fetch the pending row
   let query = service
     .from('sms_parse_log')
-    .select('id, kind, clean_title, merchant_normalized, merchant, bank_name, amount, currency, category, raw_sms_summary, source, raw_body, received_at, account_last4, counterparty_last4, sender, expense_id, income_id, failure_code')
+    .select('id, kind, clean_title, merchant_normalized, merchant, bank_name, amount, currency, category, raw_sms_summary, source, raw_body, received_at, account_last4, counterparty_last4, sender, expense_id, income_id, failure_code, matched_template_id')
     .eq('user_id', userId)
     .eq('awaiting_confirmation', true)
     .eq('parsed_ok', true)
@@ -119,6 +119,9 @@ export async function POST(request: Request) {
     counterpartyLast4: row.counterparty_last4 ?? null,
     receivedAtIso,
     logId: row.id,
+    // Carried so the direction-guard oracle can attribute a wrong `kind` back to the template
+    // that produced it on this path too — a defect is no less real for being user-confirmed.
+    matchedTemplateId: row.matched_template_id ?? null,
   }, { exchangeRates: DEFAULT_MARKET_RATES, userConfirmed: true })
 
   const { expenseId, incomeId, debtPaymentId } = tx
