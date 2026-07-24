@@ -20,7 +20,9 @@ import crypto from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { SMS_PARSER_SYSTEM_PROMPT, MASKED_ACCOUNT_CLASS } from '@/lib/sms/aiParserPrompt'
 import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNativePush'
-import { matchCuratedPattern, parseSmsDay } from '@/lib/sms/patterns'
+import { matchCuratedPattern } from '@/lib/sms/patterns'
+import { applyMappingRules, type MappingRules } from '@/lib/sms/templateApply'
+import { runLearnGates } from '@/lib/sms/learnGates'
 import { isNonTransaction } from '@/lib/sms/patterns/preFilter'
 import { checkAndAutoPromote } from '@/lib/sms/promotionChecker'
 import { lookupKeys, effectiveSender } from '@/lib/sms/routingKey'
@@ -65,31 +67,6 @@ interface ParsedTx {
   detectedAccountLast4: string | null
   detectedCounterpartyLast4: string | null
   merchantNormalized: string | null
-}
-
-/**
- * JSONB schema stored in `sms_tracking_templates_ai.mapping_rules`.
- * Defines how regex capture groups map to ParsedTx fields.
- */
-interface MappingRules {
-  amount:    { group: number; removeCommas?: boolean }
-  currency?: { group: number } | { literal: string }
-  merchant?: { group: number }
-  last4?:    { group: number }
-  /**
-   * Transaction date printed in the SMS. Without it a template-parsed row is dated by ARRIVAL,
-   * which is wrong for any delayed or offline delivery — a code pattern has always captured it.
-   */
-  datetime?: { group: number }
-  /**
-   * Destination/counterparty account last4. Dispatch's own-account transfer detection keys on
-   * this, so a template that cannot capture it can never be recognised as an own transfer.
-   */
-  counterparty_last4?: { group: number }
-  /** card | account | wallet — drives payment-method resolution. */
-  payment_instrument?: { literal: string }
-  kind:      string
-  bank_name?:{ literal: string }
 }
 
 /**
@@ -146,60 +123,42 @@ function applyTemplate(
   message: string,
   tpl: { id: string; regex_pattern: string; mapping_rules: Record<string, unknown>; match_count: number; tier?: string | null },
 ): TemplateMatch | null {
-  let re: RegExp
-  try { re = new RegExp(tpl.regex_pattern) } catch { return null }
+  const rules = tpl.mapping_rules as unknown as MappingRules
+  if (!rules?.amount) return null
+  // Same extraction path the learn-time gates verify against — see templateApply.ts.
+  const got = applyMappingRules(message, tpl.regex_pattern, rules)
+  if (!got) return null
 
-  const m = re.exec(message)
-  if (!m) return null
+  const { merchant, bankName, kind } = got
+  const cleanTitle =
+    kind === 'atm_withdrawal'       ? `ATM Withdrawal${bankName ? ` — ${bankName}` : ''}` :
+    kind === 'cc_payoff'            ? `Credit Card Payment${bankName ? ` — ${bankName}` : ''}` :
+    kind === 'own_transfer'         ? `Transfer between accounts${bankName ? ` — ${bankName}` : ''}` :
+    kind === 'currency_exchange'    ? `Currency Exchange${bankName ? ` — ${bankName}` : ''}` :
+    kind === 'instant_transfer_out' ? `Transfer${merchant ? ` to ${merchant}` : ''}` :
+    kind === 'instant_transfer_in'  ? `Transfer${merchant ? ` from ${merchant}` : ''}` :
+    merchant ?? bankName ?? null
 
-  try {
-    const rules = tpl.mapping_rules as unknown as MappingRules
-
-    const rawAmt = m[rules.amount.group] ?? ''
-    const amtStr = rules.amount.removeCommas ? rawAmt.replace(/,/g, '') : rawAmt
-    const amount = parseFloat(amtStr)
-    if (!amount || !Number.isFinite(amount)) return null
-
-    const cRules = rules.currency
-    const currency = !cRules ? null
-      : 'literal' in cRules ? cRules.literal
-      : (m[cRules.group] ?? null)
-
-    const merchant  = rules.merchant ? (m[rules.merchant.group] ?? null) : null
-    const last4Raw  = rules.last4    ? (m[rules.last4.group]    ?? null) : null
-    const cleanLast4 = last4Raw ? last4Raw.replace(/\D/g, '').slice(-4) || null : null
-    const cpLast4Raw = rules.counterparty_last4 ? (m[rules.counterparty_last4.group] ?? null) : null
-    const cleanCpLast4 = cpLast4Raw ? cpLast4Raw.replace(/\D/g, '').slice(-4) || null : null
-    const txDay = parseSmsDay(rules.datetime ? (m[rules.datetime.group] ?? null) : null)
-    const bankName  = rules.bank_name ? rules.bank_name.literal : null
-    const kind      = rules.kind as ParsedTx['kind']
-
-    const cleanTitle =
-      kind === 'atm_withdrawal'       ? `ATM Withdrawal${bankName ? ` — ${bankName}` : ''}` :
-      kind === 'cc_payoff'            ? `Credit Card Payment${bankName ? ` — ${bankName}` : ''}` :
-      kind === 'own_transfer'         ? `Transfer between accounts${bankName ? ` — ${bankName}` : ''}` :
-      kind === 'currency_exchange'    ? `Currency Exchange${bankName ? ` — ${bankName}` : ''}` :
-      kind === 'instant_transfer_out' ? `Transfer${merchant ? ` to ${merchant}` : ''}` :
-      kind === 'instant_transfer_in'  ? `Transfer${merchant ? ` from ${merchant}` : ''}` :
-      merchant ?? bankName ?? null
-
-    return {
-      templateId: tpl.id,
-      tier: tpl.tier === 'curated_db' ? 'curated_db' : 'template',
-      txDay,
-      paymentInstrument: rules.payment_instrument?.literal ?? null,
-      parsed: {
-        is_transaction: true, amount,
-        currency: currency as ParsedTx['currency'],
-        merchant, bank_name: bankName,
-        category: null, confidence: 1.0, kind,
-        cleanTitle,
-        detectedAccountLast4: cleanLast4,
-        detectedCounterpartyLast4: cleanCpLast4,
-        merchantNormalized: null,
-      },
-    }
-  } catch { return null }
+  return {
+    templateId: tpl.id,
+    tier: tpl.tier === 'curated_db' ? 'curated_db' : 'template',
+    txDay: got.txDay,
+    paymentInstrument: got.paymentInstrument,
+    parsed: {
+      is_transaction: true,
+      amount: got.amount,
+      currency: got.currency as ParsedTx['currency'],
+      merchant,
+      bank_name: bankName,
+      category: null,
+      confidence: 1.0,
+      kind: kind as ParsedTx['kind'],
+      cleanTitle,
+      detectedAccountLast4: got.last4,
+      detectedCounterpartyLast4: got.counterpartyLast4,
+      merchantNormalized: null,
+    },
+  }
 }
 
 // Tier 2: DB templates for any of these routing keys (indexed `IN` query).
@@ -352,6 +311,20 @@ async function generateMatchingRegex(
   if (!re.test(message)) {
     return { ok: false, status: `regex_no_match: ${learned.regex_pattern}`.slice(0, 200) }
   }
+
+  // Matching is not enough. A regex can match its own sample while its capture groups point at
+  // the wrong tokens — grabbing the trailing "available balance" instead of the amount is the
+  // classic case, and it used to pass validation and ship as a global, fully-trusted template.
+  // The gates re-extract through the SAME path production uses and require the AI's values back.
+  const gate = runLearnGates(message, learned.regex_pattern, learned.mapping_rules, {
+    amount: parsed.amount,
+    currency: parsed.currency,
+    detectedAccountLast4: parsed.detectedAccountLast4,
+  })
+  if (!gate.ok) {
+    return { ok: false, status: `${gate.status}${gate.detail ? `: ${gate.detail}` : ''}`.slice(0, 200) }
+  }
+
   return { ok: true, regex: learned.regex_pattern, mapping: learned.mapping_rules }
 }
 

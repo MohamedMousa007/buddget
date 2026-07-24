@@ -25,21 +25,49 @@ const BALANCE_ONLY_RE =
   /(available\s+balance|current\s+balance|account\s+balance|balance\s+(?:is|inquiry)|رصيدك\s*(?:الحالي|المتاح)|الرصيد\s*(?:الحالي|المتاح)|استعلام\s*(?:عن\s*)?(?:ال)?رصيد)/i
 
 /**
- * Strips balance-notification clauses (e.g. "Your available balance is EGP 36,183.18",
- * "Avl Bal is AED 15,234.50") from text, then checks whether any currency+amount
+ * Balance-notification clauses — "Your available balance is EGP 36,183.18",
+ * "Avl Bal is AED 15,234.50", "الرصيد المتاح : EGP 2700.03".
+ *
+ * Exported because two callers need them and must agree:
+ *  - `hasNonBalanceAmount` below, so a real transaction that merely *ends* with a balance line
+ *    is not mis-rejected as a balance-only SMS.
+ *  - the learn-time wrong-token gate, which rejects a generated regex whose amount capture
+ *    lands INSIDE one of these clauses. Grabbing the trailing balance instead of the amount is
+ *    the single most common systematic misparse, and nearly every message in the corpus ends
+ *    with one of these.
+ *
+ * Note: these carry the `g` flag, so callers that use `.exec`/`.test` in a loop must reset
+ * `lastIndex` or use `matchAll`, which does it for them.
+ */
+export const BALANCE_CLAUSE_PATTERNS: readonly RegExp[] = [
+  // EN: "Your available/current/account/card balance/limit is EGP 36,183.18"
+  /(?:your\s+)?(?:available|current|account|card)\s+(?:international\s+)?(?:balance|limit)(?:\s+(?:to\s+use\s+)?is\s*|:?\s*)[A-Z]{0,3}\s*[\d,]+(?:\.\d+)?/gi,
+  // EN compact: "Avl Bal is AED 15,234.50" / "Avl Cr. Limit is AED 30,978.13"
+  /\bavl?\.?\s*(?:cr\.?\s*)?(?:bal(?:ance)?|limit)\s+(?:is\s+)?[A-Z]{0,3}\s*[\d,]+(?:\.\d+)?/gi,
+  // AR: "الرصيد المتاح / الحالي : EGP 2700.03" and "رصيدك المتاح : ..."
+  /(?:الرصيد|رصيدك?)\s*(?:الحالي|المتاح)\s*:?\s*[A-Z]{0,3}\s*[\d,]+(?:\.\d+)?/gi,
+]
+
+/** Character spans of every balance clause in `text`. */
+export function balanceClauseSpans(text: string): Array<[number, number]> {
+  const spans: Array<[number, number]> = []
+  for (const re of BALANCE_CLAUSE_PATTERNS) {
+    for (const m of text.matchAll(re)) {
+      if (m.index !== undefined) spans.push([m.index, m.index + m[0].length])
+    }
+  }
+  return spans
+}
+
+/**
+ * Strips balance-notification clauses from text, then checks whether any currency+amount
  * remains — a sign the SMS describes an actual transaction, not just a balance query.
  *
  * Prevents mis-rejection of bank notifications that append a balance line to a real
  * transaction (a common HSBC / Emirates NBD / CIB pattern).
  */
 function hasNonBalanceAmount(text: string): boolean {
-  const stripped = text
-    // EN: "Your available/current/account/card balance/limit is EGP 36,183.18"
-    .replace(/(?:your\s+)?(?:available|current|account|card)\s+(?:international\s+)?(?:balance|limit)(?:\s+(?:to\s+use\s+)?is\s*|:?\s*)[A-Z]{0,3}\s*[\d,]+(?:\.\d+)?/gi, '')
-    // EN compact: "Avl Bal is AED 15,234.50" / "Avl Cr. Limit is AED 30,978.13"
-    .replace(/\bavl?\.?\s*(?:cr\.?\s*)?(?:bal(?:ance)?|limit)\s+(?:is\s+)?[A-Z]{0,3}\s*[\d,]+(?:\.\d+)?/gi, '')
-    // AR: "الرصيد المتاح / الحالي : EGP 2700.03" and "رصيدك المتاح : ..."
-    .replace(/(?:الرصيد|رصيدك?)\s*(?:الحالي|المتاح)\s*:?\s*[A-Z]{0,3}\s*[\d,]+(?:\.\d+)?/gi, '')
+  const stripped = BALANCE_CLAUSE_PATTERNS.reduce((acc, re) => acc.replace(re, ''), text)
 
   // Any currency+amount remaining after stripping balance clauses → transaction amount present
   return (
