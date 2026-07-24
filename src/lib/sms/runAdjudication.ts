@@ -145,6 +145,35 @@ export async function runAdjudication(
   return { adjudicated, counted }
 }
 
+/**
+ * R2 — retire templates whose amount never varies.
+ *
+ * A capture group that yields the SAME amount across many DIFFERENT message bodies is pointing
+ * at a constant (a fee, a hotline number, a credit limit), not at the transaction amount. This
+ * is near-certain, so it is a HARD signal: one hit quarantines, and shadow mode then confirms it
+ * against live AI parses before anything is retired.
+ *
+ * Runs in the same background pass as adjudication rather than per-parse, because it is a
+ * question about a template's history, not about the message in hand.
+ */
+export async function runZeroVarianceCheck(service: ServiceClient): Promise<number> {
+  try {
+    const { data } = await service.rpc('detect_zero_variance_templates', { p_min_matches: 4 })
+    const hits = (data ?? []) as Array<{ template_id: string; distinct_bodies: number; amount: number }>
+    for (const h of hits) {
+      await service.rpc('bump_sms_template_failure', {
+        p_template_id: h.template_id,
+        p_hard: true,
+        p_reason: `zero_variance_amount: ${h.amount} across ${h.distinct_bodies} distinct bodies`,
+      })
+    }
+    return hits.length
+  } catch (e) {
+    console.warn('[sms/health] zero-variance check failed', e)
+    return 0
+  }
+}
+
 async function markVerdict(
   service: ServiceClient,
   signals: SignalRow[],

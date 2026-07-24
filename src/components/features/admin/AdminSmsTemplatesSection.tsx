@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { RefreshCw, Trash2, ListTree, X } from 'lucide-react'
+import { RefreshCw, Trash2, ListTree, X, FileCode2, Copy } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import type { AdminPanelModel } from '@/hooks/useAdminPanel'
 import type { SmsTemplateRow } from '@/types/admin'
@@ -12,6 +12,7 @@ import {
   matchesFilter,
   type TemplateFilter,
 } from './templateHealthDisplay'
+import { exportAsBankPatternSet } from '@/lib/sms/exportTemplates'
 
 interface Props {
   admin: AdminPanelModel
@@ -25,6 +26,9 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
   } = admin
 
   const [filter, setFilter] = useState<TemplateFilter>('all')
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [exported, setExported] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
   const [showPool, setShowPool] = useState(false)
   const openPool = () => { setShowPool(true); void loadKeywordPool() }
 
@@ -44,6 +48,45 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
     void loadSmsTemplates()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  /**
+   * Renders the selected templates as a pattern module for a human to review and commit.
+   *
+   * Deliberately not an automatic commit: a pattern in code can only be retired by a deploy,
+   * whereas a DB row is a flag flip — so a person should look at it first. Samples are redacted
+   * by the exporter because a committed sample is public and permanent.
+   */
+  const handleExport = () => {
+    const rows = smsTemplates.filter((t) => selected.has(t.id))
+    if (rows.length === 0) return
+    // Group under one bank name; the reviewer renames it if the grouping is wrong.
+    const bank = rows[0].sender.replace(/^(HOTLINE|BODY)-/, '') || 'Bank'
+    setExported(
+      exportAsBankPatternSet(
+        rows.map((t) => ({
+          id: t.id,
+          sender: t.sender,
+          regex_pattern: t.regex_pattern,
+          template_sample: t.template_sample,
+          mapping_rules: t.mapping_rules,
+          kind: t.kind,
+          match_count: t.match_count,
+          unique_user_count: t.unique_user_count,
+        })),
+        bank,
+      ),
+    )
+    setCopied(false)
+  }
 
   const startEdit = (tpl: SmsTemplateRow) => {
     setEditingId(tpl.id)
@@ -139,6 +182,17 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
             <ListTree className="h-3.5 w-3.5" />
             Keyword Pool
           </button>
+          {selected.size > 0 && (
+            <button
+              type="button"
+              onClick={handleExport}
+              className="flex items-center gap-1.5 text-xs rounded-xl border border-teal-500/30 bg-teal-500/10 px-3 py-1.5 text-teal-400 hover:bg-teal-500/20 transition-colors"
+              title="Render the selected templates as a code pattern module to review and commit"
+            >
+              <FileCode2 className="h-3.5 w-3.5" />
+              Export {selected.size} to code
+            </button>
+          )}
           <button
             type="button"
             onClick={() => void loadSmsTemplates()}
@@ -150,6 +204,55 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
           </button>
         </div>
       </div>
+
+      {exported !== null && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setExported(null)}
+        >
+          <div
+            className="glass-card w-full max-w-3xl max-h-[85vh] overflow-hidden rounded-2xl flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-brand-border)]">
+              <div>
+                <h3 className="text-sm font-semibold text-[var(--color-brand-text-primary)]">
+                  Export to code patterns
+                </h3>
+                <p className="text-xs text-[var(--color-brand-text-muted)] mt-0.5">
+                  Review, then save as <code>src/lib/sms/patterns/&lt;bank&gt;.ts</code> and add it to
+                  ALL_PATTERN_SETS. Samples are redacted. Once in code a pattern needs a deploy to
+                  change — so it also leaves the automatic retirement safety net.
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    void navigator.clipboard?.writeText(exported)
+                    setCopied(true)
+                  }}
+                  className="flex items-center gap-1.5 text-xs rounded-xl border border-[var(--color-brand-border)] px-3 py-1.5 text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] transition-colors"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  {copied ? 'Copied' : 'Copy'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setExported(null)}
+                  aria-label="Close"
+                  className="rounded-xl border border-[var(--color-brand-border)] p-1.5 text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)] transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+            <pre className="flex-1 overflow-auto px-5 py-4 text-[11px] leading-relaxed font-mono text-[var(--color-brand-text-secondary)] whitespace-pre">
+              {exported}
+            </pre>
+          </div>
+        </div>
+      )}
 
       {showPool && (
         <div
@@ -274,6 +377,7 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
           <table className="w-full min-w-96 text-xs">
             <thead>
               <tr className="border-b border-[var(--color-brand-border)]">
+                <th className="py-2 pr-2 w-6"></th>
                 <th className="text-left py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Sender</th>
                 <th className="text-left py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Stage</th>
                 <th className="text-left py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Sample</th>
@@ -289,6 +393,19 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
               {visible.map((tpl) => (
                 <tr key={tpl.id} className="border-b border-[var(--color-brand-border)] hover:bg-[var(--color-brand-elevated)] transition-colors">
                   {/* Sender */}
+                  {/* Only a globally-trusted template is a candidate for code; a supervised
+                      one has not yet earned the reach that justifies committing it. */}
+                  <td className="py-2.5 pr-2">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(tpl.id)}
+                      disabled={tpl.tier !== 'curated_db'}
+                      onChange={() => toggleSelect(tpl.id)}
+                      aria-label={`Select ${tpl.sender} for export`}
+                      title={tpl.tier === 'curated_db' ? 'Select for export' : 'Only Curated DB templates can be exported'}
+                      className="h-3.5 w-3.5 accent-teal-500 disabled:opacity-30"
+                    />
+                  </td>
                   <td className="py-2.5 pr-4 font-mono text-[var(--color-brand-text-primary)] whitespace-nowrap">
                     {tpl.sender}
                   </td>

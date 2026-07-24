@@ -24,7 +24,8 @@ import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNative
 import { matchCuratedPattern } from '@/lib/sms/patterns'
 import { applyMappingRules, type MappingRules } from '@/lib/sms/templateApply'
 import { runLearnGates } from '@/lib/sms/learnGates'
-import { runAdjudication } from '@/lib/sms/runAdjudication'
+import { runAdjudication, runZeroVarianceCheck } from '@/lib/sms/runAdjudication'
+import { checkPlausibility, checkCurrencyAgainstAccount } from '@/lib/sms/templateHealth'
 import { getCuratedDbTemplates, TEMPLATE_COLUMNS } from '@/lib/sms/curatedDbCache'
 import {
   partitionByScope,
@@ -1128,6 +1129,45 @@ export async function POST(request: Request) {
     })
   }
 
+  // Soft health checks on what a TEMPLATE extracted. Free, deterministic, no user and no AI.
+  // Judged as a rate (see bump_sms_template_failure), never acted on individually — each of
+  // these can be legitimately wrong once, and punishing a single occurrence would retire
+  // templates that work.
+  if (matchedTemplateId) {
+    const soft = checkPlausibility(
+      { amount: parsed.amount, last4: cleanLast4, txDay },
+      nowIso,
+    )
+    const { data: accounts } = await service
+      .from('payment_methods')
+      .select('last4, currency')
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+    const ccyMismatch = checkCurrencyAgainstAccount(
+      parsed.currency,
+      cleanLast4,
+      (accounts ?? []) as Array<{ last4: string | null; currency: string | null }>,
+    )
+    if (ccyMismatch) soft.push(ccyMismatch)
+
+    if (soft.length > 0) {
+      const tid = matchedTemplateId
+      after(async () => {
+        for (const sig of soft) {
+          try {
+            await service.rpc('bump_sms_template_failure', {
+              p_template_id: tid,
+              p_hard: false,
+              p_reason: `${sig.code}: ${sig.detail}`.slice(0, 200),
+            })
+          } catch (e) {
+            console.warn('[sms/health] soft signal failed', e)
+          }
+        }
+      })
+    }
+  }
+
   // Shadow mode. A quarantined template still matched this message, but its result was NOT
   // used — the SMS was parsed by AI instead. Comparing the two is what decides its fate:
   // consecutive agreements restore it to its previous tier, one disagreement retires it. The
@@ -1228,6 +1268,9 @@ export async function POST(request: Request) {
           askModel: (system, user) => askModelJson(key, system, user),
         })
         if (res.adjudicated > 0) console.log('[sms/adjudication]', res)
+        // Free, deterministic, no AI: catches a capture group locked onto a constant.
+        const zv = await runZeroVarianceCheck(service)
+        if (zv > 0) console.log('[sms/health] zero-variance quarantined', zv)
       })
     }
   }

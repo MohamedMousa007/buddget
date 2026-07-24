@@ -2258,6 +2258,10 @@ export type Database = {
         Args: { p_id: string }
         Returns: undefined
       }
+      detect_zero_variance_templates: {
+        Args: { p_min_matches?: number }
+        Returns: { template_id: string; distinct_bodies: number; amount: number }[]
+      }
       bump_sms_template_failure: {
         Args: { p_template_id: string; p_hard?: boolean; p_reason?: string }
         Returns: string

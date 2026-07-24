@@ -22,6 +22,10 @@ export async function POST(req: Request) {
         min_age_days?: number
         max_failure_rate?: number
         min_avg_confidence?: number
+        min_matches_before_retire?: number
+        quarantine_exonerate_after?: number
+        signals_before_adjudication?: number
+        max_user_signals_per_day?: number
       }
     }
     const { pin, op, config } = body ?? {}
@@ -53,6 +57,12 @@ export async function POST(req: Request) {
       if (typeof config.min_age_days === 'number') safe.min_age_days = Math.max(0, Math.floor(config.min_age_days))
       if (typeof config.max_failure_rate === 'number') safe.max_failure_rate = Math.max(0, Math.min(1, config.max_failure_rate))
       if (typeof config.min_avg_confidence === 'number') safe.min_avg_confidence = Math.max(0, Math.min(1, config.min_avg_confidence))
+      // Retirement / health knobs (migration 0098). Bounded so the admin cannot set a value
+      // that would break the state machine (e.g. a 0-agreement exoneration).
+      if (typeof config.min_matches_before_retire === 'number') safe.min_matches_before_retire = Math.max(1, Math.floor(config.min_matches_before_retire))
+      if (typeof config.quarantine_exonerate_after === 'number') safe.quarantine_exonerate_after = Math.max(1, Math.floor(config.quarantine_exonerate_after))
+      if (typeof config.signals_before_adjudication === 'number') safe.signals_before_adjudication = Math.max(1, Math.floor(config.signals_before_adjudication))
+      if (typeof config.max_user_signals_per_day === 'number') safe.max_user_signals_per_day = Math.max(1, Math.floor(config.max_user_signals_per_day))
 
       const { data, error } = await service
         .from('sms_promotion_config')

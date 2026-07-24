@@ -75,33 +75,26 @@ export function AdminSmsPromotionSection({ admin }: Props) {
     label: string,
     description: string,
     key: keyof SmsPromotionConfig,
-    min: number,
-    max: number,
     step: number,
-    format?: (v: number) => string,
   ) => {
     const val = draft ? (draft[key] as number) : 0
-    const display = format ? format(val) : String(val)
     return (
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-[var(--color-brand-text-primary)]">{label}</p>
-            <p className="text-[10px] text-[var(--color-brand-text-muted)]">{description}</p>
-          </div>
-          <span className="text-xs font-mono font-semibold text-[var(--color-brand-text-primary)] min-w-12 text-right">
-            {display}
-          </span>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-[var(--color-brand-text-primary)]">{label}</p>
+          <p className="text-[10px] text-[var(--color-brand-text-muted)]">{description}</p>
         </div>
+        {/* A number input rather than a slider: these are exact thresholds a human reasons
+            about ("3 distinct users", "5% failures"), and a slider makes an exact value
+            fiddly to set while taking far more room in a compact overlay. */}
         <input
-          type="range"
-          min={min}
-          max={max}
+          type="number"
           step={step}
+          min={0}
           value={val}
           disabled={!draft}
-          onChange={(e) => set(key, parseFloat(e.target.value) as SmsPromotionConfig[typeof key])}
-          className="w-full h-1.5 accent-[var(--color-brand-green)] disabled:opacity-50"
+          onChange={(e) => set(key, parseFloat(e.target.value || '0') as SmsPromotionConfig[typeof key])}
+          className="w-20 shrink-0 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-bg)] px-2 py-1 text-right text-xs font-mono text-[var(--color-brand-text-primary)] outline-none focus:border-[var(--color-brand-focus)] disabled:opacity-50"
         />
       </div>
     )
@@ -140,13 +133,22 @@ export function AdminSmsPromotionSection({ admin }: Props) {
             <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-brand-text-muted)]">
               Promotion Criteria
             </p>
-            {criteriaField('Min matches', 'Times this template matched an SMS', 'min_match_count', 1, 500, 5)}
-            {criteriaField('Min distinct users', 'Different users who triggered this template', 'min_unique_users', 1, 20, 1)}
-            {criteriaField('Min age (days)', 'How long since the template was first learned', 'min_age_days', 0, 30, 1)}
-            {criteriaField('Max failure rate', 'Max fraction of sender SMS failing after template was learned', 'max_failure_rate', 0, 0.25, 0.005,
-              (v) => `${(v * 100).toFixed(1)}%`)}
-            {criteriaField('Min avg AI confidence', 'Minimum Gemini confidence score when template was created', 'min_avg_confidence', 0.7, 0.99, 0.01,
-              (v) => v.toFixed(2))}
+            {criteriaField('Min matches', 'Times this template matched an SMS', 'min_match_count', 5)}
+            {criteriaField('Min distinct users', 'Different users who triggered this template', 'min_unique_users', 1)}
+            {criteriaField('Min age (days)', 'How long since the template was first learned', 'min_age_days', 1)}
+            {criteriaField('Max failure rate', 'Fraction of matches that may fail before retire (0.05 = 5%)', 'max_failure_rate', 0.005)}
+            {criteriaField('Min avg AI confidence', 'Minimum Gemini confidence score when template was created', 'min_avg_confidence', 0.01)}
+          </div>
+
+          {/* Retirement + adjudication — the other half of the funnel (migration 0097/0098). */}
+          <div className="rounded-xl border border-[var(--color-brand-border)] px-4 py-4 space-y-5">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-brand-text-muted)]">
+              Retirement &amp; Health
+            </p>
+            {criteriaField('Min matches before retire', 'Matches served before a soft-signal rate can retire a template', 'min_matches_before_retire', 1)}
+            {criteriaField('Shadow agreements to exonerate', 'Consecutive AI agreements that clear a quarantined template', 'quarantine_exonerate_after', 1)}
+            {criteriaField('Signals before adjudication', 'User signals on one template before an AI adjudication is spent', 'signals_before_adjudication', 1)}
+            {criteriaField('Max user signals / day', 'Per-user cap so a bulk delete cannot mass-quarantine', 'max_user_signals_per_day', 1)}
           </div>
 
           {/* Eligibility preview */}
