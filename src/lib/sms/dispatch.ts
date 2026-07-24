@@ -183,6 +183,25 @@ export async function createSmsTransaction(
   //     is still true either way and keeps precedence; only when there is none does the bank
   //     name get a direction-correct wrapper, so the row doesn't land in the ledger as "HSBC".
   const guardedKind = guardDirection(parsedRow.kind, parsedRow.rawBody)
+
+  // N1 — a free, deterministic health oracle. The guard runs on every tier, so when it has to
+  // override a TEMPLATE-parsed row the template's `kind` is provably wrong: the bank's own
+  // ledger sign contradicts it. Until now the guard silently fixed such rows, which meant a
+  // defective template kept its reputation while the guard quietly cleaned up after it. One hit
+  // is enough to quarantine, where a shadow comparison decides its fate without user friction.
+  if (guardedKind !== parsedRow.kind && parsedRow.matchedTemplateId) {
+    try {
+      await service.rpc('bump_sms_template_failure', {
+        p_template_id: parsedRow.matchedTemplateId,
+        p_hard: true,
+        p_reason: `direction_guard_override: ${parsedRow.kind} -> ${guardedKind}`,
+      })
+    } catch (e) {
+      // Health accounting must never break the transaction it is observing.
+      console.warn('[sms/dispatch] direction-guard oracle failed', e)
+    }
+  }
+
   const row: SmsRowData =
     guardedKind === parsedRow.kind
       ? parsedRow

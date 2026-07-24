@@ -80,6 +80,12 @@ export interface SmsRowData {
   receivedAtIso?: string | null
   /** sms_parse_log row id, stamped onto the expense for traceability/idempotency. */
   logId?: string | null
+  /**
+   * The DB template whose regex produced this row, when one did. Carried so a downstream
+   * correction (e.g. the direction guard overriding the parsed kind) can be attributed back to
+   * the template that got it wrong.
+   */
+  matchedTemplateId?: string | null
   /** Set when this expense is linked to a tracked subscription. */
   linkedSubscriptionId?: string | null
   /** Recurring income template this credit fulfills (salary match) → links the event. */

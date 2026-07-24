@@ -844,6 +844,7 @@ export async function POST(request: Request) {
     counterpartyLast4: cleanCpLast4,
     receivedAtIso: nowIso,
     logId,
+    matchedTemplateId,
   }, { exchangeRates: DEFAULT_MARKET_RATES })
 
   const { expenseId, incomeId, debtPaymentId } = tx
