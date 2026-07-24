@@ -18,7 +18,7 @@ import { NextResponse, after } from 'next/server'
 import { z } from 'zod'
 import crypto from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/service'
-import { SMS_PARSER_SYSTEM_PROMPT } from '@/lib/sms/aiParserPrompt'
+import { SMS_PARSER_SYSTEM_PROMPT, MASKED_ACCOUNT_CLASS } from '@/lib/sms/aiParserPrompt'
 import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNativePush'
 import { matchCuratedPattern } from '@/lib/sms/patterns'
 import { isNonTransaction } from '@/lib/sms/patterns/preFilter'
@@ -123,7 +123,6 @@ interface TemplateMatch { parsed: ParsedTx; templateId: string }
 function applyTemplate(
   message: string,
   tpl: { id: string; regex_pattern: string; mapping_rules: Record<string, unknown>; match_count: number },
-  service: ReturnType<typeof createServiceRoleClient>,
 ): TemplateMatch | null {
   let re: RegExp
   try { re = new RegExp(tpl.regex_pattern) } catch { return null }
@@ -159,8 +158,6 @@ function applyTemplate(
       kind === 'instant_transfer_in'  ? `Transfer${merchant ? ` from ${merchant}` : ''}` :
       merchant ?? bankName ?? null
 
-    void service.rpc('increment_sms_template_match_count', { p_id: tpl.id })
-
     return {
       templateId: tpl.id,
       parsed: {
@@ -192,7 +189,7 @@ async function tryStaticParse(
     .order('match_count', { ascending: false })
     .limit(10)
   for (const tpl of data ?? []) {
-    const result = applyTemplate(message, tpl, service)
+    const result = applyTemplate(message, tpl)
     if (result) return result
   }
   return null
@@ -212,7 +209,7 @@ async function tryStaticParseAny(
     .order('match_count', { ascending: false })
     .limit(50)
   for (const tpl of data ?? []) {
-    const result = applyTemplate(message, tpl, service)
+    const result = applyTemplate(message, tpl)
     if (result) return result
   }
   return null
@@ -413,7 +410,7 @@ Rules:
 - Use numbered capture groups (NOT named groups)
 - Escape ALL literal special regex chars: . * ( ) [ ] { } + ? ^ $ |
 - Replace EVERY run of whitespace with \\s+ (SMS spacing is irregular — double spaces, tabs, RTL marks between words)
-- Replace masked account/card numbers (digits mixed with *, e.g. 507803******6685) ENTIRELY with [\\d*]+
+- Replace masked account/card numbers ENTIRELY with ${MASKED_ACCOUNT_CLASS} — a mask may contain hyphens as well as stars and digits (507803******6685, 103-104***-110). Never use a class without the hyphen: it cannot match a hyphenated account and the regex then fails against its own sample.
 - Use [\\d,]+\\.?\\d* for amounts that may contain comma separators
 - Replace transaction-specific values (names, amounts, reference numbers, dates, times) with flexible patterns like \\S+, .+?, or \\d+
 - Do NOT use ^ or $ anchors
@@ -593,12 +590,14 @@ export async function POST(request: Request) {
   // ---- Tier 2: learned DB templates -------------------------------------------
   // Key by transport sender AND/OR body hotline so a sender-less iOS SMS still
   // matches a template Android learned (and vice-versa); broad-scan when neither.
+  // Keyed lookup first; the broad scan is a FALLBACK, not an alternative. A template
+  // Android learned under its transport sender is invisible to the keyed lookup for the
+  // same SMS arriving sender-less from the iOS bridge, and the scan is what still finds it.
   const candidateKeys = lookupKeys(sender, message)
-  const staticMatch = !curated
-    ? candidateKeys.length
-      ? await tryStaticParse(message, candidateKeys, service)
-      : await tryStaticParseAny(message, service)
-    : null
+  const staticMatch = curated
+    ? null
+    : (candidateKeys.length ? await tryStaticParse(message, candidateKeys, service) : null) ??
+      (await tryStaticParseAny(message, service))
 
   const staticResult = staticMatch?.parsed ?? null
   const matchedTemplateId = staticMatch?.templateId ?? null
@@ -991,7 +990,14 @@ export async function POST(request: Request) {
   // accurate distinct-user count (drives the promotion min_unique_users gate).
   if (matchedTemplateId) {
     const tid = matchedTemplateId
-    after(() => recordTemplateUser(tid, userId, service))
+    after(async () => {
+      // `match_count` gates promotion (min_match_count) and is the only evidence in the
+      // admin panel that a learned template does anything. A bare `void rpc(...)` at match
+      // time is frozen the instant the response returns, so every template sat at 0 matches
+      // forever and nothing could ever become eligible.
+      await service.rpc('increment_sms_template_match_count', { p_id: tid })
+      await recordTemplateUser(tid, userId, service)
+    })
   }
 
   return NextResponse.json({

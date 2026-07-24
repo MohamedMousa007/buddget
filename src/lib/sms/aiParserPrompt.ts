@@ -10,6 +10,16 @@
  *      Doha Bank (Qatar); NBK, Boubyan (Kuwait); Bank Muscat (Oman); BBK,
  *      NBB (Bahrain).
  */
+/**
+ * Character class the regex-learning prompt tells Gemini to use for a masked account or card
+ * number. Exported so the rule has one home and can be tested against real masks.
+ *
+ * `[\d*]+` — the rule this replaces — cannot match a hyphenated mask like `103-104***-110`,
+ * so every learned regex for HSBC's statement family failed against its own sample and the
+ * template was never stored. Four `regex_no_match` rows, twelve wasted Gemini calls.
+ */
+export const MASKED_ACCOUNT_CLASS = '[\\d*\\-]+'
+
 export const SMS_PARSER_SYSTEM_PROMPT = `You are extracting a single financial transaction from a short bank or merchant SMS / push notification for a user in Egypt or the GCC.
 
 Return ONLY a JSON object with this exact schema (no markdown, no commentary):
