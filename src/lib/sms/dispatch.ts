@@ -2,6 +2,7 @@
  * createSmsTransaction — the single classification dispatcher for SMS-parsed
  * transactions. Evaluates in a strict order so money-movements are never
  * mis-booked as spend or income:
+ *  -1. ledger-sign guard (a credit is never booked as spend, whatever the tier said)
  *   0. own-wallet top-up (puts both legs in the transfer family)
  *   1. own-account reclassification (before the income branch)
  *   2. transfer / FX pairing (two-leg reconciliation)
@@ -39,6 +40,7 @@ import {
   type CcPayoffFundingLeg,
   type PairSibling,
 } from './pairing'
+import { guardDirection } from './directionGuard'
 import { matchSalary } from './matchSalary'
 import { matchSubscription } from './matchSubscription'
 
@@ -172,9 +174,17 @@ async function finalizeOwnTransferPair(
 
 export async function createSmsTransaction(
   service: SupabaseClient,
-  row: SmsRowData,
+  parsedRow: SmsRowData,
   opts: { exchangeRates: Record<string, number>; userConfirmed?: boolean },
 ): Promise<SmsTxResult> {
+  // -1. The bank's own ledger sign beats the tier's reading of the wording. A tier that got
+  //     the direction wrong also wrote a title describing that wrong direction ("Transfer to
+  //     103-104***-110" for an inbound wire), so the title is dropped with it and smsTitle
+  //     falls back to the merchant/bank.
+  const guardedKind = guardDirection(parsedRow.kind, parsedRow.rawBody)
+  const row: SmsRowData =
+    guardedKind === parsedRow.kind ? parsedRow : { ...parsedRow, kind: guardedKind, cleanTitle: null }
+
   let kind: SmsExpenseKind = row.kind
 
   // 0. Movements involving the user's own STORED-VALUE methods (wallets, prepaid cards).

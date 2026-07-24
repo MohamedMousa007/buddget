@@ -20,6 +20,28 @@ const OPEN_GRACE_MS = 400
 const FOCUSABLE =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
+/** Input types that raise a soft keyboard (or a bottom-anchored picker) on mobile. */
+const TEXT_ENTRY_TYPES = new Set([
+  'text', 'email', 'password', 'search', 'tel', 'url', 'number',
+  'date', 'time', 'datetime-local', 'month', 'week',
+])
+
+/**
+ * Whether this element is one the soft keyboard opens for.
+ *
+ * The focused element — not the viewport — is the cross-platform keyboard signal.
+ * `visualViewport` shrinks on iOS and desktop web, but on Android the WebView itself is
+ * resized, so the visual viewport matches the layout viewport and reports no inset at all.
+ */
+function isTextEntry(el: Element | null): boolean {
+  if (!(el instanceof HTMLElement)) return false
+  if (el.isContentEditable) return true
+  if (el.tagName === 'TEXTAREA') return true
+  if (el.tagName !== 'INPUT') return false
+  const input = el as HTMLInputElement
+  return !input.readOnly && !input.disabled && TEXT_ENTRY_TYPES.has(input.type)
+}
+
 interface ModalShellProps {
   open: boolean
   onBackdropClick: () => void
@@ -164,11 +186,38 @@ export function ModalShell({
     }
   }, [open])
 
+  // Tracks whether a field the keyboard opens for currently holds focus. Deferred a frame
+  // because `focusout` lands before the next `focusin`, and reading `document.activeElement`
+  // in between sees <body> — moving between two inputs would flash the footer back in.
+  const [textEntryFocused, setTextEntryFocused] = useState(false)
+  useEffect(() => {
+    let raf = 0
+    const check = () => {
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(() => setTextEntryFocused(open && isTextEntry(document.activeElement)))
+    }
+    check()
+    if (!open) return () => cancelAnimationFrame(raf)
+    document.addEventListener('focusin', check)
+    document.addEventListener('focusout', check)
+    return () => {
+      cancelAnimationFrame(raf)
+      document.removeEventListener('focusin', check)
+      document.removeEventListener('focusout', check)
+    }
+  }, [open])
+
   const desktopFadePanel = lgMotion
 
   // Lift the panel above the OS keyboard OR the glass NumberPad (same code path).
   const numpadInset = useNumpadInset()
   const bottomInset = Math.max(keyboardOffset, numpadInset)
+
+  // Published to CSS so pinned sheet footers (`.sheet-cta`) drop out of the layout while the
+  // keyboard is up: a submit button is pressed once the fields are done, so floating it above
+  // the keyboard only steals rows of screen from the fields still being filled in.
+  // Desktop keeps the footer — there is no keyboard eating the viewport there.
+  const keyboardUp = !desktopFadePanel && (bottomInset > 0 || textEntryFocused)
 
   // Portal to <body> so the sheet's `position: fixed` always resolves against
   // the viewport — a CSS transform on any ancestor (a parent framer-drag panel,
@@ -195,6 +244,7 @@ export function ModalShell({
             role="dialog"
             aria-modal="true"
             tabIndex={-1}
+            data-keyboard-open={keyboardUp ? 'true' : undefined}
             initial={desktopFadePanel ? { opacity: 0, scale: 0.98 } : { y: '100%' }}
             animate={desktopFadePanel ? { opacity: 1, scale: 1 } : { y: 0 }}
             exit={desktopFadePanel ? { opacity: 0, scale: 0.97 } : { y: '100%' }}

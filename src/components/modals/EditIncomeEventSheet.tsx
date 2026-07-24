@@ -209,7 +209,7 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
         </button>
       </div>
 
-      <div className="shrink-0 px-5 pb-5 pt-4">
+      <div className="sheet-cta shrink-0 px-5 pb-5 pt-4">
         <button
           type="button"
           onClick={handleSave}

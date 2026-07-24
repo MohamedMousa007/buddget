@@ -502,6 +502,12 @@ html[data-locale='ar'] .prose-rtl {
   85% { opacity: 1 }
   100% { inset-inline-start: calc(100% - 6px); opacity: 0 }
 }
+/* Pinned sheet footer (the primary CTA). While the soft keyboard or the glass NumberPad is
+   up, the footer leaves the layout instead of floating above it — the button is pressed once
+   the fields are done, and pinning it there costs the form ~64px of the little space left.
+   ModalShell stamps data-keyboard-open on the panel; see its `keyboardUp`. */
+[data-keyboard-open='true'] .sheet-cta { display: none; }
+
 .np-key:active { background: rgba(255,255,255,.12) !important; }
 @media (prefers-reduced-motion: reduce) {
   .np-glow { animation: none !important; opacity: .7 !important; }

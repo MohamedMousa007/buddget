@@ -379,7 +379,7 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
 
         {/* Pinned footer: full-width Save CTA, with Delete as a distinct, less
             prominent action directly below it (edit only, non-shared sources). */}
-        <div className="shrink-0 px-5 pb-5 pt-4">
+        <div className="sheet-cta shrink-0 px-5 pb-5 pt-4">
           <button
             type="button"
             onClick={handleSubmit}

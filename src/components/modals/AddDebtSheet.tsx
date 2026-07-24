@@ -112,7 +112,7 @@ export function AddDebtSheet() {
 
         {/* Footer */}
         {showFooter ? (
-          <div className="flex shrink-0 items-center gap-3 border-t border-[var(--color-brand-border)] px-5 pb-[calc(16px+env(safe-area-inset-bottom))] pt-3">
+          <div className="sheet-cta flex shrink-0 items-center gap-3 border-t border-[var(--color-brand-border)] px-5 pb-[calc(16px+env(safe-area-inset-bottom))] pt-3">
             {d.isEditFlow ? (
               <button type="button" onClick={d.handleDeleteDebt} className="flex items-center gap-1.5 px-2 py-3 text-sm font-semibold text-[var(--color-brand-red)] transition-opacity hover:opacity-80">
                 <Trash2 className="h-4 w-4" />

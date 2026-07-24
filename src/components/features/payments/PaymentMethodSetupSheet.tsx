@@ -457,7 +457,7 @@ export function PaymentMethodSetupSheet({
             </div>
           </div>
 
-          <div className="shrink-0 border-t border-[#1c1c26] px-4 pb-[calc(16px+env(safe-area-inset-bottom))] pt-3">
+          <div className="sheet-cta shrink-0 border-t border-[#1c1c26] px-4 pb-[calc(16px+env(safe-area-inset-bottom))] pt-3">
             <button
               type="button" onClick={handleSave} disabled={!canSave}
               className={cn(
@@ -695,7 +695,7 @@ function ProviderPickerSheet({
         </div>
         <button
           type="button" onClick={() => onCustom(query)}
-          className="mt-2.5 flex h-[50px] w-full shrink-0 items-center justify-center gap-2 rounded-[13px] border border-[var(--color-brand-red)]/30 bg-[var(--color-brand-red)]/10 text-sm font-semibold text-[#FF5C5C]"
+          className="sheet-cta mt-2.5 flex h-[50px] w-full shrink-0 items-center justify-center gap-2 rounded-[13px] border border-[var(--color-brand-red)]/30 bg-[var(--color-brand-red)]/10 text-sm font-semibold text-[#FF5C5C]"
         >
           <Plus className="h-[18px] w-[18px]" />
           {customLabel}

@@ -423,7 +423,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
         </div>
 
         {/* footer */}
-        <div className="shrink-0 border-t border-[var(--color-brand-border)] px-5 pt-3 pb-6">
+        <div className="sheet-cta shrink-0 border-t border-[var(--color-brand-border)] px-5 pt-3 pb-6">
           {submitDisabled ? (
             <p className="mb-2 text-center text-xs font-medium text-[var(--color-brand-text-muted)]" role="status">
               {!amount.trim() || Number.isNaN(amountNum) || amountNum <= 0

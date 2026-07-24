@@ -76,7 +76,7 @@ export function SelectPaymentMethodSheet({ open, value, paymentMethods, onSelect
             />
           )}
 
-          <div className="shrink-0 px-[18px] pb-[calc(16px+env(safe-area-inset-bottom))] pt-4">
+          <div className="sheet-cta shrink-0 px-[18px] pb-[calc(16px+env(safe-area-inset-bottom))] pt-4">
             {activeIsAdd ? (
               <button
                 type="button" onClick={() => setSetupOpen(true)}

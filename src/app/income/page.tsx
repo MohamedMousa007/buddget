@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { useShallow } from 'zustand/react/shallow'
-import { addMonths, subMonths, format, parse } from 'date-fns'
+import { addMonths, subMonths, subDays, format, parse } from 'date-fns'
 import { ChevronLeft, ChevronRight, Link2 } from 'lucide-react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -174,6 +174,9 @@ export default function IncomePage() {
       rows.push({ id: `o-${o.id}`, name: o.name, sourceType: o.sourceType, acct: o.acct, amountBase: o.amountBase, day: o.day, recurring: false, eventId: o.eventId, sourceId: o.sourceId, canAssign: Boolean(o.eventId) })
     }
     const monthIdx = (Number(monthFilter.split('-')[1]) || 1) - 1
+    // Same day-header shape as Expenses/Debts: relative label when it applies, short date always.
+    const todayKey = todayISO()
+    const yesterdayKey = format(subDays(new Date(), 1), 'yyyy-MM-dd')
     const map = new Map<number, Row[]>()
     for (const r of rows) {
       const arr = map.get(r.day)
@@ -182,8 +185,17 @@ export default function IncomePage() {
     }
     return Array.from(map.entries())
       .sort((a, b) => b[0] - a[0])
-      .map(([day, items]) => ({ day, label: `${MONTHS[monthIdx]} ${day}`, total: items.reduce((s, r) => s + r.amountBase, 0), items }))
-  }, [incomeEvents, oneTime, monthFilter, base, exchangeRates])
+      .map(([day, items]) => {
+        const key = `${monthFilter}-${String(day).padStart(2, '0')}`
+        return {
+          day,
+          rel: key === todayKey ? t.common.today : key === yesterdayKey ? t.common.yesterday : null,
+          abs: `${MON_TITLE[monthIdx]} ${day}`,
+          total: items.reduce((s, r) => s + r.amountBase, 0),
+          items,
+        }
+      })
+  }, [incomeEvents, oneTime, monthFilter, base, exchangeRates, t])
 
   const ledgerCount = ledger.reduce((s, g) => s + g.items.length, 0)
 
@@ -371,18 +383,23 @@ export default function IncomePage() {
         </div>
       ) : null}
 
-      {/* All income ledger */}
-      <div className="mb-2.5 flex items-baseline justify-between px-1">
+      {/* All income ledger — full-bleed rows, identical geometry to Expenses + Debts.
+          `-mx-4` cancels the page gutter so the row surface reaches both edges. */}
+      <div className="-mx-4">
+      <div className="mb-2.5 flex items-baseline justify-between px-[18px]">
         <p className="text-sm font-bold text-[var(--color-brand-text-primary)]">{t.income.allIncomeHeading}</p>
         <span className="text-[11px] text-[var(--color-brand-text-muted)]">{t.income.thisMonthCount(ledgerCount)}</span>
       </div>
-      {ledger.map((g) => (
+      {ledger.map((g, gIdx) => (
         <div key={g.day}>
-          <div className="flex items-baseline justify-between px-1 pb-2 pt-3">
-            <span className="text-[15px] font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{g.label}</span>
+          <div className={`flex items-baseline justify-between px-[18px] pb-2 ${gIdx === 0 ? 'pt-1' : 'pt-5'}`}>
+            <span className="flex items-baseline gap-2">
+              <span className="text-[15px] font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{g.rel ?? g.abs}</span>
+              {g.rel ? <span className="font-mono-numbers text-xs font-medium text-[var(--color-brand-text-muted)]">{g.abs}</span> : null}
+            </span>
             <span className="font-mono-numbers whitespace-nowrap text-[11px] font-medium tabular-nums text-[var(--color-brand-text-muted)]">+{fmtNum(g.total)} {base}</span>
           </div>
-          <div className="mb-2.5 overflow-hidden rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
+          <div className="border-y border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
             {g.items.map((r, idx) => {
               const colors = incomeTypeColors(r.sourceType)
               const clickable = Boolean(r.eventId || r.sourceId)
@@ -411,7 +428,7 @@ export default function IncomePage() {
                       onClick={open}
                       className={`flex min-h-[60px] w-full items-center gap-3 px-4 py-2.5 text-start transition-colors ${clickable ? 'hover:bg-[var(--color-brand-elevated)]' : 'cursor-default'}`}
                     >
-                      <span className="flex w-[54px] flex-col items-center gap-[5px]">
+                      <span className="flex w-[54px] shrink-0 flex-col items-center gap-[5px]">
                         <span className="flex h-10 w-10 items-center justify-center rounded-[11px]" style={{ background: colors.bg, color: colors.fg }}>
                           <IncomeTypeIcon type={r.sourceType} className="h-5 w-5" />
                         </span>
@@ -430,7 +447,18 @@ export default function IncomePage() {
                         </div>
                         <span className="mt-1.5 block truncate text-xs text-[var(--color-brand-text-muted)]">→ {accountLabel(r.acct)}</span>
                       </div>
-                      <span className="font-mono-numbers shrink-0 text-end text-[15px] font-medium tabular-nums text-[var(--color-brand-text-primary)]">+{fmtNum(r.amountBase)} <span className="text-[10px] font-medium text-[var(--color-brand-text-muted)]">{base}</span></span>
+                      {/* Amount column — same two-line shape as Expenses: base, then the
+                          secondary-currency approximation when the user tracks one. */}
+                      <span className="shrink-0 text-end">
+                        <span className="font-mono-numbers block text-[15px] font-medium tabular-nums text-[var(--color-brand-text-primary)]">
+                          +{fmtNum(r.amountBase)} <span className="text-[10px] font-medium text-[var(--color-brand-text-muted)]">{base}</span>
+                        </span>
+                        {secondaryOf(r.amountBase) ? (
+                          <span className="font-mono-numbers mt-[3px] block text-[11.5px] font-medium text-[var(--color-brand-text-muted)]">
+                            {secondaryOf(r.amountBase)}
+                          </span>
+                        ) : null}
+                      </span>
                     </button>
                   </SwipeToDelete>
                 </div>
@@ -439,7 +467,8 @@ export default function IncomePage() {
           </div>
         </div>
       ))}
-      {ledgerCount === 0 ? <p className="px-1 py-6 text-center text-sm text-[var(--color-brand-text-muted)]">{t.income.emptyTitle}</p> : null}
+      {ledgerCount === 0 ? <p className="px-[18px] py-6 text-center text-sm text-[var(--color-brand-text-muted)]">{t.income.emptyTitle}</p> : null}
+      </div>
     </div>
   )
 }
