@@ -10,6 +10,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import type { Database } from '@/lib/supabase/database.types'
 import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
 import type { SmsExpenseKind } from '@/lib/sms/createSmsExpense'
 import { createSmsTransaction } from '@/lib/sms/dispatch'
@@ -71,15 +72,18 @@ export async function POST(request: Request) {
   if (row.expense_id || row.income_id) {
     const confirmedCurrency = parsed.data.currency ?? row.currency
     if (confirmedCurrency) {
+      // Validated by the request schema; the DB column is an enum, so narrow at the boundary
+      // rather than widening the column type.
+      const ccy = confirmedCurrency as Database['public']['Enums']['currency_code']
       if (row.expense_id) {
-        await service.from('expenses').update({ currency: confirmedCurrency }).eq('id', row.expense_id).eq('user_id', userId)
+        await service.from('expenses').update({ currency: ccy }).eq('id', row.expense_id).eq('user_id', userId)
       }
       if (row.income_id) {
-        await service.from('income_events').update({ currency: confirmedCurrency }).eq('id', row.income_id).eq('user_id', userId)
+        await service.from('income_events').update({ currency: ccy }).eq('id', row.income_id).eq('user_id', userId)
       }
       if (senderKey) {
         await service.rpc('learn_sms_sender_currency', {
-          p_user: userId, p_sender: senderKey, p_currency: confirmedCurrency, p_confirmed: true,
+          p_user: userId, p_sender: senderKey, p_currency: ccy, p_confirmed: true,
         })
       }
     }

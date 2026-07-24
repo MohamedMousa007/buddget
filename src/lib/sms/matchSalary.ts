@@ -13,7 +13,7 @@
  * showing "Missed" — both months wrong. Payroll platforms (Deel, Wise, Payoneer)
  * make that the normal case, not the edge case.
  */
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { ServiceClient } from '@/lib/supabase/service'
 import { addDays, parseISO } from 'date-fns'
 import { paydayDatesForWindow, toISODate } from '@/lib/utils/paydaySchedule'
 import { tryConvertCurrency } from '@/lib/utils/currency'
@@ -113,7 +113,7 @@ function activeOn(row: SalaryRow, dayISO: string): boolean {
 }
 
 export async function matchSalary(
-  service: SupabaseClient,
+  service: ServiceClient,
   params: {
     userId: string
     amount: number
@@ -192,7 +192,7 @@ export async function matchSalary(
  * gap admits an exact midpoint tie — cheap to handle, wrong to assume away.
  */
 async function firstUnfilledPayday(
-  service: SupabaseClient,
+  service: ServiceClient,
   userId: string,
   templateId: string,
   paydays: string[],

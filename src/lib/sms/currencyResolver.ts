@@ -11,7 +11,7 @@
  *   3. An unconfirmed (user, sender) learned guess (still provisional).
  *   4. The user's profile base currency → fallback 'EGP'.
  */
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { ServiceClient } from '@/lib/supabase/service'
 import { hasCurrencyToken } from './patterns/currency'
 
 export interface ResolvedCurrency {
@@ -21,7 +21,7 @@ export interface ResolvedCurrency {
 }
 
 export async function resolveCurrency(
-  service: SupabaseClient,
+  service: ServiceClient,
   params: {
     userId: string
     sender: string | null

@@ -2,7 +2,9 @@
  * Shared helper: promote a sms_parse_log row to an expense or income_source.
  * Used by both /api/sms/parse (auto-add) and /api/sms/confirm (user confirm).
  */
-import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js'
+import type { ServiceClient } from '@/lib/supabase/service'
+import type { Database } from '@/lib/supabase/database.types'
+import type {PostgrestError} from '@supabase/supabase-js'
 import { localTodayISO } from '@/lib/utils/localDate'
 import type { ExpenseCategory } from '@/lib/store/types'
 import {
@@ -18,6 +20,17 @@ export type SmsExpenseKind =
   | 'cc_payoff' | 'installment_payment' | 'own_transfer' | 'currency_exchange'
   | 'income' | 'refund' | 'declined' | 'fee' | 'other'
   | null
+
+/**
+ * Narrows a validated currency string to the DB enum at the persistence boundary.
+ *
+ * `SmsRowData.currency` is a plain string because it arrives from the parser tiers, but every
+ * value reaching here has already been through `resolveCurrency`. Casting once, here, keeps the
+ * enum honest at the column without threading the enum type through the whole pipeline.
+ */
+function dbCurrency(c: string): Database['public']['Enums']['currency_code'] {
+  return c as Database['public']['Enums']['currency_code']
+}
 
 export function mapKindToCategory(
   kind: SmsExpenseKind,
@@ -142,7 +155,7 @@ function smsTitle(row: SmsRowData): string | null {
  *    well as Vodafone Cash notices, and a bill is paid from a card, not from the wallet.
  */
 async function resolvePaymentMethodByProvider(
-  service: SupabaseClient,
+  service: ServiceClient,
   userId: string,
   ...tokens: (string | null | undefined)[]
 ): Promise<string | null> {
@@ -179,7 +192,7 @@ async function resolvePaymentMethodByProvider(
  * body, so the sender ID is often the only institution signal.
  */
 export async function resolvePaymentMethodByLast4(
-  service: SupabaseClient,
+  service: ServiceClient,
   userId: string,
   last4: string | null | undefined,
   provider?: { sender?: string | null; bankName?: string | null },
@@ -213,7 +226,7 @@ export async function resolvePaymentMethodByLast4(
 }
 
 export async function createSmsExpense(
-  service: SupabaseClient,
+  service: ServiceClient,
   row: SmsRowData,
 ): Promise<CreateSmsExpenseResult> {
   const title = smsTitle(row)
@@ -230,7 +243,7 @@ export async function createSmsExpense(
         template_id: row.templateId ?? null,
         name: title ?? (linked ? 'Salary' : 'Bank credit'),
         amount: row.amount,
-        currency: row.currency,
+        currency: dbCurrency(row.currency),
         source_type: sourceType,
         received_date: row.day || localTodayISO(),
         // The payday fulfilled, when the matcher could name one. Never set without a
@@ -264,7 +277,7 @@ export async function createSmsExpense(
       description: title ?? 'Bank transaction',
       category: mappedCategory,
       amount: row.amount,
-      currency: row.currency,
+      currency: dbCurrency(row.currency),
       payment_method_id: paymentMethodId,
       notes: null,
       linked_subscription_id: row.linkedSubscriptionId ?? null,
@@ -294,7 +307,7 @@ const INSTALLMENT_AMOUNT_TOLERANCE = 0.02
  *      guess, so a stray provider SMS can't silently reduce the wrong plan.
  */
 export async function createSmsInstallmentPayment(
-  service: SupabaseClient,
+  service: ServiceClient,
   row: SmsRowData,
 ): Promise<CreateSmsExpenseResult & { needsConfirm?: boolean }> {
   const { data: plans } = await service
@@ -349,7 +362,7 @@ export async function createSmsInstallmentPayment(
       user_id: row.userId,
       debt_id: plan.id,
       amount: row.amount,
-      currency: (plan.currency as string) ?? row.currency,
+      currency: dbCurrency((plan.currency as string) ?? row.currency),
       payment_date: row.day,
       payment_method_id: fundingPaymentMethodId,
       notes: null,
@@ -366,7 +379,7 @@ export async function createSmsInstallmentPayment(
       description: smsTitle(row) ?? 'Installment payment',
       category: isBnpl ? 'Installment' : 'Debt',
       amount: row.amount,
-      currency: row.currency,
+      currency: dbCurrency(row.currency),
       payment_method_id: fundingPaymentMethodId,
       is_debt_payment: true,
       linked_debt_id: plan.id,
@@ -390,7 +403,7 @@ export async function createSmsInstallmentPayment(
  * an over-broad default would let unrelated same-amount charges match.
  */
 export async function resolveExactPaymentMethod(
-  service: SupabaseClient,
+  service: ServiceClient,
   userId: string,
   last4: string | null | undefined,
 ): Promise<string | null> {
@@ -417,7 +430,7 @@ const REFUND_DEDUPE_DAYS = 3
  * unrelated charge (or creating a duplicate standalone-declined row).
  */
 export async function findRefundedTwin(
-  service: SupabaseClient,
+  service: ServiceClient,
   row: SmsRowData,
 ): Promise<{ id: string; category: string } | null> {
   const lo = new Date(row.day)
@@ -430,7 +443,7 @@ export async function findRefundedTwin(
     .from('expenses')
     .select('id, category')
     .eq('user_id', row.userId)
-    .eq('currency', row.currency)
+    .eq('currency', dbCurrency(row.currency))
     .eq('amount', row.amount)
     .not('refunded_at', 'is', null)
     .is('deleted_at', null)
@@ -453,7 +466,7 @@ export async function findRefundedTwin(
  * then the most recent charge. Returns null when nothing qualifies (→ fallback).
  */
 export async function matchOriginalExpense(
-  service: SupabaseClient,
+  service: ServiceClient,
   row: SmsRowData,
 ): Promise<{ id: string; category: string } | null> {
   const from = new Date(row.day)
@@ -466,7 +479,7 @@ export async function matchOriginalExpense(
     .from('expenses')
     .select('id, category, description')
     .eq('user_id', row.userId)
-    .eq('currency', row.currency)
+    .eq('currency', dbCurrency(row.currency))
     .eq('amount', row.amount)
     .is('refunded_at', null)
     .is('deleted_at', null)
@@ -489,7 +502,7 @@ export async function matchOriginalExpense(
 
 /** Stamps an existing expense as reversed. The updated_at trigger propagates it to clients. */
 export async function markExpenseRefunded(
-  service: SupabaseClient,
+  service: ServiceClient,
   expenseId: string,
   refundKind: 'refunded' | 'declined',
   day: string,
@@ -517,7 +530,7 @@ export async function markExpenseRefunded(
  * cards, no last4 match) returns `needsConfirm: true` and posts nothing.
  */
 export async function createSmsDebtPayment(
-  service: SupabaseClient,
+  service: ServiceClient,
   row: SmsRowData,
   opts: { fundingLast4?: string | null } = {},
 ): Promise<CreateSmsExpenseResult & { needsConfirm?: boolean }> {
@@ -563,7 +576,7 @@ export async function createSmsDebtPayment(
       user_id: row.userId,
       debt_id: debt.id,
       amount: row.amount,
-      currency: (debt.currency as string) ?? row.currency,
+      currency: dbCurrency((debt.currency as string) ?? row.currency),
       payment_date: row.day,
       payment_method_id: fundingPaymentMethodId,
       notes: null,
@@ -581,7 +594,7 @@ export async function createSmsDebtPayment(
       description: smsTitle(row) ?? 'Credit Card Payment',
       category: 'CC Payoff',
       amount: row.amount,
-      currency: row.currency,
+      currency: dbCurrency(row.currency),
       payment_method_id: fundingPaymentMethodId,
       is_debt_payment: true,
       linked_debt_payment_id: payRow.id,

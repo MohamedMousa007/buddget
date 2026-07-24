@@ -11,7 +11,7 @@
  * merely stops matching a minute later than it could have. Admin actions that change reach or
  * health should call `invalidateCuratedDbCache()` for immediate effect.
  */
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { ServiceClient } from '@/lib/supabase/service'
 import type { TemplateCandidate } from '@/lib/sms/templateScope'
 
 export const TEMPLATE_COLUMNS =
@@ -24,7 +24,7 @@ export function invalidateCuratedDbCache(): void {
   cache = null
 }
 
-export async function getCuratedDbTemplates(service: SupabaseClient): Promise<TemplateCandidate[]> {
+export async function getCuratedDbTemplates(service: ServiceClient): Promise<TemplateCandidate[]> {
   if (cache && Date.now() < cache.expiry) return cache.rows
   const { data } = await service
     .from('sms_tracking_templates_ai')

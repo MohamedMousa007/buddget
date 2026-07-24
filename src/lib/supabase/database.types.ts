@@ -1549,6 +1549,108 @@ export type Database = {
         }
         Relationships: []
       }
+      biometric_devices: {
+        Row: {
+          device_id: string
+          user_id: string
+          secret_hash: string
+          created_at: string
+          last_used_at: string | null
+        }
+        Insert: {
+          device_id: string
+          user_id: string
+          secret_hash: string
+          created_at?: string
+          last_used_at?: string | null
+        }
+        Update: {
+          device_id?: string
+          user_id?: string
+          secret_hash?: string
+          created_at?: string
+          last_used_at?: string | null
+        }
+        Relationships: []
+      }
+      sms_template_signals: {
+        Row: {
+          id: string
+          template_id: string
+          user_id: string
+          sms_log_id: string | null
+          signal_kind: string
+          field: string | null
+          old_value: string | null
+          new_value: string | null
+          verdict: string | null
+          adjudicated_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          template_id: string
+          user_id: string
+          sms_log_id?: string | null
+          signal_kind: string
+          field?: string | null
+          old_value?: string | null
+          new_value?: string | null
+          verdict?: string | null
+          adjudicated_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          template_id?: string
+          user_id?: string
+          sms_log_id?: string | null
+          signal_kind?: string
+          field?: string | null
+          old_value?: string | null
+          new_value?: string | null
+          verdict?: string | null
+          adjudicated_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      sms_corrections: {
+        Row: {
+          id: string
+          body_shape_key: string
+          redacted_body: string
+          corrected_fields: Json
+          source_template_id: string | null
+          source_signal_id: string | null
+          confidence: number | null
+          revoked_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          body_shape_key: string
+          redacted_body: string
+          corrected_fields: Json
+          source_template_id?: string | null
+          source_signal_id?: string | null
+          confidence?: number | null
+          revoked_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          body_shape_key?: string
+          redacted_body?: string
+          corrected_fields?: Json
+          source_template_id?: string | null
+          source_signal_id?: string | null
+          confidence?: number | null
+          revoked_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       sms_parse_log: {
         Row: {
           account_last4: string | null
@@ -2155,6 +2257,18 @@ export type Database = {
       increment_sms_template_match_count: {
         Args: { p_id: string }
         Returns: undefined
+      }
+      bump_sms_template_failure: {
+        Args: { p_template_id: string; p_hard?: boolean; p_reason?: string }
+        Returns: string
+      }
+      record_sms_template_shadow: {
+        Args: { p_template_id: string; p_agreed: boolean }
+        Returns: string
+      }
+      sms_templates_awaiting_adjudication: {
+        Args: { p_undo_grace_seconds?: number }
+        Returns: { template_id: string; pending: number }[]
       }
       learn_sms_sender_currency: {
         Args: {

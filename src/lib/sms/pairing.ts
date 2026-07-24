@@ -8,7 +8,7 @@
  * represented ONCE and never double-counts — soft-deleting a leg that was
  * mistakenly posted as income.
  */
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { ServiceClient } from '@/lib/supabase/service'
 import type { SmsExpenseKind } from './createSmsExpense'
 import {
   PAYMENT_BRANDS,
@@ -26,7 +26,7 @@ const PAIR_WINDOW_SECONDS = 300
  * always the user's own account, so it alone can't distinguish own vs external.)
  */
 export async function isOwnAccountTransfer(
-  service: SupabaseClient,
+  service: ServiceClient,
   userId: string,
   counterpartyLast4: string | null,
 ): Promise<boolean> {
@@ -71,7 +71,7 @@ interface StoredValueMethod {
  *  - names under 3 chars are too generic to match safely.
  */
 async function ownStoredValueMethods(
-  service: SupabaseClient,
+  service: ServiceClient,
   userId: string,
 ): Promise<StoredValueMethod[]> {
   const { data } = await service
@@ -109,7 +109,7 @@ async function ownStoredValueMethods(
  * For everything else the hit is unambiguous: nobody buys goods from their own wallet.
  */
 export async function isOwnTopUpTarget(
-  service: SupabaseClient,
+  service: ServiceClient,
   userId: string,
   merchant: string | null,
   body: string | null,
@@ -134,7 +134,7 @@ export async function isOwnTopUpTarget(
  * otherwise books it as income or a remittance exactly as before.
  */
 export async function namesOwnStoredValue(
-  service: SupabaseClient,
+  service: ServiceClient,
   userId: string,
   text: string | null,
 ): Promise<boolean> {
@@ -159,7 +159,7 @@ export async function namesOwnStoredValue(
  * `Currency Exchange`, and a `cc_payoff` sibling must stay a payoff.
  */
 export async function retagSiblingAsTransfer(
-  service: SupabaseClient,
+  service: ServiceClient,
   sibling: PairSibling,
 ): Promise<void> {
   if (!sibling.siblingExpenseId) return
@@ -200,7 +200,7 @@ export function transferFeeTolerance(amount: number): number {
  * loss, so the leg the bank sent first can land second.
  */
 export async function tryPairLeg(
-  service: SupabaseClient,
+  service: ServiceClient,
   params: {
     userId: string
     logId: string
@@ -251,8 +251,8 @@ export async function tryPairLeg(
     // Always offered; the RPC ignores it unless a cc_payoff is on one side of the pair, or the
     // registered-sibling fallback is in play.
     p_amount_tolerance: transferFeeTolerance(params.amount),
-    p_self_kind: params.kind ?? null,
-    p_reference: params.reference ?? null,
+    p_self_kind: params.kind ?? undefined,
+    p_reference: params.reference ?? undefined,
     p_require_registered_sibling: params.requireRegisteredSibling ?? false,
   })
   if (error) {
@@ -291,7 +291,7 @@ export interface CcPayoffFundingLeg {
  * account appears — the card bank's SMS carries the CARD's last4, not the source.
  */
 export async function reconcileCcPayoffFundingLeg(
-  service: SupabaseClient,
+  service: ServiceClient,
   sibling: PairSibling,
 ): Promise<CcPayoffFundingLeg> {
   const { data: log } = await service
@@ -342,7 +342,7 @@ export interface PayoffAttribution {
  * here. The result is identical whichever leg lands first.
  */
 export async function attributeFundingToPayoff(
-  service: SupabaseClient,
+  service: ServiceClient,
   sibling: PairSibling,
   fundingPaymentMethodId: string | null,
 ): Promise<PayoffAttribution> {
@@ -380,7 +380,7 @@ export async function attributeFundingToPayoff(
  *    current leg should post a single non-spend Transfer/FX expense for visibility.
  */
 export async function reconcileSibling(
-  service: SupabaseClient,
+  service: ServiceClient,
   sibling: PairSibling,
 ): Promise<{ needsPost: boolean }> {
   if (sibling.siblingIncomeId) {

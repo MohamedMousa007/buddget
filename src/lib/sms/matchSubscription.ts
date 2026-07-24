@@ -11,7 +11,7 @@
  * caller force-overrides the category to `Subscription`) and corrupts the subscription's
  * payment history.
  */
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { ServiceClient } from '@/lib/supabase/service'
 import { getDaysInMonth, parseISO } from 'date-fns'
 import { resolveBrandKeyFromMerchant } from '@/lib/constants/subscriptionCatalog'
 import { detectPlanChange } from '@/lib/subscriptions/planChange'
@@ -43,7 +43,7 @@ export function daysFromBillingDay(day: string, billingDay: number): number {
 }
 
 export async function matchSubscription(
-  service: SupabaseClient,
+  service: ServiceClient,
   params: {
     userId: string
     merchant: string | null

@@ -18,6 +18,7 @@ import { NextResponse, after } from 'next/server'
 import { z } from 'zod'
 import crypto from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import type { Database, Json } from '@/lib/supabase/database.types'
 import { SMS_PARSER_SYSTEM_PROMPT, MASKED_ACCOUNT_CLASS } from '@/lib/sms/aiParserPrompt'
 import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNativePush'
 import { matchCuratedPattern } from '@/lib/sms/patterns'
@@ -458,7 +459,7 @@ async function learnPattern(
       sender,
       regex_pattern: attempt.regex,
       template_sample: message.slice(0, 500),
-      mapping_rules: attempt.mapping as unknown as Record<string, unknown>,
+      mapping_rules: attempt.mapping as unknown as Json,
       ai_enabled: true,
       match_count: 0,
       avg_ai_confidence: parsed.confidence ?? null,
@@ -911,7 +912,8 @@ export async function POST(request: Request) {
   // a literal/known mapping, provisional otherwise. Best-effort, after response.
   if (senderKey && !addFailed && (postedSomething || tx.outcome === 'income_matched')) {
     const learnConfirmed = !currencyProvisional
-    const ccy = parsed.currency
+    // resolveCurrency guarantees a supported code; the DB column is an enum.
+    const ccy = parsed.currency as Database['public']['Enums']['currency_code']
     after(() => service.rpc('learn_sms_sender_currency', {
       p_user: userId, p_sender: senderKey, p_currency: ccy, p_confirmed: learnConfirmed,
     }))
@@ -1099,7 +1101,7 @@ export async function POST(request: Request) {
       const delivered = pushResult.ok && (pushResult.sent ?? 0) > 0
       await service.rpc('sms_mark_pushed', {
         p_log_id: logId,
-        p_result: pushResult,
+        p_result: pushResult as unknown as Json,
         p_delivered: delivered,
       })
       if (!delivered) console.error('[sms/parse] push not delivered', pushResult)
@@ -1116,7 +1118,7 @@ export async function POST(request: Request) {
         const delivered = result.ok && (result.sent ?? 0) > 0
         await service.rpc('sms_mark_pushed', {
           p_log_id: logId,
-          p_result: result,
+          p_result: result as unknown as Json,
           p_delivered: delivered,
         })
         if (!delivered) console.error('[sms/parse] push (after) not delivered', result)

@@ -9,7 +9,7 @@
  * from that table — so the system's own quality checks can never exhaust a user's 100/day
  * parsing budget. That property is load-bearing; do not make this function log a parse.
  */
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { ServiceClient } from '@/lib/supabase/service'
 import {
   ADJUDICATOR_PROMPT,
   buildAdjudicationPrompt,
@@ -44,7 +44,7 @@ export interface AdjudicationDeps {
  * request it is riding on.
  */
 export async function runAdjudication(
-  service: SupabaseClient,
+  service: ServiceClient,
   deps: AdjudicationDeps,
 ): Promise<{ adjudicated: number; counted: number }> {
   let adjudicated = 0
@@ -146,7 +146,7 @@ export async function runAdjudication(
 }
 
 async function markVerdict(
-  service: SupabaseClient,
+  service: ServiceClient,
   signals: SignalRow[],
   verdict: string,
 ): Promise<void> {

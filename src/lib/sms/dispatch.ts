@@ -14,7 +14,9 @@
  *
  * Used by both /api/sms/parse (auto) and /api/sms/confirm (user-confirmed).
  */
-import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js'
+import type { ServiceClient } from '@/lib/supabase/service'
+import type { Database } from '@/lib/supabase/database.types'
+import type {PostgrestError} from '@supabase/supabase-js'
 import {
   createSmsExpense,
   createSmsDebtPayment,
@@ -96,7 +98,7 @@ const MIN_FEE = 0.5
  * payoff leg in one arrival order and the funding leg in the other.
  */
 async function postTransferFee(
-  service: SupabaseClient,
+  service: ServiceClient,
   row: SmsRowData,
   pair: { fundingLast4: string | null; fundingAmount: number | null; payoffAmount: number | null },
 ): Promise<void> {
@@ -112,7 +114,8 @@ async function postTransferFee(
     description: 'Transfer fee',
     category: 'Other',
     amount: fee,
-    currency: row.currency,
+    // Validated upstream by resolveCurrency; the column is an enum.
+    currency: row.currency as Database['public']['Enums']['currency_code'],
     payment_method_id: await resolveExactPaymentMethod(service, row.userId, pair.fundingLast4),
     sms_log_id: row.logId ?? null,
   })
@@ -148,7 +151,7 @@ function extractIpnReference(body: string): string | null {
  * Shared by the wallet-movement block (step 0) and the IPN reference/fallback steps (1b/1c).
  */
 async function finalizeOwnTransferPair(
-  service: SupabaseClient,
+  service: ServiceClient,
   row: SmsRowData,
   sibling: PairSibling,
 ): Promise<SmsTxResult> {
@@ -173,7 +176,7 @@ async function finalizeOwnTransferPair(
 }
 
 export async function createSmsTransaction(
-  service: SupabaseClient,
+  service: ServiceClient,
   parsedRow: SmsRowData,
   opts: { exchangeRates: Record<string, number>; userConfirmed?: boolean },
 ): Promise<SmsTxResult> {
