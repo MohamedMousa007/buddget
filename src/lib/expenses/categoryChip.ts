@@ -28,6 +28,7 @@ const HEALTH = cat('health')
 const EDUCATION = cat('education')
 const SUBSCRIPTION = cat('subscription')
 const REMITTANCE = cat('remittance')
+const INSTAPAY = cat('#7C4DFF')
 const TRANSFER = cat('transfer')
 
 /** Keyed by normalized category (lowercase, spaces/hyphens → underscore). */
@@ -44,6 +45,7 @@ const MAP: Record<string, CategoryChipColors> = {
   education: EDUCATION,
   subscription: SUBSCRIPTION,
   remittance: REMITTANCE,
+  instapay: INSTAPAY,
   transfer: TRANSFER, atm_cash_withdrawal: TRANSFER, currency_exchange: TRANSFER, top_up: TRANSFER,
   installment: DEBT,
 }

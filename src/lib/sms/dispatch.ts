@@ -469,7 +469,7 @@ export async function createSmsTransaction(
       return {
         ...base('expense', kind),
         expenseId: res.expenseId,
-        category: mapKindToCategory(kind, row.categoryHint),
+        category: mapKindToCategory(kind, row.categoryHint, row.rawBody),
         error: res.error,
       }
     }

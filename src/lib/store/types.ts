@@ -28,6 +28,7 @@ export type ExpenseCategory =
   | 'Savings'
   | 'Debt'
   | 'Remittance'
+  | 'Instapay'
   | 'Other'
   // Added spend categories (Egypt/Gulf coverage)
   | 'Groceries'

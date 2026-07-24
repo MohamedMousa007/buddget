@@ -13,6 +13,7 @@ import {
   resolvePaymentBrandKey,
 } from '@/lib/payment/paymentMethodDefaults'
 import { normalizeMerchant } from './merchantNormalizer'
+import { resolveMerchantCategory, rememberMerchantCategory } from './merchantCategoryCache'
 
 export type SmsExpenseKind =
   | 'purchase' | 'online_purchase' | 'atm_withdrawal'
@@ -32,9 +33,22 @@ function dbCurrency(c: string): Database['public']['Enums']['currency_code'] {
   return c as Database['public']['Enums']['currency_code']
 }
 
+/**
+ * Egyptian InstaPay (IPN) markers — English "IPN", Arabic "تحويل لحظي" (instant transfer), or
+ * the brand name. By the time a row is categorised its kind is settled: own-account IPN has
+ * already been reclassified to `own_transfer`, so an `instant_transfer_out` carrying these
+ * markers is a genuine send over InstaPay.
+ */
+const EGYPTIAN_IPN = /\bIPN\b|تحويل\s+لحظ[يى]|instapay/i
+
+export function isEgyptianInstapay(rawBody: string | null | undefined): boolean {
+  return !!rawBody && EGYPTIAN_IPN.test(rawBody)
+}
+
 export function mapKindToCategory(
   kind: SmsExpenseKind,
   categoryHint: string | null,
+  rawBody?: string | null,
 ): ExpenseCategory {
   // Money-movement kinds map to fixed non-spend categories (see categoryMeta).
   if (kind === 'atm_withdrawal') return 'ATM Cash Withdrawal'
@@ -42,7 +56,11 @@ export function mapKindToCategory(
   if (kind === 'installment_payment') return 'Installment'
   if (kind === 'own_transfer') return 'Transfer'
   if (kind === 'currency_exchange') return 'Currency Exchange'
-  if (kind === 'instant_transfer_out') return 'Remittance' // external person — still spend
+  if (kind === 'instant_transfer_out') {
+    // An external send — still spend. In Egypt it almost always rides InstaPay (IPN); label it
+    // as such so it's instantly recognisable. Non-IPN / international sends stay 'Remittance'.
+    return isEgyptianInstapay(rawBody) ? 'Instapay' : 'Remittance'
+  }
   const raw = (categoryHint ?? '').toLowerCase()
   if (raw.includes('rent') || raw.includes('housing')) return 'Rent'
   if (raw.includes('utilit') || raw.includes('electric') || raw.includes('water bill') || raw.includes('internet') || raw.includes('telecom') || raw.includes('mobile bill')) return 'Utilities'
@@ -267,7 +285,20 @@ export async function createSmsExpense(
           sender: row.sender,
           bankName: row.bankName,
         })
-  const mappedCategory = row.categoryOverride ?? mapKindToCategory(row.kind, row.categoryHint)
+  let mappedCategory = row.categoryOverride ?? mapKindToCategory(row.kind, row.categoryHint, row.rawBody)
+  // Purchases are the only merchant-bearing spend kind, and curated/template tiers hand them
+  // over with no categoryHint → they default to 'Other'. Fill from the shared merchant memory
+  // (catalog + learned cache); when the AI DID name a category, feed it back so the next
+  // curated/template hit on this merchant is categorised for free. Keyed on `title`, the same
+  // string the stored description (and the user-edit trigger) uses.
+  if (row.kind === 'purchase' || row.kind === 'online_purchase') {
+    if (mappedCategory === 'Other') {
+      const learned = await resolveMerchantCategory(service, title)
+      if (learned) mappedCategory = learned
+    } else if (row.categoryHint) {
+      await rememberMerchantCategory(service, title, mappedCategory, 'ai')
+    }
+  }
 
   const { data, error } = await service
     .from('expenses')

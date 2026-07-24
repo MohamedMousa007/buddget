@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      merchant_categories: {
+        Row: {
+          merchant_key: string
+          category: Database["public"]["Enums"]["expense_category"]
+          source: string
+          sample_merchant: string | null
+          hit_count: number
+          updated_at: string
+        }
+        Insert: {
+          merchant_key: string
+          category: Database["public"]["Enums"]["expense_category"]
+          source?: string
+          sample_merchant?: string | null
+          hit_count?: number
+          updated_at?: string
+        }
+        Update: {
+          merchant_key?: string
+          category?: Database["public"]["Enums"]["expense_category"]
+          source?: string
+          sample_merchant?: string | null
+          hit_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       api_rate_limits: {
         Row: {
           hits: number
@@ -2129,6 +2156,15 @@ export type Database = {
         Args: { p_subscription_id: string }
         Returns: undefined
       }
+      upsert_merchant_category: {
+        Args: {
+          p_key: string
+          p_category: Database["public"]["Enums"]["expense_category"]
+          p_source: string
+          p_sample: string
+        }
+        Returns: undefined
+      }
       check_email_exists: { Args: { p_email: string }; Returns: boolean }
       check_email_status: { Args: { p_email: string }; Returns: Json }
       check_sms_promotion_eligibility: {
@@ -2300,6 +2336,7 @@ export type Database = {
         | "Savings"
         | "Debt"
         | "Remittance"
+        | "Instapay"
         | "Other"
         | "Groceries"
         | "Fuel"
@@ -2561,6 +2598,7 @@ export const Constants = {
         "Savings",
         "Debt",
         "Remittance",
+        "Instapay",
         "Other",
         "Groceries",
         "Fuel",

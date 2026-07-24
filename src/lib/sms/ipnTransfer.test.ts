@@ -153,7 +153,7 @@ describe('IPN own-account transfer — reference match (1b)', () => {
     const svc = makeService(state)
     const a = await createSmsTransaction(svc, outLeg(), opts)
     expect(a.kind).toBe('instant_transfer_out')
-    expect(state.expenses[0].category).toBe('Remittance') // provisional spend
+    expect(state.expenses[0].category).toBe('Instapay') // provisional spend (Egyptian IPN)
     persist(state, outLeg(), a)
 
     const b = await createSmsTransaction(svc, inLeg(), opts)
@@ -183,9 +183,9 @@ describe('IPN own-account transfer — registered fee-margin fallback (1c)', () 
     persist(state, inLeg({ amount: 2000, rawBody: IN_NOREF }), a)
 
     const b = await createSmsTransaction(svc, outLeg({ amount: 2500, rawBody: 'Account 0001 debited IPN outward transfer EGP 2500 to Mohamed Mousa' }), opts)
-    expect(b.outcome).toBe('expense') // stayed a Remittance
+    expect(b.outcome).toBe('expense') // stayed a spend send (Egyptian IPN → Instapay)
     expect(state.incomes.filter((i) => !i.deleted)).toHaveLength(1) // inbound stays income
-    expect(state.expenses.filter((e) => !e.deleted && e.category === 'Remittance')).toHaveLength(1)
+    expect(state.expenses.filter((e) => !e.deleted && e.category === 'Instapay')).toHaveLength(1)
   })
 
   it('does not fire when the sibling account is not registered', async () => {
@@ -201,13 +201,14 @@ describe('IPN own-account transfer — registered fee-margin fallback (1c)', () 
 })
 
 describe('IPN own-account transfer — guards', () => {
-  it('a real remittance to a friend (no inbound leg) stays a Remittance', async () => {
+  it('a real send to a friend (no inbound leg) stays a spend send, not a Transfer', async () => {
     const svc = makeService(state)
     const res = await createSmsTransaction(svc, outLeg(), opts)
     expect(res.outcome).toBe('expense')
     const live = state.expenses.filter((e) => !e.deleted)
     expect(live).toHaveLength(1)
-    expect(live[0].category).toBe('Remittance')
+    // Egyptian IPN body → Instapay (still a spend category, NOT the non-spend own-account Transfer).
+    expect(live[0].category).toBe('Instapay')
   })
 
   it('never claims a cc_payoff sibling, even on the same reference', async () => {

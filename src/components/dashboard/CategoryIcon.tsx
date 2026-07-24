@@ -15,6 +15,7 @@ import {
   PiggyBank,
   CreditCard,
   Send,
+  Zap,
   Layers,
   Wallet,
   Fuel,
@@ -64,6 +65,7 @@ export function CategoryIcon({ category, className }: CategoryIconProps) {
   if (key === 'cc_payoff') return <CreditCard className={c} />
   if (key === 'atm_cash_withdrawal' || key === 'atm') return <Banknote className={c} />
   if (key === 'currency_exchange') return <ArrowLeftRight className={c} />
+  if (key === 'instapay') return <Zap className={c} />
   if (key === 'remittance' || key === 'transfer') return <Send className={c} />
   if (key === 'top_up') return <WalletCards className={c} />
   if (key === 'installment') return <CalendarClock className={c} />

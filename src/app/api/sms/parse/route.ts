@@ -39,6 +39,8 @@ import { isNonTransaction } from '@/lib/sms/patterns/preFilter'
 import { checkAndAutoPromote } from '@/lib/sms/promotionChecker'
 import { lookupKeys, effectiveSender, bodyShapeKey } from '@/lib/sms/routingKey'
 import { createSmsTransaction, type SmsTxResult } from '@/lib/sms/dispatch'
+import { rememberMerchantCategory } from '@/lib/sms/merchantCategoryCache'
+import type { ExpenseCategory } from '@/lib/store/types'
 import { DEFAULT_MARKET_RATES } from '@/lib/store/defaultFinanceData'
 import { resolveCurrency } from '@/lib/sms/currencyResolver'
 import { extractKeywords } from '@/lib/sms/keywordExtractor'
@@ -903,6 +905,35 @@ export async function POST(request: Request) {
   }, { exchangeRates: DEFAULT_MARKET_RATES })
 
   const { expenseId, incomeId, debtPaymentId } = tx
+
+  // A purchase the curated/template tiers matched but couldn't categorise (AI never saw it, and
+  // neither catalog nor learned cache knew the merchant) lands as 'Other'. Categorise it once, in
+  // the background, and cache the answer globally so it's instant for everyone next time. Skipped
+  // for ai_new — that tier already had its category shot from the full parser prompt.
+  // dispatch surfaces only fixed categories (Transfer/CC Payoff/Subscription…) and returns null
+  // for a plain purchase — the applied category lives on the row — so the Other check reads the DB
+  // inside after() rather than trusting tx.category.
+  const geminiKey = process.env.GEMINI_API_KEY?.trim()
+  if (geminiKey && expenseId && parseMethod !== 'ai_new' &&
+      (tx.kind === 'purchase' || tx.kind === 'online_purchase')) {
+    after(async () => {
+      try {
+        const { data: exp } = await service.from('expenses')
+          .select('description, category').eq('id', expenseId).maybeSingle()
+        // Non-Other means catalog or the learned cache already categorised it in createSmsExpense.
+        if (!exp || exp.category !== 'Other') return
+        const merchant = (exp.description as string | null) ?? parsed.merchant
+        if (!merchant) return
+        const cat = await aiCategorizeMerchant(geminiKey, merchant, message)
+        if (!cat) return
+        await service.from('expenses').update({ category: cat }).eq('id', expenseId)
+        await rememberMerchantCategory(service, merchant, cat, 'ai')
+      } catch (e) {
+        console.warn('[sms/parse] merchant categorise failed', e)
+      }
+    })
+  }
+
   const isIncome = tx.outcome === 'income'
   // Some outcomes intentionally post no row (paired transfer leg / matched salary).
   const intentionalNoPost =
@@ -1425,6 +1456,50 @@ async function fetchCorrectionExemplar(
       .maybeSingle()
     if (!data?.corrected_fields) return null
     return `A user previously corrected an automated parse of this same message format. For a message shaped like:\n${data.redacted_body}\nthe correct extraction was:\n${JSON.stringify(data.corrected_fields)}\nApply the same reading here unless this message plainly differs.`
+  } catch {
+    return null
+  }
+}
+
+/** Spend categories the merchant categoriser may return (money-movement kinds are handled by kind). */
+const MERCHANT_CATEGORY_CHOICES = [
+  'Rent', 'Transport', 'Food', 'Groceries', 'Fuel', 'Health', 'Shopping', 'Education',
+  'Utilities', 'Subscription', 'Enjoyment', 'Other',
+] as const
+
+/**
+ * Ask the model for a merchant's spending category — used only when catalog + learned cache both
+ * miss, so it runs at most once per never-seen merchant (the answer is then cached globally).
+ * Returns null on any failure or an unusable answer; the caller leaves the row as 'Other'.
+ */
+async function aiCategorizeMerchant(
+  apiKey: string, merchant: string, rawBody: string,
+): Promise<ExpenseCategory | null> {
+  const prompt =
+    `Classify this merchant into ONE spending category for a personal-finance app used in ` +
+    `Egypt and the Gulf. Reply as JSON {"category":"<one of the list>"}.\n` +
+    `Categories: ${MERCHANT_CATEGORY_CHOICES.join(', ')}.\n` +
+    `Use "Other" only if genuinely unclassifiable.\n` +
+    `Merchant: ${merchant}\nSMS (context): ${rawBody.slice(0, 300)}`
+  try {
+    const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(15_000),
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0, responseMimeType: 'application/json', thinkingConfig: { thinkingBudget: 0 } },
+      }),
+    })
+    if (!res.ok) return null
+    const payload = (await res.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> }
+    const raw = payload.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
+    const json = raw ? extractJson(raw) : null
+    if (!json) return null
+    const cat = (JSON.parse(json) as { category?: string }).category
+    return cat && (MERCHANT_CATEGORY_CHOICES as readonly string[]).includes(cat) && cat !== 'Other'
+      ? (cat as ExpenseCategory)
+      : null
   } catch {
     return null
   }
