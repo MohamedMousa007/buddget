@@ -10,6 +10,34 @@ interface Props {
   admin: AdminPanelModel
 }
 
+/**
+ * Reach. `Curated DB` applies to every user; `Template` only to the users who contributed it and
+ * is still earning the cross-user agreement that promotes it.
+ */
+const TIER_CHIP: Record<string, { label: string; cls: string }> = {
+  curated_db: { label: 'Curated DB', cls: 'border-teal-500/30 bg-teal-500/10 text-teal-400' },
+  template:   { label: 'Template',   cls: 'border-blue-500/30 bg-blue-500/10 text-blue-400' },
+}
+
+/**
+ * Health. `quarantined` still matches but its result is NOT used — the SMS goes to AI and the
+ * two are compared until the template is exonerated or retired.
+ */
+const STATUS_CHIP: Record<string, { label: string; cls: string; title: string }> = {
+  active:      { label: 'Active',      cls: 'border-green-500/30 bg-green-500/10 text-green-400', title: 'Parsing normally' },
+  quarantined: { label: 'Quarantined', cls: 'border-amber-500/30 bg-amber-500/10 text-amber-400', title: 'Shadow mode — result unused while AI decides whether to exonerate or retire it' },
+  retired:     { label: 'Retired',     cls: 'border-red-500/30 bg-red-500/10 text-[var(--color-brand-red)]', title: 'Never matched again; a replacement is learned from the correction' },
+  exported:    { label: 'In code',     cls: 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]', title: 'Now lives in the code patterns; the DB row is kept for history' },
+}
+
+type TemplateFilter = 'all' | 'curated_db' | 'template' | 'unhealthy'
+
+/** Failures as a share of the matches this template actually served (never an absolute count). */
+function failureRate(tpl: SmsTemplateRow): number | null {
+  if (!tpl.match_count) return null
+  return tpl.failure_count / tpl.match_count
+}
+
 export function AdminSmsTemplatesSection({ admin }: Props) {
   const {
     smsTemplates, smsTemplatesLoading, loadSmsTemplates,
@@ -17,8 +45,16 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
     keywordPool, senderPool, keywordPoolLoading, loadKeywordPool,
   } = admin
 
+  const [filter, setFilter] = useState<TemplateFilter>('all')
   const [showPool, setShowPool] = useState(false)
   const openPool = () => { setShowPool(true); void loadKeywordPool() }
+
+  const visible = smsTemplates.filter((t) =>
+    filter === 'all' ? true
+    : filter === 'unhealthy' ? t.status !== 'active'
+    : t.tier === filter,
+  )
+  const unhealthyCount = smsTemplates.filter((t) => t.status !== 'active').length
 
   const allEnabled  = smsTemplates.length > 0 && smsTemplates.every((t) => t.ai_enabled)
   const allDisabled = smsTemplates.length > 0 && smsTemplates.every((t) => !t.ai_enabled)
@@ -75,8 +111,31 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
             SMS Parse Templates
           </h2>
           <p className="text-xs text-[var(--color-brand-text-muted)] mt-0.5">
-            Learned regex patterns that bypass Gemini for known bank SMS formats.
+            The supervised half of the funnel: Fully Curated (code) &rarr; Curated DB (global)
+            &rarr; Template (author-scoped) &rarr; AI. Templates earn global reach by agreeing
+            with independent users&rsquo; parses, and lose it to the health signals.
           </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {([
+              ['all', `All (${smsTemplates.length})`],
+              ['curated_db', 'Curated DB'],
+              ['template', 'Template'],
+              ['unhealthy', `Needs attention (${unhealthyCount})`],
+            ] as Array<[TemplateFilter, string]>).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setFilter(key)}
+                className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold transition-colors ${
+                  filter === key
+                    ? 'border-[var(--color-brand-red)]/40 bg-[var(--color-brand-red)]/10 text-[var(--color-brand-red)]'
+                    : 'border-[var(--color-brand-border)] text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-secondary)]'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {masterLabel && (
@@ -241,20 +300,34 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
             <thead>
               <tr className="border-b border-[var(--color-brand-border)]">
                 <th className="text-left py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Sender</th>
+                <th className="text-left py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Stage</th>
                 <th className="text-left py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Sample</th>
                 <th className="text-left py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Regex</th>
                 <th className="text-center py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Matches</th>
                 <th className="text-center py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Users</th>
+                <th className="text-center py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Health</th>
                 <th className="text-center py-2 pr-4 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Active</th>
                 <th className="text-center py-2 font-semibold text-[var(--color-brand-text-muted)] uppercase tracking-wide text-[10px]">Delete</th>
               </tr>
             </thead>
             <tbody>
-              {smsTemplates.map((tpl) => (
+              {visible.map((tpl) => (
                 <tr key={tpl.id} className="border-b border-[var(--color-brand-border)] hover:bg-[var(--color-brand-elevated)] transition-colors">
                   {/* Sender */}
                   <td className="py-2.5 pr-4 font-mono text-[var(--color-brand-text-primary)] whitespace-nowrap">
                     {tpl.sender}
+                  </td>
+
+                  {/* Reach: which users this template applies to. */}
+                  <td className="py-2.5 pr-4 whitespace-nowrap">
+                    {(() => {
+                      const c = TIER_CHIP[tpl.tier] ?? { label: tpl.tier, cls: 'border-[var(--color-brand-border)] text-[var(--color-brand-text-muted)]' }
+                      return (
+                        <span className={`inline-block rounded-full border px-2 py-0.5 text-[10px] font-bold ${c.cls}`}>
+                          {c.label}
+                        </span>
+                      )
+                    })()}
                   </td>
 
                   {/* Sample */}
@@ -329,6 +402,37 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
                     >
                       {tpl.unique_user_count}
                     </span>
+                  </td>
+
+                  {/* Health: the state machine that quarantines and retires bad templates. */}
+                  <td className="py-2.5 pr-4 text-center whitespace-nowrap">
+                    {(() => {
+                      const c = STATUS_CHIP[tpl.status] ?? { label: tpl.status, cls: 'border-[var(--color-brand-border)] text-[var(--color-brand-text-muted)]', title: '' }
+                      const rate = failureRate(tpl)
+                      return (
+                        <span className="inline-flex items-center gap-1">
+                          <span className={`inline-block rounded-full border px-2 py-0.5 text-[10px] font-bold ${c.cls}`} title={c.title}>
+                            {c.label}
+                          </span>
+                          {tpl.hard_fail && (
+                            <span
+                              className="inline-block rounded-full border border-red-500/30 bg-red-500/10 px-1.5 py-0.5 text-[9px] font-bold text-[var(--color-brand-red)]"
+                              title="A hard oracle fired — the bank's own ledger sign contradicted this template, or it captured a constant instead of the amount"
+                            >
+                              hard
+                            </span>
+                          )}
+                          {tpl.failure_count > 0 && (
+                            <span
+                              className="text-[10px] font-medium text-[var(--color-brand-text-muted)]"
+                              title={`${tpl.failure_count} failure(s) over ${tpl.match_count} matches`}
+                            >
+                              {rate !== null ? `${Math.round(rate * 100)}%` : tpl.failure_count}
+                            </span>
+                          )}
+                        </span>
+                      )
+                    })()}
                   </td>
 
                   {/* AI Active toggle */}
