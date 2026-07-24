@@ -21,7 +21,7 @@ interface Props {
 export function AdminSmsTemplatesSection({ admin }: Props) {
   const {
     smsTemplates, smsTemplatesLoading, loadSmsTemplates,
-    updateSmsTemplate, deleteSmsTemplate, bulkToggleSmsTemplates,
+    updateSmsTemplate, deleteSmsTemplate, setTemplateTier, bulkToggleSmsTemplates,
     keywordPool, senderPool, keywordPoolLoading, loadKeywordPool,
   } = admin
 
@@ -410,13 +410,37 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
                     {tpl.sender}
                   </td>
 
-                  {/* Reach: which users this template applies to. */}
+                  {/* Reach: which users this template applies to, with a manual override. */}
                   <td className="py-2.5 pr-4 whitespace-nowrap">
                     {(() => {
                       const c = tierChip(tpl.tier)
+                      const canPromote = tpl.tier === 'template' && tpl.status === 'active'
+                      const canDemote = tpl.tier === 'curated_db'
                       return (
-                        <span className={`inline-block rounded-full border px-2 py-0.5 text-[10px] font-bold ${c.cls}`}>
-                          {c.label}
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className={`inline-block rounded-full border px-2 py-0.5 text-[10px] font-bold ${c.cls}`}>
+                            {c.label}
+                          </span>
+                          {canPromote && (
+                            <button
+                              type="button"
+                              onClick={() => void setTemplateTier(tpl.id, tpl.sender, 'promote')}
+                              className="text-[10px] rounded border border-teal-500/30 px-1.5 py-0.5 text-teal-400 hover:bg-teal-500/10"
+                              title="Promote to global Curated DB now"
+                            >
+                              ▲
+                            </button>
+                          )}
+                          {canDemote && (
+                            <button
+                              type="button"
+                              onClick={() => void setTemplateTier(tpl.id, tpl.sender, 'demote')}
+                              className="text-[10px] rounded border border-[var(--color-brand-border)] px-1.5 py-0.5 text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+                              title="Demote back to author-scoped Template"
+                            >
+                              ▼
+                            </button>
+                          )}
                         </span>
                       )
                     })()}

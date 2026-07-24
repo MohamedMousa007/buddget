@@ -241,6 +241,31 @@ export function useAdminPanel() {
     }
   }, [sessionPin])
 
+  /** Manual reach change: promote a supervised Template to global Curated DB, or demote back. */
+  const setTemplateTier = useCallback(async (
+    id: string,
+    sender: string,
+    op: 'promote' | 'demote',
+  ): Promise<void> => {
+    try {
+      const res = await fetch('/api/admin/sms-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: sessionPin, op, id, sender }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setSmsTemplates((prev) =>
+          prev.map((t) => (t.id === id ? { ...t, tier: op === 'promote' ? 'curated_db' : 'template' } : t)),
+        )
+      } else {
+        setPlatformMessage(data.error || `${op} failed`)
+      }
+    } catch {
+      setPlatformMessage('Network error')
+    }
+  }, [sessionPin])
+
   const deleteSmsTemplate = useCallback(async (id: string): Promise<void> => {
     try {
       const res = await fetch('/api/admin/sms-templates', {
@@ -413,6 +438,7 @@ export function useAdminPanel() {
     keywordPoolLoading,
     loadKeywordPool,
     updateSmsTemplate,
+    setTemplateTier,
     deleteSmsTemplate,
     bulkToggleSmsTemplates,
     promotionConfig,
