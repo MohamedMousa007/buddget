@@ -95,6 +95,32 @@ export function partitionByScope(
   return { usable, validationOnly }
 }
 
+/** A quarantined template's extraction, shaped for a shadow comparison. */
+export interface ShadowMatch {
+  templateId: string
+  fields: ObjectiveFields
+}
+
+/**
+ * Shadow-mode verdicts: does each quarantined template agree with the independent reading?
+ *
+ * Returns [] — recording nothing — when `selfReferential` is true. That flag marks the C4
+ * fallback, where the "independent reading" IS one quarantined template's own output: comparing
+ * a template against itself always agrees, and would exonerate it with no real check. There is
+ * no independent parse to judge against, so no verdict may be recorded.
+ */
+export function computeShadowVerdicts(
+  selfReferential: boolean,
+  shadowMatches: ReadonlyArray<ShadowMatch>,
+  independentReading: ObjectiveFields,
+): Array<{ templateId: string; agreed: boolean }> {
+  if (selfReferential) return []
+  return shadowMatches.map((m) => ({
+    templateId: m.templateId,
+    agreed: objectiveFieldsAgree(m.fields, independentReading),
+  }))
+}
+
 export type ValidationOutcome =
   /** The regex matched this independent SMS and agreed — evidence of correctness. */
   | { templateId: string; result: 'agreed' }

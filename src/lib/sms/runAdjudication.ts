@@ -25,7 +25,7 @@ const MAX_TEMPLATES_PER_RUN = 2
 
 interface SignalRow {
   id: string
-  template_id: string
+  template_id: string | null
   sms_log_id: string | null
   signal_kind: 'objective_edit' | 'delete' | 'reported'
   field: string | null
@@ -138,11 +138,90 @@ export async function runAdjudication(
         }
       }
     }
+
+    // AI-only signals: a user corrected a row the AI parsed before any template existed for its
+    // shape. There is no template to blame, so the only product is a correction exemplar keyed
+    // by body shape — which then guides future AI parses so the mistake is not repeated.
+    adjudicated += await adjudicateAiOnly(service, deps)
   } catch (e) {
     console.warn('[sms/adjudication] run failed', e)
   }
 
   return { adjudicated, counted }
+}
+
+/**
+ * Adjudicates signals with no template (AI-only rows).
+ *
+ * Each is judged individually — there is no template reputation to protect, so no threshold is
+ * needed, and the adjudicator itself filters a mere preference edit from a real parse_error. On
+ * a parse_error it stores an exemplar (no template attribution, no failure bump).
+ */
+async function adjudicateAiOnly(service: ServiceClient, deps: AdjudicationDeps): Promise<number> {
+  // No threshold: an AI-only signal blames no template, so there is nothing to protect from a
+  // single call, and the adjudicator itself rejects a preference edit. Only the undo grace applies.
+  const graceCutoff = new Date(Date.now() - 120_000).toISOString()
+  const { data: signalRows } = await service
+    .from('sms_template_signals')
+    .select('id, template_id, sms_log_id, signal_kind, field, old_value, new_value')
+    .is('template_id', null)
+    .is('verdict', null)
+    .lt('created_at', graceCutoff)
+    .order('created_at', { ascending: true })
+    .limit(MAX_TEMPLATES_PER_RUN)
+
+  const signals = (signalRows ?? []) as SignalRow[]
+  let done = 0
+
+  for (const sig of signals) {
+    if (!sig.sms_log_id) {
+      await markVerdict(service, [sig], 'unclear')
+      continue
+    }
+    const { data: log } = await service
+      .from('sms_parse_log')
+      .select('raw_body, amount, currency, kind, account_last4, received_at')
+      .eq('id', sig.sms_log_id)
+      .maybeSingle()
+    if (!log?.raw_body) {
+      await markVerdict(service, [sig], 'unclear')
+      continue
+    }
+
+    const input: AdjudicationInput = {
+      body: log.raw_body as string,
+      extracted: {
+        amount: (log.amount as number | null) ?? null,
+        currency: (log.currency as string | null) ?? null,
+        kind: (log.kind as string | null) ?? null,
+        last4: (log.account_last4 as string | null) ?? null,
+        date: ((log.received_at as string | null) ?? '').slice(0, 10) || null,
+      },
+      changes: [{ signalKind: sig.signal_kind, field: sig.field, from: sig.old_value, to: sig.new_value }],
+    }
+
+    const raw = await deps.askModel(ADJUDICATOR_PROMPT, buildAdjudicationPrompt(input))
+    if (raw === null) continue // model unavailable — leave pending
+
+    const result = parseAdjudication(raw)
+    await markVerdict(service, [sig], result.verdict)
+    done++
+
+    if (result.verdict === 'parse_error' && result.corrected) {
+      const shape = bodyShapeKey(input.body)
+      if (shape) {
+        await service.from('sms_corrections').insert({
+          body_shape_key: shape,
+          redacted_body: redactBody(input.body),
+          corrected_fields: result.corrected,
+          source_template_id: null,
+          source_signal_id: sig.id,
+          confidence: result.confidence,
+        })
+      }
+    }
+  }
+  return done
 }
 
 /**

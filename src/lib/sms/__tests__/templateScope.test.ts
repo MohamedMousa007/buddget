@@ -4,6 +4,7 @@ import {
   objectiveFieldsAgree,
   validateAgainstAiParse,
   behaviourallyEquivalent,
+  computeShadowVerdicts,
   type TemplateCandidate,
 } from '../templateScope'
 import type { MappingRules } from '../templateApply'
@@ -132,5 +133,37 @@ describe('behaviourallyEquivalent — merge cosmetic variants, not distinct temp
       sample: 'Money Added amount: 64.14',
     }
     expect(behaviourallyEquivalent(a, unrelated)).toBe(false)
+  })
+})
+
+describe('computeShadowVerdicts — C4 must not self-exonerate', () => {
+  const ofx = (amount: number) => ({ amount, currency: 'EGP', kind: 'purchase', last4: '2016' })
+
+  it('records nothing when the reading is the quarantined template itself (C4)', () => {
+    // The C4 bug: parsed = the quarantined template's own output, so a comparison always agrees.
+    const shadow = [{ templateId: 'q', fields: ofx(100) }]
+    expect(computeShadowVerdicts(true, shadow, ofx(100))).toEqual([])
+  })
+
+  it('agrees when the quarantined template matches an independent reading', () => {
+    const out = computeShadowVerdicts(false, [{ templateId: 'q', fields: ofx(100) }], ofx(100))
+    expect(out).toEqual([{ templateId: 'q', agreed: true }])
+  })
+
+  it('disagrees when the quarantined template extracts something else', () => {
+    const out = computeShadowVerdicts(false, [{ templateId: 'q', fields: ofx(999) }], ofx(100))
+    expect(out).toEqual([{ templateId: 'q', agreed: false }])
+  })
+
+  it('handles several quarantined templates in one bucket', () => {
+    const out = computeShadowVerdicts(
+      false,
+      [{ templateId: 'a', fields: ofx(100) }, { templateId: 'b', fields: ofx(50) }],
+      ofx(100),
+    )
+    expect(out).toEqual([
+      { templateId: 'a', agreed: true },
+      { templateId: 'b', agreed: false },
+    ])
   })
 })

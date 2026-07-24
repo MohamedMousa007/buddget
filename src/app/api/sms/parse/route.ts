@@ -31,7 +31,7 @@ import {
   partitionByScope,
   validateAgainstAiParse,
   behaviourallyEquivalent,
-  objectiveFieldsAgree,
+  computeShadowVerdicts,
   extractionToObjective,
   type TemplateCandidate,
 } from '@/lib/sms/templateScope'
@@ -56,6 +56,10 @@ const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GE
 const RATE_LIMIT_PER_DAY = 100
 const CONFIRM_CONFIDENCE = 0.6
 const PATTERN_LEARN_CONFIDENCE = 0.9
+// Share of parses that trigger the background health sweep (adjudication + zero-variance).
+// A maintenance pass, not per-message logic — at any real volume this still fires many times a
+// day, while keeping the sweep off the hot path of the other ~90%.
+const HEALTH_SWEEP_SAMPLE_RATE = 0.1
 
 const bodySchema = z.object({
   message: z.string().min(1).max(2000),
@@ -815,7 +819,12 @@ export async function POST(request: Request) {
   // Which stage of the journey parsed this row — stamped for the admin audit loop.
   // Fully Curated (code) -> Curated DB (global) -> Template (author-scoped) -> AI - new SMS.
   const parseMethod: 'fully_curated' | 'curated_db' | 'template' | 'ai_new' =
-    curated ? 'fully_curated' : staticMatch ? staticMatch.tier : 'ai_new'
+    curated ? 'fully_curated'
+    : staticMatch ? staticMatch.tier
+    // A C4 fallback was produced by a (quarantined) template, not the AI tier — label it as such
+    // so the admin panel doesn't misattribute it to AI.
+    : quarantinedFallback ? 'template'
+    : 'ai_new'
 
   // Stable sender identity (hotline → sender → bank) for currency learning + pooling.
   const senderKey = effectiveSender(sender, message, parsed.bank_name)
@@ -1203,28 +1212,33 @@ export async function POST(request: Request) {
   }
 
   // Shadow mode. A quarantined template still matched this message, but its result was NOT
-  // used — the SMS was parsed by AI instead. Comparing the two is what decides its fate:
-  // consecutive agreements restore it to its previous tier, one disagreement retires it. The
-  // user sees nothing either way, and the cost is bounded to a handful of comparisons.
+  // used — the SMS was parsed independently (AI, or a trusted active/curated template). Comparing
+  // the two is what decides its fate: consecutive agreements restore it to its previous tier, one
+  // disagreement retires it. The user sees nothing either way.
+  //
+  // Skipped when a quarantined template was the ONLY reader and stood in as the C4 fallback:
+  // there `parsed` IS that template's own output, so a comparison would be the template against
+  // itself — always agreeing — and would exonerate it with no independent check at all.
   if (shadowMatches.length > 0 && parsed.is_transaction && parsed.amount) {
-    const aiFields = {
+    const independentReading = {
       amount: parsed.amount,
       currency: parsed.currency,
       kind: tx.kind ?? parsed.kind,
       last4: cleanLast4,
     }
-    const verdicts = shadowMatches.map((m) => ({
-      templateId: m.templateId,
-      agreed: objectiveFieldsAgree(
-        {
+    const verdicts = computeShadowVerdicts(
+      quarantinedFallback,
+      shadowMatches.map((m) => ({
+        templateId: m.templateId,
+        fields: {
           amount: m.parsed.amount,
           currency: m.parsed.currency,
           kind: m.parsed.kind,
           last4: m.parsed.detectedAccountLast4,
         },
-        aiFields,
-      ),
-    }))
+      })),
+      independentReading,
+    )
     after(async () => {
       for (const v of verdicts) {
         try {
@@ -1239,13 +1253,18 @@ export async function POST(request: Request) {
     })
   }
 
-  // Cross-user validation. This user's SMS reached the AI tier, so the AI's reading is an
-  // INDEPENDENT second opinion on every supervised template in the bucket that this user is not
-  // a contributor to. A template that matches and agrees has just proved itself on someone
-  // else's real message — which is the evidence `min_unique_users` gates promotion on, and the
-  // only kind obtainable, since regex generation is too non-deterministic for byte-identity to
-  // ever recur. The AI call was already paid for; the second opinion is free.
-  if (validationCandidates.length > 0 && parsed.is_transaction && parsed.amount) {
+  // Cross-user validation — the evidence `min_unique_users` gates promotion on.
+  //
+  // Only when THIS SMS was read by the AI (`ai_new`): that reading is a genuinely INDEPENDENT
+  // second opinion on the supervised templates in the bucket the user isn't a contributor to. A
+  // template that matches and agrees has proved itself on someone else's real message — and this
+  // is the only such evidence obtainable, since regex generation is too non-deterministic for
+  // byte-identity to recur. The AI call was already paid for; the opinion is free.
+  //
+  // Gated to `ai_new` on purpose: if a template or curated pattern produced `parsed`, the
+  // "independent opinion" would be another regex's output, which could echo the same mistake and
+  // inflate a distinct-user count off template-vs-template agreement rather than real evidence.
+  if (parseMethod === 'ai_new' && validationCandidates.length > 0 && parsed.is_transaction && parsed.amount) {
     const aiFields = {
       amount: parsed.amount,
       currency: parsed.currency,
@@ -1290,13 +1309,14 @@ export async function POST(request: Request) {
     })
   }
 
-  // Drain pending user signals into verdicts. Rides on this request's after() rather than a
-  // cron: any SMS for any user is a fine moment for a little background work, and the RPC it
-  // starts from is cheap and usually returns nothing. It writes no parse-log row, so it can
-  // never consume anyone's daily AI quota (which is derived from that table).
+  // Background maintenance — adjudication + the zero-variance sweep. These are questions about
+  // the template population's history, not about the message in hand, so they need not run on
+  // every SMS: sampling ~1-in-N keeps them timely (they fire many times a day at any real volume)
+  // while sparing the hot path's after() budget, which is shared with push delivery. The
+  // zero-variance query in particular is a GROUP BY that grows with the log.
   {
     const key = process.env.GEMINI_API_KEY?.trim()
-    if (key) {
+    if (key && Math.random() < HEALTH_SWEEP_SAMPLE_RATE) {
       after(async () => {
         const res = await runAdjudication(service, {
           askModel: (system, user) => askModelJson(key, system, user),
