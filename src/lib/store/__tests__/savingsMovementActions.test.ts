@@ -1,0 +1,92 @@
+import { describe, it, expect, beforeEach } from 'vitest'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import type { SavingsAccount } from '@/lib/store/types'
+
+const pocket = (id: string, currency: SavingsAccount['currency'], bal: number, category: SavingsAccount['category'] = 'savings'): SavingsAccount => ({
+  id,
+  name: id,
+  category,
+  type: 'bank',
+  currency,
+  currentBalance: bal,
+  createdAt: '2026-01-01',
+})
+
+const seed = (accounts: SavingsAccount[]) =>
+  useFinanceStore.setState({
+    savingsAccounts: accounts,
+    savingsTransactions: [],
+    incomeEvents: [],
+    goals: [],
+    exchangeRates: { USD_EGP: 50, EGP_USD: 0.02 },
+  })
+
+const S = () => useFinanceStore.getState()
+
+describe('depositToSavings — declare vs allocate', () => {
+  beforeEach(() => seed([pocket('p1', 'EGP', 0)]))
+
+  it('allocate (default) is cash flow — counts against left-to-spend', () => {
+    S().depositToSavings('p1', 100, 'EGP')
+    const tx = S().savingsTransactions.at(-1)!
+    expect(tx.isCashFlow).toBeUndefined() // undefined === true downstream
+    expect(S().savingsAccounts[0].currentBalance).toBe(100)
+  })
+
+  it('declare marks the row non-cash-flow (raises net worth, not spent this month)', () => {
+    S().depositToSavings('p1', 100, 'EGP', undefined, { mode: 'declare' })
+    expect(S().savingsTransactions.at(-1)!.isCashFlow).toBe(false)
+  })
+})
+
+describe('withdrawFromSavings — purpose gates the income event', () => {
+  beforeEach(() => seed([pocket('p1', 'EGP', 500)]))
+
+  it('income (default) creates one confirmed income event', () => {
+    S().withdrawFromSavings('p1', 200, 'EGP')
+    expect(S().incomeEvents).toHaveLength(1)
+    expect(S().savingsAccounts[0].currentBalance).toBe(300)
+  })
+
+  it('spend / transfer / debt create NO income event', () => {
+    S().withdrawFromSavings('p1', 100, 'EGP', undefined, 'spend')
+    S().withdrawFromSavings('p1', 100, 'EGP', undefined, 'debt')
+    expect(S().incomeEvents).toHaveLength(0)
+    expect(S().savingsAccounts[0].currentBalance).toBe(300)
+  })
+})
+
+describe('transferBetweenPockets', () => {
+  it('same currency: two legs share a group id, both non-cash-flow, balances move', () => {
+    seed([pocket('a', 'EGP', 500), pocket('b', 'EGP', 0)])
+    S().transferBetweenPockets('a', 'b', 200)
+    const s = S()
+    expect(s.savingsAccounts.find((x) => x.id === 'a')!.currentBalance).toBe(300)
+    expect(s.savingsAccounts.find((x) => x.id === 'b')!.currentBalance).toBe(200)
+    const legs = s.savingsTransactions.filter((t) => t.transferGroupId)
+    expect(legs).toHaveLength(2)
+    expect(new Set(legs.map((l) => l.transferGroupId)).size).toBe(1)
+    expect(legs.every((l) => l.isCashFlow === false)).toBe(true)
+    expect(s.incomeEvents).toHaveLength(0)
+  })
+
+  it('FX-converts fiat to fiat on the destination leg', () => {
+    seed([pocket('a', 'EGP', 500), pocket('b', 'USD', 0)])
+    S().transferBetweenPockets('a', 'b', 100) // 100 EGP -> 2 USD at 0.02
+    expect(S().savingsAccounts.find((x) => x.id === 'b')!.currentBalance).toBeCloseTo(2, 5)
+  })
+
+  it('rejects a move with no conversion path (a buy, not a transfer)', () => {
+    seed([pocket('a', 'EGP', 500), pocket('g', 'XAU', 0, 'investment')])
+    S().transferBetweenPockets('a', 'g', 100)
+    // Nothing moved — EGP -> XAU grams has no FX path, so it is rejected.
+    expect(S().savingsAccounts.find((x) => x.id === 'a')!.currentBalance).toBe(500)
+    expect(S().savingsTransactions).toHaveLength(0)
+  })
+
+  it('rejects an overdraw', () => {
+    seed([pocket('a', 'EGP', 50), pocket('b', 'EGP', 0)])
+    S().transferBetweenPockets('a', 'b', 100)
+    expect(S().savingsAccounts.find((x) => x.id === 'a')!.currentBalance).toBe(50)
+  })
+})

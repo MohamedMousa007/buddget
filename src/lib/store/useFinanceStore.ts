@@ -1337,6 +1337,10 @@ export const useFinanceStore = create<FinanceStore>()(
             notes,
             source: opts?.source,
             isAutoSave: opts?.isAutoSave,
+            // 'declare' = money from outside the budget: raise net worth without touching
+            // this month's flow. 'allocate' (default) is real cash flow — left as undefined
+            // so cashSavingsDepositsInBaseForMonth counts it against left-to-spend.
+            ...(opts?.mode === 'declare' ? { isCashFlow: false } : {}),
           }
           const nextState: FinanceStore = {
             ...state,
@@ -1352,7 +1356,51 @@ export const useFinanceStore = create<FinanceStore>()(
         })
       },
 
-      withdrawFromSavings: (accountId, amount, currency, notes) => {
+      transferBetweenPockets: (fromId, toId, amount, notes) => {
+        const raw = Math.max(0, Number(amount) || 0)
+        if (raw <= 0 || fromId === toId) return
+        set((state) => {
+          const from = state.savingsAccounts.find((a) => a.id === fromId)
+          const to = state.savingsAccounts.find((a) => a.id === toId)
+          if (!from || !to) return state
+          if (from.currentBalance + 0.0001 < raw) return state // insufficient
+          // Convert into the destination's unit. tryConvertCurrency FAILS CLOSED: a move with
+          // no path (e.g. EGP -> XAU grams) is a purchase, not a transfer, and is rejected here.
+          const toAmt =
+            to.currency === from.currency
+              ? raw
+              : tryConvertCurrency(raw, from.currency, to.currency, state.exchangeRates)
+          if (toAmt === null || toAmt <= 0) return state
+          const gid = generateId()
+          const today = localTodayISO()
+          // Both legs are non-cash-flow: money moved between pockets, so neither net worth
+          // nor left-to-spend changes.
+          const outTx: SavingsTransaction = {
+            id: generateId(), accountId: fromId, type: 'withdrawal', amount: raw,
+            currency: from.currency, date: today, notes, source: 'transfer',
+            transferGroupId: gid, isCashFlow: false,
+          }
+          const inTx: SavingsTransaction = {
+            id: generateId(), accountId: toId, type: 'deposit', amount: toAmt,
+            currency: to.currency, date: today, notes, source: 'transfer',
+            transferGroupId: gid, isCashFlow: false,
+          }
+          const nextState: FinanceStore = {
+            ...state,
+            savingsTransactions: [...state.savingsTransactions, outTx, inTx],
+            savingsAccounts: state.savingsAccounts.map((a) =>
+              a.id === fromId
+                ? { ...a, currentBalance: Math.max(0, a.currentBalance - raw) }
+                : a.id === toId
+                  ? { ...a, currentBalance: a.currentBalance + toAmt }
+                  : a
+            ),
+          }
+          return { ...nextState, goals: reconcileGoalsForState(nextState) }
+        })
+      },
+
+      withdrawFromSavings: (accountId, amount, currency, notes, purpose = 'income') => {
         const raw = Math.max(0, Number(amount) || 0)
         if (raw <= 0) return
         set((state) => {
@@ -1373,31 +1421,39 @@ export const useFinanceStore = create<FinanceStore>()(
             date: localTodayISO(),
             notes,
           }
+          // Only 'income' returns the money to this month's spendable income. A transfer,
+          // debt payment or spend must NOT create an income event — that would inflate the
+          // income KPI and (for a transfer) loop the money back into savings. F4.
           const isInvestment = acc.category === 'investment'
           const nowIso = new Date().toISOString()
-          const incomeEvent: IncomeEvent = {
-            id: generateId(),
-            name: isInvestment ? `Return from ${acc.name}` : `Withdrawal from ${acc.name}`,
-            amount: amt,
-            currency: acc.currency,
-            sourceType: isInvestment ? 'investment' : 'savings',
-            // Local, to match the paired ledger row's `date` — the same movement must not
-            // straddle two calendar days in the Cairo-before-dawn window.
-            receivedDate: localTodayISO(),
-            status: 'confirmed',
-            linkedSavingsAccountId: accountId,
-            notes: notes?.trim() || undefined,
-            createdAt: nowIso,
-            updatedAt: nowIso,
-          }
+          const incomeEvent: IncomeEvent | null =
+            purpose === 'income'
+              ? {
+                  id: generateId(),
+                  name: isInvestment ? `Return from ${acc.name}` : `Withdrawal from ${acc.name}`,
+                  amount: amt,
+                  currency: acc.currency,
+                  sourceType: isInvestment ? 'investment' : 'savings',
+                  // Local, to match the paired ledger row's `date` — the same movement must
+                  // not straddle two calendar days in the Cairo-before-dawn window.
+                  receivedDate: localTodayISO(),
+                  status: 'confirmed',
+                  linkedSavingsAccountId: accountId,
+                  notes: notes?.trim() || undefined,
+                  createdAt: nowIso,
+                  updatedAt: nowIso,
+                }
+              : null
           const nextState: FinanceStore = {
             ...state,
             savingsTransactions: [...state.savingsTransactions, tx],
             savingsAccounts: state.savingsAccounts.map((a) =>
               a.id === accountId ? { ...a, currentBalance: Math.max(0, a.currentBalance - amt) } : a
             ),
-            incomeEvents: [...state.incomeEvents, incomeEvent],
-            settings: { ...state.settings, noIncomeDeclared: false },
+            incomeEvents: incomeEvent ? [...state.incomeEvents, incomeEvent] : state.incomeEvents,
+            settings: incomeEvent
+              ? { ...state.settings, noIncomeDeclared: false }
+              : state.settings,
           }
           return {
             ...nextState,

@@ -458,6 +458,9 @@ export interface RecurringSavingsDeposit {
   createdAt: string
 }
 
+/** Where a savings withdrawal goes. Only 'income' creates an IncomeEvent. */
+export type SavingsWithdrawalPurpose = 'income' | 'transfer' | 'debt' | 'spend'
+
 export interface SavingsTransaction {
   id: string
   accountId: string
@@ -911,9 +914,24 @@ export interface FinanceStore {
     amount: number,
     currency: Currency,
     notes?: string,
-    opts?: { isAutoSave?: boolean; source?: string }
+    /** `mode` = where the money came from: 'allocate' (from this month's budget — reduces
+     *  left-to-spend, net worth flat) or 'declare' (money from outside the budget — net worth
+     *  rises, left-to-spend untouched). Defaults to 'allocate' (the historical behaviour). */
+    opts?: { isAutoSave?: boolean; source?: string; mode?: 'allocate' | 'declare' }
   ) => void
-  withdrawFromSavings: (accountId: string, amount: number, currency: Currency, notes?: string) => void
+  /** Only 'income' returns the money to this month's spendable income; the rest do not,
+   *  so a transfer/debt/spend withdrawal never inflates the income KPI. Defaults to 'income'. */
+  withdrawFromSavings: (
+    accountId: string,
+    amount: number,
+    currency: Currency,
+    notes?: string,
+    purpose?: SavingsWithdrawalPurpose
+  ) => void
+  /** Move money between two pockets: two ledger legs sharing a transferGroupId, both
+   *  non-cash-flow (net worth and left-to-spend unaffected). FX-converts fiat↔fiat; rejects
+   *  a move with no conversion path (e.g. into a gold/crypto pocket — that's a buy, not a transfer). */
+  transferBetweenPockets: (fromId: string, toId: string, amount: number, notes?: string) => void
   correctSavingsBalance: (accountId: string, newBalance: number, notes?: string) => void
   updateSettings: (updates: Partial<AppSettings>) => void
   updateProfile: (updates: Partial<UserProfile>) => void
