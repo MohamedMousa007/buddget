@@ -10,6 +10,7 @@ export const SAVINGS_TYPE_ICONS: Record<SavingsType, string> = {
   stocks: 'TrendingUp',
   real_estate: 'Home',
   other: 'Wallet',
+  vault: 'Vault',
 }
 
 /** When `type === 'other'`, user picks one of these Lucide names. */

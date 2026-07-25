@@ -16,6 +16,9 @@ export function savingsTransactionToRow(
     transaction_date: t.date,
     notes: t.notes ?? null,
     is_cash_flow: t.isCashFlow ?? true,
+    source: t.source ?? null,
+    is_auto_save: t.isAutoSave ?? false,
+    transfer_group_id: t.transferGroupId ?? null,
   }
 }
 
@@ -33,6 +36,9 @@ export function savingsTransactionFromRow(row: SavingsTransactionRow): SavingsTr
     date: row.transaction_date,
     notes: row.notes ?? undefined,
     isCashFlow: row.is_cash_flow ?? true,
+    source: row.source ?? undefined,
+    isAutoSave: row.is_auto_save ?? undefined,
+    transferGroupId: row.transfer_group_id ?? undefined,
     createdAt: row.created_at ?? undefined,
     updatedAt: row.updated_at ?? undefined,
   }

@@ -417,6 +417,8 @@ export type SavingsType =
   | 'stocks'
   | 'real_estate'
   | 'other'
+  /** System-created "Monthly Savings" vault: undeletable, base currency, default carry target. */
+  | 'vault'
 
 /** Safe/liquid vs growth bucket (split in UI and net-worth rollups). */
 export type SavingsAccountCategory = 'savings' | 'investment'
@@ -477,6 +479,8 @@ export interface SavingsTransaction {
    * either way — the two are independent axes.
    */
   isCashFlow?: boolean
+  /** Both legs of a pocket-to-pocket transfer share this id; a plain deposit/withdrawal omits it. */
+  transferGroupId?: string
   /** Last local edit (ISO). Powers the offline-merge tiebreak — without it an
    *  offline edit to this row loses to the server on every sign-in. */
   updatedAt?: string

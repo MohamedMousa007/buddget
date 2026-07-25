@@ -16,6 +16,7 @@ export const SAVINGS_TYPES_ORDER = [
   'stocks',
   'real_estate',
   'other',
+  'vault',
 ] as const satisfies readonly SavingsType[]
 
 export function defaultCategoryForSavingsType(type: SavingsType): SavingsAccountCategory {

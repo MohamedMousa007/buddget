@@ -709,6 +709,7 @@ export interface Dictionary {
       stocks: string
       real_estate: string
       other: string
+      vault: string
     }
     placeholders: {
       bank: string
@@ -719,6 +720,7 @@ export interface Dictionary {
       stocks: string
       real_estate: string
       other: string
+      vault: string
     }
   }
 

@@ -827,6 +827,7 @@ export const en: Dictionary = {
       stocks: 'Stocks',
       real_estate: 'Real estate',
       other: 'Other',
+      vault: 'Monthly Savings',
     },
     placeholders: {
       bank: 'e.g. CIB, ADCB…',
@@ -837,6 +838,7 @@ export const en: Dictionary = {
       stocks: 'e.g. DFM portfolio',
       real_estate: 'e.g. Property deposit',
       other: 'e.g. Emergency fund',
+      vault: 'Monthly Savings',
     },
   },
 

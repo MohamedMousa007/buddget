@@ -826,6 +826,7 @@ export const ar: Dictionary = {
       stocks: 'أسهم',
       real_estate: 'عقار',
       other: 'أخرى',
+      vault: 'مدخرات شهرية',
     },
     placeholders: {
       bank: 'مثال: CIB، ADCB…',
@@ -836,6 +837,7 @@ export const ar: Dictionary = {
       stocks: 'مثال: محفظة دبي المالية',
       real_estate: 'مثال: عربون عقار',
       other: 'مثال: صندوق طوارئ',
+      vault: 'مدخرات شهرية',
     },
   },
 

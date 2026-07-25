@@ -14,33 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      merchant_categories: {
-        Row: {
-          merchant_key: string
-          category: Database["public"]["Enums"]["expense_category"]
-          source: string
-          sample_merchant: string | null
-          hit_count: number
-          updated_at: string
-        }
-        Insert: {
-          merchant_key: string
-          category: Database["public"]["Enums"]["expense_category"]
-          source?: string
-          sample_merchant?: string | null
-          hit_count?: number
-          updated_at?: string
-        }
-        Update: {
-          merchant_key?: string
-          category?: Database["public"]["Enums"]["expense_category"]
-          source?: string
-          sample_merchant?: string | null
-          hit_count?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
       api_rate_limits: {
         Row: {
           hits: number
@@ -79,6 +52,72 @@ export type Database = {
           event_type?: string
           id?: number
           metadata?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
+      asset_prices: {
+        Row: {
+          as_of: string
+          asset_class: string
+          confidence: string | null
+          created_at: string
+          currency: Database["public"]["Enums"]["currency_code"]
+          id: string
+          price: number
+          source: string | null
+          symbol: string
+          updated_at: string
+          upstream: string | null
+        }
+        Insert: {
+          as_of: string
+          asset_class: string
+          confidence?: string | null
+          created_at?: string
+          currency: Database["public"]["Enums"]["currency_code"]
+          id?: string
+          price: number
+          source?: string | null
+          symbol: string
+          updated_at?: string
+          upstream?: string | null
+        }
+        Update: {
+          as_of?: string
+          asset_class?: string
+          confidence?: string | null
+          created_at?: string
+          currency?: Database["public"]["Enums"]["currency_code"]
+          id?: string
+          price?: number
+          source?: string | null
+          symbol?: string
+          updated_at?: string
+          upstream?: string | null
+        }
+        Relationships: []
+      }
+      biometric_devices: {
+        Row: {
+          created_at: string
+          device_id: string
+          last_used_at: string | null
+          secret_hash: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          last_used_at?: string | null
+          secret_hash: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          last_used_at?: string | null
+          secret_hash?: string
           user_id?: string
         }
         Relationships: []
@@ -309,9 +348,6 @@ export type Database = {
           cleared_at: string | null
           created_at: string
           credit_limit: number | null
-          grace_period_days: number | null
-          minimum_payment_percent: number | null
-          payment_due_day: number | null
           creditor: string | null
           currency: Database["public"]["Enums"]["currency_code"]
           debt_type: Database["public"]["Enums"]["debt_kind"]
@@ -320,6 +356,7 @@ export type Database = {
           direction: Database["public"]["Enums"]["debt_direction"]
           due_date: string | null
           gold_karat: Database["public"]["Enums"]["gold_karat"] | null
+          grace_period_days: number | null
           id: string
           installment_amount: number | null
           installment_count: number | null
@@ -337,8 +374,10 @@ export type Database = {
           is_gold: boolean
           linked_credit_card_debt_id: string | null
           linked_payment_method_id: string | null
+          minimum_payment_percent: number | null
           name: string
           notes: string | null
+          payment_due_day: number | null
           person: string | null
           received_via: Database["public"]["Enums"]["debt_received_via"] | null
           relationship: string | null
@@ -354,9 +393,6 @@ export type Database = {
           cleared_at?: string | null
           created_at?: string
           credit_limit?: number | null
-          grace_period_days?: number | null
-          minimum_payment_percent?: number | null
-          payment_due_day?: number | null
           creditor?: string | null
           currency?: Database["public"]["Enums"]["currency_code"]
           debt_type?: Database["public"]["Enums"]["debt_kind"]
@@ -365,6 +401,7 @@ export type Database = {
           direction?: Database["public"]["Enums"]["debt_direction"]
           due_date?: string | null
           gold_karat?: Database["public"]["Enums"]["gold_karat"] | null
+          grace_period_days?: number | null
           id?: string
           installment_amount?: number | null
           installment_count?: number | null
@@ -382,8 +419,10 @@ export type Database = {
           is_gold?: boolean
           linked_credit_card_debt_id?: string | null
           linked_payment_method_id?: string | null
+          minimum_payment_percent?: number | null
           name: string
           notes?: string | null
+          payment_due_day?: number | null
           person?: string | null
           received_via?: Database["public"]["Enums"]["debt_received_via"] | null
           relationship?: string | null
@@ -399,9 +438,6 @@ export type Database = {
           cleared_at?: string | null
           created_at?: string
           credit_limit?: number | null
-          grace_period_days?: number | null
-          minimum_payment_percent?: number | null
-          payment_due_day?: number | null
           creditor?: string | null
           currency?: Database["public"]["Enums"]["currency_code"]
           debt_type?: Database["public"]["Enums"]["debt_kind"]
@@ -410,6 +446,7 @@ export type Database = {
           direction?: Database["public"]["Enums"]["debt_direction"]
           due_date?: string | null
           gold_karat?: Database["public"]["Enums"]["gold_karat"] | null
+          grace_period_days?: number | null
           id?: string
           installment_amount?: number | null
           installment_count?: number | null
@@ -427,8 +464,10 @@ export type Database = {
           is_gold?: boolean
           linked_credit_card_debt_id?: string | null
           linked_payment_method_id?: string | null
+          minimum_payment_percent?: number | null
           name?: string
           notes?: string | null
+          payment_due_day?: number | null
           person?: string | null
           received_via?: Database["public"]["Enums"]["debt_received_via"] | null
           relationship?: string | null
@@ -528,10 +567,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "expenses_refund_sms_log_id_fkey"
-            columns: ["refund_sms_log_id"]
+            foreignKeyName: "expenses_linked_debt_id_fkey"
+            columns: ["linked_debt_id"]
             isOneToOne: false
-            referencedRelation: "sms_parse_log"
+            referencedRelation: "debts"
             referencedColumns: ["id"]
           },
           {
@@ -560,6 +599,13 @@ export type Database = {
             columns: ["receipt_id"]
             isOneToOne: false
             referencedRelation: "receipts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_refund_sms_log_id_fkey"
+            columns: ["refund_sms_log_id"]
+            isOneToOne: false
+            referencedRelation: "sms_parse_log"
             referencedColumns: ["id"]
           },
         ]
@@ -633,92 +679,6 @@ export type Database = {
         }
         Relationships: []
       }
-      income_sources: {
-        Row: {
-          amount: number
-          created_at: string
-          currency: Database["public"]["Enums"]["currency_code"]
-          day_of_month: number | null
-          deleted_at: string | null
-          effective_end: string | null
-          effective_start: string
-          id: string
-          is_recurring: boolean
-          linked_debt_id: string | null
-          linked_savings_account_id: string | null
-          name: string
-          notes: string | null
-          payday_days: number[] | null
-          payday_drift_days: number | null
-          payment_method_id: string | null
-          recurring_frequency:
-            | Database["public"]["Enums"]["recurring_frequency"]
-            | null
-          shared_plan_id: string | null
-          source_type: Database["public"]["Enums"]["income_source_type"]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          amount: number
-          created_at?: string
-          currency?: Database["public"]["Enums"]["currency_code"]
-          day_of_month?: number | null
-          deleted_at?: string | null
-          effective_end?: string | null
-          effective_start?: string
-          id?: string
-          is_recurring?: boolean
-          linked_debt_id?: string | null
-          linked_savings_account_id?: string | null
-          name: string
-          notes?: string | null
-          payday_days?: number[] | null
-          payday_drift_days?: number | null
-          payment_method_id?: string | null
-          recurring_frequency?:
-            | Database["public"]["Enums"]["recurring_frequency"]
-            | null
-          shared_plan_id?: string | null
-          source_type?: Database["public"]["Enums"]["income_source_type"]
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          currency?: Database["public"]["Enums"]["currency_code"]
-          day_of_month?: number | null
-          deleted_at?: string | null
-          effective_end?: string | null
-          effective_start?: string
-          id?: string
-          is_recurring?: boolean
-          linked_debt_id?: string | null
-          linked_savings_account_id?: string | null
-          name?: string
-          notes?: string | null
-          payday_days?: number[] | null
-          payday_drift_days?: number | null
-          payment_method_id?: string | null
-          recurring_frequency?:
-            | Database["public"]["Enums"]["recurring_frequency"]
-            | null
-          shared_plan_id?: string | null
-          source_type?: Database["public"]["Enums"]["income_source_type"]
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "income_sources_payment_method_id_fkey"
-            columns: ["payment_method_id"]
-            isOneToOne: false
-            referencedRelation: "payment_methods"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       income_events: {
         Row: {
           amount: number
@@ -785,6 +745,92 @@ export type Database = {
         }
         Relationships: []
       }
+      income_sources: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: Database["public"]["Enums"]["currency_code"]
+          day_of_month: number | null
+          deleted_at: string | null
+          effective_end: string | null
+          effective_start: string
+          id: string
+          is_recurring: boolean
+          linked_debt_id: string | null
+          linked_savings_account_id: string | null
+          name: string
+          notes: string | null
+          payday_days: number[] | null
+          payday_drift_days: number | null
+          payment_method_id: string | null
+          recurring_frequency:
+            | Database["public"]["Enums"]["recurring_frequency"]
+            | null
+          shared_plan_id: string | null
+          source_type: Database["public"]["Enums"]["income_source_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: Database["public"]["Enums"]["currency_code"]
+          day_of_month?: number | null
+          deleted_at?: string | null
+          effective_end?: string | null
+          effective_start: string
+          id?: string
+          is_recurring?: boolean
+          linked_debt_id?: string | null
+          linked_savings_account_id?: string | null
+          name: string
+          notes?: string | null
+          payday_days?: number[] | null
+          payday_drift_days?: number | null
+          payment_method_id?: string | null
+          recurring_frequency?:
+            | Database["public"]["Enums"]["recurring_frequency"]
+            | null
+          shared_plan_id?: string | null
+          source_type?: Database["public"]["Enums"]["income_source_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: Database["public"]["Enums"]["currency_code"]
+          day_of_month?: number | null
+          deleted_at?: string | null
+          effective_end?: string | null
+          effective_start?: string
+          id?: string
+          is_recurring?: boolean
+          linked_debt_id?: string | null
+          linked_savings_account_id?: string | null
+          name?: string
+          notes?: string | null
+          payday_days?: number[] | null
+          payday_drift_days?: number | null
+          payment_method_id?: string | null
+          recurring_frequency?:
+            | Database["public"]["Enums"]["recurring_frequency"]
+            | null
+          shared_plan_id?: string | null
+          source_type?: Database["public"]["Enums"]["income_source_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "income_sources_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       live_market_data: {
         Row: {
           asset_name: string
@@ -815,6 +861,33 @@ export type Database = {
           id?: string
           last_fetch?: string | null
           source?: string | null
+        }
+        Relationships: []
+      }
+      merchant_categories: {
+        Row: {
+          category: Database["public"]["Enums"]["expense_category"]
+          hit_count: number
+          merchant_key: string
+          sample_merchant: string | null
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["expense_category"]
+          hit_count?: number
+          merchant_key: string
+          sample_merchant?: string | null
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["expense_category"]
+          hit_count?: number
+          merchant_key?: string
+          sample_merchant?: string | null
+          source?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -912,6 +985,7 @@ export type Database = {
           city: string | null
           country: string | null
           created_at: string
+          default_carry_pocket_id: string | null
           default_shared_budget_plan_id: string | null
           display_name: string | null
           email: string | null
@@ -940,6 +1014,7 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          default_carry_pocket_id?: string | null
           default_shared_budget_plan_id?: string | null
           display_name?: string | null
           email?: string | null
@@ -968,6 +1043,7 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          default_carry_pocket_id?: string | null
           default_shared_budget_plan_id?: string | null
           display_name?: string | null
           email?: string | null
@@ -1332,15 +1408,22 @@ export type Database = {
           asset_name: string | null
           asset_symbol: string
           asset_type: Database["public"]["Enums"]["savings_type"]
+          cost_basis_currency:
+            | Database["public"]["Enums"]["currency_code"]
+            | null
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
           current_value: number | null
           deleted_at: string | null
           id: string
           initial_amount: number | null
+          karat: number | null
+          karat_adjustment: number
+          karat_unconfirmed: boolean
           notes: string | null
           purchase_date: string | null
           quantity: number
+          unit_cost: number | null
           updated_at: string
           user_id: string
         }
@@ -1349,15 +1432,22 @@ export type Database = {
           asset_name?: string | null
           asset_symbol: string
           asset_type?: Database["public"]["Enums"]["savings_type"]
+          cost_basis_currency?:
+            | Database["public"]["Enums"]["currency_code"]
+            | null
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           current_value?: number | null
           deleted_at?: string | null
           id?: string
           initial_amount?: number | null
+          karat?: number | null
+          karat_adjustment?: number
+          karat_unconfirmed?: boolean
           notes?: string | null
           purchase_date?: string | null
           quantity?: number
+          unit_cost?: number | null
           updated_at?: string
           user_id: string
         }
@@ -1366,15 +1456,22 @@ export type Database = {
           asset_name?: string | null
           asset_symbol?: string
           asset_type?: Database["public"]["Enums"]["savings_type"]
+          cost_basis_currency?:
+            | Database["public"]["Enums"]["currency_code"]
+            | null
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           current_value?: number | null
           deleted_at?: string | null
           id?: string
           initial_amount?: number | null
+          karat?: number | null
+          karat_adjustment?: number
+          karat_unconfirmed?: boolean
           notes?: string | null
           purchase_date?: string | null
           quantity?: number
+          unit_cost?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -1397,10 +1494,13 @@ export type Database = {
           currency: Database["public"]["Enums"]["currency_code"]
           deleted_at: string | null
           id: string
+          is_auto_save: boolean
           is_cash_flow: boolean
           kind: Database["public"]["Enums"]["savings_transaction_kind"]
           notes: string | null
+          source: string | null
           transaction_date: string
+          transfer_group_id: string | null
           updated_at: string
           user_id: string
         }
@@ -1412,10 +1512,13 @@ export type Database = {
           currency?: Database["public"]["Enums"]["currency_code"]
           deleted_at?: string | null
           id?: string
+          is_auto_save?: boolean
           is_cash_flow?: boolean
           kind: Database["public"]["Enums"]["savings_transaction_kind"]
           notes?: string | null
+          source?: string | null
           transaction_date?: string
+          transfer_group_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1427,10 +1530,13 @@ export type Database = {
           currency?: Database["public"]["Enums"]["currency_code"]
           deleted_at?: string | null
           id?: string
+          is_auto_save?: boolean
           is_cash_flow?: boolean
           kind?: Database["public"]["Enums"]["savings_transaction_kind"]
           notes?: string | null
+          source?: string | null
           transaction_date?: string
+          transfer_group_id?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1440,6 +1546,57 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "savings_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sms_corrections: {
+        Row: {
+          body_shape_key: string
+          confidence: number | null
+          corrected_fields: Json
+          created_at: string
+          id: string
+          redacted_body: string
+          revoked_at: string | null
+          source_signal_id: string | null
+          source_template_id: string | null
+        }
+        Insert: {
+          body_shape_key: string
+          confidence?: number | null
+          corrected_fields: Json
+          created_at?: string
+          id?: string
+          redacted_body: string
+          revoked_at?: string | null
+          source_signal_id?: string | null
+          source_template_id?: string | null
+        }
+        Update: {
+          body_shape_key?: string
+          confidence?: number | null
+          corrected_fields?: Json
+          created_at?: string
+          id?: string
+          redacted_body?: string
+          revoked_at?: string | null
+          source_signal_id?: string | null
+          source_template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_corrections_source_signal_id_fkey"
+            columns: ["source_signal_id"]
+            isOneToOne: false
+            referencedRelation: "sms_template_signals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_corrections_source_template_id_fkey"
+            columns: ["source_template_id"]
+            isOneToOne: false
+            referencedRelation: "sms_tracking_templates_ai"
             referencedColumns: ["id"]
           },
         ]
@@ -1492,108 +1649,6 @@ export type Database = {
           keyword?: string
           lang?: string | null
           last_seen?: string
-        }
-        Relationships: []
-      }
-      biometric_devices: {
-        Row: {
-          device_id: string
-          user_id: string
-          secret_hash: string
-          created_at: string
-          last_used_at: string | null
-        }
-        Insert: {
-          device_id: string
-          user_id: string
-          secret_hash: string
-          created_at?: string
-          last_used_at?: string | null
-        }
-        Update: {
-          device_id?: string
-          user_id?: string
-          secret_hash?: string
-          created_at?: string
-          last_used_at?: string | null
-        }
-        Relationships: []
-      }
-      sms_template_signals: {
-        Row: {
-          id: string
-          template_id: string
-          user_id: string
-          sms_log_id: string | null
-          signal_kind: string
-          field: string | null
-          old_value: string | null
-          new_value: string | null
-          verdict: string | null
-          adjudicated_at: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          template_id: string
-          user_id: string
-          sms_log_id?: string | null
-          signal_kind: string
-          field?: string | null
-          old_value?: string | null
-          new_value?: string | null
-          verdict?: string | null
-          adjudicated_at?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          template_id?: string
-          user_id?: string
-          sms_log_id?: string | null
-          signal_kind?: string
-          field?: string | null
-          old_value?: string | null
-          new_value?: string | null
-          verdict?: string | null
-          adjudicated_at?: string | null
-          created_at?: string
-        }
-        Relationships: []
-      }
-      sms_corrections: {
-        Row: {
-          id: string
-          body_shape_key: string
-          redacted_body: string
-          corrected_fields: Json
-          source_template_id: string | null
-          source_signal_id: string | null
-          confidence: number | null
-          revoked_at: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          body_shape_key: string
-          redacted_body: string
-          corrected_fields: Json
-          source_template_id?: string | null
-          source_signal_id?: string | null
-          confidence?: number | null
-          revoked_at?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          body_shape_key?: string
-          redacted_body?: string
-          corrected_fields?: Json
-          source_template_id?: string | null
-          source_signal_id?: string | null
-          confidence?: number | null
-          revoked_at?: string | null
-          created_at?: string
         }
         Relationships: []
       }
@@ -1742,46 +1797,53 @@ export type Database = {
             referencedRelation: "income_events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "sms_parse_log_matched_template_id_fkey"
+            columns: ["matched_template_id"]
+            isOneToOne: false
+            referencedRelation: "sms_tracking_templates_ai"
+            referencedColumns: ["id"]
+          },
         ]
       }
       sms_promotion_config: {
         Row: {
           id: number
           max_failure_rate: number
+          max_user_signals_per_day: number
           min_age_days: number
           min_avg_confidence: number
           min_match_count: number
           min_matches_before_retire: number
+          min_unique_users: number
           quarantine_exonerate_after: number
           signals_before_adjudication: number
-          max_user_signals_per_day: number
-          min_unique_users: number
           updated_at: string
         }
         Insert: {
           id?: number
           max_failure_rate?: number
+          max_user_signals_per_day?: number
           min_age_days?: number
           min_avg_confidence?: number
           min_match_count?: number
           min_matches_before_retire?: number
+          min_unique_users?: number
           quarantine_exonerate_after?: number
           signals_before_adjudication?: number
-          max_user_signals_per_day?: number
-          min_unique_users?: number
           updated_at?: string
         }
         Update: {
           id?: number
           max_failure_rate?: number
+          max_user_signals_per_day?: number
           min_age_days?: number
           min_avg_confidence?: number
           min_match_count?: number
           min_matches_before_retire?: number
+          min_unique_users?: number
           quarantine_exonerate_after?: number
           signals_before_adjudication?: number
-          max_user_signals_per_day?: number
-          min_unique_users?: number
           updated_at?: string
         }
         Relationships: []
@@ -1834,6 +1896,63 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_template_signals: {
+        Row: {
+          adjudicated_at: string | null
+          created_at: string
+          field: string | null
+          id: string
+          new_value: string | null
+          old_value: string | null
+          signal_kind: string
+          sms_log_id: string | null
+          template_id: string | null
+          user_id: string
+          verdict: string | null
+        }
+        Insert: {
+          adjudicated_at?: string | null
+          created_at?: string
+          field?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          signal_kind: string
+          sms_log_id?: string | null
+          template_id?: string | null
+          user_id: string
+          verdict?: string | null
+        }
+        Update: {
+          adjudicated_at?: string | null
+          created_at?: string
+          field?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          signal_kind?: string
+          sms_log_id?: string | null
+          template_id?: string | null
+          user_id?: string
+          verdict?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_template_signals_sms_log_id_fkey"
+            columns: ["sms_log_id"]
+            isOneToOne: false
+            referencedRelation: "sms_parse_log"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_template_signals_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "sms_tracking_templates_ai"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sms_template_users: {
         Row: {
           created_at: string
@@ -1866,24 +1985,25 @@ export type Database = {
           auto_promoted: boolean
           avg_ai_confidence: number | null
           created_at: string
+          exported_at: string | null
+          failure_count: number
+          hard_fail: boolean
           id: string
           kind: string | null
           last_matched_at: string | null
           mapping_rules: Json
           match_count: number
+          merged_into: string | null
+          prev_tier: string | null
           promoted_at: string | null
+          quarantined_at: string | null
           regex_pattern: string
+          retired_at: string | null
           sender: string
+          shadow_agreements: number
+          status: string
           template_sample: string
           tier: string
-          status: string
-          failure_count: number
-          hard_fail: boolean
-          prev_tier: string | null
-          merged_into: string | null
-          quarantined_at: string | null
-          retired_at: string | null
-          exported_at: string | null
           unique_user_count: number
           updated_at: string
           user_id: string | null
@@ -1893,24 +2013,25 @@ export type Database = {
           auto_promoted?: boolean
           avg_ai_confidence?: number | null
           created_at?: string
+          exported_at?: string | null
+          failure_count?: number
+          hard_fail?: boolean
           id?: string
           kind?: string | null
           last_matched_at?: string | null
           mapping_rules: Json
           match_count?: number
+          merged_into?: string | null
+          prev_tier?: string | null
           promoted_at?: string | null
+          quarantined_at?: string | null
           regex_pattern: string
+          retired_at?: string | null
           sender: string
+          shadow_agreements?: number
+          status?: string
           template_sample: string
           tier?: string
-          status?: string
-          failure_count?: number
-          hard_fail?: boolean
-          prev_tier?: string | null
-          merged_into?: string | null
-          quarantined_at?: string | null
-          retired_at?: string | null
-          exported_at?: string | null
           unique_user_count?: number
           updated_at?: string
           user_id?: string | null
@@ -1920,29 +2041,38 @@ export type Database = {
           auto_promoted?: boolean
           avg_ai_confidence?: number | null
           created_at?: string
+          exported_at?: string | null
+          failure_count?: number
+          hard_fail?: boolean
           id?: string
           kind?: string | null
           last_matched_at?: string | null
           mapping_rules?: Json
           match_count?: number
+          merged_into?: string | null
+          prev_tier?: string | null
           promoted_at?: string | null
+          quarantined_at?: string | null
           regex_pattern?: string
+          retired_at?: string | null
           sender?: string
+          shadow_agreements?: number
+          status?: string
           template_sample?: string
           tier?: string
-          status?: string
-          failure_count?: number
-          hard_fail?: boolean
-          prev_tier?: string | null
-          merged_into?: string | null
-          quarantined_at?: string | null
-          retired_at?: string | null
-          exported_at?: string | null
           unique_user_count?: number
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sms_tracking_templates_ai_merged_into_fkey"
+            columns: ["merged_into"]
+            isOneToOne: false
+            referencedRelation: "sms_tracking_templates_ai"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscriptions: {
         Row: {
@@ -1951,6 +2081,7 @@ export type Database = {
           billing_day: number
           brand_key: string | null
           cancelled_at: string | null
+          catalog_region: string | null
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
           deleted_at: string | null
@@ -1961,7 +2092,6 @@ export type Database = {
           next_billing_date: string | null
           notes: string | null
           payment_method_id: string | null
-          catalog_region: string | null
           pending_amount: number | null
           pending_plan_id: string | null
           plan_id: string | null
@@ -1977,6 +2107,7 @@ export type Database = {
           billing_day?: number
           brand_key?: string | null
           cancelled_at?: string | null
+          catalog_region?: string | null
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           deleted_at?: string | null
@@ -1987,7 +2118,6 @@ export type Database = {
           next_billing_date?: string | null
           notes?: string | null
           payment_method_id?: string | null
-          catalog_region?: string | null
           pending_amount?: number | null
           pending_plan_id?: string | null
           plan_id?: string | null
@@ -2003,6 +2133,7 @@ export type Database = {
           billing_day?: number
           brand_key?: string | null
           cancelled_at?: string | null
+          catalog_region?: string | null
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           deleted_at?: string | null
@@ -2013,7 +2144,6 @@ export type Database = {
           next_billing_date?: string | null
           notes?: string | null
           payment_method_id?: string | null
-          catalog_region?: string | null
           pending_amount?: number | null
           pending_plan_id?: string | null
           plan_id?: string | null
@@ -2152,17 +2282,12 @@ export type Database = {
         Args: { p_is_txn: boolean; p_sender: string }
         Returns: undefined
       }
+      bump_sms_template_failure: {
+        Args: { p_hard?: boolean; p_reason?: string; p_template_id: string }
+        Returns: string
+      }
       cancel_subscription: {
         Args: { p_subscription_id: string }
-        Returns: undefined
-      }
-      upsert_merchant_category: {
-        Args: {
-          p_key: string
-          p_category: Database["public"]["Enums"]["expense_category"]
-          p_source: string
-          p_sample: string
-        }
         Returns: undefined
       }
       check_email_exists: { Args: { p_email: string }; Returns: boolean }
@@ -2201,6 +2326,14 @@ export type Database = {
         }
         Returns: string
       }
+      detect_zero_variance_templates: {
+        Args: { p_min_matches?: number }
+        Returns: {
+          amount: number
+          distinct_bodies: number
+          template_id: string
+        }[]
+      }
       get_sms_keyword_pool: {
         Args: { top_n?: number }
         Returns: {
@@ -2212,22 +2345,6 @@ export type Database = {
       increment_sms_template_match_count: {
         Args: { p_id: string }
         Returns: undefined
-      }
-      detect_zero_variance_templates: {
-        Args: { p_min_matches?: number }
-        Returns: { template_id: string; distinct_bodies: number; amount: number }[]
-      }
-      bump_sms_template_failure: {
-        Args: { p_template_id: string; p_hard?: boolean; p_reason?: string }
-        Returns: string
-      }
-      record_sms_template_shadow: {
-        Args: { p_template_id: string; p_agreed: boolean }
-        Returns: string
-      }
-      sms_templates_awaiting_adjudication: {
-        Args: { p_undo_grace_seconds?: number }
-        Returns: { template_id: string; pending: number }[]
       }
       learn_sms_sender_currency: {
         Args: {
@@ -2242,6 +2359,10 @@ export type Database = {
         Args: { p_subscription_id: string }
         Returns: undefined
       }
+      record_sms_template_shadow: {
+        Args: { p_agreed: boolean; p_template_id: string }
+        Returns: string
+      }
       sms_mark_acked: {
         Args: { p_log_id: string; p_user_id: string }
         Returns: undefined
@@ -2249,6 +2370,13 @@ export type Database = {
       sms_mark_pushed: {
         Args: { p_delivered: boolean; p_log_id: string; p_result: Json }
         Returns: undefined
+      }
+      sms_templates_awaiting_adjudication: {
+        Args: { p_undo_grace_seconds?: number }
+        Returns: {
+          pending: number
+          template_id: string
+        }[]
       }
       sms_try_pair: {
         Args: {
@@ -2281,6 +2409,15 @@ export type Database = {
           p_recurring_expense_updates: Json
           p_subscription_id: string
           p_subscription_updates: Json
+        }
+        Returns: undefined
+      }
+      upsert_merchant_category: {
+        Args: {
+          p_category: Database["public"]["Enums"]["expense_category"]
+          p_key: string
+          p_sample: string
+          p_source: string
         }
         Returns: undefined
       }
@@ -2336,7 +2473,6 @@ export type Database = {
         | "Savings"
         | "Debt"
         | "Remittance"
-        | "Instapay"
         | "Other"
         | "Groceries"
         | "Fuel"
@@ -2351,6 +2487,7 @@ export type Database = {
         | "CC Payoff"
         | "Top up"
         | "Installment"
+        | "Instapay"
       goal_category:
         | "spending_control"
         | "emergency"
@@ -2402,9 +2539,9 @@ export type Database = {
         | "debit_card"
         | "credit_card"
         | "prepaid_card"
+        | "other"
         | "wallet"
         | "bnpl"
-        | "other"
       recurring_frequency:
         | "weekly"
         | "biweekly"
@@ -2427,6 +2564,7 @@ export type Database = {
         | "real_estate"
         | "other"
         | "stablecoin"
+        | "vault"
       subscription_billing_cycle: "weekly" | "monthly" | "quarterly" | "yearly"
       subscription_status: "active" | "paused" | "cancelled" | "trial"
       theme_mode: "dark" | "light"
@@ -2598,7 +2736,6 @@ export const Constants = {
         "Savings",
         "Debt",
         "Remittance",
-        "Instapay",
         "Other",
         "Groceries",
         "Fuel",
@@ -2613,6 +2750,7 @@ export const Constants = {
         "CC Payoff",
         "Top up",
         "Installment",
+        "Instapay",
       ],
       goal_category: [
         "spending_control",
@@ -2634,7 +2772,13 @@ export const Constants = {
       ],
       goal_status: ["active", "paused", "achieved"],
       gold_karat: ["18", "21", "22", "24"],
-      income_event_status: ["confirmed", "projected", "late", "missed", "partial"],
+      income_event_status: [
+        "confirmed",
+        "projected",
+        "late",
+        "missed",
+        "partial",
+      ],
       income_source_type: [
         "salary",
         "freelance",
@@ -2663,9 +2807,9 @@ export const Constants = {
         "debit_card",
         "credit_card",
         "prepaid_card",
+        "other",
         "wallet",
         "bnpl",
-        "other",
       ],
       recurring_frequency: [
         "weekly",
@@ -2691,6 +2835,7 @@ export const Constants = {
         "real_estate",
         "other",
         "stablecoin",
+        "vault",
       ],
       subscription_billing_cycle: ["weekly", "monthly", "quarterly", "yearly"],
       subscription_status: ["active", "paused", "cancelled", "trial"],
