@@ -110,3 +110,53 @@ describe('calculateLeftToSpendCashFlow — savings', () => {
     ).toBe(9_500)
   })
 })
+
+describe('calculateLeftToSpendCashFlow — monthly target reserve', () => {
+  const salary = { incomeEvents: [event({ amount: 10_000, sourceType: 'salary' })] }
+
+  it('withholds the full target when nothing is allocated yet', () => {
+    // 10_000 − reserve(2_000 − 0) = 8_000
+    expect(leftToSpend({ ...salary, monthlyTarget: 2_000 })).toBe(8_000)
+  })
+
+  it('withholds the target exactly once as allocations fund it', () => {
+    // allocated 800 (deposit) + reserve(2_000 − 800)=1_200 → 10_000 − 800 − 1_200 = 8_000
+    expect(
+      leftToSpend({
+        ...salary,
+        monthlyTarget: 2_000,
+        savingsTransactions: [tx({ type: 'deposit', amount: 800 })],
+      }),
+    ).toBe(8_000)
+  })
+
+  it('never withholds more than the target — overshooting only subtracts the real allocation', () => {
+    // allocated 2_500, reserve 0 → 10_000 − 2_500 = 7_500
+    expect(
+      leftToSpend({
+        ...salary,
+        monthlyTarget: 2_000,
+        savingsTransactions: [tx({ type: 'deposit', amount: 2_500 })],
+      }),
+    ).toBe(7_500)
+  })
+
+  it('a legacy Savings expense counts as allocation — no double reserve (F12)', () => {
+    // savTagged 2_000 funds the whole 2_000 target: reserve 0 → 10_000 − 2_000 = 8_000
+    expect(
+      leftToSpend({
+        ...salary,
+        monthlyTarget: 2_000,
+        expenses: [
+          { id: 'e1', date: '2026-07-05', description: 'to vault', category: 'Savings',
+            amount: 2_000, currency: 'EGP', amountInBaseCurrency: 2_000, paymentMethodId: 'pm',
+            isRecurring: false, createdAt: '', updatedAt: '' } as never,
+        ],
+      }),
+    ).toBe(8_000)
+  })
+
+  it('income-blocked: no reserve, never negative', () => {
+    expect(leftToSpend({ incomeEvents: [], monthlyTarget: 2_000, incomeBlocked: true })).toBe(0)
+  })
+})

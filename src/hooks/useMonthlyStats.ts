@@ -255,6 +255,8 @@ export function useMonthlyStats() {
       baseCurrency: settings.baseCurrency,
       exchangeRates,
       incomeBlocked,
+      // Reserve the still-unfunded part of the monthly savings target from spendable cash.
+      monthlyTarget: plannedSavingsBudget,
     })
 
     const effectiveBudgetRows = planForCategoryBar

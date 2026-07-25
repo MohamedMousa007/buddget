@@ -504,8 +504,17 @@ export function totalSavingsAccountsBalanceInBase(
 }
 
 /**
- * Cash-flow "left to spend": income minus non-savings spending, legacy savings-tagged expenses,
- * and net savings ledger transfers for the month.
+ * Cash-flow "left to spend": income minus non-savings spending, savings already allocated this
+ * month, and the still-unfunded part of the monthly savings target (the "reserve").
+ *
+ *   allocated     = savings moved to a pocket this month (allocate-mode deposits) + legacy
+ *                   Savings-tagged expenses (until the A6 migration converts them to deposits)
+ *   reserve       = incomeBlocked ? 0 : max(0, monthlyTarget − allocated)
+ *   left-to-spend = income − nonSavingsSpend − allocated − reserve
+ *
+ * The reserve is SOFT: it lowers the displayed number, it does not block spending. The target is
+ * withheld exactly once — as the user allocates, the reserve shrinks by the same amount. When no
+ * target is set (default 0) the reserve is 0 and the result is unchanged from before.
  */
 export function calculateLeftToSpendCashFlow(params: {
   monthStr: string
@@ -517,6 +526,8 @@ export function calculateLeftToSpendCashFlow(params: {
   baseCurrency: Currency
   exchangeRates: Record<string, number>
   incomeBlocked: boolean
+  /** Planned monthly savings target in base currency (e.g. sum of the active plan's savings rows). */
+  monthlyTarget?: number
 }): number {
   const {
     monthStr,
@@ -528,6 +539,7 @@ export function calculateLeftToSpendCashFlow(params: {
     baseCurrency,
     exchangeRates,
     incomeBlocked,
+    monthlyTarget = 0,
   } = params
   const monthlyExpenses = filterExpensesByMonth(expenses, monthStr, monthStartDay)
   const rawIncome = actualIncomeForMonth(
@@ -554,7 +566,11 @@ export function calculateLeftToSpendCashFlow(params: {
     baseCurrency,
     exchangeRates
   )
-  return totalIncome - nonSav - savTagged - savingsDeposits
+  // `allocated` folds legacy Savings-tagged expenses in with real deposits so the reserve can't
+  // double-withhold money the user already earmarked (F12) — before OR after the A6 migration.
+  const allocated = savTagged + savingsDeposits
+  const reserve = incomeBlocked ? 0 : Math.max(0, monthlyTarget - allocated)
+  return totalIncome - nonSav - allocated - reserve
 }
 
 /** Debt payments inside a month window. `date` may be date-only or a full ISO stamp. */
