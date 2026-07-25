@@ -44,8 +44,15 @@ export function useNetWorth() {
     const goldOk = goldPriceAvailable !== false
     let totalSavings = 0
     let totalInvestments = 0
+    // A null valuation means the asset can't be priced (no FX path, e.g. BTC before live
+    // crypto pricing). Exclude it and flag incomplete — never count it at its raw unit value.
+    let valuationIncomplete = false
     for (const a of savingsAccounts) {
       const v = savingsAccountBalanceInBase(a, base, exchangeRates, goldPricePerGram, goldOk)
+      if (v === null) {
+        valuationIncomplete = true
+        continue
+      }
       if (a.category === 'investment') totalInvestments += v
       else totalSavings += v
     }
@@ -61,6 +68,8 @@ export function useNetWorth() {
     const hasGoldSavings = savingsAccounts.some((a) => a.currency === 'XAU')
     const hasGoldDebt = debts.some((d) => d.isGold)
     const netWorthGoldIncomplete = !goldOk && (hasGoldSavings || hasGoldDebt)
+    // Generalised: gold OR any other unpriceable holding (e.g. crypto pre-live-pricing).
+    const netWorthIncomplete = netWorthGoldIncomplete || valuationIncomplete
 
     return {
       netWorth,
@@ -72,6 +81,7 @@ export function useNetWorth() {
       monthlyFlow,
       baseCurrency: base,
       netWorthGoldIncomplete,
+      netWorthIncomplete,
     }
   }, [
     savingsAccounts,

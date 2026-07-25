@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { SavingsAccount } from '@/lib/store/types'
-import { savingsAccountConversionAmounts } from './savingsConversions'
+import { savingsAccountConversionAmounts, savingsAccountBalanceInBase } from './savingsConversions'
 
 const gold = (grams: number): SavingsAccount => ({
   id: 'g1',
@@ -42,5 +42,31 @@ describe('savingsAccountConversionAmounts — XAU', () => {
     )
     expect(primary).toBe(50000) // 10g * 5000 EGP
     expect(secondary).toBeCloseTo(1000, 5) // 50000 EGP * 0.02
+  })
+})
+
+describe('savingsAccountBalanceInBase — fail-closed', () => {
+  const acc = (currency: SavingsAccount['currency'], bal: number): SavingsAccount => ({
+    id: 'a1',
+    name: 'x',
+    category: 'investment',
+    type: 'crypto',
+    currency,
+    currentBalance: bal,
+    createdAt: '2026-01-01',
+  })
+
+  it('returns null for crypto with no FX path (never counts 0.5 BTC as 0.5 base)', () => {
+    expect(savingsAccountBalanceInBase(acc('BTC', 0.5), 'AED', {}, 5000, true)).toBeNull()
+  })
+
+  it('returns null for gold when the spot price is unavailable', () => {
+    expect(savingsAccountBalanceInBase(acc('XAU', 100), 'AED', {}, 5000, false)).toBeNull()
+  })
+
+  it('prices stablecoins via the USD bridge', () => {
+    // 100 USDT -> USD -> AED at 3.6725
+    const v = savingsAccountBalanceInBase(acc('USDT', 100), 'AED', { USD_AED: 3.6725 }, 5000, true)
+    expect(v).toBeCloseTo(367.25, 2)
   })
 })

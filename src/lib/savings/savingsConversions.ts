@@ -1,10 +1,15 @@
 import type { Currency, SavingsAccount } from '@/lib/store/types'
 import { goldGramsToMoney } from '@/lib/utils/calculations'
-import { convertCurrency, tryConvertCurrency } from '@/lib/utils/currency'
+import { tryConvertCurrency } from '@/lib/utils/currency'
 
 /**
  * Balance of a savings account expressed in the user's primary (base) currency for rollups.
- * Gold (XAU) uses `goldPricePerGram` (24k); fiat/crypto use FX rates (stables bridge via USD).
+ * Gold (XAU) uses `goldPricePerGram` (24k); fiat/stables use FX rates (stables bridge via USD).
+ *
+ * FAIL-CLOSED: returns `null` when the account cannot be priced — gold spot unavailable, or no
+ * FX path (e.g. BTC/ETH before live crypto pricing lands). Callers MUST exclude a null from
+ * totals and flag net worth incomplete; counting an unpriceable asset at its raw unit value
+ * (0.5 BTC → 0.5 AED) silently corrupts net worth.
  */
 export function savingsAccountBalanceInBase(
   account: SavingsAccount,
@@ -12,13 +17,13 @@ export function savingsAccountBalanceInBase(
   rates: Record<string, number>,
   goldPricePerGram: number,
   goldPriceAvailable: boolean
-): number {
+): number | null {
   const c = account.currency
   if (c === 'XAU') {
-    if (!goldPriceAvailable) return 0
+    if (!goldPriceAvailable) return null
     return goldGramsToMoney(account.currentBalance, goldPricePerGram, 24)
   }
-  return convertCurrency(account.currentBalance, c, baseCurrency, rates)
+  return tryConvertCurrency(account.currentBalance, c, baseCurrency, rates)
 }
 
 export function needsLiveValuationPlaceholder(account: SavingsAccount): boolean {

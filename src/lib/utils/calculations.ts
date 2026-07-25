@@ -497,7 +497,9 @@ export function totalSavingsAccountsBalanceInBase(
       if (!goldPriceAvailable) return sum
       return sum + goldGramsToMoney(a.currentBalance, goldPricePerGram, 24)
     }
-    return sum + convertCurrency(a.currentBalance, a.currency, baseCurrency, rates)
+    // Fail-closed: skip anything with no FX path (e.g. BTC) rather than counting it 1:1.
+    const v = tryConvertCurrency(a.currentBalance, a.currency, baseCurrency, rates)
+    return v === null ? sum : sum + v
   }, 0)
 }
 
