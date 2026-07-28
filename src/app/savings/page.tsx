@@ -14,7 +14,7 @@ import { PocketsCarousel, type PocketVM } from '@/components/features/savings-v3
 import { AddSavingsSheetV3 } from '@/components/features/savings-v3/AddSavingsSheetV3'
 import { WithdrawSheetV3 } from '@/components/features/savings-v3/WithdrawSheetV3'
 import { UpdateBalanceSheet } from '@/components/features/savings/UpdateBalanceSheet'
-import { AddSavingsAccountSheet } from '@/components/modals/AddSavingsAccountSheet'
+import { NewPocketSheet } from '@/components/features/savings-v3/NewPocketSheet'
 import { EditSavingsAccountSheet } from '@/components/modals/EditSavingsAccountSheet'
 import { savingsPace } from '@/lib/savings/savingsPace'
 import { convertCurrency } from '@/lib/utils/currency'
@@ -199,7 +199,7 @@ export default function SavingsPage() {
           onCorrect={(nb, notes) => correctSavingsBalance(updateAcc.id, nb, notes)}
         />
       )}
-      {newAccountOpen && <AddSavingsAccountSheet open onClose={() => setNewAccountOpen(false)} />}
+      {newAccountOpen && <NewPocketSheet open onClose={() => setNewAccountOpen(false)} />}
       {editAcc && (
         <EditSavingsAccountSheet open account={editAcc} onClose={() => setEditAcc(null)} />
       )}
