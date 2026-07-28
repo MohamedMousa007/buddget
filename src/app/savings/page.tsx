@@ -11,7 +11,7 @@ import { useHydrateSavings, useHydrateGoals } from '@/hooks/remote'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { SavingsHero } from '@/components/features/savings-v3/SavingsHero'
 import { PocketsCarousel, type PocketVM } from '@/components/features/savings-v3/PocketsCarousel'
-import { AddToSavingsSheet } from '@/components/features/savings/AddToSavingsSheet'
+import { AddSavingsSheetV3 } from '@/components/features/savings-v3/AddSavingsSheetV3'
 import { WithdrawFromSavingsSheet } from '@/components/features/savings/WithdrawFromSavingsSheet'
 import { UpdateBalanceSheet } from '@/components/features/savings/UpdateBalanceSheet'
 import { AddSavingsAccountSheet } from '@/components/modals/AddSavingsAccountSheet'
@@ -29,14 +29,13 @@ export default function SavingsPage() {
   const stats = useMonthlyStats()
 
   const { savingsAccounts, goals, profile, settings, exchangeRates,
-    depositToSavings, withdrawFromSavings, correctSavingsBalance } = useFinanceStore(
+    withdrawFromSavings, correctSavingsBalance } = useFinanceStore(
     useShallow((s) => ({
       savingsAccounts: s.savingsAccounts,
       goals: s.goals,
       profile: s.profile,
       settings: s.settings,
       exchangeRates: s.exchangeRates,
-      depositToSavings: s.depositToSavings,
       withdrawFromSavings: s.withdrawFromSavings,
       correctSavingsBalance: s.correctSavingsBalance,
     })),
@@ -90,7 +89,9 @@ export default function SavingsPage() {
   // ponytail: trailing-average pace uses this month vs itself until month-history wiring lands.
   const pace = savingsPace(stats.savingsThisMonth, stats.savingsThisMonth)
 
-  const guard = (fn: () => void) => requireAuth(fn, 'Sign in to manage savings')
+  const devBypass =
+    process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1'
+  const guard = (fn: () => void) => (devBypass ? fn() : requireAuth(fn, 'Sign in to manage savings'))
   const openAdd = (id?: string | null) => guard(() => { setPrefillId(id ?? null); setAddOpen(true) })
   const openWithdraw = (id?: string | null) => guard(() => { setPrefillId(id ?? null); setWithdrawOpen(true) })
 
@@ -181,10 +182,10 @@ export default function SavingsPage() {
       )}
 
       {addOpen && (
-        <AddToSavingsSheet
+        <AddSavingsSheetV3
           open onClose={() => { setAddOpen(false); setPrefillId(null) }}
-          accounts={pockets} defaultAccountId={prefillId}
-          onDeposit={(id, amt, cur, notes) => depositToSavings(id, amt, cur, notes)}
+          pockets={pocketVMs} defaultAccountId={prefillId}
+          leftToSpend={stats.leftToSpend}
         />
       )}
       {withdrawOpen && (

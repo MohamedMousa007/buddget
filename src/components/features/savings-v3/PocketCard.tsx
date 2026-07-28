@@ -1,6 +1,6 @@
 'use client'
 
-import { MoreVertical } from 'lucide-react'
+import { Check, MoreVertical } from 'lucide-react'
 import type { SavingsAccount } from '@/lib/store/types'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 import { pocketColor, pocketIdentity } from '@/lib/savings/pocketIdentity'
@@ -19,9 +19,13 @@ export interface PocketCardProps {
   goalLabel: string
   /** Shows the Auto badge when the month-end remainder lands here. */
   isAuto: boolean
-  onAdd: () => void
-  onWithdraw: () => void
-  onMenu: () => void
+  onAdd?: () => void
+  onWithdraw?: () => void
+  onMenu?: () => void
+  /** Read-only picker mode (§6.2): hides ⋮ + Add/Withdraw, shows a selection radio/check. */
+  picker?: boolean
+  selected?: boolean
+  onSelect?: () => void
 }
 
 /** Width 343 per §3; the page carousel snaps these to centre. */
@@ -29,6 +33,7 @@ export const POCKET_CARD_WIDTH = 343
 
 export function PocketCard({
   account, coverAmount, goalsAmount, goalLabel, isAuto, onAdd, onWithdraw, onMenu,
+  picker, selected, onSelect,
 }: PocketCardProps) {
   const color = pocketColor(account)
   const bal = account.currentBalance
@@ -37,13 +42,18 @@ export function PocketCard({
   const free = Math.max(0, bal - cover - goals)
   const pct = (x: number) => (bal > 0 ? `${(x / bal) * 100}%` : '0%')
 
+  const pickerWidth = 339
   return (
     <div
       className="relative overflow-hidden shrink-0"
+      onClick={picker ? onSelect : undefined}
       style={{
-        width: POCKET_CARD_WIDTH, borderRadius: 20, padding: '15px 16px 14px',
-        background: 'var(--color-brand-card)', border: '1px solid var(--color-brand-border)',
-        scrollSnapAlign: 'center',
+        width: picker ? pickerWidth : POCKET_CARD_WIDTH, borderRadius: 20, padding: '15px 16px 14px',
+        background: picker && !selected ? 'var(--color-brand-elevated)' : 'var(--color-brand-card)',
+        border: selected ? '1px solid rgba(29,185,84,.55)' : '1px solid var(--color-brand-border)',
+        boxShadow: selected ? '0 0 0 1px rgba(29,185,84,.2)' : undefined,
+        scrollSnapAlign: picker ? 'start' : 'center',
+        cursor: picker ? 'pointer' : undefined,
       }}
     >
       <div
@@ -74,13 +84,26 @@ export function PocketCard({
               {pocketIdentity(account)}
             </div>
           </div>
-          <button
-            type="button" onClick={onMenu} aria-label="Pocket menu"
-            className="flex items-center justify-center shrink-0 text-[var(--color-brand-text-muted)]"
-            style={{ width: 32, height: 32, marginTop: -4, marginRight: -6 }}
-          >
-            <MoreVertical size={18} />
-          </button>
+          {picker ? (
+            <span
+              className="flex items-center justify-center shrink-0"
+              style={{
+                width: 26, height: 26, borderRadius: 999, marginTop: -2, marginRight: -2,
+                background: selected ? '#1DB954' : 'transparent',
+                border: selected ? undefined : '1.5px solid var(--color-brand-border)',
+              }}
+            >
+              {selected && <Check size={15} color="#fff" strokeWidth={3} />}
+            </span>
+          ) : (
+            <button
+              type="button" onClick={onMenu} aria-label="Pocket menu"
+              className="flex items-center justify-center shrink-0 text-[var(--color-brand-text-muted)]"
+              style={{ width: 32, height: 32, marginTop: -4, marginRight: -6 }}
+            >
+              <MoreVertical size={18} />
+            </button>
+          )}
         </div>
 
         <div className="mt-2.5 flex items-end gap-1.5">
@@ -104,24 +127,27 @@ export function PocketCard({
           </span>
         </div>
 
-        <div className="my-3" style={{ height: 1, background: 'var(--color-brand-border)' }} />
-
-        <div className="flex gap-2">
-          <button
-            type="button" onClick={onAdd}
-            className="flex-1 text-white active:scale-[.99] transition-transform"
-            style={{ height: 42, borderRadius: 12, background: '#1DB954', fontWeight: 600, fontSize: 13.5, boxShadow: '0 9px 20px -11px rgba(29,185,84,.85)' }}
-          >
-            Add
-          </button>
-          <button
-            type="button" onClick={onWithdraw}
-            className="flex-1 text-white active:scale-[.99] transition-transform"
-            style={{ height: 42, borderRadius: 12, background: '#E50914', fontWeight: 600, fontSize: 13.5, boxShadow: '0 9px 20px -11px rgba(229,9,20,.85)' }}
-          >
-            Withdraw
-          </button>
-        </div>
+        {!picker && (
+          <>
+            <div className="my-3" style={{ height: 1, background: 'var(--color-brand-border)' }} />
+            <div className="flex gap-2">
+              <button
+                type="button" onClick={onAdd}
+                className="flex-1 text-white active:scale-[.99] transition-transform"
+                style={{ height: 42, borderRadius: 12, background: '#1DB954', fontWeight: 600, fontSize: 13.5, boxShadow: '0 9px 20px -11px rgba(29,185,84,.85)' }}
+              >
+                Add
+              </button>
+              <button
+                type="button" onClick={onWithdraw}
+                className="flex-1 text-white active:scale-[.99] transition-transform"
+                style={{ height: 42, borderRadius: 12, background: '#E50914', fontWeight: 600, fontSize: 13.5, boxShadow: '0 9px 20px -11px rgba(229,9,20,.85)' }}
+              >
+                Withdraw
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
