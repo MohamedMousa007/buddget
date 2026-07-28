@@ -155,6 +155,7 @@ export const useFinanceStore = create<FinanceStore>()(
       budgetPlans: [],
       activeBudgetPlanId: null,
       savingsHoldings: [],
+      investmentHoldings: [],
       savingsAccounts: [],
       savingsTransactions: [],
       recurringSavingsDeposits: [],
@@ -1224,6 +1225,27 @@ export const useFinanceStore = create<FinanceStore>()(
           savingsHoldings: state.savingsHoldings.filter((s) => s.id !== id),
         })),
 
+      addInvestmentHolding: (h) => {
+        const id = generateId()
+        const now = new Date().toISOString()
+        set((state) => ({
+          investmentHoldings: [...state.investmentHoldings, { ...h, id, createdAt: now, updatedAt: now }],
+        }))
+        return id
+      },
+
+      updateInvestmentHolding: (id, updates) =>
+        set((state) => ({
+          investmentHoldings: state.investmentHoldings.map((h) =>
+            h.id === id ? { ...h, ...updates, updatedAt: new Date().toISOString() } : h
+          ),
+        })),
+
+      deleteInvestmentHolding: (id) =>
+        set((state) => ({
+          investmentHoldings: state.investmentHoldings.filter((h) => h.id !== id),
+        })),
+
       addSavingsAccount: (a) => {
         const input = a as Omit<SavingsAccount, 'id' | 'createdAt' | 'currentBalance'> & {
           openingBalance?: number
@@ -1637,6 +1659,7 @@ export const useFinanceStore = create<FinanceStore>()(
           activeBudgetPlanId: null,
           financialGoalsNotes: '',
           savingsHoldings: [],
+          investmentHoldings: [],
           savingsAccounts: [],
           savingsTransactions: [],
           recurringSavingsDeposits: [],
@@ -1848,6 +1871,7 @@ export const useFinanceStore = create<FinanceStore>()(
           recurringExpenses: [],
           budgetCategories: DEFAULT_BUDGET,
           savingsHoldings: [],
+          investmentHoldings: [],
           savingsAccounts: [],
           savingsTransactions: [],
           recurringSavingsDeposits: [],

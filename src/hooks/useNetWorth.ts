@@ -7,6 +7,8 @@ import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useRates } from '@/hooks/useRates'
 import { savingsAccountBalanceInBase } from '@/lib/savings/savingsConversions'
 import { convertCurrency } from '@/lib/utils/currency'
+import { useAssetPrices } from '@/hooks/useAssetPrices'
+import { totalInvestmentValue } from '@/lib/savings/holdingValuation'
 
 /**
  * Net worth snapshot: savings + investments (account balances) + this month's cash flow − debt.
@@ -21,8 +23,10 @@ import { convertCurrency } from '@/lib/utils/currency'
 export function useNetWorth() {
   useRates()
   const stats = useMonthlyStats()
+  const { lookup } = useAssetPrices()
   const {
     savingsAccounts,
+    investmentHoldings,
     debts,
     settings,
     exchangeRates,
@@ -31,6 +35,7 @@ export function useNetWorth() {
   } = useFinanceStore(
     useShallow((s) => ({
       savingsAccounts: s.savingsAccounts,
+      investmentHoldings: s.investmentHoldings,
       debts: s.debts,
       settings: s.settings,
       exchangeRates: s.exchangeRates,
@@ -56,6 +61,12 @@ export function useNetWorth() {
       if (a.category === 'investment') totalInvestments += v
       else totalSavings += v
     }
+
+    // v3 investment holdings (gold/crypto/stock/property), valued at quantity × live price.
+    // The holdings' native EGP values convert into the user's base currency for the rollup.
+    const holdings = totalInvestmentValue(investmentHoldings, lookup)
+    if (holdings.anyUnpriced) valuationIncomplete = true
+    totalInvestments += convertCurrency(holdings.total, 'EGP', base, exchangeRates)
 
     const monthlyFlow = stats.totalIncome - stats.cashOutflow
     const netWorth = totalSavings + totalInvestments + monthlyFlow - stats.debtRemainingTotal
@@ -85,6 +96,8 @@ export function useNetWorth() {
     }
   }, [
     savingsAccounts,
+    investmentHoldings,
+    lookup,
     debts,
     settings.baseCurrency,
     settings.secondaryCurrency,

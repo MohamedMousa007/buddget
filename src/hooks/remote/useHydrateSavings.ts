@@ -6,7 +6,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { savingsAccountFromRow } from '@/lib/supabase/remote/mappers/savingsAccountMapper'
 import { savingsTransactionFromRow } from '@/lib/supabase/remote/mappers/savingsTransactionMapper'
-import { savingsHoldingFromRow } from '@/lib/supabase/remote/mappers/savingsHoldingMapper'
+import { investmentHoldingFromRow } from '@/lib/supabase/remote/mappers/investmentHoldingMapper'
 import { recurringSavingsDepositFromRow } from '@/lib/supabase/remote/mappers/recurringSavingsDepositMapper'
 import { hasHydrated, markHydrated } from '@/hooks/remote/hydrateGuard'
 
@@ -35,7 +35,7 @@ export function useHydrateSavings(): void {
         const patch: Partial<ReturnType<typeof useFinanceStore.getState>> = {}
         if (aR.data) patch.savingsAccounts = aR.data.map(savingsAccountFromRow)
         if (tR.data) patch.savingsTransactions = tR.data.map(savingsTransactionFromRow)
-        if (hR.data) patch.savingsHoldings = hR.data.map(savingsHoldingFromRow)
+        if (hR.data) patch.investmentHoldings = hR.data.map(investmentHoldingFromRow)
         if (rR.data) patch.recurringSavingsDeposits = rR.data.map(recurringSavingsDepositFromRow)
         if (Object.keys(patch).length > 0) useFinanceStore.setState(patch)
         markHydrated(uid, 'savings')

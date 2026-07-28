@@ -1,4 +1,4 @@
-import type { GoldKarat } from '@/lib/store/types'
+import type { GoldKarat, InvestmentHolding } from '@/lib/store/types'
 import type { LivePrice } from '@/lib/prices/assetPriceLookup'
 
 /**
@@ -80,4 +80,37 @@ export function valueProperty(typedValue: number | null | undefined): HoldingVal
 /** Sagha USD→EGP rate from the cache, for crypto/stock conversion. */
 export function saghaRate(lookup: PriceLookup): number | null {
   return lookup('SAGHA_USD', 'EGP')?.price ?? null
+}
+
+/** Value one v3 holding in EGP, dispatching by asset type. Fail-closed. */
+export function valueInvestmentHolding(h: InvestmentHolding, lookup: PriceLookup): HoldingValue {
+  const sagha = saghaRate(lookup)
+  switch (h.assetType) {
+    case 'gold':
+      return valueGold(h.quantity, h.karat ?? 24, lookup, 'EGP')
+    case 'crypto':
+      return valueCrypto(h.quantity, h.symbol ?? '', lookup, sagha)
+    case 'stock':
+      return valueStock(h.quantity, h.symbol ?? '', lookup, sagha)
+    case 'property':
+      return valueProperty(h.propertyValue)
+  }
+}
+
+export interface InvestmentTotal {
+  total: number
+  /** True when at least one holding could not be priced — surface "net worth incomplete". */
+  anyUnpriced: boolean
+}
+
+/** Sum of all priceable holdings in EGP; unpriceable ones are excluded and flagged. */
+export function totalInvestmentValue(holdings: InvestmentHolding[], lookup: PriceLookup): InvestmentTotal {
+  let total = 0
+  let anyUnpriced = false
+  for (const h of holdings) {
+    const v = valueInvestmentHolding(h, lookup)
+    if (v.priced && v.value != null) total += v.value
+    else anyUnpriced = true
+  }
+  return { total, anyUnpriced }
 }

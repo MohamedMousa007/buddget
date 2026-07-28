@@ -1,4 +1,4 @@
-import type { FinanceStore, UserProfile, AppSettings, PaymentMethod, IncomeSource, IncomeEvent, Expense, Receipt, RecurringExpense, Subscription, Debt, DebtPayment, RecurringDebtPayment, SavingsAccount, SavingsHolding, SavingsTransaction, RecurringSavingsDeposit, Goal, BudgetPlan } from '@/lib/store/types'
+import type { FinanceStore, UserProfile, AppSettings, PaymentMethod, IncomeSource, IncomeEvent, Expense, Receipt, RecurringExpense, Subscription, Debt, DebtPayment, RecurringDebtPayment, SavingsAccount, InvestmentHolding, SavingsTransaction, RecurringSavingsDeposit, Goal, BudgetPlan } from '@/lib/store/types'
 
 /**
  * Mirror of the finance store slices we persist to Supabase. Used to compute diffs
@@ -20,7 +20,7 @@ export interface Snapshot {
   debtPayments: DebtPayment[]
   recurringDebtPayments: RecurringDebtPayment[]
   savingsAccounts: SavingsAccount[]
-  savingsHoldings: SavingsHolding[]
+  investmentHoldings: InvestmentHolding[]
   savingsTransactions: SavingsTransaction[]
   recurringSavingsDeposits: RecurringSavingsDeposit[]
   goals: Goal[]
@@ -32,7 +32,7 @@ export function snapshot(state: Pick<FinanceStore,
   | 'profile' | 'settings' | 'financialGoalsNotes' | 'activeBudgetPlanId'
   | 'paymentMethods' | 'incomeSources' | 'incomeEvents' | 'expenses' | 'receipts' | 'recurringExpenses'
   | 'subscriptions' | 'debts' | 'debtPayments' | 'recurringDebtPayments'
-  | 'savingsAccounts' | 'savingsHoldings' | 'savingsTransactions' | 'recurringSavingsDeposits'
+  | 'savingsAccounts' | 'investmentHoldings' | 'savingsTransactions' | 'recurringSavingsDeposits'
   | 'goals' | 'budgetPlans'
 >): Snapshot {
   return {
@@ -51,7 +51,7 @@ export function snapshot(state: Pick<FinanceStore,
     debtPayments: state.debtPayments,
     recurringDebtPayments: state.recurringDebtPayments,
     savingsAccounts: state.savingsAccounts,
-    savingsHoldings: state.savingsHoldings,
+    investmentHoldings: state.investmentHoldings,
     savingsTransactions: state.savingsTransactions,
     recurringSavingsDeposits: state.recurringSavingsDeposits,
     goals: state.goals,
@@ -95,7 +95,7 @@ export function emptySnapshot(): Snapshot {
     debtPayments: [],
     recurringDebtPayments: [],
     savingsAccounts: [],
-    savingsHoldings: [],
+    investmentHoldings: [],
     savingsTransactions: [],
     recurringSavingsDeposits: [],
     goals: [],

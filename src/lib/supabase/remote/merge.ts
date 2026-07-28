@@ -51,7 +51,7 @@ export function mergeSnapshots(local: Snapshot, server: Snapshot): Snapshot {
     debtPayments: mergeList(local.debtPayments, server.debtPayments),
     recurringDebtPayments: mergeList(local.recurringDebtPayments, server.recurringDebtPayments),
     savingsAccounts: mergeList(local.savingsAccounts, server.savingsAccounts),
-    savingsHoldings: mergeList(local.savingsHoldings, server.savingsHoldings),
+    investmentHoldings: mergeList(local.investmentHoldings, server.investmentHoldings),
     savingsTransactions: mergeList(local.savingsTransactions as WithId[], server.savingsTransactions as WithId[]) as Snapshot['savingsTransactions'],
     recurringSavingsDeposits: mergeList(local.recurringSavingsDeposits, server.recurringSavingsDeposits),
     goals: mergeList(local.goals, server.goals),

@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import {
   goldToGrams, valueGold, valueCrypto, valueStock, valueProperty, saghaRate,
+  valueInvestmentHolding, totalInvestmentValue,
   type PriceLookup,
 } from './holdingValuation'
 import type { LivePrice } from '@/lib/prices/assetPriceLookup'
+import type { InvestmentHolding } from '@/lib/store/types'
 
 const P = (price: number): LivePrice => ({ price, asOf: '2026-07-29T10:00:00Z', confidence: 'high' })
 
@@ -64,5 +66,32 @@ describe('saghaRate', () => {
   it('reads SAGHA_USD:EGP from the cache', () => {
     expect(saghaRate(lookupFrom({ 'SAGHA_USD:EGP': 52.4 }))).toBe(52.4)
     expect(saghaRate(lookupFrom({}))).toBeNull()
+  })
+})
+
+const holding = (over: Partial<InvestmentHolding>): InvestmentHolding => ({
+  id: 'h', assetType: 'gold', name: 'x', quantity: 0, currency: 'EGP', createdAt: '2026-01-01', ...over,
+})
+
+describe('valueInvestmentHolding + totalInvestmentValue', () => {
+  const lookup = lookupFrom({ 'XAU_21K:EGP': 5990, 'BTC:USD': 64000, 'SAGHA_USD:EGP': 52 })
+
+  it('dispatches by asset type', () => {
+    expect(valueInvestmentHolding(holding({ assetType: 'gold', karat: 21, quantity: 10 }), lookup).value).toBe(59900)
+    expect(valueInvestmentHolding(holding({ assetType: 'crypto', symbol: 'BTC', quantity: 0.5 }), lookup).value).toBe(0.5 * 64000 * 52)
+    expect(valueInvestmentHolding(holding({ assetType: 'property', propertyValue: 2_000_000 }), lookup).value).toBe(2_000_000)
+  })
+
+  it('sums priceable holdings and flags the rest', () => {
+    const r = totalInvestmentValue(
+      [
+        holding({ assetType: 'gold', karat: 21, quantity: 10 }), // 59,900
+        holding({ assetType: 'property', propertyValue: 1_000_000 }), // 1,000,000
+        holding({ assetType: 'gold', karat: 18, quantity: 5 }), // unpriced (no 18k)
+      ],
+      lookup,
+    )
+    expect(r.total).toBe(1_059_900)
+    expect(r.anyUnpriced).toBe(true)
   })
 })

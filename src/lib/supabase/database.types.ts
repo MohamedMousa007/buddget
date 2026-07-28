@@ -1420,6 +1420,7 @@ export type Database = {
           karat: number | null
           karat_adjustment: number
           karat_unconfirmed: boolean
+          metadata: Json
           notes: string | null
           purchase_date: string | null
           quantity: number
@@ -1444,6 +1445,7 @@ export type Database = {
           karat?: number | null
           karat_adjustment?: number
           karat_unconfirmed?: boolean
+          metadata?: Json
           notes?: string | null
           purchase_date?: string | null
           quantity?: number
@@ -1468,6 +1470,7 @@ export type Database = {
           karat?: number | null
           karat_adjustment?: number
           karat_unconfirmed?: boolean
+          metadata?: Json
           notes?: string | null
           purchase_date?: string | null
           quantity?: number
@@ -1484,6 +1487,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      savings_month_summary: {
+        Row: {
+          allocated: number
+          carry: number
+          carry_adjustment: number
+          closed_at: string
+          created_at: string
+          currency: Database["public"]["Enums"]["currency_code"]
+          id: string
+          month_key: string
+          pocket_id: string | null
+          saved: number
+          target: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allocated?: number
+          carry?: number
+          carry_adjustment?: number
+          closed_at?: string
+          created_at?: string
+          currency: Database["public"]["Enums"]["currency_code"]
+          id?: string
+          month_key: string
+          pocket_id?: string | null
+          saved?: number
+          target?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allocated?: number
+          carry?: number
+          carry_adjustment?: number
+          closed_at?: string
+          created_at?: string
+          currency?: Database["public"]["Enums"]["currency_code"]
+          id?: string
+          month_key?: string
+          pocket_id?: string | null
+          saved?: number
+          target?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       savings_transactions: {
         Row: {

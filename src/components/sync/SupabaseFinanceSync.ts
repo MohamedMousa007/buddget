@@ -420,7 +420,7 @@ async function runFullSync(
     debtPayments: merged.debtPayments,
     recurringDebtPayments: merged.recurringDebtPayments,
     savingsAccounts: merged.savingsAccounts,
-    savingsHoldings: merged.savingsHoldings,
+    investmentHoldings: merged.investmentHoldings,
     savingsTransactions: merged.savingsTransactions,
     recurringSavingsDeposits: merged.recurringSavingsDeposits,
     goals: merged.goals,

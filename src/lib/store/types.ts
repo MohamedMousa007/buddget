@@ -407,6 +407,43 @@ export interface SavingsHolding {
   updatedAt: string
 }
 
+/** v3 investment position: a thing you own, valued at quantity × live price. Grouped by
+ *  `assetType` on the Investment page (not inside a pocket). Backed by `savings_holdings`. */
+export type InvestmentAssetType = 'gold' | 'crypto' | 'stock' | 'property'
+
+export interface InvestmentHolding {
+  id: string
+  assetType: InvestmentAssetType
+  /** Display name — "21k jewellery", "Bitcoin", "Apple", "Downtown flat". */
+  name: string
+  /** Grams (gold, normalised from the entered unit) · coins · shares · m² (property). */
+  quantity: number
+  /** Valuation currency for this row (EGP for most; USD for a US stock before Sagha conversion). */
+  currency: Currency
+  purchaseDate?: string
+  /** Cost basis per unit (optional). */
+  unitCost?: number
+  costBasisCurrency?: Currency
+  notes?: string
+  // gold
+  karat?: GoldKarat
+  /** True on a backfilled gold row assumed 24k; prompts the user to confirm. */
+  karatUnconfirmed?: boolean
+  /** The unit the user entered gold in; `quantity` is always grams. */
+  goldUnit?: 'grams' | 'pounds' | 'ounces'
+  /** Coin symbol (BTC) or stock ticker (AAPL). */
+  symbol?: string
+  // property — value is user-typed; the area estimate never overrides it
+  propertyValue?: number
+  sharePercent?: number
+  rentedOut?: boolean
+  areaPricePerM2?: number
+  /** Where the gold sits · the crypto venue · the stock market. */
+  location?: string
+  createdAt: string
+  updatedAt?: string
+}
+
 /** High-level savings product; drives default Lucide icon in the UI. */
 export type SavingsType =
   | 'bank'
@@ -755,6 +792,8 @@ export interface FinanceStore {
   /** Selected plan for dashboard caps and planner UI; ignored when `budgetPlans` is empty. */
   activeBudgetPlanId: string | null
   savingsHoldings: SavingsHolding[]
+  /** v3 investment positions (gold/crypto/stock/property), valued at quantity × live price. */
+  investmentHoldings: InvestmentHolding[]
   /** Multi-account savings with transfer ledger (deposits / withdrawals). */
   savingsAccounts: SavingsAccount[]
   savingsTransactions: SavingsTransaction[]
@@ -901,6 +940,9 @@ export interface FinanceStore {
   addSavingsHolding: (h: Omit<SavingsHolding, 'id' | 'createdAt' | 'updatedAt'>) => void
   updateSavingsHolding: (id: string, updates: Partial<SavingsHolding>) => void
   deleteSavingsHolding: (id: string) => void
+  addInvestmentHolding: (h: Omit<InvestmentHolding, 'id' | 'createdAt' | 'updatedAt'>) => string
+  updateInvestmentHolding: (id: string, updates: Partial<InvestmentHolding>) => void
+  deleteInvestmentHolding: (id: string) => void
   addSavingsAccount: (
     a: Omit<SavingsAccount, 'id' | 'createdAt' | 'currentBalance'> & { openingBalance?: number }
   ) => string

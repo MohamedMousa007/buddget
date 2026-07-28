@@ -16,7 +16,7 @@ import { debtToRow, debtFromRow } from './mappers/debtMapper'
 import { debtPaymentToRow, debtPaymentFromRow } from './mappers/debtPaymentMapper'
 import { recurringDebtPaymentToRow, recurringDebtPaymentFromRow } from './mappers/recurringDebtPaymentMapper'
 import { savingsAccountToRow, savingsAccountFromRow } from './mappers/savingsAccountMapper'
-import { savingsHoldingToRow, savingsHoldingFromRow } from './mappers/savingsHoldingMapper'
+import { investmentHoldingToRow, investmentHoldingFromRow } from './mappers/investmentHoldingMapper'
 import { savingsTransactionToRow, savingsTransactionFromRow } from './mappers/savingsTransactionMapper'
 import { recurringSavingsDepositToRow, recurringSavingsDepositFromRow } from './mappers/recurringSavingsDepositMapper'
 import { goalToRow, goalFromRow } from './mappers/goalMapper'
@@ -181,7 +181,7 @@ export async function flushDiff(
   emitList(runner, 'debt_payments', next.debtPayments, prev.debtPayments, debtPaymentToRow, userId)
   emitList(runner, 'recurring_debt_payments', next.recurringDebtPayments, prev.recurringDebtPayments, recurringDebtPaymentToRow, userId)
   emitList(runner, 'savings_accounts', next.savingsAccounts, prev.savingsAccounts, savingsAccountToRow, userId)
-  emitList(runner, 'savings_holdings', next.savingsHoldings, prev.savingsHoldings, savingsHoldingToRow, userId)
+  emitList(runner, 'savings_holdings', next.investmentHoldings, prev.investmentHoldings, investmentHoldingToRow, userId)
   emitList(runner, 'savings_transactions', next.savingsTransactions, prev.savingsTransactions, savingsTransactionToRow, userId)
   emitList(runner, 'recurring_savings_deposits', next.recurringSavingsDeposits, prev.recurringSavingsDeposits, recurringSavingsDepositToRow, userId)
   emitList(runner, 'goals', next.goals, prev.goals, goalToRow, userId)
@@ -281,7 +281,7 @@ export async function pullCore(client: Client, userId: string): Promise<Snapshot
     debtPayments: [],
     recurringDebtPayments: [],
     savingsAccounts: [],
-    savingsHoldings: [],
+    investmentHoldings: [],
     savingsTransactions: [],
     recurringSavingsDeposits: [],
     goals: [],
@@ -374,7 +374,7 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
     debtPayments: (debtPayR.data ?? []).map(debtPaymentFromRow),
     recurringDebtPayments: (recDebtR.data ?? []).map(recurringDebtPaymentFromRow),
     savingsAccounts: (saR.data ?? []).map(savingsAccountFromRow),
-    savingsHoldings: (shR.data ?? []).map(savingsHoldingFromRow),
+    investmentHoldings: (shR.data ?? []).map(investmentHoldingFromRow),
     savingsTransactions: (stR.data ?? []).map(savingsTransactionFromRow),
     recurringSavingsDeposits: (rsdR.data ?? []).map(recurringSavingsDepositFromRow),
     goals: (goalR.data ?? []).map(goalFromRow),
