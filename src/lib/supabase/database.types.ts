@@ -989,6 +989,7 @@ export type Database = {
           default_shared_budget_plan_id: string | null
           display_name: string | null
           email: string | null
+          emergency_fund_config: Json
           financial_goals_notes: string
           food_frequency: string | null
           gender: string | null
@@ -1004,6 +1005,7 @@ export type Database = {
             | null
           transport_mode: string | null
           updated_at: string
+          zakat_config: Json
         }
         Insert: {
           active_budget_plan_id?: string | null
@@ -1018,6 +1020,7 @@ export type Database = {
           default_shared_budget_plan_id?: string | null
           display_name?: string | null
           email?: string | null
+          emergency_fund_config?: Json
           financial_goals_notes?: string
           food_frequency?: string | null
           gender?: string | null
@@ -1033,6 +1036,7 @@ export type Database = {
             | null
           transport_mode?: string | null
           updated_at?: string
+          zakat_config?: Json
         }
         Update: {
           active_budget_plan_id?: string | null
@@ -1047,6 +1051,7 @@ export type Database = {
           default_shared_budget_plan_id?: string | null
           display_name?: string | null
           email?: string | null
+          emergency_fund_config?: Json
           financial_goals_notes?: string
           food_frequency?: string | null
           gender?: string | null
@@ -1062,6 +1067,7 @@ export type Database = {
             | null
           transport_mode?: string | null
           updated_at?: string
+          zakat_config?: Json
         }
         Relationships: []
       }
@@ -1357,12 +1363,16 @@ export type Database = {
       savings_accounts: {
         Row: {
           category: Database["public"]["Enums"]["savings_category"]
+          color: string | null
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
           current_balance: number
           deleted_at: string | null
           icon: string | null
           id: string
+          is_emergency_cover: boolean
+          linked_payment_method_id: string | null
+          metadata: Json
           name: string
           notes: string | null
           opening_balance: number
@@ -1372,12 +1382,16 @@ export type Database = {
         }
         Insert: {
           category?: Database["public"]["Enums"]["savings_category"]
+          color?: string | null
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           current_balance?: number
           deleted_at?: string | null
           icon?: string | null
           id?: string
+          is_emergency_cover?: boolean
+          linked_payment_method_id?: string | null
+          metadata?: Json
           name: string
           notes?: string | null
           opening_balance?: number
@@ -1387,12 +1401,16 @@ export type Database = {
         }
         Update: {
           category?: Database["public"]["Enums"]["savings_category"]
+          color?: string | null
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           current_balance?: number
           deleted_at?: string | null
           icon?: string | null
           id?: string
+          is_emergency_cover?: boolean
+          linked_payment_method_id?: string | null
+          metadata?: Json
           name?: string
           notes?: string | null
           opening_balance?: number

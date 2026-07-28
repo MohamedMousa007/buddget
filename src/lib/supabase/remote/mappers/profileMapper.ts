@@ -1,6 +1,13 @@
 import type { UserProfile, Currency } from '@/lib/store/types'
 import type { ProfileRow, ProfileInsert } from '@/lib/supabase/remote/types'
 
+/** An empty jsonb config (`{}` or null) reads back as null (unset), not an empty object. */
+function emptyToNull(v: unknown): unknown {
+  if (v == null) return null
+  if (typeof v === 'object' && !Array.isArray(v) && Object.keys(v as object).length === 0) return null
+  return v
+}
+
 export interface ProfileExtras {
   financialGoalsNotes: string
   activeBudgetPlanId: string | null
@@ -49,6 +56,8 @@ export function profileToRow(
     transport_mode: p.transportMode ?? null,
     monthly_rent: p.monthlyRent ?? null,
     rent_includes_utilities: p.rentIncludesUtilities ?? false,
+    emergency_fund_config: (p.emergencyFundConfig ?? {}) as ProfileInsert['emergency_fund_config'],
+    zakat_config: (p.zakatConfig ?? {}) as ProfileInsert['zakat_config'],
     // display_name is NOT written here — it's server-authoritative. Omitting
     // it keeps PostgREST's existing value on upsert-conflict.
   }
@@ -77,6 +86,8 @@ export function profileFromRow(row: ProfileRow): ProfileFromRowResult {
     transportMode: (row.transport_mode ?? null) as UserProfile['transportMode'],
     monthlyRent: row.monthly_rent,
     rentIncludesUtilities: row.rent_includes_utilities,
+    emergencyFundConfig: emptyToNull(row.emergency_fund_config) as UserProfile['emergencyFundConfig'],
+    zakatConfig: emptyToNull(row.zakat_config) as UserProfile['zakatConfig'],
     createdAt: row.created_at,
   }
   const extras: ProfileExtras = {

@@ -477,6 +477,37 @@ export interface SavingsAccount {
   currentBalance: number
   createdAt: string
   notes?: string
+  /** v3 pocket display colour token (see the design accents). */
+  color?: string
+  /** Counts toward emergency cover (claimed before any goal). */
+  isEmergencyCover?: boolean
+  /** Linked real payment method this pocket represents. */
+  linkedPaymentMethodId?: string
+  /** Account-identity sub-line bits (bank name, last 4, certificate maturity, yearly return). */
+  institution?: string
+  accountLast4?: string
+  maturityDate?: string
+  yearlyReturn?: number
+}
+
+/** Per-user emergency-fund settings (stored as jsonb on profiles). */
+export interface EmergencyFundConfig {
+  targetMonths: number
+  /** Pockets explicitly counted as cover; when empty, the `isEmergencyCover` flag is used. */
+  coverPocketIds?: string[]
+  /** Manual simple-essentials override; when unset it is derived from rent/food/transport/bills/debt minimums. */
+  monthlyEssentials?: number
+}
+
+/** Per-user zakat settings (stored as jsonb on profiles). */
+export interface ZakatConfig {
+  nisabBasis: 'silver' | 'gold'
+  holdsForTrading: boolean
+  /** Master override — replaces the computed figure entirely. */
+  manualAmount?: number | null
+  /** Per-line edits in the "what counts" list, keyed by line id. */
+  lineOverrides?: Record<string, number>
+  lastPaidDate?: string
 }
 
 /** Template for monthly recurring deposits (user confirms amount in Add flow; scheduler posts on due date). */
@@ -664,6 +695,10 @@ export interface UserProfile {
   monthlyRent?: number | null
   /** Whether utilities are bundled into rent. Synced via `profiles.rent_includes_utilities`. */
   rentIncludesUtilities?: boolean
+  /** v3 emergency-fund settings. Synced via `profiles.emergency_fund_config`. */
+  emergencyFundConfig?: EmergencyFundConfig | null
+  /** v3 zakat settings. Synced via `profiles.zakat_config`. */
+  zakatConfig?: ZakatConfig | null
   createdAt: string
 }
 
