@@ -16,6 +16,8 @@ import { EmergencyFundSheet } from '@/components/features/savings-v3/EmergencyFu
 import { ZakatCard } from '@/components/features/savings-v3/ZakatCard'
 import { ZakatSheet } from '@/components/features/savings-v3/ZakatSheet'
 import { InvestmentView } from '@/components/features/savings-v3/InvestmentView'
+import { AddInvestmentSheet } from '@/components/features/savings-v3/AddInvestmentSheet'
+import type { InvestmentAssetType } from '@/lib/store/types'
 import { computeEmergencyFund } from '@/lib/savings/emergencyFund'
 import { computeZakat } from '@/lib/savings/zakat'
 import { deriveZakatBase } from '@/lib/savings/zakatInputs'
@@ -67,6 +69,8 @@ export default function SavingsPage() {
   const [emergencyOpen, setEmergencyOpen] = useState(false)
   const [zakatOpen, setZakatOpen] = useState(false)
   const [view, setView] = useState<'savings' | 'investment'>('savings')
+  const [addInvestOpen, setAddInvestOpen] = useState(false)
+  const [addInvestType, setAddInvestType] = useState<InvestmentAssetType | null>(null)
 
   const pockets = useMemo(
     () => savingsAccounts.filter((a) => a.category === 'savings'),
@@ -160,10 +164,13 @@ export default function SavingsPage() {
 
   if (view === 'investment') {
     return (
-      <InvestmentView
-        onBackToSavings={() => setView('savings')}
-        onAddInvestment={() => { /* Add-investment flow — slice 8 */ }}
-      />
+      <>
+        <InvestmentView
+          onBackToSavings={() => setView('savings')}
+          onAddInvestment={(t) => guard(() => { setAddInvestType(t); setAddInvestOpen(true) })}
+        />
+        {addInvestOpen && <AddInvestmentSheet open presetType={addInvestType} onClose={() => setAddInvestOpen(false)} />}
+      </>
     )
   }
 

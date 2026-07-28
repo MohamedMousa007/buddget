@@ -27,7 +27,8 @@ const ADD_LABEL: Record<InvestmentAssetType, string> = { gold: 'Add gold', crypt
 
 export interface InvestmentViewProps {
   onBackToSavings: () => void
-  onAddInvestment: (type: InvestmentAssetType) => void
+  /** null opens the type-picker list (§10); a type opens that asset's form directly. */
+  onAddInvestment: (type: InvestmentAssetType | null) => void
 }
 
 export function InvestmentView({ onBackToSavings, onAddInvestment }: InvestmentViewProps) {
@@ -82,7 +83,7 @@ export function InvestmentView({ onBackToSavings, onAddInvestment }: InvestmentV
               <HeroCell label="All time" value={`${totals.allTime >= 0 ? '+' : ''}${fmtCompact(totals.allTime)}`} color={totals.allTime >= 0 ? '#35D46F' : '#FF6B6B'} trend={totals.allTime >= 0} />
               <HeroCell label="Net worth" value={fmtCompact(nw.netWorth)} onClick={onBackToSavings} chevron last />
             </div>
-            <button type="button" onClick={() => onAddInvestment(tab)} className="mt-3 w-full text-white" style={{ height: 46, borderRadius: 13, background: '#E50914', fontWeight: 600, fontSize: 15 }}>Add investment</button>
+            <button type="button" onClick={() => onAddInvestment(null)} className="mt-3 w-full text-white" style={{ height: 46, borderRadius: 13, background: '#E50914', fontWeight: 600, fontSize: 15 }}>Add investment</button>
           </div>
         </div>
 
