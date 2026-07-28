@@ -54,6 +54,24 @@ export async function fetchSpotOunceUsd(): Promise<number | null> {
     },
   ]
 
+  // GoldAPI.io (keyed) is a distinct upstream — added when configured, strengthens the consensus.
+  const goldApiKey = process.env.GOLDAPI_IO_KEY
+  if (goldApiKey) {
+    providers.push({
+      source: 'goldapi.io', upstream: 'goldapi',
+      fetch: async () => {
+        const res = await fetch('https://www.goldapi.io/api/XAU/USD', {
+          signal: AbortSignal.timeout(6000),
+          headers: { 'x-access-token': goldApiKey, 'user-agent': UA },
+        })
+        if (!res.ok) throw new Error(`goldapi ${res.status}`)
+        const d = (await res.json()) as { price?: number }
+        if (!d.price || d.price <= 0) throw new Error('no price')
+        return d.price
+      },
+    })
+  }
+
   const samples = []
   for (const p of providers) {
     try {

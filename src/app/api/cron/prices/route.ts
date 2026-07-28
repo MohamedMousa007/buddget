@@ -14,6 +14,7 @@ import { coinGeckoUrl, parseCoinGeckoSimplePrice } from '@/lib/prices/coingecko'
 import { fetchSpotOunceUsd, fetchOfficialUsdEgp, fetchEgyptSaghaHtml } from '@/lib/prices/fetchSpot'
 import { resolveEgyptSaghaFromHtml } from '@/lib/prices/resolveEgyptSagha'
 import { egyptKaratPrice, usdPerGram } from '@/lib/prices/egyptGold'
+import { fetchGulfGoldKarats, fetchHeldStockTickers, fetchFinnhubQuotes } from '@/lib/prices/fetchKeyed'
 import type { Currency, GoldKarat } from '@/lib/store/types'
 
 export const maxDuration = 60
@@ -77,6 +78,34 @@ export async function GET(request: Request) {
     }
   } catch (e) {
     console.error('[cron/prices] coingecko failed', e)
+  }
+
+  // Gulf gold karats (keyed): AED/SAR are pegged, so GoldAPI.io + goldpricez give exact local karat
+  // prices with no crawling. EGP is deliberately excluded — its local price is the crawled Sagha.
+  for (const cur of ['AED', 'SAR'] as const) {
+    try {
+      for (const k of await fetchGulfGoldKarats(cur)) {
+        rows.push(row({ symbol: `XAU_${k.karat}K`, asset_class: 'gold', currency: cur, price: k.pricePerGram, source: k.sources, upstream: 'gulf-gold', confidence: k.confidence }))
+      }
+    } catch (e) {
+      console.error(`[cron/prices] gulf gold ${cur} failed`, e)
+    }
+  }
+
+  // Stocks (keyed, Finnhub): only the tickers users actually hold — one quote call each.
+  const finnhubKey = process.env.FINNHUB_KEY
+  if (finnhubKey) {
+    try {
+      const service0 = createServiceRoleClient()
+      const tickers = await fetchHeldStockTickers(service0)
+      if (tickers.length > 0) {
+        for (const q of await fetchFinnhubQuotes(tickers, finnhubKey)) {
+          rows.push(row({ symbol: q.symbol, asset_class: 'stock', currency: 'USD', price: q.price, source: 'finnhub', upstream: 'finnhub', confidence: 'single' }))
+        }
+      }
+    } catch (e) {
+      console.error('[cron/prices] finnhub failed', e)
+    }
   }
 
   if (rows.length === 0) {
