@@ -695,6 +695,8 @@ export interface UserProfile {
   monthlyRent?: number | null
   /** Whether utilities are bundled into rent. Synced via `profiles.rent_includes_utilities`. */
   rentIncludesUtilities?: boolean
+  /** Pocket that receives the automatic month-end carry. Synced via `profiles.default_carry_pocket_id`. */
+  defaultCarryPocketId?: string | null
   /** v3 emergency-fund settings. Synced via `profiles.emergency_fund_config`. */
   emergencyFundConfig?: EmergencyFundConfig | null
   /** v3 zakat settings. Synced via `profiles.zakat_config`. */

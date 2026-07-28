@@ -56,6 +56,7 @@ export function profileToRow(
     transport_mode: p.transportMode ?? null,
     monthly_rent: p.monthlyRent ?? null,
     rent_includes_utilities: p.rentIncludesUtilities ?? false,
+    default_carry_pocket_id: p.defaultCarryPocketId ?? null,
     emergency_fund_config: (p.emergencyFundConfig ?? {}) as ProfileInsert['emergency_fund_config'],
     zakat_config: (p.zakatConfig ?? {}) as ProfileInsert['zakat_config'],
     // display_name is NOT written here — it's server-authoritative. Omitting
@@ -86,6 +87,7 @@ export function profileFromRow(row: ProfileRow): ProfileFromRowResult {
     transportMode: (row.transport_mode ?? null) as UserProfile['transportMode'],
     monthlyRent: row.monthly_rent,
     rentIncludesUtilities: row.rent_includes_utilities,
+    defaultCarryPocketId: row.default_carry_pocket_id ?? null,
     emergencyFundConfig: emptyToNull(row.emergency_fund_config) as UserProfile['emergencyFundConfig'],
     zakatConfig: emptyToNull(row.zakat_config) as UserProfile['zakatConfig'],
     createdAt: row.created_at,
