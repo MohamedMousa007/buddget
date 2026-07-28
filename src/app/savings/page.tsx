@@ -13,7 +13,12 @@ import { SavingsHero } from '@/components/features/savings-v3/SavingsHero'
 import { PocketsCarousel, type PocketVM } from '@/components/features/savings-v3/PocketsCarousel'
 import { EmergencyFundCard } from '@/components/features/savings-v3/EmergencyFundCard'
 import { EmergencyFundSheet } from '@/components/features/savings-v3/EmergencyFundSheet'
+import { ZakatCard } from '@/components/features/savings-v3/ZakatCard'
+import { ZakatSheet } from '@/components/features/savings-v3/ZakatSheet'
 import { computeEmergencyFund } from '@/lib/savings/emergencyFund'
+import { computeZakat } from '@/lib/savings/zakat'
+import { deriveZakatBase } from '@/lib/savings/zakatInputs'
+import { useAssetPrices } from '@/hooks/useAssetPrices'
 import { deriveSimpleMonth } from '@/lib/savings/simpleMonth'
 import { savingsAccountBalanceInBase } from '@/lib/savings/savingsConversions'
 import { AddSavingsSheetV3 } from '@/components/features/savings-v3/AddSavingsSheetV3'
@@ -33,9 +38,11 @@ export default function SavingsPage() {
   const nw = useNetWorth()
   const stats = useMonthlyStats()
 
-  const { savingsAccounts, goals, profile, settings, exchangeRates, budgetPlans, activeBudgetPlanId, debts, goldPricePerGram, goldPriceAvailable, correctSavingsBalance } = useFinanceStore(
+  const { lookup } = useAssetPrices()
+  const { savingsAccounts, investmentHoldings, goals, profile, settings, exchangeRates, budgetPlans, activeBudgetPlanId, debts, goldPricePerGram, goldPriceAvailable, correctSavingsBalance } = useFinanceStore(
     useShallow((s) => ({
       savingsAccounts: s.savingsAccounts,
+      investmentHoldings: s.investmentHoldings,
       goals: s.goals,
       profile: s.profile,
       settings: s.settings,
@@ -57,6 +64,7 @@ export default function SavingsPage() {
   const [prefillId, setPrefillId] = useState<string | null>(null)
   const [menuId, setMenuId] = useState<string | null>(null)
   const [emergencyOpen, setEmergencyOpen] = useState(false)
+  const [zakatOpen, setZakatOpen] = useState(false)
 
   const pockets = useMemo(
     () => savingsAccounts.filter((a) => a.category === 'savings'),
@@ -78,6 +86,32 @@ export default function SavingsPage() {
     [profile, budgetPlans, activeBudgetPlanId, debts, settings.baseCurrency, exchangeRates])
   const targetMonths = profile.emergencyFundConfig?.targetMonths ?? 3
   const emergency = useMemo(() => computeEmergencyFund({ coverAmount, monthlyEssentials: simpleMonth.total, targetMonths }), [coverAmount, simpleMonth.total, targetMonths])
+
+  // Zakat
+  const zakatBase = useMemo(() => deriveZakatBase({ savingsAccounts, investmentHoldings, debts, baseCurrency: settings.baseCurrency, exchangeRates, goldPricePerGram, goldPriceAvailable: goldOk, lookup }),
+    [savingsAccounts, investmentHoldings, debts, settings.baseCurrency, exchangeRates, goldPricePerGram, goldOk, lookup])
+  const zakatResult = useMemo(() => {
+    const zc = profile.zakatConfig
+    const ov = zc?.lineOverrides ?? {}
+    return computeZakat({
+      cashAndSavings: ov.cash ?? zakatBase.cashAndSavings,
+      goldValue: ov.gold ?? zakatBase.goldValue,
+      cryptoValue: ov.crypto ?? zakatBase.cryptoValue,
+      stocksValue: ov.stocks ?? zakatBase.stocksValue,
+      debtsDueThisYear: ov.debts ?? zakatBase.debtsDueThisYear,
+      holdsForTrading: zc?.holdsForTrading ?? false,
+      nisabBasis: zc?.nisabBasis ?? 'silver',
+      gold24kSellPerGram: zakatBase.gold24kSellPerGram,
+      silverPerGram: zakatBase.silverPerGram,
+      manualAmount: zc?.manualAmount ?? null,
+    })
+  }, [zakatBase, profile.zakatConfig])
+  // Hawl date: a lunar year (~354 days) from the last paid date or account creation.
+  const hawlDate = useMemo(() => {
+    const start = profile.zakatConfig?.lastPaidDate ?? profile.createdAt
+    const d = new Date(new Date(start).getTime() + 354 * 24 * 3600 * 1000)
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  }, [profile.zakatConfig?.lastPaidDate, profile.createdAt])
 
   const pocketVMs = useMemo<PocketVM[]>(() => {
     return pockets.map((account) => {
@@ -185,6 +219,7 @@ export default function SavingsPage() {
                 />
               </div>
             )}
+            <ZakatCard result={zakatResult} base={zakatResult.zakatable} hawlDate={hawlDate} onOpen={() => guard(() => setZakatOpen(true))} />
           </section>
         )}
       </div>
@@ -241,6 +276,7 @@ export default function SavingsPage() {
       )}
       {newAccountOpen && <NewPocketSheet open onClose={() => setNewAccountOpen(false)} />}
       {emergencyOpen && <EmergencyFundSheet open onClose={() => setEmergencyOpen(false)} />}
+      {zakatOpen && <ZakatSheet open onClose={() => setZakatOpen(false)} base={zakatBase} hawlDate={hawlDate} />}
       {editAcc && (
         <EditSavingsAccountSheet open account={editAcc} onClose={() => setEditAcc(null)} />
       )}
