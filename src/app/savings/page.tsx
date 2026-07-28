@@ -12,7 +12,7 @@ import { SkeletonList } from '@/components/ui/SkeletonList'
 import { SavingsHero } from '@/components/features/savings-v3/SavingsHero'
 import { PocketsCarousel, type PocketVM } from '@/components/features/savings-v3/PocketsCarousel'
 import { AddSavingsSheetV3 } from '@/components/features/savings-v3/AddSavingsSheetV3'
-import { WithdrawFromSavingsSheet } from '@/components/features/savings/WithdrawFromSavingsSheet'
+import { WithdrawSheetV3 } from '@/components/features/savings-v3/WithdrawSheetV3'
 import { UpdateBalanceSheet } from '@/components/features/savings/UpdateBalanceSheet'
 import { AddSavingsAccountSheet } from '@/components/modals/AddSavingsAccountSheet'
 import { EditSavingsAccountSheet } from '@/components/modals/EditSavingsAccountSheet'
@@ -28,15 +28,13 @@ export default function SavingsPage() {
   const nw = useNetWorth()
   const stats = useMonthlyStats()
 
-  const { savingsAccounts, goals, profile, settings, exchangeRates,
-    withdrawFromSavings, correctSavingsBalance } = useFinanceStore(
+  const { savingsAccounts, goals, profile, settings, exchangeRates, correctSavingsBalance } = useFinanceStore(
     useShallow((s) => ({
       savingsAccounts: s.savingsAccounts,
       goals: s.goals,
       profile: s.profile,
       settings: s.settings,
       exchangeRates: s.exchangeRates,
-      withdrawFromSavings: s.withdrawFromSavings,
       correctSavingsBalance: s.correctSavingsBalance,
     })),
   )
@@ -189,10 +187,9 @@ export default function SavingsPage() {
         />
       )}
       {withdrawOpen && (
-        <WithdrawFromSavingsSheet
+        <WithdrawSheetV3
           open onClose={() => { setWithdrawOpen(false); setPrefillId(null) }}
-          accounts={pockets} defaultAccountId={prefillId}
-          onWithdraw={(id, amt, cur, notes) => withdrawFromSavings(id, amt, cur, notes)}
+          pockets={pocketVMs} defaultAccountId={prefillId}
         />
       )}
       {updateAcc && (
