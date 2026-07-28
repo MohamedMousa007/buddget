@@ -11,6 +11,11 @@ import { useHydrateSavings, useHydrateGoals } from '@/hooks/remote'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { SavingsHero } from '@/components/features/savings-v3/SavingsHero'
 import { PocketsCarousel, type PocketVM } from '@/components/features/savings-v3/PocketsCarousel'
+import { EmergencyFundCard } from '@/components/features/savings-v3/EmergencyFundCard'
+import { EmergencyFundSheet } from '@/components/features/savings-v3/EmergencyFundSheet'
+import { computeEmergencyFund } from '@/lib/savings/emergencyFund'
+import { deriveSimpleMonth } from '@/lib/savings/simpleMonth'
+import { savingsAccountBalanceInBase } from '@/lib/savings/savingsConversions'
 import { AddSavingsSheetV3 } from '@/components/features/savings-v3/AddSavingsSheetV3'
 import { WithdrawSheetV3 } from '@/components/features/savings-v3/WithdrawSheetV3'
 import { UpdateBalanceSheet } from '@/components/features/savings/UpdateBalanceSheet'
@@ -28,13 +33,18 @@ export default function SavingsPage() {
   const nw = useNetWorth()
   const stats = useMonthlyStats()
 
-  const { savingsAccounts, goals, profile, settings, exchangeRates, correctSavingsBalance } = useFinanceStore(
+  const { savingsAccounts, goals, profile, settings, exchangeRates, budgetPlans, activeBudgetPlanId, debts, goldPricePerGram, goldPriceAvailable, correctSavingsBalance } = useFinanceStore(
     useShallow((s) => ({
       savingsAccounts: s.savingsAccounts,
       goals: s.goals,
       profile: s.profile,
       settings: s.settings,
       exchangeRates: s.exchangeRates,
+      budgetPlans: s.budgetPlans,
+      activeBudgetPlanId: s.activeBudgetPlanId,
+      debts: s.debts,
+      goldPricePerGram: s.goldPricePerGram,
+      goldPriceAvailable: s.goldPriceAvailable,
       correctSavingsBalance: s.correctSavingsBalance,
     })),
   )
@@ -46,11 +56,28 @@ export default function SavingsPage() {
   const [updateAcc, setUpdateAcc] = useState<SavingsAccount | null>(null)
   const [prefillId, setPrefillId] = useState<string | null>(null)
   const [menuId, setMenuId] = useState<string | null>(null)
+  const [emergencyOpen, setEmergencyOpen] = useState(false)
 
   const pockets = useMemo(
     () => savingsAccounts.filter((a) => a.category === 'savings'),
     [savingsAccounts],
   )
+
+  // Emergency fund: cover = the cover pockets' balances; essentials = a "simple month".
+  const goldOk = goldPriceAvailable !== false
+  const coverPocketIds = useMemo(() => {
+    const cfg = profile.emergencyFundConfig
+    return cfg?.coverPocketIds ?? pockets.filter((a) => a.isEmergencyCover).map((a) => a.id)
+  }, [profile.emergencyFundConfig, pockets])
+  const coverAmount = useMemo(() =>
+    pockets.filter((a) => coverPocketIds.includes(a.id))
+      .reduce((s, a) => s + (savingsAccountBalanceInBase(a, settings.baseCurrency, exchangeRates, goldPricePerGram, goldOk) ?? 0), 0),
+    [pockets, coverPocketIds, settings.baseCurrency, exchangeRates, goldPricePerGram, goldOk])
+  const simpleMonth = useMemo(() =>
+    deriveSimpleMonth({ profile, activePlan: budgetPlans.find((p) => p.id === activeBudgetPlanId) ?? budgetPlans[0], debts, baseCurrency: settings.baseCurrency, exchangeRates, override: profile.emergencyFundConfig?.monthlyEssentials }),
+    [profile, budgetPlans, activeBudgetPlanId, debts, settings.baseCurrency, exchangeRates])
+  const targetMonths = profile.emergencyFundConfig?.targetMonths ?? 3
+  const emergency = useMemo(() => computeEmergencyFund({ coverAmount, monthlyEssentials: simpleMonth.total, targetMonths }), [coverAmount, simpleMonth.total, targetMonths])
 
   const pocketVMs = useMemo<PocketVM[]>(() => {
     return pockets.map((account) => {
@@ -71,13 +98,13 @@ export default function SavingsPage() {
             : `${linked[0].name} + ${linked.length - 1} more`
       return {
         account,
-        coverAmount: 0, // refined in the emergency-fund slice
+        coverAmount: coverPocketIds.includes(account.id) ? account.currentBalance : 0,
         goalsAmount,
         goalLabel,
         isAuto: profile.defaultCarryPocketId === account.id || account.type === 'vault',
       }
     })
-  }, [pockets, goals, profile.defaultCarryPocketId])
+  }, [pockets, goals, profile.defaultCarryPocketId, coverPocketIds])
 
   const heroBig = nw.totalSavings + nw.totalInvestments
   const heroUsd = useMemo(
@@ -145,6 +172,19 @@ export default function SavingsPage() {
               onWithdraw={openWithdraw}
               onMenu={(id) => setMenuId(id)}
             />
+
+            {simpleMonth.total > 0 && (
+              <div className="mt-3">
+                <EmergencyFundCard
+                  monthsCovered={emergency.monthsCovered}
+                  targetMonths={targetMonths}
+                  coverAmount={coverAmount}
+                  gap={emergency.gap}
+                  atOrAboveTarget={emergency.atOrAboveTarget}
+                  onOpen={() => guard(() => setEmergencyOpen(true))}
+                />
+              </div>
+            )}
           </section>
         )}
       </div>
@@ -200,6 +240,7 @@ export default function SavingsPage() {
         />
       )}
       {newAccountOpen && <NewPocketSheet open onClose={() => setNewAccountOpen(false)} />}
+      {emergencyOpen && <EmergencyFundSheet open onClose={() => setEmergencyOpen(false)} />}
       {editAcc && (
         <EditSavingsAccountSheet open account={editAcc} onClose={() => setEditAcc(null)} />
       )}
