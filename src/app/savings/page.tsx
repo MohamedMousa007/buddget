@@ -17,6 +17,7 @@ import { ZakatCard } from '@/components/features/savings-v3/ZakatCard'
 import { ZakatSheet } from '@/components/features/savings-v3/ZakatSheet'
 import { InvestmentView } from '@/components/features/savings-v3/InvestmentView'
 import { AddInvestmentSheet } from '@/components/features/savings-v3/AddInvestmentSheet'
+import { ActivityLedger } from '@/components/features/savings-v3/ActivityLedger'
 import type { InvestmentAssetType } from '@/lib/store/types'
 import { computeEmergencyFund } from '@/lib/savings/emergencyFund'
 import { computeZakat } from '@/lib/savings/zakat'
@@ -42,9 +43,10 @@ export default function SavingsPage() {
   const stats = useMonthlyStats()
 
   const { lookup } = useAssetPrices()
-  const { savingsAccounts, investmentHoldings, goals, profile, settings, exchangeRates, budgetPlans, activeBudgetPlanId, debts, goldPricePerGram, goldPriceAvailable, correctSavingsBalance } = useFinanceStore(
+  const { savingsAccounts, savingsTransactions, investmentHoldings, goals, profile, settings, exchangeRates, budgetPlans, activeBudgetPlanId, debts, goldPricePerGram, goldPriceAvailable, correctSavingsBalance } = useFinanceStore(
     useShallow((s) => ({
       savingsAccounts: s.savingsAccounts,
+      savingsTransactions: s.savingsTransactions,
       investmentHoldings: s.investmentHoldings,
       goals: s.goals,
       profile: s.profile,
@@ -238,6 +240,10 @@ export default function SavingsPage() {
               </div>
             )}
             <ZakatCard result={zakatResult} base={zakatResult.zakatable} hawlDate={hawlDate} onOpen={() => guard(() => setZakatOpen(true))} />
+
+            <div className="mt-4">
+              <ActivityLedger transactions={savingsTransactions} accounts={pockets} baseCurrency={settings.baseCurrency} exchangeRates={exchangeRates} />
+            </div>
           </section>
         )}
       </div>
