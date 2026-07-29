@@ -289,6 +289,7 @@ export default function SavingsPage() {
         <WithdrawSheetV3
           open onClose={() => { setWithdrawOpen(false); setPrefillId(null) }}
           pockets={pocketVMs} defaultAccountId={prefillId}
+          onNeedAsset={(t) => { setWithdrawOpen(false); setPrefillId(null); setAddInvestType(t); setAddInvestOpen(true) }}
         />
       )}
       {updateAcc && (

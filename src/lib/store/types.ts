@@ -641,6 +641,8 @@ export interface DebtPayment {
   amountInPrimary?: number
   rateAtEntry?: number
   notes?: string
+  /** Paid from a savings pocket (balance-sheet move) — excluded from monthly cash outflow. */
+  fundedFromSavings?: boolean
   sharedPlanId?: string | null
   createdAt: string
 }

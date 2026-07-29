@@ -292,6 +292,7 @@ export type Database = {
           currency: Database["public"]["Enums"]["currency_code"]
           debt_id: string
           deleted_at: string | null
+          funded_from_savings: boolean
           id: string
           notes: string | null
           payment_date: string
@@ -305,6 +306,7 @@ export type Database = {
           currency?: Database["public"]["Enums"]["currency_code"]
           debt_id: string
           deleted_at?: string | null
+          funded_from_savings?: boolean
           id?: string
           notes?: string | null
           payment_date?: string
@@ -318,6 +320,7 @@ export type Database = {
           currency?: Database["public"]["Enums"]["currency_code"]
           debt_id?: string
           deleted_at?: string | null
+          funded_from_savings?: boolean
           id?: string
           notes?: string | null
           payment_date?: string

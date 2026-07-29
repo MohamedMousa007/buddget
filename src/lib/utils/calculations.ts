@@ -651,6 +651,9 @@ export function calculateCashOutflow(params: {
   for (const p of monthDebtPayments) {
     const debt = debtById.get(p.debtId)
     if (!debt || !deferredDebtIds.has(debt.id)) continue
+    // Savings-funded payoffs are a balance-sheet move (pocket → debt), already accounted
+    // for by the pocket withdrawal; counting them as cash outflow would drop net worth twice.
+    if (p.fundedFromSavings) continue
     const inBase = tryConvertCurrency(p.amountPaid, debt.currency as Currency, baseCurrency, exchangeRates)
     outflow += inBase ?? p.amountPaid
   }

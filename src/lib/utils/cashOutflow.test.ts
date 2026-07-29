@@ -268,6 +268,19 @@ describe('calculateCashOutflow', () => {
     ).toBe(12_000)
   })
 
+  it('excludes a savings-funded card payoff — the pocket withdrawal already moved net worth', () => {
+    expect(
+      outflow({
+        monthExpenses: [],
+        monthDebtPayments: [payment({ amountPaid: 12_000, fundedFromSavings: true })],
+        debts: [cardDebt()],
+        monthSavingsDeposits: 0,
+        baseCurrency: BASE,
+        exchangeRates: RATES,
+      }),
+    ).toBe(0)
+  })
+
   it('ignores payments toward a personal debt — its repayment already posts a Debt spend row', () => {
     const personal = debt({ id: 'debt_p', name: 'Ahmed', debtType: 'personal', startingBalance: 500 })
     expect(

@@ -1,16 +1,27 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Calendar, Plus, ShoppingCart, CreditCard, Gem, TrendingUp, ArrowRight, X } from 'lucide-react'
+import { Calendar, Plus, ShoppingCart, CreditCard, Gem, TrendingUp, ArrowRight, X, Coins, Bitcoin, LineChart } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { AmountField } from '@/components/ui/AmountField'
 import { CurrencyField } from '@/components/ui/CurrencyField'
 import { Input } from '@/components/ui/input'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useDebtTabData } from '@/hooks/useDebtTabData'
+import { useAssetPrices } from '@/hooks/useAssetPrices'
+import { valueInvestmentHolding } from '@/lib/savings/holdingValuation'
+import { convertCurrency } from '@/lib/utils/currency'
+import { moneyToGoldGrams } from '@/lib/utils/calculations'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 import { pocketColor } from '@/lib/savings/pocketIdentity'
 import type { PocketVM } from '@/components/features/savings-v3/PocketsCarousel'
-import type { Currency, SavingsWithdrawalPurpose } from '@/lib/store/types'
+import type { Currency, InvestmentAssetType, SavingsWithdrawalPurpose } from '@/lib/store/types'
+
+const INVEST_CLASSES: Array<{ type: InvestmentAssetType; label: string; icon: React.ReactNode }> = [
+  { type: 'gold', label: 'Gold', icon: <Coins size={15} /> },
+  { type: 'crypto', label: 'Crypto', icon: <Bitcoin size={15} /> },
+  { type: 'stock', label: 'Stocks & funds', icon: <LineChart size={15} /> },
+]
 
 const micro: React.CSSProperties = { fontSize: 10, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--color-brand-text-muted)' }
 const fmtNum = (n: number) => Math.round(n).toLocaleString('en-US')
@@ -29,18 +40,31 @@ export interface WithdrawSheetV3Props {
   onClose: () => void
   pockets: PocketVM[]
   defaultAccountId?: string | null
+  /** Fallback when a chosen asset class has no existing holding to top up. */
+  onNeedAsset?: (type: InvestmentAssetType) => void
 }
 
-export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId }: WithdrawSheetV3Props) {
+export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNeedAsset }: WithdrawSheetV3Props) {
   const withdraw = useFinanceStore((s) => s.withdrawFromSavings)
   const transfer = useFinanceStore((s) => s.transferBetweenPockets)
+  const addDebtPayment = useFinanceStore((s) => s.addDebtPayment)
+  const updateHolding = useFinanceStore((s) => s.updateInvestmentHolding)
+  const holdings = useFinanceStore((s) => s.investmentHoldings)
+  const debts = useFinanceStore((s) => s.debts)
+  const exchangeRates = useFinanceStore((s) => s.exchangeRates)
+  const goldPricePerGram = useFinanceStore((s) => s.goldPricePerGram)
+  const goldPriceAvailable = useFinanceStore((s) => s.goldPriceAvailable)
   const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
+  const { lookup } = useAssetPrices()
+  const debtData = useDebtTabData()
 
   const [amount, setAmount] = useState('')
   const [currency, setCurrency] = useState<Currency>(baseCurrency)
   const [reason, setReason] = useState<Reason | null>('spend')
   const [moveOn, setMoveOn] = useState(false)
   const [moveToId, setMoveToId] = useState<string | null>(null)
+  const [debtId, setDebtId] = useState<string | null>(null)
+  const [assetClass, setAssetClass] = useState<InvestmentAssetType | null>(null)
   const [noteOpen, setNoteOpen] = useState(false)
   const [note, setNote] = useState('')
 
@@ -48,12 +72,66 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId }: Wi
   const from = pockets.find((p) => p.account.id === fromId)
   const amountNum = parseFloat(amount) || 0
   const free = from ? Math.max(0, from.account.currentBalance) : 0
+  // Guard against the sheet currency differing from the pocket's — compare like for like.
+  const amountInPocket = from ? convertCurrency(amountNum, currency, from.account.currency, exchangeRates) : amountNum
+
+  // Active debts, flattened across the three families (screen 07).
+  const debtChips = useMemo(
+    () => [
+      ...debtData.borrow.map((b) => ({ id: b.id, name: b.name, left: b.remaining, currency: b.currency })),
+      ...debtData.cards.map((c) => ({ id: c.id, name: c.bank, left: c.outstanding, currency: c.currency })),
+      ...debtData.installments.map((i) => ({ id: i.id, name: i.item, left: i.remaining, currency: i.currency })),
+    ],
+    [debtData],
+  )
+
+  // For each asset class, the priceable holding we'd top up (largest by live value) and its
+  // per-unit EGP value — so a money amount maps to a quantity to add (screen 08, "Add to it").
+  const topupByClass = useMemo(() => {
+    const out = new Map<InvestmentAssetType, { id: string; name: string; unitEgp: number }>()
+    for (const cls of ['gold', 'crypto', 'stock'] as InvestmentAssetType[]) {
+      let best: { id: string; name: string; unitEgp: number; total: number } | null = null
+      for (const h of holdings.filter((x) => x.assetType === cls)) {
+        const unit = valueInvestmentHolding({ ...h, quantity: 1 }, lookup).value
+        const total = valueInvestmentHolding(h, lookup).value
+        if (unit == null || unit <= 0 || total == null) continue
+        if (!best || total > best.total) best = { id: h.id, name: h.name, unitEgp: unit, total }
+      }
+      if (best) out.set(cls, { id: best.id, name: best.name, unitEgp: best.unitEgp })
+    }
+    return out
+  }, [holdings, lookup])
 
   const submit = () => {
     if (!from || amountNum <= 0) return
     if (moveOn) {
       if (!moveToId) return
       transfer(from.account.id, moveToId, amountNum, note.trim() || undefined)
+    } else if (reason === 'debt') {
+      const debt = debts.find((d) => d.id === debtId)
+      if (!debt) return
+      const noteTrim = note.trim() || undefined
+      withdraw(from.account.id, amountNum, currency, noteTrim, 'debt')
+      const amountInBase = convertCurrency(amountNum, currency, baseCurrency, exchangeRates)
+      const amountPaid = debt.isGold
+        ? goldPriceAvailable !== false
+          ? moneyToGoldGrams(amountInBase, goldPricePerGram, debt.goldKarat)
+          : 0
+        : convertCurrency(amountNum, currency, debt.currency, exchangeRates)
+      if (amountPaid > 0) {
+        addDebtPayment({ debtId: debt.id, date: new Date().toISOString().slice(0, 10), amountPaid, paymentCurrency: debt.currency, notes: noteTrim, fundedFromSavings: true })
+      }
+    } else if (reason === 'transfer') {
+      if (!assetClass) return
+      const target = topupByClass.get(assetClass)
+      if (!target) return
+      // Holdings are EGP-denominated regardless of base currency — pivot on EGP.
+      const amountEgp = convertCurrency(amountNum, currency, 'EGP', exchangeRates)
+      const qtyAdd = amountEgp / target.unitEgp
+      const existing = holdings.find((h) => h.id === target.id)
+      if (!existing || qtyAdd <= 0) return
+      withdraw(from.account.id, amountNum, currency, note.trim() || undefined, 'transfer')
+      updateHolding(target.id, { quantity: existing.quantity + qtyAdd })
     } else if (reason) {
       withdraw(from.account.id, amountNum, currency, note.trim() || undefined, reason)
     }
@@ -67,7 +145,17 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId }: Wi
     return `${verb} ${amt}`.trim()
   }, [moveOn, reason, amountNum, currency])
 
-  const canSubmit = !!from && amountNum > 0 && free + 0.001 >= amountNum && (moveOn ? !!moveToId : !!reason)
+  const canSubmit =
+    !!from &&
+    amountNum > 0 &&
+    free + 0.001 >= amountInPocket &&
+    (moveOn
+      ? !!moveToId
+      : reason === 'debt'
+        ? !!debtId
+        : reason === 'transfer'
+          ? !!assetClass && topupByClass.has(assetClass)
+          : !!reason)
 
   if (!open) return null
 
@@ -121,7 +209,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId }: Wi
               {REASONS.map((r) => {
                 const on = !moveOn && reason === r.key
                 return (
-                  <button key={r.key} type="button" onClick={() => { setMoveOn(false); setReason(r.key) }}
+                  <button key={r.key} type="button" onClick={() => { setMoveOn(false); setReason(r.key); setDebtId(null); setAssetClass(null) }}
                     className="flex items-center gap-3 rounded-2xl p-3 text-left"
                     style={{ minHeight: 62, border: on ? `1px solid rgba(${hexToRgb(r.color)},.5)` : '1px solid var(--color-brand-border)', background: on ? `rgba(${hexToRgb(r.color)},.06)` : 'var(--color-brand-elevated)' }}>
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: `rgba(${hexToRgb(r.color)},.14)`, color: r.color }}>{r.icon}</span>
@@ -135,13 +223,65 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId }: Wi
             </div>
           </div>
 
+          {/* Which debt? (screen 07) */}
+          {!moveOn && reason === 'debt' && (
+            <div className="rounded-2xl border border-[var(--color-brand-border)] p-3">
+              <p className="mb-2 text-[13px] font-bold text-[var(--color-brand-text-primary)]">Which debt?</p>
+              {debtChips.length === 0 ? (
+                <p className="text-xs text-[var(--color-brand-text-muted)]">No open debts to pay.</p>
+              ) : (
+                <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                  {debtChips.map((d) => {
+                    const on = debtId === d.id
+                    return (
+                      <button key={d.id} type="button" onClick={() => setDebtId(d.id)}
+                        className="flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-left"
+                        style={{ border: on ? '1px solid rgba(229,9,20,.5)' : '1px solid var(--color-brand-border)', background: on ? 'rgba(229,9,20,.08)' : 'var(--color-brand-elevated)' }}>
+                        <CreditCard size={15} style={{ color: '#E50914' }} />
+                        <span>
+                          <span className="block text-[12.5px] font-semibold text-[var(--color-brand-text-primary)]">{d.name}</span>
+                          <span className="block font-mono-numbers text-[10px] text-[var(--color-brand-text-muted)]">{fmtNum(d.left)} left</span>
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Which asset? (screen 08) */}
+          {!moveOn && reason === 'transfer' && (
+            <div className="rounded-2xl border border-[var(--color-brand-border)] p-3">
+              <p className="mb-2 text-[13px] font-bold text-[var(--color-brand-text-primary)]">Which asset?</p>
+              <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                {INVEST_CLASSES.map((c) => {
+                  const target = topupByClass.get(c.type)
+                  const on = assetClass === c.type
+                  return (
+                    <button key={c.type} type="button"
+                      onClick={() => { if (target) setAssetClass(c.type); else onNeedAsset?.(c.type) }}
+                      className="flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-left"
+                      style={{ border: on ? '1px solid rgba(245,200,66,.5)' : '1px solid var(--color-brand-border)', background: on ? 'rgba(245,200,66,.08)' : 'var(--color-brand-elevated)' }}>
+                      <span style={{ color: '#F5C842' }}>{c.icon}</span>
+                      <span>
+                        <span className="block text-[12.5px] font-semibold text-[var(--color-brand-text-primary)]">{c.label}</span>
+                        <span className="block text-[10px] text-[var(--color-brand-text-muted)]">{target ? `Add to ${target.name}` : 'Add one first'}</span>
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           {/* OR + move */}
           <div className="flex items-center gap-3">
             <span className="h-px flex-1 bg-[var(--color-brand-border)]" />
             <span style={{ ...micro, letterSpacing: '.12em' }}>Or</span>
             <span className="h-px flex-1 bg-[var(--color-brand-border)]" />
           </div>
-          <button type="button" onClick={() => { setMoveOn(true); setReason(null) }}
+          <button type="button" onClick={() => { setMoveOn(true); setReason(null); setDebtId(null); setAssetClass(null) }}
             className="flex w-full items-center gap-3 rounded-2xl p-3 text-left"
             style={{ border: moveOn ? '1px solid rgba(126,174,249,.5)' : '1px solid var(--color-brand-border)', background: moveOn ? 'rgba(126,174,249,.06)' : 'var(--color-brand-elevated)' }}>
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(126,174,249,.14)', color: '#7EAEF9' }}><ArrowRight size={18} /></span>

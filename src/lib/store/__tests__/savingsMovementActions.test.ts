@@ -91,6 +91,46 @@ describe('transferBetweenPockets', () => {
   })
 })
 
+describe('withdraw → pay a debt (net-worth-neutral)', () => {
+  it('debits the pocket and records a debt payment, no income event', () => {
+    useFinanceStore.setState({
+      savingsAccounts: [pocket('p1', 'EGP', 5000)],
+      savingsTransactions: [],
+      incomeEvents: [],
+      goals: [],
+      debts: [{ id: 'd1', name: 'valU', person: '', startingBalance: 3000, currency: 'EGP', isGold: false, createdAt: '2026-01-01' }],
+      debtPayments: [],
+      exchangeRates: { USD_EGP: 50, EGP_USD: 0.02 },
+    })
+    S().withdrawFromSavings('p1', 1000, 'EGP', undefined, 'debt')
+    S().addDebtPayment({ debtId: 'd1', date: '2026-07-29', amountPaid: 1000, paymentCurrency: 'EGP' })
+    expect(S().savingsAccounts[0].currentBalance).toBe(4000)
+    expect(S().debtPayments).toHaveLength(1)
+    expect(S().debtPayments[0].amountPaid).toBe(1000)
+    expect(S().incomeEvents).toHaveLength(0)
+  })
+})
+
+describe('withdraw → top up an investment holding (net-worth-neutral)', () => {
+  it('debits the pocket and raises the holding quantity, no income event', () => {
+    useFinanceStore.setState({
+      savingsAccounts: [pocket('p1', 'EGP', 10000)],
+      savingsTransactions: [],
+      incomeEvents: [],
+      goals: [],
+      investmentHoldings: [{ id: 'h1', assetType: 'gold', name: '21k gold', quantity: 10, currency: 'EGP', karat: 21, createdAt: '2026-01-01' }],
+      exchangeRates: { USD_EGP: 50, EGP_USD: 0.02 },
+    })
+    // 2 more grams at an assumed 1000 EGP/g unit value.
+    const existing = S().investmentHoldings[0]
+    S().withdrawFromSavings('p1', 2000, 'EGP', undefined, 'transfer')
+    S().updateInvestmentHolding('h1', { quantity: existing.quantity + 2 })
+    expect(S().savingsAccounts[0].currentBalance).toBe(8000)
+    expect(S().investmentHoldings[0].quantity).toBe(12)
+    expect(S().incomeEvents).toHaveLength(0)
+  })
+})
+
 describe('deleteSavingsTransaction', () => {
   it('reverses a deposit', () => {
     seed([pocket('p1', 'EGP', 0)])
