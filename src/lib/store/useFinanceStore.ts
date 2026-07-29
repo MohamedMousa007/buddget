@@ -1484,6 +1484,30 @@ export const useFinanceStore = create<FinanceStore>()(
         })
       },
 
+      deleteSavingsTransaction: (id) =>
+        set((state) => {
+          const tx = state.savingsTransactions.find((t) => t.id === id)
+          if (!tx) return state
+          // A transfer is two legs — remove both and reverse each.
+          const ids = tx.transferGroupId
+            ? state.savingsTransactions.filter((t) => t.transferGroupId === tx.transferGroupId).map((t) => t.id)
+            : [id]
+          const removed = state.savingsTransactions.filter((t) => ids.includes(t.id))
+          const balanceDelta: Record<string, number> = {}
+          for (const r of removed) {
+            // Reverse: undo a deposit by subtracting, undo a withdrawal by adding back.
+            balanceDelta[r.accountId] = (balanceDelta[r.accountId] ?? 0) + (r.type === 'deposit' ? -r.amount : r.amount)
+          }
+          const nextState: FinanceStore = {
+            ...state,
+            savingsTransactions: state.savingsTransactions.filter((t) => !ids.includes(t.id)),
+            savingsAccounts: state.savingsAccounts.map((a) =>
+              balanceDelta[a.id] != null ? { ...a, currentBalance: Math.max(0, a.currentBalance + balanceDelta[a.id]) } : a
+            ),
+          }
+          return { ...nextState, goals: reconcileGoalsForState(nextState) }
+        }),
+
       correctSavingsBalance: (accountId, newBalance, notes) => {
         const nb = Math.max(0, Number(newBalance) || 0)
         set((state) => {

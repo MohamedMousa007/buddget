@@ -90,3 +90,24 @@ describe('transferBetweenPockets', () => {
     expect(S().savingsAccounts.find((x) => x.id === 'a')!.currentBalance).toBe(50)
   })
 })
+
+describe('deleteSavingsTransaction', () => {
+  it('reverses a deposit', () => {
+    seed([pocket('p1', 'EGP', 0)])
+    S().depositToSavings('p1', 300, 'EGP')
+    expect(S().savingsAccounts[0].currentBalance).toBe(300)
+    S().deleteSavingsTransaction(S().savingsTransactions.at(-1)!.id)
+    expect(S().savingsAccounts[0].currentBalance).toBe(0)
+    expect(S().savingsTransactions).toHaveLength(0)
+  })
+
+  it('reverses both legs of a transfer', () => {
+    seed([pocket('a', 'EGP', 500), pocket('b', 'EGP', 0)])
+    S().transferBetweenPockets('a', 'b', 200)
+    const leg = S().savingsTransactions.find((t) => t.transferGroupId)!
+    S().deleteSavingsTransaction(leg.id)
+    expect(S().savingsAccounts.find((x) => x.id === 'a')!.currentBalance).toBe(500)
+    expect(S().savingsAccounts.find((x) => x.id === 'b')!.currentBalance).toBe(0)
+    expect(S().savingsTransactions.filter((t) => t.transferGroupId)).toHaveLength(0)
+  })
+})

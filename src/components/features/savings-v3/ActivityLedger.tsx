@@ -1,12 +1,14 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { parseISO } from 'date-fns'
 import { ArrowRightLeft, Funnel, ShoppingCart, TrendingUp } from 'lucide-react'
 import type { SavingsAccount, SavingsTransaction, Currency } from '@/lib/store/types'
 import { convertCurrency } from '@/lib/utils/currency'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 import { pocketColor } from '@/lib/savings/pocketIdentity'
+import { SwipeToDelete, type SwipeSide } from '@/components/expenses/SwipeToDelete'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 
 const fmtSigned = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(Math.round(n)).toLocaleString('en-US')}`
 const hexToRgb = (hex: string) => { const h = hex.replace('#', ''); return `${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)}` }
@@ -35,6 +37,8 @@ export interface ActivityLedgerProps {
 }
 
 export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeRates }: ActivityLedgerProps) {
+  const deleteTx = useFinanceStore((s) => s.deleteSavingsTransaction)
+  const [openId, setOpenId] = useState<string | null>(null)
   const acc = (id: string) => accounts.find((a) => a.id === id)
 
   const days = useMemo(() => {
@@ -96,7 +100,8 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
             const amtBase = convertCurrency(tx.amount, tx.currency, baseCurrency, exchangeRates)
             const usd = convertCurrency(amtBase, baseCurrency, 'USD', exchangeRates)
             return (
-              <div key={tx.id} className="flex items-center gap-3 border-t border-[var(--color-brand-border)] px-4 py-3">
+              <SwipeToDelete key={tx.id} onDelete={() => deleteTx(tx.id)} openSide={openId === tx.id ? 'left' : null} onOpenChange={(side) => setOpenId(side ? tx.id : null)} deleteLabel="Delete">
+              <div className="flex items-center gap-3 border-t border-[var(--color-brand-border)] bg-[var(--color-brand-bg)] px-4 py-3">
                 <div className="flex w-[46px] flex-col items-center gap-1">
                   <span className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: a ? `rgba(${hexToRgb(pocketColor(a))},.14)` : 'var(--color-brand-elevated)', color: a ? pocketColor(a) : undefined }}>
                     {a ? <SavingsAccountIcon account={a} className="h-5 w-5" /> : tag.label === 'Withdrew' ? <ShoppingCart size={18} /> : <TrendingUp size={18} />}
@@ -114,6 +119,7 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
                   <p className="font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]">≈ ${Math.abs(usd).toFixed(2)}</p>
                 </div>
               </div>
+              </SwipeToDelete>
             )
           })}
         </div>

@@ -1012,6 +1012,8 @@ export interface FinanceStore {
    *  a move with no conversion path (e.g. into a gold/crypto pocket — that's a buy, not a transfer). */
   transferBetweenPockets: (fromId: string, toId: string, amount: number, notes?: string) => void
   correctSavingsBalance: (accountId: string, newBalance: number, notes?: string) => void
+  /** Delete a savings ledger row and reverse its balance effect (both legs for a transfer). */
+  deleteSavingsTransaction: (id: string) => void
   updateSettings: (updates: Partial<AppSettings>) => void
   updateProfile: (updates: Partial<UserProfile>) => void
   setFinancialGoalsNotes: (notes: string) => void
