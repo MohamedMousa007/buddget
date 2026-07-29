@@ -46,6 +46,12 @@ export async function GET(request: Request) {
 
   const [ounceUsd, officialUsdEgp] = await Promise.all([fetchSpotOunceUsd(), fetchOfficialUsdEgp()])
 
+  // Official USD/EGP — stored so the client computes the local-vs-global gold premium against the
+  // SAME official rate the Sagha dollar was measured against (not its own display FX rate).
+  if (officialUsdEgp) {
+    rows.push(row({ symbol: 'OFFICIAL_USD', asset_class: 'fx', currency: 'EGP', price: officialUsdEgp, source: 'open.er-api.com', upstream: 'er-api', confidence: 'single' }))
+  }
+
   // Global gold spot (USD/oz and USD/g).
   if (ounceUsd) {
     rows.push(row({ symbol: 'XAU', asset_class: 'gold', currency: 'USD', price: ounceUsd, source: 'spot-consensus', upstream: 'spot', confidence: 'high' }))

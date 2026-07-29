@@ -97,16 +97,15 @@ export function InvestmentView({ onBackToSavings, onAddInvestment }: InvestmentV
           ))}
         </div>
 
-        {held.length > 0 ? (
-          <HoldingsCard type={tab} holdings={held} lookup={lookup} toBase={toBase} onAdd={() => onAddInvestment(tab)} />
-        ) : (
-          <div className="space-y-3">
-            {tab === 'gold' && <GoldMarketCard lookup={lookup} />}
+        <div className="space-y-4">
+          {held.length > 0 && <HoldingsCard type={tab} holdings={held} lookup={lookup} toBase={toBase} onAdd={() => onAddInvestment(tab)} />}
+          {tab === 'gold' && <GoldMarketCard lookup={lookup} officialUsdEgp={exchangeRates['USD_EGP'] ?? null} />}
+          {held.length === 0 && (
             <button type="button" onClick={() => onAddInvestment(tab)} className="mx-4 flex w-[calc(100%-32px)] items-center justify-center gap-2 rounded-2xl border border-dashed border-[var(--color-brand-border)] py-4 text-sm font-semibold text-[var(--color-brand-text-secondary)]">
               <Plus size={16} /> {ADD_LABEL[tab]}
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   )
@@ -131,15 +130,32 @@ function HoldingsCard({ type, holdings, lookup, toBase, onAdd }: { type: Investm
   })
   const total = rows.reduce((s, r) => s + (r.worth ?? 0), 0)
   const putIn = holdings.reduce((s, h) => s + (h.unitCost != null ? h.unitCost * h.quantity : 0), 0)
+  const sinceBought = putIn > 0 ? ((total - putIn) / putIn) * 100 : null
+  // Gold's third stat: live sell price of 24k if any is held, else the karat with the most grams (ties → higher purity).
+  const goldStatKarat = (() => {
+    if (holdings.some((h) => h.karat === 24)) return 24 as GoldKarat
+    const byGrams = [...holdings].sort((a, b) => (b.quantity - a.quantity) || ((b.karat ?? 0) - (a.karat ?? 0)))
+    return (byGrams[0]?.karat ?? 24) as GoldKarat
+  })()
+  const goldStatPrice = lookup(`XAU_${goldStatKarat}K`, 'EGP')?.price ?? null
   const cols: Record<InvestmentAssetType, [string, string, string]> = {
     gold: ['Karat', 'Grams', 'Worth'], crypto: ['Coin', 'Amount', 'Worth'], stock: ['Position', 'Shares', 'Worth'], property: ['Property', 'Size', 'Worth'],
   }
+  const thirdStat: [string, string, string] = type === 'gold'
+    ? [`${goldStatKarat}k right now`, goldStatPrice != null ? `${fmtNum(goldStatPrice)} /g` : '—', '#F5C842']
+    : ['Best holding', rows.length ? fmtNum(Math.max(...rows.map((r) => r.worth ?? 0))) : '—', '#35D46F']
   return (
     <div className="mx-4 overflow-hidden rounded-[18px] border border-[var(--color-brand-border)]">
       <div className="p-4" style={{ background: 'linear-gradient(150deg, rgba(245,200,66,.12), transparent 72%)' }}>
         <p style={{ ...micro, fontSize: 9 }}>{type === 'gold' ? 'What a shop would pay you today' : 'What it is worth today'}</p>
         <p className="mt-1 font-mono-numbers text-[26px] font-semibold text-[var(--color-brand-text-primary)]">{fmtNum(total)} <span className="text-sm text-[var(--color-brand-text-muted)]">EGP</span></p>
         <p className="font-mono-numbers text-[10.5px] text-[var(--color-brand-text-muted)]">{fmtNum(putIn)} put in</p>
+      </div>
+      {/* 3 stats */}
+      <div className="grid grid-cols-3 border-t border-[var(--color-brand-border)]">
+        <Stat label="Since you bought" value={sinceBought != null ? `${sinceBought >= 0 ? '+' : ''}${sinceBought.toFixed(1)}%` : '—'} color={sinceBought != null && sinceBought >= 0 ? '#35D46F' : sinceBought != null ? '#FF6B6B' : undefined} />
+        <Stat label="This month" value="—" border />
+        <Stat label={thirdStat[0]} value={thirdStat[1]} color={thirdStat[2]} />
       </div>
       <div className="grid grid-cols-3 border-t border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-4 py-2" style={{ ...micro }}>
         <span>{cols[type][0]}</span><span className="text-right">{cols[type][1]}</span><span className="text-right">{cols[type][2]}</span>
@@ -160,34 +176,63 @@ function HoldingsCard({ type, holdings, lookup, toBase, onAdd }: { type: Investm
   )
 }
 
-function GoldMarketCard({ lookup }: { lookup: PriceLookup }) {
+function Stat({ label, value, color, border }: { label: string; value: string; color?: string; border?: boolean }) {
+  return (
+    <div style={{ padding: '11px 12px', borderRight: border ? undefined : '1px solid var(--color-brand-border)', borderLeft: border ? '1px solid var(--color-brand-border)' : undefined }}>
+      <div style={{ ...micro }}>{label}</div>
+      <div className="mt-0.5 font-mono-numbers text-[13px] font-semibold" style={{ color: color ?? 'var(--color-brand-text-primary)' }}>{value}</div>
+    </div>
+  )
+}
+
+function GoldMarketCard({ lookup, officialUsdEgp: fallbackOfficial }: { lookup: PriceLookup; officialUsdEgp: number | null }) {
   const sagha = saghaRate(lookup)
   const ounceUsd = lookup('XAU', 'USD')?.price ?? null
+  // Prefer the official rate the cron measured the Sagha against, so the premium is consistent.
+  const officialUsdEgp = lookup('OFFICIAL_USD', 'EGP')?.price ?? fallbackOfficial
   const priced = sagha != null && ounceUsd != null
   const karats: GoldKarat[] = [24, 21, 18]
+  const gram24Global = priced && officialUsdEgp ? usdPerGram(ounceUsd) * officialUsdEgp : null
+  const local24 = priced ? egyptKaratPrice(ounceUsd, sagha, 24) : null
+  const localVsGlobal = gram24Global && local24 ? ((local24 / gram24Global) - 1) * 100 : null
   return (
     <div className="mx-4">
       <div className="mb-2 flex items-center justify-between px-1">
         <h3 className="text-[15px] font-bold text-[var(--color-brand-text-primary)]">Gold today · Egypt</h3>
-        <span className="text-xs text-[var(--color-brand-text-muted)]">{priced ? 'Live' : 'Unavailable'}</span>
+        <span className="flex items-center gap-1.5 text-xs text-[var(--color-brand-text-muted)]"><span className="h-1.5 w-1.5 rounded-full" style={{ background: priced ? '#35D46F' : '#9898B0' }} />{priced ? 'Live' : 'Unavailable'}</span>
       </div>
       <div className="overflow-hidden rounded-2xl border border-[var(--color-brand-border)]">
         <div className="p-4" style={{ background: 'linear-gradient(150deg, rgba(245,200,66,.12), transparent 72%)' }}>
           <p style={{ ...micro, fontSize: 9 }}>24k · what a shop pays you</p>
-          <p className="mt-1 font-mono-numbers text-[26px] font-semibold text-[var(--color-brand-text-primary)]">{priced ? fmtNum(egyptKaratPrice(ounceUsd, sagha, 24)) : '—'} <span className="text-sm text-[var(--color-brand-text-muted)]">EGP/g</span></p>
+          <p className="mt-1 font-mono-numbers text-[26px] font-semibold text-[var(--color-brand-text-primary)]">{priced ? fmtNum(local24!) : '—'} <span className="text-sm text-[var(--color-brand-text-muted)]">EGP/g</span></p>
         </div>
-        {priced ? karats.map((k) => (
-          <div key={k} className="flex items-center border-t border-[var(--color-brand-border)] px-4 py-3">
-            <span className="flex-1 text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{k}k</span>
-            <span className="font-mono-numbers text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{fmtNum(egyptKaratPrice(ounceUsd, sagha, k))} <span className="text-xs text-[var(--color-brand-text-muted)]">/g</span></span>
-          </div>
-        )) : (
+        {priced ? (
+          <>
+            <div className="grid grid-cols-[1fr_auto_auto] gap-x-6 border-t border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-4 py-2" style={micro}>
+              <span>Karat</span><span className="text-right">You buy</span><span className="text-right" style={{ color: '#35D46F' }}>You sell</span>
+            </div>
+            {karats.map((k) => {
+              const sell = egyptKaratPrice(ounceUsd!, sagha!, k)
+              const buy = sell * 1.013
+              return (
+                <div key={k} className="grid grid-cols-[1fr_auto_auto] items-center gap-x-6 border-t border-[var(--color-brand-border)] px-4 py-3">
+                  <span className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{k}k</span>
+                  <span className="text-right font-mono-numbers text-[15px] text-[var(--color-brand-text-secondary)]">{fmtNum(buy)}</span>
+                  <span className="text-right font-mono-numbers text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{fmtNum(sell)}</span>
+                </div>
+              )
+            })}
+            <div className="grid grid-cols-3 border-t border-[var(--color-brand-border)]">
+              <Stat label="Ounce · global" value={`$${fmtNum(ounceUsd!)}`} />
+              <Stat label="Gram 24k · global" value={gram24Global != null ? `${fmtNum(gram24Global)} EGP` : '—'} border />
+              <Stat label="Local vs global" value={localVsGlobal != null ? `${localVsGlobal >= 0 ? '+' : ''}${localVsGlobal.toFixed(1)}%` : '—'} color="#F5C842" />
+            </div>
+            <div className="border-t border-[var(--color-brand-border)] px-4 py-3">
+              <p className="text-xs text-[var(--color-brand-text-muted)]">Egyptian gold is priced off the Sagha dollar ({sagha!.toFixed(2)}){officialUsdEgp ? `, not the official rate (${officialUsdEgp.toFixed(2)})` : ''}. Shown in EGP, your main currency.</p>
+            </div>
+          </>
+        ) : (
           <div className="border-t border-[var(--color-brand-border)] px-4 py-4 text-center text-sm text-[var(--color-brand-text-muted)]">Live gold prices are refreshing — check back shortly.</div>
-        )}
-        {priced && (
-          <div className="border-t border-[var(--color-brand-border)] px-4 py-3">
-            <p className="text-xs text-[var(--color-brand-text-muted)]">Ounce global ${ounceUsd.toFixed(2)} · gram 24k global {fmtNum(usdPerGram(ounceUsd))} · Egyptian gold is priced off the Sagha dollar ({sagha.toFixed(2)}), not the official rate. Shown in EGP.</p>
-          </div>
         )}
       </div>
     </div>
