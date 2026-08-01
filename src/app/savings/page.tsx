@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { Target, Pencil, Trash2 } from 'lucide-react'
+import { Target, Pencil, Trash2, Plus } from 'lucide-react'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useNetWorth } from '@/hooks/useNetWorth'
@@ -225,12 +225,20 @@ export default function SavingsPage() {
               <span className="inline-flex h-5 min-w-[21px] items-center justify-center rounded-full bg-[var(--color-brand-elevated)] px-1.5 font-mono-numbers text-[11px] font-semibold text-[var(--color-brand-text-secondary)]">
                 {pockets.length}
               </span>
+              <button
+                type="button" aria-label="Add a pocket"
+                onClick={() => guard(() => setNewAccountOpen(true))}
+                className="ms-auto flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]"
+              >
+                <Plus size={16} />
+              </button>
             </div>
             <PocketsCarousel
               pockets={pocketVMs}
               onAdd={openAdd}
               onWithdraw={openWithdraw}
               onMenu={(id, anchor) => setMenu({ id, anchor })}
+              onAddPocket={() => guard(() => setNewAccountOpen(true))}
             />
 
             {simpleMonth.total > 0 && (

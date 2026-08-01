@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { Plus } from 'lucide-react'
 import type { SavingsAccount } from '@/lib/store/types'
 import { PocketCard } from '@/components/features/savings-v3/PocketCard'
 
@@ -17,9 +18,11 @@ export interface PocketsCarouselProps {
   onAdd: (id: string) => void
   onWithdraw: (id: string) => void
   onMenu: (id: string, anchor: DOMRect) => void
+  /** Trailing "add pocket" tile — opens the new-pocket flow. */
+  onAddPocket: () => void
 }
 
-export function PocketsCarousel({ pockets, onAdd, onWithdraw, onMenu }: PocketsCarouselProps) {
+export function PocketsCarousel({ pockets, onAdd, onWithdraw, onMenu, onAddPocket }: PocketsCarouselProps) {
   const railRef = useRef<HTMLDivElement>(null)
   const [active, setActive] = useState(0)
 
@@ -52,6 +55,15 @@ export function PocketsCarousel({ pockets, onAdd, onWithdraw, onMenu }: PocketsC
             onMenu={(rect) => onMenu(p.account.id, rect)}
           />
         ))}
+        {/* Trailing add-pocket tile (mirrors the payment-methods empty-add card). */}
+        <button
+          type="button" onClick={onAddPocket} aria-label="Add a pocket"
+          className="flex shrink-0 flex-col items-center justify-center gap-2 rounded-[18px] border border-dashed border-[var(--color-brand-border)] text-[var(--color-brand-text-muted)]"
+          style={{ width: 132, scrollSnapAlign: 'center' }}
+        >
+          <span className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-brand-border)]"><Plus size={18} /></span>
+          <span className="text-xs font-semibold">Add pocket</span>
+        </button>
       </div>
       {pockets.length > 1 && (
         <div className="flex justify-center gap-1.5 pt-1">
