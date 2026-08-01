@@ -1,15 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { X } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { AmountField } from '@/components/ui/AmountField'
 import { CurrencyField } from '@/components/ui/CurrencyField'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
+import { ColorSwatchRow } from '@/components/ui/ColorSwatchRow'
+import { PAYMENT_BRANDS, QUICK_ADD_BLEND, brandIssuesType } from '@/lib/payment/paymentMethodDefaults'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
-import { POCKET_PROVIDERS, POCKET_COLORS, type PocketKindDef } from '@/lib/savings/pocketKinds'
+import { type PocketKindDef } from '@/lib/savings/pocketKinds'
 import type { Currency, PaymentMethod } from '@/lib/store/types'
 
 const micro: React.CSSProperties = { fontSize: 10, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--color-brand-text-muted)' }
@@ -40,6 +42,14 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
   const [currency, setCurrency] = useState<Currency>(linkedMethod?.currency ?? baseCurrency)
   const [color, setColor] = useState(def.color)
   const [alsoPayment, setAlsoPayment] = useState(false)
+
+  // Provider chips from the app-wide catalogue, filtered to what THIS pocket kind can hold
+  // (a bank pocket shows banks, not Vodafone Cash / InstaPay). One pool, not a hardcoded list.
+  const providerNames = useMemo(() => {
+    const issues = def.kind === 'wallet' ? 'wallet' : 'bank_account'
+    const ids = QUICK_ADD_BLEND.filter((id) => PAYMENT_BRANDS[id] && brandIssuesType(PAYMENT_BRANDS[id], issues))
+    return [...new Set(ids.map((id) => PAYMENT_BRANDS[id].name))].slice(0, 10)
+  }, [def.kind])
   const [emergencyCover, setEmergencyCover] = useState(def.kind === 'bank' || def.kind === 'wallet')
 
   const create = () => {
@@ -86,12 +96,16 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
             <div>
               <label style={micro}>Provider</label>
               <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar">
-                {POCKET_PROVIDERS.map((p) => (
+                {providerNames.map((p) => (
                   <button key={p} type="button" onClick={() => setProvider(p)} className="shrink-0 rounded-full px-4 py-2 text-sm font-medium"
                     style={{ border: provider === p ? '1px solid rgba(229,9,20,.45)' : '1px solid var(--color-brand-border)', background: provider === p ? 'rgba(229,9,20,.13)' : 'transparent', color: 'var(--color-brand-text-primary)' }}>
                     {p}
                   </button>
                 ))}
+                <button type="button" onClick={() => setProvider('')} className="shrink-0 rounded-full px-4 py-2 text-sm font-medium"
+                  style={{ border: '1px solid var(--color-brand-border)', background: 'transparent', color: 'var(--color-brand-text-muted)' }}>
+                  Other
+                </button>
               </div>
             </div>
           )}
@@ -133,11 +147,8 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
 
           <div>
             <label style={micro}>Colour</label>
-            <div className="mt-2 flex flex-wrap gap-3">
-              {POCKET_COLORS.map((c) => (
-                <button key={c} type="button" onClick={() => setColor(c)} aria-label={`Colour ${c}`}
-                  className="h-9 w-9 rounded-full" style={{ background: c, outline: color === c ? '2px solid #fff' : 'none', outlineOffset: 2 }} />
-              ))}
+            <div className="mt-2">
+              <ColorSwatchRow value={color} onChange={setColor} />
             </div>
           </div>
 
