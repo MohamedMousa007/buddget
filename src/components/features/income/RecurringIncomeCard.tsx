@@ -1,7 +1,9 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { Check, Pencil } from 'lucide-react'
+import { useState } from 'react'
+import { Check, MoreVertical, Pencil } from 'lucide-react'
+import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { IncomeTypeIcon, incomeTypeColors } from '@/components/features/income/IncomeTypeIcon'
 import { heroCardStyle } from '@/components/features/income/incomeGlass'
 import { PaydayTimeline } from '@/components/features/income/PaydayTimeline'
@@ -72,6 +74,7 @@ export function RecurringIncomeCard({
 }: Props) {
   const colors = incomeTypeColors(sourceType)
   const cornered = showTick || Boolean(onEdit)
+  const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null)
 
   return (
     <div
@@ -85,14 +88,21 @@ export function RecurringIncomeCard({
         </span>
       ) : null}
       {!showTick && onEdit ? (
-        <button
-          type="button"
-          onClick={onEdit}
-          aria-label={editAriaLabel}
-          className="absolute end-1 top-1 flex h-11 w-11 items-center justify-center text-white/55 transition-colors hover:text-white"
-        >
-          <Pencil className="h-4 w-4" />
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setMenuAnchor(e.currentTarget.getBoundingClientRect()) }}
+            aria-label={editAriaLabel}
+            className="absolute end-1 top-1 flex h-11 w-11 items-center justify-center text-white/55 transition-colors hover:text-white"
+          >
+            <MoreVertical className="h-4 w-4" />
+          </button>
+          <CardActionMenu
+            anchor={menuAnchor}
+            onClose={() => setMenuAnchor(null)}
+            items={[{ label: 'Edit', icon: <Pencil size={17} />, onSelect: onEdit }]}
+          />
+        </>
       ) : null}
 
       {/* Header */}
