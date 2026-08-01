@@ -9,6 +9,7 @@ import {
   BarChart3,
   SlidersHorizontal,
   Coins,
+  Gem,
   RefreshCw,
 } from 'lucide-react'
 import type { Dictionary } from '@/lib/i18n'
@@ -47,6 +48,7 @@ export const BOTTOM_NAV_MORE_MENU: MoreMenuItem[] = [
   { href: '/budget-setup', label: 'budgetSetup', icon: SlidersHorizontal, fg: 'var(--color-brand-red)', bg: 'rgba(229,9,20,.13)' },
   { href: '/income', label: 'income', icon: Wallet, fg: 'var(--color-brand-green)', bg: 'rgba(29,185,84,.13)' },
   { href: '/savings', label: 'savings', icon: Coins, fg: 'var(--color-brand-gold)', bg: 'rgba(245,200,66,.13)' },
+  { href: '/investment', label: 'investment', icon: Gem, fg: '#B79CFF', bg: 'rgba(183,156,255,.13)' },
   { href: '/subscriptions', label: 'subscriptions', icon: RefreshCw, fg: '#4DA3FF', bg: 'rgba(77,163,255,.13)' },
   { href: '/reports', label: 'reports', icon: BarChart3, fg: '#A78BFA', bg: 'rgba(167,139,250,.13)' },
 ]
@@ -56,6 +58,7 @@ export const BOTTOM_NAV_MORE_HREFS = new Set<string>([
   '/budget-setup',
   '/income',
   '/savings',
+  '/investment',
   '/subscriptions',
   '/reports',
   '/settings',
@@ -69,6 +72,7 @@ export function sectionTitleNavKey(pathname: string | null): keyof Dictionary['n
   if (pathname.startsWith('/debts')) return 'debts'
   if (pathname.startsWith('/income')) return 'income'
   if (pathname.startsWith('/savings')) return 'savings'
+  if (pathname.startsWith('/investment')) return 'investment'
   if (pathname.startsWith('/subscriptions')) return 'subscriptions'
   if (pathname.startsWith('/budget-setup')) return 'budgetSetup'
   if (pathname.startsWith('/settings')) return 'settings'

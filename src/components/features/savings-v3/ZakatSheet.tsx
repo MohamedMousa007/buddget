@@ -125,6 +125,12 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
               <NisabCard title="Silver · 595 g" value={silverNisab} on={nisabBasis === 'silver'} onClick={() => { setNisabBasis('silver'); save({ nisabBasis: 'silver' }) }} />
               <NisabCard title="Gold · 85 g" value={goldNisab} on={nisabBasis === 'gold'} onClick={() => { setNisabBasis('gold'); save({ nisabBasis: 'gold' }) }} />
             </div>
+            <div className="mt-2 flex items-start gap-2 rounded-xl bg-[var(--color-brand-elevated)] px-3 py-2.5">
+              <BookOpen size={14} className="mt-0.5 shrink-0" style={{ color: '#35D46F' }} />
+              <p className="text-[11.5px] leading-relaxed text-[var(--color-brand-text-secondary)]">
+                Silver is the recommended basis — it sets the <span className="font-semibold text-[var(--color-brand-text-primary)]">lower threshold</span>, so more of your wealth becomes zakatable and more reaches those in need. The silver price here is estimated from gold.
+              </p>
+            </div>
           </div>
 
           {/* stock factor */}

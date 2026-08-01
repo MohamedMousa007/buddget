@@ -166,6 +166,7 @@ export interface Dictionary {
     expenses: string
     income: string
     savings: string
+    investment: string
     debts: string
     reports: string
     subscriptions: string
