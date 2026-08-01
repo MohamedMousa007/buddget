@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { Check, CreditCard as CardIcon, Layers, HandCoins } from 'lucide-react'
 import { SwipeToDelete, type SwipeSide } from '@/components/expenses/SwipeToDelete'
+import { TransactionRow } from '@/components/transactions/TransactionRow'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { FAMILY_ACCENT, type PaymentVM } from '@/hooks/useDebtTabData'
@@ -97,34 +98,17 @@ export function DebtPaymentsFeed({ payments, currentFamily }: { payments: Paymen
                       }}
                       deleteLabel="Delete"
                     >
-                      <div className="flex min-h-[60px] w-full items-center gap-3 bg-[var(--color-brand-card)] px-4 py-2.5">
-                        <div className="flex w-[54px] shrink-0 flex-col items-center gap-[5px]">
-                          <span
-                            className="flex h-10 w-10 items-center justify-center rounded-[11px]"
-                            style={{ background: `${accent}22`, color: accent }}
-                          >
-                            <meta.Icon className="h-5 w-5" />
-                          </span>
-                          <span className="max-w-[54px] truncate text-[9.5px] font-semibold leading-none" style={{ color: accent }}>
-                            {meta.label}
-                          </span>
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{p.name}</p>
-                          <p className="mt-1.5 truncate font-mono-numbers text-xs font-medium text-[var(--color-brand-text-muted)]">
-                            {format(parseISO(p.date), 'MMM d')}
-                            {p.method ? ` · ${p.method}` : ''}
-                          </p>
-                        </div>
-                        <div className="shrink-0 text-end">
-                          <span className="font-mono-numbers block text-[15px] font-medium tabular-nums text-[var(--color-brand-text-primary)]">
-                            −{fmtWhole(p.amount)}
-                          </span>
-                          <span className="mt-[3px] inline-flex items-center gap-0.5 text-[10.5px] font-semibold text-[#35D46F]">
-                            <Check className="h-3 w-3" strokeWidth={3} /> Paid
-                          </span>
-                        </div>
-                      </div>
+                      <TransactionRow
+                        icon={<meta.Icon className="h-5 w-5" />}
+                        iconBg={`${accent}22`}
+                        iconFg={accent}
+                        caption={meta.label}
+                        captionColor={accent}
+                        title={p.name}
+                        subtitle={`${format(parseISO(p.date), 'MMM d')}${p.method ? ` · ${p.method}` : ''}`}
+                        amount={`−${fmtWhole(p.amount)}`}
+                        sub={<span className="inline-flex items-center gap-0.5 font-semibold" style={{ color: '#35D46F' }}><Check className="h-3 w-3" strokeWidth={3} /> Paid</span>}
+                      />
                     </SwipeToDelete>
                   </div>
                 )

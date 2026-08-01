@@ -11,6 +11,7 @@ import { MonthYearPicker } from '@/components/ui/MonthYearPicker'
 import { RecurringIncomeCard } from '@/components/features/income/RecurringIncomeCard'
 import { RecurringIncomeCarousel } from '@/components/features/income/RecurringIncomeCarousel'
 import { SwipeToDelete, type SwipeSide } from '@/components/expenses/SwipeToDelete'
+import { TransactionRow } from '@/components/transactions/TransactionRow'
 import { IncomeTypeIcon, incomeTypeColors } from '@/components/features/income/IncomeTypeIcon'
 import { AccountChip } from '@/components/features/income/AccountChip'
 import { GLASS_CARD } from '@/components/features/income/incomeGlass'
@@ -424,51 +425,30 @@ export default function IncomePage() {
                         : undefined
                     }
                   >
-                    <button
-                      type="button"
-                      disabled={!clickable}
-                      onClick={open}
-                      className={`flex min-h-[60px] w-full items-center gap-3 px-4 py-2.5 text-start transition-colors ${clickable ? 'hover:bg-[var(--color-brand-elevated)]' : 'cursor-default'}`}
-                    >
-                      <span className="flex w-[54px] shrink-0 flex-col items-center gap-[5px]">
-                        <span className="flex h-10 w-10 items-center justify-center rounded-[11px]" style={{ background: colors.bg, color: colors.fg }}>
-                          <IncomeTypeIcon type={r.sourceType} className="h-5 w-5" />
-                        </span>
-                        <span className="max-w-[54px] truncate text-center text-[9.5px] font-semibold leading-none" style={{ color: colors.fg }}>
-                          {incomeSourceTypeLabel(t.income, r.sourceType)}
-                        </span>
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className="truncate text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{r.name}</span>
-                          <span
-                            className={`shrink-0 rounded-full px-2 py-[2.5px] text-[9.5px] font-extrabold uppercase tracking-[0.05em] ${r.recurring ? 'bg-[rgba(29,185,84,0.16)] text-[var(--color-brand-green)]' : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]'}`}
-                          >
+                    <TransactionRow
+                      icon={<IncomeTypeIcon type={r.sourceType} className="h-5 w-5" />}
+                      iconBg={colors.bg}
+                      iconFg={colors.fg}
+                      caption={incomeSourceTypeLabel(t.income, r.sourceType)}
+                      captionColor={colors.fg}
+                      onClick={clickable ? open : undefined}
+                      title={r.name}
+                      titleBadge={
+                        <>
+                          <span className={`shrink-0 rounded-full px-2 py-[2.5px] text-[9.5px] font-extrabold uppercase tracking-[0.05em] ${r.recurring ? 'bg-[rgba(29,185,84,0.16)] text-[var(--color-brand-green)]' : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]'}`}>
                             {r.recurring ? t.income.recurringLabel : t.income.oneTimeLabel}
                           </span>
-                          {/* Drift between the payday and the day the money landed — the Deel-to-bank
-                              hop. Amber, matching the `late` status colour on the payday timeline. */}
                           {r.daysLate ? (
                             <span className="shrink-0 rounded-full bg-[rgba(255,177,61,0.16)] px-2 py-[2.5px] text-[9.5px] font-extrabold uppercase tracking-[0.05em] text-[#FFD68A]">
                               {t.income.daysLateChip(r.daysLate)}
                             </span>
                           ) : null}
-                        </div>
-                        <span className="mt-1.5 block truncate text-xs text-[var(--color-brand-text-muted)]">→ {accountLabel(r.acct)}</span>
-                      </div>
-                      {/* Amount column — same two-line shape as Expenses: base, then the
-                          secondary-currency approximation when the user tracks one. */}
-                      <span className="shrink-0 text-end">
-                        <span className="font-mono-numbers block text-[15px] font-medium tabular-nums text-[var(--color-brand-text-primary)]">
-                          +{fmtNum(r.amountBase)} <span className="text-[10px] font-medium text-[var(--color-brand-text-muted)]">{base}</span>
-                        </span>
-                        {secondaryOf(r.amountBase) ? (
-                          <span className="font-mono-numbers mt-[3px] block text-[11.5px] font-medium text-[var(--color-brand-text-muted)]">
-                            {secondaryOf(r.amountBase)}
-                          </span>
-                        ) : null}
-                      </span>
-                    </button>
+                        </>
+                      }
+                      subtitle={<span className="truncate">→ {accountLabel(r.acct)}</span>}
+                      amount={<>+{fmtNum(r.amountBase)} <span className="text-[10px] font-medium text-[var(--color-brand-text-muted)]">{base}</span></>}
+                      sub={secondaryOf(r.amountBase) || null}
+                    />
                   </SwipeToDelete>
                 </div>
               )
