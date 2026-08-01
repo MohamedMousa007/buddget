@@ -85,9 +85,12 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
-    const { contents, generationConfig } = body as {
+    const { contents, generationConfig, grounded } = body as {
       contents?: unknown[]
       generationConfig?: Record<string, unknown>
+      /** Opt-in Google Search grounding — set ONLY by callers that need live facts (e.g. the
+       *  emergency-fund estimator). Off by default so ordinary AI calls don't pay the token cost. */
+      grounded?: boolean
     }
 
     if (!Array.isArray(contents) || contents.length === 0) {
@@ -97,6 +100,9 @@ export async function POST(req: Request) {
     const geminiBody: Record<string, unknown> = { contents }
     if (generationConfig && typeof generationConfig === 'object') {
       geminiBody.generationConfig = generationConfig
+    }
+    if (grounded === true) {
+      geminiBody.tools = [{ google_search: {} }]
     }
 
     const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {

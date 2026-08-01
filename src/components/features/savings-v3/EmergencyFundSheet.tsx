@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { Check, Minus, Plus, Shield, X } from 'lucide-react'
+import { Minus, Plus, Shield, Sparkles, X } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { deriveSimpleMonth } from '@/lib/savings/simpleMonth'
-import { savingsAccountBalanceInBase } from '@/lib/savings/savingsConversions'
+import { estimateEmergencyFund } from '@/lib/savings/estimateEmergencyFund'
 import type { EmergencyFundConfig } from '@/lib/store/types'
 
 const micro: React.CSSProperties = { fontSize: 10, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--color-brand-text-muted)' }
@@ -18,21 +18,20 @@ export interface EmergencyFundSheetProps {
 }
 
 export function EmergencyFundSheet({ open, onClose }: EmergencyFundSheetProps) {
-  const { savingsAccounts, budgetPlans, activeBudgetPlanId, debts, profile, settings, exchangeRates, goldPricePerGram, goldPriceAvailable, updateProfile } = useFinanceStore(
+  const { budgetPlans, activeBudgetPlanId, debts, profile, settings, exchangeRates, updateProfile } = useFinanceStore(
     useShallow((s) => ({
-      savingsAccounts: s.savingsAccounts, budgetPlans: s.budgetPlans, activeBudgetPlanId: s.activeBudgetPlanId,
+      budgetPlans: s.budgetPlans, activeBudgetPlanId: s.activeBudgetPlanId,
       debts: s.debts, profile: s.profile, settings: s.settings, exchangeRates: s.exchangeRates,
-      goldPricePerGram: s.goldPricePerGram, goldPriceAvailable: s.goldPriceAvailable, updateProfile: s.updateProfile,
+      updateProfile: s.updateProfile,
     })),
   )
 
   const cfg = profile.emergencyFundConfig ?? undefined
   const [targetMonths, setTargetMonths] = useState(cfg?.targetMonths ?? 3)
-  const [coverIds, setCoverIds] = useState<string[]>(
-    cfg?.coverPocketIds ?? savingsAccounts.filter((a) => a.category === 'savings' && a.isEmergencyCover).map((a) => a.id),
-  )
+  const [aiBusy, setAiBusy] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
+  const [aiNote, setAiNote] = useState<string | null>(null)
 
-  const pockets = savingsAccounts.filter((a) => a.category === 'savings')
   const simple = useMemo(
     () => deriveSimpleMonth({ profile, activePlan: budgetPlans.find((p) => p.id === activeBudgetPlanId) ?? budgetPlans[0], debts, baseCurrency: settings.baseCurrency, exchangeRates, override: cfg?.monthlyEssentials }),
     [profile, budgetPlans, activeBudgetPlanId, debts, settings.baseCurrency, exchangeRates, cfg?.monthlyEssentials],
@@ -40,18 +39,23 @@ export function EmergencyFundSheet({ open, onClose }: EmergencyFundSheetProps) {
   const needed = simple.total * targetMonths
 
   const save = (patch: Partial<EmergencyFundConfig>) => {
-    updateProfile({ emergencyFundConfig: { targetMonths, coverPocketIds: coverIds, monthlyEssentials: cfg?.monthlyEssentials, ...patch } })
+    // Cover is your whole liquid savings now — no per-pocket list is written.
+    updateProfile({ emergencyFundConfig: { targetMonths, monthlyEssentials: cfg?.monthlyEssentials, ...patch } })
   }
   const setMonths = (m: number) => { const v = Math.max(1, Math.min(24, m)); setTargetMonths(v); save({ targetMonths: v }) }
-  const toggleCover = (id: string) => {
-    const next = coverIds.includes(id) ? coverIds.filter((x) => x !== id) : [...coverIds, id]
-    setCoverIds(next); save({ coverPocketIds: next })
-  }
 
-  const balanceOf = (id: string) => {
-    const a = pockets.find((p) => p.id === id)
-    if (!a) return 0
-    return savingsAccountBalanceInBase(a, settings.baseCurrency, exchangeRates, goldPricePerGram, goldPriceAvailable !== false) ?? 0
+  const runAiEstimate = async () => {
+    setAiBusy(true); setAiError(null); setAiNote(null)
+    try {
+      const est = await estimateEmergencyFund({ currency: settings.baseCurrency, trackedEssentials: simple.total })
+      setTargetMonths(est.targetMonths)
+      save({ monthlyEssentials: est.monthlyEssentials, targetMonths: est.targetMonths })
+      setAiNote(est.rationale || `Estimated ${fmtNum(est.monthlyEssentials)} ${settings.baseCurrency}/month.`)
+    } catch (e) {
+      setAiError(e instanceof Error ? e.message : 'Could not estimate right now.')
+    } finally {
+      setAiBusy(false)
+    }
   }
 
   if (!open) return null
@@ -96,22 +100,16 @@ export function EmergencyFundSheet({ open, onClose }: EmergencyFundSheetProps) {
               <span className="font-mono-numbers text-[15px] font-bold text-[var(--color-brand-text-primary)]">{fmtNum(simple.total)} EGP</span>
             </div>
             <p className="mt-2 text-xs text-[var(--color-brand-text-muted)]">Rent, food, transport, bills and debt minimums — the fancy parts of your budget are left out on purpose.</p>
-          </div>
 
-          <div>
-            <p style={micro}>What counts as cover</p>
-            <div className="mt-2 space-y-2.5">
-              {pockets.map((a) => {
-                const on = coverIds.includes(a.id)
-                return (
-                  <button key={a.id} type="button" onClick={() => toggleCover(a.id)} className="flex w-full items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3 text-left">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: on ? '#7EAEF9' : 'transparent', border: on ? undefined : '1.5px solid var(--color-brand-border)' }}>{on && <Check size={16} color="#fff" strokeWidth={3} />}</span>
-                    <span className="flex-1 truncate text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{a.name}</span>
-                    <span className="font-mono-numbers text-sm text-[var(--color-brand-text-muted)]">{fmtNum(balanceOf(a.id))}</span>
-                  </button>
-                )
-              })}
-            </div>
+            {/* AI estimate — grounded on local cost of living; user can still edit the months above. */}
+            <button type="button" onClick={runAiEstimate} disabled={aiBusy}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-[rgba(183,156,255,.4)] bg-[rgba(183,156,255,.08)] py-2.5 text-sm font-semibold"
+              style={{ color: '#B79CFF' }}>
+              <Sparkles size={15} className={aiBusy ? 'animate-pulse' : ''} />
+              {aiBusy ? 'Estimating for your country…' : 'Estimate with AI'}
+            </button>
+            {aiError ? <p className="mt-2 text-xs" style={{ color: '#FF6B6B' }}>{aiError}</p> : null}
+            {aiNote ? <p className="mt-2 text-xs text-[var(--color-brand-text-secondary)]">{aiNote}</p> : null}
           </div>
 
           <div className="flex items-center justify-between rounded-2xl border border-[rgba(126,174,249,.4)] bg-[rgba(126,174,249,.06)] p-3.5">

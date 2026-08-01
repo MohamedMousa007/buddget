@@ -8,6 +8,8 @@ import { apiFetchAuth } from '@/lib/apiBase'
 export interface GeminiProxyRequestBody {
   contents: unknown[]
   generationConfig?: Record<string, unknown>
+  /** Opt-in Google Search grounding (live facts). Only set by callers that need it. */
+  grounded?: boolean
 }
 
 const DEFAULT_MAX_ATTEMPTS = 3
