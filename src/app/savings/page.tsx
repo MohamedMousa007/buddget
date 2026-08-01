@@ -9,6 +9,7 @@ import { useNetWorth } from '@/hooks/useNetWorth'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useHydrateSavings, useHydrateGoals } from '@/hooks/remote'
+import { useEnsureMonthlySavingsVault } from '@/hooks/useEnsureMonthlySavingsVault'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { SavingsHero } from '@/components/features/savings-v3/SavingsHero'
 import { PocketsCarousel, type PocketVM } from '@/components/features/savings-v3/PocketsCarousel'
@@ -39,6 +40,7 @@ import type { SavingsAccount } from '@/lib/store/types'
 export default function SavingsPage() {
   useHydrateSavings()
   useHydrateGoals()
+  useEnsureMonthlySavingsVault()
   const dataReady = useFinanceStore((s) => s.dataReady)
   const requireAuth = useRequireAuthAction()
   const nw = useNetWorth()
@@ -272,14 +274,15 @@ export default function SavingsPage() {
             onClose={() => setMenu(null)}
             items={[
               { label: 'Edit', icon: <Pencil size={17} />, onSelect: () => setEditAcc(a) },
-              {
+              // The Monthly Savings vault is the carry destination floor — never deletable.
+              ...(a.type === 'vault' ? [] : [{
                 label: 'Delete', icon: <Trash2 size={17} />, destructive: true,
                 onSelect: async () => {
                   if (await confirmDialog({ title: `Delete ${a.name}?`, body: 'This removes the pocket and its history. This cannot be undone.', destructive: true })) {
                     useFinanceStore.getState().deleteSavingsAccount(a.id)
                   }
                 },
-              },
+              }]),
             ]}
           />
         )
