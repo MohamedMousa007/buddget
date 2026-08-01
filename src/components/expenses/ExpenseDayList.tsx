@@ -6,6 +6,7 @@ import { format, parseISO, subDays } from 'date-fns'
 import { CircleSlash } from 'lucide-react'
 import { CategoryIcon } from '@/components/dashboard/CategoryIcon'
 import { SwipeToDelete } from '@/components/expenses/SwipeToDelete'
+import { TransactionRow } from '@/components/transactions/TransactionRow'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { categoryChipColors } from '@/lib/expenses/categoryChip'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -155,100 +156,39 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                     onDelete={() => handleDelete(e)}
                     deleteLabel={t.expenses.swipeDelete}
                   >
-                    <button
-                      type="button"
+                    <TransactionRow
+                      icon={<CategoryIcon category={e.category} className="h-5 w-5" />}
+                      iconBg={colors.bg}
+                      iconFg={colors.fg}
+                      caption={e.category}
+                      captionColor={colors.fg}
+                      dimmed={netZero}
                       onClick={() => openEdit(e.id)}
-                      className="flex min-h-[60px] w-full items-center gap-3 px-4 py-2.5 text-start transition-colors hover:bg-[var(--color-brand-elevated)]"
-                    >
-                      {/* A. Icon column */}
-                      <span className="flex w-[54px] shrink-0 flex-col items-center gap-[5px]">
-                        <span
-                          className={`flex h-10 w-10 items-center justify-center rounded-[11px] ${netZero ? 'opacity-50' : ''}`}
-                          style={{ background: colors.bg, color: colors.fg }}
-                        >
-                          <CategoryIcon category={e.category} className="h-5 w-5" />
-                        </span>
-                        <span
-                          className="max-w-[54px] truncate text-center text-[9.5px] font-semibold leading-none"
-                          style={{ color: colors.fg }}
-                        >
-                          {e.category}
-                        </span>
-                      </span>
-
-                      {/* B. Middle column */}
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-2 overflow-hidden">
-                          <span className="truncate text-[15px] font-semibold text-[var(--color-brand-text-primary)]">
-                            {e.description}
-                          </span>
-                          {e.refundKind === 'declined' ? (
-                            <span
-                              className="shrink-0 rounded-full px-2 py-[2.5px] text-[9.5px] font-extrabold uppercase tracking-[0.05em]"
-                              style={{ background: 'rgba(229,9,20,0.14)', color: '#F76D74' }}
-                            >
-                              {t.expenses.badgeDeclined}
-                            </span>
-                          ) : e.refundKind === 'refunded' ? (
-                            <span
-                              className="shrink-0 rounded-full px-2 py-[2.5px] text-[9.5px] font-extrabold uppercase tracking-[0.05em]"
-                              style={{ background: 'rgba(29,185,84,0.16)', color: '#1DB954' }}
-                            >
-                              {t.expenses.badgeRefunded}
-                            </span>
-                          ) : nonSpend ? (
-                            // Money movement, not consumption. An icon (not a word) because the
-                            // icon column already names the category — a text badge would repeat
-                            // it and eat ~90px of the description.
-                            <CircleSlash
-                              role="img"
-                              aria-label={t.expenses.badgeNotCounted}
-                              className="h-3.5 w-3.5 shrink-0 text-[var(--color-brand-text-muted)]"
-                            />
-                          ) : null}
-                        </span>
-                        <span className="mt-1.5 flex items-center whitespace-nowrap">
-                          <span className="flex min-w-0 items-center">
-                            {method?.last4 ? (
-                              <>
-                                <span className="font-mono-numbers truncate text-xs font-medium text-[var(--color-brand-text-muted)]">
-                                  {decomposePaymentMethodName(method.name, method.last4).provider}
-                                </span>
-                                <span className="font-mono-numbers ml-1 shrink-0 text-xs font-medium text-[var(--color-brand-text-muted)]">
-                                  ••{method.last4}
-                                </span>
-                              </>
-                            ) : (
-                              <span className="font-mono-numbers truncate text-xs font-medium text-[var(--color-brand-text-muted)]">
-                                {method?.name || t.common.unknown}
-                              </span>
-                            )}
-                          </span>
-                        </span>
-                      </span>
-
-                      {/* C. Amount column */}
-                      <span className="shrink-0 text-end">
-                        <span
-                          className={`font-mono-numbers block text-[15px] font-medium tabular-nums ${netZero ? 'text-[var(--color-brand-text-secondary)] line-through' : nonSpend ? 'text-[var(--color-brand-text-muted)]' : 'text-[var(--color-brand-text-primary)]'}`}
-                        >
-                          −{fmtNum(baseVal)}
-                        </span>
-                        {e.refundKind === 'refunded' ? (
-                          <span className="font-mono-numbers mt-[3px] block text-[10.5px] font-semibold" style={{ color: '#1DB954' }}>
-                            ↩ {t.expenses.statusReturned} {statusDate}
-                          </span>
+                      title={e.description}
+                      titleBadge={
+                        e.refundKind === 'declined' ? (
+                          <span className="shrink-0 rounded-full px-2 py-[2.5px] text-[9.5px] font-extrabold uppercase tracking-[0.05em]" style={{ background: 'rgba(229,9,20,0.14)', color: '#F76D74' }}>{t.expenses.badgeDeclined}</span>
+                        ) : e.refundKind === 'refunded' ? (
+                          <span className="shrink-0 rounded-full px-2 py-[2.5px] text-[9.5px] font-extrabold uppercase tracking-[0.05em]" style={{ background: 'rgba(29,185,84,0.16)', color: '#1DB954' }}>{t.expenses.badgeRefunded}</span>
+                        ) : nonSpend ? (
+                          <CircleSlash role="img" aria-label={t.expenses.badgeNotCounted} className="h-3.5 w-3.5 shrink-0 text-[var(--color-brand-text-muted)]" />
+                        ) : null
+                      }
+                      subtitle={
+                        method?.last4 ? (
+                          <><span className="truncate">{decomposePaymentMethodName(method.name, method.last4).provider}</span><span className="ml-1 shrink-0">••{method.last4}</span></>
+                        ) : (method?.name || t.common.unknown)
+                      }
+                      amount={<span className={netZero ? 'line-through' : ''}>−{fmtNum(baseVal)}</span>}
+                      amountColor={netZero ? 'var(--color-brand-text-secondary)' : nonSpend ? 'var(--color-brand-text-muted)' : 'var(--color-brand-text-primary)'}
+                      sub={
+                        e.refundKind === 'refunded' ? (
+                          <span className="font-semibold" style={{ color: '#1DB954' }}>↩ {t.expenses.statusReturned} {statusDate}</span>
                         ) : e.refundKind === 'declined' ? (
-                          <span className="font-mono-numbers mt-[3px] block text-[10.5px] font-semibold text-[var(--color-brand-text-muted)]">
-                            ✕ {t.expenses.statusBlocked} {statusDate}
-                          </span>
-                        ) : usd ? (
-                          <span className="font-mono-numbers mt-[3px] block text-[11.5px] font-medium text-[var(--color-brand-text-muted)]">
-                            ≈ −{usd}
-                          </span>
-                        ) : null}
-                      </span>
-                    </button>
+                          <span className="font-semibold">✕ {t.expenses.statusBlocked} {statusDate}</span>
+                        ) : usd ? (<>≈ −{usd}</>) : null
+                      }
+                    />
                   </SwipeToDelete>
                 </div>
               )

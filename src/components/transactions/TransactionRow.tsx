@@ -16,8 +16,10 @@ export interface TransactionRowProps {
   /** Tiny label under the icon (category / tag). */
   caption?: string
   captionColor?: string
-  /** Main line — text or nodes (badges allowed). */
+  /** Main line — text or nodes. */
   title: React.ReactNode
+  /** Optional badge/icon shown right after the title (shrink-0, not truncated). */
+  titleBadge?: React.ReactNode
   /** Second line under the title (payment method, note, time). */
   subtitle?: React.ReactNode
   /** Signed amount, pre-formatted (e.g. "−1,200" / "+300"). */
@@ -31,7 +33,7 @@ export interface TransactionRowProps {
 }
 
 export function TransactionRow({
-  icon, iconBg, iconFg, caption, captionColor, title, subtitle, amount, amountColor, sub, onClick, dimmed,
+  icon, iconBg, iconFg, caption, captionColor, title, titleBadge, subtitle, amount, amountColor, sub, onClick, dimmed,
 }: TransactionRowProps) {
   const Tag = onClick ? 'button' : 'div'
   return (
@@ -58,6 +60,7 @@ export function TransactionRow({
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2 overflow-hidden">
           <span className="truncate text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{title}</span>
+          {titleBadge}
         </span>
         {subtitle ? (
           <span className="mt-1.5 flex items-center whitespace-nowrap font-mono-numbers text-xs font-medium text-[var(--color-brand-text-muted)]">
