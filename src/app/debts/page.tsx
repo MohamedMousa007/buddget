@@ -87,7 +87,7 @@ export default function DebtsPage() {
   const renderCard = (i: number) => {
     if (tab === 'borrow') {
       const vm = data.borrow[i]
-      return <BorrowHeroCard vm={vm} onEdit={() => editDebt(vm.id)} onPay={() => guardPay(vm.id)} />
+      return <BorrowHeroCard vm={vm} onEdit={() => editDebt(vm.id)} onDelete={() => useFinanceStore.getState().deleteDebt(vm.id)} onPay={() => guardPay(vm.id)} />
     }
     if (tab === 'credit_card') {
       const vm = data.cards[i]
@@ -95,13 +95,14 @@ export default function DebtsPage() {
         <CreditCardHeroCard
           vm={vm}
           onEdit={() => editDebt(vm.id)}
+          onDelete={() => useFinanceStore.getState().deleteDebt(vm.id)}
           onPay={() => guardPay(vm.id)}
           onCharges={() => viewCharges(vm)}
         />
       )
     }
     const vm = data.installments[i]
-    return <InstallmentHeroCard vm={vm} onEdit={() => editDebt(vm.id)} onPay={() => guardPay(vm.id)} />
+    return <InstallmentHeroCard vm={vm} onEdit={() => editDebt(vm.id)} onDelete={() => useFinanceStore.getState().deleteDebt(vm.id)} onPay={() => guardPay(vm.id)} />
   }
 
   return (

@@ -100,6 +100,25 @@ export function SavingsHero({
           </div>
         )}
 
+        {/* Allocation split — fills the hero's dead space with a real visual of where wealth sits. */}
+        {totalSaved + investment > 0 && (() => {
+          const total = totalSaved + investment
+          const savedPct = Math.round((totalSaved / total) * 100)
+          const invPct = 100 - savedPct
+          return (
+            <div className="mt-3">
+              <div className="flex h-2 overflow-hidden rounded-full" style={{ background: 'rgba(255,255,255,.08)' }}>
+                <div style={{ width: `${savedPct}%`, background: '#35D46F' }} />
+                <div style={{ width: `${invPct}%`, background: '#F5C842' }} />
+              </div>
+              <div className="mt-1.5 flex items-center justify-between" style={{ fontSize: 10.5, fontWeight: 600 }}>
+                <span className="inline-flex items-center gap-1" style={{ color: '#35D46F' }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: '#35D46F' }} />Saved {savedPct}%</span>
+                <span className="inline-flex items-center gap-1" style={{ color: '#F5C842' }}>Invested {invPct}%<span className="h-1.5 w-1.5 rounded-full" style={{ background: '#F5C842' }} /></span>
+              </div>
+            </div>
+          )
+        })()}
+
         {/* cell strip */}
         <div
           className="mt-3 flex items-stretch"

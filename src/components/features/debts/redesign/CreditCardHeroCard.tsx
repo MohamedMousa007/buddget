@@ -9,6 +9,7 @@ import { EditPin, fmtWhole } from './heroCardShared'
 export interface CreditCardHeroCardProps {
   vm: CreditCardVM
   onEdit: () => void
+  onDelete?: () => void
   onPay: () => void
   onCharges: () => void
 }
@@ -21,14 +22,14 @@ function barTone(utilPct: number | null): string {
 }
 
 /** Revolving credit-card hero — compact card-like, 3 stat boxes (handoff §3). */
-export function CreditCardHeroCard({ vm, onEdit, onPay, onCharges }: CreditCardHeroCardProps) {
+export function CreditCardHeroCard({ vm, onEdit, onDelete, onPay, onCharges }: CreditCardHeroCardProps) {
   const over = vm.overBy > 0
   const barW = vm.utilPct == null ? 0 : Math.min(100, vm.utilPct)
   const tone = barTone(vm.utilPct)
 
   return (
     <div className="relative flex flex-col rounded-[18px] p-4 text-white" style={heroCardStyle(vm.color)}>
-      <EditPin onClick={onEdit} label="Edit card" />
+      <EditPin onClick={onEdit} onDelete={onDelete} label="Edit card" deleteLabel="Delete card" deleteBody="This removes the card debt and its history. This cannot be undone." />
 
       {/* Header: bank mark + name + last4 · Debt */}
       <div className="flex items-center gap-3 pe-9">

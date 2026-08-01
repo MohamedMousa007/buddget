@@ -9,17 +9,18 @@ import { ProviderBadge } from './ProviderBadge'
 export interface InstallmentHeroCardProps {
   vm: InstallmentVM
   onEdit: () => void
+  onDelete?: () => void
   onPay: () => void
 }
 
 /** Installment / BNPL plan hero — segmented progress, provider mark (handoff §3). */
-export function InstallmentHeroCard({ vm, onEdit, onPay }: InstallmentHeroCardProps) {
+export function InstallmentHeroCard({ vm, onEdit, onDelete, onPay }: InstallmentHeroCardProps) {
   const accent = vm.brandColor
   const segments = Array.from({ length: Math.max(vm.count, 1) }, (_, i) => (i < vm.paid ? 'paid' : i === vm.paid ? 'next' : 'todo'))
 
   return (
     <div className="relative flex flex-col rounded-[18px] p-4 text-white" style={heroCardStyle(accent)}>
-      <EditPin onClick={onEdit} label="Edit plan" />
+      <EditPin onClick={onEdit} onDelete={onDelete} label="Edit plan" deleteLabel="Delete plan" deleteBody="This removes the installment plan and its history. This cannot be undone." />
 
       {/* Header: provider mark + card tag */}
       <div className="flex items-center gap-2 pe-9">

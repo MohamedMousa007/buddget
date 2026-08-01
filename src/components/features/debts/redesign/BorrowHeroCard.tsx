@@ -8,18 +8,19 @@ import { EditPin, fmtWhole } from './heroCardShared'
 export interface BorrowHeroCardProps {
   vm: BorrowVM
   onEdit: () => void
+  onDelete?: () => void
   onPay: () => void
 }
 
 /** Borrow (person-to-person / gold) hero card — handoff §3. */
-export function BorrowHeroCard({ vm, onEdit, onPay }: BorrowHeroCardProps) {
+export function BorrowHeroCard({ vm, onEdit, onDelete, onPay }: BorrowHeroCardProps) {
   const owe = vm.dir === 'owe'
   const pct = vm.total > 0 ? Math.max(0, Math.min(100, (vm.paid / vm.total) * 100)) : 0
   const accent = vm.accent
 
   return (
     <div className="relative flex flex-col rounded-[18px] p-4 text-white" style={heroCardStyle(accent)}>
-      <EditPin onClick={onEdit} label="Edit debt" />
+      <EditPin onClick={onEdit} onDelete={onDelete} label="Edit debt" deleteLabel="Delete debt" deleteBody="This removes the debt and its payment history. This cannot be undone." />
 
       {/* Header */}
       <div className="flex items-start gap-3 pe-9">
