@@ -7,7 +7,8 @@ import type { SavingsAccount, SavingsTransaction, Currency } from '@/lib/store/t
 import { convertCurrency } from '@/lib/utils/currency'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 import { pocketColor } from '@/lib/savings/pocketIdentity'
-import { SwipeToDelete, type SwipeSide } from '@/components/expenses/SwipeToDelete'
+import { SwipeToDelete } from '@/components/expenses/SwipeToDelete'
+import { TransactionRow } from '@/components/transactions/TransactionRow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 
 const fmtSigned = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(Math.round(n)).toLocaleString('en-US')}`
@@ -99,26 +100,23 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
             const tag = tagFor(tx)
             const amtBase = convertCurrency(tx.amount, tx.currency, baseCurrency, exchangeRates)
             const usd = convertCurrency(amtBase, baseCurrency, 'USD', exchangeRates)
+            const time = new Date(tx.date.length > 10 ? tx.date : tx.date + 'T12:00:00').toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
             return (
               <SwipeToDelete key={tx.id} onDelete={() => deleteTx(tx.id)} openSide={openId === tx.id ? 'left' : null} onOpenChange={(side) => setOpenId(side ? tx.id : null)} deleteLabel="Delete">
-              <div className="flex items-center gap-3 border-t border-[var(--color-brand-border)] bg-[var(--color-brand-bg)] px-4 py-3">
-                <div className="flex w-[46px] flex-col items-center gap-1">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: a ? `rgba(${hexToRgb(pocketColor(a))},.14)` : 'var(--color-brand-elevated)', color: a ? pocketColor(a) : undefined }}>
-                    {a ? <SavingsAccountIcon account={a} className="h-5 w-5" /> : tag.label === 'Withdrew' ? <ShoppingCart size={18} /> : <TrendingUp size={18} />}
-                  </span>
-                  <span className="text-[9.5px] font-semibold" style={{ color: tag.color }}>{tag.label}</span>
+                <div className="border-t border-[var(--color-brand-border)] bg-[var(--color-brand-bg)]">
+                  <TransactionRow
+                    icon={a ? <SavingsAccountIcon account={a} className="h-5 w-5" /> : tag.label === 'Withdrew' ? <ShoppingCart size={18} /> : <TrendingUp size={18} />}
+                    iconBg={a ? `rgba(${hexToRgb(pocketColor(a))},.14)` : 'var(--color-brand-elevated)'}
+                    iconFg={a ? pocketColor(a) : undefined}
+                    caption={tag.label}
+                    captionColor={tag.color}
+                    title={a?.name ?? 'Savings'}
+                    subtitle={`${time} · ${tx.notes || tx.source || a?.institution || 'Savings'}`}
+                    amount={`${fmtSigned(tag.sign * amtBase)}.00`}
+                    amountColor={tag.sign > 0 ? '#35D46F' : '#FF6B6B'}
+                    sub={`≈ $${Math.abs(usd).toFixed(2)}`}
+                  />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{a?.name ?? 'Savings'}</p>
-                  <p className="truncate text-xs text-[var(--color-brand-text-muted)]">
-                    {new Date(tx.date.length > 10 ? tx.date : tx.date + 'T12:00:00').toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} · {tx.notes || tx.source || a?.institution || 'Savings'}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-mono-numbers text-[15px] font-semibold" style={{ color: tag.sign > 0 ? '#35D46F' : '#FF6B6B' }}>{fmtSigned(tag.sign * amtBase)}.00</p>
-                  <p className="font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]">≈ ${Math.abs(usd).toFixed(2)}</p>
-                </div>
-              </div>
               </SwipeToDelete>
             )
           })}
