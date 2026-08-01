@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { Target, Pencil, Trash2, Plus } from 'lucide-react'
+import { Target, Pencil, Trash2, Plus, Shield, ChevronRight } from 'lucide-react'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useNetWorth } from '@/hooks/useNetWorth'
@@ -84,11 +84,12 @@ export default function SavingsPage() {
     [savingsAccounts],
   )
 
-  // Emergency fund: cover = the cover pockets' balances; essentials = a "simple month".
+  // Emergency fund: cover = your whole liquid savings (all savings pockets) — a threshold on the
+  // money you already have, not a per-pocket flag. An explicit config list still overrides.
   const goldOk = goldPriceAvailable !== false
   const coverPocketIds = useMemo(() => {
     const cfg = profile.emergencyFundConfig
-    return cfg?.coverPocketIds ?? pockets.filter((a) => a.isEmergencyCover).map((a) => a.id)
+    return cfg?.coverPocketIds ?? pockets.map((a) => a.id)
   }, [profile.emergencyFundConfig, pockets])
   const coverAmount = useMemo(() =>
     pockets.filter((a) => coverPocketIds.includes(a.id))
@@ -243,8 +244,8 @@ export default function SavingsPage() {
               onAddPocket={() => guard(() => setNewAccountOpen(true))}
             />
 
-            {simpleMonth.total > 0 && (
-              <div className="mt-3">
+            <div className="mt-3">
+              {simpleMonth.total > 0 ? (
                 <EmergencyFundCard
                   monthsCovered={emergency.monthsCovered}
                   targetMonths={targetMonths}
@@ -253,8 +254,20 @@ export default function SavingsPage() {
                   atOrAboveTarget={emergency.atOrAboveTarget}
                   onOpen={() => guard(() => setEmergencyOpen(true))}
                 />
-              </div>
-            )}
+              ) : (
+                // No spending/budget data to size a month yet — always show the block with a
+                // set-up CTA so the safety net is never invisible (item 17).
+                <button type="button" onClick={() => guard(() => setEmergencyOpen(true))}
+                  className="mx-4 flex w-[calc(100%-2rem)] items-center gap-3 rounded-[18px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-3.5 text-left">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(126,174,249,.14)', color: '#7EAEF9' }}><Shield size={18} /></span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">Set your emergency fund</p>
+                    <p className="text-xs text-[var(--color-brand-text-muted)]">A safety net of a few months&apos; essentials</p>
+                  </div>
+                  <ChevronRight size={18} className="text-[var(--color-brand-text-muted)]" />
+                </button>
+              )}
+            </div>
             <ZakatCard result={zakatResult} base={zakatResult.zakatable} hawlDate={hawlDate} onOpen={() => guard(() => setZakatOpen(true))} />
 
             <div className="mt-4">

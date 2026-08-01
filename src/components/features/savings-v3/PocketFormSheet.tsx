@@ -48,6 +48,7 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
   const [currency, setCurrency] = useState<Currency>(linkedMethod?.currency ?? baseCurrency)
   const [color, setColor] = useState(def.color)
   const [alsoPayment, setAlsoPayment] = useState(false)
+  // Emergency cover is a threshold over ALL savings now (set on the emergency card), not per pocket.
 
   // Provider chips from the app-wide catalogue, filtered to what THIS pocket kind can hold
   // (a bank pocket shows banks, not Vodafone Cash / InstaPay). One pool, not a hardcoded list.
@@ -56,7 +57,6 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
     const ids = QUICK_ADD_BLEND.filter((id) => PAYMENT_BRANDS[id] && brandIssuesType(PAYMENT_BRANDS[id], issues))
     return [...new Set(ids.map((id) => PAYMENT_BRANDS[id].name))].slice(0, 10)
   }, [def.kind])
-  const [emergencyCover, setEmergencyCover] = useState(def.kind === 'bank' || def.kind === 'wallet')
 
   const create = () => {
     addSavingsAccount({
@@ -66,7 +66,6 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
       currency,
       openingBalance: parseFloat(balance) || 0,
       color,
-      isEmergencyCover: emergencyCover,
       icon: def.icon,
       ...(provider ? { institution: provider } : {}),
       ...(last4 ? { accountLast4: last4 } : {}),
@@ -170,7 +169,6 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
           {(def.kind === 'bank' || def.kind === 'wallet') && (
             <ToggleRow title="Also add as a payment method" sub="So you can spend from it too" on={alsoPayment} onToggle={setAlsoPayment} />
           )}
-          <ToggleRow title="Counts as emergency cover" sub="Money you could reach fast" on={emergencyCover} onToggle={setEmergencyCover} />
         </div>
 
         <div className="px-5 pt-2 pb-[max(20px,env(safe-area-inset-bottom))]">
