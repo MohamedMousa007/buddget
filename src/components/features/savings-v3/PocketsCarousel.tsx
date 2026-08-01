@@ -16,7 +16,7 @@ export interface PocketsCarouselProps {
   pockets: PocketVM[]
   onAdd: (id: string) => void
   onWithdraw: (id: string) => void
-  onMenu: (id: string) => void
+  onMenu: (id: string, anchor: DOMRect) => void
 }
 
 export function PocketsCarousel({ pockets, onAdd, onWithdraw, onMenu }: PocketsCarouselProps) {
@@ -49,7 +49,7 @@ export function PocketsCarousel({ pockets, onAdd, onWithdraw, onMenu }: PocketsC
             isAuto={p.isAuto}
             onAdd={() => onAdd(p.account.id)}
             onWithdraw={() => onWithdraw(p.account.id)}
-            onMenu={() => onMenu(p.account.id)}
+            onMenu={(rect) => onMenu(p.account.id, rect)}
           />
         ))}
       </div>

@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { Target } from 'lucide-react'
+import { Target, Pencil, Trash2 } from 'lucide-react'
+import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useNetWorth } from '@/hooks/useNetWorth'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
@@ -68,7 +69,7 @@ export default function SavingsPage() {
   const [editAcc, setEditAcc] = useState<SavingsAccount | null>(null)
   const [updateAcc, setUpdateAcc] = useState<SavingsAccount | null>(null)
   const [prefillId, setPrefillId] = useState<string | null>(null)
-  const [menuId, setMenuId] = useState<string | null>(null)
+  const [menu, setMenu] = useState<{ id: string; anchor: DOMRect } | null>(null)
   const confirmDialog = useConfirm()
   const [emergencyOpen, setEmergencyOpen] = useState(false)
   const [zakatOpen, setZakatOpen] = useState(false)
@@ -229,7 +230,7 @@ export default function SavingsPage() {
               pockets={pocketVMs}
               onAdd={openAdd}
               onWithdraw={openWithdraw}
-              onMenu={(id) => setMenuId(id)}
+              onMenu={(id, anchor) => setMenu({ id, anchor })}
             />
 
             {simpleMonth.total > 0 && (
@@ -253,37 +254,28 @@ export default function SavingsPage() {
         )}
       </div>
 
-      {/* Kebab menu (Edit / Delete) — reuses existing edit sheet for now */}
-      {menuId && (
-        <div className="fixed inset-0 z-40" onClick={() => setMenuId(null)}>
-          <div
-            className="absolute rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] py-1 shadow-xl"
-            style={{ top: 220, right: 24, minWidth: 186 }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              className="block w-full px-4 py-2.5 text-left text-sm text-[var(--color-brand-text-primary)]"
-              onClick={() => { const a = pockets.find((p) => p.id === menuId) ?? null; setMenuId(null); setEditAcc(a) }}
-            >
-              Edit
-            </button>
-            <button
-              type="button"
-              className="block w-full px-4 py-2.5 text-left text-sm text-[var(--color-brand-red-text)]"
-              onClick={async () => {
-                const a = pockets.find((p) => p.id === menuId)
-                setMenuId(null)
-                if (a && (await confirmDialog({ title: `Delete ${a.name}?`, body: 'This removes the pocket and its history. This cannot be undone.', destructive: true }))) {
-                  useFinanceStore.getState().deleteSavingsAccount(a.id)
-                }
-              }}
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-      )}
+      {menu && (() => {
+        const a = pockets.find((p) => p.id === menu.id)
+        if (!a) return null
+        return (
+          <CardActionMenu
+            anchor={menu.anchor}
+            title={a.name}
+            onClose={() => setMenu(null)}
+            items={[
+              { label: 'Edit', icon: <Pencil size={17} />, onSelect: () => setEditAcc(a) },
+              {
+                label: 'Delete', icon: <Trash2 size={17} />, destructive: true,
+                onSelect: async () => {
+                  if (await confirmDialog({ title: `Delete ${a.name}?`, body: 'This removes the pocket and its history. This cannot be undone.', destructive: true })) {
+                    useFinanceStore.getState().deleteSavingsAccount(a.id)
+                  }
+                },
+              },
+            ]}
+          />
+        )
+      })()}
 
       {addOpen && (
         <AddSavingsSheetV3

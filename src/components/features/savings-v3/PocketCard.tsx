@@ -21,7 +21,7 @@ export interface PocketCardProps {
   isAuto: boolean
   onAdd?: () => void
   onWithdraw?: () => void
-  onMenu?: () => void
+  onMenu?: (anchor: DOMRect) => void
   /** Read-only picker mode (§6.2): hides ⋮ + Add/Withdraw, shows a selection radio/check. */
   picker?: boolean
   selected?: boolean
@@ -97,7 +97,7 @@ export function PocketCard({
             </span>
           ) : (
             <button
-              type="button" onClick={onMenu} aria-label="Pocket menu"
+              type="button" onClick={(e) => onMenu?.(e.currentTarget.getBoundingClientRect())} aria-label="Pocket menu"
               className="flex items-center justify-center shrink-0 text-[var(--color-brand-text-muted)]"
               style={{ width: 32, height: 32, marginTop: -4, marginRight: -6 }}
             >
