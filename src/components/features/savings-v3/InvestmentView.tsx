@@ -2,7 +2,9 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { ChevronRight, Pencil, Plus, TrendingUp } from 'lucide-react'
+import { ChevronRight, MoreVertical, Trash2, Plus, TrendingUp } from 'lucide-react'
+import { CardActionMenu } from '@/components/ui/CardActionMenu'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAssetPrices } from '@/hooks/useAssetPrices'
 import { useNetWorth } from '@/hooks/useNetWorth'
@@ -125,6 +127,9 @@ function HeroCell({ label, value, color = '#fff', chevron, trend, onClick, last 
 }
 
 function HoldingsCard({ type, holdings, lookup, toBase, onAdd }: { type: InvestmentAssetType; holdings: InvestmentHolding[]; lookup: Parameters<typeof valueInvestmentHolding>[1]; toBase: (n: number) => number; onAdd: () => void }) {
+  const deleteHolding = useFinanceStore((s) => s.deleteInvestmentHolding)
+  const confirm = useConfirm()
+  const [menu, setMenu] = useState<{ id: string; anchor: DOMRect } | null>(null)
   const rows = holdings.map((h) => {
     const v = valueInvestmentHolding(h, lookup)
     return { h, worth: v.priced && v.value != null ? toBase(v.value) : null }
@@ -169,10 +174,19 @@ function HoldingsCard({ type, holdings, lookup, toBase, onAdd }: { type: Investm
           </div>
           <span className="w-16 text-right font-mono-numbers text-[12.5px] text-[var(--color-brand-text-secondary)]">{fmtNum(h.quantity)}{type === 'gold' ? ' g' : ''}</span>
           <span className="w-[92px] text-right font-mono-numbers text-[13.5px] font-semibold text-[var(--color-brand-text-primary)]">{worth != null ? fmtNum(worth) : '—'}</span>
-          <button type="button" aria-label="Edit" className="text-[var(--color-brand-text-muted)]"><Pencil size={14} /></button>
+          <button type="button" aria-label="Holding options" onClick={(e) => setMenu({ id: h.id, anchor: e.currentTarget.getBoundingClientRect() })} className="text-[var(--color-brand-text-muted)]"><MoreVertical size={16} /></button>
         </div>
       ))}
       <button type="button" onClick={onAdd} className="w-full border-t border-[var(--color-brand-border)] py-3 text-center text-sm font-semibold" style={{ color: '#E50914' }}>+ {type === 'gold' ? 'Add more gold' : 'Add more'}</button>
+      {menu && (() => {
+        const hh = holdings.find((x) => x.id === menu.id)
+        if (!hh) return null
+        return (
+          <CardActionMenu anchor={menu.anchor} title={hh.name} onClose={() => setMenu(null)} items={[
+            { label: 'Delete', icon: <Trash2 size={17} />, destructive: true, onSelect: async () => { if (await confirm({ title: `Delete ${hh.name}?`, body: 'Removes this holding from your investments.', destructive: true })) deleteHolding(hh.id) } },
+          ]} />
+        )
+      })()}
     </div>
   )
 }
