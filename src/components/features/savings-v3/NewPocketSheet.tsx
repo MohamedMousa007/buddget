@@ -37,16 +37,12 @@ export function NewPocketSheet({ open, onClose }: NewPocketSheetProps) {
 
   if (!open) return null
 
-  if (formDef) {
-    return (
-      <PocketFormSheet
-        open onClose={() => { setFormDef(null); setLinkedMethod(null); onClose() }}
-        def={formDef} linkedMethod={linkedMethod}
-      />
-    )
-  }
-
+  // Stack the chooser + form as two ModalShells (like the payment-methods flow) so each
+  // registers its own LIFO back guard — the hardware back button peels the form first, then
+  // the chooser, instead of collapsing both at once (design-system rule: layered sheets step
+  // back one level at a time).
   return (
+    <>
     <ModalShell open={open} onBackdropClick={onClose}>
       <div className="flex flex-col" style={{ maxHeight: '92vh' }}>
         <div className="flex items-start justify-between px-5 pt-4 pb-1">
@@ -110,5 +106,14 @@ export function NewPocketSheet({ open, onClose }: NewPocketSheetProps) {
         </div>
       </div>
     </ModalShell>
+    {formDef && (
+      <PocketFormSheet
+        open
+        onClose={() => { setFormDef(null); setLinkedMethod(null) }}
+        onDone={() => { setFormDef(null); setLinkedMethod(null); onClose() }}
+        def={formDef} linkedMethod={linkedMethod}
+      />
+    )}
+    </>
   )
 }

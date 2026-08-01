@@ -19,8 +19,10 @@ const PACE = {
 } as const
 
 export interface SavingsHeroProps {
-  netWorth: number // savings + investments
+  netWorth: number // real net worth (balances + this month's flow − debt), matches dashboard
   netWorthUsd: number | null
+  /** A holding couldn't be priced — net worth excludes it; show a subtle note. */
+  incomplete?: boolean
   totalSaved: number
   thisMonth: number
   investment: number
@@ -36,7 +38,7 @@ const microLabel: React.CSSProperties = {
 }
 
 export function SavingsHero({
-  netWorth, netWorthUsd, totalSaved, thisMonth, investment, pace, currency, empty,
+  netWorth, netWorthUsd, incomplete, totalSaved, thisMonth, investment, pace, currency, empty,
   onAddSavings, onInvestment,
 }: SavingsHeroProps) {
   const paceStyle = PACE[pace.state]
@@ -86,14 +88,21 @@ export function SavingsHero({
           <span style={{ fontWeight: 500, fontSize: 13, color: '#CFCFE0', paddingBottom: 4 }}>{currency}</span>
         </div>
         {netWorthUsd != null && (
-          <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 500, fontSize: 12.5, color: '#8FA6C7', marginTop: 2 }}>
-            ≈ ${netWorthUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+          <div className="flex items-center gap-1.5" style={{ marginTop: 2 }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500, fontSize: 12.5, color: '#8FA6C7' }}>
+              ≈ ${netWorthUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+            </span>
+            {incomplete && (
+              <span style={{ fontSize: 10, fontWeight: 600, color: '#FFB13D' }} title="A holding couldn't be priced — excluded">
+                · incomplete
+              </span>
+            )}
           </div>
         )}
 
         {/* cell strip */}
         <div
-          className="mt-3 flex"
+          className="mt-3 flex items-stretch"
           style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 13 }}
         >
           <Cell label="Total saved" value={fmtCompact(totalSaved)} />
@@ -132,8 +141,8 @@ function Cell({
   )
   return (
     <div
-      className="flex-1"
-      style={{ padding: '10px 11px', borderRight: last ? undefined : '1px solid rgba(255,255,255,.07)' }}
+      className="flex flex-1 flex-col items-start"
+      style={{ padding: '10px 11px', minHeight: 52, borderRight: last ? undefined : '1px solid rgba(255,255,255,.07)' }}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
     >

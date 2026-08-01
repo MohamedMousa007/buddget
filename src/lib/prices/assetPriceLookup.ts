@@ -32,7 +32,7 @@ export interface LivePrice {
   confidence: string | null
 }
 
-/** Fresh price for (symbol, currency), or null when missing/stale. */
+/** Fresh price for (symbol, currency), or null when missing/stale. Used by valuation/net worth. */
 export function lookupAssetPrice(
   map: AssetPriceMap,
   symbol: string,
@@ -43,4 +43,25 @@ export function lookupAssetPrice(
   if (!e) return null
   if (!isPriceFresh(e.asOf, e.assetClass, now)) return null
   return { price: e.price, asOf: e.asOf, confidence: e.confidence }
+}
+
+/** A price entry for the market-DISPLAY tier: present even when stale, flagged `fresh`. */
+export interface DisplayPrice extends LivePrice {
+  fresh: boolean
+}
+
+/**
+ * Display-only read: returns the cached price whether fresh or stale (null only when missing
+ * entirely), so market cards can render a stamped stale number instead of a blank "Unavailable".
+ * NEVER use this for valuation/net worth — those must stay fail-closed via {@link lookupAssetPrice}.
+ */
+export function lookupAssetPriceDisplay(
+  map: AssetPriceMap,
+  symbol: string,
+  currency: string,
+  now: Date = new Date(),
+): DisplayPrice | null {
+  const e = map[priceKey(symbol, currency)]
+  if (!e) return null
+  return { price: e.price, asOf: e.asOf, confidence: e.confidence, fresh: isPriceFresh(e.asOf, e.assetClass, now) }
 }

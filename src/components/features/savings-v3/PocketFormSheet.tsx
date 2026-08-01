@@ -6,6 +6,7 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import { AmountField } from '@/components/ui/AmountField'
 import { CurrencyField } from '@/components/ui/CurrencyField'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 import { POCKET_PROVIDERS, POCKET_COLORS, type PocketKindDef } from '@/lib/savings/pocketKinds'
@@ -16,13 +17,16 @@ const hexToRgb = (hex: string) => { const h = hex.replace('#', ''); return `${pa
 
 export interface PocketFormSheetProps {
   open: boolean
+  /** Step back one level (back button / X / backdrop) — returns to the chooser, not the page. */
   onClose: () => void
+  /** Full dismiss after a successful create (tears down the whole flow). Defaults to onClose. */
+  onDone?: () => void
   def: PocketKindDef
   /** Prefill + link when created from an existing payment method. */
   linkedMethod?: PaymentMethod | null
 }
 
-export function PocketFormSheet({ open, onClose, def, linkedMethod }: PocketFormSheetProps) {
+export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: PocketFormSheetProps) {
   const addSavingsAccount = useFinanceStore((s) => s.addSavingsAccount)
   const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
 
@@ -53,7 +57,7 @@ export function PocketFormSheet({ open, onClose, def, linkedMethod }: PocketForm
       ...(maturity ? { maturityDate: maturity } : {}),
       ...(linkedMethod ? { linkedPaymentMethodId: linkedMethod.id } : {}),
     } as never)
-    onClose()
+    ;(onDone ?? onClose)()
   }
 
   if (!open) return null
@@ -138,9 +142,9 @@ export function PocketFormSheet({ open, onClose, def, linkedMethod }: PocketForm
           </div>
 
           {(def.kind === 'bank' || def.kind === 'wallet') && (
-            <ToggleRow title="Also add as a payment method" sub="So you can spend from it too" on={alsoPayment} onColor="#1DB954" onToggle={() => setAlsoPayment((v) => !v)} />
+            <ToggleRow title="Also add as a payment method" sub="So you can spend from it too" on={alsoPayment} onToggle={setAlsoPayment} />
           )}
-          <ToggleRow title="Counts as emergency cover" sub="Money you could reach fast" on={emergencyCover} onColor="#E50914" onToggle={() => setEmergencyCover((v) => !v)} />
+          <ToggleRow title="Counts as emergency cover" sub="Money you could reach fast" on={emergencyCover} onToggle={setEmergencyCover} />
         </div>
 
         <div className="px-5 pt-2 pb-[max(20px,env(safe-area-inset-bottom))]">
@@ -153,16 +157,16 @@ export function PocketFormSheet({ open, onClose, def, linkedMethod }: PocketForm
   )
 }
 
-function ToggleRow({ title, sub, on, onColor, onToggle }: { title: string; sub: string; on: boolean; onColor: string; onToggle: () => void }) {
+function ToggleRow({ title, sub, on, onToggle }: { title: string; sub: string; on: boolean; onToggle: (v: boolean) => void }) {
   return (
-    <button type="button" onClick={onToggle} className="flex w-full items-center justify-between rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3.5 text-left">
+    <div role="button" tabIndex={0} onClick={() => onToggle(!on)}
+      className="flex w-full cursor-pointer items-center justify-between rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3.5 text-left">
       <div>
         <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{title}</p>
         <p className="text-xs text-[var(--color-brand-text-muted)]">{sub}</p>
       </div>
-      <span className="relative shrink-0" style={{ width: 46, height: 28, borderRadius: 999, background: on ? onColor : 'var(--color-brand-border)', transition: 'background .15s' }}>
-        <span className="absolute top-1 h-6 w-6 rounded-full bg-white" style={{ left: on ? 18 : 2, transition: 'left .15s' }} />
-      </span>
-    </button>
+      {/* Canonical app switch; row handles the tap so the thumb is display-only. */}
+      <Switch checked={on} onCheckedChange={onToggle} className="pointer-events-none shrink-0" />
+    </div>
   )
 }

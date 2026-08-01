@@ -31,6 +31,7 @@ import { UpdateBalanceSheet } from '@/components/features/savings/UpdateBalanceS
 import { NewPocketSheet } from '@/components/features/savings-v3/NewPocketSheet'
 import { EditSavingsAccountSheet } from '@/components/modals/EditSavingsAccountSheet'
 import { savingsPace } from '@/lib/savings/savingsPace'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { convertCurrency } from '@/lib/utils/currency'
 import type { SavingsAccount } from '@/lib/store/types'
 
@@ -68,6 +69,7 @@ export default function SavingsPage() {
   const [updateAcc, setUpdateAcc] = useState<SavingsAccount | null>(null)
   const [prefillId, setPrefillId] = useState<string | null>(null)
   const [menuId, setMenuId] = useState<string | null>(null)
+  const confirmDialog = useConfirm()
   const [emergencyOpen, setEmergencyOpen] = useState(false)
   const [zakatOpen, setZakatOpen] = useState(false)
   const [view, setView] = useState<'savings' | 'investment'>('savings')
@@ -148,10 +150,12 @@ export default function SavingsPage() {
     })
   }, [pockets, goals, profile.defaultCarryPocketId, coverPocketIds])
 
-  const heroBig = nw.totalSavings + nw.totalInvestments
+  // Real net worth — same figure the dashboard shows (savings + investments + this month's
+  // flow − debt), not just balances. Binding to totalSavings+totalInvestments read 0 for a
+  // user with income but nothing yet saved.
   const heroUsd = useMemo(
-    () => convertCurrency(heroBig, settings.baseCurrency, 'USD', exchangeRates),
-    [heroBig, settings.baseCurrency, exchangeRates],
+    () => convertCurrency(nw.netWorth, settings.baseCurrency, 'USD', exchangeRates),
+    [nw.netWorth, settings.baseCurrency, exchangeRates],
   )
   // ponytail: trailing-average pace uses this month vs itself until month-history wiring lands.
   const pace = savingsPace(stats.savingsThisMonth, stats.savingsThisMonth)
@@ -182,8 +186,9 @@ export default function SavingsPage() {
     <div className="pb-24">
       <div className="pt-3 space-y-4">
         <SavingsHero
-          netWorth={heroBig}
+          netWorth={nw.netWorth}
           netWorthUsd={heroUsd}
+          incomplete={nw.netWorthIncomplete}
           totalSaved={nw.totalSavings}
           thisMonth={stats.savingsThisMonth}
           investment={nw.totalInvestments}
@@ -266,10 +271,12 @@ export default function SavingsPage() {
             <button
               type="button"
               className="block w-full px-4 py-2.5 text-left text-sm text-[var(--color-brand-red-text)]"
-              onClick={() => {
+              onClick={async () => {
                 const a = pockets.find((p) => p.id === menuId)
                 setMenuId(null)
-                if (a && globalThis.confirm?.('Delete this pocket?')) useFinanceStore.getState().deleteSavingsAccount(a.id)
+                if (a && (await confirmDialog({ title: `Delete ${a.name}?`, body: 'This removes the pocket and its history. This cannot be undone.', destructive: true }))) {
+                  useFinanceStore.getState().deleteSavingsAccount(a.id)
+                }
               }}
             >
               Delete

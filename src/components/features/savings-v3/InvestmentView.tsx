@@ -6,7 +6,8 @@ import { ChevronRight, Pencil, Plus, TrendingUp } from 'lucide-react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAssetPrices } from '@/hooks/useAssetPrices'
 import { useNetWorth } from '@/hooks/useNetWorth'
-import { valueInvestmentHolding, saghaRate, type PriceLookup } from '@/lib/savings/holdingValuation'
+import { valueInvestmentHolding } from '@/lib/savings/holdingValuation'
+import type { DisplayPrice } from '@/lib/prices/assetPriceLookup'
 import { egyptKaratPrice, usdPerGram } from '@/lib/prices/egyptGold'
 import { convertCurrency } from '@/lib/utils/currency'
 import type { GoldKarat, InvestmentAssetType, InvestmentHolding } from '@/lib/store/types'
@@ -32,7 +33,7 @@ export interface InvestmentViewProps {
 }
 
 export function InvestmentView({ onBackToSavings, onAddInvestment }: InvestmentViewProps) {
-  const { lookup } = useAssetPrices()
+  const { lookup, lookupDisplay } = useAssetPrices()
   const nw = useNetWorth()
   const { investmentHoldings, settings, exchangeRates } = useFinanceStore(
     useShallow((s) => ({ investmentHoldings: s.investmentHoldings, settings: s.settings, exchangeRates: s.exchangeRates })),
@@ -99,7 +100,7 @@ export function InvestmentView({ onBackToSavings, onAddInvestment }: InvestmentV
 
         <div className="space-y-4">
           {held.length > 0 && <HoldingsCard type={tab} holdings={held} lookup={lookup} toBase={toBase} onAdd={() => onAddInvestment(tab)} />}
-          {tab === 'gold' && <GoldMarketCard lookup={lookup} officialUsdEgp={exchangeRates['USD_EGP'] ?? null} />}
+          {tab === 'gold' && <GoldMarketCard lookupDisplay={lookupDisplay} officialUsdEgp={exchangeRates['USD_EGP'] ?? null} />}
           {held.length === 0 && (
             <button type="button" onClick={() => onAddInvestment(tab)} className="mx-4 flex w-[calc(100%-32px)] items-center justify-center gap-2 rounded-2xl border border-dashed border-[var(--color-brand-border)] py-4 text-sm font-semibold text-[var(--color-brand-text-secondary)]">
               <Plus size={16} /> {ADD_LABEL[tab]}
@@ -185,21 +186,38 @@ function Stat({ label, value, color, border }: { label: string; value: string; c
   )
 }
 
-function GoldMarketCard({ lookup, officialUsdEgp: fallbackOfficial }: { lookup: PriceLookup; officialUsdEgp: number | null }) {
-  const sagha = saghaRate(lookup)
-  const ounceUsd = lookup('XAU', 'USD')?.price ?? null
+type DisplayLookup = (symbol: string, currency: string) => DisplayPrice | null
+
+/** Short "Jul 28" style stamp for a stale price's as-of date. */
+function fmtAsOf(iso: string): string {
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function GoldMarketCard({ lookupDisplay, officialUsdEgp: fallbackOfficial }: { lookupDisplay: DisplayLookup; officialUsdEgp: number | null }) {
+  // Display tier: show the cached price even when stale, with an "as of" stamp — never blank.
+  const saghaE = lookupDisplay('SAGHA_USD', 'EGP')
+  const ounceE = lookupDisplay('XAU', 'USD')
+  const sagha = saghaE?.price ?? null
+  const ounceUsd = ounceE?.price ?? null
   // Prefer the official rate the cron measured the Sagha against, so the premium is consistent.
-  const officialUsdEgp = lookup('OFFICIAL_USD', 'EGP')?.price ?? fallbackOfficial
+  const officialUsdEgp = lookupDisplay('OFFICIAL_USD', 'EGP')?.price ?? fallbackOfficial
   const priced = sagha != null && ounceUsd != null
+  const fresh = priced && !!saghaE?.fresh && !!ounceE?.fresh
   const karats: GoldKarat[] = [24, 21, 18]
   const gram24Global = priced && officialUsdEgp ? usdPerGram(ounceUsd) * officialUsdEgp : null
   const local24 = priced ? egyptKaratPrice(ounceUsd, sagha, 24) : null
   const localVsGlobal = gram24Global && local24 ? ((local24 / gram24Global) - 1) * 100 : null
+  const status = !priced
+    ? { color: '#9898B0', text: 'Unavailable' }
+    : fresh
+      ? { color: '#35D46F', text: 'Live' }
+      : { color: '#FFB13D', text: `as of ${fmtAsOf(saghaE!.asOf)}` }
   return (
     <div className="mx-4">
       <div className="mb-2 flex items-center justify-between px-1">
         <h3 className="text-[15px] font-bold text-[var(--color-brand-text-primary)]">Gold today · Egypt</h3>
-        <span className="flex items-center gap-1.5 text-xs text-[var(--color-brand-text-muted)]"><span className="h-1.5 w-1.5 rounded-full" style={{ background: priced ? '#35D46F' : '#9898B0' }} />{priced ? 'Live' : 'Unavailable'}</span>
+        <span className="flex items-center gap-1.5 text-xs text-[var(--color-brand-text-muted)]"><span className="h-1.5 w-1.5 rounded-full" style={{ background: status.color }} />{status.text}</span>
       </div>
       <div className="overflow-hidden rounded-2xl border border-[var(--color-brand-border)]">
         <div className="p-4" style={{ background: 'linear-gradient(150deg, rgba(245,200,66,.12), transparent 72%)' }}>
