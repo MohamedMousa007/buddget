@@ -25,9 +25,3 @@ export const POCKET_KINDS: Record<PocketKind, PocketKindDef> = {
 }
 
 export const POCKET_KIND_ORDER: PocketKind[] = ['bank', 'wallet', 'cash', 'certificate', 'stablecoin', 'other']
-
-/** Provider chips shown for bank/wallet/certificate kinds. */
-export const POCKET_PROVIDERS = ['CIB', 'NBE', 'QNB', 'Banque Misr', 'AAIB', 'Vodafone Cash', 'InstaPay', 'Other']
-
-/** The 8 colour swatches (§ pocket form). */
-export const POCKET_COLORS = ['#7EAEF9', '#F5C842', '#35D46F', '#B79CFF', '#2CE0C6', '#FFB13D', '#FF5CA8', '#E50914']
