@@ -48,19 +48,18 @@ export function PocketCard({
       className="relative overflow-hidden shrink-0"
       onClick={picker ? onSelect : undefined}
       style={{
-        width: picker ? pickerWidth : POCKET_CARD_WIDTH, borderRadius: 20, padding: '15px 16px 14px',
-        background: picker && !selected ? 'var(--color-brand-elevated)' : 'var(--color-brand-card)',
-        border: selected ? '1px solid rgba(29,185,84,.55)' : '1px solid var(--color-brand-border)',
-        boxShadow: selected ? '0 0 0 1px rgba(29,185,84,.2)' : undefined,
+        // Unified secondary-hero gradient — same tinted-glass surface as the debt/income cards
+        // (heroCardStyle), keyed off the pocket's colour instead of a flat card fill.
+        width: picker ? pickerWidth : POCKET_CARD_WIDTH, borderRadius: 16, padding: '15px 16px 14px',
+        background: picker && !selected
+          ? 'var(--color-brand-elevated)'
+          : `linear-gradient(158deg, rgba(${hexToRgb(color)},.16), rgba(255,255,255,.045) 55%), #0f0f15`,
+        border: selected ? '1px solid rgba(29,185,84,.55)' : '1px solid rgba(255,255,255,.08)',
+        boxShadow: selected ? '0 0 0 1px rgba(29,185,84,.2)' : 'inset 0 1px 0 rgba(255,255,255,.07), 0 8px 24px -12px rgba(0,0,0,.6)',
         scrollSnapAlign: picker ? 'start' : 'center',
         cursor: picker ? 'pointer' : undefined,
       }}
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0"
-        style={{ height: 82, background: `linear-gradient(160deg, rgba(${hexToRgb(color)},.13), transparent 78%)` }}
-      />
       <div className="relative">
         <div className="flex items-start gap-3">
           <span
