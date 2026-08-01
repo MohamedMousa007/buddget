@@ -29,6 +29,11 @@ export function NewPocketSheet({ open, onClose }: NewPocketSheetProps) {
   const [linkedMethod, setLinkedMethod] = useState<PaymentMethod | null>(null)
 
   const usedPmIds = new Set(savingsAccounts.map((a) => a.linkedPaymentMethodId).filter(Boolean))
+  // Only methods you can actually keep money in — a bank/wallet/prepaid/debit holds a balance;
+  // a credit card, BNPL or cash pocket does not (you'd add cash from scratch). No PM↔PM link
+  // exists to dedup a bank from its own debit card, so both may appear (noted follow-up).
+  const HOLDS_MONEY = new Set(['bank_account', 'wallet', 'prepaid_card', 'debit_card'])
+  const holdablePms = paymentMethods.filter((pm) => HOLDS_MONEY.has(pm.type))
 
   const openForm = (def: PocketKindDef, method: PaymentMethod | null) => {
     setLinkedMethod(method)
@@ -54,11 +59,11 @@ export function NewPocketSheet({ open, onClose }: NewPocketSheetProps) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 pb-4 pt-3 space-y-4">
-          {paymentMethods.length > 0 && (
+          {holdablePms.length > 0 && (
             <div>
               <p style={label}>From your payment methods</p>
               <div className="mt-2 space-y-2.5">
-                {paymentMethods.map((pm) => {
+                {holdablePms.map((pm) => {
                   const used = usedPmIds.has(pm.id)
                   const kind = pm.type === 'wallet' ? POCKET_KINDS.wallet : POCKET_KINDS.bank
                   return (

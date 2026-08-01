@@ -8,7 +8,7 @@ import { CurrencyField } from '@/components/ui/CurrencyField'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { ColorSwatchRow } from '@/components/ui/ColorSwatchRow'
-import { PAYMENT_BRANDS, QUICK_ADD_BLEND, brandIssuesType } from '@/lib/payment/paymentMethodDefaults'
+import { PAYMENT_BRANDS, QUICK_ADD_BLEND, brandIssuesType, decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 import { type PocketKindDef } from '@/lib/savings/pocketKinds'
@@ -34,10 +34,16 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
 
   const has = (f: string) => def.fields.includes(f as never)
 
-  const [provider, setProvider] = useState(linkedMethod?.name ?? '')
+  // From an existing payment method the provider + last4 come locked from the method — split the
+  // composed name ("CIB ••2016") into its bare provider so we don't duplicate it across three
+  // fields, and hide the last-4 input (it's already known).
+  const fromPM = !!linkedMethod
+  const decomposed = linkedMethod ? decomposePaymentMethodName(linkedMethod.name, linkedMethod.last4 ?? undefined) : null
+
+  const [provider, setProvider] = useState(decomposed?.provider ?? '')
   const [last4, setLast4] = useState(linkedMethod?.last4 ?? '')
   const [maturity, setMaturity] = useState('')
-  const [name, setName] = useState(linkedMethod?.name ?? def.label)
+  const [name, setName] = useState(decomposed?.provider ?? def.label)
   const [balance, setBalance] = useState('')
   const [currency, setCurrency] = useState<Currency>(linkedMethod?.currency ?? baseCurrency)
   const [color, setColor] = useState(def.color)
@@ -92,7 +98,16 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
             </div>
           </div>
 
-          {has('provider') && (
+          {has('provider') && fromPM && (
+            <div>
+              <label style={micro}>Provider</label>
+              <div className="mt-2 flex h-12 items-center gap-2 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-4 text-sm font-medium text-[var(--color-brand-text-primary)]">
+                {provider}{last4 ? <span className="font-mono-numbers text-[var(--color-brand-text-muted)]">••{last4}</span> : null}
+              </div>
+            </div>
+          )}
+
+          {has('provider') && !fromPM && (
             <div>
               <label style={micro}>Provider</label>
               <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar">
@@ -110,7 +125,7 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
             </div>
           )}
 
-          {has('last4') && (
+          {has('last4') && !fromPM && (
             <div>
               <label style={micro}>Last 4 digits</label>
               <Input value={last4} onChange={(e) => setLast4(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="2016" inputMode="numeric"
