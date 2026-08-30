@@ -5,9 +5,16 @@
         "source": "github",
         "repo": "neonwatty/qa-skills"
       }
+    },
+    "ponytail": {
+      "source": {
+        "source": "github",
+        "repo": "DietrichGebert/ponytail"
+      }
     }
   },
   "enabledPlugins": {
-    "qa-skills@neonwatty-qa": true
+    "qa-skills@neonwatty-qa": true,
+    "ponytail@ponytail": true
   }
 }
