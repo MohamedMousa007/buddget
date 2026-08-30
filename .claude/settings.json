@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "neonwatty-qa": {
+      "source": {
+        "source": "github",
+        "repo": "neonwatty/qa-skills"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "qa-skills@neonwatty-qa": true
+  }
+}
