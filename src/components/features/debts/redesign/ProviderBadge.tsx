@@ -1,6 +1,7 @@
 'use client'
 
 import { findProviderBrand } from '@/lib/constants/installmentProviders'
+import { shade } from '@/lib/utils/color'
 
 /**
  * Provider logo badge. Renders the provider's OFFICIAL logo (from `public/providers/`)
@@ -27,14 +28,6 @@ const OFFICIAL_LOGOS: Record<string, string> = {
   shahry: '/providers/shahry.webp',
   contact: '/providers/contact.png',
   postpay: '/providers/postpay.png',
-}
-
-function shade(hex: string, f: number): string {
-  const h = hex.replace('#', '')
-  const r = Math.round(parseInt(h.slice(0, 2), 16) * f)
-  const g = Math.round(parseInt(h.slice(2, 4), 16) * f)
-  const b = Math.round(parseInt(h.slice(4, 6), 16) * f)
-  return `rgb(${r},${g},${b})`
 }
 
 /** Short monogram for a provider (original wordmark-style fallback). */

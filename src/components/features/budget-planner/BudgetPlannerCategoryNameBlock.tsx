@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ChevronDown, Pencil } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
+import { microClassName } from '@/lib/ui/microLabelStyle'
 import type { BudgetPlanCategory } from '@/lib/store/types'
 import {
   PREDEFINED_BUDGET_CATEGORIES,
@@ -158,7 +159,7 @@ export function BudgetPlannerCategoryNameBlock({
             align="start"
             className="w-[min(100vw-2rem,18rem)] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-0 text-[var(--color-brand-text-primary)] shadow-xl"
           >
-            <p className="border-b border-[var(--color-brand-border)] px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
+            <p className={`border-b border-[var(--color-brand-border)] px-3 py-2 ${microClassName}`}>
               {labels.chooseCategoryTitle}
             </p>
             {popoverItems}

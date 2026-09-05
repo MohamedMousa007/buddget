@@ -2,6 +2,7 @@
 
 import { CirclePlus } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils/formatters'
+import { microClassName } from '@/lib/ui/microLabelStyle'
 import type { Currency } from '@/lib/store/types'
 
 export interface BudgetPlannerSummaryProps {
@@ -38,7 +39,7 @@ export function BudgetPlannerSummary({
     <div className="rounded-2xl border border-[var(--color-brand-border)] bg-gradient-to-br from-[var(--color-brand-elevated)]/90 to-[var(--color-brand-card)] p-5 space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
+          <p className={microClassName}>
             {labels.totalIncome}
           </p>
           {hasIncome ? (
@@ -57,7 +58,7 @@ export function BudgetPlannerSummary({
           )}
         </div>
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
+          <p className={microClassName}>
             {labels.totalPlanned}
           </p>
           <p className="mt-1 text-lg font-semibold text-[var(--color-brand-text-primary)] font-mono-numbers">
@@ -65,7 +66,7 @@ export function BudgetPlannerSummary({
           </p>
         </div>
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
+          <p className={microClassName}>
             {labels.projectedSavings}
           </p>
           {hasIncome ? (

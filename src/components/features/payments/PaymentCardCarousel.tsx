@@ -4,15 +4,12 @@ import { createElement, useRef, useState } from 'react'
 import { MoreVertical, Plus, Check } from 'lucide-react'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
 import { PAYMENT_TYPE_META, decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
+import { shade } from '@/lib/utils/color'
 import type { PaymentMethod, PaymentMethodType } from '@/lib/store/types'
 
-// ── card gradient helpers (shared with the setup preview) ───────────────────
-export function shade(hex: string, f: number): string {
-  const h = hex.replace('#', '')
-  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16)
-  const m = (v: number) => Math.max(0, Math.min(255, Math.round(v * f)))
-  return `rgb(${m(r)},${m(g)},${m(b)})`
-}
+export { shade }
+
+// ── card gradient helper (shared with the setup preview) ───────────────────
 export function cardGradient(color: string): string {
   return `linear-gradient(140deg, ${shade(color, 1.18)} 0%, ${color} 48%, ${shade(color, 0.6)} 100%)`
 }

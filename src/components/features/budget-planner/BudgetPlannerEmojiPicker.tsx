@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { EMOJI_PICKER_GROUPS } from '@/lib/budget/budgetPlannerPresets'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { microClassName } from '@/lib/ui/microLabelStyle'
 
 export interface BudgetPlannerEmojiPickerProps {
   value: string
@@ -37,7 +38,7 @@ export function BudgetPlannerEmojiPicker({ value, onChange, ariaLabel, className
         <div className="space-y-3">
           {EMOJI_PICKER_GROUPS.map((g) => (
             <div key={g.title}>
-              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
+              <p className={`mb-1.5 ${microClassName}`}>
                 {g.title}
               </p>
               <div className="flex flex-wrap gap-1">

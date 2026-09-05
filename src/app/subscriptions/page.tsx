@@ -14,6 +14,7 @@ import { useT } from '@/lib/i18n'
 import type { Subscription } from '@/lib/store/types'
 import { useHydrateSubscriptions, useHydrateExpenses } from '@/hooks/remote'
 import { SkeletonList } from '@/components/ui/SkeletonList'
+import { microClassName } from '@/lib/ui/microLabelStyle'
 
 export default function SubscriptionsPage() {
   useHydrateSubscriptions()
@@ -112,7 +113,7 @@ export default function SubscriptionsPage() {
         ) : (
           <div className="space-y-4">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)] mb-2">
+              <p className={`${microClassName} mb-2`}>
                 {t.subscriptions.activeSection(active.length)}
               </p>
               <div className="space-y-2">
@@ -123,7 +124,7 @@ export default function SubscriptionsPage() {
             </div>
             {cancelled.length > 0 ? (
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)] mb-2">
+                <p className={`${microClassName} mb-2`}>
                   {t.subscriptions.cancelledSection}
                 </p>
                 <div className="space-y-2">

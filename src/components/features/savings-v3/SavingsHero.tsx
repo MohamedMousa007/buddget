@@ -5,7 +5,7 @@ import type { Currency } from '@/lib/store/types'
 import type { SavingsPace } from '@/lib/savings/savingsPace'
 import { fmtCompact } from '@/lib/utils/currency'
 import { rgba } from '@/lib/utils/color'
-import { micro as microLabel } from '@/components/features/savings-v3/microLabelStyle'
+import { micro as microLabel } from '@/lib/ui/microLabelStyle'
 
 /** Signed compact figure with a leading + on positives; unsigned zero. */
 function signed(n: number): string {

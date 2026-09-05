@@ -5,15 +5,8 @@ import { X, Search, Check, Plus } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { useT } from '@/lib/i18n'
 import { PAYMENT_BRANDS, PAYMENT_TYPE_META, brandIssuesType } from '@/lib/payment/paymentMethodDefaults'
+import { rgba } from '@/lib/utils/color'
 import type { PaymentMethodType } from '@/lib/store/types'
-
-function rgba(hex: string, a: number): string {
-  const h = hex.replace('#', '')
-  const r = parseInt(h.slice(0, 2), 16)
-  const g = parseInt(h.slice(2, 4), 16)
-  const b = parseInt(h.slice(4, 6), 16)
-  return `rgba(${r},${g},${b},${a})`
-}
 
 /**
  * App-wide provider chooser over the {@link PAYMENT_BRANDS} catalogue — searchable, Popular/All

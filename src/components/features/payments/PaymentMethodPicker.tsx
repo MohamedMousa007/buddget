@@ -6,6 +6,7 @@ import type { PaymentMethod } from '@/lib/store/types'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
 import { defaultColorForPaymentMethodType, decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 import { rgba } from '@/lib/utils/color'
+import { microClassName } from '@/lib/ui/microLabelStyle'
 import { useT } from '@/lib/i18n'
 import { SelectPaymentMethodSheet } from '@/components/features/payments/SelectPaymentMethodSheet'
 
@@ -37,11 +38,10 @@ export function PaymentMethodPicker({
   const [open, setOpen] = useState(false)
 
   const selPay = paymentMethods.find((m) => m.id === value) || paymentMethods[0]
-  const microLabel = 'font-semibold text-[10px] tracking-[.08em] uppercase text-[var(--color-brand-text-muted)]'
 
   return (
     <div>
-      {label ? <div className={`${microLabel} mb-2.5`}>{label}</div> : null}
+      {label ? <div className={`${microClassName} mb-2.5`}>{label}</div> : null}
       <button
         type="button"
         onClick={() => setOpen(true)}

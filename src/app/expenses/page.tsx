@@ -20,6 +20,7 @@ import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useT } from '@/lib/i18n'
 import { useHydrateExpenses } from '@/hooks/remote'
 import { SkeletonList } from '@/components/ui/SkeletonList'
+import { microClassName } from '@/lib/ui/microLabelStyle'
 
 function fmtNum(n: number): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -175,7 +176,7 @@ export default function ExpensesPage() {
           <div className="min-w-0">
             {/* min-h-[2em]: the label wraps to 2 lines in Arabic / for custom ranges, and
                 the left column is min-w-0 — without this the amount's baseline shifts. */}
-            <p className="flex min-h-[2em] flex-wrap items-start gap-x-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
+            <p className={`flex min-h-[2em] flex-wrap items-start gap-x-1 ${microClassName}`}>
               <span>{heroLabel}</span>
               {heroDates ? <span className="font-mono-numbers normal-case">{heroDates}</span> : null}
             </p>
@@ -191,7 +192,7 @@ export default function ExpensesPage() {
           </div>
           {/* Right: avg / day + spending rate */}
           <div className="shrink-0 text-end">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
+            <p className={microClassName}>
               {t.expenses.avgPerDay}
             </p>
             <p className="font-mono-numbers mt-2 text-base font-medium tabular-nums text-[var(--color-brand-text-secondary)]">

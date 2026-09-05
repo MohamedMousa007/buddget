@@ -9,7 +9,7 @@ import { deriveSimpleMonth } from '@/lib/savings/simpleMonth'
 import { estimateEmergencyFund } from '@/lib/savings/estimateEmergencyFund'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
-import { micro } from '@/components/features/savings-v3/microLabelStyle'
+import { micro } from '@/lib/ui/microLabelStyle'
 import type { EmergencyFundConfig } from '@/lib/store/types'
 
 export interface EmergencyFundSheetProps {

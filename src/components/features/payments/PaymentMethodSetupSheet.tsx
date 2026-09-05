@@ -20,14 +20,11 @@ import {
 } from '@/lib/payment/paymentMethodDefaults'
 import { cn } from '@/lib/utils'
 import type { PmPrefill } from '@/lib/store/useSettingsStore'
+import { rgba } from '@/lib/utils/color'
+import { microClassName } from '@/lib/ui/microLabelStyle'
 import type { Currency, PaymentMethod, PaymentMethodType } from '@/lib/store/types'
 
 type Disc = 'last4' | 'tag' | 'none'
-
-function rgba(hex: string, a: number): string {
-  const h = hex.replace('#', '')
-  return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${a})`
-}
 function countryFromCurrency(cur: Currency): 'EG' | 'SA' | 'AE' | null {
   if (cur === 'EGP') return 'EG'
   if (cur === 'SAR') return 'SA'
@@ -252,7 +249,7 @@ export function PaymentMethodSetupSheet({
             <div className="flex flex-col gap-[18px]">
               {/* Provider */}
               <div>
-                <div className="mx-0.5 mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
+                <div className={`mx-0.5 mb-2 ${microClassName}`}>
                   {t.paymentMethods.provider}
                 </div>
                 <button
@@ -281,7 +278,7 @@ export function PaymentMethodSetupSheet({
 
               {/* Card colour */}
               <div>
-                <div className="mx-0.5 mb-2.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
+                <div className={`mx-0.5 mb-2.5 ${microClassName}`}>
                   {t.paymentMethods.cardColour}
                 </div>
                 <div className="native-scroll flex gap-2.5 overflow-x-auto px-0.5 pb-1">
@@ -304,7 +301,7 @@ export function PaymentMethodSetupSheet({
 
               {/* Type — locked to a single chip when lockType is set (e.g. Debt → credit card) */}
               <div>
-                <div className="mx-0.5 mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
+                <div className={`mx-0.5 mb-2 ${microClassName}`}>
                   {t.paymentMethods.type}
                 </div>
                 {lockType ? (
@@ -348,19 +345,19 @@ export function PaymentMethodSetupSheet({
               {type === 'credit_card' && (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <span className="mx-0.5 mb-2 block text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">Limit</span>
+                    <span className={`mx-0.5 mb-2 block ${microClassName}`}>Limit</span>
                     <AmountField value={ccLimit} onChange={setCcLimit} mode="decimal" currency={curCode} placeholder="30,000" />
                   </div>
                   <div>
-                    <span className="mx-0.5 mb-2 block text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">Current outstanding</span>
+                    <span className={`mx-0.5 mb-2 block ${microClassName}`}>Current outstanding</span>
                     <AmountField value={ccOutstanding} onChange={setCcOutstanding} mode="decimal" currency={curCode} placeholder="8,420" />
                   </div>
                   <div>
-                    <span className="mx-0.5 mb-2 block text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">Statement day</span>
+                    <span className={`mx-0.5 mb-2 block ${microClassName}`}>Statement day</span>
                     <AmountField value={ccStatementDay} onChange={(v) => setCcStatementDay(v.slice(0, 2))} mode="integer" placeholder="15" />
                   </div>
                   <div>
-                    <span className="mx-0.5 mb-2 block text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">Grace days</span>
+                    <span className={`mx-0.5 mb-2 block ${microClassName}`}>Grace days</span>
                     <AmountField value={ccGrace} onChange={(v) => setCcGrace(v.slice(0, 3))} mode="integer" placeholder="55" />
                   </div>
                 </div>
@@ -369,7 +366,7 @@ export function PaymentMethodSetupSheet({
               {/* Identifier */}
               <div>
                 <div className="mx-0.5 mb-2 flex items-center gap-2">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
+                  <span className={microClassName}>
                     {t.paymentMethods.identifier}
                   </span>
                   <span className="text-[10px] font-medium text-[var(--color-brand-text-muted)]">
@@ -420,7 +417,7 @@ export function PaymentMethodSetupSheet({
 
               {/* Currency */}
               <div>
-                <div className="mx-0.5 mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
+                <div className={`mx-0.5 mb-2 ${microClassName}`}>
                   {t.paymentMethods.currency}
                 </div>
                 <button

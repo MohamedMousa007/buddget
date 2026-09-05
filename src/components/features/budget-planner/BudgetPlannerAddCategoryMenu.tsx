@@ -10,6 +10,7 @@ import {
 } from '@/lib/budget/budgetPlannerPresets'
 import { BudgetPlannerEmojiPicker } from '@/components/features/budget-planner/BudgetPlannerEmojiPicker'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { microClassName } from '@/lib/ui/microLabelStyle'
 import type { BudgetPlanCategory } from '@/lib/store/types'
 
 export interface BudgetPlannerAddCategoryMenuLabels {
@@ -84,7 +85,7 @@ export function BudgetPlannerAddCategoryMenu({
         align="end"
         className="max-h-[min(70vh,28rem)] w-[min(100vw-2rem,22rem)] overflow-y-auto border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-0 text-[var(--color-brand-text-primary)] shadow-xl"
       >
-        <p className="border-b border-[var(--color-brand-border)] px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
+        <p className={`border-b border-[var(--color-brand-border)] px-3 py-2 ${microClassName}`}>
           {labels.chooseCategoryTitle}
         </p>
 
@@ -136,7 +137,7 @@ export function BudgetPlannerAddCategoryMenu({
           )}
         </ul>
         <div className="border-t border-[var(--color-brand-border)] p-3 space-y-2">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
+          <p className={microClassName}>
             {labels.customCategoryOption}
           </p>
           <div className="flex items-center gap-2">

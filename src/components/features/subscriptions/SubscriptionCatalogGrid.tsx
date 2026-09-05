@@ -8,6 +8,7 @@ import {
   type SubscriptionBrand,
 } from '@/lib/constants/subscriptionCatalog'
 import { SubscriptionBrandIcon } from '@/components/features/subscriptions/SubscriptionBrandIcon'
+import { microClassName } from '@/lib/ui/microLabelStyle'
 import { useT } from '@/lib/i18n'
 import type { Dictionary } from '@/lib/i18n/types'
 import { cn } from '@/lib/utils'
@@ -41,7 +42,7 @@ function sectionLabel(t: Dictionary['subscriptions'], id: CatalogSectionKey) {
 
 function SectionHeader({ children }: { children: ReactNode }) {
   return (
-    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)] mb-2">
+    <p className={`${microClassName} mb-2`}>
       {children}
     </p>
   )

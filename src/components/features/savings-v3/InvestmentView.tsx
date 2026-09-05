@@ -13,7 +13,7 @@ import type { DisplayPrice } from '@/lib/prices/assetPriceLookup'
 import { egyptKaratPrice, usdPerGram } from '@/lib/prices/egyptGold'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
-import { micro } from '@/components/features/savings-v3/microLabelStyle'
+import { micro } from '@/lib/ui/microLabelStyle'
 import type { GoldKarat, InvestmentAssetType, InvestmentHolding } from '@/lib/store/types'
 
 const fmtCompact = (n: number) => {

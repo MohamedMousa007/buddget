@@ -13,7 +13,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 import { type PocketKindDef } from '@/lib/savings/pocketKinds'
 import { rgba } from '@/lib/utils/color'
-import { micro } from '@/components/features/savings-v3/microLabelStyle'
+import { micro } from '@/lib/ui/microLabelStyle'
 import type { Currency, PaymentMethod } from '@/lib/store/types'
 
 export interface PocketFormSheetProps {
