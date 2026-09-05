@@ -12,6 +12,7 @@ import ExpensesPage from '@/app/expenses/page'
 import DebtsPage from '@/app/debts/page'
 import IncomePage from '@/app/income/page'
 import SavingsPage from '@/app/savings/page'
+import InvestmentPage from '@/app/investment/page'
 import SubscriptionsPage from '@/app/subscriptions/page'
 import GoalsPage from '@/app/goals/page'
 import ReportsPage from '@/app/reports/page'
@@ -31,6 +32,7 @@ const VIEW_MAP: Record<string, ComponentType> = {
   '/debts': DebtsPage,
   '/income': IncomePage,
   '/savings': SavingsPage,
+  '/investment': InvestmentPage,
   '/subscriptions': SubscriptionsPage,
   '/goals': GoalsPage,
   '/reports': ReportsPage,

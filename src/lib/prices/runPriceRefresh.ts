@@ -45,6 +45,10 @@ export async function runPriceRefresh(): Promise<PriceRefreshResult> {
   if (ounceUsd) {
     rows.push(row({ symbol: 'XAU', asset_class: 'gold', currency: 'USD', price: ounceUsd, source: 'spot-consensus', upstream: 'spot', confidence: 'high' }))
     rows.push(row({ symbol: 'XAU_G', asset_class: 'gold', currency: 'USD', price: usdPerGram(ounceUsd), source: 'spot-consensus', upstream: 'spot', confidence: 'high' }))
+  } else {
+    // Every keyless gold-spot provider failed this run — was silent before, which is exactly how
+    // gold sat stale for weeks while crypto/FX kept the table's newest row looking fresh.
+    console.error('[prices] gold spot: all providers failed, XAU/XAU_G/Egypt karats skipped this run')
   }
 
   // Egyptian local gold: consensus Sagha dollar → karat prices in EGP.

@@ -187,8 +187,8 @@ export default function SavingsPage() {
   const empty = pockets.length === 0
 
   return (
-    <div className="pb-24">
-      <div className="pt-3 space-y-4">
+    <div className="overflow-x-hidden pb-24">
+      <div className="mx-auto max-w-screen-sm space-y-5 pt-3">
         <SavingsHero
           netWorth={nw.netWorth}
           netWorthUsd={heroUsd}

@@ -12,6 +12,7 @@ export const SHELL_PATHS = [
   '/debts',
   '/income',
   '/savings',
+  '/investment',
   '/subscriptions',
   '/goals',
   '/reports',

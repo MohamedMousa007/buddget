@@ -46,10 +46,13 @@ export function useAssetPrices() {
         }))
         setPrices(buildAssetPriceMap(rows))
 
-        // Self-heal: if the freshest row is stale (scheduled cron may be down), ask the server to
-        // refresh, then re-read once. The endpoint is globally debounced, so this is cheap.
-        const newest = rows.reduce((m, r) => Math.max(m, Date.parse(r.asOf) || 0), 0)
-        if (!newest || Date.now() - newest > SELF_HEAL_MS) {
+        // Self-heal: if ANY row is stale (scheduled cron may have quietly stopped updating just
+        // that symbol, e.g. gold's provider going down while crypto/FX keep refreshing), ask the
+        // server to refresh, then re-read once. Checking the OLDEST row (not the newest) is what
+        // catches a single stuck asset class instead of only a fully-dead cron. The endpoint is
+        // globally debounced, so this is cheap.
+        const oldest = rows.reduce((m, r) => Math.min(m, Date.parse(r.asOf) || 0), Infinity)
+        if (!Number.isFinite(oldest) || Date.now() - oldest > SELF_HEAL_MS) {
           try {
             const res = await fetch('/api/prices/refresh', { method: 'POST' })
             const body = (await res.json().catch(() => null)) as { written?: number } | null

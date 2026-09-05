@@ -331,11 +331,40 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         void flush()
       }
     }
+    // Resume: reconcile with the server so stale cached data (or a
+    // transaction that landed while backgrounded) shows up immediately
+    // instead of waiting for a manual pull-to-refresh. `pendingSync`'s own
+    // `reconciling` lock keeps this from overlapping the mount warm-start.
+    let lastResumeSync = 0
+    const onShow = () => {
+      if (syncSuspended || !hydrated.current) return
+      const now = Date.now()
+      if (now - lastResumeSync < 10_000) return
+      lastResumeSync = now
+      void pendingSync?.().catch((e) => console.error('[finance sync] resume reconcile failed', e))
+    }
     const onVisibility = () => {
       if (document.visibilityState === 'hidden') onHide()
+      else onShow()
     }
     window.addEventListener('pagehide', onHide)
     document.addEventListener('visibilitychange', onVisibility)
+
+    // Native resume: `visibilitychange` isn't reliable across every backgrounding
+    // path on Capacitor (see AppShell's SMS resume listener), so also hook the
+    // native app-state event directly.
+    let removeAppStateListener: (() => void) | null = null
+    void (async () => {
+      try {
+        const { Capacitor } = await import('@capacitor/core')
+        if (!Capacitor.isNativePlatform()) return
+        const { App } = await import('@capacitor/app')
+        const handle = await App.addListener('appStateChange', ({ isActive }) => {
+          if (isActive) onShow()
+        })
+        removeAppStateListener = () => { void handle.remove() }
+      } catch { /* web build without @capacitor/app — ignore */ }
+    })()
 
     // Reconnect trigger: when the device comes back online, push queued local
     // edits + pull server truth (same parallel path as pull-to-refresh), then
@@ -378,6 +407,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       if (reconnectTimer) clearTimeout(reconnectTimer)
       window.removeEventListener('pagehide', onHide)
       document.removeEventListener('visibilitychange', onVisibility)
+      removeAppStateListener?.()
       if (timer.current) clearTimeout(timer.current)
       if (pendingFlush === flush) pendingFlush = null
       pendingSync = null

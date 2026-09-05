@@ -26,6 +26,8 @@ export interface PocketCardProps {
   picker?: boolean
   selected?: boolean
   onSelect?: () => void
+  /** Fills its carousel slide (RecurringIncomeCarousel) instead of the fixed 343px width. */
+  fullWidth?: boolean
 }
 
 /** Width 343 per §3; the page carousel snaps these to centre. */
@@ -33,7 +35,7 @@ export const POCKET_CARD_WIDTH = 343
 
 export function PocketCard({
   account, coverAmount, goalsAmount, goalLabel, isAuto, onAdd, onWithdraw, onMenu,
-  picker, selected, onSelect,
+  picker, selected, onSelect, fullWidth,
 }: PocketCardProps) {
   const color = pocketColor(account)
   const bal = account.currentBalance
@@ -50,7 +52,7 @@ export function PocketCard({
       style={{
         // Unified secondary-hero gradient — same tinted-glass surface as the debt/income cards
         // (heroCardStyle), keyed off the pocket's colour instead of a flat card fill.
-        width: picker ? pickerWidth : POCKET_CARD_WIDTH, borderRadius: 16, padding: '15px 16px 14px',
+        width: fullWidth ? '100%' : picker ? pickerWidth : POCKET_CARD_WIDTH, borderRadius: 16, padding: '15px 16px 14px',
         background: picker && !selected
           ? 'var(--color-brand-elevated)'
           : `linear-gradient(158deg, rgba(${hexToRgb(color)},.16), rgba(255,255,255,.045) 55%), #0f0f15`,

@@ -3,7 +3,7 @@
  *
  * Clients call this on opening Savings/Investment when the cache looks stale, so prices recover
  * even when the scheduled cron isn't firing in production. Safe to expose without the cron secret:
- * it is **globally debounced** — if the table's newest row is younger than DEBOUNCE_MS it no-ops,
+ * it is **debounced on the table's OLDEST row** — if every row is younger than DEBOUNCE_MS it no-ops,
  * so a burst of callers can't stampede the upstream providers — and an in-process inflight lock
  * dedupes concurrent calls within a single serverless instance. The heavy compute + service-role
  * write live in the shared {@link runPriceRefresh}; every write is idempotent.
@@ -24,15 +24,17 @@ let inflight: Promise<{ ok: boolean; written: number; reason?: string; error?: s
 export async function POST() {
   try {
     const service = createServiceRoleClient()
+    // Oldest row, not newest — a single stuck asset class (e.g. gold) must not hide behind
+    // other classes (crypto/FX) that keep refreshing fine on the cron.
     const { data } = await service
       .from('asset_prices')
       .select('as_of')
-      .order('as_of', { ascending: false })
+      .order('as_of', { ascending: true })
       .limit(1)
       .maybeSingle()
 
-    const newest = data?.as_of ? Date.parse(data.as_of as string) : 0
-    if (newest && Date.now() - newest < DEBOUNCE_MS) {
+    const oldest = data?.as_of ? Date.parse(data.as_of as string) : 0
+    if (oldest && Date.now() - oldest < DEBOUNCE_MS) {
       return NextResponse.json({ ok: true, skipped: 'fresh', written: 0 })
     }
 

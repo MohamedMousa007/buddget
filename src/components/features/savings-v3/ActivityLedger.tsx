@@ -56,9 +56,11 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
 
   if (transactions.length === 0) {
     return (
-      <div className="mx-4 mt-2">
-        <h2 className="mb-2 text-[15px] font-bold text-[var(--color-brand-text-primary)]">Activity</h2>
-        <p className="text-sm text-[var(--color-brand-text-muted)]">Nothing here yet</p>
+      <div className="mt-2">
+        <h2 className="mb-2 px-4 text-[15px] font-bold text-[var(--color-brand-text-primary)]">Activity</h2>
+        <div className="px-1 py-10 text-center">
+          <p className="text-sm text-[var(--color-brand-text-muted)]">Nothing here yet</p>
+        </div>
       </div>
     )
   }
