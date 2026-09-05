@@ -7,6 +7,7 @@ import { Target } from 'lucide-react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useGoalProgress } from '@/hooks/useGoalProgress'
 import { GoalProgressBar } from '@/components/features/goals/GoalProgressBar'
+import { SectionHeader } from '@/components/dashboard/SectionHeader'
 import { useT } from '@/lib/i18n'
 import type { Goal } from '@/lib/store/types'
 
@@ -44,18 +45,18 @@ export function GoalsWidget() {
 
   return (
     <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]/90 backdrop-blur-sm p-4">
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <h2 className="text-sm font-semibold text-[var(--color-brand-text-primary)] flex items-center gap-2">
-          <Target className="w-4 h-4 text-[var(--color-brand-red)]" aria-hidden />
-          {t.goals.pageTitle}
-        </h2>
-        <Link
-          href="/goals"
-          className="text-xs text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)]"
-        >
-          {t.goals.seeAll}
-        </Link>
-      </div>
+      <SectionHeader>
+        <SectionHeader.Icon><Target className="w-4 h-4 text-[var(--color-brand-red)]" aria-hidden /></SectionHeader.Icon>
+        <SectionHeader.Title>{t.goals.pageTitle}</SectionHeader.Title>
+        <SectionHeader.Trailing>
+          <Link
+            href="/goals"
+            className="text-xs text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)]"
+          >
+            {t.goals.seeAll}
+          </Link>
+        </SectionHeader.Trailing>
+      </SectionHeader>
       {top.length === 0 ? (
         <Link
           href="/goals"

@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { SectionHeader } from '@/components/dashboard/SectionHeader'
 import { useT } from '@/lib/i18n'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 
@@ -71,9 +72,9 @@ export function RecentExpenses({ expenses }: RecentExpensesProps) {
   if (recentExpenses.length === 0) {
     return (
       <div className="glass-card rounded-2xl p-5">
-        <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-2">
-          {t.dashboard.recentTitle}
-        </h3>
+        <SectionHeader>
+          <SectionHeader.Title>{t.dashboard.recentTitle}</SectionHeader.Title>
+        </SectionHeader>
         <EmptyState
           icon="💸"
           title={t.dashboard.recentEmpty}
@@ -86,17 +87,17 @@ export function RecentExpenses({ expenses }: RecentExpensesProps) {
 
   return (
     <div className="glass-card rounded-2xl p-5">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
-          {t.dashboard.recentTitle}
-        </h3>
-        <Link
-          href="/expenses"
-          className="text-xs text-[var(--color-brand-red)] hover:text-[var(--color-brand-red-hover)] transition-colors"
-        >
-          {t.dashboard.recentSeeAll}
-        </Link>
-      </div>
+      <SectionHeader>
+        <SectionHeader.Title>{t.dashboard.recentTitle}</SectionHeader.Title>
+        <SectionHeader.Trailing>
+          <Link
+            href="/expenses"
+            className="text-xs text-[var(--color-brand-red)] hover:text-[var(--color-brand-red-hover)] transition-colors"
+          >
+            {t.dashboard.recentSeeAll}
+          </Link>
+        </SectionHeader.Trailing>
+      </SectionHeader>
 
       <div className="space-y-4">
         {Object.entries(grouped).map(([day, dayExpenses]) => (

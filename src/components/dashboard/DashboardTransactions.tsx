@@ -10,6 +10,7 @@ import {
   getCategoryPalette,
   formatCompact,
 } from '@/components/dashboard/categoryVisuals'
+import { SectionHeader } from '@/components/dashboard/SectionHeader'
 import type { Expense } from '@/lib/store/types'
 
 export interface DashboardTransactionsProps {
@@ -54,19 +55,19 @@ export function DashboardTransactions({
 
   return (
     <section className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-xs uppercase tracking-[0.3px] text-[var(--color-brand-text-secondary)] font-semibold">
-          {t.dashboard.sectionTxTitle}
-        </h2>
+      <SectionHeader>
+        <SectionHeader.Title>{t.dashboard.sectionTxTitle}</SectionHeader.Title>
         {hasRows ? (
-          <Link
-            href="/expenses"
-            className="text-xs text-[var(--color-brand-red)] hover:underline"
-          >
-            {t.dashboard.sectionSeeAll}
-          </Link>
+          <SectionHeader.Trailing>
+            <Link
+              href="/expenses"
+              className="text-xs text-[var(--color-brand-red)] hover:underline"
+            >
+              {t.dashboard.sectionSeeAll}
+            </Link>
+          </SectionHeader.Trailing>
         ) : null}
-      </div>
+      </SectionHeader>
       {hasRows ? (
         <ul className={variant === 'minimal' ? 'divide-y divide-black/[0.04]' : 'space-y-3'}>
           {rows.map((expense) => (

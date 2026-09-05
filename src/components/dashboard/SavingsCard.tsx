@@ -8,6 +8,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { TrendingUp } from 'lucide-react'
+import { SectionHeader } from '@/components/dashboard/SectionHeader'
 
 interface SavingsCardProps {
   savingsTotal: number
@@ -44,20 +45,18 @@ export function SavingsCard({
 
   return (
     <div className="glass-card rounded-2xl p-5">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-[var(--color-brand-green)]" />
-          <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
-            {t.dashboard.savingsTitle}
-          </h3>
-        </div>
-        <Link
-          href="/savings"
-          className="text-xs text-[var(--color-brand-red)] hover:text-[var(--color-brand-red-hover)]"
-        >
-          {t.dashboard.savingsLink}
-        </Link>
-      </div>
+      <SectionHeader>
+        <SectionHeader.Icon><TrendingUp className="w-4 h-4 text-[var(--color-brand-green)]" /></SectionHeader.Icon>
+        <SectionHeader.Title>{t.dashboard.savingsTitle}</SectionHeader.Title>
+        <SectionHeader.Trailing>
+          <Link
+            href="/savings"
+            className="text-xs text-[var(--color-brand-red)] hover:text-[var(--color-brand-red-hover)]"
+          >
+            {t.dashboard.savingsLink}
+          </Link>
+        </SectionHeader.Trailing>
+      </SectionHeader>
 
       <div className="space-y-3">
         <div className="flex items-end justify-between">

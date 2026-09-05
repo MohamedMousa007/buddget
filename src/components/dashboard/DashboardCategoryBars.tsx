@@ -9,6 +9,7 @@ import {
   formatCompact,
 } from '@/components/dashboard/categoryVisuals'
 import { CategoryIcon } from '@/components/dashboard/CategoryIcon'
+import { SectionHeader } from '@/components/dashboard/SectionHeader'
 import type { BudgetCategory } from '@/lib/store/types'
 
 export interface DashboardCategoryBarsProps {
@@ -80,12 +81,10 @@ export function DashboardCategoryBars({
 
   return (
     <section className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <h2 className="text-xs uppercase tracking-[0.3px] text-[var(--color-brand-text-secondary)] font-semibold shrink-0">
-          {t.dashboard.sectionCategoriesTitle}
-        </h2>
-        {status ? <StatusChip tone={status.tone} text={status.text} /> : null}
-      </div>
+      <SectionHeader>
+        <SectionHeader.Title>{t.dashboard.sectionCategoriesTitle}</SectionHeader.Title>
+        {status ? <SectionHeader.Trailing><StatusChip tone={status.tone} text={status.text} /></SectionHeader.Trailing> : null}
+      </SectionHeader>
 
       {rows.length > 0 ? (
         <div
