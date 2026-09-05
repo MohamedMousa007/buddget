@@ -12,9 +12,9 @@ import { valueInvestmentHolding } from '@/lib/savings/holdingValuation'
 import type { DisplayPrice } from '@/lib/prices/assetPriceLookup'
 import { egyptKaratPrice, usdPerGram } from '@/lib/prices/egyptGold'
 import { convertCurrency } from '@/lib/utils/currency'
+import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import type { GoldKarat, InvestmentAssetType, InvestmentHolding } from '@/lib/store/types'
 
-const fmtNum = (n: number) => Math.round(n).toLocaleString('en-US')
 const fmtCompact = (n: number) => {
   const a = Math.abs(n)
   if (a >= 1e6) return `${(n / 1e6).toFixed(2)}M`

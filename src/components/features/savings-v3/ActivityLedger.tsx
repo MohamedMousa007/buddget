@@ -10,9 +10,9 @@ import { pocketColor } from '@/lib/savings/pocketIdentity'
 import { SwipeToDelete } from '@/components/expenses/SwipeToDelete'
 import { TransactionRow } from '@/components/transactions/TransactionRow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { rgba } from '@/lib/utils/color'
 
 const fmtSigned = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(Math.round(n)).toLocaleString('en-US')}`
-const hexToRgb = (hex: string) => { const h = hex.replace('#', ''); return `${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)}` }
 
 /** The coloured tag under each row's icon, derived from the transaction's kind/source. */
 function tagFor(tx: SavingsTransaction): { label: string; color: string; sign: 1 | -1 } {
@@ -108,7 +108,7 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
                 <div className="border-t border-[var(--color-brand-border)] bg-[var(--color-brand-bg)]">
                   <TransactionRow
                     icon={a ? <SavingsAccountIcon account={a} className="h-5 w-5" /> : tag.label === 'Withdrew' ? <ShoppingCart size={18} /> : <TrendingUp size={18} />}
-                    iconBg={a ? `rgba(${hexToRgb(pocketColor(a))},.14)` : 'var(--color-brand-elevated)'}
+                    iconBg={a ? rgba(pocketColor(a), .14) : 'var(--color-brand-elevated)'}
                     iconFg={a ? pocketColor(a) : undefined}
                     caption={tag.label}
                     captionColor={tag.color}

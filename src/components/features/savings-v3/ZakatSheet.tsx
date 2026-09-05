@@ -6,12 +6,12 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { computeZakat } from '@/lib/savings/zakat'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
+import { rgba } from '@/lib/utils/color'
+import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import type { ZakatBase } from '@/lib/savings/zakatInputs'
 import type { ZakatConfig } from '@/lib/store/types'
 
 const micro: React.CSSProperties = { fontSize: 10, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--color-brand-text-muted)' }
-const fmtNum = (n: number) => Math.round(n).toLocaleString('en-US')
-const hexToRgb = (hex: string) => { const h = hex.replace('#', ''); return `${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)}` }
 
 export interface ZakatSheetProps {
   open: boolean
@@ -76,7 +76,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
 
         <div className="flex-1 overflow-y-auto px-5 pb-3 space-y-4">
           {/* verdict */}
-          <div className="relative overflow-hidden rounded-2xl border p-4" style={{ borderColor: `rgba(${hexToRgb(accent)},.35)`, background: `rgba(${hexToRgb(accent)},.05)` }}>
+          <div className="relative overflow-hidden rounded-2xl border p-4" style={{ borderColor: rgba(accent, .35), background: rgba(accent, .05) }}>
             <p className="text-sm font-semibold" style={{ color: accent }}>{result.due ? 'Zakat is due' : 'No zakat due'}</p>
             <p className="mt-1 font-mono-numbers text-[30px] font-bold text-[var(--color-brand-text-primary)]">{result.due ? fmtNum(result.zakat) : '—'} <span className="text-base text-[var(--color-brand-text-muted)]">EGP</span></p>
             <p className="mt-1 font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{result.due ? `2.5% × ${fmtNum(result.zakatable)} EGP zakatable` : `You are ${fmtNum(result.gap)} EGP under the line`}</p>
@@ -90,7 +90,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
             <div className="mt-2 overflow-hidden rounded-2xl border border-[var(--color-brand-border)]">
               {rows.map((r, i) => (
                 <div key={r.id} className="flex items-center gap-3 p-3" style={{ borderTop: i ? '1px solid var(--color-brand-border)' : undefined }}>
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: `rgba(${hexToRgb(r.color)},.14)`, color: r.color }}>{r.icon}</span>
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: rgba(r.color, .14), color: r.color }}>{r.icon}</span>
                   <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{r.name}</p><p className="text-[11px] text-[var(--color-brand-text-muted)]">{r.sub}</p></div>
                   <input inputMode="numeric" defaultValue={fmtNum(r.value)} onBlur={(e) => editLine(r.id, e.target.value)}
                     className="h-9 w-[84px] rounded-[11px] bg-[var(--color-brand-elevated)] px-2 text-right font-mono-numbers text-sm text-[var(--color-brand-text-primary)]"

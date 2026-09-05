@@ -4,6 +4,7 @@ import { ChevronRight, TrendingUp } from 'lucide-react'
 import type { Currency } from '@/lib/store/types'
 import type { SavingsPace } from '@/lib/savings/savingsPace'
 import { fmtCompact } from '@/lib/utils/currency'
+import { rgba } from '@/lib/utils/color'
 
 /** Signed compact figure with a leading + on positives; unsigned zero. */
 function signed(n: number): string {
@@ -71,7 +72,7 @@ export function SavingsHero({
               className="inline-flex items-center gap-1"
               style={{
                 height: 26, borderRadius: 999, padding: '0 10px',
-                background: `rgba(${hexToRgb(paceStyle.c)},.14)`, border: `1px solid rgba(${hexToRgb(paceStyle.c)},.3)`,
+                background: rgba(paceStyle.c, .14), border: `1px solid ${rgba(paceStyle.c, .3)}`,
                 color: paceStyle.c, fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 11,
               }}
             >
@@ -168,12 +169,4 @@ function Cell({
       {inner}
     </div>
   )
-}
-
-function hexToRgb(hex: string): string {
-  const h = hex.replace('#', '')
-  const r = parseInt(h.slice(0, 2), 16)
-  const g = parseInt(h.slice(2, 4), 16)
-  const b = parseInt(h.slice(4, 6), 16)
-  return `${r},${g},${b}`
 }

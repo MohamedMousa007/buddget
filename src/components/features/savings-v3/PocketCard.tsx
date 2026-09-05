@@ -4,10 +4,8 @@ import { Check, MoreVertical } from 'lucide-react'
 import type { SavingsAccount } from '@/lib/store/types'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 import { pocketColor, pocketIdentity } from '@/lib/savings/pocketIdentity'
-
-function fmtNum(n: number): string {
-  return Math.round(n).toLocaleString('en-US')
-}
+import { rgba } from '@/lib/utils/color'
+import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 
 export interface PocketCardProps {
   account: SavingsAccount
@@ -55,7 +53,7 @@ export function PocketCard({
         width: fullWidth ? '100%' : picker ? pickerWidth : POCKET_CARD_WIDTH, borderRadius: 16, padding: '15px 16px 14px',
         background: picker && !selected
           ? 'var(--color-brand-elevated)'
-          : `linear-gradient(158deg, rgba(${hexToRgb(color)},.16), rgba(255,255,255,.045) 55%), #0f0f15`,
+          : `linear-gradient(158deg, ${rgba(color, .16)}, rgba(255,255,255,.045) 55%), #0f0f15`,
         border: selected ? '1px solid rgba(29,185,84,.55)' : '1px solid rgba(255,255,255,.08)',
         boxShadow: selected ? '0 0 0 1px rgba(29,185,84,.2)' : 'inset 0 1px 0 rgba(255,255,255,.07), 0 8px 24px -12px rgba(0,0,0,.6)',
         scrollSnapAlign: picker ? 'start' : 'center',
@@ -66,7 +64,7 @@ export function PocketCard({
         <div className="flex items-start gap-3">
           <span
             className="flex items-center justify-center shrink-0"
-            style={{ width: 40, height: 40, borderRadius: 12, background: `rgba(${hexToRgb(color)},.14)`, color }}
+            style={{ width: 40, height: 40, borderRadius: 12, background: rgba(color, .14), color }}
           >
             <SavingsAccountIcon account={account} className="h-5 w-5" />
           </span>
@@ -152,9 +150,4 @@ export function PocketCard({
       </div>
     </div>
   )
-}
-
-function hexToRgb(hex: string): string {
-  const h = hex.replace('#', '')
-  return `${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)}`
 }

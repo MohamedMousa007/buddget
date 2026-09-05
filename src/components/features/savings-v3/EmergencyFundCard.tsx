@@ -1,8 +1,7 @@
 'use client'
 
 import { ChevronRight, Shield } from 'lucide-react'
-
-const fmtNum = (n: number) => Math.round(n).toLocaleString('en-US')
+import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 
 export interface EmergencyFundCardProps {
   monthsCovered: number

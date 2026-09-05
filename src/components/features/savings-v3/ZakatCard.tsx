@@ -2,8 +2,8 @@
 
 import { ChevronRight, Scale } from 'lucide-react'
 import type { ZakatResult } from '@/lib/savings/zakat'
-
-const fmtNum = (n: number) => Math.round(n).toLocaleString('en-US')
+import { rgba } from '@/lib/utils/color'
+import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 
 export interface ZakatCardProps {
   result: ZakatResult
@@ -20,10 +20,10 @@ export function ZakatCard({ result, base, hawlDate, onOpen }: ZakatCardProps) {
     <button type="button" onClick={onOpen} className="mx-4 mt-3 block w-[calc(100%-2rem)] text-left"
       style={{ borderRadius: 18 }}>
       <div className="relative overflow-hidden rounded-[18px] border bg-[var(--color-brand-card)] p-3.5"
-        style={{ borderColor: `rgba(${hexToRgb(accent)},.28)` }}>
-        <div aria-hidden className="pointer-events-none absolute" style={{ width: 150, height: 150, top: -46, right: -34, background: `radial-gradient(circle, rgba(${hexToRgb(accent)},.17), transparent 68%)` }} />
+        style={{ borderColor: rgba(accent, .28) }}>
+        <div aria-hidden className="pointer-events-none absolute" style={{ width: 150, height: 150, top: -46, right: -34, background: `radial-gradient(circle, ${rgba(accent, .17)}, transparent 68%)` }} />
         <div className="relative flex items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: `rgba(${hexToRgb(accent)},.14)`, color: accent }}><Scale size={18} /></span>
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: rgba(accent, .14), color: accent }}><Scale size={18} /></span>
           <div className="min-w-0 flex-1">
             <p className="text-[13.5px] font-semibold text-[var(--color-brand-text-primary)]">{due ? 'Zakat is due' : 'No zakat due'}</p>
             <p className="font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]">{due ? `2.5% of ${fmtNum(base)} EGP` : `Nisab is ${fmtNum(result.nisab)} EGP`}</p>
@@ -37,9 +37,4 @@ export function ZakatCard({ result, base, hawlDate, onOpen }: ZakatCardProps) {
       </div>
     </button>
   )
-}
-
-function hexToRgb(hex: string): string {
-  const h = hex.replace('#', '')
-  return `${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)}`
 }

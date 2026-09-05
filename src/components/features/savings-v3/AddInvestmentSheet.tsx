@@ -5,6 +5,7 @@ import { ChevronRight, Gem, Bitcoin, TrendingUp, Home } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { AssetFormSheet } from '@/components/features/savings-v3/AssetFormSheet'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
+import { rgba } from '@/lib/utils/color'
 import type { InvestmentAssetType } from '@/lib/store/types'
 
 const TYPES: Array<{ key: InvestmentAssetType; icon: React.ReactNode; color: string; name: string; sub: string }> = [
@@ -39,7 +40,7 @@ export function AddInvestmentSheet({ open, onClose, presetType }: AddInvestmentS
           {TYPES.map((t) => (
             <button key={t.key} type="button" onClick={() => setType(t.key)}
               className="flex w-full items-center gap-3.5 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3.5 text-left">
-              <span className="flex h-11 w-11 items-center justify-center rounded-[13px]" style={{ background: `rgba(${hexToRgb(t.color)},.15)`, color: t.color }}>{t.icon}</span>
+              <span className="flex h-11 w-11 items-center justify-center rounded-[13px]" style={{ background: rgba(t.color, .15), color: t.color }}>{t.icon}</span>
               <div className="min-w-0 flex-1">
                 <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{t.name}</p>
                 <p className="text-xs text-[var(--color-brand-text-muted)]">{t.sub}</p>
@@ -51,9 +52,4 @@ export function AddInvestmentSheet({ open, onClose, presetType }: AddInvestmentS
       </div>
     </ModalShell>
   )
-}
-
-function hexToRgb(hex: string): string {
-  const h = hex.replace('#', '')
-  return `${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)}`
 }

@@ -12,13 +12,11 @@ import type { PocketVM } from '@/components/features/savings-v3/PocketsCarousel'
 import { pocketColor, pocketIdentity } from '@/lib/savings/pocketIdentity'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
+import { rgba } from '@/lib/utils/color'
+import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import type { Currency } from '@/lib/store/types'
 
 const micro: React.CSSProperties = { fontSize: 10, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--color-brand-text-muted)' }
-
-function fmtNum(n: number): string {
-  return Math.round(n).toLocaleString('en-US')
-}
 
 export interface AddSavingsSheetV3Props {
   open: boolean
@@ -94,7 +92,7 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId, le
             <label style={micro}>Pocket</label>
             {locked && selected ? (
               <div className="mt-2 flex items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: `rgba(${hexToRgb(pocketColor(selected.account))},.14)`, color: pocketColor(selected.account) }}>
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: rgba(pocketColor(selected.account), .14), color: pocketColor(selected.account) }}>
                   <SavingsAccountIcon account={selected.account} className="h-4.5 w-4.5" />
                 </span>
                 <div className="min-w-0 flex-1">
@@ -183,7 +181,7 @@ function SourceCard({ icon, iconColor, title, sub, on, onClick }: {
         background: on ? 'rgba(229,9,20,.06)' : 'var(--color-brand-elevated)',
       }}>
       <div className="flex items-start justify-between">
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: `rgba(${hexToRgb(iconColor)},.14)`, color: iconColor }}>
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: rgba(iconColor, .14), color: iconColor }}>
           {icon}
         </span>
         <span className="flex h-5 w-5 items-center justify-center rounded-full" style={{ border: on ? undefined : '1.5px solid var(--color-brand-border)', background: on ? '#E50914' : 'transparent' }}>
@@ -196,7 +194,3 @@ function SourceCard({ icon, iconColor, title, sub, on, onClick }: {
   )
 }
 
-function hexToRgb(hex: string): string {
-  const h = hex.replace('#', '')
-  return `${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)}`
-}

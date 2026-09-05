@@ -8,10 +8,10 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { deriveSimpleMonth } from '@/lib/savings/simpleMonth'
 import { estimateEmergencyFund } from '@/lib/savings/estimateEmergencyFund'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
+import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import type { EmergencyFundConfig } from '@/lib/store/types'
 
 const micro: React.CSSProperties = { fontSize: 10, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--color-brand-text-muted)' }
-const fmtNum = (n: number) => Math.round(n).toLocaleString('en-US')
 
 export interface EmergencyFundSheetProps {
   open: boolean

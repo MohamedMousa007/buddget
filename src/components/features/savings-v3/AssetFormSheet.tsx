@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Input } from '@/components/ui/input'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
+import { rgba } from '@/lib/utils/color'
+import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAssetPrices } from '@/hooks/useAssetPrices'
 import { egyptKaratPrice } from '@/lib/prices/egyptGold'
@@ -12,8 +14,6 @@ import { COINGECKO_IDS } from '@/lib/prices/coingecko'
 import type { GoldKarat, InvestmentAssetType } from '@/lib/store/types'
 
 const micro: React.CSSProperties = { fontSize: 10, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--color-brand-text-muted)' }
-const fmtNum = (n: number) => Math.round(n).toLocaleString('en-US')
-const hexToRgb = (hex: string) => { const h = hex.replace('#', ''); return `${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)}` }
 
 const ACCENT: Record<InvestmentAssetType, string> = { gold: '#F5C842', crypto: '#B79CFF', stock: '#35D46F', property: '#2CE0C6' }
 const TITLE: Record<InvestmentAssetType, string> = { gold: 'Add gold', crypto: 'Add crypto', stock: 'Add a position', property: 'Add property' }
@@ -134,7 +134,7 @@ export function AssetFormSheet({ open, type, onClose }: AssetFormSheetProps) {
           {type !== 'property' && <Field label="What you paid · optional"><UnitInput value={paid} onChange={setPaid} suffix={type === 'stock' ? 'USD' : 'EGP'} placeholder="Total" /></Field>}
 
           {/* live value */}
-          <div className="rounded-2xl border p-4" style={{ borderColor: `rgba(${hexToRgb(accent)},.4)`, background: `rgba(${hexToRgb(accent)},.06)` }}>
+          <div className="rounded-2xl border p-4" style={{ borderColor: rgba(accent, .4), background: rgba(accent, .06) }}>
             <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{type === 'gold' ? 'What a shop would pay you today' : 'What it is worth today'}</p>
             <p className="mt-1 font-mono-numbers text-2xl font-bold" style={{ color: accent }}>{liveValue != null ? `${fmtNum(liveValue)} EGP` : '—'}</p>
             <p className="mt-1 font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]">{liveValue != null ? 'Live valuation' : 'Live price refreshing — value will appear shortly'}</p>
@@ -165,7 +165,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function PriceCard({ on, accent, onClick, title, sub }: { on: boolean; accent: string; onClick: () => void; title: string; sub: string }) {
   return (
-    <button type="button" onClick={onClick} className="shrink-0 rounded-[14px] px-3 py-2.5 text-left" style={{ minWidth: 88, border: on ? `1px solid rgba(${hexToRgb(accent)},.5)` : '1px solid var(--color-brand-border)', background: on ? `rgba(${hexToRgb(accent)},.10)` : 'var(--color-brand-elevated)' }}>
+    <button type="button" onClick={onClick} className="shrink-0 rounded-[14px] px-3 py-2.5 text-left" style={{ minWidth: 88, border: on ? `1px solid ${rgba(accent, .5)}` : '1px solid var(--color-brand-border)', background: on ? rgba(accent, .10) : 'var(--color-brand-elevated)' }}>
       <p className="font-mono-numbers text-[15px] font-bold text-[var(--color-brand-text-primary)]">{title}</p>
       <p className="font-mono-numbers text-[10px] text-[var(--color-brand-text-muted)]">{sub}</p>
     </button>

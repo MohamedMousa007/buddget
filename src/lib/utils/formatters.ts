@@ -148,6 +148,11 @@ export function formatPercent(value: number): string {
   return `${Math.round(value)}%`
 }
 
+/** Round to the nearest whole unit, grouped ("1,234"). No currency symbol — pair with one at the call site. */
+export function formatWhole(n: number): string {
+  return Math.round(n).toLocaleString(numberLocale())
+}
+
 export function groupByDate(dateStr: string): string {
   const date = parseISO(dateStr)
   if (isToday(date)) return 'Today'

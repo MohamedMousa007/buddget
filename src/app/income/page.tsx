@@ -21,7 +21,7 @@ import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
 import { useHydrateIncome, useHydrateIncomeEvents, useHydrateDebts, useHydrateSavings } from '@/hooks/remote'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { convertCurrency, fmtCompact } from '@/lib/utils/currency'
-import { formatCurrency } from '@/lib/utils/formatters'
+import { formatCurrency, formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { expectedRecurringForMonth, getMonthRange, recurringActiveForWindow } from '@/lib/utils/calculations'
 import { buildOccurrences, eventDaysLate, isRealizedOccurrence, missedAfterDaysFor, pendingStatus, type IncomeOccurrence } from '@/lib/utils/incomeOccurrences'
 import type { IncomeSource, IncomeSourceType } from '@/lib/store/types'
@@ -31,9 +31,6 @@ const MON_TITLE = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'
 const REALIZED_EVENT = new Set(['confirmed', 'late', 'partial'])
 const todayISO = () => localTodayISO()
 
-function fmtNum(n: number): string {
-  return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
-}
 function fmtDay(iso: string): string {
   return `${MON_TITLE[Number(iso.slice(5, 7)) - 1]} ${Number(iso.slice(8, 10))}`
 }

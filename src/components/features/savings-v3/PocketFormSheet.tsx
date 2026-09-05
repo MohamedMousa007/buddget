@@ -12,10 +12,10 @@ import { PAYMENT_BRANDS, QUICK_ADD_BLEND, brandIssuesType, decomposePaymentMetho
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 import { type PocketKindDef } from '@/lib/savings/pocketKinds'
+import { rgba } from '@/lib/utils/color'
 import type { Currency, PaymentMethod } from '@/lib/store/types'
 
 const micro: React.CSSProperties = { fontSize: 10, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--color-brand-text-muted)' }
-const hexToRgb = (hex: string) => { const h = hex.replace('#', ''); return `${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)}` }
 
 export interface PocketFormSheetProps {
   open: boolean
@@ -86,8 +86,8 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
 
         <div className="flex-1 overflow-y-auto px-5 pb-3 space-y-4">
           {/* preview */}
-          <div className="flex items-center gap-3 rounded-2xl p-3.5" style={{ border: `1px solid rgba(${hexToRgb(color)},.35)`, background: `rgba(${hexToRgb(color)},.06)` }}>
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl" style={{ background: `rgba(${hexToRgb(color)},.16)`, color }}>
+          <div className="flex items-center gap-3 rounded-2xl p-3.5" style={{ border: `1px solid ${rgba(color, .35)}`, background: rgba(color, .06) }}>
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl" style={{ background: rgba(color, .16), color }}>
               <SavingsAccountIcon account={{ type: def.savingsType, icon: def.icon }} className="h-5 w-5" />
             </span>
             <div className="min-w-0">

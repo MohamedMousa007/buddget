@@ -15,6 +15,8 @@ import { moneyToGoldGrams } from '@/lib/utils/calculations'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { pocketColor } from '@/lib/savings/pocketIdentity'
+import { rgba } from '@/lib/utils/color'
+import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import type { PocketVM } from '@/components/features/savings-v3/PocketsCarousel'
 import type { Currency, InvestmentAssetType, SavingsWithdrawalPurpose } from '@/lib/store/types'
 
@@ -25,7 +27,6 @@ const INVEST_CLASSES: Array<{ type: InvestmentAssetType; label: string; icon: Re
 ]
 
 const micro: React.CSSProperties = { fontSize: 10, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--color-brand-text-muted)' }
-const fmtNum = (n: number) => Math.round(n).toLocaleString('en-US')
 
 type Reason = SavingsWithdrawalPurpose // 'income' | 'transfer' | 'debt' | 'spend'
 
@@ -188,7 +189,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
 
           {from && (
             <div className="flex items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: `rgba(${hexToRgb(pocketColor(from.account))},.14)`, color: pocketColor(from.account) }}>
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: rgba(pocketColor(from.account), .14), color: pocketColor(from.account) }}>
                 <SavingsAccountIcon account={from.account} className="h-4.5 w-4.5" />
               </span>
               <div className="min-w-0">
@@ -209,8 +210,8 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
                 return (
                   <button key={r.key} type="button" onClick={() => { setMoveOn(false); setReason(r.key); setDebtId(null); setAssetClass(null) }}
                     className="flex items-center gap-3 rounded-2xl p-3 text-left"
-                    style={{ minHeight: 62, border: on ? `1px solid rgba(${hexToRgb(r.color)},.5)` : '1px solid var(--color-brand-border)', background: on ? `rgba(${hexToRgb(r.color)},.06)` : 'var(--color-brand-elevated)' }}>
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: `rgba(${hexToRgb(r.color)},.14)`, color: r.color }}>{r.icon}</span>
+                    style={{ minHeight: 62, border: on ? `1px solid ${rgba(r.color, .5)}` : '1px solid var(--color-brand-border)', background: on ? rgba(r.color, .06) : 'var(--color-brand-elevated)' }}>
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: rgba(r.color, .14), color: r.color }}>{r.icon}</span>
                     <div className="min-w-0">
                       <p className="text-[12.5px] font-semibold text-[var(--color-brand-text-primary)]">{r.title}</p>
                       <p className="text-[10px] text-[var(--color-brand-text-muted)]">{r.sub}</p>
@@ -329,9 +330,4 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
       </div>
     </ModalShell>
   )
-}
-
-function hexToRgb(hex: string): string {
-  const h = hex.replace('#', '')
-  return `${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)}`
 }

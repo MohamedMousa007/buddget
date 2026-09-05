@@ -8,10 +8,10 @@ import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccount
 import { PocketFormSheet } from '@/components/features/savings-v3/PocketFormSheet'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { POCKET_KINDS, POCKET_KIND_ORDER, type PocketKindDef } from '@/lib/savings/pocketKinds'
+import { rgba } from '@/lib/utils/color'
 import type { PaymentMethod, SavingsType } from '@/lib/store/types'
 
 const label: React.CSSProperties = { fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--color-brand-text-muted)' }
-const hexToRgb = (hex: string) => { const h = hex.replace('#', ''); return `${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)}` }
 
 const PM_TYPE_LABEL: Record<string, string> = {
   bank_account: 'Bank account', debit_card: 'Debit card', credit_card: 'Credit card',
@@ -69,7 +69,7 @@ export function NewPocketSheet({ open, onClose }: NewPocketSheetProps) {
                       onClick={() => openForm(kind, pm)}
                       className="flex w-full items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3 text-left"
                       style={{ opacity: used ? 0.55 : 1 }}>
-                      <span className="flex h-11 w-11 items-center justify-center rounded-xl" style={{ background: `rgba(${hexToRgb(pm.color ?? '#7EAEF9')},.14)`, color: pm.color ?? '#7EAEF9' }}>
+                      <span className="flex h-11 w-11 items-center justify-center rounded-xl" style={{ background: rgba(pm.color ?? '#7EAEF9', .14), color: pm.color ?? '#7EAEF9' }}>
                         <SavingsAccountIcon account={{ type: 'bank' as SavingsType, icon: 'CreditCard' }} className="h-5 w-5" />
                       </span>
                       <div className="min-w-0 flex-1">
@@ -96,7 +96,7 @@ export function NewPocketSheet({ open, onClose }: NewPocketSheetProps) {
                 return (
                   <button key={k} type="button" onClick={() => openForm(def, null)}
                     className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3.5 text-left">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-xl" style={{ background: `rgba(${hexToRgb(def.color)},.14)`, color: def.color }}>
+                    <span className="flex h-11 w-11 items-center justify-center rounded-xl" style={{ background: rgba(def.color, .14), color: def.color }}>
                       <SavingsAccountIcon account={{ type: def.savingsType, icon: def.icon }} className="h-5 w-5" />
                     </span>
                     <p className="mt-2.5 text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{def.label}</p>

@@ -13,9 +13,9 @@ import { buildOccurrences, expectedPerPayday } from '@/lib/utils/incomeOccurrenc
 import { UnifiedDatePicker, formatDatePillLabel } from '@/components/ui/UnifiedDatePicker'
 import { Calendar } from 'lucide-react'
 import { useModalTitleId } from '@/components/modals/ModalShell'
+import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 
 const MON_TITLE = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-const fmtNum = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 const fmtDay = (iso: string) => `${MON_TITLE[Number(iso.slice(5, 7)) - 1]} ${Number(iso.slice(8, 10))}`
 const todayISO = () => localTodayISO()
 
