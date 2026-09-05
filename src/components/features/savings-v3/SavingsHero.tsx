@@ -44,9 +44,9 @@ export function SavingsHero({
   const paceStyle = PACE[pace.state]
   return (
     <div
-      className="relative overflow-hidden"
+      className="relative mx-4 overflow-hidden"
       style={{
-        margin: '0 16px', padding: 16, borderRadius: 20,
+        padding: 16, borderRadius: 20,
         background: 'linear-gradient(152deg,#141b28,#0f1017)',
         border: '1px solid rgba(126,174,249,.18)',
         boxShadow: '0 18px 40px -24px rgba(0,0,0,.85)',

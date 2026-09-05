@@ -17,7 +17,7 @@ export function ZakatCard({ result, base, hawlDate, onOpen }: ZakatCardProps) {
   const due = result.due
   const accent = due ? '#F5C842' : '#35D46F'
   return (
-    <button type="button" onClick={onOpen} className="mx-4 mt-3 block w-full text-left"
+    <button type="button" onClick={onOpen} className="mx-4 mt-3 block w-[calc(100%-2rem)] text-left"
       style={{ borderRadius: 18 }}>
       <div className="relative overflow-hidden rounded-[18px] border bg-[var(--color-brand-card)] p-3.5"
         style={{ borderColor: `rgba(${hexToRgb(accent)},.28)` }}>
