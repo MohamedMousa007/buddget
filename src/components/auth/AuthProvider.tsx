@@ -14,7 +14,7 @@ import {
 import { AnalyticsHeartbeat } from '@/components/sync/AnalyticsHeartbeat'
 import { NativeBootstrap } from '@/lib/native/NativeBootstrap'
 import { unregisterPushToken } from '@/lib/native/pushNotifications'
-import { AuthModal } from '@/components/auth/AuthModal'
+import { AuthModal } from '@/components/features/auth-modal/AuthModal'
 import { LockScreen } from '@/components/auth/LockScreen'
 import { AuthContext, type AuthContextValue, type AuthMode, useAuth } from '@/components/auth/auth-context'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
