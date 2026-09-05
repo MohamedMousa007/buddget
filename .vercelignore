@@ -1,0 +1,12 @@
+# Native/build artifacts that have no business in a Vercel deploy — .gitignore
+# lists these too, but the CLI's gitignore fallback wasn't excluding them
+# (a `vercel --prod` was uploading 2.9GB instead of the actual app source).
+dist/
+android/
+ios/
+out/
+design/
+*.apk
+
+# auto-deploy verification ping (2026-09-05): confirms git push actually
+# triggers a Vercel deploy without a manual `vercel --prod`.
