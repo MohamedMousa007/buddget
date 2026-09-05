@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import { syncFinanceNow } from '@/components/sync/SupabaseFinanceSync'
+import { refreshAssetPrices } from '@/hooks/useAssetPrices'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { isScrollLocked } from '@/lib/ui/scrollLock'
 import { useT } from '@/lib/i18n'
@@ -108,7 +109,11 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
       void (async () => {
         const started = Date.now()
         try {
-          await Promise.race([syncFinanceNow(), sleep(SYNC_TIMEOUT)])
+          // Prices piggyback on the same gesture — best-effort, never blocks the finance sync.
+          await Promise.race([
+            Promise.all([syncFinanceNow(), refreshAssetPrices().catch(() => {})]),
+            sleep(SYNC_TIMEOUT),
+          ])
         } catch { /* best-effort; next auto-flush retries */ }
         const elapsed = Date.now() - started
         if (elapsed < MIN_SPIN) await sleep(MIN_SPIN - elapsed)
