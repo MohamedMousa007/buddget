@@ -11,9 +11,8 @@ import { useAssetPrices } from '@/hooks/useAssetPrices'
 import { egyptKaratPrice } from '@/lib/prices/egyptGold'
 import { saghaRate, goldToGrams, valueGold, valueCrypto, valueStock, valueProperty, type GoldUnit } from '@/lib/savings/holdingValuation'
 import { COINGECKO_IDS } from '@/lib/prices/coingecko'
+import { micro } from '@/components/features/savings-v3/microLabelStyle'
 import type { GoldKarat, InvestmentAssetType } from '@/lib/store/types'
-
-const micro: React.CSSProperties = { fontSize: 10, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--color-brand-text-muted)' }
 
 const ACCENT: Record<InvestmentAssetType, string> = { gold: '#F5C842', crypto: '#B79CFF', stock: '#35D46F', property: '#2CE0C6' }
 const TITLE: Record<InvestmentAssetType, string> = { gold: 'Add gold', crypto: 'Add crypto', stock: 'Add a position', property: 'Add property' }

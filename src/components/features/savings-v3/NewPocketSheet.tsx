@@ -9,9 +9,8 @@ import { PocketFormSheet } from '@/components/features/savings-v3/PocketFormShee
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { POCKET_KINDS, POCKET_KIND_ORDER, type PocketKindDef } from '@/lib/savings/pocketKinds'
 import { rgba } from '@/lib/utils/color'
+import { micro as label } from '@/components/features/savings-v3/microLabelStyle'
 import type { PaymentMethod, SavingsType } from '@/lib/store/types'
-
-const label: React.CSSProperties = { fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--color-brand-text-muted)' }
 
 const PM_TYPE_LABEL: Record<string, string> = {
   bank_account: 'Bank account', debit_card: 'Debit card', credit_card: 'Credit card',

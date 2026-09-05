@@ -8,10 +8,9 @@ import { computeZakat } from '@/lib/savings/zakat'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { rgba } from '@/lib/utils/color'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
+import { micro } from '@/components/features/savings-v3/microLabelStyle'
 import type { ZakatBase } from '@/lib/savings/zakatInputs'
 import type { ZakatConfig } from '@/lib/store/types'
-
-const micro: React.CSSProperties = { fontSize: 10, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--color-brand-text-muted)' }
 
 export interface ZakatSheetProps {
   open: boolean

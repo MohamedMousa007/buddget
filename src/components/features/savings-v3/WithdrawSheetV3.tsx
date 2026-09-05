@@ -17,6 +17,7 @@ import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { pocketColor } from '@/lib/savings/pocketIdentity'
 import { rgba } from '@/lib/utils/color'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
+import { micro } from '@/components/features/savings-v3/microLabelStyle'
 import type { PocketVM } from '@/components/features/savings-v3/PocketsCarousel'
 import type { Currency, InvestmentAssetType, SavingsWithdrawalPurpose } from '@/lib/store/types'
 
@@ -25,8 +26,6 @@ const INVEST_CLASSES: Array<{ type: InvestmentAssetType; label: string; icon: Re
   { type: 'crypto', label: 'Crypto', icon: <Bitcoin size={15} /> },
   { type: 'stock', label: 'Stocks & funds', icon: <LineChart size={15} /> },
 ]
-
-const micro: React.CSSProperties = { fontSize: 10, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--color-brand-text-muted)' }
 
 type Reason = SavingsWithdrawalPurpose // 'income' | 'transfer' | 'debt' | 'spend'
 

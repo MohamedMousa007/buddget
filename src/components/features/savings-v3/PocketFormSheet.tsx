@@ -13,9 +13,8 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 import { type PocketKindDef } from '@/lib/savings/pocketKinds'
 import { rgba } from '@/lib/utils/color'
+import { micro } from '@/components/features/savings-v3/microLabelStyle'
 import type { Currency, PaymentMethod } from '@/lib/store/types'
-
-const micro: React.CSSProperties = { fontSize: 10, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--color-brand-text-muted)' }
 
 export interface PocketFormSheetProps {
   open: boolean

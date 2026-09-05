@@ -13,6 +13,7 @@ import type { DisplayPrice } from '@/lib/prices/assetPriceLookup'
 import { egyptKaratPrice, usdPerGram } from '@/lib/prices/egyptGold'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
+import { micro } from '@/components/features/savings-v3/microLabelStyle'
 import type { GoldKarat, InvestmentAssetType, InvestmentHolding } from '@/lib/store/types'
 
 const fmtCompact = (n: number) => {
@@ -21,7 +22,6 @@ const fmtCompact = (n: number) => {
   if (a >= 1e3) return `${Math.round(n / 1e3)}K`
   return `${Math.round(n)}`
 }
-const micro: React.CSSProperties = { fontSize: 8.5, fontWeight: 600, letterSpacing: '.07em', textTransform: 'uppercase', color: '#6E6E85' }
 
 const TABS: Array<{ key: InvestmentAssetType; label: string }> = [
   { key: 'gold', label: 'Gold' }, { key: 'crypto', label: 'Crypto' }, { key: 'stock', label: 'Stocks' }, { key: 'property', label: 'Property' },

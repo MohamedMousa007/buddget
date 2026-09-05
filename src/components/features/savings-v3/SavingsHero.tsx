@@ -5,6 +5,7 @@ import type { Currency } from '@/lib/store/types'
 import type { SavingsPace } from '@/lib/savings/savingsPace'
 import { fmtCompact } from '@/lib/utils/currency'
 import { rgba } from '@/lib/utils/color'
+import { micro as microLabel } from '@/components/features/savings-v3/microLabelStyle'
 
 /** Signed compact figure with a leading + on positives; unsigned zero. */
 function signed(n: number): string {
@@ -32,10 +33,6 @@ export interface SavingsHeroProps {
   empty: boolean
   onAddSavings: () => void
   onInvestment: () => void
-}
-
-const microLabel: React.CSSProperties = {
-  fontSize: 8.5, fontWeight: 600, letterSpacing: '.07em', textTransform: 'uppercase', color: '#6E6E85',
 }
 
 export function SavingsHero({
