@@ -1,10 +1,11 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Wallet, Gem, Bitcoin, TrendingUp, Home, CreditCard, BookOpen, X } from 'lucide-react'
+import { Wallet, Gem, Bitcoin, TrendingUp, Home, CreditCard, BookOpen } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { computeZakat } from '@/lib/savings/zakat'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import type { ZakatBase } from '@/lib/savings/zakatInputs'
 import type { ZakatConfig } from '@/lib/store/types'
 
@@ -69,10 +70,9 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
   return (
     <ModalShell open={open} onBackdropClick={onClose}>
       <div className="flex flex-col" style={{ maxHeight: '92vh' }}>
-        <div className="flex items-center justify-between px-5 pt-4 pb-2">
-          <h2 className="text-[22px] font-bold text-[var(--color-brand-text-primary)]">Zakat</h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]"><X size={18} /></button>
-        </div>
+        <V3SheetHeader onClose={onClose}>
+          <V3SheetHeader.Title>Zakat</V3SheetHeader.Title>
+        </V3SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-5 pb-3 space-y-4">
           {/* verdict */}

@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronRight, X } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 import { PocketFormSheet } from '@/components/features/savings-v3/PocketFormSheet'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { POCKET_KINDS, POCKET_KIND_ORDER, type PocketKindDef } from '@/lib/savings/pocketKinds'
 import type { PaymentMethod, SavingsType } from '@/lib/store/types'
 
@@ -50,13 +51,10 @@ export function NewPocketSheet({ open, onClose }: NewPocketSheetProps) {
     <>
     <ModalShell open={open} onBackdropClick={onClose}>
       <div className="flex flex-col" style={{ maxHeight: '92vh' }}>
-        <div className="flex items-start justify-between px-5 pt-4 pb-1">
-          <div>
-            <h2 className="text-[22px] font-bold text-[var(--color-brand-text-primary)]">New pocket</h2>
-            <p className="mt-0.5 text-sm text-[var(--color-brand-text-secondary)]">Where does this money actually sit?</p>
-          </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]"><X size={18} /></button>
-        </div>
+        <V3SheetHeader onClose={onClose}>
+          <V3SheetHeader.Title>New pocket</V3SheetHeader.Title>
+          <V3SheetHeader.Subtitle>Where does this money actually sit?</V3SheetHeader.Subtitle>
+        </V3SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-5 pb-4 pt-3 space-y-4">
           {holdablePms.length > 0 && (

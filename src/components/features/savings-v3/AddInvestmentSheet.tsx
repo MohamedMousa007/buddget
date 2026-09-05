@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronRight, Gem, Bitcoin, TrendingUp, Home, X } from 'lucide-react'
+import { ChevronRight, Gem, Bitcoin, TrendingUp, Home } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { AssetFormSheet } from '@/components/features/savings-v3/AssetFormSheet'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import type { InvestmentAssetType } from '@/lib/store/types'
 
 const TYPES: Array<{ key: InvestmentAssetType; icon: React.ReactNode; color: string; name: string; sub: string }> = [
@@ -29,13 +30,10 @@ export function AddInvestmentSheet({ open, onClose, presetType }: AddInvestmentS
   return (
     <ModalShell open={open} onBackdropClick={onClose}>
       <div className="flex flex-col" style={{ maxHeight: '90vh' }}>
-        <div className="flex items-start justify-between px-5 pt-4 pb-1">
-          <div>
-            <h2 className="text-[22px] font-bold text-[var(--color-brand-text-primary)]">Add investment</h2>
-            <p className="mt-0.5 text-[13px] text-[var(--color-brand-text-secondary)]">What did you invest in?</p>
-          </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]"><X size={18} /></button>
-        </div>
+        <V3SheetHeader onClose={onClose}>
+          <V3SheetHeader.Title>Add investment</V3SheetHeader.Title>
+          <V3SheetHeader.Subtitle>What did you invest in?</V3SheetHeader.Subtitle>
+        </V3SheetHeader>
 
         <div className="space-y-2.5 px-5 pb-5 pt-3">
           {TYPES.map((t) => (

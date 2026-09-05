@@ -7,6 +7,7 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import type { ClearedVM } from '@/hooks/useDebtTabData'
 import type { DebtFamily } from '@/lib/debts/debtFamily'
 import { fmtWhole } from './heroCardShared'
+import { useModalTitleId } from '@/components/modals/ModalShell'
 
 const FAMILY_TAG: Record<DebtFamily, string> = {
   borrow: 'Borrow',
@@ -35,7 +36,7 @@ export function ClearedVaultSheet({ open, onClose, cleared, base }: { open: bool
           <Award className="h-6 w-6" />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-2xl font-bold text-white">Cleared vault</h2>
+          <h2 id={useModalTitleId()} className="text-2xl font-bold text-white">Cleared vault</h2>
           <p className="mt-0.5 font-mono-numbers text-sm text-white/60">
             {cleared.length} cleared · {fmtWhole(sum)} {base} paid off
           </p>

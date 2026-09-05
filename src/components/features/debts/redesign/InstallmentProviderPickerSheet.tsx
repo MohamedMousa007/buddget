@@ -8,6 +8,7 @@ import { INSTALLMENT_PROVIDER_CATALOGUE } from '@/lib/constants/installmentProvi
 import { PaymentCardCarousel } from '@/components/features/payments/PaymentCardCarousel'
 import type { PaymentMethod } from '@/lib/store/types'
 import { ProviderBadge } from './ProviderBadge'
+import { useModalTitleId } from '@/components/modals/ModalShell'
 
 export interface CreditCardOption {
   debtId: string
@@ -70,7 +71,7 @@ export function InstallmentProviderPickerSheet({
               <ArrowLeft className="h-full w-full" />
             </button>
           ) : null}
-          <span className="min-w-0 flex-1 text-lg font-semibold text-white">
+          <span id={useModalTitleId()} className="min-w-0 flex-1 text-lg font-semibold text-white">
             {view === 'card' ? 'Which credit card?' : view === 'custom' ? 'Custom provider' : 'Choose provider'}
           </span>
           <button type="button" aria-label="Close" onClick={close} className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-white/8 p-[9px] text-white/70">

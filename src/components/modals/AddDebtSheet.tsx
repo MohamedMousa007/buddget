@@ -12,6 +12,7 @@ import { AddInstallmentForm } from '@/components/features/debts/redesign/AddInst
 import { PayDebtForm } from '@/components/features/debts/redesign/PayDebtForm'
 import { fmtWhole } from '@/components/features/debts/redesign/heroCardShared'
 import { useT } from '@/lib/i18n'
+import { useModalTitleId } from '@/components/modals/ModalShell'
 
 /**
  * Debt bottom sheet (handoff §4). New: family picker → per-family form. Edit: the
@@ -74,7 +75,7 @@ export function AddDebtSheet() {
       <div className="flex min-h-0 flex-1 flex-col">
         {/* Header */}
         <div className="flex shrink-0 items-center gap-2.5 px-5 pb-3 pt-4">
-          <span className="min-w-0 flex-1 text-xl font-bold text-[var(--color-brand-text-primary)]">{title}</span>
+          <span id={useModalTitleId()} className="min-w-0 flex-1 text-xl font-bold text-[var(--color-brand-text-primary)]">{title}</span>
           <button type="button" aria-label="Close" onClick={d.closeSheet} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]">
             <X className="h-4 w-4" />
           </button>

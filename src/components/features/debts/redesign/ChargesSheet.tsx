@@ -6,6 +6,7 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import { ExpenseDayList } from '@/components/expenses/ExpenseDayList'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useShallow } from 'zustand/react/shallow'
+import { useModalTitleId } from '@/components/modals/ModalShell'
 
 export interface ChargesSheetTarget {
   pmId: string
@@ -28,7 +29,7 @@ export function ChargesSheet({ open, onClose, target }: { open: boolean; onClose
     <ModalShell open={open} onBackdropClick={onClose} scrollChild panelClassName="h-[82vh]">
       <div className="flex shrink-0 items-start justify-between gap-3 px-5 pt-5">
         <div className="min-w-0">
-          <h2 className="text-2xl font-bold text-[var(--color-brand-text-primary)]">Expenses</h2>
+          <h2 id={useModalTitleId()} className="text-2xl font-bold text-[var(--color-brand-text-primary)]">Expenses</h2>
           <p className="mt-0.5 text-sm text-[var(--color-brand-text-muted)]">Filtered to this card</p>
         </div>
         <button

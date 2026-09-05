@@ -12,6 +12,7 @@ import { useActionToast } from '@/components/ui/ActionToast'
 import { buildOccurrences, expectedPerPayday } from '@/lib/utils/incomeOccurrences'
 import { UnifiedDatePicker, formatDatePillLabel } from '@/components/ui/UnifiedDatePicker'
 import { Calendar } from 'lucide-react'
+import { useModalTitleId } from '@/components/modals/ModalShell'
 
 const MON_TITLE = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const fmtNum = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -141,12 +142,14 @@ export function AmountReceivedSheet() {
     if (isOpen) savingRef.current = false
   }, [isOpen])
 
+  const titleId = useModalTitleId()
+
   if (!isOpen || !source || !current) return null
 
   return (
     <ModalShell open={isOpen} onBackdropClick={close} padContent>
       <div className="pt-1">
-        <h2 className="text-lg font-bold text-[var(--color-brand-text-primary)]">{t.income.amountReceivedTitle}</h2>
+        <h2 id={titleId} className="text-lg font-bold text-[var(--color-brand-text-primary)]">{t.income.amountReceivedTitle}</h2>
         <p className="mt-1 font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">
           {t.income.amountSheetSubtitle(fmtDay(current.date), source.name, `${fmtNum(expected)} ${currency}`)}
         </p>

@@ -23,6 +23,7 @@ import { IncomePaydayGrid } from '@/components/features/income/IncomePaydayGrid'
 import { deriveDefaultPaydays } from '@/lib/utils/paydaySchedule'
 import { incomeMonthlyMultiplier } from '@/lib/utils/calculations'
 import { MODAL_BODY_SCROLL_CLASS, MODAL_CONTROL_CLASS, MODAL_LABEL_CLASS } from '@/lib/modals/modalFormClasses'
+import { useModalTitleId } from '@/components/modals/ModalShell'
 
 const FREQS: IncomeRecurringFrequency[] = ['monthly', 'biweekly', 'weekly']
 
@@ -209,7 +210,7 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
         {/* Header: title + subtitle, one-time date pill (add only), close */}
         <div className="flex shrink-0 items-start gap-3 px-5 pt-1">
           <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-bold text-[var(--color-brand-text-primary)]">{edit ? t.editIncome.title : t.addIncome.sheetTitle}</h2>
+            <h2 id={useModalTitleId()} className="text-lg font-bold text-[var(--color-brand-text-primary)]">{edit ? t.editIncome.title : t.addIncome.sheetTitle}</h2>
             {!edit ? (
               <p className="mt-0.5 text-xs text-[var(--color-brand-text-muted)]">
                 {isRecurring ? t.addIncome.addSubtitleRecurring : t.addIncome.addSubtitleOneTime}

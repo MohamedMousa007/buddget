@@ -11,6 +11,7 @@ import { PocketCard } from '@/components/features/savings-v3/PocketCard'
 import type { PocketVM } from '@/components/features/savings-v3/PocketsCarousel'
 import { pocketColor, pocketIdentity } from '@/lib/savings/pocketIdentity'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import type { Currency } from '@/lib/store/types'
 
 const micro: React.CSSProperties = { fontSize: 10, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--color-brand-text-muted)' }
@@ -64,18 +65,14 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId, le
   return (
     <ModalShell open={open} onBackdropClick={onClose}>
       <div className="flex flex-col" style={{ maxHeight: '90vh' }}>
-        {/* header */}
-        <div className="flex items-center justify-between px-5 pt-4 pb-2">
-          <h2 className="text-[22px] font-bold text-[var(--color-brand-text-primary)]">Add savings</h2>
-          <div className="flex items-center gap-2">
+        <V3SheetHeader onClose={onClose}>
+          <V3SheetHeader.Title>Add savings</V3SheetHeader.Title>
+          <V3SheetHeader.Extra>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-brand-border)] px-3 py-1.5 text-sm text-[var(--color-brand-text-secondary)]">
               <Calendar size={14} /> Today
             </span>
-            <button type="button" onClick={onClose} aria-label="Close" className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]">
-              <X size={18} />
-            </button>
-          </div>
-        </div>
+          </V3SheetHeader.Extra>
+        </V3SheetHeader>
 
         {/* body */}
         <div className="flex-1 overflow-y-auto px-5 pb-3 space-y-4">

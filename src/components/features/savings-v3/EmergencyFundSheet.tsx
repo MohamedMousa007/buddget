@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { Minus, Plus, Shield, Sparkles, X } from 'lucide-react'
+import { Minus, Plus, Shield, Sparkles } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { deriveSimpleMonth } from '@/lib/savings/simpleMonth'
 import { estimateEmergencyFund } from '@/lib/savings/estimateEmergencyFund'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import type { EmergencyFundConfig } from '@/lib/store/types'
 
 const micro: React.CSSProperties = { fontSize: 10, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--color-brand-text-muted)' }
@@ -67,13 +68,10 @@ export function EmergencyFundSheet({ open, onClose }: EmergencyFundSheetProps) {
   return (
     <ModalShell open={open} onBackdropClick={onClose}>
       <div className="flex flex-col" style={{ maxHeight: '92vh' }}>
-        <div className="flex items-start justify-between px-5 pt-4 pb-1">
-          <div className="pr-4">
-            <h2 className="text-[22px] font-bold text-[var(--color-brand-text-primary)]">Emergency fund</h2>
-            <p className="mt-0.5 text-sm text-[var(--color-brand-text-secondary)]">Months you could cover on a simple version of your life — not your usual budget.</p>
-          </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]"><X size={18} /></button>
-        </div>
+        <V3SheetHeader onClose={onClose}>
+          <V3SheetHeader.Title>Emergency fund</V3SheetHeader.Title>
+          <V3SheetHeader.Subtitle>Months you could cover on a simple version of your life — not your usual budget.</V3SheetHeader.Subtitle>
+        </V3SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-5 pb-4 pt-3 space-y-4">
           <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">

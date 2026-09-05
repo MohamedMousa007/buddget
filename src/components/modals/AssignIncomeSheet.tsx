@@ -13,6 +13,7 @@ import { buildOccurrences, isRealizedOccurrence, nextAwaitingIndex, type IncomeO
 import { RecurringIncomeCard } from '@/components/features/income/RecurringIncomeCard'
 import { RecurringIncomeCarousel } from '@/components/features/income/RecurringIncomeCarousel'
 import { AccountChip } from '@/components/features/income/AccountChip'
+import { useModalTitleId } from '@/components/modals/ModalShell'
 
 const MON_TITLE = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const fmtNum = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -113,12 +114,14 @@ export function AssignIncomeSheet({ open, onClose, onAssign, initialTemplateId, 
     onClose()
   }
 
+  const titleId = useModalTitleId()
+
   if (!open || cards.length === 0 || !activeCard) return null
 
   return (
     <ModalShell open={open} onBackdropClick={onClose} zIndexClassName={zIndexClassName ?? 'z-[110]'} padContent>
       <div className="pt-1">
-        <h2 className="text-lg font-bold text-[var(--color-brand-text-primary)]">{t.income.assignTitle}</h2>
+        <h2 id={titleId} className="text-lg font-bold text-[var(--color-brand-text-primary)]">{t.income.assignTitle}</h2>
         <p className="mt-1 text-xs text-[var(--color-brand-text-muted)]">{t.income.assignSubtitle}</p>
 
         <div className="mt-4">

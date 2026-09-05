@@ -11,6 +11,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT } from '@/lib/i18n'
 import { decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 import type { PaymentMethod } from '@/lib/store/types'
+import { useModalTitleId } from '@/components/modals/ModalShell'
 
 export function PaymentMethodsSheet() {
   const t = useT()
@@ -73,7 +74,7 @@ export function PaymentMethodsSheet() {
       <ModalShell open={isWalletModal} onBackdropClick={close} scrollChild>
         <div className="relative flex min-h-0 flex-1 flex-col outline-none">
           <div className="flex shrink-0 items-center justify-between px-[18px] pb-2 pt-1">
-            <span className="text-lg font-semibold text-[var(--color-brand-text-primary)]">
+            <span id={useModalTitleId()} className="text-lg font-semibold text-[var(--color-brand-text-primary)]">
               {t.paymentMethods.title}
             </span>
             <button

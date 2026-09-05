@@ -12,6 +12,7 @@ import { CurrencyField } from '@/components/ui/CurrencyField'
 import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
 import { rgba } from '@/lib/utils/color'
 import { useNumberPad } from '@/components/ui/useNumberPad'
+import { useModalTitleId } from '@/components/modals/ModalShell'
 
 const HIDE_SCROLL = '[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
 
@@ -144,7 +145,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
         {/* header — ModalShell renders the drag handle above this. */}
         <div className="shrink-0 px-5 pt-1">
           <div className="flex items-center justify-between">
-            <div className="font-heading text-lg font-bold text-[var(--color-brand-text-primary)]">
+            <div id={useModalTitleId()} className="font-heading text-lg font-bold text-[var(--color-brand-text-primary)]">
               {mode === 'edit' ? t.expenseForm.titleEdit : t.expenseForm.titleAdd}
             </div>
             <div className="flex items-center gap-2">

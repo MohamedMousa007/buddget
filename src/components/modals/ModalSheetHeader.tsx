@@ -3,6 +3,7 @@
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
+import { useModalTitleId } from '@/components/modals/ModalShell'
 
 /**
  * Deprecated: ModalShell now always renders the drag-handle grab strip, so a
@@ -31,7 +32,7 @@ export function ModalSheetHeader({ title, onClose, titleRowClassName = 'mb-4' }:
           titleRowClassName,
         )}
       >
-        <h3 className="text-base font-semibold text-[var(--color-brand-text-primary)]">{title}</h3>
+        <h3 id={useModalTitleId()} className="text-base font-semibold text-[var(--color-brand-text-primary)]">{title}</h3>
         <button
           type="button"
           onClick={onClose}

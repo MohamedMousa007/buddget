@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, useDragControls } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -16,6 +16,17 @@ const OVERLAY_Z = 'z-[100]'
 // on the backdrop and instantly closes the modal (BUD-50 FAB flicker). Ignore
 // dismissal events landing within this window of the modal opening.
 const OPEN_GRACE_MS = 400
+
+/**
+ * Id ModalShell generates for its dialog title, exposed to whichever header
+ * component a sheet uses so `aria-labelledby` actually resolves. A sheet with
+ * no title consumer simply leaves the id unmatched — same as before this
+ * existed (nameless dialog), not a regression.
+ */
+const ModalTitleIdContext = createContext<string | undefined>(undefined)
+export function useModalTitleId() {
+  return useContext(ModalTitleIdContext)
+}
 
 const FOCUSABLE =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -86,6 +97,7 @@ export function ModalShell({
   const dragControls = useDragControls()
   const zStack = zIndexClassName ?? OVERLAY_Z
   const panelRef = useRef<HTMLDivElement>(null)
+  const titleId = useId()
 
   // Lock the background scroll while open so a touch-drag on the backdrop /
   // non-scrolling chrome can't scroll the page behind the sheet.
@@ -243,6 +255,7 @@ export function ModalShell({
             key="modal-panel"
             role="dialog"
             aria-modal="true"
+            aria-labelledby={titleId}
             tabIndex={-1}
             data-keyboard-open={keyboardUp ? 'true' : undefined}
             initial={desktopFadePanel ? { opacity: 0, scale: 0.98 } : { y: '100%' }}
@@ -277,33 +290,35 @@ export function ModalShell({
                 : undefined
             }
           >
-            {dragToClose ? (
-              <>
-                {/* Generous, misclick-safe grab strip (≥44px). Sole drag
-                    initiator: it sits above all interactive content, so it can
-                    never swallow a tap on a button/input. Hidden on desktop,
-                    where the sheet is a centered fade with no drag. */}
-                <div
-                  className="flex shrink-0 items-center justify-center min-h-11 cursor-grab active:cursor-grabbing touch-none select-none lg:hidden"
-                  onPointerDown={(e) => dragControls.start(e)}
-                  role="presentation"
-                  aria-hidden
-                >
-                  <div className="w-10 h-1 rounded-full bg-[var(--color-brand-border)]" />
-                </div>
-                <div
-                  className={cn(
-                    'flex min-h-0 flex-1 flex-col',
-                    !scrollChild && 'overflow-y-auto overscroll-y-contain touch-pan-y',
-                    padContent && 'px-5 pb-5',
-                  )}
-                >
-                  {children}
-                </div>
-              </>
-            ) : (
-              children
-            )}
+            <ModalTitleIdContext.Provider value={titleId}>
+              {dragToClose ? (
+                <>
+                  {/* Generous, misclick-safe grab strip (≥44px). Sole drag
+                      initiator: it sits above all interactive content, so it can
+                      never swallow a tap on a button/input. Hidden on desktop,
+                      where the sheet is a centered fade with no drag. */}
+                  <div
+                    className="flex shrink-0 items-center justify-center min-h-11 cursor-grab active:cursor-grabbing touch-none select-none lg:hidden"
+                    onPointerDown={(e) => dragControls.start(e)}
+                    role="presentation"
+                    aria-hidden
+                  >
+                    <div className="w-10 h-1 rounded-full bg-[var(--color-brand-border)]" />
+                  </div>
+                  <div
+                    className={cn(
+                      'flex min-h-0 flex-1 flex-col',
+                      !scrollChild && 'overflow-y-auto overscroll-y-contain touch-pan-y',
+                      padContent && 'px-5 pb-5',
+                    )}
+                  >
+                    {children}
+                  </div>
+                </>
+              ) : (
+                children
+              )}
+            </ModalTitleIdContext.Provider>
           </motion.div>
         </>
       )}
