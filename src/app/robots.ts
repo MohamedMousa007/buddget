@@ -5,18 +5,8 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: '/',
-        disallow: [
-          '/expenses',
-          '/debts',
-          '/reports',
-          '/settings',
-          '/admin',
-          '/api/',
-          '/profile',
-          '/savings',
-          '/income',
-        ],
+        allow: ['/', '/terms', '/privacy', '/legal/terms', '/legal/privacy'],
+        disallow: '/',
       },
     ],
     sitemap: 'https://buddget.app/sitemap.xml',

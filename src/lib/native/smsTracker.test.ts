@@ -7,16 +7,17 @@
  * 401s and is silently dropped by SmsForwardWorker.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
+import type { SmsCapacitorPlugin } from '@/lib/native/smsTracker'
 
 const mocks = vi.hoisted(() => ({
-  saveToken: vi.fn(() => Promise.resolve()),
-  setEnabled: vi.fn(() => Promise.resolve()),
-  clearCredentials: vi.fn(() => Promise.resolve()),
-  getStatus: vi.fn(() => Promise.resolve({ enabled: true, tokenSaved: true, setupCompleted: true, wired: true, tokenUserId: 'user-1', permission: true })),
-  peekPendingQueue: vi.fn(() => Promise.resolve({ items: [] as unknown[] })),
-  removePending: vi.fn(() => Promise.resolve()),
-  fetch: vi.fn<typeof globalThis.fetch>(),
+  saveToken: vi.fn() as Mock<SmsCapacitorPlugin['saveToken']>,
+  setEnabled: vi.fn() as Mock<SmsCapacitorPlugin['setEnabled']>,
+  clearCredentials: vi.fn() as Mock<SmsCapacitorPlugin['clearCredentials']>,
+  getStatus: vi.fn() as Mock<SmsCapacitorPlugin['getStatus']>,
+  peekPendingQueue: vi.fn() as Mock<SmsCapacitorPlugin['peekPendingQueue']>,
+  removePending: vi.fn() as Mock<SmsCapacitorPlugin['removePending']>,
+  fetch: vi.fn() as Mock<typeof globalThis.fetch>,
 }))
 
 vi.mock('@/lib/native/isNative', () => ({

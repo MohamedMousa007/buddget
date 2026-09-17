@@ -39,7 +39,7 @@ export interface SmsHealthResult {
   tokenSaved: boolean
 }
 
-interface SmsCapacitorPlugin {
+export interface SmsCapacitorPlugin {
   checkPermission(): Promise<{ granted: boolean }>
   requestPermission(): Promise<{ granted: boolean }>
   /** Persists token + owning user natively (SharedPreferences / UserDefaults) so the killed-app forwarding path stays armed and account-attributed. */

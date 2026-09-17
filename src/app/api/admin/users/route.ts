@@ -19,7 +19,8 @@ export async function POST(req: Request) {
     })
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      console.error('admin/users listUsers failed:', error)
+      return NextResponse.json({ error: 'Failed to list users' }, { status: 500 })
     }
 
     const users =
