@@ -9,18 +9,29 @@
  * - `initPromise` is module-level; failed init must reset it so a later call retries.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
+import type { SocialLoginPlugin } from '@capgo/capacitor-social-login'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 // ---------------------------------------------------------------------------
 // Stable mock handles — created via vi.hoisted so they're available inside the
 // vi.mock() factory closures (which run before module-level const declarations).
 // ---------------------------------------------------------------------------
+type SignInWithIdTokenCredentials = Parameters<SupabaseClient['auth']['signInWithIdToken']>[0]
+
+type SignInWithIdTokenResult = {
+  data?: { user: { id: string } }
+  error: { message: string } | null
+}
+
 const mocks = vi.hoisted(() => ({
-  isAndroid: vi.fn<[], boolean>(() => false),
-  initialize: vi.fn<[], Promise<void>>(() => Promise.resolve()),
+  isAndroid: vi.fn<() => boolean>(() => false),
+  initialize: vi.fn(() => Promise.resolve()) as Mock<SocialLoginPlugin['initialize']>,
   login: vi.fn(),
-  logout: vi.fn(() => Promise.resolve()),
-  signInWithIdToken: vi.fn(() => Promise.resolve({ error: null })),
+  logout: vi.fn(() => Promise.resolve()) as Mock<SocialLoginPlugin['logout']>,
+  signInWithIdToken: vi.fn() as Mock<
+    (credentials: SignInWithIdTokenCredentials) => Promise<SignInWithIdTokenResult>
+  >,
   // Capture the args SocialLogin.initialize is called with, per test.
   lastInitArgs: null as Parameters<typeof import('@capgo/capacitor-social-login').SocialLogin.initialize>[0] | null,
 }))
@@ -37,7 +48,7 @@ vi.mock('@capgo/capacitor-social-login', () => ({
       return mocks.initialize(...args)
     },
     login: (...args: unknown[]) => mocks.login(...args),
-    logout: (...args: unknown[]) => mocks.logout(...args),
+    logout: (...args: Parameters<SocialLoginPlugin['logout']>) => mocks.logout(...args),
   },
 }))
 

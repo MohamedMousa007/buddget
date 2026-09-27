@@ -5,18 +5,9 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: '/',
-        disallow: [
-          '/expenses',
-          '/debts',
-          '/reports',
-          '/settings',
-          '/admin',
-          '/api/',
-          '/profile',
-          '/savings',
-          '/income',
-        ],
+        // '/$' is an exact-match anchor: the marketing homepage only, not every path under it.
+        allow: ['/$', '/terms', '/privacy', '/legal/terms', '/legal/privacy'],
+        disallow: '/',
       },
     ],
     sitemap: 'https://buddget.app/sitemap.xml',

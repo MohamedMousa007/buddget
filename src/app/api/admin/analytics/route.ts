@@ -19,7 +19,8 @@ export async function POST(req: Request) {
       .limit(8000)
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      console.error('admin/analytics query failed:', error)
+      return NextResponse.json({ error: 'Failed to load analytics' }, { status: 500 })
     }
 
     type Row = {
