@@ -9,6 +9,7 @@ import { AddIncomeSheet } from '@/components/modals/AddIncomeSheet'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useBudgetSetupPage } from '@/hooks/useBudgetSetupPage'
 import { useHydrateBudget, useHydrateIncome, useHydrateExpenses } from '@/hooks/remote'
+import { Button } from '@/components/ui/button'
 
 /**
  * Multi-plan budget editor with manual edits and optional guided setup.
@@ -78,20 +79,16 @@ export default function BudgetSetupPage() {
                   autoFocus
                 />
                 <div className="flex gap-2 justify-end">
-                  <button
-                    type="button"
+                  <Button
                     onClick={p.cancelNewPlan}
-                    className="rounded-xl border border-[var(--color-brand-border)] px-4 py-2 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
+                    variant="outline"
+                    size="touch"
                   >
                     {t.common.cancel}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={p.commitNewPlan}
-                    className="rounded-xl bg-[var(--color-brand-primary)] px-4 py-2 text-sm font-semibold text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
-                  >
+                  </Button>
+                  <Button onClick={p.commitNewPlan} size="touch">
                     {t.common.ok}
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}

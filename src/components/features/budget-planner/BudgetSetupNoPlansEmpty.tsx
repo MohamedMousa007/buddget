@@ -1,6 +1,7 @@
 'use client'
 
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Button } from '@/components/ui/button'
 
 export interface BudgetSetupNoPlansEmptyProps {
   title: string
@@ -26,13 +27,9 @@ export function BudgetSetupNoPlansEmpty({
         description={description}
         className="py-12"
         action={
-          <button
-            type="button"
-            onClick={onCreate}
-            className="inline-flex items-center justify-center rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] px-5 py-2.5 text-sm font-semibold text-[var(--color-brand-on-primary)] transition-colors"
-          >
+          <Button onClick={onCreate} size="touch">
             {createLabel}
-          </button>
+          </Button>
         }
       />
     </div>

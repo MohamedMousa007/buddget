@@ -7,6 +7,7 @@ import { useT } from '@/lib/i18n'
 import { BudgetPlannerCategoryRow } from '@/components/features/budget-planner/BudgetPlannerCategoryRow'
 import { BudgetPlannerAddCategoryMenu } from '@/components/features/budget-planner/BudgetPlannerAddCategoryMenu'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
+import { Button } from '@/components/ui/button'
 
 export interface BudgetPlannerCategoriesLabels {
   categoriesTitle: string
@@ -131,14 +132,10 @@ export function BudgetPlannerCategories({
           <p className="text-sm text-[var(--color-brand-text-secondary)]">
             Add categories to match your spending. Use presets or create your own.
           </p>
-          <button
-            type="button"
-            onClick={openAddMenu}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--color-brand-primary)] px-5 py-2.5 text-sm font-semibold text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)] transition-colors"
-          >
+          <Button onClick={openAddMenu} size="touch">
             <Plus className="h-4 w-4" />
             Add category
-          </button>
+          </Button>
         </div>
       : <div className="space-y-2">
           {categories.map((c) => (

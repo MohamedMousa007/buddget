@@ -15,6 +15,7 @@ import type { Subscription } from '@/lib/store/types'
 import { useHydrateSubscriptions, useHydrateExpenses } from '@/hooks/remote'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { microClassName } from '@/lib/ui/microLabelStyle'
+import { Button } from '@/components/ui/button'
 
 export default function SubscriptionsPage() {
   useHydrateSubscriptions()
@@ -72,13 +73,13 @@ export default function SubscriptionsPage() {
       <PageHeader>
         <PageHeaderContent>
           <div className="flex items-center justify-end gap-4 w-full">
-            <button
-              type="button"
+            <Button
               onClick={openAdd}
-              className="shrink-0 px-4 py-2 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-sm font-semibold text-[var(--color-brand-on-primary)] transition-colors"
+              size="touch"
+              className="shrink-0"
             >
               {t.subscriptions.addSubscription}
-            </button>
+            </Button>
           </div>
         </PageHeaderContent>
       </PageHeader>
@@ -101,13 +102,9 @@ export default function SubscriptionsPage() {
             title={t.subscriptions.emptyTitle}
             description={t.subscriptions.emptyHint}
             action={
-              <button
-                type="button"
-                onClick={openAdd}
-                className="px-5 py-2.5 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-sm font-semibold text-[var(--color-brand-on-primary)] transition-colors"
-              >
+              <Button onClick={openAdd} size="touch">
                 {t.subscriptions.addSubscription}
-              </button>
+              </Button>
             }
           />
         ) : (

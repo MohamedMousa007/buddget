@@ -2,6 +2,7 @@
 
 import { Copy, Download } from 'lucide-react'
 import { useT } from '@/lib/i18n'
+import { Button } from '@/components/ui/button'
 
 export interface ReportsExportBarProps {
   onExportCsv: () => void
@@ -15,22 +16,22 @@ export function ReportsExportBar({ onExportCsv, onCopySummary }: ReportsExportBa
   const t = useT()
   return (
     <div className="flex flex-wrap gap-3">
-      <button
-        type="button"
+      <Button
         onClick={onExportCsv}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
+        variant="outline"
+        size="touch"
       >
         <Download className="w-4 h-4" />
         {t.reports.downloadData}
-      </button>
-      <button
-        type="button"
+      </Button>
+      <Button
         onClick={onCopySummary}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
+        variant="outline"
+        size="touch"
       >
         <Copy className="w-4 h-4" />
         {t.reports.copySummary}
-      </button>
+      </Button>
     </div>
   )
 }

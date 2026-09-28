@@ -12,6 +12,7 @@ import { DatePickerField } from '@/components/ui/DatePickerField'
 import { CurrencyField } from '@/components/ui/CurrencyField'
 import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
 import { useT } from '@/lib/i18n'
+import { Button } from '@/components/ui/button'
 
 export interface RecurringDebtPaymentFormProps {
   payableDebts: Debt[]
@@ -162,21 +163,22 @@ export function RecurringDebtPaymentForm({
       </div>
 
       <div className="flex gap-3 pt-2">
-        <button
-          type="button"
+        <Button
           onClick={onCancel}
-          className="flex-1 py-3 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)]"
+          variant="outline"
+          size="touch"
+          className="flex-1"
         >
           {t.common.cancel}
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
           onClick={onSubmit}
           disabled={!selectDebtValue || !amount || payableDebts.length === 0}
-          className="flex-1 py-3 rounded-xl bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)] text-sm font-semibold disabled:opacity-50"
+          size="touch"
+          className="flex-1"
         >
           {t.recurringDebt.buttonSubmit}
-        </button>
+        </Button>
       </div>
     </div>
   )

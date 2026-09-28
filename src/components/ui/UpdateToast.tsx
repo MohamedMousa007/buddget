@@ -5,6 +5,7 @@ import { Sparkles, X } from 'lucide-react'
 import { usePwaUpdate } from '@/hooks/usePwaUpdate'
 import { useT } from '@/lib/i18n'
 import { IconButton } from '@/components/ui/IconButton'
+import { Button } from '@/components/ui/button'
 
 /**
  * PWA “new build available” prompt — glass, dark-first, bottom-center.
@@ -52,20 +53,12 @@ export function UpdateToast() {
                 </p>
               </div>
               <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 sm:flex-nowrap">
-                <button
-                  type="button"
-                  onClick={dismiss}
-                  className="rounded-xl border border-[var(--color-brand-text-primary)]/10 bg-[var(--color-brand-text-primary)]/5 px-4 py-2.5 text-sm font-medium text-[var(--color-brand-text-secondary)] transition-colors hover:bg-[var(--color-brand-text-primary)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50"
-                >
+                <Button onClick={dismiss} variant="outline" size="touch">
                   {t.pwa.updateNotNow}
-                </button>
-                <button
-                  type="button"
-                  onClick={applyUpdate}
-                  className="rounded-xl bg-[var(--color-brand-primary)] px-4 py-2.5 text-sm font-semibold text-[var(--color-brand-on-primary)] shadow-md shadow-red-900/30 transition-colors hover:bg-[var(--color-brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50"
-                >
+                </Button>
+                <Button onClick={applyUpdate} size="touch" className="shadow-[var(--shadow-md)]">
                   {t.pwa.updateRefresh}
-                </button>
+                </Button>
               </div>
             </div>
           </motion.div>

@@ -3,6 +3,7 @@
 import { LogOut, Shield } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import type { User } from '@supabase/supabase-js'
+import { Button } from '@/components/ui/button'
 
 export interface SettingsSignedInAccountCardProps {
   user: User
@@ -24,14 +25,14 @@ export function SettingsSignedInAccountCard({ user, onSignOut }: SettingsSignedI
       <p className="text-xs text-[var(--color-brand-text-muted)]">
         {t.settings.accountSignedIn(user.email ?? '')}
       </p>
-      <button
-        type="button"
+      <Button
         onClick={() => void onSignOut()}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
+        variant="outline"
+        size="touch"
       >
         <LogOut className="w-4 h-4" />
         {t.settings.accountSignOut}
-      </button>
+      </Button>
     </section>
   )
 }

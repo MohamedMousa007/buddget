@@ -83,21 +83,22 @@ function AddSubscriptionSheetInner({
             selectClass={selectClass}
           />
           <div className="flex gap-3 pb-6">
-            <button
-              type="button"
+            <Button
               onClick={onClose}
-              className="flex-1 py-3 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
+              variant="outline"
+              size="touch"
+              className="flex-1"
             >
               {t.common.cancel}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
               onClick={form.submit}
               disabled={!form.canSubmit}
-              className="flex-1 py-3 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              size="touch"
+              className="flex-1"
             >
               {form.isEdit ? t.subscriptions.saveEdit : t.subscriptions.saveAdd}
-            </button>
+            </Button>
           </div>
         </>
       )}

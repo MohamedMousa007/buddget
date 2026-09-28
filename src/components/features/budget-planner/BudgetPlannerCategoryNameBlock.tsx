@@ -13,6 +13,7 @@ import {
 import { BudgetPlannerEmojiPicker } from '@/components/features/budget-planner/BudgetPlannerEmojiPicker'
 import type { BudgetPlannerCategoryRowLabels } from '@/components/features/budget-planner/budgetPlannerCategoryLabels'
 import { IconButton } from '@/components/ui/IconButton'
+import { Button } from '@/components/ui/button'
 
 function customEntriesFromPlan(planCategories: BudgetPlanCategory[], currentId: string) {
   const seen = new Set<string>()
@@ -97,17 +98,18 @@ export function BudgetPlannerCategoryNameBlock({
           <span className="truncate">{c.name}</span>
         </button>
       ))}
-      <button
-        type="button"
+      <Button
         onClick={() => {
           setPickerOpen(false)
           setDraftName(category.name)
           setPenMode(true)
         }}
-        className="cursor-pointer rounded-lg border border-dashed border-[var(--color-brand-border)] px-2 py-2 text-left text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-border)]/60"
+        variant="outline"
+        size="touch"
+        className="justify-start text-left border-dashed"
       >
         + {labels.customCategoryOption}
-      </button>
+      </Button>
     </div>
   )
 
