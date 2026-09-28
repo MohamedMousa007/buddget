@@ -25,13 +25,13 @@ export function applyTheme(setting: ThemeSetting): void {
 /**
  * Inline script source injected in `<head>` to prevent FOUC.
  * Reads the persisted theme from the Zustand store in localStorage.
- * Defaults to 'dark' (Midnight) when no preference is stored.
+ * Defaults to 'light' when no preference is stored — light is the product default.
  */
 export const THEME_INIT_SCRIPT = `
 (function(){
   try {
     var raw = localStorage.getItem('buddget-storage');
-    var theme = 'system';
+    var theme = 'light';
     if (raw) {
       var parsed = JSON.parse(raw);
       var s = parsed && parsed.state && parsed.state.settings;
@@ -47,10 +47,12 @@ export const THEME_INIT_SCRIPT = `
     root.setAttribute('data-theme', eff);
     root.style.colorScheme = eff === 'dark' ? 'dark' : 'light';
   } catch(e) {
+    // Storage unavailable (private mode, blocked cookies) — fall back to the
+    // product default, which is LIGHT.
     var r = document.documentElement;
-    r.classList.add('dark');
-    r.setAttribute('data-theme', 'dark');
-    r.style.colorScheme = 'dark';
+    r.classList.remove('dark');
+    r.setAttribute('data-theme', 'light');
+    r.style.colorScheme = 'light';
   }
 })();
 `

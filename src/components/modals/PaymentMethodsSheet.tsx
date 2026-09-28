@@ -118,7 +118,7 @@ export function PaymentMethodsSheet() {
                 className="absolute inset-0 z-30 cursor-default"
               />
               <div
-                className="absolute end-[44px] top-[92px] z-[31] w-[200px] overflow-hidden rounded-[14px] border border-[#34343f] bg-[#1E1E28]"
+                className="absolute end-[44px] top-[92px] z-[31] w-[200px] overflow-hidden rounded-[14px] border border-[#34343f] bg-[var(--popover)]"
                 style={{ boxShadow: '0 18px 44px -10px rgba(0,0,0,.7)' }}
               >
                 <div className="flex items-center justify-between border-b border-[var(--color-brand-border)] py-2 pe-1.5 ps-3">

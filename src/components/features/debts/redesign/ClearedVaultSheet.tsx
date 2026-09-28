@@ -30,7 +30,7 @@ export function ClearedVaultSheet({ open, onClose, cleared, base }: { open: bool
   const detail = cleared.find((c) => c.id === selected) ?? null
 
   return (
-    <ModalShell open={open} onBackdropClick={onClose} panelClassName="bg-[#0c1610]" scrollChild>
+    <ModalShell open={open} onBackdropClick={onClose} panelClassName="bg-[var(--color-brand-card)]" scrollChild>
       <div className="flex items-start gap-3 px-5 pt-5">
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-[rgba(55,195,104,.16)] text-[#35D46F]">
           <Award className="h-6 w-6" />

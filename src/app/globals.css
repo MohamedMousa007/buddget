@@ -98,8 +98,11 @@
      from the kit. Light mode puts DARK ink on it (6.30:1); the kit specified
      white, which measured 2.71:1 and failed AA on the app's main CTA. Dark mode
      already used dark ink, so both themes now follow one rule. */
-  --color-brand-primary: #0B7568;            /* teal-700 — the FILL for buttons/FAB/active nav */
-  --color-brand-primary-hover: #096055;
+  /* The LIGHTEST point on the kit's teal-500 → teal-700 ramp that still clears
+     4.5:1 with white text (4.52:1). Going any lighter breaks AA on button
+     labels, which are 15px semibold and therefore not WCAG "large text". */
+  --color-brand-primary: #0D8578;            /* the FILL for buttons/FAB/active nav */
+  --color-brand-primary-hover: #0B7568;
   --color-brand-primary-ink: #0B7568;        /* 5.59:1 on white — teal text/links */
   --color-brand-primary-soft: #E3F6F3;
   --color-brand-on-primary: #FFFFFF;         /* 5.59:1 on the fill above */
@@ -209,7 +212,7 @@
   --card-foreground: #0D1A18;
   --popover: #FFFFFF;
   --popover-foreground: #0D1A18;
-  --primary: #0B7568;
+  --primary: #0D8578;
   --primary-foreground: #FFFFFF;
   --secondary: #ECF1F0;
   --secondary-foreground: #0D1A18;
@@ -233,7 +236,7 @@
   --radius: 0.75rem;
   --sidebar: #FFFFFF;
   --sidebar-foreground: #0D1A18;
-  --sidebar-primary: #0B7568;
+  --sidebar-primary: #0D8578;
   --sidebar-primary-foreground: #FFFFFF;
   --sidebar-accent: #ECF1F0;
   --sidebar-accent-foreground: #0D1A18;

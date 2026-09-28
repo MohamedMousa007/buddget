@@ -2,21 +2,44 @@
 
 import { useT } from '@/lib/i18n'
 
-// Same fixed neutral brand canvas as the sign-in gate (LandingGate .lg-bg) —
-// identical in light and dark, so the boot experience never flashes a theme.
-const NEUTRAL_BG =
-  'radial-gradient(120% 60% at 50% -6%, rgba(18,176,160,.26) 0%, rgba(18,176,160,.06) 38%, rgba(20,18,26,0) 62%), ' +
-  'linear-gradient(180deg, #1A1720 0%, #121016 55%, #0E0C12 100%)'
-
+/**
+ * Boot screen.
+ *
+ * Both themes are expressed as CSS variables set on the element itself, so the
+ * pre-hydration theme script (which has already put `.dark` on <html> before
+ * this paints) decides which one shows — no flash, no JS branch, and no second
+ * component to keep in sync.
+ *
+ * The teal wash is the brand gradient: a soft radial bloom off the top edge over
+ * the theme's page background.
+ */
 export default function Loading() {
   const t = useT()
   return (
     <div
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-4 px-4"
-      style={{ background: NEUTRAL_BG }}
+      className="
+        fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-4 px-4
+        [--boot-bloom:rgba(13,133,120,0.16)]
+        [--boot-from:#F4F7F6] [--boot-to:#E6EEEC]
+        [--boot-track:rgba(13,26,24,0.12)] [--boot-spin:var(--color-brand-primary)]
+        [--boot-text:var(--color-brand-text-secondary)]
+        dark:[--boot-bloom:rgba(31,195,178,0.20)]
+        dark:[--boot-from:#0E1614] dark:[--boot-to:#070C0B]
+        dark:[--boot-track:rgba(234,242,240,0.14)]
+      "
+      style={{
+        background:
+          'radial-gradient(120% 60% at 50% -6%, var(--boot-bloom) 0%, transparent 62%), ' +
+          'linear-gradient(180deg, var(--boot-from) 0%, var(--boot-to) 100%)',
+      }}
     >
-      <div className="h-10 w-10 rounded-full border-2 border-white/15 border-t-[#12B0A0] animate-spin" />
-      <p className="text-sm text-white/60">{t.dashboard.loadingMessage}</p>
+      <div
+        className="h-10 w-10 animate-spin rounded-full border-2"
+        style={{ borderColor: 'var(--boot-track)', borderTopColor: 'var(--boot-spin)' }}
+      />
+      <p className="text-sm" style={{ color: 'var(--boot-text)' }}>
+        {t.dashboard.loadingMessage}
+      </p>
     </div>
   )
 }

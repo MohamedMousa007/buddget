@@ -88,7 +88,7 @@ export function AmountField({
                 gap: 8,
                 width: '100%',
                 height: 52,
-                background: '#16161f',
+                background: 'var(--color-brand-elevated)',
                 border: `1px solid ${isOpen ? 'var(--color-brand-focus)' : '#26262f'}`,
                 borderRadius: 14,
                 padding: '0 14px',

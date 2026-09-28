@@ -74,7 +74,7 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
         <div className={`${MICRO} mb-2`}>Total amount</div>
         <div className="flex gap-2">
           <div className="min-w-0 flex-1"><AmountField value={d.startingBalance} onChange={d.setStartingBalance} mode="decimal" placeholder="0" /></div>
-          <button type="button" onClick={() => setCurOpen(true)} className="flex h-[52px] shrink-0 items-center gap-1.5 rounded-[14px] border border-[#26262f] bg-[#16161f] px-3">
+          <button type="button" onClick={() => setCurOpen(true)} className="flex h-[52px] shrink-0 items-center gap-1.5 rounded-[14px] border border-[#26262f] bg-[var(--color-brand-elevated)] px-3">
             <span className="text-[18px] leading-none">{currencyFlag(d.currency as Currency)}</span>
             <span className="font-mono-numbers text-[14px] font-bold text-[var(--color-brand-text-primary)]">{d.currency}</span>
             <ChevronDown className="h-4 w-4 text-[var(--color-brand-text-muted)]" />

@@ -75,7 +75,7 @@ export function WelcomeScreen() {
           position: 'fixed',
           inset: 0,
           background:
-            'radial-gradient(120% 55% at 50% -6%, rgba(18,176,160,.24) 0%, rgba(18,176,160,.05) 38%, rgba(20,18,26,0) 62%), linear-gradient(180deg, #1A1720 0%, #121016 55%, #0E0C12 100%)',
+            'radial-gradient(120% 55% at 50% -6%, rgba(31,195,178,.24) 0%, rgba(31,195,178,.06) 38%, rgba(10,16,15,0) 62%), linear-gradient(180deg, #0E1614 0%, #0A100F 55%, #070C0B 100%)',
           overflow: 'hidden',
           color: '#fff',
           fontFamily: bodyFont,
@@ -93,7 +93,7 @@ export function WelcomeScreen() {
             width: '400px',
             height: '400px',
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(18,176,160,.28), transparent 68%)',
+            background: 'radial-gradient(circle, rgba(31,195,178,.28), transparent 68%)',
             filter: 'blur(8px)',
             animation: 'wmBreathe 8s ease-in-out infinite',
             zIndex: 1,

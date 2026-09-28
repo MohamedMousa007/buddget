@@ -434,7 +434,7 @@ export function PaymentMethodSetupSheet({
               </div>
 
               {/* Set as default */}
-              <div className="flex items-center justify-between rounded-[14px] border border-[#24242f] bg-[#16161f] px-4 py-3.5">
+              <div className="flex items-center justify-between rounded-[14px] border border-[#24242f] bg-[var(--color-brand-elevated)] px-4 py-3.5">
                 <span className="text-start">
                   <span className="block text-sm font-semibold text-[var(--color-brand-text-secondary)]">
                     {t.paymentMethods.setDefault}

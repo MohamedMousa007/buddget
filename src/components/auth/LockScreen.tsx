@@ -69,8 +69,8 @@ export function LockScreen() {
       <style>{`
         .lg-bg {
           background:
-            radial-gradient(120% 60% at 50% -6%, rgba(18,176,160,.26) 0%, rgba(18,176,160,.06) 38%, rgba(20,18,26,0) 62%),
-            linear-gradient(180deg, #1A1720 0%, #121016 55%, #0E0C12 100%) !important;
+            radial-gradient(120% 60% at 50% -6%, rgba(31,195,178,.26) 0%, rgba(31,195,178,.06) 38%, rgba(20,18,26,0) 62%),
+            linear-gradient(180deg, #0E1614 0%, #0A100F 55%, #070C0B 100%) !important;
         }
       `}</style>
 
