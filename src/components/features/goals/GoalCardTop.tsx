@@ -5,6 +5,7 @@ import type { Goal } from '@/lib/store/types'
 import type { Dictionary } from '@/lib/i18n/types'
 import { GoalProgressBar } from '@/components/features/goals/GoalProgressBar'
 import { Badge } from '@/components/ui/badge'
+import { IconButton } from '@/components/ui/IconButton'
 
 type Props = {
   goal: Goal
@@ -33,7 +34,7 @@ export function GoalCardTop({
 }: Props) {
   return (
     <div className="flex items-start justify-between gap-2">
-      <button type="button" onClick={onToggleOpen} className="flex-1 text-start min-w-0">
+      <button type="button" onClick={onToggleOpen} aria-expanded={open} className="flex-1 text-start min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-xl shrink-0" aria-hidden>
             {goal.emoji}
@@ -67,30 +68,20 @@ export function GoalCardTop({
         </div>
       </button>
       <div className="flex items-center gap-1 shrink-0">
-        <button
-          type="button"
-          onClick={onEdit}
-          className="p-2 rounded-lg hover:bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]"
-          aria-label={t.editGoal}
-        >
-          <Pencil className="w-4 h-4" />
-        </button>
-        <button
-          type="button"
-          onClick={onDelete}
-          className="p-2 rounded-lg hover:bg-[var(--color-brand-elevated)] text-[var(--color-brand-red)]"
-          aria-label={t.deleteGoal}
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-        <button
-          type="button"
+        <IconButton onClick={onEdit} aria-label={t.editGoal}>
+          <Pencil className="size-4" />
+        </IconButton>
+        <IconButton variant="danger" onClick={onDelete} aria-label={t.deleteGoal}>
+          <Trash2 className="size-4" />
+        </IconButton>
+        <IconButton
           onClick={onToggleOpen}
-          className="p-2 rounded-lg hover:bg-[var(--color-brand-elevated)] lg:hidden"
           aria-expanded={open}
+          aria-label={open ? t.collapse : t.expand}
+          className="lg:hidden"
         >
-          {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </button>
+          {open ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+        </IconButton>
       </div>
     </div>
   )

@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { RefreshCw, Trash2, ListTree, X, FileCode2, Copy } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
+import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/IconButton'
 import type { AdminPanelModel } from '@/hooks/useAdminPanel'
 import type { SmsTemplateRow } from '@/types/admin'
 import {
@@ -179,35 +181,36 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
               Bypass: {masterLabel}
             </button>
           )}
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             onClick={openPool}
-            className="flex items-center gap-1.5 text-xs rounded-xl border border-[var(--color-brand-border)] px-3 py-1.5 text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] transition-colors"
             title="Keyword + sender frequency pool collected from confirmed transactions (Phase-2 allowlist data)"
           >
             <ListTree className="h-3.5 w-3.5" />
             Keyword Pool
-          </button>
+          </Button>
           {selected.size > 0 && (
-            <button
-              type="button"
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleExport}
-              className="flex items-center gap-1.5 text-xs rounded-xl border border-teal-500/30 bg-teal-500/10 px-3 py-1.5 text-teal-400 hover:bg-teal-500/20 transition-colors"
+              className="border-[var(--color-brand-primary)]/30 bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary-ink)] hover:bg-[var(--color-brand-primary)]/20"
               title="Render the selected templates as a code pattern module to review and commit"
             >
               <FileCode2 className="h-3.5 w-3.5" />
               Export {selected.size} to code
-            </button>
+            </Button>
           )}
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => void loadSmsTemplates()}
             disabled={smsTemplatesLoading}
-            className="flex items-center gap-1.5 text-xs rounded-xl border border-[var(--color-brand-border)] px-3 py-1.5 text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] disabled:opacity-50 transition-colors"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${smsTemplatesLoading ? 'animate-spin' : ''}`} />
             Refresh
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -232,25 +235,26 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
                 </p>
               </div>
               <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => {
                     void navigator.clipboard?.writeText(exported)
                     setCopied(true)
                   }}
-                  className="flex items-center gap-1.5 text-xs rounded-xl border border-[var(--color-brand-border)] px-3 py-1.5 text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] transition-colors"
                 >
                   <Copy className="h-3.5 w-3.5" />
                   {copied ? 'Copied' : 'Copy'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setExported(null)}
+                </Button>
+                <IconButton
                   aria-label="Close"
-                  className="rounded-xl border border-[var(--color-brand-border)] p-1.5 text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)] transition-colors"
+                  variant="outlined"
+                  size="sm"
+                  hitArea={false}
+                  onClick={() => setExported(null)}
                 >
                   <X className="h-3.5 w-3.5" />
-                </button>
+                </IconButton>
               </div>
             </div>
             <pre className="flex-1 overflow-auto px-5 py-4 text-[11px] leading-relaxed font-mono text-[var(--color-brand-text-secondary)] whitespace-pre">
@@ -277,23 +281,23 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
                 </p>
               </div>
               <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
+                <IconButton
+                  aria-label="Refresh keyword pool"
+                  size="sm"
+                  hitArea={false}
                   onClick={() => void loadKeywordPool()}
                   disabled={keywordPoolLoading}
-                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-brand-elevated)] disabled:opacity-50"
-                  aria-label="Refresh keyword pool"
                 >
                   <RefreshCw className={`h-3.5 w-3.5 ${keywordPoolLoading ? 'animate-spin' : ''}`} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowPool(false)}
-                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--color-brand-elevated)]"
+                </IconButton>
+                <IconButton
                   aria-label="Close"
+                  size="sm"
+                  hitArea={false}
+                  onClick={() => setShowPool(false)}
                 >
                   <X className="h-4 w-4" />
-                </button>
+                </IconButton>
               </div>
             </div>
 
@@ -476,21 +480,19 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
                           <p className="text-[10px] text-[var(--color-brand-red)]">{editError}</p>
                         )}
                         <div className="flex gap-1.5">
-                          <button
-                            type="button"
+                          <Button
+                            variant="success"
+                            size="xs"
                             onClick={() => void handleSaveRegex(tpl.id)}
-                            disabled={!!editError || savingId === tpl.id}
-                            className="text-[10px] rounded-lg bg-[var(--color-brand-green)] text-white px-2.5 py-1 disabled:opacity-50"
+                            disabled={!!editError}
+                            loading={savingId === tpl.id}
+                            loadingText="Saving…"
                           >
-                            {savingId === tpl.id ? 'Saving…' : 'Save'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setEditingId(null)}
-                            className="text-[10px] rounded-lg border border-[var(--color-brand-border)] px-2.5 py-1 text-[var(--color-brand-text-muted)]"
-                          >
+                            Save
+                          </Button>
+                          <Button variant="outline" size="xs" onClick={() => setEditingId(null)}>
                             Cancel
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     ) : (

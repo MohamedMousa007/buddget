@@ -8,6 +8,7 @@ import { cardStyle } from '@/components/features/auth-modal/authModalTokens'
 import { AuthModalBody } from '@/components/features/auth-modal/AuthModalBody'
 import { useDismissable } from '@/hooks/useDismissable'
 import { Scrim } from '@/components/ui/Scrim'
+import { IconButton } from '@/components/ui/IconButton'
 
 /**
  * Global Supabase auth overlay used for contextual prompts from inside the
@@ -45,14 +46,13 @@ export function AuthModal() {
         aria-labelledby="auth-modal-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          type="button"
+        <IconButton
           onClick={() => a.closeAuthModal()}
-          className="absolute end-3 top-3 rounded-lg p-2 text-[var(--color-brand-text-muted)] transition-colors hover:bg-[var(--color-brand-text-primary)]/5 hover:text-[var(--color-brand-text-primary)]"
           aria-label={t.common.close}
+          className="absolute end-3 top-3"
         >
-          <X className="h-5 w-5" />
-        </button>
+          <X />
+        </IconButton>
         <AuthModalBody />
       </motion.div>
     </div>

@@ -16,6 +16,7 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import { ExpenseFilters } from '@/components/expenses/ExpenseFilters'
 import { ExpenseDayList } from '@/components/expenses/ExpenseDayList'
 import { MonthYearPicker } from '@/components/ui/MonthYearPicker'
+import { IconButton } from '@/components/ui/IconButton'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
@@ -142,9 +143,6 @@ export default function ExpensesPage() {
   const addExpense = () =>
     requireAuth(() => setActiveModal('addExpense'), t.expenses.requireAuth)
 
-  const navBtn =
-    'flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] transition-colors hover:text-[var(--color-brand-text-primary)] active:translate-y-px'
-
   if (!dataReady) return <div className="p-4"><SkeletonList /></div>
 
   return (
@@ -155,12 +153,12 @@ export default function ExpensesPage() {
         <div className="flex items-center justify-between gap-2 px-[18px] pb-3 pt-2">
           <MonthYearPicker monthFilter={monthFilter} onChange={setMonthFilter} heroLabel />
           <div className="flex shrink-0 items-center gap-1.5">
-            <button type="button" onClick={prevMonth} className={navBtn} aria-label={t.common.previousMonth}>
-              <ChevronLeft className="h-[17px] w-[17px]" />
-            </button>
-            <button type="button" onClick={nextMonth} className={navBtn} aria-label={t.common.nextMonth}>
-              <ChevronRight className="h-[17px] w-[17px]" />
-            </button>
+            <IconButton variant="outlined" size="sm" onClick={prevMonth} aria-label={t.common.previousMonth}>
+              <ChevronLeft className="size-[17px]" />
+            </IconButton>
+            <IconButton variant="outlined" size="sm" onClick={nextMonth} aria-label={t.common.nextMonth}>
+              <ChevronRight className="size-[17px]" />
+            </IconButton>
           </div>
         </div>
       ) : (

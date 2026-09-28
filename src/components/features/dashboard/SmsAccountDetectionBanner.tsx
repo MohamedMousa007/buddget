@@ -6,6 +6,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { SelectField } from '@/components/ui/SelectField'
 import { useT } from '@/lib/i18n'
+import { IconButton } from '@/components/ui/IconButton'
 
 export function SmsAccountDetectionBanner() {
   const detected = usePaymentMethodDetector()
@@ -35,14 +36,13 @@ export function SmsAccountDetectionBanner() {
             <p className="text-xs font-medium text-[var(--color-brand-text-primary)]">
               {`${provider ? `${provider} ` : ''}••${last4}`} {t.settings.accountDetected}
             </p>
-            <button
-              type="button"
+            <IconButton
               onClick={() => dismissBanner(`pm:${last4}`)}
-              className="-me-2 -mt-2 flex h-11 w-11 shrink-0 items-center justify-center text-[var(--color-brand-text-muted)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]/55"
               aria-label={t.common.dismiss}
+              className="-me-2 -mt-2"
             >
-              <X className="h-3.5 w-3.5" />
-            </button>
+              <X className="size-3.5" />
+            </IconButton>
           </div>
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
             <button

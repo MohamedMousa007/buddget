@@ -9,6 +9,7 @@ import { PaymentCardCarousel } from '@/components/features/payments/PaymentCardC
 import type { PaymentMethod } from '@/lib/store/types'
 import { ProviderBadge } from './ProviderBadge'
 import { useModalTitleId } from '@/components/modals/ModalShell'
+import { IconButton } from '@/components/ui/IconButton'
 
 export interface CreditCardOption {
   debtId: string
@@ -67,16 +68,16 @@ export function InstallmentProviderPickerSheet({
       <div className="flex min-h-0 flex-1 flex-col px-4 pb-4">
         <div className="flex shrink-0 items-center gap-2.5 pb-3 pt-1">
           {view !== 'grid' ? (
-            <button type="button" aria-label="Back" onClick={() => setView('grid')} className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-white/8 p-[9px] text-white/70">
-              <ArrowLeft className="h-full w-full" />
-            </button>
+            <IconButton aria-label="Back" variant="onBrand" size="sm" shape="round" onClick={() => setView('grid')}>
+              <ArrowLeft />
+            </IconButton>
           ) : null}
           <span id={useModalTitleId()} className="min-w-0 flex-1 text-lg font-semibold text-white">
             {view === 'card' ? 'Which credit card?' : view === 'custom' ? 'Custom provider' : 'Choose provider'}
           </span>
-          <button type="button" aria-label="Close" onClick={close} className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-white/8 p-[9px] text-white/70">
-            <X className="h-full w-full" />
-          </button>
+<IconButton aria-label="Close" variant="onBrand" size="sm" shape="round" onClick={close}>
+            <X />
+          </IconButton>
         </div>
 
         {view === 'grid' ? (

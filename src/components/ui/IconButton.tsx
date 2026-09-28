@@ -76,7 +76,17 @@ export type IconButtonProps = Omit<
   'aria-label' | 'aria-labelledby'
 > &
   VariantProps<typeof iconButtonVariants> &
-  Labelled
+  Labelled & {
+    /**
+     * Drops the 44px hit overlay. Only for genuinely desktop-density surfaces —
+     * the admin tables — where controls sit closer together than 44px and the
+     * overlays would overlap, turning a precise click into a misclick.
+     *
+     * Never pass this on a surface a phone will show. It is deliberately explicit
+     * so that `grep hitArea={false}` lists every exception.
+     */
+    hitArea?: boolean
+  }
 
 /**
  * The app-wide icon-only button — close, back, edit, delete, chevron, overflow.
@@ -88,9 +98,13 @@ export type IconButtonProps = Omit<
  *
  * Every size keeps a **44px hit area** even when the glyph is smaller, via an
  * `after:` overlay rather than real padding — so `size="sm"` stays visually dense
- * in a tight row without becoming an accessibility failure. Two adjacent `sm`
- * buttons will overlap their hit areas slightly; space them `gap-1` or more, or
- * use `md`.
+ * in a tight row without becoming an accessibility failure.
+ *
+ * That overlay is the one thing to be careful with: at `sm` it reaches about 6px
+ * past the glyph on every side. Harmless for a button with space around it, but it
+ * means two adjacent `sm` buttons overlap (space them `gap-1`+), and a **destructive**
+ * `sm` button sitting beside other content can swallow a tap meant for the content.
+ * Prefer `md`, whose overlay exactly matches its 44px box, for anything that deletes.
  *
  * ```tsx
  * <IconButton aria-label={t.common.close} onClick={onClose}><X /></IconButton>
@@ -102,6 +116,7 @@ export function IconButton({
   variant,
   size,
   shape,
+  hitArea = true,
   type = 'button',
   ...props
 }: IconButtonProps) {
@@ -109,7 +124,11 @@ export function IconButton({
     <button
       data-slot="icon-button"
       type={type}
-      className={cn(iconButtonVariants({ variant, size, shape }), className)}
+      className={cn(
+        iconButtonVariants({ variant, size, shape }),
+        !hitArea && 'after:hidden',
+        className
+      )}
       {...props}
     />
   )

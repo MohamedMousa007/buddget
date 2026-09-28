@@ -11,6 +11,7 @@ import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { micro } from '@/lib/ui/microLabelStyle'
 import type { EmergencyFundConfig } from '@/lib/store/types'
+import { IconButton } from '@/components/ui/IconButton'
 
 export interface EmergencyFundSheetProps {
   open: boolean
@@ -77,9 +78,9 @@ export function EmergencyFundSheet({ open, onClose }: EmergencyFundSheetProps) {
             <div className="flex items-center justify-between">
               <span className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">Months to cover</span>
               <div className="flex items-center gap-3">
-                <button type="button" onClick={() => setMonths(targetMonths - 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)]"><Minus size={16} /></button>
+                <IconButton aria-label="Fewer months" variant="outlined" size="sm" onClick={() => setMonths(targetMonths - 1)}><Minus className="size-4" /></IconButton>
                 <span className="font-mono-numbers text-xl font-bold text-[var(--color-brand-text-primary)]" style={{ minWidth: 20, textAlign: 'center' }}>{targetMonths}</span>
-                <button type="button" onClick={() => setMonths(targetMonths + 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)]"><Plus size={16} /></button>
+                <IconButton aria-label="More months" variant="outlined" size="sm" onClick={() => setMonths(targetMonths + 1)}><Plus className="size-4" /></IconButton>
               </div>
             </div>
             <div className="my-3 h-px bg-[var(--color-brand-border)]" />

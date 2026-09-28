@@ -1710,6 +1710,9 @@ export interface Dictionary {
     pageTitle: string
     addGoal: string
     editGoal: string
+    /** Accessible name for the goal card disclosure toggle. */
+    expand: string
+    collapse: string
     emptyState: string
     emptyStateHint: string
     active: string

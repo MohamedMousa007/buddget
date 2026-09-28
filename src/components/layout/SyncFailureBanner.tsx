@@ -5,6 +5,7 @@ import { AlertTriangle, ChevronDown, X } from 'lucide-react'
 import { useSyncFailures } from '@/lib/store/useSyncFailures'
 import { cn } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
+import { IconButton } from '@/components/ui/IconButton'
 
 /**
  * Slim inline banner that surfaces Supabase sync failures the user
@@ -53,11 +54,12 @@ export function SyncFailureBanner() {
               </p>
               <div className="flex items-center gap-1 shrink-0">
                 {failures.length > 0 ? (
-                  <button
-                    type="button"
+                  <IconButton
+                    size="sm"
                     onClick={() => setExpanded((v) => !v)}
-                    className="p-1 rounded hover:bg-[var(--color-brand-amber)]/20 transition-colors"
+                    className="hover:bg-[var(--color-brand-amber)]/20"
                     aria-label={expanded ? t.syncFailures.collapse : t.syncFailures.expand}
+                    aria-expanded={expanded}
                   >
                     <ChevronDown
                       className={cn(
@@ -66,16 +68,16 @@ export function SyncFailureBanner() {
                       )}
                       aria-hidden
                     />
-                  </button>
+                  </IconButton>
                 ) : null}
-                <button
-                  type="button"
+                <IconButton
+                  size="sm"
                   onClick={clear}
-                  className="p-1 rounded hover:bg-[var(--color-brand-amber)]/20 transition-colors"
+                  className="hover:bg-[var(--color-brand-amber)]/20"
                   aria-label={t.syncFailures.dismiss}
                 >
-                  <X className="h-3.5 w-3.5 text-[var(--color-brand-text-muted)]" aria-hidden />
-                </button>
+                  <X className="size-3.5" aria-hidden />
+                </IconButton>
               </div>
             </div>
             <p className="mt-0.5 text-[var(--color-brand-text-secondary)]">

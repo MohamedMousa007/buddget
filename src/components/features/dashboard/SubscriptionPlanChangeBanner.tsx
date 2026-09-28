@@ -4,6 +4,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { findBrandByKey, plansForRegion, type CatalogRegion } from '@/lib/constants/subscriptionCatalog'
 import { useT } from '@/lib/i18n'
+import { IconButton } from '@/components/ui/IconButton'
 
 /**
  * "Your Netflix looks like it moved to Premium — update?" A tracked payment matched a
@@ -46,14 +47,13 @@ export function SubscriptionPlanChangeBanner() {
                   .replace('{brand}', sub.name)
                   .replace('{plan}', plan.name)}
               </p>
-              <button
-                type="button"
+              <IconButton
                 onClick={() => dismissPendingPlanChange(sub.id)}
-                className="-me-2 -mt-2 flex h-11 w-11 shrink-0 items-center justify-center text-[var(--color-brand-text-muted)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]/55"
                 aria-label={t.common.dismiss}
+                className="-me-2 -mt-2"
               >
-                <X className="h-3.5 w-3.5" />
-              </button>
+                <X className="size-3.5" />
+              </IconButton>
             </div>
             <button
               type="button"

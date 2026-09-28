@@ -1838,6 +1838,8 @@ export const en: Dictionary = {
     pageTitle: 'Goals',
     addGoal: 'Add a goal',
     editGoal: 'Edit goal',
+    expand: 'Show goal details',
+    collapse: 'Hide goal details',
     emptyState: 'Set your first savings goal',
     emptyStateHint:
       'Track progress toward a house, emergency fund, vacation, or anything that matters to you.',

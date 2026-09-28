@@ -1835,6 +1835,8 @@ export const ar: Dictionary = {
     pageTitle: 'الأهداف',
     addGoal: 'إضافة هدف',
     editGoal: 'تعديل الهدف',
+    expand: 'إظهار تفاصيل الهدف',
+    collapse: 'إخفاء تفاصيل الهدف',
     emptyState: 'عيّن أول هدف ادخار',
     emptyStateHint: 'تتبّع تقدّمك نحو منزل أو طوارئ أو إجازة أو أي شيء يهمّك.',
     active: 'نشط',

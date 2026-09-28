@@ -20,7 +20,7 @@ import { usePendingAiJobs, savePendingMedia, deletePendingMedia } from '@/lib/st
 import type { Currency, ExpenseCategory } from '@/lib/store/types'
 import { useBuddgyMoodWhile, useBuddgyMoodOnce } from '@/lib/ai/useBuddgyMood'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { IconButton } from '@/components/ui/IconButton'
 import {
   normaliseReceipt,
   reconcileMissingItems,
@@ -308,14 +308,14 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
 
       {state === 'notReceipt' ? (
         <div className="relative">
-          <button
-            type="button"
+          <IconButton
             onClick={onClose}
             aria-label="Close"
-            className="absolute end-0 top-0 inline-flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+            shape="round"
+            className="absolute end-0 top-0"
           >
-            <X className="h-5 w-5" />
-          </button>
+            <X />
+          </IconButton>
           <Centered>
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-brand-elevated)]">
               <ImageOff className="h-7 w-7 text-[var(--color-brand-text-muted)]" />
@@ -347,14 +347,14 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
 
       {state === 'error' ? (
         <div className="relative">
-          <button
-            type="button"
+          <IconButton
             onClick={onClose}
             aria-label="Close"
-            className="absolute end-0 top-0 inline-flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+            shape="round"
+            className="absolute end-0 top-0"
           >
-            <X className="h-5 w-5" />
-          </button>
+            <X />
+          </IconButton>
           <Centered>
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-brand-elevated)]">
               <ReceiptText className="h-7 w-7 text-[var(--color-brand-text-muted)]" />
@@ -577,14 +577,13 @@ function ReceiptBreakdown({
                 <span className={`tabular-nums ${unknown ? 'text-[var(--color-brand-amber)]' : 'text-[var(--color-brand-text-secondary)]'}`}>
                   {it.price === 0 ? '—' : fmt(it.price)}
                 </span>
-                <button
-                  type="button"
+                <IconButton
                   aria-label={`Remove ${it.name}`}
+                  variant="danger"
                   onClick={() => onChange({ items: items.filter((_, idx) => idx !== i) })}
-                  className="text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-red)]"
                 >
-                  <X className="h-3.5 w-3.5" />
-                </button>
+                  <X className="size-3.5" />
+                </IconButton>
               </li>
             )
           })}

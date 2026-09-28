@@ -31,7 +31,17 @@ const optionChipVariants = cva(
 )
 
 export type OptionChipProps = Omit<React.ComponentProps<'button'>, 'aria-pressed'> &
-  VariantProps<typeof optionChipVariants>
+  VariantProps<typeof optionChipVariants> & {
+    /**
+     * What the chip does, which decides how the highlighted state is announced:
+     * - `'toggle'` (default) — it turns something on and off, so `selected` is
+     *   announced as `aria-pressed`.
+     * - `'trigger'` — it opens a sheet or menu. Here `selected` only means "a
+     *   filter is applied", which is not a pressed state, so nothing is announced;
+     *   pass `aria-expanded` / `aria-haspopup` yourself.
+     */
+    as?: 'toggle' | 'trigger'
+  }
 
 /**
  * A single choice in a row of choices — a filter chip, a "this month / 3 / 6 / 12"
@@ -53,6 +63,7 @@ export function OptionChip({
   className,
   size,
   selected,
+  as = 'toggle',
   type = 'button',
   ...props
 }: OptionChipProps) {
@@ -60,7 +71,7 @@ export function OptionChip({
     <button
       data-slot="option-chip"
       type={type}
-      aria-pressed={Boolean(selected)}
+      aria-pressed={as === 'toggle' ? Boolean(selected) : undefined}
       className={cn(optionChipVariants({ size, selected }), className)}
       {...props}
     />

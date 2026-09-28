@@ -14,6 +14,7 @@ import { useAlert } from '@/components/ui/dialog/DialogProvider'
 import { Scrim } from '@/components/ui/Scrim'
 import type { FinanceStore } from '@/lib/store/types'
 import { useDismissable } from '@/hooks/useDismissable'
+import { IconButton } from '@/components/ui/IconButton'
 
 type Tab = 'choose' | 'upload' | 'remove'
 
@@ -89,14 +90,13 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          type="button"
+        <IconButton
           onClick={handleClose}
-          className="absolute end-3 top-3 p-2 rounded-lg text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-text-primary)]/5 hover:text-[var(--color-brand-text-primary)] transition-colors"
-          aria-label="Close"
+          aria-label={t.common.close}
+          className="absolute end-3 top-3"
         >
-          <X className="w-5 h-5" />
-        </button>
+          <X />
+        </IconButton>
 
         <h2 className="text-lg font-semibold text-[var(--color-brand-text-primary)] mb-4">{t.profile.avatarModalTitle}</h2>
 

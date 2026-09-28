@@ -9,6 +9,7 @@ import { VoiceRecapEditor } from '@/components/voice/VoiceRecapEditor'
 import { Button } from '@/components/ui/button'
 import type { AIResponse, AIActionItem } from '@/lib/ai/gemini'
 import { useDismissable } from '@/hooks/useDismissable'
+import { IconButton } from '@/components/ui/IconButton'
 
 const BARS = 36
 const W = BARS * 5
@@ -268,14 +269,9 @@ function ProcessingPanel({ onCancel }: { onCancel: () => void }) {
         <Loader2 className="h-4 w-4 animate-spin text-[var(--color-brand-primary-ink)] shrink-0" />
         <span className="text-sm text-[var(--color-brand-text-secondary)]">Transcribing…</span>
       </div>
-      <button
-        type="button"
-        onClick={onCancel}
-        className="rounded-lg p-1 text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
-        aria-label="Cancel"
-      >
-        <X className="h-4 w-4" />
-      </button>
+      <IconButton onClick={onCancel} aria-label="Cancel">
+        <X className="size-4" />
+      </IconButton>
     </div>
   )
 }
@@ -291,14 +287,9 @@ function QueuedPanel({ onClose }: { onClose: () => void }) {
           Recording saved — you&apos;re offline. Tap the chip at the top when you&apos;re back online to finish it.
         </p>
       </div>
-      <button
-        type="button"
-        onClick={onClose}
-        className="shrink-0 rounded-lg p-1.5 text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
-        aria-label="Close"
-      >
-        <X className="h-4 w-4" />
-      </button>
+      <IconButton onClick={onClose} aria-label="Close">
+        <X className="size-4" />
+      </IconButton>
     </div>
   )
 }
@@ -329,14 +320,9 @@ function ErrorPanel({
         >
           <RotateCcw className="h-3 w-3" /> Retry
         </Button>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-lg p-1 text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
-          aria-label="Close"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        <IconButton onClick={onClose} aria-label="Close">
+          <X className="size-4" />
+        </IconButton>
       </div>
     </div>
   )
@@ -376,13 +362,9 @@ function AnswerPanel({
         >
           Ask again
         </Button>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-xl px-3 py-2 text-xs text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        <IconButton onClick={onClose} aria-label="Close">
+          <X className="size-4" />
+        </IconButton>
       </div>
     </div>
   )
@@ -411,13 +393,9 @@ function ClarifyPanel({
         >
           <Mic className="h-3.5 w-3.5" /> Answer by voice
         </Button>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-xl px-3 py-2 text-xs text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        <IconButton onClick={onClose} aria-label="Close">
+          <X className="size-4" />
+        </IconButton>
       </div>
     </div>
   )

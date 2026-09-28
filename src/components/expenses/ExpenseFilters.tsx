@@ -24,6 +24,10 @@ import {
 import { RANGE_PRESETS, type RangePreset } from '@/lib/expenses/dateRange'
 import { useShallow } from 'zustand/react/shallow'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/IconButton'
+import { OptionChip } from '@/components/ui/OptionChip'
+import { SelectableCard } from '@/components/ui/SelectableCard'
 import { useT } from '@/lib/i18n'
 import { useDismissable } from '@/hooks/useDismissable'
 
@@ -106,15 +110,6 @@ function CheckBox({ selected }: { selected: boolean }) {
   )
 }
 
-function selRowClass(selected: boolean) {
-  return cn(
-    'flex w-full items-center gap-3 rounded-lg border px-3.5 py-3 text-start transition-colors',
-    selected
-      ? 'border-[var(--color-brand-primary)] bg-[rgba(18,176,160,0.1)]'
-      : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]',
-  )
-}
-
 /**
  * Period presets + a custom From/To. Single-select, so it is a radiogroup — the
  * selected state must not be conveyed by colour alone.
@@ -147,22 +142,16 @@ function PeriodControl() {
         {RANGE_PRESETS.map((preset) => {
           const selected = range.preset === preset
           return (
-            <button
+            <SelectableCard
               key={preset}
-              type="button"
-              role="radio"
-              aria-checked={selected}
+              selected={selected}
               onClick={() => (preset === 'custom' ? setCustomRange(from, to) : setRangePreset(preset))}
-              className={cn(
-                selRowClass(selected),
-                'min-h-[44px] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]/55',
-              )}
             >
               <CheckBox selected={selected} />
               <span className="text-sm font-semibold text-[var(--color-brand-text-primary)]">
                 {presetLabel[preset]}
               </span>
-            </button>
+            </SelectableCard>
           )
         })}
       </div>
@@ -268,9 +257,6 @@ function AmountRangeControl() {
   )
 }
 
-const redDoneBtn =
-  'h-12 w-full rounded-lg bg-[var(--color-brand-primary)] text-sm font-bold text-[var(--color-brand-on-primary)]'
-
 export function ExpenseFilters({
   categories,
   methods,
@@ -319,60 +305,75 @@ export function ExpenseFilters({
     ? `${amtMin.toLocaleString('en-US')}–${amtMax.toLocaleString('en-US')}`
     : t.expenses.labelAmount
 
-  const chip = (active: boolean) =>
-    cn(
-      'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 py-2 text-xs font-semibold transition-colors',
-      active
-        ? 'border-[var(--color-brand-primary)] bg-[rgba(18,176,160,0.12)] text-[var(--color-brand-text-primary)]'
-        : 'border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[var(--color-brand-text-secondary)]',
-    )
-
   const amountReadout = `${amtMin.toLocaleString('en-US')} – ${amtMax.toLocaleString('en-US')} EGP`
 
   return (
     <div className="mb-3 flex items-center gap-2">
       <div className="hide-scrollbar flex min-w-0 flex-1 gap-2 overflow-x-auto py-0.5 [touch-action:pan-x]">
         {/* First so it stays visible — the strip already scrolls at 375px. */}
-        <button
-          type="button"
+        <OptionChip
+          as="trigger"
+          size="sm"
+          selected={rangePreset !== 'month'}
           onClick={() => setDropdown('period')}
-          className={chip(rangePreset !== 'month')}
           aria-haspopup="dialog"
           aria-expanded={dropdown === 'period'}
         >
           <CalendarRange className="h-3.5 w-3.5" />
           {rangeLabel}
           <ArrowUpDown className="h-3.5 w-3.5 opacity-55" />
-        </button>
-        <button type="button" onClick={() => setDropdown('cat')} className={chip(cats.length > 0)}>
+        </OptionChip>
+        <OptionChip
+          as="trigger"
+          size="sm"
+          selected={cats.length > 0}
+          onClick={() => setDropdown('cat')}
+          aria-haspopup="dialog"
+          aria-expanded={dropdown === 'cat'}
+        >
           <LayoutGrid className="h-3.5 w-3.5" />
           {catChipLabel}
           <ArrowUpDown className="h-3.5 w-3.5 opacity-55" />
-        </button>
-        <button type="button" onClick={() => setDropdown('method')} className={chip(methodsSel.length > 0)}>
+        </OptionChip>
+        <OptionChip
+          as="trigger"
+          size="sm"
+          selected={methodsSel.length > 0}
+          onClick={() => setDropdown('method')}
+          aria-haspopup="dialog"
+          aria-expanded={dropdown === 'method'}
+        >
           <CreditCard className="h-3.5 w-3.5" />
           {methodChipLabel}
           <ArrowUpDown className="h-3.5 w-3.5 opacity-55" />
-        </button>
-        <button type="button" onClick={() => setDropdown('amount')} className={chip(amtActive)}>
+        </OptionChip>
+        <OptionChip
+          as="trigger"
+          size="sm"
+          selected={amtActive}
+          onClick={() => setDropdown('amount')}
+          aria-haspopup="dialog"
+          aria-expanded={dropdown === 'amount'}
+        >
           <DollarSign className="h-3.5 w-3.5" />
           {amtChipLabel}
           <ArrowUpDown className="h-3.5 w-3.5 opacity-55" />
-        </button>
+        </OptionChip>
       </div>
-      <button
-        type="button"
+      <IconButton
+        variant="outlined"
         onClick={() => setDropdown('all')}
-        className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[var(--color-brand-text-primary)]"
         aria-label={t.expenses.filtersTitle}
+        aria-haspopup="dialog"
+        aria-expanded={dropdown === 'all'}
       >
-        <SlidersHorizontal className="h-5 w-5" />
+        <SlidersHorizontal />
         {filterCount > 0 ? (
           <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-md border-2 border-[var(--color-brand-bg)] bg-[var(--color-brand-primary)] px-1 text-[10px] font-extrabold text-[var(--color-brand-on-primary)]">
             {filterCount}
           </span>
         ) : null}
-      </button>
+      </IconButton>
 
       {/* Period dropdown */}
       <FilterSheet open={dropdown === 'period'} onClose={close} maxHeightClass="max-h-[80%]">
@@ -382,7 +383,7 @@ export function ExpenseFilters({
         <div className="mb-3.5">
           <PeriodControl />
         </div>
-        <button type="button" onClick={close} className={redDoneBtn}>{t.expenses.doneCta}</button>
+        <Button size="cta-block" onClick={close} className="font-bold">{t.expenses.doneCta}</Button>
       </FilterSheet>
 
       {/* Category dropdown */}
@@ -391,21 +392,21 @@ export function ExpenseFilters({
           <h3 className="text-base font-extrabold text-[var(--color-brand-text-primary)]">{t.expenses.labelCategory}</h3>
           <span className="text-xs text-[var(--color-brand-text-muted)]">{t.expenses.selectMulti}</span>
         </div>
-        <div className="mb-3.5 flex flex-col gap-2">
+        <div role="group" aria-label={t.expenses.labelCategory} className="mb-3.5 flex flex-col gap-2">
           {categories.map((c) => {
             const sel = cats.includes(c.id)
             return (
-              <button key={c.id} type="button" onClick={() => toggleCat(c.id)} className={selRowClass(sel)}>
+              <SelectableCard key={c.id} as="checkbox" selected={sel} onClick={() => toggleCat(c.id)}>
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[var(--color-brand-card)] text-[var(--color-brand-text-secondary)]">
                   <CategoryIcon category={c.id} className="h-4 w-4" />
                 </span>
                 <span className="flex-1 text-sm font-semibold text-[var(--color-brand-text-primary)]">{c.label}</span>
                 <CheckBox selected={sel} />
-              </button>
+              </SelectableCard>
             )
           })}
         </div>
-        <button type="button" onClick={close} className={redDoneBtn}>{t.expenses.doneCta}</button>
+        <Button size="cta-block" onClick={close} className="font-bold">{t.expenses.doneCta}</Button>
       </FilterSheet>
 
       {/* Payment dropdown */}
@@ -414,19 +415,19 @@ export function ExpenseFilters({
           <h3 className="text-base font-extrabold text-[var(--color-brand-text-primary)]">{t.expenses.labelPayment}</h3>
           <span className="text-xs text-[var(--color-brand-text-muted)]">{t.expenses.selectMulti}</span>
         </div>
-        <div className="mb-3.5 flex flex-col gap-2">
+        <div role="group" aria-label={t.expenses.labelPayment} className="mb-3.5 flex flex-col gap-2">
           {methods.map((m) => {
             const sel = methodsSel.includes(m.id)
             return (
-              <button key={m.id} type="button" onClick={() => toggleMethod(m.id)} className={selRowClass(sel)}>
+              <SelectableCard key={m.id} as="checkbox" selected={sel} onClick={() => toggleMethod(m.id)}>
                 <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: m.color }} />
                 <span className="flex-1 text-sm font-semibold text-[var(--color-brand-text-primary)]">{m.label}</span>
                 <CheckBox selected={sel} />
-              </button>
+              </SelectableCard>
             )
           })}
         </div>
-        <button type="button" onClick={close} className={redDoneBtn}>{t.expenses.doneCta}</button>
+        <Button size="cta-block" onClick={close} className="font-bold">{t.expenses.doneCta}</Button>
       </FilterSheet>
 
       {/* Amount dropdown */}
@@ -436,32 +437,32 @@ export function ExpenseFilters({
           <span className="font-mono-numbers text-sm font-bold text-[var(--color-brand-primary-ink)]">{amountReadout}</span>
         </div>
         <AmountRangeControl />
-        <button type="button" onClick={close} className={redDoneBtn}>{t.expenses.doneCta}</button>
+        <Button size="cta-block" onClick={close} className="font-bold">{t.expenses.doneCta}</Button>
       </FilterSheet>
 
       {/* All-filters sheet */}
       <FilterSheet open={dropdown === 'all'} onClose={close} maxHeightClass="max-h-[84%]">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-extrabold text-[var(--color-brand-text-primary)]">{t.expenses.filtersTitle}</h3>
-          <button type="button" onClick={reset} className="text-xs font-bold text-[var(--color-brand-primary-ink)]">
+          <Button variant="link" size="sm" onClick={reset} className="font-bold no-underline hover:underline">
             {t.expenses.resetAll}
-          </button>
+          </Button>
         </div>
 
         <p className="mb-2 text-xs font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">
           {t.expenses.labelCategory}
         </p>
-        <div className="mb-5 grid grid-cols-2 gap-2">
+        <div role="group" aria-label={t.expenses.labelCategory} className="mb-5 grid grid-cols-2 gap-2">
           {categories.map((c) => {
             const sel = cats.includes(c.id)
             return (
-              <button key={c.id} type="button" onClick={() => toggleCat(c.id)} className={selRowClass(sel)}>
+              <SelectableCard key={c.id} as="checkbox" selected={sel} onClick={() => toggleCat(c.id)}>
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[var(--color-brand-card)] text-[var(--color-brand-text-secondary)]">
                   <CategoryIcon category={c.id} className="h-4 w-4" />
                 </span>
                 <span className="flex-1 truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{c.label}</span>
                 <CheckBox selected={sel} />
-              </button>
+              </SelectableCard>
             )
           })}
         </div>
@@ -469,15 +470,15 @@ export function ExpenseFilters({
         <p className="mb-2 text-xs font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">
           {t.expenses.labelPayment}
         </p>
-        <div className="mb-5 flex flex-col gap-2">
+        <div role="group" aria-label={t.expenses.labelPayment} className="mb-5 flex flex-col gap-2">
           {methods.map((m) => {
             const sel = methodsSel.includes(m.id)
             return (
-              <button key={m.id} type="button" onClick={() => toggleMethod(m.id)} className={selRowClass(sel)}>
+              <SelectableCard key={m.id} as="checkbox" selected={sel} onClick={() => toggleMethod(m.id)}>
                 <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: m.color }} />
                 <span className="flex-1 text-sm font-semibold text-[var(--color-brand-text-primary)]">{m.label}</span>
                 <CheckBox selected={sel} />
-              </button>
+              </SelectableCard>
             )
           })}
         </div>
@@ -490,9 +491,9 @@ export function ExpenseFilters({
         </div>
         <AmountRangeControl />
 
-        <button type="button" onClick={close} className="h-12 w-full rounded-lg bg-[var(--color-brand-primary)] text-base font-bold text-[var(--color-brand-on-primary)]">
+        <Button size="cta-block" onClick={close} className="text-base font-bold">
           {t.expenses.showResults.replace('{count}', String(resultCount))}
-        </button>
+        </Button>
       </FilterSheet>
     </div>
   )

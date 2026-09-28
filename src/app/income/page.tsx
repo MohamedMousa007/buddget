@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, Link2 } from 'lucide-react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { MonthYearPicker } from '@/components/ui/MonthYearPicker'
+import { IconButton } from '@/components/ui/IconButton'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { RecurringIncomeCard } from '@/components/features/income/RecurringIncomeCard'
@@ -83,9 +84,6 @@ export default function IncomePage() {
   const parseMonth = (m: string) => parse(m, 'yyyy-MM', new Date())
   const prevMonth = () => setMonthFilter(format(subMonths(parseMonth(monthFilter), 1), 'yyyy-MM'))
   const nextMonth = () => setMonthFilter(format(addMonths(parseMonth(monthFilter), 1), 'yyyy-MM'))
-  const navBtn =
-    'flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] transition-colors hover:text-[var(--color-brand-text-primary)] active:translate-y-px'
-
   const openAddIncome = () => requireAuth(() => setActiveModal('addIncome'), t.income.requireAuth)
 
   const secondaryOf = (amountBase: number): string | null =>
@@ -217,12 +215,12 @@ export default function IncomePage() {
       <div className="mb-3.5 flex items-center justify-between gap-2">
         <MonthYearPicker monthFilter={monthFilter} onChange={setMonthFilter} heroLabel />
         <div className="flex shrink-0 items-center gap-1.5">
-          <button type="button" onClick={prevMonth} className={navBtn} aria-label="Previous month">
-            <ChevronLeft className="h-[17px] w-[17px]" />
-          </button>
-          <button type="button" onClick={nextMonth} className={navBtn} aria-label="Next month">
-            <ChevronRight className="h-[17px] w-[17px]" />
-          </button>
+          <IconButton variant="outlined" size="sm" onClick={prevMonth} aria-label={t.common.previousMonth}>
+            <ChevronLeft className="size-[17px]" />
+          </IconButton>
+          <IconButton variant="outlined" size="sm" onClick={nextMonth} aria-label={t.common.nextMonth}>
+            <ChevronRight className="size-[17px]" />
+          </IconButton>
         </div>
       </div>
 
