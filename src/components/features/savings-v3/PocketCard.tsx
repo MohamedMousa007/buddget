@@ -7,6 +7,7 @@ import { pocketColor, pocketIdentity } from '@/lib/savings/pocketIdentity'
 import { rgba } from '@/lib/utils/color'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { IconButton } from '@/components/ui/IconButton'
+import { Button } from '@/components/ui/button'
 
 export interface PocketCardProps {
   account: SavingsAccount
@@ -132,20 +133,12 @@ export function PocketCard({
           <>
             <div className="my-3" style={{ height: 1, background: 'var(--color-brand-border)' }} />
             <div className="flex gap-2">
-              <button
-                type="button" onClick={onAdd}
-                className="flex-1 text-white active:scale-[.99] transition-transform"
-                style={{ height: 42, borderRadius: 12, background: '#37C368', fontWeight: 600, fontSize: 13.5, boxShadow: '0 9px 20px -11px rgba(55,195,104,.85)' }}
-              >
+              <Button variant="success" size="touch" onClick={onAdd} className="flex-1">
                 Add
-              </button>
-              <button
-                type="button" onClick={onWithdraw}
-                className="flex-1 text-white active:scale-[.99] transition-transform"
-                style={{ height: 42, borderRadius: 12, background: '#12B0A0', fontWeight: 600, fontSize: 13.5, boxShadow: '0 9px 20px -11px rgba(18,176,160,.85)' }}
-              >
+              </Button>
+              <Button size="touch" onClick={onWithdraw} className="flex-1">
                 Withdraw
-              </button>
+              </Button>
             </div>
           </>
         )}

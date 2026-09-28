@@ -35,13 +35,9 @@ export function AssignPaymentBanner({
         </p>
       </div>
       <div className="flex shrink-0 flex-col items-center gap-1">
-        <button
-          type="button"
-          onClick={() => onAssign(candidate.id)}
-          className="h-9 rounded-[11px] bg-[var(--color-brand-green)] px-4 text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-green-hover)]"
-        >
+        <Button variant="success" size="touch" onClick={() => onAssign(candidate.id)} className="font-bold">
           Assign
-        </button>
+        </Button>
         <Button
           onClick={() => onDismiss(candidate.id)}
           variant="link"

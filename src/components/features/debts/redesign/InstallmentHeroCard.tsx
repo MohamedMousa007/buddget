@@ -5,6 +5,7 @@ import { heroCardStyle } from '@/components/features/income/incomeGlass'
 import type { InstallmentVM } from '@/hooks/useDebtTabData'
 import { EditPin, fmtWhole } from './heroCardShared'
 import { ProviderBadge } from './ProviderBadge'
+import { Button } from '@/components/ui/button'
 
 export interface InstallmentHeroCardProps {
   vm: InstallmentVM
@@ -82,14 +83,14 @@ export function InstallmentHeroCard({ vm, onEdit, onDelete, onPay }: Installment
 
       {/* CTA inside */}
       <div className="mt-4 border-t border-white/10 pt-3">
-        <button
-          type="button"
+        <Button
+          size="cta-block"
           onClick={onPay}
-          className="h-11 w-full rounded-[13px] text-sm font-bold text-white transition-opacity hover:opacity-90"
+          className="font-bold text-white hover:opacity-90"
           style={{ background: accent }}
         >
           Pay next · {fmtWhole(vm.per)} {vm.currency}
-        </button>
+        </Button>
       </div>
     </div>
   )

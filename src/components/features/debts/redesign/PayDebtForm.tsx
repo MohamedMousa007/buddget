@@ -8,6 +8,8 @@ import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
 import { defaultColorForPaymentMethodType, decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 import { rgba } from '@/lib/utils/color'
 import { fmtWhole } from './heroCardShared'
+import { OptionChip } from '@/components/ui/OptionChip'
+import { Switch } from '@/components/ui/switch'
 
 const MICRO = 'font-semibold text-[10px] tracking-[0.08em] uppercase text-[var(--color-brand-text-muted)]'
 const FIELD = 'h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-[15px] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] outline-none'
@@ -64,32 +66,28 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
             const c = m.color || defaultColorForPaymentMethodType(m.type)
             const Icon = paymentTypeIcon(m.type)
             return (
-              <button
+              <OptionChip
                 key={m.id}
-                type="button"
+                selected={on}
                 onClick={() => d.setPaymentMethodId(m.id)}
-                className="flex h-11 shrink-0 items-center gap-2 rounded-full border px-3.5 text-[13px] font-semibold transition-colors"
+                className="h-11"
                 style={on
                   ? { background: rgba(accent, 0.14), borderColor: rgba(accent, 0.6), color: 'var(--color-brand-text-primary)' }
-                  : { background: 'var(--color-brand-elevated)', borderColor: 'var(--color-brand-border)', color: 'var(--color-brand-text-secondary)' }}
+                  : undefined}
               >
                 <span className="flex h-6 w-6 items-center justify-center rounded-md" style={{ background: rgba(c, 0.18), color: c }}>
                   <Icon className="h-3.5 w-3.5" />
                 </span>
                 {decomposePaymentMethodName(m.name, m.last4).provider}
                 {m.last4 ? <span className="font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]">••{m.last4}</span> : null}
-              </button>
+              </OptionChip>
             )
           })}
         </div>
       </div>
 
       {/* Recurring toggle-card */}
-      <button
-        type="button"
-        onClick={() => d.setPaymentScheduleMode(d.paymentScheduleMode === 'recurring' ? 'one_time' : 'recurring')}
-        className="flex items-center gap-3 rounded-[16px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-4 text-start"
-      >
+      <div className="flex items-center gap-3 rounded-[16px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-4 text-start">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--color-brand-card)] text-[var(--color-brand-text-secondary)]">
           <Repeat className="h-[18px] w-[18px]" />
         </span>
@@ -97,13 +95,13 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
           <span className="block text-sm font-bold text-[var(--color-brand-text-primary)]">Recurring payment</span>
           <span className="mt-0.5 block text-[12px] text-[var(--color-brand-text-muted)]">Repeat every cycle automatically</span>
         </span>
-        <span
-          className="flex h-7 w-[46px] shrink-0 rounded-full p-[3px] transition-colors"
-          style={{ background: d.paymentScheduleMode === 'recurring' ? '#E5484D' : 'var(--color-brand-border)', justifyContent: d.paymentScheduleMode === 'recurring' ? 'flex-end' : 'flex-start' }}
-        >
-          <span className="block h-[22px] w-[22px] rounded-full bg-white" />
-        </span>
-      </button>
+        <Switch
+          size="touch"
+          aria-label="Recurring payment"
+          checked={d.paymentScheduleMode === 'recurring'}
+          onCheckedChange={(on) => d.setPaymentScheduleMode(on ? 'recurring' : 'one_time')}
+        />
+      </div>
 
       {/* Notes */}
       <div>

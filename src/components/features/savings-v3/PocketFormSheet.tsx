@@ -17,6 +17,7 @@ import { type PocketKindDef } from '@/lib/savings/pocketKinds'
 import { rgba } from '@/lib/utils/color'
 import { micro } from '@/lib/ui/microLabelStyle'
 import type { Currency, PaymentMethod } from '@/lib/store/types'
+import { OptionChip } from '@/components/ui/OptionChip'
 
 export interface PocketFormSheetProps {
   open: boolean
@@ -111,15 +112,13 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
               <label style={micro}>Provider</label>
               <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar">
                 {providerNames.map((p) => (
-                  <button key={p} type="button" onClick={() => setProvider(p)} className="shrink-0 rounded-full px-4 py-2 text-sm font-medium"
-                    style={{ border: provider === p ? '1px solid rgba(18,176,160,.45)' : '1px solid var(--color-brand-border)', background: provider === p ? 'rgba(18,176,160,.13)' : 'transparent', color: 'var(--color-brand-text-primary)' }}>
+                  <OptionChip key={p} selected={provider === p} onClick={() => setProvider(p)}>
                     {p}
-                  </button>
+                  </OptionChip>
                 ))}
-                <button type="button" onClick={() => setProvider('')} className="shrink-0 rounded-full px-4 py-2 text-sm font-medium"
-                  style={{ border: '1px solid var(--color-brand-border)', background: 'transparent', color: 'var(--color-brand-text-muted)' }}>
+                <OptionChip selected={provider === ''} onClick={() => setProvider('')}>
                   Other
-                </button>
+                </OptionChip>
               </div>
             </div>
           )}

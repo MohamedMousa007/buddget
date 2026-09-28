@@ -1,6 +1,7 @@
 'use client'
 
 import type { DebtFamily } from '@/lib/debts/debtFamily'
+import { OptionChip } from '@/components/ui/OptionChip'
 
 const TABS: { key: DebtFamily; label: string }[] = [
   { key: 'borrow', label: 'Borrow' },
@@ -15,18 +16,15 @@ export function DebtFamilyTabs({ active, onChange }: { active: DebtFamily; onCha
       {TABS.map((tab) => {
         const on = active === tab.key
         return (
-          <button
+          <OptionChip
             key={tab.key}
-            type="button"
+            size="segment"
+            selected={on}
             onClick={() => onChange(tab.key)}
-            className={`h-11 rounded-[12px] text-sm font-bold transition-colors ${
-              on
-                ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
-                : 'text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)]'
-            }`}
+            className="font-bold"
           >
             {tab.label}
-          </button>
+          </OptionChip>
         )
       })}
     </div>

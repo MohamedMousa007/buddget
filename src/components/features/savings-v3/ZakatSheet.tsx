@@ -15,6 +15,8 @@ import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { micro } from '@/lib/ui/microLabelStyle'
 import type { ZakatBase } from '@/lib/savings/zakatInputs'
 import type { ZakatConfig } from '@/lib/store/types'
+import { Switch } from '@/components/ui/switch'
+import { SelectableCard } from '@/components/ui/SelectableCard'
 
 export interface ZakatSheetProps {
   open: boolean
@@ -153,10 +155,15 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
 
           {/* override */}
           <Card variant="elevated" padding="none" className="p-3.5">
-            <button type="button" onClick={() => { const v = !manualOn; setManualOn(v); save({ manualAmount: v ? parseFloat(manualAmount) || 0 : null }) }} className="flex w-full items-center justify-between text-left">
+            <div className="flex w-full items-center justify-between text-left">
               <div><p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">Set the amount myself</p><p className="text-xs text-[var(--color-brand-text-muted)]">Overrides everything above</p></div>
-              <span className="relative shrink-0" style={{ width: 46, height: 28, borderRadius: 999, background: manualOn ? '#12B0A0' : 'var(--color-brand-border)' }}><span className="absolute top-1 h-6 w-6 rounded-full bg-white" style={{ left: manualOn ? 18 : 2, transition: 'left .15s' }} /></span>
-            </button>
+              <Switch
+                size="touch"
+                aria-label="Set the amount myself"
+                checked={manualOn}
+                onCheckedChange={(v) => { setManualOn(v); save({ manualAmount: v ? parseFloat(manualAmount) || 0 : null }) }}
+              />
+            </div>
             {manualOn && (
               <Input inputMode="numeric" value={manualAmount} onChange={(e) => setManualAmount(e.target.value)} onBlur={() => save({ manualAmount: parseFloat(manualAmount) || 0 })} placeholder="0"
                 className="mt-3 h-12 rounded-xl border-[var(--color-brand-primary)]/50 bg-[var(--color-brand-card)] px-4 font-mono-numbers text-lg text-[var(--color-brand-text-primary)]" />
@@ -180,18 +187,18 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
 
 function NisabCard({ title, value, on, onClick }: { title: string; value: number; on: boolean; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className="rounded-2xl p-3 text-left" style={{ border: on ? '1px solid rgba(237,196,99,.5)' : '1px solid var(--color-brand-border)', background: on ? 'rgba(237,196,99,.08)' : 'var(--color-brand-elevated)' }}>
+    <SelectableCard layout="stack" selected={on} onClick={onClick}>
       <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{title}</p>
       <p className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{fmtNum(value)} EGP</p>
-    </button>
+    </SelectableCard>
   )
 }
 
 function FactorCard({ title, sub, on, onClick }: { title: string; sub: string; on: boolean; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className="rounded-2xl p-3 text-left" style={{ border: on ? '1px solid rgba(53,212,111,.5)' : '1px solid var(--color-brand-border)', background: on ? 'rgba(53,212,111,.08)' : 'var(--color-brand-elevated)' }}>
+    <SelectableCard layout="stack" selected={on} onClick={onClick}>
       <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{title}</p>
       <p className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{sub}</p>
-    </button>
+    </SelectableCard>
   )
 }

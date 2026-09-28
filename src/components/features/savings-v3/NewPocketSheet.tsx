@@ -11,6 +11,7 @@ import { POCKET_KINDS, POCKET_KIND_ORDER, type PocketKindDef } from '@/lib/savin
 import { rgba } from '@/lib/utils/color'
 import { micro as label } from '@/lib/ui/microLabelStyle'
 import type { PaymentMethod, SavingsType } from '@/lib/store/types'
+import { SelectableCard } from '@/components/ui/SelectableCard'
 
 const PM_TYPE_LABEL: Record<string, string> = {
   bank_account: 'Bank account', debit_card: 'Debit card', credit_card: 'Credit card',
@@ -64,9 +65,9 @@ export function NewPocketSheet({ open, onClose }: NewPocketSheetProps) {
                   const used = usedPmIds.has(pm.id)
                   const kind = pm.type === 'wallet' ? POCKET_KINDS.wallet : POCKET_KINDS.bank
                   return (
-                    <button key={pm.id} type="button" disabled={used}
+                    <SelectableCard key={pm.id} as="action" disabled={used}
                       onClick={() => openForm(kind, pm)}
-                      className="flex w-full items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3 text-left"
+                      className="gap-3 p-3"
                       style={{ opacity: used ? 0.55 : 1 }}>
                       <span className="flex h-11 w-11 items-center justify-center rounded-xl" style={{ background: rgba(pm.color ?? '#7EAEF9', .14), color: pm.color ?? '#7EAEF9' }}>
                         <SavingsAccountIcon account={{ type: 'bank' as SavingsType, icon: 'CreditCard' }} className="h-5 w-5" />
@@ -80,7 +81,7 @@ export function NewPocketSheet({ open, onClose }: NewPocketSheetProps) {
                       ) : (
                         <ChevronRight size={18} className="text-[var(--color-brand-text-muted)]" />
                       )}
-                    </button>
+                    </SelectableCard>
                   )
                 })}
               </div>
@@ -93,14 +94,13 @@ export function NewPocketSheet({ open, onClose }: NewPocketSheetProps) {
               {POCKET_KIND_ORDER.map((k) => {
                 const def = POCKET_KINDS[k]
                 return (
-                  <button key={k} type="button" onClick={() => openForm(def, null)}
-                    className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3.5 text-left">
+                  <SelectableCard key={k} as="action" layout="stack" onClick={() => openForm(def, null)} className="p-3.5">
                     <span className="flex h-11 w-11 items-center justify-center rounded-xl" style={{ background: rgba(def.color, .14), color: def.color }}>
                       <SavingsAccountIcon account={{ type: def.savingsType, icon: def.icon }} className="h-5 w-5" />
                     </span>
                     <p className="mt-2.5 text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{def.label}</p>
                     <p className="text-xs text-[var(--color-brand-text-muted)]">{def.sub}</p>
-                  </button>
+                  </SelectableCard>
                 )
               })}
             </div>

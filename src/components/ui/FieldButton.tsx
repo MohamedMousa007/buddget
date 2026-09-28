@@ -21,7 +21,10 @@ export interface FieldButtonProps
   affordance?: React.ReactNode
   /** 48px by default, matching `Input size="brand"`. `lg` is 52px for a two-line value. */
   size?: 'default' | 'lg'
-  /** Marks the control invalid, matching the input's error treatment. */
+  /**
+   * Marks the control invalid, matching the input's error treatment. Sets
+   * `data-invalid`; pair it with visible error text and `aria-describedby`.
+   */
   invalid?: boolean
   /**
    * Classes for the value itself, for a field whose value is not ordinary body
@@ -65,7 +68,10 @@ export function FieldButton({
     <button
       data-slot="field-button"
       type={type}
-      aria-invalid={invalid || undefined}
+      // `aria-invalid` is not valid on a button, so the state is exposed as a data
+      // attribute for styling. Announce the problem with the error text you render
+      // beside the field, associated via aria-describedby.
+      data-invalid={invalid || undefined}
       className={cn(
         'flex w-full items-center gap-2.5 rounded-xl border bg-[var(--color-brand-card)] px-3.5 text-start text-[15px] transition-colors outline-none',
         'focus-visible:ring-3 focus-visible:ring-[var(--color-brand-focus)]/50 focus-visible:border-[var(--color-brand-focus)]',
