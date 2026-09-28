@@ -15,9 +15,7 @@ import { ProfileDropdown } from '@/components/layout/ProfileDropdown'
 import { NotificationInbox } from '@/components/notifications/NotificationInbox'
 import { isNative } from '@/lib/native/isNative'
 import { IconButton } from '@/components/ui/IconButton'
-
-const btnClass =
-  'inline-flex items-center justify-center px-2 py-1.5 rounded-lg text-xs sm:text-xs font-semibold transition-colors border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] sm:px-3'
+import { Button } from '@/components/ui/button'
 
 function ProfileAvatarWithMenu({ className }: { className?: string }) {
   const t = useT()
@@ -114,20 +112,21 @@ export function AuthNavButtons({
     <div className={cn('flex flex-nowrap items-center gap-1.5 sm:gap-2', className)}>
       {!user ? (
         <>
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => openAuthModal(nextPath, null, 'signin')}
-            className={btnClass}
+            className="text-xs font-semibold sm:px-3"
           >
             {t.common.signIn}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            size="sm"
             onClick={() => openAuthModal(nextPath, null, 'signup')}
-            className="inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] transition-colors sm:px-3"
+            className="text-xs font-semibold sm:px-3"
           >
             {t.common.signUp}
-          </button>
+          </Button>
         </>
       ) : !isNative() ? (
         <NotificationInbox />

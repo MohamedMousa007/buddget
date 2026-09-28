@@ -12,6 +12,8 @@ import { ProviderBadge } from './ProviderBadge'
 import { coarseProvider } from '@/lib/constants/installmentProviders'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { currencyFlag } from '@/lib/constants/currencyMeta'
+import { FieldButton } from '@/components/ui/FieldButton'
+import { OptionChip } from '@/components/ui/OptionChip'
 
 const MICRO = 'font-semibold text-[10px] tracking-[0.08em] uppercase text-[var(--color-brand-text-muted)]'
 const FIELD = 'h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-[15px] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] outline-none'
@@ -36,15 +38,20 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
       {/* Provider (locked in Edit) */}
       <div>
         <div className={`${MICRO} mb-2 flex items-center gap-1.5`}>Provider {locked ? <Lock className="h-3 w-3" /> : null}</div>
-        <button type="button" disabled={locked} onClick={() => setProviderOpen(true)} className="flex h-12 w-full items-center gap-3 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-start disabled:opacity-70">
-          {d.installmentProvider === 'credit_card' ? (
-            <span className="flex h-7 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[#8A5CF6]/22 text-[11px] font-extrabold text-[#8A5CF6]">CC</span>
-          ) : d.installmentProviderName ? (
-            <ProviderBadge slug={d.installmentProviderSlug} name={d.installmentProviderName} size={28} />
-          ) : null}
-          <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{providerLabel}</span>
-          <ChevronDown className="h-4 w-4 shrink-0 text-[var(--color-brand-text-muted)]" />
-        </button>
+        <FieldButton
+          disabled={locked}
+          onClick={() => setProviderOpen(true)}
+          className="bg-[var(--color-brand-elevated)] px-3 disabled:opacity-70"
+          valueClassName="text-sm font-semibold"
+          value={providerLabel}
+          icon={
+            d.installmentProvider === 'credit_card' ? (
+              <span className="flex h-7 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[var(--color-cat-6)]/20 text-[11px] font-extrabold text-[var(--color-cat-6)]">CC</span>
+            ) : d.installmentProviderName ? (
+              <ProviderBadge slug={d.installmentProviderSlug} name={d.installmentProviderName} size={28} />
+            ) : null
+          }
+        />
         <InstallmentProviderPickerSheet
           open={providerOpen}
           valueSlug={d.installmentProviderSlug}
@@ -74,11 +81,14 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
         <div className={`${MICRO} mb-2`}>Total amount</div>
         <div className="flex gap-2">
           <div className="min-w-0 flex-1"><AmountField value={d.startingBalance} onChange={d.setStartingBalance} mode="decimal" placeholder="0" /></div>
-          <button type="button" onClick={() => setCurOpen(true)} className="flex h-[52px] shrink-0 items-center gap-1.5 rounded-[14px] border border-[#26262f] bg-[var(--color-brand-elevated)] px-3">
-            <span className="text-[18px] leading-none">{currencyFlag(d.currency as Currency)}</span>
-            <span className="font-mono-numbers text-[14px] font-bold text-[var(--color-brand-text-primary)]">{d.currency}</span>
-            <ChevronDown className="h-4 w-4 text-[var(--color-brand-text-muted)]" />
-          </button>
+          <FieldButton
+            size="lg"
+            onClick={() => setCurOpen(true)}
+            className="w-auto shrink-0 gap-1.5 bg-[var(--color-brand-elevated)] px-3"
+            valueClassName="font-mono-numbers text-[14px] font-bold"
+            value={d.currency}
+            icon={<span className="text-[18px] leading-none">{currencyFlag(d.currency as Currency)}</span>}
+          />
         </div>
         <CurrencySheet open={curOpen} value={d.currency as Currency} base={d.settings.baseCurrency} onSelect={(c) => { d.setCurrency(c as Currency); setCurOpen(false) }} onClose={() => setCurOpen(false)} />
       </div>
@@ -101,9 +111,9 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
             {FREQS.map((f) => {
               const on = d.installmentFrequency === f.v
               return (
-                <button key={f.v} type="button" onClick={() => d.setInstallmentFrequency(f.v)} className="h-full flex-1 rounded-lg text-[11px] font-semibold transition-colors" style={on ? { background: '#00C2A81f', color: '#2CE0C6' } : { color: 'var(--color-brand-text-muted)' }}>
+                <OptionChip key={f.v} size="segment" selected={on} onClick={() => d.setInstallmentFrequency(f.v)} className="h-full text-[11px]">
                   {f.label}
-                </button>
+                </OptionChip>
               )
             })}
           </div>

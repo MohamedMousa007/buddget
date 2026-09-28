@@ -11,6 +11,7 @@ import { ProviderBadge } from './ProviderBadge'
 import { useModalTitleId } from '@/components/modals/ModalShell'
 import { IconButton } from '@/components/ui/IconButton'
 import { Button } from '@/components/ui/button'
+import { SelectableCard } from '@/components/ui/SelectableCard'
 
 export interface CreditCardOption {
   debtId: string
@@ -97,15 +98,17 @@ export function InstallmentProviderPickerSheet({
                 {tiles.map((b) => {
                   const sel = valueSlug === b.slug && !valueCardId
                   return (
-                    <button
+                    <SelectableCard
                       key={b.slug}
-                      type="button"
+                      selected={sel}
                       onClick={() => {
                         onPickBrand(b.slug, b.name)
                         close()
                       }}
-                      className="relative flex items-center gap-3 rounded-[16px] border p-3.5 text-start transition-colors"
-                      style={sel ? { borderColor: `${b.color}`, background: `${b.color}18` } : { borderColor: 'rgba(255,255,255,.1)' }}
+                      className="gap-3 p-3.5"
+                      style={sel
+                        ? { borderColor: b.color, background: `${b.color}18` }
+                        : { borderColor: 'rgba(255,255,255,.1)', background: 'transparent' }}
                     >
                       <ProviderBadge slug={b.slug} name={b.name} color={b.color} size={40} />
                       <span className="min-w-0 flex-1">
@@ -113,26 +116,26 @@ export function InstallmentProviderPickerSheet({
                         <span className="block text-[11px] font-medium capitalize text-white/45">{b.category.replace('_', ' ')}</span>
                       </span>
                       {sel ? <Check className="h-4 w-4 shrink-0" style={{ color: b.color }} /> : null}
-                    </button>
+                    </SelectableCard>
                   )
                 })}
                 {/* Credit card + Custom pinned */}
-                <button
-                  type="button"
+                <SelectableCard
+                  as="action"
                   onClick={() => setView('card')}
-                  className="flex items-center gap-3 rounded-[16px] border border-white/10 p-3.5 text-start"
+                  className="gap-3 border-white/10 bg-transparent p-3.5 hover:bg-white/5"
                 >
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-[#8A5CF6]/22 text-[#8A5CF6]"><CreditCard className="h-5 w-5" /></span>
                   <span className="block truncate text-[15px] font-bold text-white">Credit card</span>
-                </button>
-                <button
-                  type="button"
+                </SelectableCard>
+                <SelectableCard
+                  as="action"
                   onClick={() => setView('custom')}
-                  className="flex items-center gap-3 rounded-[16px] border border-white/10 p-3.5 text-start"
+                  className="gap-3 border-white/10 bg-transparent p-3.5 hover:bg-white/5"
                 >
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-white/8 text-white/60"><Plus className="h-5 w-5" /></span>
                   <span className="block truncate text-[15px] font-bold text-white">Custom</span>
-                </button>
+                </SelectableCard>
               </div>
             </div>
           </>
