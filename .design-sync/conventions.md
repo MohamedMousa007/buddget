@@ -23,15 +23,24 @@ variable in an arbitrary-value utility. Write `bg-[var(--color-brand-card)]`, ne
 |---|---|
 | Surfaces | `--color-brand-bg` (page) · `--color-brand-card` · `--color-brand-elevated` (inputs, chips) · `--color-brand-border` |
 | Text | `--color-brand-text-primary` · `--color-brand-text-secondary` · `--color-brand-text-muted` |
-| Accents | `--color-brand-red` (+`-hover`, `-text`) · `--color-brand-green` (+`-hover`) · `--color-brand-gold` · `--color-brand-amber` · `--color-brand-focus` |
-| Radius | `--radius` (12px base) → `--radius-sm|md|lg|xl` |
+| Brand | `--color-brand-primary` (+`-hover`) · `--color-brand-primary-ink` (teal TEXT — the plain brand fails contrast as text) · `--color-brand-primary-soft` · `--color-brand-on-primary` (what goes ON a teal fill) |
+| Accents | `--color-brand-red` (+`-hover`, `-soft`, `-text`) · `--color-brand-green` (+`-hover`, `-soft`) · `--color-brand-gold` · `--color-brand-amber` (+`-soft`) · `--color-brand-focus` |
+| Category ramp | `--color-cat-1` … `--color-cat-6` (charts, category chips) |
+| Elevation | `--shadow-sm` · `--shadow-md` · `--shadow-lg` |
+| Radius | buttons/inputs **12px** (`rounded-xl`) · cards **16px** (`rounded-2xl`) · sheet tops **24px** (`rounded-3xl`) · chips `rounded-full` |
 
-**Semantics are fixed** — do not re-assign them: red = expense / outflow / primary CTA and destructive;
-green = income, received, success; amber = warning, late; gold = premium, price.
+**Semantics are fixed** — do not re-assign them: **teal = the brand and every primary action**;
+**red = destructive and over-budget alerts ONLY**, never a primary CTA; green = income, received,
+success; amber = warning, late; gold = investment. Outflow amounts are plain text, not red — red
+is reserved so that when it appears, it means something.
 
-A trap worth stating: on `Button` and `Badge`, **`variant="default"` is the solid brand-red fill and is
-the primary CTA**; `variant="destructive"` is a softer red *tinted* style. That is the opposite of the
-usual shadcn reading.
+Two traps worth stating:
+1. On `Button` and `Badge`, **`variant="default"` is the solid brand-TEAL fill and is the primary
+   CTA**; `variant="destructive"` is a softer red *tinted* style. That is the opposite of the usual
+   shadcn reading.
+2. **Plain `--color-brand-primary` fails contrast as text** (2.71:1 on white). Use it for fills,
+   borders and icons. For teal *text* and links use **`--color-brand-primary-ink`**; for anything
+   sitting on a teal fill use **`--color-brand-on-primary`**.
 
 Hand-written utilities beyond stock Tailwind: `font-mono-numbers` (JetBrains Mono, `unicode-bidi:
 isolate` — use on **every** amount, date and percentage), `font-heading`, `glass-card`, `prose-rtl`, and
@@ -43,7 +52,10 @@ theme in practice — check both.
 ### Non-negotiables
 
 - Every form input, select and trigger is **48px tall** (`h-12`). No tap target under **44×44px**.
-- Cards/sheets `rounded-2xl`; inputs/buttons `rounded-xl`; chips/badges `rounded-full`.
+- Cards/sheets `rounded-2xl` (16px); inputs/buttons `rounded-xl` (12px); chips/badges `rounded-full`.
+- **Never use a pig for savings.** The canonical savings glyph is Lucide `Coins`. `PiggyBank` is
+  banned product-wide and must not be reintroduced in any icon set or picker.
+- **No notification bell on native.** The mobile header is avatar + greeting only.
 - Arabic runs with `dir` staying LTR, so use **logical properties everywhere**: `ms-/me-/ps-/pe-`,
   `text-start/text-end` — never `ml-/pl-/text-left`.
 - Amounts are `tabular-nums` and pre-formatted by the caller; components take formatted strings.

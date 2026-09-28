@@ -383,7 +383,7 @@ export function PaymentMethodSetupSheet({
                         className={cn(
                           'h-11 flex-1 rounded-xl border text-[13px] font-semibold',
                           selTab
-                            ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)] text-white'
+                            ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
                             : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]',
                         )}
                       >
@@ -447,7 +447,7 @@ export function PaymentMethodSetupSheet({
                   type="button" role="switch" aria-checked={isDefault}
                   onClick={() => setIsDefault((v) => !v)}
                   className="flex h-7 w-[46px] shrink-0 rounded-full p-[3px] transition-colors"
-                  style={{ background: isDefault ? '#E50914' : 'var(--color-brand-border)', justifyContent: isDefault ? 'flex-end' : 'flex-start' }}
+                  style={{ background: isDefault ? '#12B0A0' : 'var(--color-brand-border)', justifyContent: isDefault ? 'flex-end' : 'flex-start' }}
                 >
                   <span className="block h-[22px] w-[22px] rounded-full bg-white" />
                 </button>
@@ -461,7 +461,7 @@ export function PaymentMethodSetupSheet({
               className={cn(
                 'h-[52px] w-full rounded-[14px] text-base font-semibold',
                 canSave
-                  ? 'bg-[var(--color-brand-red)] text-white'
+                  ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
                   : 'cursor-not-allowed bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]',
               )}
             >

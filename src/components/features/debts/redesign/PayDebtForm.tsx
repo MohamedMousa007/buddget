@@ -16,7 +16,7 @@ const FIELD = 'h-12 w-full rounded-xl border border-[var(--color-brand-border)] 
 export function PayDebtForm({ d }: { d: AddDebtHook }) {
   const debt = d.selectedDebt
   const owedLabel = debt?.direction === 'they_owe' ? 'Owed to you' : 'You owe'
-  const accent = debt?.direction === 'they_owe' ? '#1DB954' : debt?.isGold ? '#F5C842' : '#E50914'
+  const accent = debt?.direction === 'they_owe' ? '#37C368' : debt?.isGold ? '#EDC463' : '#E5484D'
   const initial = (debt?.name || debt?.person || '?').trim().charAt(0).toUpperCase()
 
   return (
@@ -99,7 +99,7 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
         </span>
         <span
           className="flex h-7 w-[46px] shrink-0 rounded-full p-[3px] transition-colors"
-          style={{ background: d.paymentScheduleMode === 'recurring' ? '#E50914' : 'var(--color-brand-border)', justifyContent: d.paymentScheduleMode === 'recurring' ? 'flex-end' : 'flex-start' }}
+          style={{ background: d.paymentScheduleMode === 'recurring' ? '#E5484D' : 'var(--color-brand-border)', justifyContent: d.paymentScheduleMode === 'recurring' ? 'flex-end' : 'flex-start' }}
         >
           <span className="block h-[22px] w-[22px] rounded-full bg-white" />
         </span>

@@ -61,7 +61,7 @@ export function DashboardTransactions({
           <SectionHeader.Trailing>
             <Link
               href="/expenses"
-              className="text-xs text-[var(--color-brand-red)] hover:underline"
+              className="text-xs text-[var(--color-brand-primary-ink)] hover:underline"
             >
               {t.dashboard.sectionSeeAll}
             </Link>

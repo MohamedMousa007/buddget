@@ -43,8 +43,8 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
         <div className={`${MICRO} mb-2 flex items-center gap-1.5`}>Direction {locked ? <Lock className="h-3 w-3" /> : null}</div>
         <div className="flex gap-2">
           {([
-            { v: 'i_owe', label: 'I owe', c: '#E50914' },
-            { v: 'they_owe', label: 'Owed to me', c: '#1DB954' },
+            { v: 'i_owe', label: 'I owe', c: '#E5484D' },
+            { v: 'they_owe', label: 'Owed to me', c: '#37C368' },
           ] as const).map((o) => {
             const on = d.direction === o.v
             if (locked && !on) return null
@@ -75,7 +75,7 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
       </div>
 
       {/* Gold-backed toggle */}
-      <div className="flex items-center justify-between rounded-[16px] border border-[#F5C84233] bg-[#F5C8420d] px-4 py-3.5">
+      <div className="flex items-center justify-between rounded-[16px] border border-[#EDC46333] bg-[#EDC4630d] px-4 py-3.5">
         <div>
           <span className="block text-sm font-bold text-[var(--color-brand-text-primary)]">Gold-backed</span>
           <span className="mt-0.5 block text-[12px] text-[var(--color-brand-text-muted)]">Track in grams at today&apos;s price</span>
@@ -86,7 +86,7 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
           aria-checked={isGold}
           onClick={() => d.applyDebtReceivedVia(isGold ? 'cash' : 'gold')}
           className="flex h-7 w-[46px] shrink-0 rounded-full p-[3px] transition-colors"
-          style={{ background: isGold ? '#F5C842' : 'var(--color-brand-border)', justifyContent: isGold ? 'flex-end' : 'flex-start' }}
+          style={{ background: isGold ? '#EDC463' : 'var(--color-brand-border)', justifyContent: isGold ? 'flex-end' : 'flex-start' }}
         >
           <span className="block h-[22px] w-[22px] rounded-full bg-white" />
         </button>
@@ -105,7 +105,7 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
                     type="button"
                     onClick={() => d.setGoldKarat(k)}
                     className="h-11 flex-1 rounded-xl border text-[14px] font-bold transition-colors"
-                    style={on ? { background: '#F5C84222', borderColor: '#F5C84288', color: '#F5C842' } : { background: 'var(--color-brand-elevated)', borderColor: 'var(--color-brand-border)', color: 'var(--color-brand-text-muted)' }}
+                    style={on ? { background: '#EDC46322', borderColor: '#EDC46388', color: '#EDC463' } : { background: 'var(--color-brand-elevated)', borderColor: 'var(--color-brand-border)', color: 'var(--color-brand-text-muted)' }}
                   >
                     {k}K
                   </button>
@@ -117,7 +117,7 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
             <div className={`${MICRO} mb-2`}>Grams</div>
             <AmountField value={d.startingBalance} onChange={d.setStartingBalance} mode="decimal" placeholder="e.g. 12.5" />
             {goldValue != null ? (
-              <p className="mt-2 px-0.5 font-mono-numbers text-[12px] text-[#F5C842]">≈ {goldValue.toLocaleString()} EGP at {GOLD_PRICE[d.goldKarat].toLocaleString()}/g</p>
+              <p className="mt-2 px-0.5 font-mono-numbers text-[12px] text-[#EDC463]">≈ {goldValue.toLocaleString()} EGP at {GOLD_PRICE[d.goldKarat].toLocaleString()}/g</p>
             ) : null}
           </div>
         </>
@@ -142,7 +142,7 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
 
       {/* Payoff goal (borrow-only, i-owe) */}
       {d.direction === 'i_owe' ? (
-        <div className="rounded-[16px] border border-[#F5C84233] bg-[#F5C8420d] p-4">
+        <div className="rounded-[16px] border border-[#EDC46333] bg-[#EDC4630d] p-4">
           <div className="flex items-center justify-between">
             <div>
               <span className="block text-sm font-bold text-[var(--color-brand-text-primary)]">Set a payoff goal</span>
@@ -154,7 +154,7 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
               aria-checked={d.goalEnabled}
               onClick={() => d.setGoalEnabled(!d.goalEnabled)}
               className="flex h-7 w-[46px] shrink-0 rounded-full p-[3px] transition-colors"
-              style={{ background: d.goalEnabled ? '#F5C842' : 'var(--color-brand-border)', justifyContent: d.goalEnabled ? 'flex-end' : 'flex-start' }}
+              style={{ background: d.goalEnabled ? '#EDC463' : 'var(--color-brand-border)', justifyContent: d.goalEnabled ? 'flex-end' : 'flex-start' }}
             >
               <span className="block h-[22px] w-[22px] rounded-full bg-white" />
             </button>
@@ -168,7 +168,7 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
                     const val = format(addMonths(new Date(), m), 'yyyy-MM')
                     const on = d.goalMonth === val
                     return (
-                      <button key={m} type="button" onClick={() => d.setGoalMonth(val)} className="h-10 shrink-0 rounded-full border px-3.5 text-[13px] font-semibold" style={on ? { background: '#F5C84222', borderColor: '#F5C84288', color: '#F5C842' } : { borderColor: 'var(--color-brand-border)', color: 'var(--color-brand-text-secondary)' }}>
+                      <button key={m} type="button" onClick={() => d.setGoalMonth(val)} className="h-10 shrink-0 rounded-full border px-3.5 text-[13px] font-semibold" style={on ? { background: '#EDC46322', borderColor: '#EDC46388', color: '#EDC463' } : { borderColor: 'var(--color-brand-border)', color: 'var(--color-brand-text-secondary)' }}>
                         {format(addMonths(new Date(), m), 'MMM yyyy')}
                       </button>
                     )
@@ -181,7 +181,7 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
                   {(['monthly', 'weekly'] as const).map((c) => {
                     const on = d.goalCadence === c
                     return (
-                      <button key={c} type="button" onClick={() => d.setGoalCadence(c)} className="h-10 flex-1 rounded-xl border text-[13px] font-semibold capitalize" style={on ? { background: '#F5C84222', borderColor: '#F5C84288', color: '#F5C842' } : { borderColor: 'var(--color-brand-border)', color: 'var(--color-brand-text-secondary)' }}>
+                      <button key={c} type="button" onClick={() => d.setGoalCadence(c)} className="h-10 flex-1 rounded-xl border text-[13px] font-semibold capitalize" style={on ? { background: '#EDC46322', borderColor: '#EDC46388', color: '#EDC463' } : { borderColor: 'var(--color-brand-border)', color: 'var(--color-brand-text-secondary)' }}>
                         {c}
                       </button>
                     )
@@ -189,8 +189,8 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
                 </div>
               </div>
               {goalPreview != null ? (
-                <div className="rounded-[12px] bg-[#F5C8420d] px-3.5 py-2.5">
-                  <p className="font-mono-numbers text-[14px] font-bold text-[#F5C842]">You&apos;d pay ≈ {goalPreview.toLocaleString()} {d.currency} / {d.goalCadence === 'weekly' ? 'week' : 'month'}</p>
+                <div className="rounded-[12px] bg-[#EDC4630d] px-3.5 py-2.5">
+                  <p className="font-mono-numbers text-[14px] font-bold text-[#EDC463]">You&apos;d pay ≈ {goalPreview.toLocaleString()} {d.currency} / {d.goalCadence === 'weekly' ? 'week' : 'month'}</p>
                   {strain != null ? (
                     <p className={`mt-1 text-[12px] ${strain > 0.35 ? 'text-[#FFB13D]' : 'text-[var(--color-brand-text-muted)]'}`}>
                       {strain > 0.35 ? `That's ${Math.round(strain * 100)}% of your monthly income — heavy.` : 'Comfortable against your income.'}

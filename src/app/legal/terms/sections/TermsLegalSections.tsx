@@ -35,7 +35,7 @@ export function TermsLegalSections() {
       <LegalSection title="15. Dispute Resolution and Governing Law">
         <p>
           We encourage you to contact us first at{' '}
-          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
+          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-primary-ink)] hover:underline">
             support@buddget.app
           </a>{' '}
           to resolve any dispute informally before pursuing formal proceedings.
@@ -64,7 +64,7 @@ export function TermsLegalSections() {
         <p>Buddget is operated as an independent product. For all inquiries including legal matters:</p>
         <p>
           <strong className="text-[var(--color-brand-text-primary)]">Email:</strong>{' '}
-          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
+          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-primary-ink)] hover:underline">
             support@buddget.app
           </a>
         </p>
@@ -72,7 +72,7 @@ export function TermsLegalSections() {
           <strong className="text-[var(--color-brand-text-primary)]">Website:</strong>{' '}
           <a
             href="https://buddget.app"
-            className="text-[var(--color-brand-red)] hover:underline"
+            className="text-[var(--color-brand-primary-ink)] hover:underline"
             target="_blank"
             rel="noopener noreferrer"
           >

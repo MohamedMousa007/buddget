@@ -15,7 +15,7 @@ export interface ZakatCardProps {
 
 export function ZakatCard({ result, base, hawlDate, onOpen }: ZakatCardProps) {
   const due = result.due
-  const accent = due ? '#F5C842' : '#35D46F'
+  const accent = due ? '#EDC463' : '#35D46F'
   return (
     <button type="button" onClick={onOpen} className="mx-4 mt-3 block w-[calc(100%-2rem)] text-left"
       style={{ borderRadius: 18 }}>

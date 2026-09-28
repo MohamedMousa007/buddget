@@ -16,7 +16,7 @@ const paceColorMap: Record<PaceStatus, string> = {
 const paceDotMap: Record<PaceStatus, string> = {
   on_track: 'bg-[var(--color-brand-green)]',
   warning: 'bg-[var(--color-brand-amber)]',
-  over: 'bg-[var(--color-brand-red)]',
+  over: 'bg-[var(--color-brand-primary)]',
 }
 
 const RADIUS = 80

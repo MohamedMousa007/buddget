@@ -180,7 +180,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                 type="button"
                 onClick={amountPad.openPad}
                 dir="ltr"
-                className={`flex h-12 w-full items-center rounded-xl border bg-[var(--color-brand-elevated)] px-3.5 ${amountPad.isOpen ? 'border-[var(--color-brand-red)]' : 'border-[var(--color-brand-border)]'}`}
+                className={`flex h-12 w-full items-center rounded-xl border bg-[var(--color-brand-elevated)] px-3.5 ${amountPad.isOpen ? 'border-[var(--color-brand-primary)]' : 'border-[var(--color-brand-border)]'}`}
               >
                 <span className={`min-w-0 flex-1 text-start font-bold text-2xl font-mono-numbers tracking-[-0.02em] ${amount ? 'text-[var(--color-brand-text-primary)]' : 'text-[var(--color-brand-text-muted)]'}`}>
                   {amount || '0.00'}
@@ -322,7 +322,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                   {t.expenseForm.splitInstallments}
                 </span>
                 <span
-                  className={`relative h-6 w-10 shrink-0 rounded-full transition-colors ${installment.enabled ? 'bg-[var(--color-brand-red)]' : 'bg-[var(--color-brand-border)]'}`}
+                  className={`relative h-6 w-10 shrink-0 rounded-full transition-colors ${installment.enabled ? 'bg-[var(--color-brand-primary)]' : 'bg-[var(--color-brand-border)]'}`}
                 >
                   <span
                     className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${installment.enabled ? 'left-[18px]' : 'left-0.5'}`}
@@ -337,7 +337,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                         key={n}
                         type="button"
                         onClick={() => installment.setCount(n)}
-                        className={`h-9 flex-1 rounded-lg border text-sm font-semibold transition-colors ${installment.count === n ? 'border-[var(--color-brand-red)] bg-[rgba(229,9,20,0.12)] text-[var(--color-brand-text-primary)]' : 'border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)]'}`}
+                        className={`h-9 flex-1 rounded-lg border text-sm font-semibold transition-colors ${installment.count === n ? 'border-[var(--color-brand-primary)] bg-[rgba(18,176,160,0.12)] text-[var(--color-brand-text-primary)]' : 'border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)]'}`}
                       >
                         {n}
                       </button>
@@ -439,7 +439,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
             className={`h-14 w-full rounded-2xl text-base font-semibold transition-colors ${
               submitDisabled
                 ? 'cursor-not-allowed bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]'
-                : 'bg-[var(--color-brand-red)] text-white hover:bg-[var(--color-brand-red-hover)]'
+                : 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]'
             }`}
           >
             {mode === 'edit' ? t.expenseForm.saveChanges : t.expenseForm.saveExpense}
@@ -495,7 +495,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                     setConfirmOpen(false)
                     onSubmit()
                   }}
-                  className="h-12 rounded-xl bg-[var(--color-brand-red)] text-base font-semibold text-white hover:bg-[var(--color-brand-red-hover)]"
+                  className="h-12 rounded-xl bg-[var(--color-brand-primary)] text-base font-semibold text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
                 >
                   {t.expenseForm.saveChanges}
                 </button>

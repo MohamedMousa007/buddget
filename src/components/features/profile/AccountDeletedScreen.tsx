@@ -37,7 +37,7 @@ export function AccountDeletedScreen() {
       <button
         type="button"
         onClick={() => void handleHome()}
-        className="h-12 px-8 rounded-2xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
+        className="h-12 px-8 rounded-2xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] text-sm font-semibold transition-colors"
       >
         {t.profile.deleteAccountSuccessButton}
       </button>

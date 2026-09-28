@@ -37,7 +37,7 @@ export function BorrowHeroCard({ vm, onEdit, onDelete, onPay }: BorrowHeroCardPr
         <span
           className="mt-1 inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold"
           style={{
-            background: owe ? 'rgba(229,9,20,.16)' : 'rgba(29,185,84,.16)',
+            background: owe ? 'rgba(18,176,160,.16)' : 'rgba(55,195,104,.16)',
             color: owe ? '#F76D74' : '#35D46F',
           }}
         >
@@ -63,19 +63,19 @@ export function BorrowHeroCard({ vm, onEdit, onDelete, onPay }: BorrowHeroCardPr
       </p>
 
       {vm.gold ? (
-        <span className="mt-2 inline-flex w-fit items-center gap-1 rounded-full bg-[rgba(245,200,66,.14)] px-2.5 py-1 text-xs font-semibold text-[#F5C842]">
+        <span className="mt-2 inline-flex w-fit items-center gap-1 rounded-full bg-[rgba(237,196,99,.14)] px-2.5 py-1 text-xs font-semibold text-[#EDC463]">
           {vm.gold.grams.toFixed(1)}g · {vm.gold.karat}K
         </span>
       ) : null}
 
       {/* Payoff goal strip (borrow-only) */}
       {vm.goal ? (
-        <div className="mt-3 flex items-center gap-3 rounded-[14px] border border-[rgba(245,200,66,.35)] bg-[rgba(245,200,66,.08)] px-3 py-2.5">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[rgba(245,200,66,.18)] text-[#F5C842]">
+        <div className="mt-3 flex items-center gap-3 rounded-[14px] border border-[rgba(237,196,99,.35)] bg-[rgba(237,196,99,.08)] px-3 py-2.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[rgba(237,196,99,.18)] text-[#EDC463]">
             <Target className="h-4 w-4" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-[#F5C842]">Goal · clear by {vm.goal.by}</p>
+            <p className="text-sm font-bold text-[#EDC463]">Goal · clear by {vm.goal.by}</p>
             <p className="mt-0.5 font-mono-numbers text-[12px] leading-snug text-white/70">
               {vm.goal.remaining} payments left · {fmtWhole(vm.goal.per)}/{vm.goal.cadence === 'monthly' ? 'mo' : vm.goal.cadence}
               {vm.goal.next ? ` · next ${vm.goal.next}` : ''}
@@ -84,7 +84,7 @@ export function BorrowHeroCard({ vm, onEdit, onDelete, onPay }: BorrowHeroCardPr
           <span
             className="shrink-0 rounded-full px-2 py-1 text-[11px] font-bold uppercase tracking-wide"
             style={{
-              background: vm.goal.onTrack ? 'rgba(29,185,84,.2)' : 'rgba(255,177,61,.2)',
+              background: vm.goal.onTrack ? 'rgba(55,195,104,.2)' : 'rgba(255,177,61,.2)',
               color: vm.goal.onTrack ? '#35D46F' : '#FFB13D',
             }}
           >
@@ -99,7 +99,7 @@ export function BorrowHeroCard({ vm, onEdit, onDelete, onPay }: BorrowHeroCardPr
           <button
             type="button"
             onClick={onPay}
-            className="h-11 w-full rounded-[13px] bg-[var(--color-brand-red)] text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-red-hover)]"
+            className="h-11 w-full rounded-[13px] bg-[var(--color-brand-primary)] text-sm font-bold text-[var(--color-brand-on-primary)] transition-colors hover:bg-[var(--color-brand-primary-hover)]"
           >
             Pay {vm.name}
           </button>

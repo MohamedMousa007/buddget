@@ -9,7 +9,7 @@ import { rgba } from '@/lib/utils/color'
 import type { InvestmentAssetType } from '@/lib/store/types'
 
 const TYPES: Array<{ key: InvestmentAssetType; icon: React.ReactNode; color: string; name: string; sub: string }> = [
-  { key: 'gold', icon: <Gem size={23} />, color: '#F5C842', name: 'Gold', sub: 'Bars, coins, jewellery · priced by karat' },
+  { key: 'gold', icon: <Gem size={23} />, color: '#EDC463', name: 'Gold', sub: 'Bars, coins, jewellery · priced by karat' },
   { key: 'crypto', icon: <Bitcoin size={23} />, color: '#B79CFF', name: 'Crypto', sub: 'Coins and tokens · live price' },
   { key: 'stock', icon: <TrendingUp size={23} />, color: '#35D46F', name: 'Stocks & funds', sub: 'EGX, US markets, ETFs' },
   { key: 'property', icon: <Home size={23} />, color: '#2CE0C6', name: 'Real estate', sub: 'Flat, land, shop · area estimate' },

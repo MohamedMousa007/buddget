@@ -14,7 +14,7 @@ import { COINGECKO_IDS } from '@/lib/prices/coingecko'
 import { micro } from '@/lib/ui/microLabelStyle'
 import type { GoldKarat, InvestmentAssetType } from '@/lib/store/types'
 
-const ACCENT: Record<InvestmentAssetType, string> = { gold: '#F5C842', crypto: '#B79CFF', stock: '#35D46F', property: '#2CE0C6' }
+const ACCENT: Record<InvestmentAssetType, string> = { gold: '#EDC463', crypto: '#B79CFF', stock: '#35D46F', property: '#2CE0C6' }
 const TITLE: Record<InvestmentAssetType, string> = { gold: 'Add gold', crypto: 'Add crypto', stock: 'Add a position', property: 'Add property' }
 
 export interface AssetFormSheetProps {
@@ -149,7 +149,7 @@ export function AssetFormSheet({ open, type, onClose }: AssetFormSheetProps) {
 
         <div className="px-5 pt-2 pb-[max(20px,env(safe-area-inset-bottom))]">
           <button type="button" onClick={submit} disabled={!canSubmit} className="w-full text-white"
-            style={{ height: 52, borderRadius: 14, fontWeight: 600, fontSize: 15, background: canSubmit ? '#E50914' : 'var(--color-brand-elevated)', color: canSubmit ? '#fff' : 'var(--color-brand-text-muted)', cursor: canSubmit ? 'pointer' : 'default' }}>
+            style={{ height: 52, borderRadius: 14, fontWeight: 600, fontSize: 15, background: canSubmit ? '#12B0A0' : 'var(--color-brand-elevated)', color: canSubmit ? '#fff' : 'var(--color-brand-text-muted)', cursor: canSubmit ? 'pointer' : 'default' }}>
             Add investment
           </button>
         </div>
@@ -175,7 +175,7 @@ function ChipRow({ options, value, onChange, labels }: { options: string[]; valu
   return (
     <div className="flex gap-2 overflow-x-auto no-scrollbar">
       {options.map((o) => (
-        <button key={o} type="button" onClick={() => onChange(o)} className="shrink-0 rounded-full px-4 text-[12.5px] font-semibold" style={{ height: 36, border: value === o ? '1px solid rgba(229,9,20,.45)' : '1px solid var(--color-brand-border)', background: value === o ? 'rgba(229,9,20,.13)' : 'transparent', color: 'var(--color-brand-text-primary)' }}>
+        <button key={o} type="button" onClick={() => onChange(o)} className="shrink-0 rounded-full px-4 text-[12.5px] font-semibold" style={{ height: 36, border: value === o ? '1px solid rgba(18,176,160,.45)' : '1px solid var(--color-brand-border)', background: value === o ? 'rgba(18,176,160,.13)' : 'transparent', color: 'var(--color-brand-text-primary)' }}>
           {labels?.[o] ?? o}
         </button>
       ))}
@@ -194,6 +194,6 @@ function UnitInput({ value, onChange, suffix, placeholder }: { value: string; on
 
 function SourceChip({ title, on, onClick }: { title: string; on: boolean; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className="rounded-2xl p-3.5 text-center text-[13px] font-semibold" style={{ border: on ? '1px solid rgba(229,9,20,.5)' : '1px solid var(--color-brand-border)', background: on ? 'rgba(229,9,20,.06)' : 'var(--color-brand-elevated)', color: 'var(--color-brand-text-primary)' }}>{title}</button>
+    <button type="button" onClick={onClick} className="rounded-2xl p-3.5 text-center text-[13px] font-semibold" style={{ border: on ? '1px solid rgba(18,176,160,.5)' : '1px solid var(--color-brand-border)', background: on ? 'rgba(18,176,160,.06)' : 'var(--color-brand-elevated)', color: 'var(--color-brand-text-primary)' }}>{title}</button>
   )
 }

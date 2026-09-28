@@ -32,10 +32,10 @@ export function QuickAddFAB() {
 
   const tiles: QuickAddTile[] = [
     { id: 'scanReceipt', label: t.modals.fabTileScan, icon: Camera, fg: '#4DA3FF', bg: 'rgba(77,163,255,.16)' },
-    { id: 'addExpense', label: t.modals.fabTileExpense, icon: Receipt, fg: 'var(--color-brand-red)', bg: 'rgba(229,9,20,.14)' },
-    { id: 'addIncome', label: t.modals.fabTileIncome, icon: DollarSign, fg: 'var(--color-brand-green)', bg: 'rgba(29,185,84,.14)' },
+    { id: 'addExpense', label: t.modals.fabTileExpense, icon: Receipt, fg: 'var(--color-brand-red)', bg: 'rgba(18,176,160,.14)' },
+    { id: 'addIncome', label: t.modals.fabTileIncome, icon: DollarSign, fg: 'var(--color-brand-green)', bg: 'rgba(55,195,104,.14)' },
     { id: 'payDebt', label: t.modals.fabTileDebt, icon: CreditCard, fg: '#FF5C5C', bg: 'rgba(255,92,92,.14)' },
-    { id: 'addGoal', label: t.modals.fabTileSaving, icon: Coins, fg: 'var(--color-brand-gold)', bg: 'rgba(245,200,66,.14)' },
+    { id: 'addGoal', label: t.modals.fabTileSaving, icon: Coins, fg: 'var(--color-brand-gold)', bg: 'rgba(237,196,99,.14)' },
     { id: 'addPaymentMethod', label: t.paymentMethods.addMethod, icon: Wallet, fg: '#2DD4BF', bg: 'rgba(45,212,191,.14)' },
   ]
 
@@ -104,7 +104,7 @@ export function QuickAddFAB() {
       <button
         type="button"
         {...handlers}
-        className="hidden lg:flex fixed bottom-8 end-8 z-50 items-center justify-center w-14 h-14 rounded-full bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white shadow-lg shadow-red-900/30 transition-all duration-200 active:scale-95 cursor-pointer touch-none select-none"
+        className="hidden lg:flex fixed bottom-8 end-8 z-50 items-center justify-center h-[54px] w-[54px] rounded-[18px] bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] shadow-[0_8px_20px_-6px_color-mix(in_srgb,var(--color-brand-primary)_60%,transparent)] transition-all duration-200 active:scale-95 cursor-pointer touch-none select-none"
         aria-label={isOpen ? t.common.close : t.nav.quickAdd}
         aria-expanded={isOpen}
       >
@@ -119,7 +119,7 @@ export function QuickAddFAB() {
         padContent
         panelClassName="!bottom-0 !start-0 !end-0 !rounded-t-3xl lg:!bottom-24 lg:!end-8 lg:!start-auto lg:!top-auto lg:!translate-x-0 lg:!translate-y-0 lg:!w-[360px] lg:!rounded-2xl"
       >
-        <div className="mb-3.5 flex items-center justify-center gap-2 text-xs font-semibold text-[var(--color-brand-red)]">
+        <div className="mb-3.5 flex items-center justify-center gap-2 text-xs font-semibold text-[var(--color-brand-primary-ink)]">
           <Mic className="h-3.5 w-3.5 shrink-0" />
           {t.modals.fabVoiceTip}
         </div>

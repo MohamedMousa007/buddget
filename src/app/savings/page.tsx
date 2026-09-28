@@ -216,7 +216,7 @@ export default function SavingsPage() {
               type="button"
               onClick={() => guard(() => setNewAccountOpen(true))}
               className="mt-4 rounded-xl px-5 py-3 text-sm font-semibold text-white"
-              style={{ background: '#E50914' }}
+              style={{ background: '#12B0A0' }}
             >
               Create a pocket
             </button>

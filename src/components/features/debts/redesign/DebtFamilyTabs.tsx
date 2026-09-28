@@ -21,7 +21,7 @@ export function DebtFamilyTabs({ active, onChange }: { active: DebtFamily; onCha
             onClick={() => onChange(tab.key)}
             className={`h-11 rounded-[12px] text-sm font-bold transition-colors ${
               on
-                ? 'bg-[var(--color-brand-red)] text-white'
+                ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
                 : 'text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)]'
             }`}
           >

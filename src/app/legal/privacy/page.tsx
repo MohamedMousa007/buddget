@@ -23,7 +23,7 @@ export default function PrivacyPage() {
     <div className="space-y-10">
       {/* Page header */}
       <div className="space-y-2 pb-6 border-b border-white/5">
-        <p className="text-xs font-medium text-[var(--color-brand-red)] uppercase tracking-wider">
+        <p className="text-xs font-medium text-[var(--color-brand-primary-ink)] uppercase tracking-wider">
           Legal
         </p>
         <h1 className="text-3xl font-bold font-heading tracking-tight">Privacy Policy</h1>
@@ -32,7 +32,7 @@ export default function PrivacyPage() {
         </p>
         <p className="text-sm text-[var(--color-brand-text-secondary)] max-w-xl">
           This policy explains how Buddget collects, uses, stores, and protects your data. Also see our{' '}
-          <Link href="/legal/terms" className="text-[var(--color-brand-red)] hover:underline">
+          <Link href="/legal/terms" className="text-[var(--color-brand-primary-ink)] hover:underline">
             Terms of Service
           </Link>
           .

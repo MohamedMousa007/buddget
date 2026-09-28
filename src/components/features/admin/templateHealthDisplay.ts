@@ -34,7 +34,7 @@ export const STATUS_CHIP: Record<string, Chip> = {
   },
   retired: {
     label: 'Retired',
-    cls: 'border-red-500/30 bg-red-500/10 text-[var(--color-brand-red)]',
+    cls: 'border-red-500/30 bg-red-500/10 text-[var(--color-brand-primary-ink)]',
     title: 'Never matched again; a replacement is learned from the correction',
   },
   exported: {

@@ -12,7 +12,8 @@ import {
   Plug,
   RefreshCw,
   Landmark,
-  Send, Zap,
+  Send,
+  Zap,
   Layers,
   Banknote,
   BanknoteArrowUp,
@@ -29,7 +30,6 @@ import {
   Award,
   Laptop,
   TrendingUp,
-  PiggyBank,
   HandCoins,
   Gift,
   Undo2,
@@ -72,7 +72,7 @@ export const EXPENSE_CATEGORY_GRID: CategoryGridItem[] = [
   { id: 'CC Payoff', icon: CreditCard, accent: '#F0A0A0', nonspend: true },
   { id: 'Top up', icon: WalletCards, accent: '#2DD4BF', nonspend: true },
   { id: 'Installment', icon: CalendarClock, accent: '#EC4899', nonspend: true },
-  { id: 'Savings', icon: Coins, accent: '#F5C842', nonspend: true },
+  { id: 'Savings', icon: Coins, accent: '#EDC463', nonspend: true },
 ]
 
 /** Income source type → unique Lucide glyph + accent. Single source of truth for
@@ -87,10 +87,10 @@ export interface IncomeTypeGridItem {
 // Accents match the Income handoff §9 "Type colors" spec exactly.
 export const INCOME_TYPE_GRID: IncomeTypeGridItem[] = [
   { id: 'salary', icon: Briefcase, accent: '#6366F1' },
-  { id: 'bonus', icon: Award, accent: '#F5C842' },
+  { id: 'bonus', icon: Award, accent: '#EDC463' },
   { id: 'side_hustle', icon: Laptop, accent: '#4DA3FF' },
   { id: 'investment', icon: TrendingUp, accent: '#A78BFA' },
-  { id: 'savings', icon: PiggyBank, accent: '#F5C842' },
+  { id: 'savings', icon: Coins, accent: '#EDC463' },
   { id: 'debt', icon: HandCoins, accent: '#FF6B6B' },
   { id: 'gift', icon: Gift, accent: '#F472B6' },
   { id: 'refund', icon: Undo2, accent: '#38BDF8' },

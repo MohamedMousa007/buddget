@@ -206,7 +206,7 @@ export default function ExpensesPage() {
         <button
           type="button"
           onClick={addExpense}
-          className="mt-4 h-11 w-full rounded-xl bg-[var(--color-brand-red)] text-[15px] font-semibold tracking-[-0.005em] text-white shadow-[0_10px_24px_-10px_rgba(229,9,20,0.55)] transition-transform hover:bg-[var(--color-brand-red-hover)] active:translate-y-px"
+          className="mt-4 h-11 w-full rounded-xl bg-[var(--color-brand-primary)] text-[15px] font-semibold tracking-[-0.005em] text-[var(--color-brand-on-primary)] shadow-[0_10px_24px_-10px_rgba(18,176,160,0.55)] transition-transform hover:bg-[var(--color-brand-primary-hover)] active:translate-y-px"
         >
           {t.expenses.addExpenseCta}
         </button>

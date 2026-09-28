@@ -28,7 +28,7 @@ export function SmsReviewChip() {
           }}
           className="flex min-h-11 w-full items-center gap-2.5 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-2.5 text-start hover:bg-[var(--color-brand-elevated)] transition-colors"
         >
-          <BellRing className="h-4 w-4 shrink-0 text-[var(--color-brand-red)]" />
+          <BellRing className="h-4 w-4 shrink-0 text-[var(--color-brand-primary-ink)]" />
           <span className="flex-1 text-xs font-medium text-[var(--color-brand-text-primary)]">
             {t.smsReview.chip(pending.length)}
           </span>

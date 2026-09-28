@@ -178,7 +178,7 @@ export default function ResetPasswordConfirmPage() {
   if (checking) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--color-brand-bg)]">
-        <Loader2 className="w-8 h-8 animate-spin text-[var(--color-brand-red)]" />
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--color-brand-primary-ink)]" />
       </div>
     )
   }
@@ -191,7 +191,7 @@ export default function ResetPasswordConfirmPage() {
           className="w-full max-w-md border p-5 sm:p-6 rounded-2xl space-y-3 text-center"
           style={{ background: 'var(--color-brand-card)', borderColor: 'var(--color-brand-border)' }}
         >
-          <div className="mx-auto w-12 h-12 rounded-full bg-[var(--color-brand-red)]/10 flex items-center justify-center">
+          <div className="mx-auto w-12 h-12 rounded-full bg-[var(--color-brand-primary)]/10 flex items-center justify-center">
             <AlertTriangle className="w-6 h-6 text-[var(--color-brand-red)]" aria-hidden />
           </div>
           <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)]">

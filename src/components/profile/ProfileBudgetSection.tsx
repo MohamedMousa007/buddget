@@ -53,7 +53,7 @@ export function ProfileBudgetSection({ variant = 'standalone' }: ProfileBudgetSe
     <section className={sectionClass}>
       {variant === 'standalone' ? (
         <div className="flex items-center gap-2 mb-2">
-          <Target className="w-5 h-5 text-[var(--color-brand-red)]" />
+          <Target className="w-5 h-5 text-[var(--color-brand-primary-ink)]" />
           <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
             {t.profile.budgetTitle}
           </h2>

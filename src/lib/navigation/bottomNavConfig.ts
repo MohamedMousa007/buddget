@@ -45,9 +45,9 @@ export interface MoreMenuItem {
  * Settings intentionally lives in the Profile menu, not here.
  */
 export const BOTTOM_NAV_MORE_MENU: MoreMenuItem[] = [
-  { href: '/budget-setup', label: 'budgetSetup', icon: SlidersHorizontal, fg: 'var(--color-brand-red)', bg: 'rgba(229,9,20,.13)' },
-  { href: '/income', label: 'income', icon: Wallet, fg: 'var(--color-brand-green)', bg: 'rgba(29,185,84,.13)' },
-  { href: '/savings', label: 'savings', icon: Coins, fg: 'var(--color-brand-gold)', bg: 'rgba(245,200,66,.13)' },
+  { href: '/budget-setup', label: 'budgetSetup', icon: SlidersHorizontal, fg: 'var(--color-brand-primary)', bg: 'rgba(18,176,160,.13)' },
+  { href: '/income', label: 'income', icon: Wallet, fg: 'var(--color-brand-green)', bg: 'rgba(55,195,104,.13)' },
+  { href: '/savings', label: 'savings', icon: Coins, fg: 'var(--color-brand-gold)', bg: 'rgba(237,196,99,.13)' },
   { href: '/investment', label: 'investment', icon: Gem, fg: '#B79CFF', bg: 'rgba(183,156,255,.13)' },
   { href: '/subscriptions', label: 'subscriptions', icon: RefreshCw, fg: '#4DA3FF', bg: 'rgba(77,163,255,.13)' },
   { href: '/reports', label: 'reports', icon: BarChart3, fg: '#A78BFA', bg: 'rgba(167,139,250,.13)' },

@@ -321,7 +321,7 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
                           setPaydays(deriveDefaultPaydays(paydays[0] ?? new Date().getDate(), f))
                         }}
                         className={`rounded-xl py-2.5 text-sm font-semibold transition-colors ${
-                          on ? 'bg-[var(--color-brand-red)] text-white' : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
+                          on ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]' : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
                         }`}
                       >
                         {f === 'monthly' ? t.addIncome.freqMonthly : f === 'biweekly' ? t.addIncome.freqBiweekly : t.addIncome.freqWeekly}
@@ -359,7 +359,7 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
                         type="button"
                         onClick={() => setDriftDays(days)}
                         className={`rounded-xl py-2.5 text-sm font-semibold transition-colors ${
-                          on ? 'bg-[var(--color-brand-red)] text-white' : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
+                          on ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]' : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
                         }`}
                       >
                         {t.addIncome[key]}
@@ -392,7 +392,7 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
                   <button
                     type="button"
                     onClick={() => setAssignOpen(true)}
-                    className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[rgba(29,185,84,0.16)] px-3.5 py-2 text-sm font-bold text-[var(--color-brand-green)]"
+                    className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[rgba(55,195,104,0.16)] px-3.5 py-2 text-sm font-bold text-[var(--color-brand-green)]"
                   >
                     <Link2 className="h-4 w-4" />
                     {t.addIncome.assignBtn}
@@ -432,7 +432,7 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
             type="button"
             onClick={handleSubmit}
             disabled={!name.trim() || !amtValid}
-            className="w-full rounded-xl bg-[var(--color-brand-red)] py-3.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-brand-red-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-xl bg-[var(--color-brand-primary)] py-3.5 text-sm font-semibold text-[var(--color-brand-on-primary)] transition-colors hover:bg-[var(--color-brand-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {edit ? t.editIncome.buttonSave : isRecurring ? t.addIncome.buttonSubmit : t.income.addIncomeCta}
           </button>

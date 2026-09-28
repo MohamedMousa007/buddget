@@ -1,7 +1,7 @@
 'use client'
 
 import { AppLink as Link } from '@/components/ui/AppLink'
-import { DollarSign, PiggyBank } from 'lucide-react'
+import { DollarSign, Coins } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 
 /**
@@ -14,7 +14,7 @@ export function SettingsPageLinksSection() {
     <>
       <section className="glass-card rounded-2xl p-5 space-y-3">
         <div className="flex items-center gap-2 mb-1">
-          <DollarSign className="w-5 h-5 text-[var(--color-brand-red)]" />
+          <DollarSign className="w-5 h-5 text-[var(--color-brand-primary-ink)]" />
           <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">{t.settings.pageLinksIncomeTitle}</h2>
         </div>
         <p className="text-xs text-[var(--color-brand-text-muted)]">
@@ -30,7 +30,7 @@ export function SettingsPageLinksSection() {
 
       <section className="glass-card rounded-2xl p-5 space-y-3">
         <div className="flex items-center gap-2 mb-1">
-          <PiggyBank className="w-5 h-5 text-[var(--color-brand-red)]" />
+          <Coins className="w-5 h-5 text-[var(--color-brand-primary-ink)]" />
           <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">{t.settings.pageLinksSavingsTitle}</h2>
         </div>
         <p className="text-xs text-[var(--color-brand-text-muted)]">{t.settings.pageLinksSavingsDesc}</p>

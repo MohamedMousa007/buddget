@@ -76,7 +76,7 @@ export function BudgetPlannerAddCategoryMenu({
       <PopoverTrigger
         type="button"
         data-add-category-trigger
-        className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] px-3 py-1.5 text-xs font-medium text-[var(--color-brand-red)] hover:bg-[var(--color-brand-elevated)] transition-colors"
+        className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] px-3 py-1.5 text-xs font-medium text-[var(--color-brand-primary-ink)] hover:bg-[var(--color-brand-elevated)] transition-colors"
       >
         <Plus className="h-3.5 w-3.5" />
         {labels.addCategory}
@@ -157,7 +157,7 @@ export function BudgetPlannerAddCategoryMenu({
             type="button"
             onClick={handleCustomAdd}
             disabled={!customName.trim() || categoryNameAlreadyInPlan(customName.trim(), categories)}
-            className="w-full rounded-xl bg-[var(--color-brand-red)] py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)] disabled:opacity-40"
+            className="w-full rounded-xl bg-[var(--color-brand-primary)] py-2 text-sm font-semibold text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)] disabled:opacity-40"
           >
             {labels.addCustomCategory}
           </button>

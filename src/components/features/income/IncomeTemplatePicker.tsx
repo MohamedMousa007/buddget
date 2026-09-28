@@ -50,7 +50,7 @@ export function IncomeTemplatePicker({
         <button
           type="button"
           onClick={() => onChange(suggestion.id)}
-          className="mt-1.5 text-xs font-semibold text-[var(--color-brand-red)]"
+          className="mt-1.5 text-xs font-semibold text-[var(--color-brand-primary-ink)]"
         >
           {(suggestionLabel ?? ((n) => n))(suggestion.name)}
         </button>

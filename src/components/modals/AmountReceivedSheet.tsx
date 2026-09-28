@@ -187,7 +187,7 @@ export function AmountReceivedSheet() {
             <button
               type="button"
               onClick={() => setAmount(String(expected))}
-              className="shrink-0 rounded-lg bg-[rgba(29,185,84,0.16)] px-2.5 py-1.5 text-xs font-bold text-[var(--color-brand-green)] transition-colors hover:bg-[rgba(29,185,84,0.24)]"
+              className="shrink-0 rounded-lg bg-[rgba(55,195,104,0.16)] px-2.5 py-1.5 text-xs font-bold text-[var(--color-brand-green)] transition-colors hover:bg-[rgba(55,195,104,0.24)]"
             >
               {t.income.fullBtn}
             </button>

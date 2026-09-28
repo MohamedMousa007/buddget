@@ -92,7 +92,7 @@ function CheckBox({ selected }: { selected: boolean }) {
       className={cn(
         'flex h-6 w-6 shrink-0 items-center justify-center rounded-sm border-2 text-white',
         selected
-          ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)]'
+          ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]'
           : 'border-[var(--color-brand-border)] bg-transparent',
       )}
     >
@@ -105,7 +105,7 @@ function selRowClass(selected: boolean) {
   return cn(
     'flex w-full items-center gap-3 rounded-lg border px-3.5 py-3 text-start transition-colors',
     selected
-      ? 'border-[var(--color-brand-red)] bg-[rgba(229,9,20,0.1)]'
+      ? 'border-[var(--color-brand-primary)] bg-[rgba(18,176,160,0.1)]'
       : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]',
   )
 }
@@ -205,7 +205,7 @@ function AmountRangeControl() {
       <div className="relative mb-4 h-7">
         <div className="absolute left-0 right-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-[var(--color-brand-elevated)]" />
         <div
-          className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-[var(--color-brand-red)]"
+          className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-[var(--color-brand-primary)]"
           style={{ left: minPct, right: maxRightPct }}
         />
         <input
@@ -264,7 +264,7 @@ function AmountRangeControl() {
 }
 
 const redDoneBtn =
-  'h-12 w-full rounded-lg bg-[var(--color-brand-red)] text-sm font-bold text-white'
+  'h-12 w-full rounded-lg bg-[var(--color-brand-primary)] text-sm font-bold text-[var(--color-brand-on-primary)]'
 
 export function ExpenseFilters({
   categories,
@@ -318,7 +318,7 @@ export function ExpenseFilters({
     cn(
       'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 py-2 text-xs font-semibold transition-colors',
       active
-        ? 'border-[var(--color-brand-red)] bg-[rgba(229,9,20,0.12)] text-[var(--color-brand-text-primary)]'
+        ? 'border-[var(--color-brand-primary)] bg-[rgba(18,176,160,0.12)] text-[var(--color-brand-text-primary)]'
         : 'border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[var(--color-brand-text-secondary)]',
     )
 
@@ -363,7 +363,7 @@ export function ExpenseFilters({
       >
         <SlidersHorizontal className="h-5 w-5" />
         {filterCount > 0 ? (
-          <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-md border-2 border-[var(--color-brand-bg)] bg-[var(--color-brand-red)] px-1 text-[10px] font-extrabold text-white">
+          <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-md border-2 border-[var(--color-brand-bg)] bg-[var(--color-brand-primary)] px-1 text-[10px] font-extrabold text-[var(--color-brand-on-primary)]">
             {filterCount}
           </span>
         ) : null}
@@ -428,7 +428,7 @@ export function ExpenseFilters({
       <FilterSheet open={dropdown === 'amount'} onClose={close}>
         <div className="mb-5 flex items-center justify-between">
           <h3 className="text-base font-extrabold text-[var(--color-brand-text-primary)]">{t.expenses.amountRange}</h3>
-          <span className="font-mono-numbers text-sm font-bold text-[var(--color-brand-red)]">{amountReadout}</span>
+          <span className="font-mono-numbers text-sm font-bold text-[var(--color-brand-primary-ink)]">{amountReadout}</span>
         </div>
         <AmountRangeControl />
         <button type="button" onClick={close} className={redDoneBtn}>{t.expenses.doneCta}</button>
@@ -438,7 +438,7 @@ export function ExpenseFilters({
       <FilterSheet open={dropdown === 'all'} onClose={close} maxHeightClass="max-h-[84%]">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-extrabold text-[var(--color-brand-text-primary)]">{t.expenses.filtersTitle}</h3>
-          <button type="button" onClick={reset} className="text-xs font-bold text-[var(--color-brand-red)]">
+          <button type="button" onClick={reset} className="text-xs font-bold text-[var(--color-brand-primary-ink)]">
             {t.expenses.resetAll}
           </button>
         </div>
@@ -485,7 +485,7 @@ export function ExpenseFilters({
         </div>
         <AmountRangeControl />
 
-        <button type="button" onClick={close} className="h-12 w-full rounded-lg bg-[var(--color-brand-red)] text-base font-bold text-white">
+        <button type="button" onClick={close} className="h-12 w-full rounded-lg bg-[var(--color-brand-primary)] text-base font-bold text-[var(--color-brand-on-primary)]">
           {t.expenses.showResults.replace('{count}', String(resultCount))}
         </button>
       </FilterSheet>

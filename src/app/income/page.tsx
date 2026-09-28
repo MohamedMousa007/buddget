@@ -249,7 +249,7 @@ export default function IncomePage() {
         <button
           type="button"
           onClick={openAddIncome}
-          className="mt-4 w-full rounded-[14px] bg-[var(--color-brand-red)] py-3 text-sm font-bold text-white hover:bg-[var(--color-brand-red-hover)]"
+          className="mt-4 w-full rounded-[14px] bg-[var(--color-brand-primary)] py-3 text-sm font-bold text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
         >
           {t.income.addIncomeCta}
         </button>
@@ -362,7 +362,7 @@ export default function IncomePage() {
                         <button
                           type="button"
                           onClick={() => markPaydayMissed(source, sel.dueDate)}
-                          className="rounded-[14px] bg-[var(--color-brand-red)] py-2.5 text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-red-hover)]"
+                          className="rounded-[14px] bg-[var(--color-brand-primary)] py-2.5 text-sm font-bold text-[var(--color-brand-on-primary)] transition-colors hover:bg-[var(--color-brand-primary-hover)]"
                         >
                           {t.income.missedBtn}
                         </button>
@@ -432,7 +432,7 @@ export default function IncomePage() {
                       title={r.name}
                       titleBadge={
                         <>
-                          <span className={`shrink-0 rounded-full px-2 py-[2.5px] text-[9.5px] font-extrabold uppercase tracking-[0.05em] ${r.recurring ? 'bg-[rgba(29,185,84,0.16)] text-[var(--color-brand-green)]' : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]'}`}>
+                          <span className={`shrink-0 rounded-full px-2 py-[2.5px] text-[9.5px] font-extrabold uppercase tracking-[0.05em] ${r.recurring ? 'bg-[rgba(55,195,104,0.16)] text-[var(--color-brand-green)]' : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]'}`}>
                             {r.recurring ? t.income.recurringLabel : t.income.oneTimeLabel}
                           </span>
                           {r.daysLate ? (

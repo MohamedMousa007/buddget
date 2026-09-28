@@ -291,7 +291,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
           <button
             type="button"
             onClick={onClose}
-            className="mt-2 min-h-[44px] rounded-xl bg-[var(--color-brand-red)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
+            className="mt-2 min-h-[44px] rounded-xl bg-[var(--color-brand-primary)] px-4 py-2 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
           >
             Done
           </button>
@@ -321,7 +321,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
               <button
                 type="button"
                 onClick={() => { reset(); void runScan('camera') }}
-                className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
+                className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-primary)] px-5 py-2.5 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
               >
                 <Camera className="h-4 w-4" /> Scan again
               </button>
@@ -357,7 +357,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
               <button
                 type="button"
                 onClick={() => void submitPhotos(photos)}
-                className="mt-1 inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
+                className="mt-1 inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[var(--color-brand-primary)] px-5 py-2.5 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
               >
                 <RefreshCcw className="h-4 w-4" /> Try again
               </button>
@@ -365,7 +365,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
               <button
                 type="button"
                 onClick={() => void runScan('camera')}
-                className="mt-1 inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
+                className="mt-1 inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[var(--color-brand-primary)] px-5 py-2.5 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
               >
                 <RefreshCcw className="h-4 w-4" /> Scan again
               </button>
@@ -397,7 +397,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
             <button
               type="button"
               onClick={() => void runScan('camera')}
-              className="flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-4 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
+              className="flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[var(--color-brand-primary)] px-4 py-2.5 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
             >
               <Camera className="h-4 w-4" /> Scan
             </button>
@@ -447,7 +447,7 @@ function ResultView({
                 className="h-12 w-9 rounded-lg border border-[var(--color-brand-border)] object-cover"
               />
               {pageCount > 1 ? (
-                <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--color-brand-red)] px-1 text-[9px] font-semibold text-white">
+                <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--color-brand-primary)] px-1 text-[9px] font-semibold text-[var(--color-brand-on-primary)]">
                   {pageCount}
                 </span>
               ) : null}
@@ -519,7 +519,7 @@ function ResultView({
         <button
           type="button"
           onClick={onConfirm}
-          className="flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-4 py-3 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
+          className="flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-primary)] px-4 py-3 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
         >
           <Check className="h-4 w-4" /> Save expense
         </button>
@@ -647,7 +647,7 @@ function ProcessingView({ preview, title, subtitle }: { preview: string | null; 
       <style>{`
         .rsl-sweep {
           position: absolute; left: 0; right: 0; top: -45%; height: 45%;
-          background: linear-gradient(to bottom, transparent, rgba(229,9,20,.28), rgba(229,9,20,.55), rgba(229,9,20,.28), transparent);
+          background: linear-gradient(to bottom, transparent, rgba(18,176,160,.28), rgba(18,176,160,.55), rgba(18,176,160,.28), transparent);
           animation: rslSweep 1.5s cubic-bezier(.4,0,.6,1) infinite;
         }
         @keyframes rslSweep { 0% { top: -45%; } 100% { top: 100%; } }

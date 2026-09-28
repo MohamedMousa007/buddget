@@ -23,8 +23,8 @@ export function AssignPaymentBanner({
 }) {
   if (!candidate) return null
   return (
-    <div className="flex items-center gap-3 rounded-[16px] border border-[#1DB954]/45 bg-[rgba(29,185,84,.08)] p-3.5">
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-[rgba(29,185,84,.18)] text-[#35D46F]">
+    <div className="flex items-center gap-3 rounded-[16px] border border-[#37C368]/45 bg-[rgba(55,195,104,.08)] p-3.5">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-[rgba(55,195,104,.18)] text-[#35D46F]">
         <Link2 className="h-5 w-5" />
       </span>
       <div className="min-w-0 flex-1">

@@ -12,8 +12,8 @@ export function AdminHelpSection() {
       <div className="text-xs text-[var(--color-brand-text-muted)] space-y-2">
         <p>
           Server admin configuration is on{' '}
-          <code className="text-[var(--color-brand-red)]">Vercel</code> (not native{' '}
-          <code className="text-[var(--color-brand-red)]">.env.local</code>):
+          <code className="text-[var(--color-brand-primary-ink)]">Vercel</code> (not native{' '}
+          <code className="text-[var(--color-brand-primary-ink)]">.env.local</code>):
         </p>
         <div className="p-3 rounded-lg bg-[var(--color-brand-bg)] font-mono-numbers space-y-1 text-xs">
           <p>

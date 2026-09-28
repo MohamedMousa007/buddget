@@ -14,7 +14,7 @@ export function AdminAiKeyStatus({ config }: AdminAiKeyStatusProps) {
   return (
     <>
       <div className="flex items-center gap-2 mb-2">
-        <Bot className="w-5 h-5 text-[var(--color-brand-red)]" />
+        <Bot className="w-5 h-5 text-[var(--color-brand-primary-ink)]" />
         <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
           AI Assistant
         </h2>
@@ -26,8 +26,8 @@ export function AdminAiKeyStatus({ config }: AdminAiKeyStatusProps) {
           <span className="flex items-center gap-2">
             {!config?.ai.keyPresent ? (
               <>
-                <XCircle className="w-4 h-4 text-[var(--color-brand-red)]" />
-                <span className="text-sm text-[var(--color-brand-red)] font-medium">No API key</span>
+                <XCircle className="w-4 h-4 text-[var(--color-brand-primary-ink)]" />
+                <span className="text-sm text-[var(--color-brand-primary-ink)] font-medium">No API key</span>
               </>
             ) : (
               <>
@@ -54,11 +54,11 @@ export function AdminAiKeyStatus({ config }: AdminAiKeyStatusProps) {
           <div className="p-3 rounded-xl bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)]">
             <p className="text-xs text-[var(--color-brand-text-secondary)]">
               To enable AI, add{' '}
-              <code className="text-[var(--color-brand-red)] bg-[var(--color-brand-bg)] px-1 py-0.5 rounded">
+              <code className="text-[var(--color-brand-primary-ink)] bg-[var(--color-brand-bg)] px-1 py-0.5 rounded">
                 GEMINI_API_KEY
               </code>{' '}
               to your{' '}
-              <code className="text-[var(--color-brand-red)] bg-[var(--color-brand-bg)] px-1 py-0.5 rounded">
+              <code className="text-[var(--color-brand-primary-ink)] bg-[var(--color-brand-bg)] px-1 py-0.5 rounded">
                 .env.local
               </code>{' '}
               file and restart the server.
@@ -67,7 +67,7 @@ export function AdminAiKeyStatus({ config }: AdminAiKeyStatusProps) {
               href="https://aistudio.google.com/apikey"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-[var(--color-brand-red)] hover:text-[var(--color-brand-red-hover)] mt-2 inline-block"
+              className="text-xs text-[var(--color-brand-primary-ink)] hover:text-[var(--color-brand-primary-hover)] mt-2 inline-block"
             >
               Get a free Gemini API key →
             </a>

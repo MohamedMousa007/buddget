@@ -40,7 +40,7 @@ export function DashboardStatsRow({
         label={t.dashboard.heroStatOut}
         amount={totalSpent}
         currency={baseCurrency}
-        color="text-[var(--color-brand-red)]"
+        color="text-[var(--color-brand-primary-ink)]"
       />
       <Divider />
       <Stat

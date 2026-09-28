@@ -139,7 +139,7 @@ export function SettingsSubPageShell({ title, children, showSave = true }: Props
                 <button
                   type="button"
                   onClick={() => void onSaveAndLeave()}
-                  className="h-11 px-4 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
+                  className="h-11 px-4 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] text-sm font-semibold transition-colors"
                 >
                   {t.common.save}
                 </button>

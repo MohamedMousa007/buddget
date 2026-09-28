@@ -59,7 +59,7 @@ export function PasswordStrengthMeter({ password }: PasswordStrengthMeterProps) 
   ]
   const colors = [
     'bg-[var(--color-brand-border)]',
-    'bg-[var(--color-brand-red)]',
+    'bg-[var(--color-brand-primary)]',
     'bg-[var(--color-brand-amber)]',
     'bg-[var(--color-brand-gold)]',
     'bg-[var(--color-brand-green)]',

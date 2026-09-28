@@ -56,7 +56,7 @@ export function ReportsSummaryPanel({
         </div>
         <div>
           <p className="text-xs text-[var(--color-brand-text-muted)]">{t.reports.kpiTotalOut}</p>
-          <p className="text-lg font-bold font-mono-numbers text-[var(--color-brand-red)]">
+          <p className="text-lg font-bold font-mono-numbers text-[var(--color-brand-primary-ink)]">
             {formatCurrency(totalExpenses, baseCurrency)}
           </p>
         </div>

@@ -173,7 +173,7 @@ export function AssignIncomeSheet({ open, onClose, onAssign, initialTemplateId, 
           type="button"
           onClick={confirm}
           disabled={!chosen || !targetOcc}
-          className="mt-5 w-full rounded-[14px] bg-[var(--color-brand-red)] py-3 text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-red-hover)] disabled:opacity-50"
+          className="mt-5 w-full rounded-[14px] bg-[var(--color-brand-primary)] py-3 text-sm font-bold text-[var(--color-brand-on-primary)] transition-colors hover:bg-[var(--color-brand-primary-hover)] disabled:opacity-50"
         >
           {chosenCard ? t.income.assignConfirm(chosenCard.source.name) : t.income.assignTitle}
         </button>

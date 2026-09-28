@@ -38,7 +38,7 @@ export function AIChatMessageList({
           <div
             className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
               message.role === 'user'
-                ? 'bg-[var(--color-brand-red)] text-white'
+                ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
                 : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)]'
             }`}
           >

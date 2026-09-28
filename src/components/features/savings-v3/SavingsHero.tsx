@@ -107,11 +107,11 @@ export function SavingsHero({
             <div className="mt-3">
               <div className="flex h-2 overflow-hidden rounded-full" style={{ background: 'rgba(255,255,255,.08)' }}>
                 <div style={{ width: `${savedPct}%`, background: '#35D46F' }} />
-                <div style={{ width: `${invPct}%`, background: '#F5C842' }} />
+                <div style={{ width: `${invPct}%`, background: '#EDC463' }} />
               </div>
               <div className="mt-1.5 flex items-center justify-between" style={{ fontSize: 10.5, fontWeight: 600 }}>
                 <span className="inline-flex items-center gap-1" style={{ color: '#35D46F' }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: '#35D46F' }} />Saved {savedPct}%</span>
-                <span className="inline-flex items-center gap-1" style={{ color: '#F5C842' }}>Invested {invPct}%<span className="h-1.5 w-1.5 rounded-full" style={{ background: '#F5C842' }} /></span>
+                <span className="inline-flex items-center gap-1" style={{ color: '#EDC463' }}>Invested {invPct}%<span className="h-1.5 w-1.5 rounded-full" style={{ background: '#EDC463' }} /></span>
               </div>
             </div>
           )
@@ -124,14 +124,14 @@ export function SavingsHero({
         >
           <Cell label="Total saved" value={fmtCompact(totalSaved)} />
           <Cell label="This month" value={signed(thisMonth)} valueColor="#35D46F" />
-          <Cell label="Investment" value={fmtCompact(investment)} valueColor="#F5C842" chevron onClick={onInvestment} last />
+          <Cell label="Investment" value={fmtCompact(investment)} valueColor="#EDC463" chevron onClick={onInvestment} last />
         </div>
 
         <button
           type="button"
           onClick={onAddSavings}
           className="mt-3 w-full text-white active:scale-[.99] transition-transform"
-          style={{ height: 46, borderRadius: 13, background: '#E50914', fontWeight: 600, fontSize: 15 }}
+          style={{ height: 46, borderRadius: 13, background: '#12B0A0', fontWeight: 600, fontSize: 15 }}
         >
           Add savings
         </button>

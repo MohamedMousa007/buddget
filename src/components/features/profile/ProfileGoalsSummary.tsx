@@ -35,7 +35,7 @@ export function ProfileGoalsSummary() {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-[var(--color-brand-text-primary)] flex items-center gap-2">
-            <Target className="w-4 h-4 text-[var(--color-brand-red)]" aria-hidden />
+            <Target className="w-4 h-4 text-[var(--color-brand-primary-ink)]" aria-hidden />
             {t.goals.pageTitle}
           </h2>
           <p className="text-xs text-[var(--color-brand-text-muted)] mt-1">

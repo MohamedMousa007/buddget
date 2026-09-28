@@ -78,7 +78,7 @@ export function PrivacyRightsSections() {
         </p>
         <p>
           To exercise any right, contact{' '}
-          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
+          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-primary-ink)] hover:underline">
             support@buddget.app
           </a>
           . We will respond within 30 days.

@@ -69,7 +69,7 @@ export function LockScreen() {
       <style>{`
         .lg-bg {
           background:
-            radial-gradient(120% 60% at 50% -6%, rgba(229,9,20,.26) 0%, rgba(229,9,20,.06) 38%, rgba(20,18,26,0) 62%),
+            radial-gradient(120% 60% at 50% -6%, rgba(18,176,160,.26) 0%, rgba(18,176,160,.06) 38%, rgba(20,18,26,0) 62%),
             linear-gradient(180deg, #1A1720 0%, #121016 55%, #0E0C12 100%) !important;
         }
       `}</style>
@@ -79,7 +79,7 @@ export function LockScreen() {
         style={{ fontFamily: 'var(--font-heading), var(--font-sans)' }}
       >
         <span className="text-[var(--color-brand-text-primary)]">Bud</span>
-        <span className="text-[var(--color-brand-red)]">d</span>
+        <span className="text-[var(--color-brand-primary-ink)]">d</span>
         <span className="text-[var(--color-brand-text-primary)]">get</span>
       </h1>
 
@@ -91,7 +91,7 @@ export function LockScreen() {
           <button
             type="button"
             onClick={() => void signOut()}
-            className="mt-8 flex h-12 items-center justify-center rounded-xl bg-[var(--color-brand-red)] px-6 font-medium text-white"
+            className="mt-8 flex h-12 items-center justify-center rounded-xl bg-[var(--color-brand-primary)] px-6 font-medium text-[var(--color-brand-on-primary)]"
           >
             {t.common.signIn}
           </button>

@@ -84,7 +84,7 @@ export const AuthEmailField = forwardRef<HTMLInputElement, AuthEmailFieldProps>(
                 if (!disabled && !pending) onAdvance()
               }}
               disabled={disabled || pending || !value.trim()}
-              className="absolute end-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg flex items-center justify-center bg-[var(--color-brand-red)] text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--color-brand-red-hover)] transition-colors"
+              className="absolute end-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg flex items-center justify-center bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--color-brand-primary-hover)] transition-colors"
               aria-label={t.auth.continueAriaLabel}
             >
               {pending ? (

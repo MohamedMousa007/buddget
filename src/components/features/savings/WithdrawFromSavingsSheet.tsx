@@ -90,7 +90,7 @@ export function WithdrawFromSavingsSheet({
             </div>
           </div>
           {acc && Number.isFinite(n) && n > acc.currentBalance + 0.0001 && (
-            <p className="text-xs text-[var(--color-brand-red)]">{t.savings.exceedsBalance}</p>
+            <p className="text-xs text-[var(--color-brand-primary-ink)]">{t.savings.exceedsBalance}</p>
           )}
           <div>
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelReason}</Label>
@@ -105,7 +105,7 @@ export function WithdrawFromSavingsSheet({
             type="button"
             onClick={submit}
             disabled={!valid}
-            className="mt-2 w-full rounded-xl bg-[var(--color-brand-red)] py-3 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)] disabled:opacity-40 transition-colors"
+            className="mt-2 w-full rounded-xl bg-[var(--color-brand-primary)] py-3 text-sm font-semibold text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)] disabled:opacity-40 transition-colors"
           >
             {t.savings.submitWithdraw}
           </button>

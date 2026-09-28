@@ -60,7 +60,7 @@ export default function GoalsPage() {
             <button
               type="button"
               onClick={openAdd}
-              className="shrink-0 px-4 py-2 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-sm font-semibold text-white transition-colors"
+              className="shrink-0 px-4 py-2 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-sm font-semibold text-[var(--color-brand-on-primary)] transition-colors"
             >
               {t.goals.addGoal}
             </button>
@@ -77,7 +77,7 @@ export default function GoalsPage() {
               <button
                 type="button"
                 onClick={openAdd}
-                className="px-5 py-2.5 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-sm font-semibold text-white transition-colors"
+                className="px-5 py-2.5 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-sm font-semibold text-[var(--color-brand-on-primary)] transition-colors"
               >
                 {t.goals.addGoal}
               </button>

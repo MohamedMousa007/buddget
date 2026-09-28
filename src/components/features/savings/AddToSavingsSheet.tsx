@@ -30,7 +30,7 @@ const pill = (on: boolean) =>
   cn(
     'rounded-xl border px-3 py-2 text-xs font-medium transition-colors',
     on
-      ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10 text-[var(--color-brand-text-primary)]'
+      ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-text-primary)]'
       : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
   )
 

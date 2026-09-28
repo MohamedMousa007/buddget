@@ -14,7 +14,7 @@ export default function LegalLayout({ children }: { children: ReactNode }) {
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <span className="text-xl font-bold font-heading tracking-tight">
-              Bud<span className="text-[var(--color-brand-red)]">d</span>get
+              Bud<span className="text-[var(--color-brand-primary-ink)]">d</span>get
             </span>
           </Link>
           <nav className="flex items-center gap-4 text-xs text-[var(--color-brand-text-muted)]">
@@ -38,13 +38,13 @@ export default function LegalLayout({ children }: { children: ReactNode }) {
         <div className="max-w-3xl mx-auto px-4 flex flex-wrap items-center justify-between gap-4 text-xs text-[var(--color-brand-text-muted)]">
           <span>© {new Date().getFullYear()} Buddget. All rights reserved.</span>
           <div className="flex gap-4">
-            <Link href="/legal/terms" className="hover:text-[var(--color-brand-red)] transition-colors">
+            <Link href="/legal/terms" className="hover:text-[var(--color-brand-primary-ink)] transition-colors">
               Terms of Service
             </Link>
-            <Link href="/legal/privacy" className="hover:text-[var(--color-brand-red)] transition-colors">
+            <Link href="/legal/privacy" className="hover:text-[var(--color-brand-primary-ink)] transition-colors">
               Privacy Policy
             </Link>
-            <a href="mailto:support@buddget.app" className="hover:text-[var(--color-brand-red)] transition-colors">
+            <a href="mailto:support@buddget.app" className="hover:text-[var(--color-brand-primary-ink)] transition-colors">
               Contact
             </a>
           </div>

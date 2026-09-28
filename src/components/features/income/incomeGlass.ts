@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react'
 
 /** Glass card surface (summary, recurring, assign cards). Handoff §9. */
 export const GLASS_CARD: CSSProperties = {
-  background: 'linear-gradient(158deg, rgba(29,185,84,.09), rgba(18,18,24,.72) 54%), #0f0f15',
+  background: 'linear-gradient(158deg, rgba(55,195,104,.09), rgba(18,18,24,.72) 54%), #0f0f15',
   border: '1px solid rgba(255,255,255,.08)',
   backdropFilter: 'blur(14px)',
   WebkitBackdropFilter: 'blur(14px)',

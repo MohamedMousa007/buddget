@@ -27,7 +27,7 @@ export function SettingsPaymentMethodsSection({ store, onOpen }: SettingsPayment
         className="flex w-full items-center gap-3 px-4 min-h-11 py-2.5 text-start transition-colors hover:bg-[var(--color-brand-elevated)]"
       >
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-elevated)]">
-          <CreditCard className="h-4 w-4 text-[var(--color-brand-red)]" />
+          <CreditCard className="h-4 w-4 text-[var(--color-brand-primary-ink)]" />
         </span>
         <span className="flex-1 min-w-0">
           <span className="block text-sm font-medium text-[var(--color-brand-text-primary)]">

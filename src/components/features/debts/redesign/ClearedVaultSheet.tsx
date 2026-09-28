@@ -32,7 +32,7 @@ export function ClearedVaultSheet({ open, onClose, cleared, base }: { open: bool
   return (
     <ModalShell open={open} onBackdropClick={onClose} panelClassName="bg-[#0c1610]" scrollChild>
       <div className="flex items-start gap-3 px-5 pt-5">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-[rgba(29,185,84,.16)] text-[#35D46F]">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-[rgba(55,195,104,.16)] text-[#35D46F]">
           <Award className="h-6 w-6" />
         </span>
         <div className="min-w-0 flex-1">
@@ -59,7 +59,7 @@ export function ClearedVaultSheet({ open, onClose, cleared, base }: { open: bool
             {cleared.map((c) => {
               const on = selected === c.id
               return (
-                <div key={c.id} className="flex flex-col rounded-[16px] border border-[#1DB954]/25 bg-[rgba(29,185,84,.05)] p-3.5">
+                <div key={c.id} className="flex flex-col rounded-[16px] border border-[#37C368]/25 bg-[rgba(55,195,104,.05)] p-3.5">
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-[10px] font-bold uppercase leading-tight tracking-[0.05em] text-[#35D46F]/80">
                       Cleared · {FAMILY_TAG[c.family]}
@@ -91,7 +91,7 @@ export function ClearedVaultSheet({ open, onClose, cleared, base }: { open: bool
         )}
 
         {detail ? (
-          <div className="mt-4 overflow-hidden rounded-[16px] border border-[#1DB954]/25 bg-[rgba(29,185,84,.05)]">
+          <div className="mt-4 overflow-hidden rounded-[16px] border border-[#37C368]/25 bg-[rgba(55,195,104,.05)]">
             <div className="flex items-center gap-3 p-3.5">
               <span className="flex h-11 w-11 shrink-0 -rotate-12 items-center justify-center rounded-full border-2 border-dashed border-[#35D46F]/70 text-[#35D46F]">
                 <Check className="h-5 w-5" strokeWidth={2.5} />

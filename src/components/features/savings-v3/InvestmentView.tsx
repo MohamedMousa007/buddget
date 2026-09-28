@@ -62,8 +62,8 @@ export function InvestmentView({ onBackToSavings, onAddInvestment }: InvestmentV
     <div className="pb-24">
       <div className="pt-3 space-y-4">
         {/* hero (gold skin) */}
-        <div className="relative overflow-hidden" style={{ margin: '0 16px', padding: 16, borderRadius: 20, background: 'linear-gradient(152deg,#1e1a10,#111017)', border: '1px solid rgba(245,200,66,.2)', boxShadow: '0 18px 40px -24px rgba(0,0,0,.85)' }}>
-          <div aria-hidden className="pointer-events-none absolute" style={{ width: 190, height: 190, top: -60, right: -40, background: 'radial-gradient(circle, rgba(245,200,66,.22), transparent 68%)' }} />
+        <div className="relative overflow-hidden" style={{ margin: '0 16px', padding: 16, borderRadius: 20, background: 'linear-gradient(152deg,#1e1a10,#111017)', border: '1px solid rgba(237,196,99,.2)', boxShadow: '0 18px 40px -24px rgba(0,0,0,.85)' }}>
+          <div aria-hidden className="pointer-events-none absolute" style={{ width: 190, height: 190, top: -60, right: -40, background: 'radial-gradient(circle, rgba(237,196,99,.22), transparent 68%)' }} />
           <div className="relative">
             <div className="flex items-start justify-between">
               <span style={{ ...micro, fontSize: 10, letterSpacing: '.08em', color: '#B8A87C' }}>Value of what you hold</span>
@@ -86,7 +86,7 @@ export function InvestmentView({ onBackToSavings, onAddInvestment }: InvestmentV
               <HeroCell label="All time" value={`${totals.allTime >= 0 ? '+' : ''}${fmtCompact(totals.allTime)}`} color={totals.allTime >= 0 ? '#35D46F' : '#FF6B6B'} trend={totals.allTime >= 0} />
               <HeroCell label="Net worth" value={fmtCompact(nw.netWorth)} onClick={onBackToSavings} chevron last />
             </div>
-            <button type="button" onClick={() => onAddInvestment(null)} className="mt-3 w-full text-white" style={{ height: 46, borderRadius: 13, background: '#E50914', fontWeight: 600, fontSize: 15 }}>Add investment</button>
+            <button type="button" onClick={() => onAddInvestment(null)} className="mt-3 w-full text-white" style={{ height: 46, borderRadius: 13, background: '#12B0A0', fontWeight: 600, fontSize: 15 }}>Add investment</button>
           </div>
         </div>
 
@@ -94,7 +94,7 @@ export function InvestmentView({ onBackToSavings, onAddInvestment }: InvestmentV
         <div className="mx-4 flex gap-[3px] rounded-[13px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-1">
           {TABS.map((t) => (
             <button key={t.key} type="button" onClick={() => setTab(t.key)} className="flex-1 rounded-[10px] text-[12px] font-semibold transition-all"
-              style={{ height: 36, background: tab === t.key ? '#E50914' : 'transparent', color: tab === t.key ? '#fff' : 'var(--color-brand-text-muted)', boxShadow: tab === t.key ? '0 4px 12px -6px rgba(229,9,20,.7)' : undefined }}>
+              style={{ height: 36, background: tab === t.key ? '#12B0A0' : 'transparent', color: tab === t.key ? '#fff' : 'var(--color-brand-text-muted)', boxShadow: tab === t.key ? '0 4px 12px -6px rgba(18,176,160,.7)' : undefined }}>
               {t.label}
             </button>
           ))}
@@ -148,11 +148,11 @@ function HoldingsCard({ type, holdings, lookup, toBase, onAdd }: { type: Investm
     gold: ['Karat', 'Grams', 'Worth'], crypto: ['Coin', 'Amount', 'Worth'], stock: ['Position', 'Shares', 'Worth'], property: ['Property', 'Size', 'Worth'],
   }
   const thirdStat: [string, string, string] = type === 'gold'
-    ? [`${goldStatKarat}k right now`, goldStatPrice != null ? `${fmtNum(goldStatPrice)} /g` : '—', '#F5C842']
+    ? [`${goldStatKarat}k right now`, goldStatPrice != null ? `${fmtNum(goldStatPrice)} /g` : '—', '#EDC463']
     : ['Best holding', rows.length ? fmtNum(Math.max(...rows.map((r) => r.worth ?? 0))) : '—', '#35D46F']
   return (
     <div className="mx-4 overflow-hidden rounded-[18px] border border-[var(--color-brand-border)]">
-      <div className="p-4" style={{ background: 'linear-gradient(150deg, rgba(245,200,66,.12), transparent 72%)' }}>
+      <div className="p-4" style={{ background: 'linear-gradient(150deg, rgba(237,196,99,.12), transparent 72%)' }}>
         <p style={{ ...micro, fontSize: 9 }}>{type === 'gold' ? 'What a shop would pay you today' : 'What it is worth today'}</p>
         <p className="mt-1 font-mono-numbers text-[26px] font-semibold text-[var(--color-brand-text-primary)]">{fmtNum(total)} <span className="text-sm text-[var(--color-brand-text-muted)]">EGP</span></p>
         <p className="font-mono-numbers text-[10.5px] text-[var(--color-brand-text-muted)]">{fmtNum(putIn)} put in</p>
@@ -177,7 +177,7 @@ function HoldingsCard({ type, holdings, lookup, toBase, onAdd }: { type: Investm
           <button type="button" aria-label="Holding options" onClick={(e) => setMenu({ id: h.id, anchor: e.currentTarget.getBoundingClientRect() })} className="text-[var(--color-brand-text-muted)]"><MoreVertical size={16} /></button>
         </div>
       ))}
-      <button type="button" onClick={onAdd} className="w-full border-t border-[var(--color-brand-border)] py-3 text-center text-sm font-semibold" style={{ color: '#E50914' }}>+ {type === 'gold' ? 'Add more gold' : 'Add more'}</button>
+      <button type="button" onClick={onAdd} className="w-full border-t border-[var(--color-brand-border)] py-3 text-center text-sm font-semibold" style={{ color: '#12B0A0' }}>+ {type === 'gold' ? 'Add more gold' : 'Add more'}</button>
       {menu && (() => {
         const hh = holdings.find((x) => x.id === menu.id)
         if (!hh) return null
@@ -234,7 +234,7 @@ function GoldMarketCard({ lookupDisplay, officialUsdEgp: fallbackOfficial }: { l
         <span className="flex items-center gap-1.5 text-xs text-[var(--color-brand-text-muted)]"><span className="h-1.5 w-1.5 rounded-full" style={{ background: status.color }} />{status.text}</span>
       </div>
       <div className="overflow-hidden rounded-2xl border border-[var(--color-brand-border)]">
-        <div className="p-4" style={{ background: 'linear-gradient(150deg, rgba(245,200,66,.12), transparent 72%)' }}>
+        <div className="p-4" style={{ background: 'linear-gradient(150deg, rgba(237,196,99,.12), transparent 72%)' }}>
           <p style={{ ...micro, fontSize: 9 }}>24k · what a shop pays you</p>
           <p className="mt-1 font-mono-numbers text-[26px] font-semibold text-[var(--color-brand-text-primary)]">{priced ? fmtNum(local24!) : '—'} <span className="text-sm text-[var(--color-brand-text-muted)]">EGP/g</span></p>
         </div>
@@ -257,7 +257,7 @@ function GoldMarketCard({ lookupDisplay, officialUsdEgp: fallbackOfficial }: { l
             <div className="grid grid-cols-3 border-t border-[var(--color-brand-border)]">
               <Stat label="Ounce · global" value={`$${fmtNum(ounceUsd!)}`} />
               <Stat label="Gram 24k · global" value={gram24Global != null ? `${fmtNum(gram24Global)} EGP` : '—'} border />
-              <Stat label="Local vs global" value={localVsGlobal != null ? `${localVsGlobal >= 0 ? '+' : ''}${localVsGlobal.toFixed(1)}%` : '—'} color="#F5C842" />
+              <Stat label="Local vs global" value={localVsGlobal != null ? `${localVsGlobal >= 0 ? '+' : ''}${localVsGlobal.toFixed(1)}%` : '—'} color="#EDC463" />
             </div>
             <div className="border-t border-[var(--color-brand-border)] px-4 py-3">
               <p className="text-xs text-[var(--color-brand-text-muted)]">Egyptian gold is priced off the Sagha dollar ({sagha!.toFixed(2)}){officialUsdEgp ? `, not the official rate (${officialUsdEgp.toFixed(2)})` : ''}. Shown in EGP, your main currency.</p>

@@ -59,7 +59,7 @@ export function MonthlyChart({ data, currency }: MonthlyChartProps) {
                 wrapperStyle={{ color: 'var(--color-brand-text-secondary)', fontSize: 12 }}
               />
               <Bar dataKey="income" fill="var(--color-brand-green)" radius={[4, 4, 0, 0]} name="Money in" />
-              <Bar dataKey="expenses" fill="var(--color-brand-red)" radius={[4, 4, 0, 0]} name="Money out" />
+              <Bar dataKey="expenses" fill="var(--color-brand-primary)" radius={[4, 4, 0, 0]} name="Money out" />
               <Bar dataKey="savings" fill="var(--color-brand-gold)" radius={[4, 4, 0, 0]} name="Saved" />
             </BarChart>
             </ResponsiveContainer>

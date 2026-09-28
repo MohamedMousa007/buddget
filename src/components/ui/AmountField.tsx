@@ -63,7 +63,7 @@ export function AmountField({
         height: 26,
         borderRadius: 2,
         flexShrink: 0,
-        background: 'var(--color-brand-red)',
+        background: 'var(--color-brand-primary)',
         display: isOpen ? 'block' : 'none',
         animation: 'npBlink 1.1s steps(1) infinite',
       }}

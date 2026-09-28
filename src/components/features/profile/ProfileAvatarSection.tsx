@@ -66,7 +66,7 @@ export function ProfileAvatarSection({ fileRef, store, activePreset, onAvatarFil
               className={cn(
                 'aspect-square rounded-xl overflow-hidden border-2 transition-all bg-[var(--color-brand-elevated)]',
                 selected
-                  ? 'border-[var(--color-brand-red)] ring-2 ring-[var(--color-brand-red)]/30'
+                  ? 'border-[var(--color-brand-primary)] ring-2 ring-[var(--color-brand-primary)]/30'
                   : 'border-transparent opacity-90 hover:opacity-100'
               )}
             >

@@ -170,7 +170,7 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
                     onClick={() => setStatus(sVal)}
                     className={`h-10 rounded-lg border text-xs font-semibold transition-colors ${
                       on
-                        ? 'border-[var(--color-brand-red)] bg-[rgba(229,9,20,.1)] text-[var(--color-brand-text-primary)]'
+                        ? 'border-[var(--color-brand-primary)] bg-[rgba(18,176,160,.1)] text-[var(--color-brand-text-primary)]'
                         : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]'
                     }`}
                   >
@@ -214,7 +214,7 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
           type="button"
           onClick={handleSave}
           disabled={!valid}
-          className="w-full py-3.5 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3.5 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {t.editIncome.buttonSave}
         </button>

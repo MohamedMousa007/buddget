@@ -173,7 +173,7 @@ export function RecurringDebtPaymentForm({
           type="button"
           onClick={onSubmit}
           disabled={!selectDebtValue || !amount || payableDebts.length === 0}
-          className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] text-white text-sm font-semibold disabled:opacity-50"
+          className="flex-1 py-3 rounded-xl bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)] text-sm font-semibold disabled:opacity-50"
         >
           {t.recurringDebt.buttonSubmit}
         </button>

@@ -134,7 +134,7 @@ export function BudgetPlannerCategories({
           <button
             type="button"
             onClick={openAddMenu}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--color-brand-red)] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)] transition-colors"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--color-brand-primary)] px-5 py-2.5 text-sm font-semibold text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)] transition-colors"
           >
             <Plus className="h-4 w-4" />
             Add category

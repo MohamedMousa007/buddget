@@ -64,7 +64,7 @@ export default function SettingsFeedbackPage() {
                   onClick={() => setType(v)}
                   className={`flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-colors ${
                     active
-                      ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10 text-[var(--color-brand-red)]'
+                      ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary-ink)]'
                       : 'border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[var(--color-brand-text-secondary)]'
                   }`}
                 >
@@ -87,7 +87,7 @@ export default function SettingsFeedbackPage() {
               required
               minLength={3}
               maxLength={200}
-              className="w-full h-11 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-4 text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus:outline-none focus:border-[var(--color-brand-red)] transition-colors"
+              className="w-full h-11 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-4 text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus:outline-none focus:border-[var(--color-brand-primary)] transition-colors"
             />
           </div>
 
@@ -110,7 +110,7 @@ export default function SettingsFeedbackPage() {
           <button
             type="submit"
             disabled={loading || title.length < 3}
-            className="flex items-center gap-2 h-11 w-full justify-center rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 h-11 w-full justify-center rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] text-sm font-semibold transition-colors disabled:opacity-50"
           >
             <Send className="w-4 h-4" />
             {loading ? t.settings.feedback.submitting : t.settings.feedback.submit}

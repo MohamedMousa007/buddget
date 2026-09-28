@@ -36,15 +36,15 @@ interface ThemePreset {
 // Midnight (dark, default), its Bright (light) counterpart, and System.
 // Other presets (Paper/Minimal) are disabled until they're redesigned.
 const THEMES: ThemePreset[] = [
-  { id: 'midnight', palette: 'dark',   layout: 'standard', labelKey: 'themeNameMidnight', card: '#0A0A0F', accent: '#E50914' },
-  { id: 'bright',   palette: 'light',  layout: 'standard', labelKey: 'themeNameBright',    card: '#F5F5F7', accent: '#E50914' },
+  { id: 'midnight', palette: 'dark',   layout: 'standard', labelKey: 'themeNameMidnight', card: '#0A0A0F', accent: '#12B0A0' },
+  { id: 'bright',   palette: 'light',  layout: 'standard', labelKey: 'themeNameBright',    card: '#F5F5F7', accent: '#12B0A0' },
   {
     id: 'system',
     palette: 'system',
     layout: 'standard',
     labelKey: 'themeSystem',
     card: '#FFFFFF',
-    accent: '#E50914',
+    accent: '#12B0A0',
     swatchStyle: {
       background: 'conic-gradient(from 45deg, #F5F5F7 0deg 180deg, #0A0A0F 180deg 360deg)',
     },
@@ -65,7 +65,7 @@ export function SettingsAppPreferencesSection({ store }: SettingsAppPreferencesS
   return (
     <section className="glass-card rounded-2xl p-5 space-y-5">
       <div className="flex items-center gap-2 mb-2">
-        <Palette className="w-5 h-5 text-[var(--color-brand-red)]" />
+        <Palette className="w-5 h-5 text-[var(--color-brand-primary-ink)]" />
         <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
           {t.settings.lookFeelTitle}
         </h2>
@@ -94,7 +94,7 @@ export function SettingsAppPreferencesSection({ store }: SettingsAppPreferencesS
                   className={cn(
                     'relative w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all',
                     selected
-                      ? 'border-[var(--color-brand-red)] ring-2 ring-[var(--color-brand-red)]/30'
+                      ? 'border-[var(--color-brand-primary)] ring-2 ring-[var(--color-brand-primary)]/30'
                       : 'border-[var(--color-brand-border)] hover:border-[var(--color-brand-text-muted)]',
                   )}
                   style={preset.swatchStyle ?? { background: preset.card }}
@@ -109,7 +109,7 @@ export function SettingsAppPreferencesSection({ store }: SettingsAppPreferencesS
                     />
                   )}
                   {selected ? (
-                    <span className="absolute -bottom-1 -end-1 w-5 h-5 rounded-full bg-[var(--color-brand-red)] flex items-center justify-center">
+                    <span className="absolute -bottom-1 -end-1 w-5 h-5 rounded-full bg-[var(--color-brand-primary)] flex items-center justify-center">
                       <Check className="w-3 h-3 text-white" />
                     </span>
                   ) : null}

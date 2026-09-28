@@ -23,7 +23,7 @@ const statusColor: Record<PaceStatus, string> = {
 const badgeBg: Record<PaceStatus, string> = {
   on_track: 'bg-[var(--color-brand-green)]/15 text-[var(--color-brand-green)]',
   warning: 'bg-[var(--color-brand-amber)]/15 text-[var(--color-brand-amber)]',
-  over: 'bg-[var(--color-brand-red)]/15 text-[var(--color-brand-red)]',
+  over: 'bg-[var(--color-brand-primary)]/15 text-[var(--color-brand-red)]',
 }
 
 /**
@@ -117,7 +117,7 @@ export function SpendingPacePanel({
                   {c.icon && <span>{c.icon}</span>}
                   {c.category}
                 </span>
-                <span className="font-mono-numbers text-[var(--color-brand-red)]">
+                <span className="font-mono-numbers text-[var(--color-brand-primary-ink)]">
                   {formatCurrency(c.spent, currency)} / {formatCurrency(c.cap, currency)}
                 </span>
               </div>

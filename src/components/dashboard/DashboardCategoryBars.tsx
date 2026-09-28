@@ -26,7 +26,7 @@ interface RowDatum {
 }
 
 function ringColor(pct: number): string {
-  if (pct > 80) return 'var(--color-brand-red)'
+  if (pct > 80) return 'var(--color-brand-primary)'
   if (pct > 60) return 'var(--color-brand-amber)'
   return 'var(--color-brand-green)'
 }
@@ -102,7 +102,7 @@ export function DashboardCategoryBars({
           </p>
           <Link
             href="/budget-setup"
-            className="inline-flex items-center gap-1 text-sm text-[var(--color-brand-red)] font-medium hover:underline"
+            className="inline-flex items-center gap-1 text-sm text-[var(--color-brand-primary-ink)] font-medium hover:underline"
           >
             {t.dashboard.categoryEmptyCta}
             <ArrowRight className="w-4 h-4 rtl:rotate-180" aria-hidden />

@@ -14,7 +14,7 @@ export function SettingsAdminLinkCard() {
     <section className="glass-card rounded-2xl p-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Shield className="w-5 h-5 text-[var(--color-brand-red)]" />
+          <Shield className="w-5 h-5 text-[var(--color-brand-primary-ink)]" />
           <div>
             <p className="text-sm text-[var(--color-brand-text-primary)]">{t.settings.adminTitle}</p>
             <p className="text-xs text-[var(--color-brand-text-muted)]">{t.settings.adminSubtitle}</p>

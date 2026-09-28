@@ -16,7 +16,7 @@ export interface CreditCardHeroCardProps {
 
 function barTone(utilPct: number | null): string {
   if (utilPct == null) return '#8A5CF6'
-  if (utilPct < 30) return '#1DB954'
+  if (utilPct < 30) return '#37C368'
   if (utilPct <= 100) return '#FFB13D'
   return '#FF6B6B'
 }
@@ -103,7 +103,7 @@ export function CreditCardHeroCard({ vm, onEdit, onDelete, onPay, onCharges }: C
         <button
           type="button"
           onClick={onPay}
-          className="h-11 flex-1 rounded-[13px] bg-[var(--color-brand-red)] text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-red-hover)]"
+          className="h-11 flex-1 rounded-[13px] bg-[var(--color-brand-primary)] text-sm font-bold text-[var(--color-brand-on-primary)] transition-colors hover:bg-[var(--color-brand-primary-hover)]"
         >
           Pay now
         </button>

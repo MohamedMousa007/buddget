@@ -8,7 +8,7 @@ export function TermsIntroSections() {
         <p>
           By accessing or using Buddget (&ldquo;Service,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;), you confirm that you have read,
           understood, and agree to be bound by these Terms of Service (&ldquo;Terms&rdquo;) and our{' '}
-          <a href="/legal/privacy" className="text-[var(--color-brand-red)] hover:underline">
+          <a href="/legal/privacy" className="text-[var(--color-brand-primary-ink)] hover:underline">
             Privacy Policy
           </a>
           . If you do not agree to these Terms, do not access or use the Service.
@@ -60,7 +60,7 @@ export function TermsIntroSections() {
         <p>
           You are solely responsible for maintaining the confidentiality of your account credentials and
           for all activity that occurs under your account. Notify us immediately at{' '}
-          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
+          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-primary-ink)] hover:underline">
             support@buddget.app
           </a>{' '}
           if you suspect unauthorized access to your account.

@@ -20,7 +20,7 @@ export function GoalProgressBar({ percent, className, thin }: GoalProgressBarPro
       )}
     >
       <div
-        className="h-full rounded-full bg-gradient-to-r from-[var(--color-brand-red)] to-[var(--color-brand-red-hover)] transition-all duration-500"
+        className="h-full rounded-full bg-gradient-to-r from-[var(--color-brand-primary)] to-[var(--color-brand-primary-hover)] transition-all duration-500"
         style={{ width: `${p}%` }}
       />
     </div>

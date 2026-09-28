@@ -11,8 +11,8 @@ export interface AuthPrimaryButtonProps {
   type?: 'button' | 'submit'
 }
 
-const BG = 'var(--color-brand-red)'
-const BG_HOVER = 'var(--color-brand-red-hover)'
+const BG = 'var(--color-brand-primary)'
+const BG_HOVER = 'var(--color-brand-primary-hover)'
 
 /**
  * Full-width red CTA used across auth steps.

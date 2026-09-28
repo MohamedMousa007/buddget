@@ -124,7 +124,7 @@ export function AddDebtSheet() {
               type="button"
               onClick={onSubmit}
               disabled={!canSubmit}
-              className="h-[52px] flex-1 rounded-[14px] bg-[var(--color-brand-red)] text-base font-bold text-white transition-colors hover:bg-[var(--color-brand-red-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+              className="h-[52px] flex-1 rounded-[14px] bg-[var(--color-brand-primary)] text-base font-bold text-[var(--color-brand-on-primary)] transition-colors hover:bg-[var(--color-brand-primary-hover)] disabled:cursor-not-allowed disabled:opacity-40"
             >
               {cta}
             </button>

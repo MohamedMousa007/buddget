@@ -20,7 +20,7 @@ const tab = (on: boolean) =>
   cn(
     'rounded-xl border px-4 py-2 text-sm font-medium transition-colors',
     on
-      ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10 text-[var(--color-brand-text-primary)]'
+      ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-text-primary)]'
       : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
   )
 
@@ -133,8 +133,8 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
                     className={cn(
                       'rounded-xl border p-2 transition-colors',
                       otherIcon === key
-                        ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10'
-                        : 'border-[var(--color-brand-border)] bg-[var(--color-brand-card)] hover:border-[var(--color-brand-red)]/25'
+                        ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/10'
+                        : 'border-[var(--color-brand-border)] bg-[var(--color-brand-card)] hover:border-[var(--color-brand-primary)]/25'
                     )}
                     aria-label={key}
                   >
@@ -181,7 +181,7 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
           <button
             type="button"
             onClick={submit}
-            className="w-full rounded-xl bg-[var(--color-brand-red)] py-3 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)] transition-colors"
+            className="w-full rounded-xl bg-[var(--color-brand-primary)] py-3 text-sm font-semibold text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)] transition-colors"
           >
             {t.common.save}
           </button>

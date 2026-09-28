@@ -55,13 +55,13 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
 
   const silverNisab = 595 * base.silverPerGram
   const goldNisab = 85 * base.gold24kSellPerGram
-  const accent = result.due ? '#F5C842' : '#35D46F'
+  const accent = result.due ? '#EDC463' : '#35D46F'
 
   if (!open) return null
 
   const rows: Array<{ id: LineId; icon: React.ReactNode; color: string; name: string; sub: string; value: number; negative?: boolean }> = [
     { id: 'cash', icon: <Wallet size={18} />, color: '#7EAEF9', name: 'Cash & savings', sub: 'Every pocket you hold', value: cash },
-    { id: 'gold', icon: <Gem size={18} />, color: '#F5C842', name: 'Gold', sub: "At today's sell price", value: gold },
+    { id: 'gold', icon: <Gem size={18} />, color: '#EDC463', name: 'Gold', sub: "At today's sell price", value: gold },
     { id: 'crypto', icon: <Bitcoin size={18} />, color: '#B79CFF', name: 'Crypto', sub: 'Treated like cash', value: crypto },
     { id: 'stocks', icon: <TrendingUp size={18} />, color: '#35D46F', name: 'Stocks', sub: `${holdsForTrading ? 'For trading · 100%' : 'Long-term · 30%'} counted`, value: stocks },
   ]
@@ -93,7 +93,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
                   <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{r.name}</p><p className="text-[11px] text-[var(--color-brand-text-muted)]">{r.sub}</p></div>
                   <input inputMode="numeric" defaultValue={fmtNum(r.value)} onBlur={(e) => editLine(r.id, e.target.value)}
                     className="h-9 w-[84px] rounded-[11px] bg-[var(--color-brand-elevated)] px-2 text-right font-mono-numbers text-sm text-[var(--color-brand-text-primary)]"
-                    style={{ border: overrides[r.id] != null ? '1px solid rgba(229,9,20,.5)' : '1px solid transparent' }} />
+                    style={{ border: overrides[r.id] != null ? '1px solid rgba(18,176,160,.5)' : '1px solid transparent' }} />
                 </div>
               ))}
               {/* property */}
@@ -108,7 +108,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
                 <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">Debts due this year</p><p className="text-[11px] text-[var(--color-brand-text-muted)]">Subtracted from your wealth</p></div>
                 <span className="mr-1 text-sm" style={{ color: '#FF6B6B' }}>−</span>
                 <input inputMode="numeric" defaultValue={fmtNum(debts)} onBlur={(e) => editLine('debts', e.target.value)}
-                  className="h-9 w-[76px] rounded-[11px] bg-[var(--color-brand-elevated)] px-2 text-right font-mono-numbers text-sm" style={{ color: '#FF6B6B', border: overrides.debts != null ? '1px solid rgba(229,9,20,.5)' : '1px solid transparent' }} />
+                  className="h-9 w-[76px] rounded-[11px] bg-[var(--color-brand-elevated)] px-2 text-right font-mono-numbers text-sm" style={{ color: '#FF6B6B', border: overrides.debts != null ? '1px solid rgba(18,176,160,.5)' : '1px solid transparent' }} />
               </div>
               <div className="flex items-center justify-between bg-[var(--color-brand-elevated)] p-3">
                 <span className="text-sm font-semibold text-[var(--color-brand-text-primary)]">Zakatable wealth</span>
@@ -145,23 +145,23 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
           <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3.5">
             <button type="button" onClick={() => { const v = !manualOn; setManualOn(v); save({ manualAmount: v ? parseFloat(manualAmount) || 0 : null }) }} className="flex w-full items-center justify-between text-left">
               <div><p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">Set the amount myself</p><p className="text-xs text-[var(--color-brand-text-muted)]">Overrides everything above</p></div>
-              <span className="relative shrink-0" style={{ width: 46, height: 28, borderRadius: 999, background: manualOn ? '#E50914' : 'var(--color-brand-border)' }}><span className="absolute top-1 h-6 w-6 rounded-full bg-white" style={{ left: manualOn ? 18 : 2, transition: 'left .15s' }} /></span>
+              <span className="relative shrink-0" style={{ width: 46, height: 28, borderRadius: 999, background: manualOn ? '#12B0A0' : 'var(--color-brand-border)' }}><span className="absolute top-1 h-6 w-6 rounded-full bg-white" style={{ left: manualOn ? 18 : 2, transition: 'left .15s' }} /></span>
             </button>
             {manualOn && (
               <input inputMode="numeric" value={manualAmount} onChange={(e) => setManualAmount(e.target.value)} onBlur={() => save({ manualAmount: parseFloat(manualAmount) || 0 })} placeholder="0"
-                className="mt-3 h-[52px] w-full rounded-xl bg-[var(--color-brand-card)] px-4 font-mono-numbers text-lg text-[var(--color-brand-text-primary)]" style={{ border: '1px solid rgba(229,9,20,.5)' }} />
+                className="mt-3 h-[52px] w-full rounded-xl bg-[var(--color-brand-card)] px-4 font-mono-numbers text-lg text-[var(--color-brand-text-primary)]" style={{ border: '1px solid rgba(18,176,160,.5)' }} />
             )}
           </div>
 
           <div className="flex items-start gap-2 rounded-2xl bg-[var(--color-brand-elevated)] p-3.5">
-            <BookOpen size={16} className="mt-0.5 shrink-0" style={{ color: '#F5C842' }} />
+            <BookOpen size={16} className="mt-0.5 shrink-0" style={{ color: '#EDC463' }} />
             <p className="text-xs text-[var(--color-brand-text-secondary)]">Zakat is 2.5% of the wealth you have held for one lunar year above nisab. A home you live in and land you rent out are not counted — only the rent you kept. Buddget follows the majority view; check anything unusual with someone you trust.</p>
           </div>
         </div>
 
         <div className="flex gap-3 px-5 pt-2 pb-[max(20px,env(safe-area-inset-bottom))]">
           <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-[var(--color-brand-border)] py-3.5 text-sm font-semibold text-[var(--color-brand-text-secondary)]">Remind me</button>
-          <button type="button" onClick={() => { save({ lastPaidDate: new Date().toISOString() }); onClose() }} className="flex-1 rounded-xl py-3.5 text-sm font-semibold text-white" style={{ background: '#E50914' }}>{result.due ? 'Log zakat payment' : 'Save'}</button>
+          <button type="button" onClick={() => { save({ lastPaidDate: new Date().toISOString() }); onClose() }} className="flex-1 rounded-xl py-3.5 text-sm font-semibold text-white" style={{ background: '#12B0A0' }}>{result.due ? 'Log zakat payment' : 'Save'}</button>
         </div>
       </div>
     </ModalShell>
@@ -170,7 +170,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
 
 function NisabCard({ title, value, on, onClick }: { title: string; value: number; on: boolean; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className="rounded-2xl p-3 text-left" style={{ border: on ? '1px solid rgba(245,200,66,.5)' : '1px solid var(--color-brand-border)', background: on ? 'rgba(245,200,66,.08)' : 'var(--color-brand-elevated)' }}>
+    <button type="button" onClick={onClick} className="rounded-2xl p-3 text-left" style={{ border: on ? '1px solid rgba(237,196,99,.5)' : '1px solid var(--color-brand-border)', background: on ? 'rgba(237,196,99,.08)' : 'var(--color-brand-elevated)' }}>
       <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{title}</p>
       <p className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{fmtNum(value)} EGP</p>
     </button>

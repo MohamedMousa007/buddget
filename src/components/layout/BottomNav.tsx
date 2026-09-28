@@ -80,7 +80,7 @@ export function BottomNav() {
                   type="button"
                   {...fabHandlers}
                   style={{ touchAction: 'none' }}
-                  className="flex items-center justify-center w-14 h-14 -mt-5 rounded-full bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white shadow-[0_8px_20px_rgba(127,6,12,0.5)] transition-[colors,transform] duration-[75ms] active:scale-[0.92] touch-none select-none"
+                  className="flex items-center justify-center h-[54px] w-[54px] -mt-6 rounded-[18px] border-4 border-[var(--color-brand-card)] bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] shadow-[0_8px_20px_-6px_color-mix(in_srgb,var(--color-brand-primary)_60%,transparent)] transition-[colors,transform] duration-[75ms] active:scale-[0.92] touch-none select-none"
                   aria-label={t.nav.quickAdd}
                 >
                   <item.icon className="w-7 h-7" strokeWidth={2.4} />
@@ -118,7 +118,7 @@ export function BottomNav() {
                   className={cn(
                     'flex flex-col items-center gap-1 py-1 transition-colors duration-200',
                     moreOpen || moreActive
-                      ? 'text-[var(--color-brand-red)]'
+                      ? 'text-[var(--color-brand-primary-ink)]'
                       : 'text-[var(--color-brand-text-muted)]'
                   )}
                   aria-expanded={moreOpen}
@@ -139,7 +139,7 @@ export function BottomNav() {
               onClick={closeMore}
               className={cn(
                 'flex-1 flex flex-col items-center gap-1 py-1 transition-colors duration-200',
-                isActive ? 'text-[var(--color-brand-red)]' : 'text-[var(--color-brand-text-muted)]'
+                isActive ? 'text-[var(--color-brand-primary-ink)]' : 'text-[var(--color-brand-text-muted)]'
               )}
             >
               <item.icon className="w-6 h-6" />

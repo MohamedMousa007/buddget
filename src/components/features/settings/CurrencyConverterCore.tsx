@@ -93,7 +93,7 @@ export function CurrencyConverterCore({ store, t }: { store: FinanceStore; t: Se
         </p>
       ) : null}
       {!rate && fromCurrency !== toCurrency ? (
-        <p className="text-center text-xs text-[var(--color-brand-red)]">{t.currencyConverterNoRate}</p>
+        <p className="text-center text-xs text-[var(--color-brand-primary-ink)]">{t.currencyConverterNoRate}</p>
       ) : null}
     </>
   )

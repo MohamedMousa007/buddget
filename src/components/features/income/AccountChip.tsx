@@ -1,7 +1,7 @@
 'use client'
 
 import { createElement } from 'react'
-import { PiggyBank, Landmark, Wallet } from 'lucide-react'
+import { Coins, Landmark, Wallet } from 'lucide-react'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
 import type { PaymentMethod } from '@/lib/store/types'
 
@@ -17,7 +17,7 @@ interface Props {
  */
 export function AccountChip({ label, acct, paymentMethods }: Props) {
   const pm = acct.paymentMethodId ? paymentMethods.find((m) => m.id === acct.paymentMethodId) : undefined
-  const icon = acct.linkedSavingsAccountId ? PiggyBank : acct.linkedDebtId ? Landmark : pm ? paymentTypeIcon(pm.type) : Wallet
+  const icon = acct.linkedSavingsAccountId ? Coins : acct.linkedDebtId ? Landmark : pm ? paymentTypeIcon(pm.type) : Wallet
   return (
     <>
       <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] bg-white/12 text-white/80">

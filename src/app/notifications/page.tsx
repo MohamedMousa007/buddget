@@ -37,7 +37,7 @@ export default function NotificationsPage() {
       <div className="max-w-2xl mx-auto px-4 pt-4 pb-[calc(2rem+env(safe-area-inset-bottom))] space-y-4 animate-[dashboardIn_0.35s_ease-out]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <span className="h-9 w-9 rounded-xl flex items-center justify-center bg-[var(--color-brand-red)]/10 text-[var(--color-brand-red)]">
+            <span className="h-9 w-9 rounded-xl flex items-center justify-center bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary-ink)]">
               <Bell className="h-4 w-4" />
             </span>
             <div>
@@ -53,7 +53,7 @@ export default function NotificationsPage() {
             <button
               type="button"
               onClick={() => void markAllRead()}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--color-brand-red)] hover:opacity-80 transition-opacity"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--color-brand-primary-ink)] hover:opacity-80 transition-opacity"
             >
               <CheckCheck className="h-3.5 w-3.5" />
               {t.notifications.markAllRead}

@@ -46,7 +46,7 @@ export function GoalsWidget() {
   return (
     <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]/90 backdrop-blur-sm p-4">
       <SectionHeader>
-        <SectionHeader.Icon><Target className="w-4 h-4 text-[var(--color-brand-red)]" aria-hidden /></SectionHeader.Icon>
+        <SectionHeader.Icon><Target className="w-4 h-4 text-[var(--color-brand-primary-ink)]" aria-hidden /></SectionHeader.Icon>
         <SectionHeader.Title>{t.goals.pageTitle}</SectionHeader.Title>
         <SectionHeader.Trailing>
           <Link

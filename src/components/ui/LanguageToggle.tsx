@@ -43,7 +43,7 @@ export function LanguageToggle({ size = 'md', className = '' }: LanguageTogglePr
             className={`
               inline-flex items-center gap-1.5 rounded-full px-3 font-medium transition-colors
               ${pill}
-              ${active ? 'bg-[var(--color-brand-red)] text-white shadow-sm' : 'text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)]'}
+              ${active ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)] shadow-sm' : 'text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)]'}
             `}
           >
             <Icon size={iconSize} />

@@ -110,7 +110,7 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
               <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar">
                 {providerNames.map((p) => (
                   <button key={p} type="button" onClick={() => setProvider(p)} className="shrink-0 rounded-full px-4 py-2 text-sm font-medium"
-                    style={{ border: provider === p ? '1px solid rgba(229,9,20,.45)' : '1px solid var(--color-brand-border)', background: provider === p ? 'rgba(229,9,20,.13)' : 'transparent', color: 'var(--color-brand-text-primary)' }}>
+                    style={{ border: provider === p ? '1px solid rgba(18,176,160,.45)' : '1px solid var(--color-brand-border)', background: provider === p ? 'rgba(18,176,160,.13)' : 'transparent', color: 'var(--color-brand-text-primary)' }}>
                     {p}
                   </button>
                 ))}
@@ -170,7 +170,7 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
         </div>
 
         <div className="px-5 pt-2 pb-[max(20px,env(safe-area-inset-bottom))]">
-          <button type="button" onClick={create} className="w-full text-white" style={{ height: 52, borderRadius: 14, background: '#E50914', fontWeight: 600, fontSize: 15 }}>
+          <button type="button" onClick={create} className="w-full text-white" style={{ height: 52, borderRadius: 14, background: '#12B0A0', fontWeight: 600, fontSize: 15 }}>
             Create pocket
           </button>
         </div>

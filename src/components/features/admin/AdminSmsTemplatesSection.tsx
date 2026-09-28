@@ -146,7 +146,7 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
                 onClick={() => setFilter(key)}
                 className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold transition-colors ${
                   filter === key
-                    ? 'border-[var(--color-brand-red)]/40 bg-[var(--color-brand-red)]/10 text-[var(--color-brand-red)]'
+                    ? 'border-[var(--color-brand-primary)]/40 bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary-ink)]'
                     : 'border-[var(--color-brand-border)] text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-secondary)]'
                 }`}
               >

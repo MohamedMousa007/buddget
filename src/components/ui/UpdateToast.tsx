@@ -61,7 +61,7 @@ export function UpdateToast() {
                 <button
                   type="button"
                   onClick={applyUpdate}
-                  className="rounded-xl bg-[var(--color-brand-red)] px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-red-900/30 transition-colors hover:bg-[var(--color-brand-red-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50"
+                  className="rounded-xl bg-[var(--color-brand-primary)] px-4 py-2.5 text-sm font-semibold text-[var(--color-brand-on-primary)] shadow-md shadow-red-900/30 transition-colors hover:bg-[var(--color-brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50"
                 >
                   {t.pwa.updateRefresh}
                 </button>

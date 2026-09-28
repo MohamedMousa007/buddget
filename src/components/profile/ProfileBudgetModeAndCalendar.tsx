@@ -52,7 +52,7 @@ export function ProfileBudgetModeAndCalendar({
           onClick={onModeAmount}
           className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
             budgetMode === 'amount'
-              ? 'bg-[var(--color-brand-red)] text-white'
+              ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
               : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
           }`}
         >
@@ -63,7 +63,7 @@ export function ProfileBudgetModeAndCalendar({
           onClick={onModePercent}
           className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
             budgetMode === 'percent_of_income'
-              ? 'bg-[var(--color-brand-red)] text-white'
+              ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
               : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
           }`}
         >

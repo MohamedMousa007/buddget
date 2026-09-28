@@ -68,7 +68,7 @@ export function AIChatBubble({ onClick }: AIChatBubbleProps) {
         height: ORB_SIZE,
         touchAction: 'none',
       }}
-      className="fixed z-50 flex items-center justify-center overflow-hidden rounded-full border-[1.5px] border-[rgba(229,9,20,0.5)] opacity-95 shadow-[0_4px_14px_-4px_rgba(229,9,20,0.55)] transition-opacity duration-200 hover:opacity-100 cursor-grab active:cursor-grabbing"
+      className="fixed z-50 flex items-center justify-center overflow-hidden rounded-full border-[1.5px] border-[rgba(18,176,160,0.5)] opacity-95 shadow-[0_4px_14px_-4px_rgba(18,176,160,0.55)] transition-opacity duration-200 hover:opacity-100 cursor-grab active:cursor-grabbing"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/buddgy/buddgy-square.png" alt="" className="h-full w-full object-cover select-none" draggable={false} />

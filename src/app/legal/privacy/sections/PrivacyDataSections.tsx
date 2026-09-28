@@ -9,7 +9,7 @@ export function PrivacyDataSections() {
           Buddget (&ldquo;we,&rdquo; &ldquo;us,&rdquo; &ldquo;our&rdquo;) is an independently operated personal finance application.
           The Service is currently operated by an individual and has not yet established a formal legal
           entity. For all privacy inquiries, contact{' '}
-          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
+          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-primary-ink)] hover:underline">
             support@buddget.app
           </a>
           .
@@ -120,7 +120,7 @@ export function PrivacyDataSections() {
             our behalf. Data stored on Supabase servers in the United States.{' '}
             <a
               href="https://supabase.com/privacy"
-              className="text-[var(--color-brand-red)] hover:underline"
+              className="text-[var(--color-brand-primary-ink)] hover:underline"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -136,7 +136,7 @@ export function PrivacyDataSections() {
             your data from being used for Google model training.{' '}
             <a
               href="https://policies.google.com/privacy"
-              className="text-[var(--color-brand-red)] hover:underline"
+              className="text-[var(--color-brand-primary-ink)] hover:underline"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -149,7 +149,7 @@ export function PrivacyDataSections() {
             real-time transcription and is not retained by Groq beyond processing.{' '}
             <a
               href="https://groq.com/privacy"
-              className="text-[var(--color-brand-red)] hover:underline"
+              className="text-[var(--color-brand-primary-ink)] hover:underline"
               target="_blank"
               rel="noopener noreferrer"
             >

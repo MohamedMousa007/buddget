@@ -51,7 +51,7 @@ export function SavingsCard({
         <SectionHeader.Trailing>
           <Link
             href="/savings"
-            className="text-xs text-[var(--color-brand-red)] hover:text-[var(--color-brand-red-hover)]"
+            className="text-xs text-[var(--color-brand-primary-ink)] hover:text-[var(--color-brand-primary-hover)]"
           >
             {t.dashboard.savingsLink}
           </Link>

@@ -34,7 +34,7 @@ function ProfileAvatarWithMenu({ className }: { className?: string }) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          'rounded-full overflow-hidden border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] flex items-center justify-center shrink-0 w-9 h-9 hover:ring-2 hover:ring-[var(--color-brand-red)]/40 transition-all cursor-pointer',
+          'rounded-full overflow-hidden border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] flex items-center justify-center shrink-0 w-9 h-9 hover:ring-2 hover:ring-[var(--color-brand-primary)]/40 transition-all cursor-pointer',
           className
         )}
         aria-label={t.nav.profileMenu}
@@ -121,7 +121,7 @@ export function AuthNavButtons({
           <button
             type="button"
             onClick={() => openAuthModal(nextPath, null, 'signup')}
-            className="inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white transition-colors sm:px-3"
+            className="inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] transition-colors sm:px-3"
           >
             {t.common.signUp}
           </button>

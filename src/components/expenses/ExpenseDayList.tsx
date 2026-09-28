@@ -167,9 +167,9 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                       title={e.description}
                       titleBadge={
                         e.refundKind === 'declined' ? (
-                          <span className="shrink-0 rounded-full px-2 py-[2.5px] text-[9.5px] font-extrabold uppercase tracking-[0.05em]" style={{ background: 'rgba(229,9,20,0.14)', color: '#F76D74' }}>{t.expenses.badgeDeclined}</span>
+                          <span className="shrink-0 rounded-full px-2 py-[2.5px] text-[9.5px] font-extrabold uppercase tracking-[0.05em]" style={{ background: 'rgba(18,176,160,0.14)', color: '#F76D74' }}>{t.expenses.badgeDeclined}</span>
                         ) : e.refundKind === 'refunded' ? (
-                          <span className="shrink-0 rounded-full px-2 py-[2.5px] text-[9.5px] font-extrabold uppercase tracking-[0.05em]" style={{ background: 'rgba(29,185,84,0.16)', color: '#1DB954' }}>{t.expenses.badgeRefunded}</span>
+                          <span className="shrink-0 rounded-full px-2 py-[2.5px] text-[9.5px] font-extrabold uppercase tracking-[0.05em]" style={{ background: 'rgba(55,195,104,0.16)', color: '#37C368' }}>{t.expenses.badgeRefunded}</span>
                         ) : nonSpend ? (
                           <CircleSlash role="img" aria-label={t.expenses.badgeNotCounted} className="h-3.5 w-3.5 shrink-0 text-[var(--color-brand-text-muted)]" />
                         ) : null
@@ -183,7 +183,7 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                       amountColor={netZero ? 'var(--color-brand-text-secondary)' : nonSpend ? 'var(--color-brand-text-muted)' : 'var(--color-brand-text-primary)'}
                       sub={
                         e.refundKind === 'refunded' ? (
-                          <span className="font-semibold" style={{ color: '#1DB954' }}>↩ {t.expenses.statusReturned} {statusDate}</span>
+                          <span className="font-semibold" style={{ color: '#37C368' }}>↩ {t.expenses.statusReturned} {statusDate}</span>
                         ) : e.refundKind === 'declined' ? (
                           <span className="font-semibold">✕ {t.expenses.statusBlocked} {statusDate}</span>
                         ) : usd ? (<>≈ −{usd}</>) : null

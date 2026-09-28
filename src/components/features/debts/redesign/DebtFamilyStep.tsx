@@ -3,7 +3,7 @@
 import { HandCoins, CreditCard, Layers, ChevronRight } from 'lucide-react'
 
 const TILES = [
-  { key: 'personal' as const, title: 'Borrow', sub: 'Money you borrowed or lent', color: '#E50914', Icon: HandCoins },
+  { key: 'personal' as const, title: 'Borrow', sub: 'Money you borrowed or lent', color: '#E5484D', Icon: HandCoins },
   { key: 'credit_card' as const, title: 'Credit card', sub: 'A revolving card debt', color: '#8A5CF6', Icon: CreditCard },
   { key: 'installment' as const, title: 'Installments', sub: 'A plan paid in fixed amounts', color: '#00C2A8', Icon: Layers },
 ]

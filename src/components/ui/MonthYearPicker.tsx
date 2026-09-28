@@ -116,7 +116,7 @@ export function MonthYearPicker({ monthFilter, onChange, className, compact, her
                 className={cn(
                   'py-2 rounded-lg text-xs font-medium transition-colors',
                   active
-                    ? 'bg-[var(--color-brand-red)] text-white'
+                    ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
                     : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-border)]'
                 )}
               >

@@ -54,7 +54,7 @@ export function DebtPaymentsFeed({ payments, currentFamily }: { payments: Paymen
       onClick={() => setFilter(val)}
       className={`h-8 rounded-full px-3.5 text-[13px] font-semibold transition-colors ${
         filter === val
-          ? 'bg-[var(--color-brand-red)] text-white'
+          ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
           : 'border border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]'
       }`}
     >

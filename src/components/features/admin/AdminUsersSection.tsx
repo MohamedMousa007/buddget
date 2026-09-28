@@ -14,7 +14,7 @@ export function AdminUsersSection({ admin }: AdminUsersSectionProps) {
   return (
     <section className="glass-card rounded-2xl p-5 space-y-4">
       <div className="flex items-center gap-2 mb-2">
-        <Users className="w-5 h-5 text-[var(--color-brand-red)]" />
+        <Users className="w-5 h-5 text-[var(--color-brand-primary-ink)]" />
         <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
           Users (Supabase)
         </h2>
@@ -27,7 +27,7 @@ export function AdminUsersSection({ admin }: AdminUsersSectionProps) {
         type="button"
         disabled={admin.usersLoading || !admin.sessionPin}
         onClick={() => void admin.loadUsers()}
-        className="text-xs px-3 py-2 rounded-xl bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] hover:border-[var(--color-brand-red)]/40 disabled:opacity-50"
+        className="text-xs px-3 py-2 rounded-xl bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] hover:border-[var(--color-brand-primary)]/40 disabled:opacity-50"
       >
         {admin.usersLoading ? 'Loading…' : 'Load users'}
       </button>

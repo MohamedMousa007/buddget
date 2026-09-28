@@ -26,7 +26,7 @@ function ClearedRing({ pct }: { pct: number }) {
           cy="31"
           r={r}
           fill="none"
-          stroke="#1DB954"
+          stroke="#37C368"
           strokeWidth="5"
           strokeLinecap="round"
           strokeDasharray={`${dash} ${c}`}
@@ -91,7 +91,7 @@ export function DebtPortfolioHero({
       <button
         type="button"
         onClick={onAddDebt}
-        className="mt-3.5 flex h-11 w-full items-center justify-center gap-2 rounded-[13px] bg-[var(--color-brand-red)] text-[15px] font-bold text-white shadow-[0_10px_24px_-10px_rgba(229,9,20,0.55)] transition-colors hover:bg-[var(--color-brand-red-hover)] active:translate-y-px"
+        className="mt-3.5 flex h-11 w-full items-center justify-center gap-2 rounded-[13px] bg-[var(--color-brand-primary)] text-[15px] font-bold text-[var(--color-brand-on-primary)] shadow-[0_10px_24px_-10px_rgba(18,176,160,0.55)] transition-colors hover:bg-[var(--color-brand-primary-hover)] active:translate-y-px"
       >
         <Plus className="h-[18px] w-[18px]" strokeWidth={2.4} />
         Add debt

@@ -32,7 +32,7 @@ const paceColorMap: Record<PaceStatus, string> = {
 const paceDotMap: Record<PaceStatus, string> = {
   on_track: 'bg-[var(--color-brand-green)]',
   warning: 'bg-[var(--color-brand-amber)]',
-  over: 'bg-[var(--color-brand-red)]',
+  over: 'bg-[var(--color-brand-primary)]',
 }
 
 export function BudgetRing({
@@ -76,7 +76,7 @@ export function BudgetRing({
 
   const ringColor =
     percent > 100
-      ? 'var(--color-brand-red)'
+      ? 'var(--color-brand-primary)'
       : percent > 80
         ? 'var(--color-brand-amber)'
         : 'var(--color-brand-green)'
@@ -90,7 +90,7 @@ export function BudgetRing({
 
   const statusColor =
     percent > 100
-      ? 'text-[var(--color-brand-red)]'
+      ? 'text-[var(--color-brand-primary-ink)]'
       : percent > 80
         ? 'text-[var(--color-brand-amber)]'
         : 'text-[var(--color-brand-green)]'
@@ -198,7 +198,7 @@ export function BudgetRing({
             {overBudgetCategories.map((c) => (
               <span
                 key={c.category}
-                className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-brand-red)]/10 text-[var(--color-brand-red)]"
+                className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-red)]"
               >
                 {c.icon && <span>{c.icon}</span>}
                 {c.category}

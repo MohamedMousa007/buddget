@@ -17,7 +17,7 @@ export function SettingsImportBanner({ banner }: SettingsImportBannerProps) {
       className={`rounded-xl border px-4 py-3 text-sm ${
         banner.variant === 'success'
           ? 'border-[var(--color-brand-green)]/40 bg-[var(--color-brand-green)]/10 text-[var(--color-brand-green)]'
-          : 'border-[var(--color-brand-red)]/50 bg-red-950/30 text-[var(--color-brand-red)]'
+          : 'border-[var(--color-brand-primary)]/50 bg-red-950/30 text-[var(--color-brand-primary-ink)]'
       }`}
     >
       {banner.text}

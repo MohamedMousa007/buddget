@@ -92,7 +92,7 @@ export function RecentExpenses({ expenses }: RecentExpensesProps) {
         <SectionHeader.Trailing>
           <Link
             href="/expenses"
-            className="text-xs text-[var(--color-brand-red)] hover:text-[var(--color-brand-red-hover)] transition-colors"
+            className="text-xs text-[var(--color-brand-primary-ink)] hover:text-[var(--color-brand-primary-hover)] transition-colors"
           >
             {t.dashboard.recentSeeAll}
           </Link>

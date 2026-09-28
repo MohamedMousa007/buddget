@@ -122,7 +122,7 @@ export function DebtSnapshot() {
 
                 <div className="mt-2 h-1.5 bg-[var(--color-brand-border)] rounded-full overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-[var(--color-brand-red)]"
+                    className="h-full rounded-full bg-[var(--color-brand-primary)]"
                     style={{ width: `${Math.min(progressPercent, 100)}%` }}
                   />
                 </div>

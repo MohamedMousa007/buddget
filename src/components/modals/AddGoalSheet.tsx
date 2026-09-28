@@ -52,7 +52,7 @@ function AddGoalSheetForm({ editingGoal, onClose, title, selectClass, t }: Inner
             </div>
             <button
               type="button"
-              className="w-full py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
+              className="w-full py-3 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] text-sm font-semibold transition-colors"
               onClick={() => form.setStep(2)}
             >
               {t.goals.nextStep}
@@ -121,7 +121,7 @@ function AddGoalSheetForm({ editingGoal, onClose, title, selectClass, t }: Inner
                       className={cn(
                         'px-2.5 py-1 rounded-full text-xs border',
                         form.linkedDebtIds.includes(d.id)
-                          ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/15'
+                          ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-primary)]/15'
                           : 'border-[var(--color-brand-border)]'
                       )}
                     >
@@ -142,7 +142,7 @@ function AddGoalSheetForm({ editingGoal, onClose, title, selectClass, t }: Inner
                       className={cn(
                         'px-2.5 py-1 rounded-full text-xs border max-w-full truncate',
                         form.linkedSavingsAccountIds.includes(a.id)
-                          ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/15'
+                          ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/15'
                           : 'border-[var(--color-brand-border)]'
                       )}
                     >
@@ -192,7 +192,7 @@ function AddGoalSheetForm({ editingGoal, onClose, title, selectClass, t }: Inner
               <button
                 type="button"
                 onClick={form.submit}
-                className="flex-1 py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
+                className="flex-1 py-3 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] text-sm font-semibold transition-colors"
               >
                 {t.common.save}
               </button>

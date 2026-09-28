@@ -4,7 +4,7 @@ import type { SavingsAccount, SavingsType } from '@/lib/store/types'
 const TYPE_COLOR: Partial<Record<SavingsType, string>> = {
   bank: '#7EAEF9',
   cash: '#B79CFF',
-  gold: '#F5C842',
+  gold: '#EDC463',
   stablecoin: '#B79CFF',
   vault: '#35D46F',
 }

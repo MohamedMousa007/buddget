@@ -88,7 +88,7 @@ export default function BudgetSetupPage() {
                   <button
                     type="button"
                     onClick={p.commitNewPlan}
-                    className="rounded-xl bg-[var(--color-brand-red)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)]"
+                    className="rounded-xl bg-[var(--color-brand-primary)] px-4 py-2 text-sm font-semibold text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
                   >
                     {t.common.ok}
                   </button>

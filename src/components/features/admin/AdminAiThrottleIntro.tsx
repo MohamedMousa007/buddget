@@ -19,7 +19,7 @@ export function AdminAiThrottleIntro() {
         href="https://ai.google.dev/gemini-api/docs/rate-limits"
         target="_blank"
         rel="noopener noreferrer"
-        className="text-xs text-[var(--color-brand-red)] hover:underline"
+        className="text-xs text-[var(--color-brand-primary-ink)] hover:underline"
       >
         Gemini API limits (Google) →
       </a>

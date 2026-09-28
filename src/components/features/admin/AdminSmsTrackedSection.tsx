@@ -46,7 +46,7 @@ const METHOD_CHIPS: Record<string, { label: string; cls: string }> = {
 /** AI template-learning outcome chip (shown under the AI method chip). */
 const GREEN = 'border-green-500/20 text-green-400 bg-green-500/10'
 const AMBER = 'border-amber-500/20 text-amber-400 bg-amber-500/10'
-const RED = 'border-red-500/20 text-[var(--color-brand-red)] bg-red-500/10'
+const RED = 'border-red-500/20 text-[var(--color-brand-primary-ink)] bg-red-500/10'
 const BLUE = 'border-blue-500/20 text-blue-400 bg-blue-500/10'
 const LEARN_CHIPS: Record<string, { label: string; cls: string }> = {
   learned: { label: 'learned', cls: GREEN },
@@ -219,9 +219,9 @@ export function AdminSmsTrackedSection({ admin }: Props) {
 
       {pushDown && (
         <div className="flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3">
-          <AlertTriangle className="h-4 w-4 text-[var(--color-brand-red)] shrink-0 mt-0.5" />
+          <AlertTriangle className="h-4 w-4 text-[var(--color-brand-primary-ink)] shrink-0 mt-0.5" />
           <div>
-            <p className="text-xs font-semibold text-[var(--color-brand-red)]">Push delivery is down</p>
+            <p className="text-xs font-semibold text-[var(--color-brand-primary-ink)]">Push delivery is down</p>
             <p className="text-xs text-[var(--color-brand-text-secondary)] mt-0.5">
               <span className="font-mono">FIREBASE_SERVICE_ACCOUNT_JSON</span> is not set in the deployed environment — no one is receiving SMS push notifications. Set it in the Vercel project env to restore delivery.
             </p>

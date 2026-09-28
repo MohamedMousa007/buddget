@@ -27,7 +27,7 @@ import type { Currency, Debt, DebtPayment, GoldKarat } from '@/lib/store/types'
 
 /** Family accent colors (handoff §1). */
 export const FAMILY_ACCENT: Record<DebtFamily, string> = {
-  borrow: '#E50914',
+  borrow: '#12B0A0',
   credit_card: '#8A5CF6',
   installment: '#00C2A8',
 }
@@ -176,7 +176,7 @@ export function useDebtTabData() {
           paid,
           remaining,
           currency: d.currency,
-          accent: d.isGold ? '#F5C842' : d.direction === 'they_owe' ? '#1DB954' : '#E50914',
+          accent: d.isGold ? '#EDC463' : d.direction === 'they_owe' ? '#37C368' : '#12B0A0',
           gold: d.isGold && d.goldKarat ? { grams: remaining, karat: d.goldKarat } : undefined,
           goal: g ? ((): BorrowVM['goal'] => {
             const start = parseISO(d.createdAt)

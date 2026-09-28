@@ -26,7 +26,7 @@ export function AdminLoginScreen({ pin, onPinChange, error, loading, onLogin }: 
       >
         <div className="flex flex-col items-center mb-6">
           <div className="w-16 h-16 rounded-2xl bg-[var(--color-brand-elevated)] flex items-center justify-center mb-4">
-            <Shield className="w-8 h-8 text-[var(--color-brand-red)]" />
+            <Shield className="w-8 h-8 text-[var(--color-brand-primary-ink)]" />
           </div>
           <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)]">Admin Panel</h1>
           <p className="text-sm text-[var(--color-brand-text-muted)] mt-1">Enter your admin PIN to continue</p>
@@ -60,7 +60,7 @@ export function AdminLoginScreen({ pin, onPinChange, error, loading, onLogin }: 
             type="button"
             onClick={onLogin}
             disabled={!pin.trim() || loading}
-            className="w-full py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-3 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
             <Lock className="w-4 h-4" />
             {loading ? 'Verifying...' : 'Unlock'}

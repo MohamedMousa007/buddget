@@ -10,45 +10,92 @@ All colors are CSS custom properties set in `src/app/globals.css`. Always use th
 
 ### Brand Palette
 
+**Teal is the brand and every primary action. Red does exactly one job: destructive
+actions and over-budget alerts.** It is never a CTA colour. (Revamp Kit v1, 2026-09-28 —
+this replaced a red-primary system; if you find red on a Save/Add/Confirm button, it is a
+leftover, not a decision.)
+
 | Token | CSS Variable | Light | Dark | Usage |
 |---|---|---|---|---|
-| Red (primary) | `--color-brand-red` | `#E50914` | `#E50914` | CTAs, destructive, accent |
-| Red hover | `--color-brand-red-hover` | `#C5070F` | `#F40612` | Button hover state |
-| Green | `--color-brand-green` | `#18A349` | `#1DB954` | Income, success, confirm |
-| Green hover | `--color-brand-green-hover` | `#12843B` | `#25D067` | Green button hover |
-| Gold | `--color-brand-gold` | `#D4A017` | `#F5C842` | Gold price, premium |
-| Amber | `--color-brand-amber` | `#E08800` | `#FF9F0A` | Warnings, caution states |
+| **Primary (brand)** | `--color-brand-primary` | `#12B0A0` | `#1FC3B2` | Brand, all primary CTAs, active nav, FAB |
+| Primary hover | `--color-brand-primary-hover` | `#0E9384` | `#35D4C3` | Hover on a teal fill |
+| **Primary ink** | `--color-brand-primary-ink` | `#0B7568` | `#7FE6DA` | Teal **text** and links — see the contrast warning below |
+| Primary soft | `--color-brand-primary-soft` | `#E3F6F3` | `#0F2723` | Teal tint backgrounds, icon chips |
+| **On primary** | `--color-brand-on-primary` | `#04201C` | `#04201C` | Anything sitting **on** a teal fill |
+| Red (destructive) | `--color-brand-red` | `#C0323A` | `#F2646A` | Delete, destructive confirm, over budget |
+| Red hover | `--color-brand-red-hover` | `#A82A31` | `#F87C81` | Hover on destructive |
+| Red soft | `--color-brand-red-soft` | `#FBE7E7` | `#3A1B1D` | Destructive badge background |
+| Green | `--color-brand-green` | `#0F7A36` | `#37C368` | Income, received, success |
+| Green soft | `--color-brand-green-soft` | `#E3F5EA` | `#123021` | Positive badge background |
+| Amber | `--color-brand-amber` | `#8A5B0A` | `#EDB24A` | Warning, due soon, late |
+| Amber soft | `--color-brand-amber-soft` | `#FBF0DA` | `#33280F` | Warning badge background |
+| Gold | `--color-brand-gold` | `#96701A` | `#EDC463` | Investment, gold holdings |
+| Focus ring | `--color-brand-focus` | `#12B0A0` | `#1FC3B2` | Focus rings (now brand teal) |
+
+> ⚠️ **`--color-brand-primary` fails contrast as text** — 2.71:1 on white. Use it for fills,
+> borders and icon glyphs only. For teal **text** use `--color-brand-primary-ink` (5.59:1);
+> on a teal **fill** use `--color-brand-on-primary` (6.30:1).
+>
+> Every light-mode value above was adjusted from the source mockup to clear WCAG AA. The
+> mockup's own values failed in six places. Do not "restore" them from the mockup.
+
+### Category Ramp
+
+For charts and category chips. Six steps, fixed order.
+
+| Token | Light | Dark |
+|---|---|---|
+| `--color-cat-1` | `#0E9384` | `#1FC3B2` |
+| `--color-cat-2` | `#96701A` | `#EDC463` |
+| `--color-cat-3` | `#C4472D` | `#F27E66` |
+| `--color-cat-4` | `#4952C8` | `#8A94F5` |
+| `--color-cat-5` | `#1E73A8` | `#57B2ED` |
+| `--color-cat-6` | `#6D3FC4` | `#A17DF9` |
 
 ### Surface Palette
 
+Green-tinted neutrals, not grey — they sit under a teal brand.
+
 | Token | CSS Variable | Light | Dark | Usage |
 |---|---|---|---|---|
-| Background | `--color-brand-bg` | `#F5F5F7` | `#0A0A0F` | Page background |
-| Card | `--color-brand-card` | `#FFFFFF` | `#111118` | Card surfaces |
-| Elevated | `--color-brand-elevated` | `#F0F0F4` | `#1A1A24` | Inputs, chips, secondary surfaces |
-| Border | `--color-brand-border` | `#D4D4DC` | `#2A2A38` | Dividers, input borders, card borders |
+| Background | `--color-brand-bg` | `#F4F7F6` | `#0A100F` | Page background |
+| Card | `--color-brand-card` | `#FFFFFF` | `#111917` | Card surfaces |
+| Elevated | `--color-brand-elevated` | `#ECF1F0` | `#18211F` | Inputs, chips, secondary surfaces |
+| Sunken | `--color-brand-sunken` | `#E2E9E8` | `#212C2A` | Track backgrounds, wells |
+| Border | `--color-brand-border` | `#DDE6E4` | `#25302E` | Dividers, card borders |
+| Border strong | `--color-brand-border-strong` | `#CBD6D3` | `#33403D` | Emphasised dividers, grab handles |
+
+### Elevation
+
+The kit replaced the old glass-blur card identity with a three-step shadow scale.
+`--shadow-sm` (resting cards) · `--shadow-md` (raised) · `--shadow-lg` (modals, phones).
+The `.glass-card` utility still exists for overlays but is no longer the default card look.
 
 ### Text Palette
 
 | Token | CSS Variable | Light | Dark | Usage |
 |---|---|---|---|---|
-| Primary | `--color-brand-text-primary` | `#1A1A24` | `#FFFFFF` | Headings, primary labels |
-| Secondary | `--color-brand-text-secondary` | `#5A5A72` | `#CFCFE0` | Supporting text, subtitles |
-| Muted | `--color-brand-text-muted` | `#8A8AA0` | `#9898B0` | Placeholders, timestamps, hints |
+| Primary | `--color-brand-text-primary` | `#0D1A18` | `#EAF2F0` | Headings, primary labels |
+| Secondary | `--color-brand-text-secondary` | `#566B68` | `#9BABA8` | Supporting text, subtitles |
+| Muted | `--color-brand-text-muted` | `#63726F` | `#7A8A87` | Placeholders, timestamps, hints |
 
 ### Chart Palette (in order)
 
+Mirrors the category ramp — `--chart-1…5` and `--color-cat-1…5` hold the same values, so a
+chart series and its category chip always agree.
+
 | Slot | Light | Dark |
 |---|---|---|
-| chart-1 | `#E50914` | `#E50914` |
-| chart-2 | `#18A349` | `#1DB954` |
-| chart-3 | `#D4A017` | `#F5C842` |
-| chart-4 | `#E08800` | `#FF9F0A` |
-| chart-5 | `#5A5A72` | `#A0A0B8` |
+| chart-1 | `#0E9384` | `#1FC3B2` |
+| chart-2 | `#96701A` | `#EDC463` |
+| chart-3 | `#C4472D` | `#F27E66` |
+| chart-4 | `#4952C8` | `#8A94F5` |
+| chart-5 | `#1E73A8` | `#57B2ED` |
 
 ### Glass Modifier
 
-Use `.glass-card` for translucent surfaces (e.g. modals, overlays):
+`.glass-card` still exists for translucent overlays, but glass is **no longer the default card
+look** — cards are solid surfaces with `--shadow-sm`. Reach for glass deliberately, not by habit.
 - Light: `rgba(255,255,255,0.7)` + `backdrop-filter: blur(12px)`
 - Dark: `rgba(26,26,36,0.8)` + `backdrop-filter: blur(12px)`
 
@@ -124,16 +171,32 @@ gap-6  (24px) — between cards / major page sections
 
 ## Border Radius
 
-Base radius: `--radius: 0.75rem` (12px). All `rounded-*` values derive from this.
+Base radius: `--radius: 0.75rem` (12px). The steps are re-derived so existing utility classes
+land on the Revamp Kit geometry without touching any component.
 
-| Context | Tailwind class | Approx px | Use for |
+| Context | Tailwind class | px | Use for |
 |---|---|---|---|
-| Cards, sheets, modals | `rounded-2xl` | ~22px | Top-level containers |
-| Inputs, inner elements | `rounded-xl` | ~17px | Text inputs, selects, inner cards |
-| Buttons | `rounded-xl` | ~17px | Primary and secondary buttons |
-| Chips, badges, tags | `rounded-full` | 9999px | Status badges, category chips |
-| Small controls | `rounded-lg` | ~14px | Toggles, small icon buttons |
-| Avatars | `rounded-full` | 9999px | Profile images |
+| Buttons, inputs | `rounded-xl` | **12** | All controls — this is the kit's control radius |
+| Cards, tiles | `rounded-2xl` | **16** | Top-level containers |
+| Sheets (top corners) | `rounded-3xl` | **24** | Bottom-sheet tops |
+| Chips, badges, pills | `rounded-full` | 9999 | Status badges, category chips |
+| Small controls | `rounded-lg` | 12 | Toggles, small icon buttons |
+| FAB | — | **18** | 54×54px rounded square, 4px ring in the nav surface |
+
+---
+
+## Iconography
+
+Icons are **Lucide**, outline only, 1.75–2px stroke, never filled.
+
+**Two product rules, both absolute:**
+
+- 🚫 **Never a pig.** `PiggyBank` is banned product-wide for savings or any other concept.
+  The canonical savings glyph is **`Coins`** — what the bottom nav uses. It is deliberately
+  absent from `OTHER_SAVINGS_ICON_KEYS`; a legacy alias in `SavingsAccountIcon` maps any
+  imported `'PiggyBank'` value onto `Coins` so old backups still render.
+- 🚫 **No notification bell on native.** The mobile header is avatar + greeting only. A bell
+  belongs only where a web surface genuinely needs it.
 
 ---
 

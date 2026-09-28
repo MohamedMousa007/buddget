@@ -24,7 +24,7 @@ interface KPICardProps {
 const COLOR_MAP = {
   default: 'text-[var(--color-brand-text-primary)]',
   green: 'text-[var(--color-brand-green)]',
-  red: 'text-[var(--color-brand-red)]',
+  red: 'text-[var(--color-brand-primary-ink)]',
   gold: 'text-[var(--color-brand-gold)]',
 }
 
@@ -106,7 +106,7 @@ export function KPICard({
             <span
               className={cn(
                 'me-1',
-                trend >= 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red)]'
+                trend >= 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-primary-ink)]'
               )}
             >
               {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}%

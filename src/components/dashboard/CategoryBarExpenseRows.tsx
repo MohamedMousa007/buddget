@@ -41,7 +41,7 @@ export function CategoryBarExpenseRows({
 
         const barColor =
           percent >= 100
-            ? 'bg-[var(--color-brand-red)]'
+            ? 'bg-[var(--color-brand-primary)]'
             : percent > 80
               ? 'bg-[var(--color-brand-amber)]'
               : 'bg-[var(--color-brand-green)]'
@@ -51,7 +51,7 @@ export function CategoryBarExpenseRows({
 
         const statusColor =
           percent >= 100
-            ? 'text-[var(--color-brand-red)]'
+            ? 'text-[var(--color-brand-primary-ink)]'
             : percent > 80
               ? 'text-[var(--color-brand-amber)]'
               : 'text-[var(--color-brand-green)]'

@@ -20,7 +20,7 @@ export function AdminDashboardHeader({ onLock }: AdminDashboardHeaderProps) {
             <ArrowLeft className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
           </Link>
           <div className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-[var(--color-brand-red)]" />
+            <Shield className="w-5 h-5 text-[var(--color-brand-primary-ink)]" />
             <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)]">Admin Panel</h1>
           </div>
         </div>

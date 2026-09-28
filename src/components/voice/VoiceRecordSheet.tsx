@@ -275,10 +275,10 @@ function RecordingView({
                 ? { duration: 1.4, repeat: Infinity, ease: 'easeInOut' }
                 : { duration: 0 }
             }
-            className="absolute -inset-6 rounded-full bg-[var(--color-brand-red)]/20 blur-2xl"
+            className="absolute -inset-6 rounded-full bg-[var(--color-brand-primary)]/20 blur-2xl"
           />
           <div
-            className="relative flex h-20 w-20 items-center justify-center rounded-full bg-[var(--color-brand-red)] text-white shadow-2xl shadow-red-900/40 select-none"
+            className="relative flex h-20 w-20 items-center justify-center rounded-full bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)] shadow-2xl shadow-red-900/40 select-none"
             aria-label={isRecording ? 'Release to transcribe' : 'Hold to record'}
           >
             <Mic className="h-9 w-9 pointer-events-none" />
@@ -323,7 +323,7 @@ function PermissionView({ onRequest }: { onRequest: () => void }) {
       <button
         type="button"
         onClick={onRequest}
-        className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-brand-red)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
+        className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-brand-primary)] px-5 py-2.5 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
       >
         <Mic className="h-4 w-4" /> Allow Microphone
       </button>
@@ -336,7 +336,7 @@ function PermissionView({ onRequest }: { onRequest: () => void }) {
 function ProcessingView({ onCancel }: { onCancel: () => void }) {
   return (
     <div className="flex flex-col items-center gap-3 py-6 w-full">
-      <Loader2 className="h-8 w-8 animate-spin text-[var(--color-brand-red)]" />
+      <Loader2 className="h-8 w-8 animate-spin text-[var(--color-brand-primary-ink)]" />
       <p className="text-sm text-[var(--color-brand-text-secondary)]">Transcribing your voice…</p>
       <button
         type="button"
@@ -397,7 +397,7 @@ function AnswerView({
         <button
           type="button"
           onClick={onOpenChat}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-4 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
+          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-primary)] px-4 py-2.5 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
         >
           <MessageCircle className="h-4 w-4" />
           Open in chat
@@ -444,7 +444,7 @@ function ClarifyView({
         <button
           type="button"
           onClick={onAnswer}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-4 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--color-brand-primary)] px-4 py-2.5 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
         >
           <Mic className="h-4 w-4" />
           Answer by voice
@@ -478,7 +478,7 @@ function QueuedView({ onClose }: { onClose: () => void }) {
       <button
         type="button"
         onClick={onClose}
-        className="mt-2 rounded-xl bg-[var(--color-brand-red)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
+        className="mt-2 rounded-xl bg-[var(--color-brand-primary)] px-4 py-2 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
       >
         Done
       </button>
@@ -508,7 +508,7 @@ function ErrorView({
         <button
           type="button"
           onClick={onRetry}
-          className="rounded-xl bg-[var(--color-brand-red)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-red-hover)]"
+          className="rounded-xl bg-[var(--color-brand-primary)] px-4 py-2 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
         >
           Try again
         </button>

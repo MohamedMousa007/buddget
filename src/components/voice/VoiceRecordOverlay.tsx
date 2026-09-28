@@ -201,8 +201,8 @@ function FloatingRecordingWidget({
           transition={{ type: 'spring', stiffness: 400, damping: 20 }}
           className="w-14 h-14 rounded-full flex items-center justify-center border-2"
           style={{
-            backgroundColor: nearTrash ? 'var(--color-brand-red)' : 'var(--color-brand-elevated)',
-            borderColor: nearTrash ? 'var(--color-brand-red)' : 'var(--color-brand-border)',
+            backgroundColor: nearTrash ? 'var(--color-brand-primary)' : 'var(--color-brand-elevated)',
+            borderColor: nearTrash ? 'var(--color-brand-primary)' : 'var(--color-brand-border)',
           }}
         >
           <Trash2 className="h-6 w-6" style={{ color: nearTrash ? '#fff' : 'var(--color-brand-text-muted)' }} />
@@ -226,7 +226,7 @@ function FloatingRecordingWidget({
             <motion.span
               animate={{ scale: [1, 1.25, 1], opacity: [1, 0.6, 1] }}
               transition={{ duration: 1.2, repeat: Infinity }}
-              className="h-2.5 w-2.5 rounded-full bg-[var(--color-brand-red)] shrink-0"
+              className="h-2.5 w-2.5 rounded-full bg-[var(--color-brand-primary)] shrink-0"
             />
 
             {/* Waveform */}
@@ -261,7 +261,7 @@ function ProcessingPanel({ onCancel }: { onCancel: () => void }) {
   return (
     <div className="px-4 py-3 flex items-center justify-between gap-3">
       <div className="flex items-center gap-2">
-        <Loader2 className="h-4 w-4 animate-spin text-[var(--color-brand-red)] shrink-0" />
+        <Loader2 className="h-4 w-4 animate-spin text-[var(--color-brand-primary-ink)] shrink-0" />
         <span className="text-sm text-[var(--color-brand-text-secondary)]">Transcribing…</span>
       </div>
       <button
@@ -356,7 +356,7 @@ function AnswerPanel({
         <button
           type="button"
           onClick={onOpenChat}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-3 py-2 text-xs font-semibold text-white hover:bg-[var(--color-brand-red-hover)]"
+          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-primary)] px-3 py-2 text-xs font-semibold text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
         >
           <MessageCircle className="h-3.5 w-3.5" /> Open in chat
         </button>
@@ -397,7 +397,7 @@ function ClarifyPanel({
         <button
           type="button"
           onClick={onAnswer}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-3 py-2 text-xs font-semibold text-white hover:bg-[var(--color-brand-red-hover)]"
+          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-primary)] px-3 py-2 text-xs font-semibold text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
         >
           <Mic className="h-3.5 w-3.5" /> Answer by voice
         </button>

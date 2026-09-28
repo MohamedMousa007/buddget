@@ -89,7 +89,7 @@ export function UpdateBalanceSheet({ open, onClose, account, onCorrect }: Update
               onCorrect(nb, notes.trim() || undefined)
               onClose()
             }}
-            className="w-full rounded-xl bg-[var(--color-brand-red)] py-3 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)] disabled:opacity-40"
+            className="w-full rounded-xl bg-[var(--color-brand-primary)] py-3 text-sm font-semibold text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)] disabled:opacity-40"
           >
             {t.savings.submitUpdate}
           </button>

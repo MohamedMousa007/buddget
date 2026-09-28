@@ -5,7 +5,7 @@ import { ShieldCheck, Zap } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import SmsTrackingGuide from '@/components/onboarding/SmsTrackingGuide'
 
-const RED = '#E50914'
+const RED = '#12B0A0'
 
 interface Props {
   lastReceivedAt: string | null
@@ -63,7 +63,7 @@ export function SmsIosSetupCard({ lastReceivedAt, onSetupComplete }: Props) {
           className="w-full h-14 rounded-lg text-sm font-bold text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90 active:opacity-80"
           style={{
             background: RED,
-            boxShadow: '0 10px 30px rgba(229,9,20,0.28)',
+            boxShadow: '0 10px 30px rgba(18,176,160,0.28)',
           }}
         >
           <Zap className="h-4 w-4" strokeWidth={2.5} />

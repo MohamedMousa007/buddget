@@ -197,7 +197,7 @@ function Indicator({
               >
                 <circle cx="11" cy="11" r="9" fill="none" stroke="var(--color-brand-border)" strokeWidth="2.5" />
                 <circle
-                  cx="11" cy="11" r="9" fill="none" stroke="var(--color-brand-red)" strokeWidth="2.5"
+                  cx="11" cy="11" r="9" fill="none" stroke="var(--color-brand-primary)" strokeWidth="2.5"
                   strokeLinecap="round" strokeDasharray={CIRC} strokeDashoffset={CIRC * 0.7}
                 />
               </svg>
@@ -205,7 +205,7 @@ function Indicator({
               <svg width="22" height="22" viewBox="0 0 22 22" style={{ transform: 'rotate(-90deg)' }}>
                 <circle cx="11" cy="11" r="9" fill="none" stroke="var(--color-brand-border)" strokeWidth="2.5" />
                 <motion.circle
-                  cx="11" cy="11" r="9" fill="none" stroke="var(--color-brand-red)" strokeWidth="2.5"
+                  cx="11" cy="11" r="9" fill="none" stroke="var(--color-brand-primary)" strokeWidth="2.5"
                   strokeLinecap="round" strokeDasharray={CIRC} style={{ strokeDashoffset: dashOffset }}
                 />
               </svg>

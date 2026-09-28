@@ -31,7 +31,7 @@ export default function Image() {
             alignItems: 'baseline',
           }}
         >
-          Bud<span style={{ color: '#E50914' }}>d</span>get
+          Bud<span style={{ color: '#12B0A0' }}>d</span>get
         </div>
         <div style={{ fontSize: 32, color: '#A0A0B8', marginTop: 20 }}>Your money, finally makes sense.</div>
         <div
@@ -40,7 +40,7 @@ export default function Image() {
             bottom: 0,
             width: '100%',
             height: 8,
-            background: '#E50914',
+            background: '#12B0A0',
           }}
         />
       </div>

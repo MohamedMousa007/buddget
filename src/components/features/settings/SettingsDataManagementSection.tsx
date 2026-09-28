@@ -33,7 +33,7 @@ export function SettingsDataManagementSection({
   return (
     <section className="glass-card rounded-2xl p-5 space-y-4">
       <div className="flex items-center gap-2 mb-2">
-        <Database className="w-5 h-5 text-[var(--color-brand-red)]" />
+        <Database className="w-5 h-5 text-[var(--color-brand-primary-ink)]" />
         <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
           {t.settings.dataTitle}
         </h2>
@@ -49,9 +49,9 @@ export function SettingsDataManagementSection({
       <button
         type="button"
         onClick={onExportExpenses}
-        className="flex w-full items-center gap-3 rounded-xl border border-[var(--color-brand-red)]/40 bg-[var(--color-brand-red)]/10 px-4 py-3 text-start transition-colors hover:bg-[var(--color-brand-red)]/15"
+        className="flex w-full items-center gap-3 rounded-xl border border-[var(--color-brand-primary)]/40 bg-[var(--color-brand-primary)]/10 px-4 py-3 text-start transition-colors hover:bg-[var(--color-brand-primary)]/15"
       >
-        <FileSpreadsheet className="h-5 w-5 shrink-0 text-[var(--color-brand-red)]" />
+        <FileSpreadsheet className="h-5 w-5 shrink-0 text-[var(--color-brand-primary-ink)]" />
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold text-[var(--color-brand-text-primary)]">
             {t.settings.dataExportExpenses}
@@ -60,7 +60,7 @@ export function SettingsDataManagementSection({
             {t.settings.dataExportExpensesHint}
           </span>
         </span>
-        <Download className="h-4 w-4 shrink-0 text-[var(--color-brand-red)]" />
+        <Download className="h-4 w-4 shrink-0 text-[var(--color-brand-primary-ink)]" />
       </button>
 
       <div className="flex flex-wrap gap-3">
@@ -96,7 +96,7 @@ export function SettingsDataManagementSection({
           <button
             type="button"
             onClick={() => onShowResetConfirm(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-900/50 text-sm text-[var(--color-brand-red)] hover:bg-red-900/20 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-900/50 text-sm text-[var(--color-brand-primary-ink)] hover:bg-red-900/20 transition-colors"
           >
             <Trash2 className="w-4 h-4" />
             {t.settings.dataStartFresh}
@@ -111,7 +111,7 @@ export function SettingsDataManagementSection({
                 onShowResetConfirm(false)
                 void onStartFresh()
               }}
-              className="px-3 py-1 rounded-lg bg-[var(--color-brand-red)] text-white text-xs font-medium"
+              className="px-3 py-1 rounded-lg bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)] text-xs font-medium"
             >
               {t.settings.dataConfirmReset}
             </button>

@@ -52,7 +52,7 @@ export function BudgetPlannerEmojiPicker({ value, onChange, ariaLabel, className
                     }}
                     className={cn(
                       'flex h-9 w-9 items-center justify-center rounded-lg text-lg transition-colors hover:bg-[var(--color-brand-elevated)]',
-                      value === e && 'ring-1 ring-[var(--color-brand-red)]'
+                      value === e && 'ring-1 ring-[var(--color-brand-primary)]'
                     )}
                   >
                     {e}

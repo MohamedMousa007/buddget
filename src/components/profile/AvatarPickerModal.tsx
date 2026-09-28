@@ -107,7 +107,7 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
               className={cn(
                 'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
                 tab === tabKey
-                  ? 'bg-[var(--color-brand-red)] text-white'
+                  ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
                   : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)]'
               )}
             >
@@ -130,8 +130,8 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
                   className={cn(
                     'w-16 h-16 rounded-full overflow-hidden ring-2 transition-all duration-150 cursor-pointer',
                     isSelected
-                      ? 'ring-[var(--color-brand-red)] scale-105'
-                      : 'ring-transparent hover:ring-[var(--color-brand-red)]'
+                      ? 'ring-[var(--color-brand-primary)] scale-105'
+                      : 'ring-transparent hover:ring-[var(--color-brand-primary)]'
                   )}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -169,7 +169,7 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="w-full py-10 rounded-xl border-2 border-dashed border-[var(--color-brand-border)] hover:border-[var(--color-brand-red)] text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] transition-colors text-center"
+                className="w-full py-10 rounded-xl border-2 border-dashed border-[var(--color-brand-border)] hover:border-[var(--color-brand-primary)] text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] transition-colors text-center"
               >
                 <p className="text-sm font-medium">{t.profile.avatarClickToUpload}</p>
                 <p className="text-xs text-[var(--color-brand-text-muted)] mt-1">{t.profile.avatarClickToUploadHint}</p>
@@ -185,7 +185,7 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={currentSrc} alt="" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <X className="w-8 h-8 text-[var(--color-brand-red)]" />
+                  <X className="w-8 h-8 text-[var(--color-brand-primary-ink)]" />
                 </div>
               </div>
             ) : (
@@ -210,7 +210,7 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
           <button
             type="button"
             onClick={handleSave}
-            className="px-4 py-2 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
+            className="px-4 py-2 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] text-sm font-semibold transition-colors"
           >
             {t.profile.avatarUseThis}
           </button>

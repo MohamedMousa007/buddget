@@ -8,7 +8,7 @@ import {
   Gem,
   Home,
   Landmark,
-  PiggyBank,
+  Coins,
   Star,
   TrendingUp,
   Vault,
@@ -28,8 +28,11 @@ const ICON_MAP: Record<string, LucideIcon> = {
   TrendingUp,
   Home,
   Wallet,
-  PiggyBank,
+  Coins,
   Vault,
+  // Legacy: rows imported from an old backup may still carry 'PiggyBank'.
+  // The pig is banned as a savings symbol — resolve it to the canonical Coins.
+  PiggyBank: Coins,
   Star,
   Briefcase,
 }

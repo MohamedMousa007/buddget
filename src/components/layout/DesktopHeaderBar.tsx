@@ -56,7 +56,7 @@ export function DesktopHeaderBar() {
             href="/"
             className="shrink-0 text-xl font-extrabold font-heading tracking-[-0.4px] text-[var(--color-brand-text-primary)]"
           >
-            Bud<span className="text-[var(--color-brand-red)]">d</span>get
+            Bud<span className="text-[var(--color-brand-primary-ink)]">d</span>get
           </Link>
           {sectionTitle && (
             <>
@@ -80,7 +80,7 @@ export function DesktopHeaderBar() {
               type="button"
               onClick={() => setActiveModal('clearedVault')}
               aria-label="Cleared vault"
-              className="ms-auto flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-[#1DB954]/40 bg-[rgba(29,185,84,.1)] px-3 text-[#35D46F]"
+              className="ms-auto flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-[#37C368]/40 bg-[rgba(55,195,104,.1)] px-3 text-[#35D46F]"
             >
               <Award className="h-4 w-4" />
               <span className="font-mono-numbers text-sm font-bold">{clearedCount}</span>

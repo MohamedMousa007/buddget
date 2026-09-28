@@ -50,7 +50,7 @@ export function SettingsSaveButton({ dirty, onSaved }: { dirty: boolean; onSaved
             'flex h-11 min-w-11 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold transition-colors',
             justSaved
               ? 'bg-[var(--color-brand-green)] text-white'
-              : 'bg-[var(--color-brand-red)] text-white hover:bg-[var(--color-brand-red-hover)] active:scale-95 disabled:opacity-60',
+              : 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)] active:scale-95 disabled:opacity-60',
           )}
         >
           {justSaved ? (

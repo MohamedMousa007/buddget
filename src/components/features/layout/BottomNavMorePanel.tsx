@@ -67,7 +67,7 @@ export function BottomNavMorePanel({
                 className={cn(
                   'flex items-center gap-3.5 rounded-2xl px-2.5 py-2.5 text-left transition-colors',
                   active
-                    ? 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-red)]'
+                    ? 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-primary-ink)]'
                     : 'text-[var(--color-brand-text-primary)]',
                 )}
               >

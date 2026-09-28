@@ -99,7 +99,7 @@ export function LifestyleSheet() {
           type="button"
           onClick={handleSave}
           disabled={!canSave}
-          className="w-full h-11 rounded-xl bg-[var(--color-brand-red)] text-white text-sm font-semibold mt-2 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--color-brand-red-hover)] transition-colors"
+          className="w-full h-11 rounded-xl bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)] text-sm font-semibold mt-2 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--color-brand-primary-hover)] transition-colors"
         >
           {t.onboarding.lifestyleSave}
         </button>
@@ -133,7 +133,7 @@ function PickerGroup<T extends string>({
               className={cn(
                 'min-h-10 px-3 rounded-xl border text-sm transition-colors text-start',
                 active
-                  ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-red)]/10 text-[var(--color-brand-text-primary)]'
+                  ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-text-primary)]'
                   : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)]',
               )}
             >

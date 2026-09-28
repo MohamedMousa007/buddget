@@ -22,7 +22,7 @@ export function SettingsSecuritySection({ store }: SettingsSecuritySectionProps)
   return (
     <section className="glass-card rounded-2xl p-5 space-y-4">
       <div className="flex items-center gap-2 mb-2">
-        <ShieldCheck className="w-5 h-5 text-[var(--color-brand-red)]" />
+        <ShieldCheck className="w-5 h-5 text-[var(--color-brand-primary-ink)]" />
         <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
           {t.settings.securityTitle}
         </h2>

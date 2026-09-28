@@ -30,7 +30,7 @@ export function GoalCategoryPicker({ value, onChange, labels }: GoalCategoryPick
             className={cn(
               'px-2.5 py-1.5 rounded-full text-xs font-medium border transition-colors text-start max-w-[11rem]',
               active
-                ? 'bg-[var(--color-brand-red)]/20 border-[var(--color-brand-red)] text-[var(--color-brand-text-primary)]'
+                ? 'bg-[var(--color-brand-primary)]/20 border-[var(--color-brand-primary)] text-[var(--color-brand-text-primary)]'
                 : 'bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:border-[var(--color-brand-text-muted)]'
             )}
           >

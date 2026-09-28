@@ -12,7 +12,7 @@ import {
   GraduationCap,
   Smartphone,
   RefreshCw,
-  PiggyBank,
+  Coins,
   CreditCard,
   Send,
   Zap,
@@ -60,7 +60,7 @@ export function CategoryIcon({ category, className }: CategoryIconProps) {
   if (key === 'shopping' || key === 'shop') return <ShoppingBag className={c} />
   if (key === 'health' || key === 'healthcare' || key === 'medical') return <HeartPulse className={c} />
   if (key === 'education' || key === 'school') return <GraduationCap className={c} />
-  if (key === 'savings' || key === 'saving' || key === 'investment') return <PiggyBank className={c} />
+  if (key === 'savings' || key === 'saving' || key === 'investment') return <Coins className={c} />
   if (key === 'debt' || key === 'loan' || key === 'credit') return <CreditCard className={c} />
   if (key === 'cc_payoff') return <CreditCard className={c} />
   if (key === 'atm_cash_withdrawal' || key === 'atm') return <Banknote className={c} />

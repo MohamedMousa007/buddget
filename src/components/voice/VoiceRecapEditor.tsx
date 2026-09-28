@@ -94,7 +94,7 @@ export function VoiceRecapEditor({
           return (
             <div
               key={idx}
-              className={`rounded-xl border bg-[var(--color-brand-elevated)]/50 p-2.5 ${err ? 'border-[var(--color-brand-red)]' : 'border-[var(--color-brand-border)]'}`}
+              className={`rounded-xl border bg-[var(--color-brand-elevated)]/50 p-2.5 ${err ? 'border-[var(--color-brand-primary)]' : 'border-[var(--color-brand-border)]'}`}
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-[var(--color-brand-text-secondary)]">
@@ -179,7 +179,7 @@ export function VoiceRecapEditor({
               </div>
 
               {err ? (
-                <p className="mt-1.5 flex items-center gap-1 text-xs text-[var(--color-brand-red)]">
+                <p className="mt-1.5 flex items-center gap-1 text-xs text-[var(--color-brand-primary-ink)]">
                   <AlertCircle className="h-3 w-3 shrink-0" /> {err}
                 </p>
               ) : null}
@@ -193,7 +193,7 @@ export function VoiceRecapEditor({
           type="button"
           onClick={onConfirm}
           disabled={actions.length === 0}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-red)] px-3 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-brand-red-hover)] disabled:opacity-40"
+          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-primary)] px-3 py-2.5 text-sm font-semibold text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)] disabled:opacity-40"
         >
           <Check className="h-4 w-4" /> {multiple ? 'Save all' : 'Save'}
         </button>

@@ -169,7 +169,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
           className="flex items-center justify-between px-3.5 pt-3 pb-2.5"
           style={{
             background: 'linear-gradient(160deg,#F40612,#C5070F)',
-            boxShadow: '0 6px 18px -8px rgba(229,9,20,.6)',
+            boxShadow: '0 6px 18px -8px rgba(18,176,160,.6)',
           }}
         >
           <div className="flex items-center gap-2">
@@ -232,9 +232,9 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                   const isSel = sel.y === c.y && sel.m === c.m && sel.d === c.d
                   const isToday = today.y === c.y && today.m === c.m && today.d === c.d
                   const bg = isSel
-                    ? 'bg-[var(--color-brand-red)] text-white'
+                    ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
                     : isToday
-                      ? 'bg-[rgba(229,9,20,.12)] text-[var(--color-brand-red)]'
+                      ? 'bg-[rgba(18,176,160,.12)] text-[var(--color-brand-primary-ink)]'
                       : c.out
                         ? 'text-[var(--color-brand-text-muted)]'
                         : 'text-[var(--color-brand-text-primary)]'
@@ -244,7 +244,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                       type="button"
                       onClick={() => pick(c)}
                       className={`relative flex items-center justify-center rounded-md cursor-pointer text-sm font-semibold border-none transition-colors ${bg}`}
-                      style={isSel ? { boxShadow: '0 4px 12px rgba(229,9,20,.4)' } : undefined}
+                      style={isSel ? { boxShadow: '0 4px 12px rgba(18,176,160,.4)' } : undefined}
                     >
                       {c.d}
                       {isToday && !isSel ? (
@@ -263,9 +263,9 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                 const isCur = i === m
                 const isTM = i === today.m && y === today.y
                 const cls = isCur
-                  ? 'bg-[var(--color-brand-red)] text-white border-[var(--color-brand-red)]'
+                  ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)] border-[var(--color-brand-primary)]'
                   : isTM
-                    ? 'bg-[rgba(229,9,20,.1)] text-[var(--color-brand-red)] border-[rgba(229,9,20,.45)]'
+                    ? 'bg-[rgba(18,176,160,.1)] text-[var(--color-brand-primary-ink)] border-[rgba(18,176,160,.45)]'
                     : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] border-[var(--color-brand-border)]'
                 return (
                   <button
@@ -304,9 +304,9 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                   const on = yr === y
                   const isTY = yr === today.y
                   const cls = on
-                    ? 'bg-[var(--color-brand-red)] text-white border-[var(--color-brand-red)]'
+                    ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)] border-[var(--color-brand-primary)]'
                     : isTY
-                      ? 'bg-[rgba(229,9,20,.1)] text-[var(--color-brand-red)] border-[rgba(229,9,20,.4)]'
+                      ? 'bg-[rgba(18,176,160,.1)] text-[var(--color-brand-primary-ink)] border-[rgba(18,176,160,.4)]'
                       : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] border-[var(--color-brand-border)]'
                   return (
                     <button

@@ -28,7 +28,7 @@ export default function SettingsProfilePage() {
                 <button
                   type="button"
                   onClick={() => p.setAvatarModalOpen(true)}
-                  className="absolute bottom-0 end-0 w-7 h-7 rounded-full bg-[var(--color-brand-red)] flex items-center justify-center hover:bg-[var(--color-brand-red-hover)] transition-colors"
+                  className="absolute bottom-0 end-0 w-7 h-7 rounded-full bg-[var(--color-brand-primary)] flex items-center justify-center hover:bg-[var(--color-brand-primary-hover)] transition-colors"
                   aria-label={t.profile.changeAvatar}
                 >
                   <Pencil className="w-3.5 h-3.5 text-white" />
@@ -101,7 +101,7 @@ export default function SettingsProfilePage() {
             <button
               type="button"
               onClick={p.save}
-              className="px-4 py-2 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
+              className="px-4 py-2 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] text-sm font-semibold transition-colors"
             >
               {t.profile.saveChanges}
             </button>

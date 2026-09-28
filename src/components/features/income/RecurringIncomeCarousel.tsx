@@ -22,7 +22,7 @@ const TAP_SLOP = 6
  * too (the assign sheet auto-centres the default source). Vertical page scroll is
  * preserved via `touch-action: pan-y` and a vertical-intent bail-out.
  */
-export function RecurringIncomeCarousel({ count, activeIndex, onActiveChange, renderItem, dotColor = '#E50914', activeDotWidth = 16 }: Props) {
+export function RecurringIncomeCarousel({ count, activeIndex, onActiveChange, renderItem, dotColor = '#12B0A0', activeDotWidth = 16 }: Props) {
   const trackRef = useRef<HTMLDivElement>(null)
   const start = useRef<{ x: number; y: number } | null>(null)
   const axis = useRef<'h' | 'v' | null>(null)

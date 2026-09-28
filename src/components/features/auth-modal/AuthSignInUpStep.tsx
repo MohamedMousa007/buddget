@@ -250,14 +250,14 @@ export function AuthSignInUpStep({
                       type="checkbox"
                       checked={rememberMe}
                       onChange={(e) => setRememberMe(e.target.checked)}
-                      className="w-4 h-4 rounded border-[var(--color-brand-border)] accent-[var(--color-brand-red)]"
+                      className="w-4 h-4 rounded border-[var(--color-brand-border)] accent-[var(--color-brand-primary)]"
                     />
                     <span>{t.auth.rememberMe}</span>
                   </label>
                   <button
                     type="button"
                     onClick={onForgotClick}
-                    className="text-xs text-[var(--color-brand-red)] hover:underline"
+                    className="text-xs text-[var(--color-brand-primary-ink)] hover:underline"
                   >
                     {t.auth.forgotPassword}
                   </button>

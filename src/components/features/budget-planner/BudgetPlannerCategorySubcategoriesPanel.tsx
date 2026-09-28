@@ -39,7 +39,7 @@ export function BudgetPlannerCategorySubcategoriesPanel({
       <button
         type="button"
         onClick={onAddSubcategory}
-        className="text-xs text-[var(--color-brand-red)] hover:underline"
+        className="text-xs text-[var(--color-brand-primary-ink)] hover:underline"
       >
         + {labels.addSubcategory}
       </button>

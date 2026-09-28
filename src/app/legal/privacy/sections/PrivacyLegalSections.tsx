@@ -38,7 +38,7 @@ export function PrivacyLegalSections() {
         </p>
         <p>
           <strong className="text-[var(--color-brand-text-primary)]">Email:</strong>{' '}
-          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
+          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-primary-ink)] hover:underline">
             support@buddget.app
           </a>
         </p>
@@ -46,7 +46,7 @@ export function PrivacyLegalSections() {
           <strong className="text-[var(--color-brand-text-primary)]">Website:</strong>{' '}
           <a
             href="https://buddget.app"
-            className="text-[var(--color-brand-red)] hover:underline"
+            className="text-[var(--color-brand-primary-ink)] hover:underline"
             target="_blank"
             rel="noopener noreferrer"
           >

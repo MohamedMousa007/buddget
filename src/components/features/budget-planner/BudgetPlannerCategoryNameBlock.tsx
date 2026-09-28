@@ -130,7 +130,7 @@ export function BudgetPlannerCategoryNameBlock({
             }
           }}
           placeholder={labels.categoryNameExample}
-          className="min-w-32 flex-1 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1.5 text-sm text-[var(--color-brand-text-primary)] ring-1 ring-[var(--color-brand-red)]/50 placeholder:text-[var(--color-brand-text-muted)]"
+          className="min-w-32 flex-1 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1.5 text-sm text-[var(--color-brand-text-primary)] ring-1 ring-[var(--color-brand-primary)]/50 placeholder:text-[var(--color-brand-text-muted)]"
         />
       </div>
     )

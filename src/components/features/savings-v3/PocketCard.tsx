@@ -54,8 +54,8 @@ export function PocketCard({
         background: picker && !selected
           ? 'var(--color-brand-elevated)'
           : `linear-gradient(158deg, ${rgba(color, .16)}, rgba(255,255,255,.045) 55%), #0f0f15`,
-        border: selected ? '1px solid rgba(29,185,84,.55)' : '1px solid rgba(255,255,255,.08)',
-        boxShadow: selected ? '0 0 0 1px rgba(29,185,84,.2)' : 'inset 0 1px 0 rgba(255,255,255,.07), 0 8px 24px -12px rgba(0,0,0,.6)',
+        border: selected ? '1px solid rgba(55,195,104,.55)' : '1px solid rgba(255,255,255,.08)',
+        boxShadow: selected ? '0 0 0 1px rgba(55,195,104,.2)' : 'inset 0 1px 0 rgba(255,255,255,.07), 0 8px 24px -12px rgba(0,0,0,.6)',
         scrollSnapAlign: picker ? 'start' : 'center',
         cursor: picker ? 'pointer' : undefined,
       }}
@@ -74,7 +74,7 @@ export function PocketCard({
                 {account.name}
               </span>
               {isAuto && (
-                <span style={{ fontWeight: 700, fontSize: 8, letterSpacing: '.04em', color: '#F5C842', background: 'rgba(245,200,66,.16)', borderRadius: 5, padding: '2px 4px' }}>
+                <span style={{ fontWeight: 700, fontSize: 8, letterSpacing: '.04em', color: '#EDC463', background: 'rgba(237,196,99,.16)', borderRadius: 5, padding: '2px 4px' }}>
                   AUTO
                 </span>
               )}
@@ -88,7 +88,7 @@ export function PocketCard({
               className="flex items-center justify-center shrink-0"
               style={{
                 width: 26, height: 26, borderRadius: 999, marginTop: -2, marginRight: -2,
-                background: selected ? '#1DB954' : 'transparent',
+                background: selected ? '#37C368' : 'transparent',
                 border: selected ? undefined : '1.5px solid var(--color-brand-border)',
               }}
             >
@@ -133,14 +133,14 @@ export function PocketCard({
               <button
                 type="button" onClick={onAdd}
                 className="flex-1 text-white active:scale-[.99] transition-transform"
-                style={{ height: 42, borderRadius: 12, background: '#1DB954', fontWeight: 600, fontSize: 13.5, boxShadow: '0 9px 20px -11px rgba(29,185,84,.85)' }}
+                style={{ height: 42, borderRadius: 12, background: '#37C368', fontWeight: 600, fontSize: 13.5, boxShadow: '0 9px 20px -11px rgba(55,195,104,.85)' }}
               >
                 Add
               </button>
               <button
                 type="button" onClick={onWithdraw}
                 className="flex-1 text-white active:scale-[.99] transition-transform"
-                style={{ height: 42, borderRadius: 12, background: '#E50914', fontWeight: 600, fontSize: 13.5, boxShadow: '0 9px 20px -11px rgba(229,9,20,.85)' }}
+                style={{ height: 42, borderRadius: 12, background: '#12B0A0', fontWeight: 600, fontSize: 13.5, boxShadow: '0 9px 20px -11px rgba(18,176,160,.85)' }}
               >
                 Withdraw
               </button>

@@ -103,7 +103,7 @@ export function PaymentMethodsSheet() {
           <div className="sheet-cta shrink-0 px-[18px] pb-[calc(16px+env(safe-area-inset-bottom))] pt-4">
             <button
               type="button" onClick={openAdd}
-              className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-brand-red)] text-base font-semibold text-white"
+              className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-brand-primary)] text-base font-semibold text-[var(--color-brand-on-primary)]"
             >
               <Plus className="h-5 w-5" />
               {t.paymentMethods.addMethod}

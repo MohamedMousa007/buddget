@@ -14,7 +14,7 @@ export function AdminAnalyticsSection({ admin }: AdminAnalyticsSectionProps) {
   return (
     <section className="glass-card rounded-2xl p-5 space-y-4">
       <div className="flex items-center gap-2 mb-2">
-        <BarChart3 className="w-5 h-5 text-[var(--color-brand-red)]" />
+        <BarChart3 className="w-5 h-5 text-[var(--color-brand-primary-ink)]" />
         <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
           Usage (approx.)
         </h2>
@@ -26,7 +26,7 @@ export function AdminAnalyticsSection({ admin }: AdminAnalyticsSectionProps) {
         type="button"
         disabled={admin.analyticsLoading || !admin.sessionPin}
         onClick={() => void admin.loadAnalytics()}
-        className="text-xs px-3 py-2 rounded-xl bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] hover:border-[var(--color-brand-red)]/40 disabled:opacity-50"
+        className="text-xs px-3 py-2 rounded-xl bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] hover:border-[var(--color-brand-primary)]/40 disabled:opacity-50"
       >
         {admin.analyticsLoading ? 'Loading…' : 'Load last 7 days'}
       </button>

@@ -52,7 +52,7 @@ export function AppLockToggle({ userEmail }: AppLockToggleProps) {
     <div className="rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Lock className="h-5 w-5 text-[var(--color-brand-red)]" />
+          <Lock className="h-5 w-5 text-[var(--color-brand-primary-ink)]" />
           <div>
             <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">{t.settings.appLockTitle}</p>
             <p className="text-xs text-[var(--color-brand-text-muted)]">{t.settings.appLockHint}</p>
@@ -68,7 +68,7 @@ export function AppLockToggle({ userEmail }: AppLockToggleProps) {
         >
           <span
             className={`flex h-6 w-11 items-center rounded-full px-1 transition-colors ${
-              enabled ? 'bg-[var(--color-brand-red)]' : 'bg-[var(--color-brand-border)]'
+              enabled ? 'bg-[var(--color-brand-primary)]' : 'bg-[var(--color-brand-border)]'
             }`}
           >
             <span

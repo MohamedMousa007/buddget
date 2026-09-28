@@ -34,7 +34,7 @@ export interface NumberPadProps {
   dir?: 'ltr' | 'rtl'
 }
 
-const RED = 'var(--color-brand-red)'
+const RED = 'var(--color-brand-primary)'
 
 /** Pure input reducer — the single source of truth for typing behaviour. */
 export function nextValue(value: string, key: string, mode: NumberPadMode): string {
@@ -193,7 +193,7 @@ export function NumberPad({
           bottom: 0,
           overflow: 'hidden',
           background:
-            'radial-gradient(120% 82% at 50% -12%, rgba(229,9,20,.20) 0%, rgba(229,9,20,.05) 40%, rgba(20,18,26,0) 66%), ' +
+            'radial-gradient(120% 82% at 50% -12%, rgba(18,176,160,.20) 0%, rgba(18,176,160,.05) 40%, rgba(20,18,26,0) 66%), ' +
             'linear-gradient(180deg, rgba(30,25,34,.56) 0%, rgba(18,16,22,.62) 58%, rgba(12,10,16,.66) 100%)',
           backdropFilter: 'blur(18px)',
           WebkitBackdropFilter: 'blur(18px)',
@@ -214,7 +214,7 @@ export function NumberPad({
             width: 320,
             height: 320,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(229,9,20,.30), transparent 68%)',
+            background: 'radial-gradient(circle, rgba(18,176,160,.30), transparent 68%)',
             filter: 'blur(10px)',
             animation: 'npGlow 8s ease-in-out infinite',
             zIndex: 0,
@@ -262,7 +262,7 @@ export function NumberPad({
                         borderRadius: 999,
                         transition: 'all .15s',
                         ...(i < value.length
-                          ? { background: RED, transform: 'scale(1)', boxShadow: '0 0 12px rgba(229,9,20,.5)' }
+                          ? { background: RED, transform: 'scale(1)', boxShadow: '0 0 12px rgba(18,176,160,.5)' }
                           : { background: 'rgba(255,255,255,.16)', transform: 'scale(.82)' }),
                       }}
                     />

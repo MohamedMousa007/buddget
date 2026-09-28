@@ -39,7 +39,7 @@ function AuthLoadingSplash() {
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-brand-bg)]">
       <div
         aria-label="Loading"
-        className="w-8 h-8 border-2 border-[var(--color-brand-border)] border-t-[var(--color-brand-red)] rounded-full animate-spin"
+        className="w-8 h-8 border-2 border-[var(--color-brand-border)] border-t-[var(--color-brand-primary)] rounded-full animate-spin"
       />
     </div>
   )

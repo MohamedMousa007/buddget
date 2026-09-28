@@ -14,7 +14,7 @@ export function AIChatHeader({ onClose }: AIChatHeaderProps) {
   const t = useT()
   return (
     <div className="flex items-center gap-3 p-4 border-b border-[var(--color-brand-border)]">
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[rgba(229,9,20,0.45)]">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[rgba(18,176,160,0.45)]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/buddgy/buddgy-square.png" alt="" className="h-full w-full object-cover" />
       </span>

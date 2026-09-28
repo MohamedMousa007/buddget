@@ -136,7 +136,7 @@ export function CurrencySheet({
                 className={cn(
                   'flex min-h-10 w-full items-center gap-3 rounded-[10px] px-2.5 py-1 text-start',
                   selected
-                    ? 'border border-[var(--color-brand-red)]/45 bg-[var(--color-brand-red)]/10'
+                    ? 'border border-[var(--color-brand-primary)]/45 bg-[var(--color-brand-primary)]/10'
                     : 'border border-transparent',
                 )}
               >
@@ -149,7 +149,7 @@ export function CurrencySheet({
                 <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-[var(--color-brand-text-muted)]">
                   {meta?.name ?? r.code}
                 </span>
-                {selected && <Check className="h-[18px] w-[18px] shrink-0 text-[var(--color-brand-red)]" />}
+                {selected && <Check className="h-[18px] w-[18px] shrink-0 text-[var(--color-brand-primary-ink)]" />}
               </button>
             )
           })}

@@ -178,7 +178,7 @@ export function InstallmentProviderPickerSheet({
                 onCustom(customName.trim())
                 close()
               }}
-              className="h-[52px] w-full rounded-[14px] bg-[var(--color-brand-red)] text-base font-bold text-white disabled:opacity-40"
+              className="h-[52px] w-full rounded-[14px] bg-[var(--color-brand-primary)] text-base font-bold text-[var(--color-brand-on-primary)] disabled:opacity-40"
             >
               Use “{customName.trim() || '…'}”
             </button>

@@ -44,7 +44,7 @@ export function CategoryBar({
           action={
             <Link
               href="/budget-setup"
-              className="inline-flex items-center justify-center rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] px-4 py-2.5 text-sm font-semibold text-white transition-colors"
+              className="inline-flex items-center justify-center rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] px-4 py-2.5 text-sm font-semibold text-[var(--color-brand-on-primary)] transition-colors"
             >
               {t.dashboard.categoryEmptyCta}
             </Link>

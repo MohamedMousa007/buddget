@@ -9,7 +9,7 @@ interface CategoryPieChartProps {
   currency: string
 }
 
-const COLORS = ['var(--color-brand-red)', 'var(--color-brand-green)', 'var(--color-brand-gold)', 'var(--color-brand-amber)', '#3B82F6', '#A855F7', '#EC4899', '#6B7280']
+const COLORS = ['var(--color-brand-primary)', 'var(--color-brand-green)', 'var(--color-brand-gold)', 'var(--color-brand-amber)', '#3B82F6', '#A855F7', '#EC4899', '#6B7280']
 
 export function CategoryPieChart({ data, currency }: CategoryPieChartProps) {
   const [mounted, setMounted] = useState(false)

@@ -75,7 +75,7 @@ export function BiometricLoginToggle({ userEmail }: BiometricLoginToggleProps) {
     <div className="rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4 space-y-1">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Icon className="h-5 w-5 text-[var(--color-brand-red)]" />
+          <Icon className="h-5 w-5 text-[var(--color-brand-primary-ink)]" />
           <div>
             <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">{label}</p>
             <p className="text-xs text-[var(--color-brand-text-muted)]">
@@ -95,7 +95,7 @@ export function BiometricLoginToggle({ userEmail }: BiometricLoginToggleProps) {
         >
           <span
             className={`flex h-6 w-11 items-center rounded-full px-1 transition-colors ${
-              enabled ? 'bg-[var(--color-brand-red)]' : 'bg-[var(--color-brand-border)]'
+              enabled ? 'bg-[var(--color-brand-primary)]' : 'bg-[var(--color-brand-border)]'
             }`}
           >
             <span

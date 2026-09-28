@@ -192,7 +192,7 @@ export function PaymentCardCarousel({
             onClick={() => tapSlot(methods.length, onAddCard)}
           >
             <div className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-[20px] border border-dashed border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]">
-              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-brand-red)]/12 text-[var(--color-brand-red)]">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-brand-primary)]/12 text-[var(--color-brand-primary-ink)]">
                 <Plus className="h-6 w-6" />
               </span>
               <span className="text-sm font-semibold text-[var(--color-brand-text-secondary)]">
@@ -210,7 +210,7 @@ export function PaymentCardCarousel({
             className="h-1.5 rounded-full transition-all"
             style={{
               width: i === safeActive ? 18 : 6,
-              background: i === safeActive ? '#E50914' : 'var(--color-brand-border)',
+              background: i === safeActive ? '#12B0A0' : 'var(--color-brand-border)',
             }}
           />
         ))}

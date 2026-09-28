@@ -16,7 +16,7 @@ const fmtSigned = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(
 
 /** The coloured tag under each row's icon, derived from the transaction's kind/source. */
 function tagFor(tx: SavingsTransaction): { label: string; color: string; sign: 1 | -1 } {
-  if (tx.source === 'carry') return { label: 'Month end', color: '#F5C842', sign: 1 }
+  if (tx.source === 'carry') return { label: 'Month end', color: '#EDC463', sign: 1 }
   if (tx.transferGroupId) return { label: 'Moved', color: '#7EAEF9', sign: tx.type === 'deposit' ? 1 : -1 }
   if (tx.type === 'deposit') return { label: 'Saved', color: '#35D46F', sign: 1 }
   return { label: 'Withdrew', color: '#FF6B6B', sign: -1 }

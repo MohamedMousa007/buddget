@@ -39,7 +39,7 @@ export function Sidebar() {
       <div className="p-4">
         <Link href="/" className="flex items-center gap-2">
           <span className="text-xl font-bold font-heading tracking-tight">
-            Bud<span className="text-[var(--color-brand-red)]">d</span>get
+            Bud<span className="text-[var(--color-brand-primary-ink)]">d</span>get
           </span>
         </Link>
       </div>
@@ -63,7 +63,7 @@ export function Sidebar() {
                 'flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200',
                 locale === 'ar' && 'flex-row-reverse',
                 isActive
-                  ? 'bg-[var(--color-brand-red)] text-white'
+                  ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
                   : 'text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)]'
               )}
             >

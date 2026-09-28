@@ -61,9 +61,9 @@ export function IncomePaydayGrid({ frequency, days, onChange }: Props) {
             onClick={() => tap(day)}
             className={`flex h-8 items-center justify-center rounded-md font-mono-numbers text-xs font-semibold transition-colors ${
               isSolid
-                ? 'bg-[var(--color-brand-red)] text-white'
+                ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
                 : isDerived
-                  ? 'bg-[rgba(229,9,20,0.18)] text-[var(--color-brand-red)]'
+                  ? 'bg-[rgba(18,176,160,0.18)] text-[var(--color-brand-primary-ink)]'
                   : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-border)]'
             }`}
           >
@@ -78,7 +78,7 @@ export function IncomePaydayGrid({ frequency, days, onChange }: Props) {
           aria-pressed={manual}
           className={`col-span-2 flex h-8 items-center justify-center gap-1 rounded-md text-[11px] font-semibold transition-colors ${
             manual
-              ? 'bg-[rgba(229,9,20,0.18)] text-[var(--color-brand-red)]'
+              ? 'bg-[rgba(18,176,160,0.18)] text-[var(--color-brand-primary-ink)]'
               : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-border)]'
           }`}
         >

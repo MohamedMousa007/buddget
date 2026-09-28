@@ -195,7 +195,7 @@ export const SelectField = forwardRef<HTMLButtonElement, SelectFieldProps>(
                         </span>
                       ) : null}
                     </span>
-                    <Combobox.ItemIndicator className="shrink-0 text-[var(--color-brand-red)]">
+                    <Combobox.ItemIndicator className="shrink-0 text-[var(--color-brand-primary-ink)]">
                       <Check className="h-4 w-4" aria-hidden />
                     </Combobox.ItemIndicator>
                   </Combobox.Item>

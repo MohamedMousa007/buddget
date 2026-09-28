@@ -80,7 +80,7 @@ export function SelectPaymentMethodSheet({ open, value, paymentMethods, onSelect
             {activeIsAdd ? (
               <button
                 type="button" onClick={() => setSetupOpen(true)}
-                className="flex h-[52px] w-full items-center justify-center rounded-[14px] bg-[var(--color-brand-red)] text-base font-semibold text-white"
+                className="flex h-[52px] w-full items-center justify-center rounded-[14px] bg-[var(--color-brand-primary)] text-base font-semibold text-[var(--color-brand-on-primary)]"
               >
                 {t.paymentMethods.addMethod}
               </button>
@@ -88,7 +88,7 @@ export function SelectPaymentMethodSheet({ open, value, paymentMethods, onSelect
               <button
                 type="button" onClick={() => activeMethod && choose(activeMethod.id)}
                 disabled={!activeMethod}
-                className="flex h-[52px] w-full items-center justify-center rounded-[14px] bg-[var(--color-brand-red)] text-base font-semibold text-white disabled:opacity-50"
+                className="flex h-[52px] w-full items-center justify-center rounded-[14px] bg-[var(--color-brand-primary)] text-base font-semibold text-[var(--color-brand-on-primary)] disabled:opacity-50"
               >
                 {t.paymentMethods.selectCard}
               </button>

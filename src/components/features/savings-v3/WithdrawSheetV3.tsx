@@ -31,8 +31,8 @@ type Reason = SavingsWithdrawalPurpose // 'income' | 'transfer' | 'debt' | 'spen
 
 const REASONS: Array<{ key: Reason; color: string; title: string; sub: string; verb: string; icon: React.ReactNode }> = [
   { key: 'spend', color: '#FF6B6B', title: 'Spending', sub: 'Counts as an expense', verb: 'Spend', icon: <ShoppingCart size={18} /> },
-  { key: 'debt', color: '#E50914', title: 'Pay a debt', sub: 'Lowers what you owe', verb: 'Pay', icon: <CreditCard size={18} /> },
-  { key: 'transfer', color: '#F5C842', title: 'Investment', sub: 'Buys an asset', verb: 'Invest', icon: <Gem size={18} /> },
+  { key: 'debt', color: '#E5484D', title: 'Pay a debt', sub: 'Lowers what you owe', verb: 'Pay', icon: <CreditCard size={18} /> },
+  { key: 'transfer', color: '#EDC463', title: 'Investment', sub: 'Buys an asset', verb: 'Invest', icon: <Gem size={18} /> },
   { key: 'income', color: '#35D46F', title: 'Income', sub: 'Back into this month', verb: 'Add as income', icon: <TrendingUp size={18} /> },
 ]
 
@@ -234,8 +234,8 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
                     return (
                       <button key={d.id} type="button" onClick={() => setDebtId(d.id)}
                         className="flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-left"
-                        style={{ border: on ? '1px solid rgba(229,9,20,.5)' : '1px solid var(--color-brand-border)', background: on ? 'rgba(229,9,20,.08)' : 'var(--color-brand-elevated)' }}>
-                        <CreditCard size={15} style={{ color: '#E50914' }} />
+                        style={{ border: on ? '1px solid rgba(18,176,160,.5)' : '1px solid var(--color-brand-border)', background: on ? 'rgba(18,176,160,.08)' : 'var(--color-brand-elevated)' }}>
+                        <CreditCard size={15} style={{ color: '#E5484D' }} />
                         <span>
                           <span className="block text-[12.5px] font-semibold text-[var(--color-brand-text-primary)]">{d.name}</span>
                           <span className="block font-mono-numbers text-[10px] text-[var(--color-brand-text-muted)]">{fmtNum(d.left)} left</span>
@@ -260,8 +260,8 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
                     <button key={c.type} type="button"
                       onClick={() => { if (target) setAssetClass(c.type); else onNeedAsset?.(c.type) }}
                       className="flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-left"
-                      style={{ border: on ? '1px solid rgba(245,200,66,.5)' : '1px solid var(--color-brand-border)', background: on ? 'rgba(245,200,66,.08)' : 'var(--color-brand-elevated)' }}>
-                      <span style={{ color: '#F5C842' }}>{c.icon}</span>
+                      style={{ border: on ? '1px solid rgba(237,196,99,.5)' : '1px solid var(--color-brand-border)', background: on ? 'rgba(237,196,99,.08)' : 'var(--color-brand-elevated)' }}>
+                      <span style={{ color: '#EDC463' }}>{c.icon}</span>
                       <span>
                         <span className="block text-[12.5px] font-semibold text-[var(--color-brand-text-primary)]">{c.label}</span>
                         <span className="block text-[10px] text-[var(--color-brand-text-muted)]">{target ? `Add to ${target.name}` : 'Add one first'}</span>
@@ -314,7 +314,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
                 className="absolute end-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center text-[var(--color-brand-text-muted)]"><X size={16} /></button>
             </div>
           ) : (
-            <button type="button" onClick={() => setNoteOpen(true)} className="inline-flex items-center gap-1.5 text-sm font-semibold" style={{ color: '#E50914' }}>
+            <button type="button" onClick={() => setNoteOpen(true)} className="inline-flex items-center gap-1.5 text-sm font-semibold" style={{ color: '#E5484D' }}>
               <Plus size={14} /> Add note
             </button>
           )}
@@ -322,7 +322,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
 
         <div className="px-5 pt-2 pb-[max(20px,env(safe-area-inset-bottom))]">
           <button type="button" onClick={submit} disabled={!canSubmit} className="w-full"
-            style={{ height: 52, borderRadius: 14, fontWeight: 600, fontSize: 15, background: canSubmit ? '#E50914' : 'var(--color-brand-elevated)', color: canSubmit ? '#fff' : 'var(--color-brand-text-muted)', cursor: canSubmit ? 'pointer' : 'default' }}>
+            style={{ height: 52, borderRadius: 14, fontWeight: 600, fontSize: 15, background: canSubmit ? '#E5484D' : 'var(--color-brand-elevated)', color: canSubmit ? '#fff' : 'var(--color-brand-text-muted)', cursor: canSubmit ? 'pointer' : 'default' }}>
             {ctaLabel || 'Withdraw'}
           </button>
         </div>

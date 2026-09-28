@@ -27,7 +27,7 @@ function tickerItemStyle(delaySeconds: number): CSSProperties {
   }
 }
 
-const ACCENT: CSSProperties = { fontWeight: 700, color: '#E50914' }
+const ACCENT: CSSProperties = { fontWeight: 700, color: '#12B0A0' }
 
 /**
  * Pre-auth landing screen. Email-first morph form centred vertically on the
@@ -78,7 +78,7 @@ export function LandingGate() {
            to its dark value; there is no light variant of the auth screen. */
         .lg-bg {
           background:
-            radial-gradient(120% 60% at 50% -6%, rgba(229,9,20,.26) 0%, rgba(229,9,20,.06) 38%, rgba(20,18,26,0) 62%),
+            radial-gradient(120% 60% at 50% -6%, rgba(18,176,160,.26) 0%, rgba(18,176,160,.06) 38%, rgba(20,18,26,0) 62%),
             linear-gradient(180deg, #1A1720 0%, #121016 55%, #0E0C12 100%) !important;
         }
         .lg-ticker p { color: rgba(255,255,255,.75); }
@@ -105,7 +105,7 @@ export function LandingGate() {
             width: '400px',
             height: '400px',
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(229,9,20,.28), transparent 68%)',
+            background: 'radial-gradient(circle, rgba(18,176,160,.28), transparent 68%)',
             filter: 'blur(8px)',
             animation: 'lgBreathe 8s ease-in-out infinite',
             zIndex: 0,
@@ -121,7 +121,7 @@ export function LandingGate() {
               style={{ fontFamily: 'var(--font-heading), var(--font-sans)' }}
             >
               <span className="text-[var(--color-brand-text-primary)]">Bud</span>
-              <span className="text-[var(--color-brand-red)]">d</span>
+              <span className="text-[var(--color-brand-primary-ink)]">d</span>
               <span className="text-[var(--color-brand-text-primary)]">get</span>
             </h1>
             <p className="mt-2 text-xs sm:text-sm text-[var(--color-brand-text-muted)]">

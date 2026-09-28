@@ -33,13 +33,13 @@ export function AdminAiThrottleFooter({
         type="button"
         disabled={saveLoading || !sessionPin}
         onClick={() => void onSave()}
-        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold disabled:opacity-50"
+        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] text-sm font-semibold disabled:opacity-50"
       >
         {saveLoading ? 'Saving…' : 'Save throttling settings'}
       </button>
       {saveMessage ? (
         <p
-          className={`text-xs ${saveMessage === 'Saved.' ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red)]'}`}
+          className={`text-xs ${saveMessage === 'Saved.' ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-primary-ink)]'}`}
         >
           {saveMessage}
         </p>

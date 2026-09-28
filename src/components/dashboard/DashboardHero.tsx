@@ -136,7 +136,7 @@ function HeroRing({ percent, usedLabel }: { percent: number; usedLabel: string }
           cy={size / 2}
           r={r}
           fill="none"
-          stroke="var(--color-brand-red)"
+          stroke="var(--color-brand-primary)"
           strokeWidth={stroke}
           strokeDasharray={c}
           strokeDashoffset={offset}

@@ -123,7 +123,7 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId, le
             <label style={micro}>Source</label>
             <div className="mt-2 grid grid-cols-2 gap-2.5">
               <SourceCard
-                icon={<Wallet size={18} />} iconColor="#F5C842" title="This month" sub={`Leaves ${fmtNum(remaining)} EGP`}
+                icon={<Wallet size={18} />} iconColor="#EDC463" title="This month" sub={`Leaves ${fmtNum(remaining)} EGP`}
                 on={source === 'budget'} onClick={() => setSource('budget')}
               />
               <SourceCard
@@ -144,7 +144,7 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId, le
               </button>
             </div>
           ) : (
-            <button type="button" onClick={() => setNoteOpen(true)} className="inline-flex items-center gap-1.5 text-sm font-semibold" style={{ color: '#E50914' }}>
+            <button type="button" onClick={() => setNoteOpen(true)} className="inline-flex items-center gap-1.5 text-sm font-semibold" style={{ color: '#12B0A0' }}>
               <Plus size={14} /> Add note
             </button>
           )}
@@ -157,7 +157,7 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId, le
             className="w-full text-white"
             style={{
               height: 52, borderRadius: 14, fontWeight: 600, fontSize: 15,
-              background: canSubmit ? '#E50914' : 'var(--color-brand-elevated)',
+              background: canSubmit ? '#12B0A0' : 'var(--color-brand-elevated)',
               color: canSubmit ? '#fff' : 'var(--color-brand-text-muted)',
               cursor: canSubmit ? 'pointer' : 'default',
             }}
@@ -176,14 +176,14 @@ function SourceCard({ icon, iconColor, title, sub, on, onClick }: {
   return (
     <button type="button" onClick={onClick} className="relative rounded-2xl p-3 text-left"
       style={{
-        border: on ? '1px solid rgba(229,9,20,.5)' : '1px solid var(--color-brand-border)',
-        background: on ? 'rgba(229,9,20,.06)' : 'var(--color-brand-elevated)',
+        border: on ? '1px solid rgba(18,176,160,.5)' : '1px solid var(--color-brand-border)',
+        background: on ? 'rgba(18,176,160,.06)' : 'var(--color-brand-elevated)',
       }}>
       <div className="flex items-start justify-between">
         <span className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: rgba(iconColor, .14), color: iconColor }}>
           {icon}
         </span>
-        <span className="flex h-5 w-5 items-center justify-center rounded-full" style={{ border: on ? undefined : '1.5px solid var(--color-brand-border)', background: on ? '#E50914' : 'transparent' }}>
+        <span className="flex h-5 w-5 items-center justify-center rounded-full" style={{ border: on ? undefined : '1.5px solid var(--color-brand-border)', background: on ? '#12B0A0' : 'transparent' }}>
           {on && <span className="h-2.5 w-2.5 rounded-full bg-white" />}
         </span>
       </div>
