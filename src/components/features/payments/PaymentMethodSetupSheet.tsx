@@ -10,6 +10,9 @@ import { AmountField } from '@/components/ui/AmountField'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { IconButton } from '@/components/ui/IconButton'
+import { ColorSwatchRow } from '@/components/ui/ColorSwatchRow'
+import { Switch } from '@/components/ui/switch'
 import { cardGradient, TypeGlyph } from '@/components/features/payments/PaymentCardCarousel'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { ProviderPickerSheet } from '@/components/features/payments/ProviderPickerSheet'
@@ -17,7 +20,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { currencyFlag, currencyName } from '@/lib/constants/currencyMeta'
 import {
-  PAYMENT_TYPE_META, SETUP_TYPES, PAYMENT_BRANDS, QUICK_ADD, QUICK_ADD_BLEND, CARD_COLORS,
+  PAYMENT_TYPE_META, SETUP_TYPES, PAYMENT_BRANDS, QUICK_ADD, QUICK_ADD_BLEND,
   allowsLast4, providerInitials, composePaymentMethodName, decomposePaymentMethodName,
   resolvePaymentBrandKey, prefillPaymentType, typesForBrand,
 } from '@/lib/payment/paymentMethodDefaults'
@@ -230,22 +233,22 @@ export function PaymentMethodSetupSheet({
           <div className="flex shrink-0 items-center gap-2.5 px-4 pb-3 pt-1">
             {/* Debt context (lockType) follows the debt-sheet rule: X + swipe only, no Back. */}
             {!lockType ? (
-              <button
-                type="button" aria-label="Back" onClick={onClose}
-                className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] p-[9px] text-[var(--color-brand-text-muted)]"
+              <IconButton
+                aria-label={t.common.back} onClick={onClose}
+                variant="tinted" size="sm" shape="round"
               >
-                <ArrowLeft className="h-full w-full" />
-              </button>
+                <ArrowLeft />
+              </IconButton>
             ) : null}
             <span className="min-w-0 flex-1 text-lg font-semibold text-[var(--color-brand-text-primary)]">
               {editing ? t.paymentMethods.editTitle : (titleOverride ?? t.paymentMethods.addTitle)}
             </span>
-            <button
-              type="button" aria-label="Close" onClick={onClose}
-              className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] p-[9px] text-[var(--color-brand-text-muted)]"
+            <IconButton
+              aria-label={t.common.close} onClick={onClose}
+              variant="tinted" size="sm" shape="round"
             >
-              <X className="h-full w-full" />
-            </button>
+              <X />
+            </IconButton>
           </div>
 
           <div className="native-scroll min-h-0 flex-1 overflow-y-auto px-4 pb-4">
@@ -284,22 +287,7 @@ export function PaymentMethodSetupSheet({
                 <div className={`mx-0.5 mb-2.5 ${microClassName}`}>
                   {t.paymentMethods.cardColour}
                 </div>
-                <div className="native-scroll flex gap-2.5 overflow-x-auto px-0.5 pb-1">
-                  {CARD_COLORS.map((c) => {
-                    const activeSw = effectiveColor === c
-                    return (
-                      <button
-                        key={c} type="button" onClick={() => setCardColor(c)} aria-label={`Colour ${c}`}
-                        className="h-[34px] w-[34px] shrink-0 rounded-[10px]"
-                        style={{
-                          background: c,
-                          border: `2px solid ${activeSw ? '#fff' : 'transparent'}`,
-                          boxShadow: '0 0 0 1px rgba(255,255,255,.12)',
-                        }}
-                      />
-                    )
-                  })}
-                </div>
+                <ColorSwatchRow value={effectiveColor} onChange={setCardColor} />
               </div>
 
               {/* Type — locked to a single chip when lockType is set (e.g. Debt → credit card) */}
@@ -446,14 +434,12 @@ export function PaymentMethodSetupSheet({
                     {t.paymentMethods.setDefaultSub}
                   </span>
                 </span>
-                <button
-                  type="button" role="switch" aria-checked={isDefault}
-                  onClick={() => setIsDefault((v) => !v)}
-                  className="flex h-7 w-[46px] shrink-0 rounded-full p-[3px] transition-colors"
-                  style={{ background: isDefault ? '#12B0A0' : 'var(--color-brand-border)', justifyContent: isDefault ? 'flex-end' : 'flex-start' }}
-                >
-                  <span className="block h-[22px] w-[22px] rounded-full bg-white" />
-                </button>
+                <Switch
+                  size="touch"
+                  aria-label={t.paymentMethods.setDefault}
+                  checked={isDefault}
+                  onCheckedChange={setIsDefault}
+                />
               </Card>
             </div>
           </div>

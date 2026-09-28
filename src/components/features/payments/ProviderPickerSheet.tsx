@@ -5,6 +5,7 @@ import { X, Search, Check, Plus } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { IconButton } from '@/components/ui/IconButton'
 import { useT } from '@/lib/i18n'
 import { PAYMENT_BRANDS, PAYMENT_TYPE_META, brandIssuesType } from '@/lib/payment/paymentMethodDefaults'
 import { rgba } from '@/lib/utils/color'
@@ -69,12 +70,9 @@ export function ProviderPickerSheet({
           <span className="text-lg font-semibold text-[var(--color-brand-text-primary)]">
             {t.paymentMethods.chooseProvider}
           </span>
-          <button
-            type="button" aria-label="Close" onClick={onClose}
-            className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[var(--color-brand-elevated)] p-[9px] text-[var(--color-brand-text-muted)]"
-          >
-            <X className="h-full w-full" />
-          </button>
+          <IconButton aria-label={t.common.close} onClick={onClose} variant="tinted" size="sm" shape="round">
+            <X />
+          </IconButton>
         </div>
         <div className="relative mb-2.5 shrink-0">
           <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-brand-text-muted)]" />

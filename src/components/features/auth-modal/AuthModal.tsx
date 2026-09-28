@@ -7,6 +7,7 @@ import { useT } from '@/lib/i18n'
 import { cardStyle } from '@/components/features/auth-modal/authModalTokens'
 import { AuthModalBody } from '@/components/features/auth-modal/AuthModalBody'
 import { useDismissable } from '@/hooks/useDismissable'
+import { Scrim } from '@/components/ui/Scrim'
 
 /**
  * Global Supabase auth overlay used for contextual prompts from inside the
@@ -27,11 +28,11 @@ export function AuthModal() {
       className="fixed inset-0 z-[100] overflow-y-auto flex items-start sm:items-center justify-center p-4"
       role="presentation"
     >
-      <button
-        type="button"
-        className="absolute inset-0 cursor-default bg-black/25 backdrop-blur-md transition-colors hover:bg-black/35"
-        aria-label={t.auth.closeSignIn}
+      <Scrim
+        label={t.auth.closeSignIn}
         onClick={() => a.closeAuthModal()}
+        tone="light"
+        className="transition-colors hover:bg-black/35"
       />
       <motion.div
         initial={{ opacity: 0, y: 12, scale: 0.98 }}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Fingerprint, ScanFace } from 'lucide-react'
 import { useT } from '@/lib/i18n'
+import { Switch } from '@/components/ui/switch'
 import {
   authenticate,
   getLinkedAccount,
@@ -83,28 +84,13 @@ export function BiometricLoginToggle({ userEmail }: BiometricLoginToggleProps) {
             </p>
           </div>
         </div>
-        {/* p-2.5/-m-2.5 grows the hit area to 44px without moving the layout.
-            Flex-centered thumb (no absolute positioning) → robust on iOS WKWebView. */}
-        <button
-          type="button"
-          onClick={() => void toggle()}
+        <Switch
+          size="touch"
+          aria-label={label}
+          checked={enabled}
           disabled={busy}
-          role="switch"
-          aria-checked={enabled}
-          className="shrink-0 rounded-full p-2.5 -m-2.5 disabled:opacity-60"
-        >
-          <span
-            className={`flex h-6 w-11 items-center rounded-full px-1 transition-colors ${
-              enabled ? 'bg-[var(--color-brand-primary)]' : 'bg-[var(--color-brand-border)]'
-            }`}
-          >
-            <span
-              className={`block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-                enabled ? 'translate-x-5 rtl:-translate-x-5' : ''
-              }`}
-            />
-          </span>
-        </button>
+          onCheckedChange={() => void toggle()}
+        />
       </div>
     </div>
   )

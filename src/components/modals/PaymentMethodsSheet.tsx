@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { X, Plus, Pencil, Star, Trash2 } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/IconButton'
+import { Scrim } from '@/components/ui/Scrim'
 import { PaymentCardCarousel } from '@/components/features/payments/PaymentCardCarousel'
 import { PaymentMethodSetupSheet } from '@/components/features/payments/PaymentMethodSetupSheet'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
@@ -78,12 +80,9 @@ export function PaymentMethodsSheet() {
             <span id={useModalTitleId()} className="text-lg font-semibold text-[var(--color-brand-text-primary)]">
               {t.paymentMethods.title}
             </span>
-            <button
-              type="button" onClick={close} aria-label="Close"
-              className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[var(--color-brand-elevated)] p-[9px] text-[var(--color-brand-text-muted)]"
-            >
-              <X className="h-full w-full" />
-            </button>
+            <IconButton aria-label={t.common.close} onClick={close} variant="tinted" size="sm" shape="round">
+              <X />
+            </IconButton>
           </div>
 
           {deck.length === 0 ? (
@@ -110,11 +109,7 @@ export function PaymentMethodsSheet() {
 
           {menuCard && (
             <>
-              <button
-                type="button" aria-label="Close menu"
-                onClick={() => setCardMenuId(null)}
-                className="absolute inset-0 z-30 cursor-default"
-              />
+              <Scrim label={t.common.close} onClick={() => setCardMenuId(null)} tone="none" className="z-30" />
               <div
                 className="absolute end-[44px] top-[92px] z-[31] w-[200px] overflow-hidden rounded-[14px] border border-[#34343f] bg-[var(--popover)]"
                 style={{ boxShadow: '0 18px 44px -10px rgba(0,0,0,.7)' }}

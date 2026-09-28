@@ -7,6 +7,7 @@ import { useT } from '@/lib/i18n'
 import { useScrollLock } from '@/lib/ui/scrollLock'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Scrim } from '@/components/ui/Scrim'
 import { useDismissable } from '@/hooks/useDismissable'
 
 export interface DeleteAccountDialogProps {
@@ -40,12 +41,7 @@ export function DeleteAccountDialog({ open, onClose, onConfirm, inProgress, erro
     <AnimatePresence>
       {open ? (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" role="presentation">
-          <button
-            type="button"
-            aria-label={t.common.close}
-            onClick={handleClose}
-            className="absolute inset-0 cursor-default bg-black/40 backdrop-blur-md"
-          />
+          <Scrim label={t.common.close} onClick={handleClose} />
           <motion.div
             initial={{ opacity: 0, y: 12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}

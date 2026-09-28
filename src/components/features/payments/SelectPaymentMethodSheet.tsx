@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/IconButton'
 import { PaymentCardCarousel } from '@/components/features/payments/PaymentCardCarousel'
 import { PaymentMethodSetupSheet } from '@/components/features/payments/PaymentMethodSetupSheet'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
@@ -55,12 +56,9 @@ export function SelectPaymentMethodSheet({ open, value, paymentMethods, onSelect
             <span className="text-lg font-semibold text-[var(--color-brand-text-primary)]">
               {t.paymentMethods.title}
             </span>
-            <button
-              type="button" onClick={onClose} aria-label={t.common.close}
-              className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[var(--color-brand-elevated)] p-[9px] text-[var(--color-brand-text-muted)]"
-            >
-              <X className="h-full w-full" />
-            </button>
+            <IconButton aria-label={t.common.close} onClick={onClose} variant="tinted" size="sm" shape="round">
+              <X />
+            </IconButton>
           </div>
 
           {paymentMethods.length > 0 && (

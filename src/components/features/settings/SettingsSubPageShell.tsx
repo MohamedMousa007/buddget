@@ -8,6 +8,7 @@ import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { SettingsSaveButton } from '@/components/features/settings/SettingsSaveButton'
 import { flushFinanceNow } from '@/components/sync/SupabaseFinanceSync'
 import { useActionToast } from '@/components/ui/ActionToast'
+import { Scrim } from '@/components/ui/Scrim'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { registerBackGuard } from '@/lib/navigation/backGuard'
 import { useLocale, useT } from '@/lib/i18n'
@@ -99,12 +100,7 @@ export function SettingsSubPageShell({ title, children, showSave = true }: Props
       <AnimatePresence>
         {confirmOpen ? (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" role="presentation">
-            <button
-              type="button"
-              aria-label={t.common.close}
-              onClick={() => setConfirmOpen(false)}
-              className="absolute inset-0 cursor-default bg-black/40 backdrop-blur-md"
-            />
+            <Scrim label={t.common.close} onClick={() => setConfirmOpen(false)} />
             <motion.div
               initial={{ opacity: 0, y: 12, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}

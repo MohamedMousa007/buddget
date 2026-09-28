@@ -11,6 +11,7 @@ import { useScrollLock } from '@/lib/ui/scrollLock'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useAlert } from '@/components/ui/dialog/DialogProvider'
+import { Scrim } from '@/components/ui/Scrim'
 import type { FinanceStore } from '@/lib/store/types'
 import { useDismissable } from '@/hooks/useDismissable'
 
@@ -80,11 +81,7 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" role="presentation">
-      <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-        onClick={handleClose}
-        aria-hidden
-      />
+      <Scrim label={t.common.close} onClick={handleClose} tone="heavy" className="backdrop-blur-sm" />
       <Card
         padding="none"
         className="relative z-10 max-w-lg w-full mx-4 p-6 max-h-[80vh] overflow-y-auto"

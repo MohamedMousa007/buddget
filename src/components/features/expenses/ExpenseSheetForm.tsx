@@ -16,6 +16,7 @@ import { PaymentMethodPicker } from '@/components/features/payments/PaymentMetho
 import { cn } from '@/lib/utils'
 import { rgba } from '@/lib/utils/color'
 import { useNumberPad } from '@/components/ui/useNumberPad'
+import { Scrim } from '@/components/ui/Scrim'
 import { useModalTitleId } from '@/components/modals/ModalShell'
 
 const HIDE_SCROLL = '[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
@@ -482,12 +483,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
             className="fixed inset-0 z-[125] flex items-center justify-center p-7"
             style={{ animation: 'efFade .16s ease' }}
           >
-            <button
-              type="button"
-              aria-label={t.common.close}
-              onClick={() => setConfirmOpen(false)}
-              className="absolute inset-0 border-none bg-black/[0.68]"
-            />
+            <Scrim label={t.common.close} onClick={() => setConfirmOpen(false)} tone="heavy" blur={false} />
             <Card
               padding="none"
               className="relative w-full max-w-72 px-5 pt-6 pb-5 text-start"

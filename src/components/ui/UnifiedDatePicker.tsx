@@ -5,6 +5,8 @@ import { createPortal } from 'react-dom'
 import { ChevronDown, ChevronLeft, ChevronRight, X, Search } from 'lucide-react'
 import { useLocale } from '@/lib/i18n'
 import { useScrollLock } from '@/lib/ui/scrollLock'
+import { Scrim } from '@/components/ui/Scrim'
+import { IconButton } from '@/components/ui/IconButton'
 
 const MONS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const MON_AR = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
@@ -139,8 +141,6 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
   const yearPill = `${activePill} font-bold text-sm font-mono-numbers border-white/30 ${
     isYears ? 'bg-white/30' : 'bg-white/15'
   }`
-  const headerBtn =
-    'w-7 h-7 flex items-center justify-center border-none rounded-md text-white cursor-pointer bg-white/[0.16] hover:bg-white/30'
 
   // Portal to <body> so `fixed` isn't trapped by a transformed ancestor when the
   // picker opens from inside a form sheet (same class as the currency-sheet bug).
@@ -150,12 +150,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
       className="fixed inset-0 z-[130] flex items-center justify-center p-6"
       style={{ animation: 'efFade .16s ease' }}
     >
-      <button
-        type="button"
-        aria-label="close"
-        onClick={onClose}
-        className="absolute inset-0 bg-black/[0.62] border-none cursor-default"
-      />
+      <Scrim label={ar ? 'إغلاق' : 'Close'} onClick={onClose} tone="heavy" blur={false} />
       <div
         className="relative w-full max-w-72 overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[var(--color-brand-text-primary)]"
         style={{
@@ -191,25 +186,33 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
           <div className="flex items-center gap-1.5">
             {!isYears ? (
               <>
-                <button
-                  type="button"
+                <IconButton
+                  aria-label={ar ? 'السابق' : 'Previous'}
+                  variant="onBrand"
+                  size="sm"
                   onClick={() => (isMonths ? shiftYear(-1) : shiftMonth(-1))}
-                  className={headerBtn}
                 >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
+                  <ChevronLeft />
+                </IconButton>
+                <IconButton
+                  aria-label={ar ? 'التالي' : 'Next'}
+                  variant="onBrand"
+                  size="sm"
                   onClick={() => (isMonths ? shiftYear(1) : shiftMonth(1))}
-                  className={headerBtn}
                 >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+                  <ChevronRight />
+                </IconButton>
               </>
             ) : null}
-            <button type="button" onClick={onClose} className={`${headerBtn} ms-0.5`}>
-              <X className="w-4 h-4" />
-            </button>
+            <IconButton
+              aria-label={ar ? 'إغلاق' : 'Close'}
+              variant="onBrand"
+              size="sm"
+              onClick={onClose}
+              className="ms-0.5"
+            >
+              <X />
+            </IconButton>
           </div>
         </div>
 

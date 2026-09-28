@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Lock } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { getLinkedAccount, isAppLockEnabled, isEnabled, setAppLockEnabled } from '@/lib/native/biometricAuth'
+import { Switch } from '@/components/ui/switch'
 
 interface AppLockToggleProps {
   userEmail?: string
@@ -58,26 +59,13 @@ export function AppLockToggle({ userEmail }: AppLockToggleProps) {
             <p className="text-xs text-[var(--color-brand-text-muted)]">{t.settings.appLockHint}</p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => void toggle()}
+        <Switch
+          size="touch"
+          aria-label={t.settings.appLockTitle}
+          checked={enabled}
           disabled={busy}
-          role="switch"
-          aria-checked={enabled}
-          className="shrink-0 rounded-full p-2.5 -m-2.5 disabled:opacity-60"
-        >
-          <span
-            className={`flex h-6 w-11 items-center rounded-full px-1 transition-colors ${
-              enabled ? 'bg-[var(--color-brand-primary)]' : 'bg-[var(--color-brand-border)]'
-            }`}
-          >
-            <span
-              className={`block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-                enabled ? 'translate-x-5 rtl:-translate-x-5' : ''
-              }`}
-            />
-          </span>
-        </button>
+          onCheckedChange={() => void toggle()}
+        />
       </div>
     </div>
   )

@@ -6,6 +6,7 @@ import type { AddDebtHook } from '@/hooks/useAddDebtSheet'
 import type { Currency, GoldKarat } from '@/lib/store/types'
 import { CurrencySheet } from '@/components/ui/CurrencySheet'
 import { AmountField } from '@/components/ui/AmountField'
+import { Switch } from '@/components/ui/switch'
 import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { currencyFlag } from '@/lib/constants/currencyMeta'
@@ -80,16 +81,13 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
           <span className="block text-sm font-bold text-[var(--color-brand-text-primary)]">Gold-backed</span>
           <span className="mt-0.5 block text-[12px] text-[var(--color-brand-text-muted)]">Track in grams at today&apos;s price</span>
         </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={isGold}
-          onClick={() => d.applyDebtReceivedVia(isGold ? 'cash' : 'gold')}
-          className="flex h-7 w-[46px] shrink-0 rounded-full p-[3px] transition-colors"
-          style={{ background: isGold ? '#EDC463' : 'var(--color-brand-border)', justifyContent: isGold ? 'flex-end' : 'flex-start' }}
-        >
-          <span className="block h-[22px] w-[22px] rounded-full bg-white" />
-        </button>
+        <Switch
+          size="touch"
+          aria-label="Gold-backed"
+          checked={isGold}
+          onCheckedChange={(on) => d.applyDebtReceivedVia(on ? 'gold' : 'cash')}
+          className="data-checked:bg-[var(--color-brand-gold)]"
+        />
       </div>
 
       {isGold ? (
@@ -148,16 +146,13 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
               <span className="block text-sm font-bold text-[var(--color-brand-text-primary)]">Set a payoff goal</span>
               <span className="mt-0.5 block text-[12px] text-[var(--color-brand-text-muted)]">Plan a clear-by date</span>
             </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={d.goalEnabled}
-              onClick={() => d.setGoalEnabled(!d.goalEnabled)}
-              className="flex h-7 w-[46px] shrink-0 rounded-full p-[3px] transition-colors"
-              style={{ background: d.goalEnabled ? '#EDC463' : 'var(--color-brand-border)', justifyContent: d.goalEnabled ? 'flex-end' : 'flex-start' }}
-            >
-              <span className="block h-[22px] w-[22px] rounded-full bg-white" />
-            </button>
+            <Switch
+              size="touch"
+              aria-label="Set a payoff goal"
+              checked={d.goalEnabled}
+              onCheckedChange={d.setGoalEnabled}
+              className="data-checked:bg-[var(--color-brand-gold)]"
+            />
           </div>
           {d.goalEnabled ? (
             <div className="mt-3 flex flex-col gap-3">
