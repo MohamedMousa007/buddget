@@ -14,6 +14,8 @@ import { saghaRate, goldToGrams, valueGold, valueCrypto, valueStock, valueProper
 import { COINGECKO_IDS } from '@/lib/prices/coingecko'
 import { micro } from '@/lib/ui/microLabelStyle'
 import type { GoldKarat, InvestmentAssetType } from '@/lib/store/types'
+import { OptionChip } from '@/components/ui/OptionChip'
+import { SelectableCard } from '@/components/ui/SelectableCard'
 
 const ACCENT: Record<InvestmentAssetType, string> = { gold: '#EDC463', crypto: '#B79CFF', stock: '#35D46F', property: '#2CE0C6' }
 const TITLE: Record<InvestmentAssetType, string> = { gold: 'Add gold', crypto: 'Add crypto', stock: 'Add a position', property: 'Add property' }
@@ -86,7 +88,7 @@ export function AssetFormSheet({ open, type, onClose }: AssetFormSheetProps) {
                     const price = sagha != null && ounceUsd != null ? egyptKaratPrice(ounceUsd, sagha, k) : null
                     const pure = k === 24 ? '999' : k === 21 ? '875' : '750'
                     return (
-                      <PriceCard key={k} on={karat === k} accent={accent} onClick={() => setKarat(k)} title={`${k}k`} sub={`${pure} pure${price != null ? ` · ${fmtNum(price)}/g` : ''}`} />
+                      <PriceCard key={k} on={karat === k} onClick={() => setKarat(k)} title={`${k}k`} sub={`${pure} pure${price != null ? ` · ${fmtNum(price)}/g` : ''}`} />
                     )
                   })}
                 </div>
@@ -105,9 +107,9 @@ export function AssetFormSheet({ open, type, onClose }: AssetFormSheetProps) {
                 <div className="flex gap-2.5 overflow-x-auto no-scrollbar">
                   {Object.keys(COINGECKO_IDS).map((c) => {
                     const p = lookup(c, 'USD')?.price ?? null
-                    return <PriceCard key={c} on={symbol === c} accent={accent} onClick={() => setSymbol(c)} title={c} sub={p != null ? `$${fmtNum(p)}` : 'live price'} />
+                    return <PriceCard key={c} on={symbol === c} onClick={() => setSymbol(c)} title={c} sub={p != null ? `$${fmtNum(p)}` : 'live price'} />
                   })}
-                  <PriceCard on={!['BTC', 'ETH'].includes(symbol)} accent={accent} onClick={() => setSymbol('')} title="Other" sub="type it" />
+                  <PriceCard on={!['BTC', 'ETH'].includes(symbol)} onClick={() => setSymbol('')} title="Other" sub="type it" />
                 </div>
               </Field>
               {!['BTC', 'ETH'].includes(symbol) && <Field label="Symbol"><Input value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="SOL" size="brand" className="font-mono-numbers" /></Field>}
@@ -162,12 +164,12 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return <div><label style={micro}>{label}</label><div className="mt-2">{children}</div></div>
 }
 
-function PriceCard({ on, accent, onClick, title, sub }: { on: boolean; accent: string; onClick: () => void; title: string; sub: string }) {
+function PriceCard({ on, onClick, title, sub }: { on: boolean; onClick: () => void; title: string; sub: string }) {
   return (
-    <button type="button" onClick={onClick} className="shrink-0 rounded-[14px] px-3 py-2.5 text-left" style={{ minWidth: 88, border: on ? `1px solid ${rgba(accent, .5)}` : '1px solid var(--color-brand-border)', background: on ? rgba(accent, .10) : 'var(--color-brand-elevated)' }}>
+    <SelectableCard layout="stack" selected={on} onClick={onClick} className="w-auto shrink-0 gap-0 px-3 py-2.5" style={{ minWidth: 88 }}>
       <p className="font-mono-numbers text-[15px] font-bold text-[var(--color-brand-text-primary)]">{title}</p>
       <p className="font-mono-numbers text-[10px] text-[var(--color-brand-text-muted)]">{sub}</p>
-    </button>
+    </SelectableCard>
   )
 }
 
@@ -175,9 +177,9 @@ function ChipRow({ options, value, onChange, labels }: { options: string[]; valu
   return (
     <div className="flex gap-2 overflow-x-auto no-scrollbar">
       {options.map((o) => (
-        <button key={o} type="button" onClick={() => onChange(o)} className="shrink-0 rounded-full px-4 text-[12.5px] font-semibold" style={{ height: 36, border: value === o ? '1px solid rgba(18,176,160,.45)' : '1px solid var(--color-brand-border)', background: value === o ? 'rgba(18,176,160,.13)' : 'transparent', color: 'var(--color-brand-text-primary)' }}>
+        <OptionChip key={o} size="sm" selected={value === o} onClick={() => onChange(o)}>
           {labels?.[o] ?? o}
-        </button>
+        </OptionChip>
       ))}
     </div>
   )
@@ -194,6 +196,6 @@ function UnitInput({ value, onChange, suffix, placeholder }: { value: string; on
 
 function SourceChip({ title, on, onClick }: { title: string; on: boolean; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className="rounded-2xl p-3.5 text-center text-[13px] font-semibold" style={{ border: on ? '1px solid rgba(18,176,160,.5)' : '1px solid var(--color-brand-border)', background: on ? 'rgba(18,176,160,.06)' : 'var(--color-brand-elevated)', color: 'var(--color-brand-text-primary)' }}>{title}</button>
+    <SelectableCard layout="tile" selected={on} onClick={onClick} className="p-3.5 text-[13px] font-semibold">{title}</SelectableCard>
   )
 }

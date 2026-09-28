@@ -16,14 +16,8 @@ import { buildSavingsCurrencyOptions, pickDefaultSavingsCurrency } from '@/lib/s
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-
-const tab = (on: boolean) =>
-  cn(
-    'rounded-xl border px-4 py-2 text-sm font-medium transition-colors',
-    on
-      ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-text-primary)]'
-      : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
-  )
+import { OptionChip } from '@/components/ui/OptionChip'
+import { SelectableCard } from '@/components/ui/SelectableCard'
 
 export interface EditSavingsAccountSheetProps {
   open: boolean
@@ -97,16 +91,12 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
           <div>
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelProductCategory}</Label>
             <div className="mt-2 flex flex-wrap gap-2">
-              <button type="button" className={tab(productCategory === 'savings')} onClick={() => pickCategory('savings')}>
+              <OptionChip selected={productCategory === 'savings'} onClick={() => pickCategory('savings')}>
                 {t.savings.categorySavings}
-              </button>
-              <button
-                type="button"
-                className={tab(productCategory === 'investment')}
-                onClick={() => pickCategory('investment')}
-              >
+              </OptionChip>
+              <OptionChip selected={productCategory === 'investment'} onClick={() => pickCategory('investment')}>
                 {t.savings.categoryInvestment}
-              </button>
+              </OptionChip>
             </div>
           </div>
 
@@ -127,20 +117,16 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
               <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelPickIcon}</Label>
               <div className="mt-2 flex flex-wrap gap-2">
                 {OTHER_SAVINGS_ICON_KEYS.map((key) => (
-                  <button
+                  <SelectableCard
                     key={key}
-                    type="button"
+                    layout="list"
+                    selected={otherIcon === key}
                     onClick={() => setOtherIcon(key)}
-                    className={cn(
-                      'rounded-xl border p-2 transition-colors',
-                      otherIcon === key
-                        ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/10'
-                        : 'border-[var(--color-brand-border)] bg-[var(--color-brand-card)] hover:border-[var(--color-brand-primary)]/25'
-                    )}
                     aria-label={key}
+                    className="w-auto justify-center p-2"
                   >
                     <SavingsAccountIcon account={{ type: 'other', icon: key }} className="h-5 w-5" />
-                  </button>
+                  </SelectableCard>
                 ))}
               </div>
             </div>
