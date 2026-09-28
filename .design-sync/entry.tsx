@@ -29,6 +29,17 @@ export { SegmentedControl } from '@/components/ui/SegmentedControl'
 export { StatTile } from '@/components/ui/StatTile'
 export { PromptBanner } from '@/components/ui/PromptBanner'
 
+// ── button primitives (added with the button unification) ───────────────────
+// These six replaced 359 hand-rolled <button> elements in 271 distinct styles.
+// `noStyledRawButtons.test.ts` in the repo fails the build if a raw button starts
+// re-declaring a fill, border, radius or its own size again.
+export { IconButton, iconButtonVariants } from '@/components/ui/IconButton'
+export { OptionChip, optionChipVariants } from '@/components/ui/OptionChip'
+export { SelectableCard, selectableCardVariants } from '@/components/ui/SelectableCard'
+export { FieldButton } from '@/components/ui/FieldButton'
+export { AccentTile, accentTileGridClass, accentTileGridStyle } from '@/components/ui/AccentTile'
+export { Scrim } from '@/components/ui/Scrim'
+
 export { AmountField } from '@/components/ui/AmountField'
 export { CardActionMenu } from '@/components/ui/CardActionMenu'
 export { ColorSwatchRow } from '@/components/ui/ColorSwatchRow'

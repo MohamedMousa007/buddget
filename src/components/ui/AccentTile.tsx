@@ -10,6 +10,11 @@ export interface AccentTileProps extends Omit<React.ComponentProps<'button'>, 'c
    * because the colour is how the user recognises the item at a glance in a grid of
    * twenty. Selection is conveyed by that tint *plus* a matching border and a
    * colour-shift on the glyph, so it does not rest on hue alone.
+   *
+   * Must be a literal `#RRGGBB` — the tint goes through {@link rgba}, which parses
+   * hex. A `var(--token)` here yields `rgba(NaN,NaN,NaN,…)` and the tile renders with
+   * no fill and no border at all, which is silent rather than obvious. Both grids
+   * that use this pass hex from `categoryGrid.ts`.
    */
   accent: string
   selected: boolean

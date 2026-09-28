@@ -58,7 +58,13 @@
     "SegmentedControl": "src/components/ui/SegmentedControl.tsx",
     "StatTile": "src/components/ui/StatTile.tsx",
     "PromptBanner": "src/components/ui/PromptBanner.tsx",
-    "BuddgyIcon": "src/components/ai/BuddgyIcon.tsx"
+    "BuddgyIcon": "src/components/ai/BuddgyIcon.tsx",
+    "IconButton": "src/components/ui/IconButton.tsx",
+    "OptionChip": "src/components/ui/OptionChip.tsx",
+    "SelectableCard": "src/components/ui/SelectableCard.tsx",
+    "FieldButton": "src/components/ui/FieldButton.tsx",
+    "AccentTile": "src/components/ui/AccentTile.tsx",
+    "Scrim": "src/components/ui/Scrim.tsx"
   },
   "dtsPropsFor": {
     "CountrySelect": "/** Stored value: English country name (or legacy alpha-2 code). */\n    value: string;\nonChange: (countryNameEn: string) => void;\n/** BCP 47 locale for option labels (e.g. from `useLocale()`). */\n    locale: string;\nplaceholder: string;\nid?: string;\nclassName?: string;",
