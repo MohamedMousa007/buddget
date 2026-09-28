@@ -1,0 +1,11 @@
+/* ════════════════════════════════════════════════════════════
+   Buddget Design System — global entry point
+   Consumers link THIS file. It is an import manifest only:
+   tokens + fonts live in the files below. Do not add rules here.
+   ════════════════════════════════════════════════════════════ */
+
+@import "./tokens/fonts.css";
+@import "./tokens/colors.css";
+@import "./tokens/typography.css";
+@import "./tokens/radius.css";
+@import "./tokens/effects.css";
