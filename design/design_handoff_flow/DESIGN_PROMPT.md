@@ -1,6 +1,10 @@
 # Design Brief — Buddget "Flow" + "Paydays"
 
-> Supersedes the first version of this file. Decisions here are grounded in an audit of Buddget's
+> **This is the single Flow brief.** It carries both the decided constraints and the request for
+> three structural directions to choose between; there is no separate variations file.
+> The logo is briefed separately in `design/design_handoff_logo/LOGO_PROMPT.md`.
+>
+> Supersedes all earlier versions of this file. Decisions here are grounded in an audit of Buddget's
 > own data model and a review of 11 comparable products (Monarch, Copilot, Lunch Money, YNAB,
 > Actual, Emma, Rocket Money, Simplifi, PocketGuard, Wallet, Cashew). The rationale is kept in the
 > brief on purpose — do not silently reverse a decision without reading why it was made.
@@ -319,22 +323,18 @@ Lucide, outline only, 1.75–2px stroke, never filled. Do not switch icon librar
 A **54×54px rounded square** (18px radius) in brand teal with a 4px ring in the nav surface colour,
 notched up into the bar. Not a circle.
 
-## 9b. Three additional design tasks (in scope for this brief)
+## 9b. Two additional design tasks (in scope for this brief)
 
-**1. The logo.** Buddget needs a real mark, not the placeholder wallet glyph in the revamp kit.
-Design an icon that works at app-icon size and at 26px in the header, in the teal system, light and
-dark. Keep the existing **wordmark** ("Buddget" with the accented "d" — the "d" is already teal) and
-deliver the icon+wordmark lockup. Show **3–4 distinct directions** before converging; this is
-identity work and deserves options. Avoid: generic wallets, generic coins, piggy banks of any kind,
-and anything that reads as a banking-app cliché.
+> The **logo** is briefed separately in `design/design_handoff_logo/LOGO_PROMPT.md` — do not design
+> it here.
 
-**2. The custom calendar.** `UnifiedDatePicker` keeps its current **function** and the month-switch
+**1. The custom calendar.** `UnifiedDatePicker` keeps its current **function** and the month-switch
 behaviour exactly as they are — this is a visual redesign only, on the new tokens. Today it carries
 a lot of leftover heavy styling. Make it calmer: clear today/selected/disabled states, a legible
 week grid at 375px, range selection for the custom From/To period, and Arabic-safe layout. Deliver
 month view, a selected range, and the month/year switcher.
 
-**3. Hero and stats.** Rebuild the hero and the stat tiles to be **simpler, more informative and
+**2. Hero and stats.** Rebuild the hero and the stat tiles to be **simpler, more informative and
 easier to read** than today. The revamp kit's direction is a teal gradient hero carrying one big
 number with a sparkline and a delta chip, over a row of three compact KPI tiles. Apply that to
 Flow's in/out/net (§4.1) and show the collapsed sticky state. Fewer numbers, better hierarchy —
@@ -342,7 +342,74 @@ if a number does not change a decision, cut it.
 
 ---
 
+## 9c. Three directions — design all three
+
+Design all three properly. Do not pick a favourite and sketch the others.
+
+### Direction A — **Ledger-led**
+*The organising idea: this screen is a list. Everything else serves the list.*
+
+- Flow opens on the merged day-grouped ledger, with the summary compressed to a single slim bar.
+- The All/In/Out segment is the primary control and sits close to the list.
+- Maximum rows visible; the hero earns very little space and collapses to almost nothing on scroll.
+- Payday signals and the unmatched-income prompt appear **inline in the stream**, at the right date,
+  rather than as a header banner.
+- Closest to what power users of Lunch Money or Copilot expect.
+
+### Direction B — **Summary-led**
+*The organising idea: this screen answers "how am I doing?" before "what happened?".*
+
+- Flow opens on a strong hero: net flow for the period, with in and out as the supporting pair, plus
+  a small trend. The ledger begins below the fold.
+- The segment re-scopes the hero as much as the list — switching to "In" changes the headline
+  number, not just the filter.
+- Stat tiles carry the secondary figures.
+- Closest to Monarch or Copilot's Cash Flow altitude.
+
+### Direction C — **Time-led**
+*The organising idea: money has a rhythm — paydays, bills, the month boundary — and the screen
+should show where you are in it.*
+
+- Flow leads with the period itself: where today sits between the last payday and the next, what has
+  landed, what is still expected.
+- The ledger is grouped by that rhythm rather than by plain calendar days.
+- The payday timeline is not hidden on a detail screen — it is the spine of the view.
+- Riskiest and most differentiated. Buddget already has the data model for it (`paydayDays[]`,
+  `occurrence_date`, drift detection); no competitor in the review does this well. It may be the
+  product's real advantage or it may be too clever — that is exactly what these variations exist to
+  find out.
+
+**For each direction, say in two lines what it optimises for and what it gives up.** A direction
+with no downside has not been thought through.
+
+---
+
+
+**For each direction, say in two lines what it optimises for and what it gives up.** A direction
+with no downside has not been thought through.
+
+Everything in §2 (the Flow/Paydays split), §4.5 (the payday rule), §4.6 (the unmatched-income
+banner), §6 (payment methods), §7 (must-keep), §8 (defects to FIX) and §11 (do-not) is binding on
+**all three**. Only structure varies — otherwise the comparison is meaningless.
+
+### How to present the comparison
+
+1. The three directions **side by side** at the same screen (Flow / All) so they can be judged against
+   each other, not in sequence.
+2. Then each direction in full.
+3. A short comparison table: what each optimises for, what it sacrifices, who it suits.
+4. **Your recommendation, with reasoning.** Do not hedge — say which one you would ship and why. Name
+   the strongest argument against your own pick.
+
+---
+
+
+---
+
 ## 10. Deliverables
+
+**Screens 1–9 below are required for EACH of the three directions.** Items 2 and 4–9 are delivered
+once, for the direction you recommend.
 
 1. **Screens** (dark + light, 390×844):
    - Flow / All — hero expanded, mixed ledger
@@ -365,10 +432,8 @@ if a number does not change a decision, cut it.
 6. **Migration note**: which existing components survive unchanged (`TransactionRow`,
    `SwipeToDelete`, `MonthYearPicker`, `RecurringIncomeCard`, `PaydayTimeline`, `IncomeTypeIcon`,
    `AccountChip`, `ExpenseFilters`), which gain a prop, which are new.
-7. **The logo**: 3–4 directions, then the chosen mark as SVG at app-icon and header sizes, light and
-   dark, plus the wordmark lockup.
-8. **The calendar**: month view, selected range, month/year switcher — new visuals, same function.
-9. **Hero + stats**: expanded and collapsed, both themes.
+7. **The calendar**: month view, selected range, month/year switcher — new visuals, same function.
+8. **Hero + stats**: expanded and collapsed, both themes.
 
 ---
 

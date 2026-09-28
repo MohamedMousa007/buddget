@@ -1,0 +1,42 @@
+<!-- @dsCard group="Brand" viewport="700x250" name="Iconography — Lucide" subtitle="Outline, 1.75–2px stroke · never a pig, never a bell on native" -->
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+  body { margin: 0; font-family: var(--font-sans); background: var(--color-brand-bg); color: var(--color-brand-text-primary); padding: 20px; }
+  .row { display: flex; gap: 14px; }
+  .sw { flex: 1; min-width: 0; }
+  .chip { height: 64px; border-radius: var(--radius-xl); border: 1px solid var(--color-brand-border); }
+  .name { font-size: 12px; font-weight: 600; margin-top: 8px; }
+  .hex { font-family: var(--font-mono); font-size: 11px; color: var(--color-brand-text-muted); margin-top: 2px; }
+  .note { font-size: 11.5px; color: var(--color-brand-text-secondary); margin-top: 14px; line-height: 1.5; }
+  .note b { color: var(--color-brand-text-primary); }
+  body { background: var(--color-brand-card); }
+  .grid { display: flex; gap: 26px; flex-wrap: wrap; }
+  .item { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 64px; }
+  .item i { color: var(--color-brand-text-secondary); }
+  .item.on i { color: var(--color-brand-primary-bright); }
+  .cap { font-family: var(--font-mono); font-size: 10px; color: var(--color-brand-text-muted); }
+  svg.lucide { width: 28px; height: 28px; stroke-width: 1.75; }
+</style>
+</head>
+<body>
+  <div class="grid">
+    <div class="item on"><i data-lucide="layout-dashboard"></i><div class="cap">home</div></div>
+    <div class="item"><i data-lucide="receipt"></i><div class="cap">expenses</div></div>
+    <div class="item"><i data-lucide="landmark"></i><div class="cap">debts</div></div>
+    <div class="item"><i data-lucide="coins"></i><div class="cap">savings</div></div>
+    <div class="item"><i data-lucide="bar-chart-3"></i><div class="cap">reports</div></div>
+    <div class="item"><i data-lucide="utensils-crossed"></i><div class="cap">dining</div></div>
+    <div class="item"><i data-lucide="car"></i><div class="cap">transport</div></div>
+    <div class="item"><i data-lucide="plus"></i><div class="cap">add</div></div>
+  </div>
+  <p class="note">🚫 <b>Never a pig.</b> <code>piggy-bank</code> is prohibited product-wide for savings or anything else — this is a religious constraint for the app's audience, not a style preference. The canonical savings glyph is <b><code>coins</code></b>.<br />
+  🚫 <b>No notification bell on native.</b> The mobile header is avatar + greeting only.<br />
+  The active nav item is <b>teal</b>, not red.</p>
+<script>lucide.createIcons();</script>
+</body>
+</html>

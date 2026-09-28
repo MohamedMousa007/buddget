@@ -1,0 +1,30 @@
+<!-- @dsCard group="Colors" viewport="700x230" name="Light theme" subtitle="Light is the product default — dark is opt-in" -->
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+
+<style>
+  body { margin: 0; font-family: var(--font-sans); background: var(--color-brand-bg); color: var(--color-brand-text-primary); padding: 20px; }
+  .row { display: flex; gap: 14px; }
+  .sw { flex: 1; min-width: 0; }
+  .chip { height: 64px; border-radius: var(--radius-xl); border: 1px solid var(--color-brand-border); }
+  .name { font-size: 12px; font-weight: 600; margin-top: 8px; }
+  .hex { font-family: var(--font-mono); font-size: 11px; color: var(--color-brand-text-muted); margin-top: 2px; }
+  .note { font-size: 11.5px; color: var(--color-brand-text-secondary); margin-top: 14px; line-height: 1.5; }
+  .note b { color: var(--color-brand-text-primary); }
+</style>
+</head>
+<body>
+  <div class="row" style="background:#F4F7F6;padding:16px;border-radius:var(--radius-2xl)">
+    <div class="sw"><div class="chip" style="background:#0D8578"></div><div class="name" style="color:#0D1A18">Primary fill</div><div class="hex">#0D8578</div></div>
+    <div class="sw"><div class="chip" style="background:#12B0A0"></div><div class="name" style="color:#0D1A18">Identity teal</div><div class="hex">#12B0A0</div></div>
+    <div class="sw"><div class="chip" style="background:#FFFFFF"></div><div class="name" style="color:#0D1A18">Card</div><div class="hex">#FFFFFF</div></div>
+    <div class="sw"><div class="chip" style="background:#107E38"></div><div class="name" style="color:#0D1A18">Income</div><div class="hex">#107E38</div></div>
+    <div class="sw"><div class="chip" style="background:#C2353B"></div><div class="name" style="color:#0D1A18">Destructive</div><div class="hex">#C2353B</div></div>
+  </div>
+  <p class="note">A user with no stored preference — including one whose browser blocks storage — gets light. The primary fill is <b>#0D8578</b>: the lightest point on the teal ramp that still clears 4.5:1 with white text. It cannot go lighter; button labels are 15px semibold, which is not WCAG "large text".</p>
+
+</body>
+</html>

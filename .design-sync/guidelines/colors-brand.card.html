@@ -1,0 +1,32 @@
+<!-- @dsCard group="Colors" viewport="700x230" name="Brand accents" subtitle="Teal is the brand and every primary action — red means destructive only" -->
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+
+<style>
+  body { margin: 0; font-family: var(--font-sans); background: var(--color-brand-bg); color: var(--color-brand-text-primary); padding: 20px; }
+  .row { display: flex; gap: 14px; }
+  .sw { flex: 1; min-width: 0; }
+  .chip { height: 64px; border-radius: var(--radius-xl); border: 1px solid var(--color-brand-border); }
+  .name { font-size: 12px; font-weight: 600; margin-top: 8px; }
+  .hex { font-family: var(--font-mono); font-size: 11px; color: var(--color-brand-text-muted); margin-top: 2px; }
+  .note { font-size: 11.5px; color: var(--color-brand-text-secondary); margin-top: 14px; line-height: 1.5; }
+  .note b { color: var(--color-brand-text-primary); }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="sw"><div class="chip" style="background:var(--color-brand-primary)"></div><div class="name">Teal — primary / CTA</div><div class="hex">#1FC3B2</div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-brand-primary-bright)"></div><div class="name">Teal — identity</div><div class="hex">#1FC3B2</div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-brand-green)"></div><div class="name">Green — income</div><div class="hex">#37C368</div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-brand-gold)"></div><div class="name">Gold — investment</div><div class="hex">#EDC463</div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-brand-amber)"></div><div class="name">Amber — warning</div><div class="hex">#EDB24A</div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-brand-red)"></div><div class="name">Red — destructive</div><div class="hex">#F2646A</div></div>
+  </div>
+  <p class="note"><b>Red is not a CTA colour.</b> It marks destructive actions and over-budget alerts, nothing else — so when it appears it means something. Outflow amounts are plain text, not red.<br />
+  <b>Watch the two teals.</b> <code>--color-brand-primary</code> is the fill that text sits on. <code>--color-brand-primary-bright</code> is the identity colour for chart marks, icon glyphs and decorative fills — white on it is only 2.71:1, so it can never carry text.</p>
+
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!-- @dsCard group="Spacing" viewport="700x220" name="Glass surface" subtitle="No longer the default card — kept for overlays only" -->
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+
+<style>
+  body { margin: 0; font-family: var(--font-sans); background: var(--color-brand-bg); color: var(--color-brand-text-primary); padding: 20px; }
+  .row { display: flex; gap: 14px; }
+  .sw { flex: 1; min-width: 0; }
+  .chip { height: 64px; border-radius: var(--radius-xl); border: 1px solid var(--color-brand-border); }
+  .name { font-size: 12px; font-weight: 600; margin-top: 8px; }
+  .hex { font-family: var(--font-mono); font-size: 11px; color: var(--color-brand-text-muted); margin-top: 2px; }
+  .note { font-size: 11.5px; color: var(--color-brand-text-secondary); margin-top: 14px; line-height: 1.5; }
+  .note b { color: var(--color-brand-text-primary); }
+  body { background:
+      radial-gradient(420px 200px at 18% 10%, color-mix(in srgb, var(--color-brand-primary-bright) 26%, transparent), transparent 60%),
+      radial-gradient(420px 220px at 85% 90%, color-mix(in srgb, var(--color-brand-green) 20%, transparent), transparent 60%),
+      var(--color-brand-bg); }
+</style>
+</head>
+<body>
+  <div class="glass-card" style="border-radius:var(--radius-2xl);padding:20px 22px;max-width:340px">
+    <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-brand-text-secondary)">Left to spend</div>
+    <div class="font-mono" style="font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:30px;font-weight:700;margin-top:6px">4,180.00</div>
+    <div style="font-size:12px;color:var(--color-brand-text-muted);margin-top:6px">.glass-card · backdrop-blur(12px)</div>
+  </div>
+  <p class="note"><b>Cards are solid surfaces now</b> — <code>--color-brand-card</code> with <code>--shadow-sm</code>. Glass was the old signature look and is retired as the default; use <code>.glass-card</code> only where something genuinely floats over content, such as an overlay.</p>
+
+</body>
+</html>

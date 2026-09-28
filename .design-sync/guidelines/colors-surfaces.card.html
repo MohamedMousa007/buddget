@@ -1,0 +1,31 @@
+<!-- @dsCard group="Colors" viewport="700x200" name="Surfaces" subtitle="Green-tinted neutrals, not grey — they sit under a teal brand" -->
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+
+<style>
+  body { margin: 0; font-family: var(--font-sans); background: var(--color-brand-bg); color: var(--color-brand-text-primary); padding: 20px; }
+  .row { display: flex; gap: 14px; }
+  .sw { flex: 1; min-width: 0; }
+  .chip { height: 64px; border-radius: var(--radius-xl); border: 1px solid var(--color-brand-border); }
+  .name { font-size: 12px; font-weight: 600; margin-top: 8px; }
+  .hex { font-family: var(--font-mono); font-size: 11px; color: var(--color-brand-text-muted); margin-top: 2px; }
+  .note { font-size: 11.5px; color: var(--color-brand-text-secondary); margin-top: 14px; line-height: 1.5; }
+  .note b { color: var(--color-brand-text-primary); }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="sw"><div class="chip" style="background:var(--color-brand-bg)"></div><div class="name">Background</div><div class="hex">#0A100F</div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-brand-card)"></div><div class="name">Card</div><div class="hex">#111917</div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-brand-elevated)"></div><div class="name">Elevated</div><div class="hex">#18211F</div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-brand-sunken)"></div><div class="name">Sunken</div><div class="hex">#212C2A</div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-brand-border)"></div><div class="name">Border</div><div class="hex">#25302E</div></div>
+    <div class="sw"><div class="chip" style="background:var(--color-brand-border-strong)"></div><div class="name">Border strong</div><div class="hex">#33403D</div></div>
+  </div>
+  <p class="note">Cards are flat by default — reach for <code>--shadow-sm</code> deliberately. The old glass-blur card identity is retired; <code>.glass-card</code> still exists for overlays but is no longer the default look.</p>
+
+</body>
+</html>
