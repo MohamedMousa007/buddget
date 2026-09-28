@@ -21,13 +21,11 @@ Bottom nav becomes: Home · **Flow** · FAB(+) · Debts · More.
 Flow's icon: a banknote carrying both an incoming and an outgoing arrow. Draw it as a 24px,
 1.75px-stroke glyph in the lucide idiom; deliver the SVG. Fallback: `BanknoteArrowUp`.
 
-**The Arabic label for Flow is `الحركات`, NOT `تدفق`.** This is deliberate. A literal translation
-reads technical and literary; `الحركات` is what Arab bank statements actually call these lines
-(`حركات الحساب`), it is plural-definite like every other nav label (`المصروفات`, `الديون`), and it
-keeps the tab distinct from `أيام القبض` (Paydays). Buddget already localizes non-literally —
+**The Arabic label for Flow is `المعاملات`, NOT `تدفق`.** This is deliberate. A literal translation
+of "Flow" reads technical and literary in Arabic; `المعاملات` is the ordinary word for financial
+transactions/dealings, it is plural-definite like every other nav label (`المصروفات`, `الديون`), and
+it stays clearly distinct from `أيام القبض` (Paydays). Buddget already localises non-literally —
 `Dashboard → الرئيسية` — so this follows existing precedent rather than breaking it.
-
-The goal is *minimalist by consolidation, never by deletion*. Every capability in §7 must survive.
 
 ---
 
@@ -69,14 +67,14 @@ The setup surface is called **Paydays**.
 - Not **Income** — reads as a filter on a report ("show me my income"), not a managed list.
 - Not **Recurring** — correct only if bills live there too; ours is income-only, so users would
   arrive expecting subscriptions.
-- Not **Streams / Inflows / Currents** — in English they blur into "Flow", and in Arabic they
-  collide outright (Flow = تدفق). The app is fully bilingual; the two labels must stay distinct in
-  both.
+- Not **Streams / Inflows / Currents** — in English they blur into "Flow", and in Arabic they all
+  land on the same تدفق/تدفقات family. The app is fully bilingual; the two labels must stay distinct
+  in both. (Flow itself ships as `المعاملات` in Arabic, not a literal translation — see §1.)
 
 **Paydays** wins because it is the only candidate that is simultaneously distinctive, instantly
 concrete, free of the above collisions, and already true to the data model — the whole engine is
 built on paydays, drift and occurrences. Arabic: **أيام القبض**, which is colloquial, clear, and
-nothing like تدفق.
+unmistakably different from `المعاملات`.
 
 Fallback if the team judges "Paydays" too salary-leaning for rental or dividend income:
 **Income streams**. Do not use "Sources" alone — it prompts "sources of what?".

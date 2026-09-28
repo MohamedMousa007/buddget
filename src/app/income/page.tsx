@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, Link2 } from 'lucide-react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { MonthYearPicker } from '@/components/ui/MonthYearPicker'
+import { Badge } from '@/components/ui/badge'
 import { RecurringIncomeCard } from '@/components/features/income/RecurringIncomeCard'
 import { RecurringIncomeCarousel } from '@/components/features/income/RecurringIncomeCarousel'
 import { SwipeToDelete, type SwipeSide } from '@/components/expenses/SwipeToDelete'
@@ -432,13 +433,13 @@ export default function IncomePage() {
                       title={r.name}
                       titleBadge={
                         <>
-                          <span className={`shrink-0 rounded-full px-2 py-[2.5px] text-[9.5px] font-extrabold uppercase tracking-[0.05em] ${r.recurring ? 'bg-[rgba(55,195,104,0.16)] text-[var(--color-brand-green)]' : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]'}`}>
+                          <Badge variant={r.recurring ? 'positive' : 'muted'} size="xs" className="shrink-0">
                             {r.recurring ? t.income.recurringLabel : t.income.oneTimeLabel}
-                          </span>
+                          </Badge>
                           {r.daysLate ? (
-                            <span className="shrink-0 rounded-full bg-[rgba(255,177,61,0.16)] px-2 py-[2.5px] text-[9.5px] font-extrabold uppercase tracking-[0.05em] text-[#FFD68A]">
+                            <Badge variant="warning" size="xs" className="shrink-0">
                               {t.income.daysLateChip(r.daysLate)}
-                            </span>
+                            </Badge>
                           ) : null}
                         </>
                       }

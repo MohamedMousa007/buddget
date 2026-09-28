@@ -4,7 +4,12 @@ import { Input as InputPrimitive } from "@base-ui/react/input"
 import { cn } from "@/lib/utils"
 import { isAndroid } from "@/lib/native/isNative"
 
-function Input({ className, type, inputMode, onClick, ...props }: React.ComponentProps<"input">) {
+/**
+ * `size="brand"` is the app's real control height (48px, rounded-xl, elevated
+ * fill) and satisfies the design-system rule that every input is h-12. The
+ * default is shadcn's h-8 desktop density, kept for compact/admin surfaces.
+ */
+function Input({ className, type, inputMode, onClick, size, ...props }: React.ComponentProps<"input"> & { size?: "default" | "brand" }) {
   const handleClick: React.MouseEventHandler<HTMLInputElement> = (e) => {
     if ((type === 'date' || type === 'month') && 'showPicker' in e.currentTarget) {
       try { (e.currentTarget as HTMLInputElement).showPicker() } catch { /* unsupported browser */ }
@@ -25,7 +30,10 @@ function Input({ className, type, inputMode, onClick, ...props }: React.Componen
       inputMode={resolvedInputMode}
       data-slot="input"
       className={cn(
-        "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/55 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+        size === "brand"
+          ? "h-12 rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-base"
+          : "h-8 rounded-lg px-2.5 py-1 text-base md:text-sm",
+        "w-full min-w-0 border border-input bg-transparent transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/55 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
         className
       )}
       onClick={handleClick}

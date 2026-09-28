@@ -32,7 +32,7 @@ export function QuickAddFAB() {
 
   const tiles: QuickAddTile[] = [
     { id: 'scanReceipt', label: t.modals.fabTileScan, icon: Camera, fg: '#4DA3FF', bg: 'rgba(77,163,255,.16)' },
-    { id: 'addExpense', label: t.modals.fabTileExpense, icon: Receipt, fg: 'var(--color-brand-red)', bg: 'rgba(18,176,160,.14)' },
+    { id: 'addExpense', label: t.modals.fabTileExpense, icon: Receipt, fg: 'var(--color-brand-primary-ink)', bg: 'var(--color-brand-primary-soft)' },
     { id: 'addIncome', label: t.modals.fabTileIncome, icon: DollarSign, fg: 'var(--color-brand-green)', bg: 'rgba(55,195,104,.14)' },
     { id: 'payDebt', label: t.modals.fabTileDebt, icon: CreditCard, fg: '#FF5C5C', bg: 'rgba(255,92,92,.14)' },
     { id: 'addGoal', label: t.modals.fabTileSaving, icon: Coins, fg: 'var(--color-brand-gold)', bg: 'rgba(237,196,99,.14)' },

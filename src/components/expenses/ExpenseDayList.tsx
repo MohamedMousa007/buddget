@@ -6,6 +6,7 @@ import { format, parseISO, subDays } from 'date-fns'
 import { CircleSlash } from 'lucide-react'
 import { CategoryIcon } from '@/components/dashboard/CategoryIcon'
 import { SwipeToDelete } from '@/components/expenses/SwipeToDelete'
+import { Badge } from '@/components/ui/badge'
 import { TransactionRow } from '@/components/transactions/TransactionRow'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { categoryChipColors } from '@/lib/expenses/categoryChip'
@@ -167,9 +168,9 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                       title={e.description}
                       titleBadge={
                         e.refundKind === 'declined' ? (
-                          <span className="shrink-0 rounded-full px-2 py-[2.5px] text-[9.5px] font-extrabold uppercase tracking-[0.05em]" style={{ background: 'rgba(18,176,160,0.14)', color: '#F76D74' }}>{t.expenses.badgeDeclined}</span>
+                          <Badge variant="negative" size="xs" className="shrink-0">{t.expenses.badgeDeclined}</Badge>
                         ) : e.refundKind === 'refunded' ? (
-                          <span className="shrink-0 rounded-full px-2 py-[2.5px] text-[9.5px] font-extrabold uppercase tracking-[0.05em]" style={{ background: 'rgba(55,195,104,0.16)', color: '#37C368' }}>{t.expenses.badgeRefunded}</span>
+                          <Badge variant="positive" size="xs" className="shrink-0">{t.expenses.badgeRefunded}</Badge>
                         ) : nonSpend ? (
                           <CircleSlash role="img" aria-label={t.expenses.badgeNotCounted} className="h-3.5 w-3.5 shrink-0 text-[var(--color-brand-text-muted)]" />
                         ) : null

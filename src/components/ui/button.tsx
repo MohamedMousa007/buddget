@@ -20,6 +20,10 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
+        /** Solid red fill for a committing destructive action (delete confirmations).
+         *  `destructive` above is the softer tinted style for lower-stakes removes. */
+        "destructive-solid":
+          "bg-[var(--color-brand-red)] text-white hover:bg-[var(--color-brand-red-hover)]",
       },
       size: {
         default:
@@ -33,6 +37,22 @@ const buttonVariants = cva(
         "icon-sm":
           "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
         "icon-lg": "size-9",
+
+        /* ── Brand sizes (Buddget) ────────────────────────────────────────────
+           The sizes above are shadcn's desktop density and top out at h-9 (36px),
+           under this app's 44px minimum tap target — which is exactly why most
+           call sites hand-rolled their own button instead of using this one.
+           These three are the real app sizes; prefer them on touch surfaces. */
+
+        /** 44px — the minimum tap target. Compact rows, inline actions. */
+        touch: "h-11 gap-2 rounded-xl px-4 text-[15px] [&_svg:not([class*='size-'])]:size-[18px]",
+        /** 48px — the standard form control height, matching inputs. */
+        cta: "h-12 gap-2 rounded-xl px-5 text-[15px] [&_svg:not([class*='size-'])]:size-[18px]",
+        /** 48px, full width — the committing action at the foot of a sheet. */
+        "cta-block":
+          "h-12 w-full gap-2 rounded-xl px-5 text-[15px] [&_svg:not([class*='size-'])]:size-[18px]",
+        /** 44×44 icon-only — the minimum square tap target. */
+        "icon-touch": "size-11 rounded-xl [&_svg:not([class*='size-'])]:size-5",
       },
     },
     defaultVariants: {

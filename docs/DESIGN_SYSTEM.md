@@ -4,6 +4,14 @@ Single source of truth for all UI/UX work. Read this before writing or modifying
 
 ---
 
+## Theme default
+
+**Light is the product default.** A user with no stored preference — including one whose browser
+blocks storage — gets light. Dark is opt-in via Settings. Both themes are complete and equally
+supported; `.dark` on `<html>` is the switch, set before first paint by the inline theme script.
+
+---
+
 ## Colors
 
 All colors are CSS custom properties set in `src/app/globals.css`. Always use the variable name in Tailwind (`var(--color-brand-*)`) — never hardcode hex values.
@@ -17,9 +25,9 @@ leftover, not a decision.)
 
 | Token | CSS Variable | Light | Dark | Usage |
 |---|---|---|---|---|
-| **Primary (fill)** | `--color-brand-primary` | `#0B7568` | `#1FC3B2` | Buttons, FAB, active nav — the fill that text sits on |
+| **Primary (fill)** | `--color-brand-primary` | `#0D8578` | `#1FC3B2` | Buttons, FAB, active nav — the fill that text sits on |
 | **Primary bright** | `--color-brand-primary-bright` | `#12B0A0` | `#1FC3B2` | The kit's identity teal. Chart marks, icon glyphs, decorative fills — **never** under text |
-| Primary hover | `--color-brand-primary-hover` | `#096055` | `#35D4C3` | Hover on a teal fill |
+| Primary hover | `--color-brand-primary-hover` | `#0B7568` | `#35D4C3` | Hover on a teal fill |
 | **Primary ink** | `--color-brand-primary-ink` | `#0B7568` | `#7FE6DA` | Teal **text** and links — see the contrast warning below |
 | Primary soft | `--color-brand-primary-soft` | `#E3F6F3` | `#0F2723` | Teal tint backgrounds, icon chips |
 | **On primary** | `--color-brand-on-primary` | `#FFFFFF` | `#04201C` | Anything sitting **on** a teal fill |

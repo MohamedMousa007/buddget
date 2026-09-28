@@ -2362,9 +2362,6 @@
       border-color: color-mix(in oklab, var(--color-yellow-500) 30%, transparent);
     }
   }
-  .border-t-\[\#12B0A0\] {
-    border-top-color: #12B0A0;
-  }
   .border-t-\[var\(--color-brand-border\)\] {
     border-top-color: var(--color-brand-border);
   }
@@ -2377,14 +2374,8 @@
   .border-l-\[var\(--color-brand-green\)\] {
     border-left-color: var(--color-brand-green);
   }
-  .bg-\[\#0c1610\] {
-    background-color: #0c1610;
-  }
   .bg-\[\#00C2A80d\] {
     background-color: #00C2A80d;
-  }
-  .bg-\[\#1E1E28\] {
-    background-color: #1E1E28;
   }
   .bg-\[\#8A5CF6\]\/12 {
     background-color: color-mix(in oklab, #8A5CF6 12%, transparent);
@@ -2397,12 +2388,6 @@
   }
   .bg-\[\#38D96B\] {
     background-color: #38D96B;
-  }
-  .bg-\[\#14141b\] {
-    background-color: #14141b;
-  }
-  .bg-\[\#16161f\] {
-    background-color: #16161f;
   }
   .bg-\[\#111118\] {
     background-color: #111118;
@@ -2467,9 +2452,6 @@
   .bg-\[rgba\(237\,196\,99\,\.18\)\] {
     background-color: rgba(237,196,99,.18);
   }
-  .bg-\[rgba\(255\,177\,61\,0\.16\)\] {
-    background-color: rgba(255,177,61,0.16);
-  }
   .bg-\[var\(--color-brand-amber\)\] {
     background-color: var(--color-brand-amber);
   }
@@ -2484,6 +2466,9 @@
     @supports (color: color-mix(in lab, red, red)) {
       background-color: color-mix(in oklab, var(--color-brand-amber) 15%, transparent);
     }
+  }
+  .bg-\[var\(--color-brand-amber-soft\)\] {
+    background-color: var(--color-brand-amber-soft);
   }
   .bg-\[var\(--color-brand-bg\)\] {
     background-color: var(--color-brand-bg);
@@ -2587,6 +2572,9 @@
       background-color: color-mix(in oklab, var(--color-brand-green) 20%, transparent);
     }
   }
+  .bg-\[var\(--color-brand-green-soft\)\] {
+    background-color: var(--color-brand-green-soft);
+  }
   .bg-\[var\(--color-brand-primary\)\] {
     background-color: var(--color-brand-primary);
   }
@@ -2614,6 +2602,9 @@
       background-color: color-mix(in oklab, var(--color-brand-primary) 20%, transparent);
     }
   }
+  .bg-\[var\(--color-brand-primary-soft\)\] {
+    background-color: var(--color-brand-primary-soft);
+  }
   .bg-\[var\(--color-brand-red\)\] {
     background-color: var(--color-brand-red);
   }
@@ -2628,6 +2619,9 @@
     @supports (color: color-mix(in lab, red, red)) {
       background-color: color-mix(in oklab, var(--color-brand-red) 15%, transparent);
     }
+  }
+  .bg-\[var\(--color-brand-red-soft\)\] {
+    background-color: var(--color-brand-red-soft);
   }
   .bg-\[var\(--color-brand-text-muted\)\] {
     background-color: var(--color-brand-text-muted);
@@ -2652,6 +2646,9 @@
   }
   .bg-\[var\(--color-status-warn-bg\)\] {
     background-color: var(--color-status-warn-bg);
+  }
+  .bg-\[var\(--popover\)\] {
+    background-color: var(--popover);
   }
   .bg-amber-500\/10 {
     background-color: color-mix(in srgb, oklch(76.9% 0.188 70.08) 10%, transparent);
@@ -3697,9 +3694,6 @@
   .text-\[\#FFB13D\] {
     color: #FFB13D;
   }
-  .text-\[\#FFD68A\] {
-    color: #FFD68A;
-  }
   .text-\[--color-brand-text-primary\] {
     color: --color-brand-text-primary;
   }
@@ -4210,6 +4204,9 @@
     outline-style: var(--tw-outline-style);
     outline-width: 1px;
   }
+  .outline-white {
+    outline-color: var(--color-white);
+  }
   .blur {
     --tw-blur: blur(8px);
     filter: var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,) var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,);
@@ -4351,6 +4348,24 @@
   .select-text {
     -webkit-user-select: text;
     user-select: text;
+  }
+  .\[--boot-bloom\:rgba\(13\,133\,120\,0\.16\)\] {
+    --boot-bloom: rgba(13,133,120,0.16);
+  }
+  .\[--boot-from\:\#F4F7F6\] {
+    --boot-from: #F4F7F6;
+  }
+  .\[--boot-spin\:var\(--color-brand-primary\)\] {
+    --boot-spin: var(--color-brand-primary);
+  }
+  .\[--boot-text\:var\(--color-brand-text-secondary\)\] {
+    --boot-text: var(--color-brand-text-secondary);
+  }
+  .\[--boot-to\:\#E6EEEC\] {
+    --boot-to: #E6EEEC;
+  }
+  .\[--boot-track\:rgba\(13\,26\,24\,0\.12\)\] {
+    --boot-track: rgba(13,26,24,0.12);
   }
   .\[-ms-overflow-style\:none\] {
     -ms-overflow-style: none;
@@ -5855,6 +5870,18 @@
   .dark\:text-muted-foreground:is(.dark *) {
     color: var(--muted-foreground);
   }
+  .dark\:\[--boot-bloom\:rgba\(31\,195\,178\,0\.20\)\]:is(.dark *) {
+    --boot-bloom: rgba(31,195,178,0.20);
+  }
+  .dark\:\[--boot-from\:\#0E1614\]:is(.dark *) {
+    --boot-from: #0E1614;
+  }
+  .dark\:\[--boot-to\:\#070C0B\]:is(.dark *) {
+    --boot-to: #070C0B;
+  }
+  .dark\:\[--boot-track\:rgba\(234\,242\,240\,0\.14\)\]:is(.dark *) {
+    --boot-track: rgba(234,242,240,0.14);
+  }
   @media (hover: hover) {
     .dark\:hover\:bg-destructive\/30:is(.dark *):hover {
       background-color: var(--destructive);
@@ -5961,6 +5988,14 @@
   .\[\&_svg\:not\(\[class\*\=\'size-\'\]\)\]\:size-4 svg:not([class*='size-']) {
     width: calc(var(--spacing) * 4);
     height: calc(var(--spacing) * 4);
+  }
+  .\[\&_svg\:not\(\[class\*\=\'size-\'\]\)\]\:size-5 svg:not([class*='size-']) {
+    width: calc(var(--spacing) * 5);
+    height: calc(var(--spacing) * 5);
+  }
+  .\[\&_svg\:not\(\[class\*\=\'size-\'\]\)\]\:size-\[18px\] svg:not([class*='size-']) {
+    width: 18px;
+    height: 18px;
   }
   .\[\&\:\:-webkit-scrollbar\]\:hidden::-webkit-scrollbar {
     display: none;
@@ -6111,8 +6146,8 @@
   initial-value: 0;
 }
 :root {
-  --color-brand-primary: #0B7568;
-  --color-brand-primary-hover: #096055;
+  --color-brand-primary: #0D8578;
+  --color-brand-primary-hover: #0B7568;
   --color-brand-primary-ink: #0B7568;
   --color-brand-primary-soft: #E3F6F3;
   --color-brand-on-primary: #FFFFFF;
@@ -6192,7 +6227,7 @@
   --card-foreground: #0D1A18;
   --popover: #FFFFFF;
   --popover-foreground: #0D1A18;
-  --primary: #0B7568;
+  --primary: #0D8578;
   --primary-foreground: #FFFFFF;
   --secondary: #ECF1F0;
   --secondary-foreground: #0D1A18;
@@ -6213,7 +6248,7 @@
   --radius: 0.75rem;
   --sidebar: #FFFFFF;
   --sidebar-foreground: #0D1A18;
-  --sidebar-primary: #0B7568;
+  --sidebar-primary: #0D8578;
   --sidebar-primary-foreground: #FFFFFF;
   --sidebar-accent: #ECF1F0;
   --sidebar-accent-foreground: #0D1A18;
