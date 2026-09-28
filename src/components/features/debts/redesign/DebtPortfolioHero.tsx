@@ -3,6 +3,7 @@
 import { Plus } from 'lucide-react'
 import type { DebtFamily } from '@/lib/debts/debtFamily'
 import { fmtWhole } from './heroCardShared'
+import { Button } from '@/components/ui/button'
 
 export interface DebtPortfolioHeroProps {
   owed: number
@@ -88,14 +89,14 @@ export function DebtPortfolioHero({
         ))}
       </div>
 
-      <button
-        type="button"
+      <Button
         onClick={onAddDebt}
-        className="mt-3.5 flex h-11 w-full items-center justify-center gap-2 rounded-[13px] bg-[var(--color-brand-primary)] text-[15px] font-bold text-[var(--color-brand-on-primary)] shadow-[0_10px_24px_-10px_rgba(18,176,160,0.55)] transition-colors hover:bg-[var(--color-brand-primary-hover)] active:translate-y-px"
+        size="cta-block"
+        className="mt-3.5 shadow-[var(--shadow-md)]"
       >
         <Plus className="h-[18px] w-[18px]" strokeWidth={2.4} />
         Add debt
-      </button>
+      </Button>
     </div>
   )
 }

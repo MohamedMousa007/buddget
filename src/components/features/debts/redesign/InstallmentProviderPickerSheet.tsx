@@ -10,6 +10,7 @@ import type { PaymentMethod } from '@/lib/store/types'
 import { ProviderBadge } from './ProviderBadge'
 import { useModalTitleId } from '@/components/modals/ModalShell'
 import { IconButton } from '@/components/ui/IconButton'
+import { Button } from '@/components/ui/button'
 
 export interface CreditCardOption {
   debtId: string
@@ -172,17 +173,16 @@ export function InstallmentProviderPickerSheet({
               placeholder="Provider name"
               className="h-[52px] w-full rounded-xl border border-white/10 bg-black/30 px-3.5 text-[15px] text-white outline-none"
             />
-            <button
-              type="button"
+            <Button
               disabled={!customName.trim()}
               onClick={() => {
                 onCustom(customName.trim())
                 close()
               }}
-              className="h-[52px] w-full rounded-[14px] bg-[var(--color-brand-primary)] text-base font-bold text-[var(--color-brand-on-primary)] disabled:opacity-40"
+              size="cta-block"
             >
               Use “{customName.trim() || '…'}”
-            </button>
+            </Button>
           </div>
         ) : null}
       </div>

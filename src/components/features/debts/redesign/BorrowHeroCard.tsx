@@ -4,6 +4,7 @@ import { ArrowUpRight, ArrowDownRight, Target } from 'lucide-react'
 import { heroCardStyle } from '@/components/features/income/incomeGlass'
 import type { BorrowVM } from '@/hooks/useDebtTabData'
 import { EditPin, fmtWhole } from './heroCardShared'
+import { Button } from '@/components/ui/button'
 
 export interface BorrowHeroCardProps {
   vm: BorrowVM
@@ -96,21 +97,18 @@ export function BorrowHeroCard({ vm, onEdit, onDelete, onPay }: BorrowHeroCardPr
       {/* CTA inside */}
       <div className="mt-4 border-t border-white/10 pt-3">
         {owe ? (
-          <button
-            type="button"
-            onClick={onPay}
-            className="h-11 w-full rounded-[13px] bg-[var(--color-brand-primary)] text-sm font-bold text-[var(--color-brand-on-primary)] transition-colors hover:bg-[var(--color-brand-primary-hover)]"
-          >
+          <Button onClick={onPay} size="cta-block">
             Pay {vm.name}
-          </button>
+          </Button>
         ) : (
-          <button
-            type="button"
+          <Button
             onClick={onPay}
-            className="h-11 w-full rounded-[13px] border border-[#35D46F]/50 text-sm font-bold text-[#35D46F] transition-colors hover:bg-[#35D46F]/10"
+            variant="outline"
+            size="cta-block"
+            className="border-[var(--color-brand-green)]/50 text-[var(--color-brand-green)] hover:bg-[var(--color-brand-green)]/10"
           >
             Log receipt from {vm.name}
-          </button>
+          </Button>
         )}
       </div>
     </div>

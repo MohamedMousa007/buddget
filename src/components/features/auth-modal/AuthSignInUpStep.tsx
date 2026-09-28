@@ -14,6 +14,7 @@ import { useAuth } from '@/components/auth/auth-context'
 import { useT } from '@/lib/i18n'
 import { emailLocalPart } from '@/lib/auth/emailLocalPart'
 import type { AuthEmailStep, AuthPasswordIntent } from '@/hooks/useAuthModal'
+import { Button } from '@/components/ui/button'
 
 export interface AuthSignInUpStepProps {
   emailStep: AuthEmailStep
@@ -254,13 +255,14 @@ export function AuthSignInUpStep({
                     />
                     <span>{t.auth.rememberMe}</span>
                   </label>
-                  <button
-                    type="button"
+                  <Button
                     onClick={onForgotClick}
-                    className="text-xs text-[var(--color-brand-primary-ink)] hover:underline"
+                    variant="link"
+                    size="xs"
+                    className="no-underline hover:underline"
                   >
                     {t.auth.forgotPassword}
-                  </button>
+                  </Button>
                 </div>
               ) : (
                 <PasswordStrengthMeter password={password} />

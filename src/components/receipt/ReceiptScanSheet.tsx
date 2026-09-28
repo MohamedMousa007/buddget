@@ -531,13 +531,13 @@ function ResultView({
         >
           <Check className="h-4 w-4" /> Save expense
         </Button>
-        <button
-          type="button"
+        <Button
           onClick={onRescan}
-          className="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] px-4 py-2.5 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
+          variant="outline"
+          size="cta-block"
         >
           <RefreshCcw className="h-4 w-4" /> Rescan
-        </button>
+        </Button>
       </div>
     </div>
   )

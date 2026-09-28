@@ -5,6 +5,7 @@ import { CARTOON_AVATAR_PRESETS, cartoonAvatarUrlForPreset } from '@/lib/onboard
 import { cn } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
 import type { FinanceStore } from '@/lib/store/types'
+import { Button } from '@/components/ui/button'
 
 export interface ProfileAvatarSectionProps {
   fileRef: RefObject<HTMLInputElement | null>
@@ -32,13 +33,14 @@ export function ProfileAvatarSection({ fileRef, store, activePreset, onAvatarFil
         className="hidden"
         onChange={onAvatarFile}
       />
-      <button
-        type="button"
+      <Button
         onClick={() => fileRef.current?.click()}
-        className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
+        variant="outline"
+        size="cta-block"
+        className="sm:w-auto"
       >
         {t.profile.avatarUploadPhoto}
-      </button>
+      </Button>
       {store.profile.avatar?.startsWith('data:') ? (
         <button
           type="button"

@@ -3,6 +3,7 @@
 import type { BudgetPlanCategory, BudgetPlanSubcategory } from '@/lib/store/types'
 import type { BudgetPlannerCategoryRowLabels } from '@/components/features/budget-planner/budgetPlannerCategoryLabels'
 import { BudgetPlannerSubcategoryRow } from '@/components/features/budget-planner/BudgetPlannerSubcategoryRow'
+import { Button } from '@/components/ui/button'
 
 export interface BudgetPlannerCategorySubcategoriesPanelProps {
   category: BudgetPlanCategory
@@ -36,13 +37,14 @@ export function BudgetPlannerCategorySubcategoriesPanel({
           onDelete={() => onDeleteSubcategory(sub.id)}
         />
       ))}
-      <button
-        type="button"
+      <Button
         onClick={onAddSubcategory}
-        className="text-xs text-[var(--color-brand-primary-ink)] hover:underline"
+        variant="link"
+        size="xs"
+        className="no-underline hover:underline"
       >
         + {labels.addSubcategory}
-      </button>
+      </Button>
     </div>
   )
 }

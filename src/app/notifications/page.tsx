@@ -7,6 +7,7 @@ import { useNotifications } from '@/hooks/useNotifications'
 import { useSmsTracking } from '@/hooks/useSmsTracking'
 import { useT } from '@/lib/i18n'
 import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 const SEVERITY_DOT: Record<'warning' | 'info' | 'critical', string> = {
   critical: 'var(--color-brand-red)',
@@ -51,14 +52,15 @@ export default function NotificationsPage() {
             </div>
           </div>
           {notifications.length > 0 ? (
-            <button
-              type="button"
+            <Button
               onClick={() => void markAllRead()}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--color-brand-primary-ink)] hover:opacity-80 transition-opacity"
+              variant="link"
+              size="xs"
+              className="no-underline hover:underline"
             >
               <CheckCheck className="h-3.5 w-3.5" />
               {t.notifications.markAllRead}
-            </button>
+            </Button>
           ) : null}
         </div>
 

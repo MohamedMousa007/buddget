@@ -185,7 +185,13 @@ function HoldingsCard({ type, holdings, lookup, toBase, onAdd }: { type: Investm
           </IconButton>
         </div>
       ))}
-      <button type="button" onClick={onAdd} className="w-full border-t border-[var(--color-brand-border)] py-3 text-center text-sm font-semibold text-[var(--color-brand-primary-ink)]">+ {type === 'gold' ? 'Add more gold' : 'Add more'}</button>
+      <Button
+          variant="ghost"
+          onClick={onAdd}
+          className="h-auto w-full rounded-none border-t border-[var(--color-brand-border)] py-3 font-semibold text-[var(--color-brand-primary-ink)]"
+        >
+          + {type === 'gold' ? 'Add more gold' : 'Add more'}
+        </Button>
       {menu && (() => {
         const hh = holdings.find((x) => x.id === menu.id)
         if (!hh) return null

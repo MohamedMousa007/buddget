@@ -2,6 +2,7 @@
 
 import type { IncomeSource } from '@/lib/store/types'
 import { MODAL_LABEL_CLASS } from '@/lib/modals/modalFormClasses'
+import { Button } from '@/components/ui/button'
 
 export interface IncomeTemplatePickerProps {
   /** Selected template id, or '' for "not linked". */
@@ -47,13 +48,14 @@ export function IncomeTemplatePicker({
         ))}
       </select>
       {suggestion && !value ? (
-        <button
-          type="button"
+        <Button
           onClick={() => onChange(suggestion.id)}
-          className="mt-1.5 text-xs font-semibold text-[var(--color-brand-primary-ink)]"
+          variant="link"
+          size="xs"
+          className="mt-1.5 no-underline hover:underline"
         >
           {(suggestionLabel ?? ((n) => n))(suggestion.name)}
-        </button>
+        </Button>
       ) : null}
     </div>
   )
