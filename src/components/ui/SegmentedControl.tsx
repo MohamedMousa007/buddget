@@ -1,0 +1,104 @@
+'use client'
+
+import { cn } from '@/lib/utils'
+
+export interface SegmentedOption<T extends string> {
+  value: T
+  label: string
+  /** Optional count shown after the label, e.g. a result count per segment. */
+  count?: number
+}
+
+export interface SegmentedControlProps<T extends string> {
+  options: readonly SegmentedOption<T>[]
+  value: T
+  onChange: (value: T) => void
+  /** Stretch each segment to fill the row. Default true — the usual mobile layout. */
+  fill?: boolean
+  /** Accessible name for the group, e.g. "Filter by direction". */
+  ariaLabel: string
+  className?: string
+}
+
+/**
+ * A single-select segmented control — the All / In / Out switch on Flow, and the
+ * Savings / Investment switch.
+ *
+ * Built as a **radiogroup**, not tabs: it filters the content below rather than
+ * swapping panels, so `role="tablist"` would promise a relationship to screen
+ * readers that does not exist. Arrow keys move between options, matching native
+ * radio-group behaviour.
+ *
+ * The selected pill is a sibling element rather than a background on the button,
+ * so it can animate between positions later without touching the markup.
+ */
+export function SegmentedControl<T extends string>({
+  options,
+  value,
+  onChange,
+  fill = true,
+  ariaLabel,
+  className,
+}: SegmentedControlProps<T>) {
+  const move = (dir: 1 | -1) => {
+    const i = options.findIndex((o) => o.value === value)
+    if (i === -1) return
+    // Wrap, like a native radio group.
+    onChange(options[(i + dir + options.length) % options.length].value)
+  }
+
+  return (
+    <div
+      role="radiogroup"
+      aria-label={ariaLabel}
+      onKeyDown={(e) => {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); move(1) }
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); move(-1) }
+      }}
+      className={cn(
+        'inline-flex gap-0.5 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-[3px]',
+        fill && 'w-full',
+        className,
+      )}
+    >
+      {options.map((o) => {
+        const selected = o.value === value
+        return (
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            // Only the selected option is in the tab order; arrows move within.
+            tabIndex={selected ? 0 : -1}
+            onClick={() => onChange(o.value)}
+            className={cn(
+              // h-9 inside a 3px-padded 44px-tall track keeps the whole control
+              // on the 44px tap minimum without each segment looking oversized.
+              'inline-flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-[9px] px-4 text-[13.5px] font-semibold transition-colors outline-none',
+              'focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]/55',
+              fill && 'flex-1',
+              selected
+                ? 'bg-[var(--color-brand-card)] text-[var(--color-brand-text-primary)] shadow-[var(--shadow-sm)]'
+                : 'text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)]',
+            )}
+          >
+            <span className="truncate">{o.label}</span>
+            {o.count !== undefined ? (
+              <span
+                className={cn(
+                  'font-mono-numbers text-[11px] font-semibold tabular-nums',
+                  selected
+                    ? 'text-[var(--color-brand-text-muted)]'
+                    : 'text-[var(--color-brand-text-muted)]',
+                )}
+              >
+                {o.count}
+              </span>
+            ) : null}
+          </button>
+        )
+      })}
+    </div>
+  )
+}

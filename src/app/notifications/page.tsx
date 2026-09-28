@@ -6,6 +6,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { useNotifications } from '@/hooks/useNotifications'
 import { useSmsTracking } from '@/hooks/useSmsTracking'
 import { useT } from '@/lib/i18n'
+import { Card } from '@/components/ui/card'
 
 const SEVERITY_DOT: Record<'warning' | 'info' | 'critical', string> = {
   critical: 'var(--color-brand-red)',
@@ -62,8 +63,9 @@ export default function NotificationsPage() {
         </div>
 
         {smsStatus ? (
-          <div
-            className={`flex items-center gap-2.5 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-3 ${
+          <Card
+            padding="none"
+            className={`flex items-center gap-2.5 px-4 py-3 ${
               smsStatus.connected ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-text-muted)]'
             }`}
           >
@@ -78,11 +80,11 @@ export default function NotificationsPage() {
               </p>
               <p className="text-xs text-[var(--color-brand-text-secondary)] truncate">{smsStatus.label}</p>
             </div>
-          </div>
+          </Card>
         ) : null}
 
         {notifications.length > 0 ? (
-          <ul className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] divide-y divide-[var(--color-brand-border)]">
+          <Card render={<ul />} padding="none" divide>
             {notifications.map((n) => (
               <li key={n.id} className="flex gap-3 px-4 py-3.5">
                 <span
@@ -101,12 +103,12 @@ export default function NotificationsPage() {
                 </div>
               </li>
             ))}
-          </ul>
+          </Card>
         ) : (
-          <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] py-14 text-center">
+          <Card padding="none" className="py-14 text-center">
             <Bell className="mx-auto h-7 w-7 text-[var(--color-brand-text-muted)]" />
             <p className="mt-3 text-sm text-[var(--color-brand-text-secondary)]">{t.notifications.emptyState}</p>
-          </div>
+          </Card>
         )}
       </div>
     </div>

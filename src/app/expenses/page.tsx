@@ -16,6 +16,8 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import { ExpenseFilters } from '@/components/expenses/ExpenseFilters'
 import { ExpenseDayList } from '@/components/expenses/ExpenseDayList'
 import { MonthYearPicker } from '@/components/ui/MonthYearPicker'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useT } from '@/lib/i18n'
 import { useHydrateExpenses } from '@/hooks/remote'
@@ -170,7 +172,7 @@ export default function ExpensesPage() {
       )}
 
       {/* Summary (hero) card */}
-      <div className="mx-4 rounded-[14px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-[18px] dark:bg-[linear-gradient(150deg,#1d1416,#121017)]">
+      <Card radius="none" className="mx-4 rounded-[14px] dark:bg-[linear-gradient(150deg,#1d1416,#121017)]">
         <div className="flex items-start justify-between gap-4">
           {/* Left: spent this month */}
           <div className="min-w-0">
@@ -203,14 +205,14 @@ export default function ExpensesPage() {
             </p>
           </div>
         </div>
-        <button
-          type="button"
+        <Button
+          size="cta-block"
           onClick={addExpense}
-          className="mt-4 h-11 w-full rounded-xl bg-[var(--color-brand-primary)] text-[15px] font-semibold tracking-[-0.005em] text-[var(--color-brand-on-primary)] shadow-[0_10px_24px_-10px_rgba(18,176,160,0.55)] transition-transform hover:bg-[var(--color-brand-primary-hover)] active:translate-y-px"
+          className="mt-4 font-semibold tracking-[-0.005em] shadow-[0_10px_24px_-10px_rgba(18,176,160,0.55)]"
         >
           {t.expenses.addExpenseCta}
-        </button>
-      </div>
+        </Button>
+      </Card>
 
       <div className="mt-3.5 px-[18px]">
         <ExpenseFilters

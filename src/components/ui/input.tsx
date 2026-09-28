@@ -9,7 +9,10 @@ import { isAndroid } from "@/lib/native/isNative"
  * fill) and satisfies the design-system rule that every input is h-12. The
  * default is shadcn's h-8 desktop density, kept for compact/admin surfaces.
  */
-function Input({ className, type, inputMode, onClick, size, ...props }: React.ComponentProps<"input"> & { size?: "default" | "brand" }) {
+// `size` must be Omit-ed before being redeclared: the DOM input attribute is a
+// number, so a plain intersection collapses to `number & string` = never and the
+// prop becomes unusable.
+function Input({ className, type, inputMode, onClick, size = "default", ...props }: Omit<React.ComponentProps<"input">, "size"> & { size?: "default" | "brand" }) {
   const handleClick: React.MouseEventHandler<HTMLInputElement> = (e) => {
     if ((type === 'date' || type === 'month') && 'showPicker' in e.currentTarget) {
       try { (e.currentTarget as HTMLInputElement).showPicker() } catch { /* unsupported browser */ }

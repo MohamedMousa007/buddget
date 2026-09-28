@@ -5,6 +5,8 @@ import { Calendar, Plus, Wallet, PackageOpen, X } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { AmountField } from '@/components/ui/AmountField'
 import { CurrencyField } from '@/components/ui/CurrencyField'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { PocketCard } from '@/components/features/savings-v3/PocketCard'
@@ -90,7 +92,7 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId, le
           <div>
             <label style={micro}>Pocket</label>
             {locked && selected ? (
-              <div className="mt-2 flex items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3">
+              <Card variant="elevated" padding="sm" className="mt-2 flex items-center gap-3">
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: rgba(pocketColor(selected.account), .14), color: pocketColor(selected.account) }}>
                   <SavingsAccountIcon account={selected.account} className="h-4.5 w-4.5" />
                 </span>
@@ -103,7 +105,7 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId, le
                 <button type="button" onClick={() => setLocked(false)} className="rounded-full border border-[var(--color-brand-border)] px-3 py-1.5 text-xs font-medium text-[var(--color-brand-text-secondary)]">
                   Change
                 </button>
-              </div>
+              </Card>
             ) : (
               <div className="mt-2 flex gap-3 overflow-x-auto no-scrollbar" style={{ scrollSnapType: 'x mandatory', padding: '2px 0 4px' }}>
                 {pockets.map((p) => (
@@ -137,7 +139,7 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId, le
           {noteOpen ? (
             <div className="relative">
               <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="What was it for?"
-                className="h-[46px] rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] pr-10" />
+                size="brand" className="pr-10" />
               <button type="button" onClick={() => { setNote(''); setNoteOpen(false) }} aria-label="Clear note"
                 className="absolute end-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center text-[var(--color-brand-text-muted)]">
                 <X size={16} />
@@ -152,18 +154,9 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId, le
 
         {/* footer CTA */}
         <div className="px-5 pt-2 pb-[max(20px,env(safe-area-inset-bottom))]">
-          <button
-            type="button" onClick={submit} disabled={!canSubmit}
-            className="w-full text-white"
-            style={{
-              height: 52, borderRadius: 14, fontWeight: 600, fontSize: 15,
-              background: canSubmit ? '#12B0A0' : 'var(--color-brand-elevated)',
-              color: canSubmit ? '#fff' : 'var(--color-brand-text-muted)',
-              cursor: canSubmit ? 'pointer' : 'default',
-            }}
-          >
+          <Button size="cta-block" onClick={submit} disabled={!canSubmit} className="font-semibold">
             {ctaLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </ModalShell>

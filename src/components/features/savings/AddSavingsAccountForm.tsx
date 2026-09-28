@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { SavingsProductTypePicker } from '@/components/modals/SavingsProductTypePicker'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AmountField } from '@/components/ui/AmountField'
 import { Label } from '@/components/ui/label'
@@ -193,13 +194,9 @@ export function AddSavingsAccountForm({ onDone }: AddSavingsAccountFormProps) {
         />
       </div>
 
-      <button
-        type="button"
-        onClick={submit}
-        className="w-full rounded-xl bg-[var(--color-brand-primary)] py-3 text-sm font-semibold text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)] transition-colors"
-      >
+      <Button size="cta-block" onClick={submit} className="text-sm font-semibold">
         {t.savings.createAccountButton}
-      </button>
+      </Button>
     </div>
   )
 }

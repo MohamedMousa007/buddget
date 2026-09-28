@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
+import { Button } from '@/components/ui/button'
 import { PaymentCardCarousel } from '@/components/features/payments/PaymentCardCarousel'
 import { PaymentMethodSetupSheet } from '@/components/features/payments/PaymentMethodSetupSheet'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
@@ -78,20 +79,18 @@ export function SelectPaymentMethodSheet({ open, value, paymentMethods, onSelect
 
           <div className="sheet-cta shrink-0 px-[18px] pb-[calc(16px+env(safe-area-inset-bottom))] pt-4">
             {activeIsAdd ? (
-              <button
-                type="button" onClick={() => setSetupOpen(true)}
-                className="flex h-[52px] w-full items-center justify-center rounded-[14px] bg-[var(--color-brand-primary)] text-base font-semibold text-[var(--color-brand-on-primary)]"
-              >
+              <Button size="cta-block" onClick={() => setSetupOpen(true)} className="text-base font-semibold">
                 {t.paymentMethods.addMethod}
-              </button>
+              </Button>
             ) : (
-              <button
-                type="button" onClick={() => activeMethod && choose(activeMethod.id)}
+              <Button
+                size="cta-block"
+                onClick={() => activeMethod && choose(activeMethod.id)}
                 disabled={!activeMethod}
-                className="flex h-[52px] w-full items-center justify-center rounded-[14px] bg-[var(--color-brand-primary)] text-base font-semibold text-[var(--color-brand-on-primary)] disabled:opacity-50"
+                className="text-base font-semibold"
               >
                 {t.paymentMethods.selectCard}
-              </button>
+              </Button>
             )}
           </div>
         </div>

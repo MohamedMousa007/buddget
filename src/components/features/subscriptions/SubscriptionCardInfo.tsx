@@ -1,6 +1,7 @@
 'use client'
 
 import { SubscriptionBrandIcon } from '@/components/features/subscriptions/SubscriptionBrandIcon'
+import { Badge } from '@/components/ui/badge'
 import type { SubscriptionBrand } from '@/lib/constants/subscriptionCatalog'
 import type { Dictionary } from '@/lib/i18n/types'
 import type { Subscription } from '@/lib/store/types'
@@ -45,19 +46,13 @@ export function SubscriptionCardInfo({
             ) : null}
           </span>
           {sub.status === 'trial' ? (
-            <span className="text-[10px] uppercase px-2 py-0.5 rounded-full bg-[var(--color-brand-card)] border border-[var(--color-brand-border)]">
-              {t.trial}
-            </span>
+            <Badge variant="muted" size="xs">{t.trial}</Badge>
           ) : null}
           {sub.status === 'paused' ? (
-            <span className="text-[10px] uppercase px-2 py-0.5 rounded-full bg-[var(--color-brand-card)] border border-[var(--color-brand-border)]">
-              {t.paused}
-            </span>
+            <Badge variant="muted" size="xs">{t.paused}</Badge>
           ) : null}
           {paidThisCycle ? (
-            <span className="text-[10px] uppercase px-2 py-0.5 rounded-full bg-[var(--color-brand-green)]/10 border border-[var(--color-brand-green)]/30 text-[var(--color-brand-green)]">
-              {t.paidThisCycle}
-            </span>
+            <Badge variant="positive" size="xs">{t.paidThisCycle}</Badge>
           ) : null}
         </div>
         <p className="text-xs text-[var(--color-brand-text-muted)] mt-0.5 truncate">

@@ -4,6 +4,7 @@ import { Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import type { Goal } from '@/lib/store/types'
 import type { Dictionary } from '@/lib/i18n/types'
 import { GoalProgressBar } from '@/components/features/goals/GoalProgressBar'
+import { Badge } from '@/components/ui/badge'
 
 type Props = {
   goal: Goal
@@ -41,9 +42,7 @@ export function GoalCardTop({
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-semibold text-[var(--color-brand-text-primary)] truncate">{goal.name}</span>
               {goal.status === 'achieved' ? (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                  {t.achieved}
-                </span>
+                <Badge variant="positive" size="xs">{t.achieved}</Badge>
               ) : null}
             </div>
             {!compact && goal.status === 'active' ? (

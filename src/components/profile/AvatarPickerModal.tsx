@@ -8,6 +8,8 @@ import { isValidImageDataUrl } from '@/lib/profile/validImageDataUrl'
 import { cn } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
 import { useScrollLock } from '@/lib/ui/scrollLock'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { useAlert } from '@/components/ui/dialog/DialogProvider'
 import type { FinanceStore } from '@/lib/store/types'
 
@@ -81,8 +83,9 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
         onClick={handleClose}
         aria-hidden
       />
-      <div
-        className="relative z-10 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl max-w-lg w-full mx-4 p-6 max-h-[80vh] overflow-y-auto"
+      <Card
+        padding="none"
+        className="relative z-10 max-w-lg w-full mx-4 p-6 max-h-[80vh] overflow-y-auto"
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
@@ -200,22 +203,14 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
         )}
 
         <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-[var(--color-brand-border)]">
-          <button
-            type="button"
-            onClick={handleClose}
-            className="px-4 py-2 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
-          >
+          <Button variant="outline" size="touch" onClick={handleClose} className="text-sm">
             {t.common.neverMind}
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            className="px-4 py-2 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] text-sm font-semibold transition-colors"
-          >
+          </Button>
+          <Button size="touch" onClick={handleSave} className="text-sm font-semibold">
             {t.profile.avatarUseThis}
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
     </div>
   )
 }

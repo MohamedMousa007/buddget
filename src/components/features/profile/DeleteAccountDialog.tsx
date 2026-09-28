@@ -5,6 +5,8 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Trash2, X, AlertTriangle } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { useScrollLock } from '@/lib/ui/scrollLock'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 export interface DeleteAccountDialogProps {
   open: boolean
@@ -79,7 +81,7 @@ export function DeleteAccountDialog({ open, onClose, onConfirm, inProgress, erro
             <label className="block text-xs font-medium text-[var(--color-brand-text-muted)] mb-2">
               {t.profile.deleteAccountConfirmPrompt}
             </label>
-            <input
+            <Input
               type="text"
               value={typed}
               onChange={(e) => setTyped(e.target.value)}
@@ -87,7 +89,7 @@ export function DeleteAccountDialog({ open, onClose, onConfirm, inProgress, erro
               autoComplete="off"
               spellCheck={false}
               placeholder={expected}
-              className="w-full h-11 px-3 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] outline-none transition-colors focus:border-[var(--color-brand-red)] focus:ring-1 focus:ring-[var(--color-brand-red)] text-sm font-mono"
+              size="brand" className="text-[var(--color-brand-text-primary)] focus:border-[var(--color-brand-red)] focus-visible:ring-[var(--color-brand-red)]/40 text-sm font-mono"
             />
 
             {error ? (
@@ -95,23 +97,25 @@ export function DeleteAccountDialog({ open, onClose, onConfirm, inProgress, erro
             ) : null}
 
             <div className="mt-5 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="touch"
                 onClick={handleClose}
                 disabled={inProgress}
-                className="h-11 px-4 rounded-xl border border-[var(--color-brand-border)] text-sm font-medium text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors disabled:opacity-50"
+                className="text-sm font-medium"
               >
                 {t.profile.deleteAccountCancel}
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="destructive-solid"
+                size="touch"
                 onClick={() => void onConfirm()}
                 disabled={!canConfirm}
-                className="h-11 px-4 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors inline-flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="text-sm font-semibold disabled:cursor-not-allowed"
               >
                 <Trash2 className="h-4 w-4" />
                 {inProgress ? t.profile.deleteAccountInProgress : t.profile.deleteAccountConfirmButton}
-              </button>
+              </Button>
             </div>
           </motion.div>
         </div>

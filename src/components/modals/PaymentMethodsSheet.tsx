@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { X, Plus, Pencil, Star, Trash2 } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
+import { Button } from '@/components/ui/button'
 import { PaymentCardCarousel } from '@/components/features/payments/PaymentCardCarousel'
 import { PaymentMethodSetupSheet } from '@/components/features/payments/PaymentMethodSetupSheet'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
@@ -101,13 +102,10 @@ export function PaymentMethodsSheet() {
           )}
 
           <div className="sheet-cta shrink-0 px-[18px] pb-[calc(16px+env(safe-area-inset-bottom))] pt-4">
-            <button
-              type="button" onClick={openAdd}
-              className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-brand-primary)] text-base font-semibold text-[var(--color-brand-on-primary)]"
-            >
+            <Button size="cta-block" onClick={openAdd} className="text-base font-semibold">
               <Plus className="h-5 w-5" />
               {t.paymentMethods.addMethod}
-            </button>
+            </Button>
           </div>
 
           {menuCard && (

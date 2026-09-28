@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { Bug, Lightbulb, Send, CheckCircle } from 'lucide-react'
 import { SettingsSubPageShell } from '@/components/features/settings/SettingsSubPageShell'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { useT } from '@/lib/i18n'
 
 type FeedbackType = 'bug' | 'feature'
@@ -79,7 +82,7 @@ export default function SettingsFeedbackPage() {
             <label className="text-xs font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
               {t.settings.feedback.labelTitle}
             </label>
-            <input
+            <Input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -87,7 +90,7 @@ export default function SettingsFeedbackPage() {
               required
               minLength={3}
               maxLength={200}
-              className="w-full h-11 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-4 text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus:outline-none focus:border-[var(--color-brand-primary)] transition-colors"
+              size="brand"
             />
           </div>
 
@@ -95,26 +98,22 @@ export default function SettingsFeedbackPage() {
             <label className="text-xs font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
               {t.settings.feedback.labelDescription}
             </label>
-            <textarea
+            <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={t.settings.feedback.placeholderDescription}
               rows={5}
               maxLength={5000}
-              className="w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-4 py-3 text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus:outline-none focus:border-[var(--color-brand-red)] transition-colors resize-none"
+              className="resize-none rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-4 py-3 dark:bg-[var(--color-brand-elevated)]"
             />
           </div>
 
           {error && <p className="text-sm text-[var(--color-brand-red)]">{error}</p>}
 
-          <button
-            type="submit"
-            disabled={loading || title.length < 3}
-            className="flex items-center gap-2 h-11 w-full justify-center rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] text-sm font-semibold transition-colors disabled:opacity-50"
-          >
+          <Button type="submit" size="cta-block" disabled={loading || title.length < 3} className="font-semibold">
             <Send className="w-4 h-4" />
             {loading ? t.settings.feedback.submitting : t.settings.feedback.submit}
-          </button>
+          </Button>
         </form>
       )}
     </SettingsSubPageShell>

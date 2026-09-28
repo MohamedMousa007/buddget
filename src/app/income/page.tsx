@@ -9,6 +9,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { MonthYearPicker } from '@/components/ui/MonthYearPicker'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { RecurringIncomeCard } from '@/components/features/income/RecurringIncomeCard'
 import { RecurringIncomeCarousel } from '@/components/features/income/RecurringIncomeCarousel'
 import { SwipeToDelete, type SwipeSide } from '@/components/expenses/SwipeToDelete'
@@ -30,6 +31,9 @@ import type { IncomeSource, IncomeSourceType } from '@/lib/store/types'
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 const MON_TITLE = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const REALIZED_EVENT = new Set(['confirmed', 'late', 'partial'])
+/** "Money arrived" green. Button has no green variant — the semantic is local to paydays. */
+const CONFIRM_GREEN =
+  'rounded-[14px] bg-[var(--color-brand-green)] text-sm font-bold text-white hover:bg-[var(--color-brand-green-hover)]'
 const todayISO = () => localTodayISO()
 
 function fmtDay(iso: string): string {
@@ -247,13 +251,9 @@ export default function IncomePage() {
           {toCome > 0 ? <span>{t.income.toCome(`${fmtNum(toCome)} ${base}`)}</span> : null}
         </div>
 
-        <button
-          type="button"
-          onClick={openAddIncome}
-          className="mt-4 w-full rounded-[14px] bg-[var(--color-brand-primary)] py-3 text-sm font-bold text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
-        >
+        <Button size="cta-block" onClick={openAddIncome} className="mt-4 rounded-[14px] text-sm font-bold">
           {t.income.addIncomeCta}
-        </button>
+        </Button>
       </div>
 
       {/* Recurring carousel */}
@@ -312,68 +312,70 @@ export default function IncomePage() {
                     ) : isRealizedOccurrence(sel) ? (
                       // Settled → Delete the money + Edit the amount.
                       <div className="grid w-full grid-cols-2 gap-2">
-                        <button
-                          type="button"
+                        <Button
+                          variant="destructive-solid"
+                          size="touch"
                           onClick={() => { deleteIncomeEvent(sel.eventId!); setSelected(null) }}
-                          className="rounded-[14px] bg-[var(--color-brand-red)] py-2.5 text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-red-hover)]"
+                          className="rounded-[14px] text-sm font-bold"
                         >
                           {t.common.delete}
-                        </button>
-                        <button
-                          type="button"
+                        </Button>
+                        <Button
+                          size="touch"
                           onClick={() => openAmountReceived(source.id, sel.key)}
-                          className="rounded-[14px] bg-[var(--color-brand-green)] py-2.5 text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-green-hover)]"
+                          className={CONFIRM_GREEN}
                         >
                           {t.common.edit}
-                        </button>
+                        </Button>
                       </div>
                     ) : sel.status === 'missed' ? (
                       // Marked/auto missed. An old payday (naturally missed by date) can only
                       // ever be Received — one full-width CTA. A future/due one is reversible:
                       // Awaiting un-marks it (deletes the missed event) back to awaiting/late.
                       pendingStatus(sel.dueDate, todayISO(), missedAfterDaysFor(source)) === 'missed' || !sel.eventId ? (
-                        <button
-                          type="button"
+                        <Button
+                          size="touch"
                           onClick={() => openAmountReceived(source.id, sel.key)}
-                          className="w-full rounded-[14px] bg-[var(--color-brand-green)] py-2.5 text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-green-hover)]"
+                          className={`w-full ${CONFIRM_GREEN}`}
                         >
                           {t.income.receivedBtn}
-                        </button>
+                        </Button>
                       ) : (
                         <div className="grid w-full grid-cols-2 gap-2">
-                          <button
-                            type="button"
+                          <Button
+                            variant="ghost"
+                            size="touch"
                             onClick={() => { deleteIncomeEvent(sel.eventId!); setSelected(null) }}
-                            className="rounded-[14px] bg-white/[0.08] py-2.5 text-sm font-bold text-white/75 transition-colors hover:bg-white/[0.12]"
+                            className="rounded-[14px] bg-white/[0.08] text-sm font-bold text-white/75 hover:bg-white/[0.12] hover:text-white/75 dark:hover:bg-white/[0.12]"
                           >
                             {t.income.awaitingBtn}
-                          </button>
-                          <button
-                            type="button"
+                          </Button>
+                          <Button
+                            size="touch"
                             onClick={() => openAmountReceived(source.id, sel.key)}
-                            className="rounded-[14px] bg-[var(--color-brand-green)] py-2.5 text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-green-hover)]"
+                            className={CONFIRM_GREEN}
                           >
                             {t.income.receivedBtn}
-                          </button>
+                          </Button>
                         </div>
                       )
                     ) : (
                       // Open (awaiting/late) → skip it (Missed, solid red CTA) or log money (Received).
                       <div className="grid w-full grid-cols-2 gap-2">
-                        <button
-                          type="button"
+                        <Button
+                          size="touch"
                           onClick={() => markPaydayMissed(source, sel.dueDate)}
-                          className="rounded-[14px] bg-[var(--color-brand-primary)] py-2.5 text-sm font-bold text-[var(--color-brand-on-primary)] transition-colors hover:bg-[var(--color-brand-primary-hover)]"
+                          className="rounded-[14px] text-sm font-bold"
                         >
                           {t.income.missedBtn}
-                        </button>
-                        <button
-                          type="button"
+                        </Button>
+                        <Button
+                          size="touch"
                           onClick={() => openAmountReceived(source.id, sel.key)}
-                          className="rounded-[14px] bg-[var(--color-brand-green)] py-2.5 text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-green-hover)]"
+                          className={CONFIRM_GREEN}
                         >
                           {t.income.receivedBtn}
-                        </button>
+                        </Button>
                       </div>
                     )
                   }

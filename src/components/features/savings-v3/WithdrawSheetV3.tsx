@@ -5,6 +5,7 @@ import { Calendar, Plus, ShoppingCart, CreditCard, Gem, TrendingUp, ArrowRight, 
 import { ModalShell } from '@/components/modals/ModalShell'
 import { AmountField } from '@/components/ui/AmountField'
 import { CurrencyField } from '@/components/ui/CurrencyField'
+import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useDebtTabData } from '@/hooks/useDebtTabData'
@@ -187,7 +188,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
           </div>
 
           {from && (
-            <div className="flex items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3">
+            <Card variant="elevated" padding="sm" className="flex items-center gap-3">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: rgba(pocketColor(from.account), .14), color: pocketColor(from.account) }}>
                 <SavingsAccountIcon account={from.account} className="h-4.5 w-4.5" />
               </span>
@@ -197,7 +198,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
                   Free {fmtNum(free)} of {fmtNum(from.account.currentBalance)} {from.account.currency}
                 </p>
               </div>
-            </div>
+            </Card>
           )}
 
           {/* Reason 2x2 */}
@@ -223,7 +224,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
 
           {/* Which debt? (screen 07) */}
           {!moveOn && reason === 'debt' && (
-            <div className="rounded-2xl border border-[var(--color-brand-border)] p-3">
+            <Card padding="sm">
               <p className="mb-2 text-[13px] font-bold text-[var(--color-brand-text-primary)]">Which debt?</p>
               {debtChips.length === 0 ? (
                 <p className="text-xs text-[var(--color-brand-text-muted)]">No open debts to pay.</p>
@@ -245,12 +246,12 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
                   })}
                 </div>
               )}
-            </div>
+            </Card>
           )}
 
           {/* Which asset? (screen 08) */}
           {!moveOn && reason === 'transfer' && (
-            <div className="rounded-2xl border border-[var(--color-brand-border)] p-3">
+            <Card padding="sm">
               <p className="mb-2 text-[13px] font-bold text-[var(--color-brand-text-primary)]">Which asset?</p>
               <div className="flex gap-2 overflow-x-auto no-scrollbar">
                 {INVEST_CLASSES.map((c) => {
@@ -270,7 +271,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
                   )
                 })}
               </div>
-            </div>
+            </Card>
           )}
 
           {/* OR + move */}
@@ -309,7 +310,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
           {noteOpen ? (
             <div className="relative">
               <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="What was it for?"
-                className="h-[46px] rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] pr-10" />
+                size="brand" className="pr-10" />
               <button type="button" onClick={() => { setNote(''); setNoteOpen(false) }} aria-label="Clear note"
                 className="absolute end-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center text-[var(--color-brand-text-muted)]"><X size={16} /></button>
             </div>

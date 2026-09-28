@@ -3,6 +3,8 @@
 import { useMemo, useState } from 'react'
 import { X, Search, Check, Plus } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useT } from '@/lib/i18n'
 import { PAYMENT_BRANDS, PAYMENT_TYPE_META, brandIssuesType } from '@/lib/payment/paymentMethodDefaults'
 import { rgba } from '@/lib/utils/color'
@@ -76,10 +78,10 @@ export function ProviderPickerSheet({
         </div>
         <div className="relative mb-2.5 shrink-0">
           <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-brand-text-muted)]" />
-          <input
+          <Input
             value={query} onChange={(e) => setQuery(e.target.value)}
             placeholder={t.paymentMethods.searchProviderPlaceholder}
-            className="h-11 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-bg)] ps-10 pe-3 text-[15px] text-[var(--color-brand-text-primary)] text-start outline-none"
+            className="h-12 rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-bg)] ps-10 pe-3 text-[15px] text-[var(--color-brand-text-primary)] text-start"
           />
         </div>
         <div className="native-scroll -mx-1 flex max-h-[52vh] min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-1">
@@ -119,13 +121,13 @@ export function ProviderPickerSheet({
             )
           })}
         </div>
-        <button
-          type="button" onClick={() => onCustom(query)}
-          className="sheet-cta mt-2.5 flex h-[50px] w-full shrink-0 items-center justify-center gap-2 rounded-[13px] border border-[var(--color-brand-primary)]/30 bg-[var(--color-brand-primary)]/10 text-sm font-semibold text-[#FF5C5C]"
+        <Button
+          variant="ghost" size="cta-block" onClick={() => onCustom(query)}
+          className="sheet-cta mt-2.5 shrink-0 border-[var(--color-brand-primary)]/30 bg-[var(--color-brand-primary)]/10 text-sm font-semibold text-[var(--color-brand-primary-ink)]"
         >
           <Plus className="h-[18px] w-[18px]" />
           {customLabel}
-        </button>
+        </Button>
       </div>
     </ModalShell>
   )

@@ -7,6 +7,9 @@ import { X, ArrowLeft, ChevronDown, CreditCard, Lock } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { CurrencySheet } from '@/components/ui/CurrencySheet'
 import { AmountField } from '@/components/ui/AmountField'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { cardGradient, TypeGlyph } from '@/components/features/payments/PaymentCardCarousel'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { ProviderPickerSheet } from '@/components/features/payments/ProviderPickerSheet'
@@ -394,11 +397,11 @@ export function PaymentMethodSetupSheet({
                 </div>
                 {disc === 'last4' && (
                   <>
-                    <input
+                    <Input
                       value={last4}
                       onChange={(e) => setLast4(e.target.value.replace(/\D/g, '').slice(0, 4))}
                       dir="ltr" inputMode="numeric" pattern="[0-9]*" maxLength={4} placeholder="e.g. 1234"
-                      className="mt-2.5 h-[52px] w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 font-mono-numbers text-[15px] tracking-[0.1em] text-[var(--color-brand-text-primary)] text-start outline-none"
+                      size="brand" className="mt-2.5 font-mono-numbers text-[15px] tracking-[0.1em] text-[var(--color-brand-text-primary)] text-start"
                     />
                     <div className="mt-2 px-0.5 text-[11.5px] text-[var(--color-brand-text-muted)]">
                       {t.paymentMethods.last4Help}
@@ -406,11 +409,11 @@ export function PaymentMethodSetupSheet({
                   </>
                 )}
                 {disc === 'tag' && (
-                  <input
+                  <Input
                     value={tag}
                     onChange={(e) => setTag(e.target.value)}
                     maxLength={18} placeholder={t.paymentMethods.tagPlaceholder}
-                    className="mt-2.5 h-[52px] w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-[15px] text-[var(--color-brand-text-primary)] text-start outline-none"
+                    size="brand" className="mt-2.5 text-[15px] text-[var(--color-brand-text-primary)] text-start"
                   />
                 )}
               </div>
@@ -434,7 +437,7 @@ export function PaymentMethodSetupSheet({
               </div>
 
               {/* Set as default */}
-              <div className="flex items-center justify-between rounded-[14px] border border-[#24242f] bg-[var(--color-brand-elevated)] px-4 py-3.5">
+              <Card variant="elevated" radius="sm" padding="none" className="flex items-center justify-between px-4 py-3.5">
                 <span className="text-start">
                   <span className="block text-sm font-semibold text-[var(--color-brand-text-secondary)]">
                     {t.paymentMethods.setDefault}
@@ -451,22 +454,14 @@ export function PaymentMethodSetupSheet({
                 >
                   <span className="block h-[22px] w-[22px] rounded-full bg-white" />
                 </button>
-              </div>
+              </Card>
             </div>
           </div>
 
-          <div className="sheet-cta shrink-0 border-t border-[#1c1c26] px-4 pb-[calc(16px+env(safe-area-inset-bottom))] pt-3">
-            <button
-              type="button" onClick={handleSave} disabled={!canSave}
-              className={cn(
-                'h-[52px] w-full rounded-[14px] text-base font-semibold',
-                canSave
-                  ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
-                  : 'cursor-not-allowed bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]',
-              )}
-            >
+          <div className="sheet-cta shrink-0 border-t border-[var(--color-brand-border)] px-4 pb-[calc(16px+env(safe-area-inset-bottom))] pt-3">
+            <Button size="cta-block" onClick={handleSave} disabled={!canSave} className="text-base font-semibold">
               {t.paymentMethods.saveMethod}
-            </button>
+            </Button>
           </div>
         </div>
       </ModalShell>

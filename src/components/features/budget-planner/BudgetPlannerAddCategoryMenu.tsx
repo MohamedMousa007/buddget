@@ -9,6 +9,8 @@ import {
   type BudgetPlannerPresetCategory,
 } from '@/lib/budget/budgetPlannerPresets'
 import { BudgetPlannerEmojiPicker } from '@/components/features/budget-planner/BudgetPlannerEmojiPicker'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import type { BudgetPlanCategory } from '@/lib/store/types'
@@ -92,14 +94,14 @@ export function BudgetPlannerAddCategoryMenu({
         <div className="px-3 pt-2 pb-1">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--color-brand-text-muted)]" />
-            <input
+            <Input
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value)
                 setCustomNameOverride(null)
               }}
               placeholder="Search categories..."
-              className="w-full rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] pl-8 pr-3 py-1.5 text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-focus)]/40"
+              size="brand" className="pl-8 pr-3 text-sm text-[var(--color-brand-text-primary)]"
               autoFocus
             />
           </div>
@@ -146,21 +148,22 @@ export function BudgetPlannerAddCategoryMenu({
               onChange={setCustomIcon}
               ariaLabel={labels.emojiPickerLabel}
             />
-            <input
+            {/* Height matches the h-9 emoji-picker trigger beside it, so the row stays aligned. */}
+            <Input
               value={customName}
               onChange={(e) => setCustomNameOverride(e.target.value)}
               placeholder={labels.categoryNameExample}
-              className="min-w-0 flex-1 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1.5 text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)]"
+              className="h-9 min-w-0 flex-1 border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-sm text-[var(--color-brand-text-primary)]"
             />
           </div>
-          <button
-            type="button"
+          <Button
+            size="cta-block"
             onClick={handleCustomAdd}
             disabled={!customName.trim() || categoryNameAlreadyInPlan(customName.trim(), categories)}
-            className="w-full rounded-xl bg-[var(--color-brand-primary)] py-2 text-sm font-semibold text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)] disabled:opacity-40"
+            className="text-sm font-semibold"
           >
             {labels.addCustomCategory}
-          </button>
+          </Button>
         </div>
       </PopoverContent>
     </Popover>

@@ -18,6 +18,9 @@ import { registerBackGuard } from '@/lib/navigation/backGuard'
 import { newClientId } from '@/lib/store/useFinanceStore'
 import { usePendingAiJobs, savePendingMedia, deletePendingMedia } from '@/lib/store/usePendingAiJobs'
 import type { Currency, ExpenseCategory } from '@/lib/store/types'
+import { useBuddgyMoodWhile, useBuddgyMoodOnce } from '@/lib/ai/useBuddgyMood'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   normaliseReceipt,
   reconcileMissingItems,
@@ -70,6 +73,11 @@ async function queueReceiptCapture(dataUrl: string): Promise<boolean> {
 
 export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptScanSheetProps) {
   const [state, setState] = useState<ScanState>('idle')
+
+  // Buddgy reflects the OCR pipeline: scanning while it reads, then the outcome.
+  useBuddgyMoodWhile('scanning', state === 'scanning' || state === 'parsing')
+  useBuddgyMoodOnce('done', state === 'result')
+  useBuddgyMoodOnce('error', state === 'error' || state === 'notReceipt')
   const [photos, setPhotos] = useState<CapturedImage[]>([])
   const [preview, setPreview] = useState<string | null>(null)
   const [result, setResult] = useState<ScannedReceipt | null>(null)
@@ -288,13 +296,13 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
             you&apos;re back online, a chip will appear at the top of the app — tap it
             to finish adding this receipt.
           </p>
-          <button
+          <Button
             type="button"
             onClick={onClose}
-            className="mt-2 min-h-[44px] rounded-xl bg-[var(--color-brand-primary)] px-4 py-2 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
+            size="touch" className="mt-2 hover:bg-[var(--color-brand-primary-hover)]"
           >
             Done
-          </button>
+          </Button>
         </Centered>
       ) : null}
 
@@ -318,13 +326,13 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
               receipt, or pick a clearer photo.
             </p>
             <div className="mt-1 flex flex-col items-stretch gap-2">
-              <button
+              <Button
                 type="button"
                 onClick={() => { reset(); void runScan('camera') }}
-                className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-primary)] px-5 py-2.5 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
+                size="touch" className="text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
               >
                 <Camera className="h-4 w-4" /> Scan again
-              </button>
+              </Button>
               <button
                 type="button"
                 onClick={() => { reset(); void runScan('gallery') }}
@@ -354,21 +362,21 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
             <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">Let&apos;s try that again</p>
             <p className="max-w-72 text-xs text-[var(--color-brand-text-muted)] text-center">{error}</p>
             {photos.length > 0 ? (
-              <button
+              <Button
                 type="button"
                 onClick={() => void submitPhotos(photos)}
-                className="mt-1 inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[var(--color-brand-primary)] px-5 py-2.5 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
+                size="touch" className="mt-1 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
               >
                 <RefreshCcw className="h-4 w-4" /> Try again
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button
                 type="button"
                 onClick={() => void runScan('camera')}
-                className="mt-1 inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[var(--color-brand-primary)] px-5 py-2.5 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
+                size="touch" className="mt-1 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
               >
                 <RefreshCcw className="h-4 w-4" /> Scan again
-              </button>
+              </Button>
             )}
           </Centered>
         </div>
@@ -394,13 +402,13 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
           <Camera className="h-8 w-8 text-[var(--color-brand-text-muted)]" />
           <p className="text-sm text-[var(--color-brand-text-secondary)]">Scan a receipt to add it as an expense.</p>
           <div className="flex gap-2">
-            <button
+            <Button
               type="button"
               onClick={() => void runScan('camera')}
-              className="flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[var(--color-brand-primary)] px-4 py-2.5 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
+              size="touch" className="text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
             >
               <Camera className="h-4 w-4" /> Scan
-            </button>
+            </Button>
             <button
               type="button"
               onClick={() => void runScan('gallery')}
@@ -516,13 +524,13 @@ function ResultView({
       <ReceiptBreakdown result={result} onChange={onChange} />
 
       <div className="mt-4 flex flex-col gap-2">
-        <button
+        <Button
           type="button"
           onClick={onConfirm}
-          className="flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-primary)] px-4 py-3 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
+          size="cta-block" className="text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
         >
           <Check className="h-4 w-4" /> Save expense
-        </button>
+        </Button>
         <button
           type="button"
           onClick={onRescan}

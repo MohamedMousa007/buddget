@@ -22,6 +22,13 @@ export * from '@/components/ui/dropdown-menu'
 export * from '@/components/ui/scroll-area'
 
 // ── ui composites ───────────────────────────────────────────────────────────
+// ── surfaces & layout primitives (added with the teal revamp) ───────────────
+export { Card } from '@/components/ui/card'
+export { BuddgyIcon } from '@/components/ai/BuddgyIcon'
+export { SegmentedControl } from '@/components/ui/SegmentedControl'
+export { StatTile } from '@/components/ui/StatTile'
+export { PromptBanner } from '@/components/ui/PromptBanner'
+
 export { AmountField } from '@/components/ui/AmountField'
 export { CardActionMenu } from '@/components/ui/CardActionMenu'
 export { ColorSwatchRow } from '@/components/ui/ColorSwatchRow'

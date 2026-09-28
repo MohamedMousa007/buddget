@@ -5,6 +5,7 @@ import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { AmountField } from '@/components/ui/AmountField'
+import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -119,14 +120,15 @@ export function HouseholdRentSheet() {
           <Switch checked={utilitiesIncluded} onCheckedChange={setUtilitiesIncluded} />
         </label>
 
-        <button
+        <Button
           type="button"
           onClick={handleSave}
           disabled={!canSave}
-          className="w-full h-11 rounded-xl bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)] text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--color-brand-primary-hover)] transition-colors"
+          size="touch"
+          className="w-full text-sm font-semibold"
         >
           {t.onboarding.householdSave}
-        </button>
+        </Button>
       </div>
     </ModalShell>
   )

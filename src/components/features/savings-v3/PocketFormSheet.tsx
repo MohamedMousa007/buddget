@@ -5,6 +5,8 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { AmountField } from '@/components/ui/AmountField'
 import { CurrencyField } from '@/components/ui/CurrencyField'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { ColorSwatchRow } from '@/components/ui/ColorSwatchRow'
@@ -126,7 +128,7 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
             <div>
               <label style={micro}>Last 4 digits</label>
               <Input value={last4} onChange={(e) => setLast4(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="2016" inputMode="numeric"
-                className="mt-2 h-12 rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] font-mono-numbers" />
+                size="brand" className="mt-2 font-mono-numbers" />
             </div>
           )}
 
@@ -134,21 +136,21 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
             <div>
               <label style={micro}>Matures on</label>
               <Input type="date" value={maturity} onChange={(e) => setMaturity(e.target.value)}
-                className="mt-2 h-12 rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]" />
+                size="brand" className="mt-2" />
             </div>
           )}
 
           <div>
             <label style={micro}>Pocket name</label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={def.label}
-              className="mt-2 h-12 rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]" />
+              size="brand" className="mt-2" />
           </div>
 
           <div className="flex gap-3">
             <div className="flex-1">
               <label style={micro}>What&apos;s in it now</label>
               <AmountField value={balance} onChange={setBalance} currency={currency} placeholder="0.00"
-                className="mt-2 h-12 rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] font-mono-numbers px-3" />
+                className="mt-2 h-12 rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 font-mono-numbers" />
             </div>
             <div style={{ width: 104 }}>
               <label style={micro}>Currency</label>
@@ -170,9 +172,9 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
         </div>
 
         <div className="px-5 pt-2 pb-[max(20px,env(safe-area-inset-bottom))]">
-          <button type="button" onClick={create} className="w-full text-white" style={{ height: 52, borderRadius: 14, background: '#12B0A0', fontWeight: 600, fontSize: 15 }}>
+          <Button size="cta-block" onClick={create} className="font-semibold">
             Create pocket
-          </button>
+          </Button>
         </div>
       </div>
     </ModalShell>
@@ -181,14 +183,14 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
 
 function ToggleRow({ title, sub, on, onToggle }: { title: string; sub: string; on: boolean; onToggle: (v: boolean) => void }) {
   return (
-    <div role="button" tabIndex={0} onClick={() => onToggle(!on)}
-      className="flex w-full cursor-pointer items-center justify-between rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3.5 text-left">
+    <Card variant="elevated" padding="none" role="button" tabIndex={0} onClick={() => onToggle(!on)}
+      className="flex w-full cursor-pointer items-center justify-between p-3.5 text-left">
       <div>
         <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{title}</p>
         <p className="text-xs text-[var(--color-brand-text-muted)]">{sub}</p>
       </div>
       {/* Canonical app switch; row handles the tap so the thumb is display-only. */}
       <Switch checked={on} onCheckedChange={onToggle} className="pointer-events-none shrink-0" />
-    </div>
+    </Card>
   )
 }

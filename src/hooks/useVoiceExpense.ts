@@ -26,6 +26,7 @@ import { speak, stopSpeaking } from '@/lib/voice/speak'
 import { isOnline } from '@/hooks/useNetworkStatus'
 import { isNative } from '@/lib/native/isNative'
 import { usePendingAiJobs, savePendingMedia, deletePendingMedia } from '@/lib/store/usePendingAiJobs'
+import { useBuddgyMoodWhile, useBuddgyMoodOnce } from '@/lib/ai/useBuddgyMood'
 
 export type VoiceState =
   | 'idle'
@@ -169,6 +170,12 @@ export function useVoiceExpense(): UseVoiceCommandResult {
   const abortRef = useRef<AbortController | null>(null)
 
   const [state, setState] = useState<VoiceState>('idle')
+
+  // Buddgy mirrors what the mic is doing. Bound declaratively so an unmount
+  // mid-recording releases the mood instead of freezing the orb.
+  useBuddgyMoodWhile('listening', state === 'recording')
+  useBuddgyMoodWhile('thinking', state === 'processing')
+  useBuddgyMoodOnce('error', state === 'error')
   const [response, setResponse] = useState<AIResponse | null>(null)
   /** Editable copy of the extracted add-actions shown in the recap. */
   const [draftActions, setDraftActions] = useState<AIActionItem[]>([])

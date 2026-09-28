@@ -8,17 +8,18 @@ import { EXPENSE_CATEGORY_GRID } from '@/lib/constants/categoryGrid'
 import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
 import { useT, useLocale } from '@/lib/i18n'
 import { UnifiedDatePicker, formatDatePillLabel } from '@/components/ui/UnifiedDatePicker'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { CurrencyField } from '@/components/ui/CurrencyField'
 import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
+import { cn } from '@/lib/utils'
 import { rgba } from '@/lib/utils/color'
 import { useNumberPad } from '@/components/ui/useNumberPad'
 import { useModalTitleId } from '@/components/modals/ModalShell'
 
 const HIDE_SCROLL = '[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
 
-// shared surface/input recipes — all theme-driven via brand tokens
-const INPUT =
-  'h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-start text-base font-normal text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus:outline-none focus:border-[var(--color-brand-focus)]'
 
 function Portal({ children }: { children: React.ReactNode }) {
   if (typeof document === 'undefined') return null
@@ -201,7 +202,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
           {/* description */}
           <div>
             <label htmlFor="ef-description" className={`block ${microLabel} mb-2`}>{t.expenseForm.description}</label>
-            <input
+            <Input
               id="ef-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -212,7 +213,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
               onCompositionUpdate={(e) => setDescription(e.currentTarget.value)}
               onCompositionEnd={(e) => setDescription(e.currentTarget.value)}
               placeholder={t.expenseForm.descriptionPlaceholder}
-              className={INPUT}
+              size="brand"
             />
           </div>
 
@@ -282,12 +283,17 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
               </div>
             </div>
             {nonSpendSelected ? (
-              <div className="mt-3 flex items-start gap-2.5 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2.5">
+              <Card
+                variant="elevated"
+                radius="sm"
+                padding="none"
+                className="mt-3 flex items-start gap-2.5 px-3 py-2.5"
+              >
                 <Info className="mt-px w-4 h-4 shrink-0 text-[var(--color-brand-text-muted)]" />
                 <span className="text-start text-xs font-medium leading-[1.4] text-[var(--color-brand-text-secondary)]">
                   {t.expenseForm.nonSpendHint}
                 </span>
-              </div>
+              </Card>
             ) : null}
           </div>
 
@@ -311,7 +317,12 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
 
           {/* BNPL: split this purchase into an installment plan */}
           {mode === 'add' && installment?.isBnplPurchase ? (
-            <div className="rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/40 p-3">
+            <Card
+              variant="elevated"
+              radius="sm"
+              padding="sm"
+              className="bg-[var(--color-brand-elevated)]/40"
+            >
               <button
                 type="button"
                 onClick={() => installment.setEnabled(!installment.enabled)}
@@ -350,11 +361,11 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                     <span className="mb-1 block text-xs font-medium text-[var(--color-brand-text-muted)]">
                       {t.expenseForm.installmentFirstDue}
                     </span>
-                    <input
+                    <Input
                       type="date"
                       value={installment.firstDue}
                       onChange={(e) => installment.setFirstDue(e.target.value)}
-                      className="w-full rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-sm text-[var(--color-brand-text-primary)]"
+                      size="brand" className={cn('rounded-lg px-3 text-sm')}
                     />
                   </label>
                   <PaymentMethodPicker
@@ -365,7 +376,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                   />
                 </div>
               ) : null}
-            </div>
+            </Card>
           ) : null}
 
           {/* reversal audit line — charged vs refunded/declined date */}
@@ -389,12 +400,12 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
           <div>
             {noteOpen ? (
               <div className="relative">
-                <input
+                <Input
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder={t.expenseForm.notePlaceholder}
                   aria-label={t.expenseForm.addNote}
-                  className={INPUT}
+                  size="brand"
                   style={{ paddingBlock: 0, paddingInline: '14px 46px' }}
                 />
                 <button
@@ -432,18 +443,19 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                 : t.expenseForm.cueDescription}
             </p>
           ) : null}
-          <button
+          <Button
             type="button"
             onClick={onSubmit}
             disabled={submitDisabled}
-            className={`h-14 w-full rounded-2xl text-base font-semibold transition-colors ${
+            size="cta-block"
+            className={`h-14 rounded-2xl text-base font-semibold ${
               submitDisabled
-                ? 'cursor-not-allowed bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]'
-                : 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]'
+                ? 'cursor-not-allowed bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)] disabled:opacity-100'
+                : ''
             }`}
           >
             {mode === 'edit' ? t.expenseForm.saveChanges : t.expenseForm.saveExpense}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -476,8 +488,9 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
               onClick={() => setConfirmOpen(false)}
               className="absolute inset-0 border-none bg-black/[0.68]"
             />
-            <div
-              className="relative w-full max-w-72 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-5 pt-6 pb-5 text-start"
+            <Card
+              padding="none"
+              className="relative w-full max-w-72 px-5 pt-6 pb-5 text-start"
               style={{
                 boxShadow: '0 24px 60px -12px rgba(0,0,0,.4)',
                 animation: 'efPop .22s cubic-bezier(.22,1,.36,1)',
@@ -489,29 +502,32 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                 {t.expenseForm.confirmBody}
               </div>
               <div className="mt-5 flex flex-col gap-2.5">
-                <button
+                <Button
                   type="button"
                   onClick={() => {
                     setConfirmOpen(false)
                     onSubmit()
                   }}
-                  className="h-12 rounded-xl bg-[var(--color-brand-primary)] text-base font-semibold text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
+                  size="cta"
+                  className="text-base font-semibold"
                 >
                   {t.expenseForm.saveChanges}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={() => {
                     onDiscard?.()
                     setConfirmOpen(false)
                     onClose()
                   }}
-                  className="h-12 rounded-xl border border-[var(--color-brand-border)] bg-transparent text-base font-semibold text-[var(--color-brand-red)] hover:bg-[var(--color-brand-elevated)]"
+                  variant="outline"
+                  size="cta"
+                  className="bg-transparent text-base font-semibold text-[var(--color-brand-red)] hover:bg-[var(--color-brand-elevated)]"
                 >
                   {t.expenseForm.discardChanges}
-                </button>
+                </Button>
               </div>
-            </div>
+            </Card>
           </div>
         </Portal>
       ) : null}

@@ -2,6 +2,8 @@
 
 import { RefObject } from 'react'
 import { AlertTriangle, Database, Download, FileSpreadsheet, Trash2, Upload } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { useT } from '@/lib/i18n'
 
 export interface SettingsDataManagementSectionProps {
@@ -46,10 +48,13 @@ export function SettingsDataManagementSection({
         {t.settings.dataDeviceOnlyNote}
       </p>
 
-      <button
-        type="button"
-        onClick={onExportExpenses}
-        className="flex w-full items-center gap-3 rounded-xl border border-[var(--color-brand-primary)]/40 bg-[var(--color-brand-primary)]/10 px-4 py-3 text-start transition-colors hover:bg-[var(--color-brand-primary)]/15"
+      <Card
+        render={<button type="button" onClick={onExportExpenses} />}
+        variant="brand"
+        radius="sm"
+        padding="none"
+        interactive
+        className="flex w-full items-center gap-3 border-[var(--color-brand-primary)]/40 px-4 py-3 text-start"
       >
         <FileSpreadsheet className="h-5 w-5 shrink-0 text-[var(--color-brand-primary-ink)]" />
         <span className="min-w-0 flex-1">
@@ -61,67 +66,62 @@ export function SettingsDataManagementSection({
           </span>
         </span>
         <Download className="h-4 w-4 shrink-0 text-[var(--color-brand-primary-ink)]" />
-      </button>
+      </Card>
 
       <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={onExport}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
-        >
+        <Button variant="outline" size="touch" onClick={onExport}>
           <Download className="w-4 h-4" />
           {t.settings.dataDownload}
-        </button>
+        </Button>
 
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
-        >
+        <Button variant="outline" size="touch" onClick={() => fileInputRef.current?.click()}>
           <Upload className="w-4 h-4" />
           {t.settings.dataRestore}
-        </button>
+        </Button>
         <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={onImportChange} />
 
         {isResetting ? (
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="touch"
             disabled
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-900/50 text-sm text-[var(--color-brand-red)] opacity-60 cursor-not-allowed"
+            className="border-red-900/50 bg-transparent text-[var(--color-brand-red)] dark:border-red-900/50 dark:bg-transparent"
           >
             <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
             {t.settings.dataStartFresh}
-          </button>
+          </Button>
         ) : !showResetConfirm ? (
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="touch"
             onClick={() => onShowResetConfirm(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-900/50 text-sm text-[var(--color-brand-primary-ink)] hover:bg-red-900/20 transition-colors"
+            className="border-red-900/50 bg-transparent text-[var(--color-brand-primary-ink)] hover:bg-red-900/20 hover:text-[var(--color-brand-primary-ink)] dark:border-red-900/50 dark:bg-transparent dark:hover:bg-red-900/20"
           >
             <Trash2 className="w-4 h-4" />
             {t.settings.dataStartFresh}
-          </button>
+          </Button>
         ) : (
           <div className="flex items-center gap-2 p-3 rounded-xl bg-red-900/20 border border-red-900/50">
             <AlertTriangle className="w-5 h-5 text-[var(--color-brand-red)]" />
             <span className="text-sm text-[var(--color-brand-red)]">{t.settings.dataResetWarning}</span>
-            <button
-              type="button"
+            <Button
+              size="sm"
               onClick={() => {
                 onShowResetConfirm(false)
                 void onStartFresh()
               }}
-              className="px-3 py-1 rounded-lg bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)] text-xs font-medium"
+              className="rounded-lg px-3 text-xs"
             >
               {t.settings.dataConfirmReset}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => onShowResetConfirm(false)}
-              className="px-3 py-1 rounded-lg border border-[var(--color-brand-border)] text-xs text-[var(--color-brand-text-secondary)]"
+              className="rounded-lg px-3 text-xs"
             >
               {t.settings.dataCancelReset}
-            </button>
+            </Button>
           </div>
         )}
       </div>

@@ -4,6 +4,8 @@ import { Check, Trash2, Mic, X, AlertCircle } from 'lucide-react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { getField } from '@/lib/ai/aiActionHandlers'
 import { AmountField } from '@/components/ui/AmountField'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import type { AIAction, AIActionItem } from '@/lib/ai/gemini'
 import { EXPENSE_ENTRY_CATEGORIES } from '@/lib/constants/finance'
 import { CurrencyField } from '@/components/ui/CurrencyField'
@@ -92,9 +94,12 @@ export function VoiceRecapEditor({
           const pmValue = String(getField(item.data, 'paymentMethod', 'payment_method') ?? '')
 
           return (
-            <div
+            <Card
               key={idx}
-              className={`rounded-xl border bg-[var(--color-brand-elevated)]/50 p-2.5 ${err ? 'border-[var(--color-brand-primary)]' : 'border-[var(--color-brand-border)]'}`}
+              variant="elevated"
+              radius="sm"
+              padding="none"
+              className={`bg-[var(--color-brand-elevated)]/50 p-2.5 ${err ? 'border-[var(--color-brand-primary)]' : ''}`}
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-[var(--color-brand-text-secondary)]">
@@ -183,27 +188,30 @@ export function VoiceRecapEditor({
                   <AlertCircle className="h-3 w-3 shrink-0" /> {err}
                 </p>
               ) : null}
-            </div>
+            </Card>
           )
         })}
       </div>
 
       <div className="mt-3 flex gap-2">
-        <button
+        <Button
           type="button"
           onClick={onConfirm}
           disabled={actions.length === 0}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-primary)] px-3 py-2.5 text-sm font-semibold text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)] disabled:opacity-40"
+          size="touch"
+          className="flex-1 gap-1.5 px-3 text-sm font-semibold"
         >
           <Check className="h-4 w-4" /> {multiple ? 'Save all' : 'Save'}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={onRedo}
-          className="inline-flex items-center gap-1 rounded-xl border border-[var(--color-brand-border)] px-3 py-2.5 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
+          variant="outline"
+          size="touch"
+          className="gap-1 bg-transparent px-3 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
         >
           <Mic className="h-4 w-4" /> Redo
-        </button>
+        </Button>
         <button
           type="button"
           onClick={onCancel}

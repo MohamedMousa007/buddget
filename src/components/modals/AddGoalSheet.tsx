@@ -6,7 +6,9 @@ import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { GoalCategoryPicker } from '@/components/features/goals/GoalCategoryPicker'
 import { Input } from '@/components/ui/input'
 import { AmountField } from '@/components/ui/AmountField'
+import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { FiatCurrencyField } from '@/components/ui/CurrencyField'
 import { DatePickerField } from '@/components/ui/DatePickerField'
 import { useAddGoalForm } from '@/hooks/useAddGoalForm'
@@ -50,13 +52,14 @@ function AddGoalSheetForm({ editingGoal, onClose, title, selectClass, t }: Inner
                 <GoalCategoryPicker value={form.category} onChange={form.pickCategory} labels={t.goals} />
               </div>
             </div>
-            <button
+            <Button
               type="button"
-              className="w-full py-3 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] text-sm font-semibold transition-colors"
+              size="cta-block"
+              className="text-sm font-semibold"
               onClick={() => form.setStep(2)}
             >
               {t.goals.nextStep}
-            </button>
+            </Button>
           </>
         ) : (
           <>
@@ -172,30 +175,33 @@ function AddGoalSheetForm({ editingGoal, onClose, title, selectClass, t }: Inner
             </div>
             <div>
               <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.goals.notes}</Label>
-              <textarea
+              <Textarea
                 value={form.notes}
                 onChange={(e) => form.setNotes(e.target.value)}
                 rows={2}
-                className={cn('mt-1 w-full rounded-xl px-3 py-2 text-sm', inputClass)}
+                className={cn('mt-1 px-3 py-2 text-sm', inputClass)}
               />
             </div>
             <div className="flex gap-2">
               {!editingGoal ? (
-                <button
+                <Button
                   type="button"
                   onClick={() => form.setStep(1)}
-                  className="flex-1 py-3 rounded-xl border border-[var(--color-brand-border)]"
+                  variant="outline"
+                  size="cta"
+                  className="flex-1 bg-transparent"
                 >
                   {t.common.back}
-                </button>
+                </Button>
               ) : null}
-              <button
+              <Button
                 type="button"
                 onClick={form.submit}
-                className="flex-1 py-3 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] text-sm font-semibold transition-colors"
+                size="cta"
+                className="flex-1 text-sm font-semibold"
               >
                 {t.common.save}
-              </button>
+              </Button>
             </div>
           </>
         )}

@@ -3,9 +3,13 @@
 import { useMemo, useState } from 'react'
 import { Wallet, Gem, Bitcoin, TrendingUp, Home, CreditCard, BookOpen } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { computeZakat } from '@/lib/savings/zakat'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
+import { cn } from '@/lib/utils'
 import { rgba } from '@/lib/utils/color'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { micro } from '@/lib/ui/microLabelStyle'
@@ -86,14 +90,17 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
           {/* what counts */}
           <div>
             <p style={micro}>What counts</p>
-            <div className="mt-2 overflow-hidden rounded-2xl border border-[var(--color-brand-border)]">
+            <Card padding="none" className="mt-2 overflow-hidden">
               {rows.map((r, i) => (
                 <div key={r.id} className="flex items-center gap-3 p-3" style={{ borderTop: i ? '1px solid var(--color-brand-border)' : undefined }}>
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: rgba(r.color, .14), color: r.color }}>{r.icon}</span>
                   <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{r.name}</p><p className="text-[11px] text-[var(--color-brand-text-muted)]">{r.sub}</p></div>
+                  {/* Deliberately compact (36px) so the row rhythm holds — not the app's 48px field. */}
                   <input inputMode="numeric" defaultValue={fmtNum(r.value)} onBlur={(e) => editLine(r.id, e.target.value)}
-                    className="h-9 w-[84px] rounded-[11px] bg-[var(--color-brand-elevated)] px-2 text-right font-mono-numbers text-sm text-[var(--color-brand-text-primary)]"
-                    style={{ border: overrides[r.id] != null ? '1px solid rgba(18,176,160,.5)' : '1px solid transparent' }} />
+                    className={cn(
+                      'h-9 w-[84px] rounded-[11px] border bg-[var(--color-brand-elevated)] px-2 text-right font-mono-numbers text-sm text-[var(--color-brand-text-primary)] outline-none',
+                      overrides[r.id] != null ? 'border-[var(--color-brand-primary)]/50' : 'border-transparent',
+                    )} />
                 </div>
               ))}
               {/* property */}
@@ -106,15 +113,18 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
               <div className="flex items-center gap-3 p-3" style={{ borderTop: '1px solid var(--color-brand-border)' }}>
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: 'rgba(255,107,107,.14)', color: '#FF6B6B' }}><CreditCard size={18} /></span>
                 <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">Debts due this year</p><p className="text-[11px] text-[var(--color-brand-text-muted)]">Subtracted from your wealth</p></div>
-                <span className="mr-1 text-sm" style={{ color: '#FF6B6B' }}>−</span>
+                <span className="mr-1 text-sm text-[var(--color-brand-red)]">−</span>
                 <input inputMode="numeric" defaultValue={fmtNum(debts)} onBlur={(e) => editLine('debts', e.target.value)}
-                  className="h-9 w-[76px] rounded-[11px] bg-[var(--color-brand-elevated)] px-2 text-right font-mono-numbers text-sm" style={{ color: '#FF6B6B', border: overrides.debts != null ? '1px solid rgba(18,176,160,.5)' : '1px solid transparent' }} />
+                  className={cn(
+                    'h-9 w-[76px] rounded-[11px] border bg-[var(--color-brand-elevated)] px-2 text-right font-mono-numbers text-sm text-[var(--color-brand-red)] outline-none',
+                    overrides.debts != null ? 'border-[var(--color-brand-primary)]/50' : 'border-transparent',
+                  )} />
               </div>
               <div className="flex items-center justify-between bg-[var(--color-brand-elevated)] p-3">
                 <span className="text-sm font-semibold text-[var(--color-brand-text-primary)]">Zakatable wealth</span>
                 <span className="font-mono-numbers text-[15px] font-bold text-[var(--color-brand-text-primary)]">{fmtNum(result.zakatable)} EGP</span>
               </div>
-            </div>
+            </Card>
           </div>
 
           {/* nisab */}
@@ -142,16 +152,16 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
           </div>
 
           {/* override */}
-          <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3.5">
+          <Card variant="elevated" padding="none" className="p-3.5">
             <button type="button" onClick={() => { const v = !manualOn; setManualOn(v); save({ manualAmount: v ? parseFloat(manualAmount) || 0 : null }) }} className="flex w-full items-center justify-between text-left">
               <div><p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">Set the amount myself</p><p className="text-xs text-[var(--color-brand-text-muted)]">Overrides everything above</p></div>
               <span className="relative shrink-0" style={{ width: 46, height: 28, borderRadius: 999, background: manualOn ? '#12B0A0' : 'var(--color-brand-border)' }}><span className="absolute top-1 h-6 w-6 rounded-full bg-white" style={{ left: manualOn ? 18 : 2, transition: 'left .15s' }} /></span>
             </button>
             {manualOn && (
-              <input inputMode="numeric" value={manualAmount} onChange={(e) => setManualAmount(e.target.value)} onBlur={() => save({ manualAmount: parseFloat(manualAmount) || 0 })} placeholder="0"
-                className="mt-3 h-[52px] w-full rounded-xl bg-[var(--color-brand-card)] px-4 font-mono-numbers text-lg text-[var(--color-brand-text-primary)]" style={{ border: '1px solid rgba(18,176,160,.5)' }} />
+              <Input inputMode="numeric" value={manualAmount} onChange={(e) => setManualAmount(e.target.value)} onBlur={() => save({ manualAmount: parseFloat(manualAmount) || 0 })} placeholder="0"
+                className="mt-3 h-12 rounded-xl border-[var(--color-brand-primary)]/50 bg-[var(--color-brand-card)] px-4 font-mono-numbers text-lg text-[var(--color-brand-text-primary)]" />
             )}
-          </div>
+          </Card>
 
           <div className="flex items-start gap-2 rounded-2xl bg-[var(--color-brand-elevated)] p-3.5">
             <BookOpen size={16} className="mt-0.5 shrink-0" style={{ color: '#EDC463' }} />
@@ -160,8 +170,8 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
         </div>
 
         <div className="flex gap-3 px-5 pt-2 pb-[max(20px,env(safe-area-inset-bottom))]">
-          <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-[var(--color-brand-border)] py-3.5 text-sm font-semibold text-[var(--color-brand-text-secondary)]">Remind me</button>
-          <button type="button" onClick={() => { save({ lastPaidDate: new Date().toISOString() }); onClose() }} className="flex-1 rounded-xl py-3.5 text-sm font-semibold text-white" style={{ background: '#12B0A0' }}>{result.due ? 'Log zakat payment' : 'Save'}</button>
+          <Button variant="outline" size="cta" onClick={onClose} className="flex-1 text-sm font-semibold">Remind me</Button>
+          <Button size="cta" onClick={() => { save({ lastPaidDate: new Date().toISOString() }); onClose() }} className="flex-1 text-sm font-semibold">{result.due ? 'Log zakat payment' : 'Save'}</Button>
         </div>
       </div>
     </ModalShell>

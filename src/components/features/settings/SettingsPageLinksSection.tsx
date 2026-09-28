@@ -2,6 +2,7 @@
 
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { DollarSign, Coins } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { useT } from '@/lib/i18n'
 
 /**
@@ -20,12 +21,9 @@ export function SettingsPageLinksSection() {
         <p className="text-xs text-[var(--color-brand-text-muted)]">
           {t.settings.pageLinksIncomeDesc}
         </p>
-        <Link
-          href="/income"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
-        >
+        <Button render={<Link href="/income" />} variant="outline" size="touch" className="w-fit">
           {t.settings.pageLinksIncomeLink}
-        </Link>
+        </Button>
       </section>
 
       <section className="glass-card rounded-2xl p-5 space-y-3">
@@ -34,12 +32,9 @@ export function SettingsPageLinksSection() {
           <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">{t.settings.pageLinksSavingsTitle}</h2>
         </div>
         <p className="text-xs text-[var(--color-brand-text-muted)]">{t.settings.pageLinksSavingsDesc}</p>
-        <Link
-          href="/savings"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
-        >
+        <Button render={<Link href="/savings" />} variant="outline" size="touch" className="w-fit">
           {t.settings.pageLinksSavingsLink}
-        </Link>
+        </Button>
       </section>
     </>
   )

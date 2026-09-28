@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { ModalShell } from '@/components/modals/ModalShell'
+import { Button } from '@/components/ui/button'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT } from '@/lib/i18n'
@@ -169,14 +170,15 @@ export function AssignIncomeSheet({ open, onClose, onAssign, initialTemplateId, 
           />
         </div>
 
-        <button
+        <Button
           type="button"
           onClick={confirm}
           disabled={!chosen || !targetOcc}
-          className="mt-5 w-full rounded-[14px] bg-[var(--color-brand-primary)] py-3 text-sm font-bold text-[var(--color-brand-on-primary)] transition-colors hover:bg-[var(--color-brand-primary-hover)] disabled:opacity-50"
+          size="cta-block"
+          className="mt-5 rounded-[14px] text-sm font-bold"
         >
           {chosenCard ? t.income.assignConfirm(chosenCard.source.name) : t.income.assignTitle}
-        </button>
+        </Button>
       </div>
     </ModalShell>
   )

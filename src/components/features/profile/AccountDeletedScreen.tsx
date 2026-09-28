@@ -2,6 +2,7 @@
 
 import { CheckCircle2 } from 'lucide-react'
 import { useT } from '@/lib/i18n'
+import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 
 export function AccountDeletedScreen() {
@@ -34,13 +35,9 @@ export function AccountDeletedScreen() {
       <p className="text-sm text-[var(--color-brand-text-secondary)] leading-relaxed max-w-sm mb-8">
         {t.profile.deleteAccountSuccessBody}
       </p>
-      <button
-        type="button"
-        onClick={() => void handleHome()}
-        className="h-12 px-8 rounded-2xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] text-sm font-semibold transition-colors"
-      >
+      <Button size="cta" onClick={() => void handleHome()} className="rounded-2xl px-8 text-sm font-semibold">
         {t.profile.deleteAccountSuccessButton}
-      </button>
+      </Button>
     </div>
   )
 }

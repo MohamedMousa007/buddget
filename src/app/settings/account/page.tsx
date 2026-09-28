@@ -10,6 +10,8 @@ import { SettingsPaymentMethodsSection } from '@/components/features/settings/Se
 import { DeleteAccountDialog } from '@/components/features/profile/DeleteAccountDialog'
 import { AccountDeletedScreen } from '@/components/features/profile/AccountDeletedScreen'
 import { ProfileFieldRow } from '@/components/profile/ProfileFieldRow'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useProfilePage } from '@/hooks/useProfilePage'
@@ -32,7 +34,7 @@ export default function SettingsAccountPage() {
   return (
     <SettingsSubPageShell title={t.settings.hub.account}>
       {/* Account info */}
-      <div className="bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl p-6">
+      <Card padding="none" className="p-6">
         <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-4">
           {t.profile.accountTitle}
         </h2>
@@ -51,22 +53,21 @@ export default function SettingsAccountPage() {
           />
         </div>
         <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-[var(--color-brand-border)]">
-          <button
-            type="button"
-            onClick={p.handlePasswordReset}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
-          >
+          {/* Neutral secondary action. */}
+          <Button variant="outline" size="touch" onClick={p.handlePasswordReset}>
             <Lock className="w-4 h-4" />
             {t.profile.changePassword}
-          </button>
-          <button
-            type="button"
+          </Button>
+          {/* Destructive, but reversible — outlined red, not a solid fill. */}
+          <Button
+            variant="outline"
+            size="touch"
             onClick={p.handleSignOut}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--color-brand-red)]/30 text-sm text-[var(--color-brand-red)] hover:bg-[var(--color-brand-red)]/10 transition-colors"
+            className="border-[var(--color-brand-red)]/30 bg-transparent text-[var(--color-brand-red)] hover:bg-[var(--color-brand-red)]/10 hover:text-[var(--color-brand-red)] dark:border-[var(--color-brand-red)]/30 dark:bg-transparent dark:hover:bg-[var(--color-brand-red)]/10"
           >
             <LogOut className="w-4 h-4" />
             {t.common.signOut}
-          </button>
+          </Button>
         </div>
 
         <div className="mt-6 pt-4 border-t border-[var(--color-brand-border)]">
@@ -76,16 +77,18 @@ export default function SettingsAccountPage() {
           <p className="text-xs text-[var(--color-brand-text-muted)] leading-relaxed mb-3">
             {t.profile.deleteAccountBody}
           </p>
-          <button
-            type="button"
+          {/* Irreversible — the solid red fill. */}
+          <Button
+            variant="destructive-solid"
+            size="touch"
             onClick={p.openDeleteDialog}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold transition-colors"
+            className="font-semibold"
           >
             <Trash2 className="w-4 h-4" />
             {t.profile.deleteAccountButton}
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
 
       {/* Security */}
       <SettingsSecuritySection store={store} />

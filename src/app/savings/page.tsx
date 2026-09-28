@@ -4,6 +4,9 @@ import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { Target, Pencil, Trash2, Plus, Shield, ChevronRight } from 'lucide-react'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useNetWorth } from '@/hooks/useNetWorth'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
@@ -212,22 +215,17 @@ export default function SavingsPage() {
             <p className="mx-auto mt-1 max-w-[16rem] text-sm text-[var(--color-brand-text-secondary)]">
               A pocket is wherever money actually sits — a bank account, cash in a safe, a certificate.
             </p>
-            <button
-              type="button"
-              onClick={() => guard(() => setNewAccountOpen(true))}
-              className="mt-4 rounded-xl px-5 py-3 text-sm font-semibold text-white"
-              style={{ background: '#12B0A0' }}
-            >
+            <Button size="cta" onClick={() => guard(() => setNewAccountOpen(true))} className="mt-4 font-semibold">
               Create a pocket
-            </button>
+            </Button>
           </div>
         ) : (
           <section>
             <div className="flex items-center gap-2 px-4">
               <h2 className="text-[15px] font-bold text-[var(--color-brand-text-primary)]">Pockets</h2>
-              <span className="inline-flex h-5 min-w-[21px] items-center justify-center rounded-full bg-[var(--color-brand-elevated)] px-1.5 font-mono-numbers text-[11px] font-semibold text-[var(--color-brand-text-secondary)]">
+              <Badge variant="muted" className="min-w-[21px] px-1.5 font-mono-numbers text-[11px] font-semibold text-[var(--color-brand-text-secondary)]">
                 {pockets.length}
-              </span>
+              </Badge>
               <button
                 type="button" aria-label="Add a pocket"
                 onClick={() => guard(() => setNewAccountOpen(true))}
@@ -257,15 +255,19 @@ export default function SavingsPage() {
               ) : (
                 // No spending/budget data to size a month yet — always show the block with a
                 // set-up CTA so the safety net is never invisible (item 17).
-                <button type="button" onClick={() => guard(() => setEmergencyOpen(true))}
-                  className="mx-4 flex w-[calc(100%-2rem)] items-center gap-3 rounded-[18px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-3.5 text-left">
+                <Card
+                  render={<button type="button" onClick={() => guard(() => setEmergencyOpen(true))} />}
+                  interactive
+                  padding="none"
+                  className="mx-4 flex w-[calc(100%-2rem)] items-center gap-3 rounded-[18px] p-3.5 text-left"
+                >
                   <span className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(126,174,249,.14)', color: '#7EAEF9' }}><Shield size={18} /></span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">Set your emergency fund</p>
                     <p className="text-xs text-[var(--color-brand-text-muted)]">A safety net of a few months&apos; essentials</p>
                   </div>
                   <ChevronRight size={18} className="text-[var(--color-brand-text-muted)]" />
-                </button>
+                </Card>
               )}
             </div>
             <ZakatCard result={zakatResult} base={zakatResult.zakatable} hawlDate={hawlDate} onOpen={() => guard(() => setZakatOpen(true))} />

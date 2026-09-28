@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import type { BudgetPlan } from '@/lib/store/types'
 import { BudgetPlanTabs } from '@/components/features/budget-planner/BudgetPlanTabs'
+import { Button } from '@/components/ui/button'
 
 export interface BudgetSetupPlanToolbarProps {
   plans: BudgetPlan[]
@@ -73,23 +74,25 @@ export function BudgetSetupPlanToolbar({
       {confirmOpen && (
         <div className="flex items-center gap-3 rounded-xl border border-[var(--color-brand-red)]/30 bg-[var(--color-brand-red)]/5 px-4 py-2.5">
           <p className="flex-1 text-xs text-[var(--color-brand-text-primary)]">{confirmDeleteMessage}</p>
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="touch"
             onClick={() => setConfirmOpen(false)}
-            className="rounded-lg border border-[var(--color-brand-border)] px-3 py-1.5 text-xs text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
+            className="shrink-0 text-xs"
           >
             Cancel
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="destructive-solid"
+            size="touch"
             onClick={() => {
               onDeleteActivePlan()
               setConfirmOpen(false)
             }}
-            className="rounded-lg bg-[var(--color-brand-red)] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[var(--color-brand-red-hover)]"
+            className="shrink-0 text-xs font-semibold"
           >
             Delete
-          </button>
+          </Button>
         </div>
       )}
     </div>

@@ -24,6 +24,13 @@ const buttonVariants = cva(
          *  `destructive` above is the softer tinted style for lower-stakes removes. */
         "destructive-solid":
           "bg-[var(--color-brand-red)] text-white hover:bg-[var(--color-brand-red-hover)]",
+        /**
+         * Solid green fill. Reserved for confirming that MONEY CAME IN — "Received",
+         * "Assign", "Full". Green is the income semantic, so this is not a general
+         * affirmative: the ordinary confirm is `default` (teal).
+         */
+        success:
+          "bg-[var(--color-brand-green)] text-white hover:bg-[var(--color-brand-green-hover)]",
       },
       size: {
         default:

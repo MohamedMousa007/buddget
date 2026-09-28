@@ -4,6 +4,8 @@ import { useEffect, useRef, useCallback } from 'react'
 import { Mic, MicOff, X, Loader2, AlertTriangle, Trash2, MessageCircle, Volume2, VolumeX, CheckCircle2 } from 'lucide-react'
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion'
 import { ModalShell } from '@/components/modals/ModalShell'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { useVoiceExpense } from '@/hooks/useVoiceExpense'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { VoiceRecapEditor } from '@/components/voice/VoiceRecapEditor'
@@ -294,13 +296,15 @@ function RecordingView({
       </p>
 
       {!isRecording ? (
-        <button
+        <Button
           type="button"
           onClick={onCancel}
-          className="mt-2 inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+          variant="ghost"
+          size="touch"
+          className="mt-2 gap-1 px-3 text-sm text-[var(--color-brand-text-muted)]"
         >
           <X className="h-4 w-4" /> Cancel
-        </button>
+        </Button>
       ) : null}
     </>
   )
@@ -320,13 +324,9 @@ function PermissionView({ onRequest }: { onRequest: () => void }) {
           Allow microphone access so Buddget can hear your expense.
         </p>
       </div>
-      <button
-        type="button"
-        onClick={onRequest}
-        className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-brand-primary)] px-5 py-2.5 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
-      >
+      <Button type="button" onClick={onRequest} size="touch" className="px-5 text-sm font-medium">
         <Mic className="h-4 w-4" /> Allow Microphone
-      </button>
+      </Button>
     </div>
   )
 }
@@ -338,14 +338,16 @@ function ProcessingView({ onCancel }: { onCancel: () => void }) {
     <div className="flex flex-col items-center gap-3 py-6 w-full">
       <Loader2 className="h-8 w-8 animate-spin text-[var(--color-brand-primary-ink)]" />
       <p className="text-sm text-[var(--color-brand-text-secondary)]">Transcribing your voice…</p>
-      <button
+      <Button
         type="button"
         onClick={onCancel}
-        className="mt-1 inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)] transition-colors"
+        variant="ghost"
+        size="touch"
+        className="mt-1 gap-1.5 text-sm text-[var(--color-brand-text-muted)]"
         aria-label="Cancel transcription"
       >
         <X className="h-4 w-4" /> Cancel
-      </button>
+      </Button>
     </div>
   )
 }
@@ -376,7 +378,12 @@ function AnswerView({
         </p>
       ) : null}
 
-      <div className="mt-3 flex items-start gap-2 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]/60 p-4">
+      <Card
+        variant="elevated"
+        radius="sm"
+        padding="md"
+        className="mt-3 flex items-start gap-2 bg-[var(--color-brand-elevated)]/60"
+      >
         <p className="flex-1 text-sm text-[var(--color-brand-text-primary)]">{message}</p>
         <button
           type="button"
@@ -391,31 +398,36 @@ function AnswerView({
         >
           {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
         </button>
-      </div>
+      </Card>
 
       <div className="mt-5 flex gap-2">
-        <button
+        <Button
           type="button"
           onClick={onOpenChat}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-primary)] px-4 py-2.5 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
+          size="touch"
+          className="flex-1 gap-1.5 text-sm font-medium"
         >
           <MessageCircle className="h-4 w-4" />
           Open in chat
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={onAskAgain}
-          className="rounded-xl border border-[var(--color-brand-border)] px-3 py-2.5 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
+          variant="outline"
+          size="touch"
+          className="bg-transparent px-3 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
         >
           Ask again
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={onClose}
-          className="rounded-xl px-3 py-2.5 text-sm text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+          variant="ghost"
+          size="touch"
+          className="px-3 text-sm text-[var(--color-brand-text-muted)]"
         >
           Close
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -441,21 +453,19 @@ function ClarifyView({
         {message || 'Could you add a bit more detail?'}
       </p>
       <div className="mt-5 flex justify-center gap-2">
-        <button
-          type="button"
-          onClick={onAnswer}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--color-brand-primary)] px-4 py-2.5 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
-        >
+        <Button type="button" onClick={onAnswer} size="touch" className="gap-1.5 text-sm font-medium">
           <Mic className="h-4 w-4" />
           Answer by voice
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={onCancel}
-          className="rounded-xl px-3 py-2.5 text-sm text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+          variant="ghost"
+          size="touch"
+          className="px-3 text-sm text-[var(--color-brand-text-muted)]"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -475,13 +485,9 @@ function QueuedView({ onClose }: { onClose: () => void }) {
         online, a chip will appear at the top of the app — tap it to finish adding
         this expense.
       </p>
-      <button
-        type="button"
-        onClick={onClose}
-        className="mt-2 rounded-xl bg-[var(--color-brand-primary)] px-4 py-2 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
-      >
+      <Button type="button" onClick={onClose} size="touch" className="mt-2 text-sm font-medium">
         Done
-      </button>
+      </Button>
     </div>
   )
 }
@@ -505,20 +511,18 @@ function ErrorView({
         {error ?? 'Something went wrong. Try again or close.'}
       </p>
       <div className="mt-2 flex gap-2">
-        <button
-          type="button"
-          onClick={onRetry}
-          className="rounded-xl bg-[var(--color-brand-primary)] px-4 py-2 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
-        >
+        <Button type="button" onClick={onRetry} size="touch" className="text-sm font-medium">
           Try again
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={onClose}
-          className="rounded-xl px-3 py-2 text-sm text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+          variant="ghost"
+          size="touch"
+          className="px-3 text-sm text-[var(--color-brand-text-muted)]"
         >
           Close
-        </button>
+        </Button>
       </div>
     </div>
   )

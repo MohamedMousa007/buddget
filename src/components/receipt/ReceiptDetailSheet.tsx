@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useShallow } from 'zustand/react/shallow'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
+import { Card } from '@/components/ui/card'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { readReceiptImage } from '@/lib/native/receiptImages'
 
@@ -45,7 +46,7 @@ export function ReceiptDetailSheet({
           <ModalSheetHeader title="Receipt" onClose={onClose} />
 
           {/* Hero: merchant + total, mirroring the scan result card. */}
-          <div className="flex items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
+          <Card padding="md" className="flex items-center gap-3">
             {imgSrc ? (
               <Image
                 src={imgSrc}
@@ -69,10 +70,10 @@ export function ReceiptDetailSheet({
                 {receipt.amount.toFixed(2)} <span className="text-base text-[var(--color-brand-text-secondary)]">{receipt.currency}</span>
               </p>
             </div>
-          </div>
+          </Card>
 
           {receipt.items.length > 0 || receipt.charges.length > 0 ? (
-            <div className="mt-3 rounded-xl border border-[var(--color-brand-border)] p-3">
+            <Card radius="sm" padding="sm" className="mt-3">
               <p className="mb-2 text-xs font-semibold text-[var(--color-brand-text-secondary)]">Breakdown</p>
 
               {receipt.items.length > 0 ? (
@@ -102,7 +103,7 @@ export function ReceiptDetailSheet({
                   ))}
                 </ul>
               ) : null}
-            </div>
+            </Card>
           ) : null}
 
           {receipt.notes ? (

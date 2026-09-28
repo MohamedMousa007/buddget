@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { ModalShell } from '@/components/modals/ModalShell'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { rgba } from '@/lib/utils/color'
@@ -109,14 +110,14 @@ export function AssetFormSheet({ open, type, onClose }: AssetFormSheetProps) {
                   <PriceCard on={!['BTC', 'ETH'].includes(symbol)} accent={accent} onClick={() => setSymbol('')} title="Other" sub="type it" />
                 </div>
               </Field>
-              {!['BTC', 'ETH'].includes(symbol) && <Field label="Symbol"><Input value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="SOL" className="h-12 rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] font-mono-numbers" /></Field>}
+              {!['BTC', 'ETH'].includes(symbol) && <Field label="Symbol"><Input value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="SOL" size="brand" className="font-mono-numbers" /></Field>}
               <Field label="How much"><UnitInput value={amount} onChange={setAmount} suffix={symbol || 'coins'} /></Field>
             </>
           )}
 
           {type === 'stock' && (
             <>
-              <Field label="Ticker"><Input value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="AAPL" className="h-12 rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] font-mono-numbers" /></Field>
+              <Field label="Ticker"><Input value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="AAPL" size="brand" className="font-mono-numbers" /></Field>
               <Field label="Shares"><UnitInput value={amount} onChange={setAmount} suffix="shares" /></Field>
             </>
           )}
@@ -129,7 +130,7 @@ export function AssetFormSheet({ open, type, onClose }: AssetFormSheetProps) {
             </>
           )}
 
-          <Field label="When you bought it"><Input type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} className="h-12 rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]" /></Field>
+          <Field label="When you bought it"><Input type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} size="brand" /></Field>
           {type !== 'property' && <Field label="What you paid · optional"><UnitInput value={paid} onChange={setPaid} suffix={type === 'stock' ? 'USD' : 'EGP'} placeholder="Total" /></Field>}
 
           {/* live value */}
@@ -148,10 +149,9 @@ export function AssetFormSheet({ open, type, onClose }: AssetFormSheetProps) {
         </div>
 
         <div className="px-5 pt-2 pb-[max(20px,env(safe-area-inset-bottom))]">
-          <button type="button" onClick={submit} disabled={!canSubmit} className="w-full text-white"
-            style={{ height: 52, borderRadius: 14, fontWeight: 600, fontSize: 15, background: canSubmit ? '#12B0A0' : 'var(--color-brand-elevated)', color: canSubmit ? '#fff' : 'var(--color-brand-text-muted)', cursor: canSubmit ? 'pointer' : 'default' }}>
+          <Button size="cta-block" onClick={submit} disabled={!canSubmit} className="font-semibold">
             Add investment
-          </button>
+          </Button>
         </div>
       </div>
     </ModalShell>

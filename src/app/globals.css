@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @config "../../tailwind.config.ts";
 @import "tw-animate-css";
+@import "./buddgy-motion.css";
 
 @custom-variant dark (&:is(.dark *));
 

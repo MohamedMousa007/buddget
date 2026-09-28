@@ -1,0 +1,24 @@
+/* Buddgy visor motion. Units are SVG user units (1px = 1/24 of the icon). */
+.bg-fb { transform-box: fill-box; transform-origin: center; }
+
+.bg-listen { animation: bg-listen 900ms ease-in-out infinite; }
+.bg-think  { animation: bg-think 1200ms ease-in-out infinite; }
+.bg-scan   { animation: bg-scan 1400ms ease-in-out infinite alternate; }
+.bg-draw   { stroke-dasharray: 10; animation: bg-draw 400ms cubic-bezier(.2,.9,.25,1) both; }
+.bg-hop    { animation: bg-hop 520ms cubic-bezier(.34,1.56,.64,1) both; }
+.bg-nope   { animation: bg-nope 360ms ease-out both; }
+.bg-shake  { transform-box: view-box; transform-origin: 12px 20px; animation: bg-shake 600ms ease-out both; }
+.bg-face-in { animation: bg-face-in 180ms ease-out both; }
+
+@keyframes bg-listen { 0%,100% { transform: scaleY(.4) } 50% { transform: scaleY(1) } }
+@keyframes bg-think  { 0%,100% { opacity: .25 } 35% { opacity: 1 } }
+@keyframes bg-scan   { from { transform: translateY(-2.25px) } to { transform: translateY(2.25px) } }
+@keyframes bg-draw   { from { stroke-dashoffset: 10 } to { stroke-dashoffset: 0 } }
+@keyframes bg-hop    { 0%,100% { transform: translateY(0) } 40% { transform: translateY(-1.5px) } }
+@keyframes bg-nope   { 0%,100% { transform: translateX(0) } 25% { transform: translateX(-1.5px) } 50% { transform: translateX(1.5px) } 75% { transform: translateX(-1px) } }
+@keyframes bg-shake  { 0%,100% { transform: rotate(0) } 20% { transform: rotate(-8deg) } 45% { transform: rotate(7deg) } 70% { transform: rotate(-4deg) } }
+@keyframes bg-face-in { from { opacity: 0; transform: scale(.7) } to { opacity: 1; transform: scale(1) } }
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-listen, .bg-think, .bg-scan, .bg-draw, .bg-hop, .bg-nope, .bg-shake, .bg-face-in { animation: none; stroke-dashoffset: 0; }
+}

@@ -13,6 +13,8 @@ import { useActionToast } from '@/components/ui/ActionToast'
 import type { Currency, IncomeRecurringFrequency, IncomeSource, IncomeSourceType } from '@/lib/store/types'
 import { Input } from '@/components/ui/input'
 import { AmountField } from '@/components/ui/AmountField'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { FiatCurrencyField } from '@/components/ui/CurrencyField'
 import { DatePickerField } from '@/components/ui/DatePickerField'
@@ -371,7 +373,7 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
             </>
           ) : (
             /* Assign card (one-time, add only) */
-            <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3.5">
+            <Card variant="elevated" padding="none" className="p-3.5">
               {assignedSource ? (
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
@@ -399,7 +401,7 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
                   </button>
                 </div>
               )}
-            </div>
+            </Card>
           )}
 
           {/* Received into (reused payment carousel) */}
@@ -428,23 +430,26 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
         {/* Pinned footer: full-width Save CTA, with Delete as a distinct, less
             prominent action directly below it (edit only, non-shared sources). */}
         <div className="sheet-cta shrink-0 px-5 pb-5 pt-4">
-          <button
+          <Button
             type="button"
             onClick={handleSubmit}
             disabled={!name.trim() || !amtValid}
-            className="w-full rounded-xl bg-[var(--color-brand-primary)] py-3.5 text-sm font-semibold text-[var(--color-brand-on-primary)] transition-colors hover:bg-[var(--color-brand-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+            size="cta-block"
+            className="text-sm font-semibold"
           >
             {edit ? t.editIncome.buttonSave : isRecurring ? t.addIncome.buttonSubmit : t.income.addIncomeCta}
-          </button>
+          </Button>
           {edit && source && !source.sharedPlanId ? (
-            <button
+            <Button
               type="button"
               onClick={handleDelete}
-              className="mt-2 flex w-full items-center justify-center gap-2 py-2.5 text-sm text-[var(--color-brand-red)] opacity-80 hover:opacity-100"
+              variant="ghost"
+              size="touch"
+              className="mt-2 w-full text-sm text-[var(--color-brand-red)] opacity-80 hover:opacity-100"
             >
               <Trash2 className="h-4 w-4" />
               {t.common.delete}
-            </button>
+            </Button>
           ) : null}
         </div>
       </div>

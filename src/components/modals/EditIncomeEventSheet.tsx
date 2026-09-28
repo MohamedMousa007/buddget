@@ -13,6 +13,7 @@ import { useT } from '@/lib/i18n'
 import type { Currency, IncomeEvent, IncomeEventStatus, IncomeSourceType } from '@/lib/store/types'
 import { Input } from '@/components/ui/input'
 import { AmountField } from '@/components/ui/AmountField'
+import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { FiatCurrencyField } from '@/components/ui/CurrencyField'
@@ -199,25 +200,28 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
           />
         </div>
 
-        <button
+        <Button
           type="button"
           onClick={handleDelete}
-          className="flex w-full items-center justify-center gap-2 py-3 text-sm text-[var(--color-brand-red)] opacity-80 hover:opacity-100"
+          variant="ghost"
+          size="touch"
+          className="w-full text-sm text-[var(--color-brand-red)] opacity-80 hover:opacity-100"
         >
           <Trash2 className="h-4 w-4" />
           {t.common.delete}
-        </button>
+        </Button>
       </div>
 
       <div className="sheet-cta shrink-0 px-5 pb-5 pt-4">
-        <button
+        <Button
           type="button"
           onClick={handleSave}
           disabled={!valid}
-          className="w-full py-3.5 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          size="cta-block"
+          className="text-sm font-semibold"
         >
           {t.editIncome.buttonSave}
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -227,27 +231,33 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
           <h2 className="text-base font-bold text-[var(--color-brand-text-primary)]">{t.income.deleteWithDebtTitle}</h2>
           <p className="mt-2 text-sm text-[var(--color-brand-text-secondary)]">{t.income.deleteWithDebtBody(linkedDebt.name)}</p>
           <div className="mt-5 flex flex-col gap-2">
-            <button
+            <Button
               type="button"
               onClick={() => finishDelete(true)}
-              className="w-full py-3 rounded-xl bg-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-hover)] text-white text-sm font-semibold"
+              variant="destructive-solid"
+              size="cta"
+              className="w-full text-sm font-semibold"
             >
               {t.income.deleteBoth}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={() => finishDelete(false)}
-              className="w-full py-3 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)] text-sm font-semibold"
+              variant="outline"
+              size="cta"
+              className="w-full bg-[var(--color-brand-elevated)] text-sm font-semibold text-[var(--color-brand-text-primary)]"
             >
               {t.income.keepDebt}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={() => setDebtChoiceOpen(false)}
-              className="w-full py-2.5 text-sm text-[var(--color-brand-text-muted)]"
+              variant="ghost"
+              size="touch"
+              className="w-full text-sm text-[var(--color-brand-text-muted)]"
             >
               {t.common.cancel}
-            </button>
+            </Button>
           </div>
         </div>
       </ModalShell>

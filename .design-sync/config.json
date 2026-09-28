@@ -53,7 +53,12 @@
     "IncomeTypeIcon": "src/components/features/income/IncomeTypeIcon.tsx",
     "PaydayTimeline": "src/components/features/income/PaydayTimeline.tsx",
     "RecurringIncomeCard": "src/components/features/income/RecurringIncomeCard.tsx",
-    "RecurringIncomeCarousel": "src/components/features/income/RecurringIncomeCarousel.tsx"
+    "RecurringIncomeCarousel": "src/components/features/income/RecurringIncomeCarousel.tsx",
+    "Card": "src/components/ui/card.tsx",
+    "SegmentedControl": "src/components/ui/SegmentedControl.tsx",
+    "StatTile": "src/components/ui/StatTile.tsx",
+    "PromptBanner": "src/components/ui/PromptBanner.tsx",
+    "BuddgyIcon": "src/components/ai/BuddgyIcon.tsx"
   },
   "dtsPropsFor": {
     "CountrySelect": "/** Stored value: English country name (or legacy alpha-2 code). */\n    value: string;\nonChange: (countryNameEn: string) => void;\n/** BCP 47 locale for option labels (e.g. from `useLocale()`). */\n    locale: string;\nplaceholder: string;\nid?: string;\nclassName?: string;",

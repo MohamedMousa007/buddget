@@ -5,6 +5,8 @@ import { localTodayISO } from '@/lib/utils/localDate'
 import { useShallow } from 'zustand/react/shallow'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { ModalShell } from '@/components/modals/ModalShell'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT, useLocale } from '@/lib/i18n'
@@ -169,8 +171,10 @@ export function AmountReceivedSheet() {
         <label className="mt-4 block text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
           {t.income.amountReceivedLabel}
         </label>
-        <div
-          className="mt-1.5 flex items-center gap-2 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-4"
+        <Card
+          variant="elevated"
+          padding="none"
+          className="mt-1.5 flex items-center gap-2 px-4"
           style={{ boxShadow: `inset 0 0 0 1px ${valid ? inputColorDisplay + '55' : 'transparent'}` }}
         >
           <span className="font-mono-numbers text-sm text-[var(--color-brand-text-muted)]">{currency}</span>
@@ -192,19 +196,20 @@ export function AmountReceivedSheet() {
               {t.income.fullBtn}
             </button>
           ) : null}
-        </div>
+        </Card>
         <p className="mt-2 font-mono-numbers text-xs" style={{ color: meetsExpected ? 'var(--color-brand-text-muted)' : '#FFB13D' }}>
           {!valid || meetsExpected ? t.income.matchesExpected : t.income.shortOfExpected(`${fmtNum(short)} ${currency}`, `${fmtNum(expected)} ${currency}`)}
         </p>
 
-        <button
+        <Button
           type="button"
           onClick={save}
           disabled={!valid || unchanged || blocked}
-          className="mt-4 w-full rounded-[14px] bg-[var(--color-brand-green)] py-3 text-sm font-bold text-white transition-colors hover:bg-[var(--color-brand-green-hover)] disabled:opacity-50"
+          size="cta-block"
+          className="mt-4 rounded-[14px] bg-[var(--color-brand-green)] text-sm font-bold text-white hover:bg-[var(--color-brand-green-hover)]"
         >
           {isEdit ? t.income.saveChangesBtn : meetsExpected ? t.income.markReceivedBtn : t.income.saveAsPartialBtn}
-        </button>
+        </Button>
         {blocked ? (
           <p className="mt-2 text-center text-xs text-[var(--color-brand-text-muted)]">{t.income.earlierPaydayFirst}</p>
         ) : null}

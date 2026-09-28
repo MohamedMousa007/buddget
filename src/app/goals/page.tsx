@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Button } from '@/components/ui/button'
 import { GoalCard } from '@/components/features/goals/GoalCard'
 import { AddGoalSheet } from '@/components/modals/AddGoalSheet'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -57,13 +58,9 @@ export default function GoalsPage() {
       <PageHeader>
         <PageHeaderContent>
           <div className="flex items-center justify-end gap-4 w-full">
-            <button
-              type="button"
-              onClick={openAdd}
-              className="shrink-0 px-4 py-2 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-sm font-semibold text-[var(--color-brand-on-primary)] transition-colors"
-            >
+            <Button size="touch" onClick={openAdd} className="font-semibold">
               {t.goals.addGoal}
-            </button>
+            </Button>
           </div>
         </PageHeaderContent>
       </PageHeader>
@@ -74,13 +71,9 @@ export default function GoalsPage() {
             title={t.goals.emptyState}
             description={t.goals.emptyStateHint}
             action={
-              <button
-                type="button"
-                onClick={openAdd}
-                className="px-5 py-2.5 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-sm font-semibold text-[var(--color-brand-on-primary)] transition-colors"
-              >
+              <Button size="cta" onClick={openAdd} className="font-semibold">
                 {t.goals.addGoal}
-              </button>
+              </Button>
             }
           />
         ) : (

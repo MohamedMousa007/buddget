@@ -3,6 +3,8 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { ChevronRight, MoreVertical, Trash2, Plus, TrendingUp } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -86,7 +88,7 @@ export function InvestmentView({ onBackToSavings, onAddInvestment }: InvestmentV
               <HeroCell label="All time" value={`${totals.allTime >= 0 ? '+' : ''}${fmtCompact(totals.allTime)}`} color={totals.allTime >= 0 ? '#35D46F' : '#FF6B6B'} trend={totals.allTime >= 0} />
               <HeroCell label="Net worth" value={fmtCompact(nw.netWorth)} onClick={onBackToSavings} chevron last />
             </div>
-            <button type="button" onClick={() => onAddInvestment(null)} className="mt-3 w-full text-white" style={{ height: 46, borderRadius: 13, background: '#12B0A0', fontWeight: 600, fontSize: 15 }}>Add investment</button>
+            <Button size="cta-block" onClick={() => onAddInvestment(null)} className="mt-3 font-semibold">Add investment</Button>
           </div>
         </div>
 
@@ -104,9 +106,12 @@ export function InvestmentView({ onBackToSavings, onAddInvestment }: InvestmentV
           {held.length > 0 && <HoldingsCard type={tab} holdings={held} lookup={lookup} toBase={toBase} onAdd={() => onAddInvestment(tab)} />}
           {tab === 'gold' && <GoldMarketCard lookupDisplay={lookupDisplay} officialUsdEgp={exchangeRates['USD_EGP'] ?? null} />}
           {held.length === 0 && (
-            <button type="button" onClick={() => onAddInvestment(tab)} className="mx-4 flex w-[calc(100%-32px)] items-center justify-center gap-2 rounded-2xl border border-dashed border-[var(--color-brand-border)] py-4 text-sm font-semibold text-[var(--color-brand-text-secondary)]">
+            <Button
+              variant="ghost" size="cta-block" onClick={() => onAddInvestment(tab)}
+              className="mx-4 w-[calc(100%-32px)] rounded-2xl border border-dashed border-[var(--color-brand-border)] text-sm font-semibold text-[var(--color-brand-text-secondary)]"
+            >
               <Plus size={16} /> {ADD_LABEL[tab]}
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -151,7 +156,7 @@ function HoldingsCard({ type, holdings, lookup, toBase, onAdd }: { type: Investm
     ? [`${goldStatKarat}k right now`, goldStatPrice != null ? `${fmtNum(goldStatPrice)} /g` : '—', '#EDC463']
     : ['Best holding', rows.length ? fmtNum(Math.max(...rows.map((r) => r.worth ?? 0))) : '—', '#35D46F']
   return (
-    <div className="mx-4 overflow-hidden rounded-[18px] border border-[var(--color-brand-border)]">
+    <Card padding="none" className="mx-4 overflow-hidden rounded-[18px]">
       <div className="p-4" style={{ background: 'linear-gradient(150deg, rgba(237,196,99,.12), transparent 72%)' }}>
         <p style={{ ...micro, fontSize: 9 }}>{type === 'gold' ? 'What a shop would pay you today' : 'What it is worth today'}</p>
         <p className="mt-1 font-mono-numbers text-[26px] font-semibold text-[var(--color-brand-text-primary)]">{fmtNum(total)} <span className="text-sm text-[var(--color-brand-text-muted)]">EGP</span></p>
@@ -177,7 +182,7 @@ function HoldingsCard({ type, holdings, lookup, toBase, onAdd }: { type: Investm
           <button type="button" aria-label="Holding options" onClick={(e) => setMenu({ id: h.id, anchor: e.currentTarget.getBoundingClientRect() })} className="text-[var(--color-brand-text-muted)]"><MoreVertical size={16} /></button>
         </div>
       ))}
-      <button type="button" onClick={onAdd} className="w-full border-t border-[var(--color-brand-border)] py-3 text-center text-sm font-semibold" style={{ color: '#12B0A0' }}>+ {type === 'gold' ? 'Add more gold' : 'Add more'}</button>
+      <button type="button" onClick={onAdd} className="w-full border-t border-[var(--color-brand-border)] py-3 text-center text-sm font-semibold text-[var(--color-brand-primary-ink)]">+ {type === 'gold' ? 'Add more gold' : 'Add more'}</button>
       {menu && (() => {
         const hh = holdings.find((x) => x.id === menu.id)
         if (!hh) return null
@@ -187,7 +192,7 @@ function HoldingsCard({ type, holdings, lookup, toBase, onAdd }: { type: Investm
           ]} />
         )
       })()}
-    </div>
+    </Card>
   )
 }
 
@@ -233,7 +238,7 @@ function GoldMarketCard({ lookupDisplay, officialUsdEgp: fallbackOfficial }: { l
         <h3 className="text-[15px] font-bold text-[var(--color-brand-text-primary)]">Gold today · Egypt</h3>
         <span className="flex items-center gap-1.5 text-xs text-[var(--color-brand-text-muted)]"><span className="h-1.5 w-1.5 rounded-full" style={{ background: status.color }} />{status.text}</span>
       </div>
-      <div className="overflow-hidden rounded-2xl border border-[var(--color-brand-border)]">
+      <Card padding="none" className="overflow-hidden">
         <div className="p-4" style={{ background: 'linear-gradient(150deg, rgba(237,196,99,.12), transparent 72%)' }}>
           <p style={{ ...micro, fontSize: 9 }}>24k · what a shop pays you</p>
           <p className="mt-1 font-mono-numbers text-[26px] font-semibold text-[var(--color-brand-text-primary)]">{priced ? fmtNum(local24!) : '—'} <span className="text-sm text-[var(--color-brand-text-muted)]">EGP/g</span></p>
@@ -266,7 +271,7 @@ function GoldMarketCard({ lookupDisplay, officialUsdEgp: fallbackOfficial }: { l
         ) : (
           <div className="border-t border-[var(--color-brand-border)] px-4 py-4 text-center text-sm text-[var(--color-brand-text-muted)]">Live gold prices are refreshing — check back shortly.</div>
         )}
-      </div>
+      </Card>
     </div>
   )
 }

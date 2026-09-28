@@ -1,10 +1,13 @@
 'use client'
 
 import { useState, useEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react'
+import { motion } from 'framer-motion'
 import { useShallow } from 'zustand/react/shallow'
 import { checkAIStatus } from '@/lib/ai/gemini'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT } from '@/lib/i18n'
+import { BuddgyIcon, type BuddgyMood } from '@/components/ai/BuddgyIcon'
+import { useBuddgyMood, buddgyStatusText } from '@/lib/ai/useBuddgyMood'
 
 interface AIChatBubbleProps {
   onClick: () => void
@@ -14,8 +17,35 @@ const ORB_SIZE = 44
 const EDGE_INSET = 12
 
 /**
+ * Ring + glow colour per mood (handoff README §6). Offline is the only mood with
+ * no glow — it should read as "switched off", not as another coloured state.
+ */
+const RING: Record<BuddgyMood, { border: string; glow: string | undefined }> = (() => {
+  const teal = 'var(--color-brand-primary-bright)'
+  const ring = (c: string) => ({
+    border: `color-mix(in srgb, ${c} 55%, transparent)`,
+    glow: `0 4px 14px -4px color-mix(in srgb, ${c} 55%, transparent)`,
+  })
+  return {
+    idle: ring(teal),
+    small: ring(teal),
+    listening: ring(teal),
+    thinking: ring(teal),
+    scanning: ring(teal),
+    done: ring('var(--color-brand-green)'),
+    happy: ring('var(--color-brand-gold)'),
+    alert: ring('var(--color-brand-amber)'),
+    error: ring('var(--color-brand-red)'),
+    offline: { border: 'var(--color-brand-border)', glow: undefined },
+  }
+})()
+
+/**
  * Draggable Buddgy orb. Drags vertically, snaps to the left/right edge, and a
  * tap (no drag) opens the AI chat. Resting `{side, top}` persists in Zustand.
+ *
+ * The icon is `BuddgyIcon`, whose face reflects what the assistant is doing; the
+ * ring and glow follow the same mood.
  */
 export function AIChatBubble({ onClick }: AIChatBubbleProps) {
   const t = useT()
@@ -23,6 +53,7 @@ export function AIChatBubble({ onClick }: AIChatBubbleProps) {
   const { orb, setBuddgyOrb } = useSettingsStore(
     useShallow((s) => ({ orb: s.buddgyOrb, setBuddgyOrb: s.setBuddgyOrb })),
   )
+  const mood = useBuddgyMood()
   const btnRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
@@ -54,24 +85,36 @@ export function AIChatBubble({ onClick }: AIChatBubbleProps) {
 
   if (!aiEnabled) return null
 
+  const ring = RING[mood]
+  const status = buddgyStatusText(mood)
+
   return (
-    <button
-      ref={btnRef}
-      type="button"
-      onPointerDown={handlePointerDown}
-      title={t.modals.fabAskAi}
-      aria-label={t.modals.fabAskAi}
-      style={{
-        top: orb.top,
-        ...(orb.side === 'left' ? { left: EDGE_INSET } : { right: EDGE_INSET }),
-        width: ORB_SIZE,
-        height: ORB_SIZE,
-        touchAction: 'none',
-      }}
-      className="fixed z-50 flex items-center justify-center overflow-hidden rounded-full border-[1.5px] border-[rgba(18,176,160,0.5)] opacity-95 shadow-[0_4px_14px_-4px_rgba(18,176,160,0.55)] transition-opacity duration-200 hover:opacity-100 cursor-grab active:cursor-grabbing"
-    >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/buddgy/buddgy-square.png" alt="" className="h-full w-full object-cover select-none" draggable={false} />
-    </button>
+    <>
+      <motion.button
+        ref={btnRef}
+        type="button"
+        onPointerDown={handlePointerDown}
+        title={t.modals.fabAskAi}
+        aria-label={t.modals.fabAskAi}
+        initial={{ scale: 0.6, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+        whileTap={{ scale: 0.92 }}
+        style={{
+          top: orb.top,
+          ...(orb.side === 'left' ? { left: EDGE_INSET } : { right: EDGE_INSET }),
+          width: ORB_SIZE,
+          height: ORB_SIZE,
+          touchAction: 'none',
+          borderColor: ring.border,
+          boxShadow: ring.glow,
+        }}
+        className="fixed z-50 flex items-center justify-center rounded-full border-[1.5px] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text)] opacity-95 transition-[border-color,box-shadow] duration-200 hover:opacity-100 cursor-grab active:cursor-grabbing"
+      >
+        <BuddgyIcon mood={mood} size={24} />
+      </motion.button>
+      {/* State is announced here rather than inferred from the face. */}
+      <span aria-live="polite" className="sr-only">{status ?? ''}</span>
+    </>
   )
 }

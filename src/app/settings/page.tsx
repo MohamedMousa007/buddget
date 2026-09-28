@@ -8,6 +8,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 import { SettingsRow } from '@/components/features/settings/SettingsRow'
 import { SkeletonList } from '@/components/ui/SkeletonList'
+import { Card } from '@/components/ui/card'
 import { useT, useLocale } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
@@ -21,9 +22,9 @@ function SectionHeader({ label }: { label: string }) {
 
 function SectionCard({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] divide-y divide-[var(--color-brand-border)] overflow-hidden">
+    <Card padding="none" divide className="overflow-hidden">
       {children}
-    </div>
+    </Card>
   )
 }
 
@@ -50,9 +51,10 @@ export default function SettingsPage() {
       <div className="px-4 py-4 lg:px-6 max-w-3xl mx-auto pb-10">
         {/* Identity header */}
         {user && (
-          <Link
-            href="/settings/profile"
-            className="flex items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-3.5 mb-2 hover:bg-[var(--color-brand-elevated)] transition-colors"
+          <Card
+            render={<Link href="/settings/profile" />}
+            padding="none"
+            className="flex items-center gap-3 px-4 py-3.5 mb-2 hover:bg-[var(--color-brand-elevated)]"
           >
             <div className="w-12 h-12 rounded-full overflow-hidden border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] flex items-center justify-center shrink-0">
               {avatarSrc
@@ -66,7 +68,7 @@ export default function SettingsPage() {
                 <p className="text-xs text-[var(--color-brand-text-muted)] truncate">{displayEmail}</p>
               ) : null}
             </div>
-          </Link>
+          </Card>
         )}
 
         {/* Account */}

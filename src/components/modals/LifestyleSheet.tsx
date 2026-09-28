@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
+import { Button } from '@/components/ui/button'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT } from '@/lib/i18n'
@@ -95,14 +96,15 @@ export function LifestyleSheet() {
           ]}
         />
 
-        <button
+        <Button
           type="button"
           onClick={handleSave}
           disabled={!canSave}
-          className="w-full h-11 rounded-xl bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)] text-sm font-semibold mt-2 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--color-brand-primary-hover)] transition-colors"
+          size="touch"
+          className="mt-2 w-full text-sm font-semibold"
         >
           {t.onboarding.lifestyleSave}
-        </button>
+        </Button>
       </div>
     </ModalShell>
   )

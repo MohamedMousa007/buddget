@@ -2,6 +2,9 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { createSafeLocalStorage } from '@/lib/store/safeLocalStorage'
 import type { PaymentMethodType } from '@/lib/store/types'
+// Type-only: erased at compile time, so this does not create a runtime cycle
+// between the store and the component that renders the mood.
+import type { BuddgyMood } from '@/components/ai/BuddgyIcon'
 
 export interface ExpensePrefill {
   date?: string
@@ -71,6 +74,15 @@ interface SettingsState {
   /** Draggable Buddgy orb resting position (persisted). */
   buddgyOrb: BuddgyOrbPosition
   setBuddgyOrb: (pos: BuddgyOrbPosition) => void
+  /**
+   * Which moods are currently true. Buddgy shows the highest-priority one, so
+   * callers set and clear the mood they own without having to know about the
+   * others — a finished OCR scan can't wipe an `offline` state it never set.
+   * NOT persisted: it describes this moment, not a preference.
+   */
+  buddgyActive: Partial<Record<BuddgyMood, boolean>>
+  /** Turn one mood on or off. `done`/`happy`/`error` self-clear (see the hook). */
+  setBuddgyMood: (mood: BuddgyMood, active: boolean) => void
   setSidebarOpen: (open: boolean) => void
   setActiveModal: (modal: string | null) => void
   setEditingExpenseId: (expenseId: string | null) => void
@@ -127,6 +139,15 @@ export const useSettingsStore = create<SettingsState>()(
       debtSheetPresetFamily: null,
       buddgyOrb: { side: 'right', top: 620 },
       setBuddgyOrb: (pos) => set({ buddgyOrb: pos }),
+      buddgyActive: {},
+      setBuddgyMood: (mood, active) =>
+        set((state) => {
+          if (Boolean(state.buddgyActive[mood]) === active) return state
+          const next = { ...state.buddgyActive }
+          if (active) next[mood] = true
+          else delete next[mood]
+          return { buddgyActive: next }
+        }),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
       setActiveModal: (modal) => set({ activeModal: modal }),
       setEditingExpenseId: (expenseId) => set({ editingExpenseId: expenseId }),

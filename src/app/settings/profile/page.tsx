@@ -7,6 +7,8 @@ import { getProfileCountryDisplayLabel } from '@/lib/profile/countryOptions'
 import { AvatarPickerModal } from '@/components/profile/AvatarPickerModal'
 import { SettingsSubPageShell } from '@/components/features/settings/SettingsSubPageShell'
 import { useProfilePage } from '@/hooks/useProfilePage'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 
 export default function SettingsProfilePage() {
   const p = useProfilePage()
@@ -14,7 +16,7 @@ export default function SettingsProfilePage() {
 
   return (
     <SettingsSubPageShell title={t.settings.hub.profile}>
-      <div className="bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl p-6">
+      <Card padding="none" className="p-6">
         <div className="flex flex-col sm:flex-row gap-6">
           <div className="w-32 shrink-0 flex flex-col items-center">
             <div className="relative">
@@ -36,13 +38,9 @@ export default function SettingsProfilePage() {
               )}
             </div>
             {!p.editMode && (
-              <button
-                type="button"
-                onClick={p.enterEditMode}
-                className="text-sm text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] border border-[var(--color-brand-border)] rounded-lg px-3 py-1.5 mt-3 w-full text-center transition-colors"
-              >
+              <Button variant="outline" size="touch" onClick={p.enterEditMode} className="mt-3 w-full">
                 {t.profile.editProfile}
-              </button>
+              </Button>
             )}
           </div>
 
@@ -91,23 +89,15 @@ export default function SettingsProfilePage() {
 
         {p.editMode && (
           <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-[var(--color-brand-border)]">
-            <button
-              type="button"
-              onClick={p.discard}
-              className="px-4 py-2 rounded-xl border border-[var(--color-brand-border)] text-sm text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
-            >
+            <Button variant="outline" size="touch" onClick={p.discard}>
               {t.profile.discard}
-            </button>
-            <button
-              type="button"
-              onClick={p.save}
-              className="px-4 py-2 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] text-sm font-semibold transition-colors"
-            >
+            </Button>
+            <Button size="touch" onClick={p.save} className="font-semibold">
               {t.profile.saveChanges}
-            </button>
+            </Button>
           </div>
         )}
-      </div>
+      </Card>
 
       <AvatarPickerModal open={p.avatarModalOpen} onClose={() => p.setAvatarModalOpen(false)} store={p.store} />
     </SettingsSubPageShell>

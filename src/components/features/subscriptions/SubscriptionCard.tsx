@@ -7,6 +7,7 @@ import { findBrandByKey } from '@/lib/constants/subscriptionCatalog'
 import { isCyclePaid } from '@/lib/subscriptions/subscriptionOccurrence'
 import { SubscriptionCardInfo } from '@/components/features/subscriptions/SubscriptionCardInfo'
 import { SubscriptionCardMenu } from '@/components/features/subscriptions/SubscriptionCardMenu'
+import { Card } from '@/components/ui/card'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 import { useLocalizedFormatters } from '@/hooks/useLocalizedFormatters'
@@ -62,11 +63,11 @@ export function SubscriptionCard({
           : t.subscriptions.perMonth
 
   return (
-    <div
-      className={cn(
-        'relative flex items-start gap-3 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3',
-        dimmed && 'opacity-70'
-      )}
+    <Card
+      variant="elevated"
+      radius="sm"
+      padding="sm"
+      className={cn('relative flex items-start gap-3', dimmed && 'opacity-70')}
     >
       <SubscriptionCardInfo
         sub={sub}
@@ -102,6 +103,6 @@ export function SubscriptionCard({
           reactivateSubscription={reactivateSubscription}
         />
       ) : null}
-    </div>
+    </Card>
   )
 }

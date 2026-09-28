@@ -6,6 +6,7 @@ import { motion, AnimatePresence, type MotionValue } from 'framer-motion'
 import { X, RotateCcw, Loader2, Trash2, MessageCircle, Mic, CheckCircle2 } from 'lucide-react'
 import type { VoiceState } from '@/hooks/useVoiceExpense'
 import { VoiceRecapEditor } from '@/components/voice/VoiceRecapEditor'
+import { Button } from '@/components/ui/button'
 import type { AIResponse, AIActionItem } from '@/lib/ai/gemini'
 
 const BARS = 36
@@ -316,13 +317,15 @@ function ErrorPanel({
         {error ?? 'Something went wrong'}
       </p>
       <div className="flex items-center gap-1.5 shrink-0">
-        <button
+        <Button
           type="button"
           onClick={onRedo}
-          className="inline-flex items-center gap-1 rounded-lg bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] px-2 py-1 text-xs text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-border)]"
+          variant="outline"
+          size="xs"
+          className="gap-1 rounded-lg bg-[var(--color-brand-elevated)] text-xs text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-border)]"
         >
           <RotateCcw className="h-3 w-3" /> Retry
-        </button>
+        </Button>
         <button
           type="button"
           onClick={onClose}
@@ -353,20 +356,23 @@ function AnswerPanel({
     <div className="px-4 py-3 space-y-2">
       <p className="text-sm text-[var(--color-brand-text-primary)] max-h-[34vh] overflow-y-auto">{message}</p>
       <div className="flex gap-2">
-        <button
+        <Button
           type="button"
           onClick={onOpenChat}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-primary)] px-3 py-2 text-xs font-semibold text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
+          size="sm"
+          className="h-8 flex-1 gap-1.5 rounded-xl px-3 text-xs font-semibold"
         >
           <MessageCircle className="h-3.5 w-3.5" /> Open in chat
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={onRedo}
-          className="rounded-xl border border-[var(--color-brand-border)] px-3 py-2 text-xs text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
+          variant="outline"
+          size="sm"
+          className="h-8 rounded-xl bg-transparent px-3 text-xs text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
         >
           Ask again
-        </button>
+        </Button>
         <button
           type="button"
           onClick={onClose}
@@ -394,13 +400,14 @@ function ClarifyPanel({
     <div className="px-4 py-3 space-y-2">
       <p className="text-xs text-[var(--color-brand-text-secondary)]">{message || 'Could you add a bit more detail?'}</p>
       <div className="flex gap-2">
-        <button
+        <Button
           type="button"
           onClick={onAnswer}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-primary)] px-3 py-2 text-xs font-semibold text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
+          size="sm"
+          className="h-8 flex-1 gap-1.5 rounded-xl px-3 text-xs font-semibold"
         >
           <Mic className="h-3.5 w-3.5" /> Answer by voice
-        </button>
+        </Button>
         <button
           type="button"
           onClick={onClose}
