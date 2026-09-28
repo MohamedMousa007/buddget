@@ -5,6 +5,7 @@ import type { CSSProperties } from 'react'
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { AuthModalBody } from '@/components/features/auth-modal/AuthModalBody'
 import { useT, useLocale } from '@/lib/i18n'
+import { BuddgetWordmark } from '@/components/brand'
 
 function blurActive() {
   ;(document.activeElement as HTMLElement | null)?.blur?.()
@@ -116,13 +117,8 @@ export function LandingGate() {
         <main className="mx-auto w-full max-w-md px-4 py-4 sm:py-8 relative z-10">
           {/* Large centred wordmark */}
           <div className="text-center mb-6 sm:mb-8">
-            <h1
-              className="text-5xl sm:text-6xl font-extrabold tracking-tight"
-              style={{ fontFamily: 'var(--font-heading), var(--font-sans)' }}
-            >
-              <span className="text-[var(--color-brand-text-primary)]">Bud</span>
-              <span className="text-[var(--color-brand-primary-ink)]">d</span>
-              <span className="text-[var(--color-brand-text-primary)]">get</span>
+            <h1 className="flex justify-center">
+              <BuddgetWordmark height={24} />
             </h1>
             <p className="mt-2 text-xs sm:text-sm text-[var(--color-brand-text-muted)]">
               {t.brand.tagline}

@@ -4,6 +4,7 @@ import type { CSSProperties } from 'react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/auth-context'
 import { emailLocalPart } from '@/lib/auth/emailLocalPart'
+import { BuddgetWordmark } from '@/components/brand'
 
 function getGreeting(hour: number, isArabic: boolean): string {
   if (isArabic) return hour < 12 ? 'صباح الخير' : 'مساء الخير'
@@ -116,18 +117,7 @@ export function WelcomeScreen() {
           }}
         >
           {/* Wordmark — always Latin / LTR */}
-          <div
-            style={{
-              fontFamily: 'var(--font-heading), var(--font-sans), sans-serif',
-              fontSize: '60px',
-              fontWeight: 800,
-              letterSpacing: '-2px',
-              lineHeight: 1,
-              direction: 'ltr',
-            }}
-          >
-            Bud<span style={{ color: '#12B0A0' }}>d</span>get
-          </div>
+          <BuddgetWordmark height={24} className="dark" />
 
           {/* Greeting */}
           <p

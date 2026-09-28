@@ -5,6 +5,9 @@ import { Fingerprint, Loader2, ScanFace } from 'lucide-react'
 import { useAuth } from '@/components/auth/auth-context'
 import { authenticate, getType, type BiometryType } from '@/lib/native/biometricAuth'
 import { useT } from '@/lib/i18n'
+import { BuddgetWordmark } from '@/components/brand'
+import { IconButton } from '@/components/ui/IconButton'
+import { Button } from '@/components/ui/button'
 
 /**
  * Full-screen biometric lock. Shown at launch when the SDK holds a session and
@@ -74,13 +77,8 @@ export function LockScreen() {
         }
       `}</style>
 
-      <h1
-        className="text-4xl font-extrabold tracking-tight"
-        style={{ fontFamily: 'var(--font-heading), var(--font-sans)' }}
-      >
-        <span className="text-[var(--color-brand-text-primary)]">Bud</span>
-        <span className="text-[var(--color-brand-primary-ink)]">d</span>
-        <span className="text-[var(--color-brand-text-primary)]">get</span>
+      <h1>
+        <BuddgetWordmark height={24} />
       </h1>
 
       {expired ? (
@@ -88,38 +86,37 @@ export function LockScreen() {
           <p className="mt-3 max-w-xs text-sm text-[var(--color-brand-text-muted)]">
             {t.auth.sessionExpired}
           </p>
-          <button
-            type="button"
-            onClick={() => void signOut()}
-            className="mt-8 flex h-12 items-center justify-center rounded-xl bg-[var(--color-brand-primary)] px-6 font-medium text-[var(--color-brand-on-primary)]"
-          >
+          <Button size="cta" onClick={() => void signOut()} className="mt-8 px-6">
             {t.common.signIn}
-          </button>
+          </Button>
         </>
       ) : (
         <>
           <p className="mt-3 text-sm text-[var(--color-brand-text-muted)]">{t.brand.tagline}</p>
-          <button
-            type="button"
+          <IconButton
             onClick={() => void run()}
             disabled={busy}
             aria-label={label}
-            className="mt-10 flex h-20 w-20 items-center justify-center rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[var(--color-brand-text-primary)] transition-colors hover:bg-[var(--color-brand-elevated)] disabled:opacity-60"
+            variant="outlined"
+            size="xl"
+            shape="round"
+            className="mt-10"
           >
             {busy ? (
               <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
             ) : (
               <Icon className="h-8 w-8" aria-hidden />
             )}
-          </button>
+          </IconButton>
           <p className="mt-4 text-sm text-[var(--color-brand-text-secondary)]">{label}</p>
-          <button
-            type="button"
+          <Button
+            variant="link"
+            size="sm"
             onClick={() => void signOut()}
-            className="absolute bottom-[max(env(safe-area-inset-bottom),2rem)] text-sm text-[var(--color-brand-text-muted)] underline-offset-4 hover:underline"
+            className="absolute bottom-[max(env(safe-area-inset-bottom),2rem)] text-[var(--color-brand-text-muted)] no-underline hover:underline"
           >
             {t.common.signOut}
-          </button>
+          </Button>
         </>
       )}
     </div>

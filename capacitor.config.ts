@@ -39,7 +39,7 @@ const config: CapacitorConfig = {
     SplashScreen: {
       launchShowDuration: 1500,
       launchAutoHide: true,
-      backgroundColor: '#0A0A0F',
+      backgroundColor: '#0A100F',
       androidSplashResourceName: 'splash',
       androidScaleType: 'CENTER_CROP',
       showSpinner: false,
@@ -48,14 +48,14 @@ const config: CapacitorConfig = {
     },
     StatusBar: {
       style: 'DARK',
-      backgroundColor: '#0A0A0F',
+      backgroundColor: '#0A100F',
     },
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
     LocalNotifications: {
       smallIcon: 'ic_stat_buddget',
-      iconColor: '#E50914',
+      iconColor: '#12B0A0',
     },
     Camera: {
       androidScaleType: 'CENTER_CROP',

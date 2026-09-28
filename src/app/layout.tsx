@@ -82,7 +82,7 @@ export const metadata: Metadata = {
     description: 'Track expenses, manage budgets, monitor debts. Free multi-currency planner.',
     images: [
       {
-        url: '/opengraph-image',
+        url: '/opengraph-image.png',
         width: 1200,
         height: 630,
         alt: 'Buddget — Personal Finance Tracker',
@@ -93,7 +93,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Buddget — Personal Finance Tracker',
     description: 'Track expenses, manage budgets, monitor debts. Free multi-currency planner.',
-    images: ['/opengraph-image'],
+    images: ['/opengraph-image.png'],
   },
   alternates: { canonical: 'https://buddget.app' },
   manifest: '/manifest.json',
@@ -139,6 +139,7 @@ export default async function RootLayout({
         <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
         <link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192" />
         <link rel="icon" href="/icons/icon-32.png" type="image/png" sizes="32x32" />
+        <link rel="icon" href="/icons/icon-48.png" type="image/png" sizes="48x48" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.svg" type="image/svg+xml" />

@@ -16,6 +16,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { FiatCurrencyField } from '@/components/ui/CurrencyField'
 import { localeInlineLabelClass, useLocale, useT } from '@/lib/i18n'
+import { BuddgetWordmark } from '@/components/brand'
 
 export function Sidebar() {
   const pathname = useNavPath()
@@ -38,9 +39,7 @@ export function Sidebar() {
     <aside className="hidden lg:flex flex-col w-44 h-screen bg-[var(--color-brand-card)] border-e border-[var(--color-brand-border)] fixed start-0 top-0 z-40 overflow-hidden">
       <div className="p-4">
         <Link href="/" className="flex items-center gap-2">
-          <span className="text-xl font-bold font-heading tracking-tight">
-            Bud<span className="text-[var(--color-brand-primary-ink)]">d</span>get
-          </span>
+          <BuddgetWordmark height={24} />
         </Link>
       </div>
 

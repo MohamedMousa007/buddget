@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { AppLink as Link } from '@/components/ui/AppLink'
+import { BuddgetWordmark } from '@/components/brand'
 
 /**
  * Shared layout for all /legal/* pages (Terms, Privacy Policy).
@@ -13,9 +14,7 @@ export default function LegalLayout({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-10 border-b border-white/5 backdrop-blur-md bg-[var(--color-brand-bg)]/80">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold font-heading tracking-tight">
-              Bud<span className="text-[var(--color-brand-primary-ink)]">d</span>get
-            </span>
+            <BuddgetWordmark height={24} />
           </Link>
           <nav className="flex items-center gap-4 text-xs text-[var(--color-brand-text-muted)]">
             <Link href="/legal/terms" className="hover:text-[var(--color-brand-text-primary)] transition-colors">

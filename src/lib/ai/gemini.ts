@@ -12,7 +12,7 @@ import {
   generateWithFallback,
   throwIfAiProxyNotOk,
 } from '@/lib/ai/generateWithFallback'
-import { apiUrl, apiFetch } from '@/lib/apiBase'
+import { apiFetch } from '@/lib/apiBase'
 
 export type AIAction =
   | 'add_goal'
@@ -584,11 +584,11 @@ export async function checkAIStatus(): Promise<{
   rateLimit?: { limitingEnabled: boolean; maxRequests: number; windowMs: number }
 }> {
   try {
-    // MUST go through apiUrl(): on iOS/Android the WebView serves from localhost
+    // MUST go through apiFetch/apiUrl (never both — that doubles the base): on iOS/Android the WebView serves from localhost
     // with no Next.js server, so a relative '/api/ai' 404s, this returns
     // `enabled: false`, and every AI surface (including the Buddgy orb, which
     // renders null when disabled) silently disappears on native.
-    const res = await apiFetch(apiUrl('/api/ai'))
+    const res = await apiFetch('/api/ai')
     if (!res.ok) return { enabled: false, model: '' }
     return await res.json()
   } catch {
