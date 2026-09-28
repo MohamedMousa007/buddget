@@ -16,6 +16,7 @@ import type { Goal } from '@/lib/store/types'
 import type { Dictionary } from '@/lib/i18n/types'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { OptionChip } from '@/components/ui/OptionChip'
 
 export type AddGoalSheetProps = {
   open: boolean
@@ -117,19 +118,14 @@ function AddGoalSheetForm({ editingGoal, onClose, title, selectClass, t }: Inner
                 <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.goals.linkedDebts}</Label>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {form.activeDebts.map((d) => (
-                    <button
+                    <OptionChip
                       key={d.id}
-                      type="button"
                       onClick={() => form.toggleDebtLink(d.id)}
-                      className={cn(
-                        'px-2.5 py-1 rounded-full text-xs border',
-                        form.linkedDebtIds.includes(d.id)
-                          ? 'border-[var(--color-brand-red)] bg-[var(--color-brand-primary)]/15'
-                          : 'border-[var(--color-brand-border)]'
-                      )}
+                      selected={form.linkedDebtIds.includes(d.id)}
+                      size="sm"
                     >
                       {d.name}
-                    </button>
+                    </OptionChip>
                   ))}
                 </div>
               </div>
@@ -138,19 +134,15 @@ function AddGoalSheetForm({ editingGoal, onClose, title, selectClass, t }: Inner
                 <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.goals.linkedAccounts}</Label>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {form.savingsOptions.map((a) => (
-                    <button
+                    <OptionChip
                       key={a.id}
-                      type="button"
                       onClick={() => form.toggleSavingsLink(a.id)}
-                      className={cn(
-                        'px-2.5 py-1 rounded-full text-xs border max-w-full truncate',
-                        form.linkedSavingsAccountIds.includes(a.id)
-                          ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/15'
-                          : 'border-[var(--color-brand-border)]'
-                      )}
+                      selected={form.linkedSavingsAccountIds.includes(a.id)}
+                      size="sm"
+                      className="max-w-full truncate"
                     >
                       {a.name}
-                    </button>
+                    </OptionChip>
                   ))}
                 </div>
                 <div className="mt-3">

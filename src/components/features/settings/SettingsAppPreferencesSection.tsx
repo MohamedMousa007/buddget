@@ -134,7 +134,7 @@ export function SettingsAppPreferencesSection({ store }: SettingsAppPreferencesS
         <Label className="text-sm text-[var(--color-brand-text-primary)]">
           {t.settings.languageLabel}
         </Label>
-        <LanguageToggle size="sm" />
+        <LanguageToggle />
       </div>
 
       <div className="flex items-center justify-between">

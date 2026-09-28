@@ -3,8 +3,8 @@
 import type { Dictionary } from '@/lib/i18n/types'
 import { GOAL_CATEGORIES } from '@/lib/constants/goalCategories'
 import type { GoalCategory } from '@/lib/store/types'
-import { cn } from '@/lib/utils'
 import { goalCategoryLabelKey } from '@/components/features/goals/goalCategoryLabel'
+import { OptionChip } from '@/components/ui/OptionChip'
 
 export type GoalCategoryPickerProps = {
   value: GoalCategory
@@ -23,22 +23,18 @@ export function GoalCategoryPicker({ value, onChange, labels }: GoalCategoryPick
         const raw = labels[goalCategoryLabelKey(c.value)]
         const label = typeof raw === 'string' ? raw : c.label
         return (
-          <button
+          <OptionChip
             key={c.value}
-            type="button"
             onClick={() => onChange(c.value)}
-            className={cn(
-              'px-2.5 py-1.5 rounded-full text-xs font-medium border transition-colors text-start max-w-[11rem]',
-              active
-                ? 'bg-[var(--color-brand-primary)]/20 border-[var(--color-brand-primary)] text-[var(--color-brand-text-primary)]'
-                : 'bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:border-[var(--color-brand-text-muted)]'
-            )}
+            selected={active}
+            size="sm"
+            className="max-w-[11rem]"
           >
             <span className="me-1" aria-hidden>
               {c.emoji}
             </span>
             {label}
-          </button>
+          </OptionChip>
         )
       })}
     </div>

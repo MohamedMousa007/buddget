@@ -10,6 +10,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { FAMILY_ACCENT, type PaymentVM } from '@/hooks/useDebtTabData'
 import type { DebtFamily } from '@/lib/debts/debtFamily'
 import { fmtWhole } from './heroCardShared'
+import { OptionChip } from '@/components/ui/OptionChip'
 
 const FAMILY_META: Record<DebtFamily, { label: string; Icon: typeof Check }> = {
   borrow: { label: 'Borrow', Icon: HandCoins },
@@ -48,18 +49,14 @@ export function DebtPaymentsFeed({ payments, currentFamily }: { payments: Paymen
   if (payments.length === 0) return null
 
   const chip = (val: 'all' | DebtFamily, label: string) => (
-    <button
+    <OptionChip
       key={val}
-      type="button"
       onClick={() => setFilter(val)}
-      className={`h-8 rounded-full px-3.5 text-[13px] font-semibold transition-colors ${
-        filter === val
-          ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
-          : 'border border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]'
-      }`}
+      selected={filter === val}
+      size="sm"
     >
       {label}
-    </button>
+    </OptionChip>
   )
 
   return (

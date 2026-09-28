@@ -95,7 +95,7 @@ export function AuthModalBody({ showBranding = true }: { showBranding?: boolean 
       </AnimatePresence>
 
       <div className="flex justify-center mt-4">
-        <LanguageToggle size="sm" />
+        <LanguageToggle />
       </div>
     </>
   )
