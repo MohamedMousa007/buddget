@@ -18,6 +18,8 @@ import { rgba } from '@/lib/utils/color'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { micro } from '@/lib/ui/microLabelStyle'
 import type { Currency } from '@/lib/store/types'
+import { IconButton } from '@/components/ui/IconButton'
+import { SelectableCard } from '@/components/ui/SelectableCard'
 
 export interface AddSavingsSheetV3Props {
   open: boolean
@@ -102,9 +104,9 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId, le
                     {pocketIdentity(selected.account)} · {fmtNum(selected.account.currentBalance)} {selected.account.currency}
                   </p>
                 </div>
-                <button type="button" onClick={() => setLocked(false)} className="rounded-full border border-[var(--color-brand-border)] px-3 py-1.5 text-xs font-medium text-[var(--color-brand-text-secondary)]">
+                <Button variant="outline" size="sm" onClick={() => setLocked(false)} className="rounded-full">
                   Change
-                </button>
+                </Button>
               </Card>
             ) : (
               <div className="mt-2 flex gap-3 overflow-x-auto no-scrollbar" style={{ scrollSnapType: 'x mandatory', padding: '2px 0 4px' }}>
@@ -140,15 +142,15 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId, le
             <div className="relative">
               <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="What was it for?"
                 size="brand" className="pr-10" />
-              <button type="button" onClick={() => { setNote(''); setNoteOpen(false) }} aria-label="Clear note"
-                className="absolute end-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center text-[var(--color-brand-text-muted)]">
+              <IconButton onClick={() => { setNote(''); setNoteOpen(false) }} aria-label="Clear note" size="sm"
+                className="absolute end-2 top-1/2 -translate-y-1/2">
                 <X size={16} />
-              </button>
+              </IconButton>
             </div>
           ) : (
-            <button type="button" onClick={() => setNoteOpen(true)} className="inline-flex items-center gap-1.5 text-sm font-semibold" style={{ color: '#12B0A0' }}>
+            <Button variant="link" size="sm" onClick={() => setNoteOpen(true)} className="font-semibold no-underline hover:underline">
               <Plus size={14} /> Add note
-            </button>
+            </Button>
           )}
         </div>
 
@@ -167,22 +169,18 @@ function SourceCard({ icon, iconColor, title, sub, on, onClick }: {
   icon: React.ReactNode; iconColor: string; title: string; sub: string; on: boolean; onClick: () => void
 }) {
   return (
-    <button type="button" onClick={onClick} className="relative rounded-2xl p-3 text-left"
-      style={{
-        border: on ? '1px solid rgba(18,176,160,.5)' : '1px solid var(--color-brand-border)',
-        background: on ? 'rgba(18,176,160,.06)' : 'var(--color-brand-elevated)',
-      }}>
+    <SelectableCard layout="stack" selected={on} onClick={onClick}>
       <div className="flex items-start justify-between">
         <span className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: rgba(iconColor, .14), color: iconColor }}>
           {icon}
         </span>
-        <span className="flex h-5 w-5 items-center justify-center rounded-full" style={{ border: on ? undefined : '1.5px solid var(--color-brand-border)', background: on ? '#12B0A0' : 'transparent' }}>
+        <span className="flex h-5 w-5 items-center justify-center rounded-full" style={{ border: on ? undefined : '1.5px solid var(--color-brand-border)', background: on ? 'var(--color-brand-primary)' : 'transparent' }}>
           {on && <span className="h-2.5 w-2.5 rounded-full bg-white" />}
         </span>
       </div>
       <p className="mt-2 text-[13px] font-semibold text-[var(--color-brand-text-primary)]">{title}</p>
       <p className="font-mono-numbers text-[10.5px] text-[var(--color-brand-text-muted)]">{sub}</p>
-    </button>
+    </SelectableCard>
   )
 }
 

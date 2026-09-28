@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Scrim } from '@/components/ui/Scrim'
 import { useDismissable } from '@/hooks/useDismissable'
+import { IconButton } from '@/components/ui/IconButton'
 
 export interface DeleteAccountDialogProps {
   open: boolean
@@ -52,15 +53,15 @@ export function DeleteAccountDialog({ open, onClose, onConfirm, inProgress, erro
             aria-modal="true"
             aria-labelledby="delete-account-title"
           >
-            <button
-              type="button"
+            <IconButton
               onClick={handleClose}
               disabled={inProgress}
-              className="absolute end-3 top-3 rounded-lg p-2 text-[var(--color-brand-text-muted)] transition-colors hover:bg-[var(--color-brand-text-primary)]/5 hover:text-[var(--color-brand-text-primary)] disabled:opacity-50"
               aria-label={t.common.close}
+              size="sm"
+              className="absolute end-3 top-3"
             >
               <X className="h-5 w-5" />
-            </button>
+            </IconButton>
 
             <div className="flex items-start gap-3 mb-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-red)]/15 text-[var(--color-brand-red)]">

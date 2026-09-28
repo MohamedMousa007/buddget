@@ -17,6 +17,7 @@ import { convertCurrency } from '@/lib/utils/currency'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { micro } from '@/lib/ui/microLabelStyle'
 import type { GoldKarat, InvestmentAssetType, InvestmentHolding } from '@/lib/store/types'
+import { IconButton } from '@/components/ui/IconButton'
 
 const fmtCompact = (n: number) => {
   const a = Math.abs(n)
@@ -179,7 +180,9 @@ function HoldingsCard({ type, holdings, lookup, toBase, onAdd }: { type: Investm
           </div>
           <span className="w-16 text-right font-mono-numbers text-[12.5px] text-[var(--color-brand-text-secondary)]">{fmtNum(h.quantity)}{type === 'gold' ? ' g' : ''}</span>
           <span className="w-[92px] text-right font-mono-numbers text-[13.5px] font-semibold text-[var(--color-brand-text-primary)]">{worth != null ? fmtNum(worth) : '—'}</span>
-          <button type="button" aria-label="Holding options" onClick={(e) => setMenu({ id: h.id, anchor: e.currentTarget.getBoundingClientRect() })} className="text-[var(--color-brand-text-muted)]"><MoreVertical size={16} /></button>
+          <IconButton aria-label="Holding options" onClick={(e) => setMenu({ id: h.id, anchor: e.currentTarget.getBoundingClientRect() })}>
+            <MoreVertical size={16} />
+          </IconButton>
         </div>
       ))}
       <button type="button" onClick={onAdd} className="w-full border-t border-[var(--color-brand-border)] py-3 text-center text-sm font-semibold text-[var(--color-brand-primary-ink)]">+ {type === 'gold' ? 'Add more gold' : 'Add more'}</button>

@@ -3,6 +3,7 @@
 import { Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { BudgetPlan } from '@/lib/store/types'
+import { IconButton } from '@/components/ui/IconButton'
 
 export interface BudgetPlanTabsProps {
   plans: BudgetPlan[]
@@ -64,14 +65,15 @@ export function BudgetPlanTabs({
           </div>
         )
       })}
-      <button
-        type="button"
+      <IconButton
         onClick={onAddPlan}
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-dashed border-[var(--color-brand-border)] text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)] hover:border-[var(--color-brand-primary)] transition-colors"
         aria-label={labels.addPlan}
+        variant="outlined"
+        size="sm"
+        className="shrink-0 border-dashed hover:border-[var(--color-brand-primary)]"
       >
         <Plus className="h-5 w-5" />
-      </button>
+      </IconButton>
     </div>
   )
 }

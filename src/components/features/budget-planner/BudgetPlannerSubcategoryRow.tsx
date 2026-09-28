@@ -7,6 +7,7 @@ import { NumberPad } from '@/components/ui/NumberPad'
 import type { BudgetPlanSubcategory } from '@/lib/store/types'
 import { BudgetPlannerEmojiPicker } from '@/components/features/budget-planner/BudgetPlannerEmojiPicker'
 import type { BudgetPlannerCategoryRowLabels } from '@/components/features/budget-planner/budgetPlannerCategoryLabels'
+import { IconButton } from '@/components/ui/IconButton'
 
 export interface BudgetPlannerSubcategoryRowProps {
   sub: BudgetPlanSubcategory
@@ -65,14 +66,9 @@ export function BudgetPlannerSubcategoryRow({ sub, labels, onUpdate, onDelete }:
           <NumberPad value={amountStr} onChange={setAmountStr} onDone={blurAmount} onClose={blurAmount} />,
           document.body,
         )}
-      <button
-        type="button"
-        onClick={onDelete}
-        className="p-1 text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-red)]"
-        aria-label={labels.delete}
-      >
+      <IconButton onClick={onDelete} aria-label={labels.delete}>
         <Trash2 className="h-3.5 w-3.5" />
-      </button>
+      </IconButton>
     </div>
   )
 }

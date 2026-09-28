@@ -5,6 +5,7 @@ import type { AppSettings, BudgetPlanCategory, Currency } from '@/lib/store/type
 import { BudgetPlannerCategoryNameBlock } from '@/components/features/budget-planner/BudgetPlannerCategoryNameBlock'
 import { BudgetPlannerCategoryCurrencyAmountField } from '@/components/features/budget-planner/BudgetPlannerCategoryCurrencyAmountField'
 import type { BudgetPlannerCategoryRowLabels } from '@/components/features/budget-planner/budgetPlannerCategoryLabels'
+import { IconButton } from '@/components/ui/IconButton'
 
 export interface BudgetPlannerCategoryRowHeaderProps {
   category: BudgetPlanCategory
@@ -85,14 +86,13 @@ export function BudgetPlannerCategoryRowHeader({
           onCurrencyChange={(currency) => onUpdateCategory({ currency })}
         />
       </div>
-      <button
-        type="button"
+      <IconButton
         onClick={onDeleteCategory}
-        className="cursor-pointer inline-flex shrink-0 items-center justify-center min-w-11 min-h-11 rounded-lg text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-red)]"
         aria-label={labels.delete}
+        className="shrink-0"
       >
         <Trash2 className="h-4 w-4" />
-      </button>
+      </IconButton>
     </div>
   )
 }

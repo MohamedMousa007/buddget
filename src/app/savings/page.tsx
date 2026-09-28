@@ -39,6 +39,7 @@ import { savingsPace } from '@/lib/savings/savingsPace'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { convertCurrency } from '@/lib/utils/currency'
 import type { SavingsAccount } from '@/lib/store/types'
+import { IconButton } from '@/components/ui/IconButton'
 
 export default function SavingsPage() {
   useHydrateSavings()
@@ -226,13 +227,16 @@ export default function SavingsPage() {
               <Badge variant="muted" className="min-w-[21px] px-1.5 font-mono-numbers text-[11px] font-semibold text-[var(--color-brand-text-secondary)]">
                 {pockets.length}
               </Badge>
-              <button
-                type="button" aria-label="Add a pocket"
+              <IconButton
+                aria-label="Add a pocket"
                 onClick={() => guard(() => setNewAccountOpen(true))}
-                className="ms-auto flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]"
+                variant="tinted"
+                size="sm"
+                shape="round"
+                className="ms-auto"
               >
                 <Plus size={16} />
-              </button>
+              </IconButton>
             </div>
             <PocketsCarousel
               pockets={pocketVMs}

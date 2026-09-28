@@ -8,6 +8,7 @@ import { CURRENCY_META, COMMON_CURRENCIES } from '@/lib/constants/currencyMeta'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { cn } from '@/lib/utils'
 import type { Currency } from '@/lib/store/types'
+import { IconButton } from '@/components/ui/IconButton'
 
 interface CurrencySheetProps {
   open: boolean
@@ -86,14 +87,15 @@ export function CurrencySheet({
           <span className="text-[17px] font-semibold text-[var(--color-brand-text-primary)]">
             Currency
           </span>
-          <button
-            type="button"
+          <IconButton
             onClick={onClose}
             aria-label="Close"
-            className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-[var(--color-brand-elevated)] p-2 text-[var(--color-brand-text-muted)]"
+            variant="tinted"
+            size="sm"
+            shape="round"
           >
             <X className="h-full w-full" />
-          </button>
+          </IconButton>
         </div>
         <div className="relative mx-0.5 mb-2 shrink-0">
           <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-brand-text-muted)]" />

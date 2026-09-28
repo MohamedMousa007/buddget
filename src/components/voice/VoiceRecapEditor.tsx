@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card'
 import type { AIAction, AIActionItem } from '@/lib/ai/gemini'
 import { EXPENSE_ENTRY_CATEGORIES } from '@/lib/constants/finance'
 import { CurrencyField } from '@/components/ui/CurrencyField'
+import { IconButton } from '@/components/ui/IconButton'
 
 export interface VoiceRecapEditorProps {
   actions: AIActionItem[]
@@ -105,14 +106,9 @@ export function VoiceRecapEditor({
                 <span className="text-xs font-medium text-[var(--color-brand-text-secondary)]">
                   {meta.emoji} {meta.label}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => onRemove(idx)}
-                  className="rounded-md p-1 text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)] hover:text-[var(--color-brand-red)]"
-                  aria-label="Remove item"
-                >
+                <IconButton onClick={() => onRemove(idx)} aria-label="Remove item">
                   <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                </IconButton>
               </div>
 
               <div className="mt-2 grid grid-cols-2 gap-2">
@@ -212,14 +208,9 @@ export function VoiceRecapEditor({
         >
           <Mic className="h-4 w-4" /> Redo
         </Button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-xl px-2.5 py-2.5 text-sm text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
-          aria-label="Cancel"
-        >
+        <IconButton onClick={onCancel} aria-label="Cancel">
           <X className="h-4 w-4" />
-        </button>
+        </IconButton>
       </div>
     </div>
   )

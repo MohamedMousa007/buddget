@@ -5,6 +5,8 @@ import { Bell } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useNotifications } from '@/hooks/useNotifications'
 import { useT } from '@/lib/i18n'
+import { IconButton } from '@/components/ui/IconButton'
+import { Button } from '@/components/ui/button'
 import {
   confirmRecurringDebtPayment,
   snoozeRecurringDebtPayment,
@@ -59,17 +61,14 @@ export function NotificationInbox({
 
   return (
     <div ref={wrapRef} className={cn('relative', className)}>
-      <button
-        type="button"
+      <IconButton
         onClick={() => setOpen((v) => !v)}
-        className={cn(
-          'relative cursor-pointer inline-flex items-center justify-center rounded-lg p-2',
-          variant === 'dark'
-            ? 'border border-white/15 bg-white/10 text-white hover:bg-white/15'
-            : 'border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)]',
-        )}
+        variant={variant === 'dark' ? 'onBrand' : 'outlined'}
+        size="sm"
+        className={cn(variant === 'dark' && 'border-white/15')}
         aria-label={t.notifications.title}
         aria-expanded={open}
+        aria-haspopup="dialog"
       >
         <Bell className="h-4 w-4" />
         {unreadCount > 0 ? (
@@ -77,7 +76,7 @@ export function NotificationInbox({
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         ) : null}
-      </button>
+      </IconButton>
 
       {open ? (
         <div
@@ -87,13 +86,9 @@ export function NotificationInbox({
         >
           <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-3 py-2.5">
             <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{t.notifications.title}</p>
-            <button
-              type="button"
-              onClick={() => void markAllRead()}
-              className="cursor-pointer text-xs text-[var(--color-brand-primary-ink)] hover:underline"
-            >
+            <Button variant="link" size="xs" onClick={() => void markAllRead()} className="no-underline hover:underline">
               {t.notifications.markAllRead}
-            </button>
+            </Button>
           </div>
           <div className="px-3 py-3 space-y-3">
             {notifications.length > 0 ? (
@@ -111,22 +106,23 @@ export function NotificationInbox({
                         <p className="mt-0.5 text-xs leading-relaxed text-[var(--color-brand-text-secondary)]">{n.body}</p>
                         {n.type === 'recurring_due' && n.recurringId ? (
                           <div className="mt-2 flex flex-wrap gap-2">
-                            <button
-                              type="button"
+                            <Button
+                              variant="ghost"
+                              size="xs"
                               onClick={() => {
                                 void confirmRecurringDebtPayment(n.recurringId!)
                               }}
-                              className="rounded-lg bg-[var(--color-brand-green)]/20 px-2.5 py-1 text-xs font-medium text-[var(--color-brand-green)] hover:bg-[var(--color-brand-green)]/30"
+                              className="bg-[var(--color-brand-green)]/20 text-[var(--color-brand-green)] hover:bg-[var(--color-brand-green)]/30"
                             >
                               {t.notifications.recurringConfirmPaid}
-                            </button>
-                            <button
-                              type="button"
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="xs"
                               onClick={() => snoozeRecurringDebtPayment(n.recurringId!)}
-                              className="rounded-lg border border-[var(--color-brand-border)] px-2.5 py-1 text-xs text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
                             >
                               {t.notifications.recurringSnooze}
-                            </button>
+                            </Button>
                           </div>
                         ) : null}
                       </div>

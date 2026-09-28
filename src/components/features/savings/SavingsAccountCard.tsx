@@ -7,6 +7,8 @@ import { useT } from '@/lib/i18n'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 import { SavingsCardConversionLine } from '@/components/features/savings/SavingsCardConversionLine'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { IconButton } from '@/components/ui/IconButton'
+import { Button } from '@/components/ui/button'
 
 export interface SavingsAccountCardProps {
   account: SavingsAccount
@@ -16,9 +18,6 @@ export interface SavingsAccountCardProps {
   onEdit: () => void
   onDelete: () => void
 }
-
-const withdrawBtnClass =
-  'inline-flex flex-1 min-w-[5rem] items-center justify-center gap-1 rounded-xl bg-[var(--color-brand-red)] py-2 text-xs font-semibold text-white hover:bg-[var(--color-brand-red-hover)] transition-colors'
 
 /**
  * Single savings bucket with balance, FX sublines, and transfer actions.
@@ -64,48 +63,28 @@ export function SavingsAccountCard({
           </div>
         </div>
         <div className="flex shrink-0 gap-2">
-          <button
-            type="button"
-            onClick={onEdit}
-            title={t.common.edit}
-            aria-label={t.common.edit}
-            className="inline-flex items-center justify-center min-w-11 min-h-11 rounded-lg text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)] hover:text-[var(--color-brand-text-primary)]"
-          >
-            <Pencil className="h-4 w-4" aria-hidden />
-          </button>
-          <button
-            type="button"
-            onClick={onDelete}
-            title={t.common.delete}
-            aria-label={t.common.delete}
-            className="inline-flex items-center justify-center min-w-11 min-h-11 rounded-lg text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)] hover:text-[var(--color-brand-red)]"
-          >
-            <Trash2 className="h-4 w-4" aria-hidden />
-          </button>
+          <IconButton onClick={onEdit} title={t.common.edit} aria-label={t.common.edit}>
+            <Pencil className="size-4" aria-hidden />
+          </IconButton>
+          <IconButton variant="danger" onClick={onDelete} title={t.common.delete} aria-label={t.common.delete}>
+            <Trash2 className="size-4" aria-hidden />
+          </IconButton>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-2 pt-1">
-        <button
-          type="button"
-          onClick={onAdd}
-          className="inline-flex flex-1 min-w-[5rem] items-center justify-center gap-1 rounded-xl bg-[var(--color-brand-green)] py-2 text-xs font-semibold text-white hover:bg-[var(--color-brand-green-hover)] transition-colors"
-        >
-          <Plus className="h-3.5 w-3.5" />
+        <Button variant="success" size="sm" onClick={onAdd} className="min-w-[5rem] flex-1 rounded-xl">
+          <Plus className="size-3.5" />
           {t.savings.addToSavings}
-        </button>
-        <button type="button" onClick={onWithdraw} className={withdrawBtnClass}>
-          <Minus className="h-3.5 w-3.5" />
+        </Button>
+        <Button variant="destructive-solid" size="sm" onClick={onWithdraw} className="min-w-[5rem] flex-1 rounded-xl">
+          <Minus className="size-3.5" />
           {t.savings.withdraw}
-        </button>
-        <button
-          type="button"
-          onClick={onUpdateBalance}
-          className="inline-flex flex-1 min-w-[5rem] items-center justify-center gap-1 rounded-xl border border-[var(--color-brand-border)] py-2 text-xs font-medium text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
-        >
-          <Pencil className="h-3.5 w-3.5" />
+        </Button>
+        <Button variant="outline" size="sm" onClick={onUpdateBalance} className="min-w-[5rem] flex-1 rounded-xl">
+          <Pencil className="size-3.5" />
           {t.savings.updateBalance}
-        </button>
+        </Button>
       </div>
     </div>
   )

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
+import { IconButton } from '@/components/ui/IconButton'
 
 /** Whole-number formatter used across debt hero cards (no cents, grouped). */
 export function fmtWhole(n: number): string {
@@ -28,14 +29,16 @@ export function EditPin({
   const [anchor, setAnchor] = useState<DOMRect | null>(null)
   return (
     <>
-      <button
-        type="button"
+      <IconButton
         onClick={(e) => setAnchor(e.currentTarget.getBoundingClientRect())}
         aria-label={label}
-        className="absolute end-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+        variant="onBrand"
+        size="sm"
+        shape="round"
+        className="absolute end-3 top-3"
       >
         <MoreVertical className="h-4 w-4" aria-hidden />
-      </button>
+      </IconButton>
       <CardActionMenu
         anchor={anchor}
         onClose={() => setAnchor(null)}

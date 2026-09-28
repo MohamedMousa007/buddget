@@ -8,6 +8,7 @@ import type { ClearedVM } from '@/hooks/useDebtTabData'
 import type { DebtFamily } from '@/lib/debts/debtFamily'
 import { fmtWhole } from './heroCardShared'
 import { useModalTitleId } from '@/components/modals/ModalShell'
+import { IconButton } from '@/components/ui/IconButton'
 
 const FAMILY_TAG: Record<DebtFamily, string> = {
   borrow: 'Borrow',
@@ -41,14 +42,15 @@ export function ClearedVaultSheet({ open, onClose, cleared, base }: { open: bool
             {cleared.length} cleared · {fmtWhole(sum)} {base} paid off
           </p>
         </div>
-        <button
-          type="button"
+        <IconButton
           onClick={onClose}
           aria-label="Close"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-white/8 text-white/70 hover:bg-white/12"
+          variant="onBrand"
+          size="sm"
+          shape="round"
         >
           <X className="h-4 w-4" />
-        </button>
+        </IconButton>
       </div>
 
       <div className="px-5 pb-6 pt-4">
@@ -102,14 +104,15 @@ export function ClearedVaultSheet({ open, onClose, cleared, base }: { open: bool
                   Original {fmtWhole(detail.original)} {detail.currency} · {detail.clearedMonth}
                 </p>
               </div>
-              <button
-                type="button"
+              <IconButton
                 onClick={() => setSelected(null)}
                 aria-label="Close history"
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/8 text-white/70 hover:bg-white/12"
+                variant="onBrand"
+                size="sm"
+                shape="round"
               >
                 <X className="h-4 w-4" />
-              </button>
+              </IconButton>
             </div>
             {detail.history.map((h, i) => (
               <div key={i} className="flex items-center gap-3 border-t border-white/8 px-4 py-3">

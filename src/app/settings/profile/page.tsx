@@ -9,6 +9,7 @@ import { SettingsSubPageShell } from '@/components/features/settings/SettingsSub
 import { useProfilePage } from '@/hooks/useProfilePage'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { IconButton } from '@/components/ui/IconButton'
 
 export default function SettingsProfilePage() {
   const p = useProfilePage()
@@ -27,14 +28,15 @@ export default function SettingsProfilePage() {
                   : <User className="w-10 h-10 text-[var(--color-brand-text-secondary)]" />}
               </div>
               {p.editMode && (
-                <button
-                  type="button"
+                <IconButton
                   onClick={() => p.setAvatarModalOpen(true)}
-                  className="absolute bottom-0 end-0 w-7 h-7 rounded-full bg-[var(--color-brand-primary)] flex items-center justify-center hover:bg-[var(--color-brand-primary-hover)] transition-colors"
                   aria-label={t.profile.changeAvatar}
+                  size="sm"
+                  shape="round"
+                  className="absolute bottom-0 end-0"
                 >
                   <Pencil className="w-3.5 h-3.5 text-white" />
-                </button>
+                </IconButton>
               )}
             </div>
             {!p.editMode && (

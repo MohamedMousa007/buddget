@@ -21,6 +21,10 @@ import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { micro } from '@/lib/ui/microLabelStyle'
 import type { PocketVM } from '@/components/features/savings-v3/PocketsCarousel'
 import type { Currency, InvestmentAssetType, SavingsWithdrawalPurpose } from '@/lib/store/types'
+import { IconButton } from '@/components/ui/IconButton'
+import { Button } from '@/components/ui/button'
+import { SelectableCard } from '@/components/ui/SelectableCard'
+import { OptionChip } from '@/components/ui/OptionChip'
 
 const INVEST_CLASSES: Array<{ type: InvestmentAssetType; label: string; icon: React.ReactNode }> = [
   { type: 'gold', label: 'Gold', icon: <Coins size={15} /> },
@@ -208,15 +212,14 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
               {REASONS.map((r) => {
                 const on = !moveOn && reason === r.key
                 return (
-                  <button key={r.key} type="button" onClick={() => { setMoveOn(false); setReason(r.key); setDebtId(null); setAssetClass(null) }}
-                    className="flex items-center gap-3 rounded-2xl p-3 text-left"
-                    style={{ minHeight: 62, border: on ? `1px solid ${rgba(r.color, .5)}` : '1px solid var(--color-brand-border)', background: on ? rgba(r.color, .06) : 'var(--color-brand-elevated)' }}>
+                  <SelectableCard key={r.key} selected={on} onClick={() => { setMoveOn(false); setReason(r.key); setDebtId(null); setAssetClass(null) }}
+                    className="min-h-[62px]">
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: rgba(r.color, .14), color: r.color }}>{r.icon}</span>
                     <div className="min-w-0">
                       <p className="text-[12.5px] font-semibold text-[var(--color-brand-text-primary)]">{r.title}</p>
                       <p className="text-[10px] text-[var(--color-brand-text-muted)]">{r.sub}</p>
                     </div>
-                  </button>
+                  </SelectableCard>
                 )
               })}
             </div>
@@ -233,15 +236,13 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
                   {debtChips.map((d) => {
                     const on = debtId === d.id
                     return (
-                      <button key={d.id} type="button" onClick={() => setDebtId(d.id)}
-                        className="flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-left"
-                        style={{ border: on ? '1px solid rgba(18,176,160,.5)' : '1px solid var(--color-brand-border)', background: on ? 'rgba(18,176,160,.08)' : 'var(--color-brand-elevated)' }}>
+                      <SelectableCard key={d.id} layout="list" selected={on} onClick={() => setDebtId(d.id)} className="w-auto shrink-0 gap-2 px-3 py-2">
                         <CreditCard size={15} style={{ color: '#E5484D' }} />
                         <span>
                           <span className="block text-[12.5px] font-semibold text-[var(--color-brand-text-primary)]">{d.name}</span>
                           <span className="block font-mono-numbers text-[10px] text-[var(--color-brand-text-muted)]">{fmtNum(d.left)} left</span>
                         </span>
-                      </button>
+                      </SelectableCard>
                     )
                   })}
                 </div>
@@ -258,16 +259,15 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
                   const target = topupByClass.get(c.type)
                   const on = assetClass === c.type
                   return (
-                    <button key={c.type} type="button"
+                    <SelectableCard key={c.type} layout="list" selected={on}
                       onClick={() => { if (target) setAssetClass(c.type); else onNeedAsset?.(c.type) }}
-                      className="flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-left"
-                      style={{ border: on ? '1px solid rgba(237,196,99,.5)' : '1px solid var(--color-brand-border)', background: on ? 'rgba(237,196,99,.08)' : 'var(--color-brand-elevated)' }}>
+                      className="w-auto shrink-0 gap-2 px-3 py-2">
                       <span style={{ color: '#EDC463' }}>{c.icon}</span>
                       <span>
                         <span className="block text-[12.5px] font-semibold text-[var(--color-brand-text-primary)]">{c.label}</span>
                         <span className="block text-[10px] text-[var(--color-brand-text-muted)]">{target ? `Add to ${target.name}` : 'Add one first'}</span>
                       </span>
-                    </button>
+                    </SelectableCard>
                   )
                 })}
               </div>
@@ -280,9 +280,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
             <span style={{ ...micro, letterSpacing: '.12em' }}>Or</span>
             <span className="h-px flex-1 bg-[var(--color-brand-border)]" />
           </div>
-          <button type="button" onClick={() => { setMoveOn(true); setReason(null); setDebtId(null); setAssetClass(null) }}
-            className="flex w-full items-center gap-3 rounded-2xl p-3 text-left"
-            style={{ border: moveOn ? '1px solid rgba(126,174,249,.5)' : '1px solid var(--color-brand-border)', background: moveOn ? 'rgba(126,174,249,.06)' : 'var(--color-brand-elevated)' }}>
+          <SelectableCard selected={moveOn} onClick={() => { setMoveOn(true); setReason(null); setDebtId(null); setAssetClass(null) }}>
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(126,174,249,.14)', color: '#7EAEF9' }}><ArrowRight size={18} /></span>
             <div className="min-w-0 flex-1">
               <p className="text-[13px] font-semibold text-[var(--color-brand-text-primary)]">Move to another pocket</p>
@@ -290,19 +288,17 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
                 {!moveOn ? 'Stays inside your savings' : moveToId ? `Going to ${pockets.find((p) => p.account.id === moveToId)?.account.name}` : 'Pick a pocket below'}
               </p>
             </div>
-            <span className="flex h-[22px] w-[22px] items-center justify-center rounded-full" style={{ border: moveOn ? undefined : '1.5px solid var(--color-brand-border)', background: moveOn ? '#7EAEF9' : 'transparent' }}>
+            <span className="flex h-[22px] w-[22px] items-center justify-center rounded-full" style={{ border: moveOn ? undefined : '1.5px solid var(--color-brand-border)', background: moveOn ? 'var(--color-brand-primary)' : 'transparent' }}>
               {moveOn && <span className="h-2.5 w-2.5 rounded-full bg-white" />}
             </span>
-          </button>
+          </SelectableCard>
 
           {moveOn && (
             <div className="flex gap-2 overflow-x-auto no-scrollbar">
               {pockets.filter((p) => p.account.id !== fromId).map((p) => (
-                <button key={p.account.id} type="button" onClick={() => setMoveToId(p.account.id)}
-                  className="shrink-0 rounded-xl px-3 py-2 text-xs font-medium"
-                  style={{ border: moveToId === p.account.id ? '1px solid rgba(126,174,249,.5)' : '1px solid var(--color-brand-border)', background: moveToId === p.account.id ? 'rgba(126,174,249,.1)' : 'var(--color-brand-elevated)', color: 'var(--color-brand-text-primary)' }}>
+                <OptionChip key={p.account.id} selected={moveToId === p.account.id} onClick={() => setMoveToId(p.account.id)}>
                   {p.account.name}
-                </button>
+                </OptionChip>
               ))}
             </div>
           )}
@@ -311,21 +307,20 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
             <div className="relative">
               <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="What was it for?"
                 size="brand" className="pr-10" />
-              <button type="button" onClick={() => { setNote(''); setNoteOpen(false) }} aria-label="Clear note"
-                className="absolute end-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center text-[var(--color-brand-text-muted)]"><X size={16} /></button>
+              <IconButton onClick={() => { setNote(''); setNoteOpen(false) }} aria-label="Clear note" size="sm"
+                className="absolute end-2 top-1/2 -translate-y-1/2"><X size={16} /></IconButton>
             </div>
           ) : (
-            <button type="button" onClick={() => setNoteOpen(true)} className="inline-flex items-center gap-1.5 text-sm font-semibold" style={{ color: '#E5484D' }}>
+            <Button variant="link" size="sm" onClick={() => setNoteOpen(true)} className="font-semibold no-underline hover:underline">
               <Plus size={14} /> Add note
-            </button>
+            </Button>
           )}
         </div>
 
         <div className="px-5 pt-2 pb-[max(20px,env(safe-area-inset-bottom))]">
-          <button type="button" onClick={submit} disabled={!canSubmit} className="w-full"
-            style={{ height: 52, borderRadius: 14, fontWeight: 600, fontSize: 15, background: canSubmit ? '#E5484D' : 'var(--color-brand-elevated)', color: canSubmit ? '#fff' : 'var(--color-brand-text-muted)', cursor: canSubmit ? 'pointer' : 'default' }}>
+          <Button size="cta-block" onClick={submit} disabled={!canSubmit}>
             {ctaLabel || 'Withdraw'}
-          </button>
+          </Button>
         </div>
       </div>
     </ModalShell>

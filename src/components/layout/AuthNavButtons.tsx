@@ -14,6 +14,7 @@ import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { ProfileDropdown } from '@/components/layout/ProfileDropdown'
 import { NotificationInbox } from '@/components/notifications/NotificationInbox'
 import { isNative } from '@/lib/native/isNative'
+import { IconButton } from '@/components/ui/IconButton'
 
 const btnClass =
   'inline-flex items-center justify-center px-2 py-1.5 rounded-lg text-xs sm:text-xs font-semibold transition-colors border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] sm:px-3'
@@ -30,16 +31,18 @@ function ProfileAvatarWithMenu({ className }: { className?: string }) {
 
   return (
     <div ref={containerRef} className="relative">
-      <button
-        type="button"
+      <IconButton
         onClick={() => setOpen((v) => !v)}
+        variant="tinted"
+        size="sm"
+        shape="round"
         className={cn(
-          'rounded-full overflow-hidden border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] flex items-center justify-center shrink-0 w-9 h-9 hover:ring-2 hover:ring-[var(--color-brand-primary)]/40 transition-all cursor-pointer',
+          'size-9 overflow-hidden border-[var(--color-brand-border)] hover:ring-2 hover:ring-[var(--color-brand-primary)]/40',
           className
         )}
         aria-label={t.nav.profileMenu}
         aria-expanded={open}
-        aria-haspopup="true"
+        aria-haspopup="menu"
       >
         {src ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -47,7 +50,7 @@ function ProfileAvatarWithMenu({ className }: { className?: string }) {
         ) : (
           <User className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
         )}
-      </button>
+      </IconButton>
       <ProfileDropdown open={open} onClose={() => setOpen(false)} containerRef={containerRef} />
     </div>
   )

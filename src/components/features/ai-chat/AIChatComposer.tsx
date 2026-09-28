@@ -3,6 +3,7 @@
 import { Send } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { useT } from '@/lib/i18n'
+import { IconButton } from '@/components/ui/IconButton'
 
 export interface AIChatComposerProps {
   value: string
@@ -26,15 +27,15 @@ export function AIChatComposer({ value, onChange, onSend, disabled }: AIChatComp
           onKeyDown={(e) => e.key === 'Enter' && onSend()}
           className="flex-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] text-sm"
         />
-        <button
-          type="button"
+        <IconButton
           onClick={onSend}
           disabled={!value.trim() || disabled}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] transition-colors disabled:opacity-50"
           aria-label={t.ai.sendMessage}
+          size="sm"
+          className="shrink-0"
         >
           <Send className="w-5 h-5" />
-        </button>
+        </IconButton>
       </div>
     </div>
   )

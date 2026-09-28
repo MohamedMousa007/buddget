@@ -50,6 +50,9 @@ const iconButtonVariants = cva(
         md: "size-11 [&_svg:not([class*='size-'])]:size-5",
         /** 48px — matches a form control, for a lone action beside an input. */
         lg: "size-12 [&_svg:not([class*='size-'])]:size-[22px]",
+        /** 80px — a hero control that is the whole point of the screen: the
+         *  biometric unlock, the record button. Not for toolbars. */
+        xl: "size-20 [&_svg:not([class*='size-'])]:size-8",
       },
       shape: {
         /** Squared with the app's control radius. */

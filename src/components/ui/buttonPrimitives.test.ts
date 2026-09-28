@@ -14,7 +14,7 @@ import { selectableCardVariants } from '@/components/ui/SelectableCard'
  */
 describe('IconButton', () => {
   it('guarantees a 44px hit area at every size', () => {
-    for (const size of ['sm', 'md', 'lg'] as const) {
+    for (const size of ['sm', 'md', 'lg', 'xl'] as const) {
       const cls = iconButtonVariants({ size })
       expect(cls, `size=${size}`).toContain('after:min-h-[44px]')
       expect(cls, `size=${size}`).toContain('after:min-w-[44px]')

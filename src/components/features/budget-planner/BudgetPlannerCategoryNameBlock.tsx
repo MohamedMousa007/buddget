@@ -12,6 +12,7 @@ import {
 } from '@/lib/budget/budgetPlannerPresets'
 import { BudgetPlannerEmojiPicker } from '@/components/features/budget-planner/BudgetPlannerEmojiPicker'
 import type { BudgetPlannerCategoryRowLabels } from '@/components/features/budget-planner/budgetPlannerCategoryLabels'
+import { IconButton } from '@/components/ui/IconButton'
 
 function customEntriesFromPlan(planCategories: BudgetPlanCategory[], currentId: string) {
   const seen = new Set<string>()
@@ -165,17 +166,16 @@ export function BudgetPlannerCategoryNameBlock({
             {popoverItems}
           </PopoverContent>
         </Popover>
-        <button
-          type="button"
+        <IconButton
           onClick={() => {
             setDraftName(category.name)
             setPenMode(true)
           }}
-          className="cursor-pointer inline-flex shrink-0 items-center justify-center min-w-11 min-h-11 rounded-lg text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]"
           aria-label={labels.editCategoryName}
+          className="shrink-0"
         >
           <Pencil className="h-4 w-4" />
-        </button>
+        </IconButton>
       </div>
     </div>
   )

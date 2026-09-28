@@ -11,6 +11,7 @@ import { SwipeToDelete } from '@/components/expenses/SwipeToDelete'
 import { TransactionRow } from '@/components/transactions/TransactionRow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { rgba } from '@/lib/utils/color'
+import { IconButton } from '@/components/ui/IconButton'
 
 const fmtSigned = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(Math.round(n)).toLocaleString('en-US')}`
 
@@ -86,9 +87,14 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
             </button>
           ))}
         </div>
-        <button type="button" aria-label="Filters" className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]">
+        <IconButton
+          aria-label="Filters"
+          variant="tinted"
+          shape="round"
+          className="shrink-0"
+        >
           <Funnel size={16} />
-        </button>
+        </IconButton>
       </div>
 
       {days.map(([day, rows]) => (

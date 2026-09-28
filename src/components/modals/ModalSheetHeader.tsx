@@ -4,6 +4,7 @@ import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
 import { useModalTitleId } from '@/components/modals/ModalShell'
+import { IconButton } from '@/components/ui/IconButton'
 
 /**
  * Deprecated: ModalShell now always renders the drag-handle grab strip, so a
@@ -33,14 +34,9 @@ export function ModalSheetHeader({ title, onClose, titleRowClassName = 'mb-4' }:
         )}
       >
         <h3 id={useModalTitleId()} className="text-base font-semibold text-[var(--color-brand-text-primary)]">{title}</h3>
-        <button
-          type="button"
-          onClick={onClose}
-          className="inline-flex items-center justify-center min-w-10 min-h-10 rounded-lg hover:bg-[var(--color-brand-elevated)] transition-colors"
-          aria-label={t.common.close}
-        >
+        <IconButton onClick={onClose} aria-label={t.common.close}>
           <X className="w-5 h-5 text-[var(--color-brand-text-muted)]" aria-hidden />
-        </button>
+        </IconButton>
       </div>
     </>
   )

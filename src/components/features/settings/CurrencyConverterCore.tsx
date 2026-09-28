@@ -7,6 +7,7 @@ import { useT } from '@/lib/i18n'
 import { CONVERTER_CODES } from '@/components/features/settings/currencyConverterConstants'
 import { CurrencyConverterAmountBlock } from '@/components/features/settings/CurrencyConverterAmountBlock'
 import type { Dictionary } from '@/lib/i18n/types'
+import { IconButton } from '@/components/ui/IconButton'
 
 type SettingsCopy = Dictionary['settings']
 
@@ -67,14 +68,15 @@ export function CurrencyConverterCore({ store, t }: { store: FinanceStore; t: Se
       />
 
       <div className="flex justify-center">
-        <button
-          type="button"
+        <IconButton
           onClick={handleSwap}
-          className="p-2 rounded-full bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] hover:bg-[var(--color-brand-card)] transition-colors"
           aria-label={tc.common.ariaSwapCurrencies}
+          variant="tinted"
+          size="sm"
+          shape="round"
         >
           <ArrowDownUp className="w-4 h-4 text-[var(--color-brand-text-secondary)]" aria-hidden />
-        </button>
+        </IconButton>
       </div>
 
       <CurrencyConverterAmountBlock

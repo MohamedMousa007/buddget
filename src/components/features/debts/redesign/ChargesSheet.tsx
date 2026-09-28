@@ -7,6 +7,7 @@ import { ExpenseDayList } from '@/components/expenses/ExpenseDayList'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useShallow } from 'zustand/react/shallow'
 import { useModalTitleId } from '@/components/modals/ModalShell'
+import { IconButton } from '@/components/ui/IconButton'
 
 export interface ChargesSheetTarget {
   pmId: string
@@ -32,14 +33,16 @@ export function ChargesSheet({ open, onClose, target }: { open: boolean; onClose
           <h2 id={useModalTitleId()} className="text-2xl font-bold text-[var(--color-brand-text-primary)]">Expenses</h2>
           <p className="mt-0.5 text-sm text-[var(--color-brand-text-muted)]">Filtered to this card</p>
         </div>
-        <button
-          type="button"
+        <IconButton
           onClick={onClose}
           aria-label="Close"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]"
+          variant="tinted"
+          size="sm"
+          shape="round"
+          className="shrink-0"
         >
           <X className="h-4 w-4" />
-        </button>
+        </IconButton>
       </div>
 
       {target ? (

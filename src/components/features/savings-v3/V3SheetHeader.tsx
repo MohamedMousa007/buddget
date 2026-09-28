@@ -3,6 +3,7 @@
 import { Children, isValidElement, type ReactNode } from 'react'
 import { X } from 'lucide-react'
 import { useModalTitleId } from '@/components/modals/ModalShell'
+import { IconButton } from '@/components/ui/IconButton'
 
 function Title({ children }: { children: ReactNode }) {
   return <h2 id={useModalTitleId()} className="text-[22px] font-bold text-[var(--color-brand-text-primary)]">{children}</h2>
@@ -33,14 +34,14 @@ function V3SheetHeaderBase({ onClose, children }: V3SheetHeaderProps) {
       <div className="min-w-0 flex-1">{rest}</div>
       <div className="flex shrink-0 items-center gap-2">
         {extra}
-        <button
-          type="button"
+        <IconButton
           onClick={onClose}
           aria-label="Close"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]"
+          variant="tinted"
+          className="shrink-0"
         >
           <X size={18} />
-        </button>
+        </IconButton>
       </div>
     </div>
   )

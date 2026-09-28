@@ -280,7 +280,7 @@ function RecordingView({
             className="absolute -inset-6 rounded-full bg-[var(--color-brand-primary)]/20 blur-2xl"
           />
           <div
-            className="relative flex h-20 w-20 items-center justify-center rounded-full bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)] shadow-2xl shadow-red-900/40 select-none"
+            className="relative flex size-20 items-center justify-center rounded-full bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)] shadow-2xl shadow-[var(--color-brand-primary)]/40 select-none"
             aria-label={isRecording ? 'Release to transcribe' : 'Hold to record'}
           >
             <Mic className="h-9 w-9 pointer-events-none" />

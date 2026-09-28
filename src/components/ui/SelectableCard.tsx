@@ -17,6 +17,9 @@ const selectableCardVariants = cva(
         tile: 'flex-col items-center gap-2.5 rounded-2xl px-1.5 py-3.5 text-center',
         /** A compact row inside a scrolling list — a checkbox list of categories. */
         list: 'min-h-11 items-center gap-3 rounded-xl px-2.5 py-1.5',
+        /** Icon and a radio mark on the first line, then title and subtitle under
+         *  them — the savings "what is this for?" cards. */
+        stack: 'flex-col gap-2 rounded-2xl p-3',
       },
       selected: {
         true: 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary-soft)]',

@@ -9,6 +9,7 @@ import { heroCardStyle } from '@/components/features/income/incomeGlass'
 import { PaydayTimeline } from '@/components/features/income/PaydayTimeline'
 import type { IncomeOccurrence } from '@/lib/utils/incomeOccurrences'
 import type { IncomeSourceType } from '@/lib/store/types'
+import { IconButton } from '@/components/ui/IconButton'
 
 interface Props {
   sourceType?: IncomeSourceType
@@ -39,6 +40,8 @@ interface Props {
   onCardTap?: () => void
   /** When set, a pencil button (top-right) opens the source editor. */
   onEdit?: () => void
+  /** Accessible name for the ⋮ menu trigger. Required whenever `onEdit` is passed —
+   *  the trigger is icon-only, so without it a screen reader announces just "button". */
   editAriaLabel?: string
   footer: ReactNode
 }
@@ -89,14 +92,13 @@ export function RecurringIncomeCard({
       ) : null}
       {!showTick && onEdit ? (
         <>
-          <button
-            type="button"
+          <IconButton
             onClick={(e) => { e.stopPropagation(); setMenuAnchor(e.currentTarget.getBoundingClientRect()) }}
-            aria-label={editAriaLabel}
-            className="absolute end-1 top-1 flex h-11 w-11 items-center justify-center text-white/55 transition-colors hover:text-white"
+            aria-label={editAriaLabel ?? 'Edit'}
+            className="absolute end-1 top-1"
           >
             <MoreVertical className="h-4 w-4" />
-          </button>
+          </IconButton>
           <CardActionMenu
             anchor={menuAnchor}
             onClose={() => setMenuAnchor(null)}

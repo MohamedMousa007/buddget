@@ -463,14 +463,14 @@ function ResultView({
           ) : null}
           <p className="truncate text-base font-semibold text-[var(--color-brand-text-primary)]">Review &amp; save</p>
         </div>
-        <button
-          type="button"
+        <IconButton
           onClick={onCancel}
           aria-label="Close"
-          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+          shape="round"
+          className="shrink-0"
         >
           <X className="h-5 w-5" />
-        </button>
+        </IconButton>
       </div>
 
       {/* Amount + currency — mirrors the expense sheet's field pattern. */}
@@ -596,14 +596,9 @@ function ReceiptBreakdown({
             <li key={`charge-${i}`} className="flex items-center gap-2 text-sm">
               <span className="flex-1 truncate text-[var(--color-brand-text-muted)]">{c.label}</span>
               <span className="tabular-nums text-[var(--color-brand-text-secondary)]">{fmt(c.amount)}</span>
-              <button
-                type="button"
-                aria-label={`Remove ${c.label}`}
-                onClick={() => onChange({ charges: charges.filter((_, idx) => idx !== i) })}
-                className="text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-red)]"
-              >
+              <IconButton aria-label={`Remove ${c.label}`} onClick={() => onChange({ charges: charges.filter((_, idx) => idx !== i) })}>
                 <X className="h-3.5 w-3.5" />
-              </button>
+              </IconButton>
             </li>
           ))}
         </ul>

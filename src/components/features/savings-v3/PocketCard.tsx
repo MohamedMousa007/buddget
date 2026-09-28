@@ -6,6 +6,7 @@ import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccount
 import { pocketColor, pocketIdentity } from '@/lib/savings/pocketIdentity'
 import { rgba } from '@/lib/utils/color'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
+import { IconButton } from '@/components/ui/IconButton'
 
 export interface PocketCardProps {
   account: SavingsAccount
@@ -95,13 +96,14 @@ export function PocketCard({
               {selected && <Check size={15} color="#fff" strokeWidth={3} />}
             </span>
           ) : (
-            <button
-              type="button" onClick={(e) => onMenu?.(e.currentTarget.getBoundingClientRect())} aria-label="Pocket menu"
-              className="flex items-center justify-center shrink-0 text-[var(--color-brand-text-muted)]"
+            <IconButton
+              onClick={(e) => onMenu?.(e.currentTarget.getBoundingClientRect())}
+              aria-label="Pocket menu"
               style={{ width: 32, height: 32, marginTop: -4, marginRight: -6 }}
+              className="shrink-0"
             >
               <MoreVertical size={18} />
-            </button>
+            </IconButton>
           )}
         </div>
 
