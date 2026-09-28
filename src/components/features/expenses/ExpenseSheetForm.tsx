@@ -22,6 +22,7 @@ import { IconButton } from '@/components/ui/IconButton'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { FieldButton } from '@/components/ui/FieldButton'
 import { Switch } from '@/components/ui/switch'
+import { AccentTile, accentTileGridClass, accentTileGridStyle } from '@/components/ui/AccentTile'
 
 const HIDE_SCROLL = '[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
 
@@ -231,45 +232,28 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
             <div className="-mx-5 px-5">
               <div ref={catRef} onScroll={onCatScroll} className={`overflow-x-auto pb-0.5 ${HIDE_SCROLL}`}>
                 <div
-                  className="grid w-max gap-2"
-                  style={{ gridAutoFlow: 'column', gridTemplateRows: 'repeat(2,60px)', gridAutoColumns: '66px' }}
+                  role="radiogroup"
+                  aria-label={t.expenseForm.category}
+                  className={accentTileGridClass}
+                  style={accentTileGridStyle}
                 >
                   {EXPENSE_CATEGORY_GRID.map((c) => {
-                    const on = c.id === category
                     const Icon = c.icon
-                    const tileStyle: React.CSSProperties = on
-                      ? { background: rgba(c.accent, 0.15), border: `1px solid ${rgba(c.accent, 0.55)}` }
-                      : {
-                          background: 'var(--color-brand-elevated)',
-                          border: c.nonspend
-                            ? '1px dashed var(--color-brand-border)'
-                            : '1px solid var(--color-brand-border)',
-                        }
                     return (
-                      <button
+                      <AccentTile
                         key={c.id}
-                        type="button"
+                        accent={c.accent}
+                        selected={c.id === category}
+                        dashed={c.nonspend}
                         onClick={() => setCategory(c.id)}
-                        aria-pressed={on}
-                        style={tileStyle}
-                        className="relative flex flex-col items-center justify-center gap-1.5 rounded-2xl transition-all"
-                      >
-                        {c.nonspend ? (
-                          <span className="absolute top-1.5 inline-flex w-3.5 h-3.5 text-[var(--color-brand-text-muted)] end-1.5">
-                            <ArrowLeftRight className="w-full h-full" strokeWidth={2.4} />
+                        icon={<Icon />}
+                        label={t.expenseForm.categoryLabels[c.id] ?? c.id}
+                        badge={c.nonspend ? (
+                          <span className="absolute end-1.5 top-1.5 inline-flex h-3.5 w-3.5 text-[var(--color-brand-text-muted)]">
+                            <ArrowLeftRight className="h-full w-full" strokeWidth={2.4} />
                           </span>
                         ) : null}
-                        <Icon
-                          className="w-6 h-6"
-                          style={{ color: on ? c.accent : 'var(--color-brand-text-muted)' }}
-                        />
-                        <span
-                          className="whitespace-nowrap text-[10px] font-semibold"
-                          style={{ color: on ? 'var(--color-brand-text-primary)' : 'var(--color-brand-text-secondary)' }}
-                        >
-                          {t.expenseForm.categoryLabels[c.id] ?? c.id}
-                        </span>
-                      </button>
+                      />
                     )
                   })}
                 </div>

@@ -6,6 +6,7 @@ import { MANUAL_INCOME_SOURCE_TYPES, ALL_INCOME_SOURCE_TYPES } from '@/lib/const
 import { incomeTypeGridItem } from '@/lib/constants/categoryGrid'
 import { rgba } from '@/lib/utils/color'
 import type { IncomeSourceType } from '@/lib/store/types'
+import { AccentTile, accentTileGridClass, accentTileGridStyle } from '@/components/ui/AccentTile'
 
 const HIDE_SCROLL = '[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
 
@@ -33,35 +34,23 @@ export function IncomeSourceTypePicker({
   return (
     <div className={`overflow-x-auto pb-0.5 ${HIDE_SCROLL}`}>
       <div
-        className="grid w-max gap-2"
-        style={{ gridAutoFlow: 'column', gridTemplateRows: 'repeat(2,60px)', gridAutoColumns: '66px' }}
+        role="radiogroup"
+        aria-label={labels.sourceTypeLabel}
+        className={accentTileGridClass}
+        style={accentTileGridStyle}
       >
         {list.map((st) => {
-          const active = value === st
           const { icon: Icon, accent } = incomeTypeGridItem(st)
-          const tileStyle: React.CSSProperties = active
-            ? { background: rgba(accent, 0.15), border: `1px solid ${rgba(accent, 0.55)}` }
-            : { background: 'var(--color-brand-elevated)', border: '1px solid var(--color-brand-border)' }
           return (
-            <button
+            <AccentTile
               key={st}
-              type="button"
+              accent={accent}
+              selected={value === st}
               disabled={disabled}
               onClick={() => onChange(st)}
-              aria-pressed={active}
-              style={tileStyle}
-              className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl transition-all ${
-                disabled ? 'cursor-not-allowed opacity-60' : ''
-              }`}
-            >
-              <Icon className="h-6 w-6" style={{ color: active ? accent : 'var(--color-brand-text-muted)' }} />
-              <span
-                className="whitespace-nowrap text-[10px] font-semibold"
-                style={{ color: active ? 'var(--color-brand-text-primary)' : 'var(--color-brand-text-secondary)' }}
-              >
-                {incomeSourceTypeLabel(labels, st)}
-              </span>
-            </button>
+              icon={<Icon />}
+              label={incomeSourceTypeLabel(labels, st)}
+            />
           )
         })}
       </div>

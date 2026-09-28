@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, Lock } from 'lucide-react'
+import { Lock } from 'lucide-react'
 import type { AddDebtHook } from '@/hooks/useAddDebtSheet'
 import type { Currency } from '@/lib/store/types'
 import { CurrencySheet } from '@/components/ui/CurrencySheet'
