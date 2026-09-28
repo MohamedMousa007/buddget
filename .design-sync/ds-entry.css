@@ -1,0 +1,38 @@
+/* design-sync stylesheet entry — compiled to .design-sync/compiled.css (= cfg.cssEntry).
+ *
+ * Buddget's real stylesheet is src/app/globals.css, but it cannot ship as-is:
+ *   1. it opens with `@import "tailwindcss"` + `@import "tw-animate-css"` — npm packages,
+ *      not files — so the design runtime resolves nothing and every utility class is dead.
+ *   2. the brand families are injected by next/font at runtime, so outside Next.js the
+ *      `--font-*` variables fall back to system fonts.
+ *
+ * The font @import MUST be the first rule: CSS drops an @import that follows other rules,
+ * and Tailwind emits this file's content in source order (a previous version placed it
+ * after the globals import and it landed on line 6517, loading nothing).
+ */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap');
+@import "../src/app/globals.css";
+
+/* Scan the real component tree. Tailwind v4 bases auto-detection on the input file's own
+ * directory, so without this the output has almost no utilities. */
+@source "../src";
+
+/* globals.css declares the font vars inside `@theme inline`, and `inline` BAKES the literal
+ * value into every generated utility (`.font-sans { font-family: ui-sans-serif, ... }`) rather
+ * than emitting a var() reference — so a plain :root override cannot reach them. Re-declaring
+ * them in a later @theme block is what actually re-points the baked utilities. */
+@theme inline {
+  --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* The hand-written utilities in globals.css (.font-mono-numbers, .font-heading, the
+ * html[data-locale='ar'] rules) DO reference var(--font-*), so they need the plain
+ * custom properties as well. */
+:root {
+  --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-sans-ar: 'IBM Plex Sans Arabic', ui-sans-serif, system-ui, sans-serif;
+}

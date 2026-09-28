@@ -26,6 +26,13 @@ const eslintConfig = defineConfig([
     "public/worker-*.js",
     // Design handoff references (not app code)
     "design/**",
+    // design-sync artifacts: the generated design-system bundle, the emitted
+    // declaration tree, and the staged converter scripts. All regenerated, never
+    // hand-edited, and all gitignored.
+    "ds-bundle/**",
+    "ds-types/**",
+    ".ds-sync/**",
+    ".design-sync/**",
   ]),
 ]);
 
