@@ -12,6 +12,8 @@ import { Scrim } from '@/components/ui/Scrim'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { registerBackGuard } from '@/lib/navigation/backGuard'
 import { useLocale, useT } from '@/lib/i18n'
+import { IconButton } from '@/components/ui/IconButton'
+import { Button } from '@/components/ui/button'
 
 interface Props {
   title: string
@@ -78,16 +80,11 @@ export function SettingsSubPageShell({ title, children, showSave = true }: Props
       <PageHeader>
         <PageHeaderContent>
           <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={onBackClick}
-              className="flex h-11 w-11 items-center justify-center rounded-xl text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)] transition-colors shrink-0"
-              aria-label="Back to Settings"
-            >
+            <IconButton onClick={onBackClick} aria-label={t.common.back}>
               {isRtl
                 ? <ChevronRight className="h-5 w-5" />
                 : <ChevronLeft className="h-5 w-5" />}
-            </button>
+            </IconButton>
             <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)]">{title}</h1>
             {showSave ? <div className="ms-auto"><SettingsSaveButton dirty={dirty} onSaved={() => { snapshotRef.current = useFinanceStore.getState().settings; bumpBaseline((n) => n + 1) }} /></div> : null}
           </div>
@@ -118,27 +115,15 @@ export function SettingsSubPageShell({ title, children, showSave = true }: Props
                 {t.settings.unsavedBody}
               </p>
               <div className="mt-5 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setConfirmOpen(false)}
-                  className="h-11 px-4 rounded-xl border border-[var(--color-brand-border)] text-sm font-medium text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-elevated)] transition-colors"
-                >
+                <Button variant="outline" size="touch" onClick={() => setConfirmOpen(false)}>
                   {t.common.cancel}
-                </button>
-                <button
-                  type="button"
-                  onClick={onDiscardAndLeave}
-                  className="h-11 px-4 rounded-xl border border-[var(--color-brand-border)] text-sm font-medium text-[var(--color-brand-red)] hover:bg-[var(--color-brand-red)]/10 transition-colors"
-                >
+                </Button>
+                <Button variant="destructive" size="touch" onClick={onDiscardAndLeave}>
                   {t.profile.discard}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void onSaveAndLeave()}
-                  className="h-11 px-4 rounded-xl bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] text-sm font-semibold transition-colors"
-                >
+                </Button>
+                <Button size="touch" onClick={() => void onSaveAndLeave()}>
                   {t.common.save}
-                </button>
+                </Button>
               </div>
             </motion.div>
           </div>

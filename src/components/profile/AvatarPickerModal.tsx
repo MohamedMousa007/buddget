@@ -15,6 +15,8 @@ import { Scrim } from '@/components/ui/Scrim'
 import type { FinanceStore } from '@/lib/store/types'
 import { useDismissable } from '@/hooks/useDismissable'
 import { IconButton } from '@/components/ui/IconButton'
+import { OptionChip } from '@/components/ui/OptionChip'
+import { SelectableCard } from '@/components/ui/SelectableCard'
 
 type Tab = 'choose' | 'upload' | 'remove'
 
@@ -102,43 +104,37 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
 
         <div className="flex gap-2 mb-5">
           {(['choose', 'upload', 'remove'] as const).map((tabKey) => (
-            <button
+            <OptionChip
               key={tabKey}
-              type="button"
+              size="sm"
+              selected={tab === tabKey}
               onClick={() => setTab(tabKey)}
-              className={cn(
-                'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-                tab === tabKey
-                  ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
-                  : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)]'
-              )}
             >
               {tabKey === 'choose' ? t.profile.avatarTabPick : tabKey === 'upload' ? t.profile.avatarTabUpload : t.profile.avatarTabRemove}
-            </button>
+            </OptionChip>
           ))}
         </div>
 
         {tab === 'choose' && (
-          <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
+          <div role="radiogroup" aria-label={t.profile.avatarTabPick} className="grid grid-cols-4 sm:grid-cols-6 gap-3">
             {CARTOON_AVATAR_PRESETS.map((p) => {
               const src = cartoonAvatarUrlForPreset(p.id)
               const isSelected = selectedPreset === p.id
               return (
-                <button
+                <SelectableCard
                   key={p.id}
-                  type="button"
                   title={p.label}
+                  aria-label={p.label}
+                  selected={isSelected}
                   onClick={() => setSelectedPreset(p.id)}
                   className={cn(
-                    'w-16 h-16 rounded-full overflow-hidden ring-2 transition-all duration-150 cursor-pointer',
-                    isSelected
-                      ? 'ring-[var(--color-brand-primary)] scale-105'
-                      : 'ring-transparent hover:ring-[var(--color-brand-primary)]'
+                    'size-16 w-auto shrink-0 overflow-hidden rounded-full border-2 p-0 transition-all duration-150',
+                    isSelected && 'scale-105'
                   )}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={src} alt={p.label} className="w-full h-full object-cover" width={64} height={64} />
-                </button>
+                </SelectableCard>
               )
             })}
           </div>
@@ -159,23 +155,25 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={uploadPreview} alt="Preview" className="w-full h-full object-cover" />
                 </div>
-                <button
-                  type="button"
+                <Button
+                  variant="link"
+                  size="sm"
                   onClick={() => { setUploadPreview(null); fileRef.current?.click() }}
-                  className="text-sm text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] transition-colors"
+                  className="text-[var(--color-brand-text-secondary)] no-underline hover:text-[var(--color-brand-text-primary)] hover:underline"
                 >
                   {t.profile.avatarChooseDifferent}
-                </button>
+                </Button>
               </div>
             ) : (
-              <button
-                type="button"
+              <SelectableCard
+                as="action"
+                layout="tile"
                 onClick={() => fileRef.current?.click()}
-                className="w-full py-10 rounded-xl border-2 border-dashed border-[var(--color-brand-border)] hover:border-[var(--color-brand-primary)] text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] transition-colors text-center"
+                className="border-2 border-dashed py-10 text-[var(--color-brand-text-secondary)] hover:border-[var(--color-brand-primary)] hover:text-[var(--color-brand-text-primary)]"
               >
                 <p className="text-sm font-medium">{t.profile.avatarClickToUpload}</p>
                 <p className="text-xs text-[var(--color-brand-text-muted)] mt-1">{t.profile.avatarClickToUploadHint}</p>
-              </button>
+              </SelectableCard>
             )}
           </div>
         )}

@@ -16,6 +16,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { nextRecurringSavingsDueDate } from '@/lib/savings/recurringSavingsDates'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { OptionChip } from '@/components/ui/OptionChip'
 
 export interface AddToSavingsSheetProps {
   open: boolean
@@ -26,14 +27,6 @@ export interface AddToSavingsSheetProps {
 }
 
 type Mode = 'deposit' | 'addAccount'
-
-const pill = (on: boolean) =>
-  cn(
-    'rounded-xl border px-3 py-2 text-xs font-medium transition-colors',
-    on
-      ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-text-primary)]'
-      : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
-  )
 
 const tabBtn = (on: boolean) =>
   cn(
@@ -172,12 +165,12 @@ export function AddToSavingsSheet({
             <div>
               <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.recurringQuestion}</Label>
               <div className="mt-2 flex flex-wrap gap-2">
-                <button type="button" className={pill(!recurring)} onClick={() => setRecurring(false)}>
+                <OptionChip selected={!recurring} onClick={() => setRecurring(false)}>
                   {t.savings.recurringOneTime}
-                </button>
-                <button type="button" className={pill(recurring)} onClick={() => setRecurring(true)}>
+                </OptionChip>
+                <OptionChip selected={recurring} onClick={() => setRecurring(true)}>
                   {t.savings.recurringRepeat}
-                </button>
+                </OptionChip>
               </div>
             </div>
 

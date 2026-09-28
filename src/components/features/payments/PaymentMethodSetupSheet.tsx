@@ -29,6 +29,8 @@ import type { PmPrefill } from '@/lib/store/useSettingsStore'
 import { rgba } from '@/lib/utils/color'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import type { Currency, PaymentMethod, PaymentMethodType } from '@/lib/store/types'
+import { FieldButton } from '@/components/ui/FieldButton'
+import { OptionChip } from '@/components/ui/OptionChip'
 
 type Disc = 'last4' | 'tag' | 'none'
 function countryFromCurrency(cur: Currency): 'EG' | 'SA' | 'AE' | null {
@@ -258,28 +260,24 @@ export function PaymentMethodSetupSheet({
                 <div className={`mx-0.5 mb-2 ${microClassName}`}>
                   {t.paymentMethods.provider}
                 </div>
-                <button
-                  type="button" onClick={() => setProviderSheetOpen(true)}
-                  className="flex h-[50px] w-full items-center gap-3 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3"
-                >
-                  <span
-                    className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] text-[11px] font-extrabold"
-                    style={hasProvider
-                      ? { background: rgba(fieldChipColor, 0.16), color: fieldChipColor }
-                      : { background: 'var(--color-brand-border)', color: 'var(--color-brand-text-muted)' }}
-                  >
-                    {hasProvider ? fieldInitials : <CreditCard className="h-4 w-4" />}
-                  </span>
-                  <span
-                    className={cn(
-                      'min-w-0 flex-1 truncate text-start text-[14.5px] font-semibold',
-                      hasProvider ? 'text-[var(--color-brand-text-primary)]' : 'text-[var(--color-brand-text-muted)]',
-                    )}
-                  >
-                    {hasProvider ? providerName : t.paymentMethods.providerPlaceholder}
-                  </span>
-                  <ChevronDown className="h-[15px] w-[15px] shrink-0 text-[var(--color-brand-text-muted)]" />
-                </button>
+                <FieldButton
+                  onClick={() => setProviderSheetOpen(true)}
+                  size="lg"
+                  className="bg-[var(--color-brand-elevated)] px-3"
+                  valueClassName="text-[14.5px] font-semibold"
+                  value={hasProvider ? providerName : undefined}
+                  placeholder={t.paymentMethods.providerPlaceholder}
+                  icon={
+                    <span
+                      className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] text-[11px] font-extrabold"
+                      style={hasProvider
+                        ? { background: rgba(fieldChipColor, 0.16), color: fieldChipColor }
+                        : { background: 'var(--color-brand-border)', color: 'var(--color-brand-text-muted)' }}
+                    >
+                      {hasProvider ? fieldInitials : <CreditCard className="h-4 w-4" />}
+                    </span>
+                  }
+                />
               </div>
 
               {/* Card colour */}
@@ -314,18 +312,18 @@ export function PaymentMethodSetupSheet({
                       const meta = PAYMENT_TYPE_META[tp]
                       const activeChip = type === tp
                       return (
-                        <button
-                          key={tp} type="button" onClick={() => pickType(tp)}
-                          className="flex h-[38px] shrink-0 items-center gap-[7px] whitespace-nowrap rounded-full px-3.5 text-[13px] font-semibold"
+                        <OptionChip
+                          key={tp} selected={activeChip} onClick={() => pickType(tp)}
+                          className="h-[38px]"
                           style={{
-                            background: activeChip ? rgba(meta.color, 0.15) : 'var(--color-brand-elevated)',
-                            border: `1px solid ${activeChip ? rgba(meta.color, 0.5) : 'var(--color-brand-border)'}`,
-                            color: activeChip ? meta.color : 'var(--color-brand-text-muted)',
+                            background: activeChip ? rgba(meta.color, 0.15) : undefined,
+                            borderColor: activeChip ? rgba(meta.color, 0.5) : undefined,
+                            color: activeChip ? meta.color : undefined,
                           }}
                         >
                           <TypeGlyph type={tp} className="h-[15px] w-[15px]" />
                           {meta.label}
-                        </button>
+                        </OptionChip>
                       )
                     })}
                   </div>
@@ -369,17 +367,11 @@ export function PaymentMethodSetupSheet({
                     const selTab = disc === k
                     const label = k === 'last4' ? t.paymentMethods.fourDigits : k === 'tag' ? t.paymentMethods.label : t.paymentMethods.none
                     return (
-                      <button
-                        key={k} type="button" onClick={() => setDisc(k)}
-                        className={cn(
-                          'h-11 flex-1 rounded-xl border text-[13px] font-semibold',
-                          selTab
-                            ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
-                            : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]',
-                        )}
+                      <OptionChip
+                        key={k} size="segment" selected={selTab} onClick={() => setDisc(k)}
                       >
                         {label}
-                      </button>
+                      </OptionChip>
                     )
                   })}
                 </div>
