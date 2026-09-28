@@ -403,17 +403,19 @@ export function PaymentMethodSetupSheet({
                 <div className={`mx-0.5 mb-2 ${microClassName}`}>
                   {t.paymentMethods.currency}
                 </div>
-                <button
-                  type="button" onClick={() => setCurrencyOpen(true)}
-                  className="flex h-[52px] w-full items-center justify-between rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5"
-                >
-                  <span className="flex items-center gap-[11px]">
-                    <span className="text-[22px] leading-none">{currencyFlag(curCode)}</span>
-                    <span className="font-mono-numbers text-[15px] font-bold text-[var(--color-brand-text-primary)]">{curCode}</span>
-                    <span className="text-[13px] font-medium text-[var(--color-brand-text-muted)]">{currencyName(curCode)}</span>
-                  </span>
-                  <ChevronDown className="h-[15px] w-[15px] text-[var(--color-brand-text-muted)]" />
-                </button>
+                <FieldButton
+                  size="lg"
+                  onClick={() => setCurrencyOpen(true)}
+                  className="bg-[var(--color-brand-elevated)]"
+                  affordance={<ChevronDown className="h-[15px] w-[15px] shrink-0 text-[var(--color-brand-text-muted)]" />}
+                  value={
+                    <span className="flex items-center gap-[11px]">
+                      <span className="text-[22px] leading-none">{currencyFlag(curCode)}</span>
+                      <span className="font-mono-numbers text-[15px] font-bold text-[var(--color-brand-text-primary)]">{curCode}</span>
+                      <span className="text-[13px] font-medium text-[var(--color-brand-text-muted)]">{currencyName(curCode)}</span>
+                    </span>
+                  }
+                />
               </div>
 
               {/* Set as default */}

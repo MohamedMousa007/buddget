@@ -193,14 +193,15 @@ export function AuthSignInUpStep({
             transition={{ duration: 0.18, ease: 'easeOut' }}
             className="space-y-3"
           >
-            <button
-              type="button"
+            <Button
+              variant="link"
+              size="sm"
               onClick={backToEmail}
-              className="-mt-1 -ms-1 flex items-center gap-1.5 text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)] h-8 px-1 rounded-md"
+              className="-ms-1 -mt-1 text-xs text-[var(--color-brand-text-muted)] no-underline hover:text-[var(--color-brand-text-primary)] hover:underline"
             >
               <ArrowLeft className="w-4 h-4 rtl:rotate-180" aria-hidden />
               <span>{t.auth.backToEmail}</span>
-            </button>
+            </Button>
 
             <p className="text-sm text-[var(--color-brand-text-primary)]">
               {isSignin
@@ -295,14 +296,15 @@ export function AuthSignInUpStep({
             transition={{ duration: 0.18, ease: 'easeOut' }}
             className="space-y-3"
           >
-            <button
-              type="button"
+            <Button
+              variant="link"
+              size="sm"
               onClick={abandonVerifyPending}
-              className="-mt-1 -ms-1 flex items-center gap-1.5 text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)] h-8 px-1 rounded-md"
+              className="-ms-1 -mt-1 text-xs text-[var(--color-brand-text-muted)] no-underline hover:text-[var(--color-brand-text-primary)] hover:underline"
             >
               <ArrowLeft className="w-4 h-4 rtl:rotate-180" aria-hidden />
               <span>{t.auth.backToEmail}</span>
-            </button>
+            </Button>
 
             <p className="text-sm text-[var(--color-brand-text-primary)]">
               {t.auth.pendingVerificationTitle}

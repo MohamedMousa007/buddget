@@ -9,6 +9,7 @@ import { rgba } from '@/lib/utils/color'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import { useT } from '@/lib/i18n'
 import { SelectPaymentMethodSheet } from '@/components/features/payments/SelectPaymentMethodSheet'
+import { FieldButton } from '@/components/ui/FieldButton'
 
 function swatchColor(pm: PaymentMethod): string {
   return pm.color || defaultColorForPaymentMethodType(pm.type)
@@ -42,12 +43,12 @@ export function PaymentMethodPicker({
   return (
     <div>
       {label ? <div className={`${microClassName} mb-2.5`}>{label}</div> : null}
-      <button
-        type="button"
+      <FieldButton
         onClick={() => setOpen(true)}
-        className="flex h-12 w-full items-center justify-between gap-2 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 hover:border-[var(--color-brand-text-muted)]"
-      >
-        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+        className="bg-[var(--color-brand-elevated)] px-3"
+        affordance={<ChevronDown className="w-5 h-5 shrink-0 text-[var(--color-brand-text-muted)]" />}
+        value={
+          <span className="flex min-w-0 flex-1 items-center gap-2.5">
           {selPay ? (
             <>
               <span
@@ -72,9 +73,9 @@ export function PaymentMethodPicker({
               {t.expenseForm.addPaymentMethod}
             </span>
           )}
-        </div>
-        <ChevronDown className="w-5 h-5 shrink-0 text-[var(--color-brand-text-muted)]" />
-      </button>
+          </span>
+        }
+      />
 
       <SelectPaymentMethodSheet
         open={open}

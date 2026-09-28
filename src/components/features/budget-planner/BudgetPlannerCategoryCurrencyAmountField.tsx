@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import type { AppSettings, BudgetPlanCategory, Currency } from '@/lib/store/types'
 import { planCategoryCurrency } from '@/lib/budget/budgetPlans'
 import { buildFiatCurrencyPickerOptions } from '@/lib/utils/currencyPickerOptions'
+import { FieldButton } from '@/components/ui/FieldButton'
 
 export interface BudgetPlannerCategoryCurrencyAmountFieldProps {
   category: BudgetPlanCategory
@@ -60,23 +61,19 @@ export function BudgetPlannerCategoryCurrencyAmountField({
       {currencyTrigger}
       <div className="flex items-center gap-1">
         <span className="text-[10px] uppercase text-[var(--color-brand-text-muted)]">{amountLabel}</span>
-        <button
-          type="button"
+        <FieldButton
           disabled={hasSubs}
           onClick={() => {
             if (hasSubs) return
             onAmountFocus()
             setPadOpen(true)
           }}
-          className={cn(
-            'w-24 flex items-center rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1.5 font-mono text-sm text-start',
-            hasSubs && 'cursor-not-allowed opacity-60'
-          )}
-        >
-          <span className={categoryAmountInputValue ? 'text-[var(--color-brand-text-primary)]' : 'text-[var(--color-brand-text-muted)]'}>
-            {categoryAmountInputValue || amountPlaceholder}
-          </span>
-        </button>
+          className={cn('h-auto w-24 bg-[var(--color-brand-elevated)] px-2 py-1.5', hasSubs && 'cursor-not-allowed opacity-60')}
+          valueClassName="font-mono text-sm"
+          affordance={null}
+          value={categoryAmountInputValue || undefined}
+          placeholder={amountPlaceholder}
+        />
         {padOpen &&
           typeof document !== 'undefined' &&
           createPortal(

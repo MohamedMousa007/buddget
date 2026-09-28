@@ -8,6 +8,7 @@ import type { BudgetPlanSubcategory } from '@/lib/store/types'
 import { BudgetPlannerEmojiPicker } from '@/components/features/budget-planner/BudgetPlannerEmojiPicker'
 import type { BudgetPlannerCategoryRowLabels } from '@/components/features/budget-planner/budgetPlannerCategoryLabels'
 import { IconButton } from '@/components/ui/IconButton'
+import { FieldButton } from '@/components/ui/FieldButton'
 
 export interface BudgetPlannerSubcategoryRowProps {
   sub: BudgetPlanSubcategory
@@ -51,15 +52,14 @@ export function BudgetPlannerSubcategoryRow({ sub, labels, onUpdate, onDelete }:
         placeholder={labels.subcategoryNamePlaceholder}
         className="flex-1 min-w-24 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1 text-xs text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)]"
       />
-      <button
-        type="button"
+      <FieldButton
         onClick={focusAmount}
-        className="w-24 flex items-center rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2 py-1 text-xs font-mono-numbers text-start"
-      >
-        <span className={displayAmount ? 'text-[var(--color-brand-text-primary)]' : 'text-[var(--color-brand-text-muted)]'}>
-          {displayAmount || labels.amountPlaceholder}
-        </span>
-      </button>
+        className="h-auto w-24 bg-[var(--color-brand-elevated)] px-2 py-1"
+        valueClassName="font-mono-numbers text-xs"
+        affordance={null}
+        value={displayAmount || undefined}
+        placeholder={labels.amountPlaceholder}
+      />
       {amountFocused &&
         typeof document !== 'undefined' &&
         createPortal(

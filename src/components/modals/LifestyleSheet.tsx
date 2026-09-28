@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
 import type { UserProfile } from '@/lib/store/types'
+import { OptionChip } from '@/components/ui/OptionChip'
 
 type FoodFrequency = NonNullable<UserProfile['foodFrequency']>
 type TransportMode = NonNullable<UserProfile['transportMode']>
@@ -128,19 +128,15 @@ function PickerGroup<T extends string>({
         {options.map((opt) => {
           const active = value === opt.value
           return (
-            <button
+            <OptionChip
               key={opt.value}
-              type="button"
+              size="segment"
+              selected={active}
               onClick={() => onChange(opt.value)}
-              className={cn(
-                'min-h-10 px-3 rounded-xl border text-sm transition-colors text-start',
-                active
-                  ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-text-primary)]'
-                  : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)]',
-              )}
+              className="min-h-10 justify-start text-start text-sm"
             >
               {opt.label}
-            </button>
+            </OptionChip>
           )
         })}
       </div>

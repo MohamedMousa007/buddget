@@ -21,6 +21,7 @@ import { DatePickerField } from '@/components/ui/DatePickerField'
 import { IncomeSourceTypePicker } from '@/components/features/income/IncomeSourceTypePicker'
 import { IncomeTemplatePicker } from '@/components/features/income/IncomeTemplatePicker'
 import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
+import { OptionChip } from '@/components/ui/OptionChip'
 import {
   MODAL_BODY_SCROLL_CLASS,
   MODAL_CONTROL_CLASS,
@@ -165,18 +166,15 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
               {STATUS_CHOICES.map((sVal) => {
                 const on = status === sVal
                 return (
-                  <button
+                  <OptionChip
                     key={sVal}
-                    type="button"
+                    size="segment"
+                    selected={on}
                     onClick={() => setStatus(sVal)}
-                    className={`h-10 rounded-lg border text-xs font-semibold transition-colors ${
-                      on
-                        ? 'border-[var(--color-brand-primary)] bg-[rgba(18,176,160,.1)] text-[var(--color-brand-text-primary)]'
-                        : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]'
-                    }`}
+                    className="h-10 text-xs"
                   >
                     {statusText[sVal]}
-                  </button>
+                  </OptionChip>
                 )
               })}
             </div>

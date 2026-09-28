@@ -12,6 +12,8 @@ import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { currencyFlag } from '@/lib/constants/currencyMeta'
 import { format, addMonths } from 'date-fns'
 import { Button } from '@/components/ui/button'
+import { OptionChip } from '@/components/ui/OptionChip'
+import { FieldButton } from '@/components/ui/FieldButton'
 
 const MICRO = 'font-semibold text-[10px] tracking-[0.08em] uppercase text-[var(--color-brand-text-muted)]'
 const FIELD = 'h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-[15px] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] outline-none'
@@ -128,11 +130,14 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
             <div className={`${MICRO} mb-2`}>Amount</div>
             <div className="flex gap-2">
               <div className="min-w-0 flex-1"><AmountField value={d.startingBalance} onChange={d.setStartingBalance} mode="decimal" placeholder="0" /></div>
-              <button type="button" onClick={() => setCurOpen(true)} className="flex h-[52px] shrink-0 items-center gap-1.5 rounded-[14px] border border-[#26262f] bg-[var(--color-brand-elevated)] px-3">
-                <span className="text-[18px] leading-none">{currencyFlag(d.currency as Currency)}</span>
-                <span className="font-mono-numbers text-[14px] font-bold text-[var(--color-brand-text-primary)]">{d.currency}</span>
-                <ChevronDown className="h-4 w-4 text-[var(--color-brand-text-muted)]" />
-              </button>
+              <FieldButton
+                size="lg"
+                onClick={() => setCurOpen(true)}
+                className="w-auto shrink-0 gap-1.5 bg-[var(--color-brand-elevated)] px-3"
+                valueClassName="font-mono-numbers text-[14px] font-bold"
+                value={d.currency}
+                icon={<span className="text-[18px] leading-none">{currencyFlag(d.currency as Currency)}</span>}
+              />
             </div>
             <CurrencySheet open={curOpen} value={d.currency as Currency} base={d.settings.baseCurrency} onSelect={(c) => { d.setCurrency(c as Currency); setCurOpen(false) }} onClose={() => setCurOpen(false)} />
           </div>
@@ -166,9 +171,9 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
                     const val = format(addMonths(new Date(), m), 'yyyy-MM')
                     const on = d.goalMonth === val
                     return (
-                      <button key={m} type="button" onClick={() => d.setGoalMonth(val)} className="h-10 shrink-0 rounded-full border px-3.5 text-[13px] font-semibold" style={on ? { background: '#EDC46322', borderColor: '#EDC46388', color: '#EDC463' } : { borderColor: 'var(--color-brand-border)', color: 'var(--color-brand-text-secondary)' }}>
+                      <OptionChip key={m} selected={on} onClick={() => d.setGoalMonth(val)} className="h-10 text-[13px]">
                         {format(addMonths(new Date(), m), 'MMM yyyy')}
-                      </button>
+                      </OptionChip>
                     )
                   })}
                 </div>
@@ -179,9 +184,9 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
                   {(['monthly', 'weekly'] as const).map((c) => {
                     const on = d.goalCadence === c
                     return (
-                      <button key={c} type="button" onClick={() => d.setGoalCadence(c)} className="h-10 flex-1 rounded-xl border text-[13px] font-semibold capitalize" style={on ? { background: '#EDC46322', borderColor: '#EDC46388', color: '#EDC463' } : { borderColor: 'var(--color-brand-border)', color: 'var(--color-brand-text-secondary)' }}>
+                      <OptionChip key={c} size="segment" selected={on} onClick={() => d.setGoalCadence(c)} className="h-10 text-[13px] capitalize">
                         {c}
-                      </button>
+                      </OptionChip>
                     )
                   })}
                 </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Copy, Eye, EyeOff, Check } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface IosSmsSetupClientProps {
   token: string | null
@@ -41,27 +42,30 @@ export function IosSmsSetupClient({ token, parseEndpoint, ingestEndpoint }: IosS
           <p className="text-xs uppercase tracking-wide text-[var(--color-brand-text-muted)]">
             Your bearer token
           </p>
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setRevealed((v) => !v)}
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
+            aria-pressed={revealed}
+            className="text-xs text-[var(--color-brand-text-secondary)]"
           >
             {revealed ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
             {revealed ? 'Hide' : 'Reveal'}
-          </button>
+          </Button>
         </div>
         <div className="mt-2 flex items-center gap-2">
           <code className="flex-1 truncate rounded-md bg-[var(--color-brand-card)] px-2 py-1.5 font-mono text-xs">
             {revealed ? token : masked}
           </code>
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => void copy('token', token)}
-            className="inline-flex items-center gap-1 rounded-md border border-[var(--color-brand-border)] px-2 py-1.5 text-xs hover:bg-[var(--color-brand-elevated)]"
+            className="text-xs"
           >
             {copied === 'token' ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
             {copied === 'token' ? 'Copied' : 'Copy'}
-          </button>
+          </Button>
         </div>
         <p className="mt-2 text-xs text-[var(--color-brand-text-muted)]">
           Treat this like a password — anyone with it can post SMS to your account.
@@ -80,14 +84,10 @@ function Endpoint({ label, url, onCopy, copied }: { label: string; url: string; 
       <p className="text-xs uppercase tracking-wide text-[var(--color-brand-text-muted)]">{label}</p>
       <div className="mt-1 flex items-center gap-2">
         <code className="flex-1 truncate rounded-md bg-[var(--color-brand-card)] px-2 py-1.5 font-mono text-xs">{url}</code>
-        <button
-          type="button"
-          onClick={() => onCopy(url)}
-          className="inline-flex items-center gap-1 rounded-md border border-[var(--color-brand-border)] px-2 py-1.5 text-xs hover:bg-[var(--color-brand-elevated)]"
-        >
+        <Button variant="outline" size="sm" onClick={() => onCopy(url)} className="text-xs">
           {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
           {copied ? 'Copied' : 'Copy'}
-        </button>
+        </Button>
       </div>
     </div>
   )

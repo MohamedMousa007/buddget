@@ -11,8 +11,8 @@ import { Switch } from '@/components/ui/switch'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
 import type { UserProfile } from '@/lib/store/types'
+import { OptionChip } from '@/components/ui/OptionChip'
 
 type Household = NonNullable<UserProfile['household']>
 
@@ -83,19 +83,15 @@ export function HouseholdRentSheet() {
             ).map((opt) => {
               const active = household === opt.value
               return (
-                <button
+                <OptionChip
                   key={opt.value}
-                  type="button"
+                  size="segment"
+                  selected={active}
                   onClick={() => setHousehold(opt.value)}
-                  className={cn(
-                    'h-10 rounded-xl border text-sm transition-colors',
-                    active
-                      ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-text-primary)]'
-                      : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]',
-                  )}
+                  className="h-10 text-sm"
                 >
                   {opt.label}
-                </button>
+                </OptionChip>
               )
             })}
           </div>

@@ -6,6 +6,7 @@ import { useSubscriptionDetector } from '@/hooks/useSubscriptionDetector'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT } from '@/lib/i18n'
 import { IconButton } from '@/components/ui/IconButton'
+import { Button } from '@/components/ui/button'
 
 /**
  * "We noticed a recurring charge — track it?" Never creates the subscription itself: the
@@ -45,17 +46,18 @@ export function SmsSubscriptionDetectionBanner() {
               <X className="size-3.5" />
             </IconButton>
           </div>
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="touch"
             onClick={() => {
               openAddSubscriptionWithPrefill({ brandKey, amount, currency, billingDay })
               router.push('/subscriptions')
             }}
-            className="mt-2.5 flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[var(--color-brand-green)]/10 px-3 text-xs text-[var(--color-brand-green)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]/55"
+            className="mt-2.5 bg-[var(--color-brand-green)]/10 text-xs text-[var(--color-brand-green)] hover:bg-[var(--color-brand-green)]/20"
           >
             <PlusCircle className="h-3.5 w-3.5" />
             {t.subscriptions.detectedCta}
-          </button>
+          </Button>
         </div>
       ))}
     </>

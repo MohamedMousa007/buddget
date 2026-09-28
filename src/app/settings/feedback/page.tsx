@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useT } from '@/lib/i18n'
+import { OptionChip } from '@/components/ui/OptionChip'
 
 type FeedbackType = 'bug' | 'feature'
 
@@ -61,19 +62,15 @@ export default function SettingsFeedbackPage() {
               const label = v === 'bug' ? t.settings.feedback.typeBug : t.settings.feedback.typeFeature
               const active = type === v
               return (
-                <button
+                <OptionChip
                   key={v}
-                  type="button"
+                  size="segment"
+                  selected={active}
                   onClick={() => setType(v)}
-                  className={`flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-colors ${
-                    active
-                      ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary-ink)]'
-                      : 'border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[var(--color-brand-text-secondary)]'
-                  }`}
                 >
                   <Icon className="w-4 h-4 shrink-0" />
                   {label}
-                </button>
+                </OptionChip>
               )
             })}
           </div>
