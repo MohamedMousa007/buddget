@@ -201,9 +201,9 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
         <Button
           type="button"
           onClick={handleDelete}
-          variant="ghost"
+          variant="destructive"
           size="touch"
-          className="w-full text-sm text-[var(--color-brand-red)] opacity-80 hover:opacity-100"
+          className="w-full text-sm"
         >
           <Trash2 className="h-4 w-4" />
           {t.common.delete}
@@ -250,9 +250,9 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
             <Button
               type="button"
               onClick={() => setDebtChoiceOpen(false)}
-              variant="ghost"
+              variant="outline"
               size="touch"
-              className="w-full text-sm text-[var(--color-brand-text-muted)]"
+              className="w-full text-sm"
             >
               {t.common.cancel}
             </Button>

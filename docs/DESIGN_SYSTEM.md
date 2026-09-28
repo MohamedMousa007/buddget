@@ -273,6 +273,29 @@ buttons in 271 distinct styles grew out of copying them.
 | A tap-to-dismiss backdrop | `<Scrim>` | A real button, so it is keyboard reachable. |
 | An on/off switch | `<Switch size="touch">` | 44×24. The smaller sizes are desktop density. |
 
+### Which variant an action gets
+
+Decided by what the action *is*, not by where it sits, so the same verb looks the
+same across the app:
+
+| Action | Variant |
+|---|---|
+| The one primary action on the surface | `default` (teal) |
+| Its secondary sibling — Cancel, Back in a footer | `outline` |
+| A delete, a discard, anything that throws work away | `destructive` (tinted red) |
+| The button that *commits* an irreversible thing, with no confirm after it | `destructive-solid` |
+| Confirming money came in — Received, Assign, Full | `success` |
+| An inline text action inside prose or a header | `link` |
+| A low-emphasis action that must not draw the eye | `ghost` |
+
+Never dress one variant as another — a `ghost` with a red `className` is a
+`destructive`, and it will drift away from the real one the first time the token
+changes.
+
+Four labels legitimately differ by role, and that is not drift: `signIn` and
+`signOut` (a settings row vs a subdued escape on the lock screen), `back` (a wizard
+footer control vs an inline link), and `delete` (the two destructive rows above).
+
 ### The two surfaces
 
 `OptionChip` and `SelectableCard` default to **`surface="elevated"`** because

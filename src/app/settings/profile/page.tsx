@@ -91,7 +91,7 @@ export default function SettingsProfilePage() {
 
         {p.editMode && (
           <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-[var(--color-brand-border)]">
-            <Button variant="outline" size="touch" onClick={p.discard}>
+            <Button variant="destructive" size="touch" onClick={p.discard}>
               {t.profile.discard}
             </Button>
             <Button size="touch" onClick={p.save} className="font-semibold">
