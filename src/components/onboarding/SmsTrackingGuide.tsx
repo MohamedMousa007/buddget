@@ -4,13 +4,14 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, ChevronLeft, ChevronRight, Coffee, Copy, Plus, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/IconButton';
 import { Badge } from '@/components/ui/badge';
 import { MoneyDisplay } from '@/components/ui/MoneyDisplay';
 import { useT } from '@/lib/i18n';
 
 // ── config ────────────────────────────────────────────────────────────────
 const ASSET_BASE = '/guides/sms';
-const RED = '#12B0A0';
+const BRAND = 'var(--color-brand-primary)';
 
 const F = 'var(--font-sans)';
 const MONO = 'var(--font-mono)';
@@ -105,7 +106,7 @@ const ChatGlyph = ({ s = 18 }: { s?: number }) => (
 function renderDesc(desc: string) {
   return desc.split('*').map((part, i) =>
     i % 2 === 1
-      ? <span key={i} style={{ color: RED, fontWeight: 700, fontFamily: AR }}>{part}</span>
+      ? <span key={i} style={{ color: BRAND, fontWeight: 700, fontFamily: AR }}>{part}</span>
       : <React.Fragment key={i}>{part}</React.Fragment>
   );
 }
@@ -117,7 +118,7 @@ function Underline({ r }: { r?: Rect | null }) {
   return (
     <div style={{
       position: 'absolute', left: `${r.x - w / 2}%`, top: `${r.y + r.h / 2 + 0.4}%`,
-      width: `${w}%`, height: 3, background: RED, borderRadius: 3,
+      width: `${w}%`, height: 3, background: BRAND, borderRadius: 3,
       boxShadow: '0 0 7px rgba(18,176,160,0.55)', animation: 'bg-ulPulse 1.8s ease-in-out infinite',
       pointerEvents: 'none', zIndex: 11,
     }} />
@@ -134,8 +135,8 @@ function ArrowMark({ a }: { a?: Arrow | null }) {
     }}>
       <svg width={36} height={50} viewBox="0 0 46 62" fill="none"
         style={{ display: 'block', filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.45))', animation: 'bg-arrowBob 1.5s ease-in-out infinite' }}>
-        <path d="M25 6 C 15 24, 15 40, 23 51" stroke={RED} strokeWidth={5} strokeLinecap="round" />
-        <path d="M23 55 L14 44 M23 55 L33 45" stroke={RED} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M25 6 C 15 24, 15 40, 23 51" stroke={BRAND} strokeWidth={5} strokeLinecap="round" />
+        <path d="M23 55 L14 44 M23 55 L33 45" stroke={BRAND} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </div>
   );
@@ -160,7 +161,7 @@ function Hero() {
         </div>
       </div>
       <div style={{ position: 'relative', width: 2, height: 36, background: 'var(--color-brand-border)', borderRadius: 2, margin: '7px 0' }}>
-        <div style={{ position: 'absolute', left: -3, width: 8, height: 8, borderRadius: '50%', background: RED, boxShadow: '0 0 10px rgba(18,176,160,0.9)', animation: 'bg-heroDot 2.6s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', left: -3, width: 8, height: 8, borderRadius: '50%', background: BRAND, boxShadow: '0 0 10px rgba(18,176,160,0.9)', animation: 'bg-heroDot 2.6s ease-in-out infinite' }} />
       </div>
       <div style={{ width: 302, maxWidth: '100%', background: 'var(--color-brand-card)', border: '1px solid var(--color-brand-border)', borderRadius: 18, padding: '11px 11px 9px', boxShadow: '0 12px 30px rgba(0,0,0,0.18)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5, padding: '0 5px' }}>
@@ -189,7 +190,7 @@ function Hero() {
 
 // ── keyword teaching screen ───────────────────────────────────────────────────
 const kwHl = (text: string, ar?: boolean) => (
-  <span style={{ background: 'rgba(18,176,160,0.16)', color: RED, fontWeight: 800, padding: '1px 5px', borderRadius: 5, fontFamily: ar ? AR : MONO }}>{text}</span>
+  <span style={{ background: 'rgba(18,176,160,0.16)', color: BRAND, fontWeight: 800, padding: '1px 5px', borderRadius: 5, fontFamily: ar ? AR : MONO }}>{text}</span>
 );
 const KwBubble = ({ rtl, children }: { rtl?: boolean; children: React.ReactNode }) => (
   <div style={{ display: 'flex', flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'flex-end', gap: 8 }}>
@@ -201,9 +202,15 @@ const KwLabel = ({ children }: { children: React.ReactNode }) => (
   <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--color-brand-text-muted)', fontFamily: F }}>{children}</div>
 );
 const KwChip = ({ k, ar, onCopy }: { k: string; ar?: boolean; onCopy: (k: string) => void }) => (
-  <button onClick={() => onCopy(k)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--color-brand-elevated)', border: '1px solid var(--color-brand-border)', color: 'var(--color-brand-text-primary)', fontSize: 13, fontWeight: 700, fontFamily: ar ? AR : MONO, padding: '7px 12px', borderRadius: 10, cursor: 'pointer' }}>
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={() => onCopy(k)}
+    className="font-bold"
+    style={{ fontFamily: ar ? AR : MONO }}
+  >
     {k}<Copy size={14} color="var(--color-brand-text-muted)" />
-  </button>
+  </Button>
 );
 
 // Concept step animation phases:
@@ -247,8 +254,8 @@ function KeywordScreen({ onCopy, phase }: { onCopy: (k: string) => void; phase: 
             <div style={{ position: 'absolute', top: -28, left: 84, pointerEvents: 'none', zIndex: 5 }}>
               <svg width={28} height={38} viewBox="0 0 46 62" fill="none"
                 style={{ display: 'block', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.35))', animation: 'bg-arrowBob 1.5s ease-in-out infinite' }}>
-                <path d="M25 6 C 15 24, 15 40, 23 51" stroke={RED} strokeWidth={5} strokeLinecap="round" />
-                <path d="M23 55 L14 44 M23 55 L33 45" stroke={RED} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M25 6 C 15 24, 15 40, 23 51" stroke={BRAND} strokeWidth={5} strokeLinecap="round" />
+                <path d="M23 55 L14 44 M23 55 L33 45" stroke={BRAND} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
           </div>
@@ -351,9 +358,16 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-brand-bg)', fontFamily: F }}>
       <div style={{ width: 390, height: 844, maxWidth: '100%', maxHeight: '100%', background: 'var(--color-brand-bg)', position: 'relative', overflow: 'hidden', fontFamily: F }}>
-        <button onClick={close} aria-label={g.ariaClose} style={{ position: 'absolute', top: 16, right: 16, zIndex: 60, width: 30, height: 30, borderRadius: '50%', background: 'var(--color-brand-card)', border: '1px solid var(--color-brand-border)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <X size={14} strokeWidth={2} color="var(--color-brand-text-muted)" />
-        </button>
+        <IconButton
+          onClick={close}
+          aria-label={g.ariaClose}
+          variant="outlined"
+          size="sm"
+          shape="round"
+          className="absolute end-4 top-4 z-[60]"
+        >
+          <X size={14} strokeWidth={2} />
+        </IconButton>
 
         {/* slider track */}
         <div style={{ width: 780, height: 844, display: 'flex', willChange: 'transform', transform: `translateX(${-(step - 1) * 390}px)`, transition: 'transform .44s cubic-bezier(.4,0,.2,1)' }}>
@@ -361,7 +375,7 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
           {/* PANEL 1 — INTRO */}
           <section data-screen-label="Intro" style={{ width: 390, height: 844, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '24px 26px 0', flexShrink: 0 }}>
-              <div style={{ width: 30, height: 30, borderRadius: 9, background: RED, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(18,176,160,0.35)' }}>
+              <div style={{ width: 30, height: 30, borderRadius: 9, background: BRAND, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(18,176,160,0.35)' }}>
                 <span style={{ fontSize: 17, fontWeight: 900, color: '#fff', lineHeight: 1 }}>B</span>
               </div>
               <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--color-brand-text-primary)', letterSpacing: '-.2px' }}>{g.brand}</span>
@@ -371,8 +385,8 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
 
             <div style={{ padding: '0 26px 0' }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(18,176,160,0.09)', border: '1px solid rgba(18,176,160,0.22)', borderRadius: 9999, padding: '4px 12px', marginBottom: 13, width: 'fit-content', whiteSpace: 'nowrap' }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: RED, animation: 'bg-pulseDot 2s infinite', flexShrink: 0 }} />
-                <span style={{ fontSize: 10, fontWeight: 700, color: RED, letterSpacing: '.09em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{g.introBadge}</span>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: BRAND, animation: 'bg-pulseDot 2s infinite', flexShrink: 0 }} />
+                <span style={{ fontSize: 10, fontWeight: 700, color: BRAND, letterSpacing: '.09em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{g.introBadge}</span>
               </div>
               <h1 style={{ fontSize: 29, fontWeight: 800, color: 'var(--color-brand-text-primary)', lineHeight: 1.16, marginBottom: 11, letterSpacing: '-.6px' }}>{g.introTitle1}<br />{g.introTitle2}</h1>
               <p style={{ fontSize: 14, color: 'var(--color-brand-text-secondary)', lineHeight: 1.65, maxWidth: 310 }}>{g.introBody}</p>
@@ -393,9 +407,15 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
             {/* Header */}
             <div style={{ padding: '18px 20px 11px', flexShrink: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, paddingRight: 48, marginBottom: 9 }}>
-                <button onClick={() => setStep(1)} aria-label={g.ariaBack} style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--color-brand-card)', border: '1px solid var(--color-brand-border)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <ChevronLeft size={14} color="var(--color-brand-text-muted)" />
-                </button>
+                <IconButton
+                  onClick={() => setStep(1)}
+                  aria-label={g.ariaBack}
+                  variant="outlined"
+                  size="sm"
+                  shape="round"
+                >
+                  <ChevronLeft size={14} />
+                </IconButton>
                 <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--color-brand-text-primary)', letterSpacing: '-.2px' }}>{g.setupTitle}</span>
               </div>
               <div style={{ marginBottom: 7 }}>
@@ -424,7 +444,7 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{ width: 20, height: 20, borderRadius: 6, background: 'rgba(18,176,160,0.14)', color: RED, fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{safe + 1}</span>
+                  <span style={{ width: 20, height: 20, borderRadius: 6, background: 'rgba(18,176,160,0.14)', color: BRAND, fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{safe + 1}</span>
                   <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--color-brand-text-primary)' }}>{curCopy.title}</span>
                 </div>
                 <p style={{ fontSize: 12.5, color: 'var(--color-brand-text-secondary)', lineHeight: 1.55, paddingLeft: 28 }}>{renderDesc(curCopy.desc)}</p>
@@ -433,46 +453,46 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
 
             {/* Nav arrows + dot indicators */}
             <div style={{ padding: '10px 18px 6px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 2 }}>
-              <button
+              <IconButton
                 onClick={() => setSubStep(s => Math.max(0, s - 1))}
                 aria-label={g.ariaPrev}
-                style={{
-                  width: 38, height: 38, borderRadius: '50%', background: 'var(--color-brand-card)', border: '1px solid var(--color-brand-border)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: safe > 0 ? '0 0 14px rgba(18,176,160,0.2), 0 2px 8px rgba(0,0,0,0.12)' : '0 1px 4px rgba(0,0,0,0.08)',
-                  transition: 'box-shadow .25s',
-                }}
+                variant="outlined"
+                shape="round"
+                disabled={safe === 0}
+                className="shadow-[var(--shadow-sm)]"
               >
-                <ChevronLeft size={16} color={safe > 0 ? 'var(--color-brand-text-primary)' : 'var(--color-brand-border)'} />
-              </button>
+                <ChevronLeft size={16} />
+              </IconButton>
               <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
                 {STEPS.map((_, i) => (
-                  <button key={i} onClick={() => setSubStep(i)} aria-label={g.ariaStep(i + 1)} style={{ height: 6, width: i === safe ? 20 : 6, borderRadius: 9999, cursor: 'pointer', border: 'none', padding: 0, transition: 'all .28s cubic-bezier(.4,0,.2,1)', background: i === safe ? RED : i < safe ? '#37C368' : 'var(--color-brand-border)' }} />
+                  <button key={i} onClick={() => setSubStep(i)} aria-label={g.ariaStep(i + 1)} style={{ height: 6, width: i === safe ? 20 : 6, borderRadius: 9999, cursor: 'pointer', border: 'none', padding: 0, transition: 'all .28s cubic-bezier(.4,0,.2,1)', background: i === safe ? BRAND : i < safe ? '#37C368' : 'var(--color-brand-border)' }} />
                 ))}
               </div>
-              <button
+              <IconButton
                 onClick={() => setSubStep(s => Math.min(total - 1, s + 1))}
                 aria-label={g.ariaNext}
-                style={{
-                  width: 38, height: 38, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: isLast ? RED : 'var(--color-brand-card)',
-                  border: `1px solid ${isLast ? 'transparent' : 'var(--color-brand-border)'}`,
-                  boxShadow: isLast ? '0 0 22px rgba(18,176,160,0.5), 0 4px 14px rgba(18,176,160,0.3)' : '0 0 14px rgba(18,176,160,0.18), 0 2px 8px rgba(0,0,0,0.12)',
-                  transition: 'box-shadow .25s, background .25s',
-                }}
+                variant={isLast ? 'solid' : 'outlined'}
+                shape="round"
+                className="shadow-[var(--shadow-md)]"
               >
-                <ChevronRight size={16} color={isLast ? '#fff' : 'var(--color-brand-text-primary)'} />
-              </button>
+                <ChevronRight size={16} />
+              </IconButton>
             </div>
 
             {/* CTA button — always shows "Open Shortcuts" except on the done step */}
             <div style={{ padding: '6px 20px 26px', flexShrink: 0, position: 'relative', zIndex: 2 }}>
               {cur.done ? (
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <button onClick={() => { setStep(2); setSubStep(0); }} style={{ flex: 1, height: 46, borderRadius: 13, cursor: 'pointer', fontFamily: F, fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, border: 'none', background: RED, color: '#fff', boxShadow: '0 8px 22px rgba(18,176,160,0.26)' }}>
-                    <Plus size={14} strokeWidth={2.4} color="#fff" />
+                  <Button
+                    size="cta"
+                    onClick={() => { setStep(2); setSubStep(0); }}
+                    className="flex-1 font-bold shadow-[var(--shadow-md)]"
+                    style={{ fontFamily: F }}
+                  >
+                    <Plus size={14} strokeWidth={2.4} />
                     {g.addKeyword}
-                  </button>
-                  <button onClick={finish} style={{ flex: 1, height: 46, borderRadius: 13, cursor: 'pointer', fontFamily: F, fontSize: 14, fontWeight: 700, border: '1px solid var(--color-brand-border)', background: 'transparent', color: 'var(--color-brand-text-secondary)' }}>{g.finish}</button>
+                  </Button>
+                  <Button variant="outline" size="cta" onClick={finish} className="flex-1 font-bold" style={{ fontFamily: F }}>{g.finish}</Button>
                 </div>
               ) : (
                 <Button variant="default" style={{ width: '100%', height: 52, fontSize: 15, fontWeight: 700, borderRadius: 14, boxShadow: '0 10px 30px rgba(18,176,160,0.28)' }} onClick={openShortcuts}>{g.openShortcuts}</Button>

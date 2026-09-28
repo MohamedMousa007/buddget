@@ -11,6 +11,7 @@ import { PaymentMethodPicker } from '@/components/features/payments/PaymentMetho
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { currencyFlag } from '@/lib/constants/currencyMeta'
 import { format, addMonths } from 'date-fns'
+import { Button } from '@/components/ui/button'
 
 const MICRO = 'font-semibold text-[10px] tracking-[0.08em] uppercase text-[var(--color-brand-text-muted)]'
 const FIELD = 'h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-[15px] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] outline-none'
@@ -50,16 +51,17 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
             const on = d.direction === o.v
             if (locked && !on) return null
             return (
-              <button
+              <Button
                 key={o.v}
-                type="button"
                 disabled={locked}
                 onClick={() => d.setDirection(o.v)}
-                className="h-11 flex-1 rounded-xl border text-[14px] font-semibold transition-colors disabled:opacity-100"
+                className="flex-1"
                 style={on ? { background: `${o.c}1f`, borderColor: `${o.c}80`, color: o.c } : { background: 'var(--color-brand-elevated)', borderColor: 'var(--color-brand-border)', color: 'var(--color-brand-text-muted)' }}
+                variant="outline"
+                size="touch"
               >
                 {o.label}
-              </button>
+              </Button>
             )
           })}
         </div>
@@ -98,15 +100,16 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
               {([24, 21, 18] as GoldKarat[]).map((k) => {
                 const on = d.goldKarat === k
                 return (
-                  <button
+                  <Button
                     key={k}
-                    type="button"
                     onClick={() => d.setGoldKarat(k)}
-                    className="h-11 flex-1 rounded-xl border text-[14px] font-bold transition-colors"
+                    className="flex-1"
                     style={on ? { background: '#EDC46322', borderColor: '#EDC46388', color: '#EDC463' } : { background: 'var(--color-brand-elevated)', borderColor: 'var(--color-brand-border)', color: 'var(--color-brand-text-muted)' }}
+                    variant="outline"
+                    size="touch"
                   >
                     {k}K
-                  </button>
+                  </Button>
                 )
               })}
             </div>

@@ -2,6 +2,7 @@
 
 import { Link2 } from 'lucide-react'
 import { fmtWhole } from './heroCardShared'
+import { Button } from '@/components/ui/button'
 
 export interface AssignCandidate {
   id: string
@@ -41,13 +42,14 @@ export function AssignPaymentBanner({
         >
           Assign
         </button>
-        <button
-          type="button"
+        <Button
           onClick={() => onDismiss(candidate.id)}
-          className="text-xs font-semibold text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-secondary)]"
+          variant="link"
+          size="xs"
+          className="no-underline hover:underline text-[var(--color-brand-text-muted)]"
         >
           Not now
-        </button>
+        </Button>
       </div>
     </div>
   )

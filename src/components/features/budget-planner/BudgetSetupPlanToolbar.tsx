@@ -60,14 +60,15 @@ export function BudgetSetupPlanToolbar({
           labels={tabLabels}
         />
         {activePlan && !confirmOpen ? (
-          <button
-            type="button"
+          <Button
             onClick={() => setConfirmOpen(true)}
-            className="flex items-center gap-2 text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-red)] shrink-0"
+            variant="link"
+            size="xs"
+            className="shrink-0 text-[var(--color-brand-text-muted)] no-underline hover:text-[var(--color-brand-red)] hover:underline"
           >
             <Trash2 className="h-4 w-4" />
             {deletePlanLabel}
-          </button>
+          </Button>
         ) : null}
       </div>
 

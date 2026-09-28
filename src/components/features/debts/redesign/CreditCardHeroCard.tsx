@@ -5,6 +5,7 @@ import { Receipt } from 'lucide-react'
 import { heroCardStyle } from '@/components/features/income/incomeGlass'
 import type { CreditCardVM } from '@/hooks/useDebtTabData'
 import { EditPin, fmtWhole } from './heroCardShared'
+import { Button } from '@/components/ui/button'
 
 export interface CreditCardHeroCardProps {
   vm: CreditCardVM
@@ -100,21 +101,18 @@ export function CreditCardHeroCard({ vm, onEdit, onDelete, onPay, onCharges }: C
 
       {/* CTAs inside */}
       <div className="mt-3 flex gap-2 border-t border-white/10 pt-2.5">
-        <button
-          type="button"
-          onClick={onPay}
-          className="h-11 flex-1 rounded-[13px] bg-[var(--color-brand-primary)] text-sm font-bold text-[var(--color-brand-on-primary)] transition-colors hover:bg-[var(--color-brand-primary-hover)]"
-        >
+        <Button onClick={onPay} size="touch" className="flex-1">
           Pay now
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
           onClick={onCharges}
-          className="flex h-11 flex-1 items-center justify-center gap-2 rounded-[13px] border border-white/15 text-sm font-semibold text-white/85 transition-colors hover:bg-white/5"
+          variant="outline"
+          size="touch"
+          className="flex-1 border-white/15 bg-transparent text-white/85 hover:bg-white/5 hover:text-white"
         >
           <Receipt className="h-4 w-4" />
           Charges
-        </button>
+        </Button>
       </div>
     </div>
   )

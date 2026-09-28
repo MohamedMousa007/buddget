@@ -5,6 +5,7 @@ import { AuthOtpRow } from '@/components/features/auth-modal/AuthOtpRow'
 import { AuthPrimaryButton } from '@/components/features/auth-modal/AuthPrimaryButton'
 import { useT } from '@/lib/i18n'
 import type { AuthVerifyPurpose } from '@/hooks/useAuthModal'
+import { Button } from '@/components/ui/button'
 
 export interface AuthVerifyStepProps {
   email: string
@@ -60,17 +61,23 @@ export function AuthVerifyStep({
         )}
       </AuthPrimaryButton>
       <div className="flex flex-col items-center gap-2 text-sm">
-        <button
-          type="button"
+        <Button
+          variant="link"
+          size="sm"
           disabled={resendCooldown > 0 || loading}
           onClick={() => void onResend()}
-          className="text-[var(--color-brand-red)] disabled:opacity-50 disabled:cursor-not-allowed hover:underline"
+          className="no-underline hover:underline disabled:cursor-not-allowed"
         >
           {resendCooldown > 0 ? t.auth.verifySendNewCooldown(resendCooldown) : t.auth.verifySendNew}
-        </button>
-        <button type="button" onClick={onUseDifferentEmail} className="text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]">
+        </Button>
+        <Button
+          onClick={onUseDifferentEmail}
+          variant="link"
+          size="sm"
+          className="no-underline hover:underline text-[var(--color-brand-text-muted)]"
+        >
           {t.auth.verifyDifferentEmail}
-        </button>
+        </Button>
       </div>
     </div>
   )

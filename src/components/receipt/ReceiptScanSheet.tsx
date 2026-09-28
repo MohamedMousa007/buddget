@@ -333,13 +333,13 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
               >
                 <Camera className="h-4 w-4" /> Scan again
               </Button>
-              <button
-                type="button"
+              <Button
                 onClick={() => { reset(); void runScan('gallery') }}
-                className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] px-5 py-2.5 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
+                variant="outline"
+                size="touch"
               >
                 <Images className="h-4 w-4" /> Choose from gallery
-              </button>
+              </Button>
             </div>
           </Centered>
         </div>
@@ -409,13 +409,13 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
             >
               <Camera className="h-4 w-4" /> Scan
             </Button>
-            <button
-              type="button"
+            <Button
               onClick={() => void runScan('gallery')}
-              className="flex min-h-[44px] items-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] px-4 py-2.5 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
+              variant="outline"
+              size="touch"
             >
               <Images className="h-4 w-4" /> Gallery
-            </button>
+            </Button>
           </div>
         </Centered>
       ) : null}

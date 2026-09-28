@@ -11,6 +11,7 @@ import { useT } from '@/lib/i18n'
 import type { SubscriptionPrefill } from '@/lib/store/useSettingsStore'
 import type { Subscription } from '@/lib/store/types'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 
 const selectClass = cn(
   'h-8 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-sm text-[var(--color-brand-text-primary)]'
@@ -53,13 +54,14 @@ function AddSubscriptionSheetInner({
       ) : (
         <>
           {form.step === 2 && form.showCatalog && !editing ? (
-            <button
-              type="button"
+            <Button
               onClick={() => form.setStep(1)}
-              className="mb-2 text-sm text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)]"
+              variant="link"
+              size="sm"
+              className="mb-2 no-underline hover:underline text-[var(--color-brand-text-secondary)]"
             >
               {t.common.back}
-            </button>
+            </Button>
           ) : null}
           {form.step === 2 && catalogBrand ? (
             <div className="flex items-center gap-3 pb-2">

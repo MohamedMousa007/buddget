@@ -321,13 +321,14 @@ export function AuthSignInUpStep({
               )}
             </AuthPrimaryButton>
 
-            <button
-              type="button"
+            <Button
               onClick={abandonVerifyPending}
-              className="w-full text-center text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]"
+              variant="link"
+              size="xs"
+              className="no-underline hover:underline w-full text-center text-[var(--color-brand-text-muted)]"
             >
               {t.auth.pendingUseDifferentEmail}
-            </button>
+            </Button>
           </motion.div>
         )}
       </AnimatePresence>

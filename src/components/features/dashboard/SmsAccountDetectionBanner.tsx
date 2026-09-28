@@ -7,6 +7,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { SelectField } from '@/components/ui/SelectField'
 import { useT } from '@/lib/i18n'
 import { IconButton } from '@/components/ui/IconButton'
+import { Button } from '@/components/ui/button'
 
 export function SmsAccountDetectionBanner() {
   const detected = usePaymentMethodDetector()
@@ -68,17 +69,17 @@ export function SmsAccountDetectionBanner() {
                 items={paymentMethods.map((pm) => ({ value: pm.id, label: pm.name }))}
               />
               {linking[last4] && (
-                <button
-                  type="button"
+                <Button
                   onClick={() => {
                     updatePaymentMethod(linking[last4]!, { last4 })
                     dismissBanner(`pm:${last4}`)
                   }}
-                  className="flex min-h-[44px] items-center gap-1 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2.5 text-xs text-[var(--color-brand-text-secondary)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]/55"
+                  variant="outline"
+                  size="touch"
                 >
                   <LinkIcon className="h-3 w-3" />
                   {t.settings.linkCta}
-                </button>
+                </Button>
               )}
             </div>
           </div>

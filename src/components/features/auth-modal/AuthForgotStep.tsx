@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { inputClass, inputFocus, inputStyle } from '@/components/features/auth-modal/authModalTokens'
 import { AuthPrimaryButton } from '@/components/features/auth-modal/AuthPrimaryButton'
 import { useT } from '@/lib/i18n'
+import { Button } from '@/components/ui/button'
 
 export interface AuthForgotStepProps {
   email: string
@@ -51,9 +52,14 @@ export function AuthForgotStep({
       <AuthPrimaryButton disabled={loading} onClick={() => void onSendReset()}>
         {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : t.auth.forgotSendCode}
       </AuthPrimaryButton>
-      <button type="button" onClick={onBackToSignIn} className="w-full text-sm text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]">
+      <Button
+        onClick={onBackToSignIn}
+        variant="link"
+        size="sm"
+        className="no-underline hover:underline w-full text-[var(--color-brand-text-muted)]"
+      >
         {t.auth.forgotBackToSignIn}
-      </button>
+      </Button>
     </div>
   )
 }

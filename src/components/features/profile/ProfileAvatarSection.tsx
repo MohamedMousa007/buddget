@@ -42,13 +42,14 @@ export function ProfileAvatarSection({ fileRef, store, activePreset, onAvatarFil
         {t.profile.avatarUploadPhoto}
       </Button>
       {store.profile.avatar?.startsWith('data:') ? (
-        <button
-          type="button"
+        <Button
           onClick={() => store.updateProfile({ avatar: undefined })}
-          className="block text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-red)]"
+          variant="link"
+          size="xs"
+          className="no-underline hover:underline block text-[var(--color-brand-text-muted)]"
         >
           {t.profile.removePhoto}
-        </button>
+        </Button>
       ) : null}
       <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 pt-2">
         {CARTOON_AVATAR_PRESETS.map((p) => {

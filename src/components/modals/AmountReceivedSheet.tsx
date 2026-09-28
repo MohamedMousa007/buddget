@@ -16,6 +16,7 @@ import { UnifiedDatePicker, formatDatePillLabel } from '@/components/ui/UnifiedD
 import { Calendar } from 'lucide-react'
 import { useModalTitleId } from '@/components/modals/ModalShell'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
+import { OptionChip } from '@/components/ui/OptionChip'
 
 const MON_TITLE = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const fmtDay = (iso: string) => `${MON_TITLE[Number(iso.slice(5, 7)) - 1]} ${Number(iso.slice(8, 10))}`
@@ -159,14 +160,16 @@ export function AmountReceivedSheet() {
         <label className="mt-4 block text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
           {t.income.receivedOnLabel}
         </label>
-        <button
-          type="button"
+        <OptionChip
+          as="trigger"
           onClick={() => setCalOpen(true)}
-          className="mt-1.5 inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-sm font-semibold text-[var(--color-brand-text-secondary)] hover:border-[var(--color-brand-text-muted)]"
+          aria-haspopup="dialog"
+          aria-expanded={calOpen}
+          className="mt-1.5"
         >
           <Calendar className="h-4 w-4 text-[var(--color-brand-text-muted)]" />
           {formatDatePillLabel(receivedDate, locale, t.common.today)}
-        </button>
+        </OptionChip>
 
         <label className="mt-4 block text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
           {t.income.amountReceivedLabel}
