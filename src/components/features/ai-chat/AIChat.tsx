@@ -14,6 +14,7 @@ import { AIChatMessageList } from '@/components/features/ai-chat/AIChatMessageLi
 import { AIChatTypingIndicator } from '@/components/features/ai-chat/AIChatTypingIndicator'
 import { AIChatComposer } from '@/components/features/ai-chat/AIChatComposer'
 import type { BuddgyOrbPosition } from '@/lib/store/useSettingsStore'
+import { useDismissable } from '@/hooks/useDismissable'
 
 const DESKTOP_BP = 1024
 const PANEL_W = 400
@@ -111,6 +112,8 @@ export function AIChat() {
   }, [orb])
 
   useScrollLock(isOpen)
+  // Android back / Escape close the chat instead of the whole screen.
+  useDismissable(isOpen, close)
 
   return (
     <AnimatePresence>

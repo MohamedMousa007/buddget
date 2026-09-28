@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useAlert } from '@/components/ui/dialog/DialogProvider'
 import type { FinanceStore } from '@/lib/store/types'
+import { useDismissable } from '@/hooks/useDismissable'
 
 type Tab = 'choose' | 'upload' | 'remove'
 
@@ -24,6 +25,7 @@ interface AvatarPickerModalProps {
 }
 
 export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalProps) {
+  useDismissable(open, onClose)
   const t = useT()
   const alert = useAlert()
   useScrollLock(open)

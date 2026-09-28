@@ -7,6 +7,7 @@ import { useT } from '@/lib/i18n'
 import { useScrollLock } from '@/lib/ui/scrollLock'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useDismissable } from '@/hooks/useDismissable'
 
 export interface DeleteAccountDialogProps {
   open: boolean
@@ -22,6 +23,7 @@ export interface DeleteAccountDialogProps {
  * - User must type the exact confirm word (DELETE) to unlock the destructive button
  */
 export function DeleteAccountDialog({ open, onClose, onConfirm, inProgress, error }: DeleteAccountDialogProps) {
+  useDismissable(open, onClose)
   const t = useT()
   useScrollLock(open)
   const [typed, setTyped] = useState('')

@@ -6,6 +6,7 @@ import { useAuthModal } from '@/hooks/useAuthModal'
 import { useT } from '@/lib/i18n'
 import { cardStyle } from '@/components/features/auth-modal/authModalTokens'
 import { AuthModalBody } from '@/components/features/auth-modal/AuthModalBody'
+import { useDismissable } from '@/hooks/useDismissable'
 
 /**
  * Global Supabase auth overlay used for contextual prompts from inside the
@@ -15,6 +16,11 @@ import { AuthModalBody } from '@/components/features/auth-modal/AuthModalBody'
 export function AuthModal() {
   const a = useAuthModal()
   const t = useT()
+  // Mounted only while open (AuthProvider gates it), so `true` is the open state.
+  // Not on ModalShell because this is a scrollable CENTRED modal — ModalShell's
+  // scroll lock plus bottom-sheet drag would fight the tall sign-up form on a
+  // short viewport. It still needs Android back and Escape.
+  useDismissable(true, () => a.closeAuthModal())
 
   return (
     <div

@@ -8,6 +8,7 @@ import type { VoiceState } from '@/hooks/useVoiceExpense'
 import { VoiceRecapEditor } from '@/components/voice/VoiceRecapEditor'
 import { Button } from '@/components/ui/button'
 import type { AIResponse, AIActionItem } from '@/lib/ai/gemini'
+import { useDismissable } from '@/hooks/useDismissable'
 
 const BARS = 36
 const W = BARS * 5
@@ -60,6 +61,8 @@ export function VoiceRecordOverlay({
   onOpenChat,
 }: Props) {
   const visible = state !== 'idle'
+  // Back/Escape cancel the capture rather than navigating away mid-recording.
+  useDismissable(visible, onClose)
 
   // Portal to <body>: the overlay must escape the bottom-nav, whose backdrop-blur
   // establishes a containing block that re-anchors position:fixed children

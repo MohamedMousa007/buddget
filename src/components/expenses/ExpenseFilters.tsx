@@ -25,6 +25,7 @@ import { RANGE_PRESETS, type RangePreset } from '@/lib/expenses/dateRange'
 import { useShallow } from 'zustand/react/shallow'
 import { cn } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
+import { useDismissable } from '@/hooks/useDismissable'
 
 export interface FilterCategoryOption {
   id: string
@@ -50,6 +51,10 @@ function FilterSheet({
   children: ReactNode
   maxHeightClass?: string
 }) {
+  // This sheet deliberately does NOT use ModalShell: it contains range sliders,
+  // and ModalShell's drag-to-dismiss would capture the pointer drag on a thumb.
+  // It still has to honour Android back and Escape.
+  useDismissable(open, onClose)
   useScrollLock(open)
   return (
     <AnimatePresence>

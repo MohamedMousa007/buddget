@@ -7,6 +7,7 @@ import type { MoreMenuItem } from '@/lib/navigation/bottomNavConfig'
 import { cn } from '@/lib/utils'
 import { localeInlineLabelClass, useLocale, useT } from '@/lib/i18n'
 import type { Dictionary } from '@/lib/i18n'
+import { useDismissable } from '@/hooks/useDismissable'
 
 export function BottomNavMorePanel({
   pathname,
@@ -20,6 +21,10 @@ export function BottomNavMorePanel({
   onClose: () => void
 }) {
   const t = useT()
+  // Mounted only while open. Deliberately NOT ModalShell: this panel sits below
+  // the bottom nav's z-index on purpose so the nav stays visible above it, and
+  // ModalShell's overlay would cover it.
+  useDismissable(true, onClose)
   const { locale } = useLocale()
   const dragControls = useDragControls()
   return (

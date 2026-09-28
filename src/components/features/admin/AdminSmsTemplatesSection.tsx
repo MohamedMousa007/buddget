@@ -13,6 +13,7 @@ import {
   type TemplateFilter,
 } from './templateHealthDisplay'
 import { exportAsBankPatternSet } from '@/lib/sms/exportTemplates'
+import { useDismissable } from '@/hooks/useDismissable'
 
 interface Props {
   admin: AdminPanelModel
@@ -30,6 +31,11 @@ export function AdminSmsTemplatesSection({ admin }: Props) {
   const [exported, setExported] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [showPool, setShowPool] = useState(false)
+
+  // Two plain overlays rather than ModalShell (admin-only, no sheet chrome), so
+  // they register their own back/Escape guards. LIFO: whichever is on top wins.
+  useDismissable(exported !== null, () => setExported(null))
+  useDismissable(showPool, () => setShowPool(false))
   const openPool = () => { setShowPool(true); void loadKeywordPool() }
 
   const visible = smsTemplates.filter((t) => matchesFilter(t, filter))
