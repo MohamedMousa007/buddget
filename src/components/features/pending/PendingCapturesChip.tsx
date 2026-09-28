@@ -8,6 +8,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { usePendingAiJobs, readPendingMedia, deletePendingMedia } from '@/lib/store/usePendingAiJobs'
 import { ReceiptScanSheet } from '@/components/receipt/ReceiptScanSheet'
+import { SelectableCard } from '@/components/ui/SelectableCard'
 
 /**
  * Surfaces offline voice/receipt captures queued by the capture-now-process-
@@ -78,11 +79,11 @@ export function PendingCapturesChip() {
 
   return (
     <>
-      <button
-        type="button"
+      <SelectableCard
+        as="action"
         onClick={() => void processNext()}
         disabled={busy || !online}
-        className="mx-4 mt-3 flex min-h-11 w-[calc(100%-2rem)] items-center gap-2.5 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-2.5 text-start disabled:opacity-80"
+        className="mx-4 mt-3 min-h-11 w-[calc(100%-2rem)] gap-2.5 px-4 py-2.5 disabled:opacity-80"
       >
         {busy ? (
           <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[var(--color-brand-green)]" />
@@ -97,7 +98,7 @@ export function PendingCapturesChip() {
               ? t.pendingCaptures.chip(jobs.length)
               : t.pendingCaptures.waitingOffline(jobs.length))}
         </span>
-      </button>
+      </SelectableCard>
 
       <ReceiptScanSheet
         open={reviewJob !== null}

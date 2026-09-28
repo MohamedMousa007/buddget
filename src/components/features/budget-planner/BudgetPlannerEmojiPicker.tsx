@@ -43,7 +43,7 @@ export function BudgetPlannerEmojiPicker({ value, onChange, ariaLabel, className
               </p>
               <div className="flex flex-wrap gap-1">
                 {g.emojis.map((e) => (
-                  <button
+                  <button data-raw-button-ok="an emoji cell in a picker grid, sized by the grid"
                     key={e}
                     type="button"
                     onClick={() => {

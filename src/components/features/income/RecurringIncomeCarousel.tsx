@@ -103,7 +103,7 @@ export function RecurringIncomeCarousel({ count, activeIndex, onActiveChange, re
       {count > 1 ? (
         <div className="mt-3 flex items-center justify-center gap-1.5">
           {Array.from({ length: count }, (_, i) => (
-            <button
+            <button data-raw-button-ok="a carousel position dot, 6px tall"
               key={i}
               type="button"
               aria-label={`Go to ${i + 1}`}

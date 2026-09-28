@@ -25,7 +25,7 @@ interface RightAction {
 function DeletePanel({ deleteLabel, onDelete }: { deleteLabel: string; onDelete: () => void }) {
   return (
     <div className="absolute inset-y-0 end-0 flex" style={{ width: REVEAL }}>
-      <button
+      <button data-raw-button-ok="a swipe-action panel revealed behind a row; the swipe distance sizes it"
         type="button"
         aria-label={deleteLabel}
         onClick={() => { void tapHaptic(); onDelete() }}
@@ -41,7 +41,7 @@ function DeletePanel({ deleteLabel, onDelete }: { deleteLabel: string; onDelete:
 function AssignPanel({ action }: { action: RightAction }) {
   return (
     <div className="absolute inset-y-0 start-0 flex" style={{ width: REVEAL }}>
-      <button
+      <button data-raw-button-ok="a swipe-action panel revealed behind a row; the swipe distance sizes it"
         type="button"
         aria-label={action.label}
         onClick={() => { void tapHaptic(); action.onAction() }}

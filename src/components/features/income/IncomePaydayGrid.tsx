@@ -55,7 +55,7 @@ export function IncomePaydayGrid({ frequency, days, onChange }: Props) {
         const isSolid = solid.has(day)
         const isDerived = !isSolid && selected.has(day)
         return (
-          <button
+          <button data-raw-button-ok="a day-number cell in a month grid"
             key={day}
             type="button"
             onClick={() => tap(day)}
@@ -72,7 +72,7 @@ export function IncomePaydayGrid({ frequency, days, onChange }: Props) {
         )
       })}
       {frequency !== 'monthly' ? (
-        <button
+        <button data-raw-button-ok="a day-number cell in a month grid"
           type="button"
           onClick={toggleManual}
           aria-pressed={manual}

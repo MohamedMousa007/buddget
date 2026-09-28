@@ -1,7 +1,7 @@
 'use client'
 
-import { cn } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
+import { OptionChip } from '@/components/ui/OptionChip'
 
 export type ExpenseDebtFilterMode = 'all' | 'debt_only' | 'exclude_debt'
 
@@ -28,19 +28,13 @@ export function ReportExpenseDebtFilter({ value, onChange }: ReportExpenseDebtFi
       </p>
       <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
         {options.map((opt) => (
-          <button
+          <OptionChip
             key={opt.value}
-            type="button"
+            selected={value === opt.value}
             onClick={() => onChange(opt.value)}
-            className={cn(
-              'px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors',
-              value === opt.value
-                ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
-                : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-border)]'
-            )}
           >
             {opt.label}
-          </button>
+          </OptionChip>
         ))}
       </div>
     </div>

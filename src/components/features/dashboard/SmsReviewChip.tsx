@@ -4,6 +4,7 @@ import { BellRing, ChevronRight } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { useSmsConfirmations } from '@/hooks/useSmsConfirmations'
 import { SmsReviewSheet } from '@/components/features/dashboard/SmsReviewSheet'
+import { SelectableCard } from '@/components/ui/SelectableCard'
 
 /**
  * Compact dashboard entry point for SMS transactions awaiting review
@@ -20,20 +21,20 @@ export function SmsReviewChip() {
   return (
     <>
       {pending.length > 0 && (
-        <button
-          type="button"
+        <SelectableCard
+          as="action"
           onClick={() => {
             setOpen(true)
             void refetch()
           }}
-          className="flex min-h-11 w-full items-center gap-2.5 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-2.5 text-start hover:bg-[var(--color-brand-elevated)] transition-colors"
+          className="min-h-11 gap-2.5 px-4 py-2.5"
         >
           <BellRing className="h-4 w-4 shrink-0 text-[var(--color-brand-primary-ink)]" />
           <span className="flex-1 text-xs font-medium text-[var(--color-brand-text-primary)]">
             {t.smsReview.chip(pending.length)}
           </span>
           <ChevronRight className="h-4 w-4 shrink-0 text-[var(--color-brand-text-muted)] rtl:rotate-180" />
-        </button>
+        </SelectableCard>
       )}
 
       <SmsReviewSheet

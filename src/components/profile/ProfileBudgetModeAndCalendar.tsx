@@ -5,6 +5,7 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import { Label } from '@/components/ui/label'
 import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import type { Dictionary } from '@/lib/i18n/types'
+import { OptionChip } from '@/components/ui/OptionChip'
 
 function ordinalSuffix(d: number): string {
   return d === 1 ? 'st' : d === 2 ? 'nd' : d === 3 ? 'rd' : 'th'
@@ -47,28 +48,12 @@ export function ProfileBudgetModeAndCalendar({
         All budget amounts are shown in <strong className="text-[var(--color-brand-text-primary)]">{baseCurrency}</strong>, your primary currency.
       </p>
       <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={onModeAmount}
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
-            budgetMode === 'amount'
-              ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
-              : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
-          }`}
-        >
+        <OptionChip size="sm" selected={budgetMode === 'amount'} onClick={onModeAmount}>
           {t.budgetModeFixed}
-        </button>
-        <button
-          type="button"
-          onClick={onModePercent}
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
-            budgetMode === 'percent_of_income'
-              ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
-              : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
-          }`}
-        >
+        </OptionChip>
+        <OptionChip size="sm" selected={budgetMode === 'percent_of_income'} onClick={onModePercent}>
           {t.budgetModePercent}
-        </button>
+        </OptionChip>
       </div>
       {budgetMode === 'percent_of_income' && (
         <p className="text-[10px] text-[var(--color-brand-text-muted)]">

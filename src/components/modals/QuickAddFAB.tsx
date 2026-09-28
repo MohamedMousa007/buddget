@@ -101,7 +101,7 @@ export function QuickAddFAB() {
 
   return (
     <>
-      <button
+      <button data-raw-button-ok="the floating action button itself, with its own press choreography"
         type="button"
         {...handlers}
         className="hidden lg:flex fixed bottom-8 end-8 z-50 items-center justify-center h-[54px] w-[54px] rounded-[18px] bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] shadow-[0_8px_20px_-6px_color-mix(in_srgb,var(--color-brand-primary)_60%,transparent)] transition-all duration-200 active:scale-95 cursor-pointer touch-none select-none"

@@ -46,8 +46,9 @@ export function SmsAccountDetectionBanner() {
             </IconButton>
           </div>
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="touch"
               onClick={() =>
                 openAddPaymentMethodWithPrefill({
                   name: provider ?? '',
@@ -55,11 +56,11 @@ export function SmsAccountDetectionBanner() {
                   ...(type ? { type } : {}),
                 })
               }
-              className="flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[var(--color-brand-green)]/10 px-3 text-xs text-[var(--color-brand-green)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]/55"
+              className="bg-[var(--color-brand-green)]/10 text-xs text-[var(--color-brand-green)] hover:bg-[var(--color-brand-green)]/20"
             >
               <PlusCircle className="h-3.5 w-3.5" />
               {t.settings.createPaymentMethod}
-            </button>
+            </Button>
             <div className="flex items-center gap-1.5">
               <SelectField
                 value={linking[last4] ?? ''}

@@ -6,6 +6,7 @@ import { useT } from '@/lib/i18n'
 import type { PendingConfirmation } from '@/hooks/useSmsConfirmations'
 import { SMS_BADGES, KIND_TO_BADGE } from '@/lib/sms/transactionTypes'
 import type { SmsTransactionType } from '@/lib/sms/transactionTypes'
+import { Button } from '@/components/ui/button'
 
 interface SmsReviewSheetProps {
   open: boolean
@@ -87,11 +88,12 @@ export function SmsReviewSheet({ open, onClose, items, confirmItem, dismissItem 
                 ) : null}
               </p>
               <div className="mt-2.5 flex items-center gap-2">
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="touch"
                   disabled={busy}
                   onClick={() => void run(item.id, () => confirmItem(item.id, provisional ? (item.currency ?? undefined) : undefined))}
-                  className="flex min-h-11 items-center gap-1.5 rounded-xl bg-[var(--color-brand-green)]/10 px-4 text-sm font-medium text-[var(--color-brand-green)] disabled:opacity-60"
+                  className="bg-[var(--color-brand-green)]/10 text-[var(--color-brand-green)] hover:bg-[var(--color-brand-green)]/20"
                 >
                   {busy ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -101,15 +103,16 @@ export function SmsReviewSheet({ open, onClose, items, confirmItem, dismissItem 
                   {provisional && item.currency
                     ? t.smsReview.confirmCurrencyBtn(item.currency)
                     : t.smsReview.addTransaction}
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="touch"
                   disabled={busy}
                   onClick={() => void run(item.id, () => dismissItem(item.id))}
-                  className="min-h-11 rounded-xl px-4 text-sm text-[var(--color-brand-text-muted)] disabled:opacity-60"
+                  className="text-[var(--color-brand-text-muted)]"
                 >
                   {t.smsReview.dismiss}
-                </button>
+                </Button>
               </div>
               {failedId === item.id ? (
                 <p className="mt-1.5 text-xs text-[var(--color-brand-red)]" role="alert">

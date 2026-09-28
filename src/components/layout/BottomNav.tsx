@@ -76,7 +76,7 @@ export function BottomNav() {
           if (item.kind === 'fab') {
             return (
               <div key="fab" className="flex-1 flex justify-center" style={{ touchAction: 'none' }}>
-                <button
+                <button data-raw-button-ok="the centre FAB: one raised 54px circle, not a button style"
                   type="button"
                   {...fabHandlers}
                   style={{ touchAction: 'none' }}

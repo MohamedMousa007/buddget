@@ -4,6 +4,7 @@ import { ChevronRight, Scale } from 'lucide-react'
 import type { ZakatResult } from '@/lib/savings/zakat'
 import { rgba } from '@/lib/utils/color'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
+import { SelectableCard } from '@/components/ui/SelectableCard'
 
 export interface ZakatCardProps {
   result: ZakatResult
@@ -17,7 +18,7 @@ export function ZakatCard({ result, base, hawlDate, onOpen }: ZakatCardProps) {
   const due = result.due
   const accent = due ? '#EDC463' : '#35D46F'
   return (
-    <button type="button" onClick={onOpen} className="mx-4 mt-3 block w-[calc(100%-2rem)] text-left"
+    <SelectableCard as="action" onClick={onOpen} className="mx-4 mt-3 block w-[calc(100%-2rem)] border-none bg-transparent p-0 hover:bg-transparent"
       style={{ borderRadius: 18 }}>
       <div className="relative overflow-hidden rounded-[18px] border bg-[var(--color-brand-card)] p-3.5"
         style={{ borderColor: rgba(accent, .28) }}>
@@ -35,6 +36,6 @@ export function ZakatCard({ result, base, hawlDate, onOpen }: ZakatCardProps) {
           {due ? `Above nisab for a full lunar year · due by ${hawlDate}` : `You are ${fmtNum(result.gap)} EGP under the line, so nothing is owed.`}
         </p>
       </div>
-    </button>
+    </SelectableCard>
   )
 }

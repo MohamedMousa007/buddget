@@ -1,6 +1,6 @@
 'use client'
 
-import { cn } from '@/lib/utils'
+import { OptionChip } from '@/components/ui/OptionChip'
 
 type DateRange = 'thisMonth' | 'lastMonth' | 'last3Months' | 'last6Months' | 'thisYear'
 
@@ -21,18 +21,13 @@ export function ReportFilters({ selected, onSelect }: ReportFiltersProps) {
   return (
     <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
       {OPTIONS.map((opt) => (
-        <button
+        <OptionChip
           key={opt.value}
+          selected={selected === opt.value}
           onClick={() => onSelect(opt.value)}
-          className={cn(
-            'px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors',
-            selected === opt.value
-              ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
-              : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-border)]'
-          )}
         >
           {opt.label}
-        </button>
+        </OptionChip>
       ))}
     </div>
   )
