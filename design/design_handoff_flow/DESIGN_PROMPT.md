@@ -279,8 +279,9 @@ silently present as on-time.
 
 ## 9. Design system — non-negotiable
 
-The DS project was **re-synced on 2026-09-28 with a new teal identity** (Revamp Kit v1). If you have
-seen an older Buddget design, everything about its colour is now wrong.
+The DS project (`Buddget Design System`) was **re-synced on 2026-09-28** with the new teal identity
+(Revamp Kit v1) **and a unified component library — 57 components**. If you have seen an older
+Buddget design, everything about its colour *and* its buttons is now wrong.
 
 - **Tokens only.** No hex literals. Both **light and dark** must be delivered; dark is primary in
   practice and dark mode is **class-based** (`.dark`), not `prefers-color-scheme`.
@@ -310,6 +311,44 @@ seen an older Buddget design, everything about its colour is now wrong.
   clipping the last row.
 - **Arabic**: `dir` stays LTR, so use logical properties everywhere — `ms-/me-/ps-/pe-`,
   `text-start/text-end`. Never `ml-/pl-/text-left`. Labels wrap to two lines; reserve the space.
+
+### Build it from these components — do not draw new buttons
+
+The app just went through a button unification: **359 hand-rolled buttons in 271 distinct styles**
+were replaced by the set below, and a test (`noStyledRawButtons.test.ts`) now **fails the build** if
+a raw `<button>` re-declares a fill, a border, a radius or its own size. If your design implies a
+control that is not in this list, say so explicitly in the handoff rather than drawing a one-off —
+a one-off cannot be built without an exception.
+
+| You need | Component | Notes |
+|---|---|---|
+| A text action | `Button` | `size="touch"` 44px · `size="cta"` 48px · `size="cta-block"` full width |
+| An icon-only action | `IconButton` | 44px hit area at **every** size, even the 32px `sm`. Requires an accessible name. |
+| One choice among several, inline | `OptionChip` | `selected` drives the tint **and** the border |
+| A fixed set of 2–4 exclusive choices | `SegmentedControl` | Owns the radiogroup + arrow keys. Use for the Flow direction segment (§4.2). |
+| A card-shaped choice | `SelectableCard` | `as="radio" \| "checkbox" \| "action"` |
+| A category / type tile | `AccentTile` | The **only** control tinted by the item's own colour |
+| A trigger that must look like an input | `FieldButton` | Height tracks the 48px input, so it lines up in a form column |
+| A tap-to-dismiss backdrop | `Scrim` | |
+| An on/off switch | `Switch size="touch"` | 44×24 |
+| A money figure | `MoneyDisplay` · `AmountField` | |
+| A ledger row | `TransactionRow` | **Design Flow's row as a variant of this**, not a new component |
+| A KPI tile | `StatTile` | For the §9b stat row |
+| A disappearing prompt | `PromptBanner` | This is the §4.6 match banner — it already exists |
+
+**Two rules that decide how these look, and that designs keep getting wrong:**
+
+1. **Surfaces.** `OptionChip` and `SelectableCard` default to `surface="elevated"`, because sheet
+   panels are `--color-brand-card` — a card-filled chip inside a sheet is **white on white** in
+   light mode. Only a control resting on the page background takes `surface="card"`. If you show a
+   chip inside a sheet, draw it on the elevated fill.
+2. **One action, one variant.** The variant is chosen by *what the action is*, never by what sits
+   next to it: primary → `default` (teal) · its secondary sibling, Cancel, a footer Back →
+   `outline` · delete/discard → `destructive` · the irreversible commit → `destructive-solid` ·
+   money received → `success` · an inline text action → `link`. Never dress one as another.
+
+**Selection is never colour alone.** A chosen chip, card or tile changes its fill **and** its
+border, and is announced as pressed/checked. Do not design a selected state that differs only by hue.
 
 ### Two absolute product rules
 - 🚫 **Never a pig.** Not for savings, not for anything. The canonical savings glyph is Lucide
@@ -432,6 +471,10 @@ once, for the direction you recommend.
 6. **Migration note**: which existing components survive unchanged (`TransactionRow`,
    `SwipeToDelete`, `MonthYearPicker`, `RecurringIncomeCard`, `PaydayTimeline`, `IncomeTypeIcon`,
    `AccountChip`, `ExpenseFilters`), which gain a prop, which are new.
+   **Plus a component ledger**: for every control in the design, the library component it is built
+   from (§9 table). Anything you could not map — say so and justify it. A control that maps to
+   nothing needs a new primitive, and that is a decision to take deliberately, not to discover in
+   implementation.
 7. **The calendar**: month view, selected range, month/year switcher — new visuals, same function.
 8. **Hero + stats**: expanded and collapsed, both themes.
 
@@ -447,6 +490,10 @@ once, for the direction you recommend.
 - Build YNAB-style budget allocation.
 - Make payment methods a peer of Flow.
 - Invent accent colours, gradients, radii or font sizes outside the system.
+- Draw a bespoke button, chip or selectable card. Use the §9 components; the build fails on raw
+  styled buttons.
+- Put a card-filled chip inside a sheet — sheets are `--color-brand-card`, so it disappears.
+- Design a selected state that differs only by hue.
 - Use red for anything that is not destructive or an over-budget alert.
 - Use `--color-brand-primary` as a text colour (it fails contrast — use `-ink`).
 - Change the header contents, the profile placement, or the menu structure — those stay as they are.
@@ -468,3 +515,6 @@ Answer each in one line in the handoff:
 8. How do I confirm a bank-SMS-parsed transaction from this screen?
 9. How does a refunded expense and a 3-days-late salary look in the same day group?
 10. What does Flow look like with 40 transactions and no budget set?
+11. Name every control in the Flow screen and the library component it is built from. Which, if any,
+    needed something that does not exist yet?
+12. Point at one selected chip and one selected card in your screens: what changes besides the hue?
