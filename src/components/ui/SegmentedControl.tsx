@@ -7,6 +7,11 @@ export interface SegmentedOption<T extends string> {
   label: string
   /** Optional count shown after the label, e.g. a result count per segment. */
   count?: number
+  /**
+   * Optional leading glyph. Decorative only — the label already names the option,
+   * so the icon is hidden from assistive tech rather than announced twice.
+   */
+  icon?: React.ReactNode
 }
 
 export interface SegmentedControlProps<T extends string> {
@@ -83,6 +88,11 @@ export function SegmentedControl<T extends string>({
                 : 'text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)]',
             )}
           >
+            {o.icon ? (
+              <span aria-hidden className="flex shrink-0 items-center [&_svg]:size-4">
+                {o.icon}
+              </span>
+            ) : null}
             <span className="truncate">{o.label}</span>
             {o.count !== undefined ? (
               <span

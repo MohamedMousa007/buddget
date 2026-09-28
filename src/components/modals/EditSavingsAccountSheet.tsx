@@ -15,6 +15,7 @@ import type { Currency, SavingsAccount, SavingsAccountCategory, SavingsType } fr
 import { buildSavingsCurrencyOptions, pickDefaultSavingsCurrency } from '@/lib/savings/savingsCurrencyOptions'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 
 const tab = (on: boolean) =>
   cn(
@@ -178,13 +179,9 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
             />
           </div>
 
-          <button
-            type="button"
-            onClick={submit}
-            className="w-full rounded-xl bg-[var(--color-brand-primary)] py-3 text-sm font-semibold text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)] transition-colors"
-          >
+          <Button size="cta-block" onClick={submit}>
             {t.common.save}
-          </button>
+          </Button>
         </div>
       </div>
     </ModalShell>

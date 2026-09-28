@@ -204,6 +204,7 @@ export const ar: Dictionary = {
     edit: 'تعديل',
     back: 'رجوع',
     close: 'إغلاق',
+    moreActions: 'إجراءات أخرى',
     selectDate: 'اختر تاريخاً',
     next: 'التالي',
     confirm: 'تأكيد',

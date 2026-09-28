@@ -10,6 +10,7 @@ import type { SavingsAccount } from '@/lib/store/types'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
+import { Button } from '@/components/ui/button'
 
 export interface UpdateBalanceSheetProps {
   open: boolean
@@ -81,18 +82,17 @@ export function UpdateBalanceSheet({ open, onClose, account, onCorrect }: Update
               {formatCurrency(Math.abs(diff), account.currency)}
             </p>
           )}
-          <button
-            type="button"
+          <Button
+            size="cta-block"
             disabled={!canSubmit}
             onClick={() => {
               if (!canSubmit) return
               onCorrect(nb, notes.trim() || undefined)
               onClose()
             }}
-            className="w-full rounded-xl bg-[var(--color-brand-primary)] py-3 text-sm font-semibold text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)] disabled:opacity-40"
           >
             {t.savings.submitUpdate}
-          </button>
+          </Button>
         </div>
       </div>
     </ModalShell>

@@ -15,6 +15,7 @@ import { useActionToast } from '@/components/ui/ActionToast'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { nextRecurringSavingsDueDate } from '@/lib/savings/recurringSavingsDates'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 
 export interface AddToSavingsSheetProps {
   open: boolean
@@ -207,14 +208,15 @@ export function AddToSavingsSheet({
                 className={cn('mt-1 h-10', inputClass)}
               />
             </div>
-            <button
-              type="button"
+            <Button
+              variant="success"
+              size="cta-block"
               onClick={submit}
               disabled={!acc}
-              className="mt-2 w-full rounded-xl bg-[var(--color-brand-green)] py-3 text-sm font-semibold text-white hover:bg-[var(--color-brand-green-hover)] disabled:opacity-40 transition-colors"
+              className="mt-2"
             >
               {t.savings.submitAdd}
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="mt-4">

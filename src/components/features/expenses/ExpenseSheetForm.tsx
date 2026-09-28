@@ -18,6 +18,10 @@ import { rgba } from '@/lib/utils/color'
 import { useNumberPad } from '@/components/ui/useNumberPad'
 import { Scrim } from '@/components/ui/Scrim'
 import { useModalTitleId } from '@/components/modals/ModalShell'
+import { IconButton } from '@/components/ui/IconButton'
+import { OptionChip } from '@/components/ui/OptionChip'
+import { FieldButton } from '@/components/ui/FieldButton'
+import { Switch } from '@/components/ui/switch'
 
 const HIDE_SCROLL = '[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
 
@@ -151,22 +155,24 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
               {mode === 'edit' ? t.expenseForm.titleEdit : t.expenseForm.titleAdd}
             </div>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
+              <OptionChip
+                as="trigger"
+                size="sm"
                 onClick={() => setCalOpen(true)}
-                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-xs font-semibold text-[var(--color-brand-text-secondary)] hover:border-[var(--color-brand-text-muted)]"
+                aria-haspopup="dialog"
+                aria-expanded={calOpen}
               >
-                <Calendar className="w-3.5 h-3.5 text-[var(--color-brand-text-muted)]" />
+                <Calendar className="size-3.5 text-[var(--color-brand-text-muted)]" />
                 {formatDatePillLabel(date, locale, t.expenseForm.today)}
-              </button>
-              <button
-                type="button"
+              </OptionChip>
+              <IconButton
                 onClick={handleX}
                 aria-label={t.common.close}
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-border)] hover:text-[var(--color-brand-text-secondary)]"
+                variant="tinted"
+                shape="round"
               >
-                <X className="w-5 h-5" strokeWidth={2} />
-              </button>
+                <X strokeWidth={2} />
+              </IconButton>
             </div>
           </div>
         </div>
@@ -177,17 +183,16 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
           <div className="grid grid-cols-[1fr_108px] gap-3 items-end">
             <div>
               <label htmlFor="ef-amount" className={`block ${microLabel} mb-2`}>{t.expenseForm.amount}</label>
-              <button
+              <FieldButton
                 id="ef-amount"
-                type="button"
                 onClick={amountPad.openPad}
                 dir="ltr"
-                className={`flex h-12 w-full items-center rounded-xl border bg-[var(--color-brand-elevated)] px-3.5 ${amountPad.isOpen ? 'border-[var(--color-brand-primary)]' : 'border-[var(--color-brand-border)]'}`}
-              >
-                <span className={`min-w-0 flex-1 text-start font-bold text-2xl font-mono-numbers tracking-[-0.02em] ${amount ? 'text-[var(--color-brand-text-primary)]' : 'text-[var(--color-brand-text-muted)]'}`}>
-                  {amount || '0.00'}
-                </span>
-              </button>
+                value={amount || undefined}
+                placeholder="0.00"
+                affordance={null}
+                valueClassName="font-mono-numbers text-2xl font-bold tracking-[-0.02em]"
+                className={`bg-[var(--color-brand-elevated)] ${amountPad.isOpen ? 'border-[var(--color-brand-primary)]' : ''}`}
+              />
               {amountPad.pad}
             </div>
             <div>
@@ -324,35 +329,29 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
               padding="sm"
               className="bg-[var(--color-brand-elevated)]/40"
             >
-              <button
-                type="button"
-                onClick={() => installment.setEnabled(!installment.enabled)}
-                aria-pressed={installment.enabled}
-                className="flex w-full items-center justify-between"
-              >
+              <div className="flex w-full items-center justify-between">
                 <span className="text-sm font-medium text-[var(--color-brand-text-primary)]">
                   {t.expenseForm.splitInstallments}
                 </span>
-                <span
-                  className={`relative h-6 w-10 shrink-0 rounded-full transition-colors ${installment.enabled ? 'bg-[var(--color-brand-primary)]' : 'bg-[var(--color-brand-border)]'}`}
-                >
-                  <span
-                    className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${installment.enabled ? 'left-[18px]' : 'left-0.5'}`}
-                  />
-                </span>
-              </button>
+                <Switch
+                  size="touch"
+                  aria-label={t.expenseForm.splitInstallments}
+                  checked={installment.enabled}
+                  onCheckedChange={installment.setEnabled}
+                />
+              </div>
               {installment.enabled ? (
                 <div className="mt-3 space-y-3">
                   <div className="flex gap-2">
                     {[3, 4, 6, 12].map((n) => (
-                      <button
+                      <OptionChip
                         key={n}
-                        type="button"
+                        size="segment"
+                        selected={installment.count === n}
                         onClick={() => installment.setCount(n)}
-                        className={`h-9 flex-1 rounded-lg border text-sm font-semibold transition-colors ${installment.count === n ? 'border-[var(--color-brand-primary)] bg-[rgba(18,176,160,0.12)] text-[var(--color-brand-text-primary)]' : 'border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)]'}`}
                       >
                         {n}
-                      </button>
+                      </OptionChip>
                     ))}
                   </div>
                   <p className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">
@@ -409,27 +408,28 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                   size="brand"
                   style={{ paddingBlock: 0, paddingInline: '14px 46px' }}
                 />
-                <button
-                  type="button"
+                <IconButton
                   onClick={() => {
                     setNoteOpen(false)
                     setNotes('')
                   }}
                   aria-label={t.common.close}
-                  className="absolute top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center p-2.5 text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-secondary)] end-2"
+                  size="sm"
+                  className="absolute end-2 top-1/2 -translate-y-1/2"
                 >
                   {IcClose}
-                </button>
+                </IconButton>
               </div>
             ) : (
-              <button
-                type="button"
+              <Button
+                variant="link"
+                size="sm"
                 onClick={() => setNoteOpen(true)}
-                className="inline-flex items-center gap-1.5 self-start py-0.5 text-sm font-semibold text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)]"
+                className="self-start font-semibold text-[var(--color-brand-text-secondary)] no-underline hover:text-[var(--color-brand-text-primary)] hover:underline"
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="size-3.5" />
                 {t.expenseForm.addNote}
-              </button>
+              </Button>
             )}
           </div>
           <div className="h-0.5" />

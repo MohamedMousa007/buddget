@@ -9,6 +9,7 @@ import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField
 import type { Currency, SavingsAccount } from '@/lib/store/types'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
+import { Button } from '@/components/ui/button'
 
 export interface WithdrawFromSavingsSheetProps {
   open: boolean
@@ -101,14 +102,9 @@ export function WithdrawFromSavingsSheet({
               className="mt-1 w-full min-h-[4.5rem] resize-y rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2 text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-brand-focus)]/30"
             />
           </div>
-          <button
-            type="button"
-            onClick={submit}
-            disabled={!valid}
-            className="mt-2 w-full rounded-xl bg-[var(--color-brand-primary)] py-3 text-sm font-semibold text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)] disabled:opacity-40 transition-colors"
-          >
+          <Button size="cta-block" onClick={submit} disabled={!valid} className="mt-2">
             {t.savings.submitWithdraw}
-          </button>
+          </Button>
         </div>
       </div>
     </ModalShell>

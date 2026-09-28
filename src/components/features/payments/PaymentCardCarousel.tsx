@@ -6,6 +6,7 @@ import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
 import { PAYMENT_TYPE_META, decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 import { shade } from '@/lib/utils/color'
 import type { PaymentMethod, PaymentMethodType } from '@/lib/store/types'
+import { IconButton } from '@/components/ui/IconButton'
 
 export { shade }
 
@@ -32,7 +33,7 @@ interface Props {
   /** Tap the focused (centered) card. */
   onCardSelect?: (m: PaymentMethod) => void
   /** ⋯ button per card (manage mode). Omit to hide it (select mode). */
-  onMenu?: (id: string) => void
+  onMenu?: (id: string, anchor: DOMRect) => void
   /** Highlight the currently-selected method with a ring (select mode). */
   selectedId?: string
   /** Append a dashed “+” add tile; tapping it (focused) fires this. */
@@ -156,15 +157,15 @@ export function PaymentCardCarousel({
                       {PAYMENT_TYPE_META[m.type].label}
                     </span>
                     {onMenu ? (
-                      <button
-                        type="button"
+                      <IconButton
+                        size="sm"
                         onPointerDown={(e) => e.stopPropagation()}
-                        onClick={(e) => { e.stopPropagation(); onMenu(m.id) }}
+                        onClick={(e) => { e.stopPropagation(); onMenu(m.id, e.currentTarget.getBoundingClientRect()) }}
                         aria-label="Manage"
-                        className="-mr-1.5 -mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center bg-transparent p-[3px] text-white/90"
+                        className="-mr-1.5 -mt-0.5 text-white/90 hover:bg-white/15 hover:text-white"
                       >
-                        <MoreVertical className="h-full w-full" />
-                      </button>
+                        <MoreVertical />
+                      </IconButton>
                     ) : isSelected ? (
                       <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#38D96B] text-white shadow-[0_2px_6px_rgba(0,0,0,.25)]">
                         <Check className="h-[14px] w-[14px]" strokeWidth={3} />

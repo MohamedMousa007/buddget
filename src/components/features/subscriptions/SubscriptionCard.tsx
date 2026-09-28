@@ -15,6 +15,7 @@ import { useT } from '@/lib/i18n'
 import type { Subscription } from '@/lib/store/types'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { cn } from '@/lib/utils'
+import { IconButton } from '@/components/ui/IconButton'
 
 /**
  * Single subscription row with overflow menu for edit / cancel / reactivate / delete.
@@ -30,7 +31,7 @@ export function SubscriptionCard({
 }) {
   const t = useT()
   const { formatDateShort } = useLocalizedFormatters()
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null)
   const { paymentMethods, expenses, cancelSubscription, deleteSubscription, reactivateSubscription } =
     useFinanceStore(
       useShallow((s) => ({
@@ -82,22 +83,23 @@ export function SubscriptionCard({
           {formatCurrency(sub.amount, sub.currency)}
           <span className="text-xs font-normal text-[var(--color-brand-text-muted)]">{cycleLabel}</span>
         </p>
-        <button
-          type="button"
-          className="mt-1 inline-flex items-center justify-center min-w-11 min-h-11 rounded-lg hover:bg-[var(--color-brand-card)] text-[var(--color-brand-text-muted)]"
-          aria-expanded={menuOpen}
-          aria-label="Menu"
-          onClick={() => setMenuOpen((v) => !v)}
+        <IconButton
+          className="mt-1"
+          aria-expanded={menuAnchor !== null}
+          aria-haspopup="menu"
+          aria-label={t.common.moreActions}
+          onClick={(e) => setMenuAnchor(e.currentTarget.getBoundingClientRect())}
         >
-          <MoreHorizontal className="w-4 h-4" />
-        </button>
+          <MoreHorizontal className="size-4" />
+        </IconButton>
       </div>
 
-      {menuOpen ? (
+      {menuAnchor ? (
         <SubscriptionCardMenu
           sub={sub}
+          anchor={menuAnchor}
           onEdit={onEdit}
-          onClose={() => setMenuOpen(false)}
+          onClose={() => setMenuAnchor(null)}
           cancelSubscription={cancelSubscription}
           deleteSubscription={deleteSubscription}
           reactivateSubscription={reactivateSubscription}

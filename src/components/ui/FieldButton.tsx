@@ -23,6 +23,11 @@ export interface FieldButtonProps
   size?: 'default' | 'lg'
   /** Marks the control invalid, matching the input's error treatment. */
   invalid?: boolean
+  /**
+   * Classes for the value itself, for a field whose value is not ordinary body
+   * text — an amount rendered large and monospaced, for instance.
+   */
+  valueClassName?: string
 }
 
 /**
@@ -50,6 +55,7 @@ export function FieldButton({
   affordance,
   size = 'default',
   invalid,
+  valueClassName,
   type = 'button',
   ...props
 }: FieldButtonProps) {
@@ -78,7 +84,8 @@ export function FieldButton({
           'min-w-0 flex-1 truncate font-medium',
           empty
             ? 'text-[var(--color-brand-text-muted)]'
-            : 'text-[var(--color-brand-text-primary)]'
+            : 'text-[var(--color-brand-text-primary)]',
+          valueClassName
         )}
       >
         {empty ? placeholder : value}

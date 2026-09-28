@@ -106,6 +106,8 @@ export interface Dictionary {
     edit: string
     back: string
     close: string
+    /** Accessible name for a card's ⋮ action-menu trigger. */
+    moreActions: string
     selectDate: string
     /** Walkthrough / tutorial primary action */
     next: string

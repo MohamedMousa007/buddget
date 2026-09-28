@@ -26,6 +26,8 @@ import { deriveDefaultPaydays } from '@/lib/utils/paydaySchedule'
 import { incomeMonthlyMultiplier } from '@/lib/utils/calculations'
 import { MODAL_BODY_SCROLL_CLASS, MODAL_CONTROL_CLASS, MODAL_LABEL_CLASS } from '@/lib/modals/modalFormClasses'
 import { useModalTitleId } from '@/components/modals/ModalShell'
+import { IconButton } from '@/components/ui/IconButton'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 
 const FREQS: IncomeRecurringFrequency[] = ['monthly', 'biweekly', 'weekly']
 
@@ -222,14 +224,14 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
           {!edit && !isRecurring ? (
             <DatePickerField value={receivedDate} onChange={setReceivedDate} className="!h-8 !w-auto shrink-0 rounded-full !px-3 text-xs" />
           ) : null}
-          <button
-            type="button"
+          <IconButton
             onClick={handleClose}
             aria-label={t.common.cancel}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+            size="sm"
+            shape="round"
           >
-            <X className="h-5 w-5" />
-          </button>
+            <X className="size-5" />
+          </IconButton>
         </div>
 
         <div className={`${MODAL_BODY_SCROLL_CLASS} px-5 pb-6`}>
@@ -277,25 +279,15 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
 
           {/* Recurring / One-time tabs — add only (edit is locked to recurring) */}
           {!edit ? (
-            <div className="grid grid-cols-2 gap-2 rounded-2xl bg-[var(--color-brand-elevated)] p-1">
-              {([true, false] as const).map((rec) => {
-                const on = isRecurring === rec
-                const Icon = rec ? Repeat : CalendarDays
-                return (
-                  <button
-                    key={String(rec)}
-                    type="button"
-                    onClick={() => setIsRecurring(rec)}
-                    className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-semibold transition-colors ${
-                      on ? 'bg-[var(--color-brand-card)] text-[var(--color-brand-text-primary)] shadow-sm' : 'text-[var(--color-brand-text-muted)]'
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {rec ? t.addIncome.tabRecurring : t.addIncome.tabOneTime}
-                  </button>
-                )
-              })}
-            </div>
+            <SegmentedControl
+              ariaLabel={t.addIncome.tabRecurring}
+              value={isRecurring ? 'recurring' : 'oneTime'}
+              onChange={(v) => setIsRecurring(v === 'recurring')}
+              options={[
+                { value: 'recurring', label: t.addIncome.tabRecurring, icon: <Repeat /> },
+                { value: 'oneTime', label: t.addIncome.tabOneTime, icon: <CalendarDays /> },
+              ]}
+            />
           ) : null}
 
           {/* Income type chip slider (locked for linked sources) */}
@@ -311,25 +303,24 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
               {/* How often */}
               <div>
                 <span className={MODAL_LABEL_CLASS}>{t.addIncome.howOftenLabel}</span>
-                <div className="mt-1.5 grid grid-cols-3 gap-2">
-                  {FREQS.map((f) => {
-                    const on = frequency === f
-                    return (
-                      <button
-                        key={f}
-                        type="button"
-                        onClick={() => {
-                          setFrequency(f)
-                          setPaydays(deriveDefaultPaydays(paydays[0] ?? new Date().getDate(), f))
-                        }}
-                        className={`rounded-xl py-2.5 text-sm font-semibold transition-colors ${
-                          on ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]' : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
-                        }`}
-                      >
-                        {f === 'monthly' ? t.addIncome.freqMonthly : f === 'biweekly' ? t.addIncome.freqBiweekly : t.addIncome.freqWeekly}
-                      </button>
-                    )
-                  })}
+                <div className="mt-1.5">
+                  <SegmentedControl
+                    ariaLabel={t.addIncome.howOftenLabel}
+                    value={frequency}
+                    onChange={(f) => {
+                      setFrequency(f)
+                      setPaydays(deriveDefaultPaydays(paydays[0] ?? new Date().getDate(), f))
+                    }}
+                    options={FREQS.map((f) => ({
+                      value: f,
+                      label:
+                        f === 'monthly'
+                          ? t.addIncome.freqMonthly
+                          : f === 'biweekly'
+                            ? t.addIncome.freqBiweekly
+                            : t.addIncome.freqWeekly,
+                    }))}
+                  />
                 </div>
               </div>
               {/* Payday grid */}
@@ -352,22 +343,16 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
                     beside-the-label helper wraps the uppercase label onto two lines. */}
                 <span className={MODAL_LABEL_CLASS}>{t.addIncome.driftLabel}</span>
                 <p className="mt-0.5 text-[10px] text-[var(--color-brand-text-muted)]">{t.addIncome.driftHelper}</p>
-                <div className="mt-1.5 grid grid-cols-3 gap-2">
-                  {DRIFT_PRESETS.map(({ days, key }) => {
-                    const on = (driftDays ?? DEFAULT_DRIFT_PRESET) === days
-                    return (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => setDriftDays(days)}
-                        className={`rounded-xl py-2.5 text-sm font-semibold transition-colors ${
-                          on ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]' : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
-                        }`}
-                      >
-                        {t.addIncome[key]}
-                      </button>
-                    )
-                  })}
+                <div className="mt-1.5">
+                  <SegmentedControl
+                    ariaLabel={t.addIncome.driftLabel}
+                    value={String(driftDays ?? DEFAULT_DRIFT_PRESET)}
+                    onChange={(v) => setDriftDays(Number(v))}
+                    options={DRIFT_PRESETS.map(({ days, key }) => ({
+                      value: String(days),
+                      label: t.addIncome[key],
+                    }))}
+                  />
                 </div>
               </div>
             </>
@@ -381,8 +366,8 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
                     {assigned ? <p className="mt-0.5 text-xs text-[var(--color-brand-text-muted)]">{assigned.date}</p> : null}
                   </div>
                   <div className="flex shrink-0 gap-2">
-                    <button type="button" onClick={() => setAssignOpen(true)} className="text-xs font-semibold text-[var(--color-brand-green)]">{t.addIncome.assignChange}</button>
-                    <button type="button" onClick={() => setAssigned(null)} className="text-xs font-semibold text-[var(--color-brand-text-muted)]">{t.addIncome.assignRemove}</button>
+                    <Button variant="link" size="xs" onClick={() => setAssignOpen(true)} className="font-semibold text-[var(--color-brand-green)] no-underline hover:underline">{t.addIncome.assignChange}</Button>
+                    <Button variant="link" size="xs" onClick={() => setAssigned(null)} className="font-semibold text-[var(--color-brand-text-muted)] no-underline hover:underline">{t.addIncome.assignRemove}</Button>
                   </div>
                 </div>
               ) : (
@@ -391,14 +376,15 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
                     <p className="text-sm font-semibold text-[var(--color-brand-green)]">{t.addIncome.assignCardTitle}</p>
                     <p className="mt-0.5 text-xs text-[var(--color-brand-text-muted)]">{t.addIncome.assignCardBody}</p>
                   </div>
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="touch"
                     onClick={() => setAssignOpen(true)}
-                    className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[rgba(55,195,104,0.16)] px-3.5 py-2 text-sm font-bold text-[var(--color-brand-green)]"
+                    className="shrink-0 bg-[var(--color-brand-green)]/15 font-bold text-[var(--color-brand-green)] hover:bg-[var(--color-brand-green)]/25"
                   >
                     <Link2 className="h-4 w-4" />
                     {t.addIncome.assignBtn}
-                  </button>
+                  </Button>
                 </div>
               )}
             </Card>
@@ -420,10 +406,10 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
               />
             </div>
           ) : (
-            <button type="button" onClick={() => setNotesOpen(true)} className="inline-flex items-center gap-1 self-start text-sm font-semibold text-[var(--color-brand-green)]">
+            <Button variant="link" size="sm" onClick={() => setNotesOpen(true)} className="self-start font-semibold text-[var(--color-brand-green)] no-underline hover:underline">
               <ChevronDown className="h-4 w-4" />
               {t.addIncome.labelNotes}
-            </button>
+            </Button>
           )}
         </div>
 

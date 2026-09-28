@@ -203,6 +203,7 @@ export const en: Dictionary = {
     edit: 'Edit',
     back: 'Back',
     close: 'Close',
+    moreActions: 'More actions',
     selectDate: 'Select date',
     next: 'Next',
     confirm: 'Confirm',

@@ -5,7 +5,6 @@ import { X, Plus, Pencil, Star, Trash2 } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/IconButton'
-import { Scrim } from '@/components/ui/Scrim'
 import { PaymentCardCarousel } from '@/components/features/payments/PaymentCardCarousel'
 import { PaymentMethodSetupSheet } from '@/components/features/payments/PaymentMethodSetupSheet'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
@@ -15,6 +14,7 @@ import { useT } from '@/lib/i18n'
 import { decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 import type { PaymentMethod } from '@/lib/store/types'
 import { useModalTitleId } from '@/components/modals/ModalShell'
+import { CardActionMenu } from '@/components/ui/CardActionMenu'
 
 export function PaymentMethodsSheet() {
   const t = useT()
@@ -30,6 +30,7 @@ export function PaymentMethodsSheet() {
 
   const [active, setActive] = useState(0)
   const [cardMenuId, setCardMenuId] = useState<string | null>(null)
+  const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null)
   const [setupOpen, setSetupOpen] = useState(false)
   const [editingMethod, setEditingMethod] = useState<PaymentMethod | null>(null)
 
@@ -96,7 +97,7 @@ export function PaymentMethodsSheet() {
               onActiveChange={setActive}
               defaultLabel={t.paymentMethods.default}
               hint={t.paymentMethods.walletHint}
-              onMenu={setCardMenuId}
+              onMenu={(id, anchor) => { setCardMenuId(id); setMenuAnchor(anchor) }}
             />
           )}
 
@@ -107,57 +108,29 @@ export function PaymentMethodsSheet() {
             </Button>
           </div>
 
-          {menuCard && (
-            <>
-              <Scrim label={t.common.close} onClick={() => setCardMenuId(null)} tone="none" className="z-30" />
-              <div
-                className="absolute end-[44px] top-[92px] z-[31] w-[200px] overflow-hidden rounded-[14px] border border-[#34343f] bg-[var(--popover)]"
-                style={{ boxShadow: '0 18px 44px -10px rgba(0,0,0,.7)' }}
-              >
-                <div className="flex items-center justify-between border-b border-[var(--color-brand-border)] py-2 pe-1.5 ps-3">
-                  <span className="truncate text-[11.5px] font-semibold text-[var(--color-brand-text-muted)]">
-                    {decomposePaymentMethodName(menuCard.name, menuCard.last4).provider}
-                    {menuCard.last4 ? ` ••${menuCard.last4}` : ''}
-                  </span>
-                  <button
-                    type="button" aria-label="Close" onClick={() => setCardMenuId(null)}
-                    className="flex h-[26px] w-[26px] items-center justify-center p-1.5 text-[var(--color-brand-text-muted)]"
-                  >
-                    <X className="h-full w-full" />
-                  </button>
-                </div>
-                <button
-                  type="button" onClick={() => openEdit(menuCard)}
-                  className="flex w-full items-center gap-[11px] px-3.5 py-3 text-start text-sm font-medium text-white"
-                >
-                  <Pencil className="h-[17px] w-[17px] text-[#CFCFE0]" />
-                  {t.paymentMethods.edit}
-                </button>
-                {!menuCard.isDefault && (
-                  <>
-                    <div className="h-px bg-[var(--color-brand-border)]" />
-                    <button
-                      type="button"
-                      onClick={() => { updatePaymentMethod(menuCard.id, { isDefault: true }); setCardMenuId(null) }}
-                      className="flex w-full items-center gap-[11px] px-3.5 py-3 text-start text-sm font-medium text-white"
-                    >
-                      <Star className="h-[17px] w-[17px] fill-[#38D96B] text-[#38D96B]" />
-                      {t.paymentMethods.setDefault}
-                    </button>
-                  </>
-                )}
-                <div className="h-px bg-[var(--color-brand-border)]" />
-                <button
-                  type="button"
-                  onClick={() => { deletePaymentMethod(menuCard.id); setCardMenuId(null); setActive(0) }}
-                  className="flex w-full items-center gap-[11px] px-3.5 py-3 text-start text-sm font-medium text-[#FF6B6B]"
-                >
-                  <Trash2 className="h-[17px] w-[17px]" />
-                  {t.paymentMethods.delete}
-                </button>
-              </div>
-            </>
-          )}
+          {menuCard ? (
+            <CardActionMenu
+              anchor={menuAnchor}
+              onClose={() => { setCardMenuId(null); setMenuAnchor(null) }}
+              title={`${decomposePaymentMethodName(menuCard.name, menuCard.last4).provider}${menuCard.last4 ? ` ••${menuCard.last4}` : ''}`}
+              items={[
+                { label: t.paymentMethods.edit, icon: <Pencil size={17} />, onSelect: () => openEdit(menuCard) },
+                ...(menuCard.isDefault
+                  ? []
+                  : [{
+                      label: t.paymentMethods.setDefault,
+                      icon: <Star size={17} />,
+                      onSelect: () => updatePaymentMethod(menuCard.id, { isDefault: true }),
+                    }]),
+                {
+                  label: t.paymentMethods.delete,
+                  icon: <Trash2 size={17} />,
+                  destructive: true,
+                  onSelect: () => { deletePaymentMethod(menuCard.id); setActive(0) },
+                },
+              ]}
+            />
+          ) : null}
         </div>
       </ModalShell>
 

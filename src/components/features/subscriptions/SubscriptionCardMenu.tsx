@@ -2,11 +2,21 @@
 
 import { Pencil, RotateCcw, Trash2, XCircle } from 'lucide-react'
 import { useT } from '@/lib/i18n'
+import { CardActionMenu, type CardMenuItem } from '@/components/ui/CardActionMenu'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import type { Subscription } from '@/lib/store/types'
 
+/**
+ * The ⋮ menu on a subscription card.
+ *
+ * This used to be a bespoke absolutely-positioned panel with its own item markup.
+ * It now only decides *which items* a subscription offers — cancel and reactivate
+ * are mutually exclusive, and both destructive actions are confirmed first — and
+ * hands them to {@link CardActionMenu}, which every other card already uses.
+ */
 export function SubscriptionCardMenu({
   sub,
+  anchor,
   onEdit,
   onClose,
   cancelSubscription,
@@ -14,6 +24,8 @@ export function SubscriptionCardMenu({
   reactivateSubscription,
 }: {
   sub: Subscription
+  /** The ⋮ trigger's rect, captured on click. */
+  anchor: DOMRect | null
   onEdit: () => void
   onClose: () => void
   cancelSubscription: (id: string) => void
@@ -22,58 +34,44 @@ export function SubscriptionCardMenu({
 }) {
   const t = useT()
   const confirm = useConfirm()
-  return (
-    <div
-      className="absolute end-2 top-10 z-10 min-w-[10rem] rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] shadow-lg py-1 text-sm"
-      role="menu"
-    >
-      <button
-        type="button"
-        className="flex items-center gap-2 w-full px-3 py-2 hover:bg-[var(--color-brand-elevated)]"
-        onClick={() => {
-          onClose()
-          onEdit()
-        }}
-      >
-        <Pencil className="w-4 h-4" /> {t.subscriptions.editSubscription}
-      </button>
-      {sub.status === 'active' || sub.status === 'trial' || sub.status === 'paused' ? (
-        <button
-          type="button"
-          className="flex items-center gap-2 w-full px-3 py-2 hover:bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]"
-          onClick={async () => {
-            if (await confirm({ title: t.subscriptions.confirmCancel, destructive: true })) {
-              cancelSubscription(sub.id)
-            }
-            onClose()
-          }}
-        >
-          <XCircle className="w-4 h-4" /> {t.subscriptions.cancelSubscriptionAction}
-        </button>
-      ) : (
-        <button
-          type="button"
-          className="flex items-center gap-2 w-full px-3 py-2 hover:bg-[var(--color-brand-elevated)]"
-          onClick={() => {
-            reactivateSubscription(sub.id)
-            onClose()
-          }}
-        >
-          <RotateCcw className="w-4 h-4" /> {t.subscriptions.reactivate}
-        </button>
-      )}
-      <button
-        type="button"
-        className="flex items-center gap-2 w-full px-3 py-2 hover:bg-[var(--color-brand-elevated)] text-[var(--color-brand-red)]"
-        onClick={async () => {
-          if (await confirm({ title: t.subscriptions.confirmDeleteSubscription, destructive: true })) {
+
+  const cancellable =
+    sub.status === 'active' || sub.status === 'trial' || sub.status === 'paused'
+
+  const items: CardMenuItem[] = [
+    { label: t.subscriptions.editSubscription, icon: <Pencil size={17} />, onSelect: onEdit },
+    cancellable
+      ? {
+          label: t.subscriptions.cancelSubscriptionAction,
+          icon: <XCircle size={17} />,
+          onSelect: () => {
+            void (async () => {
+              if (await confirm({ title: t.subscriptions.confirmCancel, destructive: true })) {
+                cancelSubscription(sub.id)
+              }
+            })()
+          },
+        }
+      : {
+          label: t.subscriptions.reactivate,
+          icon: <RotateCcw size={17} />,
+          onSelect: () => reactivateSubscription(sub.id),
+        },
+    {
+      label: t.subscriptions.deleteSubscription,
+      icon: <Trash2 size={17} />,
+      destructive: true,
+      onSelect: () => {
+        void (async () => {
+          if (
+            await confirm({ title: t.subscriptions.confirmDeleteSubscription, destructive: true })
+          ) {
             deleteSubscription(sub.id)
           }
-          onClose()
-        }}
-      >
-        <Trash2 className="w-4 h-4" /> {t.subscriptions.deleteSubscription}
-      </button>
-    </div>
-  )
+        })()
+      },
+    },
+  ]
+
+  return <CardActionMenu anchor={anchor} onClose={onClose} items={items} />
 }

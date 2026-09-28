@@ -55,7 +55,7 @@ export function CardActionMenu({ anchor, items, onClose, title }: CardActionMenu
             type="button"
             onClick={() => { onClose(); it.onSelect() }}
             className="flex w-full items-center gap-[11px] px-3.5 py-3 text-start text-sm font-medium"
-            style={{ color: it.destructive ? '#FF6B6B' : 'var(--color-brand-text-primary)', borderTop: i > 0 ? '1px solid var(--color-brand-border)' : undefined }}
+            style={{ color: it.destructive ? 'var(--color-brand-red)' : 'var(--color-brand-text-primary)', borderTop: i > 0 ? '1px solid var(--color-brand-border)' : undefined }}
           >
             {it.icon}
             {it.label}
