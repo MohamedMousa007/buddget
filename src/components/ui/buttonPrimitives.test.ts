@@ -65,3 +65,28 @@ describe('SelectableCard', () => {
     expect(selectableCardVariants({ layout: 'list' })).toContain('min-h-11')
   })
 })
+
+describe('unselected surface', () => {
+  /**
+   * `ModalShell` panels are `--color-brand-card`, and most chips and option cards
+   * live inside one. If their unselected fill were also card, they would be white on
+   * white in light mode — readable only by a 1px border. That was a real regression
+   * during the migration, so the default is pinned here.
+   */
+  it('defaults to the elevated fill, so a chip inside a sheet is visible', () => {
+    expect(optionChipVariants({ selected: false })).toContain('bg-[var(--color-brand-elevated)]')
+    expect(selectableCardVariants({ selected: false })).toContain('bg-[var(--color-brand-elevated)]')
+  })
+
+  it('uses the card fill only when asked, for controls on the page background', () => {
+    expect(optionChipVariants({ selected: false, surface: 'card' })).toContain('bg-[var(--color-brand-card)]')
+    expect(selectableCardVariants({ selected: false, surface: 'card' })).toContain('bg-[var(--color-brand-card)]')
+  })
+
+  it('ignores surface once selected — the teal tint always wins', () => {
+    for (const surface of ['elevated', 'card'] as const) {
+      expect(optionChipVariants({ selected: true, surface })).toContain('bg-[var(--color-brand-primary-soft)]')
+      expect(optionChipVariants({ selected: true, surface })).not.toContain('bg-[var(--color-brand-elevated)]')
+    }
+  })
+})

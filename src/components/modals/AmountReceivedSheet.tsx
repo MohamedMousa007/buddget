@@ -191,13 +191,14 @@ export function AmountReceivedSheet() {
             style={{ color: inputColorDisplay }}
           />
           {!meetsExpected && expected > 0 ? (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setAmount(String(expected))}
-              className="shrink-0 rounded-lg bg-[rgba(55,195,104,0.16)] px-2.5 py-1.5 text-xs font-bold text-[var(--color-brand-green)] transition-colors hover:bg-[rgba(55,195,104,0.24)]"
+              className="shrink-0 bg-[var(--color-brand-green)]/15 text-xs font-bold text-[var(--color-brand-green)] hover:bg-[var(--color-brand-green)]/25"
             >
               {t.income.fullBtn}
-            </button>
+            </Button>
           ) : null}
         </Card>
         <p className="mt-2 font-mono-numbers text-xs" style={{ color: meetsExpected ? 'var(--color-brand-text-muted)' : '#FFB13D' }}>

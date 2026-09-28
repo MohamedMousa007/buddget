@@ -11,6 +11,7 @@ import {
   inputStyle,
 } from '@/components/features/auth-modal/authModalTokens'
 import { useT } from '@/lib/i18n'
+import { IconButton } from '@/components/ui/IconButton'
 
 export type EmailFieldTone = 'neutral' | 'error' | 'valid'
 
@@ -78,13 +79,14 @@ export const AuthEmailField = forwardRef<HTMLInputElement, AuthEmailFieldProps>(
             aria-label={t.auth.labelEmail}
           />
           {showAdvanceButton ? (
-            <button
-              type="button"
+            <IconButton
               onClick={() => {
                 if (!disabled && !pending) onAdvance()
               }}
               disabled={disabled || pending || !value.trim()}
-              className="absolute end-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg flex items-center justify-center bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--color-brand-primary-hover)] transition-colors"
+              variant="solid"
+              size="sm"
+              className="absolute end-2 top-1/2 -translate-y-1/2 disabled:opacity-40"
               aria-label={t.auth.continueAriaLabel}
             >
               {pending ? (
@@ -92,7 +94,7 @@ export const AuthEmailField = forwardRef<HTMLInputElement, AuthEmailFieldProps>(
               ) : (
                 <ArrowRight className="w-4 h-4 rtl:rotate-180" aria-hidden />
               )}
-            </button>
+            </IconButton>
           ) : null}
         </div>
       </div>

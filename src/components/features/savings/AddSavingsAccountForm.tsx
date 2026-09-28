@@ -122,6 +122,7 @@ export function AddSavingsAccountForm({ onDone }: AddSavingsAccountFormProps) {
               <SelectableCard
                 key={key}
                 layout="list"
+                surface="card"
                 selected={otherIcon === key}
                 onClick={() => setOtherIcon(key)}
                 aria-label={key}

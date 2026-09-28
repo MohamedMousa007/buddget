@@ -1,6 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import { Button } from '@/components/ui/button'
 
 export interface AuthPrimaryButtonProps {
   children: ReactNode
@@ -11,28 +12,25 @@ export interface AuthPrimaryButtonProps {
   type?: 'button' | 'submit'
 }
 
-const BG = 'var(--color-brand-primary)'
-const BG_HOVER = 'var(--color-brand-primary-hover)'
-
 /**
- * Full-width red CTA used across auth steps.
+ * The full-width CTA on every auth step.
+ *
+ * It stays a named component because the auth steps refer to it by intent rather
+ * than by variant, but it is now just {@link Button} — it used to re-declare the
+ * fill and drive its own hover by assigning `style.background` in onMouseEnter and
+ * onMouseLeave, which a `hover:` class does for free and which left the hover state
+ * stuck whenever the pointer left during a re-render. Its doc comment also still
+ * called it "red", from the palette before the teal one.
  */
-export function AuthPrimaryButton({ children, disabled, onClick, type = 'button' }: AuthPrimaryButtonProps) {
+export function AuthPrimaryButton({
+  children,
+  disabled,
+  onClick,
+  type = 'button',
+}: AuthPrimaryButtonProps) {
   return (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      className="w-full h-11 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      style={{ background: BG }}
-      onMouseEnter={(e) => {
-        if (!disabled) (e.target as HTMLButtonElement).style.background = BG_HOVER
-      }}
-      onMouseLeave={(e) => {
-        (e.target as HTMLButtonElement).style.background = BG
-      }}
-    >
+    <Button type={type} onClick={onClick} disabled={disabled} size="cta-block">
       {children}
-    </button>
+    </Button>
   )
 }

@@ -11,7 +11,7 @@ import { SubscriptionBrandIcon } from '@/components/features/subscriptions/Subsc
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import { useT } from '@/lib/i18n'
 import type { Dictionary } from '@/lib/i18n/types'
-import { cn } from '@/lib/utils'
+import { SelectableCard } from '@/components/ui/SelectableCard'
 
 function sectionLabel(t: Dictionary['subscriptions'], id: CatalogSectionKey) {
   switch (id) {
@@ -50,14 +50,11 @@ function SectionHeader({ children }: { children: ReactNode }) {
 
 function BrandTile({ b, onPick }: { b: SubscriptionBrand; onPick: (x: SubscriptionBrand) => void }) {
   return (
-    <button
-      type="button"
+    <SelectableCard
+      as="action"
+      layout="tile"
       onClick={() => onPick(b)}
-      className={cn(
-        'flex flex-col items-center gap-2 rounded-xl border border-[var(--color-brand-border)]',
-        'bg-[var(--color-brand-elevated)] p-2 text-center transition-colors',
-        'hover:bg-[var(--color-brand-card)] min-h-[5.5rem] justify-start'
-      )}
+      className="min-h-[5.5rem] justify-start gap-2 rounded-xl p-2"
     >
       <SubscriptionBrandIcon
         brandKey={b.key}
@@ -70,7 +67,7 @@ function BrandTile({ b, onPick }: { b: SubscriptionBrand; onPick: (x: Subscripti
       <span className="text-xs font-medium leading-tight line-clamp-2 text-[var(--color-brand-text-primary)] w-full">
         {b.name}
       </span>
-    </button>
+    </SelectableCard>
   )
 }
 
@@ -114,13 +111,10 @@ export function SubscriptionCatalogGrid({
   return (
     <div className="space-y-6 max-h-[60vh] overflow-y-auto pe-1">
       <div>
-        <button
-          type="button"
+        <SelectableCard
+          as="action"
           onClick={onCustom}
-          className={cn(
-            'w-full flex items-center justify-between gap-3 rounded-xl border border-dashed border-[var(--color-brand-border)]',
-            'px-4 py-3 text-left hover:bg-[var(--color-brand-elevated)] transition-colors'
-          )}
+          className="justify-between gap-3 rounded-xl border-dashed px-4 py-3"
         >
           <span className="flex items-center gap-3 min-w-0">
             <span className="text-lg shrink-0" aria-hidden>
@@ -138,7 +132,7 @@ export function SubscriptionCatalogGrid({
           <span className="text-[var(--color-brand-text-muted)] shrink-0" aria-hidden>
             →
           </span>
-        </button>
+        </SelectableCard>
       </div>
 
       {popular.length > 0 ? (

@@ -65,6 +65,7 @@ export default function SettingsFeedbackPage() {
                 <OptionChip
                   key={v}
                   size="segment"
+                  surface="card"
                   selected={active}
                   onClick={() => setType(v)}
                 >

@@ -18,6 +18,7 @@ import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { micro } from '@/lib/ui/microLabelStyle'
 import type { GoldKarat, InvestmentAssetType, InvestmentHolding } from '@/lib/store/types'
 import { IconButton } from '@/components/ui/IconButton'
+import { OptionChip } from '@/components/ui/OptionChip'
 
 const fmtCompact = (n: number) => {
   const a = Math.abs(n)
@@ -96,10 +97,9 @@ export function InvestmentView({ onBackToSavings, onAddInvestment }: InvestmentV
         {/* segmented control */}
         <div className="mx-4 flex gap-[3px] rounded-[13px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-1">
           {TABS.map((t) => (
-            <button key={t.key} type="button" onClick={() => setTab(t.key)} className="flex-1 rounded-[10px] text-[12px] font-semibold transition-all"
-              style={{ height: 36, background: tab === t.key ? '#12B0A0' : 'transparent', color: tab === t.key ? '#fff' : 'var(--color-brand-text-muted)', boxShadow: tab === t.key ? '0 4px 12px -6px rgba(18,176,160,.7)' : undefined }}>
+            <OptionChip key={t.key} size="segment" selected={tab === t.key} onClick={() => setTab(t.key)} className="h-9 text-[12px]">
               {t.label}
-            </button>
+            </OptionChip>
           ))}
         </div>
 

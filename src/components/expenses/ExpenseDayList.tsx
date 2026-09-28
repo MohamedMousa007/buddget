@@ -20,6 +20,7 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import type { Expense } from '@/lib/store/types'
 import { useT } from '@/lib/i18n'
 import { decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
+import { Button } from '@/components/ui/button'
 
 function fmtNum(n: number): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -107,13 +108,9 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
           {isMonthRange ? t.expenses.emptyTitle : t.expenses.emptyInRange}
         </p>
         {hasFilters ? (
-          <button
-            type="button"
-            onClick={resetFilters}
-            className="mt-3 min-h-[44px] rounded-xl px-4 text-sm font-semibold text-[var(--color-brand-red-text)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]/55"
-          >
+          <Button variant="ghost" size="touch" onClick={resetFilters} className="mt-3 font-semibold">
             {t.expenses.clearFilters}
-          </button>
+          </Button>
         ) : null}
       </div>
     )

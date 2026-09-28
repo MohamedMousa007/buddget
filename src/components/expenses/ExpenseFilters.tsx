@@ -314,6 +314,7 @@ export function ExpenseFilters({
         <OptionChip
           as="trigger"
           size="sm"
+          surface="card"
           selected={rangePreset !== 'month'}
           onClick={() => setDropdown('period')}
           aria-haspopup="dialog"
@@ -326,6 +327,7 @@ export function ExpenseFilters({
         <OptionChip
           as="trigger"
           size="sm"
+          surface="card"
           selected={cats.length > 0}
           onClick={() => setDropdown('cat')}
           aria-haspopup="dialog"
@@ -338,6 +340,7 @@ export function ExpenseFilters({
         <OptionChip
           as="trigger"
           size="sm"
+          surface="card"
           selected={methodsSel.length > 0}
           onClick={() => setDropdown('method')}
           aria-haspopup="dialog"
@@ -350,6 +353,7 @@ export function ExpenseFilters({
         <OptionChip
           as="trigger"
           size="sm"
+          surface="card"
           selected={amtActive}
           onClick={() => setDropdown('amount')}
           aria-haspopup="dialog"

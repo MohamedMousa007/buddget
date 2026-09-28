@@ -12,6 +12,7 @@ import { TransactionRow } from '@/components/transactions/TransactionRow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { rgba } from '@/lib/utils/color'
 import { IconButton } from '@/components/ui/IconButton'
+import { OptionChip } from '@/components/ui/OptionChip'
 
 const fmtSigned = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(Math.round(n)).toLocaleString('en-US')}`
 
@@ -82,9 +83,9 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
       <div className="flex items-center gap-2 px-4">
         <div className="flex flex-1 gap-2 overflow-x-auto no-scrollbar">
           {FILTERS.map((f) => (
-            <button key={f.key} type="button" className="flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 py-2 text-[13px] font-medium text-[var(--color-brand-text-secondary)]">
+            <OptionChip key={f.key} selected={false}>
               {f.icon}{f.label}
-            </button>
+            </OptionChip>
           ))}
         </div>
         <IconButton

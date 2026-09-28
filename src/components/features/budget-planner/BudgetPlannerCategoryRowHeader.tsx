@@ -52,15 +52,13 @@ export function BudgetPlannerCategoryRowHeader({
 }: BudgetPlannerCategoryRowHeaderProps) {
   return (
     <div className="flex flex-wrap items-center gap-2 p-3">
-      <button
-        type="button"
+      <IconButton
         onClick={onToggleOpen}
-        className="cursor-pointer inline-flex shrink-0 items-center justify-center min-w-11 min-h-11 rounded-lg text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]"
         aria-expanded={open}
         aria-label={labels.expandCategory}
       >
         {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-      </button>
+      </IconButton>
       <BudgetPlannerCategoryNameBlock
         category={category}
         planCategories={planCategories}

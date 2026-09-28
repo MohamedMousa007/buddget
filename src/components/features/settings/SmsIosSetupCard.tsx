@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { ShieldCheck, Zap } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import SmsTrackingGuide from '@/components/onboarding/SmsTrackingGuide'
+import { Button } from '@/components/ui/button'
 
-const RED = '#12B0A0'
 
 interface Props {
   lastReceivedAt: string | null
@@ -57,18 +57,14 @@ export function SmsIosSetupCard({ lastReceivedAt, onSetupComplete }: Props) {
         </div>
 
         {/* CTA — always red; connection state is communicated by the pill above */}
-        <button
-          type="button"
+        <Button
+          size="cta-block"
           onClick={() => setShowSetup(true)}
-          className="w-full h-14 rounded-lg text-sm font-bold text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90 active:opacity-80"
-          style={{
-            background: RED,
-            boxShadow: '0 10px 30px rgba(18,176,160,0.28)',
-          }}
+          className="h-14 font-bold shadow-[var(--shadow-md)]"
         >
           <Zap className="h-4 w-4" strokeWidth={2.5} />
           {connected ? t.smsTracking.iosSetupButtonConnected : t.smsTracking.iosSetupButton}
-        </button>
+        </Button>
       </div>
 
       {showSetup && (

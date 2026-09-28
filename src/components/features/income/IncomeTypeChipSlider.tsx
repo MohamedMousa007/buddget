@@ -6,6 +6,7 @@ import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
 import { MANUAL_INCOME_SOURCE_TYPES } from '@/lib/constants/incomeSourceTypes'
 import { IncomeTypeIcon, incomeTypeColors } from '@/components/features/income/IncomeTypeIcon'
 import type { IncomeSourceType } from '@/lib/store/types'
+import { OptionChip } from '@/components/ui/OptionChip'
 
 interface Props {
   value: IncomeSourceType
@@ -25,18 +26,15 @@ export function IncomeTypeChipSlider({ value, onChange, labels }: Props) {
         const active = value === st
         const colors = incomeTypeColors(st)
         return (
-          <button
+          <OptionChip
             key={st}
-            type="button"
+            selected={active}
             onClick={() => onChange(st)}
-            className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-2 text-sm font-semibold transition-colors ${
-              active ? '' : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
-            }`}
             style={active ? { background: colors.bg, borderColor: colors.fg, color: colors.fg } : undefined}
           >
             <IncomeTypeIcon type={st} className="h-4 w-4" />
             {incomeSourceTypeLabel(labels, st)}
-          </button>
+          </OptionChip>
         )
       })}
       </div>

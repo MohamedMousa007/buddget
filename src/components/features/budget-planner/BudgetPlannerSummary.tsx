@@ -4,6 +4,7 @@ import { CirclePlus } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import type { Currency } from '@/lib/store/types'
+import { Button } from '@/components/ui/button'
 
 export interface BudgetPlannerSummaryProps {
   totalIncome: number
@@ -47,14 +48,15 @@ export function BudgetPlannerSummary({
               {formatCurrency(totalIncome, currency, true)}
             </p>
           ) : (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="touch"
               onClick={onAddIncome}
-              className="mt-1 inline-flex items-center gap-1.5 rounded-lg bg-[var(--color-brand-amber)]/10 px-2.5 py-1 text-xs font-medium text-[var(--color-brand-amber)] hover:bg-[var(--color-brand-amber)]/20 transition-colors"
+              className="mt-1 bg-[var(--color-brand-amber)]/10 text-xs text-[var(--color-brand-amber)] hover:bg-[var(--color-brand-amber)]/20"
             >
               <CirclePlus className="h-3.5 w-3.5" />
               Add your income
-            </button>
+            </Button>
           )}
         </div>
         <div>

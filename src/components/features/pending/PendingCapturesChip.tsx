@@ -81,6 +81,7 @@ export function PendingCapturesChip() {
     <>
       <SelectableCard
         as="action"
+        surface="card"
         onClick={() => void processNext()}
         disabled={busy || !online}
         className="mx-4 mt-3 min-h-11 w-[calc(100%-2rem)] gap-2.5 px-4 py-2.5 disabled:opacity-80"

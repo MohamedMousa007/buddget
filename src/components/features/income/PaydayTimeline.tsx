@@ -118,6 +118,7 @@ export function PaydayTimeline({ occurrences, dateLabel, amountLabel, statusBrac
             onClick={onSelect ? (e) => { e.stopPropagation(); onSelect(occ) } : undefined}
             aria-label={dateLabel(occ)}
             aria-pressed={selected}
+            data-raw-button-ok="a node placed by percentage along a timeline track"
             className={`absolute top-1/2 flex h-11 min-w-[44px] -translate-x-1/2 -translate-y-1/2 items-center justify-center transition-opacity ${dimmed ? 'opacity-45' : ''}`}
             style={{ left: `${pos(i)}%` }}
           >

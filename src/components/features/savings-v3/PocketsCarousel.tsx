@@ -5,6 +5,7 @@ import { Plus } from 'lucide-react'
 import type { SavingsAccount } from '@/lib/store/types'
 import { PocketCard } from '@/components/features/savings-v3/PocketCard'
 import { RecurringIncomeCarousel } from '@/components/features/income/RecurringIncomeCarousel'
+import { SelectableCard } from '@/components/ui/SelectableCard'
 
 export interface PocketVM {
   account: SavingsAccount
@@ -39,14 +40,15 @@ export function PocketsCarousel({ pockets, onAdd, onWithdraw, onMenu, onAddPocke
           const p = pockets[i]
           if (!p) {
             return (
-              <button
-                type="button" onClick={onAddPocket} aria-label="Add a pocket"
-                className="flex w-full flex-col items-center justify-center gap-2 rounded-[16px] border border-dashed border-[var(--color-brand-border)] text-[var(--color-brand-text-muted)]"
+              <SelectableCard
+                as="action" onClick={onAddPocket} aria-label="Add a pocket"
+                layout="tile"
+                className="justify-center gap-2 rounded-[16px] border-dashed text-[var(--color-brand-text-muted)]"
                 style={{ minHeight: 214 }}
               >
                 <span className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-brand-border)]"><Plus size={18} /></span>
                 <span className="text-xs font-semibold">Add pocket</span>
-              </button>
+              </SelectableCard>
             )
           }
           return (

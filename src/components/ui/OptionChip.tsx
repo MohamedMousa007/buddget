@@ -22,11 +22,36 @@ const optionChipVariants = cva(
       },
       selected: {
         true: 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]',
-        false:
-          'border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]',
+        false: 'border-[var(--color-brand-border)] text-[var(--color-brand-text-secondary)]',
+      },
+      /**
+       * What the chip is sitting ON, which decides its unselected fill.
+       *
+       * `elevated` (default) is for a chip inside a sheet or a card — and that is
+       * the default because `ModalShell` panels are `--color-brand-card`, so a
+       * card-filled chip there is white on white, visible only by its border.
+       * `card` is for a chip on the page background instead.
+       *
+       * It only affects the unselected state; a selected chip is always the teal tint.
+       */
+      surface: {
+        elevated: '',
+        card: '',
       },
     },
-    defaultVariants: { size: 'md', selected: false },
+    compoundVariants: [
+      {
+        selected: false,
+        surface: 'elevated',
+        class: 'bg-[var(--color-brand-elevated)] hover:bg-[var(--color-brand-sunken)]',
+      },
+      {
+        selected: false,
+        surface: 'card',
+        class: 'bg-[var(--color-brand-card)] hover:bg-[var(--color-brand-elevated)]',
+      },
+    ],
+    defaultVariants: { size: 'md', selected: false, surface: 'elevated' },
   }
 )
 
@@ -63,6 +88,7 @@ export function OptionChip({
   className,
   size,
   selected,
+  surface,
   as = 'toggle',
   type = 'button',
   ...props
@@ -72,7 +98,7 @@ export function OptionChip({
       data-slot="option-chip"
       type={type}
       aria-pressed={as === 'toggle' ? Boolean(selected) : undefined}
-      className={cn(optionChipVariants({ size, selected }), className)}
+      className={cn(optionChipVariants({ size, selected, surface }), className)}
       {...props}
     />
   )

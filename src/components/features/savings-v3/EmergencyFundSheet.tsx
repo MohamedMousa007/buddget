@@ -12,6 +12,7 @@ import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { micro } from '@/lib/ui/microLabelStyle'
 import type { EmergencyFundConfig } from '@/lib/store/types'
 import { IconButton } from '@/components/ui/IconButton'
+import { Button } from '@/components/ui/button'
 
 export interface EmergencyFundSheetProps {
   open: boolean
@@ -100,12 +101,11 @@ export function EmergencyFundSheet({ open, onClose }: EmergencyFundSheetProps) {
             <p className="mt-2 text-xs text-[var(--color-brand-text-muted)]">Rent, food, transport, bills and debt minimums — the fancy parts of your budget are left out on purpose.</p>
 
             {/* AI estimate — grounded on local cost of living; user can still edit the months above. */}
-            <button type="button" onClick={runAiEstimate} disabled={aiBusy}
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-[rgba(183,156,255,.4)] bg-[rgba(183,156,255,.08)] py-2.5 text-sm font-semibold"
-              style={{ color: '#B79CFF' }}>
+            <Button variant="outline" size="cta-block" onClick={runAiEstimate} disabled={aiBusy}
+              className="mt-3 border-[var(--color-cat-6)]/40 bg-[var(--color-cat-6)]/10 font-semibold text-[var(--color-cat-6)] hover:bg-[var(--color-cat-6)]/20">
               <Sparkles size={15} className={aiBusy ? 'animate-pulse' : ''} />
               {aiBusy ? 'Estimating for your country…' : 'Estimate with AI'}
-            </button>
+            </Button>
             {aiError ? <p className="mt-2 text-xs" style={{ color: '#FF6B6B' }}>{aiError}</p> : null}
             {aiNote ? <p className="mt-2 text-xs text-[var(--color-brand-text-secondary)]">{aiNote}</p> : null}
           </div>

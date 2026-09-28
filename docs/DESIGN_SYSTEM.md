@@ -242,7 +242,12 @@ Do not add manual `pt-*` values to compensate for the status bar — the platfor
 Rules:
 - All `<button>`, `<a>`, `[role="button"]` elements must be at least `min-h-[44px] min-w-[44px]`.
 - Form inputs use `h-12` (48px height) — satisfies the minimum automatically.
-- Icon-only buttons must have explicit size: `h-11 w-11` minimum, or pad with `p-2.5` around a smaller icon.
+- Icon-only buttons use `<IconButton>`, which keeps a 44px hit area at every size —
+  including `size="sm"`, whose glyph is 32px but whose target is not. Do not hand-roll
+  `h-11 w-11`; the guard in `noStyledRawButtons.test.ts` will fail it.
+- `IconButton size="sm"`'s hit area reaches ~6px past the glyph. Space adjacent ones
+  `gap-1`+, and prefer `size="md"` for anything destructive, so it cannot swallow a tap
+  meant for the row it sits in.
 - Use `touch-none` on draggable elements (e.g. sliders, drag-to-cancel) to prevent scroll interference.
 - Use `.no-tap-highlight` or `select-none` on non-text interactive surfaces to remove the default blue flash on Android.
 
@@ -250,40 +255,50 @@ Rules:
 
 ## Component Blueprints
 
-### Primary Button
+**Do not hand-roll a button.** Every shape below already exists as a component, and
+`src/components/ui/noStyledRawButtons.test.ts` fails the build if a raw `<button>`
+re-declares a fill, a border, a radius or its own size. That guard exists because
+this section used to show class strings instead of components, and 359 hand-rolled
+buttons in 271 distinct styles grew out of copying them.
 
-```tsx
-<button className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--color-brand-red)] px-4 py-2.5 text-sm font-semibold text-white min-h-[44px] hover:bg-[var(--color-brand-red-hover)] transition-colors disabled:opacity-50">
-```
+| You need | Use | Notes |
+|---|---|---|
+| A text action | `<Button>` | `size="touch"` 44px, `size="cta"` 48px, `size="cta-block"` full width. `xs`/`sm` are desktop density — admin only. |
+| An icon-only action | `<IconButton>` | Requires `aria-label` in its type. 44px hit area at every size. |
+| One choice among several, inline | `<OptionChip>` | `selected` drives the teal tint and `aria-pressed`. `size="segment"` for an equal-width row. |
+| A fixed set of 2–4 exclusive choices | `<SegmentedControl>` | Owns the radiogroup and arrow keys. Prefer over chips when the set is fixed. |
+| A card-shaped choice | `<SelectableCard>` | `as="radio" \| "checkbox" \| "action"` picks the ARIA. |
+| A category / type tile | `<AccentTile>` | The one control tinted by the item's own colour, not the brand. |
+| A trigger that must look like an input | `<FieldButton>` | Height tracks `Input size="brand"`, so it lines up in a form column. |
+| A tap-to-dismiss backdrop | `<Scrim>` | A real button, so it is keyboard reachable. |
+| An on/off switch | `<Switch size="touch">` | 44×24. The smaller sizes are desktop density. |
 
-### Secondary / Ghost Button
+### The two surfaces
 
-```tsx
-<button className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--color-brand-border)] px-4 py-2.5 text-sm text-[var(--color-brand-text-secondary)] min-h-[44px] hover:bg-[var(--color-brand-elevated)] transition-colors">
-```
+`OptionChip` and `SelectableCard` default to **`surface="elevated"`** because
+`ModalShell` panels are `--color-brand-card`: a card-filled chip inside a sheet is
+white on white in light mode, readable only by its border. Pass `surface="card"`
+only for a control resting on the page background.
+
+### Selection is never colour alone
+
+A selected chip or card changes its **fill and its border**, and announces itself
+through `aria-pressed` (a toggle) or `aria-checked` (a radio or checkbox). A
+`radio`/`checkbox` role needs a wrapping `role="radiogroup"` / `role="group"` with
+an `aria-label`.
 
 ### Text Input
 
 ```tsx
-<input className="h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]/55" />
+<Input size="brand" />   // 48px, matching FieldButton
 ```
 
 ### Card
 
 ```tsx
-<div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-5">
-```
-
-### Elevated / Inner Card
-
-```tsx
-<div className="rounded-xl bg-[var(--color-brand-elevated)] p-4">
-```
-
-### Badge / Chip
-
-```tsx
-<span className="inline-flex items-center rounded-full bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-brand-text-secondary)]">
+<Card>…</Card>                          // the standard surface
+<Card variant="elevated">…</Card>       // a card on a card
+<Card render={<ul />} padding="none" divide>…</Card>
 ```
 
 ### Section Label (small caps)
@@ -298,13 +313,20 @@ Rules:
 <span className="font-mono-numbers font-semibold text-[var(--color-brand-text-primary)]">
 ```
 
-### Icon Button (touch-safe)
+### When a raw `<button>` is still right
+
+Two cases, and the guard allows both:
+
+1. The classes are **layout only** — `flex-1 text-start min-w-0` on a region that is
+   tappable as a whole. Wrapping that in a component is ceremony.
+2. The control genuinely has no shared shape — a keypad key, a calendar cell, a
+   carousel dot, a swipe-action panel, the centre FAB. Mark it:
 
 ```tsx
-<button className="flex h-11 w-11 items-center justify-center rounded-xl text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)] hover:text-[var(--color-brand-text-primary)] transition-colors">
-  <Icon className="h-5 w-5" />
-</button>
+<button data-raw-button-ok="a day-number cell in a month grid" …>
 ```
+
+The value is the reason. When it stops being true, the control belongs on a primitive.
 
 ---
 

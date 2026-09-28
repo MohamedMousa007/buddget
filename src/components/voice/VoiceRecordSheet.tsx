@@ -11,6 +11,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { VoiceRecapEditor } from '@/components/voice/VoiceRecapEditor'
 import { speak, stopSpeaking } from '@/lib/voice/speak'
 import { isNative } from '@/lib/native/isNative'
+import { IconButton } from '@/components/ui/IconButton'
 
 interface VoiceRecordSheetProps {
   open: boolean
@@ -385,19 +386,19 @@ function AnswerView({
         className="mt-3 flex items-start gap-2 bg-[var(--color-brand-elevated)]/60"
       >
         <p className="flex-1 text-sm text-[var(--color-brand-text-primary)]">{message}</p>
-        <button
-          type="button"
+        <IconButton
           onClick={() => {
             const next = !muted
             setMuted(next)
             if (next) stopSpeaking()
             else speak(message)
           }}
-          className="shrink-0 rounded-lg p-1.5 text-[var(--color-brand-text-muted)] hover:bg-[var(--color-brand-elevated)]"
+          size="sm"
           aria-label={muted ? 'Unmute answer' : 'Mute answer'}
+          aria-pressed={muted}
         >
           {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-        </button>
+        </IconButton>
       </Card>
 
       <div className="mt-5 flex gap-2">

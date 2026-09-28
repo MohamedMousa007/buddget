@@ -5,6 +5,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { findBrandByKey, plansForRegion, type CatalogRegion } from '@/lib/constants/subscriptionCatalog'
 import { useT } from '@/lib/i18n'
 import { IconButton } from '@/components/ui/IconButton'
+import { Button } from '@/components/ui/button'
 
 /**
  * "Your Netflix looks like it moved to Premium — update?" A tracked payment matched a
@@ -55,13 +56,14 @@ export function SubscriptionPlanChangeBanner() {
                 <X className="size-3.5" />
               </IconButton>
             </div>
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="touch"
               onClick={() => applyPendingPlanChange(sub.id)}
-              className="mt-2.5 flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[var(--color-brand-green)]/10 px-3 text-xs text-[var(--color-brand-green)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]/55"
+              className="mt-2.5 bg-[var(--color-brand-green)]/10 text-xs text-[var(--color-brand-green)] hover:bg-[var(--color-brand-green)]/20"
             >
               {t.subscriptions.planChangeApply}
-            </button>
+            </Button>
           </div>
         )
       })}

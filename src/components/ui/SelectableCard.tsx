@@ -23,11 +23,36 @@ const selectableCardVariants = cva(
       },
       selected: {
         true: 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary-soft)]',
-        false:
-          'border-[var(--color-brand-border)] bg-[var(--color-brand-card)] hover:bg-[var(--color-brand-elevated)]',
+        false: 'border-[var(--color-brand-border)]',
+      },
+      /**
+       * What the card is sitting ON, which decides its unselected fill.
+       *
+       * `elevated` (default) is for a card inside a sheet — and that is the default
+       * because `ModalShell` panels are `--color-brand-card`, so a card-filled option
+       * inside one is white on white, readable only by its border. `card` is for an
+       * option resting on the page background instead.
+       *
+       * It only affects the unselected state; a selected card is always the teal tint.
+       */
+      surface: {
+        elevated: '',
+        card: '',
       },
     },
-    defaultVariants: { layout: 'row', selected: false },
+    compoundVariants: [
+      {
+        selected: false,
+        surface: 'elevated',
+        class: 'bg-[var(--color-brand-elevated)] hover:bg-[var(--color-brand-sunken)]',
+      },
+      {
+        selected: false,
+        surface: 'card',
+        class: 'bg-[var(--color-brand-card)] hover:bg-[var(--color-brand-elevated)]',
+      },
+    ],
+    defaultVariants: { layout: 'row', selected: false, surface: 'elevated' },
   }
 )
 
@@ -67,6 +92,7 @@ export function SelectableCard({
   className,
   layout,
   selected,
+  surface,
   as = 'radio',
   type = 'button',
   ...props
@@ -83,7 +109,7 @@ export function SelectableCard({
       data-slot="selectable-card"
       type={type}
       {...state}
-      className={cn(selectableCardVariants({ layout, selected }), className)}
+      className={cn(selectableCardVariants({ layout, selected, surface }), className)}
       {...props}
     />
   )

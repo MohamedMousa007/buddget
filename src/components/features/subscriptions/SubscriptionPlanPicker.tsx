@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import type { SubscriptionPlan } from '@/lib/constants/subscriptionCatalog'
 import type { Currency, SubscriptionBillingCycle } from '@/lib/store/types'
 import { formatCurrency } from '@/lib/utils/formatters'
+import { SelectableCard } from '@/components/ui/SelectableCard'
 
 function cycleSuffix(
   cycle: SubscriptionBillingCycle,
@@ -53,17 +54,15 @@ export function SubscriptionPlanPicker({
           const selected = i === selectedIndex
           const suffix = cycleSuffix(pl.cycle, cycleLabels)
           return (
-            <button
+            <SelectableCard
               key={`${pl.name}-${i}`}
-              type="button"
+              selected={selected}
               onClick={() => onSelect(i)}
               className={cn(
-                'snap-start shrink-0 rounded-xl border border-solid text-left transition-colors',
-                'flex min-h-[7.5rem] w-[9rem] flex-col justify-between sm:w-[9.25rem]',
+                'snap-start shrink-0 rounded-xl border-solid text-left',
+                'min-h-[7.5rem] w-[9rem] flex-col justify-between sm:w-[9.25rem]',
                 'px-3 py-3',
-                selected
-                  ? 'shadow-sm'
-                  : 'border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] hover:bg-[var(--color-brand-card)]'
+                selected && 'shadow-sm'
               )}
               style={
                 selected
@@ -89,7 +88,7 @@ export function SubscriptionPlanPicker({
                   {pl.description}
                 </span>
               ) : null}
-            </button>
+            </SelectableCard>
           )
         })}
       </div>

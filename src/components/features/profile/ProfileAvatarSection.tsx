@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
 import type { FinanceStore } from '@/lib/store/types'
 import { Button } from '@/components/ui/button'
+import { SelectableCard } from '@/components/ui/SelectableCard'
 
 export interface ProfileAvatarSectionProps {
   fileRef: RefObject<HTMLInputElement | null>
@@ -56,10 +57,11 @@ export function ProfileAvatarSection({ fileRef, store, activePreset, onAvatarFil
           const src = cartoonAvatarUrlForPreset(p.id)
           const selected = activePreset === p.id
           return (
-            <button
+            <SelectableCard
               key={p.id}
-              type="button"
               title={p.label}
+              aria-label={p.label}
+              selected={selected}
               onClick={() =>
                 store.updateProfile({
                   avatarPresetId: p.id,
@@ -67,15 +69,15 @@ export function ProfileAvatarSection({ fileRef, store, activePreset, onAvatarFil
                 })
               }
               className={cn(
-                'aspect-square rounded-xl overflow-hidden border-2 transition-all bg-[var(--color-brand-elevated)]',
+                'aspect-square overflow-hidden rounded-xl border-2 p-0 transition-all',
                 selected
-                  ? 'border-[var(--color-brand-primary)] ring-2 ring-[var(--color-brand-primary)]/30'
+                  ? 'ring-2 ring-[var(--color-brand-primary)]/30'
                   : 'border-transparent opacity-90 hover:opacity-100'
               )}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={src} alt="" className="w-full h-full object-cover" width={80} height={80} />
-            </button>
+            </SelectableCard>
           )
         })}
       </div>

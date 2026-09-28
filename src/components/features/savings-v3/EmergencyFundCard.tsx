@@ -18,7 +18,7 @@ export function EmergencyFundCard({ monthsCovered, targetMonths, coverAmount, ga
   const moColor = atOrAboveTarget ? '#35D46F' : '#7EAEF9'
   return (
     <div className="mx-4 mt-0" style={{ borderRadius: 18 }}>
-      <SelectableCard as="action" onClick={onOpen} className="flex-col items-stretch rounded-[18px] p-3.5">
+      <SelectableCard as="action" surface="card" onClick={onOpen} className="flex-col items-stretch rounded-[18px] p-3.5">
         <div className="flex items-center gap-3">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(126,174,249,.14)', color: '#7EAEF9' }}><Shield size={18} /></span>
           <div className="min-w-0 flex-1">

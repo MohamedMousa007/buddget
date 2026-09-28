@@ -10,6 +10,7 @@ import { useT } from '@/lib/i18n'
 import { PAYMENT_BRANDS, PAYMENT_TYPE_META, brandIssuesType } from '@/lib/payment/paymentMethodDefaults'
 import { rgba } from '@/lib/utils/color'
 import type { PaymentMethodType } from '@/lib/store/types'
+import { SelectableCard } from '@/components/ui/SelectableCard'
 
 /**
  * App-wide provider chooser over the {@link PAYMENT_BRANDS} catalogue — searchable, Popular/All
@@ -95,12 +96,11 @@ export function ProviderPickerSheet({
             const col = b.colors[0]
             const sel = selectedId === r.id
             return (
-              <button
-                key={`${r.id}-${i}`} type="button" onClick={() => onPick(r.id)}
-                className="flex min-h-14 w-full items-center gap-3 rounded-[14px] border px-3 py-2 text-start"
-                style={sel
-                  ? { background: 'rgba(56,217,107,.12)', borderColor: 'rgba(56,217,107,.45)' }
-                  : { borderColor: 'transparent' }}
+              <SelectableCard
+                key={`${r.id}-${i}`}
+                selected={sel}
+                onClick={() => onPick(r.id)}
+                className="min-h-14 gap-3 rounded-[14px] px-3 py-2"
               >
                 <span
                   className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[11px] text-[12px] font-extrabold"
@@ -114,8 +114,8 @@ export function ProviderPickerSheet({
                     {PAYMENT_TYPE_META[issuesType ?? b.type].label}{b.full ? ` · ${b.full}` : ''}
                   </span>
                 </span>
-                {sel && <Check className="h-[18px] w-[18px] shrink-0 text-[#38D96B]" />}
-              </button>
+                {sel && <Check className="h-[18px] w-[18px] shrink-0 text-[var(--color-brand-primary-ink)]" />}
+              </SelectableCard>
             )
           })}
         </div>

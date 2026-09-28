@@ -73,6 +73,7 @@ export function BudgetPlannerCategoryNameBlock({
             setPickerOpen(false)
             setPenMode(false)
           }}
+          data-raw-button-ok="a preset row inside a small popover list; sized by the popover"
           className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-border)]"
         >
           <span className="text-lg" aria-hidden>
@@ -90,6 +91,7 @@ export function BudgetPlannerCategoryNameBlock({
             setPickerOpen(false)
             setPenMode(false)
           }}
+          data-raw-button-ok="a preset row inside a small popover list; sized by the popover"
           className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-border)]"
         >
           <span className="text-lg" aria-hidden>

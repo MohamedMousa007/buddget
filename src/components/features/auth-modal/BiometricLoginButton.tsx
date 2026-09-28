@@ -5,6 +5,7 @@ import { Fingerprint, Loader2, ScanFace } from 'lucide-react'
 import { biometricSignIn, getType, isEnabled, type BiometryType } from '@/lib/native/biometricAuth'
 import { isNative } from '@/lib/native/isNative'
 import { useT } from '@/lib/i18n'
+import { IconButton } from '@/components/ui/IconButton'
 
 interface BiometricLoginButtonProps {
   /** Surfaces the biometric error to the parent form's error slot. */
@@ -60,15 +61,14 @@ export function BiometricLoginButton({ onError }: BiometricLoginButtonProps) {
   }
 
   return (
-    <button
-      type="button"
+    <IconButton
       onClick={() => void run()}
       disabled={busy}
       aria-label={label}
       title={label}
-      className="flex h-10 sm:h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[var(--color-brand-text-primary)] transition-colors hover:bg-[var(--color-brand-elevated)] disabled:opacity-60"
+      variant="outlined"
     >
       {busy ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Icon className="h-5 w-5" aria-hidden />}
-    </button>
+    </IconButton>
   )
 }

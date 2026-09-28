@@ -4,6 +4,7 @@ import { Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { BudgetPlan } from '@/lib/store/types'
 import { IconButton } from '@/components/ui/IconButton'
+import { OptionChip } from '@/components/ui/OptionChip'
 
 export interface BudgetPlanTabsProps {
   plans: BudgetPlan[]
@@ -48,19 +49,13 @@ export function BudgetPlanTabs({
                 autoFocus
               />
             ) : (
-              <button
-                type="button"
+              <OptionChip
+                selected={active}
                 onClick={() => onSelect(p.id)}
                 onDoubleClick={() => onStartRename(p)}
-                className={cn(
-                  'rounded-xl px-3 py-2 text-sm font-medium transition-colors whitespace-nowrap',
-                  active
-                    ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
-                    : 'bg-[var(--color-brand-elevated)]/80 text-[var(--color-brand-text-secondary)] hover:text-[var(--color-brand-text-primary)] border border-transparent hover:border-[var(--color-brand-border)]'
-                )}
               >
                 {p.name}
-              </button>
+              </OptionChip>
             )}
           </div>
         )

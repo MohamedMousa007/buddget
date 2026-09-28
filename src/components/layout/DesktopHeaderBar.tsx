@@ -11,6 +11,7 @@ import { useLocale, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { sectionTitleNavKey } from '@/lib/navigation/bottomNavConfig'
 import { BuddgetWordmark } from '@/components/brand'
+import { Button } from '@/components/ui/button'
 
 export function DesktopHeaderBar() {
   const { monthFilter, setMonthFilter, setActiveModal } = useSettingsStore()
@@ -74,15 +75,16 @@ export function DesktopHeaderBar() {
 
           {/* Debt tab: cleared-vault pill (one tap to the celebratory archive). */}
           {isDebts && (
-            <button
-              type="button"
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setActiveModal('clearedVault')}
               aria-label="Cleared vault"
-              className="ms-auto flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-[#37C368]/40 bg-[rgba(55,195,104,.1)] px-3 text-[#35D46F]"
+              className="ms-auto rounded-full border-[var(--color-brand-green)]/40 bg-[var(--color-brand-green)]/10 text-[var(--color-brand-green)] hover:bg-[var(--color-brand-green)]/20"
             >
               <Award className="h-4 w-4" />
               <span className="font-mono-numbers text-sm font-bold">{clearedCount}</span>
-            </button>
+            </Button>
           )}
 
           <div className={cn('flex shrink-0 items-center', isHome || isDebts ? 'ms-2' : 'ms-auto')}>

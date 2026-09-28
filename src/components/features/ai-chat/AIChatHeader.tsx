@@ -4,6 +4,7 @@ import { X } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { useBuddgyMood } from '@/lib/ai/useBuddgyMood'
+import { IconButton } from '@/components/ui/IconButton'
 
 export interface AIChatHeaderProps {
   onClose: () => void
@@ -29,16 +30,15 @@ export function AIChatHeader({ onClose }: AIChatHeaderProps) {
         </h3>
         <p className="text-xs text-[var(--color-brand-text-muted)] truncate">{t.ai.headerSubtitle}</p>
       </div>
-      <button
-        type="button"
+      <IconButton
         onClick={onClose}
-        className="flex h-11 w-11 shrink-0 items-center justify-center"
         aria-label="Close chat"
+        variant="tinted"
+        size="sm"
+        shape="round"
       >
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]">
-          <X className="h-4 w-4" strokeWidth={2.2} />
-        </span>
-      </button>
+        <X className="h-4 w-4" strokeWidth={2.2} />
+      </IconButton>
     </div>
   )
 }

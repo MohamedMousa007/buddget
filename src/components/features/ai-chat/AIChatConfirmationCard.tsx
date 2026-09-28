@@ -6,6 +6,7 @@ import { AIChatActionPreview } from '@/components/features/ai-chat/AIChatActionP
 import type { AIChatMessage } from '@/hooks/useAIChat'
 import { useT } from '@/lib/i18n'
 import type { Currency } from '@/lib/store/types'
+import { Button } from '@/components/ui/button'
 
 export interface AIChatConfirmationCardProps {
   message: AIChatMessage
@@ -56,22 +57,14 @@ export function AIChatConfirmationCard({
       })}
 
       <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => onConfirm(message.id)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--color-brand-green)] text-white text-xs font-medium"
-        >
+        <Button variant="success" size="touch" onClick={() => onConfirm(message.id)} className="text-xs">
           <Check className="w-3 h-3" />
           {t.ai.confirmAdd}
-        </button>
-        <button
-          type="button"
-          onClick={() => onEdit(message)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)] text-xs font-medium border border-[var(--color-brand-text-primary)]/10"
-        >
+        </Button>
+        <Button variant="outline" size="touch" onClick={() => onEdit(message)} className="text-xs">
           <Pencil className="w-3 h-3" />
           {t.ai.confirmEdit}
-        </button>
+        </Button>
       </div>
     </div>
   )

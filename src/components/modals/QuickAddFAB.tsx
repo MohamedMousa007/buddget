@@ -13,6 +13,7 @@ import { useT } from '@/lib/i18n'
 import { useVoiceHoldGesture } from '@/hooks/useVoiceHoldGesture'
 import { VoiceRecordSheet } from '@/components/voice/VoiceRecordSheet'
 import { ReceiptScanSheet } from '@/components/receipt/ReceiptScanSheet'
+import { SelectableCard } from '@/components/ui/SelectableCard'
 
 type QuickAddTile = {
   id: string
@@ -67,11 +68,12 @@ export function QuickAddFAB() {
   const renderTile = (tile: QuickAddTile) => {
     const Icon = tile.icon
     return (
-      <button
+      <SelectableCard
         key={tile.id}
-        type="button"
+        as="action"
+        layout="tile"
         onClick={() => runTile(tile.id)}
-        className="flex w-full flex-col items-center gap-2.5 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-1.5 py-3.5 text-center transition-colors active:bg-[var(--color-brand-border)]/40"
+        className="gap-2.5 rounded-lg"
       >
         <span
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg"
@@ -82,7 +84,7 @@ export function QuickAddFAB() {
         <span className="text-xs font-semibold leading-[1.2] text-[var(--color-brand-text-primary)]">
           {tile.label}
         </span>
-      </button>
+      </SelectableCard>
     )
   }
 

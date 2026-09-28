@@ -3,6 +3,7 @@
 import type { LucideIcon } from 'lucide-react'
 import { SlidersHorizontal, PieChart, CreditCard, RefreshCw } from 'lucide-react'
 import { useT } from '@/lib/i18n'
+import { SelectableCard } from '@/components/ui/SelectableCard'
 
 export interface AIChatEmptyStateProps {
   onPickSuggestion: (text: string) => void
@@ -23,17 +24,17 @@ export function AIChatEmptyState({ onPickSuggestion }: AIChatEmptyStateProps) {
   return (
     <div className="flex flex-col gap-2">
       {suggestions.map(({ icon: Icon, label }) => (
-        <button
+        <SelectableCard
           key={label}
-          type="button"
+          as="action"
           onClick={() => onPickSuggestion(label)}
-          className="flex w-full items-center gap-3 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 py-3 text-start transition-colors hover:bg-[var(--color-brand-border)]/40"
+          className="gap-3 rounded-lg px-3.5 py-3"
         >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[rgba(18,176,160,0.13)] text-[var(--color-brand-primary-ink)]">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]">
             <Icon className="h-4 w-4" aria-hidden />
           </span>
           <span className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{label}</span>
-        </button>
+        </SelectableCard>
       ))}
     </div>
   )

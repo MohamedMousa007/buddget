@@ -23,6 +23,7 @@ export function SmsReviewChip() {
       {pending.length > 0 && (
         <SelectableCard
           as="action"
+          surface="card"
           onClick={() => {
             setOpen(true)
             void refetch()
