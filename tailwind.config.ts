@@ -15,6 +15,7 @@ export default {
              app's CTA colour; `red` is destructive-only. */
           primary: 'var(--color-brand-primary)',
           'primary-hover': 'var(--color-brand-primary-hover)',
+          'primary-bright': 'var(--color-brand-primary-bright)',
           'primary-ink': 'var(--color-brand-primary-ink)',
           'primary-soft': 'var(--color-brand-primary-soft)',
           'on-primary': 'var(--color-brand-on-primary)',

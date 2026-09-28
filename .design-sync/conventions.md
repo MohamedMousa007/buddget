@@ -23,7 +23,7 @@ variable in an arbitrary-value utility. Write `bg-[var(--color-brand-card)]`, ne
 |---|---|
 | Surfaces | `--color-brand-bg` (page) · `--color-brand-card` · `--color-brand-elevated` (inputs, chips) · `--color-brand-border` |
 | Text | `--color-brand-text-primary` · `--color-brand-text-secondary` · `--color-brand-text-muted` |
-| Brand | `--color-brand-primary` (+`-hover`) · `--color-brand-primary-ink` (teal TEXT — the plain brand fails contrast as text) · `--color-brand-primary-soft` · `--color-brand-on-primary` (what goes ON a teal fill) |
+| Brand | `--color-brand-primary` (the FILL for buttons/FAB) + `--color-brand-on-primary` (what goes on it) · `--color-brand-primary-bright` (identity teal — decorative/chart/icon only) · `--color-brand-primary-ink` (teal TEXT) · `--color-brand-primary-soft` |
 | Accents | `--color-brand-red` (+`-hover`, `-soft`, `-text`) · `--color-brand-green` (+`-hover`, `-soft`) · `--color-brand-gold` · `--color-brand-amber` (+`-soft`) · `--color-brand-focus` |
 | Category ramp | `--color-cat-1` … `--color-cat-6` (charts, category chips) |
 | Elevation | `--shadow-sm` · `--shadow-md` · `--shadow-lg` |
@@ -38,9 +38,10 @@ Two traps worth stating:
 1. On `Button` and `Badge`, **`variant="default"` is the solid brand-TEAL fill and is the primary
    CTA**; `variant="destructive"` is a softer red *tinted* style. That is the opposite of the usual
    shadcn reading.
-2. **Plain `--color-brand-primary` fails contrast as text** (2.71:1 on white). Use it for fills,
-   borders and icons. For teal *text* and links use **`--color-brand-primary-ink`**; for anything
-   sitting on a teal fill use **`--color-brand-on-primary`**.
+2. **`--color-brand-primary-bright` (`#12B0A0`) cannot carry text** — white on it is 2.71:1. It is
+   the identity teal for chart marks, icon glyphs and decorative fills only. The button FILL is
+   `--color-brand-primary`; put `--color-brand-on-primary` on it. For teal *text* and links use
+   `--color-brand-primary-ink`.
 
 Hand-written utilities beyond stock Tailwind: `font-mono-numbers` (JetBrains Mono, `unicode-bidi:
 isolate` — use on **every** amount, date and percentage), `font-heading`, `glass-card`, `prose-rtl`, and

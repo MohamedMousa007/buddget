@@ -17,40 +17,46 @@ leftover, not a decision.)
 
 | Token | CSS Variable | Light | Dark | Usage |
 |---|---|---|---|---|
-| **Primary (brand)** | `--color-brand-primary` | `#12B0A0` | `#1FC3B2` | Brand, all primary CTAs, active nav, FAB |
-| Primary hover | `--color-brand-primary-hover` | `#0E9384` | `#35D4C3` | Hover on a teal fill |
+| **Primary (fill)** | `--color-brand-primary` | `#0B7568` | `#1FC3B2` | Buttons, FAB, active nav — the fill that text sits on |
+| **Primary bright** | `--color-brand-primary-bright` | `#12B0A0` | `#1FC3B2` | The kit's identity teal. Chart marks, icon glyphs, decorative fills — **never** under text |
+| Primary hover | `--color-brand-primary-hover` | `#096055` | `#35D4C3` | Hover on a teal fill |
 | **Primary ink** | `--color-brand-primary-ink` | `#0B7568` | `#7FE6DA` | Teal **text** and links — see the contrast warning below |
 | Primary soft | `--color-brand-primary-soft` | `#E3F6F3` | `#0F2723` | Teal tint backgrounds, icon chips |
-| **On primary** | `--color-brand-on-primary` | `#04201C` | `#04201C` | Anything sitting **on** a teal fill |
-| Red (destructive) | `--color-brand-red` | `#C0323A` | `#F2646A` | Delete, destructive confirm, over budget |
+| **On primary** | `--color-brand-on-primary` | `#FFFFFF` | `#04201C` | Anything sitting **on** a teal fill |
+| Red (destructive) | `--color-brand-red` | `#C2353B` | `#F2646A` | Delete, destructive confirm, over budget |
 | Red hover | `--color-brand-red-hover` | `#A82A31` | `#F87C81` | Hover on destructive |
 | Red soft | `--color-brand-red-soft` | `#FBE7E7` | `#3A1B1D` | Destructive badge background |
-| Green | `--color-brand-green` | `#0F7A36` | `#37C368` | Income, received, success |
+| Green | `--color-brand-green` | `#107E38` | `#37C368` | Income, received, success |
 | Green soft | `--color-brand-green-soft` | `#E3F5EA` | `#123021` | Positive badge background |
-| Amber | `--color-brand-amber` | `#8A5B0A` | `#EDB24A` | Warning, due soon, late |
+| Amber | `--color-brand-amber` | `#93630B` | `#EDB24A` | Warning, due soon, late |
 | Amber soft | `--color-brand-amber-soft` | `#FBF0DA` | `#33280F` | Warning badge background |
-| Gold | `--color-brand-gold` | `#96701A` | `#EDC463` | Investment, gold holdings |
+| Gold | `--color-brand-gold` | `#977019` | `#EDC463` | Investment, gold holdings |
 | Focus ring | `--color-brand-focus` | `#12B0A0` | `#1FC3B2` | Focus rings (now brand teal) |
 
-> ⚠️ **`--color-brand-primary` fails contrast as text** — 2.71:1 on white. Use it for fills,
-> borders and icon glyphs only. For teal **text** use `--color-brand-primary-ink` (5.59:1);
-> on a teal **fill** use `--color-brand-on-primary` (6.30:1).
+> ⚠️ **`--color-brand-primary-bright` (`#12B0A0`) is the kit's identity teal but cannot carry
+> text** — white on it is only 2.71:1. That is why the light-mode button FILL is teal-700
+> (`#0B7568`, white text at 5.59:1) while the bright teal stays for chart marks, icon glyphs and
+> decorative fills. Dark mode keeps the kit's own pairing (`#04201C` on `#1FC3B2`, 7.74:1).
 >
-> Every light-mode value above was adjusted from the source mockup to clear WCAG AA. The
-> mockup's own values failed in six places. Do not "restore" them from the mockup.
+> Light-mode values are the **minimum darkening from the kit that clears WCAG AA** — computed,
+> not eyeballed, so they stay as close to the source mockup as accessibility allows. The kit's own
+> light values failed AA in six places. Do not "restore" them from the mockup.
 
 ### Category Ramp
 
 For charts and category chips. Six steps, fixed order.
 
-| Token | Light | Dark |
-|---|---|---|
-| `--color-cat-1` | `#0E9384` | `#1FC3B2` |
-| `--color-cat-2` | `#96701A` | `#EDC463` |
-| `--color-cat-3` | `#C4472D` | `#F27E66` |
-| `--color-cat-4` | `#4952C8` | `#8A94F5` |
-| `--color-cat-5` | `#1E73A8` | `#57B2ED` |
-| `--color-cat-6` | `#6D3FC4` | `#A17DF9` |
+Light values keep the kit's exact colour wherever it already clears 3:1 as an icon glyph on
+white — only cat-1, cat-2 and cat-5 needed nudging.
+
+| Token | Light | Dark | vs kit (light) |
+|---|---|---|---|
+| `--color-cat-1` | `#11A596` | `#1FC3B2` | 6% darker (2.71 → 3.07) |
+| `--color-cat-2` | `#B68E30` | `#EDC463` | 20% darker (1.96 → 3.04) |
+| `--color-cat-3` | `#E5684D` | `#F27E66` | **kit value, unchanged** (3.27) |
+| `--color-cat-4` | `#6E7BF2` | `#8A94F5` | **kit value, unchanged** (3.63) |
+| `--color-cat-5` | `#389BD9` | `#57B2ED` | 3% darker (2.88 → 3.06) |
+| `--color-cat-6` | `#8B5CF6` | `#A17DF9` | **kit value, unchanged** (4.23) |
 
 ### Surface Palette
 
@@ -77,7 +83,7 @@ The `.glass-card` utility still exists for overlays but is no longer the default
 |---|---|---|---|---|
 | Primary | `--color-brand-text-primary` | `#0D1A18` | `#EAF2F0` | Headings, primary labels |
 | Secondary | `--color-brand-text-secondary` | `#566B68` | `#9BABA8` | Supporting text, subtitles |
-| Muted | `--color-brand-text-muted` | `#63726F` | `#7A8A87` | Placeholders, timestamps, hints |
+| Muted | `--color-brand-text-muted` | `#687371` | `#748380` | Placeholders, timestamps, hints |
 
 ### Chart Palette (in order)
 
@@ -86,11 +92,11 @@ chart series and its category chip always agree.
 
 | Slot | Light | Dark |
 |---|---|---|
-| chart-1 | `#0E9384` | `#1FC3B2` |
-| chart-2 | `#96701A` | `#EDC463` |
-| chart-3 | `#C4472D` | `#F27E66` |
-| chart-4 | `#4952C8` | `#8A94F5` |
-| chart-5 | `#1E73A8` | `#57B2ED` |
+| chart-1 | `#11A596` | `#1FC3B2` |
+| chart-2 | `#B68E30` | `#EDC463` |
+| chart-3 | `#E5684D` | `#F27E66` |
+| chart-4 | `#6E7BF2` | `#8A94F5` |
+| chart-5 | `#389BD9` | `#57B2ED` |
 
 ### Glass Modifier
 
