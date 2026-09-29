@@ -25,11 +25,12 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL_LEGACY?.trim() || 'gemini-2.5-flas
 
 /**
  * Buddgy's tiers. `fast` = quick capture (voice → transaction), `smart` = chat and
- * reasoning. Env overrides let a model be swapped without a deploy of code.
+ * reasoning. 2.5 is ~4-5× cheaper per token than 3.5 Flash and does this job well;
+ * when Google retires it, set GEMINI_MODEL_SMART/FAST (e.g. a 3.x model) — no code change.
  */
 const TIER_MODELS = {
-  fast: process.env.GEMINI_MODEL_FAST?.trim() || 'gemini-3.1-flash-lite',
-  smart: process.env.GEMINI_MODEL_SMART?.trim() || 'gemini-3.5-flash',
+  fast: process.env.GEMINI_MODEL_FAST?.trim() || 'gemini-2.5-flash-lite',
+  smart: process.env.GEMINI_MODEL_SMART?.trim() || 'gemini-2.5-flash',
 } as const
 type Tier = keyof typeof TIER_MODELS
 
@@ -40,7 +41,11 @@ function geminiUrl(model: string, stream: boolean, apiKey: string): string {
   return `https://generativelanguage.googleapis.com/v1beta/models/${model}:${method}key=${apiKey}`
 }
 
-/** The legacy model speaks `thinkingBudget`, not `thinkingLevel`. */
+/** 2.x models speak `thinkingBudget`; 3.x speak `thinkingLevel`. */
+function configFor(model: string, config: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
+  return model.startsWith('gemini-2.') ? toLegacyConfig(config) : config
+}
+
 function toLegacyConfig(config: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
   const thinking = config?.thinkingConfig as { thinkingLevel?: string } | undefined
   if (!thinking?.thinkingLevel) return config
@@ -135,19 +140,19 @@ export async function POST(req: Request) {
     if (systemInstruction) geminiBody.systemInstruction = systemInstruction
 
     const model = tier && tier in TIER_MODELS ? TIER_MODELS[tier] : GEMINI_MODEL
-    const call = (m: string, b: Record<string, unknown>) =>
+    const call = (m: string) =>
       fetch(geminiUrl(m, stream === true, apiKey), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(b),
+        body: JSON.stringify({ ...geminiBody, generationConfig: configFor(m, geminiBody.generationConfig as Record<string, unknown>) }),
       })
 
-    let response = await call(model, geminiBody)
+    let response = await call(model)
     // A tier model this key can't reach or doesn't accept (404/403/400) falls back to
     // the legacy model rather than taking Buddgy offline. 429 is quota, not the model.
     if (response.status >= 400 && response.status < 500 && response.status !== 429 && model !== GEMINI_MODEL) {
       console.error(`[AI] model=${model} status=${response.status}, falling back to ${GEMINI_MODEL}`)
-      response = await call(GEMINI_MODEL, { ...geminiBody, generationConfig: toLegacyConfig(geminiBody.generationConfig as Record<string, unknown>) })
+      response = await call(GEMINI_MODEL)
     }
 
     if (stream === true && response.ok && response.body) {

@@ -15,9 +15,10 @@ import { thinkingFor } from '@/lib/ai/runAiCommand'
  */
 const KEY = process.env.GEMINI_API_KEY
 const MODELS = {
-  fast: process.env.GEMINI_MODEL_FAST || 'gemini-3.1-flash-lite',
-  smart: process.env.GEMINI_MODEL_SMART || 'gemini-3.5-flash',
+  fast: process.env.GEMINI_MODEL_FAST || 'gemini-2.5-flash-lite',
+  smart: process.env.GEMINI_MODEL_SMART || 'gemini-2.5-flash',
 }
+const THINKING_BUDGET = { minimal: 0, low: 512, medium: 2048 } as const
 
 const pms = [
   { id: 'pm1', name: 'Cash' }, { id: 'pm2', name: 'ADCB Visa' }, { id: 'pm3', name: 'Nol Silver' }, { id: 'pm4', name: 'Nol Gold' },
@@ -93,7 +94,12 @@ const CHAT: Case[] = [
 ]
 
 async function ask(tier: 'fast' | 'smart', system: string, text: string) {
-  const body = buildGeminiBody(system, text, [], { thinking: tier === 'fast' ? 'minimal' : thinkingFor(text), maxOutputTokens: 2048 })
+  const thinking = tier === 'fast' ? 'minimal' : thinkingFor(text)
+  const body = buildGeminiBody(system, text, [], { thinking, maxOutputTokens: 2048 })
+  // Mirrors the proxy: 2.x models take a token budget instead of a level.
+  if (MODELS[tier].startsWith('gemini-2.')) {
+    Object.assign(body.generationConfig, { thinkingConfig: { thinkingBudget: THINKING_BUDGET[thinking] } })
+  }
   const t0 = Date.now()
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODELS[tier]}:generateContent?key=${KEY}`, {
     method: 'POST',
