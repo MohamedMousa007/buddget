@@ -13,6 +13,7 @@ import {
   throwIfAiProxyNotOk,
 } from '@/lib/ai/generateWithFallback'
 import { apiFetch } from '@/lib/apiBase'
+import { readGeminiText } from '@/lib/ai/geminiStream'
 
 export type AIAction =
   | 'add_goal'
@@ -40,6 +41,10 @@ export type AIAction =
   | 'unclear'
   // Returned by the lean tier-1 voice extractor to hand off to the full brain.
   | 'escalate'
+  // Buddgy asks the user's own data a question (resolved on-device, then re-asked).
+  | 'lookup'
+  // A lasting fact the user told Buddgy; stored locally, fed back as memory.
+  | 'remember'
 
 export interface AIActionItem {
   action: AIAction
@@ -58,6 +63,8 @@ export interface AIResponse {
   clarificationNeeded: string | null
   message: string
   mood?: AIReplyMood
+  /** Facts the user asked Buddgy to remember in this turn. */
+  notes?: string[]
 }
 
 const AI_ACTIONS: AIAction[] = [
@@ -85,6 +92,8 @@ const AI_ACTIONS: AIAction[] = [
   'query',
   'unclear',
   'escalate',
+  'lookup',
+  'remember',
 ]
 
 const actionItemSchema = z.object({
@@ -216,7 +225,8 @@ export function buildSystemPrompt(
   incomeSources: IncomeSource[] = [],
   savingsAccounts: SavingsAccount[] = [],
   goals: Goal[] = [],
-  mode: AiPromptMode = 'chat'
+  mode: AiPromptMode = 'chat',
+  memoryBlock = '',
 ): string {
   const { methodList, debtList, incomeList, savingsAccountList, goalsList } = buildEntityContext(
     paymentMethods,
@@ -246,7 +256,7 @@ CONTEXT (the user's accounts and live totals — use these):
 - Budget updates may still use Savings as a category for allocation targets
 - Active debts: ${debtList}
 - Savings goals: ${goalsList || '(none)'}
-${live}${mode === 'chat' && budgetPlanContext ? `
+${memoryBlock ? `\nWHAT YOU KNOW ABOUT THIS USER (use it to fill unsaid fields; don't recite it):\n${memoryBlock}\n` : ''}${live}${mode === 'chat' && budgetPlanContext ? `
 ACTIVE_BUDGET_PLAN:
 - Plan ID: ${budgetPlanContext.planId}
 - Plan Name: ${budgetPlanContext.planName}
@@ -286,6 +296,9 @@ RULES:
 25. For "update_goal", include data.name (to match an existing goal) and optional data.targetAmount, data.targetDate, data.monthlyContribution, data.status ("active"|"paused"|"achieved"|"cancelled").
 26. Always include top-level "mood" — how you feel about your reply: "happy" (good news, logged/saved), "proud" (user is doing great), "worried" (overspending, risk, running low), "curious" (you are asking for details), "playful" (casual chat), or "neutral".
 27. For "query" answers be concrete: use the real numbers from LIVE_APP_DATA, keep it to 2-4 short sentences, and end with ONE practical next step when useful.
+28. LOOKUP: when an answer needs transactions LIVE_APP_DATA doesn't have (a merchant, a past month, a date range, largest purchases, month-to-month comparison, income history, subscriptions), return ONLY {"mood":"curious","message":"One sec, checking…","action":"lookup","data":{"kind":"expenses"|"income"|"subscriptions","from":"YYYY-MM-DD","to":"YYYY-MM-DD","category":"optional","text":"optional merchant/description words","paymentMethod":"optional","groupBy":"category"|"merchant"|"month"|"day"|"none"}}. You will then get LOOKUP_RESULT — answer from it. Never invent numbers or ask the user for data you can look up.
+29. REMEMBER: when the user states a lasting fact or preference ("salary lands on the 25th", "W card is my wife's card", "I'm saving for a wedding"), add {"action":"remember","data":{"note":"short third-person fact"}} alongside any other action.
+30. Write "mood" and "message" FIRST in the JSON object, then the actions.
 ${mode === 'chat' ? `
 RESPONSE FORMAT for update_budget_plan_row:
 {"action":"update_budget_plan_row","data":{"planId":"plan-uuid","categoryId":"category-uuid","newAmount":1500},"confidence":1,"clarificationNeeded":null,"message":"short friendly confirmation"}
@@ -313,7 +326,7 @@ RESPONSE FORMAT for update_budget_category:
 {"action":"update_budget_category","data":{"category":"Food","budgetedAmount":1200},"confidence":1,"clarificationNeeded":null,"message":"short friendly confirmation"}
 
 RESPONSE FORMAT for queries:
-{"action":"query","data":{},"confidence":1,"clarificationNeeded":null,"message":"your answer here"}
+{"mood":"neutral","message":"your answer here","action":"query","data":{},"confidence":1,"clarificationNeeded":null}
 ` : `
 COMPACT SCHEMA (one JSON object; "data" fields per action):
 - add_expense: description, amount, currency, category(Rent|Transport|Food|Enjoyment|Debt|Remittance|Other), paymentMethod, date, isRecurring
@@ -328,6 +341,7 @@ COMPACT SCHEMA (one JSON object; "data" fields per action):
 - add_goal: name, category, targetAmount, currency, targetDate, monthlyContribution
 - update_budget_category: category, budgetedAmount OR percentOfIncome
 - query: data {} and put the answer in "message"
+- lookup: kind(expenses|income|subscriptions), from, to, category, text, paymentMethod, groupBy — see rule 28
 `}
 RESPONSE FORMAT for MULTIPLE operations in one user message (preferred when user lists several items):
 {"actions":[{"action":"add_debt_payment","data":{"person":"Dad","amount":10000,"currency":"EGP","date":"${today}","paymentMethod":"Cash"}},{"action":"add_expense","data":{"description":"Mandi lunch","amount":30,"currency":"AED","category":"Food","paymentMethod":"Cash","date":"${today}","isRecurring":false}},{"action":"add_expense","data":{"description":"Water","amount":1,"currency":"AED","category":"Food","paymentMethod":"Cash","date":"${today}","isRecurring":false}}],"confidence":1,"clarificationNeeded":null,"message":"short summary listing each item"}
@@ -403,14 +417,48 @@ CONTEXT:
 - Savings accounts: ${savingsAccountList || '(none)'}`
 }
 
+/** How hard the model reasons before answering — latency grows with it. */
+export type ThinkingLevel = 'minimal' | 'low' | 'medium'
+
 export interface SendToGeminiOptions {
   /** Abort the in-flight request (e.g. voice cancel). */
   signal?: AbortSignal
-  /** Cap on model output tokens (voice uses a smaller value). */
+  /** Cap on model output tokens — thinking counts against it too. */
   maxOutputTokens?: number
   /** Retry tuning forwarded to generateWithFallback (voice = fewer/faster). */
   maxAttempts?: number
   backoffMs?: number
+  /** `fast` = quick capture model, `smart` = chat/reasoning model. */
+  tier?: 'fast' | 'smart'
+  thinking?: ThinkingLevel
+  /** Stream: receives the reply's `message` as it is written. */
+  onText?: (message: string) => void
+}
+
+/** The proxy body for one Buddgy turn (shared with the eval harness). */
+export function buildGeminiBody(
+  systemPrompt: string,
+  userMessage: string,
+  conversationHistory: { role: string; content: string }[],
+  options?: Pick<SendToGeminiOptions, 'maxOutputTokens' | 'thinking'>,
+) {
+  return {
+    systemInstruction: { parts: [{ text: systemPrompt }] },
+    contents: [
+      ...conversationHistory.map((msg) => ({
+        role: msg.role === 'user' ? 'user' : 'model',
+        parts: [{ text: msg.content }],
+      })),
+      { role: 'user', parts: [{ text: userMessage }] },
+    ],
+    // Gemini 3 is tuned for its default temperature; JSON mode removes the
+    // "could not parse" failures that free-text JSON produced.
+    generationConfig: {
+      maxOutputTokens: options?.maxOutputTokens ?? 1024,
+      responseMimeType: 'application/json',
+      thinkingConfig: { thinkingLevel: options?.thinking ?? 'minimal' },
+    },
+  }
 }
 
 export async function sendToGemini(
@@ -419,36 +467,11 @@ export async function sendToGemini(
   conversationHistory: { role: string; content: string }[] = [],
   options?: SendToGeminiOptions
 ): Promise<AIResponse> {
-  const contents = [
-    {
-      role: 'user',
-      parts: [{ text: systemPrompt }],
-    },
-    {
-      role: 'model',
-      parts: [
-        {
-          text: '{"action":"query","data":{},"confidence":1,"clarificationNeeded":null,"message":"Hi! I can help you add expenses, check your budget, or record debt payments. What would you like to do?"}',
-        },
-      ],
-    },
-    ...conversationHistory.map((msg) => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.content }],
-    })),
-    {
-      role: 'user',
-      parts: [{ text: userMessage }],
-    },
-  ]
-
   const response = await generateWithFallback(
     {
-      contents,
-      generationConfig: {
-        temperature: 0.3,
-        maxOutputTokens: options?.maxOutputTokens ?? 1024,
-      },
+      ...buildGeminiBody(systemPrompt, userMessage, conversationHistory, options),
+      tier: options?.tier ?? 'smart',
+      stream: Boolean(options?.onText),
     },
     {
       signal: options?.signal,
@@ -459,9 +482,7 @@ export async function sendToGemini(
 
   await throwIfAiProxyNotOk(response)
 
-  const result = await response.json()
-  const text = result.candidates?.[0]?.content?.parts?.[0]?.text
-
+  const text = await readGeminiText(response, options?.onText)
   if (!text) {
     throw new Error('No response from AI')
   }
@@ -568,7 +589,7 @@ export function friendlyLineForActionItem(action: AIAction, d: Record<string, un
 }
 
 function generateFriendlyMessage(response: AIResponse): string {
-  const actionable = response.actions.filter((a) => a.action !== 'query')
+  const actionable = response.actions.filter((a) => a.action !== 'query' && a.action !== 'lookup' && a.action !== 'remember')
   if (actionable.length === 0) {
     const only = response.actions[0]
     if (only?.action === 'unclear') {

@@ -37,7 +37,7 @@ export interface BuddgyBeat {
   at: number
 }
 
-const AI_CHAT_HISTORY_MAX_MESSAGES = 5
+const AI_CHAT_HISTORY_MAX_MESSAGES = 10
 
 export function useAIChat() {
   const store = useFinanceStore()
@@ -64,11 +64,13 @@ export function useAIChat() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [beat, setBeat] = useState<BuddgyBeat | null>(null)
+  /** The reply as it streams in; null when nothing has arrived yet. */
+  const [streamingText, setStreamingText] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages, streamingText])
 
   // A seed either pre-fills the composer (voice "Open in chat") or, from a
   // Buddgy tip, is sent straight away so the answer is already coming.
@@ -101,9 +103,13 @@ export function useAIChat() {
     setIsLoading(true)
 
     try {
+      // Earlier replies go back as the JSON the model wrote, so it remembers what it
+      // proposed (actions, amounts), not just what it said.
       const history = messages.slice(-AI_CHAT_HISTORY_MAX_MESSAGES).map((m) => ({
         role: m.role,
-        content: m.content,
+        content: m.aiResponse
+          ? JSON.stringify({ message: m.aiResponse.message, actions: m.aiResponse.actions, confirmed: m.confirmed })
+          : m.content,
       }))
 
       const response = await runAiCommand({
@@ -114,7 +120,10 @@ export function useAIChat() {
         mode: 'chat',
         history,
         screen: pathname,
+        notes: useSettingsStore.getState().buddgyNotes,
+        onText: setStreamingText,
       })
+      if (response.notes?.length) useSettingsStore.getState().addBuddgyNotes(response.notes)
 
       const mood = moodForReply(response)
       setMessages((prev) => [
@@ -145,6 +154,7 @@ export function useAIChat() {
       ])
     } finally {
       setIsLoading(false)
+      setStreamingText(null)
     }
   }, [input, isLoading, messages, monthFilter, pathname, stats, store])
 
@@ -242,6 +252,7 @@ export function useAIChat() {
     input,
     setInput,
     isLoading,
+    streamingText,
     beat,
     handleSend,
     handleConfirm,

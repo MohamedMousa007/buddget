@@ -1642,6 +1642,11 @@ export const en: Dictionary = {
     settingsSubtitle: 'Tips and suggestions',
     tipsTitle: 'Proactive tips',
     tipsHint: 'Buddgy occasionally suggests something useful for the screen you’re on. Max 3 a day.',
+    remembered: (note) => `Remembered: ${note}`,
+    memoriesTitle: 'What Buddgy remembers',
+    memoriesHint: 'Tell Buddgy things like “my salary lands on the 25th”. Stored on this device only.',
+    memoriesEmpty: 'Nothing yet.',
+    forget: 'Forget',
   },
 
   pwa: {

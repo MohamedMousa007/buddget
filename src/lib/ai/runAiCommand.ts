@@ -4,7 +4,12 @@ import {
   buildVoiceExtractPrompt,
   sendToGemini,
   type AIResponse,
+  type SendToGeminiOptions,
+  type ThinkingLevel,
 } from '@/lib/ai/gemini'
+import { classifyVoiceIntent } from '@/lib/voice/classifyVoiceIntent'
+import { runLookup, type LookupQuery } from '@/lib/ai/buddgyLookup'
+import { buildMemoryBlock } from '@/lib/ai/buddgyMemory'
 import { buildPlanRowsForPrompt } from '@/lib/ai/budgetPlannerAi'
 
 /** `chat`/`voice` = full brain; `voiceExtract` = lean tier-1 adds-only extractor. */
@@ -72,13 +77,32 @@ export interface RunAiCommandArgs {
   signal?: AbortSignal
   /** Route the user is looking at, so answers can refer to it. */
   screen?: string
+  /** Facts the user asked Buddgy to remember. */
+  notes?: string[]
+  /** Streams the reply's message as it is written (chat). */
+  onText?: (message: string) => void
 }
+
+/** Planning asks for real reasoning; a question a little; logging none. */
+const PLANNING_RE =
+  /\b(plan|budget|strategy|rebuild|payoff|pay off|emergency fund|save for|invest|should i|advice|optimi[sz]e|compare)\b|خطة|ميزانية|انصحني|استثمر/i
+
+export function thinkingFor(text: string): ThinkingLevel {
+  if (PLANNING_RE.test(text)) return 'medium'
+  return classifyVoiceIntent(text) === 'complex' ? 'low' : 'minimal'
+}
+
+const MAX_LOOKUPS = 2
 
 /**
  * Single entry point for turning a natural-language utterance into an `AIResponse`.
  * Shared by the AI chat (full prompt + conversation history) and voice (lean prompt,
  * no history, fewer/faster retries, abortable). Keeps prompt-building in one place so
  * the two surfaces never drift.
+ *
+ * A `lookup` reply is resolved against the on-device store and the question is
+ * re-asked with the result (at most {@link MAX_LOOKUPS} hops). `remember` actions
+ * are lifted into `notes` so they never reach the confirm card.
  */
 export async function runAiCommand({
   store,
@@ -89,6 +113,8 @@ export async function runAiCommand({
   history = [],
   signal,
   screen,
+  notes = [],
+  onText,
 }: RunAiCommandArgs): Promise<AIResponse> {
   // Tier-1: lean adds-only extractor — no live data, no history, smallest budget.
   if (mode === 'voiceExtract') {
@@ -101,6 +127,8 @@ export async function runAiCommand({
     )
     return sendToGemini(prompt, text, [], {
       signal,
+      tier: 'fast',
+      thinking: 'minimal',
       // Output is billed as generated, not as the cap — 768 just guards against
       // JSON truncation when one utterance lists several transactions.
       maxOutputTokens: 768,
@@ -142,14 +170,32 @@ export async function runAiCommand({
     store.savingsAccounts,
     store.goals,
     mode,
+    buildMemoryBlock(store, notes),
   )
 
-  return sendToGemini(
-    systemPrompt,
-    text,
-    mode === 'voice' ? [] : history,
-    mode === 'voice'
-      ? { signal, maxOutputTokens: 1024, maxAttempts: 2, backoffMs: 800 }
-      : { signal },
-  )
+  const thinking = thinkingFor(text)
+  const options: SendToGeminiOptions = mode === 'voice'
+    ? { signal, thinking, maxOutputTokens: 2048, maxAttempts: 2, backoffMs: 800 }
+    // Thinking tokens count against the cap, so reasoning turns get more room.
+    : { signal, thinking, onText, maxOutputTokens: thinking === 'medium' ? 4096 : 2048 }
+
+  let message = text
+  let response = await sendToGemini(systemPrompt, message, mode === 'voice' ? [] : history, options)
+  for (let hop = 0; hop < MAX_LOOKUPS; hop++) {
+    const lookups = response.actions.filter((a) => a.action === 'lookup')
+    if (!lookups.length) break
+    const results = lookups.map((a) => runLookup(store, a.data as LookupQuery)).join('\n\n')
+    message = `${text}\n\nLOOKUP_RESULT (the user's own data — answer from it; do not look it up again):\n${results}`
+    response = await sendToGemini(systemPrompt, message, mode === 'voice' ? [] : history, options)
+  }
+
+  const learned = response.actions
+    .filter((a) => a.action === 'remember' && typeof a.data.note === 'string')
+    .map((a) => String(a.data.note))
+  const actions = response.actions.filter((a) => a.action !== 'remember' && a.action !== 'lookup')
+  return {
+    ...response,
+    actions: actions.length ? actions : [{ action: 'query', data: {} }],
+    notes: learned,
+  }
 }

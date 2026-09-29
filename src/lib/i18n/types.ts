@@ -1526,6 +1526,11 @@ export interface Dictionary {
     settingsSubtitle: string
     tipsTitle: string
     tipsHint: string
+    remembered: (note: string) => string
+    memoriesTitle: string
+    memoriesHint: string
+    memoriesEmpty: string
+    forget: string
   }
 
   pwa: {

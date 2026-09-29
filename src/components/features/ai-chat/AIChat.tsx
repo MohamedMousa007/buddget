@@ -93,6 +93,7 @@ export function AIChat() {
     input,
     setInput,
     isLoading,
+    streamingText,
     beat,
     handleSend,
     handleConfirm,
@@ -147,7 +148,7 @@ export function AIChat() {
             transition={{ type: 'spring', stiffness: 380, damping: 32, opacity: { duration: 0.14 } }}
             className="fixed z-50 flex flex-col overflow-hidden bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.7)]"
           >
-            <AIChatHeader onClose={close} beat={beat} isLoading={isLoading} />
+            <AIChatHeader onClose={close} beat={beat} isLoading={isLoading} streaming={Boolean(streamingText)} />
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {messages.length === 0 ? (
@@ -159,11 +160,11 @@ export function AIChat() {
                   lastUserContentBefore={lastUserContentBefore}
                   onConfirm={handleConfirm}
                   onEdit={handleEdit}
-                  scrollAnchorRef={messagesEndRef}
                 />
               )}
 
-              {isLoading ? <AIChatTypingIndicator /> : null}
+              {isLoading ? <AIChatTypingIndicator text={streamingText} /> : null}
+              <div ref={messagesEndRef} />
             </div>
 
             {!online && (

@@ -1,6 +1,5 @@
 'use client'
 
-import type { RefObject } from 'react'
 import { Check } from 'lucide-react'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { AIChatConfirmationCard } from '@/components/features/ai-chat/AIChatConfirmationCard'
@@ -14,7 +13,6 @@ export interface AIChatMessageListProps {
   lastUserContentBefore: (assistantMessageId: string) => string | null
   onConfirm: (id: string) => void
   onEdit: (m: AIChatMessage) => void
-  scrollAnchorRef: RefObject<HTMLDivElement | null>
 }
 
 /**
@@ -26,7 +24,6 @@ export function AIChatMessageList({
   lastUserContentBefore,
   onConfirm,
   onEdit,
-  scrollAnchorRef,
 }: AIChatMessageListProps) {
   const t = useT()
   return (
@@ -59,6 +56,10 @@ export function AIChatMessageList({
               onEdit={onEdit}
             />
 
+            {message.aiResponse?.notes?.map((note) => (
+              <p key={note} className="mt-2 text-xs text-[var(--color-brand-text-muted)]">{t.buddgy.remembered(note)}</p>
+            ))}
+
             {message.confirmed ? (
               <p className="mt-2 text-xs text-[var(--color-brand-green)] flex items-center gap-1">
                 <Check className="w-3 h-3" aria-hidden /> {t.ai.confirmedLabel}
@@ -67,7 +68,6 @@ export function AIChatMessageList({
           </div>
         </div>
       ))}
-      <div ref={scrollAnchorRef} />
     </>
   )
 }

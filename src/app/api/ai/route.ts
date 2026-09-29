@@ -20,8 +20,32 @@ async function requireUserOrUnauthorized(
   return { userId: user.id }
 }
 
-const GEMINI_MODEL = 'gemini-2.5-flash'
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
+/** Untiered callers (budget parser, emergency-fund estimator) keep the model they were tuned on. */
+const GEMINI_MODEL = process.env.GEMINI_MODEL_LEGACY?.trim() || 'gemini-2.5-flash'
+
+/**
+ * Buddgy's tiers. `fast` = quick capture (voice → transaction), `smart` = chat and
+ * reasoning. Env overrides let a model be swapped without a deploy of code.
+ */
+const TIER_MODELS = {
+  fast: process.env.GEMINI_MODEL_FAST?.trim() || 'gemini-3.1-flash-lite',
+  smart: process.env.GEMINI_MODEL_SMART?.trim() || 'gemini-3.5-flash',
+} as const
+type Tier = keyof typeof TIER_MODELS
+
+const THINKING_BUDGET: Record<string, number> = { minimal: 0, low: 512, medium: 2048, high: 8192 }
+
+function geminiUrl(model: string, stream: boolean, apiKey: string): string {
+  const method = stream ? 'streamGenerateContent?alt=sse&' : 'generateContent?'
+  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:${method}key=${apiKey}`
+}
+
+/** The legacy model speaks `thinkingBudget`, not `thinkingLevel`. */
+function toLegacyConfig(config: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
+  const thinking = config?.thinkingConfig as { thinkingLevel?: string } | undefined
+  if (!thinking?.thinkingLevel) return config
+  return { ...config, thinkingConfig: { thinkingBudget: THINKING_BUDGET[thinking.thinkingLevel] ?? 0 } }
+}
 
 /** Per-client request timestamps (sliding window; limits from admin/runtime config). */
 const hitTimestamps = new Map<string, number[]>()
@@ -85,9 +109,13 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
-    const { contents, generationConfig, grounded } = body as {
+    const { contents, generationConfig, grounded, systemInstruction, tier, stream } = body as {
       contents?: unknown[]
       generationConfig?: Record<string, unknown>
+      systemInstruction?: unknown
+      tier?: Tier
+      /** Server-sent events straight from Gemini, so the first words show immediately. */
+      stream?: boolean
       /** Opt-in Google Search grounding — set ONLY by callers that need live facts (e.g. the
        *  emergency-fund estimator). Off by default so ordinary AI calls don't pay the token cost. */
       grounded?: boolean
@@ -104,12 +132,30 @@ export async function POST(req: Request) {
     if (grounded === true) {
       geminiBody.tools = [{ google_search: {} }]
     }
+    if (systemInstruction) geminiBody.systemInstruction = systemInstruction
 
-    const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(geminiBody),
-    })
+    const model = tier && tier in TIER_MODELS ? TIER_MODELS[tier] : GEMINI_MODEL
+    const call = (m: string, b: Record<string, unknown>) =>
+      fetch(geminiUrl(m, stream === true, apiKey), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(b),
+      })
+
+    let response = await call(model, geminiBody)
+    // A tier model this key can't reach or doesn't accept (404/403/400) falls back to
+    // the legacy model rather than taking Buddgy offline. 429 is quota, not the model.
+    if (response.status >= 400 && response.status < 500 && response.status !== 429 && model !== GEMINI_MODEL) {
+      console.error(`[AI] model=${model} status=${response.status}, falling back to ${GEMINI_MODEL}`)
+      response = await call(GEMINI_MODEL, { ...geminiBody, generationConfig: toLegacyConfig(geminiBody.generationConfig as Record<string, unknown>) })
+    }
+
+    if (stream === true && response.ok && response.body) {
+      console.info(`[AI] ok stream user=${userId} model=${model} ttfb=${Date.now() - started}ms`)
+      return new Response(response.body, {
+        headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform' },
+      })
+    }
 
     const payload = await response.json()
 
@@ -119,7 +165,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: errorMsg, stage: 'extract' }, { status: response.status })
     }
 
-    console.info(`[AI] ok user=${userId} latency=${Date.now() - started}ms`)
+    console.info(`[AI] ok user=${userId} model=${model} latency=${Date.now() - started}ms`)
     return NextResponse.json(payload)
   } catch (err) {
     console.error(`[AI] fail status=500 latency=${Date.now() - started}ms err=${err instanceof Error ? err.message : String(err)}`)
@@ -132,7 +178,7 @@ export async function GET() {
   const runtime = getEffectiveAiRuntimeConfig()
   return NextResponse.json({
     enabled: hasKey,
-    model: GEMINI_MODEL,
+    model: TIER_MODELS.smart,
     rateLimit: {
       limitingEnabled: runtime.rateLimitingEnabled,
       maxRequests: runtime.rateLimitMaxRequests,

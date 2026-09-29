@@ -26,7 +26,8 @@ const FACES: Record<BuddgyMood, { tone: Tone; face?: string; icon?: string; path
   idle:      { tone: 'ink',   paths: [['M10.25 10.75v5'], ['M10.25 10.75h2a1.25 1.25 0 0 1 0 2.5h-2'], ['M10.25 13.25h2.5a1.25 1.25 0 0 1 0 2.5h-2.5']] },
   small:     { tone: 'ink',   paths: [['M9.5 13.25h.01'], ['M14.5 13.25h.01']] },
   listening: { tone: 'brand',   paths: [['M9 12.5v1.5', 'bg-fb bg-listen', 0], ['M12 11v4.5', 'bg-fb bg-listen', 120], ['M15 12v2.5', 'bg-fb bg-listen', 240]] },
-  thinking:  { tone: 'brand',   paths: [['M9 13.25h.01', 'bg-think', 0], ['M12 13.25h.01', 'bg-think', 160], ['M15 13.25h.01', 'bg-think', 320]] },
+  // Three solid dots in a travelling wave — never fades to an empty visor.
+  thinking:  { tone: 'brand',   paths: [['M9 13.5h.01', 'bg-fb bg-dot bg-think', 0], ['M12 13.5h.01', 'bg-fb bg-dot bg-think', 180], ['M15 13.5h.01', 'bg-fb bg-dot bg-think', 360]] },
   scanning:  { tone: 'brand',   paths: [['M8.5 13.25h7', 'bg-fb bg-scan']] },
   done:      { tone: 'green', paths: [['M9.25 13.5 11 15.25l3.75-3.75', 'bg-draw']] },
   happy:     { tone: 'gold',  face: 'bg-fb bg-hop', paths: [['M8.5 14a1.75 1.75 0 0 1 3 0'], ['M12.5 14a1.75 1.75 0 0 1 3 0']] },

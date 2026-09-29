@@ -1639,6 +1639,11 @@ export const ar: Dictionary = {
     settingsSubtitle: 'النصائح والاقتراحات',
     tipsTitle: 'نصائح استباقية',
     tipsHint: 'يقترح Buddgy أحياناً شيئاً مفيداً للشاشة التي تتصفحها. 3 مرات يومياً كحد أقصى.',
+    remembered: (note) => `تم الحفظ: ${note}`,
+    memoriesTitle: 'ما يتذكره Buddgy',
+    memoriesHint: 'أخبر Buddgy بأشياء مثل «راتبي ينزل يوم 25». تُحفظ على هذا الجهاز فقط.',
+    memoriesEmpty: 'لا شيء بعد.',
+    forget: 'انسَ',
   },
 
   pwa: {

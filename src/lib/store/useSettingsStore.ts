@@ -79,6 +79,10 @@ interface SettingsState {
   /** Throttle ledger for tips: per-day count, last shown time, ids already shown today (persisted). */
   buddgyNudgeLog: BuddgyNudgeLog
   logBuddgyNudge: (id: string) => void
+  /** Facts the user asked Buddgy to remember — device-local, fed into every prompt (persisted). */
+  buddgyNotes: string[]
+  addBuddgyNotes: (notes: string[]) => void
+  removeBuddgyNote: (note: string) => void
   /** Mute spoken-aloud answers in the voice flow (persisted). */
   voiceSpeakMuted: boolean
   /** When opening add-debt sheet from "Record payment" on a card */
@@ -158,6 +162,11 @@ export const useSettingsStore = create<SettingsState>()(
           const prev = st.buddgyNudgeLog.day === day ? st.buddgyNudgeLog : { day, count: 0, lastAt: 0, seen: [] }
           return { buddgyNudgeLog: { day, count: prev.count + 1, lastAt: Date.now(), seen: [...prev.seen, id] } }
         }),
+      buddgyNotes: [],
+      // ponytail: newest 20 kept; a smarter merge (dedupe by meaning) if notes start contradicting.
+      addBuddgyNotes: (notes) =>
+        set((st) => ({ buddgyNotes: [...st.buddgyNotes.filter((n) => !notes.includes(n)), ...notes].slice(-20) })),
+      removeBuddgyNote: (note) => set((st) => ({ buddgyNotes: st.buddgyNotes.filter((n) => n !== note) })),
       voiceSpeakMuted: false,
       debtSheetPaymentOnly: false,
       debtSheetPrefillDebtId: null,
@@ -251,6 +260,7 @@ export const useSettingsStore = create<SettingsState>()(
         dismissedBanners: state.dismissedBanners,
         buddgyNudges: state.buddgyNudges,
         buddgyNudgeLog: state.buddgyNudgeLog,
+        buddgyNotes: state.buddgyNotes,
       }),
     }
   )

@@ -12,6 +12,8 @@ export interface AIChatHeaderProps {
   onClose: () => void
   beat: BuddgyBeat | null
   isLoading: boolean
+  /** The reply is being written out right now. */
+  streaming: boolean
 }
 
 const TALK_MS = 1100
@@ -26,7 +28,7 @@ const REACTION: Partial<Record<BuddgyMood, string>> = {
  * the answer lands, then the feeling of that answer (worried about overspend,
  * happy about a saved entry…) before settling back to awake.
  */
-function useBeatMood(beat: BuddgyBeat | null, isLoading: boolean): BuddgyMood {
+function useBeatMood(beat: BuddgyBeat | null, isLoading: boolean, streaming: boolean): BuddgyMood {
   // The stage belongs to one beat; a newer beat starts from its first stage.
   const [stage, setStage] = useState<{ at: number; phase: 'hold' | 'rest' }>({ at: 0, phase: 'rest' })
   useEffect(() => {
@@ -38,6 +40,7 @@ function useBeatMood(beat: BuddgyBeat | null, isLoading: boolean): BuddgyMood {
       window.clearTimeout(b)
     }
   }, [beat])
+  if (streaming) return 'talking'
   if (isLoading) return 'thinking'
   if (!beat) return 'awake'
   const silent = beat.mood === 'done' || beat.mood === 'error'
@@ -47,10 +50,10 @@ function useBeatMood(beat: BuddgyBeat | null, isLoading: boolean): BuddgyMood {
 }
 
 /** Title row for the AI assistant sheet — a live Buddgy avatar + title. */
-export function AIChatHeader({ onClose, beat, isLoading }: AIChatHeaderProps) {
+export function AIChatHeader({ onClose, beat, isLoading, streaming }: AIChatHeaderProps) {
   const t = useT()
   const surface = useBuddgyMood()
-  const chatMood = useBeatMood(beat, isLoading)
+  const chatMood = useBeatMood(beat, isLoading, streaming)
   const mood = surface === 'offline' ? 'offline' : chatMood
   const avatarRef = useRef<HTMLSpanElement>(null)
 
@@ -73,7 +76,7 @@ export function AIChatHeader({ onClose, beat, isLoading }: AIChatHeaderProps) {
           {t.ai.headerTitle}
         </h3>
         <p className="text-xs text-[var(--color-brand-text-muted)] truncate" aria-live="polite">
-          {isLoading ? t.buddgy.thinking : t.ai.headerSubtitle}
+          {isLoading && !streaming ? t.buddgy.thinking : t.ai.headerSubtitle}
         </p>
       </div>
       <IconButton

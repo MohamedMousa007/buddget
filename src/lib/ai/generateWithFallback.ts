@@ -10,6 +10,11 @@ export interface GeminiProxyRequestBody {
   generationConfig?: Record<string, unknown>
   /** Opt-in Google Search grounding (live facts). Only set by callers that need it. */
   grounded?: boolean
+  systemInstruction?: { parts: { text: string }[] }
+  /** Buddgy model tier; untiered callers get the legacy model. */
+  tier?: 'fast' | 'smart'
+  /** Server-sent events (streamGenerateContent). */
+  stream?: boolean
 }
 
 const DEFAULT_MAX_ATTEMPTS = 3

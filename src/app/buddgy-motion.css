@@ -2,7 +2,8 @@
 .bg-fb { transform-box: fill-box; transform-origin: center; }
 
 .bg-listen { animation: bg-listen 900ms ease-in-out infinite; }
-.bg-think  { animation: bg-think 1200ms ease-in-out infinite; }
+.bg-think  { animation: bg-think 1100ms ease-in-out infinite; }
+.bg-dot    { stroke-width: 2.3px; }
 .bg-scan   { animation: bg-scan 1400ms ease-in-out infinite alternate; }
 .bg-draw   { stroke-dasharray: 10; animation: bg-draw 400ms cubic-bezier(.2,.9,.25,1) both; }
 .bg-hop    { animation: bg-hop 520ms cubic-bezier(.34,1.56,.64,1) both; }
@@ -18,7 +19,7 @@
 .bg-tilt   { transform-box: view-box; transform-origin: 12px 20px; animation: bg-tilt 700ms cubic-bezier(.34,1.56,.64,1) both; }
 
 @keyframes bg-listen { 0%,100% { transform: scaleY(.4) } 50% { transform: scaleY(1) } }
-@keyframes bg-think  { 0%,100% { opacity: .25 } 35% { opacity: 1 } }
+@keyframes bg-think  { 0%,60%,100% { transform: translateY(0); opacity: .6 } 30% { transform: translateY(-1.25px); opacity: 1 } }
 @keyframes bg-scan   { from { transform: translateY(-2.25px) } to { transform: translateY(2.25px) } }
 @keyframes bg-draw   { from { stroke-dashoffset: 10 } to { stroke-dashoffset: 0 } }
 @keyframes bg-hop    { 0%,100% { transform: translateY(0) } 40% { transform: translateY(-1.5px) } }
