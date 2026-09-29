@@ -32,7 +32,10 @@ Two of those must therefore live somewhere other than the bar.
 
 ### Profile dropdown
 
-**Analytics/Reports**, **Goals**, Paydays, Payment methods, Settings.
+**Analytics/Reports**, **Goals**, Payment methods, Settings.
+
+**Paydays is not here.** Income streams are set up and managed from **Flow**, which is
+where the paydays themselves are read. Income has no separate destination.
 
 ### Why Budget takes the slot and Analytics does not
 
@@ -129,13 +132,13 @@ That is where live rates belong, and it is the one thing the merge must not flat
 ## The resulting map
 
 ```
-Flow      (home)   income + expenses + paydays + SMS/AI
+Flow      (home)   income + expenses + paydays (incl. stream setup) + SMS/AI
 Budget             planning + Committed (subscriptions) + spending_control goals
 Wealth             pockets (balances) + holdings (positions, live-valued)
                    + emergency fund + zakat + savings goals
 Debts              borrows + cards + installments/BNPL + debt_freedom goals
 ─────────
-dropdown           Analytics · Goals (full list) · Paydays · Payment methods · Settings
+dropdown           Analytics · Goals (full list) · Payment methods · Settings
 ```
 
 Every tab answers one question in its own title. Nothing needs a tutorial to find,

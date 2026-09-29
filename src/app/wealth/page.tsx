@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { Target, Pencil, Trash2, Plus, Shield, ChevronRight } from 'lucide-react'
+import { Target, Pencil, Trash2, Plus, Shield, ChevronRight, Scale } from 'lucide-react'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -316,6 +316,12 @@ export default function SavingsPage() {
             onClose={() => setMenu(null)}
             items={[
               { label: 'Edit', icon: <Pencil size={17} />, onSelect: () => setEditAcc(a) },
+              /* Reconciling a pocket against the real account. The sheet existed and the
+                 store action was complete, but nothing ever called setUpdateAcc — the
+                 feature was built and unreachable. It belongs on the pocket rather than
+                 as a top-level affordance: Add/Withdraw record a movement, this records
+                 the difference as one, so the ledger stays honest either way. */
+              { label: 'Correct balance', icon: <Scale size={17} />, onSelect: () => setUpdateAcc(a) },
               // The Monthly Savings vault is the carry destination floor — never deletable.
               ...(a.type === 'vault' ? [] : [{
                 label: 'Delete', icon: <Trash2 size={17} />, destructive: true,

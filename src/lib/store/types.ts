@@ -433,11 +433,9 @@ export interface InvestmentHolding {
   goldUnit?: 'grams' | 'pounds' | 'ounces'
   /** Coin symbol (BTC) or stock ticker (AAPL). */
   symbol?: string
-  // property — value is user-typed; the area estimate never overrides it
+  // property — value is user-typed. Size lives in `quantity` (m²).
   propertyValue?: number
   sharePercent?: number
-  rentedOut?: boolean
-  areaPricePerM2?: number
   /** Where the gold sits · the crypto venue · the stock market. */
   location?: string
   createdAt: string

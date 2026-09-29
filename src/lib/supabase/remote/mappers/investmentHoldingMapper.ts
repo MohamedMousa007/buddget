@@ -14,8 +14,6 @@ function fromDbAssetType(t: SavingsHoldingRow['asset_type']): InvestmentAssetTyp
 interface HoldingMeta {
   goldUnit?: InvestmentHolding['goldUnit']
   sharePercent?: number
-  rentedOut?: boolean
-  areaPricePerM2?: number
   location?: string
 }
 
@@ -23,8 +21,6 @@ export function investmentHoldingToRow(h: InvestmentHolding, userId: string): Sa
   const metadata: HoldingMeta = {}
   if (h.goldUnit) metadata.goldUnit = h.goldUnit
   if (h.sharePercent != null) metadata.sharePercent = h.sharePercent
-  if (h.rentedOut != null) metadata.rentedOut = h.rentedOut
-  if (h.areaPricePerM2 != null) metadata.areaPricePerM2 = h.areaPricePerM2
   if (h.location) metadata.location = h.location
 
   return {
@@ -68,8 +64,6 @@ export function investmentHoldingFromRow(row: SavingsHoldingRow): InvestmentHold
     symbol: row.asset_symbol || undefined,
     propertyValue: assetType === 'property' ? row.current_value ?? undefined : undefined,
     sharePercent: meta.sharePercent,
-    rentedOut: meta.rentedOut,
-    areaPricePerM2: meta.areaPricePerM2,
     location: meta.location,
     createdAt: row.created_at,
     updatedAt: row.updated_at ?? undefined,
