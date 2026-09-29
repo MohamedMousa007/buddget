@@ -9,6 +9,26 @@ Savings and Investment are being merged into a single destination called **Wealt
 
 ---
 
+## 0. Already redesigned — do not touch
+
+These have **already been redesigned and shipped**. They are out of scope. Do not
+restyle them, do not re-lay them out, do not "harmonise" them with your work, and do
+not include them in deliverables:
+
+- **The Flow screen**, including **Paydays** and everything in it
+- **The income add sheet**
+- **The FAB** (quick-add button)
+- **Alert banners** — including the new-payment-method / SMS detection banners
+- **The offline alert**
+
+If Wealth needs one of these — a banner, the FAB overlapping the list, the offline
+state — **reuse the existing component exactly as it is** and design around it. Show it
+in your screens only as context, never as something you have changed.
+
+The header, the profile placement and the menu structure are likewise fixed.
+
+---
+
 ## 1. The actual design problem
 
 This is not "put two pages side by side". The hard part is that **users sit on a
@@ -235,6 +255,65 @@ correction sheet. Do not invent a third way to change the number.
 
 ---
 
+## 7b. Emergency fund and Zakat — two features that need design help
+
+You asked for the complicated things to be examined. These are the two, and each has a
+real fault. Neither should be removed — both are differentiating — but both are
+currently *presented* in a way that is quietly wrong.
+
+### Emergency fund — the number is derived invisibly, and sometimes wrongly
+
+"Months covered" = **cover ÷ monthly essentials**. The maths is fine. The inputs are not.
+
+`monthly essentials` is assembled from four hidden sources: rent from the profile,
+food/transport/bills **string-matched against the user's own budget category names**,
+and debt minimums. Then there is a manual override, and an AI estimator that can set it
+too. Cover, the numerator, comes from a per-pocket "counts as cover" flag buried in the
+pocket form.
+
+Two faults:
+
+1. **The matching is English-only.** Categories are free text. A user who names a
+   category "طعام" or "Supermarket" matches nothing, so food, transport and bills all
+   compute as **zero**, essentials shrink, and the app confidently reports **more**
+   months of cover than they have. In a bilingual app this is not an edge case.
+2. **Nobody can see why the number is what it is.** Four invisible sources, two
+   override paths, and a flag in another sheet.
+
+**Design ask:** make the essentials figure **one number the user owns and can see**.
+Derivation becomes a *starting suggestion* — "we think about 8,400/mo, based on your
+rent and bills — change it" — not a hidden computation. Keep the AI estimate as a way to
+*fill that number*, not as a parallel system beside it. And surface what counts as cover
+**on the emergency-fund card itself** ("covered by Main pocket + Vault · change"),
+rather than as a toggle hidden in each pocket's form.
+
+Getting this right turns a number people cannot trust into one they can.
+
+### Zakat — the rules are right, the confidence is overstated
+
+Do **not** simplify the rules. They are correctly specified and tested: property
+excluded, stocks 30% long-term / 100% for trading, short-term debts subtracted, silver
+nisab as the default lower line, gold nisab as the alternative, 2.5%. This is a genuine
+differentiator and it is done well.
+
+Two places where the UI claims more certainty than the data supports:
+
+1. **There is no silver price feed.** The silver nisab — the *default* line — is
+   derived by dividing the gold price by a fixed 85:1 ratio. The real ratio moves a
+   lot. So the default threshold is an estimate that can be materially off, and nothing
+   says so. Design the nisab so its basis and its estimate-ness are visible, and make
+   switching to the gold basis a first-class choice rather than a buried setting.
+2. **The hawl date is anchored to the user's app signup.** A lunar year is counted from
+   when wealth first passed nisab — not from when someone installed a budgeting app,
+   which is what "354 days from `createdAt`" actually means today. Design a way for the
+   user to set their own zakat year start (many people use a fixed Hijri date such as
+   Ramadan), with the current value clearly labelled as a placeholder until they do.
+
+Zakat guidance should feel careful. Where it is estimating, it should say so — that is
+what makes the rest of it trustworthy.
+
+---
+
 ## 8. Must-keep — do not lose these in the merge
 
 - Pockets: create, edit, delete, colour, icon, linked payment method
@@ -306,8 +385,11 @@ A falling asset is **not** destructive. Use the ▼ delta treatment, never the r
 
 ## 11. Deliverables
 
-1. **The ownership spectrum — the most important screens** (dark + light, 390×844):
-   - **Pockets only, no investments** — the majority case. Prove it feels complete.
+1. **The ownership spectrum — the most important screens** (dark + light, 390×844).
+   **Start with the first one.** It is the screen most of your users live in and the one
+   today's design serves worst; the others are variations on it, not the other way round:
+   - **Pockets only, no investments** — the majority case. Prove it feels complete,
+     not like a page with things missing.
    - **Pockets + gold** — the common case
    - **Everything** — pockets, gold, crypto, stocks, property
    - **Brand new user** — nothing at all
@@ -319,6 +401,10 @@ A falling asset is **not** destructive. Use the ▼ delta treatment, never the r
 7. **The sheet family**: add money, withdraw, new pocket, add investment, asset form
    (gold + property), emergency fund, zakat — as one coherent set
 8. **A pocket with a linked goal**
+8b. **Emergency fund, redesigned per §7b** — the card, the sheet, the editable
+    essentials figure with its suggestion, and where cover is chosen
+8c. **Zakat, redesigned per §7b** — the card, the sheet, the nisab basis choice with its
+    estimate disclosed, and setting the zakat year start
 9. **The Wealth tab icon** SVG, active and inactive
 10. **Annotated spec**: tokens, px, sticky threshold, tap targets, RTL, motion
 11. **One self-contained HTML prototype** on the real CSS custom properties
@@ -347,6 +433,9 @@ only thing that is off the table.
 - Use red for a falling asset.
 - Use a pig for savings. Ever. The glyph is Lucide `Coins`.
 - Change the header contents, profile placement or menu structure.
+- Touch anything in §0 — Flow, Paydays, the income add sheet, the FAB, the alert and
+  detection banners, the offline alert. They are done. Reuse, never restyle.
+- Simplify the zakat *rules*. Only its presentation is in scope.
 
 ---
 
@@ -366,4 +455,8 @@ Answer each in one line:
 10. Do I owe zakat, and on what base?
 11. Name every control on the page and the library component it is built from.
 12. What did you cut, and why?
-13. What did you do here that we did not ask for, and why is the page better for it?
+13. I opened the app with three pockets and nothing else. What is the first thing I see,
+    and what is the first thing I can do?
+14. Where does my "months covered" number come from, and how do I change it when it is wrong?
+15. Why is the zakat threshold what it is, and how would I know it is an estimate?
+16. What did you do here that we did not ask for, and why is the page better for it?
