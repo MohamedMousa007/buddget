@@ -30,6 +30,66 @@ sections appear because you have something in them.
 
 ---
 
+## 1b. Where you are free — and where you are not
+
+This brief is specific about **constraints and truths**. It is deliberately quiet about
+**form**. Read the difference.
+
+### Fixed, because breaking it breaks the product
+
+These are not style opinions. Each is here because the data, the market or an actual
+shipped bug says so.
+
+- **One page.** No top-level tabs, no Savings/Invested segment. *Reason:* most users own
+  pockets and nothing else, and today they meet four empty asset tabs.
+- **What you do not own costs no space** (§4), with one exception — the gold market card.
+- **A position is never shown without its price age**, and never blanked when the price
+  is missing (§6). *Reason:* this app shipped 80-hour-stale prices presented as fact.
+- **Property never looks live-priced.**
+- **Balance ≠ position** (§3). The two are valued by different things and must stay
+  legible as different kinds of thing.
+- **The library components, the tokens, and accessibility** (§10). The build fails on a
+  raw styled button; a chosen state never differs by hue alone; nothing under 44×44.
+- **Everything in §8 survives** the merge.
+
+### Entirely yours
+
+Do not ask permission for any of this — it is the actual design work:
+
+- **The hero.** What the number looks like, what sits beside it, how it behaves on
+  scroll, whether there is a chart, a delta, a sparkline, nothing. One number must be
+  the hero; how it earns that is your call.
+- **The visual language of balance vs position.** §5 says they must read as one list
+  while staying distinguishable. *How* — icon treatment, typography, a delta chip, a
+  sub-line, something we have not thought of — is yours.
+- **The gold market card.** Its whole shape, weight and personality. It is the most
+  likely reason someone opens this page; make it worth opening.
+- **Section order, grouping and rhythm.** The §4 table says what shows *when*. It does
+  not say in what order, how they are separated, or whether they are cards, bands or a
+  continuous list.
+- **Every empty state.** The brand-new user, the pockets-only user, the dismissed gold
+  card. These are the screens most people live in — treat them as primary, not as
+  fallbacks.
+- **The sheet family.** Layout, flow, how many steps, what is progressive.
+- **Motion**, density, and how the page feels at 375px with one pocket vs twenty.
+
+### How to disagree
+
+Every constraint above carries its reason. **If you can beat the reason, the constraint
+moves** — propose it in the handoff with the argument, and we will take it seriously.
+What we will not take is a constraint quietly ignored.
+
+Two honest invitations:
+
+1. If you think the ownership problem (§1) has a better answer than progressive
+   disclosure — a different model entirely — show it. We chose this because it is the
+   simplest thing that serves all three users; we are not attached to it.
+2. If something in §8's must-keep list is, in your judgement, not worth the space it
+   costs, put it on the cut list (§11.13) with the reason. Do not remove it in the
+   design — propose it and let us decide.
+
+---
+
 ## 2. What the user asks this page, in order of frequency
 
 1. **What am I worth?** — one number, trustworthy
@@ -151,20 +211,27 @@ these as one coherent family (they share `V3SheetHeader` today):
   ounces**) · quantity · where it is kept
 - **Crypto** — symbol · quantity
 - **Stock** — ticker · shares
-- **Property** — value (user-typed) · size · share % · rented-out · area price per m²
+- **Property** — value (user-typed) · size (m²) · your share %
 
 Gold's karat and unit are **not** complexity to remove — gold pounds are a real unit
 here and karat changes the price. Design them as fast, not as a form.
 
-Property is the outlier: four fields, no live price, and an area estimator that must
-never override the user's own number. See §10 — its scope is an open question.
+Property is the outlier only in that it has **no live price**: its value is typed by
+the user and must never be presented as if a market produced it. Its form is already
+down to three fields; do not add a fourth.
 
-### Two entry points that should probably be one
+### Changing a pocket's balance — one door, two meanings
 
-A pocket balance can be changed by **Add money / Withdraw** (a movement, which lands in
-the ledger) *and* by **Update balance** (a correction, which does not). Two doors to
-one number. Design the correction as a mode *inside* the pocket, not a separate sheet —
-unless you can show why a user would look for it on its own.
+Both of these already exist and both write to the ledger, so neither is a silent
+override:
+
+- **Add money / Withdraw** — a *movement*. Money actually went in or out.
+- **Correct balance** — a *reconciliation*. The pocket drifted from the real account;
+  the difference is recorded as a movement so history stays honest.
+
+Correction lives on the **pocket's own ⋮ menu**, not as a top-level affordance — you
+reach for it while looking at the pocket that is wrong. Design that menu and the
+correction sheet. Do not invent a third way to change the number.
 
 ---
 
@@ -173,6 +240,7 @@ unless you can show why a user would look for it on its own.
 - Pockets: create, edit, delete, colour, icon, linked payment method
 - The **Monthly Savings vault** — the carry destination, never deletable
 - Add / Withdraw, including withdrawals that pay a debt or fund an investment
+- **Correct balance** on a pocket — reconciling against the real account
 - Recurring savings deposits
 - Holdings: gold (karat + entered unit), crypto, stocks, property
 - Emergency fund sizing and target months
@@ -263,6 +331,10 @@ A falling asset is **not** destructive. Use the ▼ delta treatment, never the r
 
 ## 12. Do not
 
+These are failure modes, not taste. Each traces to a reason stated earlier — §1b says
+how to challenge one if you think the reason is wrong. Silently ignoring one is the
+only thing that is off the table.
+
 - Keep two pages, a Savings/Invested segment, or asset-type tabs at the top level.
 - Show an empty group for an asset type the user does not own.
 - Change the hero total when a filter changes.
@@ -294,3 +366,4 @@ Answer each in one line:
 10. Do I owe zakat, and on what base?
 11. Name every control on the page and the library component it is built from.
 12. What did you cut, and why?
+13. What did you do here that we did not ask for, and why is the page better for it?
