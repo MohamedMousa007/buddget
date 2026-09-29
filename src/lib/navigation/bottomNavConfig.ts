@@ -9,7 +9,6 @@ import {
   BarChart3,
   SlidersHorizontal,
   Coins,
-  Gem,
   RefreshCw,
 } from 'lucide-react'
 import type { Dictionary } from '@/lib/i18n'
@@ -47,8 +46,8 @@ export interface MoreMenuItem {
 export const BOTTOM_NAV_MORE_MENU: MoreMenuItem[] = [
   { href: '/budget-setup', label: 'budgetSetup', icon: SlidersHorizontal, fg: 'var(--color-brand-primary)', bg: 'rgba(18,176,160,.13)' },
   { href: '/income', label: 'income', icon: Wallet, fg: 'var(--color-brand-green)', bg: 'rgba(55,195,104,.13)' },
-  { href: '/savings', label: 'savings', icon: Coins, fg: 'var(--color-brand-gold)', bg: 'rgba(237,196,99,.13)' },
-  { href: '/investment', label: 'investment', icon: Gem, fg: '#B79CFF', bg: 'rgba(183,156,255,.13)' },
+  // Savings and Investment merged into one destination (design/IA_MASTER_PLAN.md).
+  { href: '/wealth', label: 'wealth', icon: Coins, fg: 'var(--color-brand-gold)', bg: 'rgba(237,196,99,.13)' },
   { href: '/subscriptions', label: 'subscriptions', icon: RefreshCw, fg: '#4DA3FF', bg: 'rgba(77,163,255,.13)' },
   { href: '/reports', label: 'reports', icon: BarChart3, fg: '#A78BFA', bg: 'rgba(167,139,250,.13)' },
 ]
@@ -57,6 +56,7 @@ export const BOTTOM_NAV_MORE_MENU: MoreMenuItem[] = [
 export const BOTTOM_NAV_MORE_HREFS = new Set<string>([
   '/budget-setup',
   '/income',
+  '/wealth',
   '/savings',
   '/investment',
   '/subscriptions',
@@ -71,12 +71,14 @@ export function sectionTitleNavKey(pathname: string | null): keyof Dictionary['n
   if (pathname.startsWith('/expenses')) return 'expenses'
   if (pathname.startsWith('/debts')) return 'debts'
   if (pathname.startsWith('/income')) return 'income'
-  if (pathname.startsWith('/savings')) return 'savings'
-  if (pathname.startsWith('/investment')) return 'investment'
+  if (pathname.startsWith('/wealth')) return 'wealth'
+  // aliases of /wealth
+  if (pathname.startsWith('/savings')) return 'wealth'
+  if (pathname.startsWith('/investment')) return 'wealth'
   if (pathname.startsWith('/subscriptions')) return 'subscriptions'
   if (pathname.startsWith('/budget-setup')) return 'budgetSetup'
   if (pathname.startsWith('/settings')) return 'settings'
   if (pathname.startsWith('/reports')) return 'reports'
-  if (pathname.startsWith('/goals')) return 'savings'
+  if (pathname.startsWith('/goals')) return 'wealth'
   return null
 }

@@ -11,8 +11,7 @@ import DashboardPage from '@/app/page'
 import ExpensesPage from '@/app/expenses/page'
 import DebtsPage from '@/app/debts/page'
 import IncomePage from '@/app/income/page'
-import SavingsPage from '@/app/savings/page'
-import InvestmentPage from '@/app/investment/page'
+import WealthPage from '@/app/wealth/page'
 import SubscriptionsPage from '@/app/subscriptions/page'
 import GoalsPage from '@/app/goals/page'
 import ReportsPage from '@/app/reports/page'
@@ -31,8 +30,10 @@ const VIEW_MAP: Record<string, ComponentType> = {
   '/expenses': ExpensesPage,
   '/debts': DebtsPage,
   '/income': IncomePage,
-  '/savings': SavingsPage,
-  '/investment': InvestmentPage,
+  '/wealth': WealthPage,
+  // Savings and Investment merged into Wealth; both paths still resolve.
+  '/savings': WealthPage,
+  '/investment': WealthPage,
   '/subscriptions': SubscriptionsPage,
   '/goals': GoalsPage,
   '/reports': ReportsPage,

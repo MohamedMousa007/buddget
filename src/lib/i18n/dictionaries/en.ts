@@ -262,6 +262,7 @@ export const en: Dictionary = {
     income: 'Income',
     savings: 'Savings',
     investment: 'Investment',
+    wealth: 'Wealth',
     debts: 'Debts',
     reports: 'Reports',
     subscriptions: 'Subscriptions',

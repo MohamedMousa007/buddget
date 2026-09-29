@@ -169,6 +169,8 @@ export interface Dictionary {
     income: string
     savings: string
     investment: string
+    /** Merged Savings + Investment destination. */
+    wealth: string
     debts: string
     reports: string
     subscriptions: string

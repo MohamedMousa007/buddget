@@ -263,6 +263,7 @@ export const ar: Dictionary = {
     income: 'الدخل',
     savings: 'المدخرات',
     investment: 'الاستثمار',
+    wealth: 'الثروة',
     debts: 'الديون',
     reports: 'التقارير',
     subscriptions: 'الاشتراكات',

@@ -32,7 +32,7 @@ export function SettingsPageLinksSection() {
           <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">{t.settings.pageLinksSavingsTitle}</h2>
         </div>
         <p className="text-xs text-[var(--color-brand-text-muted)]">{t.settings.pageLinksSavingsDesc}</p>
-        <Button render={<Link href="/savings" />} variant="outline" size="touch" className="w-fit">
+        <Button render={<Link href="/wealth" />} variant="outline" size="touch" className="w-fit">
           {t.settings.pageLinksSavingsLink}
         </Button>
       </section>
