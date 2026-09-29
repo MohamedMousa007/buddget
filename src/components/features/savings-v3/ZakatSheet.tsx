@@ -16,6 +16,7 @@ import { micro } from '@/lib/ui/microLabelStyle'
 import type { ZakatBase } from '@/lib/savings/zakatInputs'
 import type { ZakatConfig } from '@/lib/store/types'
 import { Switch } from '@/components/ui/switch'
+import { DatePickerField } from '@/components/ui/DatePickerField'
 import { SelectableCard } from '@/components/ui/SelectableCard'
 
 export interface ZakatSheetProps {
@@ -34,6 +35,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
   const [nisabBasis, setNisabBasis] = useState<'silver' | 'gold'>(cfg?.nisabBasis ?? 'silver')
   const [holdsForTrading, setHoldsForTrading] = useState(cfg?.holdsForTrading ?? false)
   const [manualOn, setManualOn] = useState(cfg?.manualAmount != null)
+  const [yearStart, setYearStart] = useState(cfg?.yearStartDate ?? '')
   const [manualAmount, setManualAmount] = useState(cfg?.manualAmount != null ? String(cfg.manualAmount) : '')
   const [overrides, setOverrides] = useState<Record<string, number>>(cfg?.lineOverrides ?? {})
 
@@ -51,7 +53,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
     manualAmount: manualOn ? parseFloat(manualAmount) || 0 : null,
   }), [cash, gold, crypto, stocks, holdsForTrading, debts, nisabBasis, base, manualOn, manualAmount])
 
-  const save = (patch: Partial<ZakatConfig>) => updateProfile({ zakatConfig: { nisabBasis, holdsForTrading, manualAmount: manualOn ? parseFloat(manualAmount) || 0 : null, lineOverrides: overrides, ...patch } })
+  const save = (patch: Partial<ZakatConfig>) => updateProfile({ zakatConfig: { nisabBasis, holdsForTrading, manualAmount: manualOn ? parseFloat(manualAmount) || 0 : null, lineOverrides: overrides, yearStartDate: yearStart || null, ...patch } })
   const editLine = (id: LineId, raw: string) => {
     const next = { ...overrides }
     if (raw.trim() === '') delete next[id]
@@ -152,6 +154,24 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
               <FactorCard title="For trading" sub="100% counted" on={holdsForTrading} onClick={() => { setHoldsForTrading(true); save({ holdsForTrading: true }) }} />
             </div>
           </div>
+
+          {/* zakat year — the hawl anchor. Without this the due date is derived from the
+              account's creation, which is when they installed the app and means nothing
+              religiously. See lib/savings/hawl.ts. */}
+          <Card variant="elevated" padding="none" className="p-3.5">
+            <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">When your zakat year starts</p>
+            <p className="mt-0.5 text-xs text-[var(--color-brand-text-muted)]">
+              {yearStart
+                ? 'A lunar year (354 days) from this date.'
+                : 'Not set — we are counting from when you joined, which is only a guess. Many people use a fixed date such as 1 Ramadan.'}
+            </p>
+            <DatePickerField
+              value={yearStart}
+              onChange={(v) => { setYearStart(v); save({ yearStartDate: v || null }) }}
+              placeholder="Pick the date"
+              className="mt-3"
+            />
+          </Card>
 
           {/* override */}
           <Card variant="elevated" padding="none" className="p-3.5">

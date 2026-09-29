@@ -282,8 +282,9 @@ Two faults:
 
 **Design ask:** make the essentials figure **one number the user owns and can see**.
 Derivation becomes a *starting suggestion* — "we think about 8,400/mo, based on your
-rent and bills — change it" — not a hidden computation. Keep the AI estimate as a way to
-*fill that number*, not as a parallel system beside it. And surface what counts as cover
+rent and bills — change it" — not a hidden computation. **Keep the AI estimate** — it earns its place, but only as the thing that *fills that
+field*: one tap that puts a sensible local figure into the number the user owns, which
+they then edit. It is not a second, parallel way to size the fund. And surface what counts as cover
 **on the emergency-fund card itself** ("covered by Main pocket + Vault · change"),
 rather than as a toggle hidden in each pocket's form.
 
@@ -303,11 +304,15 @@ Two places where the UI claims more certainty than the data supports:
    lot. So the default threshold is an estimate that can be materially off, and nothing
    says so. Design the nisab so its basis and its estimate-ness are visible, and make
    switching to the gold basis a first-class choice rather than a buried setting.
-2. **The hawl date is anchored to the user's app signup.** A lunar year is counted from
-   when wealth first passed nisab — not from when someone installed a budgeting app,
-   which is what "354 days from `createdAt`" actually means today. Design a way for the
-   user to set their own zakat year start (many people use a fixed Hijri date such as
-   Ramadan), with the current value clearly labelled as a placeholder until they do.
+2. **The hawl date — already fixed in code, now design it.** It used to be 354 days
+   from the user's app signup, which is an install date, not a religious one. There is
+   now a **zakat-year anchor** the user sets (`ZakatConfig.yearStartDate`), with
+   precedence: the date they set → when they last paid → account creation as a
+   *labelled* guess. When it is the guess, the card no longer claims a due date; it asks
+   for the anchor instead.
+   **Your job is the presentation, not the mechanism:** where setting the year start
+   belongs in the sheet, how the unset state reads on the card without nagging, and how
+   to make "1 Ramadan" — the anchor many people actually keep — fast to pick.
 
 Zakat guidance should feel careful. Where it is estimating, it should say so — that is
 what makes the rest of it trustworthy.
@@ -404,7 +409,8 @@ A falling asset is **not** destructive. Use the ▼ delta treatment, never the r
 8b. **Emergency fund, redesigned per §7b** — the card, the sheet, the editable
     essentials figure with its suggestion, and where cover is chosen
 8c. **Zakat, redesigned per §7b** — the card, the sheet, the nisab basis choice with its
-    estimate disclosed, and setting the zakat year start
+    estimate disclosed, and the zakat-year anchor: where it lives, how the unset state
+    reads on the card, and how to make a fixed Hijri date fast to pick
 9. **The Wealth tab icon** SVG, active and inactive
 10. **Annotated spec**: tokens, px, sticky threshold, tap targets, RTL, motion
 11. **One self-contained HTML prototype** on the real CSS custom properties
@@ -459,4 +465,6 @@ Answer each in one line:
     and what is the first thing I can do?
 14. Where does my "months covered" number come from, and how do I change it when it is wrong?
 15. Why is the zakat threshold what it is, and how would I know it is an estimate?
+15b. I have never set my zakat year. What does the card tell me, and how do I fix it in
+    one step?
 16. What did you do here that we did not ask for, and why is the page better for it?

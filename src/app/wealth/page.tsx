@@ -27,6 +27,7 @@ import { AddInvestmentSheet } from '@/components/features/savings-v3/AddInvestme
 import { ActivityLedger } from '@/components/features/savings-v3/ActivityLedger'
 import type { InvestmentAssetType } from '@/lib/store/types'
 import { computeEmergencyFund } from '@/lib/savings/emergencyFund'
+import { deriveHawl } from '@/lib/savings/hawl'
 import { computeZakat } from '@/lib/savings/zakat'
 import { deriveZakatBase } from '@/lib/savings/zakatInputs'
 import { useAssetPrices } from '@/hooks/useAssetPrices'
@@ -127,12 +128,17 @@ export default function SavingsPage() {
       manualAmount: zc?.manualAmount ?? null,
     })
   }, [zakatBase, profile.zakatConfig])
-  // Hawl date: a lunar year (~354 days) from the last paid date or account creation.
-  const hawlDate = useMemo(() => {
-    const start = profile.zakatConfig?.lastPaidDate ?? profile.createdAt
-    const d = new Date(new Date(start).getTime() + 354 * 24 * 3600 * 1000)
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-  }, [profile.zakatConfig?.lastPaidDate, profile.createdAt])
+  // A lunar year from the anchor the user set, or their last payment. Falling back to
+  // account creation is a labelled guess, not a date we present as fact.
+  const hawl = useMemo(() => deriveHawl({
+    yearStartDate: profile.zakatConfig?.yearStartDate,
+    lastPaidDate: profile.zakatConfig?.lastPaidDate,
+    createdAt: profile.createdAt,
+  }), [profile.zakatConfig?.yearStartDate, profile.zakatConfig?.lastPaidDate, profile.createdAt])
+  const hawlDate = useMemo(
+    () => new Date(hawl.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+    [hawl.dueDate],
+  )
 
   const pocketVMs = useMemo<PocketVM[]>(() => {
     return pockets.map((account) => {
@@ -297,7 +303,7 @@ export default function SavingsPage() {
                 </Card>
               )}
             </div>
-            <ZakatCard result={zakatResult} base={zakatResult.zakatable} hawlDate={hawlDate} onOpen={() => guard(() => setZakatOpen(true))} />
+            <ZakatCard result={zakatResult} base={zakatResult.zakatable} hawlDate={hawlDate} hawlIsPlaceholder={hawl.isPlaceholder} onOpen={() => guard(() => setZakatOpen(true))} />
 
             <div className="mt-4">
               <ActivityLedger transactions={savingsTransactions} accounts={pockets} baseCurrency={settings.baseCurrency} exchangeRates={exchangeRates} />

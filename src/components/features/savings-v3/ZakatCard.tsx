@@ -11,10 +11,15 @@ export interface ZakatCardProps {
   /** Base for the "2.5% of {base}" sub-line (the zakatable wealth). */
   base: number
   hawlDate: string
+  /**
+   * True when no zakat-year anchor is set, so `hawlDate` was derived from account
+   * creation. Say so rather than presenting an install date as a religious one.
+   */
+  hawlIsPlaceholder?: boolean
   onOpen: () => void
 }
 
-export function ZakatCard({ result, base, hawlDate, onOpen }: ZakatCardProps) {
+export function ZakatCard({ result, base, hawlDate, hawlIsPlaceholder, onOpen }: ZakatCardProps) {
   const due = result.due
   const accent = due ? '#EDC463' : '#35D46F'
   return (
@@ -33,7 +38,11 @@ export function ZakatCard({ result, base, hawlDate, onOpen }: ZakatCardProps) {
           <ChevronRight size={18} className="text-[var(--color-brand-text-muted)]" />
         </div>
         <p className="relative mt-2 text-[10.5px] text-[var(--color-brand-text-muted)]">
-          {due ? `Above nisab for a full lunar year · due by ${hawlDate}` : `You are ${fmtNum(result.gap)} EGP under the line, so nothing is owed.`}
+          {due
+            ? hawlIsPlaceholder
+              ? `Above nisab · set when your zakat year starts to get a real due date`
+              : `Above nisab for a full lunar year · due by ${hawlDate}`
+            : `You are ${fmtNum(result.gap)} EGP under the line, so nothing is owed.`}
         </p>
       </div>
     </SelectableCard>

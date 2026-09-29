@@ -506,6 +506,13 @@ export interface ZakatConfig {
   /** Per-line edits in the "what counts" list, keyed by line id. */
   lineOverrides?: Record<string, number>
   lastPaidDate?: string
+  /**
+   * The user's own zakat-year anchor (ISO date) — when their wealth first passed
+   * nisab, or the fixed Hijri date they keep. Without it the hawl falls back to
+   * account creation, which is an install date and not a religious one; see
+   * {@link deriveHawl}.
+   */
+  yearStartDate?: string | null
 }
 
 /** Template for monthly recurring deposits (user confirms amount in Add flow; scheduler posts on due date). */
