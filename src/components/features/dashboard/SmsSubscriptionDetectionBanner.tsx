@@ -18,13 +18,13 @@ export function SmsSubscriptionDetectionBanner() {
 
   useRegisterPrompts(
     'subscription-detection',
-    detected.map(({ brandKey, name, amount, currency, billingDay, sightings }) => ({
+    detected.map(({ brandKey, name, amount, currency, billingDay, months }) => ({
       key: `sub:${brandKey}`,
       priority: PROMPT_PRIORITY.subscription,
       tone: 'brand' as const,
       icon: Repeat,
       title: t.subscriptions.detectedTitle.replace('{brand}', name),
-      description: t.prompts.subBody(`${amount.toLocaleString('en-US')} ${currency}`, billingDay, sightings),
+      description: t.prompts.subBody(`${amount.toLocaleString('en-US')} ${currency}`, billingDay, months),
       actions: [
         {
           label: t.subscriptions.detectedCta,

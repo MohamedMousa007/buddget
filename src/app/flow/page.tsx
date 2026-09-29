@@ -18,10 +18,9 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/button'
-import { StatusBarCover } from '@/components/layout/StatusBarCover'
 import { ExpenseFilters } from '@/components/expenses/ExpenseFilters'
-import { FlowHeader } from '@/components/features/flow/FlowHeader'
-import { FlowSummaryBand, FLOW_BAND_BG } from '@/components/features/flow/FlowSummaryBand'
+import { FlowSubHeader } from '@/components/features/flow/FlowSubHeader'
+import { FlowSummaryBand } from '@/components/features/flow/FlowSummaryBand'
 import { FlowStickyStrip } from '@/components/features/flow/FlowStickyStrip'
 import { FlowChipRow, type FlowChip } from '@/components/features/flow/FlowChipRow'
 import { FlowLedger } from '@/components/features/flow/FlowLedger'
@@ -185,11 +184,10 @@ export default function FlowPage() {
 
   return (
     <div className="pb-6 lg:mx-auto lg:max-w-screen-sm">
-      <StatusBarCover background={collapsed ? FLOW_BAND_BG : 'var(--color-brand-bg)'} />
       <FlowStickyStrip visible={collapsed && dataReady} {...sticky} />
       {segment === 'in' ? <IncomePrompts /> : null}
 
-      <FlowHeader monthName={monthName} />
+      <FlowSubHeader />
       <FlowSummaryBand {...band} />
 
       <div className="mx-4 mt-2.5">

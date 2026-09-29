@@ -494,6 +494,8 @@ export interface Dictionary {
     linkSheetTitle: string
     /** Slots: {amount} {currency} {date}. */
     linkSheetBody: string
+    /** Slots: {amount} {currency} {from} {date}. */
+    linkSheetBodyFrom: string
     linkOptionSub: (date: string, expected: string) => string
     offPct: (pct: number) => string
     bestMatch: string
@@ -1864,6 +1866,10 @@ export interface Dictionary {
     confirmCurrencyHelp: string
     dismiss: string
     actionFailed: string
+    confirmAndLink: string
+    matchedTo: (date: string) => string
+    arrivedLate: (n: number) => string
+    newInstrument: (kind: 'card' | 'account' | 'wallet', last4: string) => string
   }
 
   smsTracking: {
@@ -1959,7 +1965,6 @@ export interface Dictionary {
   }
 
   flow: {
-    eyebrow: string
     segmentAria: string
     segAll: string
     segIn: string

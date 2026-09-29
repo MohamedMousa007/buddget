@@ -624,6 +624,7 @@ export const ar: Dictionary = {
     oneTimeIncome: 'دخل لمرة واحدة',
     makeRecurringNote: 'يتكرر كل شهر؟ اجعله يوم قبض وسيتوقعه Buddget وينبّهك عند تأخره.',
     linkSheetTitle: 'أي يوم قبض هذا؟',
+    linkSheetBodyFrom: 'وصل {amount} {currency} من {from} في {date}. الربط يحتفظ بهذا التاريخ، فيبقى يوم القبض المتأخر متأخراً.',
     linkSheetBody: 'وصل {amount} {currency} في {date}. الربط يحتفظ بهذا التاريخ، فيبقى يوم القبض المتأخر متأخراً.',
     linkOptionSub: (date: string, expected: string) => `يوم قبض ${date} · المتوقع ${expected}`,
     offPct: (pct: number) => `فرق ${pct}%`,
@@ -1991,6 +1992,11 @@ export const ar: Dictionary = {
     confirmCurrencyHelp: 'أُضيفت بالفعل — فقط أكّد العملة.',
     dismiss: 'تجاهل',
     actionFailed: 'لم تنجح العملية. تحقق من اتصالك وحاول مرة أخرى.',
+    confirmAndLink: 'تأكيد وربط',
+    matchedTo: (date: string) => `مطابق ليوم قبض ${date}`,
+    arrivedLate: (n: number) => `وصل متأخراً ${n} أيام`,
+    newInstrument: (kind: 'card' | 'account' | 'wallet', last4: string) =>
+      `${kind === 'card' ? 'بطاقة' : kind === 'wallet' ? 'محفظة' : 'حساب'} •• ${last4} جديد`,
   },
 
   smsTracking: {
@@ -2104,7 +2110,6 @@ export const ar: Dictionary = {
   },
 
   flow: {
-    eyebrow: 'المعاملات',
     segmentAria: 'تصفية حسب الاتجاه',
     segAll: 'الكل',
     segIn: 'وارد',
@@ -2246,7 +2251,7 @@ export const ar: Dictionary = {
     lateBody: (amount: string, date: string) => `المتوقع ${amount} في ${date}.`,
     matchBody: (amount: string, date: string, payday: string) => `وصل ${amount} في ${date}. يوم القبض كان ${payday}.`,
     acctBody: (n: number) => `ظهر في ${n} رسائل بنكية هذا الأسبوع.`,
-    subBody: (amount: string, day: number, n: number) => `${amount} في يوم ${day}، ${n} مرات متتالية.`,
+    subBody: (amount: string, day: number, n: number) => `${amount} في يوم ${day}، ${n} أشهر متتالية.`,
   },
 
   status: {

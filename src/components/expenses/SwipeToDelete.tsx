@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, type ReactNode } from 'react'
-import { animate, motion, useMotionValue, type PanInfo } from 'framer-motion'
+import { animate, motion, useMotionValue, useTransform, type PanInfo } from 'framer-motion'
 import { Trash2 } from 'lucide-react'
 import { REVEAL, resolveSwipe, resolveSwipeRight } from './swipeToDeleteLogic'
 
@@ -76,6 +76,9 @@ export function SwipeToDelete({
   rightAction?: RightAction
 }) {
   const x = useMotionValue(0)
+  // Panels only exist while the row is moved: at rest a fractional row height would
+  // otherwise let the red panel show as a hairline along the row's edge.
+  const panelVisibility = useTransform(x, (v) => (v === 0 ? 'hidden' : 'visible'))
   const didDrag = useRef(false)
 
   // Follow external open state (another row opened → close this one).
@@ -108,8 +111,10 @@ export function SwipeToDelete({
 
   return (
     <div className="relative overflow-hidden" onPointerDownCapture={() => { didDrag.current = false }}>
-      <DeletePanel deleteLabel={deleteLabel} onDelete={onDelete} />
-      {rightAction ? <AssignPanel action={rightAction} /> : null}
+      <motion.div className="absolute inset-0" style={{ visibility: panelVisibility }}>
+        <DeletePanel deleteLabel={deleteLabel} onDelete={onDelete} />
+        {rightAction ? <AssignPanel action={rightAction} /> : null}
+      </motion.div>
       <motion.div
         drag="x"
         dragDirectionLock

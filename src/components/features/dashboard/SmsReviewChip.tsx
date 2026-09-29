@@ -1,5 +1,6 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { MessageSquareText } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { useSmsConfirmations } from '@/hooks/useSmsConfirmations'
@@ -15,6 +16,28 @@ export function SmsReviewChip() {
   const t = useT()
   const { pending, confirmItem, dismissItem, refetch } = useSmsConfirmations()
   const [open, setOpen] = useState(false)
+  // SMS credit log id → the payday it was confirmed into, until its income event exists.
+  // ponytail: session-only; if the app restarts before the event syncs, Flow's match prompt asks instead.
+  const [toLink, setToLink] = useState<Record<string, { templateId: string; date: string }>>({})
+  const incomeEvents = useFinanceStore((s) => s.incomeEvents)
+  const updateIncomeEvent = useFinanceStore((s) => s.updateIncomeEvent)
+
+  // §8.0: link by payday (occurrenceDate); the event keeps the day the money arrived.
+  useEffect(() => {
+    const ids = Object.keys(toLink)
+    if (!ids.length) return
+    const done: string[] = []
+    for (const e of incomeEvents) {
+      const target = e.smsLogId ? toLink[e.smsLogId] : undefined
+      if (!target) continue
+      if (!e.templateId) updateIncomeEvent(e.id, { templateId: target.templateId, occurrenceDate: target.date, status: 'confirmed' })
+      done.push(e.smsLogId!)
+    }
+    if (done.length) {
+      /* eslint-disable-next-line react-hooks/set-state-in-effect -- consume the links that just landed */
+      setToLink((prev) => Object.fromEntries(Object.entries(prev).filter(([k]) => !done.includes(k))))
+    }
+  }, [incomeEvents, toLink, updateIncomeEvent])
 
   useRegisterPrompts(
     'sms-review',
@@ -49,6 +72,10 @@ export function SmsReviewChip() {
       items={pending}
       confirmItem={confirmItem}
       dismissItem={dismissItem}
+      onConfirmedMatch={(item, target) => {
+        if (item.income_id) updateIncomeEvent(item.income_id, { templateId: target.templateId, occurrenceDate: target.date, status: 'confirmed' })
+        else setToLink((prev) => ({ ...prev, [item.id]: target }))
+      }}
     />
   )
 }

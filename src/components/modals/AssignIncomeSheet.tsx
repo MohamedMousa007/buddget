@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
+import { useSmsCounterparty } from '@/hooks/useSmsCounterparty'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalTitle } from '@/components/modals/ModalTitle'
 import { Button } from '@/components/ui/button'
@@ -34,6 +35,8 @@ interface Props {
   initialTemplateId?: string
   /** Nested over the add sheet needs a higher layer; the page opens it at the default. */
   zIndexClassName?: string
+  /** Who sent it, when known (SMS credits): "… from AL RAJHI arrived on …". */
+  from?: string | null
 }
 
 /**
@@ -42,7 +45,7 @@ interface Props {
  * never shown. Linking writes the payday as `occurrenceDate` and never touches the credit's
  * `receivedDate` (§8.0), so a late payday still reads as late.
  */
-export function AssignIncomeSheet({ open, onClose, credit, onAssign, initialTemplateId, zIndexClassName }: Props) {
+export function AssignIncomeSheet({ open, onClose, credit, onAssign, initialTemplateId, zIndexClassName, from }: Props) {
   const t = useT()
   const { incomeSources, incomeEvents, monthStartDay, rates } = useFinanceStore(
     useShallow((s) => ({
@@ -77,7 +80,8 @@ export function AssignIncomeSheet({ open, onClose, credit, onAssign, initialTemp
     onClose()
   }
 
-  const body = fillSlots(t.income.linkSheetBody, {
+  const body = fillSlots(from ? t.income.linkSheetBodyFrom : t.income.linkSheetBody, {
+    from: from ?? '',
     amount: <b className="font-mono-numbers text-[var(--color-brand-text-primary)]">{formatFixed2(credit.amount)}</b>,
     currency: credit.currency,
     date: <b>{shortDate(credit.receivedDate)}</b>,
@@ -149,12 +153,14 @@ export function GlobalAssignIncomeSheet() {
     useShallow((s) => ({ activeModal: s.activeModal, setActiveModal: s.setActiveModal, assignTarget: s.assignTarget })),
   )
   const event = assignTarget?.eventId ? incomeEvents.find((e) => e.id === assignTarget.eventId) : undefined
+  const from = useSmsCounterparty(event?.smsLogId)
   if (!event) return null
   return (
     <AssignIncomeSheet
       open={activeModal === 'assignIncome'}
       onClose={() => setActiveModal(null)}
       credit={event}
+      from={from}
       // §8.0: the payday goes on occurrenceDate; receivedDate stays the day it arrived.
       onAssign={({ templateId, date }) => updateIncomeEvent(event.id, { templateId, occurrenceDate: date, status: 'confirmed' })}
     />

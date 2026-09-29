@@ -1,8 +1,9 @@
 /**
- * Routes that draw their own header right under the status bar (Flow and Paydays), so the
- * shell's mobile wordmark bar steps aside. Includes Flow's Expenses/Income aliases.
+ * Routes that draw their own header right under the status bar (Paydays, with its back
+ * button), so the shell's mobile wordmark bar steps aside. Flow keeps the bar: its month
+ * row is a sub-header below it.
  */
-const OWN_HEADER = new Set(['/flow', '/expenses', '/income', '/paydays'])
+const OWN_HEADER = new Set(['/paydays'])
 
 export function ownsHeader(path: string): boolean {
   return OWN_HEADER.has(path)

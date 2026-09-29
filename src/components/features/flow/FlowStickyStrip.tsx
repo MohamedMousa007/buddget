@@ -13,15 +13,14 @@ export interface FlowStickyStripProps {
 }
 
 /**
- * The band collapsed: a 52px teal strip under the status bar once the band's stat row has
- * scrolled away. The status bar turns teal at the same moment (see StatusBarCover), so the
- * band never visibly cuts off.
+ * The band collapsed: a 52px teal strip tucked under the logo bar once the band's stat row
+ * has scrolled away. It sits below the bar in z-order, so it slides out from behind it.
  */
 export function FlowStickyStrip({ visible, primary, secondary, right }: FlowStickyStripProps) {
   return (
     <div
       aria-hidden={!visible}
-      className="pointer-events-none fixed inset-x-0 top-[env(safe-area-inset-top,0px)] z-[45] flex h-[52px] items-center justify-between gap-2.5 px-[18px] text-[var(--flow-band-fg)] lg:hidden"
+      className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top,0px)+57px)] z-[39] flex h-[52px] items-center justify-between gap-2.5 px-[18px] text-[var(--flow-band-fg)] lg:hidden"
       style={{
         background: FLOW_BAND_BG,
         transform: visible ? 'translateY(0)' : 'translateY(-110%)',

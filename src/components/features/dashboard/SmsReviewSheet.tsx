@@ -1,5 +1,12 @@
 'use client'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
+import { format } from 'date-fns'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { paydayCandidates } from '@/lib/income/paydayResolution'
+import { methodLabel } from '@/components/features/flow/useFlowLedger'
+import { shortDate } from '@/lib/utils/shortDate'
+import type { Currency } from '@/lib/store/types'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalTitle } from '@/components/modals/ModalTitle'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
@@ -17,6 +24,15 @@ interface SmsReviewSheetProps {
   items: PendingConfirmation[]
   confirmItem: (logId: string, currency?: string) => Promise<boolean>
   dismissItem: (logId: string) => Promise<boolean>
+  /** A credit confirmed with its matched payday: the caller links the income it creates. */
+  onConfirmedMatch: (item: PendingConfirmation, target: { templateId: string; date: string }) => void
+}
+
+/** The payday an SMS credit plausibly fills, from the same matcher as Flow's prompts. */
+export interface ReviewMatch {
+  templateId: string
+  date: string
+  daysLate: number
 }
 
 /**
@@ -25,8 +41,32 @@ interface SmsReviewSheetProps {
  *  - provisional currency (transaction exists) → confirming locks the currency
  *  - add-failed rescue (nothing created yet)   → confirming creates it
  */
-export function SmsReviewSheet({ open, onClose, items, confirmItem, dismissItem }: SmsReviewSheetProps) {
+export function SmsReviewSheet({ open, onClose, items, confirmItem, dismissItem, onConfirmedMatch }: SmsReviewSheetProps) {
   const t = useT()
+  const { incomeSources, incomeEvents, paymentMethods, monthStartDay, rates } = useFinanceStore(
+    useShallow((s) => ({
+      incomeSources: s.incomeSources,
+      incomeEvents: s.incomeEvents,
+      paymentMethods: s.paymentMethods,
+      monthStartDay: s.settings.monthStartDay,
+      rates: s.exchangeRates,
+    })),
+  )
+  // Credits that plausibly fill an open payday are confirmed straight into it ("Confirm and link").
+  const matches = useMemo(() => {
+    const out = new Map<string, ReviewMatch>()
+    if (!open) return out
+    const today = new Date()
+    for (const item of items) {
+      if (!item.kind || !CREDIT_KINDS.has(item.kind) || item.amount == null || !item.currency) continue
+      const receivedDate = format(new Date(item.received_at), 'yyyy-MM-dd')
+      const best = paydayCandidates({ amount: item.amount, currency: item.currency as Currency, receivedDate }, incomeSources, incomeEvents, monthStartDay, rates, today)[0]
+      if (!best?.plausible) continue
+      const late = Math.round((Date.parse(receivedDate) - Date.parse(best.occ.dueDate)) / 86_400_000)
+      out.set(item.id, { templateId: best.source.id, date: best.occ.dueDate, daysLate: Math.max(0, late) })
+    }
+    return out
+  }, [open, items, incomeSources, incomeEvents, monthStartDay, rates])
   const [busyId, setBusyId] = useState<string | null>(null)
   const [failedId, setFailedId] = useState<string | null>(null)
 
@@ -56,9 +96,18 @@ export function SmsReviewSheet({ open, onClose, items, confirmItem, dismissItem 
           const provisional = Boolean(item.expense_id || item.income_id)
           const credit = item.kind ? CREDIT_KINDS.has(item.kind) : false
           const busy = busyId === item.id
-          const sub = provisional
-            ? t.smsReview.confirmCurrencyHelp
-            : [item.bank_name, item.account_last4 ? `•• ${item.account_last4}` : null].filter(Boolean).join(' ')
+          const match = matches.get(item.id)
+          const pm = item.account_last4 ? paymentMethods.find((m) => m.last4 === item.account_last4) : undefined
+          const instrument = item.account_last4
+            ? pm
+              ? methodLabel(pm)
+              : t.smsReview.newInstrument((item.payment_instrument as 'card' | 'account' | 'wallet' | null) ?? 'card', item.account_last4)
+            : item.bank_name
+          const sub = match
+            ? [t.smsReview.matchedTo(shortDate(match.date)), match.daysLate ? t.smsReview.arrivedLate(match.daysLate) : null].filter(Boolean).join(' · ')
+            : provisional && !credit
+              ? t.smsReview.confirmCurrencyHelp
+              : [credit ? null : item.category, instrument].filter(Boolean).join(' · ')
           return (
             <div
               key={item.id}
@@ -84,12 +133,18 @@ export function SmsReviewSheet({ open, onClose, items, confirmItem, dismissItem 
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <Button
-                  variant={credit ? 'success' : 'default'}
+                  variant={match ? 'success' : 'default'}
                   size="touch"
                   loading={busy}
-                  onClick={() => void run(item.id, () => confirmItem(item.id, provisional ? (item.currency ?? undefined) : undefined))}
+                  onClick={() =>
+                    void run(item.id, async () => {
+                      const ok = await confirmItem(item.id, provisional ? (item.currency ?? undefined) : undefined)
+                      if (ok && match) onConfirmedMatch(item, match)
+                      return ok
+                    })
+                  }
                 >
-                  {t.common.confirm}
+                  {match ? t.smsReview.confirmAndLink : t.common.confirm}
                 </Button>
                 <Button variant="outline" size="touch" disabled={busy} onClick={() => void run(item.id, () => dismissItem(item.id))}>
                   {t.smsReview.dismiss}

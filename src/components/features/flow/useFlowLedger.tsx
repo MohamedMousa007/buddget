@@ -23,6 +23,7 @@ import { shortDate } from '@/lib/utils/shortDate'
 import { decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
 import { usePendingSmsPreviews } from '@/hooks/usePendingSmsPreviews'
+import { catalogCategory, merchantCategoryKey } from '@/lib/sms/merchantCategoryCache'
 import { useIncomeResolution } from '@/components/features/flow/IncomePrompts'
 import { useLocale, useT } from '@/lib/i18n'
 import type { Expense, IncomeEvent, IncomeSource, IncomeSourceType, PaymentMethod } from '@/lib/store/types'
@@ -331,11 +332,21 @@ export function useFlowLedger() {
     }
 
     // SMS captured offline: shown where they will land, muted and not counted, until they sync.
+    // Their category is guessed offline, the way the server will: this user's own last
+    // expense at the merchant, then the subscription catalog.
+    const pastCategory = new Map<string, string>()
+    for (const e of [...expenses].sort((a, b) => a.date.localeCompare(b.date))) {
+      const k = merchantCategoryKey(e.description)
+      if (k) pastCategory.set(k, e.category)
+    }
     for (const p of previews) {
       const date = format(new Date(p.receivedAt), 'yyyy-MM-dd')
       if (!inRange(date, resolved)) continue
       const dir = p.parsed && CREDIT_KINDS.has(p.parsed.kind) ? 'in' : 'out'
       const amountBase = p.parsed ? convertCurrency(p.parsed.amount, p.parsed.currency, base, rates) : 0
+      const who = p.parsed?.counterparty ?? null
+      const category = dir === 'out' ? (pastCategory.get(merchantCategoryKey(who) ?? '') ?? catalogCategory(who) ?? null) : null
+      const colors = category ? categoryChipColors(category) : null
       items.push({
         id: p.key,
         dir,
@@ -346,8 +357,11 @@ export function useFlowLedger() {
         row: {
           key: `p-${p.key}`,
           row: {
-            icon: <MessageSquare className="h-5 w-5" />,
-            iconFg: 'var(--color-brand-text-muted)',
+            icon: category ? <CategoryIcon category={category} className="h-5 w-5" /> : <MessageSquare className="h-5 w-5" />,
+            iconBg: colors?.bg,
+            iconFg: colors?.fg ?? 'var(--color-brand-text-muted)',
+            caption: category ?? undefined,
+            captionColor: 'var(--color-brand-text-secondary)',
             dimmed: true,
             title: p.parsed ? p.parsed.counterparty || p.parsed.bank : t.pendingSms.generic,
             titleBadge: <Badge variant="muted" size="xs" className="shrink-0">{t.flow.pending}</Badge>,

@@ -15,6 +15,8 @@ export interface DetectedSubscription {
   /** Day of month the charges landed on. */
   billingDay: number
   sightings: number
+  /** Distinct months it was charged in — "three months running". */
+  months: number
 }
 
 /** How many charges before we suggest tracking it. */
@@ -113,6 +115,7 @@ export function useSubscriptionDetector(): DetectedSubscription[] {
             currency,
             billingDay: days.length ? days[days.length - 1] : new Date().getDate(),
             sightings: consistent.length,
+            months: new Set(sameCurrency.filter((r) => Math.abs(r.amount! - mid) / mid <= AMOUNT_SPREAD).map((r) => r.day?.slice(0, 7))).size,
           })
         }
         setDetected(result)

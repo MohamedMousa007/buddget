@@ -625,6 +625,7 @@ export const en: Dictionary = {
     oneTimeIncome: 'One-time income',
     makeRecurringNote: 'Happens every month? Make it a payday and Buddget will expect it and flag it when it\u2019s late.',
     linkSheetTitle: 'Which payday is this?',
+    linkSheetBodyFrom: '{amount} {currency} from {from} arrived on {date}. Linking keeps that date, so a late payday still shows as late.',
     linkSheetBody: '{amount} {currency} arrived on {date}. Linking keeps that date, so a late payday still shows as late.',
     linkOptionSub: (date: string, expected: string) => `${date} payday · expected ${expected}`,
     offPct: (pct: number) => `${pct}% off`,
@@ -1995,6 +1996,10 @@ export const en: Dictionary = {
     confirmCurrencyHelp: 'Already added — just confirm the currency.',
     dismiss: 'Dismiss',
     actionFailed: "That didn't go through. Check your connection and try again.",
+    confirmAndLink: 'Confirm and link',
+    matchedTo: (date: string) => `Matched to the ${date} payday`,
+    arrivedLate: (n: number) => (n === 1 ? 'arrived 1 day late' : `arrived ${n} days late`),
+    newInstrument: (kind: 'card' | 'account' | 'wallet', last4: string) => `${kind} •• ${last4} is new`,
   },
 
   smsTracking: {
@@ -2108,7 +2113,6 @@ export const en: Dictionary = {
   },
 
   flow: {
-    eyebrow: 'Flow',
     segmentAria: 'Filter by direction',
     segAll: 'All',
     segIn: 'In',
@@ -2252,7 +2256,7 @@ export const en: Dictionary = {
     acctBody: (n: number) => (n === 1 ? 'Seen in 1 bank SMS this week.' : `Seen in ${n} bank SMS this week.`),
     subBody: (amount: string, day: number, n: number) => {
       const s = day % 10 === 1 && day !== 11 ? 'st' : day % 10 === 2 && day !== 12 ? 'nd' : day % 10 === 3 && day !== 13 ? 'rd' : 'th'
-      return `${amount} on the ${day}${s}, ${n} times running.`
+      return n === 1 ? `${amount} on the ${day}${s}.` : `${amount} on the ${day}${s}, ${n} months running.`
     },
   },
 
