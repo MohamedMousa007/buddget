@@ -68,7 +68,7 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
   }
 
   const targetUrl =
-    action === 'view' && expenseId ? `/expenses?highlight=${expenseId}` : '/'
+    action === 'view' && expenseId ? '/flow' : '/'
 
   event.waitUntil(
     self.clients

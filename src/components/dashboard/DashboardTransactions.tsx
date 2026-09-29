@@ -60,7 +60,7 @@ export function DashboardTransactions({
         {hasRows ? (
           <SectionHeader.Trailing>
             <Link
-              href="/expenses"
+              href="/flow"
               className="text-xs text-[var(--color-brand-primary-ink)] hover:underline"
             >
               {t.dashboard.sectionSeeAll}

@@ -1,28 +1,28 @@
-import type { LucideIcon } from 'lucide-react'
+import type { ComponentType } from 'react'
+import type { LucideIcon, LucideProps } from 'lucide-react'
 import {
-  LayoutDashboard,
-  Receipt,
+  House,
   Landmark,
   Plus,
   Menu,
-  Wallet,
   BarChart3,
   SlidersHorizontal,
   Coins,
   RefreshCw,
 } from 'lucide-react'
 import type { Dictionary } from '@/lib/i18n'
+import { FlowTabIcon } from '@/components/icons/FlowTabIcon'
 
 export type BuddgetNavIcon = LucideIcon
 
 export type BottomNavItem =
-  | { kind: 'link'; href: string; label: string; icon: LucideIcon }
+  | { kind: 'link'; href: string; label: string; icon: LucideIcon | ComponentType<LucideProps> }
   | { kind: 'fab'; icon: typeof Plus }
   | { kind: 'more'; label: string; icon: typeof Menu }
 
 export const BOTTOM_NAV_ITEMS: BottomNavItem[] = [
-  { kind: 'link', href: '/', label: 'home', icon: LayoutDashboard },
-  { kind: 'link', href: '/expenses', label: 'expenses', icon: Receipt },
+  { kind: 'link', href: '/', label: 'home', icon: House },
+  { kind: 'link', href: '/flow', label: 'flow', icon: FlowTabIcon },
   { kind: 'fab', icon: Plus },
   { kind: 'link', href: '/debts', label: 'debts', icon: Landmark },
   { kind: 'more', label: 'more', icon: Menu },
@@ -45,7 +45,6 @@ export interface MoreMenuItem {
  */
 export const BOTTOM_NAV_MORE_MENU: MoreMenuItem[] = [
   { href: '/budget-setup', label: 'budgetSetup', icon: SlidersHorizontal, fg: 'var(--color-brand-primary)', bg: 'rgba(18,176,160,.13)' },
-  { href: '/income', label: 'income', icon: Wallet, fg: 'var(--color-brand-green)', bg: 'rgba(55,195,104,.13)' },
   // Savings and Investment merged into one destination (design/IA_MASTER_PLAN.md).
   { href: '/wealth', label: 'wealth', icon: Coins, fg: 'var(--color-brand-gold)', bg: 'rgba(237,196,99,.13)' },
   { href: '/subscriptions', label: 'subscriptions', icon: RefreshCw, fg: '#4DA3FF', bg: 'rgba(77,163,255,.13)' },
@@ -55,7 +54,6 @@ export const BOTTOM_NAV_MORE_MENU: MoreMenuItem[] = [
 /** Routes where the bottom-nav "More" tab renders active (includes Settings, which moved to Profile). */
 export const BOTTOM_NAV_MORE_HREFS = new Set<string>([
   '/budget-setup',
-  '/income',
   '/wealth',
   '/savings',
   '/investment',
@@ -68,9 +66,11 @@ export const BOTTOM_NAV_MORE_HREFS = new Set<string>([
 export function sectionTitleNavKey(pathname: string | null): keyof Dictionary['nav'] | null {
   if (!pathname) return null
   if (pathname === '/') return 'home'
-  if (pathname.startsWith('/expenses')) return 'expenses'
+  if (pathname.startsWith('/flow')) return 'flow'
+  if (pathname.startsWith('/paydays')) return 'paydays'
+  if (pathname.startsWith('/expenses')) return 'flow'
   if (pathname.startsWith('/debts')) return 'debts'
-  if (pathname.startsWith('/income')) return 'income'
+  if (pathname.startsWith('/income')) return 'flow'
   if (pathname.startsWith('/wealth')) return 'wealth'
   // aliases of /wealth
   if (pathname.startsWith('/savings')) return 'wealth'

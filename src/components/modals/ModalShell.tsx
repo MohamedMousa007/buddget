@@ -303,7 +303,7 @@ export function ModalShell({
                     role="presentation"
                     aria-hidden
                   >
-                    <div className="w-10 h-1 rounded-full bg-[var(--color-brand-border)]" />
+                    <div className="h-1 w-9 rounded-full bg-[var(--color-brand-border-strong)]" />
                   </div>
                   <div
                     className={cn(

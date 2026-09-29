@@ -18,13 +18,15 @@ export interface PendingConfirmation {
   failure_code: string | null
   expense_id: string | null
   income_id: string | null
+  /** The SMS as received — shown verbatim on the review card. */
+  raw_body: string | null
 }
 
 function fetchPending() {
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
   return createClient()
     .from('sms_parse_log')
-    .select('id, kind, clean_title, merchant, amount, currency, bank_name, account_last4, received_at, failure_code, expense_id, income_id')
+    .select('id, kind, clean_title, merchant, amount, currency, bank_name, account_last4, received_at, failure_code, expense_id, income_id, raw_body')
     .eq('parsed_ok', true)
     .eq('awaiting_confirmation', true)
     .gte('created_at', since)

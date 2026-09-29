@@ -1,91 +1,100 @@
 'use client'
 import { useState } from 'react'
-import { LinkIcon, PlusCircle, X } from 'lucide-react'
-import { usePaymentMethodDetector } from '@/hooks/usePaymentMethodDetector'
+import { CreditCard, Landmark, Wallet, type LucideIcon } from 'lucide-react'
+import { usePaymentMethodDetector, type DetectedAccount } from '@/hooks/usePaymentMethodDetector'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { PROMPT_PRIORITY, useRegisterPrompts, type Prompt } from '@/lib/store/usePromptStore'
+import { ModalShell } from '@/components/modals/ModalShell'
+import { ModalTitle } from '@/components/modals/ModalTitle'
 import { SelectField } from '@/components/ui/SelectField'
-import { useT } from '@/lib/i18n'
-import { IconButton } from '@/components/ui/IconButton'
 import { Button } from '@/components/ui/button'
+import { useT } from '@/lib/i18n'
+import type { Dictionary } from '@/lib/i18n'
 
+/** The primary CTA names what will be created, from the type the SMS implies. */
+function addFor(type: DetectedAccount['type'], t: Dictionary['prompts']): { label: string; icon: LucideIcon } {
+  if (type === 'wallet') return { label: t.addWallet, icon: Wallet }
+  if (type === 'bank_account') return { label: t.addAccount, icon: Landmark }
+  return { label: t.addCard, icon: CreditCard }
+}
+
+/**
+ * An account seen in bank SMS that no payment method owns yet. Registers `pm:<last4>` with
+ * the prompt stack: "Add card/account/wallet" opens the prefilled setup sheet; "Link existing"
+ * stamps the last4 onto a method the user already has. Either answer makes the detector drop
+ * the account, which resolves the prompt.
+ */
 export function SmsAccountDetectionBanner() {
   const detected = usePaymentMethodDetector()
   const t = useT()
-  const [linking, setLinking] = useState<Record<string, string>>({})
-  // Persisted: a plain useState meant the banner returned on every dashboard visit,
-  // which trains people to ignore it.
-  const dismissed = useSettingsStore((s) => s.dismissedBanners)
-  const dismissBanner = useSettingsStore((s) => s.dismissBanner)
+  const [linkFor, setLinkFor] = useState<string | null>(null)
   const openAddPaymentMethodWithPrefill = useSettingsStore((s) => s.openAddPaymentMethodWithPrefill)
+
+  useRegisterPrompts(
+    'account-detection',
+    detected.map(({ last4, provider, type, count }): Prompt => {
+      const add = addFor(type, t.prompts)
+      return {
+        key: `pm:${last4}`,
+        priority: PROMPT_PRIORITY.account,
+        tone: 'brand',
+        icon: add.icon,
+        title: `${provider ? `${provider} ` : ''}••${last4} ${t.settings.accountDetected}`,
+        description: t.prompts.acctBody(count),
+        actions: [
+          {
+            label: add.label,
+            variant: 'default',
+            onPress: () => openAddPaymentMethodWithPrefill({ name: provider ?? '', last4, ...(type ? { type } : {}) }),
+          },
+          { label: t.prompts.linkExisting, variant: 'secondary', onPress: () => setLinkFor(last4) },
+        ],
+      }
+    }),
+  )
+
+  return <LinkExistingSheet last4={linkFor} onClose={() => setLinkFor(null)} />
+}
+
+/** "Link existing": the payment-method select, in a sheet, that stamps the detected last4. */
+function LinkExistingSheet({ last4, onClose }: { last4: string | null; onClose: () => void }) {
+  const t = useT()
   const paymentMethods = useFinanceStore((s) => s.paymentMethods)
   const updatePaymentMethod = useFinanceStore((s) => s.updatePaymentMethod)
+  const dismissBanner = useSettingsStore((s) => s.dismissBanner)
+  const [choice, setChoice] = useState('')
+  const close = () => {
+    setChoice('')
+    onClose()
+  }
 
-  const visible = detected.filter((d) => !dismissed.includes(`pm:${d.last4}`))
-  if (!visible.length) return null
-
-  // A plain child of BannerStack, which owns the fixed position — this used to carry its
-  // own `fixed … z-50` and would silently sit on top of any other banner.
   return (
-    <>
-      {visible.map(({ last4, provider, type }) => (
-        <div
-          key={last4}
-          className="animate-in slide-in-from-top-4 fade-in rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-3 shadow-lg"
+    <ModalShell open={last4 !== null} onBackdropClick={close} padContent>
+      <div className="flex flex-col gap-3">
+        <ModalTitle>
+          {t.prompts.linkExisting} · ••{last4}
+        </ModalTitle>
+        <SelectField
+          value={choice}
+          onChange={setChoice}
+          placeholder={t.settings.linkToExisting}
+          aria-label={t.settings.linkToExisting}
+          items={paymentMethods.map((pm) => ({ value: pm.id, label: pm.name }))}
+        />
+        <Button
+          size="cta-block"
+          disabled={!choice}
+          onClick={() => {
+            if (!last4 || !choice) return
+            updatePaymentMethod(choice, { last4 })
+            dismissBanner(`pm:${last4}`)
+            close()
+          }}
         >
-          <div className="flex items-start justify-between gap-2">
-            <p className="text-xs font-medium text-[var(--color-brand-text-primary)]">
-              {`${provider ? `${provider} ` : ''}••${last4}`} {t.settings.accountDetected}
-            </p>
-            <IconButton
-              onClick={() => dismissBanner(`pm:${last4}`)}
-              aria-label={t.common.dismiss}
-              className="-me-2 -mt-2"
-            >
-              <X className="size-3.5" />
-            </IconButton>
-          </div>
-          <div className="mt-2.5 flex flex-wrap items-center gap-2">
-            <Button
-              variant="ghost"
-              size="touch"
-              onClick={() =>
-                openAddPaymentMethodWithPrefill({
-                  name: provider ?? '',
-                  last4,
-                  ...(type ? { type } : {}),
-                })
-              }
-              className="bg-[var(--color-brand-green)]/10 text-xs text-[var(--color-brand-green)] hover:bg-[var(--color-brand-green)]/20"
-            >
-              <PlusCircle className="h-3.5 w-3.5" />
-              {t.settings.createPaymentMethod}
-            </Button>
-            <div className="flex items-center gap-1.5">
-              <SelectField
-                value={linking[last4] ?? ''}
-                onChange={(v) => setLinking((l) => ({ ...l, [last4]: v }))}
-                placeholder={t.settings.linkToExisting}
-                aria-label={t.settings.linkToExisting}
-                items={paymentMethods.map((pm) => ({ value: pm.id, label: pm.name }))}
-              />
-              {linking[last4] && (
-                <Button
-                  onClick={() => {
-                    updatePaymentMethod(linking[last4]!, { last4 })
-                    dismissBanner(`pm:${last4}`)
-                  }}
-                  variant="outline"
-                  size="touch"
-                >
-                  <LinkIcon className="h-3 w-3" />
-                  {t.settings.linkCta}
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      ))}
-    </>
+          {t.settings.linkCta}
+        </Button>
+      </div>
+    </ModalShell>
   )
 }

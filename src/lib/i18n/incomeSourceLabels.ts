@@ -13,6 +13,8 @@ export function incomeSourceTypeLabel(
       return t.sourceTypeBonus
     case 'side_hustle':
       return t.sourceTypeSideHustle
+    case 'rental':
+      return t.sourceTypeRental
     case 'investment':
       return t.sourceTypeInvestment
     case 'savings':

@@ -15,5 +15,5 @@ export function EditIncomeSheet() {
   }
 
   if (!source) return null
-  return <IncomeSheetForm key={source.id} open={activeModal === 'editIncome'} onClose={close} source={source} />
+  return <IncomeSheetForm key={source.id} mode="payday" open={activeModal === 'editIncome'} onClose={close} source={source} />
 }

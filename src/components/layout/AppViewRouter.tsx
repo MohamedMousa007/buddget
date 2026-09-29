@@ -8,9 +8,9 @@ import { useNavPath } from '@/lib/navigation/navStore'
 // which is what makes the App Router segment-fetch wedge structurally
 // impossible. Keep keys in sync with `SHELL_PATHS`.
 import DashboardPage from '@/app/page'
-import ExpensesPage from '@/app/expenses/page'
+import FlowPage from '@/app/flow/page'
+import PaydaysPage from '@/app/paydays/page'
 import DebtsPage from '@/app/debts/page'
-import IncomePage from '@/app/income/page'
 import WealthPage from '@/app/wealth/page'
 import SubscriptionsPage from '@/app/subscriptions/page'
 import GoalsPage from '@/app/goals/page'
@@ -28,9 +28,12 @@ import SettingsSmsPage from '@/app/settings/sms/page'
 
 const VIEW_MAP: Record<string, ComponentType> = {
   '/': DashboardPage,
-  '/expenses': ExpensesPage,
+  '/flow': FlowPage,
+  // Expenses and Income collapsed into Flow; both paths still resolve.
+  '/expenses': FlowPage,
+  '/income': FlowPage,
+  '/paydays': PaydaysPage,
   '/debts': DebtsPage,
-  '/income': IncomePage,
   '/wealth': WealthPage,
   // Savings and Investment merged into Wealth; both paths still resolve.
   '/savings': WealthPage,

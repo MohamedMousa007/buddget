@@ -17,7 +17,8 @@ import { isNative } from '@/lib/native/isNative'
 import { IconButton } from '@/components/ui/IconButton'
 import { Button } from '@/components/ui/button'
 
-function ProfileAvatarWithMenu({ className }: { className?: string }) {
+/** The avatar that opens ProfileDropdown — the mobile header's, and Flow's own header's. */
+export function ProfileAvatarWithMenu({ className }: { className?: string }) {
   const t = useT()
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)

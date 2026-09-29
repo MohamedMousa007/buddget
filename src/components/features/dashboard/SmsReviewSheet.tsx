@@ -1,12 +1,15 @@
 'use client'
 import { useState } from 'react'
-import { CheckCircle, Loader2 } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
+import { ModalTitle } from '@/components/modals/ModalTitle'
+import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { useT } from '@/lib/i18n'
 import type { PendingConfirmation } from '@/hooks/useSmsConfirmations'
-import { SMS_BADGES, KIND_TO_BADGE } from '@/lib/sms/transactionTypes'
-import type { SmsTransactionType } from '@/lib/sms/transactionTypes'
+import { formatFixed2 } from '@/lib/utils/formatters'
 import { Button } from '@/components/ui/button'
+
+/** Kinds that are money coming in: the amount reads +, green, and confirming is a `success`. */
+const CREDIT_KINDS = new Set(['income', 'instant_transfer_in', 'refund'])
 
 interface SmsReviewSheetProps {
   open: boolean
@@ -17,10 +20,10 @@ interface SmsReviewSheetProps {
 }
 
 /**
- * Bottom-sheet review queue for SMS transactions awaiting user action.
- * Two flavours per row:
- *  - provisional currency (transaction exists) → "Confirm EGP"
- *  - add-failed rescue (nothing created yet)   → "Add transaction"
+ * Review transactions (screen 09): one card per SMS awaiting action — the original text,
+ * Buddgy's reading of it, and two terminal answers. Two flavours per row:
+ *  - provisional currency (transaction exists) → confirming locks the currency
+ *  - add-failed rescue (nothing created yet)   → confirming creates it
  */
 export function SmsReviewSheet({ open, onClose, items, confirmItem, dismissItem }: SmsReviewSheetProps) {
   const t = useT()
@@ -38,84 +41,62 @@ export function SmsReviewSheet({ open, onClose, items, confirmItem, dismissItem 
   }
 
   return (
-    <ModalShell open={open} onBackdropClick={onClose} padContent panelClassName="!max-h-[min(80vh,640px)]">
-      <div className="space-y-3 pb-2">
-        <div>
-          <h2 className="text-base font-semibold text-[var(--color-brand-text-primary)]">
-            {t.smsReview.title}
-          </h2>
-          <p className="text-xs text-[var(--color-brand-text-muted)]">{t.smsReview.subtitle}</p>
+    <ModalShell open={open} onBackdropClick={onClose} panelClassName="!max-h-[min(80vh,640px)]">
+      <div className="flex flex-col gap-3 px-4 pb-[max(env(safe-area-inset-bottom,0px),20px)]">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <ModalTitle>{t.smsReview.title}</ModalTitle>
+            <p className="mt-0.5 text-xs text-[var(--color-brand-text-muted)]">{t.smsReview.subtitle}</p>
+          </div>
+          <BuddgyIcon size={22} aria-hidden />
         </div>
 
         {items.map((item) => {
-          const badgeKey = item.kind ? (KIND_TO_BADGE[item.kind] as SmsTransactionType) : null
-          const badge = badgeKey ? SMS_BADGES[badgeKey] : null
           const title = item.clean_title ?? item.merchant ?? 'Bank transaction'
           const provisional = Boolean(item.expense_id || item.income_id)
+          const credit = item.kind ? CREDIT_KINDS.has(item.kind) : false
           const busy = busyId === item.id
-          const formattedAmount =
-            item.amount != null ? `${item.currency ?? ''} ${item.amount.toLocaleString()}` : null
-
+          const sub = provisional
+            ? t.smsReview.confirmCurrencyHelp
+            : [item.bank_name, item.account_last4 ? `•• ${item.account_last4}` : null].filter(Boolean).join(' ')
           return (
             <div
               key={item.id}
-              className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-3"
+              className="flex flex-col gap-2.5 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3"
             >
-              <div className="flex items-center gap-2 min-w-0">
-                {badge && (
+              {item.raw_body ? (
+                <p className="font-mono-numbers text-[11px] leading-[1.45] text-[var(--color-brand-text-muted)]">{item.raw_body}</p>
+              ) : null}
+              <div className="flex items-center justify-between gap-2.5">
+                <span className="min-w-0">
+                  <span className="block text-[14.5px] font-bold text-[var(--color-brand-text-primary)]">{title}</span>
+                  {sub ? <span className="block text-[12.5px] text-[var(--color-brand-text-secondary)]">{sub}</span> : null}
+                </span>
+                {item.amount != null ? (
                   <span
-                    className={`shrink-0 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${badge.color}`}
+                    className="whitespace-nowrap font-mono-numbers text-[15px] font-semibold"
+                    style={{ color: credit ? 'var(--color-brand-green)' : 'var(--color-brand-text-primary)' }}
                   >
-                    {badge.icon} {badge.label}
-                  </span>
-                )}
-                <p className="text-sm font-medium text-[var(--color-brand-text-primary)] truncate">
-                  {title}
-                </p>
-              </div>
-              {formattedAmount && (
-                <p className="mt-1 font-mono text-lg font-semibold text-[var(--color-brand-text-primary)]">
-                  {formattedAmount}
-                </p>
-              )}
-              <p className="mt-0.5 text-xs text-[var(--color-brand-text-muted)]">
-                {provisional ? t.smsReview.confirmCurrencyHelp : null}
-                {item.bank_name ? (
-                  <span className={provisional ? 'ms-1.5' : undefined}>
-                    {item.bank_name}
-                    {item.account_last4 ? ` ••${item.account_last4}` : ''}
+                    {credit ? '+' : '−'}
+                    {formatFixed2(item.amount)}
                   </span>
                 ) : null}
-              </p>
-              <div className="mt-2.5 flex items-center gap-2">
+              </div>
+              <div className="grid grid-cols-2 gap-2">
                 <Button
-                  variant="ghost"
+                  variant={credit ? 'success' : 'default'}
                   size="touch"
-                  disabled={busy}
+                  loading={busy}
                   onClick={() => void run(item.id, () => confirmItem(item.id, provisional ? (item.currency ?? undefined) : undefined))}
-                  className="bg-[var(--color-brand-green)]/10 text-[var(--color-brand-green)] hover:bg-[var(--color-brand-green)]/20"
                 >
-                  {busy ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <CheckCircle className="h-4 w-4" />
-                  )}
-                  {provisional && item.currency
-                    ? t.smsReview.confirmCurrencyBtn(item.currency)
-                    : t.smsReview.addTransaction}
+                  {t.common.confirm}
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="touch"
-                  disabled={busy}
-                  onClick={() => void run(item.id, () => dismissItem(item.id))}
-                  className="text-[var(--color-brand-text-muted)]"
-                >
+                <Button variant="outline" size="touch" disabled={busy} onClick={() => void run(item.id, () => dismissItem(item.id))}>
                   {t.smsReview.dismiss}
                 </Button>
               </div>
               {failedId === item.id ? (
-                <p className="mt-1.5 text-xs text-[var(--color-brand-red)]" role="alert">
+                <p className="text-xs text-[var(--color-brand-red)]" role="alert">
                   {t.smsReview.actionFailed}
                 </p>
               ) : null}

@@ -5,11 +5,10 @@ import { useNavPath } from '@/lib/navigation/navStore'
 import {
   LayoutDashboard,
   SlidersHorizontal,
-  Receipt,
-  Wallet,
   Landmark,
   BarChart3,
   HandCoins,
+  CalendarClock,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useShallow } from 'zustand/react/shallow'
@@ -17,6 +16,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { FiatCurrencyField } from '@/components/ui/CurrencyField'
 import { localeInlineLabelClass, useLocale, useT } from '@/lib/i18n'
 import { BuddgetWordmark } from '@/components/brand'
+import { FlowTabIcon } from '@/components/icons/FlowTabIcon'
 
 export function Sidebar() {
   const pathname = useNavPath()
@@ -26,8 +26,8 @@ export function Sidebar() {
   const NAV_ITEMS = [
     { href: '/', label: t.nav.dashboard, icon: LayoutDashboard },
     { href: '/budget-setup', label: t.nav.budgetSetup, icon: SlidersHorizontal },
-    { href: '/expenses', label: t.nav.expenses, icon: Receipt },
-    { href: '/income', label: t.nav.income, icon: Wallet },
+    { href: '/flow', label: t.nav.flow, icon: FlowTabIcon },
+    { href: '/paydays', label: t.nav.paydays, icon: CalendarClock },
     { href: '/wealth', label: t.nav.wealth, icon: HandCoins },
     { href: '/debts', label: t.nav.debts, icon: Landmark },
     { href: '/reports', label: t.nav.reports, icon: BarChart3 },

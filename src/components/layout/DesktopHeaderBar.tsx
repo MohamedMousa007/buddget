@@ -10,6 +10,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useLocale, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { sectionTitleNavKey } from '@/lib/navigation/bottomNavConfig'
+import { ownsHeader } from '@/lib/navigation/ownsHeader'
 import { BuddgetWordmark } from '@/components/brand'
 import { Button } from '@/components/ui/button'
 
@@ -51,7 +52,8 @@ export function DesktopHeaderBar() {
         </div>
       </header>
 
-      {/* ─── Mobile header (<lg) ─── */}
+      {/* ─── Mobile header (<lg) ─── Flow and Paydays draw their own. */}
+      {ownsHeader(pathname) ? null : (
       <header className="flex lg:hidden fixed top-0 start-0 end-0 z-40 min-h-[calc(52px+env(safe-area-inset-top,0px))] flex-col bg-[var(--color-brand-bg)] border-b border-[var(--color-brand-border)] safe-area-top">
         <div className="flex h-14 shrink-0 items-center gap-2.5 px-5">
           <Link href="/" className="shrink-0">
@@ -92,6 +94,7 @@ export function DesktopHeaderBar() {
           </div>
         </div>
       </header>
+      )}
     </>
   )
 }

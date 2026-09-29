@@ -175,6 +175,8 @@ export interface Dictionary {
     reports: string
     subscriptions: string
     home: string
+    flow: string
+    paydays: string
     more: string
     quickAdd: string
     profileMenu: string
@@ -467,6 +469,40 @@ export interface Dictionary {
     linkToRecurring: string
     notLinkedToRecurring: string
     looksLikeTemplate: (name: string) => string
+    linkToPayday: string
+    unlink: string
+    unlinkAria: (date: string) => string
+    arrivedDaysLate: (n: number) => string
+    makeRecurring: string
+    openInPaydays: string
+    detailsLabel: string
+    setAccount: string
+    editIncomeAria: string
+    factPayday: string
+    factArrived: string
+    factReceived: string
+    factPaidInto: string
+    factRecordedFrom: string
+    factCountedIn: string
+    daysAfterPayday: (n: number) => string
+    notRecorded: string
+    recordedSms: string
+    recordedManual: string
+    countedInOneTime: string
+    oneTimeIncome: string
+    makeRecurringNote: string
+    linkSheetTitle: string
+    /** Slots: {amount} {currency} {date}. */
+    linkSheetBody: string
+    linkOptionSub: (date: string, expected: string) => string
+    offPct: (pct: number) => string
+    bestMatch: string
+    linkNone: string
+    linkNoneSub: string
+    linkCta: (date: string, label: string) => string
+    notLinked: string
+    fromSms: string
+    paydayArrived: (due: string, arrived: string) => string
     statusLabel: string
     statusReceived: string
     statusLate: string
@@ -487,6 +523,7 @@ export interface Dictionary {
     sourceTypeDebt: string
     sourceTypeGift: string
     sourceTypeRefund: string
+    sourceTypeRental: string
     sourceTypeOther: string
     sourceTypeLabel: string
     debtPersonLabel: string
@@ -1459,7 +1496,8 @@ export interface Dictionary {
     fabTileExpense: string
     fabTileIncome: string
     fabTileDebt: string
-    fabTileSaving: string
+    fabTileWealth: string
+    fabTileMethod: string
     fabLogPurchase: string
     fabAddIncome: string
     fabAddPayment: string
@@ -1918,6 +1956,180 @@ export interface Dictionary {
       ariaStep: (n: number) => string
       steps: { title: string; desc: string }[]
     }
+  }
+
+  flow: {
+    eyebrow: string
+    segmentAria: string
+    segAll: string
+    segIn: string
+    segOut: string
+    leftToSpend: (month: string) => string
+    received: (month: string) => string
+    spent: (month: string) => string
+    spentFilters: (n: number) => string
+    categoryMonth: (cat: string, month: string) => string
+    onTrack: string
+    close: string
+    over: string
+    overBy: (x: string) => string
+    allIn: string
+    toResolve: (n: number) => string
+    of: (x: string) => string
+    ofBudget: (x: string) => string
+    ofExpected: (x: string) => string
+    perDay: (x: string) => string
+    untilDate: (d: string) => string
+    forDays: (n: number) => string
+    average: string
+    averageSoFar: string
+    receivedWord: string
+    transactions: string
+    scaleSpent: (x: string) => string
+    scaleLeft: (x: string) => string
+    scaleOverBy: (x: string) => string
+    allPaydaysIn: (n: number) => string
+    paydaysOpen: (n: number) => string
+    categoryBudget: (cat: string, x: string) => string
+    moneyIn: string
+    moneyOut: string
+    netWorth: string
+    expected: string
+    toCome: string
+    oneTime: string
+    statSpent: string
+    statPerDay: string
+    statLeft: string
+    statBudget: string
+    statOverBy: string
+    statTransactions: string
+    statPeriod: string
+    noBudgetLine: string
+    setBudget: string
+    stickyLeft: (x: string) => string
+    stickySpent: string
+    stickyToCome: (x: string) => string
+    stickyResults: (n: number) => string
+    filters: string
+    filtersCount: (n: number) => string
+    openFilters: string
+    resultsWord: (n: number) => string
+    removeFilter: (label: string) => string
+    showOnly: (label: string) => string
+    budgetAria: (label: string) => string
+    emptyMonthTitle: (month: string) => string
+    emptyMonthBody: string
+    turnOnSms: string
+    noMatchTitle: string
+    noMatchNo: string
+    noMatchSpending: string
+    noMatchTransactions: string
+    noMatchPaidWith: (m: string) => string
+    noMatchBetween: (from: string, to: string) => string
+    noMatchIn: (period: string) => string
+    pending: string
+    capturedOffline: string
+    blockedNotCounted: string
+    returnedOn: (d: string) => string
+    oneTimeCaption: string
+    askBuddgy: string
+  }
+
+  paydays: {
+    newTitle: string
+    menuNew: string
+    add: string
+    backToFlow: string
+    backToPaydays: string
+    reorderAria: string
+    dragHandle: string
+    /** Slots: {month} {received} {expected} {currency}. */
+    receivedLine: string
+    oneTimeNote: string
+    reorderHelp: string
+    paidIntoNotSet: string
+    arrivedLateShort: (n: number) => string
+    dueOn: (d: string) => string
+    emptyTitle: string
+    emptyBody: string
+    emptyCta: string
+    startWithOne: string
+    starterSalary: string
+    starterSalarySub: string
+    starterRental: string
+    starterRentalSub: string
+    starterDividends: string
+    starterDividendsSub: string
+    detailEyebrow: string
+    editAria: string
+    expectedEachMonth: (cur: string) => string
+    expectedEachPayday: (cur: string) => string
+    lastPaydays: (n: number) => string
+    paydayTitle: (d: string) => string
+    /** Slots: {amount} {currency}. */
+    untouchedBody: string
+    /** Slots: {amount} {currency}. */
+    dueBody: string
+    /** Slots: {amount} {currency} {date}. */
+    receivedBody: string
+    missedBody: string
+    linkOther: string
+    history: string
+    histOnTime: (d: string) => string
+    histLate: (d: string, n: number) => string
+    histMarkedMissed: (d: string) => string
+    histNotReceived: string
+    histPartial: (amount: string, expected: string, d: string) => string
+    bracketLate: string
+    bracketMissed: string
+    deleted: string
+    confirmDeleteEntry: string
+    pickCreditTitle: string
+    pickCreditBody: string
+    pickCreditEmpty: string
+    pickCreditCta: string
+  }
+
+  prompts: {
+    snooze: string
+    snoozedUntil: (time: string) => string
+    counter: (i: number, n: number) => string
+    review: string
+    linkIt: string
+    keepSeparate: string
+    addCard: string
+    addAccount: string
+    addWallet: string
+    linkExisting: string
+    lateTitle: (name: string, n: number) => string
+    lateBody: (amount: string, date: string) => string
+    matchBody: (amount: string, date: string, payday: string) => string
+    acctBody: (n: number) => string
+    subBody: (amount: string, day: number, n: number) => string
+  }
+
+  status: {
+    offlinePending: (n: number) => string
+    hiddenReturns: string
+    hide: string
+  }
+
+  quickAdd: {
+    title: string
+    hintIncome: string
+    hintExpense: string
+    hintScan: string
+    hintDebt: string
+    hintWealth: string
+    hintMethod: string
+  }
+
+  filters: {
+    dateRange: string
+    amountHelp: string
+    paymentMethod: string
+    category: string
+    incomeType: string
   }
 
   ui: {

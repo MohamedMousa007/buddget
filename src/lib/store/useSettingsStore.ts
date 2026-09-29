@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { createSafeLocalStorage } from '@/lib/store/safeLocalStorage'
-import type { PaymentMethodType } from '@/lib/store/types'
+import type { IncomeSourceType, PaymentMethodType } from '@/lib/store/types'
 // Type-only: erased at compile time, so this does not create a runtime cycle
 // between the store and the component that renders the mood.
 import type { BuddgyMood } from '@/components/ai/BuddgyIcon'
@@ -34,6 +34,16 @@ export interface SubscriptionPrefill {
   billingDay: number
 }
 
+/** Seed for the New payday sheet. Every field optional: a starter card only knows the type. */
+export interface PaydayPrefill {
+  name?: string
+  amount?: number
+  currency?: string
+  sourceType?: IncomeSourceType
+  dayOfMonth?: number
+  paymentMethodId?: string
+}
+
 /** Persisted resting position of the draggable Buddgy orb. */
 export interface BuddgyOrbPosition {
   side: 'left' | 'right'
@@ -56,7 +66,7 @@ interface SettingsState {
   editingIncomeId: string | null
   editingIncomeEventId: string | null
   /** Amount-received sheet: the recurring source + payday being marked. */
-  markingIncome: { sourceId: string; occKey: string } | null
+  markingIncome: { sourceId: string; occKey: string; month?: string } | null
   /** Assign sheet target: the existing one-time event id being assigned from a row swipe. */
   assignTarget: { eventId: string | null } | null
   expensePrefill: ExpensePrefill | null
@@ -68,6 +78,18 @@ interface SettingsState {
    * reappears on every visit to the dashboard, which trains people to ignore it.
    */
   dismissedBanners: string[]
+  /**
+   * Prompt keys snoozed from the drop-down stack (✕ or swipe up) → ISO time they return.
+   * Unlike a dismissal, a snooze keeps coming back until one of the prompt's buttons is used.
+   */
+  snoozedBanners: Record<string, string>
+  /** Status pills (offline, sync failed) hidden by a swipe → ISO time they may return. */
+  hiddenStatusUntil: Record<string, string>
+  /** Seed for the New payday sheet ("Make this recurring", Paydays starters). */
+  paydayPrefill: PaydayPrefill | null
+  /** Payday to open on arrival at Paydays ("Open in Paydays"); consumed once. */
+  paydayFocusId: string | null
+  setPaydayFocusId: (id: string | null) => void
   monthFilter: string
   /** Pre-filled AI chat input (e.g. voice "Open in chat" hands off the transcript). */
   aiChatSeed: string | null
@@ -108,7 +130,8 @@ interface SettingsState {
   setEditingDebtId: (debtId: string | null) => void
   setEditingIncomeId: (incomeId: string | null) => void
   setEditingIncomeEventId: (id: string | null) => void
-  openAmountReceived: (sourceId: string, occKey: string) => void
+  /** `month` (`yyyy-MM`) when the payday is not in `monthFilter` — a late one from last month. */
+  openAmountReceived: (sourceId: string, occKey: string, month?: string) => void
   openAssignIncome: (target: { eventId: string | null }) => void
   setExpensePrefill: (data: ExpensePrefill | null) => void
   openAddExpenseWithPrefill: (data: ExpensePrefill) => void
@@ -117,6 +140,9 @@ interface SettingsState {
   openAddSubscriptionWithPrefill: (data: SubscriptionPrefill) => void
   clearSubscriptionPrefill: () => void
   dismissBanner: (key: string) => void
+  snoozeBanner: (key: string, untilISO: string) => void
+  hideStatus: (key: string, untilISO: string) => void
+  openNewPayday: (prefill?: PaydayPrefill) => void
   setMonthFilter: (month: string) => void
   openAiChatWithSeed: (text: string, send?: boolean) => void
   clearAiChatSeed: () => void
@@ -150,6 +176,11 @@ export const useSettingsStore = create<SettingsState>()(
       pmPrefill: null,
       subscriptionPrefill: null,
       dismissedBanners: [],
+      snoozedBanners: {},
+      hiddenStatusUntil: {},
+      paydayPrefill: null,
+      paydayFocusId: null,
+      setPaydayFocusId: (id) => set({ paydayFocusId: id }),
       monthFilter: getCurrentMonth(),
       aiChatSeed: null,
       aiChatSeedSend: false,
@@ -188,8 +219,8 @@ export const useSettingsStore = create<SettingsState>()(
       setEditingDebtId: (debtId) => set({ editingDebtId: debtId }),
       setEditingIncomeId: (incomeId) => set({ editingIncomeId: incomeId }),
       setEditingIncomeEventId: (id) => set({ editingIncomeEventId: id }),
-      openAmountReceived: (sourceId, occKey) =>
-        set({ markingIncome: { sourceId, occKey }, activeModal: 'amountReceived' }),
+      openAmountReceived: (sourceId, occKey, month) =>
+        set({ markingIncome: { sourceId, occKey, month }, activeModal: 'amountReceived' }),
       openAssignIncome: (target) => set({ assignTarget: target, activeModal: 'assignIncome' }),
       setExpensePrefill: (data) => set({ expensePrefill: data }),
       openAddExpenseWithPrefill: (data) =>
@@ -201,6 +232,9 @@ export const useSettingsStore = create<SettingsState>()(
       clearSubscriptionPrefill: () => set({ subscriptionPrefill: null }),
       dismissBanner: (key) =>
         set((st) => (st.dismissedBanners.includes(key) ? st : { dismissedBanners: [...st.dismissedBanners, key] })),
+      snoozeBanner: (key, untilISO) => set((st) => ({ snoozedBanners: { ...st.snoozedBanners, [key]: untilISO } })),
+      hideStatus: (key, untilISO) => set((st) => ({ hiddenStatusUntil: { ...st.hiddenStatusUntil, [key]: untilISO } })),
+      openNewPayday: (prefill) => set({ paydayPrefill: prefill ?? null, activeModal: 'addPayday' }),
       setMonthFilter: (month) => set({ monthFilter: month }),
       openAiChatWithSeed: (text, send = false) => set({ activeModal: 'aiChat', aiChatSeed: text, aiChatSeedSend: send }),
       clearAiChatSeed: () => set({ aiChatSeed: null, aiChatSeedSend: false }),
@@ -258,6 +292,7 @@ export const useSettingsStore = create<SettingsState>()(
         voiceSpeakMuted: state.voiceSpeakMuted,
         buddgyOrb: state.buddgyOrb,
         dismissedBanners: state.dismissedBanners,
+        snoozedBanners: state.snoozedBanners,
         buddgyNudges: state.buddgyNudges,
         buddgyNudgeLog: state.buddgyNudgeLog,
         buddgyNotes: state.buddgyNotes,

@@ -91,7 +91,7 @@ export function RecentExpenses({ expenses }: RecentExpensesProps) {
         <SectionHeader.Title>{t.dashboard.recentTitle}</SectionHeader.Title>
         <SectionHeader.Trailing>
           <Link
-            href="/expenses"
+            href="/flow"
             className="text-xs text-[var(--color-brand-primary-ink)] hover:text-[var(--color-brand-primary-hover)] transition-colors"
           >
             {t.dashboard.recentSeeAll}

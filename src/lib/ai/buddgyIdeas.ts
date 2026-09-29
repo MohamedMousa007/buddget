@@ -7,9 +7,9 @@ export type BuddgyScreen =
   | 'dashboard' | 'expenses' | 'debts' | 'savings' | 'goals' | 'income' | 'reports' | 'budget' | 'other'
 
 const SCREEN_PREFIX: [string, BuddgyScreen][] = [
-  ['/expenses', 'expenses'], ['/subscriptions', 'expenses'], ['/debts', 'debts'],
+  ['/flow', 'expenses'], ['/expenses', 'expenses'], ['/subscriptions', 'expenses'], ['/debts', 'debts'],
   ['/savings', 'savings'], ['/wealth', 'savings'], ['/investment', 'savings'], ['/goals', 'goals'],
-  ['/income', 'income'], ['/reports', 'reports'], ['/budget-setup', 'budget'],
+  ['/income', 'expenses'], ['/paydays', 'income'], ['/reports', 'reports'], ['/budget-setup', 'budget'],
 ]
 
 export function screenFromPath(pathname: string): BuddgyScreen {

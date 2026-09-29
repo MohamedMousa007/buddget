@@ -12,16 +12,19 @@ interface Props {
   value: IncomeSourceType
   onChange: (next: IncomeSourceType) => void
   labels: Dictionary['income']
+  /** The surface the row sits on; the end fade blends into it. Default: a sheet (card). */
+  fadeColor?: string
 }
 
 /**
  * Single-row horizontal chip slider for income `sourceType` (handoff §6). All 7
  * manual types; the active chip fills with its accent tint. Shown in both tabs.
  */
-export function IncomeTypeChipSlider({ value, onChange, labels }: Props) {
+export function IncomeTypeChipSlider({ value, onChange, labels, fadeColor = 'var(--color-brand-card)' }: Props) {
   return (
     <div className="relative">
-      <div className="hide-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5">
+      {/* py-1 -my-1: room for the selected chip's border, which overflow-x would otherwise clip. */}
+      <div className="hide-scrollbar -mx-1 -my-1 flex gap-2 overflow-x-auto px-1 py-1">
         {MANUAL_INCOME_SOURCE_TYPES.map((st) => {
         const active = value === st
         const colors = incomeTypeColors(st)
@@ -39,7 +42,10 @@ export function IncomeTypeChipSlider({ value, onChange, labels }: Props) {
       })}
       </div>
       {/* Right-edge fade + chevron — hints the row scrolls horizontally (7 types overflow). */}
-      <div className="pointer-events-none absolute inset-y-0 end-0 flex w-10 items-center justify-end pe-0.5 bg-[linear-gradient(to_left,var(--color-brand-card),transparent)] rtl:bg-[linear-gradient(to_right,var(--color-brand-card),transparent)]">
+      <div
+        className="pointer-events-none absolute inset-y-0 end-0 flex w-10 items-center justify-end pe-0.5"
+        style={{ background: `linear-gradient(to left, ${fadeColor}, transparent)` }}
+      >
         <ChevronRight className="h-4 w-4 text-[var(--color-brand-text-muted)] rtl:rotate-180" />
       </div>
     </div>

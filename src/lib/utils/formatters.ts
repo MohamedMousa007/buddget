@@ -153,6 +153,24 @@ export function formatWhole(n: number): string {
   return Math.round(n).toLocaleString(numberLocale())
 }
 
+/** Two decimals, grouped ("1,368.81"). Absolute value — callers place the sign. */
+export function formatFixed2(n: number): string {
+  return Math.abs(n).toLocaleString(numberLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+/** Whole when it is whole ("14,500"), else two decimals ("386.40"). Absolute value. */
+export function formatFlex(n: number): string {
+  const r = Math.round(Math.abs(n) * 100) / 100
+  return Number.isInteger(r) ? formatWhole(r) : formatFixed2(r)
+}
+
+/** Signed with a true minus: "+21,436" / "−5,131" / "0". `digits` 0 or 2. */
+export function formatSigned(n: number, digits: 0 | 2 = 0): string {
+  const body = digits ? formatFixed2(n) : formatWhole(Math.abs(n))
+  if (Math.abs(n) < (digits ? 0.005 : 0.5)) return digits ? formatFixed2(0) : '0'
+  return `${n > 0 ? '+' : '\u2212'}${body}`
+}
+
 export function groupByDate(dateStr: string): string {
   const date = parseISO(dateStr)
   if (isToday(date)) return 'Today'

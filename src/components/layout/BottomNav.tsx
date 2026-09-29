@@ -20,6 +20,12 @@ import { useVoiceExpense } from '@/hooks/useVoiceExpense'
 import { VoiceRecordOverlay } from '@/components/voice/VoiceRecordOverlay'
 import { useRef } from 'react'
 
+/** Routes that light the Flow tab: Flow itself, its old Expenses/Income aliases and Paydays. */
+const FLOW_PATHS = new Set(['/flow', '/expenses', '/income', '/paydays'])
+const TAB = 'flex h-16 min-w-14 flex-col items-center justify-center gap-1 transition-colors duration-200'
+const TAB_ON = 'font-bold text-[var(--color-brand-primary-ink)]'
+const TAB_OFF = 'font-medium text-[var(--color-brand-text-muted)]'
+
 export function BottomNav() {
   const pathname = useNavPath()
   const t = useT()
@@ -49,7 +55,7 @@ export function BottomNav() {
   })
 
   return (
-    <nav className="lg:hidden fixed bottom-0 start-0 end-0 z-50 bg-[var(--color-brand-card)] border-t border-[var(--color-brand-border)] shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.6)] safe-area-bottom">
+    <nav className="lg:hidden fixed bottom-0 start-0 end-0 z-50 bg-[var(--color-brand-card)] border-t border-[var(--color-brand-border)] safe-area-bottom">
       <VoiceRecordOverlay
         state={voice.state}
         amplitude={voice.amplitude}
@@ -71,19 +77,19 @@ export function BottomNav() {
         onClose={voice.reset}
         onOpenChat={voice.openInChat}
       />
-      <div className="flex items-start justify-between h-16 px-3.5 pt-2">
+      <div className="grid h-16 grid-cols-5 items-center">
         {BOTTOM_NAV_ITEMS.map((item) => {
           if (item.kind === 'fab') {
             return (
-              <div key="fab" className="flex-1 flex justify-center" style={{ touchAction: 'none' }}>
+              <div key="fab" className="flex justify-center" style={{ touchAction: 'none' }}>
                 <button data-raw-button-ok="the centre FAB: one raised 54px circle, not a button style"
                   type="button"
                   {...fabHandlers}
                   style={{ touchAction: 'none' }}
-                  className="flex items-center justify-center h-[54px] w-[54px] -mt-6 rounded-[18px] border-4 border-[var(--color-brand-card)] bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] shadow-[0_8px_20px_-6px_color-mix(in_srgb,var(--color-brand-primary)_60%,transparent)] transition-[colors,transform] duration-[75ms] active:scale-[0.92] touch-none select-none"
+                  className="flex items-center justify-center h-[54px] w-[54px] -mt-[26px] rounded-[18px] bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] shadow-[0_0_0_4px_var(--color-brand-card),var(--shadow-md)] transition-[colors,transform] duration-[75ms] active:scale-[0.92] touch-none select-none"
                   aria-label={t.nav.quickAdd}
                 >
-                  <item.icon className="w-7 h-7" strokeWidth={2.4} />
+                  <item.icon className="size-[26px]" strokeWidth={2.25} />
                 </button>
               </div>
             )
@@ -91,7 +97,7 @@ export function BottomNav() {
 
           if (item.kind === 'more') {
             return (
-              <div key="more" ref={moreWrapRef} className="flex-1 flex flex-col items-center">
+              <div key="more" ref={moreWrapRef} className="flex flex-col items-center">
                 <AnimatePresence>
                   {moreOpen ? (
                     <motion.div
@@ -110,41 +116,31 @@ export function BottomNav() {
                   ) : null}
                 </AnimatePresence>
                 <button
+                  data-raw-button-ok="a bottom-nav tab: same box as its sibling link tabs"
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation()
                     setMoreOpen((v) => !v)
                   }}
-                  className={cn(
-                    'flex flex-col items-center gap-1 py-1 transition-colors duration-200',
-                    moreOpen || moreActive
-                      ? 'text-[var(--color-brand-primary-ink)]'
-                      : 'text-[var(--color-brand-text-muted)]'
-                  )}
+                  className={cn(TAB, moreOpen || moreActive ? TAB_ON : TAB_OFF)}
                   aria-expanded={moreOpen}
                   aria-haspopup="true"
                 >
-                  <item.icon className="w-6 h-6" />
-                  <span className="text-xs font-semibold">{t.nav[item.label as keyof Dictionary['nav']]}</span>
+                  <item.icon className="size-6" strokeWidth={1.75} />
+                  <span className="text-[10.5px]">{t.nav[item.label as keyof Dictionary['nav']]}</span>
                 </button>
               </div>
             )
           }
 
-          const isActive = pathname === item.href
+          const isActive = item.href === '/flow' ? FLOW_PATHS.has(pathname) : pathname === item.href
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={closeMore}
-              className={cn(
-                'flex-1 flex flex-col items-center gap-1 py-1 transition-colors duration-200',
-                isActive ? 'text-[var(--color-brand-primary-ink)]' : 'text-[var(--color-brand-text-muted)]'
-              )}
-            >
-              <item.icon className="w-6 h-6" />
-              <span className="text-xs font-semibold">{t.nav[item.label as keyof Dictionary['nav']]}</span>
-            </Link>
+            <div key={item.href} className="flex justify-center">
+              <Link href={item.href} onClick={closeMore} className={cn(TAB, isActive ? TAB_ON : TAB_OFF)}>
+                <item.icon className={cn('size-6', isActive && 'text-[var(--color-brand-primary)]')} strokeWidth={1.75} />
+                <span className="text-[10.5px]">{t.nav[item.label as keyof Dictionary['nav']]}</span>
+              </Link>
+            </div>
           )
         })}
       </div>

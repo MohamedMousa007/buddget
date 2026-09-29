@@ -15,7 +15,7 @@ function fromDbSourceType(s: IncomeEventRow['source_type']): IncomeSourceType {
     bonus: 'bonus',
     freelance: 'side_hustle',
     business: 'side_hustle',
-    rental: 'other',
+    rental: 'rental',
     investment: 'investment',
     debt: 'debt',
     gift: 'gift',

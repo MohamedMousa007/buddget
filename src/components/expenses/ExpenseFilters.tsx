@@ -1,60 +1,40 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
-import { localTodayISO } from '@/lib/utils/localDate'
+import { type ReactNode } from 'react'
+import { format } from 'date-fns'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Apple, CalendarClock, Check, CreditCard, DollarSign, LayoutGrid, Smartphone, Wallet, type LucideIcon } from 'lucide-react'
+import { useShallow } from 'zustand/react/shallow'
 import { useScrollLock } from '@/lib/ui/scrollLock'
-import {
-  LayoutGrid,
-  CreditCard,
-  DollarSign,
-  ArrowUpDown,
-  CalendarRange,
-  SlidersHorizontal,
-  Check,
-} from 'lucide-react'
 import { CategoryIcon } from '@/components/dashboard/CategoryIcon'
+import { IncomeTypeIcon, incomeTypeColors } from '@/components/features/income/IncomeTypeIcon'
 import { AmountField } from '@/components/ui/AmountField'
 import { DatePickerField } from '@/components/ui/DatePickerField'
-import {
-  useExpenseFilterStore,
-  amountIsFiltered,
-  AMOUNT_MAX,
-} from '@/lib/store/useExpenseFilterStore'
-import { RANGE_PRESETS, type RangePreset } from '@/lib/expenses/dateRange'
-import { useShallow } from 'zustand/react/shallow'
-import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { IconButton } from '@/components/ui/IconButton'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { SelectableCard } from '@/components/ui/SelectableCard'
-import { useT } from '@/lib/i18n'
+import { useExpenseFilterStore, AMOUNT_MAX, ONE_TIME_INCOME, type FlowSegment } from '@/lib/store/useExpenseFilterStore'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { RANGE_PRESETS, resolveRange, type RangePreset } from '@/lib/expenses/dateRange'
+import { categoryChipColors } from '@/lib/expenses/categoryChip'
+import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
+import { methodLabel } from '@/components/features/flow/useFlowLedger'
+import { formatWhole } from '@/lib/utils/formatters'
 import { useDismissable } from '@/hooks/useDismissable'
+import { useT } from '@/lib/i18n'
+import type { IncomeSourceType, PaymentMethod } from '@/lib/store/types'
 
 export interface FilterCategoryOption {
   id: string
   label: string
 }
-export interface FilterMethodOption {
-  id: string
-  label: string
-  color: string
-}
 
-type DropdownKey = 'period' | 'cat' | 'method' | 'amount' | 'all' | null
-
-/** Lightweight bottom-sheet shell matching the redesign (26px radius, slide-up). */
-function FilterSheet({
-  open,
-  onClose,
-  children,
-  maxHeightClass = '',
-}: {
-  open: boolean
-  onClose: () => void
-  children: ReactNode
-  maxHeightClass?: string
-}) {
+/**
+ * Bottom-sheet shell for the filters: scrolls up to 90% of the screen with the grabber on a
+ * sticky card-coloured strip (rows pass under it) and an optional footer pinned below.
+ */
+function FilterSheet({ open, onClose, children, footer }: { open: boolean; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
   // This sheet deliberately does NOT use ModalShell: it contains range sliders,
   // and ModalShell's drag-to-dismiss would capture the pointer drag on a thumb.
   // It still has to honour Android back and Escape.
@@ -80,14 +60,25 @@ function FilterSheet({
             animate={{ y: 0 }}
             exit={{ y: '110%' }}
             transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-            className={cn(
-              'hide-scrollbar fixed inset-x-0 bottom-0 z-[60] overflow-y-auto rounded-t-3xl border-t border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-5 pt-2.5 shadow-[0_-20px_50px_-20px_rgba(0,0,0,0.7)]',
-              maxHeightClass,
-            )}
-            style={{ paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))' }}
+            className="fixed inset-x-0 bottom-0 z-[60] flex max-h-[90%] flex-col overflow-hidden rounded-t-3xl bg-[var(--color-brand-card)] shadow-[var(--shadow-lg)] lg:mx-auto lg:max-w-screen-sm"
           >
-            <div className="mx-auto mt-0.5 mb-3.5 h-1.5 w-11 rounded-sm bg-[var(--color-brand-border)]" />
-            {children}
+            <div
+              className="hide-scrollbar min-h-0 flex-1 overflow-y-auto px-4 pt-2"
+              style={{ paddingBottom: footer ? 16 : 'calc(20px + env(safe-area-inset-bottom, 0px))' }}
+            >
+              <div className="sticky -top-2 z-[3] -mx-4 -mt-2 mb-1 bg-[var(--color-brand-card)] py-2">
+                <div className="mx-auto h-1 w-9 rounded-full bg-[var(--color-brand-border-strong)]" />
+              </div>
+              {children}
+            </div>
+            {footer ? (
+              <div
+                className="shrink-0 border-t border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 pt-3"
+                style={{ paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))' }}
+              >
+                {footer}
+              </div>
+            ) : null}
           </motion.div>
         </>
       ) : null}
@@ -95,35 +86,32 @@ function FilterSheet({
   )
 }
 
-function CheckBox({ selected }: { selected: boolean }) {
+/** Section label: 11/700 caps with a 14px glyph, and an optional note on the end side. */
+function SectionHead({ icon: Icon, label, end }: { icon: LucideIcon; label: string; end?: ReactNode }) {
   return (
-    <span
-      className={cn(
-        'flex h-6 w-6 shrink-0 items-center justify-center rounded-sm border-2 text-white',
-        selected
-          ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]'
-          : 'border-[var(--color-brand-border)] bg-transparent',
-      )}
-    >
-      <Check className="h-3.5 w-3.5" strokeWidth={3} style={{ opacity: selected ? 1 : 0 }} />
-    </span>
+    <div className="flex items-center justify-between gap-2">
+      <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
+        <Icon className="size-3.5" strokeWidth={2} aria-hidden />
+        {label}
+      </span>
+      {end}
+    </div>
   )
 }
 
+const Divider = () => <div className="h-px bg-[var(--color-brand-border)]" />
+
 /**
- * Period presets + a custom From/To. Single-select, so it is a radiogroup — the
- * selected state must not be conveyed by colour alone.
+ * Period presets as a wrapping radiogroup of chips, then From / To, always visible —
+ * editing either switches the preset to Custom (and To is clamped to ≥ From).
  */
 function PeriodControl() {
   const t = useT()
+  const monthFilter = useSettingsStore((s) => s.monthFilter)
+  const monthStartDay = useFinanceStore((s) => s.settings.monthStartDay)
   const { range, setRangePreset, setCustomRange } = useExpenseFilterStore(
-    useShallow((s) => ({
-      range: s.range,
-      setRangePreset: s.setRangePreset,
-      setCustomRange: s.setCustomRange,
-    })),
+    useShallow((s) => ({ range: s.range, setRangePreset: s.setRangePreset, setCustomRange: s.setCustomRange })),
   )
-
   const presetLabel: Record<RangePreset, string> = {
     today: t.common.today,
     yesterday: t.common.yesterday,
@@ -131,374 +119,259 @@ function PeriodControl() {
     month: t.expenses.periodThisMonth,
     custom: t.expenses.periodCustom,
   }
-
-  const today = localTodayISO()
-  const from = range.from ?? today
-  const to = range.to ?? today
+  const resolved = resolveRange(range, monthFilter, monthStartDay)
+  const from = range.from ?? format(resolved.start, 'yyyy-MM-dd')
+  const to = range.to ?? format(resolved.end, 'yyyy-MM-dd')
 
   return (
     <>
-      <div role="radiogroup" aria-label={t.expenses.periodTitle} className="flex flex-col gap-2">
+      <div role="radiogroup" aria-label={t.filters.dateRange} className="flex flex-wrap gap-2">
         {RANGE_PRESETS.map((preset) => {
           const selected = range.preset === preset
           return (
-            <SelectableCard
+            <OptionChip
               key={preset}
+              as="trigger"
+              role="radio"
+              aria-checked={selected}
+              surface="elevated"
+              size="sm"
               selected={selected}
               onClick={() => (preset === 'custom' ? setCustomRange(from, to) : setRangePreset(preset))}
             >
-              <CheckBox selected={selected} />
-              <span className="text-sm font-semibold text-[var(--color-brand-text-primary)]">
-                {presetLabel[preset]}
-              </span>
-            </SelectableCard>
+              {presetLabel[preset]}
+            </OptionChip>
           )
         })}
       </div>
-
-      {range.preset === 'custom' ? (
-        <div className="mt-3 flex items-end gap-3">
-          <label className="min-w-0 flex-1">
-            <span className="mb-1.5 block text-xs font-medium text-[var(--color-brand-text-muted)]">
-              {t.expenses.periodFrom}
-            </span>
-            {/* Clamp `to` forward: UnifiedDatePicker has no min/max, so nothing else
-                stops an inverted range. */}
-            <DatePickerField
-              value={from}
-              onChange={(v) => setCustomRange(v, v > to ? v : to)}
-              className="h-12"
-            />
-          </label>
-          <label className="min-w-0 flex-1">
-            <span className="mb-1.5 block text-xs font-medium text-[var(--color-brand-text-muted)]">
-              {t.expenses.periodTo}
-            </span>
-            <DatePickerField
-              value={to}
-              onChange={(v) => setCustomRange(v < from ? v : from, v)}
-              className="h-12"
-            />
-          </label>
-        </div>
-      ) : null}
+      <div className="grid grid-cols-2 gap-2.5">
+        <label className="flex min-w-0 flex-col gap-1.5">
+          <span className="text-xs font-medium text-[var(--color-brand-text-muted)]">{t.expenses.periodFrom}</span>
+          {/* Clamp `to` forward: UnifiedDatePicker has no min/max, so nothing else stops an inverted range. */}
+          <DatePickerField value={from} onChange={(v) => setCustomRange(v, v > to ? v : to)} className="h-12 rounded-xl" />
+        </label>
+        <label className="flex min-w-0 flex-col gap-1.5">
+          <span className="text-xs font-medium text-[var(--color-brand-text-muted)]">{t.expenses.periodTo}</span>
+          <DatePickerField value={to} onChange={(v) => setCustomRange(v < from ? v : from, v)} className="h-12 rounded-xl" />
+        </label>
+      </div>
     </>
   )
 }
 
-function AmountRangeControl() {
+/** Two-thumb slider (step 50) over Minimum / Maximum boxes; both write the same store. */
+function AmountRangeControl({ currency }: { currency: string }) {
+  const t = useT()
   const { amtMin, amtMax, setAmtMin, setAmtMax } = useExpenseFilterStore(
     useShallow((s) => ({ amtMin: s.amtMin, amtMax: s.amtMax, setAmtMin: s.setAmtMin, setAmtMax: s.setAmtMax })),
   )
-  const t = useT()
-  const minPct = `${(amtMin / AMOUNT_MAX) * 100}%`
-  const maxRightPct = `${100 - (amtMax / AMOUNT_MAX) * 100}%`
-
+  const box = (label: string, value: number, onChange: (v: number) => void) => (
+    <label className="flex min-w-0 flex-1 flex-col gap-1.5">
+      <span className="text-[10px] font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">{label}</span>
+      <span className="flex h-12 items-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3">
+        <AmountField
+          bare
+          className="min-w-0 flex-1 border-none bg-transparent text-start font-mono-numbers text-base font-bold text-[var(--color-brand-text-primary)] outline-none"
+          value={String(value)}
+          onChange={(v) => onChange(+v || 0)}
+        />
+        <span className="text-xs text-[var(--color-brand-text-muted)]">{currency}</span>
+      </span>
+    </label>
+  )
   return (
     <>
-      <div className="relative mb-4 h-7">
-        <div className="absolute left-0 right-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-[var(--color-brand-elevated)]" />
+      <div className="relative mx-3 h-7">
+        <div className="absolute -inset-x-3 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-[var(--color-brand-elevated)]" />
         <div
           className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-[var(--color-brand-primary)]"
-          style={{ left: minPct, right: maxRightPct }}
+          style={{ insetInlineStart: `${(amtMin / AMOUNT_MAX) * 100}%`, insetInlineEnd: `${100 - (amtMax / AMOUNT_MAX) * 100}%` }}
         />
-        <input
-          className="rng2"
-          type="range"
-          min={0}
-          max={AMOUNT_MAX}
-          step={50}
-          value={amtMin}
-          onChange={(e) => setAmtMin(+e.target.value)}
-          aria-label={t.expenses.minimum}
-        />
-        <input
-          className="rng2"
-          type="range"
-          min={0}
-          max={AMOUNT_MAX}
-          step={50}
-          value={amtMax}
-          onChange={(e) => setAmtMax(+e.target.value)}
-          aria-label={t.expenses.maximum}
-        />
+        <input className="rng2" type="range" min={0} max={AMOUNT_MAX} step={50} value={amtMin} onChange={(e) => setAmtMin(+e.target.value)} aria-label={t.expenses.minimum} />
+        <input className="rng2" type="range" min={0} max={AMOUNT_MAX} step={50} value={amtMax} onChange={(e) => setAmtMax(+e.target.value)} aria-label={t.expenses.maximum} />
       </div>
-      <div className="mb-5 flex gap-2.5">
-        <label className="flex-1">
-          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">
-            {t.expenses.minimum}
-          </p>
-          <div className="flex items-center gap-1.5 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2.5">
-            <AmountField
-              bare
-              className="font-mono-numbers min-w-0 flex-1 border-none bg-transparent text-base font-bold text-[var(--color-brand-text-primary)] outline-none"
-              value={String(amtMin)}
-              onChange={(v) => setAmtMin(+v || 0)}
-            />
-            <span className="text-xs text-[var(--color-brand-text-muted)]">EGP</span>
-          </div>
-        </label>
-        <label className="flex-1">
-          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">
-            {t.expenses.maximum}
-          </p>
-          <div className="flex items-center gap-1.5 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2.5">
-            <AmountField
-              bare
-              className="font-mono-numbers min-w-0 flex-1 border-none bg-transparent text-base font-bold text-[var(--color-brand-text-primary)] outline-none"
-              value={String(amtMax)}
-              onChange={(v) => setAmtMax(+v || 0)}
-            />
-            <span className="text-xs text-[var(--color-brand-text-muted)]">EGP</span>
-          </div>
-        </label>
+      <div className="flex gap-2.5">
+        {box(t.expenses.minimum, amtMin, setAmtMin)}
+        {box(t.expenses.maximum, amtMax, setAmtMax)}
       </div>
     </>
   )
 }
 
+/** The payment-method type glyph: card, Apple / Google Pay, bank, wallet, cash. */
+function methodIcon(pm: PaymentMethod): LucideIcon {
+  const name = pm.name.toLowerCase()
+  if (name.includes('apple pay')) return Apple
+  if (name.includes('google pay')) return Smartphone
+  if (pm.type === 'wallet') return Wallet
+  if (pm.type === 'credit_card' || pm.type === 'debit_card') return CreditCard
+  return paymentTypeIcon(pm.type)
+}
+
+/**
+ * A 2-up checkbox card: 32px icon chip with a 16px check badge on its top-end corner when
+ * selected (the card's own fill + border carry the rest), then the label.
+ */
+function CheckCard({ selected, onClick, chip, chipStyle, label }: { selected: boolean; onClick: () => void; chip: ReactNode; chipStyle: React.CSSProperties; label: string }) {
+  return (
+    <div className="min-w-0">
+      <SelectableCard as="checkbox" surface="elevated" selected={selected} onClick={onClick} className="w-full min-w-0 gap-2.5">
+        <span className="relative flex size-8 shrink-0 items-center justify-center rounded-[10px]" style={chipStyle}>
+          {chip}
+          <span
+            aria-hidden
+            className="absolute -end-[5px] -top-[5px] flex size-4 items-center justify-center rounded-full bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)] shadow-[0_0_0_2px_var(--color-brand-elevated)] transition-opacity"
+            style={{ opacity: selected ? 1 : 0 }}
+          >
+            <Check className="size-2.5" strokeWidth={4} />
+          </span>
+        </span>
+        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-[var(--color-brand-text-primary)]">{label}</span>
+      </SelectableCard>
+    </div>
+  )
+}
+
+/**
+ * Flow's all-filters sheet. Date range and amount first (the period sheet folded in), then
+ * payment methods, then categories — or, on In, income types — last, because that is the
+ * long list people scroll for. Direction is not a filter here: it is the page's segment.
+ * One store (`useExpenseFilterStore`) backs this sheet, the chip row and the budget chips.
+ */
 export function ExpenseFilters({
+  open,
+  onClose,
+  segment,
   categories,
-  methods,
+  incomeTypes,
   resultCount,
-  rangeLabel,
+  currency,
 }: {
+  open: boolean
+  onClose: () => void
+  segment: FlowSegment
   categories: FilterCategoryOption[]
-  methods: FilterMethodOption[]
+  incomeTypes: FilterCategoryOption[]
   resultCount: number
-  /** Active period label, resolved by the page so header and chip can't disagree. */
-  rangeLabel: string
+  currency: string
 }) {
   const t = useT()
-  const [dropdown, setDropdown] = useState<DropdownKey>(null)
-  const close = () => setDropdown(null)
-  const { cats, methodsSel, amtMin, amtMax, rangePreset, toggleCat, toggleMethod, reset } =
-    useExpenseFilterStore(
-      useShallow((s) => ({
-        cats: s.cats,
-        methodsSel: s.methods,
-        amtMin: s.amtMin,
-        amtMax: s.amtMax,
-        rangePreset: s.range.preset,
-        toggleCat: s.toggleCat,
-        toggleMethod: s.toggleMethod,
-        reset: s.reset,
-      })),
-    )
-
-  const amtActive = amountIsFiltered(amtMin, amtMax)
-  const filterCount = (cats.length ? 1 : 0) + (methodsSel.length ? 1 : 0) + (amtActive ? 1 : 0)
-
-  const catChipLabel =
-    cats.length === 0
-      ? t.expenses.labelCategory
-      : cats.length === 1
-        ? (categories.find((c) => c.id === cats[0])?.label ?? cats[0])
-        : `${t.expenses.labelCategories} (${cats.length})`
-  const methodChipLabel =
-    methodsSel.length === 0
-      ? t.expenses.labelPayment
-      : methodsSel.length === 1
-        ? (methods.find((m) => m.id === methodsSel[0])?.label ?? methodsSel[0])
-        : `${t.expenses.labelPayment} (${methodsSel.length})`
-  const amtChipLabel = amtActive
-    ? `${amtMin.toLocaleString('en-US')}–${amtMax.toLocaleString('en-US')}`
-    : t.expenses.labelAmount
-
-  const amountReadout = `${amtMin.toLocaleString('en-US')} – ${amtMax.toLocaleString('en-US')} EGP`
+  const paymentMethods = useFinanceStore((s) => s.paymentMethods)
+  const { cats, methodsSel, incomeSel, amtMin, amtMax, toggleCat, toggleMethod, toggleIncomeType, reset } = useExpenseFilterStore(
+    useShallow((s) => ({
+      cats: s.cats,
+      methodsSel: s.methods,
+      incomeSel: s.incomeTypes,
+      amtMin: s.amtMin,
+      amtMax: s.amtMax,
+      toggleCat: s.toggleCat,
+      toggleMethod: s.toggleMethod,
+      toggleIncomeType: s.toggleIncomeType,
+      reset: s.reset,
+    })),
+  )
+  const selectMulti = <span className="text-xs text-[var(--color-brand-text-muted)]">{t.expenses.selectMulti}</span>
 
   return (
-    <div className="mb-3 flex items-center gap-2">
-      <div className="hide-scrollbar flex min-w-0 flex-1 gap-2 overflow-x-auto py-0.5 [touch-action:pan-x]">
-        {/* First so it stays visible — the strip already scrolls at 375px. */}
-        <OptionChip
-          as="trigger"
-          size="sm"
-          surface="card"
-          selected={rangePreset !== 'month'}
-          onClick={() => setDropdown('period')}
-          aria-haspopup="dialog"
-          aria-expanded={dropdown === 'period'}
-        >
-          <CalendarRange className="h-3.5 w-3.5" />
-          {rangeLabel}
-          <ArrowUpDown className="h-3.5 w-3.5 opacity-55" />
-        </OptionChip>
-        <OptionChip
-          as="trigger"
-          size="sm"
-          surface="card"
-          selected={cats.length > 0}
-          onClick={() => setDropdown('cat')}
-          aria-haspopup="dialog"
-          aria-expanded={dropdown === 'cat'}
-        >
-          <LayoutGrid className="h-3.5 w-3.5" />
-          {catChipLabel}
-          <ArrowUpDown className="h-3.5 w-3.5 opacity-55" />
-        </OptionChip>
-        <OptionChip
-          as="trigger"
-          size="sm"
-          surface="card"
-          selected={methodsSel.length > 0}
-          onClick={() => setDropdown('method')}
-          aria-haspopup="dialog"
-          aria-expanded={dropdown === 'method'}
-        >
-          <CreditCard className="h-3.5 w-3.5" />
-          {methodChipLabel}
-          <ArrowUpDown className="h-3.5 w-3.5 opacity-55" />
-        </OptionChip>
-        <OptionChip
-          as="trigger"
-          size="sm"
-          surface="card"
-          selected={amtActive}
-          onClick={() => setDropdown('amount')}
-          aria-haspopup="dialog"
-          aria-expanded={dropdown === 'amount'}
-        >
-          <DollarSign className="h-3.5 w-3.5" />
-          {amtChipLabel}
-          <ArrowUpDown className="h-3.5 w-3.5 opacity-55" />
-        </OptionChip>
-      </div>
-      <IconButton
-        variant="outlined"
-        onClick={() => setDropdown('all')}
-        aria-label={t.expenses.filtersTitle}
-        aria-haspopup="dialog"
-        aria-expanded={dropdown === 'all'}
-      >
-        <SlidersHorizontal />
-        {filterCount > 0 ? (
-          <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-md border-2 border-[var(--color-brand-bg)] bg-[var(--color-brand-primary)] px-1 text-[10px] font-extrabold text-[var(--color-brand-on-primary)]">
-            {filterCount}
-          </span>
-        ) : null}
-      </IconButton>
-
-      {/* Period dropdown */}
-      <FilterSheet open={dropdown === 'period'} onClose={close} maxHeightClass="max-h-[80%]">
-        <div className="mb-3.5 flex items-center justify-between">
-          <h3 className="text-base font-extrabold text-[var(--color-brand-text-primary)]">{t.expenses.periodTitle}</h3>
-        </div>
-        <div className="mb-3.5">
-          <PeriodControl />
-        </div>
-        <Button size="cta-block" onClick={close} className="font-bold">{t.expenses.doneCta}</Button>
-      </FilterSheet>
-
-      {/* Category dropdown */}
-      <FilterSheet open={dropdown === 'cat'} onClose={close} maxHeightClass="max-h-[80%]">
-        <div className="mb-3.5 flex items-center justify-between">
-          <h3 className="text-base font-extrabold text-[var(--color-brand-text-primary)]">{t.expenses.labelCategory}</h3>
-          <span className="text-xs text-[var(--color-brand-text-muted)]">{t.expenses.selectMulti}</span>
-        </div>
-        <div role="group" aria-label={t.expenses.labelCategory} className="mb-3.5 flex flex-col gap-2">
-          {categories.map((c) => {
-            const sel = cats.includes(c.id)
-            return (
-              <SelectableCard key={c.id} as="checkbox" selected={sel} onClick={() => toggleCat(c.id)}>
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[var(--color-brand-card)] text-[var(--color-brand-text-secondary)]">
-                  <CategoryIcon category={c.id} className="h-4 w-4" />
-                </span>
-                <span className="flex-1 text-sm font-semibold text-[var(--color-brand-text-primary)]">{c.label}</span>
-                <CheckBox selected={sel} />
-              </SelectableCard>
-            )
-          })}
-        </div>
-        <Button size="cta-block" onClick={close} className="font-bold">{t.expenses.doneCta}</Button>
-      </FilterSheet>
-
-      {/* Payment dropdown */}
-      <FilterSheet open={dropdown === 'method'} onClose={close} maxHeightClass="max-h-[80%]">
-        <div className="mb-3.5 flex items-center justify-between">
-          <h3 className="text-base font-extrabold text-[var(--color-brand-text-primary)]">{t.expenses.labelPayment}</h3>
-          <span className="text-xs text-[var(--color-brand-text-muted)]">{t.expenses.selectMulti}</span>
-        </div>
-        <div role="group" aria-label={t.expenses.labelPayment} className="mb-3.5 flex flex-col gap-2">
-          {methods.map((m) => {
-            const sel = methodsSel.includes(m.id)
-            return (
-              <SelectableCard key={m.id} as="checkbox" selected={sel} onClick={() => toggleMethod(m.id)}>
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: m.color }} />
-                <span className="flex-1 text-sm font-semibold text-[var(--color-brand-text-primary)]">{m.label}</span>
-                <CheckBox selected={sel} />
-              </SelectableCard>
-            )
-          })}
-        </div>
-        <Button size="cta-block" onClick={close} className="font-bold">{t.expenses.doneCta}</Button>
-      </FilterSheet>
-
-      {/* Amount dropdown */}
-      <FilterSheet open={dropdown === 'amount'} onClose={close}>
-        <div className="mb-5 flex items-center justify-between">
-          <h3 className="text-base font-extrabold text-[var(--color-brand-text-primary)]">{t.expenses.amountRange}</h3>
-          <span className="font-mono-numbers text-sm font-bold text-[var(--color-brand-primary-ink)]">{amountReadout}</span>
-        </div>
-        <AmountRangeControl />
-        <Button size="cta-block" onClick={close} className="font-bold">{t.expenses.doneCta}</Button>
-      </FilterSheet>
-
-      {/* All-filters sheet */}
-      <FilterSheet open={dropdown === 'all'} onClose={close} maxHeightClass="max-h-[84%]">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-extrabold text-[var(--color-brand-text-primary)]">{t.expenses.filtersTitle}</h3>
-          <Button variant="link" size="sm" onClick={reset} className="font-bold no-underline hover:underline">
+    <FilterSheet
+      open={open}
+      onClose={onClose}
+      footer={
+        <Button size="cta-block" onClick={onClose}>
+          {t.expenses.showResults.replace('{count}', String(resultCount))}
+        </Button>
+      }
+    >
+      <div className="flex flex-col gap-5">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-lg font-bold text-[var(--color-brand-text-primary)]">{t.expenses.filtersTitle}</h3>
+          <Button variant="link" size="touch" onClick={reset}>
             {t.expenses.resetAll}
           </Button>
         </div>
 
-        <p className="mb-2 text-xs font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">
-          {t.expenses.labelCategory}
-        </p>
-        <div role="group" aria-label={t.expenses.labelCategory} className="mb-5 grid grid-cols-2 gap-2">
-          {categories.map((c) => {
-            const sel = cats.includes(c.id)
-            return (
-              <SelectableCard key={c.id} as="checkbox" selected={sel} onClick={() => toggleCat(c.id)}>
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[var(--color-brand-card)] text-[var(--color-brand-text-secondary)]">
-                  <CategoryIcon category={c.id} className="h-4 w-4" />
-                </span>
-                <span className="flex-1 truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{c.label}</span>
-                <CheckBox selected={sel} />
-              </SelectableCard>
-            )
-          })}
+        <div className="flex flex-col gap-2.5">
+          <SectionHead icon={CalendarClock} label={t.filters.dateRange} />
+          <PeriodControl />
         </div>
+        <Divider />
 
-        <p className="mb-2 text-xs font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">
-          {t.expenses.labelPayment}
-        </p>
-        <div role="group" aria-label={t.expenses.labelPayment} className="mb-5 flex flex-col gap-2">
-          {methods.map((m) => {
-            const sel = methodsSel.includes(m.id)
-            return (
-              <SelectableCard key={m.id} as="checkbox" selected={sel} onClick={() => toggleMethod(m.id)}>
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: m.color }} />
-                <span className="flex-1 text-sm font-semibold text-[var(--color-brand-text-primary)]">{m.label}</span>
-                <CheckBox selected={sel} />
-              </SelectableCard>
-            )
-          })}
+        <div className="flex flex-col gap-2.5">
+          <SectionHead
+            icon={DollarSign}
+            label={t.expenses.amountRange}
+            end={
+              <span className="font-mono-numbers text-[13px] font-bold text-[var(--color-brand-primary-ink)]">
+                {formatWhole(amtMin)} – {formatWhole(amtMax)} {currency}
+              </span>
+            }
+          />
+          <p className="-mt-1 text-[12.5px] text-[var(--color-brand-text-secondary)]">{t.filters.amountHelp}</p>
+          <AmountRangeControl currency={currency} />
         </div>
+        <Divider />
 
-        <div className="mb-1 flex items-center justify-between">
-          <p className="text-xs font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">
-            {t.expenses.amountRange}
-          </p>
-          <span className="font-mono-numbers text-xs font-bold text-[var(--color-brand-text-primary)]">{amountReadout}</span>
+        <div className="flex flex-col gap-2.5">
+          <SectionHead icon={CreditCard} label={t.filters.paymentMethod} end={selectMulti} />
+          <div role="group" aria-label={t.filters.paymentMethod} className="grid grid-cols-2 gap-2">
+            {paymentMethods.map((pm) => {
+              const Icon = methodIcon(pm)
+              return (
+                <CheckCard
+                  key={pm.id}
+                  selected={methodsSel.includes(pm.id)}
+                  onClick={() => toggleMethod(pm.id)}
+                  chip={<Icon className="size-4" strokeWidth={1.75} />}
+                  chipStyle={{ background: 'var(--color-brand-card)', color: 'var(--color-brand-text-secondary)' }}
+                  label={methodLabel(pm) ?? pm.name}
+                />
+              )
+            })}
+          </div>
         </div>
-        <AmountRangeControl />
+        <Divider />
 
-        <Button size="cta-block" onClick={close} className="text-base font-bold">
-          {t.expenses.showResults.replace('{count}', String(resultCount))}
-        </Button>
-      </FilterSheet>
-    </div>
+        {segment === 'in' ? (
+          <div className="flex flex-col gap-2.5">
+            <SectionHead icon={LayoutGrid} label={t.filters.incomeType} end={selectMulti} />
+            <div role="group" aria-label={t.filters.incomeType} className="grid grid-cols-2 gap-2">
+              {incomeTypes.map((it) => {
+                const type = (it.id === ONE_TIME_INCOME ? 'other' : it.id) as IncomeSourceType
+                const c = incomeTypeColors(type)
+                return (
+                  <CheckCard
+                    key={it.id}
+                    selected={incomeSel.includes(it.id)}
+                    onClick={() => toggleIncomeType(it.id)}
+                    chip={<IncomeTypeIcon type={type} className="size-4" />}
+                    chipStyle={{ background: c.bg, color: c.fg }}
+                    label={it.label}
+                  />
+                )
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2.5">
+            <SectionHead icon={LayoutGrid} label={t.filters.category} end={selectMulti} />
+            <div role="group" aria-label={t.filters.category} className="grid grid-cols-2 gap-2">
+              {categories.map((c) => {
+                const colors = categoryChipColors(c.id)
+                return (
+                  <CheckCard
+                    key={c.id}
+                    selected={cats.includes(c.id)}
+                    onClick={() => toggleCat(c.id)}
+                    chip={<CategoryIcon category={c.id} className="size-4" />}
+                    chipStyle={{ background: colors.bg, color: colors.fg }}
+                    label={c.label}
+                  />
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </FilterSheet>
   )
 }

@@ -12,11 +12,6 @@ import { DashboardTransactions } from '@/components/dashboard/DashboardTransacti
 import { DashboardSummaryCards } from '@/components/dashboard/DashboardSummaryCards'
 import { DashboardSummaryTrio } from '@/components/dashboard/DashboardSummaryTrio'
 import { DashboardGoalsStrip } from '@/components/dashboard/DashboardGoalsStrip'
-import { SmsAccountDetectionBanner } from '@/components/features/dashboard/SmsAccountDetectionBanner'
-import { SmsSubscriptionDetectionBanner } from '@/components/features/dashboard/SmsSubscriptionDetectionBanner'
-import { SubscriptionPlanChangeBanner } from '@/components/features/dashboard/SubscriptionPlanChangeBanner'
-import { BannerStack } from '@/components/features/dashboard/BannerStack'
-import { SmsReviewChip } from '@/components/features/dashboard/SmsReviewChip'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useNetWorth } from '@/hooks/useNetWorth'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -58,15 +53,6 @@ export default function DashboardPage() {
       <div
         className="max-w-2xl lg:max-w-3xl mx-auto px-4 pt-4 pb-8 space-y-4 animate-[dashboardIn_0.35s_ease-out]"
       >
-        <SmsReviewChip />
-        {/* One floating slot: these genuinely stack instead of covering each other, and a
-            single SMS can reveal both a new account and an untracked subscription. */}
-        <BannerStack>
-          <SmsAccountDetectionBanner />
-          <SmsSubscriptionDetectionBanner />
-          <SubscriptionPlanChangeBanner />
-        </BannerStack>
-
         {isMinimal ? (
           <DashboardHeroMinimal
             stats={{

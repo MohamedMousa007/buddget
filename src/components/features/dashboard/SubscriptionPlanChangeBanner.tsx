@@ -1,15 +1,14 @@
 'use client'
-import { ArrowUpDown, X } from 'lucide-react'
+import { ArrowUpDown } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { findBrandByKey, plansForRegion, type CatalogRegion } from '@/lib/constants/subscriptionCatalog'
+import { PROMPT_PRIORITY, useRegisterPrompts, type Prompt } from '@/lib/store/usePromptStore'
 import { useT } from '@/lib/i18n'
-import { IconButton } from '@/components/ui/IconButton'
-import { Button } from '@/components/ui/button'
 
 /**
  * "Your Netflix looks like it moved to Premium — update?" A tracked payment matched a
- * different catalog plan (dispatch parked it on `pendingPlanId`); the user confirms or
+ * different catalog plan (dispatch parked it on `pendingPlanId`); the user applies or
  * dismisses. Never auto-applied — a proration or promo can look like a switch.
  */
 export function SubscriptionPlanChangeBanner() {
@@ -22,51 +21,31 @@ export function SubscriptionPlanChangeBanner() {
     })),
   )
 
-  const pending = subscriptions.filter((s) => s.pendingPlanId && s.status === 'active')
-  if (!pending.length) return null
+  const prompts: Prompt[] = []
+  for (const sub of subscriptions) {
+    if (!sub.pendingPlanId || sub.status !== 'active') continue
+    const brand = findBrandByKey(sub.brandKey)
+    const plan = brand && sub.catalogRegion
+      ? plansForRegion(brand, sub.catalogRegion as CatalogRegion).find((p) => p.id === sub.pendingPlanId)
+      : undefined
+    // If we can't name the plan the detection is unusable — drop it silently.
+    if (!plan) continue
+    const isUpgrade = (sub.pendingAmount ?? 0) > sub.amount
+    prompts.push({
+      key: `plan:${sub.id}`,
+      priority: PROMPT_PRIORITY.planChange,
+      tone: 'brand',
+      icon: ArrowUpDown,
+      title: (isUpgrade ? t.subscriptions.planChangeUpgrade : t.subscriptions.planChangeDowngrade)
+        .replace('{brand}', sub.name)
+        .replace('{plan}', plan.name),
+      actions: [
+        { label: t.subscriptions.planChangeApply, variant: 'default', onPress: () => applyPendingPlanChange(sub.id) },
+        { label: t.common.dismiss, variant: 'secondary', onPress: () => dismissPendingPlanChange(sub.id) },
+      ],
+    })
+  }
+  useRegisterPrompts('plan-change', prompts)
 
-  return (
-    <>
-      {pending.map((sub) => {
-        const brand = findBrandByKey(sub.brandKey)
-        const plan = brand && sub.catalogRegion
-          ? plansForRegion(brand, sub.catalogRegion as CatalogRegion).find((p) => p.id === sub.pendingPlanId)
-          : undefined
-        // If we can't name the plan the detection is unusable — drop it silently.
-        if (!plan) return null
-        const isUpgrade = (sub.pendingAmount ?? 0) > sub.amount
-
-        return (
-          <div
-            key={sub.id}
-            className="animate-in slide-in-from-top-4 fade-in rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-3 shadow-lg"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <p className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-brand-text-primary)]">
-                <ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-[var(--color-brand-text-muted)]" />
-                {(isUpgrade ? t.subscriptions.planChangeUpgrade : t.subscriptions.planChangeDowngrade)
-                  .replace('{brand}', sub.name)
-                  .replace('{plan}', plan.name)}
-              </p>
-              <IconButton
-                onClick={() => dismissPendingPlanChange(sub.id)}
-                aria-label={t.common.dismiss}
-                className="-me-2 -mt-2"
-              >
-                <X className="size-3.5" />
-              </IconButton>
-            </div>
-            <Button
-              variant="ghost"
-              size="touch"
-              onClick={() => applyPendingPlanChange(sub.id)}
-              className="mt-2.5 bg-[var(--color-brand-green)]/10 text-xs text-[var(--color-brand-green)] hover:bg-[var(--color-brand-green)]/20"
-            >
-              {t.subscriptions.planChangeApply}
-            </Button>
-          </div>
-        )
-      })}
-    </>
-  )
+  return null
 }

@@ -21,7 +21,7 @@ export function SettingsPageLinksSection() {
         <p className="text-xs text-[var(--color-brand-text-muted)]">
           {t.settings.pageLinksIncomeDesc}
         </p>
-        <Button render={<Link href="/income" />} variant="outline" size="touch" className="w-fit">
+        <Button render={<Link href="/paydays" />} variant="outline" size="touch" className="w-fit">
           {t.settings.pageLinksIncomeLink}
         </Button>
       </section>

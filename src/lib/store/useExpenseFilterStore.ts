@@ -6,6 +6,13 @@ export const AMOUNT_MAX = 10000
 
 const DEFAULT_RANGE: ExpenseRange = { preset: 'month', from: null, to: null }
 
+/** Flow's All / In / Out segment. Not a filter: Reset all leaves it alone. */
+export type FlowSegment = 'all' | 'in' | 'out'
+
+/** Income-type chip value on Flow's In segment: a source type, or one-time income. */
+export type IncomeTypeFilter = string
+export const ONE_TIME_INCOME = 'one-time'
+
 /**
  * Expenses screen filter dimensions (session-only — not persisted).
  * Empty `cats`/`methods` arrays mean "all". Active-filter count = number of
@@ -17,12 +24,19 @@ const DEFAULT_RANGE: ExpenseRange = { preset: 'month', from: null, to: null }
  * preset resolves *from* `monthFilter`, so the two stay coherent without coupling.
  */
 interface ExpenseFilterState {
+  segment: FlowSegment
   cats: string[]
+  /** In segment only — replaces Category (`ONE_TIME_INCOME` or an income source type). */
+  incomeTypes: IncomeTypeFilter[]
   methods: string[]
   amtMin: number
   amtMax: number
   range: ExpenseRange
+  setSegment: (segment: FlowSegment) => void
   toggleCat: (id: string) => void
+  /** The budget-chip row is single-select: tap = only this category, tap again = none. */
+  selectCat: (id: string | null) => void
+  toggleIncomeType: (id: IncomeTypeFilter) => void
   toggleMethod: (id: string) => void
   setAmtMin: (v: number) => void
   setAmtMax: (v: number) => void
@@ -34,11 +48,17 @@ interface ExpenseFilterState {
 }
 
 export const useExpenseFilterStore = create<ExpenseFilterState>((set) => ({
+  segment: 'all',
   cats: [],
+  incomeTypes: [],
   methods: [],
   amtMin: AMOUNT_MIN,
   amtMax: AMOUNT_MAX,
   range: DEFAULT_RANGE,
+  setSegment: (segment) => set({ segment }),
+  selectCat: (id) => set({ cats: id ? [id] : [] }),
+  toggleIncomeType: (id) =>
+    set((s) => ({ incomeTypes: s.incomeTypes.includes(id) ? s.incomeTypes.filter((x) => x !== id) : [...s.incomeTypes, id] })),
   toggleCat: (id) =>
     set((s) => ({ cats: s.cats.includes(id) ? s.cats.filter((x) => x !== id) : [...s.cats, id] })),
   toggleMethod: (id) =>
@@ -54,7 +74,7 @@ export const useExpenseFilterStore = create<ExpenseFilterState>((set) => ({
       // this can be called from an effect without looping.
       return next.length === s.cats.length ? s : { cats: next }
     }),
-  reset: () => set({ cats: [], methods: [], amtMin: AMOUNT_MIN, amtMax: AMOUNT_MAX, range: DEFAULT_RANGE }),
+  reset: () => set({ cats: [], incomeTypes: [], methods: [], amtMin: AMOUNT_MIN, amtMax: AMOUNT_MAX, range: DEFAULT_RANGE }),
 }))
 
 /** True when the amount range is narrower than the full span. */

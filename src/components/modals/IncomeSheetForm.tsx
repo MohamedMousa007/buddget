@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { useShallow } from 'zustand/react/shallow'
-import { X, Repeat, CalendarDays, ChevronDown, Link2, Trash2 } from 'lucide-react'
+import { X, ChevronDown, Link2, Trash2 } from 'lucide-react'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -11,6 +11,7 @@ import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { useT } from '@/lib/i18n'
 import { useActionToast } from '@/components/ui/ActionToast'
 import type { Currency, IncomeRecurringFrequency, IncomeSource, IncomeSourceType } from '@/lib/store/types'
+import type { PaydayPrefill } from '@/lib/store/useSettingsStore'
 import { Input } from '@/components/ui/input'
 import { AmountField } from '@/components/ui/AmountField'
 import { Button } from '@/components/ui/button'
@@ -32,20 +33,10 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 const FREQS: IncomeRecurringFrequency[] = ['monthly', 'biweekly', 'weekly']
 
 /**
- * Payday-drift presets. The stored value is a day count so the matcher and the
- * late→missed threshold can both use it directly; the labels keep the user out of
- * guessing a number.
- */
-const DRIFT_PRESETS = [
-  { days: 0, key: 'driftExact' },
-  { days: 7, key: 'driftWeek' },
-  { days: 14, key: 'driftLoose' },
-] as const
-/**
- * What an unset source shows, and what saving writes when the user never touches the
- * control. Always written explicitly: leaving it null would mean the highlighted preset
- * ("Up to a week") lies about the late→missed threshold, which reads the app default of 5
- * for null. Legacy rows keep null and keep exactly their current behaviour.
+ * The payday drift a new payday is written with (days a paycheck may land from its payday
+ * and still be it). Always written explicitly on create — null would read the app default
+ * of 5 for the late→missed threshold. There is no control for it in the sheet any more;
+ * legacy rows keep null and exactly their current behaviour.
  */
 const DEFAULT_DRIFT_PRESET = 7
 
@@ -59,17 +50,25 @@ function typeIsLocked(source?: IncomeSource): boolean {
 interface Props {
   open: boolean
   onClose: () => void
-  /** Present → edit that recurring source (locked to recurring); absent → create. */
+  /**
+   * `oneTime` — "Log money in" from + → Money in: a dated one-off, optionally linked to a
+   * payday. `payday` — "New payday" from Paydays / "Make this recurring", and edit.
+   */
+  mode: 'oneTime' | 'payday'
+  /** Present → edit that recurring source; absent → create. */
   source?: IncomeSource
+  /** Seeds a new payday (a starter card, or the one-time row being made recurring). */
+  prefill?: PaydayPrefill | null
 }
 
 /**
- * The one income sheet used by both Add and Edit. Editing seeds every field from
- * the source, locks the form to recurring (no one-time tab, no assign flow), and
- * saves through `updateIncomeSource`; adding keeps the recurring/one-time choice.
+ * The one income sheet. `mode` fixes what it records — no switch inside: one-time money
+ * from +, or a payday from Paydays. Editing seeds every field from the source and saves
+ * through `updateIncomeSource`.
  */
-export function IncomeSheetForm({ open, onClose, source }: Props) {
+export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props) {
   const edit = Boolean(source)
+  const isRecurring = mode === 'payday'
   const showToast = useActionToast()
   const { addIncomeSource, updateIncomeSource, deleteIncomeSource, addIncomeEvent, settings, paymentMethods, incomeSources } = useFinanceStore(
     useShallow((s) => ({
@@ -95,11 +94,10 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
   const [name, setName] = useState(source?.name ?? '')
   const [amount, setAmount] = useState(source ? String(source.amount) : '')
   const [currency, setCurrency] = useState<Currency>(source?.currency ?? settings.baseCurrency)
-  const [isRecurring, setIsRecurring] = useState(source ? true : true)
   const [sourceType, setSourceType] = useState<IncomeSourceType>(source?.sourceType ?? 'salary')
   const [frequency, setFrequency] = useState<IncomeRecurringFrequency>(source?.recurringFrequency ?? 'monthly')
   const [paydays, setPaydays] = useState<number[]>(seedPaydays)
-  const [driftDays, setDriftDays] = useState<number | null>(source?.paydayDriftDays ?? null)
+  const driftDays = source?.paydayDriftDays ?? null
   const [receivedDate, setReceivedDate] = useState(() => localTodayISO())
   const [assigned, setAssigned] = useState<{ templateId: string; date: string } | null>(null)
   const [paymentMethodId, setPaymentMethodId] = useState(source?.paymentMethodId ?? defaultPmId)
@@ -114,21 +112,23 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- reset add defaults when the sheet opens */
     if (!edit && open && !prevIsOpen.current) {
-      setCurrency(settings.baseCurrency)
-      setPaymentMethodId(defaultPmId)
+      setCurrency((prefill?.currency as Currency | undefined) ?? settings.baseCurrency)
+      setPaymentMethodId(prefill?.paymentMethodId ?? defaultPmId)
       setReceivedDate(localTodayISO())
-      setPaydays([new Date().getDate()])
+      setPaydays([prefill?.dayOfMonth ?? new Date().getDate()])
       setAssigned(null)
+      if (prefill?.name) setName(prefill.name)
+      if (prefill?.amount) setAmount(String(prefill.amount))
+      if (prefill?.sourceType) setSourceType(prefill.sourceType)
     }
     prevIsOpen.current = open
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [edit, open, settings.baseCurrency, defaultPmId])
+  }, [edit, open, settings.baseCurrency, defaultPmId, prefill])
 
   const resetForm = useCallback(() => {
     setName('')
     setAmount('')
     setCurrency(settings.baseCurrency)
-    setIsRecurring(true)
     setSourceType('salary')
     setFrequency('monthly')
     setPaydays([new Date().getDate()])
@@ -183,7 +183,8 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
         amount: amt,
         currency: cur,
         sourceType,
-        receivedDate: assigned ? assigned.date : receivedDate,
+        // §8.0: linking picks the payday (occurrenceDate); receivedDate stays the real day.
+        receivedDate,
         ...(assigned ? { occurrenceDate: assigned.date } : {}),
         status: 'confirmed',
         notes: notes.trim() || undefined,
@@ -212,16 +213,16 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
     <ModalShell open={open} onBackdropClick={handleClose} scrollChild>
       <div className="flex min-h-0 flex-1 flex-col outline-none">
         {/* Header: title + subtitle, one-time date pill (add only), close */}
-        <div className="flex shrink-0 items-start gap-3 px-5 pt-1">
+        <div className="flex shrink-0 items-start gap-2.5 px-4 pb-4 pt-1">
           <div className="min-w-0 flex-1">
-            <h2 id={useModalTitleId()} className="text-lg font-bold text-[var(--color-brand-text-primary)]">{edit ? t.editIncome.title : t.addIncome.sheetTitle}</h2>
-            {!edit ? (
-              <p className="mt-0.5 text-xs text-[var(--color-brand-text-muted)]">
-                {isRecurring ? t.addIncome.addSubtitleRecurring : t.addIncome.addSubtitleOneTime}
-              </p>
+            <h2 id={useModalTitleId()} className="text-lg font-bold text-[var(--color-brand-text-primary)]">
+              {edit ? t.editIncome.title : isRecurring ? t.paydays.newTitle : t.addIncome.sheetTitle}
+            </h2>
+            {!isRecurring ? (
+              <p className="mt-0.5 text-xs text-[var(--color-brand-text-muted)]">{t.addIncome.addSubtitleOneTime}</p>
             ) : null}
           </div>
-          {!edit && !isRecurring ? (
+          {!isRecurring ? (
             <DatePickerField value={receivedDate} onChange={setReceivedDate} className="!h-8 !w-auto shrink-0 rounded-full !px-3 text-xs" />
           ) : null}
           <IconButton
@@ -230,11 +231,11 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
             size="sm"
             shape="round"
           >
-            <X className="size-5" />
+            <X className="size-[18px]" strokeWidth={2} />
           </IconButton>
         </div>
 
-        <div className={`${MODAL_BODY_SCROLL_CLASS} px-5 pb-6`}>
+        <div className={`${MODAL_BODY_SCROLL_CLASS.replace('gap-5', 'gap-4')} px-4 pb-6`}>
           {/* Amount + currency */}
           <div className="grid grid-cols-[1fr_auto] items-end gap-3">
             <div className="min-w-0">
@@ -276,19 +277,6 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
               className={`mt-1.5 ${MODAL_CONTROL_CLASS}`}
             />
           </div>
-
-          {/* Recurring / One-time tabs — add only (edit is locked to recurring) */}
-          {!edit ? (
-            <SegmentedControl
-              ariaLabel={t.addIncome.tabRecurring}
-              value={isRecurring ? 'recurring' : 'oneTime'}
-              onChange={(v) => setIsRecurring(v === 'recurring')}
-              options={[
-                { value: 'recurring', label: t.addIncome.tabRecurring, icon: <Repeat /> },
-                { value: 'oneTime', label: t.addIncome.tabOneTime, icon: <CalendarDays /> },
-              ]}
-            />
-          ) : null}
 
           {/* Income type chip slider (locked for linked sources) */}
           <div>
@@ -335,30 +323,10 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
                   <IncomePaydayGrid frequency={frequency} days={paydays} onChange={setPaydays} />
                 </div>
               </div>
-              {/* Payday accuracy — how far a paycheck may drift and still be that payday.
-                  Widens SMS matching and the grace before an unpaid payday reads as missed.
-                  Presets, not a number field: nobody knows their employer's drift to the day. */}
-              <div>
-                {/* Helper on its own line: "Payday accuracy" is long enough that a
-                    beside-the-label helper wraps the uppercase label onto two lines. */}
-                <span className={MODAL_LABEL_CLASS}>{t.addIncome.driftLabel}</span>
-                <p className="mt-0.5 text-[10px] text-[var(--color-brand-text-muted)]">{t.addIncome.driftHelper}</p>
-                <div className="mt-1.5">
-                  <SegmentedControl
-                    ariaLabel={t.addIncome.driftLabel}
-                    value={String(driftDays ?? DEFAULT_DRIFT_PRESET)}
-                    onChange={(v) => setDriftDays(Number(v))}
-                    options={DRIFT_PRESETS.map(({ days, key }) => ({
-                      value: String(days),
-                      label: t.addIncome[key],
-                    }))}
-                  />
-                </div>
-              </div>
             </>
           ) : (
-            /* Assign card (one-time, add only) */
-            <Card variant="elevated" padding="none" className="p-3.5">
+            /* "Is this one of your paydays?" — link the one-off to a payday instead of counting it twice. */
+            <Card variant="elevated" padding="none" className="rounded-2xl border border-[var(--color-brand-border)] p-3.5">
               {assignedSource ? (
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
@@ -376,13 +344,8 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
                     <p className="text-sm font-semibold text-[var(--color-brand-green)]">{t.addIncome.assignCardTitle}</p>
                     <p className="mt-0.5 text-xs text-[var(--color-brand-text-muted)]">{t.addIncome.assignCardBody}</p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="touch"
-                    onClick={() => setAssignOpen(true)}
-                    className="shrink-0 bg-[var(--color-brand-green)]/15 font-bold text-[var(--color-brand-green)] hover:bg-[var(--color-brand-green)]/25"
-                  >
-                    <Link2 className="h-4 w-4" />
+                  <Button variant="outline" size="touch" onClick={() => setAssignOpen(true)} className="shrink-0">
+                    <Link2 className="size-4" strokeWidth={2} />
                     {t.addIncome.assignBtn}
                   </Button>
                 </div>
@@ -406,8 +369,8 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
               />
             </div>
           ) : (
-            <Button variant="link" size="sm" onClick={() => setNotesOpen(true)} className="self-start font-semibold text-[var(--color-brand-green)] no-underline hover:underline">
-              <ChevronDown className="h-4 w-4" />
+            <Button variant="link" size="touch" onClick={() => setNotesOpen(true)} className="-mt-2 self-start">
+              <ChevronDown className="size-4" strokeWidth={2} />
               {t.addIncome.labelNotes}
             </Button>
           )}
@@ -415,7 +378,7 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
 
         {/* Pinned footer: full-width Save CTA, with Delete as a distinct, less
             prominent action directly below it (edit only, non-shared sources). */}
-        <div className="sheet-cta shrink-0 px-5 pb-5 pt-4">
+        <div className="sheet-cta shrink-0 px-4 pb-5 pt-4">
           <Button
             type="button"
             onClick={handleSubmit}
@@ -423,7 +386,7 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
             size="cta-block"
             className="text-sm font-semibold"
           >
-            {edit ? t.editIncome.buttonSave : isRecurring ? t.addIncome.buttonSubmit : t.income.addIncomeCta}
+            {edit ? t.editIncome.buttonSave : isRecurring ? t.addIncome.buttonSubmit : t.common.save}
           </Button>
           {edit && source && !source.sharedPlanId ? (
             <Button
@@ -441,7 +404,16 @@ export function IncomeSheetForm({ open, onClose, source }: Props) {
       </div>
 
       {/* Nested assign hero slider (add one-time only). */}
-      {!edit ? <AssignIncomeSheet open={assignOpen} onClose={() => setAssignOpen(false)} onAssign={setAssigned} initialTemplateId={assigned?.templateId} zIndexClassName="z-[120]" /> : null}
+      {!isRecurring ? (
+        <AssignIncomeSheet
+          open={assignOpen}
+          onClose={() => setAssignOpen(false)}
+          credit={{ amount: amtValid ? amt : 0, currency, receivedDate }}
+          onAssign={setAssigned}
+          initialTemplateId={assigned?.templateId}
+          zIndexClassName="z-[120]"
+        />
+      ) : null}
     </ModalShell>
   )
 }

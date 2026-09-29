@@ -33,6 +33,7 @@ import {
   HandCoins,
   Gift,
   Undo2,
+  Building2,
 } from 'lucide-react'
 import type { IncomeSourceType } from '@/lib/store/types'
 
@@ -89,6 +90,7 @@ export const INCOME_TYPE_GRID: IncomeTypeGridItem[] = [
   { id: 'salary', icon: Briefcase, accent: '#6366F1' },
   { id: 'bonus', icon: Award, accent: '#EDC463' },
   { id: 'side_hustle', icon: Laptop, accent: '#4DA3FF' },
+  { id: 'rental', icon: Building2, accent: 'var(--color-cat-5)' },
   { id: 'investment', icon: TrendingUp, accent: '#A78BFA' },
   { id: 'savings', icon: Coins, accent: '#EDC463' },
   { id: 'debt', icon: HandCoins, accent: '#FF6B6B' },

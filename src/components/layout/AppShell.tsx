@@ -12,7 +12,12 @@ import { useNavPath, bindPopState } from '@/lib/navigation/navStore'
 import { ModalProvider } from '@/components/modals/ModalProvider'
 import { SyncFailureBanner } from '@/components/layout/SyncFailureBanner'
 import { PendingCapturesChip } from '@/components/features/pending/PendingCapturesChip'
-import { PendingSmsCards } from '@/components/features/pending/PendingSmsCards'
+import { BannerStack } from '@/components/features/dashboard/BannerStack'
+import { SmsReviewChip } from '@/components/features/dashboard/SmsReviewChip'
+import { SmsAccountDetectionBanner } from '@/components/features/dashboard/SmsAccountDetectionBanner'
+import { SmsSubscriptionDetectionBanner } from '@/components/features/dashboard/SmsSubscriptionDetectionBanner'
+import { SubscriptionPlanChangeBanner } from '@/components/features/dashboard/SubscriptionPlanChangeBanner'
+import { ownsHeader } from '@/lib/navigation/ownsHeader'
 import { DesktopHeaderBar } from '@/components/layout/DesktopHeaderBar'
 import { useThemeSync } from '@/hooks/useThemeSync'
 import { useRates } from '@/hooks/useRates'
@@ -20,6 +25,7 @@ import { useGoldPrice } from '@/hooks/useGoldPrice'
 import { WidgetSync } from '@/lib/native/WidgetSync'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { useExpenseFilterStore } from '@/lib/store/useExpenseFilterStore'
 import { isNative } from '@/lib/native/isNative'
 import { isAndroid } from '@/lib/native/isNative'
 import { runBackGuards } from '@/lib/navigation/backGuard'
@@ -357,6 +363,7 @@ function isBareAuthRoute(pathname: string | null) {
 export function AppShell({ children }: AppShellProps) {
   useThemeSync()
   const pathname = usePathname()
+  const navPath = useNavPath()
   const bare = isBareAuthRoute(pathname)
 
   // Keep the in-memory shell in sync with browser back/forward + iOS swipe-back.
@@ -376,14 +383,21 @@ export function AppShell({ children }: AppShellProps) {
       <MarketRatesSync />
       <Sidebar />
       <DesktopHeaderBar />
-      <main className="native-scroll pt-[calc(52px+env(safe-area-inset-top,0px))] lg:pt-12 lg:ms-[176px] pb-[calc(4rem+env(safe-area-inset-bottom,0px))] lg:pb-0 min-h-[100dvh] safe-area-x">
+      <main
+        className={`native-scroll ${ownsHeader(navPath) ? 'pt-[env(safe-area-inset-top,0px)]' : 'pt-[calc(52px+env(safe-area-inset-top,0px))]'} lg:pt-12 lg:ms-[176px] pb-[calc(4rem+env(safe-area-inset-bottom,0px))] lg:pb-0 min-h-[100dvh] safe-area-x`}
+      >
         <PullToRefresh>
-          <SyncFailureBanner />
           <PendingCapturesChip />
-          <PendingSmsCards />
           <AppViewRouter>{children}</AppViewRouter>
         </PullToRefresh>
       </main>
+      {/* One drop-down stack for every question; the sources register into it. */}
+      <SmsReviewChip />
+      <SmsAccountDetectionBanner />
+      <SmsSubscriptionDetectionBanner />
+      <SubscriptionPlanChangeBanner />
+      <BannerStack />
+      <SyncFailureBanner />
       <BottomNav />
       <ModalProvider />
       <WidgetSync />
@@ -418,7 +432,7 @@ function SmsPushActionHandler() {
         })
           .then((r) => r.json())
           .then((res: { expenseId?: string }) => {
-            navigate(res.expenseId ? `/expenses?highlight=${res.expenseId}` : '/')
+            navigate(res.expenseId ? '/flow' : '/')
           })
           .catch(() => navigate('/'))
       } else if (
@@ -449,7 +463,7 @@ function SmsPushActionHandler() {
             if (kind !== 'sms_currency_confirm') void ackSms(data.logId)
           }
           // CC payoff also affects the debt ledger — send the user there.
-          navigate(kind === 'sms_cc_payoff' ? '/debts' : `/expenses?highlight=${data.expenseId}`)
+          navigate(kind === 'sms_cc_payoff' ? '/debts' : '/flow')
         })()
       } else if (kind === 'sms_cc_payoff') {
         // Ambiguous CC payoff posted no expense id — just open debts.
@@ -465,12 +479,13 @@ function SmsPushActionHandler() {
             .is('deleted_at', null)
             .maybeSingle()
           if (row) { addIncomeEventIfMissing(row as IncomeEventRow); void ackSms(data.logId) }
-          navigate('/income')
+          useExpenseFilterStore.getState().setSegment('in')
+          navigate('/flow')
         })()
       } else if (kind === 'sms_salary_matched') {
         // No row created (matched to declared salary) — acknowledge + open income.
         void ackSms(data.logId)
-        navigate('/income')
+        navigate('/paydays')
       }
     }
     window.addEventListener('buddget:push-action', handler)

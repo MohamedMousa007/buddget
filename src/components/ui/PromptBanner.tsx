@@ -1,11 +1,14 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import { X } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/IconButton'
 import { cn } from '@/lib/utils'
 
-export interface PromptBannerProps {
+interface InlinePromptBannerProps {
+  variant?: 'inline'
   /** One line, specific. "1,240 SAR arrived — is this your Al Rajhi salary?" */
   title: ReactNode
   /** Optional supporting line. Keep it to one sentence. */
@@ -23,6 +26,108 @@ export interface PromptBannerProps {
   onDismiss?: () => void
   tone?: 'brand' | 'warning' | 'negative'
   className?: string
+}
+
+/** One CTA in the overlay card. Labels stay ≤ 16 characters so the row never wraps. */
+export interface PromptBannerAction {
+  label: string
+  variant: 'default' | 'success' | 'secondary'
+  onPress: () => void
+}
+
+/**
+ * The drop-down card of the prompt stack (`BannerStack`): card surface, 20px radius,
+ * shadow-lg, a tone icon chip, ✕ = snooze, an equal-column CTA row (max two), pager
+ * dots with "1 of N", and a grabber. Gestures live in the stack, not here.
+ */
+interface OverlayPromptBannerProps {
+  variant: 'overlay'
+  title: ReactNode
+  description?: ReactNode
+  /** 18px glyph; the chip around it is drawn here. */
+  icon: ReactNode
+  tone?: 'brand' | 'positive' | 'warning'
+  actions: PromptBannerAction[]
+  onSnooze: () => void
+  snoozeLabel: string
+  /** 0-based position in the stack and its size — pager hidden for a single card. */
+  index: number
+  count: number
+  counterLabel: string
+  className?: string
+}
+
+export type PromptBannerProps = InlinePromptBannerProps | OverlayPromptBannerProps
+
+const OVERLAY_CHIP = {
+  brand: 'bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]',
+  positive: 'bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]',
+  warning: 'bg-[var(--color-brand-amber-soft)] text-[var(--color-brand-amber)]',
+} as const
+
+function OverlayPromptBanner({
+  title,
+  description,
+  icon,
+  tone = 'brand',
+  actions,
+  onSnooze,
+  snoozeLabel,
+  index,
+  count,
+  counterLabel,
+  className,
+}: OverlayPromptBannerProps) {
+  return (
+    <div
+      className={cn(
+        'rounded-[20px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] pb-2.5 pe-1.5 ps-3.5 pt-3 shadow-[var(--shadow-lg)]',
+        className,
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-xl [&_svg]:size-[18px]', OVERLAY_CHIP[tone])}>
+          {icon}
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5 pt-px">
+          <span className="text-sm font-bold leading-[1.3] text-[var(--color-brand-text-primary)] [text-wrap:pretty]">{title}</span>
+          {description ? (
+            <span className="text-[12.5px] leading-[1.4] text-[var(--color-brand-text-secondary)]">{description}</span>
+          ) : null}
+        </span>
+        <span className="-mt-1.5">
+          <IconButton variant="ghost" size="sm" aria-label={snoozeLabel} onClick={onSnooze}>
+            <X className="size-4" strokeWidth={2} />
+          </IconButton>
+        </span>
+      </div>
+      <div
+        className="mt-2.5 grid gap-2 pe-2"
+        style={{ gridTemplateColumns: `repeat(${actions.length}, minmax(0, 1fr))` }}
+      >
+        {actions.map((a) => (
+          <Button key={a.label} variant={a.variant} size="touch" className="w-full" onClick={a.onPress}>
+            {a.label}
+          </Button>
+        ))}
+      </div>
+      {count > 1 ? (
+        <div className="mt-1 flex items-center justify-center gap-[5px]" aria-hidden>
+          {Array.from({ length: count }).map((_, i) => (
+            <span
+              key={i}
+              className={cn(
+                'h-[5px] rounded-full',
+                i === index ? 'w-3.5 bg-[var(--color-brand-primary)]' : 'w-[5px] bg-[var(--color-brand-border-strong)]',
+              )}
+            />
+          ))}
+          <span className="ms-1.5 font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]">{counterLabel}</span>
+        </div>
+      ) : null}
+      <div className="mx-auto mt-1.5 h-1 w-9 rounded-full bg-[var(--color-brand-border-strong)]" aria-hidden />
+    </div>
+  )
 }
 
 const TONE = {
@@ -57,7 +162,11 @@ const TONE = {
  * payday (where the income total is silently over-reporting), and SMS review
  * prompts.
  */
-export function PromptBanner({
+export function PromptBanner(props: PromptBannerProps) {
+  return props.variant === 'overlay' ? <OverlayPromptBanner {...props} /> : <InlinePromptBanner {...props} />
+}
+
+function InlinePromptBanner({
   title,
   description,
   icon,
@@ -67,7 +176,7 @@ export function PromptBanner({
   onDismiss,
   tone = 'brand',
   className,
-}: PromptBannerProps) {
+}: InlinePromptBannerProps) {
   const t = TONE[tone]
   return (
     <Card padding="md" radius="default" className={cn(t.surface, className)}>

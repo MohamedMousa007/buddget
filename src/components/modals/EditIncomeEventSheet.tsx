@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { Trash2 } from 'lucide-react'
-import { ModalShell } from '@/components/modals/ModalShell'
+import { Trash2, Unlink } from 'lucide-react'
+import { ModalShell, useModalTitleId } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -22,6 +22,16 @@ import { IncomeSourceTypePicker } from '@/components/features/income/IncomeSourc
 import { IncomeTemplatePicker } from '@/components/features/income/IncomeTemplatePicker'
 import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
 import { OptionChip } from '@/components/ui/OptionChip'
+import { Badge } from '@/components/ui/badge'
+import { FactsTable, type Fact } from '@/components/ui/FactsTable'
+import { IncomeTypeIcon } from '@/components/features/income/IncomeTypeIcon'
+import { methodLabel } from '@/components/features/flow/useFlowLedger'
+import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
+import { eventDaysLate } from '@/lib/utils/incomeOccurrences'
+import { cadenceLine } from '@/lib/income/cadence'
+import { formatFixed2 } from '@/lib/utils/formatters'
+import { shortDate } from '@/lib/utils/shortDate'
+import { navigate } from '@/lib/navigation/navigate'
 import {
   MODAL_BODY_SCROLL_CLASS,
   MODAL_CONTROL_CLASS,
@@ -30,22 +40,199 @@ import {
 
 const DATE_FIELD_CLASS = 'mt-1.5 h-12 rounded-xl'
 
+/**
+ * Delete, with the borrowed-money branch: an income linked to a debt asks whether the debt
+ * goes too. Shared by the detail view and the edit form.
+ */
+function useDeleteIncomeEvent(event: IncomeEvent, onDone: () => void) {
+  const t = useT()
+  const { deleteIncomeEvent, debts } = useFinanceStore(useShallow((s) => ({ deleteIncomeEvent: s.deleteIncomeEvent, debts: s.debts })))
+  const linkedDebt = event.linkedDebtId ? debts.find((d) => d.id === event.linkedDebtId) : undefined
+  const [debtChoiceOpen, setDebtChoiceOpen] = useState(false)
+  const request = () => {
+    if (linkedDebt) {
+      setDebtChoiceOpen(true)
+      return
+    }
+    if (!window.confirm(t.income.confirmDelete)) return
+    deleteIncomeEvent(event.id)
+    onDone()
+  }
+  const finish = (deleteLinkedDebt: boolean) => {
+    deleteIncomeEvent(event.id, deleteLinkedDebt)
+    setDebtChoiceOpen(false)
+    onDone()
+  }
+  const dialog =
+    debtChoiceOpen && linkedDebt ? (
+      <ModalShell open onBackdropClick={() => setDebtChoiceOpen(false)} zIndexClassName="z-[110]" dragToClose={false}>
+        <div className="w-full max-w-sm rounded-2xl bg-[var(--color-brand-card)] p-5">
+          <h2 className="text-base font-bold text-[var(--color-brand-text-primary)]">{t.income.deleteWithDebtTitle}</h2>
+          <p className="mt-2 text-sm text-[var(--color-brand-text-secondary)]">{t.income.deleteWithDebtBody(linkedDebt.name)}</p>
+          <div className="mt-5 flex flex-col gap-2">
+            <Button type="button" onClick={() => finish(true)} variant="destructive-solid" size="cta" className="w-full text-sm font-semibold">
+              {t.income.deleteBoth}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => finish(false)}
+              variant="outline"
+              size="cta"
+              className="w-full bg-[var(--color-brand-elevated)] text-sm font-semibold text-[var(--color-brand-text-primary)]"
+            >
+              {t.income.keepDebt}
+            </Button>
+            <Button type="button" onClick={() => setDebtChoiceOpen(false)} variant="outline" size="touch" className="w-full text-sm">
+              {t.common.cancel}
+            </Button>
+          </div>
+        </div>
+      </ModalShell>
+    ) : null
+  return { request, dialog }
+}
+
+/**
+ * Income detail (screens 11, 12): what arrived, when, for which payday and where it went,
+ * as facts. Recurring income keeps its payday and its arrival as two dates (§8.0), so a
+ * late payday reads "3 days after the payday" for good. Editing is behind the pencil.
+ */
+function IncomeEventDetail({ event, onClose, onEdit }: { event: IncomeEvent; onClose: () => void; onEdit: () => void }) {
+  const t = useT()
+  const { incomeSources, paymentMethods, updateIncomeEvent } = useFinanceStore(
+    useShallow((s) => ({ incomeSources: s.incomeSources, paymentMethods: s.paymentMethods, updateIncomeEvent: s.updateIncomeEvent })),
+  )
+  const { openNewPayday, setPaydayFocusId } = useSettingsStore(
+    useShallow((s) => ({ openNewPayday: s.openNewPayday, setPaydayFocusId: s.setPaydayFocusId })),
+  )
+  const del = useDeleteIncomeEvent(event, onClose)
+  const source = event.templateId ? incomeSources.find((s) => s.id === event.templateId) : undefined
+  const recurring = Boolean(event.templateId)
+  const daysLate = recurring ? eventDaysLate(event) : null
+  const typeLabel = incomeSourceTypeLabel(t.income, event.sourceType)
+  // §8.4/§8.5: only a payment method is a destination — never "Main account", never a savings/debt link.
+  const pm = methodLabel(paymentMethods.find((m) => m.id === event.paymentMethodId))
+  const paidInto: Fact = pm
+    ? { label: t.income.factPaidInto, value: pm }
+    : { label: t.income.factPaidInto, value: t.income.notRecorded, valueTone: 'var(--color-brand-text-muted)', sub: t.income.setAccount, subTone: 'var(--color-brand-primary-ink)' }
+  const payday = event.occurrenceDate ?? event.receivedDate
+
+  const facts: Fact[] = recurring
+    ? [
+        {
+          label: t.income.factPayday,
+          value: shortDate(payday),
+          trailing: (
+            <Button
+              variant="link"
+              size="touch"
+              aria-label={t.income.unlinkAria(shortDate(payday))}
+              onClick={() => updateIncomeEvent(event.id, { templateId: null, occurrenceDate: null })}
+            >
+              <Unlink className="size-3.5" strokeWidth={2} />
+              {t.income.unlink}
+            </Button>
+          ),
+        },
+        {
+          label: t.income.factArrived,
+          value: shortDate(event.receivedDate),
+          ...(daysLate ? { sub: t.income.daysAfterPayday(daysLate), subTone: 'var(--color-brand-amber)' } : {}),
+        },
+        paidInto,
+        { label: t.income.factRecordedFrom, value: event.smsLogId ? t.income.recordedSms : t.income.recordedManual },
+      ]
+    : [
+        { label: t.income.factReceived, value: shortDate(event.receivedDate) },
+        paidInto,
+        { label: t.income.factCountedIn, value: t.income.countedInOneTime },
+      ]
+
+  return (
+    <div className="flex flex-col gap-3.5 px-4 pb-[max(env(safe-area-inset-bottom,0px),20px)]">
+      <div className="flex items-center gap-3">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]">
+          <IncomeTypeIcon type={event.sourceType} className="h-5 w-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <h2 id={useModalTitleId()} className="block text-[17px] font-bold text-[var(--color-brand-text-primary)]">
+            {event.name}
+          </h2>
+          <span className="block text-[12.5px] text-[var(--color-brand-text-secondary)]">
+            {recurring ? `${typeLabel}${source ? ` · ${cadenceLine(source, t)}` : ''}` : t.income.oneTimeIncome}
+          </span>
+        </span>
+        {daysLate ? (
+          <Badge variant="warning" size="xs">{t.income.daysLateChip(daysLate)}</Badge>
+        ) : recurring ? (
+          <Badge variant="brand" size="xs">{t.income.recurringLabel}</Badge>
+        ) : (
+          <Badge variant="muted" size="xs">{t.income.oneTimeLabel}</Badge>
+        )}
+      </div>
+      <p className="flex items-baseline gap-1.5">
+        <span className="font-mono-numbers text-[32px] font-semibold tracking-[-0.02em] text-[var(--color-brand-green)]">
+          +{formatFixed2(event.amount)}
+        </span>
+        <span className="text-[13px] text-[var(--color-brand-text-secondary)]">{event.currency}</span>
+      </p>
+      <FactsTable label={t.income.detailsLabel} onEdit={onEdit} editLabel={t.income.editIncomeAria} rows={facts} />
+      {recurring ? null : (
+        <p className="text-[12.5px] leading-[1.45] text-[var(--color-brand-text-secondary)]">{t.income.makeRecurringNote}</p>
+      )}
+      <div className={`grid gap-2 ${recurring ? 'grid-cols-[1fr_1fr]' : 'grid-cols-[2fr_1fr]'}`}>
+        {recurring ? (
+          <Button
+            variant="outline"
+            size="cta"
+            onClick={() => {
+              if (source) setPaydayFocusId(source.id)
+              onClose()
+              navigate('/paydays')
+            }}
+          >
+            {t.income.openInPaydays}
+          </Button>
+        ) : (
+          <Button
+            size="cta"
+            onClick={() => {
+              onClose()
+              openNewPayday({
+                name: event.name,
+                amount: event.amount,
+                currency: event.currency,
+                sourceType: event.sourceType,
+                dayOfMonth: Number(event.receivedDate.slice(8, 10)) || 1,
+                paymentMethodId: event.paymentMethodId,
+              })
+            }}
+          >
+            {t.income.makeRecurring}
+          </Button>
+        )}
+        <Button variant="destructive" size="cta" onClick={del.request}>
+          {t.common.delete}
+        </Button>
+      </div>
+      {del.dialog}
+    </div>
+  )
+}
+
 function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: () => void }) {
   useEscapeClose(true, onClose)
   const t = useT()
-  const { updateIncomeEvent, deleteIncomeEvent, settings, paymentMethods, debts, incomeSources } = useFinanceStore(
+  const { updateIncomeEvent, settings, paymentMethods, incomeSources } = useFinanceStore(
     useShallow((s) => ({
       updateIncomeEvent: s.updateIncomeEvent,
-      deleteIncomeEvent: s.deleteIncomeEvent,
       settings: s.settings,
       paymentMethods: s.paymentMethods,
-      debts: s.debts,
       incomeSources: s.incomeSources,
     }))
   )
   const recurringTemplates = incomeSources.filter((s) => s.isRecurring)
-  const linkedDebt = event.linkedDebtId ? debts.find((d) => d.id === event.linkedDebtId) : undefined
-  const [debtChoiceOpen, setDebtChoiceOpen] = useState(false)
+  const del = useDeleteIncomeEvent(event, onClose)
   // Savings/investment/debt events are system-linked — keep their type read-only.
   const typeLocked = Boolean(event.linkedSavingsAccountId || event.linkedDebtId)
 
@@ -82,23 +269,6 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
       paymentMethodId: paymentMethodId || undefined,
       ...(typeLocked ? {} : { sourceType, templateId: templateId || null, status }),
     })
-    onClose()
-  }
-
-  const handleDelete = () => {
-    // Borrowed money → let the user decide the debt's fate; otherwise a plain confirm.
-    if (linkedDebt) {
-      setDebtChoiceOpen(true)
-      return
-    }
-    if (!window.confirm(t.income.confirmDelete)) return
-    deleteIncomeEvent(event.id)
-    onClose()
-  }
-
-  const finishDelete = (deleteLinkedDebt: boolean) => {
-    deleteIncomeEvent(event.id, deleteLinkedDebt)
-    setDebtChoiceOpen(false)
     onClose()
   }
 
@@ -200,7 +370,7 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
 
         <Button
           type="button"
-          onClick={handleDelete}
+          onClick={del.request}
           variant="destructive"
           size="touch"
           className="w-full text-sm"
@@ -223,43 +393,7 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
       </div>
     </div>
 
-    {debtChoiceOpen && linkedDebt ? (
-      <ModalShell open onBackdropClick={() => setDebtChoiceOpen(false)} zIndexClassName="z-[110]" dragToClose={false}>
-        <div className="w-full max-w-sm rounded-2xl bg-[var(--color-brand-card)] p-5">
-          <h2 className="text-base font-bold text-[var(--color-brand-text-primary)]">{t.income.deleteWithDebtTitle}</h2>
-          <p className="mt-2 text-sm text-[var(--color-brand-text-secondary)]">{t.income.deleteWithDebtBody(linkedDebt.name)}</p>
-          <div className="mt-5 flex flex-col gap-2">
-            <Button
-              type="button"
-              onClick={() => finishDelete(true)}
-              variant="destructive-solid"
-              size="cta"
-              className="w-full text-sm font-semibold"
-            >
-              {t.income.deleteBoth}
-            </Button>
-            <Button
-              type="button"
-              onClick={() => finishDelete(false)}
-              variant="outline"
-              size="cta"
-              className="w-full bg-[var(--color-brand-elevated)] text-sm font-semibold text-[var(--color-brand-text-primary)]"
-            >
-              {t.income.keepDebt}
-            </Button>
-            <Button
-              type="button"
-              onClick={() => setDebtChoiceOpen(false)}
-              variant="outline"
-              size="touch"
-              className="w-full text-sm"
-            >
-              {t.common.cancel}
-            </Button>
-          </div>
-        </div>
-      </ModalShell>
-    ) : null}
+    {del.dialog}
     </>
   )
 }
@@ -269,15 +403,23 @@ export function EditIncomeEventSheet() {
   const { activeModal, setActiveModal, editingIncomeEventId, setEditingIncomeEventId } = useSettingsStore()
   const isOpen = activeModal === 'editIncomeEvent'
   const event = incomeEvents.find((e) => e.id === editingIncomeEventId)
+  const [editing, setEditing] = useState(false)
 
   const close = () => {
     setActiveModal(null)
     setEditingIncomeEventId(null)
+    setEditing(false)
   }
 
   return (
-    <ModalShell open={isOpen && !!event} onBackdropClick={close} scrollChild>
-      {event ? <EditIncomeEventForm key={event.id} event={event} onClose={close} /> : null}
+    <ModalShell open={isOpen && !!event} onBackdropClick={close} scrollChild={editing}>
+      {event ? (
+        editing ? (
+          <EditIncomeEventForm key={event.id} event={event} onClose={close} />
+        ) : (
+          <IncomeEventDetail key={event.id} event={event} onClose={close} onEdit={() => setEditing(true)} />
+        )
+      ) : null}
     </ModalShell>
   )
 }

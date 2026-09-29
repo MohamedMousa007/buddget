@@ -78,6 +78,7 @@ export type IncomeSourceType =
   | 'salary'
   | 'bonus'
   | 'side_hustle'
+  | 'rental'
   | 'investment'
   | 'savings'
   | 'debt'
@@ -124,6 +125,8 @@ export interface IncomeSource {
   linkedDebtId?: string
   /** Which of the user's payment methods received this income (optional). */
   paymentMethodId?: string
+  /** Position on Paydays (and in Flow's In chips); lower first. Unset sorts as 0, then by creation. */
+  sortOrder?: number
 }
 
 /** Lifecycle of an actual income event vs. its projected template occurrence. */

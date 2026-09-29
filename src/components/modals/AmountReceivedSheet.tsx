@@ -55,8 +55,8 @@ export function AmountReceivedSheet() {
 
   const source = markingIncome ? incomeSources.find((s) => s.id === markingIncome.sourceId) : undefined
   const occ = useMemo(
-    () => (source ? buildOccurrences(source, incomeEvents, monthFilter, monthStartDay) : []),
-    [source, incomeEvents, monthFilter, monthStartDay],
+    () => (source ? buildOccurrences(source, incomeEvents, markingIncome?.month ?? monthFilter, monthStartDay) : []),
+    [source, incomeEvents, markingIncome?.month, monthFilter, monthStartDay],
   )
   const current = markingIncome ? occ.find((o) => o.key === markingIncome.occKey) : undefined
   const expected = source ? expectedPerPayday(source) : 0

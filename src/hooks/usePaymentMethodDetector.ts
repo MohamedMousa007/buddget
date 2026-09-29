@@ -13,6 +13,8 @@ export interface DetectedAccount {
   last4: string
   /** Type implied by the SMS, else null (the sheet falls back to the brand's type). */
   type: PaymentMethodType | null
+  /** Parsed SMS that mention this account in the lookback week. */
+  count: number
 }
 
 /** Most frequent non-empty value, else null. */
@@ -94,7 +96,7 @@ export function usePaymentMethodDetector(): DetectedAccount[] {
           const type = mode(
             rows.map((r) => paymentTypeFromSms(r.raw_body, r.payment_instrument)),
           ) as PaymentMethodType | null
-          result.push({ last4: l4, provider, type })
+          result.push({ last4: l4, provider, type, count: rows.length })
         }
         setDetected(result)
       })

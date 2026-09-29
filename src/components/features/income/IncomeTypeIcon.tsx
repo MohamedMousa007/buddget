@@ -22,5 +22,8 @@ export function IncomeTypeIcon({
 /** Foreground + translucent background for an income source type (icon tiles). */
 export function incomeTypeColors(type: IncomeSourceType | undefined): { fg: string; bg: string } {
   const accent = incomeTypeGridItem(type).accent
-  return { fg: accent, bg: rgba(accent, 0.13) }
+  return {
+    fg: accent,
+    bg: accent.startsWith('var(') ? `color-mix(in oklab, ${accent} 13%, transparent)` : rgba(accent, 0.13),
+  }
 }

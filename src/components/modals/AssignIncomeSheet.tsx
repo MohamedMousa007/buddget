@@ -4,180 +4,133 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { ModalShell } from '@/components/modals/ModalShell'
+import { ModalTitle } from '@/components/modals/ModalTitle'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { SelectableCard } from '@/components/ui/SelectableCard'
+import { IncomeTypeIcon } from '@/components/features/income/IncomeTypeIcon'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { paydayCandidates } from '@/lib/income/paydayResolution'
+import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
+import { formatFixed2, formatFlex } from '@/lib/utils/formatters'
+import { shortDate } from '@/lib/utils/shortDate'
+import { fillSlots } from '@/lib/ui/fillSlots'
 import { useT } from '@/lib/i18n'
-import { convertCurrency, fmtCompact } from '@/lib/utils/currency'
-import { expectedRecurringForMonth, getMonthRange, recurringActiveForWindow } from '@/lib/utils/calculations'
-import { buildOccurrences, isRealizedOccurrence, nextAwaitingIndex, type IncomeOccurrence } from '@/lib/utils/incomeOccurrences'
-import { RecurringIncomeCard } from '@/components/features/income/RecurringIncomeCard'
-import { RecurringIncomeCarousel } from '@/components/features/income/RecurringIncomeCarousel'
-import { AccountChip } from '@/components/features/income/AccountChip'
-import { useModalTitleId } from '@/components/modals/ModalShell'
-import { formatWhole as fmtNum } from '@/lib/utils/formatters'
+import type { IncomeEvent } from '@/lib/store/types'
 
-const MON_TITLE = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-const fmtDay = (iso: string) => `${MON_TITLE[Number(iso.slice(5, 7)) - 1]} ${Number(iso.slice(8, 10))}`
+/** How many open paydays to offer; the best match is always first. */
+const MAX_OPTIONS = 4
+const NONE = 'none'
 
 interface Props {
   open: boolean
   onClose: () => void
-  /** Chosen source + payday (`date` = scheduled payday it fulfills). */
+  /** The money being linked. Its date is kept — only the payday it fulfils is chosen here. */
+  credit: Pick<IncomeEvent, 'amount' | 'currency' | 'receivedDate'>
+  /** Chosen source + the scheduled payday (`date`) this credit fulfils. */
   onAssign: (result: { templateId: string; date: string }) => void
-  /** Preselect a source (its card shows a tick on open), when already assigned. */
+  /** Preselect a source's payday (it was linked before). */
   initialTemplateId?: string
-  /** Nested over the add modal needs a higher layer; the page opens it at the default. */
+  /** Nested over the add sheet needs a higher layer; the page opens it at the default. */
   zIndexClassName?: string
 }
 
 /**
- * Assign a receipt to a recurring source (handoff §5). Swipe between sources; like
- * the payment-method picker, no card is ticked until you tap one to choose it. The
- * chosen card shows a tick and its next-awaiting payday fills; the CTA names the
- * source (the payday is shown in the card caption, not the button).
+ * Link to a payday (screen 13): "Which payday is this?" with the open paydays as radio
+ * cards, best match first, and "None: keep it as one-time income". The word "assign" is
+ * never shown. Linking writes the payday as `occurrenceDate` and never touches the credit's
+ * `receivedDate` (§8.0), so a late payday still reads as late.
  */
-export function AssignIncomeSheet({ open, onClose, onAssign, initialTemplateId, zIndexClassName }: Props) {
-  const { incomeSources, incomeEvents, paymentMethods, settings, exchangeRates } = useFinanceStore(
+export function AssignIncomeSheet({ open, onClose, credit, onAssign, initialTemplateId, zIndexClassName }: Props) {
+  const t = useT()
+  const { incomeSources, incomeEvents, monthStartDay, rates } = useFinanceStore(
     useShallow((s) => ({
       incomeSources: s.incomeSources,
       incomeEvents: s.incomeEvents,
-      paymentMethods: s.paymentMethods,
-      settings: s.settings,
-      exchangeRates: s.exchangeRates,
+      monthStartDay: s.settings.monthStartDay,
+      rates: s.exchangeRates,
     })),
   )
-  const monthFilter = useSettingsStore((s) => s.monthFilter)
-  const t = useT()
-  const base = settings.baseCurrency
-
-  const sources = useMemo(() => {
-    const { start, end } = getMonthRange(monthFilter, settings.monthStartDay)
-    return incomeSources.filter((s) => s.isRecurring && recurringActiveForWindow(s, start, end))
-  }, [incomeSources, monthFilter, settings.monthStartDay])
-
-  const cards = useMemo(
-    () =>
-      sources.map((source) => {
-        const occ = buildOccurrences(source, incomeEvents, monthFilter, settings.monthStartDay)
-        const expectedBase = convertCurrency(expectedRecurringForMonth(source, monthFilter, settings.monthStartDay), source.currency, base, exchangeRates)
-        const realizedBase = occ.reduce(
-          (sum, o) => (isRealizedOccurrence(o) ? sum + convertCurrency(o.amount, o.currency, base, exchangeRates) : sum),
-          0,
-        )
-        return { source, occ, expectedBase, realizedBase }
-      }),
-    [sources, incomeEvents, monthFilter, settings.monthStartDay, base, exchangeRates],
+  const options = useMemo(
+    () => (open ? paydayCandidates(credit, incomeSources, incomeEvents, monthStartDay, rates, new Date()).slice(0, MAX_OPTIONS) : []),
+    [open, credit, incomeSources, incomeEvents, monthStartDay, rates],
   )
-
-  const [active, setActive] = useState(0)
-  // Nothing is chosen until the user taps a card (like the payment-method picker).
-  const [chosen, setChosen] = useState<string | null>(null)
-  const [paydayKey, setPaydayKey] = useState<string | null>(null)
+  const [chosen, setChosen] = useState<string>(NONE)
   const prevOpen = useRef(false)
   useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect -- seed selection when the sheet opens */
+    /* eslint-disable react-hooks/set-state-in-effect -- seed the choice when the sheet opens */
     if (open && !prevOpen.current) {
-      const idx = initialTemplateId ? sources.findIndex((s) => s.id === initialTemplateId) : -1
-      setActive(idx >= 0 ? idx : 0)
-      setChosen(initialTemplateId ?? null)
-      setPaydayKey(null)
+      const pre = options.find((o) => o.source.id === initialTemplateId) ?? options.find((o) => o.plausible)
+      setChosen(pre?.occ.key ?? NONE)
     }
     prevOpen.current = open
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [open, initialTemplateId, sources])
-
-  const activeCard = cards[active]
+  }, [open, options, initialTemplateId])
   useEscapeClose(open, onClose)
 
-  const accountLabel = (pmId?: string) => paymentMethods.find((m) => m.id === pmId)?.name ?? t.income.mainAccount
-
-  const chosenCard = chosen ? cards.find((c) => c.source.id === chosen) ?? null : null
-  // The payday the receipt fills: an explicit dot tap, else the chosen source's next awaiting.
-  const targetOcc = useMemo(() => {
-    if (!chosenCard) return null
-    const explicit = paydayKey ? chosenCard.occ.find((o) => o.key === paydayKey) : null
-    if (explicit) return explicit
-    const idx = nextAwaitingIndex(chosenCard.occ)
-    return chosenCard.occ[idx >= 0 ? idx : 0] ?? null
-  }, [chosenCard, paydayKey])
-
-  const selectSource = (id: string) => {
-    setChosen(id)
-    setPaydayKey(null)
-  }
-  const statusBracket = (o: IncomeOccurrence): string =>
-    o.status === 'late' ? ` ${t.income.bracketLate}` : o.status === 'missed' ? ` ${t.income.bracketMissed}` : o.status === 'partial' ? ` ${t.income.bracketPartial}` : ''
+  const pick = options.find((o) => o.occ.key === chosen)
+  const bestKey = options.find((o) => o.plausible)?.occ.key
 
   const confirm = () => {
-    if (!chosen || !targetOcc) return
-    onAssign({ templateId: chosen, date: targetOcc.dueDate })
+    if (pick) onAssign({ templateId: pick.source.id, date: pick.occ.dueDate })
     onClose()
   }
 
-  const titleId = useModalTitleId()
-
-  if (!open || cards.length === 0 || !activeCard) return null
+  const body = fillSlots(t.income.linkSheetBody, {
+    amount: <b className="font-mono-numbers text-[var(--color-brand-text-primary)]">{formatFixed2(credit.amount)}</b>,
+    currency: credit.currency,
+    date: <b>{shortDate(credit.receivedDate)}</b>,
+  })
 
   return (
-    <ModalShell open={open} onBackdropClick={onClose} zIndexClassName={zIndexClassName ?? 'z-[110]'} padContent>
-      <div className="pt-1">
-        <h2 id={titleId} className="text-lg font-bold text-[var(--color-brand-text-primary)]">{t.income.assignTitle}</h2>
-        <p className="mt-1 text-xs text-[var(--color-brand-text-muted)]">{t.income.assignSubtitle}</p>
-
-        <div className="mt-4">
-          <RecurringIncomeCarousel
-            count={cards.length}
-            activeIndex={active}
-            onActiveChange={setActive}
-            renderItem={(i) => {
-              const { source, occ, expectedBase, realizedBase } = cards[i]
-              const remaining = Math.round(expectedBase - realizedBase)
-              const isActive = i === active
-              const isChosen = chosen === source.id
-              const freq = source.recurringFrequency ?? 'monthly'
-              const cad = freq === 'weekly' ? t.addIncome.freqWeekly : freq === 'biweekly' ? t.addIncome.freqBiweekly : `${t.addIncome.freqMonthly} · ${source.dayOfMonth ?? 1}`
-              const acct = accountLabel(source.paymentMethodId)
-              return (
-                <RecurringIncomeCard
-                  sourceType={source.sourceType}
-                  name={source.name}
-                  cadenceLine={cad}
-                  paymentLine={<AccountChip label={acct} acct={{ paymentMethodId: source.paymentMethodId }} paymentMethods={paymentMethods} />}
-                  expectedBig={fmtNum(expectedBase)}
-                  expectedCurrency={base}
-                  expectedTag={t.income.expectedPerMoLabel}
-                  progressPct={expectedBase > 0 ? (realizedBase / expectedBase) * 100 : 0}
-                  progressLine={
-                    <>
-                      {t.income.receivedOfExpected(`${fmtCompact(realizedBase)} ${base}`, `${fmtCompact(expectedBase)} ${base}`)}
-                      {' · '}
-                      {remaining <= 0 ? <span className="text-[#35D46F]">{t.income.fullyReceived}</span> : t.income.toCome(`${fmtCompact(remaining)} ${base}`)}
-                    </>
-                  }
-                  occurrences={occ}
-                  dateLabel={(o) => fmtDay(o.date)}
-                  amountLabel={(o) => `${fmtCompact(o.amount)} ${o.currency}`}
-                  statusBracket={statusBracket}
-                  selectedKey={isChosen ? targetOcc?.key ?? null : null}
-                  showTick={isChosen}
-                  onCardTap={isActive ? () => selectSource(source.id) : undefined}
-                  onChipTap={isActive ? (o) => { setChosen(source.id); setPaydayKey(o.key) } : undefined}
-                  footer={<p className="w-full text-center text-[11px] text-white/55">{isChosen && targetOcc ? t.income.fillsPayday(fmtDay(targetOcc.date)) : t.income.assignTapHint}</p>}
-                />
-              )
-            }}
-          />
+    <ModalShell open={open} onBackdropClick={onClose} zIndexClassName={zIndexClassName ?? 'z-[110]'}>
+      <div className="flex flex-col gap-3 px-4 pb-[max(env(safe-area-inset-bottom,0px),20px)]">
+        <div>
+          <ModalTitle>{t.income.linkSheetTitle}</ModalTitle>
+          <p className="mt-1 text-[13px] leading-[1.45] text-[var(--color-brand-text-secondary)]">{body}</p>
         </div>
-
-        <Button
-          type="button"
-          onClick={confirm}
-          disabled={!chosen || !targetOcc}
-          size="cta-block"
-          className="mt-5 rounded-[14px] text-sm font-bold"
-        >
-          {chosenCard ? t.income.assignConfirm(chosenCard.source.name) : t.income.assignTitle}
+        <div role="radiogroup" aria-label={t.income.linkSheetTitle} className="flex flex-col gap-3">
+          {options.map((o) => (
+            <SelectableCard key={o.occ.key} surface="elevated" selected={chosen === o.occ.key} onClick={() => setChosen(o.occ.key)}>
+              <span className="flex w-full items-center gap-3 text-start">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]">
+                  <IncomeTypeIcon type={o.source.sourceType} className="h-4 w-4" />
+                </span>
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="text-[14.5px] font-bold text-[var(--color-brand-text-primary)]">{o.source.name}</span>
+                  <span className="text-[12.5px] text-[var(--color-brand-text-secondary)]">
+                    {t.income.linkOptionSub(shortDate(o.occ.dueDate), formatFlex(o.occ.amount))}
+                    {o.plausible ? ` · ${t.income.offPct(Math.round(o.diff * 100))}` : ''}
+                  </span>
+                </span>
+                {o.occ.key === bestKey ? (
+                  <Badge variant="brand" size="xs">
+                    {t.income.bestMatch}
+                  </Badge>
+                ) : null}
+              </span>
+            </SelectableCard>
+          ))}
+          <SelectableCard surface="elevated" selected={chosen === NONE} onClick={() => setChosen(NONE)}>
+            <span className="flex w-full items-center gap-3 text-start">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]">
+                <IncomeTypeIcon type="other" className="h-4 w-4" />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="text-[14.5px] font-bold text-[var(--color-brand-text-primary)]">{t.income.linkNone}</span>
+                <span className="text-[12.5px] text-[var(--color-brand-text-secondary)]">{t.income.linkNoneSub}</span>
+              </span>
+            </span>
+          </SelectableCard>
+        </div>
+        <Button size="cta-block" onClick={confirm}>
+          {pick
+            ? t.income.linkCta(shortDate(pick.occ.dueDate), incomeSourceTypeLabel(t.income, pick.source.sourceType).toLowerCase())
+            : t.prompts.keepSeparate}
+        </Button>
+        <Button variant="outline" size="cta-block" onClick={onClose}>
+          {t.common.cancel}
         </Button>
       </div>
     </ModalShell>
@@ -185,25 +138,25 @@ export function AssignIncomeSheet({ open, onClose, onAssign, initialTemplateId, 
 }
 
 /**
- * Page/global mount: driven by `activeModal === 'assignIncome'` for row-swipe
- * assign, where the chosen payday is written straight to the existing event.
+ * Global mount, driven by `activeModal === 'assignIncome'` — the row's "Link to a payday",
+ * its swipe shortcut, and the detail sheet. Writes straight to the existing event.
  */
 export function GlobalAssignIncomeSheet() {
-  const updateIncomeEvent = useFinanceStore((s) => s.updateIncomeEvent)
+  const { incomeEvents, updateIncomeEvent } = useFinanceStore(
+    useShallow((s) => ({ incomeEvents: s.incomeEvents, updateIncomeEvent: s.updateIncomeEvent })),
+  )
   const { activeModal, setActiveModal, assignTarget } = useSettingsStore(
     useShallow((s) => ({ activeModal: s.activeModal, setActiveModal: s.setActiveModal, assignTarget: s.assignTarget })),
   )
-  const open = activeModal === 'assignIncome' && !!assignTarget?.eventId
+  const event = assignTarget?.eventId ? incomeEvents.find((e) => e.id === assignTarget.eventId) : undefined
+  if (!event) return null
   return (
     <AssignIncomeSheet
-      open={open}
+      open={activeModal === 'assignIncome'}
       onClose={() => setActiveModal(null)}
-      onAssign={({ templateId, date }) => {
-        // `date` is the scheduled payday — stamp it as occurrenceDate so the
-        // assigned event joins the dedupe pairing; receivedDate keeps the payday
-        // too (legacy behavior for the ledger's day grouping).
-        if (assignTarget?.eventId) updateIncomeEvent(assignTarget.eventId, { templateId, receivedDate: date, occurrenceDate: date, status: 'confirmed' })
-      }}
+      credit={event}
+      // §8.0: the payday goes on occurrenceDate; receivedDate stays the day it arrived.
+      onAssign={({ templateId, date }) => updateIncomeEvent(event.id, { templateId, occurrenceDate: date, status: 'confirmed' })}
     />
   )
 }

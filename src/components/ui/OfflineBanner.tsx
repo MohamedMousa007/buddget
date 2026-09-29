@@ -3,17 +3,27 @@
 import { WifiOff } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
+import { usePendingSmsPreviews } from '@/hooks/usePendingSmsPreviews'
+import { useHiddenStatus } from '@/hooks/useHiddenStatus'
+import { StatusPill } from '@/components/ui/StatusPill'
+import { monoDigits } from '@/lib/ui/monoDigits'
 
+/** Offline is a state, not a question: the amber status pill, with captured SMS counted in. */
 export function OfflineBanner() {
   const t = useT()
   const { online } = useNetworkStatus()
+  const waiting = usePendingSmsPreviews().length
+  const [hidden, hide] = useHiddenStatus('offline')
 
   if (online) return null
 
   return (
-    <div className="fixed top-0 inset-x-0 z-[100] bg-[var(--color-brand-amber)] text-black text-xs text-center py-1.5 font-medium flex items-center justify-center gap-1.5 safe-area-top">
-      <WifiOff className="w-3.5 h-3.5 shrink-0" aria-hidden />
-      {t.common.offlineBanner}
-    </div>
+    <StatusPill
+      icon={<WifiOff strokeWidth={2} />}
+      label={waiting > 0 ? t.status.offlinePending(waiting) : t.common.offlineBanner}
+      visible={!hidden}
+      onHide={hide}
+      hiddenHint={monoDigits(t.status.hiddenReturns)}
+    />
   )
 }

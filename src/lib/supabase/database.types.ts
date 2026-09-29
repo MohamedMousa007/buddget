@@ -770,6 +770,7 @@ export type Database = {
             | Database["public"]["Enums"]["recurring_frequency"]
             | null
           shared_plan_id: string | null
+          sort_order: number | null
           source_type: Database["public"]["Enums"]["income_source_type"]
           updated_at: string
           user_id: string
@@ -795,6 +796,7 @@ export type Database = {
             | Database["public"]["Enums"]["recurring_frequency"]
             | null
           shared_plan_id?: string | null
+          sort_order?: number | null
           source_type?: Database["public"]["Enums"]["income_source_type"]
           updated_at?: string
           user_id: string
@@ -820,6 +822,7 @@ export type Database = {
             | Database["public"]["Enums"]["recurring_frequency"]
             | null
           shared_plan_id?: string | null
+          sort_order?: number | null
           source_type?: Database["public"]["Enums"]["income_source_type"]
           updated_at?: string
           user_id?: string
