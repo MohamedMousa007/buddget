@@ -386,7 +386,8 @@ export function useFlowLedger() {
         .filter((i) => {
           if (filters.segment === 'in' && i.dir !== 'in') return false
           if (filters.segment === 'out' && i.dir !== 'out') return false
-          if (filters.cats.length && (i.dir !== 'out' || !filters.cats.includes(i.facet))) return false
+          // The segment filters first; a category then narrows spending (it never empties In).
+          if (filters.segment !== 'in' && filters.cats.length && (i.dir !== 'out' || !filters.cats.includes(i.facet))) return false
           if (filters.segment === 'in' && filters.incomeTypes.length && !filters.incomeTypes.includes(i.facet)) return false
           if (filters.methods.length && !filters.methods.includes(i.methodId ?? '')) return false
           if (amountOn && (i.amountBase < filters.amtMin || i.amountBase > filters.amtMax)) return false

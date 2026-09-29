@@ -10,6 +10,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { useT } from '@/lib/i18n'
 import { useActionToast } from '@/components/ui/ActionToast'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import type { Currency, IncomeRecurringFrequency, IncomeSource, IncomeSourceType } from '@/lib/store/types'
 import type { PaydayPrefill } from '@/lib/store/useSettingsStore'
 import { Input } from '@/components/ui/input'
@@ -70,6 +71,7 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
   const edit = Boolean(source)
   const isRecurring = mode === 'payday'
   const showToast = useActionToast()
+  const confirm = useConfirm()
   const { addIncomeSource, updateIncomeSource, deleteIncomeSource, addIncomeEvent, settings, paymentMethods, incomeSources } = useFinanceStore(
     useShallow((s) => ({
       addIncomeSource: s.addIncomeSource,
@@ -203,8 +205,8 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
   }
   useEscapeClose(open, handleClose)
 
-  const handleDelete = () => {
-    if (!source || !window.confirm(t.income.confirmDelete)) return
+  const handleDelete = async () => {
+    if (!source || !(await confirm({ title: t.income.confirmDelete, destructive: true }))) return
     deleteIncomeSource(source.id)
     onClose()
   }
@@ -391,7 +393,7 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
           {edit && source && !source.sharedPlanId ? (
             <Button
               type="button"
-              onClick={handleDelete}
+              onClick={() => void handleDelete()}
               variant="destructive"
               size="touch"
               className="mt-2 w-full text-sm"

@@ -1,7 +1,8 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { motion } from 'framer-motion'
-import { AlertCircle, Check, Clock } from 'lucide-react'
+import { AlertCircle, ArrowDown, ArrowUp, Check, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -15,10 +16,14 @@ export interface FlowBandStatus {
 export interface FlowBandStat {
   label: string
   value: string
+  /** Money in / out get a small arrow chip beside the label. */
+  dir?: 'in' | 'out'
 }
 
 export interface FlowSummaryBandProps {
   variant: FlowBandVariant
+  /** The row at the top of the band — the month, Paydays and the arrows. */
+  header?: ReactNode
   /** 11/700 caps, e.g. "Left to spend · September". */
   label: string
   status?: FlowBandStatus
@@ -38,6 +43,9 @@ export interface FlowSummaryBandProps {
 }
 
 const STATUS_ICON = { check: Check, clock: Clock, alert: AlertCircle } as const
+/** The chip is inverted (band text colour as its fill); its text carries the tone. */
+const STATUS_TONE = { check: 'var(--flow-chip-ok)', clock: 'var(--flow-chip-warn)', alert: 'var(--flow-chip-over)' } as const
+const FG2 = 'text-[var(--flow-band-fg-2)]'
 const MIX = 'var(--flow-band-mix)'
 
 /** The band's gradient, shared with the sticky strip and the status-bar cover. */
@@ -50,6 +58,7 @@ export const FLOW_BAND_BG = 'linear-gradient(120deg, var(--flow-band-a) 0%, var(
  */
 export function FlowSummaryBand({
   variant,
+  header,
   label,
   status,
   big,
@@ -66,24 +75,25 @@ export function FlowSummaryBand({
   const StatusIcon = status ? STATUS_ICON[status.icon] : null
   return (
     <section
-      className="mt-1.5 border-y border-[var(--flow-band-line)] text-[var(--flow-band-fg)]"
+      className="border-b border-[var(--flow-band-line)] text-[var(--flow-band-fg)]"
       style={{ background: FLOW_BAND_BG }}
     >
+      {header}
       <motion.div
         key={`${variant}:${label}`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.16, ease: 'easeOut' }}
       >
-        <div className="px-[18px] pb-3 pt-3.5">
+        <div className="px-[18px] pb-3 pt-2.5">
           <div className="flex items-center justify-between gap-2">
-            <span className="min-w-0 flex-1 truncate whitespace-nowrap text-[11px] font-bold uppercase tracking-[0.08em]">
+            <span className={`min-w-0 flex-1 truncate whitespace-nowrap text-[11px] font-bold uppercase tracking-[0.08em] ${FG2}`}>
               {label}
             </span>
             {status && StatusIcon ? (
               <span
-                className="inline-flex h-[22px] shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2 text-[11.5px] font-bold"
-                style={{ background: MIX }}
+                className="inline-flex h-[22px] shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-[var(--flow-band-fg)] px-2 text-[11.5px] font-bold"
+                style={{ color: STATUS_TONE[status.icon] }}
               >
                 <StatusIcon className="size-[13px]" strokeWidth={2.5} aria-hidden />
                 {status.label}
@@ -102,11 +112,11 @@ export function FlowSummaryBand({
               <div className="mt-1.5 flex items-end justify-between gap-3">
                 <p className="flex min-w-0 flex-wrap items-baseline gap-1.5">
                   <span className="font-mono-numbers text-[32px] font-semibold leading-none tracking-[-0.03em]">{big}</span>
-                  {of ? <span className="text-[13px]">{of}</span> : null}
+                  {of ? <span className={`text-[13px] ${FG2}`}>{of}</span> : null}
                 </p>
                 {side ? (
-                  <p className="shrink-0 text-end text-[11.5px] leading-[1.3]">
-                    <b className="block font-mono-numbers text-[15px]">{side}</b>
+                  <p className={`shrink-0 text-end text-[11.5px] leading-[1.3] ${FG2}`}>
+                    <b className="block font-mono-numbers text-[15px] text-[var(--flow-band-fg)]">{side}</b>
                     {sideSub}
                   </p>
                 ) : null}
@@ -127,7 +137,7 @@ export function FlowSummaryBand({
                     ) : null}
                   </div>
                   {scale ? (
-                    <div className="mt-[5px] flex justify-between gap-2 font-mono-numbers text-[10.5px] font-semibold">
+                    <div className={`mt-[5px] flex justify-between gap-2 font-mono-numbers text-[10.5px] font-semibold ${FG2}`}>
                       <span>{scale[0]}</span>
                       <span>{scale[1]}</span>
                       <span>{scale[2]}</span>
@@ -137,7 +147,7 @@ export function FlowSummaryBand({
               ) : null}
               {variant === 'noBudget' && onSetBudget ? (
                 <div className="mt-2.5 flex items-center justify-between gap-2.5">
-                  <span className="text-[12.5px]">{noBudgetLine}</span>
+                  <span className={`text-[12.5px] ${FG2}`}>{noBudgetLine}</span>
                   <Button variant="secondary" size="touch" onClick={onSetBudget}>
                     {setBudgetLabel}
                   </Button>
@@ -146,17 +156,32 @@ export function FlowSummaryBand({
             </>
           )}
         </div>
-        <div className="grid grid-cols-3 border-t" style={{ borderColor: MIX }}>
-          {stats.map((s, i) => (
-            <div
-              key={s.label}
-              className={cn('min-w-0 pb-[11px] pe-2.5 ps-[18px] pt-2.5', i > 0 && 'border-s')}
-              style={i > 0 ? { borderColor: MIX } : undefined}
-            >
-              <p className="text-[11px] font-semibold">{s.label}</p>
-              <p className="mt-0.5 whitespace-nowrap font-mono-numbers text-[15px] font-bold">{s.value}</p>
-            </div>
-          ))}
+        {/* A deeper sub-surface groups the three stats apart from the pace above. */}
+        <div className="grid grid-cols-3 border-t bg-[var(--flow-band-deep)]" style={{ borderColor: MIX }}>
+          {stats.map((s, i) => {
+            const Arrow = s.dir === 'in' ? ArrowDown : s.dir === 'out' ? ArrowUp : null
+            return (
+              <div
+                key={s.label}
+                className={cn('min-w-0 pb-[11px] pe-2.5 ps-[18px] pt-2.5', i > 0 && 'border-s')}
+                style={i > 0 ? { borderColor: MIX } : undefined}
+              >
+                <p className={`flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[0.06em] ${FG2}`}>
+                  {Arrow ? (
+                    <span
+                      aria-hidden
+                      className="flex size-4 items-center justify-center rounded-full"
+                      style={{ background: MIX, color: s.dir === 'in' ? 'var(--flow-band-in)' : 'var(--flow-band-fg)' }}
+                    >
+                      <Arrow className="size-3" strokeWidth={2.5} />
+                    </span>
+                  ) : null}
+                  {s.label}
+                </p>
+                <p className="mt-1 whitespace-nowrap font-mono-numbers text-base font-bold">{s.value}</p>
+              </div>
+            )
+          })}
         </div>
       </motion.div>
     </section>

@@ -32,6 +32,9 @@ const buttonVariants = cva(
          */
         success:
           "bg-[var(--color-brand-green)] text-white hover:bg-[var(--color-brand-green-hover)]",
+        /** A control sitting on Flow's teal band: translucent fill in the band's text colour. */
+        onBand:
+          "border-[var(--flow-band-mix)] bg-[var(--flow-band-mix)] text-[var(--flow-band-fg)] hover:bg-[color-mix(in_oklab,var(--flow-band-fg)_30%,transparent)]",
       },
       size: {
         default:

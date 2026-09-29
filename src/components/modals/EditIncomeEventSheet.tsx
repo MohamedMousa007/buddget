@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { Trash2, Unlink } from 'lucide-react'
 import { ModalShell, useModalTitleId } from '@/components/modals/ModalShell'
+import { ModalTitle } from '@/components/modals/ModalTitle'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -22,6 +23,7 @@ import { IncomeSourceTypePicker } from '@/components/features/income/IncomeSourc
 import { IncomeTemplatePicker } from '@/components/features/income/IncomeTemplatePicker'
 import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
 import { OptionChip } from '@/components/ui/OptionChip'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { Badge } from '@/components/ui/badge'
 import { FactsTable, type Fact } from '@/components/ui/FactsTable'
 import { IncomeTypeIcon } from '@/components/features/income/IncomeTypeIcon'
@@ -49,12 +51,13 @@ function useDeleteIncomeEvent(event: IncomeEvent, onDone: () => void) {
   const { deleteIncomeEvent, debts } = useFinanceStore(useShallow((s) => ({ deleteIncomeEvent: s.deleteIncomeEvent, debts: s.debts })))
   const linkedDebt = event.linkedDebtId ? debts.find((d) => d.id === event.linkedDebtId) : undefined
   const [debtChoiceOpen, setDebtChoiceOpen] = useState(false)
-  const request = () => {
+  const confirm = useConfirm()
+  const request = async () => {
     if (linkedDebt) {
       setDebtChoiceOpen(true)
       return
     }
-    if (!window.confirm(t.income.confirmDelete)) return
+    if (!(await confirm({ title: t.income.confirmDelete, destructive: true }))) return
     deleteIncomeEvent(event.id)
     onDone()
   }
@@ -65,27 +68,19 @@ function useDeleteIncomeEvent(event: IncomeEvent, onDone: () => void) {
   }
   const dialog =
     debtChoiceOpen && linkedDebt ? (
-      <ModalShell open onBackdropClick={() => setDebtChoiceOpen(false)} zIndexClassName="z-[110]" dragToClose={false}>
-        <div className="w-full max-w-sm rounded-2xl bg-[var(--color-brand-card)] p-5">
-          <h2 className="text-base font-bold text-[var(--color-brand-text-primary)]">{t.income.deleteWithDebtTitle}</h2>
-          <p className="mt-2 text-sm text-[var(--color-brand-text-secondary)]">{t.income.deleteWithDebtBody(linkedDebt.name)}</p>
-          <div className="mt-5 flex flex-col gap-2">
-            <Button type="button" onClick={() => finish(true)} variant="destructive-solid" size="cta" className="w-full text-sm font-semibold">
-              {t.income.deleteBoth}
-            </Button>
-            <Button
-              type="button"
-              onClick={() => finish(false)}
-              variant="outline"
-              size="cta"
-              className="w-full bg-[var(--color-brand-elevated)] text-sm font-semibold text-[var(--color-brand-text-primary)]"
-            >
-              {t.income.keepDebt}
-            </Button>
-            <Button type="button" onClick={() => setDebtChoiceOpen(false)} variant="outline" size="touch" className="w-full text-sm">
-              {t.common.cancel}
-            </Button>
-          </div>
+      <ModalShell open onBackdropClick={() => setDebtChoiceOpen(false)} zIndexClassName="z-[110]">
+        <div className="flex flex-col gap-2 px-4 pb-[max(env(safe-area-inset-bottom,0px),20px)]">
+          <ModalTitle>{t.income.deleteWithDebtTitle}</ModalTitle>
+          <p className="mb-3 text-[13.5px] leading-[1.45] text-[var(--color-brand-text-secondary)]">{t.income.deleteWithDebtBody(linkedDebt.name)}</p>
+          <Button variant="destructive-solid" size="cta-block" onClick={() => finish(true)}>
+            {t.income.deleteBoth}
+          </Button>
+          <Button variant="outline" size="cta-block" onClick={() => finish(false)}>
+            {t.income.keepDebt}
+          </Button>
+          <Button variant="ghost" size="cta-block" onClick={() => setDebtChoiceOpen(false)}>
+            {t.common.cancel}
+          </Button>
         </div>
       </ModalShell>
     ) : null
@@ -211,7 +206,7 @@ function IncomeEventDetail({ event, onClose, onEdit }: { event: IncomeEvent; onC
             {t.income.makeRecurring}
           </Button>
         )}
-        <Button variant="destructive" size="cta" onClick={del.request}>
+        <Button variant="destructive" size="cta" onClick={() => void del.request()}>
           {t.common.delete}
         </Button>
       </div>
@@ -370,7 +365,7 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
 
         <Button
           type="button"
-          onClick={del.request}
+          onClick={() => void del.request()}
           variant="destructive"
           size="touch"
           className="w-full text-sm"

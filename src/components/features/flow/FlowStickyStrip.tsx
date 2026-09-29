@@ -30,7 +30,7 @@ export function FlowStickyStrip({ visible, primary, secondary, right }: FlowStic
     >
       <span className="flex min-w-0 items-baseline gap-1.5">
         <span className="font-mono-numbers text-base font-semibold">{primary}</span>
-        <span className="truncate whitespace-nowrap text-xs">{secondary}</span>
+        <span className="truncate whitespace-nowrap text-xs text-[var(--flow-band-fg-2)]">{secondary}</span>
       </span>
       <span className="flex gap-2.5 whitespace-nowrap font-mono-numbers text-xs font-semibold">
         {right.map((r) => (

@@ -9,6 +9,8 @@ export interface FlowLedgerRow {
   key: string
   /** Money in: gets the 3px green edge marker. */
   isIn?: boolean
+  /** Highlighted as the current selection (payday history). */
+  selected?: boolean
   row: TransactionRowProps
   /** Absent = not swipeable (pending captures, payday history). */
   swipe?: {
@@ -82,7 +84,14 @@ export function DayGroup({
         {group.rows.map((r, i) => {
           const row = <TransactionRow {...r.row} />
           return (
-            <div key={r.key} className="relative">
+            <div
+              key={r.key}
+              className={r.selected ? 'relative bg-[var(--color-brand-primary-soft)]' : 'relative'}
+              aria-current={r.selected || undefined}
+            >
+              {r.selected ? (
+                <span aria-hidden className="absolute inset-y-0 start-0 z-[2] w-[3px] bg-[var(--color-brand-primary)]" />
+              ) : null}
               {i > 0 ? <div className="ms-[82px] h-px bg-[var(--color-brand-border)]" /> : null}
               {r.isIn ? (
                 <span

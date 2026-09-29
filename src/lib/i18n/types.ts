@@ -1969,41 +1969,29 @@ export interface Dictionary {
     segAll: string
     segIn: string
     segOut: string
-    leftToSpend: (month: string) => string
-    received: (month: string) => string
-    spent: (month: string) => string
+    leftToSpend: string
+    spent: string
     spentFilters: (n: number) => string
-    categoryMonth: (cat: string, month: string) => string
     onTrack: string
     close: string
     over: string
     overBy: (x: string) => string
-    allIn: string
-    toResolve: (n: number) => string
     of: (x: string) => string
     ofBudget: (x: string) => string
-    ofExpected: (x: string) => string
     perDay: (x: string) => string
     untilDate: (d: string) => string
     forDays: (n: number) => string
-    average: string
     averageSoFar: string
-    receivedWord: string
     transactions: string
     scaleSpent: (x: string) => string
     scaleLeft: (x: string) => string
     scaleOverBy: (x: string) => string
-    allPaydaysIn: (n: number) => string
-    paydaysOpen: (n: number) => string
     categoryBudget: (cat: string, x: string) => string
     moneyIn: string
     moneyOut: string
     netWorth: string
-    expected: string
-    toCome: string
     oneTime: string
     statSpent: string
-    statPerDay: string
     statLeft: string
     statBudget: string
     statOverBy: string
@@ -2013,7 +2001,6 @@ export interface Dictionary {
     setBudget: string
     stickyLeft: (x: string) => string
     stickySpent: string
-    stickyToCome: (x: string) => string
     stickyResults: (n: number) => string
     filters: string
     filtersCount: (n: number) => string
@@ -2084,6 +2071,7 @@ export interface Dictionary {
     histLate: (d: string, n: number) => string
     histMarkedMissed: (d: string) => string
     histNotReceived: string
+    histOpen: (amount: string) => string
     histPartial: (amount: string, expected: string, d: string) => string
     bracketLate: string
     bracketMissed: string

@@ -15,18 +15,18 @@ type Fit = 'full' | 'shortMonth' | 'iconOnly'
 function MonthTitle({ month, year }: { month: string; year: string }) {
   return (
     <span className="flex items-baseline gap-1.5 whitespace-nowrap">
-      <span className="text-2xl font-bold tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{month}</span>
-      <span className="font-mono-numbers text-[13px] text-[var(--color-brand-text-muted)]">{year}</span>
+      <span className="text-2xl font-bold tracking-[-0.02em] text-[var(--flow-band-fg)]">{month}</span>
+      <span className="font-mono-numbers text-[13px] text-[var(--flow-band-fg-2)]">{year}</span>
     </span>
   )
 }
 
 /**
- * Flow's sub-header under the logo bar: the month and year, Paydays, and the month arrows.
+ * The top row of Flow's band: the month and year, Paydays, and the month arrows, on the teal.
  * Measured, not breakpointed: when everything won't fit, the month drops to its 3-letter
  * form first, then Paydays to its icon — so Arabic and large text degrade on their own.
  */
-export function FlowSubHeader() {
+export function FlowMonthRow() {
   const t = useT()
   const { locale } = useLocale()
   const monthFilter = useSettingsStore((s) => s.monthFilter)
@@ -70,23 +70,23 @@ export function FlowSubHeader() {
   }, [longName, shortName, locale])
 
   return (
-    <div ref={row} className="relative flex min-h-14 items-center gap-1 pe-3 ps-[18px] pt-1">
+    <div ref={row} className="relative flex min-h-14 items-center gap-1 pe-3 ps-[18px] pt-1.5">
       {/* Invisible twins: what each form of the title and of Paydays costs. */}
       <span aria-hidden className="pointer-events-none invisible absolute start-0 top-0 -z-10 flex h-0 flex-col items-start overflow-hidden">
         <span ref={ghostFull} className="inline-flex"><MonthTitle month={longName} year={year} /></span>
         <span ref={ghostShort} className="inline-flex"><MonthTitle month={shortName} year={year} /></span>
-        <span ref={ghostLabel} className="inline-flex"><PaydaysButton onClick={() => {}} iconOnly={false} /></span>
+        <span ref={ghostLabel} className="inline-flex"><PaydaysButton onClick={() => {}} iconOnly={false} onBand /></span>
       </span>
       <div className="min-w-0 flex-1 overflow-hidden">
         <MonthTitle month={fit === 'full' ? longName : shortName} year={year} />
       </div>
-      <PaydaysButton onClick={() => navigate('/paydays')} iconOnly={fit === 'iconOnly'} />
+      <PaydaysButton onClick={() => navigate('/paydays')} iconOnly={fit === 'iconOnly'} onBand />
       <div ref={arrows} className="flex shrink-0 items-center gap-0.5">
-        <IconButton variant="ghost" size="sm" aria-label={t.common.previousMonth} onClick={() => setMonthFilter(format(subMonths(month, 1), 'yyyy-MM'))}>
+        <IconButton variant="onBandGhost" size="sm" aria-label={t.common.previousMonth} onClick={() => setMonthFilter(format(subMonths(month, 1), 'yyyy-MM'))}>
           <ChevronLeft className="size-[18px]" strokeWidth={2} />
         </IconButton>
         <IconButton
-          variant="ghost"
+          variant="onBandGhost"
           size="sm"
           aria-label={t.common.nextMonth}
           disabled={atCurrent}

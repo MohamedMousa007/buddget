@@ -157,11 +157,23 @@
   --color-cat-6: #8B5CF6;
 
   /* Flow summary band (F1c). Light: the teal fill itself; dark: teal mixed into the page. */
-  --flow-band-a: var(--color-brand-primary-hover);
-  --flow-band-b: var(--color-brand-primary);
+  /* Light runs one step deeper than the primary fill so a secondary text tone can clear AA:
+     white is ~5.6:1 on it and the 88% tone ~4.6:1 (on the plain primary fill it would fail). */
+  --flow-band-a: color-mix(in oklab, var(--color-brand-primary-hover) 80%, black);
+  --flow-band-b: var(--color-brand-primary-hover);
   --flow-band-fg: var(--color-brand-on-primary);
+  /* Labels, sub-lines and the scale: quieter than the figures. */
+  --flow-band-fg-2: color-mix(in oklab, var(--flow-band-fg) 88%, var(--flow-band-b));
   --flow-band-mix: color-mix(in oklab, var(--flow-band-fg) 22%, transparent);
   --flow-band-line: color-mix(in oklab, var(--flow-band-fg) 18%, var(--flow-band-b));
+  /* The stats row's sub-surface, so it reads as its own group. */
+  --flow-band-deep: color-mix(in oklab, black 14%, transparent);
+  /* Money in / out arrow glyphs on the band. */
+  --flow-band-in: color-mix(in oklab, var(--color-brand-green) 35%, white);
+  /* Status-chip text on the inverted (fg-filled) chip: tone, dark enough for either theme's fill. */
+  --flow-chip-ok: var(--flow-band-b);
+  --flow-chip-warn: color-mix(in oklab, var(--color-brand-amber) 72%, black);
+  --flow-chip-over: color-mix(in oklab, var(--color-brand-red) 80%, black);
 
   /* Category chip accents. `utilities` and `health` were teal/emerald and would
      now read as the brand accent — moved to olive and true green. */
@@ -299,6 +311,9 @@
   --flow-band-a: color-mix(in oklab, var(--color-brand-primary) 34%, var(--color-brand-bg));
   --flow-band-b: color-mix(in oklab, var(--color-brand-primary) 50%, var(--color-brand-bg));
   --flow-band-fg: var(--color-brand-text-primary);
+  --flow-band-fg-2: color-mix(in oklab, var(--flow-band-fg) 72%, var(--flow-band-b));
+  --flow-band-deep: color-mix(in oklab, black 22%, transparent);
+  --flow-band-in: var(--color-brand-green);
 
   --cat-rent-fg: #FF6B6B;
   --cat-rent-bg: rgba(255, 107, 107, 0.13);

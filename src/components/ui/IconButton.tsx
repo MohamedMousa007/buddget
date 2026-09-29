@@ -42,6 +42,11 @@ const iconButtonVariants = cva(
          * brand colour and a token would vanish into it.
          */
         onBrand: 'bg-white/15 text-white hover:bg-white/25',
+        /** A control on Flow's teal band: translucent fill in the band's text colour (both themes). */
+        onBand:
+          'border-[var(--flow-band-mix)] bg-[var(--flow-band-mix)] text-[var(--flow-band-fg)] hover:bg-[color-mix(in_oklab,var(--flow-band-fg)_30%,transparent)]',
+        /** A glyph on Flow's teal band with no resting fill — month arrows. */
+        onBandGhost: 'text-[var(--flow-band-fg)] hover:bg-[var(--flow-band-mix)]',
       },
       size: {
         /** 32px visual, 44px hit area. Dense rows, chip dismissals. */

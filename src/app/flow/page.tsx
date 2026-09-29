@@ -19,7 +19,7 @@ import { SkeletonList } from '@/components/ui/SkeletonList'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/button'
 import { ExpenseFilters } from '@/components/expenses/ExpenseFilters'
-import { FlowSubHeader } from '@/components/features/flow/FlowSubHeader'
+import { FlowMonthRow } from '@/components/features/flow/FlowMonthRow'
 import { FlowSummaryBand } from '@/components/features/flow/FlowSummaryBand'
 import { FlowStickyStrip } from '@/components/features/flow/FlowStickyStrip'
 import { FlowChipRow, type FlowChip } from '@/components/features/flow/FlowChipRow'
@@ -108,25 +108,31 @@ export default function FlowPage() {
     onSetBudget,
   })
 
-  // The budget chips: every category with a cap, most-spent-against-cap first.
-  const budgetChips = useMemo<FlowChip[]>(
-    () =>
-      Object.entries(stats.categoryBudgetCaps)
-        .filter(([, cap]) => cap > 0)
-        .map(([cat, cap]) => ({ cat, pct: (stats.categorySpending[cat] ?? 0) / cap }))
-        .sort((a, b) => b.pct - a.pct)
-        .map(({ cat, pct }) => {
-          const on = filters.cats.length === 1 && filters.cats[0] === cat
-          return {
-            key: `b-${cat}`,
-            label: cat,
-            selected: on,
-            budget: { pct, over: pct > 1 },
-            onPress: () => filters.selectCat(on ? null : cat),
-          }
-        }),
-    [stats.categoryBudgetCaps, stats.categorySpending, filters],
-  )
+  // Category quick filters: every budgeted category (ring + %, most-spent-against-cap first),
+  // then every other category spent in this range (by spend). Tap = only that category,
+  // inside the segment; tap again = all.
+  const budgetChips = useMemo<FlowChip[]>(() => {
+    const budgeted = Object.entries(stats.categoryBudgetCaps)
+      .filter(([, cap]) => cap > 0)
+      .map(([cat, cap]) => ({ cat, pct: (stats.categorySpending[cat] ?? 0) / cap }))
+      .sort((a, b) => b.pct - a.pct)
+    const spentBy = new Map<string, number>()
+    for (const i of all) if (i.dir === 'out' && i.counted) spentBy.set(i.facet, (spentBy.get(i.facet) ?? 0) + i.amountBase)
+    const unbudgeted = [...spentBy.entries()]
+      .filter(([cat]) => !(stats.categoryBudgetCaps[cat] > 0))
+      .sort((a, b) => b[1] - a[1])
+      .map(([cat]) => ({ cat, pct: undefined as number | undefined }))
+    return [...budgeted, ...unbudgeted].map(({ cat, pct }) => {
+      const on = filters.cats.length === 1 && filters.cats[0] === cat
+      return {
+        key: `b-${cat}`,
+        label: cat,
+        selected: on,
+        budget: pct === undefined ? undefined : { pct, over: pct > 1 },
+        onPress: () => filters.selectCat(on ? null : cat),
+      }
+    })
+  }, [stats.categoryBudgetCaps, stats.categorySpending, all, filters])
 
   // In: the income types present this month, in Paydays order, then one-time.
   const incomeChips = useMemo<FlowChip[]>(() => {
@@ -187,8 +193,7 @@ export default function FlowPage() {
       <FlowStickyStrip visible={collapsed && dataReady} {...sticky} />
       {segment === 'in' ? <IncomePrompts /> : null}
 
-      <FlowSubHeader />
-      <FlowSummaryBand {...band} />
+      <FlowSummaryBand {...band} header={<FlowMonthRow />} />
 
       <div className="mx-4 mt-2.5">
         <SegmentedControl<FlowSegment>

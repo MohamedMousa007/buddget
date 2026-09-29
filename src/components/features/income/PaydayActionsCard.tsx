@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { SelectableCard } from '@/components/ui/SelectableCard'
 import { useActionToast } from '@/components/ui/ActionToast'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalTitle } from '@/components/modals/ModalTitle'
 import { IncomeTypeIcon } from '@/components/features/income/IncomeTypeIcon'
@@ -35,6 +36,7 @@ type ActionState = 'untouched' | 'received' | 'missedRecent' | 'missedPast' | 'n
 export function PaydayActionsCard({ source, occ }: { source: IncomeSource; occ: IncomeOccurrence }) {
   const t = useT()
   const toast = useActionToast()
+  const confirm = useConfirm()
   const { incomeEvents, addIncomeEvent, deleteIncomeEvent } = useFinanceStore(
     useShallow((s) => ({ incomeEvents: s.incomeEvents, addIncomeEvent: s.addIncomeEvent, deleteIncomeEvent: s.deleteIncomeEvent })),
   )
@@ -92,8 +94,8 @@ export function PaydayActionsCard({ source, occ }: { source: IncomeSource; occ: 
       status: 'missed',
       ...(source.paymentMethodId ? { paymentMethodId: source.paymentMethodId } : {}),
     })
-  const remove = () => {
-    if (!event || !window.confirm(t.paydays.confirmDeleteEntry)) return
+  const remove = async () => {
+    if (!event || !(await confirm({ title: t.paydays.confirmDeleteEntry, destructive: true }))) return
     deleteIncomeEvent(event.id)
     toast(t.paydays.deleted, {
       undo: () =>
@@ -142,7 +144,7 @@ export function PaydayActionsCard({ source, occ }: { source: IncomeSource; occ: 
           <Button variant="outline" size="cta" onClick={received}>
             {t.common.edit}
           </Button>
-          <Button variant="destructive" size="cta" onClick={remove}>
+          <Button variant="destructive" size="cta" onClick={() => void remove()}>
             {t.common.delete}
           </Button>
         </div>

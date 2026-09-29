@@ -13,7 +13,7 @@ import { FLOW_BAND_BG } from '@/components/features/flow/FlowSummaryBand'
 import { methodLabel } from '@/components/features/flow/useFlowLedger'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { focusPayday, recentPaydays } from '@/lib/income/paydaySummary'
+import { overdueDays, recentPaydays } from '@/lib/income/paydaySummary'
 import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatCurrency, formatFixed2, formatFlex } from '@/lib/utils/formatters'
@@ -23,6 +23,8 @@ import type { IncomeSource } from '@/lib/store/types'
 import { cadenceLine } from '@/lib/income/cadence'
 
 const TIMELINE_LEN = 6
+/** History reaches further back than the timeline: every payday of the last year. */
+const HISTORY_LEN = 24
 
 /**
  * Payday detail (screen 15): the full timeline on the teal band, the selected payday's
@@ -40,26 +42,29 @@ export function PaydayDetail({ source, onBack }: { source: IncomeSource; onBack:
       rates: s.exchangeRates,
     })),
   )
-  const { monthFilter, setActiveModal, setEditingIncomeId, setEditingIncomeEventId } = useSettingsStore(
+  const { monthFilter, setActiveModal, setEditingIncomeId } = useSettingsStore(
     useShallow((s) => ({
       monthFilter: s.monthFilter,
       setActiveModal: s.setActiveModal,
       setEditingIncomeId: s.setEditingIncomeId,
-      setEditingIncomeEventId: s.setEditingIncomeEventId,
-    })),
+          })),
   )
   const today = useMemo(() => new Date(), [])
   // An unanswered payday stays "late" until the user says Received or Missed — "missed"
   // on the timeline means someone marked it so.
-  const occ = useMemo(
+  const all = useMemo(
     () =>
-      recentPaydays(source, incomeEvents, monthFilter, monthStartDay, TIMELINE_LEN, today).map((o) =>
+      recentPaydays(source, incomeEvents, monthFilter, monthStartDay, HISTORY_LEN, today).map((o) =>
         !o.eventId && o.status === 'missed' ? { ...o, status: 'late' as const } : o,
       ),
     [source, incomeEvents, monthFilter, monthStartDay, today],
   )
+  const occ = all.slice(-TIMELINE_LEN)
+  // Nothing is selected until a payday is tapped (timeline or history); tapping it again,
+  // or anywhere else on the page, clears it — and with it the actions card.
   const [picked, setPicked] = useState<string | null>(null)
-  const selected = occ.find((o) => o.key === picked) ?? focusPayday(occ, today)
+  const selected = all.find((o) => o.key === picked)
+  const toggle = (key: string) => setPicked((k) => (k === key ? null : key))
   const pm = methodLabel(paymentMethods.find((m) => m.id === source.paymentMethodId))
   const typeLabel = incomeSourceTypeLabel(t.income, source.sourceType)
   const monthly = (source.recurringFrequency ?? 'monthly') === 'monthly'
@@ -67,18 +72,21 @@ export function PaydayDetail({ source, onBack }: { source: IncomeSource; onBack:
   const bracket = (o: (typeof occ)[number]) =>
     o.status === 'late' ? t.paydays.bracketLate : o.status === 'missed' ? t.paydays.bracketMissed : ''
 
-  // History: every payday on the timeline that has something recorded, newest first.
-  const history = useMemo<FlowLedgerRow[]>(
-    () =>
-      [...occ]
+  // History: every payday, newest first, whatever its state; the selected one is highlighted.
+  const history: FlowLedgerRow[] = [...all]
         .reverse()
-        .filter((o) => o.eventId && o.key !== selected?.key)
         .map((o) => {
-          const ev = incomeEvents.find((e) => e.id === o.eventId)
+          const ev = o.eventId ? incomeEvents.find((e) => e.id === o.eventId) : undefined
+          const open = !o.eventId
           const missed = o.status === 'missed'
+          const lateBy = open ? overdueDays(o, today) : 0
           const amountBase = convertCurrency(o.amount, o.currency, base, rates)
           const arrived = shortDate(ev?.receivedDate ?? o.dueDate)
-          const badge = missed
+          const badge = open
+            ? lateBy > 0
+              ? { v: 'warning' as const, l: t.income.daysLateChip(lateBy) }
+              : { v: 'muted' as const, l: t.paydays.dueOn(shortDate(o.dueDate)) }
+            : missed
             ? { v: 'muted' as const, l: t.income.statusMissed }
             : o.status === 'partial'
               ? { v: 'brand' as const, l: t.income.statusPartial }
@@ -87,21 +95,21 @@ export function PaydayDetail({ source, onBack }: { source: IncomeSource; onBack:
                 : { v: 'positive' as const, l: t.income.statusReceived }
           return {
             key: o.key,
+            selected: o.key === picked,
             row: {
               icon: <IncomeTypeIcon type={source.sourceType} className="h-5 w-5" />,
               iconBg: 'var(--color-brand-green-soft)',
               iconFg: 'var(--color-brand-green)',
               caption: typeLabel,
               captionColor: 'var(--color-brand-green)',
-              onClick: () => {
-                setEditingIncomeEventId(o.eventId!)
-                setActiveModal('editIncomeEvent')
-              },
+              onClick: () => toggle(o.key),
               title: t.paydays.paydayTitle(shortDate(o.dueDate)),
               titleBadge: <Badge variant={badge.v} size="xs" className="shrink-0">{badge.l}</Badge>,
               subtitle: (
                 <span className="truncate">
-                  {missed
+                  {open
+                    ? t.paydays.histOpen(`${formatFixed2(o.amount)} ${o.currency}`)
+                    : missed
                     ? t.paydays.histMarkedMissed(shortDate((ev?.createdAt ?? o.dueDate).slice(0, 10)))
                     : o.status === 'partial'
                       ? t.paydays.histPartial(formatFlex(o.amount), formatFlex(source.amount), arrived)
@@ -112,19 +120,19 @@ export function PaydayDetail({ source, onBack }: { source: IncomeSource; onBack:
               ),
               amount: (
                 <>
-                  +{formatFixed2(amountBase)} <span className="text-[11px] text-[var(--color-brand-text-muted)]">{base}</span>
+                  {open ? '' : '+'}
+                  {formatFixed2(amountBase)} <span className="text-[11px] text-[var(--color-brand-text-muted)]">{base}</span>
                 </>
               ),
-              amountColor: missed ? 'var(--color-brand-text-muted)' : 'var(--color-brand-green)',
-              sub: secondary ? `≈ ${formatCurrency(convertCurrency(amountBase, base, secondary, rates), secondary, true)}` : undefined,
+              amountColor: missed || open ? 'var(--color-brand-text-muted)' : 'var(--color-brand-green)',
+              sub: secondary && !open ? `≈ ${formatCurrency(convertCurrency(amountBase, base, secondary, rates), secondary, true)}` : undefined,
             },
           }
-        }),
-    [occ, selected?.key, incomeEvents, source, typeLabel, base, secondary, rates, t, setActiveModal, setEditingIncomeEventId],
-  )
+        })
 
   return (
-    <div className="pb-6">
+    // A tap anywhere that isn't a payday, the timeline or the actions card clears the selection.
+    <div className="min-h-[calc(100dvh-10rem)] pb-6" onClick={() => setPicked(null)}>
       <div className="flex min-h-14 items-center gap-1 pe-2.5 ps-1.5 pt-1">
         <IconButton variant="ghost" size="md" aria-label={t.paydays.backToPaydays} onClick={onBack}>
           <ChevronLeft className="size-5" strokeWidth={2} />
@@ -159,27 +167,33 @@ export function PaydayDetail({ source, onBack }: { source: IncomeSource; onBack:
             <span className="text-[13px]">{monthly ? t.paydays.expectedEachMonth(source.currency) : t.paydays.expectedEachPayday(source.currency)}</span>
           </p>
           <p className="mb-0.5 mt-2.5 text-[11px] font-bold uppercase tracking-[0.08em]">{t.paydays.lastPaydays(occ.length)}</p>
-          <div className="-mx-1.5">
+          <div className="-mx-1.5" onClick={(e) => e.stopPropagation()}>
             <PaydayTimeline
               occurrences={occ}
               dateLabel={(o) => shortDate(o.dueDate)}
               statusBracket={bracket}
-              selectedKey={selected?.key ?? null}
-              onSelect={(o) => setPicked(o.key)}
+              selectedKey={picked}
+              onSelect={(o) => toggle(o.key)}
             />
           </div>
           <div className="h-3.5" />
         </div>
       </section>
 
-      {selected ? <PaydayActionsCard source={source} occ={selected} /> : null}
+      {selected ? (
+        <div onClick={(e) => e.stopPropagation()}>
+          <PaydayActionsCard source={source} occ={selected} />
+        </div>
+      ) : null}
 
       {history.length ? (
         <>
           <p className="mx-[18px] mb-1.5 mt-[18px] text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
             {t.paydays.history}
           </p>
-          <FlowLedger groups={[{ key: 'history', rows: history }]} />
+          <div onClick={(e) => e.stopPropagation()}>
+            <FlowLedger groups={[{ key: 'history', rows: history }]} />
+          </div>
         </>
       ) : null}
     </div>
