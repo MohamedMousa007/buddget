@@ -1,6 +1,6 @@
 'use client'
 
-import { User, Shield, Palette, Globe, MessageSquare, Database, Target, RefreshCw, FileText, Bug } from 'lucide-react'
+import { User, Shield, Palette, Globe, MessageSquare, Database, Target, RefreshCw, FileText, Bug, Sparkles } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -87,6 +87,7 @@ export default function SettingsPage() {
         <SectionCard>
           <SettingsRow icon={Palette} title={t.settings.hub.display} subtitle={t.settings.hub.displaySubtitle} href="/settings/display" />
           <SettingsRow icon={Globe} title={t.settings.hub.currency} subtitle={t.settings.hub.currencySubtitle} href="/settings/currency" />
+          <SettingsRow icon={Sparkles} title={t.buddgy.settingsTitle} subtitle={t.buddgy.settingsSubtitle} href="/settings/ai" />
         </SectionCard>
 
         {/* Data & Tracking */}

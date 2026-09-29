@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { localTodayISO } from '@/lib/utils/localDate'
-import { Camera, Check, X, ScanLine, ReceiptText, RefreshCcw, Images, ImageOff } from 'lucide-react'
+import { Camera, Check, X, ScanLine, ReceiptText, RefreshCcw, Images } from 'lucide-react'
 import Image from 'next/image'
 import { useShallow } from 'zustand/react/shallow'
 import { ModalShell } from '@/components/modals/ModalShell'
@@ -19,6 +19,7 @@ import { newClientId } from '@/lib/store/useFinanceStore'
 import { usePendingAiJobs, savePendingMedia, deletePendingMedia } from '@/lib/store/usePendingAiJobs'
 import type { Currency, ExpenseCategory } from '@/lib/store/types'
 import { useBuddgyMoodWhile, useBuddgyMoodOnce } from '@/lib/ai/useBuddgyMood'
+import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/IconButton'
 import {
@@ -317,9 +318,9 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
             <X />
           </IconButton>
           <Centered>
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-brand-elevated)]">
-              <ImageOff className="h-7 w-7 text-[var(--color-brand-text-muted)]" />
-            </div>
+            <span className="text-[var(--color-brand-text)]">
+              <BuddgyIcon mood="curious" size={56} strokeWidth={1.5} filled alive />
+            </span>
             <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">That doesn&apos;t look like a receipt</p>
             <p className="max-w-72 text-xs text-[var(--color-brand-text-muted)] text-center">
               We couldn&apos;t find a total or merchant. Point the camera at a printed
@@ -632,6 +633,7 @@ function Centered({ children }: { children: React.ReactNode }) {
 function ProcessingView({ preview, title, subtitle }: { preview: string | null; title: string; subtitle: string }) {
   return (
     <div className="flex flex-col items-center gap-4 py-8">
+      <div className="relative">
       <div className="relative h-44 w-32 overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]">
         {preview ? (
           <Image src={preview} alt="Receipt" fill unoptimized className="object-cover" />
@@ -641,6 +643,11 @@ function ProcessingView({ preview, title, subtitle }: { preview: string | null; 
           </div>
         )}
         <span className="rsl-sweep" aria-hidden />
+      </div>
+        {/* Buddgy peeks over the corner, reading along */}
+        <span className="absolute -bottom-4 -end-6 text-[var(--color-brand-text)]">
+          <BuddgyIcon mood="scanning" size={48} strokeWidth={1.5} filled alive />
+        </span>
       </div>
       <div className="text-center">
         <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{title}</p>

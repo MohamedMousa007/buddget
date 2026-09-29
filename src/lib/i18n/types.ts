@@ -1483,11 +1483,6 @@ export interface Dictionary {
     headerSubtitle: string
     composerPlaceholder: string
     sendMessage: string
-    emptyIntro: string
-    suggestion1: string
-    suggestion2: string
-    suggestion3: string
-    suggestion4: string
     confirmAdd: string
     confirmEdit: string
     multiIntentHint: string
@@ -1498,6 +1493,39 @@ export interface Dictionary {
     balancePaymentTo: string
     balanceExpenseNote: string
     percentOfIncome: string
+  }
+
+  buddgy: {
+    greetingMorning: (name: string) => string
+    greetingAfternoon: (name: string) => string
+    greetingEvening: (name: string) => string
+    greetingSub: string
+    thinking: string
+    chipOverCategory: (category: string) => string
+    chipWillIMakeIt: string
+    chipDailyAllowance: string
+    chipWhereMoneyWent: string
+    chipDebtOrder: string
+    chipSavingsPlan: string
+    chipEmergencyFund: string
+    chipSplitSalary: string
+    chipBuildBudget: string
+    chipMonthSummary: string
+    nudgeOverCategory: (category: string, pct: number) => string
+    nudgePaceOver: string
+    nudgeOnTrack: (amount: string) => string
+    nudgeExpenses: string
+    nudgeDebts: string
+    nudgeSavings: string
+    nudgeGoals: string
+    nudgeIncome: string
+    nudgeReports: string
+    nudgeDismiss: string
+    listening: string
+    settingsTitle: string
+    settingsSubtitle: string
+    tipsTitle: string
+    tipsHint: string
   }
 
   pwa: {

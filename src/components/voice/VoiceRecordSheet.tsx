@@ -1,12 +1,13 @@
 'use client'
 
 import { useEffect, useRef, useCallback } from 'react'
-import { Mic, MicOff, X, Loader2, AlertTriangle, Trash2, MessageCircle, Volume2, VolumeX, CheckCircle2 } from 'lucide-react'
+import { Mic, MicOff, X, Trash2, MessageCircle, Volume2, VolumeX, CheckCircle2 } from 'lucide-react'
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useVoiceExpense } from '@/hooks/useVoiceExpense'
+import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { VoiceRecapEditor } from '@/components/voice/VoiceRecapEditor'
 import { speak, stopSpeaking } from '@/lib/voice/speak'
@@ -196,7 +197,10 @@ function RecordingView({
 
   return (
     <>
-      <p className="text-sm text-[var(--color-brand-text-muted)] mt-1">
+      <span className="text-[var(--color-brand-text)]">
+        <BuddgyIcon mood={isRecording ? 'listening' : 'awake'} size={48} strokeWidth={1.5} filled alive />
+      </span>
+      <p className="text-sm text-[var(--color-brand-text-muted)]">
         {isRecording ? 'Listening… speak your expense.' : 'Hold mic to record'}
       </p>
 
@@ -337,7 +341,7 @@ function PermissionView({ onRequest }: { onRequest: () => void }) {
 function ProcessingView({ onCancel }: { onCancel: () => void }) {
   return (
     <div className="flex flex-col items-center gap-3 py-6 w-full">
-      <Loader2 className="h-8 w-8 animate-spin text-[var(--color-brand-primary-ink)]" />
+      <span className="text-[var(--color-brand-text)]"><BuddgyIcon mood="thinking" size={48} strokeWidth={1.5} filled alive /></span>
       <p className="text-sm text-[var(--color-brand-text-secondary)]">Transcribing your voice…</p>
       <Button
         type="button"
@@ -385,6 +389,7 @@ function AnswerView({
         padding="md"
         className="mt-3 flex items-start gap-2 bg-[var(--color-brand-elevated)]/60"
       >
+        <span className="shrink-0 text-[var(--color-brand-text)]"><BuddgyIcon mood="happy" size={26} strokeWidth={1.75} filled /></span>
         <p className="flex-1 text-sm text-[var(--color-brand-text-primary)]">{message}</p>
         <IconButton
           onClick={() => {
@@ -447,9 +452,7 @@ function ClarifyView({
 }) {
   return (
     <div className="w-full text-center">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)]">
-        <Mic className="h-6 w-6 text-[var(--color-brand-text-muted)]" />
-      </div>
+      <span className="inline-flex text-[var(--color-brand-text)]"><BuddgyIcon mood="curious" size={48} strokeWidth={1.5} filled alive /></span>
       <p className="mt-3 text-sm text-[var(--color-brand-text-primary)] max-w-72 mx-auto">
         {message || 'Could you add a bit more detail?'}
       </p>
@@ -504,7 +507,7 @@ function ErrorView({
 }) {
   return (
     <div className="flex flex-col items-center gap-3 py-4 text-center">
-      <AlertTriangle className="h-8 w-8 text-[var(--color-brand-amber)]" />
+      <span className="text-[var(--color-brand-text)]"><BuddgyIcon mood="worried" size={48} strokeWidth={1.5} filled alive /></span>
       <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">
         Couldn&apos;t capture that
       </p>

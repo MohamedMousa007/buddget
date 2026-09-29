@@ -24,7 +24,7 @@ import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useRecurringSavingsScheduler } from '@/hooks/useRecurringSavingsScheduler'
 
 export function ModalProvider() {
-  const { setActiveModal, activeModal } = useSettingsStore()
+  const { setActiveModal, activeModal, openAiChatWithSeed } = useSettingsStore()
   const t = useT()
   const requireAuth = useRequireAuthAction()
   useRecurringSavingsScheduler()
@@ -53,8 +53,11 @@ export function ModalProvider() {
       <QuickAddFAB />
       <GoalAchievementListener />
       <AIChatBubble
-        onClick={() =>
-          requireAuth(() => setActiveModal('aiChat'), t.modals.fabRequireAuthAi)
+        onOpen={(prompt) =>
+          requireAuth(
+            () => (prompt ? openAiChatWithSeed(prompt, true) : setActiveModal('aiChat')),
+            t.modals.fabRequireAuthAi,
+          )
         }
       />
     </>

@@ -15,12 +15,12 @@ import { AIChatTypingIndicator } from '@/components/features/ai-chat/AIChatTypin
 import { AIChatComposer } from '@/components/features/ai-chat/AIChatComposer'
 import type { BuddgyOrbPosition } from '@/lib/store/useSettingsStore'
 import { useDismissable } from '@/hooks/useDismissable'
+import { ORB_SIZE, EDGE_INSET as ORB_INSET } from '@/components/ai/AIChatBubble'
 
 const DESKTOP_BP = 1024
 const PANEL_W = 400
 const PANEL_H = 600
-const EDGE_GAP = 12 // gap from the viewport / safe-area edge (matches the orb inset)
-const ORB_SIZE = 44
+const EDGE_GAP = 12 // gap from the viewport / safe-area edge
 const FAB_CLEAR = 96 // desktop: keep the bottom-right QuickAdd FAB uncovered
 const NAV_CLEAR = 76 // mobile: keep the bottom tab bar uncovered
 const HEADER_CLEAR = 52 // mobile: keep the fixed top header uncovered
@@ -33,7 +33,8 @@ interface PanelGeometry {
   height: number
   /** Horizontal inset from the orb's edge (incl. safe-area). */
   sideInset: number
-  /** Vertical transform-origin (px from the panel top) — animates open from the orb. */
+  /** Transform-origin at the orb's centre, so the panel grows out of Buddgy. */
+  originX: number
   originY: number
 }
 
@@ -71,10 +72,11 @@ function computePanel(orb: BuddgyOrbPosition): PanelGeometry | null {
   const minTop = ins.top + topClear
   const maxTop = Math.max(minTop, vh - ins.bottom - height - bottomClear)
   const top = Math.max(minTop, Math.min(maxTop, orbCenter - height / 2))
-  const originY = Math.max(0, Math.min(height, orbCenter - top))
+  const originY = orbCenter - top
   const sideInset = (orb.side === 'left' ? ins.left : ins.right) + EDGE_GAP
+  const originX = ORB_INSET + ORB_SIZE / 2 - sideInset
 
-  return { side: orb.side, top, width, height, sideInset, originY }
+  return { side: orb.side, top, width, height, sideInset, originX, originY }
 }
 
 /**
@@ -91,6 +93,7 @@ export function AIChat() {
     input,
     setInput,
     isLoading,
+    beat,
     handleSend,
     handleConfirm,
     handleEdit,
@@ -136,19 +139,19 @@ export function AIChat() {
               ...(panel.side === 'left' ? { left: panel.sideInset } : { right: panel.sideInset }),
               width: panel.width,
               height: panel.height,
-              transformOrigin: `${panel.side} ${panel.originY}px`,
+              transformOrigin: `${panel.side === 'left' ? `${panel.originX}px` : `calc(100% - ${panel.originX}px)`} ${panel.originY}px`,
             }}
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.92 }}
-            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0, scale: 0.08, borderRadius: 48 }}
+            animate={{ opacity: 1, scale: 1, borderRadius: 16 }}
+            exit={{ opacity: 0, scale: 0.08, borderRadius: 48 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 32, opacity: { duration: 0.14 } }}
             className="fixed z-50 flex flex-col overflow-hidden bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.7)]"
           >
-            <AIChatHeader onClose={close} />
+            <AIChatHeader onClose={close} beat={beat} isLoading={isLoading} />
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {messages.length === 0 ? (
-                <AIChatEmptyState onPickSuggestion={setInput} />
+                <AIChatEmptyState onPickSuggestion={(prompt) => void handleSend(prompt)} />
               ) : (
                 <AIChatMessageList
                   messages={messages}

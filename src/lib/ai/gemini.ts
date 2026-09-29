@@ -46,12 +46,18 @@ export interface AIActionItem {
   data: Record<string, unknown>
 }
 
+/** How Buddgy feels about its own reply — drives the avatar's expression. */
+export type AIReplyMood = 'happy' | 'proud' | 'worried' | 'curious' | 'playful' | 'neutral'
+
+const REPLY_MOODS: AIReplyMood[] = ['happy', 'proud', 'worried', 'curious', 'playful', 'neutral']
+
 export interface AIResponse {
   /** One or more operations; Confirm applies all (non-query) in order. */
   actions: AIActionItem[]
   confidence: number
   clarificationNeeded: string | null
   message: string
+  mood?: AIReplyMood
 }
 
 const AI_ACTIONS: AIAction[] = [
@@ -93,6 +99,7 @@ const aiResponseSchema = z.object({
   confidence: z.coerce.number().default(1),
   clarificationNeeded: z.union([z.string(), z.null()]).nullable().optional().default(null),
   message: z.string().default(''),
+  mood: z.string().optional(),
 })
 
 function normalizeAction(raw: string): AIAction {
@@ -146,6 +153,7 @@ export function parseModelJsonToAIResponse(text: string, rawFallbackMessage?: st
     confidence: row.confidence,
     clarificationNeeded: row.clarificationNeeded ?? null,
     message: row.message?.trim() || '',
+    mood: REPLY_MOODS.find((m) => m === row.mood),
   }
 
   if (!base.message || base.message.startsWith('{')) {
@@ -276,6 +284,8 @@ RULES:
 23. For "delete_payment_method", include data.name to identify the payment method.
 24. For "add_goal", include data.name (optional), data.category (one of: emergency_fund, house, car, vacation, education, wedding, phone_device, family_support, sadaqah_charity, gift, investment, debt_freedom, quality_of_life, spending_control, retirement, custom), data.targetAmount (optional number), data.currency, data.targetDate (optional), data.monthlyContribution (optional).
 25. For "update_goal", include data.name (to match an existing goal) and optional data.targetAmount, data.targetDate, data.monthlyContribution, data.status ("active"|"paused"|"achieved"|"cancelled").
+26. Always include top-level "mood" — how you feel about your reply: "happy" (good news, logged/saved), "proud" (user is doing great), "worried" (overspending, risk, running low), "curious" (you are asking for details), "playful" (casual chat), or "neutral".
+27. For "query" answers be concrete: use the real numbers from LIVE_APP_DATA, keep it to 2-4 short sentences, and end with ONE practical next step when useful.
 ${mode === 'chat' ? `
 RESPONSE FORMAT for update_budget_plan_row:
 {"action":"update_budget_plan_row","data":{"planId":"plan-uuid","categoryId":"category-uuid","newAmount":1500},"confidence":1,"clarificationNeeded":null,"message":"short friendly confirmation"}

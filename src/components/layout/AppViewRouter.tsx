@@ -22,6 +22,7 @@ import SettingsProfilePage from '@/app/settings/profile/page'
 import SettingsAccountPage from '@/app/settings/account/page'
 import SettingsCurrencyPage from '@/app/settings/currency/page'
 import SettingsDisplayPage from '@/app/settings/display/page'
+import SettingsAiPage from '@/app/settings/ai/page'
 import SettingsDataPage from '@/app/settings/data/page'
 import SettingsSmsPage from '@/app/settings/sms/page'
 
@@ -44,6 +45,7 @@ const VIEW_MAP: Record<string, ComponentType> = {
   '/settings/account': SettingsAccountPage,
   '/settings/currency': SettingsCurrencyPage,
   '/settings/display': SettingsDisplayPage,
+  '/settings/ai': SettingsAiPage,
   '/settings/data': SettingsDataPage,
   '/settings/sms': SettingsSmsPage,
 }

@@ -2,6 +2,7 @@
 
 import type { RefObject } from 'react'
 import { Check } from 'lucide-react'
+import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { AIChatConfirmationCard } from '@/components/features/ai-chat/AIChatConfirmationCard'
 import type { AIChatMessage } from '@/hooks/useAIChat'
 import { useT } from '@/lib/i18n'
@@ -30,11 +31,17 @@ export function AIChatMessageList({
   const t = useT()
   return (
     <>
-      {messages.map((message) => (
+      {messages.map((message, i) => (
         <div
           key={message.id}
-          className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          className={`flex items-end gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
         >
+          {message.role === 'assistant' ? (
+            // Only the newest reply is animated; older faces stay still so the thread isn't busy.
+            <span className="mb-0.5 shrink-0 text-[var(--color-brand-text)]">
+              <BuddgyIcon mood={message.mood ?? 'awake'} size={26} strokeWidth={1.75} filled animated={i === messages.length - 1} />
+            </span>
+          ) : null}
           <div
             className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
               message.role === 'user'

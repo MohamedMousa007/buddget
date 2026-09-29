@@ -10,7 +10,8 @@ import type { BuddgyMood } from '@/components/ai/BuddgyIcon'
  * scan cannot clear an `offline` state it did not set.
  */
 const PRIORITY: readonly BuddgyMood[] = [
-  'offline', 'error', 'listening', 'scanning', 'thinking', 'alert', 'done', 'happy', 'idle',
+  'offline', 'error', 'listening', 'scanning', 'thinking', 'alert', 'done', 'happy',
+  'worried', 'curious', 'wink', 'talking', 'idle',
 ] as const
 
 /** One-shot moods that return to idle on their own, and after how long. */
@@ -18,6 +19,10 @@ const AUTO_CLEAR: Partial<Record<BuddgyMood, number>> = {
   done: 1600,
   happy: 2000,
   error: 2000,
+  worried: 2500,
+  curious: 1500,
+  wink: 1800,
+  talking: 1600,
 }
 
 /** The mood Buddgy should currently show. */

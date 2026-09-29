@@ -19,15 +19,33 @@ export interface AiCommandStats {
   savingsTotal: number
   debtRemainingTotal: number
   daysLeft: number
+  leftToSpend: number
+  suggestedDaily: number
+  projectedSpend: number
+  paceStatus: string
+  categorySpending: Record<string, number>
+  categoryBudgetCaps: Record<string, number>
 }
 
-/** The 9-line LIVE_APP_DATA block fed to the model so `query` answers use real numbers. */
+const round = (n: number) => Math.round(n)
+
+/** The LIVE_APP_DATA block fed to the model so `query` answers use real numbers. */
 export function buildLiveDataBlock(
   store: FinanceStore,
   stats: AiCommandStats,
   monthFilter: string,
+  screen?: string,
 ): string {
+  const byCategory = Object.entries(stats.categorySpending)
+    .filter(([, spent]) => spent > 0)
+    .sort(([, a], [, b]) => b - a)
+    .map(([cat, spent]) => {
+      const cap = stats.categoryBudgetCaps[cat]
+      return cap ? `${cat} ${round(spent)}/${round(cap)}` : `${cat} ${round(spent)}`
+    })
+    .join(', ')
   return [
+    ...(screen ? [`User is currently on screen: ${screen}`] : []),
     `Billing month: ${monthFilter}`,
     `Base currency: ${store.settings.baseCurrency}`,
     `Monthly income (estimated): ${stats.totalIncome}`,
@@ -37,6 +55,9 @@ export function buildLiveDataBlock(
     `Savings total (holdings + legacy Savings-tagged expenses this month): ${stats.savingsTotal}`,
     `Debt remaining (approx): ${stats.debtRemainingTotal}`,
     `Days left in month: ${stats.daysLeft}`,
+    `Left to spend: ${round(stats.leftToSpend)} (safe daily: ${round(stats.suggestedDaily)})`,
+    `Pace: ${stats.paceStatus} (projected month spend ${round(stats.projectedSpend)})`,
+    `Spent by category (spent/budget): ${byCategory || '(nothing yet)'}`,
   ].join('\n')
 }
 
@@ -49,6 +70,8 @@ export interface RunAiCommandArgs {
   mode: AiCommandMode
   history?: { role: string; content: string }[]
   signal?: AbortSignal
+  /** Route the user is looking at, so answers can refer to it. */
+  screen?: string
 }
 
 /**
@@ -65,6 +88,7 @@ export async function runAiCommand({
   mode,
   history = [],
   signal,
+  screen,
 }: RunAiCommandArgs): Promise<AIResponse> {
   // Tier-1: lean adds-only extractor — no live data, no history, smallest budget.
   if (mode === 'voiceExtract') {
@@ -85,7 +109,7 @@ export async function runAiCommand({
     })
   }
 
-  const liveDataBlock = buildLiveDataBlock(store, stats, monthFilter)
+  const liveDataBlock = buildLiveDataBlock(store, stats, monthFilter, screen)
 
   // Voice omits the budget-plan rows entirely (token-lean); chat includes them so
   // it can do fine-grained plan-row edits.

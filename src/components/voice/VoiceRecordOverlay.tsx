@@ -3,8 +3,9 @@
 import { useEffect, useRef, useCallback, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence, type MotionValue } from 'framer-motion'
-import { X, RotateCcw, Loader2, Trash2, MessageCircle, Mic, CheckCircle2 } from 'lucide-react'
+import { X, RotateCcw, Trash2, MessageCircle, Mic, CheckCircle2 } from 'lucide-react'
 import type { VoiceState } from '@/hooks/useVoiceExpense'
+import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { VoiceRecapEditor } from '@/components/voice/VoiceRecapEditor'
 import { Button } from '@/components/ui/button'
 import type { AIResponse, AIActionItem } from '@/lib/ai/gemini'
@@ -227,12 +228,10 @@ function FloatingRecordingWidget({
             transition={{ type: 'spring', stiffness: 380, damping: 26 }}
             className="flex items-center gap-3 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] shadow-2xl rounded-2xl px-4 py-3"
           >
-            {/* Pulsing red dot */}
-            <motion.span
-              animate={{ scale: [1, 1.25, 1], opacity: [1, 0.6, 1] }}
-              transition={{ duration: 1.2, repeat: Infinity }}
-              className="h-2.5 w-2.5 rounded-full bg-[var(--color-brand-primary)] shrink-0"
-            />
+            {/* Buddgy listens while the user talks */}
+            <span className="shrink-0 text-[var(--color-brand-text)]">
+              <BuddgyIcon mood="listening" size={30} strokeWidth={1.75} filled alive />
+            </span>
 
             {/* Waveform */}
             <div className="overflow-hidden">
@@ -266,7 +265,7 @@ function ProcessingPanel({ onCancel }: { onCancel: () => void }) {
   return (
     <div className="px-4 py-3 flex items-center justify-between gap-3">
       <div className="flex items-center gap-2">
-        <Loader2 className="h-4 w-4 animate-spin text-[var(--color-brand-primary-ink)] shrink-0" />
+        <span className="shrink-0 text-[var(--color-brand-text)]"><BuddgyIcon mood="thinking" size={26} strokeWidth={1.75} filled /></span>
         <span className="text-sm text-[var(--color-brand-text-secondary)]">Transcribing…</span>
       </div>
       <IconButton onClick={onCancel} aria-label="Cancel">
@@ -307,6 +306,7 @@ function ErrorPanel({
 }) {
   return (
     <div className="px-4 py-3 flex items-center justify-between gap-3">
+      <span className="shrink-0 text-[var(--color-brand-text)]"><BuddgyIcon mood="worried" size={26} strokeWidth={1.75} filled /></span>
       <p className="text-xs text-[var(--color-brand-text-secondary)] min-w-0 truncate flex-1">
         {error ?? 'Something went wrong'}
       </p>
@@ -343,7 +343,10 @@ function AnswerPanel({
 }) {
   return (
     <div className="px-4 py-3 space-y-2">
-      <p className="text-sm text-[var(--color-brand-text-primary)] max-h-[34vh] overflow-y-auto">{message}</p>
+      <div className="flex items-start gap-2">
+        <span className="shrink-0 text-[var(--color-brand-text)]"><BuddgyIcon mood="happy" size={26} strokeWidth={1.75} filled /></span>
+        <p className="text-sm text-[var(--color-brand-text-primary)] max-h-[34vh] overflow-y-auto">{message}</p>
+      </div>
       <div className="flex gap-2">
         <Button
           type="button"
@@ -383,7 +386,10 @@ function ClarifyPanel({
 }) {
   return (
     <div className="px-4 py-3 space-y-2">
-      <p className="text-xs text-[var(--color-brand-text-secondary)]">{message || 'Could you add a bit more detail?'}</p>
+      <div className="flex items-start gap-2">
+        <span className="shrink-0 text-[var(--color-brand-text)]"><BuddgyIcon mood="curious" size={26} strokeWidth={1.75} filled /></span>
+        <p className="text-xs text-[var(--color-brand-text-secondary)]">{message || 'Could you add a bit more detail?'}</p>
+      </div>
       <div className="flex gap-2">
         <Button
           type="button"

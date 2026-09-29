@@ -1,34 +1,80 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { useT } from '@/lib/i18n'
-import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
+import { BuddgyIcon, type BuddgyMood } from '@/components/ai/BuddgyIcon'
 import { useBuddgyMood } from '@/lib/ai/useBuddgyMood'
 import { IconButton } from '@/components/ui/IconButton'
+import type { BuddgyBeat } from '@/hooks/useAIChat'
 
 export interface AIChatHeaderProps {
   onClose: () => void
+  beat: BuddgyBeat | null
+  isLoading: boolean
+}
+
+const TALK_MS = 1100
+const HOLD_MS = 3800
+const REACTION: Partial<Record<BuddgyMood, string>> = {
+  happy: 'bg-react-jump', done: 'bg-react-jump', wink: 'bg-react-spin',
+  worried: 'bg-react-shake', error: 'bg-react-shake',
 }
 
 /**
- * Title row for the AI assistant sheet — Buddgy avatar + title/subtitle.
- *
- * The avatar shows the live mood, so the header answers "is it working?" without
- * a separate spinner. Handoff §9: 20px icon in a 36px container.
+ * Buddgy's face through a reply: thinking while the request runs, "talking" as
+ * the answer lands, then the feeling of that answer (worried about overspend,
+ * happy about a saved entry…) before settling back to awake.
  */
-export function AIChatHeader({ onClose }: AIChatHeaderProps) {
+function useBeatMood(beat: BuddgyBeat | null, isLoading: boolean): BuddgyMood {
+  // The stage belongs to one beat; a newer beat starts from its first stage.
+  const [stage, setStage] = useState<{ at: number; phase: 'hold' | 'rest' }>({ at: 0, phase: 'rest' })
+  useEffect(() => {
+    if (!beat) return
+    const a = window.setTimeout(() => setStage({ at: beat.at, phase: 'hold' }), TALK_MS)
+    const b = window.setTimeout(() => setStage({ at: beat.at, phase: 'rest' }), TALK_MS + HOLD_MS)
+    return () => {
+      window.clearTimeout(a)
+      window.clearTimeout(b)
+    }
+  }, [beat])
+  if (isLoading) return 'thinking'
+  if (!beat) return 'awake'
+  const silent = beat.mood === 'done' || beat.mood === 'error'
+  const phase = stage.at === beat.at ? stage.phase : silent ? 'hold' : 'talk'
+  if (phase === 'rest') return 'awake'
+  return phase === 'talk' ? 'talking' : beat.mood
+}
+
+/** Title row for the AI assistant sheet — a live Buddgy avatar + title. */
+export function AIChatHeader({ onClose, beat, isLoading }: AIChatHeaderProps) {
   const t = useT()
-  const mood = useBuddgyMood()
+  const surface = useBuddgyMood()
+  const chatMood = useBeatMood(beat, isLoading)
+  const mood = surface === 'offline' ? 'offline' : chatMood
+  const avatarRef = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => {
+    const cls = mood !== 'talking' && REACTION[mood]
+    const el = avatarRef.current
+    if (!cls || !el) return
+    el.classList.remove(cls)
+    void el.offsetWidth
+    el.classList.add(cls)
+  }, [mood])
+
   return (
     <div className="flex items-center gap-3 p-4 border-b border-[var(--color-brand-border)]">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-text)]">
-        <BuddgyIcon mood={mood} size={20} />
+      <span ref={avatarRef} className="flex h-11 w-11 shrink-0 items-center justify-center text-[var(--color-brand-text)]">
+        <BuddgyIcon mood={mood} size={40} strokeWidth={1.75} filled alive />
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <h3 id="ai-chat-title" className="text-lg font-extrabold text-[var(--color-brand-text-primary)]">
           {t.ai.headerTitle}
         </h3>
-        <p className="text-xs text-[var(--color-brand-text-muted)] truncate">{t.ai.headerSubtitle}</p>
+        <p className="text-xs text-[var(--color-brand-text-muted)] truncate" aria-live="polite">
+          {isLoading ? t.buddgy.thinking : t.ai.headerSubtitle}
+        </p>
       </div>
       <IconButton
         onClick={onClose}

@@ -17,6 +17,8 @@ import {
 } from '@/lib/ai/aiActionHandlers'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useT } from '@/lib/i18n'
+import { moodForReply } from '@/lib/ai/buddgyIdeas'
+import type { BuddgyMood } from '@/components/ai/BuddgyIcon'
 
 /** Single row in the AI assistant transcript. */
 export interface AIChatMessage {
@@ -25,13 +27,21 @@ export interface AIChatMessage {
   content: string
   aiResponse?: AIResponse
   confirmed?: boolean
+  /** Buddgy's expression for this reply. */
+  mood?: BuddgyMood
+}
+
+/** A moment Buddgy's avatar should react to (a reply landed, an action saved). */
+export interface BuddgyBeat {
+  mood: BuddgyMood
+  at: number
 }
 
 const AI_CHAT_HISTORY_MAX_MESSAGES = 5
 
 export function useAIChat() {
   const store = useFinanceStore()
-  const { activeModal, setActiveModal, openAddExpenseWithPrefill, monthFilter, aiChatSeed, clearAiChatSeed } =
+  const { activeModal, setActiveModal, openAddExpenseWithPrefill, monthFilter, aiChatSeed, aiChatSeedSend, clearAiChatSeed } =
     useSettingsStore()
   const stats = useMonthlyStats()
   const { user, openAuthModal } = useAuth()
@@ -53,19 +63,22 @@ export function useAIChat() {
   const [messages, setMessages] = useState<AIChatMessage[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [beat, setBeat] = useState<BuddgyBeat | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // Voice "Open in chat" hands off the transcript: pre-fill the composer once.
+  // A seed either pre-fills the composer (voice "Open in chat") or, from a
+  // Buddgy tip, is sent straight away so the answer is already coming.
+  const sendRef = useRef<(text?: string) => Promise<void>>(async () => {})
   useEffect(() => {
-    if (isOpen && aiChatSeed) {
-      setInput(aiChatSeed)
-      clearAiChatSeed()
-    }
-  }, [isOpen, aiChatSeed, clearAiChatSeed])
+    if (!isOpen || !aiChatSeed) return
+    if (aiChatSeedSend) void sendRef.current(aiChatSeed)
+    else setInput(aiChatSeed)
+    clearAiChatSeed()
+  }, [isOpen, aiChatSeed, aiChatSeedSend, clearAiChatSeed])
 
   useEffect(() => {
     if (!isOpen) return
@@ -76,11 +89,11 @@ export function useAIChat() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [isOpen, setActiveModal])
 
-  const handleSend = useCallback(async () => {
-    if (!input.trim() || isLoading) return
+  const handleSend = useCallback(async (text?: string) => {
+    const userMessage = (text ?? input).trim()
+    if (!userMessage || isLoading) return
 
-    const userMessage = input
-    setInput('')
+    if (text === undefined) setInput('')
     setMessages((prev) => [
       ...prev,
       { id: Date.now().toString(), role: 'user', content: userMessage },
@@ -100,8 +113,10 @@ export function useAIChat() {
         text: userMessage,
         mode: 'chat',
         history,
+        screen: pathname,
       })
 
+      const mood = moodForReply(response)
       setMessages((prev) => [
         ...prev,
         {
@@ -110,9 +125,12 @@ export function useAIChat() {
           content: response.message,
           aiResponse: response,
           confirmed: false,
+          mood,
         },
       ])
+      setBeat({ mood, at: Date.now() })
     } catch (err) {
+      setBeat({ mood: 'error', at: Date.now() })
       setMessages((prev) => [
         ...prev,
         {
@@ -122,12 +140,17 @@ export function useAIChat() {
             err instanceof Error && err.message.startsWith('This is Google')
               ? err.message
               : `Hmm, something didn't go as planned. ${err instanceof Error ? err.message : 'Give it another try in a moment 😊'}`,
+          mood: 'error',
         },
       ])
     } finally {
       setIsLoading(false)
     }
-  }, [input, isLoading, messages, monthFilter, stats, store])
+  }, [input, isLoading, messages, monthFilter, pathname, stats, store])
+
+  useEffect(() => {
+    sendRef.current = handleSend
+  }, [handleSend])
 
   const pushAssistantNote = useCallback((text: string) => {
     setMessages((prev) => [
@@ -164,6 +187,7 @@ export function useAIChat() {
       setMessages((prev) =>
         prev.map((m) => (m.id === messageId ? { ...m, confirmed: true } : m))
       )
+      setBeat({ mood: 'done', at: Date.now() })
     },
     [guardMutations, messages, pushAssistantNote, store]
   )
@@ -218,6 +242,7 @@ export function useAIChat() {
     input,
     setInput,
     isLoading,
+    beat,
     handleSend,
     handleConfirm,
     handleEdit,

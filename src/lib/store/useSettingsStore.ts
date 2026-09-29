@@ -40,6 +40,13 @@ export interface BuddgyOrbPosition {
   top: number
 }
 
+export interface BuddgyNudgeLog {
+  day: string
+  count: number
+  lastAt: number
+  seen: string[]
+}
+
 interface SettingsState {
   sidebarOpen: boolean
   activeModal: string | null
@@ -64,6 +71,14 @@ interface SettingsState {
   monthFilter: string
   /** Pre-filled AI chat input (e.g. voice "Open in chat" hands off the transcript). */
   aiChatSeed: string | null
+  /** Send `aiChatSeed` as soon as the chat opens instead of just pre-filling it. */
+  aiChatSeedSend: boolean
+  /** Buddgy may speak up with screen-aware tips (persisted; AI settings switch). */
+  buddgyNudges: boolean
+  setBuddgyNudges: (on: boolean) => void
+  /** Throttle ledger for tips: per-day count, last shown time, ids already shown today (persisted). */
+  buddgyNudgeLog: BuddgyNudgeLog
+  logBuddgyNudge: (id: string) => void
   /** Mute spoken-aloud answers in the voice flow (persisted). */
   voiceSpeakMuted: boolean
   /** When opening add-debt sheet from "Record payment" on a card */
@@ -99,7 +114,7 @@ interface SettingsState {
   clearSubscriptionPrefill: () => void
   dismissBanner: (key: string) => void
   setMonthFilter: (month: string) => void
-  openAiChatWithSeed: (text: string) => void
+  openAiChatWithSeed: (text: string, send?: boolean) => void
   clearAiChatSeed: () => void
   setVoiceSpeakMuted: (muted: boolean) => void
   openDebtSheetNew: (family?: 'personal' | 'installment') => void
@@ -133,6 +148,16 @@ export const useSettingsStore = create<SettingsState>()(
       dismissedBanners: [],
       monthFilter: getCurrentMonth(),
       aiChatSeed: null,
+      aiChatSeedSend: false,
+      buddgyNudges: true,
+      setBuddgyNudges: (on) => set({ buddgyNudges: on }),
+      buddgyNudgeLog: { day: '', count: 0, lastAt: 0, seen: [] },
+      logBuddgyNudge: (id) =>
+        set((st) => {
+          const day = new Date().toDateString()
+          const prev = st.buddgyNudgeLog.day === day ? st.buddgyNudgeLog : { day, count: 0, lastAt: 0, seen: [] }
+          return { buddgyNudgeLog: { day, count: prev.count + 1, lastAt: Date.now(), seen: [...prev.seen, id] } }
+        }),
       voiceSpeakMuted: false,
       debtSheetPaymentOnly: false,
       debtSheetPrefillDebtId: null,
@@ -168,8 +193,8 @@ export const useSettingsStore = create<SettingsState>()(
       dismissBanner: (key) =>
         set((st) => (st.dismissedBanners.includes(key) ? st : { dismissedBanners: [...st.dismissedBanners, key] })),
       setMonthFilter: (month) => set({ monthFilter: month }),
-      openAiChatWithSeed: (text) => set({ activeModal: 'aiChat', aiChatSeed: text }),
-      clearAiChatSeed: () => set({ aiChatSeed: null }),
+      openAiChatWithSeed: (text, send = false) => set({ activeModal: 'aiChat', aiChatSeed: text, aiChatSeedSend: send }),
+      clearAiChatSeed: () => set({ aiChatSeed: null, aiChatSeedSend: false }),
       setVoiceSpeakMuted: (muted) => set({ voiceSpeakMuted: muted }),
       openDebtSheetNew: (family) =>
         set({
@@ -207,6 +232,7 @@ export const useSettingsStore = create<SettingsState>()(
           subscriptionPrefill: null,
           monthFilter: getCurrentMonth(),
           aiChatSeed: null,
+          aiChatSeedSend: false,
           voiceSpeakMuted: false,
           debtSheetPaymentOnly: false,
           debtSheetPrefillDebtId: null,
@@ -223,6 +249,8 @@ export const useSettingsStore = create<SettingsState>()(
         voiceSpeakMuted: state.voiceSpeakMuted,
         buddgyOrb: state.buddgyOrb,
         dismissedBanners: state.dismissedBanners,
+        buddgyNudges: state.buddgyNudges,
+        buddgyNudgeLog: state.buddgyNudgeLog,
       }),
     }
   )

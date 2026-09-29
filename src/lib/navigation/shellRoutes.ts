@@ -25,6 +25,7 @@ export const SHELL_PATHS = [
   '/settings/account',
   '/settings/currency',
   '/settings/display',
+  '/settings/ai',
   '/settings/data',
   '/settings/sms',
 ] as const
