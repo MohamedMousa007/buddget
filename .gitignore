@@ -82,3 +82,4 @@ ds-types/
 
 # design tool installers
 *.dmg
+android/ci-debug.p12

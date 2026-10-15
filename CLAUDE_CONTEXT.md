@@ -1,5 +1,5 @@
 # CLAUDE_CONTEXT.md — Buddget System Snapshot
-> Auto-generated: 2026-06-07. Re-generate after major architecture changes.
+> Updated: 2026-10-16 (migrations section + native CI); other sections may lag. Re-generate after major architecture changes.
 
 ---
 
@@ -24,17 +24,11 @@
 
 ---
 
-## Database — Migration Log (44 total)
+## Database — Migration Log (105 files, latest 0109)
 
-Latest 3 migrations (applied; do not re-apply):
+Live project: `ydihurtbcnoflhormgzi` (ap-southeast-1). Verified 2026-10-16: live tables/columns == `src/lib/supabase/database.types.ts` (41 tables). Latest applied: `income_sources_sort_order` (= repo 0109). Repo file numbers and applied migration names drift (e.g. repo 0108 = applied `0104_debt_payments_funded_from_savings`); compare schema, not names. Session-start check: `list_migrations`, then regenerate types and diff.
 
-| File | What it does |
-|---|---|
-| `0044_sms_parsing.sql` | `sms_parse_log` table — AI SMS/notification parser ledger with rate-limit view `sms_parse_today` |
-| `0043_push_tokens.sql` | `push_tokens` table — FCM/APNS native device tokens (distinct from web VAPID `push_subscriptions`) |
-| `0042_onboarding_v2.sql` | Adds `onboarding_version int` + `lite_mode bool` to `profiles`; backfills existing users to version 1 |
-
-Full migration history in `supabase/migrations/`. Generated types: `src/lib/supabase/database.types.ts`.
+Native builds: GitHub Actions only (`ios-release.yml` -> TestFlight, `android-release.yml` -> APK on Drive), dispatched by `scripts/native-release.sh`, on demand ("build and upload apps" = both). One-time secrets: `scripts/ci-secrets.sh`.
 
 **Schema rules:**
 - All tables use `uuid` PKs (`gen_random_uuid()`)

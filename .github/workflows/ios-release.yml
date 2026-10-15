@@ -1,0 +1,122 @@
+name: iOS release (TestFlight)
+
+# Manual only. macOS minutes cost 10x on private repos, so a guard skips the run
+# if one succeeded in the last hour (Apple also caps uploads). Use force to override.
+on:
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Ignore the 1-hour guard
+        type: boolean
+        default: false
+
+concurrency:
+  group: ios-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.g.outputs.skip }}
+    steps:
+      - id: g
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          last=$(gh run list -R "$GITHUB_REPOSITORY" --workflow ios-release.yml --status success -L 1 --json createdAt -q '.[0].createdAt // empty')
+          skip=false
+          if [ -n "$last" ] && [ "${{ inputs.force }}" != "true" ]; then
+            age=$(( $(date +%s) - $(date -d "$last" +%s) ))
+            [ "$age" -lt 3600 ] && skip=true
+          fi
+          echo "skip=$skip" >> "$GITHUB_OUTPUT"
+          echo "skip=$skip (last success: ${last:-none})"
+
+  build:
+    needs: guard
+    if: needs.guard.outputs.skip != 'true'
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci
+
+      - name: Native env + Firebase plist
+        env:
+          NATIVE_ENV_LOCAL_B64: ${{ secrets.NATIVE_ENV_LOCAL_B64 }}
+          GOOGLE_SERVICE_INFO_PLIST_B64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_B64 }}
+        run: |
+          echo "$NATIVE_ENV_LOCAL_B64" | base64 --decode > .env.local
+          echo "$GOOGLE_SERVICE_INFO_PLIST_B64" | base64 --decode > ios/App/App/GoogleService-Info.plist
+
+      - name: Bump build number
+        id: bump
+        run: |
+          PBX=ios/App/App.xcodeproj/project.pbxproj
+          cur=$(grep -m1 -oE "CURRENT_PROJECT_VERSION = [0-9]+;" "$PBX" | grep -oE "[0-9]+")
+          new=$((cur + 1))
+          sed -i '' -E "s/CURRENT_PROJECT_VERSION = [0-9]+;/CURRENT_PROJECT_VERSION = ${new};/g" "$PBX"
+          echo "build=$new" >> "$GITHUB_OUTPUT"
+
+      - name: Build web bundle into iOS shell
+        run: npm run cap:build
+
+      - name: App Store Connect key
+        env:
+          ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8_B64 }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/asc"
+          echo "$ASC_KEY_P8_B64" | base64 --decode > "$RUNNER_TEMP/asc/AuthKey.p8"
+
+      - name: Archive
+        working-directory: ios/App
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          xcodebuild -scheme App -configuration Release \
+            -destination "generic/platform=iOS" \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/asc/AuthKey.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            CODE_SIGN_STYLE=Automatic DEVELOPMENT_TEAM=9PK34RL9DN archive
+
+      - name: Export and upload to TestFlight
+        working-directory: ios/App
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/asc/AuthKey.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+
+      - name: Commit build number
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ios/App/App.xcodeproj/project.pbxproj
+          git commit -m "chore(release): iOS ${{ steps.bump.outputs.build }} (CI)"
+          for i in 1 2 3; do git pull --rebase --autostash origin "$GITHUB_REF_NAME" && git push origin "HEAD:$GITHUB_REF_NAME" && break; sleep 5; done
+
+      - name: Summary
+        run: echo "iOS build ${{ steps.bump.outputs.build }} uploaded to TestFlight" >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,135 @@
+name: Android release (APK to Drive)
+
+# Manual only. Ubuntu minutes are 1x, so this is cheap, but a guard still skips the
+# run if one succeeded in the last hour. Use force to override.
+on:
+  workflow_dispatch:
+    inputs:
+      label:
+        description: Short label in the APK filename (defaults to last commit subject)
+        type: string
+        default: ''
+      force:
+        description: Ignore the 1-hour guard
+        type: boolean
+        default: false
+
+concurrency:
+  group: android-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.g.outputs.skip }}
+    steps:
+      - id: g
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          last=$(gh run list -R "$GITHUB_REPOSITORY" --workflow android-release.yml --status success -L 1 --json createdAt -q '.[0].createdAt // empty')
+          skip=false
+          if [ -n "$last" ] && [ "${{ inputs.force }}" != "true" ]; then
+            age=$(( $(date +%s) - $(date -d "$last" +%s) ))
+            [ "$age" -lt 3600 ] && skip=true
+          fi
+          echo "skip=$skip" >> "$GITHUB_OUTPUT"
+          echo "skip=$skip (last success: ${last:-none})"
+
+  build:
+    needs: guard
+    if: needs.guard.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          build-root-directory: android
+
+      - run: npm ci
+
+      - name: Native env, Firebase json, signing key
+        env:
+          NATIVE_ENV_LOCAL_B64: ${{ secrets.NATIVE_ENV_LOCAL_B64 }}
+          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+          ANDROID_DEBUG_KEYSTORE_B64: ${{ secrets.ANDROID_DEBUG_KEYSTORE_B64 }}
+        run: |
+          echo "$NATIVE_ENV_LOCAL_B64" | base64 --decode > .env.local
+          echo "$GOOGLE_SERVICES_JSON_B64" | base64 --decode > android/app/google-services.json
+          echo "$ANDROID_DEBUG_KEYSTORE_B64" | base64 --decode > android/ci-debug.p12
+
+      - name: Bump versionCode
+        id: bump
+        run: |
+          G=android/app/build.gradle
+          cur=$(grep -m1 -oE "versionCode [0-9]+" "$G" | grep -oE "[0-9]+")
+          new=$((cur + 1))
+          sed -i -E "s/versionCode [0-9]+/versionCode ${new}/" "$G"
+          echo "code=$new" >> "$GITHUB_OUTPUT"
+
+      - name: Build web bundle into Android shell
+        run: npm run cap:build
+
+      - name: Assemble APK
+        working-directory: android
+        env:
+          ANDROID_DEBUG_KS_PASS: ${{ secrets.ANDROID_DEBUG_KS_PASS }}
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Name APK
+        id: apk
+        env:
+          LABEL: ${{ inputs.label }}
+        run: |
+          label=$(printf %s "${LABEL:-$(git log -1 --format=%s)}" | sed 's/[^a-zA-Z0-9]/-/g' | cut -c1-40 | sed 's/-*$//')
+          name="buddget-android-vc${{ steps.bump.outputs.code }}-${label}.apk"
+          cp android/app/build/outputs/apk/debug/app-debug.apk "$name"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.apk.outputs.name }}
+          path: ${{ steps.apk.outputs.name }}
+          retention-days: 30
+
+      - name: Upload to Google Drive
+        id: drive
+        env:
+          RCLONE_CONF_B64: ${{ secrets.RCLONE_CONF_B64 }}
+        run: |
+          sudo apt-get install -y rclone >/dev/null
+          mkdir -p ~/.config/rclone
+          echo "$RCLONE_CONF_B64" | base64 --decode > ~/.config/rclone/rclone.conf
+          bash scripts/upload-apk.sh "${{ steps.apk.outputs.name }}" > link.txt
+          echo "link=$(cat link.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Commit versionCode
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add android/app/build.gradle
+          git commit -m "chore(release): Android vc${{ steps.bump.outputs.code }} (CI)"
+          for i in 1 2 3; do git pull --rebase --autostash origin "$GITHUB_REF_NAME" && git push origin "HEAD:$GITHUB_REF_NAME" && break; sleep 5; done
+
+      - name: Summary
+        run: echo "Android vc${{ steps.bump.outputs.code }} → ${{ steps.drive.outputs.link }}" >> "$GITHUB_STEP_SUMMARY"
