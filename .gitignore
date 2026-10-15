@@ -79,3 +79,6 @@ ds-bundle/
 .design-sync/node_modules
 ds-types/
 .design-sync/*.tsbuildinfo
+
+# design tool installers
+*.dmg
