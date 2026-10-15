@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Buddget</string>
+    <string name="title_activity_main">Buddget</string>
+    <string name="package_name">app.buddget</string>
+    <string name="custom_url_scheme">app.buddget</string>
+</resources>
