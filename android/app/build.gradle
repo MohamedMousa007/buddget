@@ -18,14 +18,14 @@ android {
         }
     }
     signingConfigs {
-        // CI supplies a fixed keystore so every APK is signed with the same key and installs over the last one.
+        // CI signs with the app's original debug key (its SHA-1 is registered with Google sign-in), so APKs install over each other and Google login works.
         def ciKeystore = file("$rootDir/ci-debug.p12")
         if (ciKeystore.exists()) {
             debug {
                 storeFile ciKeystore
                 storeType "pkcs12"
                 storePassword System.getenv("ANDROID_DEBUG_KS_PASS")
-                keyAlias "buddget-debug"
+                keyAlias "androiddebugkey"
                 keyPassword System.getenv("ANDROID_DEBUG_KS_PASS")
             }
         }

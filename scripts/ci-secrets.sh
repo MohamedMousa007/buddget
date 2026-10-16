@@ -21,12 +21,8 @@ printf %s "$KEY_ID" | gh secret set ASC_KEY_ID
 printf %s "$ISSUER" | gh secret set ASC_ISSUER_ID
 set_b64 RCLONE_CONF_B64 "$HOME/.config/rclone/rclone.conf"
 
-# Fixed Android signing key (PKCS12) so every CI APK installs over the previous one.
-PASS="$(openssl rand -hex 16)"
-TMP="$(mktemp -d)"
-openssl req -x509 -newkey rsa:2048 -nodes -days 10000 -subj "/CN=Buddget Debug" -keyout "$TMP/k.pem" -out "$TMP/c.pem" 2>/dev/null
-openssl pkcs12 -export -inkey "$TMP/k.pem" -in "$TMP/c.pem" -name buddget-debug -passout "pass:$PASS" -out "$TMP/ci-debug.p12"
-set_b64 ANDROID_DEBUG_KEYSTORE_B64 "$TMP/ci-debug.p12"
-printf %s "$PASS" | gh secret set ANDROID_DEBUG_KS_PASS
-rm -rf "$TMP"
+# Android signing: the app's ORIGINAL debug key. Its SHA-1 is registered with Google sign-in
+# (Firebase / Cloud OAuth), so a different key breaks login. Standard debug password is "android".
+set_b64 ANDROID_DEBUG_KEYSTORE_B64 "$HOME/.android/debug.keystore"
+printf %s android | gh secret set ANDROID_DEBUG_KS_PASS
 echo "secrets set:"; gh secret list

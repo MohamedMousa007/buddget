@@ -3,7 +3,8 @@
 import { useEffect, useRef, useCallback, type RefObject } from 'react'
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { useNavPath } from '@/lib/navigation/navStore'
-import { User, Settings, LogOut, CreditCard, Target, BarChart3 } from 'lucide-react'
+import { User, Settings, LogOut, CreditCard, Target, BarChart3, CalendarClock } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -127,6 +128,11 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
         <CreditCard className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.paymentMethods.title}</span>
       </button>
+      <Link href="/paydays" onClick={delayedClose} className={itemClass} role="menuitem">
+        <CalendarClock className="w-4 h-4 shrink-0" />
+        <span className={cn('flex-1', localeInlineLabelClass(locale))}>{t.nav.paydays}</span>
+        <Badge variant="brand" size="xs">{t.paydays.menuNew}</Badge>
+      </Link>
       <Link href="/goals" onClick={delayedClose} className={itemClass} role="menuitem">
         <Target className="w-4 h-4 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{t.nav.goals}</span>
