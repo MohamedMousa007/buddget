@@ -35,6 +35,7 @@ function publicApiRateLimitOk(ip: string): boolean {
 }
 
 const AUTH_CALLBACK = '/auth/callback'
+const AUTH_CHECK_TIMEOUT_MS = 1500
 
 function buildCsp(nonce: string): string {
   return [
@@ -105,9 +106,12 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // Never let a slow auth backend take the whole site down (504 MIDDLEWARE_INVOCATION_TIMEOUT):
+  // the session refresh is best-effort, the client refreshes its own session.
+  const user = await Promise.race([
+    supabase.auth.getUser().then((r) => r.data.user, () => null),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), AUTH_CHECK_TIMEOUT_MS)),
+  ])
 
   if (pathname.startsWith('/api')) {
     return withNativeApiCors(request, supabaseResponse)
