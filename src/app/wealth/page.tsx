@@ -8,7 +8,6 @@ import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
-import { PageContainer } from '@/components/layout/PageContainer'
 import { PageGrid } from '@/components/layout/PageGrid'
 import { FlowStickyStrip } from '@/components/features/flow/FlowStickyStrip'
 import { ActivityLedger } from '@/components/features/savings-v3/ActivityLedger'
@@ -262,8 +261,8 @@ export default function WealthPage() {
         }
       />
 
-      <PageContainer className="px-0 pt-4 lg:max-w-[var(--page-max-wide)]">
-        <PageGrid
+      <PageGrid
+          className="pt-4 lg:pt-0"
           primary={
             <div className="space-y-5">
               <div className="grid grid-cols-2 gap-3 px-4 lg:px-0">
@@ -294,12 +293,11 @@ export default function WealthPage() {
             </div>
           }
           secondary={
-            <div className="mt-1 lg:-mt-2">
+            <div className="mt-1 lg:mt-0">
               <ActivityLedger transactions={savingsTransactions} accounts={savingsAccounts} baseCurrency={base} exchangeRates={exchangeRates} limit={3} filter={filter} />
             </div>
           }
         />
-      </PageContainer>
 
       {menu && (() => {
         const { row } = menu

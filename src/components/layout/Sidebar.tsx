@@ -16,9 +16,6 @@ import {
 } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { cn } from '@/lib/utils'
-import { useShallow } from 'zustand/react/shallow'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { FiatCurrencyField } from '@/components/ui/CurrencyField'
 import { localeInlineLabelClass, useLocale, useT } from '@/lib/i18n'
 import { BuddgetWordmark } from '@/components/brand'
 import { FlowTabIcon } from '@/components/icons/FlowTabIcon'
@@ -50,9 +47,6 @@ export function Sidebar() {
     { href: '/settings', label: t.nav.settings, icon: Settings },
   ]
   const activeHref = activeNavHref(pathname, [...PRIMARY, ...MORE].map((i) => i.href))
-  const { settings, updateSettings } = useFinanceStore(
-    useShallow((s) => ({ settings: s.settings, updateSettings: s.updateSettings }))
-  )
 
   const renderItem = (item: NavItem) => {
     const isActive = item.href === activeHref
@@ -81,14 +75,6 @@ export function Sidebar() {
         <Link href="/flow" className="flex items-center gap-2">
           <BuddgetWordmark height={24} />
         </Link>
-      </div>
-
-      <div className="px-3 mb-3">
-        <FiatCurrencyField
-          value={settings.baseCurrency}
-          onChange={(v) => updateSettings({ baseCurrency: v })}
-          className="w-full h-9 px-3 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]"
-        />
       </div>
 
       <nav className="flex-1 min-h-0 overflow-y-auto px-3 pb-3 space-y-1">

@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
-import { PageContainer } from '@/components/layout/PageContainer'
+import { PageBody } from '@/components/layout/PageContainer'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/button'
 import { GoalCard } from '@/components/features/goals/GoalCard'
@@ -66,7 +66,7 @@ export default function GoalsPage() {
         </PageHeaderContent>
       </PageHeader>
 
-      <PageContainer wide className="py-4 space-y-4">
+      <PageBody className="space-y-4">
         {goals.length === 0 ? (
           <EmptyState
             title={t.goals.emptyState}
@@ -100,7 +100,7 @@ export default function GoalsPage() {
             ) : null}
           </>
         )}
-      </PageContainer>
+      </PageBody>
 
       <AddGoalSheet open={sheetOpen} onClose={closeSheet} editingGoal={editing} />
     </div>

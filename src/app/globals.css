@@ -101,6 +101,10 @@
   --sidebar-w: 11rem;
   --page-max: 40rem;
   --page-max-wide: 72rem;
+  /* Desktop structure lines (hero/body, primary/rail, section breaks): the border token, softened. */
+  --color-hairline: color-mix(in srgb, var(--color-brand-border) 65%, transparent);
+  /* Gap between the hero band and the first content row from lg, shared by every page body. */
+  --page-body-pt: 1.5rem;
 
   /* Brand — teal. `--color-brand-primary` is the identity colour, unmodified
      from the kit. Light mode puts DARK ink on it (6.30:1); the kit specified
@@ -495,7 +499,8 @@
 }
 
 html {
-  overscroll-behavior-y: contain;
+  /* `none`, not `contain`: contain still lets macOS/iOS rubber-band a page that does not scroll. */
+  overscroll-behavior-y: none;
 }
 
 /* ── Capacitor / native shell tweaks ── */

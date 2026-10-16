@@ -1,6 +1,6 @@
 'use client'
 
-import { PageContainer } from '@/components/layout/PageContainer'
+import { PageBody, PageDivider } from '@/components/layout/PageContainer'
 import dynamic from 'next/dynamic'
 import { ChartPlaceholder } from '@/components/reports/ChartPlaceholder'
 import { ReportFilters } from '@/components/reports/ReportFilters'
@@ -36,7 +36,7 @@ export default function ReportsPage() {
 
   return (
     <div>
-      <PageContainer wide className="py-4 space-y-4">
+      <PageBody className="space-y-4">
         <ReportFilters selected={r.dateRange} onSelect={r.setDateRange} />
 
         <ReportExpenseDebtFilter value={r.expenseDebtFilter} onChange={r.setExpenseDebtFilter} />
@@ -61,6 +61,8 @@ export default function ReportsPage() {
         />
         </div>
 
+        <PageDivider />
+
         <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
         <SpendingPacePanel
           dailyRate={stats.dailyRate}
@@ -81,6 +83,8 @@ export default function ReportsPage() {
         />
         </div>
 
+        <PageDivider />
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <MonthlyChart data={r.monthlyData} currency={r.settings.baseCurrency} />
           <CategoryPieChart data={r.categoryData} currency={r.settings.baseCurrency} />
@@ -89,7 +93,7 @@ export default function ReportsPage() {
         <ReportsPaymentMethodPanel methods={r.methodBreakdown} baseCurrency={r.settings.baseCurrency} />
 
         <ReportsExportBar onExportCsv={r.handleExportCSV} onCopySummary={r.handleCopySummary} />
-      </PageContainer>
+      </PageBody>
     </div>
   )
 }

@@ -177,7 +177,7 @@ export function PaydaysPage() {
   const add = (prefill?: PaydayPrefill) => openNewPayday(prefill)
 
   return (
-    <PageContainer wide className="px-0">
+    <PageContainer wide className="px-0 lg:px-6">
       <StatusBarCover background="var(--color-brand-bg)" />
       {!dataReady ? (
         <>
@@ -187,7 +187,7 @@ export function PaydaysPage() {
           </div>
         </>
       ) : streams.length === 0 ? (
-        <div className="mx-auto max-w-[var(--page-max)] pb-6">
+        <div className="mx-auto max-w-[var(--page-max)]">
           {header(null)}
           <div className="mx-4 mt-6">
             <EmptyState
@@ -222,7 +222,7 @@ export function PaydaysPage() {
         </div>
       ) : (
         <div className={detail ? 'lg:grid lg:grid-cols-[26rem_minmax(0,1fr)] lg:items-start lg:gap-x-6' : 'mx-auto max-w-[var(--page-max)]'}>
-        <div className={cn('pb-6', detail && 'hidden lg:block')}>
+        <div className={cn(detail && 'hidden lg:block lg:border-e lg:border-[var(--color-hairline)] lg:pe-6')}>
           {header(
             reordering ? (
               <Button size="touch" onClick={commitOrder}>

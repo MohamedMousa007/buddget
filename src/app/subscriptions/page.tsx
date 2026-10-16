@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { PageContainer } from '@/components/layout/PageContainer'
+import { PageBody } from '@/components/layout/PageContainer'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SubscriptionCard } from '@/components/features/subscriptions/SubscriptionCard'
@@ -85,7 +85,7 @@ export default function SubscriptionsPage() {
         </PageHeaderContent>
       </PageHeader>
 
-      <PageContainer wide className="py-4 space-y-4">
+      <PageBody className="space-y-4">
         <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
           <p className="text-xs uppercase tracking-wider text-[var(--color-brand-text-muted)]">
             {t.subscriptions.totalMonthly}
@@ -134,7 +134,7 @@ export default function SubscriptionsPage() {
             ) : null}
           </div>
         )}
-      </PageContainer>
+      </PageBody>
 
       <AddSubscriptionSheet
         open={isSheetOpen}

@@ -33,7 +33,6 @@ import { FlowLedger } from '@/components/features/flow/FlowLedger'
 import { IncomePrompts } from '@/components/features/flow/IncomePrompts'
 import { methodLabel, useFlowLedger } from '@/components/features/flow/useFlowLedger'
 import { periodText, useFlowBand } from '@/components/features/flow/useFlowBand'
-import { PageContainer } from '@/components/layout/PageContainer'
 import { PageGrid } from '@/components/layout/PageGrid'
 import { selectFlowEmptyState } from '@/lib/flow/emptyState'
 
@@ -227,17 +226,16 @@ export default function FlowPage() {
   const resultCount = items.length
 
   return (
-    <div className="pb-6">
+    <div>
       <FlowStickyStrip visible={collapsed && dataReady} {...sticky} />
       {segment === 'in' ? <IncomePrompts /> : null}
 
       <FlowSummaryBand {...band} />
 
-      <PageContainer wide className="px-0 lg:px-0">
-        <PageGrid
-          secondary={<FlowChipRail title={segment === 'in' ? t.flow.railIncomeTypes : t.flow.railCategories} chips={chips} />}
+      <PageGrid
+          secondary={<div className="lg:-me-4"><FlowChipRail title={segment === 'in' ? t.flow.railIncomeTypes : t.flow.railCategories} chips={chips} /></div>}
           primary={
-            <>
+            <div className="lg:-mx-4 lg:-mt-2.5">
       <FlowMonthRow
         range={filters.rangePreset === 'month' ? undefined : periodText(resolved)}
         onBackToMonth={() => filters.setRangePreset('month')}
@@ -323,10 +321,9 @@ export default function FlowPage() {
       ) : (
         <FlowLedger groups={groups} fadeKey={`${segment}:${monthFilter}:${filterNames.join('|')}`} />
       )}
-            </>
+            </div>
           }
         />
-      </PageContainer>
 
       <ExpenseFilters
         open={sheetOpen}

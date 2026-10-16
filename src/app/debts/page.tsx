@@ -1,6 +1,5 @@
 'use client'
 
-import { PageContainer } from '@/components/layout/PageContainer'
 import { PageGrid } from '@/components/layout/PageGrid'
 import { GoalLensList } from '@/components/features/goals/GoalLensList'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -138,10 +137,9 @@ export default function DebtsPage() {
         clearedCount={clearedCount}
       />
 
-      <PageContainer className="px-0 lg:max-w-[var(--page-max-wide)]">
-        <PageGrid
+      <PageGrid
           primary={
-            <div className="px-4 pt-4 lg:px-0">
+            <div className="px-4 pt-4 lg:px-0 lg:pt-0">
                 <GoalLensList categories={['debt_freedom']} />
 
                 {noneActive ? (
@@ -162,7 +160,7 @@ export default function DebtsPage() {
                   />
                 ) : (
                   <>
-                    <div className="mt-5">
+                    <div className="mt-5 lg:mt-0">
                       <DebtFamilyTabs active={tab} onChange={changeTab} counts={data.counts} />
                     </div>
 
@@ -209,7 +207,7 @@ export default function DebtsPage() {
             </div>
           }
           secondary={
-            <div className="lg:max-h-[calc(100dvh-var(--app-header-h-lg)-2rem)] lg:overflow-y-auto">
+            <div className="lg:max-h-[calc(100dvh-var(--app-header-h-lg)-2*var(--page-body-pt))] lg:overflow-y-auto lg:[&>*]:mt-0">
               <DebtPaymentsFeed
                 payments={data.payments}
                 currentFamily={tab}
@@ -219,7 +217,6 @@ export default function DebtsPage() {
             </div>
           }
         />
-      </PageContainer>
 
       <ClearedVaultSheet
         open={activeModal === 'clearedVault'}

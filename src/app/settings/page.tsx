@@ -1,6 +1,6 @@
 'use client'
 
-import { PageContainer } from '@/components/layout/PageContainer'
+import { PageBody } from '@/components/layout/PageContainer'
 import { User, Shield, Palette, Globe, MessageSquare, Database, FileText, Bug, Sparkles } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { AppLink as Link } from '@/components/ui/AppLink'
@@ -49,7 +49,7 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <PageContainer wide className="py-4 pb-10">
+      <PageBody>
         {/* Identity header */}
         {user && (
           <Card
@@ -124,7 +124,7 @@ export default function SettingsPage() {
 
         </div>
 
-        <div className="text-center text-xs text-[var(--color-brand-text-muted)] pt-6 pb-4 space-y-1">
+        <div className="text-center text-xs text-[var(--color-brand-text-muted)] pt-6 space-y-1">
           <p>{t.settings.footer}</p>
           <p>
             <a
@@ -137,7 +137,7 @@ export default function SettingsPage() {
             </a>
           </p>
         </div>
-      </PageContainer>
+      </PageBody>
     </div>
   )
 }

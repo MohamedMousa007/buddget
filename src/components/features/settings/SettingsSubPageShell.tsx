@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { navigate } from '@/lib/navigation/navigate'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
-import { PageContainer } from '@/components/layout/PageContainer'
+import { PageBody, PageContainer } from '@/components/layout/PageContainer'
 import { SettingsSaveButton } from '@/components/features/settings/SettingsSaveButton'
 import { flushFinanceNow } from '@/components/sync/SupabaseFinanceSync'
 import { useActionToast } from '@/components/ui/ActionToast'
@@ -77,7 +77,7 @@ export function SettingsSubPageShell({ title, children, showSave = true }: Props
   }
 
   return (
-    <div className="min-h-dvh">
+    <div>
       <PageHeader>
         <PageContainer className="px-0 lg:px-0">
         <PageHeaderContent>
@@ -93,9 +93,9 @@ export function SettingsSubPageShell({ title, children, showSave = true }: Props
         </PageHeaderContent>
         </PageContainer>
       </PageHeader>
-      <PageContainer className="py-4 space-y-4">
+      <PageBody narrow className="space-y-4">
         {children}
-      </PageContainer>
+      </PageBody>
 
       <AnimatePresence>
         {confirmOpen ? (

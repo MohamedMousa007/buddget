@@ -1,6 +1,6 @@
 'use client'
 
-import { PageContainer } from '@/components/layout/PageContainer'
+import { PageBody } from '@/components/layout/PageContainer'
 import { useMemo } from 'react'
 import { Bell, MessageSquare, ShieldCheck, CheckCheck } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
@@ -37,7 +37,7 @@ export default function NotificationsPage() {
 
   return (
     <div>
-      <PageContainer className="pt-4 lg:pt-6 pb-[calc(2rem+env(safe-area-inset-bottom))] space-y-4 animate-[dashboardIn_0.35s_ease-out]">
+      <PageBody narrow className="space-y-4 animate-[dashboardIn_0.35s_ease-out]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <span className="h-9 w-9 rounded-xl flex items-center justify-center bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary-ink)]">
@@ -113,7 +113,7 @@ export default function NotificationsPage() {
             <p className="mt-3 text-sm text-[var(--color-brand-text-secondary)]">{t.notifications.emptyState}</p>
           </Card>
         )}
-      </PageContainer>
+      </PageBody>
     </div>
   )
 }

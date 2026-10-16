@@ -40,6 +40,7 @@ function wideStore(query: string) {
 }
 const mdStore = wideStore('(min-width: 768px)')
 const lgStore = wideStore('(min-width: 1024px)')
+const coarseStore = wideStore('(pointer: coarse)')
 const getWideServer = () => false
 
 const FOCUSABLE =
@@ -241,6 +242,10 @@ export function ModalShell({
 
   const desktopFadePanel = lgMotion
 
+  // A focused field only means "soft keyboard up" on touch devices. With a mouse (a narrow desktop
+  // window is still a bottom sheet below md) focusing an input must never remove the CTA.
+  const touchPrimary = useSyncExternalStore(coarseStore.subscribe, coarseStore.get, getWideServer)
+
   // Lift the panel above the OS keyboard OR the glass NumberPad (same code path).
   const numpadInset = useNumpadInset()
   const bottomInset = Math.max(keyboardOffset, numpadInset)
@@ -249,7 +254,7 @@ export function ModalShell({
   // keyboard is up: a submit button is pressed once the fields are done, so floating it above
   // the keyboard only steals rows of screen from the fields still being filled in.
   // Desktop keeps the footer — there is no keyboard eating the viewport there.
-  const keyboardUp = !desktopFadePanel && (bottomInset > 0 || textEntryFocused)
+  const keyboardUp = !desktopFadePanel && (bottomInset > 0 || (textEntryFocused && touchPrimary))
 
   // Portal to <body> so the sheet's `position: fixed` always resolves against
   // the viewport — a CSS transform on any ancestor (a parent framer-drag panel,
