@@ -170,14 +170,14 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
   if (!open) return null
 
   return (
-    <ModalShell open={open} onBackdropClick={onClose}>
-      <div className="flex flex-col" style={{ maxHeight: '92vh' }}>
+    <ModalShell open={open} onBackdropClick={onClose} scrollChild>
+      <div className="flex min-h-0 flex-1 flex-col">
         <V3SheetHeader onClose={onClose}>
           <V3SheetHeader.Title>{t.withdrawTitle}</V3SheetHeader.Title>
           <V3SheetHeader.Subtitle>{t.withdrawSub}</V3SheetHeader.Subtitle>
         </V3SheetHeader>
 
-        <div className="flex-1 space-y-4 overflow-y-auto px-5 pb-3 pt-2">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 pb-3 pt-2">
           <div>
             <p style={micro} className="mb-2">{t.from}</p>
             <PocketRadioList pockets={pockets} value={fromId} onChange={(id) => { setFromId(id); if (moveToId === id) setMoveToId(null) }} label={t.from} />

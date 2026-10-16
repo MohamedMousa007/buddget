@@ -11,7 +11,10 @@
  * className for the standalone glass style from the handoff.
  */
 
+import { useState } from 'react'
 import { cn } from '@/lib/utils'
+import { useIsNativeClient } from '@/lib/native/useIsNativeClient'
+import { AmountTextInput } from '@/components/ui/AmountTextInput'
 import { useNumberPad } from '@/components/ui/useNumberPad'
 import type { NumberPadMode } from '@/components/ui/NumberPad'
 
@@ -54,6 +57,8 @@ export function AmountField({
   id,
   'aria-label': ariaLabel,
 }: AmountFieldProps) {
+  const native = useIsNativeClient()
+  const [focused, setFocused] = useState(false)
   const { isOpen, openPad, pad } = useNumberPad({ value, onChange, mode, currency, label, dir })
   const ph = placeholder ?? (mode === 'pin' ? '0000' : '0.00')
   const showPrefix = mode === 'decimal' && !!currency
@@ -85,6 +90,59 @@ export function AmountField({
       }}
     />
   )
+
+  if (!native) {
+    const active = focused
+    return (
+      <div
+        dir={dir}
+        className={glass ? undefined : bare ? className : cn(BASE, 'focus-within:ring-2 focus-within:ring-[var(--color-brand-focus)]/55', className)}
+        style={
+          glass
+            ? {
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                width: '100%',
+                height: compactSize ? 44 : 52,
+                background: 'var(--color-brand-elevated)',
+                border: `1px solid ${active ? 'var(--color-brand-focus)' : 'var(--color-brand-border)'}`,
+                borderRadius: compactSize ? 12 : 14,
+                padding: '0 14px',
+                transition: 'border-color .15s',
+              }
+            : { borderColor: active ? 'var(--color-brand-focus)' : undefined }
+        }
+      >
+        {showPrefix && !glass && unit}
+        <AmountTextInput
+          id={id}
+          aria-label={ariaLabel ?? label}
+          disabled={disabled}
+          value={value}
+          onChange={onChange}
+          mode={mode}
+          placeholder={ph}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          dir={dir}
+          className="min-w-0 flex-1 border-0 bg-transparent p-0 text-start outline-none placeholder:opacity-50"
+          style={
+            glass
+              ? {
+                  fontFamily: 'var(--font-mono)',
+                  fontWeight: 700,
+                  fontSize: compactSize ? 20 : 24,
+                  letterSpacing: '-0.02em',
+                  color: 'var(--color-brand-text-primary)',
+                }
+              : { font: 'inherit', color: 'inherit' }
+          }
+        />
+        {showPrefix && glass && unit}
+      </div>
+    )
+  }
 
   return (
     <>

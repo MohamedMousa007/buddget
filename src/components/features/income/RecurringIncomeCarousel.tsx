@@ -1,5 +1,6 @@
 'use client'
 
+import { cn } from '@/lib/utils'
 import { useRef, useState, type ReactNode, type PointerEvent } from 'react'
 
 interface Props {
@@ -11,6 +12,8 @@ interface Props {
   dotColor?: string
   /** Active page-dot width (px). Income uses 16; debt spec wants 18. */
   activeDotWidth?: number
+  /** From lg render every item as a 2-up grid instead of a swipe carousel. */
+  lgGrid?: boolean
 }
 
 const TAP_SLOP = 6
@@ -22,7 +25,7 @@ const TAP_SLOP = 6
  * too (the assign sheet auto-centres the default source). Vertical page scroll is
  * preserved via `touch-action: pan-y` and a vertical-intent bail-out.
  */
-export function RecurringIncomeCarousel({ count, activeIndex, onActiveChange, renderItem, dotColor = 'var(--color-brand-primary)', activeDotWidth = 16 }: Props) {
+export function RecurringIncomeCarousel({ count, activeIndex, onActiveChange, renderItem, dotColor = 'var(--color-brand-primary)', activeDotWidth = 16, lgGrid = false }: Props) {
   const trackRef = useRef<HTMLDivElement>(null)
   const start = useRef<{ x: number; y: number } | null>(null)
   const axis = useRef<'h' | 'v' | null>(null)
@@ -32,6 +35,7 @@ export function RecurringIncomeCarousel({ count, activeIndex, onActiveChange, re
   const width = () => trackRef.current?.clientWidth ?? 1
 
   const onPointerDown = (e: PointerEvent) => {
+    if (lgGrid && window.matchMedia('(min-width: 1024px)').matches) return
     start.current = { x: e.clientX, y: e.clientY }
     axis.current = null
     setDragging(true)
@@ -80,28 +84,28 @@ export function RecurringIncomeCarousel({ count, activeIndex, onActiveChange, re
     <div>
       <div
         ref={trackRef}
-        className="relative overflow-hidden [touch-action:pan-y]"
+        className={cn('relative overflow-hidden [touch-action:pan-y]', lgGrid && 'lg:overflow-visible')}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
       >
         <div
-          className="flex"
+          className={cn('flex', lgGrid && 'lg:grid lg:grid-cols-2 lg:gap-4 lg:!transform-none')}
           style={{
             transform: `translateX(calc(${-activeIndex * 100}% + ${dragX}px))`,
             transition: dragging ? 'none' : 'transform .38s cubic-bezier(.22,1,.36,1)',
           }}
         >
           {Array.from({ length: count }, (_, i) => (
-            <div key={i} className="w-full shrink-0 px-0.5">
+            <div key={i} className={cn('w-full shrink-0 px-0.5', lgGrid && 'lg:min-w-0 lg:px-0')}>
               {renderItem(i)}
             </div>
           ))}
         </div>
       </div>
       {count > 1 ? (
-        <div className="mt-3 flex items-center justify-center gap-2">
+        <div className={cn('mt-3 flex items-center justify-center gap-2', lgGrid && 'lg:hidden')}>
           {Array.from({ length: count }, (_, i) => (
             <button data-raw-button-ok="a carousel position dot, 8px visible with a 24px hit area"
               key={i}

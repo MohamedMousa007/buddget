@@ -3,6 +3,7 @@
 import { AlertCircle, ArrowDown, ArrowUp, Check, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { PageContainer } from '@/components/layout/PageContainer'
 
 export type FlowBandVariant = 'budget' | 'filtered' | 'noBudget' | 'loading'
 
@@ -58,6 +59,7 @@ export function FlowSummaryBand({ variant, label, status, setBudget, big, of, si
       className="border-b border-[var(--flow-band-line)] text-[var(--flow-band-fg)]"
       style={{ background: FLOW_BAND_BG }}
     >
+      <PageContainer className="px-0 lg:px-0">
       <div className="px-[18px] pb-3 pt-2.5">
         <div className="flex h-[22px] items-center justify-between gap-2">
           <span className={`min-w-0 flex-1 truncate whitespace-nowrap text-[11px] font-bold uppercase tracking-[0.08em] ${FG2}`}>
@@ -130,8 +132,10 @@ export function FlowSummaryBand({ variant, label, status, setBudget, big, of, si
           </>
         )}
       </div>
+      </PageContainer>
       {/* A deeper sub-surface groups the three stats apart from the pace above. */}
-      <div className="grid h-[66px] grid-cols-3 border-t bg-[var(--flow-band-deep)]" style={{ borderColor: MIX }}>
+      <div className="border-t bg-[var(--flow-band-deep)]" style={{ borderColor: MIX }}>
+      <PageContainer className="grid h-[66px] grid-cols-3 px-0 lg:px-0">
         {stats.map((s, i) => {
           const Arrow = s.dir === 'in' ? ArrowDown : s.dir === 'out' ? ArrowUp : null
           return (
@@ -156,6 +160,7 @@ export function FlowSummaryBand({ variant, label, status, setBudget, big, of, si
             </div>
           )
         })}
+      </PageContainer>
       </div>
     </section>
   )

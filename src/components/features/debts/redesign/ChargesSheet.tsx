@@ -30,7 +30,7 @@ export function ChargesSheet({ open, onClose, target }: { open: boolean; onClose
   }, [expenses, target])
 
   return (
-    <ModalShell open={open} onBackdropClick={onClose} scrollChild panelClassName="h-[82vh]">
+    <ModalShell open={open} onBackdropClick={onClose} scrollChild panelClassName="h-[82dvh]">
       <div className="flex shrink-0 items-start justify-between gap-3 px-5 pt-5">
         <div className="min-w-0">
           <h2 id={useModalTitleId()} className="text-2xl font-bold text-[var(--color-brand-text-primary)]">{t.chargesTitle}</h2>

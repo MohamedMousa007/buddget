@@ -3,6 +3,7 @@
 import { format } from 'date-fns'
 import { FLOW_BAND_BG } from '@/components/features/flow/FlowSummaryBand'
 import { ProgressRing } from '@/components/ui/ProgressRing'
+import { FullBleedHero, PageContainer } from '@/components/layout/PageContainer'
 import { Progress, ProgressIndicator, ProgressTrack } from '@/components/ui/progress'
 import { monthProgress } from '@/lib/debts/heroStats'
 import { useT } from '@/lib/i18n'
@@ -104,8 +105,8 @@ export function DebtPortfolioHero({
       className="border-b border-[var(--flow-band-line)] text-[var(--flow-band-fg)]"
       style={{ background: FLOW_BAND_BG }}
     >
-      <div className="mx-auto max-w-screen-sm">
-        <div className="flex min-h-[148px] items-start justify-between gap-3 px-[18px] pb-3 pt-3">
+      <FullBleedHero innerClassName="px-0 lg:max-w-[var(--page-max-wide)]">
+        <div className="flex min-h-[148px] items-start justify-between gap-3 px-[18px] pb-3 pt-3 lg:px-0">
           <div className="min-w-0">
             <p className={`text-[11px] font-bold uppercase tracking-[0.08em] ${FG2}`}>{t.heroLabel}</p>
             <p className="mt-1.5 flex items-baseline gap-2">
@@ -129,11 +130,11 @@ export function DebtPortfolioHero({
             </div>
           ) : null}
         </div>
-      </div>
+      </FullBleedHero>
       <div className="border-t bg-[var(--flow-band-deep)]" style={{ borderColor: MIX }}>
-        <div className="mx-auto grid max-w-screen-sm grid-cols-3">
+        <PageContainer className="grid grid-cols-3 px-0 lg:max-w-[var(--page-max-wide)]">
           {cells.map((c, i) => (
-            <div key={c.label} className={cn('min-w-0 pb-[11px] pe-2.5 ps-[18px] pt-2.5', i > 0 && 'border-s')} style={i > 0 ? { borderColor: MIX } : undefined}>
+            <div key={c.label} className={cn('min-w-0 pb-[11px] pe-2.5 ps-[18px] pt-2.5', i > 0 ? 'border-s' : 'lg:ps-0')} style={i > 0 ? { borderColor: MIX } : undefined}>
               <p className={`truncate text-[10.5px] font-bold uppercase tracking-[0.06em] ${FG2}`}>{c.label}</p>
               <p className="mt-1 truncate whitespace-nowrap font-mono-numbers text-base font-bold">{c.value}</p>
               <p className={`mt-0.5 truncate text-[11px] ${FG2}`}>{c.sub}</p>
@@ -148,7 +149,7 @@ export function DebtPortfolioHero({
               </div>
             </div>
           ))}
-        </div>
+        </PageContainer>
       </div>
     </section>
   )

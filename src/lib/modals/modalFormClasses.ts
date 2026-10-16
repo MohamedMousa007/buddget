@@ -19,4 +19,4 @@ export const MODAL_CONTROL_CLASS =
 
 export const MODAL_BODY_SCROLL_CLASS = 'min-h-0 flex-1 overflow-y-auto overflow-x-hidden flex flex-col gap-5'
 
-export const MODAL_SHEET_OUTER_CLASS = 'flex max-h-[90vh] flex-col outline-none'
+export const MODAL_SHEET_OUTER_CLASS = 'flex max-h-[90dvh] flex-col outline-none'

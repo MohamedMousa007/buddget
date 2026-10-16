@@ -144,7 +144,7 @@ export function DebtPaymentsFeed({
 
   return (
     <div className="mt-6">
-      <div className="flex items-center justify-between gap-2 px-[18px]">
+      <div className="flex items-center justify-between gap-2 px-[18px] lg:px-0">
         <h2 className="text-[17px] font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{tm.title}</h2>
         {completedCount > 0 && onOpenCompleted ? (
           <Button variant="outline" size="touch" className="rounded-full border-[var(--color-brand-green)]/40 bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]" onClick={onOpenCompleted}>
@@ -158,17 +158,17 @@ export function DebtPaymentsFeed({
 
       <div className="mt-3">
         {groups.length === 0 ? (
-          <p className="px-[18px] py-8 text-center text-sm text-[var(--color-brand-text-secondary)]">{tm.noMatch}</p>
+          <p className="px-[18px] py-8 lg:px-0 text-center text-sm text-[var(--color-brand-text-secondary)]">{tm.noMatch}</p>
         ) : null}
         {groups.map((g, gi) => (
           <div key={g.key}>
-            <div className={`flex items-baseline justify-between px-[18px] pb-2 ${gi === 0 ? 'pt-1' : 'pt-5'}`}>
+            <div className={`flex items-baseline justify-between px-[18px] pb-2 lg:px-0 ${gi === 0 ? 'pt-1' : 'pt-5'}`}>
               <span className="text-[15px] font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{g.label}</span>
               {g.total !== 0 ? (
                 <span className="font-mono-numbers text-[11px] font-medium tabular-nums text-[var(--color-brand-text-muted)]">−{fmtWhole(-g.total)}</span>
               ) : null}
             </div>
-            <div className="border-y border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
+            <div className="border-y border-[var(--color-brand-border)] bg-[var(--color-brand-card)] lg:overflow-hidden lg:rounded-2xl lg:border-x">
               {g.items.map((m, i) => {
                 const FamilyIcon = m.kind === 'added' ? Plus : FAMILY_ICON[m.family]
                 const accent = FAMILY_ACCENT[m.family]

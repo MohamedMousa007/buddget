@@ -2490,6 +2490,14 @@ export const ar: Dictionary = {
     viewAll: 'عرض الكل', // TODO(ar-review)
     noMatchIncome: 'دخل على', // TODO(ar-review)
     stickyLeft: (x: string) => `متبقٍ من ${x}`,
+    // TODO(ar-review)
+    stickyOver: (x: string) => `تجاوز الميزانية ${x}`,
+    // TODO(ar-review)
+    overBudgetBy: 'تجاوز الميزانية بـ',
+    // TODO(ar-review)
+    overBudget: 'تجاوز الميزانية',
+    // TODO(ar-review)
+    budgetUsedUp: 'استُنفدت الميزانية',
     stickySpent: 'مصروف',
     stickyResults: (n: number) => `${n} نتائج`,
     filters: 'المرشّحات',

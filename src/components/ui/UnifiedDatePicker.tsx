@@ -5,6 +5,8 @@ import { createPortal } from 'react-dom'
 import { ChevronDown, ChevronLeft, ChevronRight, X, Search } from 'lucide-react'
 import { useLocale } from '@/lib/i18n'
 import { useScrollLock } from '@/lib/ui/scrollLock'
+import { registerBackGuard } from '@/lib/navigation/backGuard'
+import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { Scrim } from '@/components/ui/Scrim'
 import { IconButton } from '@/components/ui/IconButton'
 
@@ -85,6 +87,29 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
 
   // Lock background scroll while open (issue 5).
   useScrollLock(open)
+  useEscapeClose(open, onClose)
+
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  })
+  useEffect(() => {
+    if (!open) return
+    return registerBackGuard(() => {
+      onCloseRef.current()
+      return true
+    })
+  }, [open])
+
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    dialogRef.current?.focus()
+    return () => {
+      if (opener?.isConnected) opener.focus()
+    }
+  }, [open])
 
   if (!open || typeof document === 'undefined') return null
 
@@ -147,12 +172,17 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
   return createPortal(
     <div
       dir={ar ? 'rtl' : 'ltr'}
-      className="fixed inset-0 z-[130] flex items-center justify-center p-6"
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={ar ? 'اختر التاريخ' : 'Select date'}
+      tabIndex={-1}
+      className="fixed inset-0 z-[130] flex items-center justify-center p-6 outline-none"
       style={{ animation: 'efFade .16s ease' }}
     >
       <Scrim label={ar ? 'إغلاق' : 'Close'} onClick={onClose} tone="heavy" blur={false} />
       <div
-        className="relative w-full max-w-72 overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[var(--color-brand-text-primary)]"
+        className="relative w-full max-w-72 md:max-w-80 overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[var(--color-brand-text-primary)]"
         style={{
           boxShadow: '0 26px 64px -14px rgba(0,0,0,.4)',
           fontFamily: ar ? 'var(--font-sans-ar)' : 'var(--font-sans)',

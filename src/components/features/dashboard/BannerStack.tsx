@@ -80,7 +80,7 @@ export function BannerStack() {
   const cycle = (dir: 1 | -1) => setIndex((i) => (Math.min(i, count - 1) + dir + count) % count)
 
   return (
-    <div className="pointer-events-none fixed inset-x-2.5 top-[calc(env(safe-area-inset-top,0px)+3px)] z-[58] mx-auto max-w-[620px]">
+    <div className="pointer-events-none fixed inset-x-2.5 top-[calc(env(safe-area-inset-top,0px)+3px)] lg:start-[calc(var(--sidebar-w)+0.625rem)] lg:top-[calc(var(--app-header-h-lg)+8px)] z-[58] mx-auto max-w-[620px]">
       <div className="relative">
         {[2, 1]
           .filter((depth) => depth < count)

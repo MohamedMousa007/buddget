@@ -62,7 +62,7 @@ export function GoldPriceStrip() {
   const setState = (next: 'collapsed' | 'expanded' | 'hidden') => updateSettings({ wealthGoldStrip: next })
 
   return (
-    <section className="mx-4 overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] shadow-[var(--shadow-sm)]">
+    <section className="mx-4 lg:mx-0 overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] shadow-[var(--shadow-sm)]">
       <div className="grid grid-cols-3 divide-x divide-[var(--color-brand-border)] rtl:divide-x-reverse">
         {KARATS.map((k) => {
           const p = vm?.prices.find((x) => x.k === k)

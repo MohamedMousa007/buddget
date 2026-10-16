@@ -64,7 +64,7 @@ export function WealthList({ rows, categories, filter, onFilter, onRowPress, onA
 
   return (
     <section>
-      <div className="flex items-center gap-2 px-4">
+      <div className="flex items-center gap-2 px-4 lg:px-0">
         <h2 className="text-[17px] font-bold text-[var(--color-brand-text-primary)]">{t.whereItIs}</h2>
         <Badge variant="muted" className="min-w-[21px] px-1.5 font-mono-numbers text-[11px] font-semibold">{rows.length}</Badge>
         <Button variant="secondary" size="touch" className="ms-auto" onClick={onAdd}>
@@ -73,7 +73,7 @@ export function WealthList({ rows, categories, filter, onFilter, onRowPress, onA
       </div>
 
       {categories.length > 1 ? (
-        <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto px-4">
+        <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto px-4 lg:px-0">
           <OptionChip surface="card" selected={filter === null} onClick={() => onFilter(null)}>
             {t.all}
             <span className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{rows.length}</span>
@@ -97,12 +97,12 @@ export function WealthList({ rows, categories, filter, onFilter, onRowPress, onA
         groups.map((g) => (
           <div key={g.key} className="mt-3">
             {showHeaders ? (
-              <div className="flex items-center justify-between px-4 pb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
+              <div className="flex items-center justify-between px-4 pb-2 text-[11px] lg:px-0 font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
                 <span>{g.title}</span>
                 <span className="font-mono-numbers">{formatWhole(g.rows.reduce((s, r) => s + (r.amount ?? 0), 0))}</span>
               </div>
             ) : null}
-            <div className="border-y border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
+            <div className="border-y border-[var(--color-brand-border)] bg-[var(--color-brand-card)] lg:overflow-hidden lg:rounded-2xl lg:border-x">
               {g.rows.map((r, i) => {
                 const { Icon, color } = CAT[r.cat]
                 return (

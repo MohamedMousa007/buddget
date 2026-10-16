@@ -81,7 +81,7 @@ export function SmsReviewSheet({ open, onClose, items, confirmItem, dismissItem,
   }
 
   return (
-    <ModalShell open={open} onBackdropClick={onClose} panelClassName="!max-h-[min(80vh,640px)]">
+    <ModalShell open={open} onBackdropClick={onClose} panelClassName="!max-h-[min(80dvh,640px)]">
       <div className="flex flex-col gap-3 px-4 pb-[max(env(safe-area-inset-bottom,0px),20px)]">
         <div className="flex items-center justify-between gap-3">
           <div>

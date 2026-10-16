@@ -26,3 +26,9 @@ export function canEngage(scrollYAtStart: number): boolean {
 export function shouldCommit(scrollYAtStart: number, dy: number): boolean {
   return canEngage(scrollYAtStart) && resistedPull(dy) >= THRESHOLD
 }
+
+/** Touches that start inside a `[data-no-ptr]` element (e.g. the draggable Buddgy orb) never pull-to-refresh. */
+export function shouldIgnorePtr(target: EventTarget | null): boolean {
+  const el = target as Partial<Element> | null
+  return !!el?.closest?.('[data-no-ptr]')
+}

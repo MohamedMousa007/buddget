@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, useDragControls } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -27,6 +27,20 @@ const ModalTitleIdContext = createContext<string | undefined>(undefined)
 export function useModalTitleId() {
   return useContext(ModalTitleIdContext)
 }
+
+function wideStore(query: string) {
+  return {
+    subscribe: (cb: () => void) => {
+      const mq = window.matchMedia(query)
+      mq.addEventListener('change', cb)
+      return () => mq.removeEventListener('change', cb)
+    },
+    get: () => window.matchMedia(query).matches,
+  }
+}
+const mdStore = wideStore('(min-width: 768px)')
+const lgStore = wideStore('(min-width: 1024px)')
+const getWideServer = () => false
 
 const FOCUSABLE =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -79,6 +93,12 @@ interface ModalShellProps {
    * column WITHOUT its own scroll container, so there's no nested scroller.
    */
   scrollChild?: boolean
+  /**
+   * Wide-screen placement. `center` (default): centred card from tablet (md) up.
+   * `corner`: bottom sheet until desktop (lg), then a popover anchored above the
+   * bottom-end FAB; the backdrop turns into a light, non-blurring scrim there.
+   */
+  anchor?: 'center' | 'corner'
 }
 
 /**
@@ -93,6 +113,7 @@ export function ModalShell({
   dragToClose = true,
   padContent = false,
   scrollChild = false,
+  anchor = 'center',
 }: ModalShellProps) {
   const dragControls = useDragControls()
   const zStack = zIndexClassName ?? OVERLAY_Z
@@ -131,6 +152,7 @@ export function ModalShell({
     const el = panelRef.current
     if (!el) return
 
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
     const focusPanel = () => {
       el.focus()
     }
@@ -160,21 +182,19 @@ export function ModalShell({
     return () => {
       cancelAnimationFrame(id)
       el.removeEventListener('keydown', onKeyDown)
+      if (opener?.isConnected && (document.activeElement === document.body || el.contains(document.activeElement))) opener.focus()
     }
   }, [open])
 
-  const panelStaticClasses =
-    'fixed bottom-0 start-0 end-0 bg-[var(--color-brand-card)] rounded-t-3xl border-t border-[var(--color-brand-border)] max-h-[90vh] lg:bottom-auto lg:top-1/2 lg:start-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[440px] lg:rounded-2xl lg:border lg:max-h-[90vh]'
-
-  const [lgMotion, setLgMotion] = useState(false)
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const mq = window.matchMedia('(min-width: 1024px)')
-    const apply = () => setLgMotion(mq.matches)
-    apply()
-    mq.addEventListener('change', apply)
-    return () => mq.removeEventListener('change', apply)
-  }, [])
+  const corner = anchor === 'corner'
+  const panelStaticClasses = cn(
+    'fixed bottom-0 start-0 end-0 bg-[var(--color-brand-card)] rounded-t-3xl border-t border-[var(--color-brand-border)] max-h-[90dvh]',
+    corner
+      ? 'lg:bottom-24 lg:end-8 lg:start-auto lg:w-[360px] lg:rounded-2xl lg:border lg:max-h-[min(90dvh,640px)]'
+      : 'md:bottom-auto md:top-1/2 md:start-1/2 md:end-auto md:-translate-x-1/2 md:-translate-y-1/2 md:w-[min(440px,calc(100vw-2rem))] md:rounded-2xl md:border md:max-h-[90dvh] rtl:md:translate-x-1/2',
+  )
+  const store = corner ? lgStore : mdStore
+  const lgMotion = useSyncExternalStore(store.subscribe, store.get, getWideServer)
 
   // Keyboard avoidance for native + iOS Safari: when the soft keyboard rises,
   // shrink the panel so its content stays scrollable above the keyboard
@@ -248,7 +268,7 @@ export function ModalShell({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
             onClick={guardedDismiss}
-            className={cn('fixed inset-0', 'bg-black/60 backdrop-blur-sm', zStack)}
+            className={cn('fixed inset-0', corner ? 'bg-black/60 backdrop-blur-sm lg:bg-black/20 lg:backdrop-blur-none' : 'bg-black/60 backdrop-blur-sm', zStack)}
           />
           <motion.div
             ref={panelRef}
@@ -298,7 +318,10 @@ export function ModalShell({
                       never swallow a tap on a button/input. Hidden on desktop,
                       where the sheet is a centered fade with no drag. */}
                   <div
-                    className="flex shrink-0 items-center justify-center min-h-11 cursor-grab active:cursor-grabbing touch-none select-none lg:hidden"
+                    className={cn(
+                      'flex shrink-0 items-center justify-center min-h-11 cursor-grab active:cursor-grabbing touch-none select-none',
+                      corner ? 'lg:hidden' : 'md:hidden',
+                    )}
                     onPointerDown={(e) => dragControls.start(e)}
                     role="presentation"
                     aria-hidden

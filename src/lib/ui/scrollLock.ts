@@ -13,12 +13,16 @@ import { useEffect } from 'react'
  */
 let count = 0
 let saved = ''
+let savedPad = ''
 
 export function lockScroll(): void {
   if (typeof document === 'undefined') return
   if (count === 0) {
+    const gap = window.innerWidth - document.documentElement.clientWidth
     saved = document.body.style.overflow
+    savedPad = document.body.style.paddingRight
     document.body.style.overflow = 'hidden'
+    if (gap > 0) document.body.style.paddingRight = `${gap}px`
   }
   count++
 }
@@ -26,7 +30,10 @@ export function lockScroll(): void {
 export function unlockScroll(): void {
   if (typeof document === 'undefined') return
   count = Math.max(0, count - 1)
-  if (count === 0) document.body.style.overflow = saved
+  if (count === 0) {
+    document.body.style.overflow = saved
+    document.body.style.paddingRight = savedPad
+  }
 }
 
 export function isScrollLocked(): boolean {

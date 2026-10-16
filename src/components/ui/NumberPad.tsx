@@ -107,6 +107,18 @@ export function NumberPad({
   // so the modal behind it survives the first press — like a system keyboard.
   useEffect(() => registerBackGuard(() => { close(); return true }))
 
+  // Escape closes only the pad — capture + stopPropagation keeps the modal behind it open.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      e.stopPropagation()
+      e.preventDefault()
+      close()
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  })
+
   // Lock background scroll while the pad is open — otherwise a touch drag over
   // the transparent scrim scrolls the modal/page behind it. Ref-counted so it
   // composes with the ModalShell behind the pad.
@@ -191,6 +203,9 @@ export function NumberPad({
           left: 0,
           right: 0,
           bottom: 0,
+          width: '100%',
+          maxWidth: 480,
+          marginInline: 'auto',
           overflow: 'hidden',
           background:
             'radial-gradient(120% 82% at 50% -12%, rgba(18,176,160,.20) 0%, rgba(18,176,160,.05) 40%, rgba(20,18,26,0) 66%), ' +

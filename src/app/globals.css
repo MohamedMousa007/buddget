@@ -95,6 +95,13 @@
 
 /* ── Light theme (default) ── */
 :root {
+  /* Layout foundation: header heights (excl. safe-area inset), sidebar, page widths. */
+  --app-header-h: 57px;
+  --app-header-h-lg: 48px;
+  --sidebar-w: 11rem;
+  --page-max: 40rem;
+  --page-max-wide: 72rem;
+
   /* Brand — teal. `--color-brand-primary` is the identity colour, unmodified
      from the kit. Light mode puts DARK ink on it (6.30:1); the kit specified
      white, which measured 2.71:1 and failed AA on the app's main CTA. Dark mode
@@ -485,6 +492,10 @@
   .no-tap-highlight {
     -webkit-tap-highlight-color: transparent;
   }
+}
+
+html {
+  overscroll-behavior-y: contain;
 }
 
 /* ── Capacitor / native shell tweaks ── */

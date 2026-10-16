@@ -56,11 +56,12 @@ export function FilterSheet({ open, onClose, children, footer }: { open: boolean
           <motion.div
             role="dialog"
             aria-modal="true"
+            aria-label="Filters"
             initial={{ y: '110%' }}
             animate={{ y: 0 }}
             exit={{ y: '110%' }}
             transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-x-0 bottom-0 z-[60] flex max-h-[90%] flex-col overflow-hidden rounded-t-3xl bg-[var(--color-brand-card)] shadow-[var(--shadow-lg)] lg:mx-auto lg:max-w-screen-sm"
+            className="fixed inset-x-0 bottom-0 z-[60] flex max-h-[90dvh] flex-col overflow-hidden rounded-t-3xl bg-[var(--color-brand-card)] shadow-[var(--shadow-lg)] md:inset-x-auto md:start-1/2 md:w-[min(36rem,calc(100vw-2rem))] md:-translate-x-1/2 rtl:md:translate-x-1/2 lg:start-[calc(50%+var(--sidebar-w,11rem)/2)] lg:w-[min(36rem,calc(100vw-var(--sidebar-w,11rem)-2rem))]"
           >
             <div
               className="hide-scrollbar min-h-0 flex-1 overflow-y-auto px-4 pt-2"

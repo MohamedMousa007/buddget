@@ -1,5 +1,6 @@
 'use client'
 
+import { PageContainer } from '@/components/layout/PageContainer'
 import dynamic from 'next/dynamic'
 import { ChartPlaceholder } from '@/components/reports/ChartPlaceholder'
 import { ReportFilters } from '@/components/reports/ReportFilters'
@@ -35,11 +36,12 @@ export default function ReportsPage() {
 
   return (
     <div>
-      <div className="px-4 py-4 lg:px-6 space-y-4 max-w-6xl mx-auto">
+      <PageContainer wide className="py-4 space-y-4">
         <ReportFilters selected={r.dateRange} onSelect={r.setDateRange} />
 
         <ReportExpenseDebtFilter value={r.expenseDebtFilter} onChange={r.setExpenseDebtFilter} />
 
+        <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
         <ReportsNetWorthPanel />
 
         <ReportsSummaryPanel
@@ -57,7 +59,9 @@ export default function ReportsPage() {
           }
           mostUsedMethod={r.mostUsedMethod}
         />
+        </div>
 
+        <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
         <SpendingPacePanel
           dailyRate={stats.dailyRate}
           projectedSpend={stats.projectedSpend}
@@ -75,6 +79,7 @@ export default function ReportsPage() {
           baseCurrency={r.settings.baseCurrency}
           exchangeRates={r.exchangeRates}
         />
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <MonthlyChart data={r.monthlyData} currency={r.settings.baseCurrency} />
@@ -84,7 +89,7 @@ export default function ReportsPage() {
         <ReportsPaymentMethodPanel methods={r.methodBreakdown} baseCurrency={r.settings.baseCurrency} />
 
         <ReportsExportBar onExportCsv={r.handleExportCSV} onCopySummary={r.handleCopySummary} />
-      </div>
+      </PageContainer>
     </div>
   )
 }

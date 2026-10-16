@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { navigate } from '@/lib/navigation/navigate'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { SettingsSaveButton } from '@/components/features/settings/SettingsSaveButton'
 import { flushFinanceNow } from '@/components/sync/SupabaseFinanceSync'
 import { useActionToast } from '@/components/ui/ActionToast'
@@ -76,8 +77,9 @@ export function SettingsSubPageShell({ title, children, showSave = true }: Props
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-dvh">
       <PageHeader>
+        <PageContainer className="px-0 lg:px-0">
         <PageHeaderContent>
           <div className="flex items-center gap-1">
             <IconButton onClick={onBackClick} aria-label={t.common.back}>
@@ -89,10 +91,11 @@ export function SettingsSubPageShell({ title, children, showSave = true }: Props
             {showSave ? <div className="ms-auto"><SettingsSaveButton dirty={dirty} onSaved={() => { snapshotRef.current = useFinanceStore.getState().settings; bumpBaseline((n) => n + 1) }} /></div> : null}
           </div>
         </PageHeaderContent>
+        </PageContainer>
       </PageHeader>
-      <div className="px-4 py-4 lg:px-6 max-w-3xl mx-auto space-y-4">
+      <PageContainer className="py-4 space-y-4">
         {children}
-      </div>
+      </PageContainer>
 
       <AnimatePresence>
         {confirmOpen ? (

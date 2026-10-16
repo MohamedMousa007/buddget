@@ -2333,6 +2333,10 @@ export interface Dictionary {
     viewAll: string
     noMatchIncome: string
     stickyLeft: (x: string) => string
+    stickyOver: (x: string) => string
+    overBudgetBy: string
+    overBudget: string
+    budgetUsedUp: string
     stickySpent: string
     stickyResults: (n: number) => string
     filters: string

@@ -1,5 +1,7 @@
 'use client'
 
+import { PageContainer } from '@/components/layout/PageContainer'
+import { PageGrid } from '@/components/layout/PageGrid'
 import { GoalLensList } from '@/components/features/goals/GoalLensList'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CreditCard, HandCoins, Layers, Plus, ShieldCheck } from 'lucide-react'
@@ -118,7 +120,7 @@ export default function DebtsPage() {
   const FamilyIcon = family.Icon
 
   return (
-    <div className="pb-24">
+    <div>
       <DebtPortfolioHero
         owed={data.owed}
         base={data.base}
@@ -136,82 +138,88 @@ export default function DebtsPage() {
         clearedCount={clearedCount}
       />
 
-      <div className="mx-auto max-w-screen-sm px-4 pt-4 lg:px-6">
-        <GoalLensList categories={['debt_freedom']} />
+      <PageContainer className="px-0 lg:max-w-[var(--page-max-wide)]">
+        <PageGrid
+          primary={
+            <div className="px-4 pt-4 lg:px-0">
+                <GoalLensList categories={['debt_freedom']} />
 
-        {noneActive ? (
-          <EmptyState
-            className="mt-2"
-            icon={
-              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]">
-                <ShieldCheck className="h-7 w-7" aria-hidden />
-              </span>
-            }
-            title={clearedCount > 0 ? t.debts.emptyClearedTitle : t.debts.emptyNoneTitle}
-            description={clearedCount > 0 ? t.debts.emptyClearedBody : t.debts.emptyNoneBody}
-            action={
-              <Button size="cta" onClick={() => addDebt()}>
-                {t.debts.emptyAddDebt}
-              </Button>
-            }
-          />
-        ) : (
-          <>
-            <div className="mt-5">
-              <DebtFamilyTabs active={tab} onChange={changeTab} counts={data.counts} />
+                {noneActive ? (
+                  <EmptyState
+                    className="mt-2"
+                    icon={
+                      <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]">
+                        <ShieldCheck className="h-7 w-7" aria-hidden />
+                      </span>
+                    }
+                    title={clearedCount > 0 ? t.debts.emptyClearedTitle : t.debts.emptyNoneTitle}
+                    description={clearedCount > 0 ? t.debts.emptyClearedBody : t.debts.emptyNoneBody}
+                    action={
+                      <Button size="cta" onClick={() => addDebt()}>
+                        {t.debts.emptyAddDebt}
+                      </Button>
+                    }
+                  />
+                ) : (
+                  <>
+                    <div className="mt-5">
+                      <DebtFamilyTabs active={tab} onChange={changeTab} counts={data.counts} />
+                    </div>
+
+                    {tab === 'installment' && data.assignCandidate && data.assignCandidate.id !== dismissedAssign ? (
+                      <div className="mt-4">
+                        <AssignPaymentBanner candidate={data.assignCandidate} onAssign={assignPayment} onDismiss={(id) => setDismissedAssign(id)} />
+                      </div>
+                    ) : null}
+
+                    {listLen === 0 ? (
+                      <EmptyState
+                        icon={
+                          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]">
+                            <FamilyIcon className="h-6 w-6" strokeWidth={1.8} aria-hidden />
+                          </span>
+                        }
+                        title={family.emptyLine}
+                        action={
+                          <Button size="cta" onClick={() => addDebt(tab)}>
+                            {family.emptyCta}
+                          </Button>
+                        }
+                      />
+                    ) : (
+                      <div className="mt-5">
+                        <div className="mb-3 flex items-center gap-2 px-1">
+                          <h2 className="text-[17px] font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">
+                            {family.title} <span className="ms-1 font-mono-numbers text-sm font-medium text-[var(--color-brand-text-muted)]">{listLen}</span>
+                          </h2>
+                          <Button
+                            variant="outline"
+                            size="touch"
+                            className="ms-auto border-[var(--color-brand-primary)]/40 bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]"
+                            onClick={() => addDebt(tab)}>
+                            <Plus aria-hidden />
+                            {family.add}
+                          </Button>
+                        </div>
+                        <RecurringIncomeCarousel count={listLen} activeIndex={Math.min(index, listLen - 1)} onActiveChange={setIndex} renderItem={renderCard} activeDotWidth={18} lgGrid />
+                      </div>
+                    )}
+                  </>
+                )}
             </div>
-
-            {tab === 'installment' && data.assignCandidate && data.assignCandidate.id !== dismissedAssign ? (
-              <div className="mt-4">
-                <AssignPaymentBanner candidate={data.assignCandidate} onAssign={assignPayment} onDismiss={(id) => setDismissedAssign(id)} />
-              </div>
-            ) : null}
-
-            {listLen === 0 ? (
-              <EmptyState
-                icon={
-                  <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]">
-                    <FamilyIcon className="h-6 w-6" strokeWidth={1.8} aria-hidden />
-                  </span>
-                }
-                title={family.emptyLine}
-                action={
-                  <Button size="cta" onClick={() => addDebt(tab)}>
-                    {family.emptyCta}
-                  </Button>
-                }
+          }
+          secondary={
+            <div className="lg:max-h-[calc(100dvh-var(--app-header-h-lg)-2rem)] lg:overflow-y-auto">
+              <DebtPaymentsFeed
+                payments={data.payments}
+                currentFamily={tab}
+                completedCount={data.cleared.length}
+                onOpenCompleted={() => setActiveModal('clearedVault')}
               />
-            ) : (
-              <div className="mt-5">
-                <div className="mb-3 flex items-center gap-2 px-1">
-                  <h2 className="text-[17px] font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">
-                    {family.title} <span className="ms-1 font-mono-numbers text-sm font-medium text-[var(--color-brand-text-muted)]">{listLen}</span>
-                  </h2>
-                  <Button
-                    variant="outline"
-                    size="touch"
-                    className="ms-auto border-[var(--color-brand-primary)]/40 bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]"
-                    onClick={() => addDebt(tab)}>
-                    <Plus aria-hidden />
-                    {family.add}
-                  </Button>
-                </div>
-                <RecurringIncomeCarousel count={listLen} activeIndex={Math.min(index, listLen - 1)} onActiveChange={setIndex} renderItem={renderCard} activeDotWidth={18} />
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Full-bleed ledger — identical to the Expenses/Income lists (no side inset). */}
-      <div className="mx-auto max-w-screen-sm">
-        <DebtPaymentsFeed
-          payments={data.payments}
-          currentFamily={tab}
-          completedCount={data.cleared.length}
-          onOpenCompleted={() => setActiveModal('clearedVault')}
+            </div>
+          }
         />
-      </div>
+      </PageContainer>
 
       <ClearedVaultSheet
         open={activeModal === 'clearedVault'}

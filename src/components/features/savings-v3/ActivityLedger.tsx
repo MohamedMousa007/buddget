@@ -60,7 +60,7 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
   if (days.length === 0) {
     return (
       <div className="mt-2">
-        <h2 className="mb-2 px-4 text-[17px] font-bold text-[var(--color-brand-text-primary)]">{t.recentMoves}</h2>
+        <h2 className="mb-2 px-4 text-[17px] lg:px-0 font-bold text-[var(--color-brand-text-primary)]">{t.recentMoves}</h2>
         <div className="px-1 py-10 text-center">
           <p className="text-sm text-[var(--color-brand-text-muted)]">{t.nothingHeld}</p>
         </div>
@@ -76,7 +76,7 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
 
   return (
     <div className="mt-2">
-      <div className="mb-2 flex items-center justify-between px-4">
+      <div className="mb-2 flex items-center justify-between px-4 lg:px-0">
         <h2 className="text-[17px] font-bold text-[var(--color-brand-text-primary)]">
           {t.recentMoves}{filter ? ` · ${t.catLabels[filter]}` : ''}
         </h2>
@@ -84,7 +84,7 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
       </div>
 
       {days.map(([day, rows]) => (
-        <div key={day} className="mt-3">
+        <div key={day} className="mt-3 lg:overflow-hidden lg:rounded-2xl lg:border lg:border-[var(--color-brand-border)] lg:bg-[var(--color-brand-card)]">
           <div className="flex items-center justify-between px-4 pb-1">
             <span className="text-sm font-bold text-[var(--color-brand-text-primary)]">{new Date(day + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
             <span className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{fmtSigned(dayTotal(rows))}.00 {baseCurrency}</span>
@@ -97,7 +97,7 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
             const time = new Date(tx.date.length > 10 ? tx.date : tx.date + 'T12:00:00').toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
             return (
               <SwipeToDelete key={tx.id} onDelete={() => deleteTx(tx.id)} openSide={openId === tx.id ? 'left' : null} onOpenChange={(side) => setOpenId(side ? tx.id : null)} deleteLabel="Delete">
-                <div className="border-t border-[var(--color-brand-border)] bg-[var(--color-brand-bg)]">
+                <div className="border-t border-[var(--color-brand-border)] bg-[var(--color-brand-bg)] lg:bg-transparent">
                   <TransactionRow
                     icon={a ? <SavingsAccountIcon account={a} className="h-5 w-5" /> : tag.label === 'Withdrew' ? <ShoppingCart size={18} /> : <TrendingUp size={18} />}
                     iconBg={a ? rgba(pocketColor(a), .14) : 'var(--color-brand-elevated)'}

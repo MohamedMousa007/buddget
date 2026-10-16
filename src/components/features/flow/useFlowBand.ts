@@ -11,6 +11,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { amountIsFiltered, useExpenseFilterStore } from '@/lib/store/useExpenseFilterStore'
 import { formatFixed2, formatSigned, formatWhole } from '@/lib/utils/formatters'
 import { shortDate } from '@/lib/utils/shortDate'
+import { budgetHero } from '@/components/features/flow/budgetHero'
 import { totalDaysInMonth } from '@/lib/utils/spendingPace'
 import type { FlowSummaryBandProps } from '@/components/features/flow/FlowSummaryBand'
 import type { FlowStickyStripProps } from '@/components/features/flow/FlowStickyStrip'
@@ -216,6 +217,8 @@ export function useFlowBand({
     }
 
     // Left to spend. With nothing logged yet, the daily figure spreads over the month.
+    const hero = budgetHero(budget, spent)
+    const isOver = hero.kind === 'over'
     const left = budget - spent
     const empty = all.length === 0
     const days = empty ? totalDays : Math.max(1, stats.daysLeft)
@@ -223,24 +226,25 @@ export function useFlowBand({
       monthName,
       band: {
         variant: 'budget',
-        label: t.flow.leftToSpend,
-        status:
-          stats.paceStatus === 'over'
+        label: isOver ? t.flow.overBudgetBy : t.flow.leftToSpend,
+        status: isOver
+          ? { label: t.flow.overBudget, icon: 'alert' }
+          : stats.paceStatus === 'over'
             ? { label: t.flow.over, icon: 'alert' }
             : stats.paceStatus === 'warning'
               ? { label: t.flow.close, icon: 'clock' }
               : { label: t.flow.onTrack, icon: 'check' },
-        big: formatFixed2(left),
+        big: formatFixed2(hero.amount),
         of: t.flow.of(formatWhole(budget)),
         side: t.flow.perDay(formatWhole(Math.max(0, left) / Math.max(1, days))),
-        sideSub: empty ? t.flow.forDays(days) : t.flow.untilDate(endLabel),
+        sideSub: isOver ? t.flow.budgetUsedUp : empty ? t.flow.forDays(days) : t.flow.untilDate(endLabel),
         bar: { pct: (spent / budget) * 100, tick },
-        scale: [startLabel, t.flow.scaleSpent(formatWhole(spent)), endLabel],
+        scale: [startLabel, isOver ? t.flow.scaleOverBy(formatWhole(hero.amount)) : t.flow.scaleSpent(formatWhole(spent)), endLabel],
         stats: allStats(),
       },
       sticky: {
-        primary: formatFixed2(left),
-        secondary: t.flow.stickyLeft(formatWhole(budget)),
+        primary: formatFixed2(hero.amount),
+        secondary: isOver ? t.flow.stickyOver(formatWhole(budget)) : t.flow.stickyLeft(formatWhole(budget)),
         right: [formatSigned(moneyIn), formatSigned(-spent)],
       },
     }

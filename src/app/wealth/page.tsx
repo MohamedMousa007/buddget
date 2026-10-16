@@ -8,6 +8,8 @@ import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
+import { PageContainer } from '@/components/layout/PageContainer'
+import { PageGrid } from '@/components/layout/PageGrid'
 import { FlowStickyStrip } from '@/components/features/flow/FlowStickyStrip'
 import { ActivityLedger } from '@/components/features/savings-v3/ActivityLedger'
 import { AddHoldingSheet } from '@/components/features/savings-v3/AddHoldingSheet'
@@ -229,7 +231,7 @@ export default function WealthPage() {
   }
 
   return (
-    <div className="overflow-x-hidden pb-24">
+    <div>
       {unpricedGrams > 0 ? (
         <StatusPill
           icon={<TriangleAlert strokeWidth={2} />}
@@ -260,35 +262,44 @@ export default function WealthPage() {
         }
       />
 
-      <div className="mx-auto max-w-screen-sm space-y-5 pt-4">
-        <div className="grid grid-cols-2 gap-3 px-4">
-          {brandNew ? (
-            <>
-              <Button size="cta" onClick={() => openHolding()}><Plus />{t.addHolding}</Button>
-              <Button size="cta" variant="outline" onClick={() => openAdd(null)}><ArrowDownLeft />{t.addMoney}</Button>
-            </>
-          ) : (
-            <>
-              <Button size="cta" onClick={() => openAdd(null)}><ArrowDownLeft />{t.addMoney}</Button>
-              <Button size="cta" variant="outline" onClick={() => openWithdraw(null)}><ArrowUpRight />{t.withdraw}</Button>
-            </>
-          )}
-        </div>
+      <PageContainer className="px-0 pt-4 lg:max-w-[var(--page-max-wide)]">
+        <PageGrid
+          primary={
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-3 px-4 lg:px-0">
+                {brandNew ? (
+                  <>
+                    <Button size="cta" onClick={() => openHolding()}><Plus />{t.addHolding}</Button>
+                    <Button size="cta" variant="outline" onClick={() => openAdd(null)}><ArrowDownLeft />{t.addMoney}</Button>
+                  </>
+                ) : (
+                  <>
+                    <Button size="cta" onClick={() => openAdd(null)}><ArrowDownLeft />{t.addMoney}</Button>
+                    <Button size="cta" variant="outline" onClick={() => openWithdraw(null)}><ArrowUpRight />{t.withdraw}</Button>
+                  </>
+                )}
+              </div>
 
-        <GoldPriceStrip />
+              <GoldPriceStrip />
 
-        <WealthList
-          rows={model.rows}
-          categories={model.categories}
-          filter={filter}
-          onFilter={setFilter}
-          onRowPress={(row, anchor) => setMenu({ row, anchor })}
-          onAdd={() => openHolding()}
-          goalLines={goalLines}
+              <WealthList
+                rows={model.rows}
+                categories={model.categories}
+                filter={filter}
+                onFilter={setFilter}
+                onRowPress={(row, anchor) => setMenu({ row, anchor })}
+                onAdd={() => openHolding()}
+                goalLines={goalLines}
+              />
+            </div>
+          }
+          secondary={
+            <div className="mt-1 lg:-mt-2">
+              <ActivityLedger transactions={savingsTransactions} accounts={savingsAccounts} baseCurrency={base} exchangeRates={exchangeRates} limit={3} filter={filter} />
+            </div>
+          }
         />
-
-        <ActivityLedger transactions={savingsTransactions} accounts={savingsAccounts} baseCurrency={base} exchangeRates={exchangeRates} limit={3} filter={filter} />
-      </div>
+      </PageContainer>
 
       {menu && (() => {
         const { row } = menu

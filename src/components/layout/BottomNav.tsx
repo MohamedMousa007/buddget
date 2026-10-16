@@ -6,7 +6,8 @@ import { cn } from '@/lib/utils'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT } from '@/lib/i18n'
 import type { Dictionary } from '@/lib/i18n'
-import { BOTTOM_NAV_ITEMS, BOTTOM_NAV_TAB_PATHS } from '@/lib/navigation/bottomNavConfig'
+import { BOTTOM_NAV_ITEMS } from '@/lib/navigation/bottomNavConfig'
+import { isTabActive } from '@/lib/navigation/isTabActive'
 import { useVoiceHoldGesture } from '@/hooks/useVoiceHoldGesture'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useVoiceExpense } from '@/hooks/useVoiceExpense'
@@ -62,7 +63,7 @@ export function BottomNav() {
         onClose={voice.reset}
         onOpenChat={voice.openInChat}
       />
-      <div className="grid h-16 grid-cols-5 items-center">
+      <div className="mx-auto grid h-16 max-w-md grid-cols-5 items-center">
         {BOTTOM_NAV_ITEMS.map((item) => {
           if (item.kind === 'fab') {
             return (
@@ -80,7 +81,7 @@ export function BottomNav() {
             )
           }
 
-          const isActive = BOTTOM_NAV_TAB_PATHS[item.href]?.has(pathname) ?? false
+          const isActive = isTabActive(pathname, item.href)
           return (
             <div key={item.href} className="flex justify-center">
               <Link href={item.href} className={cn(TAB, isActive ? TAB_ON : TAB_OFF)}>

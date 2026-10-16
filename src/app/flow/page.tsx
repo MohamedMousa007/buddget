@@ -33,6 +33,8 @@ import { FlowLedger } from '@/components/features/flow/FlowLedger'
 import { IncomePrompts } from '@/components/features/flow/IncomePrompts'
 import { methodLabel, useFlowLedger } from '@/components/features/flow/useFlowLedger'
 import { periodText, useFlowBand } from '@/components/features/flow/useFlowBand'
+import { PageContainer } from '@/components/layout/PageContainer'
+import { PageGrid } from '@/components/layout/PageGrid'
 import { selectFlowEmptyState } from '@/lib/flow/emptyState'
 
 /** Past this scroll the band's stat row has left the viewport: collapse into the strip. */
@@ -225,12 +227,16 @@ export default function FlowPage() {
   const resultCount = items.length
 
   return (
-    <div className="pb-6 lg:mx-auto lg:max-w-screen-sm">
+    <div className="pb-6">
       <FlowStickyStrip visible={collapsed && dataReady} {...sticky} />
       {segment === 'in' ? <IncomePrompts /> : null}
 
       <FlowSummaryBand {...band} />
 
+      <PageContainer wide className="px-0 lg:px-0">
+        <PageGrid
+          primary={
+            <>
       <FlowMonthRow
         range={filters.rangePreset === 'month' ? undefined : periodText(resolved)}
         onBackToMonth={() => filters.setRangePreset('month')}
@@ -316,6 +322,10 @@ export default function FlowPage() {
       ) : (
         <FlowLedger groups={groups} fadeKey={`${segment}:${monthFilter}:${filterNames.join('|')}`} />
       )}
+            </>
+          }
+        />
+      </PageContainer>
 
       <ExpenseFilters
         open={sheetOpen}

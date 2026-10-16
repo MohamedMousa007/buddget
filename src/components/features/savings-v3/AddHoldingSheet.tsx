@@ -74,14 +74,14 @@ function AddHoldingBody({ onClose, initialTab, presetAssetType }: Omit<AddHoldin
   // peels the form first, then the chooser.
   return (
     <>
-      <ModalShell open onBackdropClick={onClose}>
-        <div className="flex flex-col" style={{ maxHeight: '92vh' }}>
+      <ModalShell open onBackdropClick={onClose} scrollChild>
+        <div className="flex min-h-0 flex-1 flex-col">
           <V3SheetHeader onClose={onClose}>
             <V3SheetHeader.Title>{t.title}</V3SheetHeader.Title>
             <V3SheetHeader.Subtitle>{tab === 'pocket' ? t.subtitlePocket : t.subtitleInvestment}</V3SheetHeader.Subtitle>
           </V3SheetHeader>
 
-          <div className="flex-1 space-y-4 overflow-y-auto px-5 pb-4 pt-3">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 pb-4 pt-3">
             <SegmentedControl<Tab>
               ariaLabel={t.tabsAria}
               value={tab}

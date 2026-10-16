@@ -22,6 +22,7 @@ interface AIChatBubbleProps {
 export const ORB_SIZE = 56
 export const EDGE_INSET = 8
 const TALK_MS = 1600
+const clampTop = (top: number) => Math.max(70, Math.min(window.innerHeight - 150, top))
 
 /**
  * Buddgy himself, standing at the screen edge — the face is the button, not an
@@ -69,6 +70,18 @@ export function AIChatBubble({ onOpen }: AIChatBubbleProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per tip
   }, [nudge])
 
+  // Keep the orb on-screen after a stored position meets a smaller viewport.
+  useEffect(() => {
+    const fit = () => {
+      const { side, top } = useSettingsStore.getState().buddgyOrb
+      const next = clampTop(top)
+      if (next !== top) setBuddgyOrb({ side, top: next })
+    }
+    fit()
+    window.addEventListener('resize', fit)
+    return () => window.removeEventListener('resize', fit)
+  }, [setBuddgyOrb])
+
   // Any sheet opening makes the tip stale.
   useEffect(() => {
     if (anyModal) setNudge(null)
@@ -88,18 +101,25 @@ export function AIChatBubble({ onOpen }: AIChatBubbleProps) {
         setDragging(true)
         setNudge(null)
       }
-      const top = Math.max(70, Math.min(window.innerHeight - 150, ev.clientY - ORB_SIZE / 2))
+      const top = clampTop(ev.clientY - ORB_SIZE / 2)
       const side: 'left' | 'right' = ev.clientX < window.innerWidth / 2 ? 'left' : 'right'
       setBuddgyOrb({ side, top })
     }
-    const onUp = () => {
+    const end = () => {
       btn.removeEventListener('pointermove', onMove)
       btn.removeEventListener('pointerup', onUp)
+      btn.removeEventListener('pointercancel', end)
+      btn.removeEventListener('lostpointercapture', end)
       setDragging(false)
+    }
+    const onUp = () => {
+      end()
       if (!moved) onOpen()
     }
     btn.addEventListener('pointermove', onMove)
     btn.addEventListener('pointerup', onUp)
+    btn.addEventListener('pointercancel', end)
+    btn.addEventListener('lostpointercapture', end)
   }
 
   if (!aiEnabled) return null
@@ -128,6 +148,11 @@ export function AIChatBubble({ onOpen }: AIChatBubbleProps) {
         ref={btnRef}
         type="button"
         onPointerDown={handlePointerDown}
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
+        onContextMenu={(e) => e.preventDefault()}
+        draggable={false}
+        data-no-ptr
         title={t.modals.fabAskAi}
         aria-label={t.modals.fabAskAi}
         initial={{ scale: 0.6, opacity: 0 }}

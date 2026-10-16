@@ -80,7 +80,7 @@ export function CurrencySheet({
       open={open}
       onBackdropClick={onClose}
       zIndexClassName={zIndexClassName ?? 'z-[110]'}
-      panelClassName="lg:w-[420px]"
+      panelClassName="md:w-[420px]"
     >
       <div className="flex min-h-0 flex-1 flex-col px-4 pb-3">
         <div className="flex shrink-0 items-center justify-between px-1 pb-2">
@@ -106,7 +106,7 @@ export function CurrencySheet({
             className="h-10 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-bg)] ps-9 pe-3 text-sm text-[var(--color-brand-text-primary)] text-start outline-none"
           />
         </div>
-        <div className="native-scroll -mx-1 flex max-h-[42vh] flex-1 flex-col gap-0.5 overflow-y-auto px-1">
+        <div className="native-scroll -mx-1 flex max-h-[42dvh] flex-1 flex-col gap-0.5 overflow-y-auto px-1">
           {rows.map((r, i) => {
             if (r.type === 'header') {
               return (

@@ -117,7 +117,7 @@ export function QuickAddFAB() {
       <button data-raw-button-ok="the floating action button itself, with its own press choreography"
         type="button"
         {...handlers}
-        className="hidden lg:flex fixed bottom-8 end-8 z-50 items-center justify-center h-[54px] w-[54px] rounded-[18px] bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] shadow-[0_8px_20px_-6px_color-mix(in_srgb,var(--color-brand-primary)_60%,transparent)] transition-all duration-200 active:scale-95 cursor-pointer touch-none select-none"
+        className={`hidden lg:flex fixed bottom-8 end-8 ${isOpen ? 'z-[110]' : 'z-50'} items-center justify-center h-[54px] w-[54px] rounded-[18px] bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] shadow-[0_8px_20px_-6px_color-mix(in_srgb,var(--color-brand-primary)_60%,transparent)] transition-all duration-200 active:scale-95 cursor-pointer touch-none select-none`}
         aria-label={isOpen ? t.common.close : t.nav.quickAdd}
         aria-expanded={isOpen}
       >
@@ -129,7 +129,7 @@ export function QuickAddFAB() {
       <ModalShell
         open={isOpen}
         onBackdropClick={() => setActiveModal(null)}
-        panelClassName="!bottom-0 !start-0 !end-0 !rounded-t-3xl lg:!bottom-24 lg:!end-8 lg:!start-auto lg:!top-auto lg:!translate-x-0 lg:!translate-y-0 lg:!w-[360px] lg:!rounded-2xl"
+        anchor="corner"
       >
         {/* Content-height, never scrolls; clears the home indicator. */}
         <div className="flex min-w-0 flex-col gap-3 px-4 pb-[max(env(safe-area-inset-bottom,0px),20px)]">

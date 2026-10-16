@@ -8,6 +8,7 @@ import { IconButton } from '@/components/ui/IconButton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SelectableCard } from '@/components/ui/SelectableCard'
 import { SkeletonList } from '@/components/ui/SkeletonList'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { StatusBarCover } from '@/components/layout/StatusBarCover'
 import { PaydayCard, type PaydayBadgeVariant } from '@/components/features/income/PaydayCard'
 import { PaydayDetail } from '@/components/features/income/PaydayDetail'
@@ -24,6 +25,7 @@ import { formatFlex, formatWhole } from '@/lib/utils/formatters'
 import { shortDate } from '@/lib/utils/shortDate'
 import { focusPayday, isLate, overdueDays } from '@/lib/income/paydaySummary'
 import { cadenceLine } from '@/lib/income/cadence'
+import { cn } from '@/lib/utils'
 import { fillSlots } from '@/lib/ui/fillSlots'
 import { useLocale, useT } from '@/lib/i18n'
 import type { Dictionary } from '@/lib/i18n'
@@ -175,7 +177,7 @@ export function PaydaysPage() {
   const add = (prefill?: PaydayPrefill) => openNewPayday(prefill)
 
   return (
-    <div className="lg:mx-auto lg:max-w-screen-sm">
+    <PageContainer wide className="px-0">
       <StatusBarCover background="var(--color-brand-bg)" />
       {!dataReady ? (
         <>
@@ -184,10 +186,8 @@ export function PaydaysPage() {
             <SkeletonList rows={4} />
           </div>
         </>
-      ) : detail ? (
-        <PaydayDetail source={detail} onBack={() => setOpenId(null)} />
       ) : streams.length === 0 ? (
-        <div className="pb-6">
+        <div className="mx-auto max-w-[var(--page-max)] pb-6">
           {header(null)}
           <div className="mx-4 mt-6">
             <EmptyState
@@ -221,7 +221,8 @@ export function PaydaysPage() {
           </div>
         </div>
       ) : (
-        <div className="pb-6">
+        <div className={detail ? 'lg:grid lg:grid-cols-[26rem_minmax(0,1fr)] lg:items-start lg:gap-x-6' : 'mx-auto max-w-[var(--page-max)]'}>
+        <div className={cn('pb-6', detail && 'hidden lg:block')}>
           {header(
             reordering ? (
               <Button size="touch" onClick={commitOrder}>
@@ -293,7 +294,13 @@ export function PaydaysPage() {
             <p className="mx-[18px] mt-4 text-[12.5px] leading-[1.45] text-[var(--color-brand-text-muted)]">{t.paydays.oneTimeNote}</p>
           ) : null}
         </div>
+        {detail ? (
+          <div className="min-w-0 lg:overflow-hidden lg:rounded-2xl lg:border lg:border-[var(--color-brand-border)] lg:bg-[var(--color-brand-card)]">
+            <PaydayDetail source={detail} onBack={() => setOpenId(null)} />
+          </div>
+        ) : null}
+        </div>
       )}
-    </div>
+    </PageContainer>
   )
 }

@@ -129,12 +129,12 @@ export function EmergencyFundSheet({ open, onClose, mode, onAddMoney }: Emergenc
       [t.stillToSave, `${fmtNum(fund.gap)} ${currency}`],
     ]
     return (
-      <ModalShell open={open} onBackdropClick={onClose}>
-        <div className="flex flex-col" style={{ maxHeight: '92vh' }}>
+      <ModalShell open={open} onBackdropClick={onClose} scrollChild>
+        <div className="flex min-h-0 flex-1 flex-col">
           <V3SheetHeader onClose={onClose}>
             <V3SheetHeader.Title>{t.title}</V3SheetHeader.Title>
           </V3SheetHeader>
-          <div className="flex-1 space-y-4 overflow-y-auto px-5 pb-3 pt-1">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 pb-3 pt-1">
             <Card variant="elevated" padding="md">
               <div className="flex items-center gap-3">
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-xl" style={{ background: `var(--color-brand-${tone}-soft)`, color: `var(--color-brand-${tone})` }}>
@@ -174,14 +174,14 @@ export function EmergencyFundSheet({ open, onClose, mode, onAddMoney }: Emergenc
   }
 
   return (
-    <ModalShell open={open} onBackdropClick={onClose}>
-      <div className="flex flex-col" style={{ maxHeight: '92vh' }}>
+    <ModalShell open={open} onBackdropClick={onClose} scrollChild>
+      <div className="flex min-h-0 flex-1 flex-col">
         <V3SheetHeader onClose={onClose}>
           <V3SheetHeader.Title>{existed ? t.editTitle : t.setupTitle}</V3SheetHeader.Title>
           <V3SheetHeader.Subtitle>{t.subtitle}</V3SheetHeader.Subtitle>
         </V3SheetHeader>
 
-        <div className="flex-1 space-y-4 overflow-y-auto px-5 pb-4 pt-3">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 pb-4 pt-3">
           <Card variant="elevated" padding="md" className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{t.monthsToCover}</p>

@@ -7,7 +7,7 @@ import { refreshAssetPrices } from '@/hooks/useAssetPrices'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { isScrollLocked } from '@/lib/ui/scrollLock'
 import { useT } from '@/lib/i18n'
-import { THRESHOLD, resistedPull, canEngage } from './pullToRefreshLogic'
+import { THRESHOLD, resistedPull, canEngage, shouldIgnorePtr } from './pullToRefreshLogic'
 
 const REST = 56 // px below the header the spinner rests at while syncing
 const MIN_SPIN = 220 // just enough that a sub-frame sync doesn't flash — no artificial dwell
@@ -57,7 +57,7 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
       // `isScrollLocked()` covers every overlay (ModalShell sheets, the More
       // sheet, numpad, date picker…), not just the ones that set `activeModal`.
       const modalOpen = useSettingsStore.getState().activeModal !== null || isScrollLocked()
-      if (active || modalOpen || e.touches.length !== 1 || !atTop()) { engaged = false; return }
+      if (active || modalOpen || e.touches.length !== 1 || !atTop() || shouldIgnorePtr(e.target)) { engaged = false; return }
       startX = e.touches[0].clientX
       startY = e.touches[0].clientY
       axis = null
@@ -169,7 +169,7 @@ function Indicator({
         opacity: phase === 'refreshing' || phase === 'done' ? 1 : opacity,
         scale: phase === 'refreshing' || phase === 'done' ? 1 : scale,
       }}
-      className="pointer-events-none fixed inset-x-0 top-[calc(52px+env(safe-area-inset-top,0px))] lg:top-12 z-[60] flex justify-center"
+      className="pointer-events-none fixed inset-x-0 top-[calc(var(--app-header-h)+env(safe-area-inset-top,0px))] lg:top-[var(--app-header-h-lg)] z-[60] flex justify-center"
     >
       <AnimatePresence mode="wait" initial={false}>
         {showDone ? (

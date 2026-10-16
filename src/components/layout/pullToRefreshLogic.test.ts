@@ -28,3 +28,15 @@ describe('pull-to-refresh gesture logic (BUD-57)', () => {
     expect(shouldCommit(0, 40)).toBe(false) // tiny pull → no accidental refresh
   })
 })
+
+import { shouldIgnorePtr } from './pullToRefreshLogic'
+
+describe('shouldIgnorePtr', () => {
+  it('ignores touches inside [data-no-ptr] and not others', () => {
+    const inside = { closest: (sel: string) => (sel === '[data-no-ptr]' ? {} : null) } as unknown as EventTarget
+    const outside = { closest: () => null } as unknown as EventTarget
+    expect(shouldIgnorePtr(inside)).toBe(true)
+    expect(shouldIgnorePtr(outside)).toBe(false)
+    expect(shouldIgnorePtr(null)).toBe(false)
+  })
+})

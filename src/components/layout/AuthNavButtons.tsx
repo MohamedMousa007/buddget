@@ -29,27 +29,22 @@ export function ProfileAvatarWithMenu({ className }: { className?: string }) {
   const profile = useFinanceStore(useShallow((s) => s.profile))
   const src =
     configured && !user ? null : resolveProfileAvatarSrc(profile)
-  const { pct, hasTransaction } = useSetupProgress()
-  const setupActive = hasTransaction && pct < 100
+  const { pct } = useSetupProgress()
+  const setupActive = pct < 100
 
   return (
     <div ref={containerRef} className="relative">
       <span
-        className={cn(
-          'relative inline-flex size-11 items-center justify-center rounded-full',
-          setupActive && 'shadow-[0_0_0_3px_color-mix(in_oklab,var(--color-brand-primary)_14%,transparent)]'
-        )}
+        className="relative inline-flex size-11 items-center justify-center rounded-full"
       >
-        {setupActive ? (
-          <ProgressRing
-            pct={pct}
-            size={44}
-            stroke={3}
-            track="var(--color-brand-border-strong)"
-            arc="var(--color-brand-primary)"
-            className="pointer-events-none absolute inset-0"
-          />
-        ) : null}
+        <ProgressRing
+          pct={setupActive ? pct : 0}
+          size={44}
+          stroke={3}
+          track="var(--color-brand-border-strong)"
+          arc="var(--color-brand-primary)"
+          className="pointer-events-none absolute inset-0"
+        />
         <IconButton
           onClick={() => setOpen((v) => !v)}
           variant="tinted"
@@ -57,7 +52,7 @@ export function ProfileAvatarWithMenu({ className }: { className?: string }) {
           shape="round"
           className={cn(
             'size-9 overflow-hidden hover:ring-2 hover:ring-[var(--color-brand-primary)]/40',
-            setupActive ? 'border-transparent' : 'border-[var(--color-brand-border-strong)]',
+            'border-transparent',
             className
           )}
           aria-label={t.nav.profileMenu}
@@ -71,6 +66,14 @@ export function ProfileAvatarWithMenu({ className }: { className?: string }) {
             <User className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
           )}
         </IconButton>
+        {setupActive ? (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute -bottom-1 -end-1.5 rounded-full bg-[var(--color-brand-primary)] px-1 text-[9px] font-bold leading-[14px] text-[var(--color-brand-bg)] font-mono-numbers"
+          >
+            {pct}%
+          </span>
+        ) : null}
       </span>
       <ProfileDropdown open={open} onClose={() => setOpen(false)} containerRef={containerRef} />
     </div>

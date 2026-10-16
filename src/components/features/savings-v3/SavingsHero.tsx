@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 import { ArrowDown, ArrowUp } from 'lucide-react'
 import { FLOW_BAND_BG } from '@/components/features/flow/FlowSummaryBand'
+import { FullBleedHero } from '@/components/layout/PageContainer'
 import { useT } from '@/lib/i18n'
 
 export interface HeroSplitSegment {
@@ -57,7 +58,7 @@ export function SavingsHero({
   const prefix = (p?: '≈' | 'At least') => (p === 'At least' ? `${t.atLeast} ` : p ? `${p} ` : '')
   return (
     <section className="border-b border-[var(--flow-band-line)] text-[var(--flow-band-fg)]" style={{ background: FLOW_BAND_BG }}>
-      <div className="px-[18px] pb-4 pt-3">
+      <FullBleedHero innerClassName="px-[18px] pb-4 pt-3 lg:max-w-[var(--page-max-wide)] lg:px-6">
         <div className="flex items-center justify-between gap-2">
           <span className="min-w-0 truncate text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--flow-band-fg-2)]">{t.holdLabel}</span>
           {badges}
@@ -103,7 +104,7 @@ export function SavingsHero({
           </span>
           {savingsRate != null ? <span>{t.savesPct(savingsRate)}</span> : null}
         </div>
-      </div>
+      </FullBleedHero>
     </section>
   )
 }

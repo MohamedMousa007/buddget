@@ -15,6 +15,8 @@ import { CurrencyField } from '@/components/ui/CurrencyField'
 import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
 import { cn } from '@/lib/utils'
 import { rgba } from '@/lib/utils/color'
+import { useIsNativeClient } from '@/lib/native/useIsNativeClient'
+import { AmountTextInput } from '@/components/ui/AmountTextInput'
 import { useNumberPad } from '@/components/ui/useNumberPad'
 import { Scrim } from '@/components/ui/Scrim'
 import { useModalTitleId } from '@/components/modals/ModalShell'
@@ -136,6 +138,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
     if (/^[0-9]*\.?[0-9]*$/.test(v)) setAmount(v)
   }
 
+  const native = useIsNativeClient()
   const amountPad = useNumberPad({ value: amount, onChange: setAmt, currency })
 
   const handleX = () => {
@@ -184,16 +187,27 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
           <div className="grid grid-cols-[1fr_108px] gap-3 items-end">
             <div>
               <label htmlFor="ef-amount" className={`block ${microLabel} mb-2`}>{t.expenseForm.amount}</label>
-              <FieldButton
-                id="ef-amount"
-                onClick={amountPad.openPad}
-                dir="ltr"
-                value={amount || undefined}
-                placeholder="0.00"
-                affordance={null}
-                valueClassName="font-mono-numbers text-2xl font-bold tracking-[-0.02em]"
-                className={`bg-[var(--color-brand-elevated)] ${amountPad.isOpen ? 'border-[var(--color-brand-primary)]' : ''}`}
-              />
+              {native ? (
+                <FieldButton
+                  id="ef-amount"
+                  onClick={amountPad.openPad}
+                  dir="ltr"
+                  value={amount || undefined}
+                  placeholder="0.00"
+                  affordance={null}
+                  valueClassName="font-mono-numbers text-2xl font-bold tracking-[-0.02em]"
+                  className={`bg-[var(--color-brand-elevated)] ${amountPad.isOpen ? 'border-[var(--color-brand-primary)]' : ''}`}
+                />
+              ) : (
+                <AmountTextInput
+                  id="ef-amount"
+                  value={amount}
+                  onChange={setAmount}
+                  placeholder="0.00"
+                  dir="ltr"
+                  className="h-12 w-full min-w-0 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-start font-mono-numbers text-2xl font-bold tracking-[-0.02em] text-[var(--color-brand-text-primary)] outline-none placeholder:text-[var(--color-brand-text-muted)] focus-visible:border-[var(--color-brand-focus)] focus-visible:ring-3 focus-visible:ring-[var(--color-brand-focus)]/50"
+                />
+              )}
               {amountPad.pad}
             </div>
             <div>

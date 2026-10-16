@@ -84,14 +84,14 @@ export function AssetFormSheet({ open, type, onClose, onDone }: AssetFormSheetPr
   if (!open) return null
 
   return (
-    <ModalShell open={open} onBackdropClick={onClose}>
-      <div className="flex flex-col" style={{ maxHeight: '92vh' }}>
+    <ModalShell open={open} onBackdropClick={onClose} scrollChild>
+      <div className="flex min-h-0 flex-1 flex-col">
         <V3SheetHeader onClose={onClose}>
           <V3SheetHeader.Title>{TITLE[type]}</V3SheetHeader.Title>
           <V3SheetHeader.Subtitle>{type === 'property' ? `${t.step2} ${t.propertyNote}` : t.step2}</V3SheetHeader.Subtitle>
         </V3SheetHeader>
 
-        <div className="flex-1 overflow-y-auto px-5 pb-3 space-y-4">
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-3 space-y-4">
           {type === 'gold' && (
             <>
               <Field label="Karat">

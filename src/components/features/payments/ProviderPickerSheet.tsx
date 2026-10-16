@@ -65,7 +65,7 @@ export function ProviderPickerSheet({
     : t.paymentMethods.addCustom
 
   return (
-    <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={zIndexClassName} panelClassName="h-[64vh] lg:w-[420px]">
+    <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={zIndexClassName} panelClassName="h-[64dvh] md:w-[420px]">
       <div className="flex min-h-0 flex-1 flex-col px-4 pb-4">
         <div className="flex shrink-0 items-center justify-between pb-3 pt-1">
           <span className="text-lg font-semibold text-[var(--color-brand-text-primary)]">
@@ -83,7 +83,7 @@ export function ProviderPickerSheet({
             className="h-12 rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-bg)] ps-10 pe-3 text-[15px] text-[var(--color-brand-text-primary)] text-start"
           />
         </div>
-        <div className="native-scroll -mx-1 flex max-h-[52vh] min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-1">
+        <div className="native-scroll -mx-1 flex max-h-[52dvh] min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-1">
           {rows.map((r, i) => {
             if (r.kind === 'header') {
               return (

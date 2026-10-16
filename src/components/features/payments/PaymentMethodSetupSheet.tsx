@@ -230,7 +230,7 @@ export function PaymentMethodSetupSheet({
         tail={previewTail} curCode={curCode}
       />
 
-      <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={z.shell} panelClassName="h-[64vh]">
+      <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={z.shell} panelClassName="h-[64dvh]">
         <div className="flex min-h-0 flex-1 flex-col outline-none">
           <div className="flex shrink-0 items-center gap-2.5 px-4 pb-3 pt-1">
             {/* Debt context (lockType) follows the debt-sheet rule: X + swipe only, no Back. */}
@@ -500,7 +500,7 @@ function FloatingCardPreview({
           transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           className={cn('pointer-events-none fixed left-1/2 w-[280px]', z)}
           // Centred in the space above the 58vh sheet; floor keeps it clear of the status bar.
-          style={{ top: 'max(46px, calc(21vh - 88px))', marginLeft: -140 }}
+          style={{ top: 'max(46px, calc(21dvh - 88px))', marginLeft: -140 }}
         >
           {/* halo — static coloured glow */}
           <div

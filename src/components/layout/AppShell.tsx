@@ -355,9 +355,12 @@ interface AppShellProps {
   children: React.ReactNode
 }
 
+const BARE_ROUTES = ['/reset-password', '/legal', '/offline', '/install']
+
+/** Routes that render without sidebar, headers, FAB or bottom nav. */
 function isBareAuthRoute(pathname: string | null) {
   if (!pathname) return false
-  return pathname.startsWith('/reset-password')
+  return BARE_ROUTES.some((r) => pathname === r || pathname.startsWith(`${r}/`) || (r === '/reset-password' && pathname.startsWith(r)))
 }
 
 export function AppShell({ children }: AppShellProps) {
@@ -384,7 +387,7 @@ export function AppShell({ children }: AppShellProps) {
       <Sidebar />
       <DesktopHeaderBar />
       <main
-        className={`native-scroll ${ownsHeader(navPath) ? 'pt-[env(safe-area-inset-top,0px)]' : 'pt-[calc(52px+env(safe-area-inset-top,0px))]'} lg:pt-12 lg:ms-[176px] pb-[calc(4rem+env(safe-area-inset-bottom,0px))] lg:pb-0 min-h-[100dvh] safe-area-x`}
+        className={`native-scroll ${ownsHeader(navPath) ? 'pt-[env(safe-area-inset-top,0px)]' : 'pt-[calc(var(--app-header-h)+env(safe-area-inset-top,0px))]'} lg:pt-[var(--app-header-h-lg)] lg:ms-[var(--sidebar-w)] pb-[calc(4rem+env(safe-area-inset-bottom,0px))] lg:pb-0 min-h-[100dvh] safe-area-x`}
       >
         <PullToRefresh>
           <PendingCapturesChip />

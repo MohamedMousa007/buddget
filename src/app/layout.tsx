@@ -117,9 +117,6 @@ export const viewport: Viewport = {
   themeColor: '#12B0A0',
   width: 'device-width',
   initialScale: 1,
-  /** Lock zoom: stops iOS WKWebView auto-zooming on input focus and disables pinch-zoom. */
-  maximumScale: 1,
-  userScalable: false,
   /** Edge-to-edge in installed PWA / iOS; pairs with `env(safe-area-inset-*)` in layout. */
   viewportFit: 'cover',
 }

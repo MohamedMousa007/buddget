@@ -1,5 +1,6 @@
 'use client'
 
+import { PageContainer } from '@/components/layout/PageContainer'
 import { User, Shield, Palette, Globe, MessageSquare, Database, FileText, Bug, Sparkles } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { AppLink as Link } from '@/components/ui/AppLink'
@@ -48,7 +49,7 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <div className="px-4 py-4 lg:px-6 max-w-3xl mx-auto pb-10">
+      <PageContainer wide className="py-4 pb-10">
         {/* Identity header */}
         {user && (
           <Card
@@ -71,26 +72,30 @@ export default function SettingsPage() {
           </Card>
         )}
 
+        <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-6">
         {/* Account */}
         {user && (
-          <>
+          <div>
             <SectionHeader label={t.settings.hub.sectionAccount} />
             <SectionCard>
               <SettingsRow icon={User} title={t.settings.hub.profile} subtitle={t.settings.hub.profileSubtitle} href="/settings/profile" />
               <SettingsRow icon={Shield} title={t.settings.hub.account} subtitle={t.settings.hub.accountSubtitle} href="/settings/account" />
             </SectionCard>
-          </>
+          </div>
         )}
 
         {/* Preferences */}
+        <div>
         <SectionHeader label={t.settings.hub.sectionPreferences} />
         <SectionCard>
           <SettingsRow icon={Palette} title={t.settings.hub.display} subtitle={t.settings.hub.displaySubtitle} href="/settings/display" />
           <SettingsRow icon={Globe} title={t.settings.hub.currency} subtitle={t.settings.hub.currencySubtitle} href="/settings/currency" />
           <SettingsRow icon={Sparkles} title={t.buddgy.settingsTitle} subtitle={t.buddgy.settingsSubtitle} href="/settings/ai" />
         </SectionCard>
+        </div>
 
         {/* Data & Tracking */}
+        <div>
         <SectionHeader label={t.settings.hub.sectionDataTracking} />
         <SectionCard>
           {user && (
@@ -98,19 +103,26 @@ export default function SettingsPage() {
           )}
           <SettingsRow icon={Database} title={t.settings.hub.data} subtitle={t.settings.hub.dataSubtitle} href="/settings/data" />
         </SectionCard>
+        </div>
 
         {/* More */}
+        <div>
         <SectionHeader label={t.settings.hub.sectionMore} />
         <SectionCard>
           <SettingsRow icon={Bug} title={t.settings.hub.feedback} subtitle={t.settings.hub.feedbackSubtitle} href="/settings/feedback" />
         </SectionCard>
+        </div>
 
         {/* Legal */}
+        <div>
         <SectionHeader label={t.settings.hub.sectionLegal} />
         <SectionCard>
           <SettingsRow icon={FileText} title={t.settings.hub.terms} href="/legal/terms" />
           <SettingsRow icon={FileText} title={t.settings.hub.privacy} href="/legal/privacy" />
         </SectionCard>
+        </div>
+
+        </div>
 
         <div className="text-center text-xs text-[var(--color-brand-text-muted)] pt-6 pb-4 space-y-1">
           <p>{t.settings.footer}</p>
@@ -125,7 +137,7 @@ export default function SettingsPage() {
             </a>
           </p>
         </div>
-      </div>
+      </PageContainer>
     </div>
   )
 }

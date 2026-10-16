@@ -38,7 +38,7 @@ function AddSubscriptionSheetInner({
     <>
       <ModalSheetHeader title={headerTitle} onClose={onClose} />
       {form.step === 1 && form.showCatalog ? (
-        <div className="px-6 pb-6 space-y-4 max-h-[72vh] overflow-y-auto">
+        <div className="px-6 pb-6 space-y-4">
           <Input
             value={form.search}
             onChange={(e) => form.setSearch(e.target.value)}

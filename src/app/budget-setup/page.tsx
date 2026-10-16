@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useEffect } from 'react'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { BudgetPlannerSummary } from '@/components/features/budget-planner/BudgetPlannerSummary'
 import { GoalLensList } from '@/components/features/goals/GoalLensList'
 import { BudgetCommittedCard } from '@/components/features/budget-planner/BudgetCommittedCard'
@@ -34,12 +35,13 @@ export default function BudgetSetupPage() {
 
   return (
     <div>
-      <div
-        className="px-4 py-4 lg:px-6 max-w-3xl mx-auto space-y-4"
-       
+      <PageContainer
+        wide
+        className="py-4 space-y-4 lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-x-6 lg:gap-y-4 lg:space-y-0"
       >
         {!p.supabaseConfigured || p.user ?
           <>
+            <div className="space-y-4 lg:col-span-2">
             {p.budgetPlans.length > 0 ?
               <BudgetSetupPlanToolbar
                 plans={p.budgetPlans}
@@ -97,11 +99,21 @@ export default function BudgetSetupPage() {
               </div>
             )}
 
-            <BudgetCommittedCard />
-            <GoalLensList categories={['spending_control']} />
+            </div>
+
+            <div
+              className={
+                p.budgetPlans.length > 0
+                  ? 'space-y-4 lg:col-start-2 lg:row-start-2 lg:row-span-2 lg:sticky lg:top-[calc(var(--app-header-h-lg)+1rem)]'
+                  : 'space-y-4 lg:col-span-2'
+              }
+            >
+              <BudgetCommittedCard />
+              <GoalLensList categories={['spending_control']} />
+            </div>
 
             {p.budgetPlans.length > 0 && (
-              <>
+              <div className="space-y-4 min-w-0 lg:col-start-1 lg:row-start-2">
                 <BudgetPlannerSummary
                   totalIncome={p.totalIncome}
                   totalPlanned={p.totalPlanned}
@@ -146,11 +158,11 @@ export default function BudgetSetupPage() {
                     }
                   />
                 : null}
-              </>
+              </div>
             )}
           </>
         : <div className="min-h-[40vh]" aria-hidden />}
-      </div>
+      </PageContainer>
 
       <AddIncomeSheet />
     </div>

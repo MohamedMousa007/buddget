@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SubscriptionCard } from '@/components/features/subscriptions/SubscriptionCard'
@@ -71,7 +72,7 @@ export default function SubscriptionsPage() {
   return (
     <div>
       <PageHeader>
-        <PageHeaderContent>
+        <PageHeaderContent width="wide">
           <div className="flex items-center justify-end gap-4 w-full">
             <Button
               onClick={openAdd}
@@ -84,7 +85,7 @@ export default function SubscriptionsPage() {
         </PageHeaderContent>
       </PageHeader>
 
-      <div className="px-4 py-4 lg:px-6 max-w-2xl mx-auto space-y-4">
+      <PageContainer wide className="py-4 space-y-4">
         <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
           <p className="text-xs uppercase tracking-wider text-[var(--color-brand-text-muted)]">
             {t.subscriptions.totalMonthly}
@@ -113,7 +114,7 @@ export default function SubscriptionsPage() {
               <p className={`${microClassName} mb-2`}>
                 {t.subscriptions.activeSection(active.length)}
               </p>
-              <div className="space-y-2">
+              <div className="space-y-2 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0">
                 {active.map((s) => (
                   <SubscriptionCard key={s.id} sub={s} onEdit={() => openEdit(s)} />
                 ))}
@@ -124,7 +125,7 @@ export default function SubscriptionsPage() {
                 <p className={`${microClassName} mb-2`}>
                   {t.subscriptions.cancelledSection}
                 </p>
-                <div className="space-y-2">
+                <div className="space-y-2 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0">
                   {cancelled.map((s) => (
                     <SubscriptionCard key={s.id} sub={s} onEdit={() => openEdit(s)} dimmed />
                   ))}
@@ -133,7 +134,7 @@ export default function SubscriptionsPage() {
             ) : null}
           </div>
         )}
-      </div>
+      </PageContainer>
 
       <AddSubscriptionSheet
         open={isSheetOpen}

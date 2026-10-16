@@ -41,7 +41,7 @@ export function StatusPill({ icon, label, visible = true, onHide, hiddenHint }: 
   }
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top,0px)+7px)] z-[58] flex flex-col items-center gap-2.5">
+    <div className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top,0px)+7px)] lg:start-[var(--sidebar-w)] lg:top-[calc(var(--app-header-h-lg)+8px)] z-[58] flex flex-col items-center gap-2.5">
       {visible ? (
       <motion.div
         role="status"

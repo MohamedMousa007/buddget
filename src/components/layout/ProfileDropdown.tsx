@@ -1,10 +1,13 @@
 'use client'
 
-import { useEffect, useRef, useCallback, type RefObject } from 'react'
+import { useEffect, useRef, useCallback, useState, type RefObject } from 'react'
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { useNavPath } from '@/lib/navigation/navStore'
 import { User, Settings, LogOut, CreditCard, Target, BarChart3, CalendarClock } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { ProgressRing } from '@/components/ui/ProgressRing'
+import { SetupChecklistSheet } from '@/components/features/setup/SetupProgressChip'
+import { useSetupProgress } from '@/hooks/useSetupProgress'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -32,6 +35,8 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
   const profile = useFinanceStore(useShallow((s) => s.profile))
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
   const prevPathname = useRef(pathname)
+  const { pct } = useSetupProgress()
+  const [setupOpen, setSetupOpen] = useState(false)
 
   // Hardware/gesture back closes the menu first instead of navigating the page.
   useEffect(() => {
@@ -85,17 +90,36 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
     onClose()
   }
 
-  if (!open) return null
+  if (!open && !setupOpen) return null
 
   const avatarSrc = resolveProfileAvatarSrc(profile)
   const displayName = profile.name || t.common.user
   const displayEmail = user?.email || profile.email || ''
 
   return (
+    <>
+    <SetupChecklistSheet open={setupOpen} onClose={() => { setSetupOpen(false); onClose() }} />
+    {open ? (
     <div
       className="absolute top-full end-0 mt-2 z-50 w-64 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl shadow-[0_24px_50px_-16px_rgba(0,0,0,0.7)] overflow-hidden"
       role="menu"
     >
+      {pct < 100 ? (
+        <>
+          <button
+            type="button"
+            data-raw-button-ok="menu row sharing itemClass with the other profile menu items, tinted as the CTA"
+            onClick={() => setSetupOpen(true)}
+            aria-label={t.setup.chipAria(pct)}
+            className={cn(itemClass, 'min-h-11 bg-[var(--color-brand-primary-soft)] font-semibold text-[var(--color-brand-primary-ink)] hover:bg-[var(--color-brand-primary-soft)]/70')}
+            role="menuitem"
+          >
+            <ProgressRing pct={pct} size={20} stroke={3} track="var(--color-brand-border-strong)" arc="var(--color-brand-primary)" />
+            <span className={cn('flex-1', localeInlineLabelClass(locale))}>{t.setup.chipLabel} · <span className="font-mono-numbers">{pct}%</span></span>
+          </button>
+          <div className="border-t border-[var(--color-brand-border)]" />
+        </>
+      ) : null}
       <div className="flex items-center gap-3 px-4 py-3.5">
         <div className="w-11 h-11 rounded-full overflow-hidden border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] flex items-center justify-center shrink-0">
           {avatarSrc ? (
@@ -157,5 +181,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
         <span className={localeInlineLabelClass(locale)}>{t.common.signOut}</span>
       </button>
     </div>
+    ) : null}
+    </>
   )
 }

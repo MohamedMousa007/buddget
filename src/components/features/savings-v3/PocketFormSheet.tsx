@@ -80,13 +80,13 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
   if (!open) return null
 
   return (
-    <ModalShell open={open} onBackdropClick={onClose}>
-      <div className="flex flex-col" style={{ maxHeight: '92vh' }}>
+    <ModalShell open={open} onBackdropClick={onClose} scrollChild>
+      <div className="flex min-h-0 flex-1 flex-col">
         <V3SheetHeader onClose={onClose}>
           <V3SheetHeader.Title>New {def.label.toLowerCase()}</V3SheetHeader.Title>
         </V3SheetHeader>
 
-        <div className="flex-1 overflow-y-auto px-5 pb-3 space-y-4">
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-3 space-y-4">
           {/* preview */}
           <div className="flex items-center gap-3 rounded-2xl p-3.5" style={{ border: `1px solid ${rgba(color, .35)}`, background: rgba(color, .06) }}>
             <span className="flex h-11 w-11 items-center justify-center rounded-xl" style={{ background: rgba(color, .16), color }}>

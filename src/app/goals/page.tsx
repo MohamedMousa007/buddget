@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/button'
 import { GoalCard } from '@/components/features/goals/GoalCard'
@@ -56,7 +57,7 @@ export default function GoalsPage() {
   return (
     <div>
       <PageHeader>
-        <PageHeaderContent>
+        <PageHeaderContent width="wide">
           <div className="flex items-center justify-end gap-4 w-full">
             <Button size="touch" onClick={openAdd} className="font-semibold">
               {t.goals.addGoal}
@@ -65,7 +66,7 @@ export default function GoalsPage() {
         </PageHeaderContent>
       </PageHeader>
 
-      <div className="px-4 py-4 lg:px-6 max-w-2xl mx-auto space-y-4">
+      <PageContainer wide className="py-4 space-y-4">
         {goals.length === 0 ? (
           <EmptyState
             title={t.goals.emptyState}
@@ -78,7 +79,7 @@ export default function GoalsPage() {
           />
         ) : (
           <>
-            <section className="space-y-3">
+            <section className="space-y-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
               {active.map((g) => {
                 return (
                   <div key={g.id}>
@@ -88,8 +89,8 @@ export default function GoalsPage() {
               })}
             </section>
             {achieved.length > 0 ? (
-              <section className="space-y-3">
-                <h2 className="text-sm font-medium text-[var(--color-brand-text-muted)]">
+              <section className="space-y-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
+                <h2 className="lg:col-span-2 text-sm font-medium text-[var(--color-brand-text-muted)]">
                   —— {t.goals.achievedSection} ——
                 </h2>
                 {achieved.map((g) => (
@@ -99,7 +100,7 @@ export default function GoalsPage() {
             ) : null}
           </>
         )}
-      </div>
+      </PageContainer>
 
       <AddGoalSheet open={sheetOpen} onClose={closeSheet} editingGoal={editing} />
     </div>

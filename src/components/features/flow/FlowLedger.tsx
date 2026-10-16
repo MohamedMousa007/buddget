@@ -42,7 +42,7 @@ export function FlowLedger({ groups, fadeKey }: { groups: FlowLedgerGroup[]; fad
   return (
     <motion.div
       key={fadeKey}
-      className="mt-0.5"
+      className="mt-0.5 lg:mx-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.12, ease: 'easeOut' }}
@@ -64,7 +64,7 @@ export function DayGroup({
   setOpen: (v: { key: string; side: SwipeSide } | null) => void
 }) {
   return (
-    <section>
+    <section className="lg:mb-3">
       {group.label ? (
       <div className="flex items-baseline justify-between px-4 pb-1.5 pt-3">
         <span className="flex items-baseline gap-2">
@@ -80,7 +80,7 @@ export function DayGroup({
         ) : null}
       </div>
       ) : null}
-      <div className="border-y border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
+      <div className="border-y border-[var(--color-brand-border)] bg-[var(--color-brand-card)] lg:overflow-hidden lg:rounded-2xl lg:border">
         {group.rows.map((r, i) => {
           const row = <TransactionRow {...r.row} />
           return (
