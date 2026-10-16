@@ -40,16 +40,19 @@ jobs:
   build:
     needs: guard
     if: needs.guard.outputs.skip != 'true'
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode 26 (App Store Connect requires the iOS 26 SDK)
+      - name: Require Xcode 26 (App Store Connect needs the iOS 26 SDK)
         run: |
-          x=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
-          [ -n "$x" ] || { echo "No Xcode 26 on this runner"; ls -d /Applications/Xcode*; exit 1; }
-          sudo xcode-select -s "$x/Contents/Developer"
+          major() { xcodebuild -version | awk 'NR==1{split($2,v,"."); print v[1]}'; }
+          if [ "$(major)" -lt 26 ]; then
+            x=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+            [ -n "$x" ] || { echo "No Xcode 26 on this runner:"; ls -d /Applications/Xcode*; exit 1; }
+            sudo xcode-select -s "$x/Contents/Developer"
+          fi
           xcodebuild -version
 
       - uses: actions/setup-node@v4
