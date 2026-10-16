@@ -29,6 +29,8 @@ interface AmountFieldProps {
    *  living inside their own bordered wrapper (filters, inline table cells). */
   bare?: boolean
   disabled?: boolean
+  /** Glass style only: compact is 44px / 20px value for fields sharing a row. */
+  size?: 'default' | 'compact'
   id?: string
   'aria-label'?: string
 }
@@ -48,6 +50,7 @@ export function AmountField({
   className,
   bare,
   disabled,
+  size = 'default',
   id,
   'aria-label': ariaLabel,
 }: AmountFieldProps) {
@@ -55,12 +58,25 @@ export function AmountField({
   const ph = placeholder ?? (mode === 'pin' ? '0000' : '0.00')
   const showPrefix = mode === 'decimal' && !!currency
   const glass = !className
+  const compactSize = size === 'compact'
+
+  const unit = (
+    <span
+      style={
+        glass
+          ? { marginInlineStart: 'auto', fontFamily: 'var(--font-mono)', fontWeight: 600, fontSize: compactSize ? 14 : 16, color: 'var(--color-brand-text-muted)' }
+          : { opacity: 0.6 }
+      }
+    >
+      {currency}
+    </span>
+  )
 
   const caret = (
     <span
       style={{
         width: 2,
-        height: 26,
+        height: compactSize ? 22 : 26,
         borderRadius: 2,
         flexShrink: 0,
         background: 'var(--color-brand-primary)',
@@ -87,10 +103,10 @@ export function AmountField({
                 alignItems: 'center',
                 gap: 8,
                 width: '100%',
-                height: 52,
+                height: compactSize ? 44 : 52,
                 background: 'var(--color-brand-elevated)',
-                border: `1px solid ${isOpen ? 'var(--color-brand-focus)' : '#26262f'}`,
-                borderRadius: 14,
+                border: `1px solid ${isOpen ? 'var(--color-brand-focus)' : 'var(--color-brand-border)'}`,
+                borderRadius: compactSize ? 12 : 14,
                 padding: '0 14px',
                 cursor: 'pointer',
                 transition: 'border-color .15s',
@@ -98,17 +114,7 @@ export function AmountField({
             : { cursor: 'pointer', borderColor: isOpen ? 'var(--color-brand-focus)' : undefined }
         }
       >
-        {showPrefix && (
-          <span
-            style={
-              glass
-                ? { fontFamily: 'var(--font-mono)', fontWeight: 600, fontSize: 18, color: '#5A5A72' }
-                : { opacity: 0.6 }
-            }
-          >
-            {currency}
-          </span>
-        )}
+        {showPrefix && !glass && unit}
         {/* Caret precedes the placeholder when empty (like a real input) and
             follows the digits once typing starts — the value span shrink-wraps
             so the caret hugs the text instead of the field's far edge. */}
@@ -122,9 +128,10 @@ export function AmountField({
                   textAlign: 'start',
                   fontFamily: 'var(--font-mono)',
                   fontWeight: 700,
-                  fontSize: 24,
+                  fontSize: compactSize ? 20 : 24,
                   letterSpacing: '-0.02em',
-                  color: value ? '#fff' : '#3F3F4D',
+                  color: value ? 'var(--color-brand-text-primary)' : 'var(--color-brand-text-muted)',
+                  opacity: value ? 1 : 0.55,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
@@ -135,6 +142,7 @@ export function AmountField({
           {value || ph}
         </span>
         {value ? caret : null}
+        {showPrefix && glass && unit}
       </button>
       {pad}
     </>

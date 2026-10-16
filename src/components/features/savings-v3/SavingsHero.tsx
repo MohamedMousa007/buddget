@@ -1,169 +1,109 @@
 'use client'
 
-import { ChevronRight, TrendingUp } from 'lucide-react'
-import type { Currency } from '@/lib/store/types'
-import type { SavingsPace } from '@/lib/savings/savingsPace'
-import { fmtCompact } from '@/lib/utils/currency'
-import { rgba } from '@/lib/utils/color'
-import { micro as microLabel } from '@/lib/ui/microLabelStyle'
+import type { ReactNode } from 'react'
+import { ArrowDown, ArrowUp } from 'lucide-react'
+import { FLOW_BAND_BG } from '@/components/features/flow/FlowSummaryBand'
+import { useT } from '@/lib/i18n'
 
-/** Signed compact figure with a leading + on positives; unsigned zero. */
-function signed(n: number): string {
-  if (n === 0) return '0'
-  return `${n > 0 ? '+' : '−'}${fmtCompact(Math.abs(n))}`
+export interface HeroSplitSegment {
+  key: string
+  label: string
+  /** Pre-formatted amount. */
+  value: string
+  /** Share of the bar, 0–100. */
+  pct: number
+  /** Return since first purchase, on the market-priced segment. */
+  ret?: string
 }
-
-const PACE = {
-  ahead: { c: '#35D46F', text: (p: number) => `Ahead +${p}%` },
-  onpace: { c: '#7EAEF9', text: () => 'On pace' },
-  behind: { c: '#FFB13D', text: (p: number) => `Behind ${p}%` },
-  none: { c: '#9898B0', text: () => 'Nothing saved yet' },
-} as const
 
 export interface SavingsHeroProps {
-  netWorth: number // real net worth (balances + this month's flow − debt), matches dashboard
-  netWorthUsd: number | null
-  /** A holding couldn't be priced — net worth excludes it; show a subtle note. */
-  incomplete?: boolean
-  totalSaved: number
-  thisMonth: number
-  investment: number
-  pace: SavingsPace
-  currency: Currency
-  empty: boolean
-  onAddSavings: () => void
-  onInvestment: () => void
+  /** Pre-formatted total — what you hold. */
+  total: string
+  currency: string
+  totalPrefix?: '≈' | 'At least'
+  netWorth: string
+  netWorthPrefix?: '≈' | 'At least'
+  split: HeroSplitSegment[]
+  netWorthTrend?: { points: number[]; pct: string; dir: 'up' | 'down' }
+  savingsRate?: number
+  badges: ReactNode
 }
 
+/** Three tones, all derived from the band so they hold in light and dark. */
+const TONES = [
+  'var(--flow-band-fg)',
+  'var(--color-brand-gold)',
+  'color-mix(in oklab, var(--flow-band-fg) 55%, transparent)',
+]
+
+function Sparkline({ points, up }: { points: number[]; up: boolean }) {
+  const min = Math.min(...points)
+  const span = Math.max(...points) - min || 1
+  const d = points
+    .map((p, i) => `${i === 0 ? 'M' : 'L'}${((i / (points.length - 1)) * 40).toFixed(1)} ${(12 - ((p - min) / span) * 10).toFixed(1)}`)
+    .join(' ')
+  return (
+    <svg width="40" height="14" viewBox="0 0 40 14" aria-hidden className={up ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red)]'}>
+      <path d={d} fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+/** The Wealth band, same height for every user: total, split bar, net worth with its 30-day trend. */
 export function SavingsHero({
-  netWorth, netWorthUsd, incomplete, totalSaved, thisMonth, investment, pace, currency, empty,
-  onAddSavings, onInvestment,
+  total, currency, totalPrefix, netWorth, netWorthPrefix, split, netWorthTrend, savingsRate, badges,
 }: SavingsHeroProps) {
-  const paceStyle = PACE[pace.state]
+  const t = useT().wealthPage
+  const prefix = (p?: '≈' | 'At least') => (p === 'At least' ? `${t.atLeast} ` : p ? `${p} ` : '')
   return (
-    <div
-      className="relative mx-4 overflow-hidden"
-      style={{
-        padding: 16, borderRadius: 20,
-        background: 'linear-gradient(152deg,#141b28,#0f1017)',
-        border: '1px solid rgba(126,174,249,.18)',
-        boxShadow: '0 18px 40px -24px rgba(0,0,0,.85)',
-      }}
-    >
-      {/* glow */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute"
-        style={{
-          width: 190, height: 190, top: -60, right: -40,
-          background: 'radial-gradient(circle, rgba(126,174,249,.20), transparent 68%)',
-        }}
-      />
-      <div className="relative">
-        <div className="flex items-start justify-between">
-          <span style={{ ...microLabel, fontSize: 10, letterSpacing: '.08em', color: '#8FA6C7' }}>
-            Net worth
-          </span>
-          {!empty && (
-            <span
-              className="inline-flex items-center gap-1"
-              style={{
-                height: 26, borderRadius: 999, padding: '0 10px',
-                background: rgba(paceStyle.c, .14), border: `1px solid ${rgba(paceStyle.c, .3)}`,
-                color: paceStyle.c, fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 11,
-              }}
-            >
-              {pace.state === 'ahead' && <TrendingUp size={12} />}
-              {paceStyle.text(pace.percent)}
-            </span>
-          )}
+    <section className="border-b border-[var(--flow-band-line)] text-[var(--flow-band-fg)]" style={{ background: FLOW_BAND_BG }}>
+      <div className="px-[18px] pb-4 pt-3">
+        <div className="flex items-center justify-between gap-2">
+          <span className="min-w-0 truncate text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--flow-band-fg-2)]">{t.holdLabel}</span>
+          {badges}
         </div>
 
-        <div className="mt-1.5 flex items-end gap-2">
-          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, fontSize: 32, letterSpacing: '-0.025em', color: '#fff', lineHeight: 1.05 }}>
-            {netWorth.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-          </span>
-          <span style={{ fontWeight: 500, fontSize: 13, color: '#CFCFE0', paddingBottom: 4 }}>{currency}</span>
+        <p className="mt-2 flex flex-wrap items-baseline gap-1.5">
+          {totalPrefix ? <span className="text-[15px] text-[var(--flow-band-fg-2)]">{prefix(totalPrefix).trim()}</span> : null}
+          <span className="font-mono-numbers text-[34px] font-semibold leading-none tracking-[-0.03em]">{total}</span>
+          <span className="text-[13px] text-[var(--flow-band-fg-2)]">{currency}</span>
+        </p>
+
+        <div className="mt-3 flex h-1.5 gap-px overflow-hidden rounded-full" style={{ background: 'var(--flow-band-mix)' }}>
+          {split.map((s, i) => (
+            <span key={s.key} className="h-full" style={{ width: `${Math.max(0, s.pct)}%`, background: TONES[i % TONES.length] }} />
+          ))}
         </div>
-        {netWorthUsd != null && (
-          <div className="flex items-center gap-1.5" style={{ marginTop: 2 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500, fontSize: 12.5, color: '#8FA6C7' }}>
-              ≈ ${netWorthUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+        <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px]">
+          {split.map((s, i) => (
+            <span key={s.key} className="inline-flex items-center gap-1.5 text-[var(--flow-band-fg-2)]">
+              <span className="size-2.5 rounded-[3px]" style={{ background: TONES[i % TONES.length] }} aria-hidden />
+              {s.label}
+              <b className="font-mono-numbers font-semibold text-[var(--flow-band-fg)]">{s.value}</b>
+              {s.ret ? (
+                <span className="inline-flex h-[22px] items-center gap-0.5 rounded-full bg-[var(--flow-band-fg)] px-2 font-mono-numbers text-xs font-bold text-[var(--color-brand-green)]">
+                  <ArrowUp className="size-3" strokeWidth={2.5} aria-hidden />{s.ret}
+                </span>
+              ) : null}
             </span>
-            {incomplete && (
-              <span style={{ fontSize: 10, fontWeight: 600, color: '#FFB13D' }} title="A holding couldn't be priced — excluded">
-                · incomplete
+          ))}
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 text-[13px] text-[var(--flow-band-fg-2)]">
+          <span className="inline-flex items-center gap-2">
+            {t.netWorth}
+            <b className="font-mono-numbers font-semibold text-[var(--flow-band-fg)]">{prefix(netWorthPrefix)}{netWorth}</b>
+            {netWorthTrend ? (
+              <span className={`inline-flex h-[22px] items-center gap-1 rounded-full bg-[var(--flow-band-fg)] px-2 font-mono-numbers text-xs font-bold ${netWorthTrend.dir === 'up' ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red)]'}`}>
+                {netWorthTrend.points.length > 1 ? <Sparkline points={netWorthTrend.points} up={netWorthTrend.dir === 'up'} /> : null}
+                {netWorthTrend.dir === 'up' ? <ArrowUp className="size-3" strokeWidth={2.5} aria-hidden /> : <ArrowDown className="size-3" strokeWidth={2.5} aria-hidden />}
+                {netWorthTrend.pct}
               </span>
-            )}
-          </div>
-        )}
-
-        {/* Allocation split — fills the hero's dead space with a real visual of where wealth sits. */}
-        {totalSaved + investment > 0 && (() => {
-          const total = totalSaved + investment
-          const savedPct = Math.round((totalSaved / total) * 100)
-          const invPct = 100 - savedPct
-          return (
-            <div className="mt-3">
-              <div className="flex h-2 overflow-hidden rounded-full" style={{ background: 'rgba(255,255,255,.08)' }}>
-                <div style={{ width: `${savedPct}%`, background: '#35D46F' }} />
-                <div style={{ width: `${invPct}%`, background: '#EDC463' }} />
-              </div>
-              <div className="mt-1.5 flex items-center justify-between" style={{ fontSize: 10.5, fontWeight: 600 }}>
-                <span className="inline-flex items-center gap-1" style={{ color: '#35D46F' }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: '#35D46F' }} />Saved {savedPct}%</span>
-                <span className="inline-flex items-center gap-1" style={{ color: '#EDC463' }}>Invested {invPct}%<span className="h-1.5 w-1.5 rounded-full" style={{ background: '#EDC463' }} /></span>
-              </div>
-            </div>
-          )
-        })()}
-
-        {/* cell strip */}
-        <div
-          className="mt-3 flex items-stretch"
-          style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 13 }}
-        >
-          <Cell label="Total saved" value={fmtCompact(totalSaved)} />
-          <Cell label="This month" value={signed(thisMonth)} valueColor="#35D46F" />
-          <Cell label="Investment" value={fmtCompact(investment)} valueColor="#EDC463" chevron onClick={onInvestment} last />
+            ) : null}
+          </span>
+          {savingsRate != null ? <span>{t.savesPct(savingsRate)}</span> : null}
         </div>
-
-        <button
-          type="button"
-          onClick={onAddSavings}
-          className="mt-3 w-full text-white active:scale-[.99] transition-transform"
-          style={{ height: 46, borderRadius: 13, background: '#12B0A0', fontWeight: 600, fontSize: 15 }}
-        >
-          Add savings
-        </button>
       </div>
-    </div>
-  )
-}
-
-function Cell({
-  label, value, valueColor = '#fff', chevron, onClick, last,
-}: {
-  label: string; value: string; valueColor?: string; chevron?: boolean; onClick?: () => void; last?: boolean
-}) {
-  const inner = (
-    <>
-      <span className="inline-flex items-center gap-0.5" style={microLabel}>
-        {label}
-        {chevron && <ChevronRight size={10} />}
-      </span>
-      <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, fontSize: 14.5, color: valueColor, marginTop: 2 }}>
-        {value}
-      </div>
-    </>
-  )
-  return (
-    <div
-      className="flex flex-1 flex-col items-start"
-      style={{ padding: '10px 11px', minHeight: 52, borderRight: last ? undefined : '1px solid rgba(255,255,255,.07)' }}
-      onClick={onClick}
-      role={onClick ? 'button' : undefined}
-    >
-      {inner}
-    </div>
+    </section>
   )
 }

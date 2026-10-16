@@ -150,6 +150,7 @@ describe('settings mapper', () => {
       twoFactorEmailEnabled: false,
       legacyOnboardingMigratedAt: null,
       dashboardLayout: 'minimal' as const,
+      wealthGoldStrip: 'expanded' as const,
       tutorialsCompleted: ['postOnboardingTour:v1', 'addIncomeTour:v1'],
       tutorialCurrentStep: 'dashboardTour:v1:3',
       smsTrackingEnabled: true,

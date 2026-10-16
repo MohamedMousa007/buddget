@@ -99,6 +99,7 @@ export const importDataSchema = z.object({
       twoFactorEmailEnabled: z.boolean().optional(),
       legacyOnboardingMigratedAt: z.string().nullable().optional(),
       dashboardLayout: z.enum(['standard', 'minimal']).optional(),
+      wealthGoldStrip: z.enum(['collapsed', 'expanded', 'hidden']).optional(),
     })
     .optional(),
   incomeSources: z

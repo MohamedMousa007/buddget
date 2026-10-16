@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Wallet, Gem, Bitcoin, TrendingUp, Home, CreditCard, BookOpen } from 'lucide-react'
+import { Wallet, Gem, Bitcoin, TrendingUp, Home, CreditCard, BookOpen, Calendar } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -10,14 +10,19 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { computeZakat } from '@/lib/savings/zakat'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { cn } from '@/lib/utils'
-import { rgba } from '@/lib/utils/color'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { micro } from '@/lib/ui/microLabelStyle'
 import type { ZakatBase } from '@/lib/savings/zakatInputs'
 import type { ZakatConfig } from '@/lib/store/types'
 import { Switch } from '@/components/ui/switch'
-import { DatePickerField } from '@/components/ui/DatePickerField'
+import { FieldButton } from '@/components/ui/FieldButton'
+import { OptionChip } from '@/components/ui/OptionChip'
 import { SelectableCard } from '@/components/ui/SelectableCard'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { UnifiedDatePicker, formatDatePillLabel } from '@/components/ui/UnifiedDatePicker'
+import { tint } from '@/components/features/savings-v3/MoneySheetParts'
+import { effectiveNisabBasis, zakatBasisChosen } from '@/lib/savings/zakatBasis'
+import { useLocale, useT } from '@/lib/i18n'
 
 export interface ZakatSheetProps {
   open: boolean
@@ -31,8 +36,13 @@ type LineId = 'cash' | 'gold' | 'crypto' | 'stocks' | 'debts'
 export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
   const updateProfile = useFinanceStore((s) => s.updateProfile)
   const cfg = useFinanceStore((s) => s.profile.zakatConfig) ?? undefined
+  const t = useT().wealthSheets.zakat
+  const { locale } = useLocale()
+  const todayLabel = useT().expenseForm.today
 
-  const [nisabBasis, setNisabBasis] = useState<'silver' | 'gold'>(cfg?.nisabBasis ?? 'silver')
+  const [nisabBasis, setNisabBasis] = useState<'silver' | 'gold'>(effectiveNisabBasis(cfg))
+  const [basisChosen, setBasisChosen] = useState(zakatBasisChosen(cfg))
+  const [yearPickerOpen, setYearPickerOpen] = useState(false)
   const [holdsForTrading, setHoldsForTrading] = useState(cfg?.holdsForTrading ?? false)
   const [manualOn, setManualOn] = useState(cfg?.manualAmount != null)
   const [yearStart, setYearStart] = useState(cfg?.yearStartDate ?? '')
@@ -53,7 +63,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
     manualAmount: manualOn ? parseFloat(manualAmount) || 0 : null,
   }), [cash, gold, crypto, stocks, holdsForTrading, debts, nisabBasis, base, manualOn, manualAmount])
 
-  const save = (patch: Partial<ZakatConfig>) => updateProfile({ zakatConfig: { nisabBasis, holdsForTrading, manualAmount: manualOn ? parseFloat(manualAmount) || 0 : null, lineOverrides: overrides, yearStartDate: yearStart || null, ...patch } })
+  const save = (patch: Partial<ZakatConfig>) => updateProfile({ zakatConfig: { nisabBasis, nisabBasisChosen: basisChosen, holdsForTrading, manualAmount: manualOn ? parseFloat(manualAmount) || 0 : null, lineOverrides: overrides, yearStartDate: yearStart || null, ...patch } })
   const editLine = (id: LineId, raw: string) => {
     const next = { ...overrides }
     if (raw.trim() === '') delete next[id]
@@ -61,17 +71,21 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
     setOverrides(next); save({ lineOverrides: next })
   }
 
+  const todayIso = new Date().toISOString().slice(0, 10)
+  const janIso = `${todayIso.slice(0, 4)}-01-01`
+  const pickYear = (v: string) => { setYearStart(v); save({ yearStartDate: v || null }) }
+
   const silverNisab = 595 * base.silverPerGram
   const goldNisab = 85 * base.gold24kSellPerGram
-  const accent = result.due ? '#EDC463' : '#35D46F'
+  const accent = result.due ? 'var(--color-brand-gold)' : 'var(--color-brand-green)'
 
   if (!open) return null
 
   const rows: Array<{ id: LineId; icon: React.ReactNode; color: string; name: string; sub: string; value: number; negative?: boolean }> = [
-    { id: 'cash', icon: <Wallet size={18} />, color: '#7EAEF9', name: 'Cash & savings', sub: 'Every pocket you hold', value: cash },
-    { id: 'gold', icon: <Gem size={18} />, color: '#EDC463', name: 'Gold', sub: "At today's sell price", value: gold },
-    { id: 'crypto', icon: <Bitcoin size={18} />, color: '#B79CFF', name: 'Crypto', sub: 'Treated like cash', value: crypto },
-    { id: 'stocks', icon: <TrendingUp size={18} />, color: '#35D46F', name: 'Stocks', sub: `${holdsForTrading ? 'For trading · 100%' : 'Long-term · 30%'} counted`, value: stocks },
+    { id: 'cash', icon: <Wallet size={18} />, color: 'var(--color-cat-5)', name: 'Cash & savings', sub: 'Every pocket you hold', value: cash },
+    { id: 'gold', icon: <Gem size={18} />, color: 'var(--color-brand-gold)', name: 'Gold', sub: "At today's sell price", value: gold },
+    { id: 'crypto', icon: <Bitcoin size={18} />, color: 'var(--color-cat-6)', name: 'Crypto', sub: 'Treated like cash', value: crypto },
+    { id: 'stocks', icon: <TrendingUp size={18} />, color: 'var(--color-brand-green)', name: 'Stocks', sub: `${holdsForTrading ? 'For trading · 100%' : 'Long-term · 30%'} counted`, value: stocks },
   ]
 
   return (
@@ -83,11 +97,11 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
 
         <div className="flex-1 overflow-y-auto px-5 pb-3 space-y-4">
           {/* verdict */}
-          <div className="relative overflow-hidden rounded-2xl border p-4" style={{ borderColor: rgba(accent, .35), background: rgba(accent, .05) }}>
+          <div className="relative overflow-hidden rounded-2xl border p-4" style={{ borderColor: tint(accent, 35), background: tint(accent, 6) }}>
             <p className="text-sm font-semibold" style={{ color: accent }}>{result.due ? 'Zakat is due' : 'No zakat due'}</p>
             <p className="mt-1 font-mono-numbers text-[30px] font-bold text-[var(--color-brand-text-primary)]">{result.due ? fmtNum(result.zakat) : '—'} <span className="text-base text-[var(--color-brand-text-muted)]">EGP</span></p>
             <p className="mt-1 font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{result.due ? `2.5% × ${fmtNum(result.zakatable)} EGP zakatable` : `You are ${fmtNum(result.gap)} EGP under the line`}</p>
-            <div className="mt-3 h-1.5 overflow-hidden rounded-full" style={{ background: 'rgba(255,255,255,.1)' }}><div style={{ width: `${Math.min(100, result.nisab > 0 ? (result.zakatable / result.nisab) * 100 : 0)}%`, height: '100%', background: accent }} /></div>
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full" style={{ background: 'var(--color-brand-sunken)' }}><div style={{ width: `${Math.min(100, result.nisab > 0 ? (result.zakatable / result.nisab) * 100 : 0)}%`, height: '100%', background: accent }} /></div>
             <div className="mt-2 flex justify-between font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]"><span>Nisab · {fmtNum(result.nisab)} EGP</span><span>Hawl ends {hawlDate}</span></div>
           </div>
 
@@ -97,7 +111,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
             <Card padding="none" className="mt-2 overflow-hidden">
               {rows.map((r, i) => (
                 <div key={r.id} className="flex items-center gap-3 p-3" style={{ borderTop: i ? '1px solid var(--color-brand-border)' : undefined }}>
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: rgba(r.color, .14), color: r.color }}>{r.icon}</span>
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: tint(r.color, 14), color: r.color }}>{r.icon}</span>
                   <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{r.name}</p><p className="text-[11px] text-[var(--color-brand-text-muted)]">{r.sub}</p></div>
                   {/* Deliberately compact (36px) so the row rhythm holds — not the app's 48px field. */}
                   <input inputMode="numeric" defaultValue={fmtNum(r.value)} onBlur={(e) => editLine(r.id, e.target.value)}
@@ -109,13 +123,13 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
               ))}
               {/* property */}
               <div className="flex items-center gap-3 p-3" style={{ borderTop: '1px solid var(--color-brand-border)' }}>
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: 'rgba(44,224,198,.14)', color: '#2CE0C6' }}><Home size={18} /></span>
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: tint('var(--color-cat-1)', 14), color: 'var(--color-cat-1)' }}><Home size={18} /></span>
                 <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">Property</p><p className="text-[11px] text-[var(--color-brand-text-muted)]">Not counted — only rent you kept</p></div>
                 <span className="rounded-full border border-dashed border-[var(--color-brand-border)] px-3 py-1.5 text-[11px] text-[var(--color-brand-text-muted)]">Not counted</span>
               </div>
               {/* debts (negative) */}
               <div className="flex items-center gap-3 p-3" style={{ borderTop: '1px solid var(--color-brand-border)' }}>
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: 'rgba(255,107,107,.14)', color: '#FF6B6B' }}><CreditCard size={18} /></span>
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: tint('var(--color-brand-red)', 14), color: 'var(--color-brand-red)' }}><CreditCard size={18} /></span>
                 <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">Debts due this year</p><p className="text-[11px] text-[var(--color-brand-text-muted)]">Subtracted from your wealth</p></div>
                 <span className="mr-1 text-sm text-[var(--color-brand-red)]">−</span>
                 <input inputMode="numeric" defaultValue={fmtNum(debts)} onBlur={(e) => editLine('debts', e.target.value)}
@@ -131,17 +145,23 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
             </Card>
           </div>
 
-          {/* nisab */}
+          {/* nisab basis */}
           <div>
-            <p style={micro}>Nisab</p>
-            <div className="mt-2 grid grid-cols-2 gap-2.5">
-              <NisabCard title="Silver · 595 g" value={silverNisab} on={nisabBasis === 'silver'} onClick={() => { setNisabBasis('silver'); save({ nisabBasis: 'silver' }) }} />
-              <NisabCard title="Gold · 85 g" value={goldNisab} on={nisabBasis === 'gold'} onClick={() => { setNisabBasis('gold'); save({ nisabBasis: 'gold' }) }} />
-            </div>
+            <p style={micro}>{t.basis}</p>
+            <SegmentedControl
+              className="mt-2"
+              ariaLabel={t.basisAria}
+              value={nisabBasis}
+              onChange={(v) => { setNisabBasis(v); setBasisChosen(true); save({ nisabBasis: v, nisabBasisChosen: true }) }}
+              options={[
+                { value: 'silver', label: `${t.silver} \u00b7 595 g` },
+                { value: 'gold', label: `${t.gold} \u00b7 85 g` },
+              ]}
+            />
             <div className="mt-2 flex items-start gap-2 rounded-xl bg-[var(--color-brand-elevated)] px-3 py-2.5">
-              <BookOpen size={14} className="mt-0.5 shrink-0" style={{ color: '#35D46F' }} />
-              <p className="text-[11.5px] leading-relaxed text-[var(--color-brand-text-secondary)]">
-                Silver is the recommended basis — it sets the <span className="font-semibold text-[var(--color-brand-text-primary)]">lower threshold</span>, so more of your wealth becomes zakatable and more reaches those in need. The silver price here is estimated from gold.
+              <BookOpen size={14} className="mt-0.5 shrink-0 text-[var(--color-brand-green)]" />
+              <p className="font-mono-numbers text-[11.5px] leading-relaxed text-[var(--color-brand-text-secondary)]">
+                {t.silver} ≈ {fmtNum(silverNisab)} · {t.gold} {fmtNum(goldNisab)} EGP. {t.silverEstimate}
               </p>
             </div>
           </div>
@@ -159,27 +179,30 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
               account's creation, which is when they installed the app and means nothing
               religiously. See lib/savings/hawl.ts. */}
           <Card variant="elevated" padding="none" className="p-3.5">
-            <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">When your zakat year starts</p>
-            <p className="mt-0.5 text-xs text-[var(--color-brand-text-muted)]">
-              {yearStart
-                ? 'A lunar year (354 days) from this date.'
-                : 'Not set — we are counting from when you joined, which is only a guess. Many people use a fixed date such as 1 Ramadan.'}
-            </p>
-            <DatePickerField
-              value={yearStart}
-              onChange={(v) => { setYearStart(v); save({ yearStartDate: v || null }) }}
-              placeholder="Pick the date"
+            <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{t.yearStart}</p>
+            <p className="mt-0.5 text-xs text-[var(--color-brand-text-muted)]">{yearStart ? t.yearSet : t.yearNotSet}</p>
+            <FieldButton
               className="mt-3"
+              icon={<Calendar className="size-4 text-[var(--color-brand-text-muted)]" />}
+              value={yearStart ? formatDatePillLabel(yearStart, locale, todayLabel) : undefined}
+              placeholder={t.pickDate}
+              affordance={null}
+              onClick={() => setYearPickerOpen(true)}
             />
+            <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar">
+              <OptionChip selected={yearStart === todayIso} onClick={() => pickYear(todayIso)}>{t.today}</OptionChip>
+              <OptionChip selected={yearStart === janIso} onClick={() => pickYear(janIso)}>{t.startOfYear}</OptionChip>
+            </div>
+            <UnifiedDatePicker open={yearPickerOpen} value={yearStart} onConfirm={pickYear} onClose={() => setYearPickerOpen(false)} />
           </Card>
 
           {/* override */}
           <Card variant="elevated" padding="none" className="p-3.5">
             <div className="flex w-full items-center justify-between text-left">
-              <div><p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">Set the amount myself</p><p className="text-xs text-[var(--color-brand-text-muted)]">Overrides everything above</p></div>
+              <div><p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{t.override}</p><p className="text-xs text-[var(--color-brand-text-muted)]">{t.overrideHint}</p></div>
               <Switch
                 size="touch"
-                aria-label="Set the amount myself"
+                aria-label={t.override}
                 checked={manualOn}
                 onCheckedChange={(v) => { setManualOn(v); save({ manualAmount: v ? parseFloat(manualAmount) || 0 : null }) }}
               />
@@ -191,7 +214,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
           </Card>
 
           <div className="flex items-start gap-2 rounded-2xl bg-[var(--color-brand-elevated)] p-3.5">
-            <BookOpen size={16} className="mt-0.5 shrink-0" style={{ color: '#EDC463' }} />
+            <BookOpen size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--color-brand-gold)' }} />
             <p className="text-xs text-[var(--color-brand-text-secondary)]">Zakat is 2.5% of the wealth you have held for one lunar year above nisab. A home you live in and land you rent out are not counted — only the rent you kept. Buddget follows the majority view; check anything unusual with someone you trust.</p>
           </div>
         </div>
@@ -202,15 +225,6 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
         </div>
       </div>
     </ModalShell>
-  )
-}
-
-function NisabCard({ title, value, on, onClick }: { title: string; value: number; on: boolean; onClick: () => void }) {
-  return (
-    <SelectableCard layout="stack" selected={on} onClick={onClick}>
-      <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{title}</p>
-      <p className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{fmtNum(value)} EGP</p>
-    </SelectableCard>
   )
 }
 

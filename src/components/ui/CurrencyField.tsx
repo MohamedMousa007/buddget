@@ -17,7 +17,7 @@ type Props = {
   includeGold?: boolean
   /** Restrict the list to these codes (e.g. the rate-converter's supported set). */
   codes?: readonly string[]
-  /** Hide the full name in the trigger (compact contexts). */
+  /** 44px / ~96px trigger: symbol + code only (name hidden). */
   compact?: boolean
 }
 
@@ -38,11 +38,14 @@ export function CurrencyField({ value, onChange, className, id, includeGold = fa
         onClick={() => setOpen(true)}
         className={cn(
           'flex items-center justify-between gap-2 text-start',
+          compact && 'h-11 min-h-11 w-24 px-3',
           className,
         )}
       >
         <span className="flex min-w-0 items-center gap-2">
-          <span className="text-lg leading-none">{meta?.flag ?? '🏳️'}</span>
+          <span className="font-mono-numbers text-sm font-semibold leading-none text-[var(--color-brand-text-muted)]">
+            {meta?.symbol ?? value}
+          </span>
           <span className="font-mono-numbers font-semibold text-[var(--color-brand-text-primary)]">
             {value}
           </span>

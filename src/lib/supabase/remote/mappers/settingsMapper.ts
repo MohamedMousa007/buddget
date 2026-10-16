@@ -17,6 +17,7 @@ export function settingsToRow(s: AppSettings, userId: string): UserSettingsInser
     no_income_declared: s.noIncomeDeclared,
     two_factor_email_enabled: s.twoFactorEmailEnabled,
     dashboard_layout: s.dashboardLayout ?? 'standard',
+    wealth_gold_strip: s.wealthGoldStrip ?? 'collapsed',
     tutorials_completed: s.tutorialsCompleted,
     tutorial_current_step: s.tutorialCurrentStep,
     sms_tracking_enabled: s.smsTrackingEnabled,
@@ -48,6 +49,7 @@ export function settingsFromRow(row: UserSettingsRow, opts: SettingsFromRowOptio
     // Client-only; never synced.
     legacyOnboardingMigratedAt: null,
     dashboardLayout: row.dashboard_layout,
+    wealthGoldStrip: row.wealth_gold_strip as AppSettings['wealthGoldStrip'],
     tutorialsCompleted: row.tutorials_completed ?? [],
     tutorialCurrentStep: row.tutorial_current_step ?? null,
     smsTrackingEnabled: row.sms_tracking_enabled ?? false,

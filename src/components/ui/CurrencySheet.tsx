@@ -27,7 +27,7 @@ interface CurrencySheetProps {
 }
 
 /**
- * Unified currency picker (handoff §4). Compact bottom sheet — flag + ISO code +
+ * Unified currency picker (handoff §4). Compact bottom sheet — symbol + ISO code +
  * full name, searchable by code or name, Common pinned then all A→Z. Reused for
  * every currency selection across the app.
  */
@@ -142,8 +142,8 @@ export function CurrencySheet({
                     : 'border border-transparent',
                 )}
               >
-                <span className="w-[26px] shrink-0 text-center text-lg leading-none">
-                  {meta?.flag ?? '🏳️'}
+                <span className="w-9 shrink-0 text-center font-mono-numbers text-sm font-semibold leading-none text-[var(--color-brand-text-muted)]">
+                  {meta?.symbol ?? r.code}
                 </span>
                 <span className="w-11 shrink-0 text-start font-mono-numbers text-sm font-bold text-[var(--color-brand-text-primary)]">
                   {r.code}

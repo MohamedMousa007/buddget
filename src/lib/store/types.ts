@@ -503,6 +503,11 @@ export interface EmergencyFundConfig {
 /** Per-user zakat settings (stored as jsonb on profiles). */
 export interface ZakatConfig {
   nisabBasis: 'silver' | 'gold'
+  /**
+   * The user explicitly picked `nisabBasis`. Absent on configs written before the Wealth v3
+   * basis prompt: any existing config counts as chosen, see {@link zakatBasisChosen}.
+   */
+  nisabBasisChosen?: boolean
   holdsForTrading: boolean
   /** Master override — replaces the computed figure entirely. */
   manualAmount?: number | null
@@ -757,6 +762,8 @@ export interface AppSettings {
    * `user_settings.dashboard_layout` so the choice survives sign-out.
    */
   dashboardLayout?: 'standard' | 'minimal'
+  /** Wealth gold-price strip state; `user_settings.wealth_gold_strip` (synced). */
+  wealthGoldStrip?: 'collapsed' | 'expanded' | 'hidden'
   /**
    * Tours the user has finished, stored as versioned ids
    * (e.g. `'postOnboardingTour:v1'`). Re-firing a tour for every existing

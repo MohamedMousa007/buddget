@@ -162,6 +162,59 @@ export interface Dictionary {
     pressBackAgainToExit: string
   }
 
+  wealthPage: {
+    holdLabel: string
+    balances: string
+    marketPriced: string
+    youValue: string
+    bankAccounts: string
+    vault: string
+    cash: string
+    other: string
+    netWorth: string
+    savesPct: (n: number) => string
+    atLeast: string
+    addMoney: string
+    withdraw: string
+    addHolding: string
+    efSetUp: string
+    efMonths: (covered: string, target: number) => string
+    efAria: string
+    zakatBadge: (amount: string, due: string) => string
+    zakatAria: string
+    stripLive: string
+    stripDaysOld: (n: number) => string
+    stripOffline: string
+    stripSagha: string
+    stripAsOf: (t: string) => string
+    worldOz: string
+    worldG: string
+    saghaDollar: string
+    refreshPrices: string
+    showWorld: string
+    hideWorld: string
+    hideStrip: string
+    whereItIs: string
+    addPocketOrAsset: string
+    all: string
+    catLabels: Record<string, string>
+    groupPockets: string
+    groupInvestments: string
+    notPriced: string
+    recentMoves: string
+    seeAll: string
+    menuAddMoney: string
+    menuWithdraw: string
+    menuEdit: string
+    menuDelete: string
+    vaultDeleteHint: string
+    nothingHeld: string
+    feeds: (goal: string, pct: number) => string
+    deleteTitle: (name: string) => string
+    deleteBody: string
+    priceFeedDown: (grams: string) => string
+  }
+
   nav: {
     dashboard: string
     budgetSetup: string
@@ -767,6 +820,41 @@ export interface Dictionary {
       other: string
       vault: string
     }
+  }
+
+  addHolding: {
+    title: string
+    subtitlePocket: string
+    subtitleInvestment: string
+    tabsAria: string
+    tabPocket: string
+    tabInvestment: string
+    fromAccount: string
+    startFromKind: string
+    alreadyPocket: string
+    notPocketYet: string
+    continue: string
+    goldName: string
+    goldSub: string
+    cryptoName: string
+    cryptoSub: string
+    stockName: string
+    stockSub: string
+    propertyName: string
+    propertySub: string
+    goldStripTitle: string
+    goldStripSub: string
+    step2: string
+    propertyNote: string
+    propertyWorth: string
+    boughtThisMonth: string
+    boughtThisMonthSub: string
+    alreadyHad: string
+    alreadyHadSub: string
+    whenBought: string
+    whatYouPaid: string
+    optional: string
+    paidHint: string
   }
 
   debts: {
@@ -2107,6 +2195,125 @@ export interface Dictionary {
     matchBody: (amount: string, date: string, payday: string) => string
     acctBody: (n: number) => string
     subBody: (amount: string, day: number, n: number) => string
+  }
+
+  wealthSheets: {
+    zakatPrompt: {
+      title: string
+      subNone: string
+      subSilverOnly: string
+      subBoth: string
+      hadith: string
+      hadithSource: string
+      jurists: string
+      silver: string
+      gold: string
+      nisabLine: (silver: string, gold: string) => string
+      footer: string
+    }
+    zakat: {
+      basis: string
+      basisAria: string
+      silver: string
+      gold: string
+      silverEstimate: string
+      yearStart: string
+      yearNotSet: string
+      yearSet: string
+      pickDate: string
+      today: string
+      startOfYear: string
+      override: string
+      overrideHint: string
+    }
+    ef: {
+      title: string
+      setupTitle: string
+      editTitle: string
+      subtitle: string
+      secured: string
+      building: string
+      notSaved: string
+      aboveTarget: (months: string) => string
+      monthsOf: (covered: string, target: number) => string
+      essentials: string
+      target: string
+      covered: string
+      stillToSave: string
+      edit: string
+      addMoney: string
+      monthsToCover: string
+      monthsHint: string
+      fewer: string
+      more: string
+      simpleMonthEyebrow: string
+      simpleMonth: string
+      simpleMonthSub: string
+      ownFigure: string
+      figureWins: string
+      estimate: string
+      estimating: string
+      estimated: (amount: string, currency: string) => string
+      estimateFailed: string
+      needed: (n: number) => string
+      neededSub: (per: string, n: number) => string
+      coverBold: string
+      coverRest: string
+      setUp: string
+      done: string
+      rent: string
+      food: string
+      transport: string
+      bills: string
+      debtMinimums: string
+    }
+    money: {
+      addTitle: string
+      addSub: string
+      withdrawTitle: string
+      withdrawSub: string
+      into: string
+      from: string
+      amount: string
+      currency: string
+      whereFrom: string
+      thisMonth: string
+      outside: string
+      tipThisMonth: string
+      tipOutside: string
+      addCta: (amount: string, pocket: string) => string
+      choosePocket: string
+      withdrawCta: (verb: string, amount: string, pocket: string) => string
+      purpose: string
+      spend: string
+      spendSub: string
+      debt: string
+      debtSub: string
+      invest: string
+      investSub: string
+      income: string
+      incomeSub: string
+      move: string
+      moveSub: string
+      verbSpend: string
+      verbPay: string
+      verbInvest: string
+      verbIncome: string
+      verbMove: string
+      whichDebt: string
+      pickDebt: string
+      noDebts: string
+      left: (n: string) => string
+      whichAsset: string
+      addToAsset: (name: string) => string
+      addOneFirst: string
+      moveTo: string
+      note: string
+      notePlaceholder: string
+      today: string
+      clearNote: string
+      balance: (n: string, cur: string) => string
+    }
   }
 
   status: {
