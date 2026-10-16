@@ -6,8 +6,8 @@ import { AmountField } from '@/components/ui/AmountField'
 import { DatePickerField } from '@/components/ui/DatePickerField'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
 import { defaultColorForPaymentMethodType, decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
-import { rgba } from '@/lib/utils/color'
-import { fmtWhole } from './heroCardShared'
+import { useT } from '@/lib/i18n'
+import { fmtWhole, soft } from './heroCardShared'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { Switch } from '@/components/ui/switch'
 
@@ -16,9 +16,10 @@ const FIELD = 'h-12 w-full rounded-xl border border-[var(--color-brand-border)] 
 
 /** "Make a payment" — handoff pay modal. */
 export function PayDebtForm({ d }: { d: AddDebtHook }) {
+  const t = useT().debts
   const debt = d.selectedDebt
-  const owedLabel = debt?.direction === 'they_owe' ? 'Owed to you' : 'You owe'
-  const accent = debt?.direction === 'they_owe' ? '#37C368' : debt?.isGold ? '#EDC463' : '#E5484D'
+  const owedLabel = debt?.direction === 'they_owe' ? t.fOwedToYou : t.fYouOwe
+  const accent = debt?.direction === 'they_owe' ? 'var(--color-brand-green)' : debt?.isGold ? 'var(--color-brand-gold)' : 'var(--color-brand-red)'
   const initial = (debt?.name || debt?.person || '?').trim().charAt(0).toUpperCase()
 
   return (
@@ -26,13 +27,13 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
       {/* Summary card */}
       {debt ? (
         <div className="flex items-center gap-3 rounded-[16px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-4">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[16px] font-bold" style={{ background: rgba(accent, 0.16), color: accent }}>
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[16px] font-bold" style={{ background: soft(accent, 16), color: accent }}>
             {debt.debtType === 'personal' || debt.debtType === 'general' ? initial : <Users className="h-5 w-5" />}
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[16px] font-bold text-[var(--color-brand-text-primary)]">{debt.name || debt.person}</p>
             <p className="mt-0.5 font-mono-numbers text-[12px] text-[var(--color-brand-text-muted)]">
-              {owedLabel} · {fmtWhole(d.selectedRemaining)} {debt.currency} left
+              {t.fPayLine(owedLabel, fmtWhole(d.selectedRemaining), debt.currency)}
             </p>
           </div>
         </div>
@@ -40,7 +41,7 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
 
       {/* Amount */}
       <div>
-        <div className={`${MICRO} mb-2`}>Amount</div>
+        <div className={`${MICRO} mb-2`}>{t.fAmount}</div>
         <AmountField
           value={d.paymentAmount}
           onChange={(v) => { d.setPaymentAmount(v); d.setPaymentRateError('') }}
@@ -48,18 +49,18 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
           currency={String(d.paymentCurrency)}
         />
         {d.paymentPreview() ? <p className="mt-2 px-0.5 font-mono-numbers text-[12px] text-[var(--color-brand-text-muted)]">{d.paymentPreview()}</p> : null}
-        {d.paymentRateError ? <p className="mt-2 px-0.5 text-[12px] text-[#FF6B6B]">{d.paymentRateError}</p> : null}
+        {d.paymentRateError ? <p className="mt-2 px-0.5 text-[12px] text-[var(--color-brand-red)]">{d.paymentRateError}</p> : null}
       </div>
 
       {/* Date */}
       <div>
-        <div className={`${MICRO} mb-2`}>{d.paymentScheduleMode === 'recurring' ? 'Next due' : 'Date'}</div>
+        <div className={`${MICRO} mb-2`}>{d.paymentScheduleMode === 'recurring' ? t.fNextDue : t.fDate}</div>
         <DatePickerField value={d.paymentDate} onChange={d.setPaymentDate} />
       </div>
 
       {/* Payment method — horizontal chips */}
       <div>
-        <div className={`${MICRO} mb-2`}>Payment method</div>
+        <div className={`${MICRO} mb-2`}>{t.fPaymentMethod}</div>
         <div className="native-scroll -mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
           {d.paymentMethods.map((m) => {
             const on = d.paymentMethodId === m.id
@@ -72,10 +73,10 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
                 onClick={() => d.setPaymentMethodId(m.id)}
                 className="h-11"
                 style={on
-                  ? { background: rgba(accent, 0.14), borderColor: rgba(accent, 0.6), color: 'var(--color-brand-text-primary)' }
+                  ? { background: soft(accent, 14), borderColor: soft(accent, 60), color: 'var(--color-brand-text-primary)' }
                   : undefined}
               >
-                <span className="flex h-6 w-6 items-center justify-center rounded-md" style={{ background: rgba(c, 0.18), color: c }}>
+                <span className="flex h-6 w-6 items-center justify-center rounded-md" style={{ background: soft(c, 18), color: c }}>
                   <Icon className="h-3.5 w-3.5" />
                 </span>
                 {decomposePaymentMethodName(m.name, m.last4).provider}
@@ -92,12 +93,12 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
           <Repeat className="h-[18px] w-[18px]" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-bold text-[var(--color-brand-text-primary)]">Recurring payment</span>
-          <span className="mt-0.5 block text-[12px] text-[var(--color-brand-text-muted)]">Repeat every cycle automatically</span>
+          <span className="block text-sm font-bold text-[var(--color-brand-text-primary)]">{t.fRecurring}</span>
+          <span className="mt-0.5 block text-[12px] text-[var(--color-brand-text-muted)]">{t.fRecurringHint}</span>
         </span>
         <Switch
           size="touch"
-          aria-label="Recurring payment"
+          aria-label={t.fRecurring}
           checked={d.paymentScheduleMode === 'recurring'}
           onCheckedChange={(on) => d.setPaymentScheduleMode(on ? 'recurring' : 'one_time')}
         />
@@ -105,8 +106,8 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
 
       {/* Notes */}
       <div>
-        <div className={`${MICRO} mb-2`}>Notes</div>
-        <input value={d.paymentNotes} onChange={(e) => d.setPaymentNotes(e.target.value)} placeholder="Optional note" className={FIELD} />
+        <div className={`${MICRO} mb-2`}>{t.fNotes}</div>
+        <input value={d.paymentNotes} onChange={(e) => d.setPaymentNotes(e.target.value)} placeholder={t.fOptionalNote} className={FIELD} />
       </div>
     </div>
   )

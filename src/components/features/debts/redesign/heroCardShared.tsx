@@ -5,10 +5,47 @@ import { MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { IconButton } from '@/components/ui/IconButton'
+import { Card } from '@/components/ui/card'
+import { Progress, ProgressIndicator, ProgressTrack } from '@/components/ui/progress'
+import { useT } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 
 /** Whole-number formatter used across debt hero cards (no cents, grouped). */
 export function fmtWhole(n: number): string {
   return Math.round(n).toLocaleString('en-US', { maximumFractionDigits: 0 })
+}
+
+/** A translucent tint of any CSS colour (token or data-driven hex). */
+export function soft(color: string, pct = 16): string {
+  return `color-mix(in oklab, ${color} ${pct}%, transparent)`
+}
+
+/**
+ * A data-driven brand colour pulled toward the text colour so it stays legible as a
+ * fill or glyph on the card in both themes (a near-black brand tile would vanish in dark).
+ */
+export function readable(color: string): string {
+  return `color-mix(in oklab, ${color} 70%, var(--color-brand-text-primary))`
+}
+
+/** The shared debt-card surface: ui Card + the kebab slot. Children own their own layout. */
+export function DebtCardFrame({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <Card elevation="sm" className={cn('relative flex flex-col', className)}>
+      {children}
+    </Card>
+  )
+}
+
+/** Token bar on the elevated track; `tone` is any CSS colour. */
+export function DebtBar({ pct, tone, className }: { pct: number; tone: string; className?: string }) {
+  return (
+    <Progress value={Math.max(0, Math.min(100, pct))} className={className}>
+      <ProgressTrack className="h-1.5 bg-[var(--color-brand-elevated)]">
+        <ProgressIndicator className="rounded-full" style={{ background: tone }} />
+      </ProgressTrack>
+    </Progress>
+  )
 }
 
 /**
@@ -26,13 +63,14 @@ export function EditPin({
   deleteBody?: string
 }) {
   const confirm = useConfirm()
+  const t = useT()
   const [anchor, setAnchor] = useState<DOMRect | null>(null)
   return (
     <>
       <IconButton
         onClick={(e) => setAnchor(e.currentTarget.getBoundingClientRect())}
         aria-label={label}
-        variant="onBrand"
+        variant="tinted"
         size="sm"
         shape="round"
         className="absolute end-3 top-3"
@@ -43,10 +81,10 @@ export function EditPin({
         anchor={anchor}
         onClose={() => setAnchor(null)}
         items={[
-          { label: 'Edit', icon: <Pencil size={17} />, onSelect: onClick },
+          { label: t.debts.actionEdit, icon: <Pencil size={17} />, onSelect: onClick },
           ...(onDelete ? [{
-            label: deleteLabel ?? 'Delete', icon: <Trash2 size={17} />, destructive: true,
-            onSelect: async () => { if (await confirm({ title: deleteLabel ?? 'Delete?', body: deleteBody ?? 'This cannot be undone.', destructive: true })) onDelete() },
+            label: deleteLabel ?? t.common.delete, icon: <Trash2 size={17} />, destructive: true,
+            onSelect: async () => { if (await confirm({ title: deleteLabel ?? t.debts.deleteConfirmTitle, body: deleteBody ?? t.debts.deleteConfirmBody, destructive: true })) onDelete() },
           }] : []),
         ]}
       />

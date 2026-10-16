@@ -173,6 +173,11 @@ export function useAddDebtSheet() {
     [debts, debtPayments, debtBalanceCtx]
   )
 
+  const payableRows = useMemo(
+    () => payableDebts.map((debt) => ({ debt, remaining: calculateDebtRemaining(debt, debtPayments, debtBalanceCtx) })),
+    [payableDebts, debtPayments, debtBalanceCtx]
+  )
+
   const selectedDebt = debts.find((d) => d.id === selectedDebtId)
   const selectedPayable = payableDebts.find((d) => d.id === selectedDebtId)
   const selectedRemaining = selectedDebt ? calculateDebtRemaining(selectedDebt, debtPayments, debtBalanceCtx) : 0
@@ -715,6 +720,7 @@ export function useAddDebtSheet() {
     editingDebt,
     handleDeleteDebt,
     payDebtStep,
+    payableRows,
     selectDebtForPayFlow,
     backToPayDebtList,
     mode,

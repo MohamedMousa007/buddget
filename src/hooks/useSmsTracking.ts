@@ -16,10 +16,40 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { isNative, isAndroid, isIOS } from '@/lib/native/isNative'
 import { createClient } from '@/lib/supabase/client'
 import { apiFetchAuth } from '@/lib/apiBase'
-import { saveSmsToken, setSmsEnabled, setIosSetupCompleted, getSmsBridgeStatus, type SmsBridgeStatus } from '@/lib/native/smsTracker'
+import { saveSmsToken, setSmsEnabled, setIosSetupCompleted, getSmsBridgeStatus, SMS_QUEUE_CHANGED_EVENT, type SmsBridgeStatus } from '@/lib/native/smsTracker'
 
 export interface TokenInfo {
   token: string
+}
+
+/**
+ * Lightweight "is SMS capture armed right now" read: the native bridge on
+ * device, the synced setting on web. No token or Supabase work.
+ */
+export function useSmsArmed(): boolean {
+  const smsTrackingEnabled = useFinanceStore((s) => s.settings.smsTrackingEnabled)
+  const [armed, setArmed] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    if (!isNative()) return
+    let live = true
+    const refresh = () => {
+      void getSmsBridgeStatus().then((status) => {
+        if (live) setArmed(status?.enabled ?? false)
+      })
+    }
+    refresh()
+    window.addEventListener(SMS_QUEUE_CHANGED_EVENT, refresh)
+    document.addEventListener('visibilitychange', refresh)
+    return () => {
+      live = false
+      window.removeEventListener(SMS_QUEUE_CHANGED_EVENT, refresh)
+      document.removeEventListener('visibilitychange', refresh)
+    }
+  }, [])
+
+  // Until the native read lands, trust the synced intent so armed users never see a stale "turn on".
+  return isNative() ? (armed ?? smsTrackingEnabled) : smsTrackingEnabled
 }
 
 export function useSmsTracking() {

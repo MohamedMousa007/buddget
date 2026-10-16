@@ -2,27 +2,23 @@
 
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { useNavPath } from '@/lib/navigation/navStore'
-import { Award } from 'lucide-react'
 import { AuthNavButtons } from '@/components/layout/AuthNavButtons'
 import { MonthNavigationControl } from '@/components/layout/MonthNavigationControl'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { sectionTitleNavKey } from '@/lib/navigation/bottomNavConfig'
 import { ownsHeader } from '@/lib/navigation/ownsHeader'
 import { BuddgetWordmark } from '@/components/brand'
-import { Button } from '@/components/ui/button'
+import { SetupProgressChip } from '@/components/features/setup/SetupProgressChip'
 
 export function DesktopHeaderBar() {
-  const { monthFilter, setMonthFilter, setActiveModal } = useSettingsStore()
+  const { monthFilter, setMonthFilter } = useSettingsStore()
   const pathname = useNavPath()
   const t = useT()
   const sectionKey = sectionTitleNavKey(pathname)
   const sectionTitle = sectionKey ? t.nav[sectionKey] : ''
   const isHome = pathname === '/'
-  const isDebts = pathname === '/debts'
-  const clearedCount = useFinanceStore((s) => s.debts.filter((d) => d.status === 'cleared').length)
 
   return (
     <>
@@ -31,7 +27,8 @@ export function DesktopHeaderBar() {
         <div className="flex items-center shrink-0">
         </div>
 
-        <div className="flex items-center shrink-0">
+        <div className="flex items-center shrink-0 gap-1">
+          <SetupProgressChip />
           <AuthNavButtons layout="desktop" />
         </div>
       </header>
@@ -59,21 +56,8 @@ export function DesktopHeaderBar() {
             </div>
           )}
 
-          {/* Debt tab: cleared-vault pill (one tap to the celebratory archive). */}
-          {isDebts && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setActiveModal('clearedVault')}
-              aria-label="Cleared vault"
-              className="ms-auto rounded-full border-[var(--color-brand-green)]/40 bg-[var(--color-brand-green)]/10 text-[var(--color-brand-green)] hover:bg-[var(--color-brand-green)]/20"
-            >
-              <Award className="h-4 w-4" />
-              <span className="font-mono-numbers text-sm font-bold">{clearedCount}</span>
-            </Button>
-          )}
-
-          <div className={cn('flex shrink-0 items-center', isHome || isDebts ? 'ms-2' : 'ms-auto')}>
+          <div className={cn('flex shrink-0 items-center gap-1', isHome ? 'ms-2' : 'ms-auto')}>
+            <SetupProgressChip />
             <AuthNavButtons layout="mobile" />
           </div>
         </div>

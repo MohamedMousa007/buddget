@@ -1,8 +1,9 @@
 'use client'
 
 import { Link2 } from 'lucide-react'
-import { fmtWhole } from './heroCardShared'
+import { fmtWhole, soft } from './heroCardShared'
 import { Button } from '@/components/ui/button'
+import { useT } from '@/lib/i18n'
 
 export interface AssignCandidate {
   id: string
@@ -10,41 +11,49 @@ export interface AssignCandidate {
   currency: string
   method: string
   date: string
+  debtId?: string
 }
 
-/** Green assign-payment prompt for likely-but-unmatched installment payments (handoff §3c). */
+/** Assign-payment prompt for likely-but-unmatched installment payments (handoff §3c). */
 export function AssignPaymentBanner({
   candidate,
   onAssign,
   onDismiss,
 }: {
   candidate: AssignCandidate | null
-  onAssign: (id: string) => void
+  onAssign: (candidate: AssignCandidate) => void
   onDismiss: (id: string) => void
 }) {
+  const t = useT().debts
   if (!candidate) return null
   return (
-    <div className="flex items-center gap-3 rounded-[16px] border border-[#37C368]/45 bg-[rgba(55,195,104,.08)] p-3.5">
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-[rgba(55,195,104,.18)] text-[#35D46F]">
+    <div
+      className="flex items-center gap-3 rounded-[16px] border p-3.5"
+      style={{ borderColor: soft('var(--color-brand-green)', 45), background: 'var(--color-brand-green-soft)' }}
+    >
+      <span
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] text-[var(--color-brand-green)]"
+        style={{ background: soft('var(--color-brand-green)', 18) }}
+      >
         <Link2 className="h-5 w-5" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-[15px] font-bold text-[var(--color-brand-text-primary)]">Assign a payment?</p>
-        <p className="mt-0.5 truncate font-mono-numbers text-[13px] text-[var(--color-brand-text-muted)]">
-          {fmtWhole(candidate.amount)} {candidate.currency} · {candidate.method} · {candidate.date} · likely a plan
+        <p className="text-[15px] font-bold text-[var(--color-brand-text-primary)]">{t.assignTitle}</p>
+        <p className="mt-0.5 truncate font-mono-numbers text-[13px] text-[var(--color-brand-text-secondary)]">
+          {t.assignSub(`${fmtWhole(candidate.amount)} ${candidate.currency}`, candidate.method, candidate.date)}
         </p>
       </div>
       <div className="flex shrink-0 flex-col items-center gap-1">
-        <Button variant="success" size="touch" onClick={() => onAssign(candidate.id)} className="font-bold">
-          Assign
+        <Button variant="success" size="touch" onClick={() => onAssign(candidate)} className="font-bold">
+          {t.assignBtn}
         </Button>
         <Button
           onClick={() => onDismiss(candidate.id)}
-          variant="link"
-          size="xs"
-          className="no-underline hover:underline text-[var(--color-brand-text-muted)]"
+          variant="ghost"
+          size="touch"
+          className="text-[var(--color-brand-text-muted)]"
         >
-          Not now
+          {t.notNow}
         </Button>
       </div>
     </div>

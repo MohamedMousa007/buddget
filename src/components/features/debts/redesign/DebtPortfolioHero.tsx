@@ -1,102 +1,45 @@
 'use client'
 
-import { Plus } from 'lucide-react'
-import type { DebtFamily } from '@/lib/debts/debtFamily'
+import { FLOW_BAND_BG } from '@/components/features/flow/FlowSummaryBand'
+import { ProgressRing } from '@/components/ui/ProgressRing'
+import { useT } from '@/lib/i18n'
 import { fmtWhole } from './heroCardShared'
-import { Button } from '@/components/ui/button'
 
 export interface DebtPortfolioHeroProps {
   owed: number
   base: string
   secondaryText?: string | null
   clearedPct: number
-  counts: Record<DebtFamily, number>
-  onAddDebt: () => void
+  borrowedTotal: number
 }
 
-function ClearedRing({ pct }: { pct: number }) {
-  const r = 25
-  const c = 2 * Math.PI * r
-  const dash = (Math.max(0, Math.min(100, pct)) / 100) * c
+/** Debts band: same teal band as Flow and Wealth; the ring shows how much is already cleared. */
+export function DebtPortfolioHero({ owed, base, secondaryText, clearedPct, borrowedTotal }: DebtPortfolioHeroProps) {
+  const t = useT().debts
+  const FG2 = 'text-[var(--flow-band-fg-2)]'
   return (
-    <div className="relative h-[62px] w-[62px] shrink-0">
-      <svg viewBox="0 0 62 62" className="h-full w-full -rotate-90">
-        <circle cx="31" cy="31" r={r} fill="none" stroke="rgba(255,255,255,.12)" strokeWidth="5" />
-        <circle
-          cx="31"
-          cy="31"
-          r={r}
-          fill="none"
-          stroke="#37C368"
-          strokeWidth="5"
-          strokeLinecap="round"
-          strokeDasharray={`${dash} ${c}`}
-          className="transition-[stroke-dasharray] duration-500"
-        />
-      </svg>
-      <span className="absolute inset-0 flex items-center justify-center font-mono-numbers text-[14px] font-bold text-white">
-        {pct}%
-      </span>
-    </div>
-  )
-}
-
-/** Fixed portfolio hero (dark gradient, not tab-scoped) — handoff §2. */
-export function DebtPortfolioHero({
-  owed,
-  base,
-  secondaryText,
-  clearedPct,
-  counts,
-  onAddDebt,
-}: DebtPortfolioHeroProps) {
-  const cells: { label: string; n: number }[] = [
-    { label: 'Borrow', n: counts.borrow },
-    { label: 'Cards', n: counts.credit_card },
-    { label: 'Installments', n: counts.installment },
-  ]
-  return (
-    <div className="rounded-[18px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-[18px] dark:border-white/5 dark:bg-[linear-gradient(150deg,#1d1416,#121017)]">
-      <div className="flex items-start justify-between gap-4">
+    <section
+      className="border-b border-[var(--flow-band-line)] text-[var(--flow-band-fg)]"
+      style={{ background: FLOW_BAND_BG }}
+    >
+      <div className="mx-auto flex max-w-screen-sm items-center justify-between gap-4 px-[18px] pb-4 pt-3">
         <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">Total still owed</p>
+          <p className={`text-[11px] font-bold uppercase tracking-[0.08em] ${FG2}`}>{t.heroLabel}</p>
           <p className="mt-1.5 flex items-baseline gap-2">
-            <span className="font-mono-numbers text-[34px] font-bold leading-none tracking-[-1px] text-[var(--color-brand-text-primary)]">
-              {fmtWhole(owed)}
-            </span>
-            <span className="text-sm font-medium text-[var(--color-brand-text-muted)]">{base}</span>
+            <span className="font-mono-numbers text-[34px] font-semibold leading-none tracking-[-0.03em]">{fmtWhole(owed)}</span>
+            <span className={`text-sm font-medium ${FG2}`}>{base}</span>
           </p>
-          {secondaryText ? (
-            <p className="mt-1.5 font-mono-numbers text-[13px] text-[var(--color-brand-text-muted)]">≈ {secondaryText}</p>
-          ) : null}
+          {secondaryText ? <p className={`mt-1.5 font-mono-numbers text-[13px] ${FG2}`}>≈ {secondaryText}</p> : null}
+          <p className={`mt-1.5 text-[12.5px] ${FG2}`}>
+            {borrowedTotal > 0 ? t.heroBorrowedTotal(`${fmtWhole(borrowedTotal)} ${base}`) : t.heroDebtFree}
+          </p>
         </div>
-        <div className="flex shrink-0 flex-col items-center gap-1">
-          <ClearedRing pct={clearedPct} />
-          <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">Cleared</span>
-        </div>
+        {borrowedTotal > 0 ? (
+          <ProgressRing pct={clearedPct} track="var(--flow-band-mix)" arc="var(--flow-band-fg)">
+            <span className="font-mono-numbers text-[14px] font-bold text-[var(--flow-band-fg)]">{clearedPct}%</span>
+          </ProgressRing>
+        ) : null}
       </div>
-
-      {/* Family-count strip */}
-      <div className="mt-3.5 grid grid-cols-3 overflow-hidden rounded-[12px] border border-[var(--color-brand-border)] dark:border-white/8">
-        {cells.map((cell, i) => (
-          <div
-            key={cell.label}
-            className={`flex flex-col items-center py-2 ${i > 0 ? 'border-s border-[var(--color-brand-border)] dark:border-white/8' : ''}`}
-          >
-            <span className="font-mono-numbers text-base font-bold text-[var(--color-brand-text-primary)]">{cell.n}</span>
-            <span className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.06em] text-[var(--color-brand-text-muted)]">{cell.label}</span>
-          </div>
-        ))}
-      </div>
-
-      <Button
-        onClick={onAddDebt}
-        size="cta-block"
-        className="mt-3.5 shadow-[var(--shadow-md)]"
-      >
-        <Plus className="h-[18px] w-[18px]" strokeWidth={2.4} />
-        Add debt
-      </Button>
-    </div>
+    </section>
   )
 }

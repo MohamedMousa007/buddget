@@ -48,6 +48,7 @@ import { createSafeLocalStorage } from '@/lib/store/safeLocalStorage'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { buildGoalProgressContext } from '@/lib/goals/computeGoalProgress'
 import { reconcileAchievedGoals } from '@/lib/goals/reconcileAchievedGoals'
+import { clearIfFullyPaid } from '@/lib/utils/calculations'
 import { migrateIdsToUuid } from '@/lib/store/migrations/v17_uuid_remap'
 import { normalizePaymentMethodType } from '@/lib/payment/paymentMethodDefaults'
 const PERSIST_VERSION = 19
@@ -55,6 +56,17 @@ const PERSIST_VERSION = 19
 function reconcileGoalsForState(state: FinanceStore): Goal[] {
   const ctx = buildGoalProgressContext(state, useSettingsStore.getState().monthFilter)
   return reconcileAchievedGoals(state.goals, ctx).goals
+}
+
+/** Debts after a payment lands: the paid debt is cleared the moment it is covered. */
+function settleDebt(state: FinanceStore, debtId: string) {
+  return clearIfFullyPaid(
+    state.debts,
+    debtId,
+    state.debtPayments,
+    { expenses: state.expenses, exchangeRates: state.exchangeRates, allDebts: state.debts },
+    localTodayISO()
+  )
 }
 
 function holdingSubtypeToSavingsType(sub: SavingsHolding['subtype']): SavingsType {
@@ -678,6 +690,7 @@ export const useFinanceStore = create<FinanceStore>()(
           return {
             debtPayments: nextState.debtPayments,
             expenses: nextState.expenses,
+            debts: settleDebt(nextState, payment.debtId),
             goals: reconcileGoalsForState(nextState),
           }
         })
@@ -694,6 +707,7 @@ export const useFinanceStore = create<FinanceStore>()(
           }
           return {
             debtPayments: nextState.debtPayments,
+            debts: settleDebt(nextState, payment.debtId),
             goals: reconcileGoalsForState(nextState),
           }
         }),

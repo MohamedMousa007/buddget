@@ -1,7 +1,6 @@
 'use client'
 
 import { findProviderBrand } from '@/lib/constants/installmentProviders'
-import { shade } from '@/lib/utils/color'
 
 /**
  * Provider logo badge. Renders the provider's OFFICIAL logo (from `public/providers/`)
@@ -50,7 +49,7 @@ export interface ProviderBadgeProps {
 export function ProviderBadge({ slug, name, color, size = 40, className }: ProviderBadgeProps) {
   const brand = findProviderBrand(slug)
   const label = name ?? brand?.name ?? 'Other'
-  const c = color ?? brand?.color ?? '#6B7280'
+  const c = color ?? brand?.color ?? 'var(--color-brand-text-muted)'
   const logo = slug ? OFFICIAL_LOGOS[slug] : undefined
 
   if (logo) {
@@ -67,13 +66,13 @@ export function ProviderBadge({ slug, name, color, size = 40, className }: Provi
 
   return (
     <span
-      className={`flex shrink-0 items-center justify-center font-extrabold text-white ${className ?? ''}`}
+      className={`flex shrink-0 items-center justify-center font-extrabold text-[var(--color-brand-on-primary)] ${className ?? ''}`}
       style={{
         width: size,
         height: size,
         borderRadius: size * 0.26,
-        background: `linear-gradient(140deg, ${c}, ${shade(c, 0.72)})`,
-        boxShadow: `0 4px 12px -4px ${c}66, inset 0 1px 0 rgba(255,255,255,.25)`,
+        background: `linear-gradient(140deg, ${c}, color-mix(in oklab, ${c} 72%, black))`,
+        boxShadow: `0 4px 12px -4px color-mix(in oklab, ${c} 40%, transparent)`,
         fontSize: size * (monogram(label).length > 2 ? 0.3 : 0.36),
         letterSpacing: '-0.02em',
       }}

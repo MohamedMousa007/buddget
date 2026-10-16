@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { useT } from '@/lib/i18n'
 import { useShallow } from 'zustand/react/shallow'
 import { format, parseISO, addMonths, addWeeks, differenceInCalendarMonths, differenceInCalendarWeeks } from 'date-fns'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -25,11 +26,11 @@ import { findProviderBrand } from '@/lib/constants/installmentProviders'
 import { decomposePaymentMethodName, providerInitials } from '@/lib/payment/paymentMethodDefaults'
 import type { Currency, Debt, DebtPayment, GoldKarat } from '@/lib/store/types'
 
-/** Family accent colors (handoff §1). */
+/** Family accent colours: theme tokens, so they resolve per light/dark. */
 export const FAMILY_ACCENT: Record<DebtFamily, string> = {
-  borrow: '#12B0A0',
-  credit_card: '#8A5CF6',
-  installment: '#00C2A8',
+  borrow: 'var(--color-cat-1)',
+  credit_card: 'var(--color-cat-6)',
+  installment: 'var(--color-cat-5)',
 }
 
 export interface BorrowVM {
@@ -108,6 +109,8 @@ export interface AssignCandidateVM {
   currency: string
   method: string
   date: string
+  /** An active installment plan whose per-cycle amount matches this payment, if any. */
+  debtId?: string
 }
 
 function paidInBase(debt: Debt, payments: DebtPayment[], base: Currency, rates: Record<string, number>, gpg: number): number {
@@ -122,6 +125,7 @@ function paidInBase(debt: Debt, payments: DebtPayment[], base: Currency, rates: 
  */
 export function useDebtTabData() {
   const stats = useMonthlyStats()
+  const t = useT()
   const { debts, debtPayments, paymentMethods, settings, exchangeRates, goldPricePerGram } = useFinanceStore(
     useShallow((s) => ({
       debts: s.debts,
@@ -147,6 +151,9 @@ export function useDebtTabData() {
     const everBorrowed = owed + paidOff
     const clearedPct = everBorrowed > 0 ? Math.round((paidOff / everBorrowed) * 100) : 0
 
+    const clearedPaid = debts
+      .filter((d) => d.status === 'cleared')
+      .reduce((sum, d) => sum + paidInBase(d, paymentsFor(d.id), base, exchangeRates, goldPricePerGram), 0)
     const counts = { borrow: 0, credit_card: 0, installment: 0 } as Record<DebtFamily, number>
     for (const d of active) counts[debtFamily(d)] += 1
 
@@ -176,7 +183,7 @@ export function useDebtTabData() {
           paid,
           remaining,
           currency: d.currency,
-          accent: d.isGold ? '#EDC463' : d.direction === 'they_owe' ? '#37C368' : '#12B0A0',
+          accent: d.isGold ? 'var(--color-brand-gold)' : d.direction === 'they_owe' ? 'var(--color-brand-green)' : 'var(--color-brand-primary)',
           gold: d.isGold && d.goldKarat ? { grams: remaining, karat: d.goldKarat } : undefined,
           goal: g ? ((): BorrowVM['goal'] => {
             const start = parseISO(d.createdAt)
@@ -225,7 +232,7 @@ export function useDebtTabData() {
           bank,
           initials: providerInitials(bank) || 'CC',
           last4: pm?.last4 ?? undefined,
-          color: '#8A5CF6',
+          color: 'var(--color-cat-6)',
           currency: d.currency,
           limit: d.creditLimit,
           outstanding,
@@ -262,8 +269,8 @@ export function useDebtTabData() {
         return {
           id: d.id,
           item: d.name,
-          providerName: brand?.name ?? d.installmentProviderName ?? 'Installment',
-          brandColor: brand?.color ?? '#00C2A8',
+          providerName: brand?.name ?? d.installmentProviderName ?? t.debts.installmentFallback,
+          brandColor: brand?.color ?? 'var(--color-cat-5)',
           logoSlug: brand?.slug,
           count,
           paid,
@@ -323,15 +330,22 @@ export function useDebtTabData() {
           id: cand.id,
           amount: cand.amount,
           currency: cand.currency,
-          method: (cand.paymentMethodId && paymentMethods.find((m) => m.id === cand.paymentMethodId)?.name) || 'Payment',
+          method: (cand.paymentMethodId && paymentMethods.find((m) => m.id === cand.paymentMethodId)?.name) || t.debts.paymentFallback,
           date: format(parseISO(cand.date), 'MMM d'),
+          debtId: (() => {
+            const matches = active.filter(
+              (d) => debtFamily(d) === 'installment' && d.currency === cand.currency && Math.abs((d.installmentAmount ?? 0) - cand.amount) < 0.5,
+            )
+            return matches.length === 1 ? matches[0].id : undefined // ambiguous: let the user choose
+          })(),
         }
       : null
 
     return {
       owed,
       paidOff,
-      everBorrowed,
+      clearedPaid,
+      borrowedTotal: everBorrowed,
       clearedPct,
       counts,
       borrow,
@@ -342,5 +356,5 @@ export function useDebtTabData() {
       assignCandidate,
       base,
     }
-  }, [debts, debtPayments, paymentMethods, expenses, base, exchangeRates, goldPricePerGram, stats.debtRemainingTotal])
+  }, [debts, debtPayments, paymentMethods, expenses, base, exchangeRates, goldPricePerGram, stats.debtRemainingTotal, t])
 }

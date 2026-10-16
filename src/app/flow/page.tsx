@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
+import { useSmsArmed } from '@/hooks/useSmsTracking'
+import { SetupChecklist } from '@/components/features/setup/SetupChecklist'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { AMOUNT_MAX, AMOUNT_MIN, amountIsFiltered, ONE_TIME_INCOME, useExpenseFilterStore, type FlowSegment } from '@/lib/store/useExpenseFilterStore'
@@ -44,6 +46,8 @@ export default function FlowPage() {
   useHydrateSavings()
   const t = useT()
   const dataReady = useFinanceStore((s) => s.dataReady)
+  const hasHistory = useFinanceStore((s) => s.expenses.length + s.incomeEvents.length > 0)
+  const smsArmed = useSmsArmed()
   const { paymentMethods, incomeSources, base } = useFinanceStore(
     useShallow((s) => ({ paymentMethods: s.paymentMethods, incomeSources: s.incomeSources, base: s.settings.baseCurrency })),
   )
@@ -226,15 +230,19 @@ export default function FlowPage() {
         <div className="mx-4 mt-3.5">
           <SkeletonList rows={7} />
         </div>
+      ) : emptyMonth && !hasHistory ? (
+        <SetupChecklist className="mx-4 mt-4" />
       ) : emptyMonth ? (
         <div className="mx-4 mt-7">
           <EmptyState
             title={t.flow.emptyMonthTitle(monthName)}
             description={t.flow.emptyMonthBody}
             action={
-              <Button size="cta" onClick={() => navigate('/settings/sms')}>
-                {t.flow.turnOnSms}
-              </Button>
+              smsArmed ? undefined : (
+                <Button size="cta" onClick={() => navigate('/settings/sms')}>
+                  {t.flow.turnOnSms}
+                </Button>
+              )
             }
           />
         </div>

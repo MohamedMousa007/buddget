@@ -2,7 +2,7 @@
 
 import { GoalLensList } from '@/components/features/goals/GoalLensList'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { CreditCard, Layers, HandCoins } from 'lucide-react'
+import { ChevronRight, CircleCheck, CreditCard, HandCoins, Layers, Plus, ShieldCheck } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -15,7 +15,7 @@ import { InstallmentHeroCard } from '@/components/features/debts/redesign/Instal
 import { DebtPaymentsFeed } from '@/components/features/debts/redesign/DebtPaymentsFeed'
 import { ClearedVaultSheet } from '@/components/features/debts/redesign/ClearedVaultSheet'
 import { ChargesSheet, type ChargesSheetTarget } from '@/components/features/debts/redesign/ChargesSheet'
-import { AssignPaymentBanner } from '@/components/features/debts/redesign/AssignPaymentBanner'
+import { AssignPaymentBanner, type AssignCandidate } from '@/components/features/debts/redesign/AssignPaymentBanner'
 import { useDebtTabData } from '@/hooks/useDebtTabData'
 import { firstNonEmptyFamily, type DebtFamily } from '@/lib/debts/debtFamily'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
@@ -24,12 +24,11 @@ import { useHydrateDebts, useHydrateGoals } from '@/hooks/remote'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
-
-const FAMILY_LABEL: Record<DebtFamily, string> = {
-  borrow: 'Borrow',
-  credit_card: 'Your cards',
-  installment: 'Installment plans',
-}
+import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { SelectableCard } from '@/components/ui/SelectableCard'
+import { StatTile } from '@/components/ui/StatTile'
+import { fmtWhole } from '@/components/features/debts/redesign/heroCardShared'
 
 export default function DebtsPage() {
   useHydrateDebts()
@@ -38,7 +37,7 @@ export default function DebtsPage() {
   const { settings, exchangeRates } = useFinanceStore(
     useShallow((s) => ({ settings: s.settings, exchangeRates: s.exchangeRates })),
   )
-  const { activeModal, setActiveModal, setEditingDebtId, openDebtSheetNew, openDebtSheetRecordPayment, openPayDebtSheet } = useSettingsStore()
+  const { activeModal, setActiveModal, setEditingDebtId, openDebtSheetNew, openDebtSheetRecordPayment } = useSettingsStore()
   const requireAuth = useRequireAuthAction()
   const t = useT()
   const data = useDebtTabData()
@@ -68,8 +67,14 @@ export default function DebtsPage() {
     return formatCurrency(convertCurrency(data.owed, data.base, settings.secondaryCurrency, exchangeRates), settings.secondaryCurrency)
   }, [settings.showSecondaryCurrency, settings.secondaryCurrency, data.owed, data.base, exchangeRates])
 
-  const guardNew = () => requireAuth(() => openDebtSheetNew(), t.debts.requireAuthNew)
+  const addDebt = (family?: DebtFamily) =>
+    requireAuth(() => {
+      if (family === 'credit_card') setActiveModal('addCreditCard')
+      else openDebtSheetNew(family === 'installment' ? 'installment' : family === 'borrow' ? 'personal' : undefined)
+    }, t.debts.requireAuthNew)
   const guardPay = (id: string) => requireAuth(() => openDebtSheetRecordPayment(id), t.debts.requireAuthPayment)
+  const assignPayment = (c: AssignCandidate) =>
+    requireAuth(() => (c.debtId ? openDebtSheetRecordPayment(c.debtId) : openDebtSheetNew('installment')), t.debts.requireAuthPayment)
   const editDebt = (id: string) => {
     setEditingDebtId(id)
     setActiveModal('editDebt')
@@ -106,54 +111,110 @@ export default function DebtsPage() {
     return <InstallmentHeroCard vm={vm} onEdit={() => editDebt(vm.id)} onDelete={() => useFinanceStore.getState().deleteDebt(vm.id)} onPay={() => guardPay(vm.id)} />
   }
 
+  const noneActive = data.counts.borrow + data.counts.credit_card + data.counts.installment === 0
+  const clearedCount = data.cleared.length
+  const family = {
+    borrow: { title: t.debts.sectionBorrowed, add: t.debts.newDebt, emptyLine: t.debts.emptyFamilyBorrow, emptyCta: t.debts.emptyAddDebt, Icon: HandCoins },
+    credit_card: { title: t.debts.sectionCards, add: t.debts.newCard, emptyLine: t.debts.emptyFamilyCard, emptyCta: t.debts.addCardCta, Icon: CreditCard },
+    installment: { title: t.debts.sectionInstallments, add: t.debts.newInstallment, emptyLine: t.debts.emptyFamilyInstallment, emptyCta: t.debts.addInstallmentCta, Icon: Layers },
+  }[tab]
+  const FamilyIcon = family.Icon
+
   return (
     <div className="pb-24">
-      <div className="mx-auto max-w-screen-sm px-4 pt-3 lg:px-6">
-        <DebtPortfolioHero
-          owed={data.owed}
-          base={data.base}
-          secondaryText={secondaryText}
-          clearedPct={data.clearedPct}
-          counts={data.counts}
-          onAddDebt={guardNew}
-        />
+      <DebtPortfolioHero
+        owed={data.owed}
+        base={data.base}
+        secondaryText={secondaryText}
+        clearedPct={data.clearedPct}
+        borrowedTotal={data.borrowedTotal}
+      />
 
-        <div className="mt-4">
+      <div className="mx-auto max-w-screen-sm px-4 pt-4 lg:px-6">
+        {clearedCount > 0 ? (
+          <SelectableCard as="action" surface="card" onClick={() => setActiveModal('clearedVault')}>
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]">
+              <CircleCheck className="h-6 w-6" aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-bold text-[var(--color-brand-text-primary)]">{t.debts.completedTitle(clearedCount)}</span>
+              <span className="block font-mono-numbers text-[13px] text-[var(--color-brand-text-muted)]">
+                {t.debts.completedSub(`${fmtWhole(data.clearedPaid)} ${data.base}`)}
+              </span>
+            </span>
+            <ChevronRight className="h-5 w-5 shrink-0 text-[var(--color-brand-text-muted)] rtl:rotate-180" aria-hidden />
+          </SelectableCard>
+        ) : null}
+
+        <div className={clearedCount > 0 ? 'mt-4' : ''}>
           <GoalLensList categories={['debt_freedom']} />
         </div>
 
-        <div className="mt-5">
-          <DebtFamilyTabs active={tab} onChange={changeTab} />
-        </div>
-
-        {tab === 'installment' && data.assignCandidate && data.assignCandidate.id !== dismissedAssign ? (
-          <div className="mt-4">
-            <AssignPaymentBanner
-              candidate={data.assignCandidate}
-              onAssign={() => requireAuth(() => openPayDebtSheet(), t.debts.requireAuthPayment)}
-              onDismiss={(id) => setDismissedAssign(id)}
-            />
-          </div>
-        ) : null}
-
-        {listLen === 0 ? (
-          <div className="mt-3 flex flex-col items-center gap-1.5 py-4 text-center">
-            {(() => {
-              const Icon = tab === 'credit_card' ? CreditCard : tab === 'installment' ? Layers : HandCoins
-              return <Icon className="h-6 w-6 text-[var(--color-brand-text-muted)]" strokeWidth={1.6} />
-            })()}
-            <p className="text-sm font-semibold text-[var(--color-brand-text-secondary)]">No active {FAMILY_LABEL[tab].toLowerCase()}</p>
-          </div>
+        {noneActive ? (
+          <EmptyState
+            className="mt-2"
+            icon={
+              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]">
+                <ShieldCheck className="h-7 w-7" aria-hidden />
+              </span>
+            }
+            title={clearedCount > 0 ? t.debts.emptyClearedTitle : t.debts.emptyNoneTitle}
+            description={clearedCount > 0 ? t.debts.emptyClearedBody : t.debts.emptyNoneBody}
+            action={
+              <div className="flex w-full max-w-sm flex-col items-stretch gap-4">
+                {clearedCount > 0 ? (
+                  <div className="grid grid-cols-2 gap-3 text-start">
+                    <StatTile label={t.debts.statDebtsCleared} value={clearedCount} tone="positive" />
+                    <StatTile label={t.debts.statTotalPaidOff} value={fmtWhole(data.paidOff)} unit={data.base} tone="positive" />
+                  </div>
+                ) : null}
+                <Button size="cta" onClick={() => addDebt()}>
+                  {t.debts.emptyAddDebt}
+                </Button>
+              </div>
+            }
+          />
         ) : (
-          <div className="mt-5">
-            <div className="mb-3 flex items-baseline justify-between px-1">
-              <h2 className="text-[17px] font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">
-                {FAMILY_LABEL[tab]} <span className="ml-1 text-sm font-medium text-[var(--color-brand-text-muted)]">{listLen} active</span>
-              </h2>
-              {listLen > 1 ? <span className="text-[13px] text-[var(--color-brand-text-muted)]">swipe →</span> : null}
+          <>
+            <div className="mt-5">
+              <DebtFamilyTabs active={tab} onChange={changeTab} counts={data.counts} />
             </div>
-            <RecurringIncomeCarousel count={listLen} activeIndex={Math.min(index, listLen - 1)} onActiveChange={setIndex} renderItem={renderCard} activeDotWidth={18} />
-          </div>
+
+            {tab === 'installment' && data.assignCandidate && data.assignCandidate.id !== dismissedAssign ? (
+              <div className="mt-4">
+                <AssignPaymentBanner candidate={data.assignCandidate} onAssign={assignPayment} onDismiss={(id) => setDismissedAssign(id)} />
+              </div>
+            ) : null}
+
+            {listLen === 0 ? (
+              <EmptyState
+                icon={
+                  <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]">
+                    <FamilyIcon className="h-6 w-6" strokeWidth={1.6} aria-hidden />
+                  </span>
+                }
+                title={family.emptyLine}
+                action={
+                  <Button size="cta" variant="secondary" onClick={() => addDebt(tab)}>
+                    {family.emptyCta}
+                  </Button>
+                }
+              />
+            ) : (
+              <div className="mt-5">
+                <div className="mb-3 flex items-center gap-2 px-1">
+                  <h2 className="text-[17px] font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">
+                    {family.title} <span className="ms-1 font-mono-numbers text-sm font-medium text-[var(--color-brand-text-muted)]">{listLen}</span>
+                  </h2>
+                  <Button variant="secondary" size="touch" className="ms-auto" onClick={() => addDebt(tab)}>
+                    <Plus aria-hidden />
+                    {family.add}
+                  </Button>
+                </div>
+                <RecurringIncomeCarousel count={listLen} activeIndex={Math.min(index, listLen - 1)} onActiveChange={setIndex} renderItem={renderCard} activeDotWidth={18} />
+              </div>
+            )}
+          </>
         )}
       </div>
 

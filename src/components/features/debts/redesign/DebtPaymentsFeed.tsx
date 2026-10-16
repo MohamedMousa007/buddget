@@ -11,15 +11,19 @@ import { FAMILY_ACCENT, type PaymentVM } from '@/hooks/useDebtTabData'
 import type { DebtFamily } from '@/lib/debts/debtFamily'
 import { fmtWhole } from './heroCardShared'
 import { OptionChip } from '@/components/ui/OptionChip'
+import { useT } from '@/lib/i18n'
+import { soft } from './heroCardShared'
 
-const FAMILY_META: Record<DebtFamily, { label: string; Icon: typeof Check }> = {
-  borrow: { label: 'Borrow', Icon: HandCoins },
-  credit_card: { label: 'Card', Icon: CardIcon },
-  installment: { label: 'Plan', Icon: Layers },
+const FAMILY_ICON: Record<DebtFamily, typeof Check> = {
+  borrow: HandCoins,
+  credit_card: CardIcon,
+  installment: Layers,
 }
 
 /** Cross-tab "All debt payments" feed — day-grouped, swipe-to-delete (handoff §2.5). */
 export function DebtPaymentsFeed({ payments, currentFamily }: { payments: PaymentVM[]; currentFamily: DebtFamily }) {
+  const t = useT().debts
+  const familyLabel: Record<DebtFamily, string> = { borrow: t.feedBorrow, credit_card: t.feedCard, installment: t.feedPlan }
   const deleteDebtPayment = useFinanceStore((s) => s.deleteDebtPayment)
   const toast = useActionToast()
   const [filter, setFilter] = useState<'all' | DebtFamily>('all')
@@ -62,11 +66,11 @@ export function DebtPaymentsFeed({ payments, currentFamily }: { payments: Paymen
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between px-[18px]">
-        <h2 className="text-[17px] font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">All debt payments</h2>
+        <h2 className="text-[17px] font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{t.feedTitle}</h2>
       </div>
       <div className="mt-3 flex gap-2 px-[18px]">
-        {chip('all', 'All')}
-        {chip(currentFamily, FAMILY_META[currentFamily].label)}
+        {chip('all', t.feedAll)}
+        {chip(currentFamily, familyLabel[currentFamily])}
       </div>
 
       <div className="mt-3">
@@ -80,31 +84,31 @@ export function DebtPaymentsFeed({ payments, currentFamily }: { payments: Paymen
             </div>
             <div className="border-y border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
               {g.items.map((p, i) => {
-                const meta = FAMILY_META[p.family]
+                const FamilyIcon = FAMILY_ICON[p.family]
                 const accent = FAMILY_ACCENT[p.family]
                 return (
                   <div key={p.id}>
-                    {i > 0 ? <div className="ml-[82px] h-px bg-[var(--color-brand-border)]" /> : null}
+                    {i > 0 ? <div className="ms-[82px] h-px bg-[var(--color-brand-border)]" /> : null}
                     <SwipeToDelete
                       openSide={openRow?.id === p.id ? openRow.side : null}
                       onOpenChange={(side) => setOpenRow(side ? { id: p.id, side } : null)}
                       onDelete={() => {
                         setOpenRow(null)
                         deleteDebtPayment(p.id)
-                        toast('Payment deleted')
+                        toast(t.feedDeleted)
                       }}
                       deleteLabel="Delete"
                     >
                       <TransactionRow
-                        icon={<meta.Icon className="h-5 w-5" />}
-                        iconBg={`${accent}22`}
+                        icon={<FamilyIcon className="h-5 w-5" />}
+                        iconBg={soft(accent, 16)}
                         iconFg={accent}
-                        caption={meta.label}
+                        caption={familyLabel[p.family]}
                         captionColor={accent}
                         title={p.name}
                         subtitle={`${format(parseISO(p.date), 'MMM d')}${p.method ? ` · ${p.method}` : ''}`}
                         amount={`−${fmtWhole(p.amount)}`}
-                        sub={<span className="inline-flex items-center gap-0.5 font-semibold" style={{ color: '#35D46F' }}><Check className="h-3 w-3" strokeWidth={3} /> Paid</span>}
+                        sub={<span className="inline-flex items-center gap-0.5 font-semibold" style={{ color: 'var(--color-brand-green)' }}><Check className="h-3 w-3" strokeWidth={3} /> {t.feedPaid}</span>}
                       />
                     </SwipeToDelete>
                   </div>

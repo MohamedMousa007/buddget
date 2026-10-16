@@ -1,10 +1,10 @@
 'use client'
 
 import { ArrowUpRight, ArrowDownRight, Target } from 'lucide-react'
-import { heroCardStyle } from '@/components/features/income/incomeGlass'
 import type { BorrowVM } from '@/hooks/useDebtTabData'
-import { EditPin, fmtWhole } from './heroCardShared'
+import { DebtBar, DebtCardFrame, EditPin, fmtWhole, soft } from './heroCardShared'
 import { Button } from '@/components/ui/button'
+import { useT } from '@/lib/i18n'
 
 export interface BorrowHeroCardProps {
   vm: BorrowVM
@@ -15,102 +15,98 @@ export interface BorrowHeroCardProps {
 
 /** Borrow (person-to-person / gold) hero card — handoff §3. */
 export function BorrowHeroCard({ vm, onEdit, onDelete, onPay }: BorrowHeroCardProps) {
+  const t = useT().debts
   const owe = vm.dir === 'owe'
-  const pct = vm.total > 0 ? Math.max(0, Math.min(100, (vm.paid / vm.total) * 100)) : 0
+  const pct = vm.total > 0 ? (vm.paid / vm.total) * 100 : 0
   const accent = vm.accent
+  const dirTone = owe ? 'var(--color-brand-red)' : 'var(--color-brand-green)'
 
   return (
-    <div className="relative flex flex-col rounded-[18px] p-4 text-white" style={heroCardStyle(accent)}>
-      <EditPin onClick={onEdit} onDelete={onDelete} label="Edit debt" deleteLabel="Delete debt" deleteBody="This removes the debt and its payment history. This cannot be undone." />
+    <DebtCardFrame>
+      <EditPin onClick={onEdit} onDelete={onDelete} label={t.editDebtAria} deleteLabel={t.deleteDebtLabel} deleteBody={t.deleteDebtBody} />
 
-      {/* Header */}
       <div className="flex items-start gap-3 pe-9">
         <span
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] text-lg font-bold"
-          style={{ background: `${accent}22`, color: accent }}
+          style={{ background: soft(accent, 16), color: accent }}
         >
           {vm.avatarInit}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-lg font-bold leading-tight">{vm.name}</p>
-          {vm.relation ? <p className="truncate text-sm text-white/60">{vm.relation}</p> : null}
+          <p className="truncate text-lg font-bold leading-tight text-[var(--color-brand-text-primary)]">{vm.name}</p>
+          {vm.relation ? <p className="truncate text-sm text-[var(--color-brand-text-muted)]">{vm.relation}</p> : null}
         </div>
-        <span
-          className="mt-1 inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold"
-          style={{
-            background: owe ? 'rgba(18,176,160,.16)' : 'rgba(55,195,104,.16)',
-            color: owe ? '#F76D74' : '#35D46F',
-          }}
-        >
-          {owe ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
-          {owe ? 'I owe' : 'Owed to me'}
+      </div>
+
+      <span
+        className="mt-3 inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold"
+        style={{ background: soft(dirTone, 14), color: dirTone }}
+      >
+        {owe ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
+        {owe ? t.iOwe : t.owedToMe}
+      </span>
+
+      <div className="mt-3 flex items-baseline gap-2">
+        <span className="font-mono-numbers text-[38px] font-bold leading-none tracking-[-1px] text-[var(--color-brand-text-primary)]">{fmtWhole(vm.remaining)}</span>
+        <span className="text-sm text-[var(--color-brand-text-muted)]">
+          {vm.currency} {owe ? t.leftSuffix : t.owedToYouSuffix}
         </span>
       </div>
 
-      {/* Remaining */}
-      <div className="mt-4 flex items-baseline gap-2">
-        <span className="font-mono-numbers text-[38px] font-bold leading-none tracking-[-1px]">{fmtWhole(vm.remaining)}</span>
-        <span className="text-sm text-white/55">
-          {vm.currency} {owe ? 'left' : 'owed to you'}
-        </span>
-      </div>
-
-      {/* Progress */}
-      <div className="mt-3 h-1.5 w-full rounded-full bg-white/10">
-        <div className="h-full rounded-full transition-[width] duration-300" style={{ width: `${pct}%`, background: accent }} />
-      </div>
-      <p className="mt-2 font-mono-numbers text-[13px] text-white/60">
-        Paid {fmtWhole(vm.paid)} of {fmtWhole(vm.total)}
+      <DebtBar pct={pct} tone={accent} className="mt-3" />
+      <p className="mt-2 font-mono-numbers text-[13px] text-[var(--color-brand-text-muted)]">
+        {t.paidOfTotal(fmtWhole(vm.paid), fmtWhole(vm.total))}
       </p>
 
       {vm.gold ? (
-        <span className="mt-2 inline-flex w-fit items-center gap-1 rounded-full bg-[rgba(237,196,99,.14)] px-2.5 py-1 text-xs font-semibold text-[#EDC463]">
+        <span
+          className="mt-2 inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-[var(--color-brand-gold)]"
+          style={{ background: soft('var(--color-brand-gold)', 14) }}
+        >
           {vm.gold.grams.toFixed(1)}g · {vm.gold.karat}K
         </span>
       ) : null}
 
-      {/* Payoff goal strip (borrow-only) */}
       {vm.goal ? (
-        <div className="mt-3 flex items-center gap-3 rounded-[14px] border border-[rgba(237,196,99,.35)] bg-[rgba(237,196,99,.08)] px-3 py-2.5">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[rgba(237,196,99,.18)] text-[#EDC463]">
+        <div
+          className="mt-3 flex items-center gap-3 rounded-[14px] border px-3 py-2.5"
+          style={{ borderColor: soft('var(--color-brand-gold)', 35), background: soft('var(--color-brand-gold)', 8) }}
+        >
+          <span
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--color-brand-gold)]"
+            style={{ background: soft('var(--color-brand-gold)', 18) }}
+          >
             <Target className="h-4 w-4" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-[#EDC463]">Goal · clear by {vm.goal.by}</p>
-            <p className="mt-0.5 font-mono-numbers text-[12px] leading-snug text-white/70">
-              {vm.goal.remaining} payments left · {fmtWhole(vm.goal.per)}/{vm.goal.cadence === 'monthly' ? 'mo' : vm.goal.cadence}
-              {vm.goal.next ? ` · next ${vm.goal.next}` : ''}
+            <p className="text-sm font-bold text-[var(--color-brand-gold)]">{t.goalClearBy(vm.goal.by)}</p>
+            <p className="mt-0.5 font-mono-numbers text-[12px] leading-snug text-[var(--color-brand-text-secondary)]">
+              {t.goalLine(vm.goal.remaining, fmtWhole(vm.goal.per), vm.goal.cadence, vm.goal.next)}
             </p>
           </div>
           <span
             className="shrink-0 rounded-full px-2 py-1 text-[11px] font-bold uppercase tracking-wide"
             style={{
-              background: vm.goal.onTrack ? 'rgba(55,195,104,.2)' : 'rgba(255,177,61,.2)',
-              color: vm.goal.onTrack ? '#35D46F' : '#FFB13D',
+              background: soft(vm.goal.onTrack ? 'var(--color-brand-green)' : 'var(--color-brand-amber)', 18),
+              color: vm.goal.onTrack ? 'var(--color-brand-green)' : 'var(--color-brand-amber)',
             }}
           >
-            {vm.goal.onTrack ? 'On track' : 'Behind'}
+            {vm.goal.onTrack ? t.onTrack : t.behind}
           </span>
         </div>
       ) : null}
 
-      {/* CTA inside */}
-      <div className="mt-4 border-t border-white/10 pt-3">
+      <div className="mt-4 border-t border-[var(--color-brand-border)] pt-3">
         {owe ? (
           <Button onClick={onPay} size="cta-block">
-            Pay {vm.name}
+            {t.payPerson(vm.name)}
           </Button>
         ) : (
-          <Button
-            onClick={onPay}
-            variant="outline"
-            size="cta-block"
-            className="border-[var(--color-brand-green)]/50 text-[var(--color-brand-green)] hover:bg-[var(--color-brand-green)]/10"
-          >
-            Log receipt from {vm.name}
+          <Button onClick={onPay} variant="success" size="cta-block">
+            {t.logReceiptFrom(vm.name)}
           </Button>
         )}
       </div>
-    </div>
+    </DebtCardFrame>
   )
 }

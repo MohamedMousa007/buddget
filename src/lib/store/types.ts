@@ -940,7 +940,7 @@ export interface FinanceStore {
   addDebtPayment: (payment: Omit<DebtPayment, 'id' | 'createdAt'>) => void
   /**
    * Atomically records a debt payment and matching expense (e.g. debt payment → expense with `linkedDebtId`).
-   * Does not auto-clear lifecycle status; the UI runs celebration then calls `clearDebt`.
+   * A non-card debt that this payment fully covers is cleared in the same update (see `clearIfFullyPaid`).
    */
   addDebtPaymentWithExpense: (
     payment: Omit<DebtPayment, 'id' | 'createdAt'>,

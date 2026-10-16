@@ -14,9 +14,9 @@ import { isBnplPlan } from '@/lib/debt/bnpl'
  */
 export function reconcileDebtSchedule(debtId: string): void {
   const state = useFinanceStore.getState()
-  // Only debts with an active reminder are reconciled here; debts without a
-  // template (e.g. a person debt paid by hand) are left to the debt card's own
-  // paid-off/celebration flow, so this must never clear them prematurely.
+  // Only debts with an active reminder are reconciled here; clearing a fully paid
+  // debt is done by the payment actions themselves (clearIfFullyPaid), so a debt
+  // without a reminder needs nothing from this function.
   const sched = state.recurringDebtPayments.find((r) => r.debtId === debtId && r.isActive)
   if (!sched) return
   const debt = state.debts.find((d) => d.id === debtId)

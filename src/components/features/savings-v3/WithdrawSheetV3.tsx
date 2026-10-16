@@ -5,6 +5,7 @@ import { Plus, ShoppingCart, CreditCard, Gem, TrendingUp, ArrowRight, X, Coins, 
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { reconcileDebtSchedule } from '@/lib/debts/recurringDebtDueHandlers'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useDebtTabData } from '@/hooks/useDebtTabData'
 import { useAssetPrices } from '@/hooks/useAssetPrices'
@@ -128,7 +129,8 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
           : 0
         : convertCurrency(amountNum, currency, debt.currency, exchangeRates)
       if (amountPaid > 0) {
-        addDebtPayment({ debtId: debt.id, date: new Date().toISOString().slice(0, 10), amountPaid, paymentCurrency: debt.currency, notes: noteTrim, fundedFromSavings: true })
+        addDebtPayment({ debtId: debt.id, date: new Date().toISOString().slice(0, 10), amountPaid, paymentCurrency: debt.currency, amountInPrimary: amountInBase, notes: noteTrim, fundedFromSavings: true })
+        reconcileDebtSchedule(debt.id)
       }
     } else if (reason === 'transfer') {
       if (!assetClass) return

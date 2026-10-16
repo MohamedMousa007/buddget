@@ -215,6 +215,21 @@ export interface Dictionary {
     priceFeedDown: (grams: string) => string
   }
 
+  debtPicker: {
+    title: string
+    subtitle: string
+    addNew: string
+    emptyTitle: string
+    emptyBody: string
+    emptyCta: string
+    dueOn: (date: string) => string
+    familyBorrow: string
+    familyCard: string
+    familyInstallment: string
+    left: string
+    owed: string
+  }
+
   nav: {
     dashboard: string
     budgetSetup: string
@@ -598,7 +613,6 @@ export interface Dictionary {
     addIncomeCta: string
     recurringHeading: string
     sourcesCount: (n: number) => string
-    swipeHint: string
     expectedPerMoLabel: string
     tapPaydayTip: string
     /** Card CTA to log/adjust a payday's received amount. */
@@ -940,6 +954,165 @@ export interface Dictionary {
     payNextInstallment: string
     viewCharges: string
     creditCardSetupHint: string
+    heroLabel: string
+    heroBorrowedTotal: (x: string) => string
+    heroDebtFree: string
+    completedTitle: (n: number) => string
+    completedSub: (x: string) => string
+    tabBorrow: string
+    tabCards: string
+    tabInstallments: string
+    sectionBorrowed: string
+    sectionCards: string
+    sectionInstallments: string
+    newDebt: string
+    newCard: string
+    newInstallment: string
+    emptyNoneTitle: string
+    emptyNoneBody: string
+    emptyAddDebt: string
+    emptyClearedTitle: string
+    emptyClearedBody: string
+    statDebtsCleared: string
+    statTotalPaidOff: string
+    emptyFamilyBorrow: string
+    emptyFamilyCard: string
+    emptyFamilyInstallment: string
+    addCardCta: string
+    addInstallmentCta: string
+    actionEdit: string
+    deleteConfirmTitle: string
+    deleteConfirmBody: string
+    editDebtAria: string
+    deleteDebtLabel: string
+    deleteDebtBody: string
+    editCardAria: string
+    deleteCardLabel: string
+    deleteCardBody: string
+    editPlanAria: string
+    deletePlanLabel: string
+    deletePlanBody: string
+    iOwe: string
+    owedToMe: string
+    leftSuffix: string
+    owedToYouSuffix: string
+    paidOfTotal: (paid: string, total: string) => string
+    goalClearBy: (by: string) => string
+    goalLine: (left: number, per: string, cadence: string, next?: string) => string
+    onTrack: string
+    behind: string
+    payPerson: (name: string) => string
+    logReceiptFrom: (name: string) => string
+    cardSuffixDebt: string
+    outstandingShort: string
+    usedPct: (p: number) => string
+    overByAmt: (x: string) => string
+    freeAmt: (x: string) => string
+    dueOn: (d: string) => string
+    dueShort: string
+    daysLeftShort: (n: number) => string
+    allDueLabel: string
+    inclAmt: (x: string) => string
+    afterLabel: string
+    chargesBtn: string
+    cardTag: (last4: string) => string
+    outstandingPaidOf: (paid: number, count: number) => string
+    installmentsLeft: (n: number, per: string) => string
+    nextCycle: string
+    payNextAmt: (amt: string, cur: string) => string
+    assignTitle: string
+    assignSub: (amt: string, method: string, date: string) => string
+    assignBtn: string
+    notNow: string
+    paymentFallback: string
+    installmentFallback: string
+    vaultTitle: string
+    vaultSummary: (n: number, sum: string, base: string) => string
+    vaultEmpty: string
+    vaultFooter: string
+    tagBorrow: string
+    tagCard: string
+    tagInstallment: string
+    clearedTag: (family: string) => string
+    originalLabel: string
+    clearedMonth: (m: string) => string
+    hide: string
+    historyLabel: string
+    closeLabel: string
+    closeHistory: string
+    vaultOriginalLine: (x: string, cur: string, month: string) => string
+    chooseProvider: string
+    whichCardTitle: string
+    customProviderTitle: string
+    backLabel: string
+    searchProvider: string
+    customLabel: string
+    providerNamePh: string
+    useName: (name: string) => string
+    pickCardHint: string
+    addCardHint: string
+    addCreditCardBtn: string
+    chargesTitle: string
+    chargesSub: string
+    chargesChip: (name: string) => string
+    noCharges: string
+    famBorrowSub: string
+    famCardTitle: string
+    famCardSub: string
+    famInstallmentSub: string
+    feedTitle: string
+    feedAll: string
+    feedBorrow: string
+    feedCard: string
+    feedPlan: string
+    feedPaid: string
+    feedDeleted: string
+    fOwedToYou: string
+    fYouOwe: string
+    fPayLine: (label: string, amt: string, cur: string) => string
+    fAmount: string
+    fDate: string
+    fNextDue: string
+    fPaymentMethod: string
+    fRecurring: string
+    fRecurringHint: string
+    fNotes: string
+    fOptionalNote: string
+    fDirection: string
+    fPerson: string
+    fPersonPh: string
+    fWhatFor: string
+    fWhatForPh: string
+    fGoldBacked: string
+    fGoldHint: string
+    fKarat: string
+    fGrams: string
+    fGramsPh: string
+    fGoldValue: (v: string, price: string) => string
+    fReceivedVia: string
+    fGivenVia: string
+    fPayoffGoal: string
+    fPayoffGoalHint: string
+    fClearBy: string
+    fCadence: string
+    fMonthly: string
+    fWeekly: string
+    fQuarterly: string
+    fPerWeek: string
+    fPerMonth: string
+    fPerQuarter: string
+    fYoudPay: (amt: string, cur: string, period: string) => string
+    fStrainHeavy: (pct: number) => string
+    fStrainOk: string
+    fProvider: string
+    fItem: string
+    fItemPh: string
+    fTotalAmount: string
+    fStartDate: string
+    fCount: string
+    fFrequency: string
+    fApprox: (amt: string, cur: string, period: string) => string
+    fNoInterest: string
   }
 
   addDebt: {
@@ -2316,6 +2489,19 @@ export interface Dictionary {
     }
   }
 
+  setup: {
+    title: string
+    progress: (done: number, total: number) => string
+    smsTitle: string
+    smsBody: string
+    paydayTitle: string
+    paydayBody: string
+    budgetTitle: string
+    budgetBody: string
+    expenseTitle: string
+    expenseBody: string
+    chipAria: (pct: number) => string
+  }
   status: {
     offlinePending: (n: number) => string
     hiddenReturns: string

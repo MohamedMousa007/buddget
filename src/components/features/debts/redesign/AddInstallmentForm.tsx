@@ -14,30 +14,32 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { currencyFlag } from '@/lib/constants/currencyMeta'
 import { FieldButton } from '@/components/ui/FieldButton'
 import { OptionChip } from '@/components/ui/OptionChip'
+import { useT } from '@/lib/i18n'
 
 const MICRO = 'font-semibold text-[10px] tracking-[0.08em] uppercase text-[var(--color-brand-text-muted)]'
 const FIELD = 'h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-[15px] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] outline-none'
-const FREQS = [
-  { v: 'weekly' as const, label: 'Weekly' },
-  { v: 'monthly' as const, label: 'Monthly' },
-  { v: 'quarterly' as const, label: 'Quarterly' },
-]
 
 export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; locked?: boolean }) {
+  const t = useT().debts
+  const FREQS = [
+    { v: 'weekly' as const, label: t.fWeekly },
+    { v: 'monthly' as const, label: t.fMonthly },
+    { v: 'quarterly' as const, label: t.fQuarterly },
+  ]
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
   const [providerOpen, setProviderOpen] = useState(false)
   const [curOpen, setCurOpen] = useState(false)
 
   const providerLabel =
     d.installmentProvider === 'credit_card'
-      ? (d.creditCardDebts.find((c) => c.id === d.linkedCreditCardDebtId)?.name ?? 'Credit card')
-      : d.installmentProviderName || 'Choose provider'
+      ? (d.creditCardDebts.find((c) => c.id === d.linkedCreditCardDebtId)?.name ?? t.debtTypeCreditCard)
+      : d.installmentProviderName || t.chooseProvider
 
   return (
     <div className="flex flex-col gap-[18px] pt-1">
       {/* Provider (locked in Edit) */}
       <div>
-        <div className={`${MICRO} mb-2 flex items-center gap-1.5`}>Provider {locked ? <Lock className="h-3 w-3" /> : null}</div>
+        <div className={`${MICRO} mb-2 flex items-center gap-1.5`}>{t.fProvider} {locked ? <Lock className="h-3 w-3" /> : null}</div>
         <FieldButton
           disabled={locked}
           onClick={() => setProviderOpen(true)}
@@ -72,13 +74,13 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
 
       {/* Item */}
       <div>
-        <div className={`${MICRO} mb-2`}>Item</div>
-        <input value={d.installmentItemName} onChange={(e) => d.setInstallmentItemName(e.target.value)} placeholder="e.g. iPhone 16" className={FIELD} />
+        <div className={`${MICRO} mb-2`}>{t.fItem}</div>
+        <input value={d.installmentItemName} onChange={(e) => d.setInstallmentItemName(e.target.value)} placeholder={t.fItemPh} className={FIELD} />
       </div>
 
       {/* Total amount */}
       <div>
-        <div className={`${MICRO} mb-2`}>Total amount</div>
+        <div className={`${MICRO} mb-2`}>{t.fTotalAmount}</div>
         <div className="flex gap-2">
           <div className="min-w-0 flex-1"><AmountField value={d.startingBalance} onChange={d.setStartingBalance} mode="decimal" placeholder="0" /></div>
           <FieldButton
@@ -95,18 +97,18 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
 
       {/* Start date */}
       <div>
-        <div className={`${MICRO} mb-2`}>Start date</div>
+        <div className={`${MICRO} mb-2`}>{t.fStartDate}</div>
         <DatePickerField value={d.installmentStartDate} onChange={d.setInstallmentStartDate} />
       </div>
 
       {/* Count + frequency */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <div className={`${MICRO} mb-2`}># of installments</div>
+          <div className={`${MICRO} mb-2`}>{t.fCount}</div>
           <AmountField value={d.installmentCount} onChange={d.setInstallmentCount} mode="integer" placeholder="12" />
         </div>
         <div>
-          <div className={`${MICRO} mb-2`}>Frequency</div>
+          <div className={`${MICRO} mb-2`}>{t.fFrequency}</div>
           <div className="flex h-12 items-center gap-1 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-1">
             {FREQS.map((f) => {
               const on = d.installmentFrequency === f.v
@@ -122,9 +124,9 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
 
       {/* Per preview + no-interest note */}
       {d.installmentPreview != null ? (
-        <div className="rounded-[14px] bg-[#00C2A80d] px-4 py-3">
-          <p className="font-mono-numbers text-[15px] font-bold text-[#2CE0C6]">≈ {d.installmentPreview.toLocaleString()} {d.currency} / {d.installmentFrequency === 'weekly' ? 'week' : d.installmentFrequency === 'quarterly' ? 'quarter' : 'month'}</p>
-          <p className="mt-0.5 text-[12px] text-[var(--color-brand-text-muted)]">Fixed amounts only — no interest.</p>
+        <div className="rounded-[14px] bg-[var(--color-brand-primary-soft)] px-4 py-3">
+          <p className="font-mono-numbers text-[15px] font-bold text-[var(--color-brand-primary-ink)]">{t.fApprox(d.installmentPreview.toLocaleString(), d.currency, d.installmentFrequency === 'weekly' ? t.fPerWeek : d.installmentFrequency === 'quarterly' ? t.fPerQuarter : t.fPerMonth)}</p>
+          <p className="mt-0.5 text-[12px] text-[var(--color-brand-text-muted)]">{t.fNoInterest}</p>
         </div>
       ) : null}
     </div>

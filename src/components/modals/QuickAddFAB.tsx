@@ -58,10 +58,14 @@ export function QuickAddFAB() {
       requireAuth(() => setActiveModal('scanReceipt'), msg)
       return
     }
-    if (tileId === 'payDebt' || tileId === 'wealth') {
+    if (tileId === 'payDebt') {
+      requireAuth(() => useSettingsStore.getState().openPayDebtSheet(), msg)
+      return
+    }
+    if (tileId === 'wealth') {
       requireAuth(() => {
         setActiveModal(null)
-        navigate(tileId === 'payDebt' ? '/debts' : '/wealth')
+        navigate('/wealth')
       }, msg)
       return
     }

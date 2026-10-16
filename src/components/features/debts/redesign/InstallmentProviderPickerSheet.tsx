@@ -12,6 +12,9 @@ import { useModalTitleId } from '@/components/modals/ModalShell'
 import { IconButton } from '@/components/ui/IconButton'
 import { Button } from '@/components/ui/button'
 import { SelectableCard } from '@/components/ui/SelectableCard'
+import { Input } from '@/components/ui/input'
+import { useT } from '@/lib/i18n'
+import { readable, soft } from './heroCardShared'
 
 export interface CreditCardOption {
   debtId: string
@@ -45,6 +48,7 @@ export function InstallmentProviderPickerSheet({
   onAddCreditCard,
   onClose,
 }: InstallmentProviderPickerSheetProps) {
+  const t = useT().debts
   const [view, setView] = useState<'grid' | 'card' | 'custom'>('grid')
   const [query, setQuery] = useState('')
   const [customName, setCustomName] = useState('')
@@ -70,14 +74,14 @@ export function InstallmentProviderPickerSheet({
       <div className="flex min-h-0 flex-1 flex-col px-4 pb-4">
         <div className="flex shrink-0 items-center gap-2.5 pb-3 pt-1">
           {view !== 'grid' ? (
-            <IconButton aria-label="Back" variant="onBrand" size="sm" shape="round" onClick={() => setView('grid')}>
+            <IconButton aria-label={t.backLabel} variant="tinted" size="sm" shape="round" onClick={() => setView('grid')}>
               <ArrowLeft />
             </IconButton>
           ) : null}
-          <span id={useModalTitleId()} className="min-w-0 flex-1 text-lg font-semibold text-white">
-            {view === 'card' ? 'Which credit card?' : view === 'custom' ? 'Custom provider' : 'Choose provider'}
+          <span id={useModalTitleId()} className="min-w-0 flex-1 text-lg font-semibold text-[var(--color-brand-text-primary)]">
+            {view === 'card' ? t.whichCardTitle : view === 'custom' ? t.customProviderTitle : t.chooseProvider}
           </span>
-<IconButton aria-label="Close" variant="onBrand" size="sm" shape="round" onClick={close}>
+<IconButton aria-label={t.closeLabel} variant="tinted" size="sm" shape="round" onClick={close}>
             <X />
           </IconButton>
         </div>
@@ -85,12 +89,13 @@ export function InstallmentProviderPickerSheet({
         {view === 'grid' ? (
           <>
             <div className="relative mb-3 shrink-0">
-              <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-              <input
+              <Search className="pointer-events-none absolute start-3 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-[var(--color-brand-text-muted)]" />
+              <Input
+                size="brand"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search provider"
-                className="h-11 w-full rounded-xl border border-white/10 bg-black/30 ps-10 pe-3 text-[15px] text-white outline-none"
+                placeholder={t.searchProvider}
+                className="ps-10"
               />
             </div>
             <div className="native-scroll -mx-1 min-h-0 flex-1 overflow-y-auto px-1">
@@ -106,16 +111,14 @@ export function InstallmentProviderPickerSheet({
                         close()
                       }}
                       className="gap-3 p-3.5"
-                      style={sel
-                        ? { borderColor: b.color, background: `${b.color}18` }
-                        : { borderColor: 'rgba(255,255,255,.1)', background: 'transparent' }}
+                      style={sel ? { borderColor: b.color, background: soft(b.color, 12) } : undefined}
                     >
                       <ProviderBadge slug={b.slug} name={b.name} color={b.color} size={40} />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[15px] font-bold text-white">{b.name}</span>
-                        <span className="block text-[11px] font-medium capitalize text-white/45">{b.category.replace('_', ' ')}</span>
+                        <span className="block truncate text-[15px] font-bold text-[var(--color-brand-text-primary)]">{b.name}</span>
+                        <span className="block text-[11px] font-medium capitalize text-[var(--color-brand-text-muted)]">{b.category.replace('_', ' ')}</span>
                       </span>
-                      {sel ? <Check className="h-4 w-4 shrink-0" style={{ color: b.color }} /> : null}
+                      {sel ? <Check className="h-4 w-4 shrink-0" style={{ color: readable(b.color) }} /> : null}
                     </SelectableCard>
                   )
                 })}
@@ -123,18 +126,18 @@ export function InstallmentProviderPickerSheet({
                 <SelectableCard
                   as="action"
                   onClick={() => setView('card')}
-                  className="gap-3 border-white/10 bg-transparent p-3.5 hover:bg-white/5"
+                  className="gap-3 p-3.5"
                 >
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-[#8A5CF6]/22 text-[#8A5CF6]"><CreditCard className="h-5 w-5" /></span>
-                  <span className="block truncate text-[15px] font-bold text-white">Credit card</span>
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-[var(--color-cat-6)]/20 text-[var(--color-cat-6)]"><CreditCard className="h-5 w-5" /></span>
+                  <span className="block truncate text-[15px] font-bold text-[var(--color-brand-text-primary)]">{t.debtTypeCreditCard}</span>
                 </SelectableCard>
                 <SelectableCard
                   as="action"
                   onClick={() => setView('custom')}
-                  className="gap-3 border-white/10 bg-transparent p-3.5 hover:bg-white/5"
+                  className="gap-3 p-3.5"
                 >
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-white/8 text-white/60"><Plus className="h-5 w-5" /></span>
-                  <span className="block truncate text-[15px] font-bold text-white">Custom</span>
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-[var(--color-brand-sunken)] text-[var(--color-brand-text-secondary)]"><Plus className="h-5 w-5" /></span>
+                  <span className="block truncate text-[15px] font-bold text-[var(--color-brand-text-primary)]">{t.customLabel}</span>
                 </SelectableCard>
               </div>
             </div>
@@ -148,8 +151,8 @@ export function InstallmentProviderPickerSheet({
               methods={creditCards.map((c) => c.pm)}
               active={cardIdx}
               onActiveChange={setCardIdx}
-              defaultLabel="Credit card"
-              hint={creditCards.length ? 'Tap your card to link this plan to it' : 'Add a credit card to link this plan'}
+              defaultLabel={t.debtTypeCreditCard}
+              hint={creditCards.length ? t.pickCardHint : t.addCardHint}
               selectedId={valueCardId ? creditCards.find((c) => c.debtId === valueCardId)?.pm.id : undefined}
               onCardSelect={(m) => {
                 const c = creditCards.find((x) => x.pm.id === m.id)
@@ -163,19 +166,14 @@ export function InstallmentProviderPickerSheet({
                 close()
                 onAddCreditCard()
               }}
-              addLabel="Add credit card"
+              addLabel={t.addCreditCardBtn}
             />
           </div>
         ) : null}
 
         {view === 'custom' ? (
           <div className="flex flex-col gap-3 pt-1">
-            <input
-              value={customName}
-              onChange={(e) => setCustomName(e.target.value)}
-              placeholder="Provider name"
-              className="h-[52px] w-full rounded-xl border border-white/10 bg-black/30 px-3.5 text-[15px] text-white outline-none"
-            />
+            <Input size="brand" value={customName} onChange={(e) => setCustomName(e.target.value)} placeholder={t.providerNamePh} />
             <Button
               disabled={!customName.trim()}
               onClick={() => {
@@ -184,7 +182,7 @@ export function InstallmentProviderPickerSheet({
               }}
               size="cta-block"
             >
-              Use “{customName.trim() || '…'}”
+              {t.useName(customName.trim() || '…')}
             </Button>
           </div>
         ) : null}

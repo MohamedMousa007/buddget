@@ -8,6 +8,8 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useShallow } from 'zustand/react/shallow'
 import { useModalTitleId } from '@/components/modals/ModalShell'
 import { IconButton } from '@/components/ui/IconButton'
+import { useT } from '@/lib/i18n'
+import { soft } from './heroCardShared'
 
 export interface ChargesSheetTarget {
   pmId: string
@@ -17,6 +19,7 @@ export interface ChargesSheetTarget {
 
 /** Credit-card charges — the expenses ledger filtered to this card (handoff §5). */
 export function ChargesSheet({ open, onClose, target }: { open: boolean; onClose: () => void; target: ChargesSheetTarget | null }) {
+  const t = useT().debts
   const { expenses } = useFinanceStore(useShallow((s) => ({ expenses: s.expenses })))
 
   const filtered = useMemo(() => {
@@ -30,12 +33,12 @@ export function ChargesSheet({ open, onClose, target }: { open: boolean; onClose
     <ModalShell open={open} onBackdropClick={onClose} scrollChild panelClassName="h-[82vh]">
       <div className="flex shrink-0 items-start justify-between gap-3 px-5 pt-5">
         <div className="min-w-0">
-          <h2 id={useModalTitleId()} className="text-2xl font-bold text-[var(--color-brand-text-primary)]">Expenses</h2>
-          <p className="mt-0.5 text-sm text-[var(--color-brand-text-muted)]">Filtered to this card</p>
+          <h2 id={useModalTitleId()} className="text-2xl font-bold text-[var(--color-brand-text-primary)]">{t.chargesTitle}</h2>
+          <p className="mt-0.5 text-sm text-[var(--color-brand-text-muted)]">{t.chargesSub}</p>
         </div>
         <IconButton
           onClick={onClose}
-          aria-label="Close"
+          aria-label={t.closeLabel}
           variant="tinted"
           size="sm"
           shape="round"
@@ -47,9 +50,12 @@ export function ChargesSheet({ open, onClose, target }: { open: boolean; onClose
 
       {target ? (
         <div className="px-5 pt-3">
-          <span className="inline-flex items-center gap-2 rounded-full border border-[#8A5CF6]/45 bg-[#8A5CF6]/12 px-3 py-1.5 text-[13px] font-semibold text-[#8A5CF6]">
+          <span
+            className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[13px] font-semibold text-[var(--color-cat-6)]"
+            style={{ borderColor: soft('var(--color-cat-6)', 45), background: soft('var(--color-cat-6)', 12) }}
+          >
             <CreditCard className="h-3.5 w-3.5" />
-            Payment · {target.name}
+            {t.chargesChip(target.name)}
             {target.last4 ? <span className="font-mono-numbers">••{target.last4}</span> : null}
           </span>
         </div>
@@ -57,7 +63,7 @@ export function ChargesSheet({ open, onClose, target }: { open: boolean; onClose
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain touch-pan-y pt-1">
         {filtered.length === 0 ? (
-          <p className="px-5 py-10 text-center text-sm text-[var(--color-brand-text-muted)]">No charges on this card yet.</p>
+          <p className="px-5 py-10 text-center text-sm text-[var(--color-brand-text-muted)]">{t.noCharges}</p>
         ) : (
           <ExpenseDayList expenses={filtered} />
         )}

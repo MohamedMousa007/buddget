@@ -773,6 +773,24 @@ export function isDebtFullyPaid(debt: Debt, payments: DebtPayment[], ctx?: DebtB
   return calculateDebtRemainingRaw(debt, payments, ctx) <= DEBT_PAID_EPS
 }
 
+/**
+ * `debts` with `debtId` marked cleared once its payments cover it. Revolving credit cards
+ * never clear; an already-cleared debt is returned as-is. Pure: the store passes in its state.
+ */
+export function clearIfFullyPaid(
+  debts: Debt[],
+  debtId: string,
+  payments: DebtPayment[],
+  ctx: DebtBalanceContext | undefined,
+  today: string
+): Debt[] {
+  return debts.map((d) =>
+    d.id === debtId && d.status !== 'cleared' && d.debtType !== 'credit_card' && isDebtFullyPaid(d, payments, ctx)
+      ? { ...d, status: 'cleared' as const, clearedAt: today, updatedAt: new Date().toISOString() }
+      : d
+  )
+}
+
 export type DebtPaymentComputeResult =
   | { ok: true; amountInDebtUnit: number; amountInBase: number; rateAtEntry: number }
   | { ok: false; error: string }
