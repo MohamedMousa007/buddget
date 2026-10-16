@@ -9,7 +9,8 @@ import { AmountField } from '@/components/ui/AmountField'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { SelectField } from '@/components/ui/SelectField'
-import { EXPENSE_CATEGORIES } from '@/lib/constants/finance'
+import { EXPENSE_ENTRY_CATEGORIES } from '@/lib/constants/finance'
+import { CategoryGlyph } from '@/components/dashboard/CategoryIcon'
 import { Textarea } from '@/components/ui/textarea'
 import { FiatCurrencyField } from '@/components/ui/CurrencyField'
 import { DatePickerField } from '@/components/ui/DatePickerField'
@@ -98,7 +99,7 @@ function AddGoalSheetForm({ editingGoal, onClose, title, selectClass, t }: Inner
                     onChange={form.setSpendingCategory}
                     items={[
                       { value: '', label: t.goals.allSpending },
-                      ...EXPENSE_CATEGORIES.map((c) => ({ value: c, label: t.expenseForm.categoryLabels[c] ?? c })),
+                      ...EXPENSE_ENTRY_CATEGORIES.map((c) => ({ value: c, label: t.expenseForm.categoryLabels[c] ?? c, glyph: <CategoryGlyph category={c} className="size-4" /> })),
                     ]}
                   />
                 </div>

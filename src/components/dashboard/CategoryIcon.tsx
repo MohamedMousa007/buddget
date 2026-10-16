@@ -24,8 +24,11 @@ import {
   ArrowLeftRight,
   WalletCards,
   CalendarClock,
+  Landmark,
+  BadgeDollarSign,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { categoryChipColors } from '@/lib/expenses/categoryChip'
 
 export interface CategoryIconProps {
   category: string
@@ -61,14 +64,24 @@ export function CategoryIcon({ category, className }: CategoryIconProps) {
   if (key === 'health' || key === 'healthcare' || key === 'medical') return <HeartPulse className={c} />
   if (key === 'education' || key === 'school') return <GraduationCap className={c} />
   if (key === 'savings' || key === 'saving' || key === 'investment') return <Coins className={c} />
-  if (key === 'debt' || key === 'loan' || key === 'credit') return <CreditCard className={c} />
+  if (key === 'debt' || key === 'loan' || key === 'credit') return <Landmark className={c} />
   if (key === 'cc_payoff') return <CreditCard className={c} />
   if (key === 'atm_cash_withdrawal' || key === 'atm') return <Banknote className={c} />
-  if (key === 'currency_exchange') return <ArrowLeftRight className={c} />
+  if (key === 'currency_exchange') return <BadgeDollarSign className={c} />
   if (key === 'instapay') return <Zap className={c} />
-  if (key === 'remittance' || key === 'transfer') return <Send className={c} />
+  if (key === 'remittance') return <Send className={c} />
+  if (key === 'transfer') return <ArrowLeftRight className={c} />
   if (key === 'top_up') return <WalletCards className={c} />
   if (key === 'installment') return <CalendarClock className={c} />
   if (key === 'other') return <Layers className={c} />
   return <Wallet className={c} />
+}
+
+/** {@link CategoryIcon} tinted with the category's chip colour (same accent as the ledger rows). */
+export function CategoryGlyph({ category, className }: CategoryIconProps) {
+  return (
+    <span aria-hidden className="inline-flex shrink-0" style={{ color: categoryChipColors(category).fg }}>
+      <CategoryIcon category={category} className={className} />
+    </span>
+  )
 }

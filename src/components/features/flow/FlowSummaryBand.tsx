@@ -1,12 +1,10 @@
 'use client'
 
-import type { ReactNode } from 'react'
-import { motion } from 'framer-motion'
 import { AlertCircle, ArrowDown, ArrowUp, Check, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-export type FlowBandVariant = 'budget' | 'received' | 'spent' | 'filtered' | 'noBudget' | 'loading'
+export type FlowBandVariant = 'budget' | 'filtered' | 'noBudget' | 'loading'
 
 export interface FlowBandStatus {
   label: string
@@ -22,23 +20,19 @@ export interface FlowBandStat {
 
 export interface FlowSummaryBandProps {
   variant: FlowBandVariant
-  /** The row at the top of the band — the month, Paydays and the arrows. */
-  header?: ReactNode
   /** 11/700 caps, e.g. "Left to spend · September". */
   label: string
   status?: FlowBandStatus
+  /** A "Set budget" pill in the status slot, when there is no budget to pace against. */
+  setBudget?: { label: string; onPress: () => void }
   /** Pre-formatted figures. */
   big?: string
   of?: string
   side?: string
   sideSub?: string
-  /** Fill 0–100 and an optional pace tick 0–100. No bar when absent. */
-  bar?: { pct: number; tick?: number }
-  scale?: [string, string, string]
-  /** `noBudget` only. */
-  noBudgetLine?: string
-  setBudgetLabel?: string
-  onSetBudget?: () => void
+  /** Fill 0–100 and an optional pace tick 0–100. `ghost` = an empty track (no budget to fill). */
+  bar: { pct: number; tick?: number; ghost?: boolean }
+  scale: [string, string, string]
   stats: FlowBandStat[]
 }
 
@@ -52,138 +46,117 @@ const MIX = 'var(--flow-band-mix)'
 export const FLOW_BAND_BG = 'linear-gradient(120deg, var(--flow-band-a) 0%, var(--flow-band-b) 100%)'
 
 /**
- * Flow's full-bleed teal summary. What it measures follows the segment: All = budget and
- * pace, In = received vs expected, Out = spending, and filters narrow it. Content
- * cross-fades (160 ms) when the variant or its label changes.
+ * Flow's full-bleed teal summary. Its height never changes: a 22px label row, a 34.5px
+ * number row, a 38.75px bar block (12 gap + 6 bar + 5 + 15.75 scale) and a 66px stats
+ * strip — every state, filter and segment fills the same slots, so only values move.
  */
-export function FlowSummaryBand({
-  variant,
-  header,
-  label,
-  status,
-  big,
-  of,
-  side,
-  sideSub,
-  bar,
-  scale,
-  noBudgetLine,
-  setBudgetLabel,
-  onSetBudget,
-  stats,
-}: FlowSummaryBandProps) {
+export function FlowSummaryBand({ variant, label, status, setBudget, big, of, side, sideSub, bar, scale, stats }: FlowSummaryBandProps) {
   const StatusIcon = status ? STATUS_ICON[status.icon] : null
+  const loading = variant === 'loading'
   return (
     <section
       className="border-b border-[var(--flow-band-line)] text-[var(--flow-band-fg)]"
       style={{ background: FLOW_BAND_BG }}
     >
-      {header}
-      <motion.div
-        key={`${variant}:${label}`}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.16, ease: 'easeOut' }}
-      >
-        <div className="px-[18px] pb-3 pt-2.5">
-          <div className="flex items-center justify-between gap-2">
-            <span className={`min-w-0 flex-1 truncate whitespace-nowrap text-[11px] font-bold uppercase tracking-[0.08em] ${FG2}`}>
-              {label}
+      <div className="px-[18px] pb-3 pt-2.5">
+        <div className="flex h-[22px] items-center justify-between gap-2">
+          <span className={`min-w-0 flex-1 truncate whitespace-nowrap text-[11px] font-bold uppercase tracking-[0.08em] ${FG2}`}>
+            {label}
+          </span>
+          {setBudget ? (
+            <Button
+              variant="onBand"
+              onClick={setBudget.onPress}
+              className='relative h-[26px] shrink-0 rounded-full px-2.5 text-[12px] after:absolute after:left-1/2 after:top-1/2 after:min-h-[44px] after:min-w-[44px] after:-translate-x-1/2 after:-translate-y-1/2 after:content-[""]'
+            >
+              {setBudget.label}
+            </Button>
+          ) : status && StatusIcon ? (
+            <span
+              className="inline-flex h-[22px] shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-[var(--flow-band-fg)] px-2 text-[11.5px] font-bold"
+              style={{ color: STATUS_TONE[status.icon] }}
+            >
+              <StatusIcon className="size-[13px]" strokeWidth={2.5} aria-hidden />
+              {status.label}
             </span>
-            {status && StatusIcon ? (
-              <span
-                className="inline-flex h-[22px] shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-[var(--flow-band-fg)] px-2 text-[11.5px] font-bold"
-                style={{ color: STATUS_TONE[status.icon] }}
-              >
-                <StatusIcon className="size-[13px]" strokeWidth={2.5} aria-hidden />
-                {status.label}
-              </span>
-            ) : null}
-          </div>
+          ) : null}
+        </div>
 
-          {variant === 'loading' ? (
-            <div className="mt-2.5 flex flex-col gap-2.5" aria-hidden>
+        {loading ? (
+          <div aria-hidden>
+            <div className="mt-1.5 flex h-[34.5px] items-end">
               <div className="h-[30px] w-[180px] rounded-lg" style={{ background: MIX }} />
-              <div className="h-1.5 rounded-full" style={{ background: MIX }} />
-              <div className="h-2.5 w-[120px] rounded-md" style={{ background: MIX }} />
             </div>
-          ) : (
-            <>
-              <div className="mt-1.5 flex items-end justify-between gap-3">
-                <p className="flex min-w-0 flex-wrap items-baseline gap-1.5">
-                  <span className="font-mono-numbers text-[32px] font-semibold leading-none tracking-[-0.03em]">{big}</span>
-                  {of ? <span className={`text-[13px] ${FG2}`}>{of}</span> : null}
+            <div className="h-[38.75px] pt-3">
+              <div className="h-1.5 rounded-full" style={{ background: MIX }} />
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="mt-1.5 flex h-[34.5px] items-end justify-between gap-3">
+              <p className="flex min-w-0 items-baseline gap-1.5">
+                <span className="shrink-0 font-mono-numbers text-[32px] font-semibold leading-none tracking-[-0.03em]">{big}</span>
+                {of ? <span className={`min-w-0 truncate whitespace-nowrap text-[13px] ${FG2}`}>{of}</span> : null}
+              </p>
+              {side ? (
+                <p className={`shrink-0 text-end text-[11.5px] leading-[1.3] ${FG2}`}>
+                  <b className="block font-mono-numbers text-[15px] text-[var(--flow-band-fg)]">{side}</b>
+                  {sideSub}
                 </p>
-                {side ? (
-                  <p className={`shrink-0 text-end text-[11.5px] leading-[1.3] ${FG2}`}>
-                    <b className="block font-mono-numbers text-[15px] text-[var(--flow-band-fg)]">{side}</b>
-                    {sideSub}
-                  </p>
+              ) : null}
+            </div>
+            <div className="h-[38.75px] pt-3">
+              <div className="relative h-1.5 rounded-full" style={{ background: MIX }}>
+                {bar.ghost ? null : (
+                  <div
+                    className="h-full rounded-full bg-[var(--flow-band-fg)] transition-[width] duration-300 motion-reduce:transition-none"
+                    style={{ width: `${Math.max(0, Math.min(100, bar.pct))}%` }}
+                  />
+                )}
+                {bar.tick !== undefined ? (
+                  <span
+                    className="absolute -bottom-1 -top-1 w-[3px] rounded-[2px] bg-[var(--flow-band-fg)] shadow-[0_0_0_1.5px_var(--flow-band-b)]"
+                    style={{ insetInlineStart: `${Math.max(0, Math.min(100, bar.tick))}%` }}
+                    aria-hidden
+                  />
                 ) : null}
               </div>
-              {bar ? (
-                <>
-                  <div className="relative mt-3 h-1.5 rounded-full" style={{ background: MIX }}>
-                    <div
-                      className="h-full rounded-full bg-[var(--flow-band-fg)]"
-                      style={{ width: `${Math.max(0, Math.min(100, bar.pct))}%` }}
-                    />
-                    {bar.tick !== undefined ? (
-                      <span
-                        className="absolute -bottom-1 -top-1 w-[3px] rounded-[2px] bg-[var(--flow-band-fg)] shadow-[0_0_0_1.5px_var(--flow-band-b)]"
-                        style={{ insetInlineStart: `${Math.max(0, Math.min(100, bar.tick))}%` }}
-                        aria-hidden
-                      />
-                    ) : null}
-                  </div>
-                  {scale ? (
-                    <div className={`mt-[5px] flex justify-between gap-2 font-mono-numbers text-[10.5px] font-semibold ${FG2}`}>
-                      <span>{scale[0]}</span>
-                      <span>{scale[1]}</span>
-                      <span>{scale[2]}</span>
-                    </div>
-                  ) : null}
-                </>
-              ) : null}
-              {variant === 'noBudget' && onSetBudget ? (
-                <div className="mt-2.5 flex items-center justify-between gap-2.5">
-                  <span className={`text-[12.5px] ${FG2}`}>{noBudgetLine}</span>
-                  <Button variant="secondary" size="touch" onClick={onSetBudget}>
-                    {setBudgetLabel}
-                  </Button>
-                </div>
-              ) : null}
-            </>
-          )}
-        </div>
-        {/* A deeper sub-surface groups the three stats apart from the pace above. */}
-        <div className="grid grid-cols-3 border-t bg-[var(--flow-band-deep)]" style={{ borderColor: MIX }}>
-          {stats.map((s, i) => {
-            const Arrow = s.dir === 'in' ? ArrowDown : s.dir === 'out' ? ArrowUp : null
-            return (
-              <div
-                key={s.label}
-                className={cn('min-w-0 pb-[11px] pe-2.5 ps-[18px] pt-2.5', i > 0 && 'border-s')}
-                style={i > 0 ? { borderColor: MIX } : undefined}
-              >
-                <p className={`flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[0.06em] ${FG2}`}>
-                  {Arrow ? (
-                    <span
-                      aria-hidden
-                      className="flex size-4 items-center justify-center rounded-full"
-                      style={{ background: MIX, color: s.dir === 'in' ? 'var(--flow-band-in)' : 'var(--flow-band-fg)' }}
-                    >
-                      <Arrow className="size-3" strokeWidth={2.5} />
-                    </span>
-                  ) : null}
-                  {s.label}
-                </p>
-                <p className="mt-1 whitespace-nowrap font-mono-numbers text-base font-bold">{s.value}</p>
+              <div className={`mt-[5px] flex h-[15.75px] justify-between gap-2 overflow-hidden font-mono-numbers text-[10.5px] font-semibold leading-[15.75px] ${FG2}`}>
+                <span className="shrink-0 whitespace-nowrap">{scale[0]}</span>
+                <span className="min-w-0 truncate whitespace-nowrap">{scale[1]}</span>
+                <span className="min-w-0 truncate whitespace-nowrap">{scale[2]}</span>
               </div>
-            )
-          })}
-        </div>
-      </motion.div>
+            </div>
+          </>
+        )}
+      </div>
+      {/* A deeper sub-surface groups the three stats apart from the pace above. */}
+      <div className="grid h-[66px] grid-cols-3 border-t bg-[var(--flow-band-deep)]" style={{ borderColor: MIX }}>
+        {stats.map((s, i) => {
+          const Arrow = s.dir === 'in' ? ArrowDown : s.dir === 'out' ? ArrowUp : null
+          return (
+            <div
+              key={i}
+              className={cn('min-w-0 pb-[11px] pe-2.5 ps-[18px] pt-2.5', i > 0 && 'border-s')}
+              style={i > 0 ? { borderColor: MIX } : undefined}
+            >
+              <p className={`flex h-4 items-center gap-1.5 whitespace-nowrap text-[10.5px] font-bold uppercase tracking-[0.06em] ${FG2}`}>
+                {Arrow ? (
+                  <span
+                    aria-hidden
+                    className="flex size-4 shrink-0 items-center justify-center rounded-full"
+                    style={{ background: MIX, color: s.dir === 'in' ? 'var(--flow-band-in)' : 'var(--flow-band-fg)' }}
+                  >
+                    <Arrow className="size-3" strokeWidth={2.5} />
+                  </span>
+                ) : null}
+                <span className="min-w-0 truncate">{s.label}</span>
+              </p>
+              <p className="mt-1 h-6 truncate whitespace-nowrap font-mono-numbers text-base font-bold leading-6">{s.value}</p>
+            </div>
+          )
+        })}
+      </div>
     </section>
   )
 }

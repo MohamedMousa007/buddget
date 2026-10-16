@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { format, isWithinInterval, parseISO } from 'date-fns'
-import { ArrowLeftRight, CalendarClock, Check, CircleCheck, CreditCard as CardIcon, Landmark, Layers, HandCoins, Plus } from 'lucide-react'
+import { ArrowLeftRight, CalendarClock, Check, CircleCheck, CreditCard as CardIcon, Landmark, Layers, Plus } from 'lucide-react'
 import { SwipeToDelete, type SwipeSide } from '@/components/expenses/SwipeToDelete'
 import { TransactionRow } from '@/components/transactions/TransactionRow'
 import { FlowChipRow, type FlowChip } from '@/components/features/flow/FlowChipRow'
@@ -21,9 +21,14 @@ import { useT } from '@/lib/i18n'
 import { fmtWhole, soft } from './heroCardShared'
 
 const FAMILY_ICON: Record<DebtFamily, typeof Check> = {
-  borrow: HandCoins,
+  borrow: Landmark,
   credit_card: CardIcon,
   installment: Layers,
+}
+
+function FamilyGlyph({ family }: { family: DebtFamily }) {
+  const Icon = FAMILY_ICON[family]
+  return <Icon className="size-4" aria-hidden />
 }
 
 type MoveKind = 'paid' | 'added'
@@ -124,11 +129,12 @@ export function DebtPaymentsFeed({
 
   const patch = (p: Partial<MoveFilters>) => setFilters((f) => ({ ...f, ...p }))
   const rangeLabel: Record<RangeKey, string> = { any: tm.anyTime, today: t.common.today, yesterday: t.common.yesterday, week: tm.thisWeek, month: tm.thisMonth, custom: tm.custom }
+  const pickedDebt = debts.find((d) => d.id === filters.debtId)
   const debtName = (id: string) => debts.find((d) => d.id === id)?.name ?? ''
   const chips: FlowChip[] = [
     filters.kind !== 'all' && { key: 'kind', label: filters.kind === 'paid' ? tm.movePaid : tm.moveAdded, selected: true, onPress: () => patch({ kind: 'all' }) },
-    filters.family && { key: 'family', label: familyLabel[filters.family], selected: true, onPress: () => patch({ family: null, debtId: null }) },
-    filters.debtId && { key: 'debt', label: debtName(filters.debtId), selected: true, onPress: () => patch({ debtId: null }) },
+    filters.family && { key: 'family', label: familyLabel[filters.family], icon: <FamilyGlyph family={filters.family} />, selected: true, onPress: () => patch({ family: null, debtId: null }) },
+    filters.debtId && { key: 'debt', label: debtName(filters.debtId), icon: pickedDebt ? <FamilyGlyph family={debtFamily(pickedDebt)} /> : undefined, selected: true, onPress: () => patch({ debtId: null }) },
     filters.range !== 'any' && { key: 'range', label: rangeLabel[filters.range], selected: true, onPress: () => patch({ range: 'any', from: '', to: '' }) },
   ].filter(Boolean) as FlowChip[]
   const filterCount = chips.length
@@ -265,7 +271,7 @@ export function DebtPaymentsFeed({
               onChange={(v) => patch({ family: v === 'all' ? null : v, debtId: null })}
               options={[
                 { value: 'all', label: tm.moveAll },
-                ...DEBT_FAMILY_ORDER.map((f) => ({ value: f, label: familyLabel[f] })),
+                ...DEBT_FAMILY_ORDER.map((f) => ({ value: f, label: familyLabel[f], icon: <FamilyGlyph family={f} /> })),
               ]}
             />
           </div>
@@ -278,6 +284,7 @@ export function DebtPaymentsFeed({
                 <div className="flex flex-wrap gap-2">
                   {familyDebts.map((d) => (
                     <OptionChip key={d.id} selected={filters.debtId === d.id} onClick={() => patch({ debtId: filters.debtId === d.id ? null : d.id })}>
+                      <FamilyGlyph family={debtFamily(d)} />
                       {d.name || d.person}
                     </OptionChip>
                   ))}

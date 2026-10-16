@@ -16,7 +16,7 @@ import {
   Zap,
   Layers,
   Banknote,
-  BanknoteArrowUp,
+  ArrowLeftRight,
   BadgeDollarSign,
   CreditCard,
   Coins,
@@ -41,7 +41,7 @@ import type { IncomeSourceType } from '@/lib/store/types'
  * Canonical category grid for the Add/Edit Expense sheet redesign. Order is
  * spend categories first, then money-movement (non-spend) ones. Every glyph is
  * unique (Debt→Landmark, CC Payoff→CreditCard, Currency Exchange→BadgeDollarSign,
- * Transfer→BanknoteArrowUp, Savings→Coins) and matches the design handoff.
+ * Transfer→ArrowLeftRight, Savings→Coins) and matches the design handoff.
  * `id` is the canonical {@link import('@/lib/store/types').ExpenseCategory}.
  */
 export interface CategoryGridItem {
@@ -68,7 +68,7 @@ export const EXPENSE_CATEGORY_GRID: CategoryGridItem[] = [
   { id: 'Instapay', icon: Zap, accent: '#7C4DFF' },
   { id: 'Other', icon: Layers, accent: '#9898B0' },
   { id: 'ATM Cash Withdrawal', icon: Banknote, accent: '#C7C7D6', nonspend: true },
-  { id: 'Transfer', icon: BanknoteArrowUp, accent: '#93A7CE', nonspend: true },
+  { id: 'Transfer', icon: ArrowLeftRight, accent: '#93A7CE', nonspend: true },
   { id: 'Currency Exchange', icon: BadgeDollarSign, accent: '#6FD4C0', nonspend: true },
   { id: 'CC Payoff', icon: CreditCard, accent: '#F0A0A0', nonspend: true },
   { id: 'Top up', icon: WalletCards, accent: '#2DD4BF', nonspend: true },

@@ -32,6 +32,7 @@ export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   'Subscription',
   'Debt',
   'Remittance',
+  'Instapay',
   'Savings',
   'Other',
   // Non-spend money-movement categories (system-assigned, excluded from spend).

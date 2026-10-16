@@ -2316,8 +2316,22 @@ export interface Dictionary {
     statOverBy: string
     statTransactions: string
     statPeriod: string
-    noBudgetLine: string
     setBudget: string
+    dayN: (n: number) => string
+    setBudgetHint: string
+    noSingleBudget: string
+    noCategoryBudget: (cat: string) => string
+    statShareOfOut: string
+    statAvgPerTx: string
+    backToMonth: string
+    emptySegmentInTitle: (month: string) => string
+    emptySegmentInBody: string
+    emptySegmentOutTitle: (month: string) => string
+    emptySegmentOutBody: string
+    addIncome: string
+    addExpense: string
+    viewAll: string
+    noMatchIncome: string
     stickyLeft: (x: string) => string
     stickySpent: string
     stickyResults: (n: number) => string
@@ -2328,6 +2342,9 @@ export interface Dictionary {
     removeFilter: (label: string) => string
     showOnly: (label: string) => string
     budgetAria: (label: string) => string
+    chipBudgetedAria: (label: string, pct: number) => string
+    chipUnassignedAria: (label: string, spent: string) => string
+    chipUnassignedIdleAria: (label: string) => string
     emptyMonthTitle: (month: string) => string
     emptyMonthBody: string
     turnOnSms: string

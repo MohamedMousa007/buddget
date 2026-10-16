@@ -8,6 +8,9 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import {
   budgetCategoriesFromPlan,
   categorySpendingForPlanRows,
+  otherRowName,
+  planRowNames,
+  unassignedSpend,
   totalExpenseBudgetFromPlan,
   totalPlannedExpensesForPlan,
   totalPlannedSavingsAllocationForPlan,
@@ -115,6 +118,9 @@ export function useMonthlyStats() {
         remaining: 0,
         budgetUsedPercent: 0,
         categorySpending: {} as ReturnType<typeof calculateCategorySpending>,
+        spendingByEnum: {} as ReturnType<typeof calculateCategorySpending>,
+        unassignedSpendByCategory: {} as Record<string, number>,
+        unassignedSpendTotal: 0,
         dashboardBudgetCategories: [],
         daysLeft,
         savingsTotal: 0,
@@ -194,9 +200,18 @@ export function useMonthlyStats() {
       settings.baseCurrency,
       exchangeRates
     )
-    const categorySpending = planForCategoryBar
+    const rowNames = planForCategoryBar ? planRowNames(planForCategoryBar) : []
+    // Spend no plan row covers: still in every total; also consumes the plan's Other row.
+    const unassignedSpendByCategory = planForCategoryBar ? unassignedSpend(spendingByEnum, rowNames) : {}
+    const unassignedSpendTotal = Object.values(unassignedSpendByCategory).reduce((s, v) => s + v, 0)
+    const otherRow = otherRowName(rowNames)
+    const rowSpending = planForCategoryBar
       ? categorySpendingForPlanRows(spendingByEnum, planForCategoryBar)
       : spendingByEnum
+    const categorySpending =
+      otherRow != null && unassignedSpendTotal > 0
+        ? { ...rowSpending, [otherRow]: (rowSpending[otherRow] ?? 0) + unassignedSpendTotal }
+        : rowSpending
     const daysLeft = calculateDaysLeftInMonth(monthFilter, settings.monthStartDay)
 
     // Month-filtered: used for budget progress and savings nudge notifications.
@@ -325,6 +340,9 @@ export function useMonthlyStats() {
       remaining,
       budgetUsedPercent,
       categorySpending,
+      spendingByEnum,
+      unassignedSpendByCategory,
+      unassignedSpendTotal,
       /** Rows for CategoryBar caps/labels (active plan or legacy `budgetCategories`). */
       dashboardBudgetCategories: effectiveBudgetRows,
       daysLeft,

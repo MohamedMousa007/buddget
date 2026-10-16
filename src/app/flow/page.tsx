@@ -15,6 +15,10 @@ import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
 import { formatWhole, formatFixed2, formatSigned } from '@/lib/utils/formatters'
 import { shortDate } from '@/lib/utils/shortDate'
 import { useT } from '@/lib/i18n'
+import { orderedCategories, categoryFilterIds } from '@/lib/budget/categoryOrder'
+import { sharedBudgetKey } from '@/lib/budget/budgetPlans'
+import { CategoryGlyph } from '@/components/dashboard/CategoryIcon'
+import { IncomeTypeIcon } from '@/components/features/income/IncomeTypeIcon'
 import { format } from 'date-fns'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { SkeletonList } from '@/components/ui/SkeletonList'
@@ -28,10 +32,11 @@ import { FlowChipRow, type FlowChip } from '@/components/features/flow/FlowChipR
 import { FlowLedger } from '@/components/features/flow/FlowLedger'
 import { IncomePrompts } from '@/components/features/flow/IncomePrompts'
 import { methodLabel, useFlowLedger } from '@/components/features/flow/useFlowLedger'
-import { useFlowBand } from '@/components/features/flow/useFlowBand'
+import { periodText, useFlowBand } from '@/components/features/flow/useFlowBand'
+import { selectFlowEmptyState } from '@/lib/flow/emptyState'
 
 /** Past this scroll the band's stat row has left the viewport: collapse into the strip. */
-const COLLAPSE_AT = 150
+const COLLAPSE_AT = 94
 
 /**
  * Flow — money in and money out in one ledger (Expenses and Income collapsed into one tab).
@@ -52,6 +57,7 @@ export default function FlowPage() {
     useShallow((s) => ({ paymentMethods: s.paymentMethods, incomeSources: s.incomeSources, base: s.settings.baseCurrency })),
   )
   const monthFilter = useSettingsStore((s) => s.monthFilter)
+  const setActiveModal = useSettingsStore((s) => s.setActiveModal)
   const filters = useExpenseFilterStore(
     useShallow((s) => ({
       segment: s.segment,
@@ -61,6 +67,7 @@ export default function FlowPage() {
       amtMin: s.amtMin,
       amtMax: s.amtMax,
       rangePreset: s.range.preset,
+      setRangePreset: s.setRangePreset,
       setSegment: s.setSegment,
       selectCat: s.selectCat,
       toggleCat: s.toggleCat,
@@ -97,8 +104,8 @@ export default function FlowPage() {
     [paymentMethods],
   )
   const filterNames = useMemo(
-    () => [...(segment !== 'in' ? filters.cats : []), ...filters.methods.map(methodName), ...(amountOn ? [amountLabel] : [])],
-    [segment, filters.cats, filters.methods, methodName, amountOn, amountLabel],
+    () => [...(segment !== 'in' ? [sharedBudgetKey(filters.cats, Object.keys(stats.categoryBudgetCaps)) ?? filters.cats].flat() : []), ...filters.methods.map(methodName), ...(amountOn ? [amountLabel] : [])],
+    [segment, filters.cats, filters.methods, methodName, amountOn, amountLabel, stats.categoryBudgetCaps],
   )
 
   const onSetBudget = useCallback(() => navigate('/budget-setup'), [])
@@ -112,31 +119,47 @@ export default function FlowPage() {
     onSetBudget,
   })
 
-  // Category quick filters: every budgeted category (ring + %, most-spent-against-cap first),
-  // then every other category spent in this range (by spend). Tap = only that category,
-  // inside the segment; tap again = all.
-  const budgetChips = useMemo<FlowChip[]>(() => {
-    const budgeted = Object.entries(stats.categoryBudgetCaps)
-      .filter(([, cap]) => cap > 0)
-      .map(([cat, cap]) => ({ cat, pct: (stats.categorySpending[cat] ?? 0) / cap }))
-      .sort((a, b) => b.pct - a.pct)
-    const spentBy = new Map<string, number>()
-    for (const i of all) if (i.dir === 'out' && i.counted) spentBy.set(i.facet, (spentBy.get(i.facet) ?? 0) + i.amountBase)
-    const unbudgeted = [...spentBy.entries()]
-      .filter(([cat]) => !(stats.categoryBudgetCaps[cat] > 0))
-      .sort((a, b) => b[1] - a[1])
-      .map(([cat]) => ({ cat, pct: undefined as number | undefined }))
-    return [...budgeted, ...unbudgeted].map(({ cat, pct }) => {
-      const on = filters.cats.length === 1 && filters.cats[0] === cat
-      return {
-        key: `b-${cat}`,
-        label: cat,
-        selected: on,
-        budget: pct === undefined ? undefined : { pct, over: pct > 1 },
-        onPress: () => filters.selectCat(on ? null : cat),
-      }
-    })
-  }, [stats.categoryBudgetCaps, stats.categorySpending, all, filters])
+  const catLabel = useCallback((c: string) => t.expenseForm.categoryLabels[c] ?? c, [t])
+  const spentByCategory = useMemo(() => {
+    const m: Record<string, number> = {}
+    for (const i of all) if (i.dir === 'out' && i.counted) m[i.facet] = (m[i.facet] ?? 0) + i.amountBase
+    return m
+  }, [all])
+  const orderedCats = useMemo(
+    () => orderedCategories({ caps: stats.categoryBudgetCaps, rowSpent: stats.categorySpending, spentByCategory }),
+    [stats.categoryBudgetCaps, stats.categorySpending, spentByCategory],
+  )
+
+  // Category quick filters: budgeted rows (% + bar, most used first), then unassigned categories
+  // with spend, then the remaining defaults. A tap filters to the row and the aliases it absorbs.
+  const budgetChips = useMemo<FlowChip[]>(
+    () =>
+      orderedCats.map((c) => {
+        const on = filters.cats.length === c.members.length && c.members.every((m) => filters.cats.includes(m))
+        const label = catLabel(c.key)
+        const spent = formatWhole(spentByCategory[c.key] ?? 0)
+        const budget = c.state === 'budgeted' ? { kind: 'budgeted' as const, pct: c.pct ?? 0 } : c.state === 'unassigned' ? { kind: 'unassigned' as const } : undefined
+        const ariaLabel =
+          c.state === 'budgeted'
+            ? t.flow.chipBudgetedAria(label, Math.round((c.pct ?? 0) * 100))
+            : c.state === 'unassigned'
+              ? (spentByCategory[c.key] ?? 0) > 0 ? t.flow.chipUnassignedAria(label, spent) : t.flow.chipUnassignedIdleAria(label)
+              : undefined
+        return {
+          key: `b-${c.key}`,
+          label,
+          icon: <CategoryGlyph category={c.key} className="size-4" />,
+          selected: on,
+          budget,
+          ariaLabel,
+          onPress: () => {
+            filters.selectCat(on ? null : c.members[0])
+            if (!on) c.members.slice(1).forEach(filters.toggleCat)
+          },
+        }
+      }),
+    [orderedCats, filters, catLabel, spentByCategory, t],
+  )
 
   // In: the income types present this month, in Paydays order, then one-time.
   const incomeChips = useMemo<FlowChip[]>(() => {
@@ -150,19 +173,20 @@ export default function FlowPage() {
     return facets.map((f) => ({
       key: `in-${f}`,
       label: f === ONE_TIME_INCOME ? t.flow.oneTime : incomeSourceTypeLabel(t.income, f as IncomeSourceType),
+      icon: <IncomeTypeIcon type={(f === ONE_TIME_INCOME ? 'other' : f) as IncomeSourceType} className="size-4" />,
       selected: filters.incomeTypes.includes(f),
       onPress: () => filters.toggleIncomeType(f),
     }))
   }, [all, incomeSources, filters, t])
 
-  const chipRowCatOnly = filterCount === 1 && filters.cats.length === 1 && budgetChips.some((c) => c.selected)
+  const chipRowCatOnly = filterCount === 1 && budgetChips.some((c) => c.selected)
   const chips: FlowChip[] =
     segment === 'in'
       ? incomeChips
       : filterCount === 0 || chipRowCatOnly
         ? budgetChips
         : [
-            ...filters.cats.map((c) => ({ key: `c-${c}`, label: c, selected: true, onPress: () => filters.toggleCat(c) })),
+            ...filters.cats.map((c) => ({ key: `c-${c}`, label: catLabel(c), icon: <CategoryGlyph category={c} className="size-4" />, selected: true, onPress: () => filters.toggleCat(c) })),
             ...filters.methods.map((m) => ({ key: `m-${m}`, label: methodName(m), selected: true, onPress: () => filters.toggleMethod(m) })),
             ...(amountOn
               ? [{ key: 'amt', label: amountLabel, selected: true, onPress: () => { filters.setAmtMin(AMOUNT_MIN); filters.setAmtMax(AMOUNT_MAX) } }]
@@ -171,12 +195,21 @@ export default function FlowPage() {
 
   const countSum = items.filter((i) => i.counted).reduce((s, i) => s + (i.dir === 'in' ? i.amountBase : -i.amountBase), 0)
   const showCount = filterCount > 0
-  const noMatch = dataReady && items.length === 0 && (filterCount > 0 || filters.rangePreset !== 'month')
-  const emptyMonth = dataReady && items.length === 0 && !noMatch
+  const empty = dataReady
+    ? selectFlowEmptyState({
+        allCount: all.length,
+        itemsCount: items.length,
+        filterCount,
+        rangePreset: filters.rangePreset,
+        segment,
+        hasHistory,
+      })
+    : 'none'
 
   const noMatchBody = (() => {
     const cats = segment !== 'in' ? filters.cats : []
-    const what = cats.length ? `${cats.join(', ')} ${t.flow.noMatchSpending}` : t.flow.noMatchTransactions
+    const kind = segment === 'in' ? t.flow.noMatchIncome : segment === 'out' || cats.length ? t.flow.noMatchSpending : t.flow.noMatchTransactions
+    const what = cats.length ? `${cats.join(', ')} ${kind}` : kind
     const paid = filters.methods.length ? ` ${t.flow.noMatchPaidWith(filters.methods.map(methodName).join(', '))}` : ''
     const from = shortDate(format(resolved.start, 'yyyy-MM-dd'))
     const to = resolved.start.getMonth() === resolved.end.getMonth() ? format(resolved.end, 'd') : shortDate(format(resolved.end, 'yyyy-MM-dd'))
@@ -185,10 +218,9 @@ export default function FlowPage() {
   })()
 
   const categoryOptions = useMemo(() => {
-    const seen = new Set<string>()
-    for (const i of all) if (i.dir === 'out' && i.facet) seen.add(i.facet)
-    return [...seen].map((c) => ({ id: c, label: c }))
-  }, [all])
+    const seen = all.filter((i) => i.dir === 'out' && i.facet).map((i) => i.facet)
+    return categoryFilterIds(orderedCats, seen).map((c) => ({ id: c, label: catLabel(c) }))
+  }, [all, orderedCats, catLabel])
   const incomeTypeOptions = useMemo(() => incomeChips.map((c) => ({ id: c.key.slice(3), label: c.label })), [incomeChips])
   const resultCount = items.length
 
@@ -197,7 +229,12 @@ export default function FlowPage() {
       <FlowStickyStrip visible={collapsed && dataReady} {...sticky} />
       {segment === 'in' ? <IncomePrompts /> : null}
 
-      <FlowSummaryBand {...band} header={<FlowMonthRow />} />
+      <FlowSummaryBand {...band} />
+
+      <FlowMonthRow
+        range={filters.rangePreset === 'month' ? undefined : periodText(resolved)}
+        onBackToMonth={() => filters.setRangePreset('month')}
+      />
 
       <div className="mx-4 mt-2.5">
         <SegmentedControl<FlowSegment>
@@ -212,27 +249,28 @@ export default function FlowPage() {
         />
       </div>
 
-      <FlowChipRow filterCount={filterCount} onOpenFilters={() => setSheetOpen(true)} chips={chips} />
-
-      {showCount ? (
-        <div className="mx-4 mt-2 flex items-center justify-between gap-2">
-          <span className="whitespace-nowrap text-[13px] text-[var(--color-brand-text-secondary)]">
-            <b className="font-mono-numbers text-[var(--color-brand-text-primary)]">{resultCount}</b> {t.flow.resultsWord(resultCount)} ·{' '}
-            <span className="font-mono-numbers">{segment === 'in' ? formatSigned(countSum, 2) : `−${formatFixed2(Math.abs(countSum))}`}</span>
-          </span>
-          <Button variant="link" size="touch" onClick={filters.reset}>
-            {t.expenses.clearFilters}
-          </Button>
-        </div>
-      ) : null}
+      <FlowChipRow
+        filterCount={filterCount}
+        onOpenFilters={() => setSheetOpen(true)}
+        chips={chips}
+        results={
+          showCount
+            ? {
+                count: resultCount,
+                summary: segment === 'in' ? formatSigned(countSum, 2) : `−${formatFixed2(Math.abs(countSum))}`,
+                onClear: filters.reset,
+              }
+            : undefined
+        }
+      />
 
       {!dataReady ? (
         <div className="mx-4 mt-3.5">
           <SkeletonList rows={7} />
         </div>
-      ) : emptyMonth && !hasHistory ? (
+      ) : empty === 'setup' ? (
         <SetupChecklist className="mx-4 mt-4" />
-      ) : emptyMonth ? (
+      ) : empty === 'emptyMonth' ? (
         <div className="mx-4 mt-7">
           <EmptyState
             title={t.flow.emptyMonthTitle(monthName)}
@@ -246,7 +284,24 @@ export default function FlowPage() {
             }
           />
         </div>
-      ) : noMatch ? (
+      ) : empty === 'emptySegment' ? (
+        <div className="mx-4 mt-7">
+          <EmptyState
+            title={segment === 'in' ? t.flow.emptySegmentInTitle(monthName) : t.flow.emptySegmentOutTitle(monthName)}
+            description={segment === 'in' ? t.flow.emptySegmentInBody : t.flow.emptySegmentOutBody}
+            action={
+              <div className="flex flex-col items-center gap-2">
+                <Button size="cta" onClick={() => setActiveModal(segment === 'in' ? 'addIncome' : 'addExpense')}>
+                  {segment === 'in' ? t.flow.addIncome : t.flow.addExpense}
+                </Button>
+                <Button variant="ghost" size="touch" onClick={() => filters.setSegment('all')}>
+                  {t.flow.viewAll}
+                </Button>
+              </div>
+            }
+          />
+        </div>
+      ) : empty === 'noMatch' ? (
         <div className="mx-4 mt-7">
           <EmptyState
             title={t.flow.noMatchTitle}

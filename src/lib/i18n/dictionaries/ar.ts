@@ -2473,8 +2473,22 @@ export const ar: Dictionary = {
     statOverBy: 'تجاوز بـ',
     statTransactions: 'المعاملات',
     statPeriod: 'الفترة',
-    noBudgetLine: 'لا توجد ميزانية بعد، فلا شيء نقيس الوتيرة عليه.',
     setBudget: 'حدّد ميزانية',
+    dayN: (n: number) => `اليوم ${n}`, // TODO(ar-review)
+    setBudgetHint: 'حدّد ميزانية لترى وتيرتك', // TODO(ar-review)
+    noSingleBudget: 'لا توجد ميزانية واحدة', // TODO(ar-review)
+    noCategoryBudget: (cat: string) => `${cat} · بلا ميزانية`, // TODO(ar-review)
+    statShareOfOut: 'حصة الصادر', // TODO(ar-review)
+    statAvgPerTx: 'متوسط المعاملة', // TODO(ar-review)
+    backToMonth: 'العودة إلى الشهر', // TODO(ar-review)
+    emptySegmentInTitle: (month: string) => `لا دخل في ${month}`, // TODO(ar-review)
+    emptySegmentInBody: 'لم يصل أي مبلغ هذا الشهر بعد.', // TODO(ar-review)
+    emptySegmentOutTitle: (month: string) => `لا إنفاق في ${month}`, // TODO(ar-review)
+    emptySegmentOutBody: 'لم يخرج أي مبلغ هذا الشهر بعد.', // TODO(ar-review)
+    addIncome: 'أضف دخلاً', // TODO(ar-review)
+    addExpense: 'أضف مصروفاً', // TODO(ar-review)
+    viewAll: 'عرض الكل', // TODO(ar-review)
+    noMatchIncome: 'دخل على', // TODO(ar-review)
     stickyLeft: (x: string) => `متبقٍ من ${x}`,
     stickySpent: 'مصروف',
     stickyResults: (n: number) => `${n} نتائج`,
@@ -2485,6 +2499,12 @@ export const ar: Dictionary = {
     removeFilter: (label: string) => `إزالة مرشّح ${label}`,
     showOnly: (label: string) => `عرض ${label} فقط`,
     budgetAria: (label: string) => `ميزانية ${label}`,
+    // TODO(ar-review)
+    chipBudgetedAria: (label: string, pct: number) => `${label}، ${pct}% من الميزانية مستخدم`,
+    // TODO(ar-review)
+    chipUnassignedAria: (label: string, spent: string) => `${label}، خارج ميزانيتك، تم إنفاق ${spent}`,
+    // TODO(ar-review)
+    chipUnassignedIdleAria: (label: string) => `${label}، خارج ميزانيتك`,
     emptyMonthTitle: (month: string) => `لا معاملات في ${month} بعد`,
     emptyMonthBody: 'أضف واحدة بزر +', // TODO(ar-review)
     turnOnSms: 'تفعيل التقاط الرسائل',

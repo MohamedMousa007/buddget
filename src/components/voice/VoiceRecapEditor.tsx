@@ -9,6 +9,9 @@ import { Card } from '@/components/ui/card'
 import type { AIAction, AIActionItem } from '@/lib/ai/gemini'
 import { EXPENSE_ENTRY_CATEGORIES } from '@/lib/constants/finance'
 import { CurrencyField } from '@/components/ui/CurrencyField'
+import { SelectField } from '@/components/ui/SelectField'
+import { CategoryGlyph } from '@/components/dashboard/CategoryIcon'
+import { useT } from '@/lib/i18n'
 import { IconButton } from '@/components/ui/IconButton'
 
 export interface VoiceRecapEditorProps {
@@ -69,6 +72,7 @@ export function VoiceRecapEditor({
 }: VoiceRecapEditorProps) {
   const paymentMethods = useFinanceStore((s) => s.paymentMethods)
   const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
+  const t = useT()
   const multiple = actions.length > 1
 
   return (
@@ -145,18 +149,19 @@ export function VoiceRecapEditor({
                 ) : null}
 
                 {showCategory ? (
-                  <label className="block">
+                  <div className="block">
                     <span className="mb-0.5 block text-[10px] text-[var(--color-brand-text-muted)]">Category</span>
-                    <select
-                      className={FIELD_CLS}
+                    <SelectField
+                      aria-label="Category"
                       value={String(getField(item.data, 'category') ?? 'Other')}
-                      onChange={(e) => onUpdateField(idx, 'category', e.target.value)}
-                    >
-                      {EXPENSE_ENTRY_CATEGORIES.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
-                  </label>
+                      onChange={(c) => onUpdateField(idx, 'category', c)}
+                      items={EXPENSE_ENTRY_CATEGORIES.map((c) => ({
+                        value: c,
+                        label: t.expenseForm.categoryLabels[c] ?? c,
+                        glyph: <CategoryGlyph category={c} className="size-4" />,
+                      }))}
+                    />
+                  </div>
                 ) : null}
 
                 {showPayment ? (

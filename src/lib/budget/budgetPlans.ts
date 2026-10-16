@@ -1,5 +1,5 @@
 import { EXPENSE_CATEGORIES, FIAT_CURRENCIES } from '@/lib/constants/finance'
-import { CATEGORY_BUDGET_ALIASES } from '@/lib/constants/categoryMeta'
+import { CATEGORY_BUDGET_ALIASES, isNonSpendCategory } from '@/lib/constants/categoryMeta'
 import type { BudgetCategory, BudgetPlan, BudgetPlanCategory, Currency, ExpenseCategory } from '@/lib/store/types'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 
@@ -136,6 +136,69 @@ export function categorySpendingForPlanRows(
       aliasSum += spendingByCategory[alias] ?? 0
     }
     out[name] = direct + legacy + aliasSum
+  }
+  return out
+}
+
+/** Names of the plan's spend rows (savings allocation rows excluded), as typed by the user. */
+export function planRowNames(plan: BudgetPlan): string[] {
+  return plan.categories.filter((c) => !isSavingsPlanCategory(c) && c.name.trim()).map((c) => c.name.trim())
+}
+
+/**
+ * The plan row that budgets an expense category: a row with the same name (case-insensitive),
+ * else the row whose legacy bucket folds it in (Groceries under Food, Fuel under Transport…).
+ * `null` when no row covers it. Single resolver for chips, ring %, tap-filter and hero cap.
+ */
+export function resolveBudgetKey(category: string, rowNames: readonly string[]): string | null {
+  const t = category.trim().toLowerCase()
+  if (!t) return null
+  const direct = rowNames.find((n) => n.trim().toLowerCase() === t)
+  if (direct) return direct
+  for (const row of rowNames) {
+    const aliases = CATEGORY_BUDGET_ALIASES[matchExpenseCategory(row) ?? row] ?? []
+    if (aliases.some((a) => a.toLowerCase() === t)) return row
+  }
+  return null
+}
+
+/** Every expense category a plan row covers: its own name, its enum spelling, and its folded aliases. */
+export function categoriesForBudgetKey(row: string, rowNames: readonly string[]): string[] {
+  const enumCat = matchExpenseCategory(row)
+  const own = new Set(rowNames.map((n) => n.trim().toLowerCase()))
+  const aliases = (CATEGORY_BUDGET_ALIASES[enumCat ?? row] ?? []).filter((a) => !own.has(a.toLowerCase()))
+  return [...new Set([row, ...(enumCat ? [enumCat] : []), ...aliases])]
+}
+
+/** Budget cap (base currency) that covers a category, or `undefined` when unassigned or the row is 0. */
+export function capForCategory(category: string, caps: Readonly<Record<string, number>>): number | undefined {
+  const key = resolveBudgetKey(category, Object.keys(caps))
+  const cap = key == null ? 0 : caps[key] ?? 0
+  return cap > 0 ? cap : undefined
+}
+
+/** The one plan row every given category resolves to, else `null` (mixed, uncovered or empty). */
+export function sharedBudgetKey(categories: readonly string[], rowNames: readonly string[]): string | null {
+  if (categories.length === 0) return null
+  const keys = new Set(categories.map((c) => resolveBudgetKey(c, rowNames)))
+  const [only] = keys
+  return keys.size === 1 && only != null ? only : null
+}
+
+/** The plan's catch-all row, if it has one. */
+export function otherRowName(rowNames: readonly string[]): string | null {
+  return rowNames.find((n) => n.trim().toLowerCase() === 'other') ?? null
+}
+
+/** Spend (base currency) in spend categories that no plan row covers. Non-spend categories never count. */
+export function unassignedSpend(
+  spendingByCategory: Readonly<Record<string, number>>,
+  rowNames: readonly string[]
+): Record<string, number> {
+  const out: Record<string, number> = {}
+  for (const [cat, amount] of Object.entries(spendingByCategory)) {
+    if (!(amount > 0) || isNonSpendCategory(cat) || resolveBudgetKey(cat, rowNames) != null) continue
+    out[cat] = amount
   }
   return out
 }

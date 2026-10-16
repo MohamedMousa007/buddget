@@ -1,52 +1,54 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { X } from 'lucide-react'
 import { OptionChip } from '@/components/ui/OptionChip'
 
-const R = 5.5
-const C = 2 * Math.PI * R
+export type BudgetChipStatus =
+  /** Covered by a plan row: the % used with a progress bar. */
+  | { kind: 'budgeted'; pct: number }
+  /** No budget covers it: "?" with a full warning bar (out of budget). */
+  | { kind: 'unassigned' }
 
 export interface BudgetChipProps {
   label: string
-  /** Spent ÷ budget, 0–∞ (1.23 = 123%). */
-  pct: number
-  over: boolean
+  icon: ReactNode
+  status: BudgetChipStatus
   selected: boolean
   onToggle: () => void
-  /** Accessible name — "Show only Groceries" / "Remove Groceries filter". */
+  /** Accessible name; carries the state so colour is never the only cue. */
   ariaLabel: string
 }
 
+function barTone(status: BudgetChipStatus): string {
+  if (status.kind === 'unassigned') return 'var(--color-brand-amber)'
+  if (status.pct > 1) return 'var(--color-brand-red)'
+  return status.pct >= 0.8 ? 'var(--color-brand-amber)' : 'var(--color-brand-primary)'
+}
+
 /**
- * A category budget in Flow's chip row: a 14px progress ring, the name and its %. Tapping
- * filters the ledger to that category (single-select from the row); selected shows fill,
- * border and ✕ and is announced as pressed.
+ * A category in Flow's chip row once a budget plan exists: icon, name, and the budget state
+ * stacked in one slot (the % over a 3px progress bar, or "?" over a full warning bar).
+ * Tapping filters the ledger to the category; selected swaps the glyph for ✕ in place and is announced as pressed.
  */
-export function BudgetChip({ label, pct, over, selected, onToggle, ariaLabel }: BudgetChipProps) {
-  const ring = over ? 'var(--color-brand-red)' : 'var(--color-brand-primary)'
+export function BudgetChip({ label, icon, status, selected, onToggle, ariaLabel }: BudgetChipProps) {
+  const fill = status.kind === 'unassigned' ? 1 : Math.min(1, status.pct)
+  const over = status.kind === 'budgeted' && status.pct > 1
   return (
     <OptionChip as="trigger" surface="card" size="sm" selected={selected} aria-pressed={selected} aria-label={ariaLabel} onClick={onToggle}>
-      <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden className="size-3.5">
-        <circle cx="7" cy="7" r={R} fill="none" stroke="var(--color-brand-elevated)" strokeWidth="2.5" />
-        <circle
-          cx="7"
-          cy="7"
-          r={R}
-          fill="none"
-          stroke={ring}
-          strokeWidth="2.5"
-          strokeDasharray={`${(Math.min(1, pct) * C).toFixed(2)} ${C.toFixed(2)}`}
-          transform="rotate(-90 7 7)"
-        />
-      </svg>
+      {selected ? <X className="size-4" strokeWidth={2.5} aria-hidden /> : icon}
       {label}
-      <span
-        className="font-mono-numbers text-[11px] font-bold"
-        style={{ color: over ? 'var(--color-brand-red)' : 'var(--color-brand-text-secondary)' }}
-      >
-        {Math.round(pct * 100)}%
+      <span className="flex flex-col items-center gap-0.5">
+        <span
+          className="font-mono-numbers text-[11px] leading-none font-bold"
+          style={{ color: over ? 'var(--color-brand-red)' : 'var(--color-brand-text-secondary)' }}
+        >
+          {status.kind === 'unassigned' ? '?' : `${Math.round(status.pct * 100)}%`}
+        </span>
+        <span aria-hidden className="h-[3px] w-6 overflow-hidden rounded-full" style={{ background: 'var(--color-brand-elevated)' }}>
+          <span className="block h-full rounded-full" style={{ width: `${fill * 100}%`, background: barTone(status) }} />
+        </span>
       </span>
-      {selected ? <X className="size-3" strokeWidth={2.5} aria-hidden /> : null}
     </OptionChip>
   )
 }

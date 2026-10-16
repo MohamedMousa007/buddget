@@ -3,22 +3,17 @@
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { useNavPath } from '@/lib/navigation/navStore'
 import { AuthNavButtons } from '@/components/layout/AuthNavButtons'
-import { MonthNavigationControl } from '@/components/layout/MonthNavigationControl'
-import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
 import { sectionTitleNavKey } from '@/lib/navigation/bottomNavConfig'
 import { ownsHeader } from '@/lib/navigation/ownsHeader'
 import { BuddgetWordmark } from '@/components/brand'
 import { SetupProgressChip } from '@/components/features/setup/SetupProgressChip'
 
 export function DesktopHeaderBar() {
-  const { monthFilter, setMonthFilter } = useSettingsStore()
   const pathname = useNavPath()
   const t = useT()
   const sectionKey = sectionTitleNavKey(pathname)
   const sectionTitle = sectionKey ? t.nav[sectionKey] : ''
-  const isHome = pathname === '/'
 
   return (
     <>
@@ -49,14 +44,7 @@ export function DesktopHeaderBar() {
             </>
           )}
 
-          {/* Home keeps its month switcher in-header (dashboard is out of scope). */}
-          {isHome && (
-            <div className="ms-auto flex min-w-0 items-center">
-              <MonthNavigationControl monthFilter={monthFilter} onChange={setMonthFilter} compact />
-            </div>
-          )}
-
-          <div className={cn('flex shrink-0 items-center gap-1', isHome ? 'ms-2' : 'ms-auto')}>
+          <div className="ms-auto flex shrink-0 items-center gap-1">
             <SetupProgressChip />
             <AuthNavButtons layout="mobile" />
           </div>
