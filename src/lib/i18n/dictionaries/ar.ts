@@ -258,7 +258,7 @@ export const ar: Dictionary = {
 
   nav: {
     dashboard: 'الرئيسية',
-    budgetSetup: 'إعداد الميزانية',
+    budgetSetup: 'الميزانية',
     expenses: 'المصروفات',
     income: 'الدخل',
     savings: 'المدخرات',
@@ -267,6 +267,7 @@ export const ar: Dictionary = {
     debts: 'الديون',
     reports: 'التقارير',
     subscriptions: 'الاشتراكات',
+    goals: 'الأهداف',
     home: 'الرئيسية',
     flow: 'المعاملات',
     paydays: 'أيام القبض',
@@ -1395,6 +1396,11 @@ export const ar: Dictionary = {
     projectedSavings: 'المدخرات المتوقعة',
     projectedSavingsLine: (amount, savingsRatePercent) =>
       `إذا التزمت بهذه الخطة، ستدخر ${amount} هذا الشهر (${savingsRatePercent}% من الدخل)`,
+    committedTitle: 'التزامات ثابتة',
+    committedEmpty: 'لا توجد اشتراكات بعد',
+    committedLine: (count, perMonth) => `${perMonth} شهريًا عبر ${count} اشتراك`,
+    committedNext: (name, date) => `التالي: ${name} · ${date}`,
+    spentOfPlanned: (spent, planned) => `أنفقت ${spent} من ${planned} المخطط`,
     savingsAllocationBadge: 'مدخرات',
     aiEvalTitle: 'رأي Buddgy',
     aiEvalLoading: 'جارٍ مراجعة خطتك…',
@@ -1931,6 +1937,8 @@ export const ar: Dictionary = {
     goalName: 'اسم الهدف',
     currency: 'العملة',
     monthlyLimit: 'حد الإنفاق الشهري',
+    spendingCategory: 'ينطبق على',
+    allSpending: 'كل الإنفاق',
     nextStep: 'متابعة',
     createAccountHint: 'إنشاء حساب ادخار جديد (اختياري)',
     createAccountPlaceholder: 'مثال: صندوق المنزل',

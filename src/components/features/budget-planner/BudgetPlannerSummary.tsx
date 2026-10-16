@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 export interface BudgetPlannerSummaryProps {
   totalIncome: number
   totalPlanned: number
+  spent: number
   projectedSavings: number
   currency: Currency
   hasIncome?: boolean
@@ -18,6 +19,7 @@ export interface BudgetPlannerSummaryProps {
     totalPlanned: string
     projectedSavings: string
     projectedSavingsLine: (amount: string, savingsRatePercent: number) => string
+    spentOfPlanned: (spent: string, planned: string) => string
   }
 }
 
@@ -25,6 +27,7 @@ export interface BudgetPlannerSummaryProps {
 export function BudgetPlannerSummary({
   totalIncome,
   totalPlanned,
+  spent,
   projectedSavings,
   currency,
   hasIncome = true,
@@ -86,6 +89,11 @@ export function BudgetPlannerSummary({
           )}
         </div>
       </div>
+      {totalPlanned > 0 && (
+        <p className="text-sm text-[var(--color-brand-text-secondary)] font-mono-numbers">
+          {labels.spentOfPlanned(formatCurrency(spent, currency, false), formatCurrency(totalPlanned, currency, false))}
+        </p>
+      )}
       {hasIncome && (
         <p className="text-sm text-[var(--color-brand-text-secondary)] leading-relaxed border-t border-[var(--color-brand-border)]/60 pt-4">
           {labels.projectedSavingsLine(savingsStr, savingsRatePercent)}

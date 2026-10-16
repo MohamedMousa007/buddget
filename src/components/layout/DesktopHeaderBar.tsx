@@ -2,12 +2,12 @@
 
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { useNavPath } from '@/lib/navigation/navStore'
-import { BarChart3, Award } from 'lucide-react'
+import { Award } from 'lucide-react'
 import { AuthNavButtons } from '@/components/layout/AuthNavButtons'
 import { MonthNavigationControl } from '@/components/layout/MonthNavigationControl'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { useLocale, useT } from '@/lib/i18n'
+import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { sectionTitleNavKey } from '@/lib/navigation/bottomNavConfig'
 import { ownsHeader } from '@/lib/navigation/ownsHeader'
@@ -18,7 +18,6 @@ export function DesktopHeaderBar() {
   const { monthFilter, setMonthFilter, setActiveModal } = useSettingsStore()
   const pathname = useNavPath()
   const t = useT()
-  const { locale } = useLocale()
   const sectionKey = sectionTitleNavKey(pathname)
   const sectionTitle = sectionKey ? t.nav[sectionKey] : ''
   const isHome = pathname === '/'
@@ -30,21 +29,6 @@ export function DesktopHeaderBar() {
       {/* ─── Desktop header (lg+) ─── */}
       <header className="hidden lg:flex fixed top-0 start-44 end-0 z-40 h-12 items-center justify-between px-6 bg-[var(--color-brand-card)]/90 border-b border-[var(--color-brand-border)] backdrop-blur-xl">
         <div className="flex items-center shrink-0">
-          {pathname === '/' && (
-            <Link
-              href="/reports"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-brand-elevated)] text-sm text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-border)] transition-colors"
-            >
-              <BarChart3 className="w-4 h-4 shrink-0" />
-              <span className={locale === 'ar' ? 'text-end' : undefined}>{t.nav.reports}</span>
-            </Link>
-          )}
-        </div>
-
-        <div className="absolute left-1/2 -translate-x-1/2">
-          {pathname === '/' && (
-            <MonthNavigationControl monthFilter={monthFilter} onChange={setMonthFilter} />
-          )}
         </div>
 
         <div className="flex items-center shrink-0">

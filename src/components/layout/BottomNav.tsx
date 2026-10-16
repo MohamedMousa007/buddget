@@ -2,26 +2,17 @@
 
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { useNavPath } from '@/lib/navigation/navStore'
-import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT } from '@/lib/i18n'
 import type { Dictionary } from '@/lib/i18n'
-import {
-  BOTTOM_NAV_ITEMS,
-  BOTTOM_NAV_MORE_MENU,
-  BOTTOM_NAV_MORE_HREFS,
-} from '@/lib/navigation/bottomNavConfig'
-import { useBottomNavMoreSheet } from '@/hooks/useBottomNavMoreSheet'
-import { BottomNavMorePanel } from '@/components/features/layout/BottomNavMorePanel'
+import { BOTTOM_NAV_ITEMS, BOTTOM_NAV_TAB_PATHS } from '@/lib/navigation/bottomNavConfig'
 import { useVoiceHoldGesture } from '@/hooks/useVoiceHoldGesture'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useVoiceExpense } from '@/hooks/useVoiceExpense'
 import { VoiceRecordOverlay } from '@/components/voice/VoiceRecordOverlay'
 import { useRef } from 'react'
 
-/** Routes that light the Flow tab: Flow itself, its old Expenses/Income aliases and Paydays. */
-const FLOW_PATHS = new Set(['/flow', '/expenses', '/income', '/paydays'])
 const TAB = 'flex h-16 min-w-14 flex-col items-center justify-center gap-1 transition-colors duration-200'
 const TAB_ON = 'font-bold text-[var(--color-brand-primary-ink)]'
 const TAB_OFF = 'font-medium text-[var(--color-brand-text-muted)]'
@@ -30,23 +21,17 @@ export function BottomNav() {
   const pathname = useNavPath()
   const t = useT()
   const { setActiveModal } = useSettingsStore()
-  const { moreOpen, setMoreOpen, moreWrapRef } = useBottomNavMoreSheet()
-  const moreActive = BOTTOM_NAV_MORE_HREFS.has(pathname)
   const requireAuth = useRequireAuthAction()
   const voice = useVoiceExpense()
-
-  const closeMore = () => setMoreOpen(false)
 
   const trashRef = useRef<HTMLDivElement>(null)
   const { handlers: fabHandlers, posX, posY, nearTrash } = useVoiceHoldGesture({
     trashRef,
     onTap: () => {
-      closeMore()
       setActiveModal('quickAdd')
     },
     onHoldStart: () => {
       requireAuth(() => {
-        closeMore()
         void voice.start()
       }, t.modals.fabRequireAuth)
     },
@@ -95,48 +80,10 @@ export function BottomNav() {
             )
           }
 
-          if (item.kind === 'more') {
-            return (
-              <div key="more" ref={moreWrapRef} className="flex flex-col items-center">
-                <AnimatePresence>
-                  {moreOpen ? (
-                    <motion.div
-                      key="more-backdrop"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.18 }}
-                      className="fixed inset-0 z-[55] bg-black/50 backdrop-blur-[2px]"
-                      aria-hidden
-                      onClick={closeMore}
-                    />
-                  ) : null}
-                  {moreOpen ? (
-                    <BottomNavMorePanel key="more-panel" pathname={pathname} items={BOTTOM_NAV_MORE_MENU} onNavigate={closeMore} onClose={closeMore} />
-                  ) : null}
-                </AnimatePresence>
-                <button
-                  data-raw-button-ok="a bottom-nav tab: same box as its sibling link tabs"
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setMoreOpen((v) => !v)
-                  }}
-                  className={cn(TAB, moreOpen || moreActive ? TAB_ON : TAB_OFF)}
-                  aria-expanded={moreOpen}
-                  aria-haspopup="true"
-                >
-                  <item.icon className="size-6" strokeWidth={1.75} />
-                  <span className="text-[10.5px]">{t.nav[item.label as keyof Dictionary['nav']]}</span>
-                </button>
-              </div>
-            )
-          }
-
-          const isActive = item.href === '/flow' ? FLOW_PATHS.has(pathname) : pathname === item.href
+          const isActive = BOTTOM_NAV_TAB_PATHS[item.href]?.has(pathname) ?? false
           return (
             <div key={item.href} className="flex justify-center">
-              <Link href={item.href} onClick={closeMore} className={cn(TAB, isActive ? TAB_ON : TAB_OFF)}>
+              <Link href={item.href} className={cn(TAB, isActive ? TAB_ON : TAB_OFF)}>
                 <item.icon className={cn('size-6', isActive && 'text-[var(--color-brand-primary)]')} strokeWidth={1.75} />
                 <span className="text-[10.5px]">{t.nav[item.label as keyof Dictionary['nav']]}</span>
               </Link>

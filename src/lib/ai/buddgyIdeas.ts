@@ -13,7 +13,7 @@ const SCREEN_PREFIX: [string, BuddgyScreen][] = [
 ]
 
 export function screenFromPath(pathname: string): BuddgyScreen {
-  if (pathname === '/') return 'dashboard'
+  if (pathname === '/') return 'expenses'
   return SCREEN_PREFIX.find(([p]) => pathname.startsWith(p))?.[1] ?? 'other'
 }
 

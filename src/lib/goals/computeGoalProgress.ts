@@ -50,7 +50,7 @@ export function computeGoalProgress(goal: Goal, ctx: GoalProgressContext): numbe
       ctx.expenses,
       ctx.monthFilter,
       ctx.monthStartDay
-    )
+    ).filter((e) => !goal.spendingCategory || e.category === goal.spendingCategory)
     const totalBase = monthExpenses.reduce(
       (s, e) => s + expenseAmountInBase(e, ctx.baseCurrency, ctx.exchangeRates),
       0

@@ -174,6 +174,7 @@ export interface Dictionary {
     debts: string
     reports: string
     subscriptions: string
+    goals: string
     home: string
     flow: string
     paydays: string
@@ -1278,6 +1279,11 @@ export interface Dictionary {
     totalPlanned: string
     projectedSavings: string
     projectedSavingsLine: (amount: string, savingsRatePercent: number) => string
+    committedTitle: string
+    committedEmpty: string
+    committedLine: (count: number, perMonth: string) => string
+    committedNext: (name: string, date: string) => string
+    spentOfPlanned: (spent: string, planned: string) => string
     /** Short label on budget planner rows that are savings allocation, not spending. */
     savingsAllocationBadge: string
     aiEvalTitle: string
@@ -1813,6 +1819,8 @@ export interface Dictionary {
     goalName: string
     currency: string
     monthlyLimit: string
+    spendingCategory: string
+    allSpending: string
     nextStep: string
     createAccountHint: string
     createAccountPlaceholder: string

@@ -812,6 +812,8 @@ export interface Goal {
   linkedSavingsAccountIds: string[]
   linkedDebtIds: string[]
   monthlySpendingLimit: number | null
+  /** spending_control only: the category the limit applies to; null = all spending. */
+  spendingCategory?: ExpenseCategory | null
   priority: number
   status: GoalStatus
   monthlyContribution: number | null

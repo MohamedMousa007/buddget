@@ -627,6 +627,7 @@ export type Database = {
           manual_current_amount: number
           monthly_contribution: number | null
           monthly_spending_limit: number | null
+          spending_category: string | null
           name: string
           notes: string | null
           priority: number
@@ -649,6 +650,7 @@ export type Database = {
           manual_current_amount?: number
           monthly_contribution?: number | null
           monthly_spending_limit?: number | null
+          spending_category?: string | null
           name: string
           notes?: string | null
           priority?: number
@@ -671,6 +673,7 @@ export type Database = {
           manual_current_amount?: number
           monthly_contribution?: number | null
           monthly_spending_limit?: number | null
+          spending_category?: string | null
           name?: string
           notes?: string | null
           priority?: number

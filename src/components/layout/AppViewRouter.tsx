@@ -7,7 +7,6 @@ import { useNavPath } from '@/lib/navigation/navStore'
 // navigation is then a synchronous component swap with zero network fetch,
 // which is what makes the App Router segment-fetch wedge structurally
 // impossible. Keep keys in sync with `SHELL_PATHS`.
-import DashboardPage from '@/app/page'
 import FlowPage from '@/app/flow/page'
 import PaydaysPage from '@/app/paydays/page'
 import DebtsPage from '@/app/debts/page'
@@ -27,7 +26,7 @@ import SettingsDataPage from '@/app/settings/data/page'
 import SettingsSmsPage from '@/app/settings/sms/page'
 
 const VIEW_MAP: Record<string, ComponentType> = {
-  '/': DashboardPage,
+  '/': FlowPage,
   '/flow': FlowPage,
   // Expenses and Income collapsed into Flow; both paths still resolve.
   '/expenses': FlowPage,

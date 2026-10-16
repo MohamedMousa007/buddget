@@ -1008,6 +1008,7 @@ export const useFinanceStore = create<FinanceStore>()(
             linkedSavingsAccountIds: input.linkedSavingsAccountIds ?? [],
             linkedDebtIds: input.linkedDebtIds ?? [],
             monthlySpendingLimit: input.monthlySpendingLimit ?? null,
+            spendingCategory: input.spendingCategory ?? null,
             notes: input.notes ?? null,
             targetDate: input.targetDate ?? null,
             monthlyContribution: input.monthlyContribution ?? null,

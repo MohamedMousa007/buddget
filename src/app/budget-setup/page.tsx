@@ -2,11 +2,14 @@
 
 import { useRef, useEffect } from 'react'
 import { BudgetPlannerSummary } from '@/components/features/budget-planner/BudgetPlannerSummary'
+import { GoalLensList } from '@/components/features/goals/GoalLensList'
+import { BudgetCommittedCard } from '@/components/features/budget-planner/BudgetCommittedCard'
 import { BudgetPlannerCategories } from '@/components/features/budget-planner/BudgetPlannerCategories'
 import { BudgetSetupNoPlansEmpty } from '@/components/features/budget-planner/BudgetSetupNoPlansEmpty'
 import { BudgetSetupPlanToolbar } from '@/components/features/budget-planner/BudgetSetupPlanToolbar'
 import { AddIncomeSheet } from '@/components/modals/AddIncomeSheet'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useBudgetSetupPage } from '@/hooks/useBudgetSetupPage'
 import { useHydrateBudget, useHydrateIncome, useHydrateExpenses } from '@/hooks/remote'
 import { Button } from '@/components/ui/button'
@@ -19,6 +22,7 @@ export default function BudgetSetupPage() {
   useHydrateIncome()
   useHydrateExpenses()
   const p = useBudgetSetupPage()
+  const { totalSpentExcludingSavings } = useMonthlyStats()
   const { t } = p
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
   const planNameInputRef = useRef<HTMLInputElement>(null)
@@ -93,11 +97,15 @@ export default function BudgetSetupPage() {
               </div>
             )}
 
+            <BudgetCommittedCard />
+            <GoalLensList categories={['spending_control']} />
+
             {p.budgetPlans.length > 0 && (
               <>
                 <BudgetPlannerSummary
                   totalIncome={p.totalIncome}
                   totalPlanned={p.totalPlanned}
+                  spent={totalSpentExcludingSavings}
                   projectedSavings={p.projectedSavings}
                   currency={p.settings.baseCurrency}
                   hasIncome={hasIncome}
@@ -107,6 +115,7 @@ export default function BudgetSetupPage() {
                     totalPlanned: t.budgetPlanner.totalPlanned,
                     projectedSavings: t.budgetPlanner.projectedSavings,
                     projectedSavingsLine: t.budgetPlanner.projectedSavingsLine,
+                    spentOfPlanned: t.budgetPlanner.spentOfPlanned,
                   }}
                 />
 

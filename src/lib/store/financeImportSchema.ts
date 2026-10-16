@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { ExpenseCategory } from '@/lib/store/types'
 
 const GCC_FIATS = [
   'KWD',
@@ -498,6 +499,7 @@ export const importDataSchema = z.object({
         linkedSavingsAccountIds: z.array(z.string()),
         linkedDebtIds: z.array(z.string()),
         monthlySpendingLimit: z.number().nullable(),
+        spendingCategory: z.custom<ExpenseCategory>((v) => v == null || typeof v === 'string').nullable().optional(),
         priority: z.number(),
         status: z.enum(['active', 'achieved', 'paused', 'cancelled']),
         monthlyContribution: z.number().nullable(),

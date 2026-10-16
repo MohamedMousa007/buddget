@@ -16,6 +16,7 @@ import type {
   Debt,
   DebtPayment,
   Expense,
+  ExpenseCategory,
   Goal,
   GoalCategory,
   IncomeSource,
@@ -50,6 +51,7 @@ function buildInitialFields(
   targetDate: string
   monthlyContribution: string
   monthlySpendingLimit: string
+  spendingCategory: string
   manualCurrentAmount: string
   linkedSavingsAccountIds: string[]
   linkedDebtIds: string[]
@@ -75,6 +77,7 @@ function buildInitialFields(
         editingGoal.monthlySpendingLimit !== null && editingGoal.monthlySpendingLimit !== undefined
           ? String(editingGoal.monthlySpendingLimit)
           : '',
+      spendingCategory: editingGoal.spendingCategory ?? '',
       manualCurrentAmount: String(editingGoal.manualCurrentAmount ?? 0),
       linkedSavingsAccountIds: editingGoal.linkedSavingsAccountIds ?? [],
       linkedDebtIds: editingGoal.linkedDebtIds ?? [],
@@ -92,6 +95,7 @@ function buildInitialFields(
     targetDate: '',
     monthlyContribution: '',
     monthlySpendingLimit: '',
+    spendingCategory: '',
     manualCurrentAmount: '0',
     linkedSavingsAccountIds: [],
     linkedDebtIds: [],
@@ -155,6 +159,7 @@ export function useAddGoalForm(editingGoal: Goal | null, onDone: () => void) {
   const [targetDate, setTargetDate] = useState(init.targetDate)
   const [monthlyContribution, setMonthlyContribution] = useState(init.monthlyContribution)
   const [monthlySpendingLimit, setMonthlySpendingLimit] = useState(init.monthlySpendingLimit)
+  const [spendingCategory, setSpendingCategory] = useState(init.spendingCategory)
   const [manualCurrentAmount, setManualCurrentAmount] = useState(init.manualCurrentAmount)
   const [linkedSavingsAccountIds, setLinkedSavingsAccountIds] = useState(init.linkedSavingsAccountIds)
   const [linkedDebtIds, setLinkedDebtIds] = useState(init.linkedDebtIds)
@@ -257,6 +262,8 @@ export function useAddGoalForm(editingGoal: Goal | null, onDone: () => void) {
       monthlyContribution: Number.isFinite(mc) && mc > 0 ? mc : null,
       monthlySpendingLimit:
         category === 'spending_control' && Number.isFinite(ms) && ms > 0 ? ms : null,
+      spendingCategory:
+        category === 'spending_control' && spendingCategory ? (spendingCategory as ExpenseCategory) : null,
       manualCurrentAmount: Number.isFinite(man) ? man : 0,
       linkedSavingsAccountIds: linkedSav,
       linkedDebtIds: category === 'debt_freedom' ? linkedDebtIds : [],
@@ -284,6 +291,7 @@ export function useAddGoalForm(editingGoal: Goal | null, onDone: () => void) {
     manualCurrentAmount,
     monthlyContribution,
     monthlySpendingLimit,
+    spendingCategory,
     name,
     newAccountName,
     notes,
@@ -321,6 +329,8 @@ export function useAddGoalForm(editingGoal: Goal | null, onDone: () => void) {
     setMonthlyContribution,
     monthlySpendingLimit,
     setMonthlySpendingLimit,
+    spendingCategory,
+    setSpendingCategory,
     manualCurrentAmount,
     setManualCurrentAmount,
     linkedSavingsAccountIds,

@@ -1,6 +1,6 @@
 'use client'
 
-import { User, Shield, Palette, Globe, MessageSquare, Database, Target, RefreshCw, FileText, Bug, Sparkles } from 'lucide-react'
+import { User, Shield, Palette, Globe, MessageSquare, Database, FileText, Bug, Sparkles } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -102,8 +102,6 @@ export default function SettingsPage() {
         {/* More */}
         <SectionHeader label={t.settings.hub.sectionMore} />
         <SectionCard>
-          <SettingsRow icon={Target} title={t.settings.hub.goals} subtitle={t.settings.hub.goalsSubtitle} href="/goals" />
-          <SettingsRow icon={RefreshCw} title={t.settings.hub.subscriptions} subtitle={t.settings.hub.subscriptionsSubtitle} href="/subscriptions" />
           <SettingsRow icon={Bug} title={t.settings.hub.feedback} subtitle={t.settings.hub.feedbackSubtitle} href="/settings/feedback" />
         </SectionCard>
 

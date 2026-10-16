@@ -257,7 +257,7 @@ export const en: Dictionary = {
 
   nav: {
     dashboard: 'Dashboard',
-    budgetSetup: 'Budget Setup',
+    budgetSetup: 'Budget',
     expenses: 'Expenses',
     income: 'Income',
     savings: 'Savings',
@@ -266,6 +266,7 @@ export const en: Dictionary = {
     debts: 'Debts',
     reports: 'Reports',
     subscriptions: 'Subscriptions',
+    goals: 'Goals',
     home: 'Home',
     flow: 'Flow',
     paydays: 'Paydays',
@@ -1396,6 +1397,11 @@ export const en: Dictionary = {
     projectedSavings: 'Projected savings',
     projectedSavingsLine: (amount, savingsRatePercent) =>
       `If you stick to this plan, you'll save ${amount} this month (${savingsRatePercent}% of income)`,
+    committedTitle: 'Committed',
+    committedEmpty: 'No subscriptions yet',
+    committedLine: (count, perMonth) => `${perMonth}/mo across ${count} subscription${count === 1 ? '' : 's'}`,
+    committedNext: (name, date) => `Next: ${name} · ${date}`,
+    spentOfPlanned: (spent, planned) => `Spent ${spent} of ${planned} planned`,
     savingsAllocationBadge: 'Savings',
     aiEvalTitle: "Buddgy's take",
     aiEvalLoading: 'Reviewing your plan…',
@@ -1935,6 +1941,8 @@ export const en: Dictionary = {
     goalName: 'Goal name',
     currency: 'Currency',
     monthlyLimit: 'Monthly spending limit',
+    spendingCategory: 'Applies to',
+    allSpending: 'All spending',
     nextStep: 'Continue',
     createAccountHint: 'Create a new savings account (optional)',
     createAccountPlaceholder: 'e.g. House Fund',

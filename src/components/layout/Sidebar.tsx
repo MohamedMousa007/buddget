@@ -3,12 +3,10 @@
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { useNavPath } from '@/lib/navigation/navStore'
 import {
-  LayoutDashboard,
   SlidersHorizontal,
   Landmark,
   BarChart3,
   HandCoins,
-  CalendarClock,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useShallow } from 'zustand/react/shallow'
@@ -24,10 +22,8 @@ export function Sidebar() {
   const { locale } = useLocale()
 
   const NAV_ITEMS = [
-    { href: '/', label: t.nav.dashboard, icon: LayoutDashboard },
-    { href: '/budget-setup', label: t.nav.budgetSetup, icon: SlidersHorizontal },
     { href: '/flow', label: t.nav.flow, icon: FlowTabIcon },
-    { href: '/paydays', label: t.nav.paydays, icon: CalendarClock },
+    { href: '/budget-setup', label: t.nav.budgetSetup, icon: SlidersHorizontal },
     { href: '/wealth', label: t.nav.wealth, icon: HandCoins },
     { href: '/debts', label: t.nav.debts, icon: Landmark },
     { href: '/reports', label: t.nav.reports, icon: BarChart3 },
@@ -38,7 +34,7 @@ export function Sidebar() {
   return (
     <aside className="hidden lg:flex flex-col w-44 h-screen bg-[var(--color-brand-card)] border-e border-[var(--color-brand-border)] fixed start-0 top-0 z-40 overflow-hidden">
       <div className="p-4">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/flow" className="flex items-center gap-2">
           <BuddgetWordmark height={24} />
         </Link>
       </div>
@@ -53,7 +49,7 @@ export function Sidebar() {
 
       <nav className="flex-1 min-h-0 overflow-y-auto px-3 space-y-1">
         {NAV_ITEMS.map((item) => {
-          const isActive = pathname === item.href
+          const isActive = (item.href === '/flow' ? pathname === '/' : false) || pathname === item.href
           return (
             <Link
               key={item.href}

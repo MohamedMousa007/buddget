@@ -1,5 +1,6 @@
 'use client'
 
+import { GoalLensList } from '@/components/features/goals/GoalLensList'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CreditCard, Layers, HandCoins } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
@@ -116,6 +117,10 @@ export default function DebtsPage() {
           counts={data.counts}
           onAddDebt={guardNew}
         />
+
+        <div className="mt-4">
+          <GoalLensList categories={['debt_freedom']} />
+        </div>
 
         <div className="mt-5">
           <DebtFamilyTabs active={tab} onChange={changeTab} />
