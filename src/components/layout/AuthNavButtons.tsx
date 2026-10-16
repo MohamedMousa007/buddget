@@ -16,6 +16,8 @@ import { NotificationInbox } from '@/components/notifications/NotificationInbox'
 import { isNative } from '@/lib/native/isNative'
 import { IconButton } from '@/components/ui/IconButton'
 import { Button } from '@/components/ui/button'
+import { ProgressRing } from '@/components/ui/ProgressRing'
+import { useSetupProgress } from '@/hooks/useSetupProgress'
 
 /** The avatar that opens ProfileDropdown — the mobile header's, and Flow's own header's. */
 export function ProfileAvatarWithMenu({ className }: { className?: string }) {
@@ -27,29 +29,49 @@ export function ProfileAvatarWithMenu({ className }: { className?: string }) {
   const profile = useFinanceStore(useShallow((s) => s.profile))
   const src =
     configured && !user ? null : resolveProfileAvatarSrc(profile)
+  const { pct, hasTransaction } = useSetupProgress()
+  const setupActive = hasTransaction && pct < 100
 
   return (
     <div ref={containerRef} className="relative">
-      <IconButton
-        onClick={() => setOpen((v) => !v)}
-        variant="tinted"
-        size="sm"
-        shape="round"
+      <span
         className={cn(
-          'size-9 overflow-hidden border-[var(--color-brand-border)] hover:ring-2 hover:ring-[var(--color-brand-primary)]/40',
-          className
+          'relative inline-flex size-11 items-center justify-center rounded-full',
+          setupActive && 'shadow-[0_0_0_3px_color-mix(in_oklab,var(--color-brand-primary)_14%,transparent)]'
         )}
-        aria-label={t.nav.profileMenu}
-        aria-expanded={open}
-        aria-haspopup="menu"
       >
-        {src ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={src} alt="" className="w-full h-full object-cover" width={36} height={36} />
-        ) : (
-          <User className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
-        )}
-      </IconButton>
+        {setupActive ? (
+          <ProgressRing
+            pct={pct}
+            size={44}
+            stroke={3}
+            track="var(--color-brand-border-strong)"
+            arc="var(--color-brand-primary)"
+            className="pointer-events-none absolute inset-0"
+          />
+        ) : null}
+        <IconButton
+          onClick={() => setOpen((v) => !v)}
+          variant="tinted"
+          size="sm"
+          shape="round"
+          className={cn(
+            'size-9 overflow-hidden hover:ring-2 hover:ring-[var(--color-brand-primary)]/40',
+            setupActive ? 'border-transparent' : 'border-[var(--color-brand-border-strong)]',
+            className
+          )}
+          aria-label={t.nav.profileMenu}
+          aria-expanded={open}
+          aria-haspopup="menu"
+        >
+          {src ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={src} alt="" className="w-full h-full object-cover" width={36} height={36} />
+          ) : (
+            <User className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
+          )}
+        </IconButton>
+      </span>
       <ProfileDropdown open={open} onClose={() => setOpen(false)} containerRef={containerRef} />
     </div>
   )

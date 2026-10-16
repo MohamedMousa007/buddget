@@ -3,15 +3,13 @@
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { format, isWithinInterval, parseISO } from 'date-fns'
-import { Check, CreditCard as CardIcon, Layers, HandCoins, Plus } from 'lucide-react'
+import { ArrowLeftRight, CalendarClock, Check, CircleCheck, CreditCard as CardIcon, Landmark, Layers, HandCoins, Plus } from 'lucide-react'
 import { SwipeToDelete, type SwipeSide } from '@/components/expenses/SwipeToDelete'
 import { TransactionRow } from '@/components/transactions/TransactionRow'
 import { FlowChipRow, type FlowChip } from '@/components/features/flow/FlowChipRow'
-import { ModalShell } from '@/components/modals/ModalShell'
-import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
+import { DateRangeField, Divider, FilterSheet, SectionHead } from '@/components/expenses/ExpenseFilters'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { Button } from '@/components/ui/button'
-import { DatePickerField } from '@/components/ui/DatePickerField'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -29,7 +27,7 @@ const FAMILY_ICON: Record<DebtFamily, typeof Check> = {
 }
 
 type MoveKind = 'paid' | 'added'
-type RangeKey = 'any' | Exclude<RangePreset, 'today' | 'yesterday'>
+type RangeKey = RangePreset | 'any'
 
 interface Move {
   id: string
@@ -54,7 +52,17 @@ interface MoveFilters {
 const NO_FILTERS: MoveFilters = { kind: 'all', family: null, debtId: null, range: 'any', from: '', to: '' }
 
 /** Recent moves across every debt: payments and new debts, day-grouped, filterable like Flow. */
-export function DebtPaymentsFeed({ payments }: { payments: PaymentVM[]; currentFamily?: DebtFamily }) {
+export function DebtPaymentsFeed({
+  payments,
+  completedCount = 0,
+  onOpenCompleted,
+}: {
+  payments: PaymentVM[]
+  currentFamily?: DebtFamily
+  /** Cleared debts; shows the Completed debts pill beside the title when > 0. */
+  completedCount?: number
+  onOpenCompleted?: () => void
+}) {
   const t = useT()
   const td = t.debts
   const tm = t.debtMoves
@@ -115,7 +123,7 @@ export function DebtPaymentsFeed({ payments }: { payments: PaymentVM[]; currentF
   if (moves.length === 0) return null
 
   const patch = (p: Partial<MoveFilters>) => setFilters((f) => ({ ...f, ...p }))
-  const rangeLabel: Record<RangeKey, string> = { any: tm.anyTime, week: tm.thisWeek, month: tm.thisMonth, custom: tm.custom }
+  const rangeLabel: Record<RangeKey, string> = { any: tm.anyTime, today: t.common.today, yesterday: t.common.yesterday, week: tm.thisWeek, month: tm.thisMonth, custom: tm.custom }
   const debtName = (id: string) => debts.find((d) => d.id === id)?.name ?? ''
   const chips: FlowChip[] = [
     filters.kind !== 'all' && { key: 'kind', label: filters.kind === 'paid' ? tm.movePaid : tm.moveAdded, selected: true, onPress: () => patch({ kind: 'all' }) },
@@ -125,12 +133,20 @@ export function DebtPaymentsFeed({ payments }: { payments: PaymentVM[]; currentF
   ].filter(Boolean) as FlowChip[]
   const filterCount = chips.length
 
+  const todayIso = format(new Date(), 'yyyy-MM-dd')
   const familyDebts = debts.filter((d) => !filters.family || debtFamily(d) === filters.family)
 
   return (
     <div className="mt-6">
-      <div className="px-[18px]">
+      <div className="flex items-center justify-between gap-2 px-[18px]">
         <h2 className="text-[17px] font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{tm.title}</h2>
+        {completedCount > 0 && onOpenCompleted ? (
+          <Button variant="outline" size="touch" className="rounded-full border-[var(--color-brand-green)]/40 bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]" onClick={onOpenCompleted}>
+            <CircleCheck aria-hidden />
+            {t.debts.heroCompletedPill}
+            <span className="font-mono-numbers">{completedCount}</span>
+          </Button>
+        ) : null}
       </div>
       <FlowChipRow filterCount={filterCount} onOpenFilters={() => setSheetOpen(true)} chips={chips} />
 
@@ -196,10 +212,38 @@ export function DebtPaymentsFeed({ payments }: { payments: PaymentVM[]; currentF
         ))}
       </div>
 
-      <ModalShell open={sheetOpen} onBackdropClick={() => setSheetOpen(false)} padContent>
-        <ModalSheetHeader title={tm.sheetTitle} onClose={() => setSheetOpen(false)} />
-        <div className="flex flex-col gap-5 pb-2">
-          <Section label={tm.moveType}>
+      <FilterSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        footer={
+          <Button size="cta-block" onClick={() => setSheetOpen(false)}>
+            {t.expenses.showResults.replace('{count}', String(shown.length))}
+          </Button>
+        }
+      >
+        <div className="flex flex-col gap-5">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-lg font-bold text-[var(--color-brand-text-primary)]">{t.expenses.filtersTitle}</h3>
+            <Button variant="link" size="touch" onClick={() => setFilters(NO_FILTERS)}>
+              {t.expenses.resetAll}
+            </Button>
+          </div>
+
+          <div className="flex flex-col gap-2.5">
+            <SectionHead icon={CalendarClock} label={tm.dateRange} />
+            <DateRangeField
+              preset={filters.range}
+              from={filters.from || todayIso}
+              to={filters.to || todayIso}
+              anyLabel={tm.anyTime}
+              onPreset={(range) => patch({ range, ...(range === 'custom' ? { from: filters.from || todayIso, to: filters.to || todayIso } : {}) })}
+              onRange={(from, to) => patch({ from, to })}
+            />
+          </div>
+          <Divider />
+
+          <div className="flex flex-col gap-2.5">
+            <SectionHead icon={ArrowLeftRight} label={tm.moveType} />
             <SegmentedControl
               ariaLabel={tm.moveType}
               value={filters.kind}
@@ -210,61 +254,39 @@ export function DebtPaymentsFeed({ payments }: { payments: PaymentVM[]; currentF
                 { value: 'added', label: tm.moveAdded },
               ]}
             />
-          </Section>
-          <Section label={tm.debtType}>
-            <div className="flex flex-wrap gap-2">
-              {DEBT_FAMILY_ORDER.map((f) => (
-                <OptionChip key={f} selected={filters.family === f} onClick={() => patch({ family: filters.family === f ? null : f, debtId: null })}>
-                  {familyLabel[f]}
-                </OptionChip>
-              ))}
-            </div>
-          </Section>
-          {familyDebts.length > 1 ? (
-            <Section label={tm.debt}>
-              <div className="flex flex-wrap gap-2">
-                {familyDebts.map((d) => (
-                  <OptionChip key={d.id} selected={filters.debtId === d.id} onClick={() => patch({ debtId: filters.debtId === d.id ? null : d.id })}>
-                    {d.name || d.person}
-                  </OptionChip>
-                ))}
-              </div>
-            </Section>
-          ) : null}
-          <Section label={tm.dateRange}>
-            <div className="flex flex-wrap gap-2">
-              {(['any', 'week', 'month', 'custom'] as const).map((r) => (
-                <OptionChip key={r} selected={filters.range === r} onClick={() => patch({ range: r })}>
-                  {rangeLabel[r]}
-                </OptionChip>
-              ))}
-            </div>
-            {filters.range === 'custom' ? (
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                <DatePickerField value={filters.from} onChange={(from) => patch({ from })} placeholder={tm.from} />
-                <DatePickerField value={filters.to} onChange={(to) => patch({ to })} placeholder={tm.to} />
-              </div>
-            ) : null}
-          </Section>
-          <div className="flex gap-3">
-            <Button variant="outline" size="cta" className="flex-1" onClick={() => setFilters(NO_FILTERS)}>
-              {tm.clear}
-            </Button>
-            <Button size="cta" className="flex-1" onClick={() => setSheetOpen(false)}>
-              {tm.done}
-            </Button>
           </div>
-        </div>
-      </ModalShell>
-    </div>
-  )
-}
+          <Divider />
 
-function Section({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{label}</p>
-      {children}
+          <div className="flex flex-col gap-2.5">
+            <SectionHead icon={Layers} label={tm.debtType} />
+            <SegmentedControl
+              ariaLabel={tm.debtType}
+              value={filters.family ?? 'all'}
+              onChange={(v) => patch({ family: v === 'all' ? null : v, debtId: null })}
+              options={[
+                { value: 'all', label: tm.moveAll },
+                ...DEBT_FAMILY_ORDER.map((f) => ({ value: f, label: familyLabel[f] })),
+              ]}
+            />
+          </div>
+
+          {familyDebts.length > 1 ? (
+            <>
+              <Divider />
+              <div className="flex flex-col gap-2.5">
+                <SectionHead icon={Landmark} label={tm.debt} />
+                <div className="flex flex-wrap gap-2">
+                  {familyDebts.map((d) => (
+                    <OptionChip key={d.id} selected={filters.debtId === d.id} onClick={() => patch({ debtId: filters.debtId === d.id ? null : d.id })}>
+                      {d.name || d.person}
+                    </OptionChip>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : null}
+        </div>
+      </FilterSheet>
     </div>
   )
 }

@@ -184,7 +184,7 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
             <div className="min-w-0 flex-1">
               <AmountField value={lengthStr} onChange={(v) => changeLength(v, unit, frequency)} mode="decimal" placeholder="12" />
             </div>
-            <SegmentedControl<PlanLengthUnit> fill={false} options={unitOptions} value={unit} onChange={changeUnit} ariaLabel={t.fPlanLength} className="h-[52px] shrink-0" />
+            <SegmentedControl<PlanLengthUnit> fill={false} options={unitOptions} value={unit} onChange={changeUnit} ariaLabel={t.fPlanLength} size="field" className="shrink-0" />
           </div>
         </div>
       )}

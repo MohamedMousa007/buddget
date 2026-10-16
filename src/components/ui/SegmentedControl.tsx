@@ -22,6 +22,8 @@ export interface SegmentedControlProps<T extends string> {
   fill?: boolean
   /** Accessible name for the group, e.g. "Filter by direction". */
   ariaLabel: string
+  /** `field` matches a 52px AmountField it sits beside (e.g. amount + unit); default is the 44px bar. */
+  size?: 'default' | 'field'
   className?: string
 }
 
@@ -43,6 +45,7 @@ export function SegmentedControl<T extends string>({
   onChange,
   fill = true,
   ariaLabel,
+  size = 'default',
   className,
 }: SegmentedControlProps<T>) {
   const move = (dir: 1 | -1) => {
@@ -61,7 +64,8 @@ export function SegmentedControl<T extends string>({
         if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); move(-1) }
       }}
       className={cn(
-        'inline-flex gap-0.5 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-[3px]',
+        'inline-flex gap-0.5 border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-[3px]',
+        size === 'field' ? 'h-[52px] rounded-[14px]' : 'rounded-xl',
         fill && 'w-full',
         className,
       )}
@@ -80,7 +84,8 @@ export function SegmentedControl<T extends string>({
             className={cn(
               // h-9 inside a 3px-padded 44px-tall track keeps the whole control
               // on the 44px tap minimum without each segment looking oversized.
-              'inline-flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-[9px] px-4 text-[13.5px] font-semibold transition-colors outline-none',
+              'inline-flex min-w-0 items-center justify-center gap-1.5 px-4 text-[13.5px] font-semibold transition-colors outline-none',
+              size === 'field' ? 'h-full rounded-[11px]' : 'h-9 rounded-[9px]',
               'focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]/55',
               fill && 'flex-1',
               selected

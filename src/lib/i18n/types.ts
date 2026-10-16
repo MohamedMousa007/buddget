@@ -981,17 +981,22 @@ export interface Dictionary {
     heroBorrowedTotal: (x: string) => string
     heroDebtFree: string
     heroNext: string
-    heroDueMonth: string
-    heroPaidMonth: string
-    heroNoPayment: string
+    heroMonth: string
+    heroMonthHint: string
+    heroDebtFreeBy: string
+    heroDebtFreeSince: string
+    heroOnSchedule: string
+    heroWithoutPlan: (n: number) => string
+    heroFirstWinLands: string
+    heroKeepItUp: string
+    heroClearedPct: (pct: number) => string
+    heroPaidOfTotal: (paid: string, total: string) => string
     heroSetPlan: string
     heroNothingDue: string
     heroNothingPaid: string
-    heroPaymentsScheduled: (n: number) => string
     heroCompletedPill: string
     heroNoDebtsCleared: string
     heroFirstWin: string
-    heroKeepGoing: string
     tabBorrow: string
     tabCards: string
     tabInstallments: string
@@ -2546,6 +2551,7 @@ export interface Dictionary {
     expenseTitle: string
     expenseBody: string
     chipAria: (pct: number) => string
+    chipLabel: string
   }
   status: {
     offlinePending: (n: number) => string

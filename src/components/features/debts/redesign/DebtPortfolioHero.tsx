@@ -1,10 +1,10 @@
 'use client'
 
 import { format } from 'date-fns'
-import { CircleCheck } from 'lucide-react'
 import { FLOW_BAND_BG } from '@/components/features/flow/FlowSummaryBand'
-import { Button } from '@/components/ui/button'
 import { ProgressRing } from '@/components/ui/ProgressRing'
+import { Progress, ProgressIndicator, ProgressTrack } from '@/components/ui/progress'
+import { monthProgress } from '@/lib/debts/heroStats'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { ScheduledPaymentVM } from '@/hooks/useDebtTabData'
@@ -19,13 +19,17 @@ export interface DebtPortfolioHeroProps {
   /** Active (not cleared) debts across every family. */
   activeCount: number
   nextPayment: ScheduledPaymentVM | null
+  /** Still due this month (scheduled, unpaid). */
   dueThisMonth: number
-  scheduledThisMonth: number
   paidThisMonth: number
+  /** Latest projected final payment across planned non-card debts. */
+  debtFreeDate: Date | null
+  /** Active non-card debts with no schedule or payoff goal. */
+  unplannedCount: number
+  lastClearedAt: Date | null
   /** Lifetime repaid, shown when nothing is active. */
   paidOff: number
   clearedCount: number
-  onOpenCleared: () => void
 }
 
 const FG2 = 'text-[var(--flow-band-fg-2)]'
@@ -35,6 +39,8 @@ interface Cell {
   label: string
   value: string
   sub: string
+  /** 0-100 progress bar; null reserves the row without drawing it. */
+  bar: number | null
 }
 
 /** Debts band: same teal band and stats strip as Flow; the ring shows how much is already cleared. Fixed height in every state. */
@@ -47,35 +53,50 @@ export function DebtPortfolioHero({
   activeCount,
   nextPayment,
   dueThisMonth,
-  scheduledThisMonth,
+  debtFreeDate,
+  unplannedCount,
+  lastClearedAt,
   paidThisMonth,
   paidOff,
   clearedCount,
-  onOpenCleared,
 }: DebtPortfolioHeroProps) {
   const t = useT().debts
   const money = (n: number) => `${fmtWhole(n)} ${base}`
   const dash = '—'
 
+  const compact = (n: number) => new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(n)
+  const month = monthProgress(paidThisMonth, dueThisMonth)
+  const monthCell: Cell =
+    dueThisMonth > 0
+      ? { label: t.heroMonth, value: `${compact(month.paid)} / ${compact(month.total)}`, sub: t.heroMonthHint, bar: month.pct }
+      : { label: t.heroMonth, value: paidThisMonth > 0 ? money(paidThisMonth) : dash, sub: t.heroNothingDue, bar: null }
+
   const cells: Cell[] =
     activeCount === 0
       ? [
-          { label: t.statDebtsCleared, value: clearedCount > 0 ? String(clearedCount) : dash, sub: clearedCount > 0 ? t.heroKeepGoing : t.heroNoDebtsCleared },
-          { label: t.statTotalPaidOff, value: paidOff > 0 ? money(paidOff) : dash, sub: paidOff > 0 ? t.heroFirstWin : t.heroNothingPaid },
-          { label: t.heroPaidMonth, value: paidThisMonth > 0 ? money(paidThisMonth) : dash, sub: paidThisMonth > 0 ? t.heroKeepGoing : t.heroNothingPaid },
+          { label: t.statDebtsCleared, value: clearedCount > 0 ? String(clearedCount) : dash, sub: clearedCount > 0 ? t.heroKeepItUp : t.heroNoDebtsCleared, bar: null },
+          { label: t.statTotalPaidOff, value: paidOff > 0 ? money(paidOff) : dash, sub: paidOff > 0 ? t.heroFirstWin : t.heroNothingPaid, bar: null },
+          {
+            label: t.heroDebtFreeSince,
+            value: lastClearedAt ? format(lastClearedAt, 'MMM yyyy') : dash,
+            sub: lastClearedAt ? t.heroKeepItUp : t.heroFirstWinLands,
+            bar: null,
+          },
         ]
       : [
           {
             label: t.heroNext,
             value: nextPayment ? money(nextPayment.amount) : dash,
             sub: nextPayment ? `${format(nextPayment.date, 'MMM d')} · ${nextPayment.name}` : t.heroSetPlan,
+            bar: null,
           },
+          monthCell,
           {
-            label: t.heroDueMonth,
-            value: dueThisMonth > 0 ? money(dueThisMonth) : dash,
-            sub: dueThisMonth > 0 ? t.heroPaymentsScheduled(scheduledThisMonth) : t.heroNothingDue,
+            label: t.heroDebtFreeBy,
+            value: debtFreeDate ? format(debtFreeDate, 'MMM yyyy') : dash,
+            sub: !debtFreeDate ? t.heroSetPlan : unplannedCount > 0 ? t.heroWithoutPlan(unplannedCount) : t.heroOnSchedule,
+            bar: null,
           },
-          { label: t.heroPaidMonth, value: paidThisMonth > 0 ? money(paidThisMonth) : dash, sub: paidThisMonth > 0 ? t.heroKeepGoing : t.heroNothingPaid },
         ]
 
   return (
@@ -96,20 +117,17 @@ export function DebtPortfolioHero({
               {borrowedTotal > 0 && activeCount > 0 ? t.heroBorrowedTotal(money(borrowedTotal)) : t.heroDebtFree}
             </p>
           </div>
-          <div className="flex shrink-0 flex-col items-end gap-2">
-            {borrowedTotal > 0 && activeCount > 0 ? (
+          {borrowedTotal > 0 && activeCount > 0 ? (
+            <div className="flex shrink-0 flex-col items-end gap-1.5">
               <ProgressRing pct={clearedPct} track={MIX} arc="var(--flow-band-fg)">
                 <span className="font-mono-numbers text-[14px] font-bold text-[var(--flow-band-fg)]">{clearedPct}%</span>
               </ProgressRing>
-            ) : null}
-            {clearedCount > 0 ? (
-              <Button variant="onBand" size="touch" className="rounded-full whitespace-nowrap" onClick={onOpenCleared}>
-                <CircleCheck aria-hidden />
-                {t.heroCompletedPill}
-                <span className="font-mono-numbers">{clearedCount}</span>
-              </Button>
-            ) : null}
-          </div>
+              <div className="text-end">
+                <p className="text-[12px] font-semibold">{t.heroClearedPct(clearedPct)}</p>
+                <p className={`mt-0.5 font-mono-numbers text-[11px] ${FG2}`}>{t.heroPaidOfTotal(fmtWhole(paidOff), fmtWhole(borrowedTotal))}</p>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
       <div className="border-t bg-[var(--flow-band-deep)]" style={{ borderColor: MIX }}>
@@ -119,6 +137,15 @@ export function DebtPortfolioHero({
               <p className={`truncate text-[10.5px] font-bold uppercase tracking-[0.06em] ${FG2}`}>{c.label}</p>
               <p className="mt-1 truncate whitespace-nowrap font-mono-numbers text-base font-bold">{c.value}</p>
               <p className={`mt-0.5 truncate text-[11px] ${FG2}`}>{c.sub}</p>
+              <div className="mt-1 h-[3px]">
+                {c.bar != null ? (
+                  <Progress value={c.bar}>
+                    <ProgressTrack className="h-[3px] bg-[var(--flow-band-mix)]">
+                      <ProgressIndicator className="bg-[var(--flow-band-fg)]" />
+                    </ProgressTrack>
+                  </Progress>
+                ) : null}
+              </div>
             </div>
           ))}
         </div>

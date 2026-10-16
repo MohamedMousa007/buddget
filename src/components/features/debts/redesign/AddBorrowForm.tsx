@@ -13,7 +13,6 @@ import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { Button } from '@/components/ui/button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { goalAmountPerPayment, goalPaymentCount, type GoalFrequency, type GoalUnit } from '@/lib/debts/borrowGoal'
-import { OptionChip } from '@/components/ui/OptionChip'
 import { useT } from '@/lib/i18n'
 import { soft } from './heroCardShared'
 
@@ -163,6 +162,7 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
               <div className="grid grid-cols-2 gap-3">
                 <AmountField value={d.goalDuration} onChange={d.setGoalDuration} mode="integer" placeholder="12" />
                 <SegmentedControl<GoalUnit>
+                  size="field"
                   ariaLabel={t.fDuration}
                   value={d.goalUnit}
                   onChange={d.setGoalUnit}
@@ -175,13 +175,12 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
             </div>
             <div>
               <div className={`${MICRO} mb-2`}>{t.fFrequency}</div>
-              <div className="grid grid-cols-4 gap-1 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-1">
-                {FREQS.map((f) => (
-                  <OptionChip key={f.v} size="segment" selected={d.goalCadence === f.v} onClick={() => d.setGoalCadence(f.v)} className="text-[11px]">
-                    {f.label}
-                  </OptionChip>
-                ))}
-              </div>
+              <SegmentedControl<GoalFrequency>
+                ariaLabel={t.fFrequency}
+                value={d.goalCadence}
+                onChange={d.setGoalCadence}
+                options={FREQS.map((f) => ({ value: f.v, label: f.label }))}
+              />
             </div>
             {goalPreview != null ? (
               <div className="rounded-[12px] bg-[var(--color-brand-gold)]/5 px-3.5 py-2.5">

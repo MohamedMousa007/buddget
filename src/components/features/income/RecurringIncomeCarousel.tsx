@@ -35,9 +35,6 @@ export function RecurringIncomeCarousel({ count, activeIndex, onActiveChange, re
     start.current = { x: e.clientX, y: e.clientY }
     axis.current = null
     setDragging(true)
-    // Capture so move/up keep firing even when the finger leaves the track —
-    // fixes swipes that "fail" mid-drag.
-    e.currentTarget.setPointerCapture?.(e.pointerId)
   }
   const onPointerMove = (e: PointerEvent) => {
     if (!start.current) return
@@ -46,6 +43,9 @@ export function RecurringIncomeCarousel({ count, activeIndex, onActiveChange, re
     if (axis.current === null) {
       if (Math.abs(dx) < TAP_SLOP && Math.abs(dy) < TAP_SLOP) return
       axis.current = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v'
+      // Capture only once it is a swipe: capturing on pointerdown retargets the click to the
+      // track, so mouse clicks on a card's buttons (Pay, kebab, Set goal) never fired.
+      if (axis.current === 'h') e.currentTarget.setPointerCapture?.(e.pointerId)
       if (axis.current === 'v') {
         // Vertical intent → let the page scroll; abandon this gesture.
         start.current = null

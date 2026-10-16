@@ -34,7 +34,7 @@ export interface FilterCategoryOption {
  * Bottom-sheet shell for the filters: scrolls up to 90% of the screen with the grabber on a
  * sticky card-coloured strip (rows pass under it) and an optional footer pinned below.
  */
-function FilterSheet({ open, onClose, children, footer }: { open: boolean; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
+export function FilterSheet({ open, onClose, children, footer }: { open: boolean; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
   // This sheet deliberately does NOT use ModalShell: it contains range sliders,
   // and ModalShell's drag-to-dismiss would capture the pointer drag on a thumb.
   // It still has to honour Android back and Escape.
@@ -87,7 +87,7 @@ function FilterSheet({ open, onClose, children, footer }: { open: boolean; onClo
 }
 
 /** Section label: 11/700 caps with a 14px glyph, and an optional note on the end side. */
-function SectionHead({ icon: Icon, label, end }: { icon: LucideIcon; label: string; end?: ReactNode }) {
+export function SectionHead({ icon: Icon, label, end }: { icon: LucideIcon; label: string; end?: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-2">
       <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
@@ -99,63 +99,97 @@ function SectionHead({ icon: Icon, label, end }: { icon: LucideIcon; label: stri
   )
 }
 
-const Divider = () => <div className="h-px bg-[var(--color-brand-border)]" />
+export const Divider = () => <div className="h-px bg-[var(--color-brand-border)]" />
+
+const PRESET_KEYS: Record<RangePreset, 'today' | 'yesterday' | 'week' | 'month' | 'custom'> = {
+  today: 'today', yesterday: 'yesterday', week: 'week', month: 'month', custom: 'custom',
+}
 
 /**
- * Period presets as a wrapping radiogroup of chips, then From / To, always visible —
- * editing either switches the preset to Custom (and To is clamped to ≥ From).
+ * Date-range filter shared by every filter sheet: preset chips, and From / To only once
+ * Custom is picked (editing either clamps the other so the range is never inverted).
+ * `anyLabel` adds a leading "no limit" chip for lists that default to all time.
  */
-function PeriodControl() {
+export function DateRangeField({
+  preset,
+  from,
+  to,
+  onPreset,
+  onRange,
+  anyLabel,
+}: {
+  preset: RangePreset | 'any'
+  from: string
+  to: string
+  onPreset: (p: RangePreset | 'any') => void
+  onRange: (from: string, to: string) => void
+  anyLabel?: string
+}) {
   const t = useT()
-  const monthFilter = useSettingsStore((s) => s.monthFilter)
-  const monthStartDay = useFinanceStore((s) => s.settings.monthStartDay)
-  const { range, setRangePreset, setCustomRange } = useExpenseFilterStore(
-    useShallow((s) => ({ range: s.range, setRangePreset: s.setRangePreset, setCustomRange: s.setCustomRange })),
-  )
-  const presetLabel: Record<RangePreset, string> = {
+  const label: Record<RangePreset, string> = {
     today: t.common.today,
     yesterday: t.common.yesterday,
     week: t.expenses.periodThisWeek,
     month: t.expenses.periodThisMonth,
     custom: t.expenses.periodCustom,
   }
-  const resolved = resolveRange(range, monthFilter, monthStartDay)
-  const from = range.from ?? format(resolved.start, 'yyyy-MM-dd')
-  const to = range.to ?? format(resolved.end, 'yyyy-MM-dd')
-
+  const chips: { key: RangePreset | 'any'; text: string }[] = [
+    ...(anyLabel ? [{ key: 'any' as const, text: anyLabel }] : []),
+    ...RANGE_PRESETS.map((p) => ({ key: PRESET_KEYS[p], text: label[p] })),
+  ]
   return (
     <>
       <div role="radiogroup" aria-label={t.filters.dateRange} className="flex flex-wrap gap-2">
-        {RANGE_PRESETS.map((preset) => {
-          const selected = range.preset === preset
-          return (
-            <OptionChip
-              key={preset}
-              as="trigger"
-              role="radio"
-              aria-checked={selected}
-              surface="elevated"
-              size="sm"
-              selected={selected}
-              onClick={() => (preset === 'custom' ? setCustomRange(from, to) : setRangePreset(preset))}
-            >
-              {presetLabel[preset]}
-            </OptionChip>
-          )
-        })}
+        {chips.map((c) => (
+          <OptionChip
+            key={c.key}
+            as="trigger"
+            role="radio"
+            aria-checked={preset === c.key}
+            surface="elevated"
+            size="sm"
+            selected={preset === c.key}
+            onClick={() => onPreset(c.key)}
+          >
+            {c.text}
+          </OptionChip>
+        ))}
       </div>
-      <div className="grid grid-cols-2 gap-2.5">
-        <label className="flex min-w-0 flex-col gap-1.5">
-          <span className="text-xs font-medium text-[var(--color-brand-text-muted)]">{t.expenses.periodFrom}</span>
-          {/* Clamp `to` forward: UnifiedDatePicker has no min/max, so nothing else stops an inverted range. */}
-          <DatePickerField value={from} onChange={(v) => setCustomRange(v, v > to ? v : to)} className="h-12 rounded-xl" />
-        </label>
-        <label className="flex min-w-0 flex-col gap-1.5">
-          <span className="text-xs font-medium text-[var(--color-brand-text-muted)]">{t.expenses.periodTo}</span>
-          <DatePickerField value={to} onChange={(v) => setCustomRange(v < from ? v : from, v)} className="h-12 rounded-xl" />
-        </label>
-      </div>
+      {preset === 'custom' ? (
+        <div className="grid grid-cols-2 gap-2.5">
+          <label className="flex min-w-0 flex-col gap-1.5">
+            <span className="text-xs font-medium text-[var(--color-brand-text-muted)]">{t.expenses.periodFrom}</span>
+            {/* Clamp `to` forward: UnifiedDatePicker has no min/max, so nothing else stops an inverted range. */}
+            <DatePickerField value={from} onChange={(v) => onRange(v, v > to ? v : to)} className="h-12 rounded-xl" />
+          </label>
+          <label className="flex min-w-0 flex-col gap-1.5">
+            <span className="text-xs font-medium text-[var(--color-brand-text-muted)]">{t.expenses.periodTo}</span>
+            <DatePickerField value={to} onChange={(v) => onRange(v < from ? v : from, v)} className="h-12 rounded-xl" />
+          </label>
+        </div>
+      ) : null}
     </>
+  )
+}
+
+/** Flow's period control: the shared date-range field bound to the expense filter store. */
+function PeriodControl() {
+  const monthFilter = useSettingsStore((s) => s.monthFilter)
+  const monthStartDay = useFinanceStore((s) => s.settings.monthStartDay)
+  const { range, setRangePreset, setCustomRange } = useExpenseFilterStore(
+    useShallow((s) => ({ range: s.range, setRangePreset: s.setRangePreset, setCustomRange: s.setCustomRange })),
+  )
+  const resolved = resolveRange(range, monthFilter, monthStartDay)
+  const from = range.from ?? format(resolved.start, 'yyyy-MM-dd')
+  const to = range.to ?? format(resolved.end, 'yyyy-MM-dd')
+  return (
+    <DateRangeField
+      preset={range.preset}
+      from={from}
+      to={to}
+      onPreset={(p) => (p === 'custom' ? setCustomRange(from, to) : p === 'any' ? undefined : setRangePreset(p))}
+      onRange={setCustomRange}
+    />
   )
 }
 

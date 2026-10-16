@@ -262,7 +262,8 @@ export const useSettingsStore = create<SettingsState>()(
           debtSheetPrefillDebtId: debtId,
           activeModal: 'addDebt',
         }),
-      openDebtGoalEdit: (debtId) => set({ editingDebtId: debtId, debtSheetGoalIntent: true, activeModal: 'editDebt' }),
+      openDebtGoalEdit: (debtId) =>
+        set({ editingDebtId: debtId, debtSheetGoalIntent: true, debtSheetPaymentOnly: false, debtSheetPrefillDebtId: null, activeModal: 'editDebt' }),
       resetDebtSheetIntent: () =>
         set({ debtSheetPaymentOnly: false, debtSheetPrefillDebtId: null, debtSheetPresetFamily: null, debtSheetGoalIntent: false }),
       resetSettings: () =>

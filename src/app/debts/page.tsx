@@ -128,11 +128,12 @@ export default function DebtsPage() {
         activeCount={data.counts.borrow + data.counts.credit_card + data.counts.installment}
         nextPayment={data.nextPayment}
         dueThisMonth={data.dueThisMonth}
-        scheduledThisMonth={data.scheduledThisMonth}
         paidThisMonth={data.paidThisMonth}
+        debtFreeDate={data.debtFreeDate}
+        unplannedCount={data.unplannedCount}
+        lastClearedAt={data.lastClearedAt}
         paidOff={data.paidOff}
         clearedCount={clearedCount}
-        onOpenCleared={() => setActiveModal('clearedVault')}
       />
 
       <div className="mx-auto max-w-screen-sm px-4 pt-4 lg:px-6">
@@ -204,7 +205,12 @@ export default function DebtsPage() {
 
       {/* Full-bleed ledger — identical to the Expenses/Income lists (no side inset). */}
       <div className="mx-auto max-w-screen-sm">
-        <DebtPaymentsFeed payments={data.payments} currentFamily={tab} />
+        <DebtPaymentsFeed
+          payments={data.payments}
+          currentFamily={tab}
+          completedCount={data.cleared.length}
+          onOpenCompleted={() => setActiveModal('clearedVault')}
+        />
       </div>
 
       <ClearedVaultSheet
