@@ -2485,6 +2485,8 @@ export const en: Dictionary = {
     noMatchIncome: 'income',
     stickyLeft: (x: string) => `left of ${x}`,
     stickyOver: (x: string) => `over budget of ${x}`,
+    railCategories: 'Categories',
+    railIncomeTypes: 'Income types',
     overBudgetBy: 'Over budget by',
     overBudget: 'Over budget',
     budgetUsedUp: 'budget used up',

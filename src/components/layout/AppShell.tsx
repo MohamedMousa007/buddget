@@ -387,7 +387,7 @@ export function AppShell({ children }: AppShellProps) {
       <Sidebar />
       <DesktopHeaderBar />
       <main
-        className={`native-scroll ${ownsHeader(navPath) ? 'pt-[env(safe-area-inset-top,0px)]' : 'pt-[calc(var(--app-header-h)+env(safe-area-inset-top,0px))]'} lg:pt-[var(--app-header-h-lg)] lg:ms-[var(--sidebar-w)] pb-[calc(4rem+env(safe-area-inset-bottom,0px))] lg:pb-0 min-h-[100dvh] safe-area-x`}
+        className={`native-scroll ${ownsHeader(navPath) ? 'pt-[env(safe-area-inset-top,0px)]' : 'pt-[calc(var(--app-header-h)+env(safe-area-inset-top,0px))]'} lg:pt-[var(--app-header-h-lg)] lg:ms-[var(--sidebar-w)] pb-[calc(4rem+env(safe-area-inset-bottom,0px))] lg:pb-24 min-h-[100dvh] safe-area-x`}
       >
         <PullToRefresh>
           <PendingCapturesChip />

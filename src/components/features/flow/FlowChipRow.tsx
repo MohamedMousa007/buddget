@@ -20,6 +20,36 @@ export interface FlowChip {
   ariaLabel?: string
 }
 
+
+/** One quick-filter chip: a budget chip when it carries budget state, else a plain option chip. */
+export function FlowChipItem({ chip: c }: { chip: FlowChip }) {
+  const t = useT()
+  const ariaLabel = c.ariaLabel ?? (c.selected ? t.flow.removeFilter(c.label) : t.flow.showOnly(c.label))
+  return c.budget ? (
+    <BudgetChip label={c.label} icon={c.icon} status={c.budget} selected={c.selected} onToggle={c.onPress} ariaLabel={ariaLabel} />
+  ) : (
+    <OptionChip as="trigger" surface="card" size="sm" selected={c.selected} aria-pressed={c.selected} aria-label={ariaLabel} onClick={c.onPress}>
+      {c.selected ? <X className="size-3.5" strokeWidth={2.5} aria-hidden /> : c.icon}
+      {c.label}
+    </OptionChip>
+  )
+}
+
+/** From lg the chips leave the row and live in this rail card beside the ledger. */
+export function FlowChipRail({ title, chips }: { title: string; chips: FlowChip[] }) {
+  if (chips.length === 0) return null
+  return (
+    <section className="hidden rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4 lg:me-4 lg:block">
+      <h2 className="mb-3 text-[13px] font-bold text-[var(--color-brand-text-primary)]">{title}</h2>
+      <div className="flex flex-wrap gap-2">
+        {chips.map((c) => (
+          <FlowChipItem key={c.key} chip={c} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
 /**
  * Filters first, then either the budget chips (All / Out), the income types (In), or —
  * once the sheet has narrowed things — the applied filters, each removable with its ✕.
@@ -61,33 +91,11 @@ export function FlowChipRow({
         )}
         {t.flow.filters}
       </OptionChip>
-      {chips.map((c) =>
-        c.budget ? (
-          <BudgetChip
-            key={c.key}
-            label={c.label}
-            icon={c.icon}
-            status={c.budget}
-            selected={c.selected}
-            onToggle={c.onPress}
-            ariaLabel={c.ariaLabel ?? (c.selected ? t.flow.removeFilter(c.label) : t.flow.showOnly(c.label))}
-          />
-        ) : (
-          <OptionChip
-            key={c.key}
-            as="trigger"
-            surface="card"
-            size="sm"
-            selected={c.selected}
-            aria-pressed={c.selected}
-            aria-label={c.ariaLabel ?? (c.selected ? t.flow.removeFilter(c.label) : t.flow.showOnly(c.label))}
-            onClick={c.onPress}
-          >
-            {c.selected ? <X className="size-3.5" strokeWidth={2.5} aria-hidden /> : c.icon}
-            {c.label}
-          </OptionChip>
-        ),
-      )}
+      <div className="contents lg:hidden">
+        {chips.map((c) => (
+          <FlowChipItem key={c.key} chip={c} />
+        ))}
+      </div>
       {results ? (
         <div className="ms-auto flex h-9 shrink-0 items-center gap-1 ps-2 text-[13px] text-[var(--color-brand-text-secondary)]">
           <span className="whitespace-nowrap">

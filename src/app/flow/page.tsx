@@ -28,7 +28,7 @@ import { ExpenseFilters } from '@/components/expenses/ExpenseFilters'
 import { FlowMonthRow } from '@/components/features/flow/FlowMonthRow'
 import { FlowSummaryBand } from '@/components/features/flow/FlowSummaryBand'
 import { FlowStickyStrip } from '@/components/features/flow/FlowStickyStrip'
-import { FlowChipRow, type FlowChip } from '@/components/features/flow/FlowChipRow'
+import { FlowChipRail, FlowChipRow, type FlowChip } from '@/components/features/flow/FlowChipRow'
 import { FlowLedger } from '@/components/features/flow/FlowLedger'
 import { IncomePrompts } from '@/components/features/flow/IncomePrompts'
 import { methodLabel, useFlowLedger } from '@/components/features/flow/useFlowLedger'
@@ -235,6 +235,7 @@ export default function FlowPage() {
 
       <PageContainer wide className="px-0 lg:px-0">
         <PageGrid
+          secondary={<FlowChipRail title={segment === 'in' ? t.flow.railIncomeTypes : t.flow.railCategories} chips={chips} />}
           primary={
             <>
       <FlowMonthRow

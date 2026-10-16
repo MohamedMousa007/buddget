@@ -2334,6 +2334,8 @@ export interface Dictionary {
     noMatchIncome: string
     stickyLeft: (x: string) => string
     stickyOver: (x: string) => string
+    railCategories: string
+    railIncomeTypes: string
     overBudgetBy: string
     overBudget: string
     budgetUsedUp: string

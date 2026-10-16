@@ -38,7 +38,7 @@ export function ProfileAvatarWithMenu({ className }: { className?: string }) {
         className="relative inline-flex size-11 items-center justify-center rounded-full"
       >
         <ProgressRing
-          pct={setupActive ? pct : 0}
+          pct={pct}
           size={44}
           stroke={3}
           track="var(--color-brand-border-strong)"

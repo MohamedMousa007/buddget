@@ -2492,6 +2492,8 @@ export const ar: Dictionary = {
     stickyLeft: (x: string) => `متبقٍ من ${x}`,
     // TODO(ar-review)
     stickyOver: (x: string) => `تجاوز الميزانية ${x}`,
+    railCategories: 'الفئات', // TODO(ar-review)
+    railIncomeTypes: 'أنواع الدخل', // TODO(ar-review)
     // TODO(ar-review)
     overBudgetBy: 'تجاوز الميزانية بـ',
     // TODO(ar-review)
