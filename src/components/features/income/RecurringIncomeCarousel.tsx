@@ -22,7 +22,7 @@ const TAP_SLOP = 6
  * too (the assign sheet auto-centres the default source). Vertical page scroll is
  * preserved via `touch-action: pan-y` and a vertical-intent bail-out.
  */
-export function RecurringIncomeCarousel({ count, activeIndex, onActiveChange, renderItem, dotColor = '#12B0A0', activeDotWidth = 16 }: Props) {
+export function RecurringIncomeCarousel({ count, activeIndex, onActiveChange, renderItem, dotColor = 'var(--color-brand-primary)', activeDotWidth = 16 }: Props) {
   const trackRef = useRef<HTMLDivElement>(null)
   const start = useRef<{ x: number; y: number } | null>(null)
   const axis = useRef<'h' | 'v' | null>(null)
@@ -101,15 +101,15 @@ export function RecurringIncomeCarousel({ count, activeIndex, onActiveChange, re
         </div>
       </div>
       {count > 1 ? (
-        <div className="mt-3 flex items-center justify-center gap-1.5">
+        <div className="mt-3 flex items-center justify-center gap-2">
           {Array.from({ length: count }, (_, i) => (
-            <button data-raw-button-ok="a carousel position dot, 6px tall"
+            <button data-raw-button-ok="a carousel position dot, 8px visible with a 24px hit area"
               key={i}
               type="button"
               aria-label={`Go to ${i + 1}`}
               onClick={() => onActiveChange(i)}
-              className="h-1.5 rounded-full transition-all"
-              style={{ width: i === activeIndex ? activeDotWidth : 6, background: i === activeIndex ? dotColor : 'rgba(255,255,255,0.22)' }}
+              className="relative rounded-full transition-all after:absolute after:-inset-2 after:content-['']"
+              style={{ width: i === activeIndex ? activeDotWidth : 8, height: 8, background: i === activeIndex ? dotColor : 'var(--color-brand-border-strong)' }}
             />
           ))}
         </div>

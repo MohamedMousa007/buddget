@@ -2,7 +2,7 @@
 
 import { GoalLensList } from '@/components/features/goals/GoalLensList'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronRight, CircleCheck, CreditCard, HandCoins, Layers, Plus, ShieldCheck } from 'lucide-react'
+import { CreditCard, HandCoins, Layers, Plus, ShieldCheck } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -26,9 +26,6 @@ import { convertCurrency } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { SelectableCard } from '@/components/ui/SelectableCard'
-import { StatTile } from '@/components/ui/StatTile'
-import { fmtWhole } from '@/components/features/debts/redesign/heroCardShared'
 
 export default function DebtsPage() {
   useHydrateDebts()
@@ -128,27 +125,18 @@ export default function DebtsPage() {
         secondaryText={secondaryText}
         clearedPct={data.clearedPct}
         borrowedTotal={data.borrowedTotal}
+        activeCount={data.counts.borrow + data.counts.credit_card + data.counts.installment}
+        nextPayment={data.nextPayment}
+        dueThisMonth={data.dueThisMonth}
+        scheduledThisMonth={data.scheduledThisMonth}
+        paidThisMonth={data.paidThisMonth}
+        paidOff={data.paidOff}
+        clearedCount={clearedCount}
+        onOpenCleared={() => setActiveModal('clearedVault')}
       />
 
       <div className="mx-auto max-w-screen-sm px-4 pt-4 lg:px-6">
-        {clearedCount > 0 ? (
-          <SelectableCard as="action" surface="card" onClick={() => setActiveModal('clearedVault')}>
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]">
-              <CircleCheck className="h-6 w-6" aria-hidden />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[15px] font-bold text-[var(--color-brand-text-primary)]">{t.debts.completedTitle(clearedCount)}</span>
-              <span className="block font-mono-numbers text-[13px] text-[var(--color-brand-text-muted)]">
-                {t.debts.completedSub(`${fmtWhole(data.clearedPaid)} ${data.base}`)}
-              </span>
-            </span>
-            <ChevronRight className="h-5 w-5 shrink-0 text-[var(--color-brand-text-muted)] rtl:rotate-180" aria-hidden />
-          </SelectableCard>
-        ) : null}
-
-        <div className={clearedCount > 0 ? 'mt-4' : ''}>
-          <GoalLensList categories={['debt_freedom']} />
-        </div>
+        <GoalLensList categories={['debt_freedom']} />
 
         {noneActive ? (
           <EmptyState
@@ -161,17 +149,9 @@ export default function DebtsPage() {
             title={clearedCount > 0 ? t.debts.emptyClearedTitle : t.debts.emptyNoneTitle}
             description={clearedCount > 0 ? t.debts.emptyClearedBody : t.debts.emptyNoneBody}
             action={
-              <div className="flex w-full max-w-sm flex-col items-stretch gap-4">
-                {clearedCount > 0 ? (
-                  <div className="grid grid-cols-2 gap-3 text-start">
-                    <StatTile label={t.debts.statDebtsCleared} value={clearedCount} tone="positive" />
-                    <StatTile label={t.debts.statTotalPaidOff} value={fmtWhole(data.paidOff)} unit={data.base} tone="positive" />
-                  </div>
-                ) : null}
-                <Button size="cta" onClick={() => addDebt()}>
-                  {t.debts.emptyAddDebt}
-                </Button>
-              </div>
+              <Button size="cta" onClick={() => addDebt()}>
+                {t.debts.emptyAddDebt}
+              </Button>
             }
           />
         ) : (
@@ -189,13 +169,13 @@ export default function DebtsPage() {
             {listLen === 0 ? (
               <EmptyState
                 icon={
-                  <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]">
-                    <FamilyIcon className="h-6 w-6" strokeWidth={1.6} aria-hidden />
+                  <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]">
+                    <FamilyIcon className="h-6 w-6" strokeWidth={1.8} aria-hidden />
                   </span>
                 }
                 title={family.emptyLine}
                 action={
-                  <Button size="cta" variant="secondary" onClick={() => addDebt(tab)}>
+                  <Button size="cta" onClick={() => addDebt(tab)}>
                     {family.emptyCta}
                   </Button>
                 }
@@ -206,7 +186,11 @@ export default function DebtsPage() {
                   <h2 className="text-[17px] font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">
                     {family.title} <span className="ms-1 font-mono-numbers text-sm font-medium text-[var(--color-brand-text-muted)]">{listLen}</span>
                   </h2>
-                  <Button variant="secondary" size="touch" className="ms-auto" onClick={() => addDebt(tab)}>
+                  <Button
+                    variant="outline"
+                    size="touch"
+                    className="ms-auto border-[var(--color-brand-primary)]/40 bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]"
+                    onClick={() => addDebt(tab)}>
                     <Plus aria-hidden />
                     {family.add}
                   </Button>

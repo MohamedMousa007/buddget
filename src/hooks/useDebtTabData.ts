@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { useT } from '@/lib/i18n'
 import { useShallow } from 'zustand/react/shallow'
-import { format, parseISO, addMonths, addWeeks, differenceInCalendarMonths, differenceInCalendarWeeks } from 'date-fns'
+import { format, parse, parseISO, addMonths, addWeeks, differenceInCalendarMonths, differenceInCalendarWeeks, endOfMonth, isSameMonth } from 'date-fns'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { debtFamily, type DebtFamily } from '@/lib/debts/debtFamily'
@@ -24,7 +24,7 @@ import {
 import { installmentPaymentsCompleted, nextInstallmentDueFormatted } from '@/lib/debts/installmentSchedule'
 import { findProviderBrand } from '@/lib/constants/installmentProviders'
 import { decomposePaymentMethodName, providerInitials } from '@/lib/payment/paymentMethodDefaults'
-import type { Currency, Debt, DebtPayment, GoldKarat } from '@/lib/store/types'
+import type { Currency, Debt, DebtGoal, DebtPayment, GoldKarat } from '@/lib/store/types'
 
 /** Family accent colours: theme tokens, so they resolve per light/dark. */
 export const FAMILY_ACCENT: Record<DebtFamily, string> = {
@@ -37,6 +37,8 @@ export interface BorrowVM {
   id: string
   name: string
   avatarInit: string
+  /** Counterparty name, shown under the debt name when it differs. */
+  person?: string
   relation?: string
   dir: 'owe' | 'owed'
   total: number
@@ -45,7 +47,7 @@ export interface BorrowVM {
   currency: string
   accent: string
   gold?: { grams: number; karat: GoldKarat }
-  goal?: { by: string; per: number; cadence: string; remaining: number; next?: string; onTrack: boolean }
+  goal?: { by: string; per: number; cadence: DebtGoal['paymentFrequency']; remaining: number; next?: string; onTrack: boolean }
 }
 
 export interface CreditCardVM {
@@ -81,6 +83,14 @@ export interface InstallmentVM {
   next?: string
   method?: string
   onCardLast4?: string
+}
+
+export interface ScheduledPaymentVM {
+  debtId: string
+  name: string
+  date: Date
+  /** Amount in the base currency. */
+  amount: number
 }
 
 export interface PaymentVM {
@@ -137,6 +147,7 @@ export function useDebtTabData() {
     })),
   )
   const expenses = useFinanceStore((s) => s.expenses)
+  const recurring = useFinanceStore((s) => s.recurringDebtPayments)
   const base = settings.baseCurrency
 
   return useMemo(() => {
@@ -151,9 +162,6 @@ export function useDebtTabData() {
     const everBorrowed = owed + paidOff
     const clearedPct = everBorrowed > 0 ? Math.round((paidOff / everBorrowed) * 100) : 0
 
-    const clearedPaid = debts
-      .filter((d) => d.status === 'cleared')
-      .reduce((sum, d) => sum + paidInBase(d, paymentsFor(d.id), base, exchangeRates, goldPricePerGram), 0)
     const counts = { borrow: 0, credit_card: 0, installment: 0 } as Record<DebtFamily, number>
     for (const d of active) counts[debtFamily(d)] += 1
 
@@ -177,6 +185,7 @@ export function useDebtTabData() {
           id: d.id,
           name: d.name || d.personName || d.person || '—',
           avatarInit: (d.name || d.personName || d.person || '?').trim().charAt(0).toUpperCase(),
+          person: d.personName || d.person || undefined,
           relation: d.relationship,
           dir: d.direction === 'they_owe' ? 'owed' : 'owe',
           total: d.startingBalance,
@@ -201,7 +210,7 @@ export function useDebtTabData() {
             // On track = paid at least what the schedule expects by now (capped at total).
             const expected = Math.min(g.calculatedAmount * elapsed, d.startingBalance)
             return {
-              by: format(parseISO(g.targetDate), 'MMM'),
+              by: format(parseISO(g.targetDate), 'MMM yyyy'),
               per: g.calculatedAmount,
               cadence: g.paymentFrequency,
               remaining: g.calculatedAmount > 0 ? Math.ceil(remaining / g.calculatedAmount) : 0,
@@ -341,10 +350,55 @@ export function useDebtTabData() {
         }
       : null
 
+    // --- hero stats: one scheduled payment per debt (recurring plan > installment cycle > payoff goal) ---
+    const now = new Date()
+    const nameOf = (d: Debt) => d.name || d.personName || d.person || '—'
+    const toBase = (amount: number, currency: string) => convertCurrency(amount, currency, base, exchangeRates)
+    const scheduled: ScheduledPaymentVM[] = []
+    for (const d of active) {
+      const plan = recurring.find((r) => r.debtId === d.id && r.isActive)
+      if (plan) {
+        scheduled.push({ debtId: d.id, name: nameOf(d), date: parseISO(plan.nextDueDate), amount: toBase(plan.amount, plan.currency) })
+        continue
+      }
+      if (d.debtType === 'installment') {
+        const nextStr = nextInstallmentDueFormatted(d, installmentPaymentsCompleted(d, paymentsFor(d.id).length))
+        if (nextStr && d.installmentAmount) {
+          scheduled.push({ debtId: d.id, name: nameOf(d), date: parse(nextStr, 'MMM d, yyyy', now), amount: toBase(d.installmentAmount, d.currency) })
+        }
+        continue
+      }
+      const g = d.goal
+      if (g && debtFamily(d) === 'borrow' && !d.isGold && g.calculatedAmount > 0) {
+        const start = parseISO(d.createdAt)
+        const monthsPer = g.paymentFrequency === 'quarterly' ? 3 : g.paymentFrequency === 'annually' ? 12 : 1
+        const date =
+          g.paymentFrequency === 'weekly'
+            ? addWeeks(start, Math.max(0, differenceInCalendarWeeks(now, start)) + 1)
+            : addMonths(start, (Math.floor(Math.max(0, differenceInCalendarMonths(now, start)) / monthsPer) + 1) * monthsPer)
+        scheduled.push({ debtId: d.id, name: nameOf(d), date, amount: toBase(g.calculatedAmount, d.currency) })
+      }
+    }
+    scheduled.sort((a, b) => a.date.getTime() - b.date.getTime())
+    const nextPayment = scheduled[0] ?? null
+    const dueThisMonthEnd = endOfMonth(now)
+    const dueList = scheduled.filter((p) => p.date <= dueThisMonthEnd)
+    const dueThisMonth = dueList.reduce((sum, p) => sum + p.amount, 0)
+    const paidThisMonth = debtPayments
+      .filter((p) => isSameMonth(parseISO(p.date), now))
+      .reduce((sum, p) => {
+        const d = debts.find((x) => x.id === p.debtId)
+        if (d?.isGold) return sum + goldGramsToMoney(p.amountPaid, goldPricePerGram, d.goldKarat)
+        return sum + toBase(p.amountPaid, p.paymentCurrency ?? d?.currency ?? base)
+      }, 0)
+
     return {
+      nextPayment,
+      dueThisMonth,
+      scheduledThisMonth: dueList.length,
+      paidThisMonth,
       owed,
       paidOff,
-      clearedPaid,
       borrowedTotal: everBorrowed,
       clearedPct,
       counts,
@@ -356,5 +410,5 @@ export function useDebtTabData() {
       assignCandidate,
       base,
     }
-  }, [debts, debtPayments, paymentMethods, expenses, base, exchangeRates, goldPricePerGram, stats.debtRemainingTotal, t])
+  }, [debts, debtPayments, recurring, paymentMethods, expenses, base, exchangeRates, goldPricePerGram, stats.debtRemainingTotal, t])
 }

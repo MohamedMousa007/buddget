@@ -26,6 +26,7 @@ import type {
   GoldKarat,
   InstallmentProvider,
 } from '@/lib/store/types'
+import { goalAmountPerPayment, goalDurationFromTarget, goalTargetDate, type GoalFrequency, type GoalUnit } from '@/lib/debts/borrowGoal'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useT } from '@/lib/i18n'
 
@@ -68,6 +69,7 @@ export function useAddDebtSheet() {
     resetDebtSheetIntent,
     editingDebtId,
     setEditingDebtId,
+    debtSheetGoalIntent: goalIntent,
   } = useSettingsStore()
   const isPayDebtFlow = activeModal === 'payDebt'
   const isEditFlow = activeModal === 'editDebt'
@@ -108,8 +110,9 @@ export function useAddDebtSheet() {
   const [linkedCreditCardDebtId, setLinkedCreditCardDebtId] = useState('')
   // Payoff goal (borrow only) — set inline in the add-borrow sheet (§4).
   const [goalEnabled, setGoalEnabled] = useState(false)
-  const [goalMonth, setGoalMonth] = useState('') // YYYY-MM
-  const [goalCadence, setGoalCadence] = useState<'weekly' | 'monthly'>('monthly')
+  const [goalDuration, setGoalDuration] = useState('12')
+  const [goalUnit, setGoalUnit] = useState<GoalUnit>('months')
+  const [goalCadence, setGoalCadence] = useState<GoalFrequency>('monthly')
 
   const [selectedDebtId, setSelectedDebtId] = useState(debts[0]?.id || '')
   const [paymentAmount, setPaymentAmount] = useState('')
@@ -153,12 +156,16 @@ export function useAddDebtSheet() {
       setLinkedCreditCardDebtId(dd.linkedCreditCardDebtId ?? '')
     }
     if (dd.goal) {
+      const { duration, unit } = goalDurationFromTarget(dd.goal.targetDate)
       setGoalEnabled(true)
-      setGoalMonth(dd.goal.targetDate.slice(0, 7))
-      setGoalCadence(dd.goal.paymentFrequency === 'weekly' ? 'weekly' : 'monthly')
+      setGoalDuration(String(duration))
+      setGoalUnit(unit)
+      setGoalCadence(dd.goal.paymentFrequency)
+    } else if (goalIntent) {
+      setGoalEnabled(true)
     }
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [isOpen, isEditFlow, editingDebt])
+  }, [isOpen, isEditFlow, editingDebt, goalIntent])
 
   const debtBalanceCtx: DebtBalanceContext | undefined = useMemo(
     () => ({ expenses, exchangeRates, allDebts: debts }),
@@ -349,7 +356,8 @@ export function useAddDebtSheet() {
     setInstallmentProviderSlug(undefined)
     setLinkedCreditCardDebtId('')
     setGoalEnabled(false)
-    setGoalMonth('')
+    setGoalDuration('12')
+    setGoalUnit('months')
     setGoalCadence('monthly')
   }, [settings.baseCurrency])
 
@@ -434,18 +442,14 @@ export function useAddDebtSheet() {
       payload.relationship = relationship.trim() || undefined
       payload.direction = direction
       payload.personName = person.trim()
-      // Inline payoff goal (borrow only): back-solve a per-period amount from the
-      // target month + cadence. Fixed amounts only — never a rate.
-      if (goalEnabled && goalMonth && direction === 'i_owe') {
-        const targetDate = `${goalMonth}-01`
-        const now = new Date()
-        const target = new Date(`${goalMonth}-01T00:00:00`)
-        const months = Math.max(1, (target.getFullYear() - now.getFullYear()) * 12 + (target.getMonth() - now.getMonth()))
-        const periods = goalCadence === 'weekly' ? Math.max(1, Math.round(months * 4.345)) : months
+      // Inline payoff goal (borrow only): fixed per-payment amount from the chosen
+      // duration + frequency — never a rate.
+      const goalSpan = parseFloat(goalDuration)
+      if (goalEnabled && goalSpan > 0 && direction === 'i_owe') {
         payload.goal = {
-          targetDate,
+          targetDate: goalTargetDate(goalSpan, goalUnit),
           paymentFrequency: goalCadence,
-          calculatedAmount: Math.round((total / periods) * 100) / 100,
+          calculatedAmount: goalAmountPerPayment(total, goalSpan, goalUnit, goalCadence),
         }
       }
     }
@@ -497,7 +501,8 @@ export function useAddDebtSheet() {
     debtType,
     direction,
     goalEnabled,
-    goalMonth,
+    goalDuration,
+    goalUnit,
     goalCadence,
     installmentCount,
     installmentFrequency,
@@ -764,8 +769,11 @@ export function useAddDebtSheet() {
     setInstallmentProviderSlug,
     goalEnabled,
     setGoalEnabled,
-    goalMonth,
-    setGoalMonth,
+    goalIntent,
+    goalDuration,
+    setGoalDuration,
+    goalUnit,
+    setGoalUnit,
     goalCadence,
     setGoalCadence,
     linkedCreditCardDebtId,

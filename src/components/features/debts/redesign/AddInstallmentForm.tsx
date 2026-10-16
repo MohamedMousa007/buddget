@@ -4,31 +4,98 @@ import { useState } from 'react'
 import { Lock } from 'lucide-react'
 import type { AddDebtHook } from '@/hooks/useAddDebtSheet'
 import type { Currency } from '@/lib/store/types'
-import { CurrencySheet } from '@/components/ui/CurrencySheet'
 import { AmountField } from '@/components/ui/AmountField'
+import { CurrencyField } from '@/components/ui/CurrencyField'
 import { DatePickerField } from '@/components/ui/DatePickerField'
+import { FieldButton } from '@/components/ui/FieldButton'
+import { Input } from '@/components/ui/input'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { InstallmentProviderPickerSheet } from './InstallmentProviderPickerSheet'
 import { ProviderBadge } from './ProviderBadge'
 import { coarseProvider } from '@/lib/constants/installmentProviders'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { currencyFlag } from '@/lib/constants/currencyMeta'
-import { FieldButton } from '@/components/ui/FieldButton'
-import { OptionChip } from '@/components/ui/OptionChip'
+import { microClassName as MICRO } from '@/lib/ui/microLabelStyle'
+import {
+  lengthForPayments,
+  paymentsForLength,
+  totalFromPer,
+  type PlanFrequency,
+  type PlanLengthUnit,
+} from '@/lib/debts/installmentPlan'
 import { useT } from '@/lib/i18n'
 
-const MICRO = 'font-semibold text-[10px] tracking-[0.08em] uppercase text-[var(--color-brand-text-muted)]'
-const FIELD = 'h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-[15px] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] outline-none'
+type PlanMode = 'total' | 'installment'
 
 export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; locked?: boolean }) {
   const t = useT().debts
-  const FREQS = [
-    { v: 'weekly' as const, label: t.fWeekly },
-    { v: 'monthly' as const, label: t.fMonthly },
-    { v: 'quarterly' as const, label: t.fQuarterly },
+  const freqOptions = [
+    { value: 'weekly' as const, label: t.fWeekly },
+    { value: 'monthly' as const, label: t.fMonthly },
+    { value: 'quarterly' as const, label: t.fQuarterly },
+  ]
+  const modeOptions = [
+    { value: 'total' as const, label: t.fModeTotal },
+    { value: 'installment' as const, label: t.fModeInstallment },
+  ]
+  const unitOptions = [
+    { value: 'months' as const, label: t.fMonths },
+    { value: 'years' as const, label: t.fYears },
   ]
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
   const [providerOpen, setProviderOpen] = useState(false)
-  const [curOpen, setCurOpen] = useState(false)
+  const [mode, setMode] = useState<PlanMode>('total')
+  const [perStr, setPerStr] = useState('')
+  const [lengthStr, setLengthStr] = useState('')
+  const [unit, setUnit] = useState<PlanLengthUnit>('months')
+
+  const frequency = d.installmentFrequency as PlanFrequency
+  const count = parseInt(d.installmentCount, 10)
+  const total = parseFloat(d.startingBalance)
+
+  const pushTotal = (per: string, n: number) => {
+    const p = parseFloat(per)
+    d.setStartingBalance(p > 0 && n > 0 ? String(totalFromPer(p, n)) : '')
+  }
+
+  const switchMode = (next: PlanMode) => {
+    if (next === 'installment') {
+      setPerStr(total > 0 && count > 0 ? String(Math.round((total / count) * 100) / 100) : '')
+      setLengthStr(count > 0 ? String(lengthForPayments(count, unit, frequency)) : '')
+    }
+    setMode(next)
+  }
+
+  const changePer = (v: string) => {
+    setPerStr(v)
+    pushTotal(v, count)
+  }
+
+  const changeLength = (v: string, u: PlanLengthUnit, f: PlanFrequency) => {
+    setLengthStr(v)
+    const len = parseFloat(v)
+    const n = len > 0 ? paymentsForLength(len, u, f) : 0
+    d.setInstallmentCount(n > 0 ? String(n) : '')
+    pushTotal(perStr, n)
+  }
+
+  const changeFrequency = (f: PlanFrequency) => {
+    d.setInstallmentFrequency(f)
+    if (mode === 'installment') changeLength(lengthStr, unit, f)
+  }
+
+  const changeUnit = (u: PlanLengthUnit) => {
+    setUnit(u)
+    const len = parseFloat(lengthStr)
+    if (!(len > 0)) return
+    const converted = u === 'years' ? len / 12 : len * 12
+    changeLength(String(Math.round(converted * 100) / 100), u, frequency)
+  }
+
+  const periodLabel = frequency === 'weekly' ? t.fPerWeek : frequency === 'quarterly' ? t.fPerQuarter : t.fPerMonth
+  const summary =
+    mode === 'total'
+      ? d.installmentPreview != null ? t.fApprox(d.installmentPreview.toLocaleString(), d.currency, periodLabel) : '—'
+      : total > 0 ? t.fTotalApprox(total.toLocaleString(), d.currency) : '—'
 
   const providerLabel =
     d.installmentProvider === 'credit_card'
@@ -75,60 +142,62 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
       {/* Item */}
       <div>
         <div className={`${MICRO} mb-2`}>{t.fItem}</div>
-        <input value={d.installmentItemName} onChange={(e) => d.setInstallmentItemName(e.target.value)} placeholder={t.fItemPh} className={FIELD} />
+        <Input size="brand" value={d.installmentItemName} onChange={(e) => d.setInstallmentItemName(e.target.value)} placeholder={t.fItemPh} />
       </div>
 
-      {/* Total amount */}
+      {/* Plan: two ways in, same stored fields (total, count, frequency). */}
+      <SegmentedControl<PlanMode> options={modeOptions} value={mode} onChange={switchMode} ariaLabel={t.fModeAria} />
+
       <div>
-        <div className={`${MICRO} mb-2`}>{t.fTotalAmount}</div>
+        <div className={`${MICRO} mb-2`}>{mode === 'total' ? t.fTotalAmount : t.fPerPayment}</div>
         <div className="flex gap-2">
-          <div className="min-w-0 flex-1"><AmountField value={d.startingBalance} onChange={d.setStartingBalance} mode="decimal" placeholder="0" /></div>
-          <FieldButton
-            size="lg"
-            onClick={() => setCurOpen(true)}
-            className="w-auto shrink-0 gap-1.5 bg-[var(--color-brand-elevated)] px-3"
-            valueClassName="font-mono-numbers text-[14px] font-bold"
+          <div className="min-w-0 flex-1">
+            {mode === 'total' ? (
+              <AmountField value={d.startingBalance} onChange={d.setStartingBalance} mode="decimal" placeholder="0" />
+            ) : (
+              <AmountField value={perStr} onChange={changePer} mode="decimal" placeholder="0" />
+            )}
+          </div>
+          <CurrencyField
+            compact
             value={d.currency}
-            icon={<span className="text-[18px] leading-none">{currencyFlag(d.currency as Currency)}</span>}
+            onChange={(c) => d.setCurrency(c as unknown as Currency)}
+            className="h-[52px] w-24 shrink-0 rounded-[14px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3"
           />
         </div>
-        <CurrencySheet open={curOpen} value={d.currency as Currency} base={d.settings.baseCurrency} onSelect={(c) => { d.setCurrency(c as Currency); setCurOpen(false) }} onClose={() => setCurOpen(false)} />
       </div>
 
-      {/* Start date */}
+      <div>
+        <div className={`${MICRO} mb-2`}>{t.fFrequency}</div>
+        <SegmentedControl<PlanFrequency> options={freqOptions} value={frequency} onChange={changeFrequency} ariaLabel={t.fFrequency} />
+      </div>
+
+      {mode === 'total' ? (
+        <div>
+          <div className={`${MICRO} mb-2`}>{t.fCount}</div>
+          <AmountField value={d.installmentCount} onChange={d.setInstallmentCount} mode="integer" placeholder="12" />
+        </div>
+      ) : (
+        <div>
+          <div className={`${MICRO} mb-2`}>{t.fPlanLength}</div>
+          <div className="flex gap-2">
+            <div className="min-w-0 flex-1">
+              <AmountField value={lengthStr} onChange={(v) => changeLength(v, unit, frequency)} mode="decimal" placeholder="12" />
+            </div>
+            <SegmentedControl<PlanLengthUnit> fill={false} options={unitOptions} value={unit} onChange={changeUnit} ariaLabel={t.fPlanLength} className="h-[52px] shrink-0" />
+          </div>
+        </div>
+      )}
+
       <div>
         <div className={`${MICRO} mb-2`}>{t.fStartDate}</div>
         <DatePickerField value={d.installmentStartDate} onChange={d.setInstallmentStartDate} />
       </div>
 
-      {/* Count + frequency */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <div className={`${MICRO} mb-2`}>{t.fCount}</div>
-          <AmountField value={d.installmentCount} onChange={d.setInstallmentCount} mode="integer" placeholder="12" />
-        </div>
-        <div>
-          <div className={`${MICRO} mb-2`}>{t.fFrequency}</div>
-          <div className="flex h-12 items-center gap-1 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-1">
-            {FREQS.map((f) => {
-              const on = d.installmentFrequency === f.v
-              return (
-                <OptionChip key={f.v} size="segment" selected={on} onClick={() => d.setInstallmentFrequency(f.v)} className="h-full text-[11px]">
-                  {f.label}
-                </OptionChip>
-              )
-            })}
-          </div>
-        </div>
+      <div className="min-h-[68px] rounded-[14px] bg-[var(--color-brand-primary-soft)] px-4 py-3">
+        <p className="font-mono-numbers text-[15px] font-bold text-[var(--color-brand-primary-ink)]">{summary}</p>
+        <p className="mt-0.5 text-[12px] text-[var(--color-brand-text-muted)]">{t.fNoInterest}</p>
       </div>
-
-      {/* Per preview + no-interest note */}
-      {d.installmentPreview != null ? (
-        <div className="rounded-[14px] bg-[var(--color-brand-primary-soft)] px-4 py-3">
-          <p className="font-mono-numbers text-[15px] font-bold text-[var(--color-brand-primary-ink)]">{t.fApprox(d.installmentPreview.toLocaleString(), d.currency, d.installmentFrequency === 'weekly' ? t.fPerWeek : d.installmentFrequency === 'quarterly' ? t.fPerQuarter : t.fPerMonth)}</p>
-          <p className="mt-0.5 text-[12px] text-[var(--color-brand-text-muted)]">{t.fNoInterest}</p>
-        </div>
-      ) : null}
     </div>
   )
 }

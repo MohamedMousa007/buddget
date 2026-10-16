@@ -1,5 +1,6 @@
 'use client'
 
+import { Input } from '@/components/ui/input'
 import { Repeat, Users } from 'lucide-react'
 import type { AddDebtHook } from '@/hooks/useAddDebtSheet'
 import { AmountField } from '@/components/ui/AmountField'
@@ -12,7 +13,6 @@ import { OptionChip } from '@/components/ui/OptionChip'
 import { Switch } from '@/components/ui/switch'
 
 const MICRO = 'font-semibold text-[10px] tracking-[0.08em] uppercase text-[var(--color-brand-text-muted)]'
-const FIELD = 'h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-[15px] text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)] outline-none'
 
 /** "Make a payment" — handoff pay modal. */
 export function PayDebtForm({ d }: { d: AddDebtHook }) {
@@ -107,7 +107,7 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
       {/* Notes */}
       <div>
         <div className={`${MICRO} mb-2`}>{t.fNotes}</div>
-        <input value={d.paymentNotes} onChange={(e) => d.setPaymentNotes(e.target.value)} placeholder={t.fOptionalNote} className={FIELD} />
+        <Input size="brand" value={d.paymentNotes} onChange={(e) => d.setPaymentNotes(e.target.value)} placeholder={t.fOptionalNote} />
       </div>
     </div>
   )

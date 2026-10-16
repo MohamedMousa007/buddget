@@ -230,6 +230,29 @@ export interface Dictionary {
     owed: string
   }
 
+  debtMoves: {
+    title: string
+    sheetTitle: string
+    moveType: string
+    moveAll: string
+    movePaid: string
+    moveAdded: string
+    debtType: string
+    debt: string
+    dateRange: string
+    anyTime: string
+    thisWeek: string
+    thisMonth: string
+    custom: string
+    from: string
+    to: string
+    clear: string
+    done: string
+    added: string
+    noMatch: string
+    paidTag: string
+  }
+
   nav: {
     dashboard: string
     budgetSetup: string
@@ -957,8 +980,18 @@ export interface Dictionary {
     heroLabel: string
     heroBorrowedTotal: (x: string) => string
     heroDebtFree: string
-    completedTitle: (n: number) => string
-    completedSub: (x: string) => string
+    heroNext: string
+    heroDueMonth: string
+    heroPaidMonth: string
+    heroNoPayment: string
+    heroSetPlan: string
+    heroNothingDue: string
+    heroNothingPaid: string
+    heroPaymentsScheduled: (n: number) => string
+    heroCompletedPill: string
+    heroNoDebtsCleared: string
+    heroFirstWin: string
+    heroKeepGoing: string
     tabBorrow: string
     tabCards: string
     tabInstallments: string
@@ -997,8 +1030,6 @@ export interface Dictionary {
     leftSuffix: string
     owedToYouSuffix: string
     paidOfTotal: (paid: string, total: string) => string
-    goalClearBy: (by: string) => string
-    goalLine: (left: number, per: string, cadence: string, next?: string) => string
     onTrack: string
     behind: string
     payPerson: (name: string) => string
@@ -1093,14 +1124,20 @@ export interface Dictionary {
     fGivenVia: string
     fPayoffGoal: string
     fPayoffGoalHint: string
-    fClearBy: string
-    fCadence: string
     fMonthly: string
     fWeekly: string
     fQuarterly: string
     fPerWeek: string
     fPerMonth: string
     fPerQuarter: string
+    fAnnually: string
+    fPerYear: string
+    fDuration: string
+    fUnitMonths: string
+    fUnitYears: string
+    fPaymentsCount: (n: number) => string
+    fOwedGoalNote: string
+    goalSummary: (per: string, freq: 'weekly' | 'monthly' | 'quarterly' | 'annually', until: string) => string
     fYoudPay: (amt: string, cur: string, period: string) => string
     fStrainHeavy: (pct: number) => string
     fStrainOk: string
@@ -1113,6 +1150,14 @@ export interface Dictionary {
     fFrequency: string
     fApprox: (amt: string, cur: string, period: string) => string
     fNoInterest: string
+    fModeAria: string
+    fModeTotal: string
+    fModeInstallment: string
+    fPerPayment: string
+    fPlanLength: string
+    fMonths: string
+    fYears: string
+    fTotalApprox: (amt: string, cur: string) => string
   }
 
   addDebt: {

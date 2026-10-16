@@ -112,6 +112,9 @@ interface SettingsState {
   debtSheetPrefillDebtId: string | null
   /** When opening add-debt, jump straight to this family's form (skip the picker). */
   debtSheetPresetFamily: 'personal' | 'installment' | null
+  /** Edit sheet opened from a card's "Set a payoff goal" CTA: open with the goal toggle on. */
+  debtSheetGoalIntent: boolean
+  openDebtGoalEdit: (debtId: string) => void
   /** Draggable Buddgy orb resting position (persisted). */
   buddgyOrb: BuddgyOrbPosition
   setBuddgyOrb: (pos: BuddgyOrbPosition) => void
@@ -202,6 +205,7 @@ export const useSettingsStore = create<SettingsState>()(
       debtSheetPaymentOnly: false,
       debtSheetPrefillDebtId: null,
       debtSheetPresetFamily: null,
+      debtSheetGoalIntent: false,
       buddgyOrb: { side: 'right', top: 620 },
       setBuddgyOrb: (pos) => set({ buddgyOrb: pos }),
       buddgyActive: {},
@@ -258,8 +262,9 @@ export const useSettingsStore = create<SettingsState>()(
           debtSheetPrefillDebtId: debtId,
           activeModal: 'addDebt',
         }),
+      openDebtGoalEdit: (debtId) => set({ editingDebtId: debtId, debtSheetGoalIntent: true, activeModal: 'editDebt' }),
       resetDebtSheetIntent: () =>
-        set({ debtSheetPaymentOnly: false, debtSheetPrefillDebtId: null, debtSheetPresetFamily: null }),
+        set({ debtSheetPaymentOnly: false, debtSheetPrefillDebtId: null, debtSheetPresetFamily: null, debtSheetGoalIntent: false }),
       resetSettings: () =>
         set({
           sidebarOpen: false,
