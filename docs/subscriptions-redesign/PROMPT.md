@@ -1,6 +1,6 @@
 # Prompt for Claude Design — Subscriptions redesign (Buddget)
 
-Attach with this prompt: `docs/DESIGN_SYSTEM.md`, `docs/SUBSCRIPTIONS_AUDIT.md` (current UI inventory, every sheet/field/copy, behaviour spec, bugs), `catalog.json` + the `logos/` folder (Egypt catalog, prices, aliases, logo files), and screenshots of the live Flow, Wealth, Debts and Budget pages (the pattern to match).
+Attach with this prompt: `docs/DESIGN_SYSTEM.md`, `AUDIT.md` (current UI inventory, every sheet/field/copy, behaviour spec, bugs), `catalog.json` + `catalog.md` + the `logos/` folder (Egypt catalog, prices, aliases, logo files; `CHANGES.md` lists what changed in the live price check), and screenshots of the live Flow, Wealth, Debts and Budget pages (the pattern to match).
 
 ---
 
@@ -58,11 +58,11 @@ Buddget is an offline-first personal-finance app (iOS, Android, web) for Egypt. 
 
 ## 7. Egypt catalog (attached)
 
-The attached catalog lists ~110 services and ~140 plans with Arabic and English statement aliases, billing currency, accepted Egyptian payment methods, cancel hints and logo files. **Prices carry a confidence flag and a checked date; only show a price as "typical" when it is high-confidence, otherwise show it as "≈ estimate" with the EGP conversion note and let the user edit.** Design a quiet way to show "estimated" without clutter. Group and order brands by Egyptian usage: Netflix, Shahid, Spotify, Anghami, YouTube Premium, Watch iT, Amazon Prime, PlayStation Plus, Xbox Game Pass, ChatGPT, Microsoft 365, iCloud+, Google One, Vodafone/Orange/e&/WE, gyms, talabat Pro, Noon One, Uber One, Careem Plus first.
+The attached catalog lists 110 services and 214 plans (136 verified live on 2026-10-17, the rest flagged medium/low or unverified) with Arabic and English statement aliases, billing currency, accepted Egyptian payment methods, cancel hints and logo files. **Prices carry a confidence flag and a checked date; only show a price as "typical" when it is high-confidence, otherwise show it as "≈ estimate" with the EGP conversion note and let the user edit.** Design a quiet way to show "estimated" without clutter. Group and order brands by Egyptian usage: Netflix, Shahid, Spotify, Anghami, YouTube Premium, Watch iT, Amazon Prime, PlayStation Plus, Xbox Game Pass, ChatGPT, Microsoft 365, iCloud+, Google One, Vodafone/Orange/e&/WE, gyms, talabat Pro, Noon One, Uber One, Careem Plus first.
 
 ## 8. Logos
 
-Use the attached high-resolution files (SVG preferred) inside a fixed 40 px rounded tile on `--color-brand-elevated` (56 px on the add grid), never recoloured, with the brand's own colour only inside the mark. Services without a logo get the first two letters on a tinted tile (existing fallback). Show how a wide wordmark logo and a square mark both sit in the same tile.
+Use the attached high-resolution files (SVG preferred; 104 of 110 services have one, and a few are below 512 px: check `logos/SOURCES.md`) inside a fixed 40 px rounded tile on `--color-brand-elevated` (56 px on the add grid), never recoloured, with the brand's own colour only inside the mark. Services without a logo get the first two letters on a tinted tile (existing fallback). Show how a wide wordmark logo and a square mark both sit in the same tile.
 
 ## 9. Data you may assume (handoff)
 
