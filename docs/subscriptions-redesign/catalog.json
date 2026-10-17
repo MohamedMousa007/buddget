@@ -1,0 +1,4454 @@
+[
+ {
+  "id": "netflix",
+  "name": "Netflix",
+  "name_ar": "نتفليكس",
+  "category": "Video streaming",
+  "aliases": [
+   "NETFLIX.COM",
+   "NETFLIX",
+   "Netflix International B.V.",
+   "نتفليكس"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "netflix_basic",
+    "name": "Basic",
+    "cycle": "monthly",
+    "price": 110,
+    "currency": "EGP",
+    "egp_approx": 110,
+    "notes": "720p, 1 screen, ad-free; no ad tier in Egypt",
+    "source_url": "https://help.netflix.com/en/node/24926/eg",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "netflix_standard",
+    "name": "Standard",
+    "cycle": "monthly",
+    "price": 190,
+    "currency": "EGP",
+    "egp_approx": 190,
+    "notes": "1080p, 2 screens",
+    "source_url": "https://help.netflix.com/en/node/24926/eg",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "netflix_premium",
+    "name": "Premium",
+    "cycle": "monthly",
+    "price": 270,
+    "currency": "EGP",
+    "egp_approx": 270,
+    "notes": "4K, 4 screens",
+    "source_url": "https://help.netflix.com/en/node/24926/eg",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Egyptian Visa/Mastercard, Meeza not confirmed, Vodafone/Orange/e& carrier billing, Fawry gift cards",
+  "cancel_url_or_hint": "netflix.com/cancelplan",
+  "notes": "Billed in EGP. Matches existing catalog.",
+  "logo_file": "logos/netflix.svg"
+ },
+ {
+  "id": "shahid",
+  "name": "Shahid (MBC)",
+  "name_ar": "شاهد",
+  "category": "Video streaming",
+  "aliases": [
+   "SHAHID",
+   "MBC SHAHID",
+   "SHAHID.NET",
+   "MBC GROUP",
+   "شاهد"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "shahid_vip_mobile",
+    "name": "VIP Mobile",
+    "cycle": "monthly",
+    "price": 52.99,
+    "currency": "EGP",
+    "egp_approx": 52.99,
+    "notes": "",
+    "source_url": "https://shahid.mbc.net/en/subscribe",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "shahid_vip",
+    "name": "VIP",
+    "cycle": "monthly",
+    "price": 159.99,
+    "currency": "EGP",
+    "egp_approx": 159.99,
+    "notes": "",
+    "source_url": "https://shahid.mbc.net/en/subscribe",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "shahid_vip_bigtime",
+    "name": "VIP | BigTime",
+    "cycle": "monthly",
+    "price": 289.99,
+    "currency": "EGP",
+    "egp_approx": 289.99,
+    "notes": "Riyadh/Jeddah Season events",
+    "source_url": "https://shahid.mbc.net/en/subscribe",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "shahid_vip_sports",
+    "name": "VIP | Sports",
+    "cycle": "monthly",
+    "price": 439.99,
+    "currency": "EGP",
+    "egp_approx": 439.99,
+    "notes": "",
+    "source_url": "https://shahid.mbc.net/en/subscribe",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "shahid_ultimate",
+    "name": "Ultimate",
+    "cycle": "monthly",
+    "price": 639.99,
+    "currency": "EGP",
+    "egp_approx": 639.99,
+    "notes": "4 concurrent streams",
+    "source_url": "https://shahid.mbc.net/en/subscribe",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Egyptian cards, Fawry, Vodafone/Orange/e&/WE carrier billing",
+  "cancel_url_or_hint": "shahid.net > Account > Subscription",
+  "notes": "Epic bundles are GCC-only.",
+  "logo_file": "logos/shahid_vip.svg"
+ },
+ {
+  "id": "watchit",
+  "name": "Watch iT",
+  "name_ar": "واتش ات",
+  "category": "Video streaming",
+  "aliases": [
+   "WATCH IT",
+   "WATCHIT",
+   "WATCH.IT",
+   "واتش ات"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "watchit_standard",
+    "name": "Basic (web/card)",
+    "cycle": "monthly",
+    "price": 19.99,
+    "currency": "EGP",
+    "egp_approx": 19.99,
+    "notes": "",
+    "source_url": "https://www.watchit.com/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "watchit_standard_y",
+    "name": "Basic (web/card)",
+    "cycle": "yearly",
+    "price": 199.99,
+    "currency": "EGP",
+    "egp_approx": 199.99,
+    "notes": "",
+    "source_url": "https://www.watchit.com/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "watchit_premium",
+    "name": "Premium (web/card)",
+    "cycle": "monthly",
+    "price": 99.99,
+    "currency": "EGP",
+    "egp_approx": 99.99,
+    "notes": "3 screens, no ads",
+    "source_url": "https://www.watchit.com/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "watchit_premium_y",
+    "name": "Premium (web/card)",
+    "cycle": "yearly",
+    "price": 999.99,
+    "currency": "EGP",
+    "egp_approx": 999.99,
+    "notes": "",
+    "source_url": "https://www.watchit.com/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "watchit_basic_carrier",
+    "name": "Basic (mobile-carrier billing)",
+    "cycle": "monthly",
+    "price": 110,
+    "currency": "EGP",
+    "egp_approx": 110,
+    "notes": "",
+    "source_url": "https://www.watchit.com/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "watchit_basic_carrier_y",
+    "name": "Basic (mobile-carrier billing)",
+    "cycle": "yearly",
+    "price": 1320,
+    "currency": "EGP",
+    "egp_approx": 1320,
+    "notes": "",
+    "source_url": "https://www.watchit.com/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "watchit_premium_carrier",
+    "name": "Premium (mobile-carrier billing)",
+    "cycle": "monthly",
+    "price": 140,
+    "currency": "EGP",
+    "egp_approx": 140,
+    "notes": "",
+    "source_url": "https://www.watchit.com/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "watchit_premium_carrier_y",
+    "name": "Premium (mobile-carrier billing)",
+    "cycle": "yearly",
+    "price": 1680,
+    "currency": "EGP",
+    "egp_approx": 1680,
+    "notes": "",
+    "source_url": "https://www.watchit.com/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Egyptian cards, Fawry, WE/Vodafone/Orange/e& billing (WE has its own bundle)",
+  "cancel_url_or_hint": "Watch iT app > Profile > Subscription",
+  "notes": "Read live from watchit.com (Arabic UI): card prices vs carrier-billing prices differ.",
+  "logo_file": "logos/watchit.svg"
+ },
+ {
+  "id": "amazon_prime",
+  "name": "Amazon Prime (Egypt)",
+  "name_ar": "أمازون برايم",
+  "category": "Video streaming",
+  "aliases": [
+   "AMAZON PRIME",
+   "PRIME VIDEO",
+   "AMZN PRIME",
+   "AMAZON.EG",
+   "AMAZON DIGITAL"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "prime_monthly",
+    "name": "Prime",
+    "cycle": "monthly",
+    "price": 29,
+    "currency": "EGP",
+    "egp_approx": 29,
+    "notes": "\"Prime is just EGP 29/month\"",
+    "source_url": "https://www.amazon.eg/prime",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "prime_yearly",
+    "name": "Prime",
+    "cycle": "yearly",
+    "price": 249,
+    "currency": "EGP",
+    "egp_approx": 249,
+    "notes": "",
+    "source_url": "https://www.amazon.eg/prime",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Egyptian cards, COD not applicable",
+  "cancel_url_or_hint": "amazon.eg > Account > Prime",
+  "notes": "Prime bundles shipping + Prime Video; verify current price on amazon.eg.",
+  "logo_file": "logos/amazon_prime_video.svg"
+ },
+ {
+  "id": "disney_plus",
+  "name": "Disney+",
+  "name_ar": "ديزني بلس",
+  "category": "Video streaming",
+  "aliases": [
+   "DISNEYPLUS",
+   "DISNEY PLUS",
+   "DISNEY+",
+   "BAMTECH",
+   "DISNEY STREAMING"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "disney_monthly",
+    "name": "Standard (single tier shown)",
+    "cycle": "monthly",
+    "price": 79.99,
+    "currency": "EGP",
+    "egp_approx": 79.99,
+    "notes": "geopriced July 2026 citing official Egypt site; disneyplus.com/en-eg is live but shows no price without sign-up; old 169.99 was a stale App Store listing",
+    "source_url": "https://geopriced.com/price/disney-plus/egypt",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Apple App Store / Google Play billing in EGP, Egyptian cards, carrier billing, Fawry/carrier billing via OSN-era deals unconfirmed",
+  "cancel_url_or_hint": "disneyplus.com > Account",
+  "notes": "Disney+ is live in Egypt (disneyplus.com/en-eg, Hulu content). Price is secondary-source only; annual price not found, old 1700 removed.",
+  "logo_file": "logos/disney_plus.svg"
+ },
+ {
+  "id": "hbo_max",
+  "name": "HBO Max",
+  "name_ar": "إتش بي أو ماكس",
+  "category": "Video streaming",
+  "aliases": [
+   "HBO MAX",
+   "HBOMAX",
+   "MAX.COM"
+  ],
+  "billing_currency": "USD",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "n/a",
+  "cancel_url_or_hint": "n/a",
+  "notes": "Not found as launched in Egypt in search results; HBO content in Egypt via OSN+ (OSN holds HBO deal). Do not prefill.",
+  "logo_file": "logos/hbo_max.svg"
+ },
+ {
+  "id": "apple_tv",
+  "name": "Apple TV (Apple TV+)",
+  "name_ar": "أبل تي في",
+  "category": "Video streaming",
+  "aliases": [
+   "APPLE.COM/BILL",
+   "APPLE TV+",
+   "APPLE TV",
+   "ITUNES.COM/BILL"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "apple_tv_included",
+    "name": "Included with any paid iCloud+ plan",
+    "cycle": "monthly",
+    "price": 0,
+    "currency": "EGP",
+    "egp_approx": 0,
+    "notes": "iCloud+ 50GB from EGP 49.99/month; standalone Apple TV subs are being folded into iCloud+",
+    "source_url": "https://www.icloud.com/en-eg/info/icloud-plus-tv-arcade",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Apple App Store / Google Play billing in EGP, Egyptian cards, carrier billing",
+  "cancel_url_or_hint": "Settings > Apple ID > Subscriptions",
+  "notes": "Apple TV and Apple Arcade are bundled free into iCloud+ in Egypt (page lists Egypt). Standalone Apple TV price no longer applies.",
+  "logo_file": "logos/apple_tv_plus.svg"
+ },
+ {
+  "id": "youtube_premium",
+  "name": "YouTube Premium",
+  "name_ar": "يوتيوب بريميوم",
+  "category": "Video streaming",
+  "aliases": [
+   "GOOGLE *YOUTUBE PREMIUM",
+   "YOUTUBE PREMIUM",
+   "GOOGLE YOUTUBEPREMIUM",
+   "GOOGLE*YOUTUBE"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "yt_individual",
+    "name": "Individual",
+    "cycle": "monthly",
+    "price": 87.99,
+    "currency": "EGP",
+    "egp_approx": 87.99,
+    "notes": "\"EGP 87.99/month\"; 1-month trial EGP 0",
+    "source_url": "https://www.youtube.com/premium",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "yt_family",
+    "name": "Family",
+    "cycle": "monthly",
+    "price": 159.99,
+    "currency": "EGP",
+    "egp_approx": 159.99,
+    "notes": "",
+    "source_url": "https://www.youtube.com/premium",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "yt_student",
+    "name": "Student",
+    "cycle": "monthly",
+    "price": 52.99,
+    "currency": "EGP",
+    "egp_approx": 52.99,
+    "notes": "",
+    "source_url": "https://www.youtube.com/premium",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "yt_lite",
+    "name": "Premium Lite",
+    "cycle": "monthly",
+    "price": 52.99,
+    "currency": "EGP",
+    "egp_approx": 52.99,
+    "notes": "new tier: most videos ad-free, no music background play",
+    "source_url": "https://www.youtube.com/premium",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Google Play billing in EGP (Egyptian cards, carrier billing, Play gift cards)",
+  "cancel_url_or_hint": "youtube.com/paid_memberships",
+  "notes": "Read live from youtube.com/premium (Egypt, EGP).",
+  "logo_file": "logos/youtube_premium.svg"
+ },
+ {
+  "id": "osn_plus",
+  "name": "OSN+",
+  "name_ar": "أو إس إن بلس",
+  "category": "Video streaming",
+  "aliases": [
+   "OSN",
+   "OSN+",
+   "OSNPLUS",
+   "OSN STREAMING"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "osn_premium_usd",
+    "name": "Premium (web, USD)",
+    "cycle": "monthly",
+    "price": 4.99,
+    "currency": "USD",
+    "egp_approx": 267,
+    "notes": "",
+    "source_url": "https://osnplus.com/en-eg/subscribe",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "osn_standard_usd",
+    "name": "Standard (web, USD)",
+    "cycle": "monthly",
+    "price": 3.49,
+    "currency": "USD",
+    "egp_approx": 187,
+    "notes": "",
+    "source_url": "https://osnplus.com/en-eg/subscribe",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "osn_ads_usd",
+    "name": "Standard with ads (web, USD)",
+    "cycle": "monthly",
+    "price": 1.99,
+    "currency": "USD",
+    "egp_approx": 106,
+    "notes": "",
+    "source_url": "https://osnplus.com/en-eg/subscribe",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "osn_premium_usd_y",
+    "name": "Premium yearly (web, USD)",
+    "cycle": "yearly",
+    "price": 49.92,
+    "currency": "USD",
+    "egp_approx": 2668,
+    "notes": "page shows 4.16/month billed yearly; x12 computed",
+    "source_url": "https://osnplus.com/en-eg/subscribe",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "osn_standard_usd_y",
+    "name": "Standard yearly (web, USD)",
+    "cycle": "yearly",
+    "price": 34.92,
+    "currency": "USD",
+    "egp_approx": 1866,
+    "notes": "page shows 2.91/month billed yearly; x12 computed",
+    "source_url": "https://osnplus.com/en-eg/subscribe",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "osn_standard_egp",
+    "name": "Standard (Etisalat/Orange/Vodafone billing)",
+    "cycle": "monthly",
+    "price": 140,
+    "currency": "EGP",
+    "egp_approx": 140,
+    "notes": "",
+    "source_url": "https://osnplus.com/en-eg/subscribe",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "osn_ads_egp",
+    "name": "Standard with ads (carrier billing)",
+    "cycle": "monthly",
+    "price": 90,
+    "currency": "EGP",
+    "egp_approx": 90,
+    "notes": "",
+    "source_url": "https://osnplus.com/en-eg/subscribe",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Egyptian cards, carrier billing (Etisalat/Vodafone offers)",
+  "cancel_url_or_hint": "osnplus.com account",
+  "notes": "Read live from osnplus.com/en-eg (operated by Anghami). Web card payment is USD; carrier billing is EGP.",
+  "logo_file": "logos/osn_plus.svg"
+ },
+ {
+  "id": "starzplay",
+  "name": "STARZPLAY",
+  "name_ar": "ستارزبلاي",
+  "category": "Video streaming",
+  "aliases": [
+   "STARZPLAY",
+   "STARZ PLAY",
+   "STARZON"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "starz_monthly",
+    "name": "Monthly",
+    "cycle": "monthly",
+    "price": 40,
+    "currency": "EGP",
+    "egp_approx": 40,
+    "notes": "existing catalog; unverified",
+    "source_url": "existing catalog",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Egyptian cards, carrier billing",
+  "cancel_url_or_hint": "starzplay.com/account",
+  "notes": "Platform status/price in Egypt unverified. starzplay.com/en-eg errors out; unverified.",
+  "logo_file": "logos/starzplay.svg"
+ },
+ {
+  "id": "viu",
+  "name": "Viu",
+  "name_ar": "فيو",
+  "category": "Video streaming",
+  "aliases": [
+   "VIU",
+   "VIU INTERNATIONAL",
+   "VIU.COM"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "viu_premium",
+    "name": "Premium",
+    "cycle": "monthly",
+    "price": 20,
+    "currency": "EGP",
+    "egp_approx": 20,
+    "notes": "unverified",
+    "source_url": "existing catalog",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Apple App Store / Google Play billing in EGP, Egyptian cards, carrier billing",
+  "cancel_url_or_hint": "Viu app > Account",
+  "notes": "viu.com/ott/eg is JS-only/blank; unverified.",
+  "logo_file": "logos/viu.svg"
+ },
+ {
+  "id": "crunchyroll",
+  "name": "Crunchyroll",
+  "name_ar": "كرانشي رول",
+  "category": "Video streaming",
+  "aliases": [
+   "CRUNCHYROLL",
+   "CRUNCHYROLL.COM"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "cr_fan",
+    "name": "Fan",
+    "cycle": "monthly",
+    "price": 7.99,
+    "currency": "USD",
+    "egp_approx": 427,
+    "notes": "USD global list; existing catalog had EGP 100",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "cr_mega",
+    "name": "Mega Fan",
+    "cycle": "monthly",
+    "price": 11.99,
+    "currency": "USD",
+    "egp_approx": 641,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "cr_ultimate",
+    "name": "Ultimate Fan",
+    "cycle": "monthly",
+    "price": 15.99,
+    "currency": "USD",
+    "egp_approx": 855,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "crunchyroll.com/account",
+  "notes": "Existing catalog Fan 100/Mega 140 EGP unverified.",
+  "logo_file": "logos/crunchyroll.svg"
+ },
+ {
+  "id": "mubi",
+  "name": "MUBI",
+  "name_ar": "موبي",
+  "category": "Video streaming",
+  "aliases": [
+   "MUBI",
+   "MUBI.COM"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "mubi_monthly",
+    "name": "Monthly",
+    "cycle": "monthly",
+    "price": 12.99,
+    "currency": "USD",
+    "egp_approx": 694,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "mubi.com/account",
+  "notes": "",
+  "logo_file": "logos/mubi.svg"
+ },
+ {
+  "id": "tod",
+  "name": "TOD (beIN)",
+  "name_ar": "تود",
+  "category": "Video streaming",
+  "aliases": [
+   "TOD",
+   "TOD TV",
+   "BEIN MEDIA",
+   "BEIN CONNECT"
+  ],
+  "billing_currency": "EGP",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "Egyptian cards, carrier billing",
+  "cancel_url_or_hint": "tod.tv",
+  "notes": "TOD/beIN CONNECT Egypt prices not found live; leave unpriced.",
+  "logo_file": null
+ },
+ {
+  "id": "beinsports",
+  "name": "beIN Sports / beIN CONNECT",
+  "name_ar": "بي إن سبورتس",
+  "category": "Video streaming",
+  "aliases": [
+   "BEIN",
+   "BEIN SPORTS",
+   "BEIN CONNECT"
+  ],
+  "billing_currency": "EGP",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "Egyptian cards, Fawry, beIN receivers resold",
+  "cancel_url_or_hint": "connect.bein.com",
+  "notes": "beIN has no official Egyptian arm for most content; sold via resellers. Prices not verified. connect.bein.com subscribe page is JS-only/blank; unverified.",
+  "logo_file": "logos/beinsports.svg"
+ },
+ {
+  "id": "yango_play",
+  "name": "Yango Play",
+  "name_ar": "يانجو بلاي",
+  "category": "Video streaming",
+  "aliases": [
+   "YANGO PLAY",
+   "YANGO"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "yango_monthly",
+    "name": "Monthly",
+    "cycle": "monthly",
+    "price": 25,
+    "currency": "EGP",
+    "egp_approx": 25,
+    "notes": "unverified",
+    "source_url": "existing catalog",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Egyptian cards, Yango Pay",
+  "cancel_url_or_hint": "Yango Play app",
+  "notes": "",
+  "logo_file": "logos/yango_play.svg"
+ },
+ {
+  "id": "weyyak",
+  "name": "Weyyak",
+  "name_ar": "وياك",
+  "category": "Video streaming",
+  "aliases": [
+   "WEYYAK",
+   "WEYYAK.COM"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "weyyak_monthly",
+    "name": "Monthly",
+    "cycle": "monthly",
+    "price": 25,
+    "currency": "EGP",
+    "egp_approx": 25,
+    "notes": "unverified",
+    "source_url": "existing catalog",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Egyptian cards, carrier billing",
+  "cancel_url_or_hint": "weyyak.com account",
+  "notes": "",
+  "logo_file": null
+ },
+ {
+  "id": "jawwy_tv",
+  "name": "Jawwy TV",
+  "name_ar": "جوي تي في",
+  "category": "Video streaming",
+  "aliases": [
+   "JAWWY",
+   "STC JAWWY"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "KSA only",
+  "cancel_url_or_hint": "n/a",
+  "notes": "KSA-only; not Egypt.",
+  "logo_file": null
+ },
+ {
+  "id": "spotify",
+  "name": "Spotify",
+  "name_ar": "سبوتيفاي",
+  "category": "Music & audio",
+  "aliases": [
+   "SPOTIFY",
+   "SPOTIFY P1A",
+   "SPOTIFY AB",
+   "SPOTIFY USA",
+   "SPOTIFY P2A"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "spotify_individual",
+    "name": "Individual",
+    "cycle": "monthly",
+    "price": 79,
+    "currency": "EGP",
+    "egp_approx": 79,
+    "notes": "Intro: 6 months at 39 then 79 (new users, ends 6 Nov 2026); prepaid 3 months = 237",
+    "source_url": "https://www.spotify.com/eg-en/premium",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "spotify_duo",
+    "name": "Duo",
+    "cycle": "monthly",
+    "price": 109,
+    "currency": "EGP",
+    "egp_approx": 109,
+    "notes": "",
+    "source_url": "https://www.spotify.com/eg-en/premium",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "spotify_family",
+    "name": "Family",
+    "cycle": "monthly",
+    "price": 139,
+    "currency": "EGP",
+    "egp_approx": 139,
+    "notes": "up to 6 accounts",
+    "source_url": "https://www.spotify.com/eg-en/premium",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "spotify_student",
+    "name": "Student",
+    "cycle": "monthly",
+    "price": 39,
+    "currency": "EGP",
+    "egp_approx": 39,
+    "notes": "prepaid 1 month = 43",
+    "source_url": "https://www.spotify.com/eg-en/premium",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Egyptian cards, carrier billing (Vodafone/Orange/e&), prepaid cards (Fawry)",
+  "cancel_url_or_hint": "spotify.com/account",
+  "notes": "Matches existing catalog.",
+  "logo_file": "logos/spotify.svg"
+ },
+ {
+  "id": "anghami",
+  "name": "Anghami",
+  "name_ar": "أنغامي",
+  "category": "Music & audio",
+  "aliases": [
+   "ANGHAMI",
+   "ANGHAMI PLUS",
+   "ANGHAMI.COM"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "anghami_plus_app",
+    "name": "Plus (App Store/Play)",
+    "cycle": "monthly",
+    "price": 69.99,
+    "currency": "EGP",
+    "egp_approx": 69.99,
+    "notes": "support page ~1-2 years old",
+    "source_url": "https://support.anghami.com/hc/en-us/articles/5428211075482-Anghami-Plus-Pricing-in-Egypt",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "anghami_plus_carrier",
+    "name": "Plus (carrier billing)",
+    "cycle": "monthly",
+    "price": 65,
+    "currency": "EGP",
+    "egp_approx": 65,
+    "notes": "Vodafone/Orange/e&; Lite 30/month",
+    "source_url": "https://support.anghami.com/hc/en-us/articles/5428211075482-Anghami-Plus-Pricing-in-Egypt",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "anghami_plus_web",
+    "name": "Plus (website)",
+    "cycle": "monthly",
+    "price": 2.5,
+    "currency": "USD",
+    "egp_approx": 134,
+    "notes": "USD, card-converted",
+    "source_url": "https://support.anghami.com/hc/en-us/articles/5428211075482-Anghami-Plus-Pricing-in-Egypt",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "anghami_family_voucher",
+    "name": "Family (XPRS voucher)",
+    "cycle": "monthly",
+    "price": 120,
+    "currency": "EGP",
+    "egp_approx": 120,
+    "notes": "",
+    "source_url": "https://support.anghami.com/hc/en-us/articles/5428211075482-Anghami-Plus-Pricing-in-Egypt",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Fawry/XPRS vouchers, carrier billing, Egyptian cards via app stores",
+  "cancel_url_or_hint": "anghami.com > Settings",
+  "notes": "Existing catalog Plus 60/Platinum 100 outdated (now 65-70).",
+  "logo_file": "logos/anghami.svg"
+ },
+ {
+  "id": "apple_music",
+  "name": "Apple Music",
+  "name_ar": "أبل ميوزك",
+  "category": "Music & audio",
+  "aliases": [
+   "APPLE.COM/BILL",
+   "APPLE MUSIC",
+   "ITUNES.COM/BILL"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "am_individual",
+    "name": "Individual",
+    "cycle": "monthly",
+    "price": 79.99,
+    "currency": "EGP",
+    "egp_approx": 79.99,
+    "notes": "\"auto-renews for EGP 79.99/month\"; old 69.99 stale",
+    "source_url": "https://music.apple.com/eg/subscribe",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "am_family",
+    "name": "Family",
+    "cycle": "monthly",
+    "price": 109.99,
+    "currency": "EGP",
+    "egp_approx": 109.99,
+    "notes": "",
+    "source_url": "existing catalog",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "am_student",
+    "name": "Student",
+    "cycle": "monthly",
+    "price": 34.99,
+    "currency": "EGP",
+    "egp_approx": 34.99,
+    "notes": "",
+    "source_url": "existing catalog",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Apple App Store / Google Play billing in EGP, Egyptian cards, carrier billing",
+  "cancel_url_or_hint": "Settings > Apple ID > Subscriptions",
+  "notes": "Individual read live; Family/Student not shown on the subscribe page, unverified.",
+  "logo_file": "logos/apple_music.svg"
+ },
+ {
+  "id": "youtube_music",
+  "name": "YouTube Music Premium",
+  "name_ar": "يوتيوب ميوزك",
+  "category": "Music & audio",
+  "aliases": [
+   "GOOGLE *YOUTUBE MUSIC",
+   "YOUTUBE MUSIC"
+  ],
+  "billing_currency": "EGP",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "Google Play billing",
+  "cancel_url_or_hint": "youtube.com/paid_memberships",
+  "notes": "EGP price not found.",
+  "logo_file": "logos/youtube_music.svg"
+ },
+ {
+  "id": "deezer",
+  "name": "Deezer",
+  "name_ar": "ديزر",
+  "category": "Music & audio",
+  "aliases": [
+   "DEEZER",
+   "DEEZER.COM"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "deezer_premium",
+    "name": "Premium",
+    "cycle": "monthly",
+    "price": 11.99,
+    "currency": "USD",
+    "egp_approx": 641,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "deezer.com account",
+  "notes": "Deezer is thin in Egypt.",
+  "logo_file": "logos/deezer.svg"
+ },
+ {
+  "id": "audible",
+  "name": "Audible",
+  "name_ar": "أوديبل",
+  "category": "Music & audio",
+  "aliases": [
+   "AUDIBLE",
+   "AUDIBLE.COM",
+   "AMZN AUDIBLE"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "audible_plus",
+    "name": "Plus",
+    "cycle": "monthly",
+    "price": 45,
+    "currency": "EGP",
+    "egp_approx": 45,
+    "notes": "",
+    "source_url": "existing catalog",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Cards",
+  "cancel_url_or_hint": "audible.com",
+  "notes": "Audible availability in Egypt unverified.",
+  "logo_file": "logos/audible.svg"
+ },
+ {
+  "id": "storytel",
+  "name": "Storytel",
+  "name_ar": "ستوري تل",
+  "category": "Music & audio",
+  "aliases": [
+   "STORYTEL"
+  ],
+  "billing_currency": "USD",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "storytel.com",
+  "notes": "Egypt coverage unverified.",
+  "logo_file": "logos/storytel.png"
+ },
+ {
+  "id": "kindle_unlimited",
+  "name": "Kindle Unlimited",
+  "name_ar": "كيندل",
+  "category": "Music & audio",
+  "aliases": [
+   "KINDLE UNLIMITED",
+   "AMZN KINDLE",
+   "AMAZON KINDLE"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "ku_monthly",
+    "name": "Monthly",
+    "cycle": "monthly",
+    "price": 11.99,
+    "currency": "USD",
+    "egp_approx": 641,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "amazon.com > Memberships",
+  "notes": "",
+  "logo_file": "logos/kindle_unlimited.svg"
+ },
+ {
+  "id": "scribd",
+  "name": "Scribd / Everand",
+  "name_ar": "سكريبد",
+  "category": "Music & audio",
+  "aliases": [
+   "SCRIBD",
+   "EVERAND"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "scribd_monthly",
+    "name": "Monthly",
+    "cycle": "monthly",
+    "price": 11.99,
+    "currency": "USD",
+    "egp_approx": 641,
+    "notes": "existing catalog 40 EGP stale",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "everand.com account",
+  "notes": "",
+  "logo_file": "logos/scribd.svg"
+ },
+ {
+  "id": "playstation_plus",
+  "name": "PlayStation Plus",
+  "name_ar": "بلايستيشن بلس",
+  "category": "Gaming",
+  "aliases": [
+   "PLAYSTATION NETWORK",
+   "PLAYSTATION PLUS",
+   "SONY INTERACTIVE ENTERTAINMENT",
+   "PSN",
+   "SIE"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "psplus_essential_1",
+    "name": "Essential (US store)",
+    "cycle": "monthly",
+    "price": 10.99,
+    "currency": "USD",
+    "egp_approx": 587,
+    "notes": "",
+    "source_url": "https://www.playstation.com/en-us/ps-plus/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "psplus_essential_12",
+    "name": "Essential (US store)",
+    "cycle": "yearly",
+    "price": 79.99,
+    "currency": "USD",
+    "egp_approx": 4275,
+    "notes": "",
+    "source_url": "https://www.playstation.com/en-us/ps-plus/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "psplus_extra_12",
+    "name": "Extra (US store)",
+    "cycle": "yearly",
+    "price": 134.99,
+    "currency": "USD",
+    "egp_approx": 7215,
+    "notes": "",
+    "source_url": "https://www.playstation.com/en-us/ps-plus/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "psplus_premium_12",
+    "name": "Premium (US store)",
+    "cycle": "yearly",
+    "price": 159.99,
+    "currency": "USD",
+    "egp_approx": 8551,
+    "notes": "",
+    "source_url": "https://www.playstation.com/en-us/ps-plus/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "psplus_extra_1",
+    "name": "Extra (US store)",
+    "cycle": "monthly",
+    "price": 16.99,
+    "currency": "USD",
+    "egp_approx": 908,
+    "notes": "",
+    "source_url": "https://www.playstation.com/en-us/ps-plus/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "psplus_premium_1",
+    "name": "Premium (US store)",
+    "cycle": "monthly",
+    "price": 19.99,
+    "currency": "USD",
+    "egp_approx": 1068,
+    "notes": "",
+    "source_url": "https://www.playstation.com/en-us/ps-plus/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "psplus_ae_essential_1",
+    "name": "Essential (UAE store)",
+    "cycle": "monthly",
+    "price": 32.99,
+    "currency": "AED",
+    "egp_approx": null,
+    "notes": "",
+    "source_url": "https://www.playstation.com/en-ae/ps-plus/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "psplus_ae_essential_12",
+    "name": "Essential (UAE store)",
+    "cycle": "yearly",
+    "price": 239.99,
+    "currency": "AED",
+    "egp_approx": null,
+    "notes": "",
+    "source_url": "https://www.playstation.com/en-ae/ps-plus/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "psplus_ae_extra_12",
+    "name": "Extra (UAE store)",
+    "cycle": "yearly",
+    "price": 396.99,
+    "currency": "AED",
+    "egp_approx": null,
+    "notes": "",
+    "source_url": "https://www.playstation.com/en-ae/ps-plus/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "psplus_ae_deluxe_12",
+    "name": "Deluxe (UAE store)",
+    "cycle": "yearly",
+    "price": 459.99,
+    "currency": "AED",
+    "egp_approx": null,
+    "notes": "",
+    "source_url": "https://www.playstation.com/en-ae/ps-plus/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "psplus_sa_essential_1",
+    "name": "Essential (KSA store)",
+    "cycle": "monthly",
+    "price": 33.99,
+    "currency": "SAR",
+    "egp_approx": null,
+    "notes": "",
+    "source_url": "https://www.playstation.com/en-sa/ps-plus/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "psplus_sa_essential_12",
+    "name": "Essential (KSA store)",
+    "cycle": "yearly",
+    "price": 243.99,
+    "currency": "SAR",
+    "egp_approx": null,
+    "notes": "",
+    "source_url": "https://www.playstation.com/en-sa/ps-plus/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "psplus_sa_extra_12",
+    "name": "Extra (KSA store)",
+    "cycle": "yearly",
+    "price": 399.99,
+    "currency": "SAR",
+    "egp_approx": null,
+    "notes": "",
+    "source_url": "https://www.playstation.com/en-sa/ps-plus/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "psplus_sa_deluxe_12",
+    "name": "Deluxe (KSA store)",
+    "cycle": "yearly",
+    "price": 469.99,
+    "currency": "SAR",
+    "egp_approx": null,
+    "notes": "",
+    "source_url": "https://www.playstation.com/en-sa/ps-plus/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Egypt has no PlayStation Store locale; Egyptians use UAE/KSA/US/Turkey accounts and gift cards (Fawry, resellers). Egyptian cards usually not accepted",
+  "cancel_url_or_hint": "playstation.com > Subscription settings",
+  "notes": "No Egyptian PlayStation Store: Egyptians subscribe via the US, UAE or KSA store (gift cards). Prices read live from playstation.com per region; EGP equivalents not stored.",
+  "logo_file": "logos/playstation_plus.svg"
+ },
+ {
+  "id": "xbox_game_pass",
+  "name": "Xbox Game Pass",
+  "name_ar": "إكس بوكس جيم باس",
+  "category": "Gaming",
+  "aliases": [
+   "MICROSOFT*XBOX",
+   "XBOX GAME PASS",
+   "MICROSOFT XBOX",
+   "XBOX.COM"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "gp_ultimate",
+    "name": "Ultimate",
+    "cycle": "monthly",
+    "price": 22.99,
+    "currency": "USD",
+    "egp_approx": 1229,
+    "notes": "US price cut Apr 2026 per search summary; Egypt EGP not found",
+    "source_url": "https://www.purexbox.com/news/2026/04/heres-a-breakdown-of-the-new-prices-for-xbox-game-pass-as-of-april-2026",
+    "checked_at": "2026-10-17",
+    "confidence": "low"
+   },
+   {
+    "id": "gp_pc",
+    "name": "PC Game Pass",
+    "cycle": "monthly",
+    "price": 13.99,
+    "currency": "USD",
+    "egp_approx": 748,
+    "notes": "",
+    "source_url": "https://www.purexbox.com/news/2026/04/heres-a-breakdown-of-the-new-prices-for-xbox-game-pass-as-of-april-2026",
+    "checked_at": "2026-10-17",
+    "confidence": "low"
+   },
+   {
+    "id": "gp_pc_sar",
+    "name": "PC Game Pass (KSA store ref)",
+    "cycle": "monthly",
+    "price": 48.99,
+    "currency": "SAR",
+    "egp_approx": null,
+    "notes": "~270 EGP per Games2Egypt, Oct 2025",
+    "source_url": "https://www.games2egypt.com/news/11183/xbox-game-pass-prices-rise-globally-in-2025",
+    "checked_at": "2026-10-17",
+    "confidence": "low"
+   },
+   {
+    "id": "gp_egypt_secondary",
+    "name": "Game Pass (tier unspecified, Egypt)",
+    "cycle": "monthly",
+    "price": 199,
+    "currency": "EGP",
+    "egp_approx": 199,
+    "notes": "aggregator July 2026; xbox.com/ar-EG/xbox-game-pass returns not-found, official EG price not readable",
+    "source_url": "https://geopriced.com/price/xbox-game-pass/egypt",
+    "checked_at": "2026-10-17",
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Microsoft Store Egypt accepts Egyptian cards where enabled; gift cards via Fawry/resellers",
+  "cancel_url_or_hint": "account.microsoft.com/services",
+  "notes": "xbox.com/en-EG page 404; Egypt EGP price not verified.",
+  "logo_file": "logos/xbox_game_pass.svg"
+ },
+ {
+  "id": "nintendo_switch_online",
+  "name": "Nintendo Switch Online",
+  "name_ar": "نينتندو أونلاين",
+  "category": "Gaming",
+  "aliases": [
+   "NINTENDO",
+   "NINTENDO SWITCH ONLINE"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "nso_12",
+    "name": "Individual 12 months",
+    "cycle": "yearly",
+    "price": 19.99,
+    "currency": "USD",
+    "egp_approx": 1068,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Nintendo eShop has no Egypt store; US/other region cards",
+  "cancel_url_or_hint": "accounts.nintendo.com",
+  "notes": "Existing catalog availability [] is right (no Egypt store).",
+  "logo_file": "logos/nintendo_switch_online.svg"
+ },
+ {
+  "id": "ea_play",
+  "name": "EA Play",
+  "name_ar": "إي إيه بلاي",
+  "category": "Gaming",
+  "aliases": [
+   "EA PLAY",
+   "ELECTRONIC ARTS",
+   "EA.COM"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "ea_monthly",
+    "name": "EA Play",
+    "cycle": "monthly",
+    "price": 5.99,
+    "currency": "USD",
+    "egp_approx": 320,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "ea.com/ea-play",
+  "notes": "",
+  "logo_file": "logos/ea_play.svg"
+ },
+ {
+  "id": "ubisoft_plus",
+  "name": "Ubisoft+",
+  "name_ar": "يوبي سوفت بلس",
+  "category": "Gaming",
+  "aliases": [
+   "UBISOFT",
+   "UBISOFT+"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "ubi_classics",
+    "name": "Classics",
+    "cycle": "monthly",
+    "price": 7.99,
+    "currency": "USD",
+    "egp_approx": 427,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "ubi_premium",
+    "name": "Premium",
+    "cycle": "monthly",
+    "price": 17.99,
+    "currency": "USD",
+    "egp_approx": 962,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "store.ubisoft.com",
+  "notes": "",
+  "logo_file": "logos/ubisoft_plus.svg"
+ },
+ {
+  "id": "apple_arcade",
+  "name": "Apple Arcade",
+  "name_ar": "أبل أركيد",
+  "category": "Gaming",
+  "aliases": [
+   "APPLE.COM/BILL",
+   "APPLE ARCADE"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "arcade_included",
+    "name": "Included with any paid iCloud+ plan",
+    "cycle": "monthly",
+    "price": 0,
+    "currency": "EGP",
+    "egp_approx": 0,
+    "notes": "",
+    "source_url": "https://www.icloud.com/en-eg/info/icloud-plus-tv-arcade",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Apple App Store / Google Play billing in EGP, Egyptian cards, carrier billing",
+  "cancel_url_or_hint": "Apple ID subscriptions",
+  "notes": "EGP price not found.",
+  "logo_file": "logos/apple_arcade.svg"
+ },
+ {
+  "id": "google_play_pass",
+  "name": "Google Play Pass",
+  "name_ar": "جوجل بلاي باس",
+  "category": "Gaming",
+  "aliases": [
+   "GOOGLE *PLAY PASS"
+  ],
+  "billing_currency": "EGP",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "Google Play",
+  "cancel_url_or_hint": "Play Store > Subscriptions",
+  "notes": "Not offered in Egypt as far as found.",
+  "logo_file": "logos/google_play_pass.svg"
+ },
+ {
+  "id": "roblox_premium",
+  "name": "Roblox Premium",
+  "name_ar": "روبلوكس",
+  "category": "Gaming",
+  "aliases": [
+   "ROBLOX",
+   "ROBLOX PREMIUM",
+   "ROBLOX.COM"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "roblox_450",
+    "name": "Premium 450 Robux",
+    "cycle": "monthly",
+    "price": 4.99,
+    "currency": "USD",
+    "egp_approx": 267,
+    "notes": "USD list; App Store tiers in EGP differ",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Apple App Store / Google Play billing in EGP, Egyptian cards, carrier billing",
+  "cancel_url_or_hint": "roblox.com > Subscriptions",
+  "notes": "Very common Egyptian kids subscription.",
+  "logo_file": "logos/roblox_premium.svg"
+ },
+ {
+  "id": "fortnite_crew",
+  "name": "Fortnite Crew",
+  "name_ar": "فورتنايت كرو",
+  "category": "Gaming",
+  "aliases": [
+   "EPIC GAMES",
+   "FORTNITE CREW"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "crew",
+    "name": "Crew",
+    "cycle": "monthly",
+    "price": 11.99,
+    "currency": "USD",
+    "egp_approx": 641,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "epicgames.com/account",
+  "notes": "",
+  "logo_file": "logos/fortnite_crew.svg"
+ },
+ {
+  "id": "discord_nitro",
+  "name": "Discord Nitro",
+  "name_ar": "ديسكورد نيترو",
+  "category": "Gaming",
+  "aliases": [
+   "DISCORD",
+   "DISCORD NITRO",
+   "DISCORD.COM"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "nitro_basic",
+    "name": "Nitro Basic",
+    "cycle": "monthly",
+    "price": 2.99,
+    "currency": "USD",
+    "egp_approx": 160,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "nitro",
+    "name": "Nitro",
+    "cycle": "monthly",
+    "price": 9.99,
+    "currency": "USD",
+    "egp_approx": 534,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing; Discord regional pricing applies",
+  "cancel_url_or_hint": "discord.com > Settings > Subscriptions",
+  "notes": "",
+  "logo_file": "logos/discord_nitro.svg"
+ },
+ {
+  "id": "twitch",
+  "name": "Twitch Turbo / subs",
+  "name_ar": "تويتش",
+  "category": "Gaming",
+  "aliases": [
+   "TWITCH",
+   "TWITCH INTERACTIVE"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "turbo",
+    "name": "Turbo",
+    "cycle": "monthly",
+    "price": 11.99,
+    "currency": "USD",
+    "egp_approx": 641,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "twitch.tv subscriptions",
+  "notes": "",
+  "logo_file": "logos/twitch.svg"
+ },
+ {
+  "id": "we_telecom",
+  "name": "WE (Telecom Egypt) - home internet & postpaid",
+  "name_ar": "المصرية للاتصالات وي",
+  "category": "Telecom & internet",
+  "aliases": [
+   "TELECOM EGYPT",
+   "WE",
+   "WE EGYPT",
+   "المصرية للاتصالات"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "we_space_50",
+    "name": "WE Space Super 30 Mbps, 50 GB",
+    "cycle": "monthly",
+    "price": 150,
+    "currency": "EGP",
+    "egp_approx": 150,
+    "notes": "excl. VAT",
+    "source_url": "https://www.te.eg/personal/home/we-internet/we-space/super",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "we_space_150",
+    "name": "WE Space Super 30 Mbps, 150 GB",
+    "cycle": "monthly",
+    "price": 260,
+    "currency": "EGP",
+    "egp_approx": 260,
+    "notes": "3120/yr; excl. VAT",
+    "source_url": "https://www.te.eg/personal/home/we-internet/we-space/super",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "we_space_200",
+    "name": "WE Space Super 30 Mbps, 200 GB",
+    "cycle": "monthly",
+    "price": 330,
+    "currency": "EGP",
+    "egp_approx": 330,
+    "notes": "3960/yr; excl. VAT",
+    "source_url": "https://www.te.eg/personal/home/we-internet/we-space/super",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "we_space_250",
+    "name": "WE Space Super 30 Mbps, 250 GB",
+    "cycle": "monthly",
+    "price": 395,
+    "currency": "EGP",
+    "egp_approx": 395,
+    "notes": "4345/yr",
+    "source_url": "https://www.te.eg/personal/home/we-internet/we-space/super",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "we_space_300",
+    "name": "WE Space Super 30 Mbps, 300 GB",
+    "cycle": "monthly",
+    "price": 460,
+    "currency": "EGP",
+    "egp_approx": 460,
+    "notes": "5060/yr",
+    "source_url": "https://www.te.eg/personal/home/we-internet/we-space/super",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "we_space_400",
+    "name": "WE Space Super 30 Mbps, 400 GB",
+    "cycle": "monthly",
+    "price": 580,
+    "currency": "EGP",
+    "egp_approx": 580,
+    "notes": "6380/yr",
+    "source_url": "https://www.te.eg/personal/home/we-internet/we-space/super",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "we_space_500",
+    "name": "WE Space Super 30 Mbps, 500 GB",
+    "cycle": "monthly",
+    "price": 660,
+    "currency": "EGP",
+    "egp_approx": 660,
+    "notes": "6930/yr",
+    "source_url": "https://www.te.eg/personal/home/we-internet/we-space/super",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "we_space_750",
+    "name": "WE Space Super 30 Mbps, 750 GB",
+    "cycle": "monthly",
+    "price": 925,
+    "currency": "EGP",
+    "egp_approx": 925,
+    "notes": "9715/yr",
+    "source_url": "https://www.te.eg/personal/home/we-internet/we-space/super",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "we_space_1500",
+    "name": "WE Space Super 30 Mbps, 1500 GB",
+    "cycle": "monthly",
+    "price": 1650,
+    "currency": "EGP",
+    "egp_approx": 1650,
+    "notes": "16500/yr",
+    "source_url": "https://www.te.eg/personal/home/we-internet/we-space/super",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "we_gold_300",
+    "name": "WE Gold postpaid 300 (5.5 GB, 1200 min)",
+    "cycle": "monthly",
+    "price": 300,
+    "currency": "EGP",
+    "egp_approx": 300,
+    "notes": "",
+    "source_url": "https://www.te.eg/web/guest/personal/mobile/we-gold",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "we_gold_600",
+    "name": "WE Gold 600 (20 GB, 3700 min)",
+    "cycle": "monthly",
+    "price": 600,
+    "currency": "EGP",
+    "egp_approx": 600,
+    "notes": "",
+    "source_url": "https://www.te.eg/web/guest/personal/mobile/we-gold",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "we_gold_890",
+    "name": "WE Gold 890 (30 GB, 6000 min)",
+    "cycle": "monthly",
+    "price": 890,
+    "currency": "EGP",
+    "egp_approx": 890,
+    "notes": "",
+    "source_url": "https://www.te.eg/web/guest/personal/mobile/we-gold",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "we_gold_1200",
+    "name": "WE Gold 1200 (65 GB, 8000 min)",
+    "cycle": "monthly",
+    "price": 1200,
+    "currency": "EGP",
+    "egp_approx": 1200,
+    "notes": "",
+    "source_url": "https://www.te.eg/web/guest/personal/mobile/we-gold",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "we_gold_1500",
+    "name": "WE Gold 1500 (70 GB, 9000 min)",
+    "cycle": "monthly",
+    "price": 1500,
+    "currency": "EGP",
+    "egp_approx": 1500,
+    "notes": "",
+    "source_url": "https://www.te.eg/web/guest/personal/mobile/we-gold",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "we_gold_2300",
+    "name": "WE Gold 2300 (130 GB, 10000 min)",
+    "cycle": "monthly",
+    "price": 2300,
+    "currency": "EGP",
+    "egp_approx": 2300,
+    "notes": "",
+    "source_url": "https://www.te.eg/web/guest/personal/mobile/we-gold",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Fawry, bank cards, WE app, Vodafone Cash/Instapay",
+  "cancel_url_or_hint": "WE app / 19777",
+  "notes": "Read live from te.eg. Home internet page states prices EXCLUDE 14% VAT (70/100/200 Mbps tiers exist; same NTRA price grid as Orange/e&: from 590/880/2350). WE Gold VAT status not stated.",
+  "logo_file": "logos/we_telecom_egypt.svg"
+ },
+ {
+  "id": "vodafone_egypt",
+  "name": "Vodafone Egypt (mobile & home)",
+  "name_ar": "فودافون مصر",
+  "category": "Telecom & internet",
+  "aliases": [
+   "VODAFONE EGYPT",
+   "VODAFONE",
+   "ANA VODAFONE",
+   "فودافون"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "vf_flex_52",
+    "name": "Flex 52",
+    "cycle": "monthly",
+    "price": 52,
+    "currency": "EGP",
+    "egp_approx": 52,
+    "notes": "1500 flexes; tax exclusive",
+    "source_url": "https://web.vodafone.com.eg/spa/vodafone-flex",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "vf_flex_80",
+    "name": "Flex 80",
+    "cycle": "monthly",
+    "price": 80,
+    "currency": "EGP",
+    "egp_approx": 80,
+    "notes": "3000 flexes; tax exclusive",
+    "source_url": "https://web.vodafone.com.eg/spa/vodafone-flex",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "vf_flex_115",
+    "name": "Flex 115",
+    "cycle": "monthly",
+    "price": 115,
+    "currency": "EGP",
+    "egp_approx": 115,
+    "notes": "5000 flexes",
+    "source_url": "https://web.vodafone.com.eg/spa/vodafone-flex",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "vf_flex_175",
+    "name": "Flex 175",
+    "cycle": "monthly",
+    "price": 175,
+    "currency": "EGP",
+    "egp_approx": 175,
+    "notes": "9000 flexes",
+    "source_url": "https://web.vodafone.com.eg/spa/vodafone-flex",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "vf_flex_345",
+    "name": "Flex 345",
+    "cycle": "monthly",
+    "price": 345,
+    "currency": "EGP",
+    "egp_approx": 345,
+    "notes": "21000 flexes",
+    "source_url": "https://web.vodafone.com.eg/spa/vodafone-flex",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "vf_red_essential",
+    "name": "RED Essential+ (16 GB, 3500 min)",
+    "cycle": "monthly",
+    "price": 575,
+    "currency": "EGP",
+    "egp_approx": 575,
+    "notes": "tax exclusive",
+    "source_url": "https://web.vodafone.com.eg/en/vodafone-red1",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "vf_red_advance",
+    "name": "RED Advance+ (32 GB, 6000 min)",
+    "cycle": "monthly",
+    "price": 980,
+    "currency": "EGP",
+    "egp_approx": 980,
+    "notes": "",
+    "source_url": "https://web.vodafone.com.eg/en/vodafone-red1",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "vf_red_prime",
+    "name": "RED Prime+ (50 GB, 8000 min)",
+    "cycle": "monthly",
+    "price": 1380,
+    "currency": "EGP",
+    "egp_approx": 1380,
+    "notes": "",
+    "source_url": "https://web.vodafone.com.eg/en/vodafone-red1",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "vf_red_elite",
+    "name": "RED Elite+ (85 GB, 10000 min)",
+    "cycle": "monthly",
+    "price": 2000,
+    "currency": "EGP",
+    "egp_approx": 2000,
+    "notes": "",
+    "source_url": "https://web.vodafone.com.eg/en/vodafone-red1",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "vf_red_exclusive",
+    "name": "RED Exclusive (200 GB, 11000 min)",
+    "cycle": "monthly",
+    "price": 3450,
+    "currency": "EGP",
+    "egp_approx": 3450,
+    "notes": "",
+    "source_url": "https://web.vodafone.com.eg/en/vodafone-red1",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "vf_hw_290",
+    "name": "Home Wireless 40 GB",
+    "cycle": "monthly",
+    "price": 290,
+    "currency": "EGP",
+    "egp_approx": 290,
+    "notes": "",
+    "source_url": "https://web.vodafone.com.eg/en/wireless-net",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "vf_hw_520",
+    "name": "Home Wireless 135 GB",
+    "cycle": "monthly",
+    "price": 520,
+    "currency": "EGP",
+    "egp_approx": 520,
+    "notes": "",
+    "source_url": "https://web.vodafone.com.eg/en/wireless-net",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "vf_hw_830",
+    "name": "Home Wireless 250 GB",
+    "cycle": "monthly",
+    "price": 830,
+    "currency": "EGP",
+    "egp_approx": 830,
+    "notes": "",
+    "source_url": "https://web.vodafone.com.eg/en/wireless-net",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "vf_hw_1270",
+    "name": "Home Wireless 400 GB",
+    "cycle": "monthly",
+    "price": 1270,
+    "currency": "EGP",
+    "egp_approx": 1270,
+    "notes": "",
+    "source_url": "https://web.vodafone.com.eg/en/wireless-net",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Vodafone Cash, Fawry, cards, recharge",
+  "cancel_url_or_hint": "Ana Vodafone app",
+  "notes": "Read live from web.vodafone.com.eg. Flex and RED prices are shown TAX EXCLUSIVE (add 14% VAT + fees). RED plans bundle subscriptions (Disney+, YouTube Premium, Watch iT, OSN+, Anghami Plus, Prime, Yango Play, TOD, talabat Pro). Old \"Plus\" MB packs (37/120/300/600) and DSL (eshop needs a landline number) removed/unverified.",
+  "logo_file": "logos/vodafone_egypt.svg"
+ },
+ {
+  "id": "orange_egypt",
+  "name": "Orange Egypt",
+  "name_ar": "أورنج مصر",
+  "category": "Telecom & internet",
+  "aliases": [
+   "ORANGE EGYPT",
+   "ORANGE",
+   "MY ORANGE",
+   "اورنج"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "orange_premier_lite",
+    "name": "PREMIER Lite (15 GB, 2500 min)",
+    "cycle": "monthly",
+    "price": 520,
+    "currency": "EGP",
+    "egp_approx": 520,
+    "notes": "",
+    "source_url": "https://shop.orange.eg/en/tariff-plans/orange-premier",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "orange_premier_plus",
+    "name": "PREMIER Plus (20 GB, 3500 min)",
+    "cycle": "monthly",
+    "price": 690,
+    "currency": "EGP",
+    "egp_approx": 690,
+    "notes": "",
+    "source_url": "https://shop.orange.eg/en/tariff-plans/orange-premier",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "orange_premier_select",
+    "name": "PREMIER Select (25 GB, 5000 min)",
+    "cycle": "monthly",
+    "price": 860,
+    "currency": "EGP",
+    "egp_approx": 860,
+    "notes": "",
+    "source_url": "https://shop.orange.eg/en/tariff-plans/orange-premier",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "orange_premier_ultra",
+    "name": "PREMIER Ultra (40 GB, 7000 min)",
+    "cycle": "monthly",
+    "price": 1200,
+    "currency": "EGP",
+    "egp_approx": 1200,
+    "notes": "",
+    "source_url": "https://shop.orange.eg/en/tariff-plans/orange-premier",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "orange_premier_platinum",
+    "name": "PREMIER Platinum (70 GB, 10000 min)",
+    "cycle": "monthly",
+    "price": 1725,
+    "currency": "EGP",
+    "egp_approx": 1725,
+    "notes": "",
+    "source_url": "https://shop.orange.eg/en/tariff-plans/orange-premier",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "orange_freemax_52",
+    "name": "FREEmax 52",
+    "cycle": "monthly",
+    "price": 52,
+    "currency": "EGP",
+    "egp_approx": 52,
+    "notes": "",
+    "source_url": "https://www.orange.eg/en/tariff-plans/freemax",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "orange_freemax_80",
+    "name": "FREEmax 80",
+    "cycle": "monthly",
+    "price": 80,
+    "currency": "EGP",
+    "egp_approx": 80,
+    "notes": "",
+    "source_url": "https://www.orange.eg/en/tariff-plans/freemax",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "orange_freemax_115",
+    "name": "FREEmax 115",
+    "cycle": "monthly",
+    "price": 115,
+    "currency": "EGP",
+    "egp_approx": 115,
+    "notes": "",
+    "source_url": "https://www.orange.eg/en/tariff-plans/freemax",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "orange_freemax_175",
+    "name": "FREEmax 175",
+    "cycle": "monthly",
+    "price": 175,
+    "currency": "EGP",
+    "egp_approx": 175,
+    "notes": "",
+    "source_url": "https://www.orange.eg/en/tariff-plans/freemax",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "orange_freemax_230",
+    "name": "FREEmax 230",
+    "cycle": "monthly",
+    "price": 230,
+    "currency": "EGP",
+    "egp_approx": 230,
+    "notes": "",
+    "source_url": "https://www.orange.eg/en/tariff-plans/freemax",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "orange_freemax_345",
+    "name": "FREEmax 345",
+    "cycle": "monthly",
+    "price": 345,
+    "currency": "EGP",
+    "egp_approx": 345,
+    "notes": "",
+    "source_url": "https://www.orange.eg/en/tariff-plans/freemax",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "orange_dsl_30",
+    "name": "Home DSL 30 Mbps (from, 50 GB)",
+    "cycle": "monthly",
+    "price": 150,
+    "currency": "EGP",
+    "egp_approx": 150,
+    "notes": "tiers by quota up to 925; excl. 14% VAT",
+    "source_url": "https://dsl.orange.eg/en/packages/Home-internet-packages",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "orange_dsl_70",
+    "name": "Home DSL 70 Mbps (from)",
+    "cycle": "monthly",
+    "price": 590,
+    "currency": "EGP",
+    "egp_approx": 590,
+    "notes": "",
+    "source_url": "https://dsl.orange.eg/en/packages/Home-internet-packages",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "orange_dsl_100",
+    "name": "Home DSL 100 Mbps (from)",
+    "cycle": "monthly",
+    "price": 880,
+    "currency": "EGP",
+    "egp_approx": 880,
+    "notes": "",
+    "source_url": "https://dsl.orange.eg/en/packages/Home-internet-packages",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "orange_dsl_200",
+    "name": "Home DSL 200 Mbps (from)",
+    "cycle": "monthly",
+    "price": 2350,
+    "currency": "EGP",
+    "egp_approx": 2350,
+    "notes": "",
+    "source_url": "https://dsl.orange.eg/en/packages/Home-internet-packages",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Orange Cash, Fawry, cards",
+  "cancel_url_or_hint": "My Orange app",
+  "notes": "Read live from orange.eg. DSL page: \"prices are subject to 14% value added taxes\" (exclusive); router EGP 50/month extra. PREMIER VAT status not stated. Old \"296 from\" and 239.4 figures removed.",
+  "logo_file": "logos/orange_egypt.svg"
+ },
+ {
+  "id": "etisalat_egypt",
+  "name": "e& Egypt (Etisalat)",
+  "name_ar": "اتصالات مصر",
+  "category": "Telecom & internet",
+  "aliases": [
+   "ETISALAT",
+   "E& EGYPT",
+   "ETISALAT MISR",
+   "اتصالات"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "etisalat_emerald_460",
+    "name": "Emerald 460 (13 GB, 2500 min)",
+    "cycle": "monthly",
+    "price": 460,
+    "currency": "EGP",
+    "egp_approx": 460,
+    "notes": "",
+    "source_url": "https://www.eand.com.eg/portal/Mobile/emerald",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "etisalat_emerald_820",
+    "name": "Emerald 820 (27 GB, 4500 min)",
+    "cycle": "monthly",
+    "price": 820,
+    "currency": "EGP",
+    "egp_approx": 820,
+    "notes": "",
+    "source_url": "https://www.eand.com.eg/portal/Mobile/emerald",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "etisalat_emerald_1170",
+    "name": "Emerald 1170 (43 GB, 6500 min)",
+    "cycle": "monthly",
+    "price": 1170,
+    "currency": "EGP",
+    "egp_approx": 1170,
+    "notes": "",
+    "source_url": "https://www.eand.com.eg/portal/Mobile/emerald",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "etisalat_emerald_1725",
+    "name": "Emerald 1725 (70 GB, 10000 min)",
+    "cycle": "monthly",
+    "price": 1725,
+    "currency": "EGP",
+    "egp_approx": 1725,
+    "notes": "",
+    "source_url": "https://www.eand.com.eg/portal/Mobile/emerald",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "etisalat_emerald_3450",
+    "name": "Emerald 3450 (200 GB, 12000 min)",
+    "cycle": "monthly",
+    "price": 3450,
+    "currency": "EGP",
+    "egp_approx": 3450,
+    "notes": "",
+    "source_url": "https://www.eand.com.eg/portal/Mobile/emerald",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "etisalat_hekaya_52",
+    "name": "Hekaya mixat (from)",
+    "cycle": "monthly",
+    "price": 52,
+    "currency": "EGP",
+    "egp_approx": 52,
+    "notes": "",
+    "source_url": "https://www.eand.com.eg/portal/home",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "etisalat_dsl_50",
+    "name": "eHome DSL 30 Mbps, 50 GB",
+    "cycle": "monthly",
+    "price": 150,
+    "currency": "EGP",
+    "egp_approx": 150,
+    "notes": "",
+    "source_url": "https://www.eand.com.eg/portal/eHome/eHome-DSL",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "etisalat_dsl_150",
+    "name": "eHome DSL 30 Mbps, 150 GB",
+    "cycle": "monthly",
+    "price": 260,
+    "currency": "EGP",
+    "egp_approx": 260,
+    "notes": "",
+    "source_url": "https://www.eand.com.eg/portal/eHome/eHome-DSL",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "etisalat_dsl_200",
+    "name": "eHome DSL 30 Mbps, 200 GB",
+    "cycle": "monthly",
+    "price": 330,
+    "currency": "EGP",
+    "egp_approx": 330,
+    "notes": "",
+    "source_url": "https://www.eand.com.eg/portal/eHome/eHome-DSL",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "etisalat_dsl_300",
+    "name": "eHome DSL 30 Mbps, 300 GB",
+    "cycle": "monthly",
+    "price": 460,
+    "currency": "EGP",
+    "egp_approx": 460,
+    "notes": "",
+    "source_url": "https://www.eand.com.eg/portal/eHome/eHome-DSL",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "etisalat_dsl_750",
+    "name": "eHome DSL 30 Mbps, 750 GB",
+    "cycle": "monthly",
+    "price": 925,
+    "currency": "EGP",
+    "egp_approx": 925,
+    "notes": "",
+    "source_url": "https://www.eand.com.eg/portal/eHome/eHome-DSL",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Etisalat Cash, Fawry, cards",
+  "cancel_url_or_hint": "Etisalat Misr app",
+  "notes": "Read live from eand.com.eg (brand now \"etisalat by e&\"). VAT status not stated on these pages (NTRA DSL grid is excl. 14% VAT).",
+  "logo_file": "logos/etisalat_egypt.png"
+ },
+ {
+  "id": "starlink_egypt",
+  "name": "Starlink Egypt",
+  "name_ar": "ستارلينك",
+  "category": "Telecom & internet",
+  "aliases": [
+   "STARLINK",
+   "SPACEX STARLINK"
+  ],
+  "billing_currency": "USD",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "starlink.com",
+  "notes": "No confirmed official Egyptian service; one tracker (satspeedcheck) claims ~3,400 EGP/month - not reliable. Do not prefill.",
+  "logo_file": null
+ },
+ {
+  "id": "microsoft_365",
+  "name": "Microsoft 365",
+  "name_ar": "مايكروسوفت 365",
+  "category": "Software & productivity",
+  "aliases": [
+   "MICROSOFT*MICROSOFT 365",
+   "MSFT *E0",
+   "MICROSOFT 365",
+   "OFFICE 365"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "ms365_personal_y",
+    "name": "Personal",
+    "cycle": "yearly",
+    "price": 2399,
+    "currency": "EGP",
+    "egp_approx": 2399,
+    "notes": "\"EGP2,399.00/year\"",
+    "source_url": "https://www.microsoft.com/en-eg/microsoft-365/p/microsoft-365-personal/cfq7ttc0k5bf",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "ms365_personal_m",
+    "name": "Personal",
+    "cycle": "monthly",
+    "price": 239,
+    "currency": "EGP",
+    "egp_approx": 239,
+    "notes": "",
+    "source_url": "https://www.microsoft.com/en-eg/microsoft-365/p/microsoft-365-personal/cfq7ttc0k5bf",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "ms365_family_y",
+    "name": "Family",
+    "cycle": "yearly",
+    "price": 2899,
+    "currency": "EGP",
+    "egp_approx": 2899,
+    "notes": "",
+    "source_url": "https://www.microsoft.com/en-eg/microsoft-365/p/microsoft-365-personal/cfq7ttc0k5dm",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "ms365_family_m",
+    "name": "Family",
+    "cycle": "monthly",
+    "price": 289,
+    "currency": "EGP",
+    "egp_approx": 289,
+    "notes": "",
+    "source_url": "https://www.microsoft.com/en-eg/microsoft-365/p/microsoft-365-personal/cfq7ttc0k5dm",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Cards; gift cards",
+  "cancel_url_or_hint": "account.microsoft.com/services",
+  "notes": "Read live from Microsoft Store Egypt. Old retailer figure 3799 removed.",
+  "logo_file": "logos/microsoft_365.svg"
+ },
+ {
+  "id": "google_one",
+  "name": "Google One / Google AI plans",
+  "name_ar": "جوجل ون",
+  "category": "Software & productivity",
+  "aliases": [
+   "GOOGLE *GOOGLE ONE",
+   "GOOGLE ONE",
+   "GOOGLE *STORAGE",
+   "GOOGLE STORAGE"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "g1_basic",
+    "name": "Basic 100 GB",
+    "cycle": "monthly",
+    "price": 94.99,
+    "currency": "EGP",
+    "egp_approx": 94.99,
+    "notes": "existing catalog 30 EGP is WRONG",
+    "source_url": "https://one.google.com/about/plans?hl=en&gl=EG",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "g1_ai_plus",
+    "name": "Google AI Plus 2 TB",
+    "cycle": "monthly",
+    "price": 449.99,
+    "currency": "EGP",
+    "egp_approx": 449.99,
+    "notes": "",
+    "source_url": "https://one.google.com/about/plans?hl=en&gl=EG",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "g1_ai_pro",
+    "name": "Google AI Pro 5 TB",
+    "cycle": "monthly",
+    "price": 939.99,
+    "currency": "EGP",
+    "egp_approx": 939.99,
+    "notes": "includes Gemini, YouTube Premium Lite; existing 75 EGP wrong",
+    "source_url": "https://one.google.com/about/plans?hl=en&gl=EG",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Google Play billing in EGP",
+  "cancel_url_or_hint": "one.google.com/settings",
+  "notes": "Annual saves up to ~16%.",
+  "logo_file": "logos/google_one.svg"
+ },
+ {
+  "id": "icloud",
+  "name": "iCloud+",
+  "name_ar": "آي كلاود",
+  "category": "Software & productivity",
+  "aliases": [
+   "APPLE.COM/BILL",
+   "ICLOUD",
+   "ITUNES.COM/BILL",
+   "APPLE ICLOUD"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "icloud_50",
+    "name": "50 GB",
+    "cycle": "monthly",
+    "price": 49.99,
+    "currency": "EGP",
+    "egp_approx": 49.99,
+    "notes": "existing catalog 39.99 WRONG",
+    "source_url": "https://support.apple.com/en-eg/108047",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "icloud_200",
+    "name": "200 GB",
+    "cycle": "monthly",
+    "price": 179.99,
+    "currency": "EGP",
+    "egp_approx": 179.99,
+    "notes": "existing 149.99 WRONG",
+    "source_url": "https://support.apple.com/en-eg/108047",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "icloud_2tb",
+    "name": "2 TB",
+    "cycle": "monthly",
+    "price": 599.99,
+    "currency": "EGP",
+    "egp_approx": 599.99,
+    "notes": "existing 499.99 WRONG",
+    "source_url": "https://support.apple.com/en-eg/108047",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "icloud_6tb",
+    "name": "6 TB",
+    "cycle": "monthly",
+    "price": 1799.99,
+    "currency": "EGP",
+    "egp_approx": 1799.99,
+    "notes": "existing 1499.99 WRONG",
+    "source_url": "https://support.apple.com/en-eg/108047",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "icloud_12tb",
+    "name": "12 TB",
+    "cycle": "monthly",
+    "price": 3599.99,
+    "currency": "EGP",
+    "egp_approx": 3599.99,
+    "notes": "existing 2999.99 WRONG",
+    "source_url": "https://support.apple.com/en-eg/108047",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Apple App Store / Google Play billing in EGP, Egyptian cards, carrier billing",
+  "cancel_url_or_hint": "Settings > Apple ID > Subscriptions",
+  "notes": "Taxes included per Apple page.",
+  "logo_file": "logos/icloud.svg"
+ },
+ {
+  "id": "dropbox",
+  "name": "Dropbox",
+  "name_ar": "دروب بوكس",
+  "category": "Software & productivity",
+  "aliases": [
+   "DROPBOX",
+   "DROPBOX*"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "db_plus",
+    "name": "Plus",
+    "cycle": "monthly",
+    "price": 11.99,
+    "currency": "USD",
+    "egp_approx": 641,
+    "notes": "existing catalog 45 EGP stale",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "dropbox.com/account",
+  "notes": "",
+  "logo_file": "logos/dropbox.svg"
+ },
+ {
+  "id": "notion",
+  "name": "Notion",
+  "name_ar": "نوشن",
+  "category": "Software & productivity",
+  "aliases": [
+   "NOTION LABS",
+   "NOTION.SO"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "notion_plus",
+    "name": "Plus",
+    "cycle": "monthly",
+    "price": 12,
+    "currency": "USD",
+    "egp_approx": 641,
+    "notes": "$10 annual-billed / $12 monthly",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "notion_business",
+    "name": "Business",
+    "cycle": "monthly",
+    "price": 24,
+    "currency": "USD",
+    "egp_approx": 1283,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "notion.so > Settings",
+  "notes": "Catalog has 10/20 (annual rate).",
+  "logo_file": "logos/notion.svg"
+ },
+ {
+  "id": "slack",
+  "name": "Slack",
+  "name_ar": "سلاك",
+  "category": "Software & productivity",
+  "aliases": [
+   "SLACK",
+   "SLACK TECHNOLOGIES"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "slack_pro",
+    "name": "Pro",
+    "cycle": "monthly",
+    "price": 8.75,
+    "currency": "USD",
+    "egp_approx": 468,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "slack_bizplus",
+    "name": "Business+",
+    "cycle": "monthly",
+    "price": 18,
+    "currency": "USD",
+    "egp_approx": 962,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "slack.com admin",
+  "notes": "",
+  "logo_file": "logos/slack.svg"
+ },
+ {
+  "id": "zoom",
+  "name": "Zoom",
+  "name_ar": "زووم",
+  "category": "Software & productivity",
+  "aliases": [
+   "ZOOM.US",
+   "ZOOM VIDEO COMMUNICATIONS"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "zoom_pro",
+    "name": "Pro",
+    "cycle": "monthly",
+    "price": 15.99,
+    "currency": "USD",
+    "egp_approx": 855,
+    "notes": "existing catalog 55 EGP stale",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "zoom.us/billing",
+  "notes": "",
+  "logo_file": "logos/zoom.svg"
+ },
+ {
+  "id": "adobe_cc",
+  "name": "Adobe Creative Cloud",
+  "name_ar": "أدوبي",
+  "category": "Software & productivity",
+  "aliases": [
+   "ADOBE",
+   "ADOBE *CREATIVE CLOUD",
+   "ADOBE SYSTEMS"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "adobe_all",
+    "name": "All Apps",
+    "cycle": "monthly",
+    "price": 59.99,
+    "currency": "USD",
+    "egp_approx": 3206,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "adobe_single",
+    "name": "Single app",
+    "cycle": "monthly",
+    "price": 22.99,
+    "currency": "USD",
+    "egp_approx": 1229,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing; Adobe Egypt storefront pricing not retrieved",
+  "cancel_url_or_hint": "account.adobe.com/plans",
+  "notes": "",
+  "logo_file": "logos/adobe_creative_cloud.svg"
+ },
+ {
+  "id": "canva",
+  "name": "Canva Pro",
+  "name_ar": "كانفا",
+  "category": "Software & productivity",
+  "aliases": [
+   "CANVA",
+   "CANVA* PRO",
+   "CANVA PTY"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "canva_pro_y",
+    "name": "Pro (1 person)",
+    "cycle": "yearly",
+    "price": 1920,
+    "currency": "EGP",
+    "egp_approx": 1920,
+    "notes": "\"EGP 1,920 /year\"; monthly price not shown",
+    "source_url": "https://www.canva.com/pricing/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "canva_business_y",
+    "name": "Business (per person)",
+    "cycle": "yearly",
+    "price": 3400,
+    "currency": "EGP",
+    "egp_approx": 3400,
+    "notes": "",
+    "source_url": "https://www.canva.com/pricing/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing; Canva localizes to EGP in app",
+  "cancel_url_or_hint": "canva.com/settings/billing-and-teams",
+  "notes": "Read live from canva.com/pricing in EGP.",
+  "logo_file": "logos/canva.svg"
+ },
+ {
+  "id": "grammarly",
+  "name": "Grammarly",
+  "name_ar": "جرامرلي",
+  "category": "Software & productivity",
+  "aliases": [
+   "GRAMMARLY"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "gram_premium",
+    "name": "Premium",
+    "cycle": "monthly",
+    "price": 30,
+    "currency": "USD",
+    "egp_approx": 1604,
+    "notes": "existing catalog 45 EGP stale",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "grammarly.com/account",
+  "notes": "",
+  "logo_file": "logos/grammarly.svg"
+ },
+ {
+  "id": "figma",
+  "name": "Figma",
+  "name_ar": "فيجما",
+  "category": "Software & productivity",
+  "aliases": [
+   "FIGMA"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "figma_pro",
+    "name": "Professional",
+    "cycle": "monthly",
+    "price": 15,
+    "currency": "USD",
+    "egp_approx": 802,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "figma.com settings",
+  "notes": "",
+  "logo_file": "logos/figma.svg"
+ },
+ {
+  "id": "evernote",
+  "name": "Evernote",
+  "name_ar": "إيفرنوت",
+  "category": "Software & productivity",
+  "aliases": [
+   "EVERNOTE"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "ev_personal",
+    "name": "Personal",
+    "cycle": "monthly",
+    "price": 14.99,
+    "currency": "USD",
+    "egp_approx": 801,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "evernote.com",
+  "notes": "",
+  "logo_file": "logos/evernote.svg"
+ },
+ {
+  "id": "onepassword",
+  "name": "1Password",
+  "name_ar": "وان باسورد",
+  "category": "Software & productivity",
+  "aliases": [
+   "1PASSWORD",
+   "AGILEBITS"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "1p_ind",
+    "name": "Individual",
+    "cycle": "monthly",
+    "price": 2.99,
+    "currency": "USD",
+    "egp_approx": 160,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "1p_fam",
+    "name": "Families",
+    "cycle": "monthly",
+    "price": 4.99,
+    "currency": "USD",
+    "egp_approx": 267,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "1password.com",
+  "notes": "",
+  "logo_file": "logos/onepassword.svg"
+ },
+ {
+  "id": "bitwarden",
+  "name": "Bitwarden Premium",
+  "name_ar": "بيت واردن",
+  "category": "Software & productivity",
+  "aliases": [
+   "BITWARDEN"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "bw_premium",
+    "name": "Premium",
+    "cycle": "yearly",
+    "price": 19.8,
+    "currency": "USD",
+    "egp_approx": 1058,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "vault.bitwarden.com",
+  "notes": "",
+  "logo_file": "logos/bitwarden.svg"
+ },
+ {
+  "id": "nordvpn",
+  "name": "NordVPN",
+  "name_ar": "نورد في بي إن",
+  "category": "Software & productivity",
+  "aliases": [
+   "NORDVPN",
+   "NORDSEC",
+   "TEFINCOM"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "nord_basic_2y",
+    "name": "Basic (27-month intro, monthly eq.)",
+    "cycle": "monthly",
+    "price": 3.49,
+    "currency": "USD",
+    "egp_approx": 187,
+    "notes": "USD 94.23 for first 27 months; renews 139.08/year; VAT may apply",
+    "source_url": "https://nordvpn.com/pricing/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "nord_complete_2y",
+    "name": "Complete (27-month intro, monthly eq.)",
+    "cycle": "monthly",
+    "price": 4.49,
+    "currency": "USD",
+    "egp_approx": 240,
+    "notes": "USD 121.23 first 27 months",
+    "source_url": "https://nordvpn.com/pricing/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "nord_completemax_2y",
+    "name": "Complete Max (27-month intro, monthly eq.)",
+    "cycle": "monthly",
+    "price": 6.49,
+    "currency": "USD",
+    "egp_approx": 347,
+    "notes": "USD 175.23 first 27 months; renews 301.08/year",
+    "source_url": "https://nordvpn.com/pricing/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing; crypto",
+  "cancel_url_or_hint": "my.nordaccount.com",
+  "notes": "VPNs are legal-gray/blocked-site context in Egypt; pricing is promo-driven.",
+  "logo_file": "logos/nordvpn.svg"
+ },
+ {
+  "id": "expressvpn",
+  "name": "ExpressVPN",
+  "name_ar": "إكسبرس في بي إن",
+  "category": "Software & productivity",
+  "aliases": [
+   "EXPRESSVPN",
+   "EXPRESS VPN"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "exp_basic_2y",
+    "name": "Basic 2-year (monthly eq.)",
+    "cycle": "monthly",
+    "price": 3.49,
+    "currency": "USD",
+    "egp_approx": 187,
+    "notes": "",
+    "source_url": "https://costbench.com/software/vpn/",
+    "checked_at": "2026-10-17",
+    "confidence": "low"
+   },
+   {
+    "id": "exp_monthly",
+    "name": "Monthly",
+    "cycle": "monthly",
+    "price": 12.99,
+    "currency": "USD",
+    "egp_approx": 694,
+    "notes": "",
+    "source_url": "https://vpnoverview.com/best-vpn/expressvpn-vs-nordvpn-vs-surfshark/",
+    "checked_at": "2026-10-17",
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "expressvpn.com/subscriptions",
+  "notes": "Restructured into Basic/Advanced/Pro in 2026. expressvpn.com returned ERR_CONNECTION_RESET from Egypt (site blocked), could not verify.",
+  "logo_file": "logos/expressvpn.svg"
+ },
+ {
+  "id": "surfshark",
+  "name": "Surfshark",
+  "name_ar": "سيرفشارك",
+  "category": "Software & productivity",
+  "aliases": [
+   "SURFSHARK",
+   "SURFSHARK LTD"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "surf_starter_2y",
+    "name": "Starter 2-year (monthly eq.)",
+    "cycle": "monthly",
+    "price": 2.49,
+    "currency": "USD",
+    "egp_approx": 133,
+    "notes": "",
+    "source_url": "https://vpnoverview.com/best-vpn/expressvpn-vs-nordvpn-vs-surfshark/",
+    "checked_at": "2026-10-17",
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "my.surfshark.com",
+  "notes": "surfshark.com unreachable from Egypt (blocked), could not verify.",
+  "logo_file": "logos/surfshark.svg"
+ },
+ {
+  "id": "proton",
+  "name": "Proton (VPN/Mail/Drive)",
+  "name_ar": "بروتون",
+  "category": "Software & productivity",
+  "aliases": [
+   "PROTON",
+   "PROTON AG"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "proton_unlimited",
+    "name": "Unlimited",
+    "cycle": "monthly",
+    "price": 12.99,
+    "currency": "USD",
+    "egp_approx": 694,
+    "notes": "",
+    "source_url": "https://proton.me/pricing",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "proton_unlimited_y",
+    "name": "Unlimited (billed yearly)",
+    "cycle": "yearly",
+    "price": 119.88,
+    "currency": "USD",
+    "egp_approx": 6408,
+    "notes": "= $9.99/month",
+    "source_url": "https://proton.me/pricing",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "proton_mailplus",
+    "name": "Mail Plus",
+    "cycle": "monthly",
+    "price": 4.99,
+    "currency": "USD",
+    "egp_approx": 267,
+    "notes": "",
+    "source_url": "https://proton.me/pricing",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "proton_mailplus_y",
+    "name": "Mail Plus (billed yearly)",
+    "cycle": "yearly",
+    "price": 47.88,
+    "currency": "USD",
+    "egp_approx": 2559,
+    "notes": "= $3.99/month",
+    "source_url": "https://proton.me/pricing",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "account.proton.me",
+  "notes": "",
+  "logo_file": "logos/proton.svg"
+ },
+ {
+  "id": "chatgpt",
+  "name": "ChatGPT (OpenAI)",
+  "name_ar": "شات جي بي تي",
+  "category": "AI tools",
+  "aliases": [
+   "OPENAI",
+   "OPENAI *CHATGPT SUBSCR",
+   "CHATGPT SUBSCRIPTION",
+   "OPENAI SAN FRANCISCO"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "gpt_go",
+    "name": "Go",
+    "cycle": "monthly",
+    "price": 220,
+    "currency": "EGP",
+    "egp_approx": 220,
+    "notes": "",
+    "source_url": "https://chatgpt.com/pricing",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "gpt_plus",
+    "name": "Plus",
+    "cycle": "monthly",
+    "price": 999.99,
+    "currency": "EGP",
+    "egp_approx": 999.99,
+    "notes": "\"EGP 999.99 / month\"; was assumed USD 20",
+    "source_url": "https://chatgpt.com/pricing",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "gpt_pro",
+    "name": "Pro (from)",
+    "cycle": "monthly",
+    "price": 5400,
+    "currency": "EGP",
+    "egp_approx": 5400,
+    "notes": "",
+    "source_url": "https://chatgpt.com/pricing",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing; Egyptian cards frequently declined, virtual USD cards common",
+  "cancel_url_or_hint": "chatgpt.com > Settings > Manage subscription",
+  "notes": "Read live from chatgpt.com/pricing: Egypt is billed in EGP (not USD).",
+  "logo_file": "logos/chatgpt.svg"
+ },
+ {
+  "id": "claude",
+  "name": "Claude (Anthropic)",
+  "name_ar": "كلود",
+  "category": "AI tools",
+  "aliases": [
+   "ANTHROPIC",
+   "CLAUDE.AI SUBSCRIPTION",
+   "ANTHROPIC, PBC"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "claude_pro",
+    "name": "Pro",
+    "cycle": "monthly",
+    "price": 20,
+    "currency": "USD",
+    "egp_approx": 1069,
+    "notes": "",
+    "source_url": "https://claude.com/pricing",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "claude_pro_annual",
+    "name": "Pro (annual, per month)",
+    "cycle": "monthly",
+    "price": 17,
+    "currency": "USD",
+    "egp_approx": 909,
+    "notes": "billed $200 upfront",
+    "source_url": "https://claude.com/pricing",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "claude_max_from",
+    "name": "Max (from)",
+    "cycle": "monthly",
+    "price": 100,
+    "currency": "USD",
+    "egp_approx": 5345,
+    "notes": "20x tier $200 from memory",
+    "source_url": "https://claude.com/pricing",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "claude.ai > Settings > Billing",
+  "notes": "Matches existing catalog.",
+  "logo_file": "logos/claude_pro.svg"
+ },
+ {
+  "id": "google_ai_pro",
+  "name": "Google AI Pro (Gemini)",
+  "name_ar": "جيميناي",
+  "category": "AI tools",
+  "aliases": [
+   "GOOGLE *GOOGLE ONE",
+   "GOOGLE AI PRO"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "gemini_ai_pro",
+    "name": "Google AI Pro",
+    "cycle": "monthly",
+    "price": 939.99,
+    "currency": "EGP",
+    "egp_approx": 939.99,
+    "notes": "",
+    "source_url": "https://one.google.com/about/plans?hl=en&gl=EG",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "gemini_ai_plus",
+    "name": "Google AI Plus",
+    "cycle": "monthly",
+    "price": 449.99,
+    "currency": "EGP",
+    "egp_approx": 449.99,
+    "notes": "",
+    "source_url": "https://one.google.com/about/plans?hl=en&gl=EG",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Google Play billing in EGP",
+  "cancel_url_or_hint": "one.google.com",
+  "notes": "Existing catalog 75 EGP is WRONG (an ~12x understatement).",
+  "logo_file": "logos/google_ai_pro.svg"
+ },
+ {
+  "id": "perplexity",
+  "name": "Perplexity Pro",
+  "name_ar": "بيربلكسيتي",
+  "category": "AI tools",
+  "aliases": [
+   "PERPLEXITY",
+   "PERPLEXITY AI"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "pplx_pro",
+    "name": "Pro",
+    "cycle": "monthly",
+    "price": 20,
+    "currency": "USD",
+    "egp_approx": 1069,
+    "notes": "existing catalog 80 EGP stale",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "perplexity.ai/settings",
+  "notes": "",
+  "logo_file": "logos/perplexity.svg"
+ },
+ {
+  "id": "cursor",
+  "name": "Cursor",
+  "name_ar": "كيرسر",
+  "category": "AI tools",
+  "aliases": [
+   "CURSOR",
+   "ANYSPHERE",
+   "CURSOR.COM"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "cur_pro",
+    "name": "Pro",
+    "cycle": "monthly",
+    "price": 20,
+    "currency": "USD",
+    "egp_approx": 1069,
+    "notes": "existing catalog 80 EGP stale",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "cur_proplus",
+    "name": "Pro+",
+    "cycle": "monthly",
+    "price": 60,
+    "currency": "USD",
+    "egp_approx": 3207,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "cur_ultra",
+    "name": "Ultra",
+    "cycle": "monthly",
+    "price": 200,
+    "currency": "USD",
+    "egp_approx": 10690,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "cursor.com/dashboard",
+  "notes": "",
+  "logo_file": "logos/cursor.png"
+ },
+ {
+  "id": "github_copilot",
+  "name": "GitHub Copilot",
+  "name_ar": "جيت هب كوبايلوت",
+  "category": "AI tools",
+  "aliases": [
+   "GITHUB",
+   "GITHUB COPILOT",
+   "GITHUB, INC"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "gh_pro",
+    "name": "Pro",
+    "cycle": "monthly",
+    "price": 10,
+    "currency": "USD",
+    "egp_approx": 534,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "gh_proplus",
+    "name": "Pro+",
+    "cycle": "monthly",
+    "price": 39,
+    "currency": "USD",
+    "egp_approx": 2085,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "github.com/settings/billing",
+  "notes": "Matches existing catalog values.",
+  "logo_file": "logos/github_copilot.svg"
+ },
+ {
+  "id": "midjourney",
+  "name": "Midjourney",
+  "name_ar": "ميدجورني",
+  "category": "AI tools",
+  "aliases": [
+   "MIDJOURNEY",
+   "MIDJOURNEY INC"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "mj_basic",
+    "name": "Basic",
+    "cycle": "monthly",
+    "price": 10,
+    "currency": "USD",
+    "egp_approx": 534,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "mj_standard",
+    "name": "Standard",
+    "cycle": "monthly",
+    "price": 30,
+    "currency": "USD",
+    "egp_approx": 1604,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "mj_pro",
+    "name": "Pro",
+    "cycle": "monthly",
+    "price": 60,
+    "currency": "USD",
+    "egp_approx": 3207,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "mj_mega",
+    "name": "Mega",
+    "cycle": "monthly",
+    "price": 120,
+    "currency": "USD",
+    "egp_approx": 6414,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "midjourney.com/account",
+  "notes": "",
+  "logo_file": "logos/midjourney.svg"
+ },
+ {
+  "id": "duolingo",
+  "name": "Duolingo Super",
+  "name_ar": "دولينجو",
+  "category": "Education & learning",
+  "aliases": [
+   "DUOLINGO",
+   "DUOLINGO SUPER"
+  ],
+  "billing_currency": "EGP",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "Apple App Store / Google Play billing in EGP, Egyptian cards, carrier billing",
+  "cancel_url_or_hint": "Duolingo app > Settings",
+  "notes": "Regional EGP price not fetched. duolingo.com/super shows no price (in-app only); unverified.",
+  "logo_file": "logos/duolingo.svg"
+ },
+ {
+  "id": "coursera",
+  "name": "Coursera Plus",
+  "name_ar": "كورسيرا",
+  "category": "Education & learning",
+  "aliases": [
+   "COURSERA"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "cour_plus",
+    "name": "Plus",
+    "cycle": "yearly",
+    "price": 399,
+    "currency": "USD",
+    "egp_approx": 21327,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "coursera.org/account",
+  "notes": "Financial aid widely used in Egypt.",
+  "logo_file": "logos/coursera.svg"
+ },
+ {
+  "id": "udemy",
+  "name": "Udemy (courses / Personal Plan)",
+  "name_ar": "يوديمي",
+  "category": "Education & learning",
+  "aliases": [
+   "UDEMY",
+   "UDEMY.COM"
+  ],
+  "billing_currency": "EGP",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "Egyptian cards, Fawry",
+  "cancel_url_or_hint": "udemy.com",
+  "notes": "Per-course purchases, not subscription, except Personal Plan.",
+  "logo_file": "logos/udemy.svg"
+ },
+ {
+  "id": "linkedin_premium",
+  "name": "LinkedIn Premium",
+  "name_ar": "لينكد إن بريميوم",
+  "category": "Education & learning",
+  "aliases": [
+   "LINKEDIN",
+   "LINKEDIN PREMIUM",
+   "LINKEDIN SN"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "li_career",
+    "name": "Career",
+    "cycle": "monthly",
+    "price": 39.99,
+    "currency": "USD",
+    "egp_approx": 2137,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "linkedin.com/premium/manage",
+  "notes": "linkedin.com/premium is behind a login wall; unverified.",
+  "logo_file": "logos/linkedin_premium.svg"
+ },
+ {
+  "id": "skillshare",
+  "name": "Skillshare",
+  "name_ar": "سكيل شير",
+  "category": "Education & learning",
+  "aliases": [
+   "SKILLSHARE"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "ss_annual",
+    "name": "Annual",
+    "cycle": "yearly",
+    "price": 168,
+    "currency": "USD",
+    "egp_approx": 8980,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "skillshare.com",
+  "notes": "",
+  "logo_file": "logos/skillshare.svg"
+ },
+ {
+  "id": "masterclass",
+  "name": "MasterClass",
+  "name_ar": "ماستر كلاس",
+  "category": "Education & learning",
+  "aliases": [
+   "MASTERCLASS"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "mc_standard",
+    "name": "Standard",
+    "cycle": "yearly",
+    "price": 120,
+    "currency": "USD",
+    "egp_approx": 6414,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "masterclass.com",
+  "notes": "",
+  "logo_file": "logos/masterclass.svg"
+ },
+ {
+  "id": "apple_fitness",
+  "name": "Apple Fitness+",
+  "name_ar": "أبل فيتنس",
+  "category": "Fitness & health",
+  "aliases": [
+   "APPLE.COM/BILL",
+   "APPLE FITNESS+"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "af_monthly",
+    "name": "Monthly",
+    "cycle": "monthly",
+    "price": 35,
+    "currency": "EGP",
+    "egp_approx": 35,
+    "notes": "",
+    "source_url": "existing catalog",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Apple App Store / Google Play billing in EGP, Egyptian cards, carrier billing",
+  "cancel_url_or_hint": "Apple ID subscriptions",
+  "notes": "Fitness+ availability in Egypt unconfirmed.",
+  "logo_file": "logos/apple_fitness.svg"
+ },
+ {
+  "id": "strava",
+  "name": "Strava",
+  "name_ar": "ستريفا",
+  "category": "Fitness & health",
+  "aliases": [
+   "STRAVA"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "strava_sub",
+    "name": "Subscription",
+    "cycle": "monthly",
+    "price": 11.99,
+    "currency": "USD",
+    "egp_approx": 641,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "strava.com/settings",
+  "notes": "",
+  "logo_file": "logos/strava.svg"
+ },
+ {
+  "id": "myfitnesspal",
+  "name": "MyFitnessPal Premium",
+  "name_ar": "ماي فيتنس بال",
+  "category": "Fitness & health",
+  "aliases": [
+   "MYFITNESSPAL"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "mfp_premium",
+    "name": "Premium",
+    "cycle": "monthly",
+    "price": 19.99,
+    "currency": "USD",
+    "egp_approx": 1068,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "myfitnesspal.com",
+  "notes": "",
+  "logo_file": "logos/myfitnesspal.svg"
+ },
+ {
+  "id": "calm",
+  "name": "Calm",
+  "name_ar": "كالم",
+  "category": "Fitness & health",
+  "aliases": [
+   "CALM",
+   "CALM.COM"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "calm_annual",
+    "name": "Annual",
+    "cycle": "yearly",
+    "price": 69.99,
+    "currency": "USD",
+    "egp_approx": 3741,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "calm.com",
+  "notes": "",
+  "logo_file": "logos/calm.png"
+ },
+ {
+  "id": "headspace",
+  "name": "Headspace",
+  "name_ar": "هيد سبيس",
+  "category": "Fitness & health",
+  "aliases": [
+   "HEADSPACE"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "hs_annual",
+    "name": "Annual",
+    "cycle": "yearly",
+    "price": 69.99,
+    "currency": "USD",
+    "egp_approx": 3741,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "headspace.com",
+  "notes": "",
+  "logo_file": "logos/headspace.svg"
+ },
+ {
+  "id": "golds_gym_egypt",
+  "name": "Gold's Gym Egypt",
+  "name_ar": "جولدز جيم",
+  "category": "Fitness & health",
+  "aliases": [
+   "GOLD'S GYM",
+   "GOLDS GYM EGYPT"
+  ],
+  "billing_currency": "EGP",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "Cash, Egyptian cards, installments (ValU/Sympl)",
+  "cancel_url_or_hint": "branch front desk",
+  "notes": "No reliable price found (only a low-quality aggregator). Typical Cairo gym memberships: monthly to annual, varies by branch.",
+  "logo_file": null
+ },
+ {
+  "id": "gym_generic",
+  "name": "Gym / sports club (generic)",
+  "name_ar": "جيم / نادي",
+  "category": "Fitness & health",
+  "aliases": [
+   "GYM",
+   "FITNESS",
+   "CLUB",
+   "نادي"
+  ],
+  "billing_currency": "EGP",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "Cash, cards, BNPL",
+  "cancel_url_or_hint": "branch",
+  "notes": "Fitness Time, Joy, Zed, sporting-club annual fees: not researched live.",
+  "logo_file": null
+ },
+ {
+  "id": "vezeeta",
+  "name": "Vezeeta",
+  "name_ar": "فيزيتا",
+  "category": "Fitness & health",
+  "aliases": [
+   "VEZEETA"
+  ],
+  "billing_currency": "EGP",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "Egyptian cards, Fawry",
+  "cancel_url_or_hint": "vezeeta.com",
+  "notes": "Pay-per-visit; no consumer subscription found.",
+  "logo_file": "logos/vezeeta.png"
+ },
+ {
+  "id": "chefaa",
+  "name": "Chefaa",
+  "name_ar": "شفاء",
+  "category": "Fitness & health",
+  "aliases": [
+   "CHEFAA"
+  ],
+  "billing_currency": "EGP",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "COD, cards",
+  "cancel_url_or_hint": "chefaa app",
+  "notes": "Chronic medication \"subscription\" model; no price.",
+  "logo_file": "logos/chefaa.png"
+ },
+ {
+  "id": "talabat_pro",
+  "name": "talabat Pro",
+  "name_ar": "طلبات برو",
+  "category": "Food, shopping & delivery",
+  "aliases": [
+   "TALABAT",
+   "TALABAT PRO",
+   "T PRO",
+   "طلبات"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "tpro_monthly",
+    "name": "Monthly",
+    "cycle": "monthly",
+    "price": 79,
+    "currency": "EGP",
+    "egp_approx": 79,
+    "notes": "talabat corporate press release Feb 2025 (79/month, 799/year, 2-week trial); talabat.com/egypt/pro page did not expose current price",
+    "source_url": "https://corporate.talabat.com/news/corporate-website-news-item-6/",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "tpro_yearly",
+    "name": "Annual",
+    "cycle": "yearly",
+    "price": 799,
+    "currency": "EGP",
+    "egp_approx": 799,
+    "notes": "talabat corporate press release Feb 2025 (79/month, 799/year, 2-week trial); talabat.com/egypt/pro page did not expose current price",
+    "source_url": "https://corporate.talabat.com/news/corporate-website-news-item-6/",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Cards, COD wallet, Fawry",
+  "cancel_url_or_hint": "talabat app > Pro",
+  "notes": "Launch price; may have moved.",
+  "logo_file": "logos/talabat_pro.svg"
+ },
+ {
+  "id": "noon_one",
+  "name": "noon VIP / noon One",
+  "name_ar": "نون",
+  "category": "Food, shopping & delivery",
+  "aliases": [
+   "NOON",
+   "NOON.COM",
+   "NOON VIP"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "noon_vip_year",
+    "name": "noon VIP",
+    "cycle": "yearly",
+    "price": 300,
+    "currency": "EGP",
+    "egp_approx": 300,
+    "notes": "aggregator only",
+    "source_url": "https://subger.com/bg/service/noon-eg-market",
+    "checked_at": "2026-10-17",
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Cards, COD",
+  "cancel_url_or_hint": "noon app",
+  "notes": "noon.com/egypt-en/noon-one is bot-walled (blank page); no Egyptian price in help.noon.com. Still unverified.",
+  "logo_file": "logos/noon_one.svg"
+ },
+ {
+  "id": "careem_plus",
+  "name": "Careem Plus",
+  "name_ar": "كريم بلس",
+  "category": "Food, shopping & delivery",
+  "aliases": [
+   "CAREEM",
+   "CAREEM PLUS",
+   "CAREEM NOW"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "careem_plus_m",
+    "name": "Careem Plus",
+    "cycle": "monthly",
+    "price": 49.99,
+    "currency": "EGP",
+    "egp_approx": 49.99,
+    "notes": "aggregator; conflicting 99 EGP elsewhere",
+    "source_url": "https://subger.com/fr/service/careem-eg",
+    "checked_at": "2026-10-17",
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Cards, cash, Careem Pay",
+  "cancel_url_or_hint": "Careem app > Plus",
+  "notes": "careem.com/en-eg/careem-plus is 404; help.careem.com only states AED 29/month (UAE, raised from AED 19 on 1 Jul 2026). Egypt availability/price unconfirmed.",
+  "logo_file": "logos/careem_plus.svg"
+ },
+ {
+  "id": "uber_one",
+  "name": "Uber One",
+  "name_ar": "أوبر وان",
+  "category": "Food, shopping & delivery",
+  "aliases": [
+   "UBER ONE",
+   "UBER *ONE",
+   "UBER"
+  ],
+  "billing_currency": "EGP",
+  "plans": [
+   {
+    "id": "uber_one_m",
+    "name": "Monthly",
+    "cycle": "monthly",
+    "price": 85,
+    "currency": "EGP",
+    "egp_approx": 85,
+    "notes": "",
+    "source_url": "https://www.uber.com/eg/en/u/uber-one/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "uber_one_y",
+    "name": "Annual",
+    "cycle": "yearly",
+    "price": 850,
+    "currency": "EGP",
+    "egp_approx": 850,
+    "notes": "",
+    "source_url": "https://www.uber.com/eg/en/u/uber-one/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Cards, cash",
+  "cancel_url_or_hint": "Uber app > Uber One",
+  "notes": "Official Uber Egypt page.",
+  "logo_file": "logos/uber_one.svg"
+ },
+ {
+  "id": "breadfast",
+  "name": "Breadfast",
+  "name_ar": "بريد فاست",
+  "category": "Food, shopping & delivery",
+  "aliases": [
+   "BREADFAST"
+  ],
+  "billing_currency": "EGP",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "Cards, cash, wallets",
+  "cancel_url_or_hint": "app",
+  "notes": "No subscription price found/verified.",
+  "logo_file": "logos/breadfast.svg"
+ },
+ {
+  "id": "elmenus",
+  "name": "elmenus",
+  "name_ar": "المنيوز",
+  "category": "Food, shopping & delivery",
+  "aliases": [
+   "ELMENUS"
+  ],
+  "billing_currency": "EGP",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "Cards, cash, wallets",
+  "cancel_url_or_hint": "app",
+  "notes": "No subscription price found/verified.",
+  "logo_file": "logos/elmenus.svg"
+ },
+ {
+  "id": "instashop",
+  "name": "InstaShop",
+  "name_ar": "انستا شوب",
+  "category": "Food, shopping & delivery",
+  "aliases": [
+   "INSTASHOP"
+  ],
+  "billing_currency": "EGP",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "Cards, cash, wallets",
+  "cancel_url_or_hint": "app",
+  "notes": "No subscription price found/verified.",
+  "logo_file": "logos/instashop.png"
+ },
+ {
+  "id": "rabbit",
+  "name": "Rabbit",
+  "name_ar": "رابيت",
+  "category": "Food, shopping & delivery",
+  "aliases": [
+   "RABBIT"
+  ],
+  "billing_currency": "EGP",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "Cards, cash, wallets",
+  "cancel_url_or_hint": "app",
+  "notes": "No subscription price found/verified.",
+  "logo_file": "logos/rabbit.png"
+ },
+ {
+  "id": "mrsool",
+  "name": "Mrsool",
+  "name_ar": "مرسول",
+  "category": "Food, shopping & delivery",
+  "aliases": [
+   "MRSOOL"
+  ],
+  "billing_currency": "EGP",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "Cards, cash, wallets",
+  "cancel_url_or_hint": "app",
+  "notes": "No subscription price found/verified.",
+  "logo_file": "logos/mrsool.svg"
+ },
+ {
+  "id": "swvl",
+  "name": "Swvl",
+  "name_ar": "سويفل",
+  "category": "Mobility",
+  "aliases": [
+   "SWVL"
+  ],
+  "billing_currency": "EGP",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "Cards, cash, wallets",
+  "cancel_url_or_hint": "app",
+  "notes": "No subscription price found/verified.",
+  "logo_file": "logos/swvl.svg"
+ },
+ {
+  "id": "indrive",
+  "name": "inDrive",
+  "name_ar": "اندرايف",
+  "category": "Mobility",
+  "aliases": [
+   "INDRIVE"
+  ],
+  "billing_currency": "EGP",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "Cards, cash, wallets",
+  "cancel_url_or_hint": "app",
+  "notes": "No subscription price found/verified.",
+  "logo_file": "logos/indrive.svg"
+ },
+ {
+  "id": "carrefour",
+  "name": "Carrefour MyClub",
+  "name_ar": "كارفور ماي كلوب",
+  "category": "Food, shopping & delivery",
+  "aliases": [
+   "CARREFOUR"
+  ],
+  "billing_currency": "EGP",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "Cards, cash, wallets",
+  "cancel_url_or_hint": "app",
+  "notes": "No subscription price found/verified.",
+  "logo_file": "logos/carrefour_mylo.svg"
+ },
+ {
+  "id": "nytimes",
+  "name": "The New York Times",
+  "name_ar": "نيويورك تايمز",
+  "category": "News & media",
+  "aliases": [
+   "NYTIMES",
+   "NYTIMES.COM"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "nyt_digital",
+    "name": "Digital",
+    "cycle": "monthly",
+    "price": 25,
+    "currency": "USD",
+    "egp_approx": 1336,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "nytimes.com/subscription",
+  "notes": "",
+  "logo_file": "logos/nytimes.svg"
+ },
+ {
+  "id": "economist",
+  "name": "The Economist",
+  "name_ar": "ذا إيكونوميست",
+  "category": "News & media",
+  "aliases": [
+   "THE ECONOMIST",
+   "ECONOMIST.COM"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "eco_digital",
+    "name": "Digital",
+    "cycle": "monthly",
+    "price": 22,
+    "currency": "USD",
+    "egp_approx": 1176,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "economist.com",
+  "notes": "",
+  "logo_file": "logos/economist.svg"
+ },
+ {
+  "id": "medium",
+  "name": "Medium",
+  "name_ar": "ميديوم",
+  "category": "News & media",
+  "aliases": [
+   "MEDIUM",
+   "MEDIUM.COM"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "medium_m",
+    "name": "Membership",
+    "cycle": "monthly",
+    "price": 5,
+    "currency": "USD",
+    "egp_approx": 267,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "medium.com/me/settings/membership",
+  "notes": "",
+  "logo_file": "logos/medium.svg"
+ },
+ {
+  "id": "substack",
+  "name": "Substack",
+  "name_ar": "سابستاك",
+  "category": "News & media",
+  "aliases": [
+   "SUBSTACK"
+  ],
+  "billing_currency": "USD",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "substack.com",
+  "notes": "Per-publication.",
+  "logo_file": "logos/substack.svg"
+ },
+ {
+  "id": "patreon",
+  "name": "Patreon",
+  "name_ar": "باتريون",
+  "category": "News & media",
+  "aliases": [
+   "PATREON",
+   "PATREON* MEMBERSHIP"
+  ],
+  "billing_currency": "USD",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "patreon.com/settings/memberships",
+  "notes": "Per-creator.",
+  "logo_file": "logos/patreon.svg"
+ },
+ {
+  "id": "telegram_premium",
+  "name": "Telegram Premium",
+  "name_ar": "تيليجرام بريميوم",
+  "category": "Social & other",
+  "aliases": [
+   "TELEGRAM",
+   "TELEGRAM PREMIUM"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "tg_m",
+    "name": "Premium",
+    "cycle": "monthly",
+    "price": 4.99,
+    "currency": "USD",
+    "egp_approx": 267,
+    "notes": "USD list; regional pricing exists; Egyptian cards often fail (evertry.co)",
+    "source_url": "https://tginfo.me/telegram-premium-en/",
+    "checked_at": "2026-10-17",
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Apple App Store / Google Play billing in EGP, Egyptian cards, carrier billing (store prices vary)",
+  "cancel_url_or_hint": "Telegram > Settings > Premium",
+  "notes": "",
+  "logo_file": "logos/telegram_premium.svg"
+ },
+ {
+  "id": "x_premium",
+  "name": "X Premium",
+  "name_ar": "إكس بريميوم",
+  "category": "Social & other",
+  "aliases": [
+   "TWITTER",
+   "X CORP",
+   "X PREMIUM"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "x_prem",
+    "name": "Premium",
+    "cycle": "monthly",
+    "price": 8,
+    "currency": "USD",
+    "egp_approx": 428,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "x.com > Premium",
+  "notes": "",
+  "logo_file": "logos/x_premium.svg"
+ },
+ {
+  "id": "snapchat_plus",
+  "name": "Snapchat+",
+  "name_ar": "سناب شات بلس",
+  "category": "Social & other",
+  "aliases": [
+   "SNAPCHAT",
+   "SNAP INC"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "snap_plus",
+    "name": "Snapchat+",
+    "cycle": "monthly",
+    "price": 3.99,
+    "currency": "USD",
+    "egp_approx": 213,
+    "notes": "",
+    "source_url": "prior knowledge, not live-verified (official page not machine-readable from this environment)",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_egypt": "Apple App Store / Google Play billing in EGP, Egyptian cards, carrier billing",
+  "cancel_url_or_hint": "Snapchat settings",
+  "notes": "",
+  "logo_file": "logos/snapchat_plus.svg"
+ },
+ {
+  "id": "tinder",
+  "name": "Tinder",
+  "name_ar": "تيندر",
+  "category": "Social & other",
+  "aliases": [
+   "TINDER",
+   "MATCH GROUP"
+  ],
+  "billing_currency": "USD",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "Apple App Store / Google Play billing in EGP, Egyptian cards, carrier billing",
+  "cancel_url_or_hint": "app store",
+  "notes": "",
+  "logo_file": "logos/tinder.svg"
+ },
+ {
+  "id": "bumble",
+  "name": "Bumble",
+  "name_ar": "بامبل",
+  "category": "Social & other",
+  "aliases": [
+   "BUMBLE"
+  ],
+  "billing_currency": "USD",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "Apple App Store / Google Play billing in EGP, Egyptian cards, carrier billing",
+  "cancel_url_or_hint": "app store",
+  "notes": "",
+  "logo_file": "logos/bumble.svg"
+ },
+ {
+  "id": "aws",
+  "name": "AWS",
+  "name_ar": "أمازون ويب سيرفيسز",
+  "category": "Cloud & dev",
+  "aliases": [
+   "AWS",
+   "AMAZON WEB SERVICES",
+   "AWS EMEA"
+  ],
+  "billing_currency": "USD",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "console.aws.amazon.com/billing",
+  "notes": "Usage-based.",
+  "logo_file": "logos/aws.svg"
+ },
+ {
+  "id": "godaddy",
+  "name": "GoDaddy",
+  "name_ar": "جو دادي",
+  "category": "Cloud & dev",
+  "aliases": [
+   "GODADDY",
+   "GODADDY.COM"
+  ],
+  "billing_currency": "USD",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "godaddy.com",
+  "notes": "Domains.",
+  "logo_file": "logos/godaddy.svg"
+ },
+ {
+  "id": "namecheap",
+  "name": "Namecheap",
+  "name_ar": "نيم تشيب",
+  "category": "Cloud & dev",
+  "aliases": [
+   "NAMECHEAP"
+  ],
+  "billing_currency": "USD",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "namecheap.com",
+  "notes": "Domains.",
+  "logo_file": "logos/namecheap.svg"
+ },
+ {
+  "id": "cloudflare",
+  "name": "Cloudflare",
+  "name_ar": "كلاود فلير",
+  "category": "Cloud & dev",
+  "aliases": [
+   "CLOUDFLARE"
+  ],
+  "billing_currency": "USD",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "dash.cloudflare.com",
+  "notes": "",
+  "logo_file": "logos/cloudflare.svg"
+ },
+ {
+  "id": "digitalocean",
+  "name": "DigitalOcean",
+  "name_ar": "ديجيتال أوشن",
+  "category": "Cloud & dev",
+  "aliases": [
+   "DIGITALOCEAN"
+  ],
+  "billing_currency": "USD",
+  "plans": [],
+  "payment_methods_accepted_in_egypt": "USD-billed: Egyptian cards only if international online use is enabled (often capped/blocked); prepaid/virtual USD cards, Apple/Google billing",
+  "cancel_url_or_hint": "cloud.digitalocean.com/account/billing",
+  "notes": "",
+  "logo_file": "logos/digitalocean.svg"
+ }
+]
