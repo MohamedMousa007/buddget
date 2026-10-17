@@ -213,6 +213,53 @@ const MERCHANT_BRAND_ALIASES: Record<string, string> = {
   office365: 'microsoft_365',
 }
 
+/**
+ * Arabic spellings of brand names, as they appear in Arabic bank SMS. Phrases are stored
+ * normalised (see {@link normalizeArabic}) and matched on whole-word boundaries: Arabic has
+ * no case or word-boundary anchor, and a bare substring would let "شاهد" (watch / witness) hit any sentence.
+ */
+const ARABIC_BRAND_ALIASES: Record<string, string> = {
+  'نتفليكس': 'netflix',
+  'نتفلكس': 'netflix',
+  'نيتفليكس': 'netflix',
+  'سبوتيفاي': 'spotify',
+  'شاهد': 'shahid_vip',
+  'انغامي': 'anghami',
+  'ديزني': 'disney_plus',
+  'ديزني بلس': 'disney_plus',
+  'يوتيوب': 'youtube_premium',
+  'ايكلاود': 'icloud',
+  'امازون برايم': 'prime_video',
+  'تشات جي بي تي': 'chatgpt_plus',
+}
+
+/** Strips diacritics/tatweel and folds alef/yaa/taa-marbuta variants so spellings compare equal. */
+function normalizeArabic(s: string): string {
+  return s
+    .replace(/[\u064B-\u065F\u0640]/g, '')
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .replace(/[^\u0621-\u064A0-9a-z]+/gi, ' ')
+    .trim()
+}
+
+function resolveArabicBrand(merchant: string): string | null {
+  if (!/[\u0600-\u06FF]/.test(merchant)) return null
+  const padded = ` ${normalizeArabic(merchant)} `
+  for (const [phrase, key] of Object.entries(ARABIC_BRAND_ALIASES)) {
+    if (padded.includes(` ${normalizeArabic(phrase)} `)) return key
+  }
+  return null
+}
+
+/**
+ * Catalog entries that are a generic category, not a merchant: a gym's name is not "Gym
+ * Membership", yet the word alone would resolve any gym purchase to it. They stay pickable
+ * and match on an exact name, but are excluded from the containment pass.
+ */
+const GENERIC_BRAND_KEYS: ReadonlySet<string> = new Set(['gym'])
+
 function normalizeBrandToken(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]/g, '')
 }
@@ -251,16 +298,17 @@ function merchantMentions(rawMerchant: string, normMerchant: string, token: stri
 export function resolveBrandKeyFromMerchant(merchant: string | null | undefined): string | null {
   if (!merchant) return null
   const norm = normalizeBrandToken(merchant)
-  if (!norm) return null
+  if (!norm) return resolveArabicBrand(merchant)
 
-  if (MERCHANT_BRAND_ALIASES[norm]) return MERCHANT_BRAND_ALIASES[norm]
+  // hasOwn: a merchant called "constructor" must not resolve to Object.prototype.constructor.
+  if (Object.prototype.hasOwnProperty.call(MERCHANT_BRAND_ALIASES, norm)) return MERCHANT_BRAND_ALIASES[norm]
   for (const b of SUBSCRIPTION_CATALOG) {
     if (normalizeBrandToken(b.key) === norm || normalizeBrandToken(b.name) === norm) return b.key
   }
 
   const candidates: { token: string; key: string }[] = [
     ...Object.entries(MERCHANT_BRAND_ALIASES).map(([token, key]) => ({ token, key })),
-    ...SUBSCRIPTION_CATALOG.flatMap((b) => [
+    ...SUBSCRIPTION_CATALOG.filter((b) => !GENERIC_BRAND_KEYS.has(b.key)).flatMap((b) => [
       { token: normalizeBrandToken(b.key), key: b.key },
       { token: normalizeBrandToken(b.name), key: b.key },
     ]),
@@ -271,7 +319,7 @@ export function resolveBrandKeyFromMerchant(merchant: string | null | undefined)
   for (const { token, key } of candidates) {
     if (merchantMentions(merchant, norm, token)) return key
   }
-  return null
+  return resolveArabicBrand(merchant)
 }
 
 export const SUBSCRIPTION_CATALOG: SubscriptionBrand[] = [

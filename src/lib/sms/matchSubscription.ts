@@ -21,7 +21,13 @@ import { tryConvertCurrency } from '@/lib/utils/currency'
 export interface SubscriptionMatch {
   subscriptionId: string
   /** A different plan the charge matches. PROPOSED — the caller prompts, never applies. */
-  planChange: { planId: string; planName: string; direction: 'upgrade' | 'downgrade' } | null
+  planChange: {
+    planId: string
+    planName: string
+    direction: 'upgrade' | 'downgrade'
+    /** The charge expressed in the SUBSCRIPTION's currency — what `pending_amount` stores. */
+    chargedAmount: number
+  } | null
 }
 
 const AMOUNT_TOLERANCE = 0.05 // ±5%
@@ -61,10 +67,11 @@ export async function matchSubscription(
 
   const { data: subs } = await service
     .from('subscriptions')
-    .select('id, amount, currency, brand_key, billing_day, status, plan_id, catalog_region')
+    .select('id, amount, currency, brand_key, billing_day, billing_cycle, status, plan_id, catalog_region')
     .eq('user_id', params.userId)
     .eq('brand_key', brandKey)
-    .eq('status', 'active')
+    // A trial's first paid charge is still that subscription renewing.
+    .in('status', ['active', 'trial'])
     .is('deleted_at', null)
 
   const candidates = subs ?? []
@@ -113,7 +120,13 @@ export async function matchSubscription(
 
     // Same brand AND a plausible amount, but nowhere near the billing date — a repeat
     // purchase that happens to cost the subscription price, not the subscription renewing.
-    if (params.day && sub.billing_day && daysFromBillingDay(params.day, sub.billing_day) > BILLING_DAY_TOLERANCE) {
+    // Weekly subs have no day-of-month to be near: any day of the month is a billing day.
+    if (
+      params.day &&
+      sub.billing_day &&
+      sub.billing_cycle !== 'weekly' &&
+      daysFromBillingDay(params.day, sub.billing_day) > BILLING_DAY_TOLERANCE
+    ) {
       continue
     }
 
@@ -123,7 +136,12 @@ export async function matchSubscription(
       // the user switching plan, and silently rewriting their plan would be worse than
       // saying nothing.
       planChange: planChange
-        ? { planId: planChange.plan.id, planName: planChange.plan.name, direction: planChange.direction }
+        ? {
+            planId: planChange.plan.id,
+            planName: planChange.plan.name,
+            direction: planChange.direction,
+            chargedAmount: Math.round(smsInSubCurrency * 100) / 100,
+          }
         : null,
     }
   }

@@ -1,4 +1,5 @@
-import type { RecurringExpense, Subscription, SubscriptionBillingCycle } from '@/lib/store/types'
+import type { Currency, RecurringExpense, Subscription, SubscriptionBillingCycle } from '@/lib/store/types'
+import { convertCurrency } from '@/lib/utils/currency'
 
 /** Monthly-equivalent amount for planner / recurring row (RecurringExpense is monthly). */
 export function subscriptionToMonthlyPlannerAmount(
@@ -64,4 +65,19 @@ export function patchRecurringFromSubscription(
     createdAt: prev.createdAt,
     updatedAt: new Date().toISOString(),
   }
+}
+
+/** Live (active + trial) subscriptions as one monthly-equivalent figure in `baseCurrency`. */
+export function subscriptionsMonthlyBaseTotal(
+  subscriptions: Pick<Subscription, 'status' | 'amount' | 'billingCycle' | 'currency'>[],
+  baseCurrency: Currency,
+  exchangeRates: Record<string, number>
+): number {
+  let sum = 0
+  for (const sub of subscriptions) {
+    if (sub.status !== 'active' && sub.status !== 'trial') continue
+    const monthlyEq = subscriptionToMonthlyPlannerAmount(sub.amount, sub.billingCycle)
+    sum += convertCurrency(monthlyEq, sub.currency, baseCurrency, exchangeRates)
+  }
+  return sum
 }

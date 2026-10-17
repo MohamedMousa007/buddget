@@ -98,11 +98,16 @@ export function budgetCategoriesFromPlan(
     }))
 }
 
+/** Plan-row spellings (incl. the "Add category" preset labels) that name an expense category. */
+const PLAN_NAME_SPELLINGS: Readonly<Record<string, ExpenseCategory>> = {
+  subscriptions: 'Subscription',
+}
+
 function matchExpenseCategory(planName: string): ExpenseCategory | null {
   const t = planName.trim()
   if (!t) return null
   const hit = EXPENSE_CATEGORIES.find((c) => c.toLowerCase() === t.toLowerCase())
-  return hit ?? null
+  return hit ?? PLAN_NAME_SPELLINGS[t.toLowerCase()] ?? null
 }
 
 /**
@@ -117,7 +122,7 @@ export function categorySpendingForPlanRows(
   // Plan row names (lowercased) so an alias is only folded in when the plan has
   // no dedicated row for that newer category.
   const planNames = new Set(
-    plan.categories.map((c) => c.name.trim().toLowerCase()).filter(Boolean),
+    plan.categories.flatMap((c) => [c.name, matchExpenseCategory(c.name) ?? '']).map((n) => n.trim().toLowerCase()).filter(Boolean),
   )
   for (const cat of plan.categories) {
     if (isSavingsPlanCategory(cat)) continue
@@ -155,6 +160,8 @@ export function resolveBudgetKey(category: string, rowNames: readonly string[]):
   if (!t) return null
   const direct = rowNames.find((n) => n.trim().toLowerCase() === t)
   if (direct) return direct
+  const spelled = rowNames.find((n) => matchExpenseCategory(n)?.toLowerCase() === t)
+  if (spelled) return spelled
   for (const row of rowNames) {
     const aliases = CATEGORY_BUDGET_ALIASES[matchExpenseCategory(row) ?? row] ?? []
     if (aliases.some((a) => a.toLowerCase() === t)) return row

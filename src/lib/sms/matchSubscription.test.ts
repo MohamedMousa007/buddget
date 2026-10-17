@@ -10,13 +10,14 @@ interface SubRow {
   currency: string
   brand_key: string
   billing_day: number | null
+  billing_cycle?: string
   status: string
 }
 
 /** Minimal thenable query-builder stub — matchSubscription only ever does one select. */
 function serviceWith(rows: SubRow[]): SupabaseClient {
   const builder: Record<string, unknown> = {}
-  for (const m of ['select', 'eq', 'is']) builder[m] = () => builder
+  for (const m of ['select', 'eq', 'in', 'is']) builder[m] = () => builder
   builder.then = (resolve: (v: { data: SubRow[] }) => unknown) => resolve({ data: rows })
   return { from: () => builder } as unknown as SupabaseClient
 }
@@ -55,7 +56,7 @@ describe('matchSubscription', () => {
     const onStandard = netflix({ amount: 190, plan_id: 'netflix_standard', catalog_region: 'egypt' })
     await expect(match([onStandard], { amount: 270 })).resolves.toEqual({
       subscriptionId: 'sub_netflix',
-      planChange: { planId: 'netflix_premium', planName: 'Premium', direction: 'upgrade' },
+      planChange: { planId: 'netflix_premium', planName: 'Premium', direction: 'upgrade', chargedAmount: 270 },
     })
   })
 
@@ -63,7 +64,7 @@ describe('matchSubscription', () => {
     const onStandard = netflix({ amount: 190, plan_id: 'netflix_standard', catalog_region: 'egypt' })
     await expect(match([onStandard], { amount: 110 })).resolves.toEqual({
       subscriptionId: 'sub_netflix',
-      planChange: { planId: 'netflix_basic', planName: 'Basic', direction: 'downgrade' },
+      planChange: { planId: 'netflix_basic', planName: 'Basic', direction: 'downgrade', chargedAmount: 110 },
     })
   })
 
@@ -114,6 +115,56 @@ describe('matchSubscription', () => {
   it('picks the candidate that actually agrees, not merely the first', async () => {
     const rows = [netflix({ id: 'sub_wrong', amount: 999 }), netflix({ id: 'sub_right', amount: 200 })]
     await expect(match(rows)).resolves.toEqual({ subscriptionId: 'sub_right', planChange: null })
+  })
+})
+
+describe('matchSubscription — cycles, trials, currency', () => {
+  it('links a weekly subscription on any day of the month', async () => {
+    // Weekly subs have no day-of-month; the date gate used to reject every charge >5 days off it.
+    await expect(match([netflix({ billing_cycle: 'weekly', billing_day: 1 })], { day: '2026-07-22' }))
+      .resolves.toEqual({ subscriptionId: 'sub_netflix', planChange: null })
+  })
+
+  it('still gates a monthly subscription on the date', async () => {
+    await expect(match([netflix({ billing_cycle: 'monthly', billing_day: 1 })], { day: '2026-07-22' })).resolves.toBeNull()
+  })
+
+  it('links the first paid charge of a trial subscription', async () => {
+    await expect(match([netflix({ status: 'trial' })])).resolves.toEqual({ subscriptionId: 'sub_netflix', planChange: null })
+  })
+
+  it('stores the proposed plan amount in the SUBSCRIPTION currency, not the SMS currency', async () => {
+    // Sub is priced in USD (ChatGPT, $20 Plus); the bank SMS arrives in EGP. pending_amount is
+    // later adopted as the sub amount, so it must be 20, not 1000.
+    const chatgptFree = netflix({
+      brand_key: 'chatgpt_plus', amount: 8, currency: 'USD', plan_id: 'chatgpt_plus_legacy', catalog_region: 'egypt',
+    })
+    const res = await match([chatgptFree], { merchant: 'OPENAI *CHATGPT', amount: 1000, currency: 'EGP', day: '2026-07-10' })
+    expect(res?.planChange).toMatchObject({ planId: 'chatgpt_plus_plus', direction: 'upgrade', chargedAmount: 20 })
+  })
+
+  it('converts an EGP charge against a USD sub before comparing', async () => {
+    const res = await match([netflix({ amount: 20, currency: 'USD' })], { amount: 1000, currency: 'EGP' })
+    expect(res).toEqual({ subscriptionId: 'sub_netflix', planChange: null })
+  })
+
+  it('does not link when there is no FX path and an amount exists — falls to unverifiable brand match', async () => {
+    await expect(match([netflix({ currency: 'JPY' })], { currency: 'XXX', exchangeRates: {} }))
+      .resolves.toEqual({ subscriptionId: 'sub_netflix', planChange: null })
+  })
+
+  it('links an Arabic-named Netflix charge', async () => {
+    await expect(match([netflix()], { merchant: 'نتفليكس' })).resolves.toEqual({ subscriptionId: 'sub_netflix', planChange: null })
+  })
+
+  it('does not link a plain gym purchase to the generic Gym Membership entry', async () => {
+    await expect(match([netflix({ brand_key: 'gym' })], { merchant: "GOLD'S GYM CAIRO" })).resolves.toBeNull()
+  })
+
+  it('does not link a charge at a month-boundary neighbour of the billing day incorrectly', async () => {
+    // Billed on the 31st; a charge on Feb 28 is its billing day (clamped).
+    await expect(match([netflix({ billing_day: 31 })], { day: '2026-02-28' }))
+      .resolves.toEqual({ subscriptionId: 'sub_netflix', planChange: null })
   })
 })
 

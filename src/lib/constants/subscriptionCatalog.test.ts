@@ -57,6 +57,43 @@ describe('resolveBrandKeyFromMerchant', () => {
   })
 })
 
+describe('resolveBrandKeyFromMerchant — Arabic merchants', () => {
+  it.each([
+    ['نتفليكس', 'netflix'],
+    ['نتفلكس', 'netflix'],
+    ['سبوتيفاي', 'spotify'],
+    ['شاهد', 'shahid_vip'],
+    ['شَاهِد VIP', 'shahid_vip'],
+    ['أنغامي', 'anghami'],
+    ['ديزني بلس', 'disney_plus'],
+    ['يوتيوب', 'youtube_premium'],
+    ['شراء من نتفليكس القاهرة', 'netflix'],
+    ['امازون برايم', 'prime_video'],
+  ])('resolves %s -> %s', (merchant, key) => {
+    expect(resolveBrandKeyFromMerchant(merchant)).toBe(key)
+  })
+
+  it.each([['سوبر ماركت الأمل'], ['مطعم شاهدين'], ['صيدلية العزبي'], ['ك']])('does not resolve %s', (m) => {
+    expect(resolveBrandKeyFromMerchant(m)).toBeNull()
+  })
+})
+
+describe('resolveBrandKeyFromMerchant — guards', () => {
+  it('does not resolve a generic gym purchase to the Gym Membership entry', () => {
+    expect(resolveBrandKeyFromMerchant("GOLD'S GYM")).toBeNull()
+    expect(resolveBrandKeyFromMerchant('Fitness Gym Maadi')).toBeNull()
+  })
+
+  it('still resolves the exact catalog name', () => {
+    expect(resolveBrandKeyFromMerchant('Gym Membership')).toBe('gym')
+  })
+
+  it('does not treat Object.prototype names as aliases', () => {
+    expect(resolveBrandKeyFromMerchant('constructor')).toBeNull()
+    expect(resolveBrandKeyFromMerchant('toString')).toBeNull()
+  })
+})
+
 describe('detectCatalogRegion', () => {
   it.each([
     ['Saudi Arabia', '', 'saudi'],

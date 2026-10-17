@@ -318,6 +318,9 @@ export interface Subscription {
   notes: string | null
   createdAt: string
   cancelledAt: string | null
+  /** Last edit (ISO). Without it a local edit (cancel, price change) ties the server on
+   *  `createdAt` and loses the offline-merge, so the server's stale copy wins. */
+  updatedAt?: string
 }
 
 export interface BudgetCategory {

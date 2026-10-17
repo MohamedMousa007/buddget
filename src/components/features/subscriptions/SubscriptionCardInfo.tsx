@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import type { SubscriptionBrand } from '@/lib/constants/subscriptionCatalog'
 import type { Dictionary } from '@/lib/i18n/types'
 import type { Subscription } from '@/lib/store/types'
+import { upcomingBillingDate } from '@/lib/subscriptions/subscriptionDates'
 
 export function SubscriptionCardInfo({
   sub,
@@ -22,11 +23,12 @@ export function SubscriptionCardInfo({
   formatDateShort: (dateStr: string) => string
   t: Dictionary['subscriptions']
 }) {
+  const nextBilling = upcomingBillingDate(sub)
   const line2 =
     sub.status === 'cancelled' && sub.cancelledAt
       ? `${t.cancelledOn} ${formatDateShort(sub.cancelledAt.slice(0, 10))}`
-      : sub.nextBillingDate
-        ? `${t.renewsOn} ${formatDateShort(sub.nextBillingDate)}`
+      : nextBilling
+        ? `${t.renewsOn} ${formatDateShort(nextBilling)}`
         : '—'
 
   return (

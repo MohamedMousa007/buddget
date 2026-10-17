@@ -807,6 +807,7 @@ export const useFinanceStore = create<FinanceStore>()(
           linkedRecurringExpenseId: recurringExpenseId,
           nextBillingDate: nextBilling,
           createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
           cancelledAt: null,
         }
         const fallbackPm =
@@ -823,7 +824,7 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => {
           const sub = state.subscriptions.find((s) => s.id === id)
           if (!sub) return state
-          const merged: Subscription = { ...sub, ...updates }
+          const merged: Subscription = { ...sub, ...updates, updatedAt: new Date().toISOString() }
           let nextBilling = merged.nextBillingDate
           if (
             updates.startDate !== undefined ||
@@ -873,7 +874,9 @@ export const useFinanceStore = create<FinanceStore>()(
       dismissPendingPlanChange: (id) =>
         set((state) => ({
           subscriptions: state.subscriptions.map((s) =>
-            s.id === id ? { ...s, pendingPlanId: null, pendingAmount: null } : s
+            s.id === id
+              ? { ...s, pendingPlanId: null, pendingAmount: null, updatedAt: new Date().toISOString() }
+              : s
           ),
         })),
 
@@ -881,8 +884,18 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => {
           const sub = state.subscriptions.find((s) => s.id === id)
           const cancelledAt = new Date().toISOString()
+          // A cancelled sub must not keep a plan-change prompt alive for its reactivation.
           const subs = state.subscriptions.map((s) =>
-            s.id === id ? { ...s, status: 'cancelled' as const, cancelledAt } : s
+            s.id === id
+              ? {
+                  ...s,
+                  status: 'cancelled' as const,
+                  cancelledAt,
+                  pendingPlanId: null,
+                  pendingAmount: null,
+                  updatedAt: cancelledAt,
+                }
+              : s
           )
           let recurring = state.recurringExpenses
           if (sub?.linkedRecurringExpenseId) {
@@ -914,6 +927,7 @@ export const useFinanceStore = create<FinanceStore>()(
             ...sub,
             status: 'active',
             cancelledAt: null,
+            updatedAt: new Date().toISOString(),
           }
           const nextBilling =
             computeNextBillingDate(merged.startDate, merged.billingDay, merged.billingCycle) ??

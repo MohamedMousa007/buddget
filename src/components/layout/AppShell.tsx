@@ -35,6 +35,8 @@ import { expenseFromRow } from '@/lib/supabase/remote/mappers/expenseMapper'
 import { incomeEventFromRow } from '@/lib/supabase/remote/mappers/incomeEventMapper'
 import { debtPaymentFromRow } from '@/lib/supabase/remote/mappers/debtPaymentMapper'
 import { createClient } from '@/lib/supabase/client'
+import { subscriptionFromRow } from '@/lib/supabase/remote/mappers/subscriptionMapper'
+import { mergeById, type MergableRow } from '@/hooks/remote/mergeById'
 import type { ExpenseRow } from '@/lib/supabase/remote/types'
 import type { IncomeEventRow } from '@/lib/supabase/remote/types'
 import type { DebtPaymentRow } from '@/lib/supabase/remote/types'
@@ -164,6 +166,37 @@ function addExpenseIfMissing(row: ExpenseRow): void {
   // and breaking dedup. upsertServerExpense keeps the local copy keyed to the
   // server PK so flushDiff stays idempotent.
   useFinanceStore.getState().upsertServerExpense(expenseFromRow(row))
+  if (row.linked_subscription_id) void pullLinkedSubscription(row.linked_subscription_id)
+}
+
+/**
+ * SMS dispatch can park a detected plan change (`pending_plan_id`) on the subscription row
+ * just before it creates the linked expense. Hydration only runs once per session, so without
+ * this the "you moved to Premium" prompt would not appear until the next cold start.
+ */
+async function pullLinkedSubscription(subscriptionId: string): Promise<void> {
+  try {
+    const { data } = await createClient()
+      .from('subscriptions')
+      .select('*')
+      .eq('id', subscriptionId)
+      .is('deleted_at', null)
+      .maybeSingle()
+    if (!data) return
+    const server = subscriptionFromRow(data)
+    useFinanceStore.setState((state) => {
+      const winner = mergeById(
+        state.subscriptions as unknown as MergableRow[],
+        [server] as unknown as MergableRow[]
+      ).find((r) => r.id === server.id) as unknown as typeof server
+      const at = state.subscriptions.findIndex((x) => x.id === server.id)
+      // In place: a mergeById round-trip would reorder the list and hop the card to the top.
+      if (at < 0) return { subscriptions: [...state.subscriptions, winner] }
+      const next = [...state.subscriptions]
+      next[at] = winner
+      return { subscriptions: next }
+    })
+  } catch { /* the next hydrate catches up */ }
 }
 
 function addIncomeEventIfMissing(row: IncomeEventRow): void {

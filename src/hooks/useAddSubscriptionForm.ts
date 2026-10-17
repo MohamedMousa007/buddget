@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'
-import { format } from 'date-fns'
 import { useShallow } from 'zustand/react/shallow'
 import type { SubscriptionPrefill } from '@/lib/store/useSettingsStore'
 import {
@@ -11,40 +10,23 @@ import {
   plansForRegion,
   REGION_CURRENCY,
   SUBSCRIPTION_CATALOG,
+  type CatalogRegion,
   type SubscriptionBrand,
 } from '@/lib/constants/subscriptionCatalog'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { convertCurrency } from '@/lib/utils/currency'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
+import { startDateForSave } from '@/lib/subscriptions/subscriptionStartDate'
 import type { Currency, Subscription, SubscriptionBillingCycle } from '@/lib/store/types'
 
 function defaultPmId(pms: { id: string; isDefault: boolean }[]): string {
   return pms.find((m) => m.isDefault)?.id || pms[0]?.id || ''
 }
 
-/** Picks a calendar date on `billingDay` in the current or previous month (when that day has not occurred yet this month). */
-function computeStartDateFromBillingDay(billingDay: number): string {
-  const today = new Date()
-  const day = Math.min(31, Math.max(1, billingDay))
-  const domToday = today.getDate()
-  let y = today.getFullYear()
-  let m = today.getMonth()
-  if (domToday < day) {
-    m -= 1
-    if (m < 0) {
-      m = 11
-      y -= 1
-    }
-  }
-  const lastDayOfMonth = new Date(y, m + 1, 0).getDate()
-  const dom = Math.min(day, lastDayOfMonth)
-  return format(new Date(y, m, dom), 'yyyy-MM-dd')
-}
-
 /**
  * Add flow: catalog (always for new subs) → configure. Regional catalog prices apply when profile
  * maps to UAE/Egypt; otherwise the user enters amount manually. Edit opens configure directly.
- * `startDate` on save is derived from `billingDay` (see `computeStartDateFromBillingDay`).
+ * `startDate` on save is derived from `billingDay` (see `startDateForSave`).
  */
 export function useAddSubscriptionForm(
   editing: Subscription | null,
@@ -103,7 +85,17 @@ export function useAddSubscriptionForm(
     () => editing?.expenseCategory ?? seedBrand?.defaultCategory ?? 'Enjoyment'
   )
   const [notes, setNotes] = useState(() => editing?.notes ?? '')
-  const [planIndex, setPlanIndex] = useState(0)
+  const [planIndex, setPlanIndex] = useState(() => {
+    if (!editing?.planId || !editing.brandKey) return 0
+    const brand = findBrandByKey(editing.brandKey)
+    const plans = brand ? plansForRegion(brand, (editing.catalogRegion as CatalogRegion | null) ?? region) : []
+    return Math.max(0, plans.findIndex((p) => p.id === editing.planId))
+  })
+  // The region whose pricing the chosen plan came from. Editing must not re-stamp it with
+  // wherever the user is now: planChange compares against THIS column.
+  const [planRegion, setPlanRegion] = useState<CatalogRegion | null>(
+    () => (editing?.catalogRegion as CatalogRegion | null | undefined) ?? null
+  )
 
   const canSubmit = useMemo(() => {
     const amount = Number.parseFloat(amountStr.replace(',', '.'))
@@ -124,6 +116,7 @@ export function useAddSubscriptionForm(
       const plan = plansForRegion(brand, region)[idx]
       if (!plan) return
       setPlanIndex(idx)
+      setPlanRegion(region)
       setPlanName(plan.name)
       setPlanId(plan.id)
       setBillingCycle(plan.cycle)
@@ -192,15 +185,20 @@ export function useAddSubscriptionForm(
     if (!name.trim() || Number.isNaN(amount) || amount <= 0) return
     const cur = clampFiatToAllowed(settings, currency)
     const brandKey = customMode || pickedBrand === 'custom' || !pickedBrand ? null : pickedBrand.key
-    const startDate = computeStartDateFromBillingDay(billingDay)
+    const startDate = startDateForSave(editing, billingDay)
+    const resolvedPlanId = brandKey ? planId : null
+    // An edit that leaves the plan and price alone must not silently drop a pending
+    // "you moved to Premium" prompt; one that changes either has answered it.
+    const resolvesPending =
+      !editing || editing.planId !== resolvedPlanId || editing.amount !== amount
     const payload: Omit<Subscription, 'id' | 'createdAt' | 'cancelledAt' | 'linkedRecurringExpenseId'> = {
       name: name.trim(),
       brandKey,
       planName: planName?.trim() || null,
-      planId: brandKey ? planId : null,
-      catalogRegion: brandKey ? region : null,
-      pendingPlanId: null,
-      pendingAmount: null,
+      planId: resolvedPlanId,
+      catalogRegion: brandKey ? (planRegion ?? region) : null,
+      pendingPlanId: resolvesPending ? null : editing.pendingPlanId,
+      pendingAmount: resolvesPending ? null : editing.pendingAmount,
       amount,
       currency: cur,
       billingCycle,
@@ -223,6 +221,7 @@ export function useAddSubscriptionForm(
     name,
     planName,
     planId,
+    planRegion,
     region,
     currency,
     billingCycle,

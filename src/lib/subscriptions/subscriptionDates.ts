@@ -1,5 +1,5 @@
 import { addMonths, addWeeks, addYears, format, getDaysInMonth, parseISO, startOfDay } from 'date-fns'
-import type { SubscriptionBillingCycle } from '@/lib/store/types'
+import type { Subscription, SubscriptionBillingCycle } from '@/lib/store/types'
 
 function clampDay(year: number, monthIndex: number, day: number): number {
   const dim = getDaysInMonth(new Date(year, monthIndex))
@@ -60,4 +60,17 @@ export function computeNextBillingDate(
     next = advanceCycle(next, billingDay, cycle)
   }
   return format(next, 'yyyy-MM-dd')
+}
+
+/**
+ * The next charge date as of `ref`. The stored `nextBillingDate` is a snapshot taken at
+ * add/edit time and nothing advances it, so once that date passes it reads "Renews <past>".
+ * Billing is calendar-locked, so the live value is always derivable from the schedule.
+ */
+export function upcomingBillingDate(
+  sub: Pick<Subscription, 'startDate' | 'billingDay' | 'billingCycle' | 'nextBillingDate'>,
+  ref: Date = new Date()
+): string | null {
+  if (!sub.startDate) return sub.nextBillingDate
+  return computeNextBillingDate(sub.startDate, sub.billingDay || 1, sub.billingCycle, ref) ?? sub.nextBillingDate
 }

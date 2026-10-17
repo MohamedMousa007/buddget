@@ -466,6 +466,7 @@ export const importDataSchema = z.object({
         notes: z.string().nullable(),
         createdAt: z.string(),
         cancelledAt: z.string().nullable(),
+        updatedAt: z.string().optional(),
       })
     )
     .optional(),

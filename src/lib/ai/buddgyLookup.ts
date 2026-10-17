@@ -34,7 +34,8 @@ export function runLookup(store: FinanceStore, q: LookupQuery): string {
   if (q.kind === 'subscriptions') {
     const subs = store.subscriptions
     if (!subs.length) return 'No tracked subscriptions.'
-    return subs.map((s) => `${s.name}: ${s.currency} ${s.amount} / ${s.billingCycle}`).join('\n')
+    // Status matters: a cancelled sub listed bare would be reported to the user as a live charge.
+    return subs.map((s) => `${s.name}: ${s.currency} ${s.amount} / ${s.billingCycle} (${s.status})`).join('\n')
   }
 
   if (q.kind === 'income') {

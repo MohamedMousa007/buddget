@@ -10,6 +10,7 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import { shortDate } from '@/lib/utils/shortDate'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import { useT } from '@/lib/i18n'
+import { upcomingBillingDate } from '@/lib/subscriptions/subscriptionDates'
 
 /**
  * Recurring spend already spoken for this month. A link into the one /subscriptions list
@@ -24,10 +25,11 @@ export function BudgetCommittedCard() {
 
   const { count, next } = useMemo(() => {
     const live = subscriptions.filter((s) => s.status === 'active' || s.status === 'trial')
-    const upcoming = live
-      .filter((s) => s.nextBillingDate)
-      .sort((a, b) => a.nextBillingDate!.localeCompare(b.nextBillingDate!))[0]
-    return { count: live.length, next: upcoming }
+    const dated = live
+      .map((s) => ({ name: s.name, date: upcomingBillingDate(s) }))
+      .filter((s): s is { name: string; date: string } => s.date !== null)
+      .sort((a, b) => a.date.localeCompare(b.date))
+    return { count: live.length, next: dated[0] }
   }, [subscriptions])
 
   return (
@@ -43,9 +45,9 @@ export function BudgetCommittedCard() {
             ? t.budgetPlanner.committedLine(count, formatCurrency(monthly, baseCurrency, false))
             : t.budgetPlanner.committedEmpty}
         </p>
-        {next?.nextBillingDate ? (
+        {next ? (
           <p className="mt-0.5 truncate text-xs text-[var(--color-brand-text-muted)]">
-            {t.budgetPlanner.committedNext(next.name, shortDate(next.nextBillingDate))}
+            {t.budgetPlanner.committedNext(next.name, shortDate(next.date))}
           </p>
         ) : null}
       </div>
