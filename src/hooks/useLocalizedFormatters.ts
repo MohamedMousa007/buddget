@@ -25,6 +25,10 @@ export function useLocalizedFormatters() {
         if (isYesterday(date)) return t.common.yesterday
         return digits(format(date, 'd MMM yyyy', { locale: dfLocale }))
       },
+      /** "19 Oct" / "19 أكتوبر": the full month in Arabic, where the abbreviation is clipped. */
+      formatDayMonth(dateStr: string) {
+        return digits(format(parseISO(dateStr), locale === 'ar' ? 'd MMMM' : 'd MMM', { locale: dfLocale }))
+      },
       formatDateShort(dateStr: string) {
         return digits(format(parseISO(dateStr), 'd MMM', { locale: dfLocale }))
       },

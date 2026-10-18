@@ -3,12 +3,11 @@
 import { Clock, TrendingUp } from 'lucide-react'
 import { useSubscriptionDates } from '@/hooks/useSubscriptionDates'
 import { useT } from '@/lib/i18n'
-import { money2 } from '@/lib/subscriptions/subscriptionFormat'
+import { microClassName } from '@/lib/ui/microLabelStyle'
 import type { Insight, StripDay } from '@/lib/subscriptions/subscriptionNudges'
 import { cn } from '@/lib/utils'
 import { signedPct } from './subscriptionLabels'
-
-const LABEL = 'text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]'
+import { formatFixed2 } from '@/lib/utils/formatters'
 
 /** Desktop rail: the 30-day strip, then at most two insight cards. */
 export function SubscriptionsRail({ strip, insights }: { strip: StripDay[]; insights: Insight[] }) {
@@ -16,8 +15,8 @@ export function SubscriptionsRail({ strip, insights }: { strip: StripDay[]; insi
   const ui = t.subscriptions.ui.rail
   const { shortDate: formatDateShort } = useSubscriptionDates()
   return (
-    <aside className="hidden w-[22rem] shrink-0 flex-col gap-4 border-s border-[var(--color-brand-border)] ps-8 lg:flex">
-      <h2 className={LABEL}>{ui.next30}</h2>
+    <div className="hidden flex-col gap-4 lg:flex">
+      <h2 className={microClassName}>{ui.next30}</h2>
       <div className="grid grid-cols-10 gap-1.5">
         {strip.map((d) => (
           <div
@@ -50,15 +49,15 @@ export function SubscriptionsRail({ strip, insights }: { strip: StripDay[]; insi
             <div className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{name}</div>
             <div className="font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">
               {i.kind === 'price' && i.row.priceChange
-                ? ui.priceMove(money2(i.row.priceChange.from), money2(i.row.priceChange.to), signedPct(i.row.priceChange.pct))
+                ? ui.priceMove(formatFixed2(i.row.priceChange.from), formatFixed2(i.row.priceChange.to), signedPct(i.row.priceChange.pct))
                 : ui.trialThen(
                     sub.trialEnd ? formatDateShort(sub.trialEnd.slice(0, 10)) : '',
-                    money2(i.kind === 'trial' ? i.amount : sub.amount),
+                    formatFixed2(i.kind === 'trial' ? i.amount : sub.amount),
                   )}
             </div>
           </div>
         )
       })}
-    </aside>
+    </div>
   )
 }

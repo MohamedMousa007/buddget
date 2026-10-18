@@ -15,13 +15,13 @@ import type { SubscriptionTracking } from '@/lib/store/types'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { findBrandByKey, plansForRegion, type CatalogRegion } from '@/lib/constants/subscriptionCatalog'
 import { chargeAmount, markPaidTarget, scheduledDates } from '@/lib/subscriptions/subscriptionForecast'
-import { money2 } from '@/lib/subscriptions/subscriptionFormat'
 import { buildRow, type Chip } from '@/lib/subscriptions/subscriptionRows'
 import { cn } from '@/lib/utils'
 import { BrandTile } from './BrandTile'
 import { SectionLabel, SheetFrame } from './SheetFrame'
 import { chipLabel, currencyLabel, cycleWord, TRACKING_ICON } from './subscriptionLabels'
 import { StatusChip } from './StatusChip'
+import { formatFixed2 } from '@/lib/utils/formatters'
 
 const TRACKING: SubscriptionTracking[] = ['sms', 'ask', 'log']
 
@@ -139,7 +139,7 @@ export function SubscriptionDetailSheet({
   const bannerKind = BANNER_BY_CHIP[row.chip.key]
   const BannerIcon = bannerKind ? BANNER_ICON[bannerKind] : null
   const d = ui.detail.banner
-  const fmt = (n: number) => money2(n)
+  const fmt = (n: number) => formatFixed2(n)
   const pendingBrand = findBrandByKey(sub.brandKey)
   const pendingPlanName =
     (pendingBrand && sub.catalogRegion

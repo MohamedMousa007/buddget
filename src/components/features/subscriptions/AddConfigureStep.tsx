@@ -19,10 +19,10 @@ import type { AddSubscriptionFormReturn } from '@/hooks/useAddSubscriptionForm'
 import { EXPENSE_ENTRY_CATEGORIES } from '@/lib/constants/finance'
 import { decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 import { addCategoryOf } from '@/lib/subscriptions/catalogDisplay'
-import { money0, money2 } from '@/lib/subscriptions/subscriptionFormat'
 import { useLocale, useT } from '@/lib/i18n'
 import type { SubscriptionBillingCycle, SubscriptionTracking } from '@/lib/store/types'
 import { cn } from '@/lib/utils'
+import { formatFixed2, formatWhole } from '@/lib/utils/formatters'
 
 const FIELD = 'h-12 rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] font-mono-numbers text-[17px] font-semibold'
 const TRACKING: SubscriptionTracking[] = ['sms', 'ask', 'log']
@@ -45,7 +45,7 @@ export function AddConfigureStep({ form }: { form: AddSubscriptionFormReturn }) 
 
   const planPrice = (amount: number, currency: string | undefined, cycle: SubscriptionBillingCycle) => {
     const cur = currency ?? form.base
-    const text = cur === 'USD' ? `$${money2(amount)}` : `${money2(amount)} ${currencyLabel(cur, locale)}`
+    const text = cur === 'USD' ? `$${formatFixed2(amount)}` : `${formatFixed2(amount)} ${currencyLabel(cur, locale)}`
     const suffix = { weekly: ui.add.perWeekShort, monthly: ui.add.perMonthShort, quarterly: ui.add.perQuarterShort, semiannual: ui.add.perHalfYearShort, yearly: ui.add.perYearShort }[cycle]
     return `${text} ${suffix}`
   }
@@ -128,7 +128,7 @@ export function AddConfigureStep({ form }: { form: AddSubscriptionFormReturn }) 
         {form.fx ? (
           <p className="flex flex-wrap items-center gap-1.5 text-xs text-[var(--color-brand-text-secondary)]">
             <span className="font-mono-numbers font-semibold text-[var(--color-brand-text-primary)]">
-              ≈ {money0(form.fx.estimate)} {currencyLabel(form.base, locale)}
+              ≈ {formatWhole(form.fx.estimate)} {currencyLabel(form.base, locale)}
             </span>
             <span>{ui.add.fxRest(form.fx.rate.toFixed(2))}</span>
           </p>

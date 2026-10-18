@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button'
 import { useAddSubscriptionForm } from '@/hooks/useAddSubscriptionForm'
 import { useLocale, useT } from '@/lib/i18n'
 import type { Subscription } from '@/lib/store/types'
-import { money0 } from '@/lib/subscriptions/subscriptionFormat'
 import { AddCatalogStep } from './AddCatalogStep'
 import { AddConfigureStep } from './AddConfigureStep'
 import { SheetFrame } from './SheetFrame'
 import { currencyLabel } from './subscriptionLabels'
+import { formatWhole } from '@/lib/utils/formatters'
 
 function Inner({
   editing,
@@ -41,10 +41,10 @@ function Inner({
         {!draft.trial ? (
           <div className="flex justify-between gap-2 text-[13px]">
             <span className="font-mono-numbers font-semibold text-[var(--color-brand-text-primary)]">
-              {ui.add.impact(money0(form.impact.monthly), currencyLabel(form.base, locale))}
+              {ui.add.impact(formatWhole(form.impact.monthly), currencyLabel(form.base, locale))}
             </span>
             <span className="font-mono-numbers text-[var(--color-brand-text-secondary)]">
-              {ui.add.committedBecomes(money0(form.impact.after))}
+              {ui.add.committedBecomes(formatWhole(form.impact.after))}
             </span>
           </div>
         ) : null}

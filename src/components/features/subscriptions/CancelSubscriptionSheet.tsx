@@ -9,11 +9,11 @@ import { useLocale, useT } from '@/lib/i18n'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { cancelHint } from '@/lib/subscriptions/cancelHints'
 import { chargeAmount, cycleState } from '@/lib/subscriptions/subscriptionForecast'
-import { money2 } from '@/lib/subscriptions/subscriptionFormat'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { BrandTile } from './BrandTile'
 import { FieldLabel, SheetFrame } from './SheetFrame'
 import { currencyLabel, cycleWord } from './subscriptionLabels'
+import { formatFixed2 } from '@/lib/utils/formatters'
 
 /**
  * Cancel confirm, no dark patterns: the last day of access (default: the end of the cycle
@@ -71,7 +71,7 @@ export function CancelSubscriptionSheet({ subId, onClose }: { subId: string | nu
             {sub.planName ? ` · ${sub.planName}` : ''}
           </div>
           <div className="font-mono-numbers text-[13px] text-[var(--color-brand-text-secondary)]">
-            {money2(chargeAmount(sub))} {currencyLabel(sub.currency, locale)} {cycleWord(sub.billingCycle, ui)}
+            {formatFixed2(chargeAmount(sub))} {currencyLabel(sub.currency, locale)} {cycleWord(sub.billingCycle, ui)}
           </div>
         </div>
       </div>

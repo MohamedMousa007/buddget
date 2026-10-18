@@ -10,8 +10,8 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import type { BudgetPlanCategory } from '@/lib/store/types'
 import { leftToPayThisMonth } from '@/lib/subscriptions/subscriptionForecast'
-import { money0 } from '@/lib/subscriptions/subscriptionFormat'
 import { expenseAmountInBase, filterExpensesByMonth } from '@/lib/utils/calculations'
+import { formatWhole } from '@/lib/utils/formatters'
 
 /**
  * The Subscriptions row of a budget plan: actual against plan, and what is still to pay from
@@ -55,7 +55,7 @@ export function BudgetSubscriptionsProgress({ category }: { category: BudgetPlan
         <div className="flex items-baseline justify-between gap-2 text-[15px] font-semibold text-[var(--color-brand-text-primary)]">
           <span className="truncate">{t.nav.subscriptions}</span>
           <span className="font-mono-numbers text-[13px] font-medium">
-            {money0(spent)} / {money0(planned)} {currencyLabel(base, locale)}
+            {formatWhole(spent)} / {formatWhole(planned)} {currencyLabel(base, locale)}
           </span>
         </div>
         <div className="h-[5px] overflow-hidden rounded-full bg-[var(--color-brand-elevated)]">
@@ -71,7 +71,7 @@ export function BudgetSubscriptionsProgress({ category }: { category: BudgetPlan
               : 'text-xs text-[var(--color-brand-text-secondary)]'
           }
         >
-          {over ? ui.overBudget(money0(spent - planned)) : ui.planLeft(money0(left))}
+          {over ? ui.overBudget(formatWhole(spent - planned)) : ui.planLeft(formatWhole(left))}
         </span>
       </div>
     </div>

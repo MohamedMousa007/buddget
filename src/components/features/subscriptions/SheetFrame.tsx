@@ -2,7 +2,9 @@
 
 import { ChevronLeft, X } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { ModalShell, useModalTitleId } from '@/components/modals/ModalShell'
+import { ModalShell } from '@/components/modals/ModalShell'
+import { ModalTitle } from '@/components/modals/ModalTitle'
+import { microClassName } from '@/lib/ui/microLabelStyle'
 import { IconButton } from '@/components/ui/IconButton'
 import { useT } from '@/lib/i18n'
 
@@ -15,9 +17,7 @@ function Header({ title, onClose, onBack }: { title: string; onClose: () => void
           <ChevronLeft strokeWidth={1.75} className="text-[var(--color-brand-text-secondary)] rtl:rotate-180" />
         </IconButton>
       ) : null}
-      <h2 id={useModalTitleId()} className="min-w-0 flex-1 truncate text-lg font-semibold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">
-        {title}
-      </h2>
+      <ModalTitle className="min-w-0 flex-1 truncate">{title}</ModalTitle>
       <IconButton aria-label={t.common.close} onClick={onClose}>
         <X strokeWidth={1.75} className="text-[var(--color-brand-text-secondary)]" />
       </IconButton>
@@ -57,7 +57,7 @@ export function SheetFrame({
         <Header title={title} onClose={onClose} onBack={onBack} />
         <div className="native-scroll flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pb-4 pt-1 md:px-6 [&>*]:shrink-0">{children}</div>
         {footer ? (
-          <div className="sheet-cta flex shrink-0 flex-col gap-2.5 border-t border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-5 pb-5 pt-3 md:px-6">
+          <div className="sheet-cta flex shrink-0 flex-col gap-2.5 border-t border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-5 pb-6 pt-3 md:px-6">
             {footer}
           </div>
         ) : null}
@@ -68,7 +68,7 @@ export function SheetFrame({
 
 /** Uppercase micro label above a block (Next charges, Matched charges...). */
 export function SectionLabel({ children }: { children: ReactNode }) {
-  return <h3 className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{children}</h3>
+  return <h3 className={microClassName}>{children}</h3>
 }
 
 /** The 12/600 field label used in the configure step. */

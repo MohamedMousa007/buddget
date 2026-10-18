@@ -12,6 +12,9 @@ import { SubscriptionGroups } from '@/components/features/subscriptions/Subscrip
 import { SubscriptionsEmpty } from '@/components/features/subscriptions/SubscriptionsEmpty'
 import { SubscriptionsHero } from '@/components/features/subscriptions/SubscriptionsHero'
 import { SubscriptionsRail } from '@/components/features/subscriptions/SubscriptionsRail'
+import { PageGrid } from '@/components/layout/PageGrid'
+import { Plus } from 'lucide-react'
+import { IconButton } from '@/components/ui/IconButton'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -26,8 +29,6 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import type { Subscription } from '@/lib/store/types'
 import type { Segment } from '@/lib/subscriptions/subscriptionRows'
-
-const WRAP = 'mx-auto w-full max-w-[1100px] px-4 py-4'
 
 export default function SubscriptionsPage() {
   useHydrateSubscriptions()
@@ -99,48 +100,55 @@ export default function SubscriptionsPage() {
   return (
     <div>
       <SubscriptionsHero hero={dataReady ? home.hero : null} base={home.base} loading={!dataReady} />
-      <div className={`${WRAP} lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-8`}>
-        <div className="flex min-w-0 flex-col gap-3.5">
-          {empty ? (
-            <SubscriptionsEmpty
-              region={catalogRegionOf(profile)}
-              onPickBrand={(key) => openAdd(key)}
-              onAdd={() => openAdd()}
-              onScan={scan}
-            />
-          ) : (
-            <>
-              <div className="flex min-h-6 items-center justify-between">
-                <span className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{period}</span>
-                <span className="text-xs text-[var(--color-brand-text-secondary)]">{ui.activeCount(activeCount)}</span>
-              </div>
-              <SegmentedControl<Segment>
-                ariaLabel={ui.segments.label}
-                value={segment}
-                onChange={setSegment}
-                options={[
-                  { value: 'upcoming', label: ui.segments.upcoming },
-                  { value: 'all', label: ui.segments.all },
-                  { value: 'ended', label: ui.segments.ended },
-                ]}
+      <PageGrid
+        primary={
+          <div className="flex min-w-0 flex-col gap-3.5 px-4 pb-4 pt-4 lg:px-0 lg:pb-0 lg:pt-0">
+            {empty ? (
+              <SubscriptionsEmpty
+                region={catalogRegionOf(profile)}
+                onPickBrand={(key) => openAdd(key)}
+                onAdd={() => openAdd()}
+                onScan={scan}
               />
-              {!dataReady ? (
-                <SkeletonList />
-              ) : (
-                <>
-                  {segment === 'upcoming' && home.nudge ? <HomeNudge nudge={home.nudge} onOpen={setDetailId} /> : null}
-                  {groups.length === 0 && segment === 'ended' ? (
-                    <p className="py-6 text-center text-sm text-[var(--color-brand-text-secondary)]">{ui.emptyTab}</p>
-                  ) : (
-                    <SubscriptionGroups groups={groups} paused={paused} cancelled={cancelled} onOpen={setDetailId} />
-                  )}
-                </>
-              )}
-            </>
-          )}
-        </div>
-        {!empty ? <SubscriptionsRail strip={home.strip} insights={home.insights} /> : null}
-      </div>
+            ) : (
+              <>
+                <div className="flex min-h-6 items-center justify-between">
+                  <span className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{period}</span>
+                  <span className="flex items-center gap-1 text-xs text-[var(--color-brand-text-secondary)]">
+                    {ui.activeCount(activeCount)}
+                    <IconButton variant="brand" aria-label={t.subscriptions.addSubscription} onClick={() => openAdd()}>
+                      <Plus strokeWidth={1.75} />
+                    </IconButton>
+                  </span>
+                </div>
+                <SegmentedControl<Segment>
+                  ariaLabel={ui.segments.label}
+                  value={segment}
+                  onChange={setSegment}
+                  options={[
+                    { value: 'upcoming', label: ui.segments.upcoming },
+                    { value: 'all', label: ui.segments.all },
+                    { value: 'ended', label: ui.segments.ended },
+                  ]}
+                />
+                {!dataReady ? (
+                  <SkeletonList />
+                ) : (
+                  <>
+                    {segment === 'upcoming' && home.nudge ? <HomeNudge nudge={home.nudge} onOpen={setDetailId} /> : null}
+                    {groups.length === 0 && segment === 'ended' ? (
+                      <p className="py-6 text-center text-sm text-[var(--color-brand-text-secondary)]">{ui.emptyTab}</p>
+                    ) : (
+                      <SubscriptionGroups groups={groups} paused={paused} cancelled={cancelled} onOpen={setDetailId} />
+                    )}
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        }
+        secondary={empty ? undefined : <SubscriptionsRail strip={home.strip} insights={home.insights} />}
+      />
 
       <AddSubscriptionSheet open={addOpen} onClose={closeAdd} editing={editing} seedBrandKey={seedBrandKey} instanceKey={instance} />
       <SubscriptionDetailSheet key={detailId ?? 'none'} subId={detailId} onClose={() => setDetailId(null)} onEdit={openEdit} onCancel={openCancel} />

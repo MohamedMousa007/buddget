@@ -12,12 +12,11 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import type { Currency } from '@/lib/store/types'
 import { convertCurrency } from '@/lib/utils/currency'
 import { localTodayISO } from '@/lib/utils/localDate'
-import { formatCurrency } from '@/lib/utils/formatters'
+import { formatCurrency, formatFixed2, formatWhole } from '@/lib/utils/formatters'
 import { catalogRegionOf } from '@/lib/subscriptions/catalogDisplay'
 import { planForAmount } from '@/lib/subscriptions/planChange'
 import { chargesToLink, notASubscriptionKey } from '@/lib/subscriptions/smsFinds'
 import { draftToSubscription } from '@/lib/subscriptions/subscriptionDraft'
-import { money0, money2 } from '@/lib/subscriptions/subscriptionFormat'
 import { startDateFromBillingDay } from '@/lib/subscriptions/subscriptionStartDate'
 import { BrandTile } from './BrandTile'
 import { ConfidenceMeter } from './ConfidenceMeter'
@@ -97,11 +96,11 @@ function FindCard({ find, onAdd, onDismiss }: { find: SmsFind; onAdd: () => void
           </div>
           <div className="text-end">
             <div className="font-mono-numbers text-[17px] font-semibold text-[var(--color-brand-text-primary)]">
-              {foreign ? formatCurrency(find.amount, find.currency) : money2(find.amount)}
+              {foreign ? formatCurrency(find.amount, find.currency) : formatFixed2(find.amount)}
             </div>
             <div className="font-mono-numbers text-[11px] text-[var(--color-brand-text-secondary)]">
               {foreign
-                ? `≈ ${currencyLabel(base, locale)} ${money0(convertCurrency(find.amount, find.currency as Currency, base, rates))}`
+                ? `≈ ${currencyLabel(base, locale)} ${formatWhole(convertCurrency(find.amount, find.currency as Currency, base, rates))}`
                 : currencyLabel(find.currency, locale)}
             </div>
           </div>

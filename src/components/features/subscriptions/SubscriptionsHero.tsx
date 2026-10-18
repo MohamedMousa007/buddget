@@ -5,7 +5,7 @@ import { BAND_FG2, BAND_MIX, BandScale, HeroBand, type HeroBandCell } from '@/co
 import { useSubscriptionDates } from '@/hooks/useSubscriptionDates'
 import { useT } from '@/lib/i18n'
 import type { HeroNumbers } from '@/lib/subscriptions/subscriptionForecast'
-import { money0, money2 } from '@/lib/subscriptions/subscriptionFormat'
+import { formatFixed2, formatWhole } from '@/lib/utils/formatters'
 
 /**
  * Subscriptions' hero is the shared `HeroBand` (Flow, Wealth and Debts use it too), so its
@@ -23,8 +23,8 @@ export function SubscriptionsHero({ hero, base, loading }: { hero: HeroNumbers |
   const pct = total > 0 && hero ? Math.min(100, (hero.paid / total) * 100) : 0
 
   const cells: [HeroBandCell, HeroBandCell, HeroBandCell] = [
-    { label: ui.monthlyEquivalent, value: blank || empty ? dash : money0(hero.monthlyEquivalent) },
-    { label: ui.perYear, value: blank || empty ? dash : money0(hero.perYear) },
+    { label: ui.monthlyEquivalent, value: blank || empty ? dash : formatWhole(hero.monthlyEquivalent) },
+    { label: ui.perYear, value: blank || empty ? dash : formatWhole(hero.perYear) },
     {
       label: ui.nextCharge,
       value: blank || !hero.next ? dash : shortDate(format(hero.next.due, 'yyyy-MM-dd')),
@@ -37,7 +37,7 @@ export function SubscriptionsHero({ hero, base, loading }: { hero: HeroNumbers |
       numbers={
         <p className="flex min-w-0 items-baseline gap-1.5">
           <span className="font-mono-numbers text-[32px] font-semibold leading-none tracking-[-0.03em]">
-            {blank ? dash : money2(hero.due30)}
+            {blank ? dash : formatFixed2(hero.due30)}
           </span>
           <span className={`min-w-0 truncate whitespace-nowrap text-[13px] ${BAND_FG2}`}>{base}</span>
         </p>
@@ -48,8 +48,8 @@ export function SubscriptionsHero({ hero, base, loading }: { hero: HeroNumbers |
             <div className="h-full rounded-full bg-[var(--flow-band-fg)]" style={{ width: `${pct}%` }} />
           </div>
           <BandScale>
-            <span className="min-w-0 truncate whitespace-nowrap">{ui.paid(blank ? '0' : money0(hero.paid))}</span>
-            <span className="min-w-0 shrink-0 truncate whitespace-nowrap">{ui.left(blank ? '0' : money0(hero.left))}</span>
+            <span className="min-w-0 truncate whitespace-nowrap">{ui.paid(blank ? '0' : formatWhole(hero.paid))}</span>
+            <span className="min-w-0 shrink-0 truncate whitespace-nowrap">{ui.left(blank ? '0' : formatWhole(hero.left))}</span>
           </BandScale>
         </>
       }

@@ -1,12 +1,13 @@
 'use client'
 
+import { SelectableCard } from '@/components/ui/SelectableCard'
 import type { SubscriptionBrand } from '@/lib/constants/subscriptionCatalog'
 import { cn } from '@/lib/utils'
 import { BrandTile } from './BrandTile'
 
 /**
- * A service to tap: logo, name and its usual price. `quick` is the first-run card (40px logo
- * on a raised card); `grid` is the add-flow cell (56px logo, hairline border).
+ * A service to tap, as the shared `SelectableCard` tile: logo, name and its usual price.
+ * `quick` is the first-run card (40px logo, raised); `grid` is the add-flow cell (56px logo).
  */
 export function BrandPriceTile({
   brand,
@@ -21,20 +22,16 @@ export function BrandPriceTile({
 }) {
   const quick = variant === 'quick'
   return (
-    <button
-      type="button"
+    <SelectableCard
+      as="action"
+      layout="tile"
+      surface="card"
       onClick={onPick}
-      data-raw-button-ok="a catalog tile: logo, name and price in one tap target"
-      className={cn(
-        'flex min-h-11 flex-col items-center gap-1.5 rounded-2xl border outline-none focus-visible:ring-3 focus-visible:ring-[var(--color-brand-focus)]/50',
-        quick
-          ? 'border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-2 py-3 shadow-[var(--shadow-sm)]'
-          : 'border-[var(--color-brand-border)] px-1 py-2.5',
-      )}
+      className={cn('min-h-11 gap-1.5', quick ? 'px-2 py-3 shadow-[var(--shadow-sm)]' : 'px-1 py-2.5')}
     >
       <BrandTile brandKey={brand.key} name={brand.name} size={quick ? 40 : 56} />
       <span className="text-center text-xs font-semibold text-[var(--color-brand-text-primary)]">{brand.name}</span>
       <span className="font-mono-numbers text-[11px] text-[var(--color-brand-text-secondary)]">{price}</span>
-    </button>
+    </SelectableCard>
   )
 }

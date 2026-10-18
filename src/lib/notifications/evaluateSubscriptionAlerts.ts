@@ -8,7 +8,7 @@ import type { Expense, Subscription } from '@/lib/store/types'
 import type { Dictionary } from '@/lib/i18n/types'
 import { chargeAmount, cycleState, lifecycle } from '@/lib/subscriptions/subscriptionForecast'
 import { priceChange } from '@/lib/subscriptions/subscriptionPricing'
-import { money2 } from '@/lib/subscriptions/subscriptionFormat'
+import { formatFixed2 } from '@/lib/utils/formatters'
 
 /** Days before a charge that the digest mentions it. Yearly plans get a longer lead. */
 export const REMIND_DAYS = [3, 0] as const
@@ -107,11 +107,11 @@ export function renderSubscriptionAlert(dict: Dictionary, a: SubscriptionAlert):
     case 'subscription_digest':
       return {
         title: n.digestTitle(a.items.length),
-        body: a.items.map((i) => n.digestItem(i.name, money2(i.amount), n.inDays(i.daysUntil))).join(' · '),
+        body: a.items.map((i) => n.digestItem(i.name, formatFixed2(i.amount), n.inDays(i.daysUntil))).join(' · '),
       }
     case 'subscription_trial':
-      return { title: n.trialTitle(a.name, a.daysLeft), body: n.trialBody(money2(a.amount), a.endsOn) }
+      return { title: n.trialTitle(a.name, a.daysLeft), body: n.trialBody(formatFixed2(a.amount), a.endsOn) }
     case 'subscription_price':
-      return { title: n.priceTitle(a.name, money2(a.to)), body: n.priceBody(money2(a.from)) }
+      return { title: n.priceTitle(a.name, formatFixed2(a.to)), body: n.priceBody(formatFixed2(a.from)) }
   }
 }

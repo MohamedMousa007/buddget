@@ -3,7 +3,7 @@ import type { SubscriptionsCopy } from '@/lib/i18n/subscriptionsCopy'
 import type { Chip, AmountNote } from '@/lib/subscriptions/subscriptionRows'
 import type { SubscriptionBillingCycle, SubscriptionTracking } from '@/lib/store/types'
 import type { PriceLabel } from '@/lib/subscriptions/catalogDisplay'
-import { money0, money2 } from '@/lib/subscriptions/subscriptionFormat'
+import { formatFixed2, formatWhole } from '@/lib/utils/formatters'
 
 export const TRACKING_ICON: Record<SubscriptionTracking, LucideIcon> = {
   sms: MessageSquare,
@@ -55,16 +55,16 @@ export function noteLabel(note: AmountNote, ui: SubscriptionsCopy, usdSymbol: (a
       return note.fxDrift != null ? ui.notes.fxDrift(base, signedPct(Math.round(note.fxDrift * 100))) : base
     }
     case 'perMonth':
-      return ui.notes.perMonth(money2(note.amount))
+      return ui.notes.perMonth(formatFixed2(note.amount))
     case 'was':
-      return ui.notes.was(money2(note.amount))
+      return ui.notes.was(formatFixed2(note.amount))
     case 'myShare':
-      return ui.notes.myShareOf(money2(note.of))
+      return ui.notes.myShareOf(formatFixed2(note.of))
   }
 }
 
 /** The headline amount of a row: `≈ 1,069` for an estimate, `190.00` otherwise. */
-export const rowAmount = (amount: number, approx: boolean) => (approx ? `≈ ${money0(amount)}` : money2(amount))
+export const rowAmount = (amount: number, approx: boolean) => (approx ? `≈ ${formatWhole(amount)}` : formatFixed2(amount))
 
 export function cycleSuffix(cycle: SubscriptionBillingCycle, ui: SubscriptionsCopy): string {
   const a = ui.add
@@ -81,6 +81,6 @@ export const currencyLabel = (code: string, locale: string) => (code === 'EGP' &
 
 /** What a catalog tile quotes: `EGP 190.00`, `≈ EGP 99.00`, `≈ $20`. */
 export function tilePriceText(p: PriceLabel, locale: string): string {
-  if (p.currency === 'USD') return `≈ $${money0(p.amount)}`
-  return `${p.approx ? '≈ ' : ''}${currencyLabel(p.currency, locale)} ${money2(p.amount)}`
+  if (p.currency === 'USD') return `≈ $${formatWhole(p.amount)}`
+  return `${p.approx ? '≈ ' : ''}${currencyLabel(p.currency, locale)} ${formatFixed2(p.amount)}`
 }

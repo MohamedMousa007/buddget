@@ -3,6 +3,7 @@
 import { Cloud, Dumbbell, Ellipsis, Gamepad2, GraduationCap, Music, Newspaper, Plus, Search, ShoppingBag, Sparkles, Tv, Wifi, type LucideIcon } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { OptionChip } from '@/components/ui/OptionChip'
+import { SelectableCard } from '@/components/ui/SelectableCard'
 import { defaultPlan, tilePrice, ADD_CATEGORIES, type AddCategory } from '@/lib/subscriptions/catalogDisplay'
 import type { AddSubscriptionFormReturn } from '@/hooks/useAddSubscriptionForm'
 import { useLocale, useT } from '@/lib/i18n'
@@ -77,17 +78,12 @@ export function AddCatalogStep({ form }: { form: AddSubscriptionFormReturn }) {
               />
             )
           })}
-          <button
-            type="button"
-            onClick={() => form.pickBrand('custom')}
-            data-raw-button-ok="the dashed Custom tile: icon and label as one target"
-            className="flex min-h-11 flex-col items-center gap-1.5 rounded-2xl border border-dashed border-[var(--color-brand-border)] px-1 py-2.5 outline-none focus-visible:ring-3 focus-visible:ring-[var(--color-brand-focus)]/50"
-          >
+          <SelectableCard as="action" layout="tile" surface="card" onClick={() => form.pickBrand('custom')} className="min-h-11 gap-1.5 border-dashed px-1 py-2.5">
             <span className="flex size-14 items-center justify-center rounded-2xl bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]">
               <Plus className="size-6" strokeWidth={1.75} aria-hidden />
             </span>
             <span className="text-xs font-semibold text-[var(--color-brand-text-primary)]">{ui.custom}</span>
-          </button>
+          </SelectableCard>
         </div>
       </section>
     </>

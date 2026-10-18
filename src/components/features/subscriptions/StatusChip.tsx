@@ -35,7 +35,7 @@ export function StatusChip({
   return (
     <Badge
       variant={TONE[tone]}
-      className={cn('h-auto gap-1 px-2 py-0.5 text-[11px] font-semibold text-[var(--color-brand-text-primary)]', className)}
+      className={cn('h-auto gap-1 px-2 py-0.5 font-sans text-[11px] font-semibold text-[var(--color-brand-text-primary)]', className)}
     >
       {Icon ? <Icon className="!size-[11px]" strokeWidth={1.75} aria-hidden /> : null}
       {children}

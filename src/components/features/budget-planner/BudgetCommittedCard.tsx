@@ -5,17 +5,16 @@ import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { AppLink } from '@/components/ui/AppLink'
 import { Card } from '@/components/ui/card'
+import { microClassName } from '@/lib/ui/microLabelStyle'
 import { RotateCwClock } from '@/components/ui/icons/RotateCwClock'
 import { useHydrateExpenses, useHydrateSubscriptions } from '@/hooks/remote'
 import { useSubscriptionDates } from '@/hooks/useSubscriptionDates'
 import { useLocale, useT } from '@/lib/i18n'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { chargesLeftThisMonth, yearlySetAside } from '@/lib/subscriptions/subscriptionForecast'
-import { money2 } from '@/lib/subscriptions/subscriptionFormat'
 import { currencyLabel } from '@/components/features/subscriptions/subscriptionLabels'
 import { format } from 'date-fns'
-
-const LABEL = 'text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]'
+import { formatFixed2 } from '@/lib/utils/formatters'
 
 /**
  * What is already spoken for this month: subscription charges still to pay, from their real
@@ -53,10 +52,10 @@ export function BudgetCommittedCard() {
 
   return (
     <Card elevation="sm" className="flex flex-col gap-3">
-      <p className={LABEL}>{ui.committed}</p>
+      <p className={microClassName}>{ui.committed}</p>
       <div className="flex items-baseline gap-2">
         <span className="font-mono-numbers text-[30px] font-semibold tracking-[-0.02em] text-[var(--color-brand-text-primary)]">
-          {money2(left)}
+          {formatFixed2(left)}
         </span>
         <span className="text-[13px] text-[var(--color-brand-text-secondary)]">{cur}</span>
       </div>
@@ -74,13 +73,13 @@ export function BudgetCommittedCard() {
             {next ? ui.entryLine(due.length, next.sub.name, formatDateShort(format(next.due, 'yyyy-MM-dd'))) : ui.nothingDue}
           </span>
         </span>
-        <span className="font-mono-numbers text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{money2(left)}</span>
+        <span className="font-mono-numbers text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{formatFixed2(left)}</span>
         <ChevronRight className="size-4 shrink-0 text-[var(--color-brand-text-muted)] rtl:rotate-180" aria-hidden />
       </AppLink>
       <div className="flex items-center justify-between text-[13px]">
         <span className="text-[var(--color-brand-text-secondary)]">{ui.setAside}</span>
         <span className="font-mono-numbers font-semibold text-[var(--color-brand-text-primary)]">
-          {money2(setAside)} {cur}
+          {formatFixed2(setAside)} {cur}
         </span>
       </div>
     </Card>

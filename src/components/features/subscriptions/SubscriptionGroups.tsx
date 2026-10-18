@@ -3,12 +3,12 @@
 import { ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { Card } from '@/components/ui/card'
+import { microClassName } from '@/lib/ui/microLabelStyle'
 import { useT } from '@/lib/i18n'
 import type { RowGroup, RowModel } from '@/lib/subscriptions/subscriptionRows'
-import { money2 } from '@/lib/subscriptions/subscriptionFormat'
 import { SubscriptionRow } from './SubscriptionRow'
+import { formatFixed2 } from '@/lib/utils/formatters'
 
-const LABEL = 'text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]'
 
 function RowCard({ rows, onOpen }: { rows: RowModel[]; onOpen: (id: string) => void }) {
   return (
@@ -45,9 +45,9 @@ export function SubscriptionGroups({
       {groups.map((g) => (
         <section key={g.key} className="flex flex-col gap-2">
           <div className="flex items-baseline justify-between">
-            <h2 className={LABEL}>{ui.groups[g.key]}</h2>
+            <h2 className={microClassName}>{ui.groups[g.key]}</h2>
             {g.total > 0 ? (
-              <span className="font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">{money2(g.total)}</span>
+              <span className="font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">{formatFixed2(g.total)}</span>
             ) : null}
           </div>
           <RowCard rows={g.rows} onOpen={onOpen} />
