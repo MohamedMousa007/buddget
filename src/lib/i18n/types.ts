@@ -2087,6 +2087,75 @@ export interface Dictionary {
     confirmDelete: string
     deleteGoal: string
     celebration: (name: string) => string
+    home: {
+      viewLabel: string
+      viewAll: string
+      viewActive: string
+      viewPaused: string
+      titleAll: string
+      titleActive: string
+      titlePaused: string
+      titleAchieved: string
+      newGoal: string
+      trophyAria: (n: number) => string
+      pausedHelper: string
+      resets: (date: string) => string
+      pausedWas: (date: string) => string
+      ofTarget: (target: string) => string
+      statusOver: (amount: string) => string
+      statusLeft: (amount: string) => string
+      statusDue: (days: number) => string
+      statusBehind: (n: number, quarterly: boolean) => string
+      statusOneDeposit: string
+      statusStreak: (n: number, quarterly: boolean) => string
+      statusNext: (pct: number, toGo: string) => string
+      statusPaused: string
+      actionAdjust: string
+      actionReview: string
+      actionReplan: string
+      actionAddMoney: string
+      actionResume: string
+      bannerBehind: (name: string, n: number, quarterly: boolean) => string
+      bannerReplan: (name: string) => string
+      dismiss: string
+      addMoneyTitle: (name: string) => string
+      addMoneyAmount: string
+      addMoneyCta: string
+      checkpointsAria: (pct: number, reached: number) => string
+      emptyFilter: string
+    }
+    achievedView: {
+      goalsAchieved: string
+      line: (amount: string) => string
+      statMonths: string
+      statEarly: string
+      statCheckpoints: string
+      yourWins: string
+      onTime: (months: number) => string
+      early: (months: number, early: number) => string
+      closingTitle: (n: number) => string
+      setGoal: string
+    }
+    empty: {
+      headline: string
+      body: string
+      placeholder: string
+      send: string
+      momentsLabel: string
+      moments: {
+        emergency: { title: string; sub: string }
+        vacation: { title: string; sub: string }
+        car: { title: string; sub: string }
+        home: { title: string; sub: string }
+        education: { title: string; sub: string }
+        other: { title: string; sub: string }
+      }
+      includesTitle: string
+      includeCheckpoints: string
+      includePace: string
+      includePocket: string
+      startScratch: string
+    }
     categoryEmergencyFund: string
     categoryHouse: string
     categoryCar: string

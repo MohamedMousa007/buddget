@@ -1,7 +1,7 @@
 import type { Goal } from '@/lib/store/types'
 
 export type GoalStatusKind =
-  | 'paused' | 'over' | 'due' | 'behind' | 'oneDeposit' | 'streak' | 'next'
+  | 'paused' | 'over' | 'underLimit' | 'due' | 'behind' | 'oneDeposit' | 'streak' | 'next'
 
 export interface AllocationRun {
   /** `YYYY-MM` or `YYYY-Qn` */
@@ -54,6 +54,12 @@ export function getGoalStatus({ goal, current, runs, now }: GoalStatusInput): Go
       kind: 'over', icon: 'AlertTriangle', tone: 'red',
       button: { action: 'adjust', variant: 'outline' },
       params: { amount: current - goal.monthlySpendingLimit },
+    }
+  }
+  if (goal.category === 'spending_control') {
+    return {
+      kind: 'underLimit', icon: 'Flag', tone: 'ink', button: { action: 'adjust', variant: 'outline' },
+      params: { amount: Math.max(0, (goal.monthlySpendingLimit ?? 0) - current) },
     }
   }
   const target = goal.targetAmount ?? 0

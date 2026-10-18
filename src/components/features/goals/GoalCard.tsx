@@ -1,77 +1,118 @@
 'use client'
 
-import { useState } from 'react'
+import type { KeyboardEvent } from 'react'
+import { useLocale, useT } from '@/lib/i18n'
+import { Button } from '@/components/ui/button'
+import { CheckpointBar, type CheckpointTone } from '@/components/features/goals/CheckpointBar'
+import { GoalStatusLine } from '@/components/features/goals/GoalStatusLine'
+import { ACTION_LABEL, goalStatusText } from '@/components/features/goals/goalStatusText'
+import type { GoalRow } from '@/hooks/useGoalRows'
+import type { GoalStatusView } from '@/lib/goals/goalStatus'
+import { goalVisual } from '@/lib/goals/goalVisual'
 import type { Goal } from '@/lib/store/types'
-import type { Dictionary } from '@/lib/i18n/types'
-import { useGoalProgress } from '@/hooks/useGoalProgress'
-import { useAverageMonthlySpendBase } from '@/hooks/useAverageMonthlySpendBase'
-import { useDebtRemainingForGoal } from '@/hooks/useDebtRemainingForGoal'
 import { formatCurrency } from '@/lib/utils/formatters'
-import { GoalCardMetaRows } from '@/components/features/goals/GoalCardMetaRows'
-import { GoalCardTop } from '@/components/features/goals/GoalCardTop'
-import { GoalCardFooter } from '@/components/features/goals/GoalCardFooter'
 import { cn } from '@/lib/utils'
-import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 
-export type GoalCardProps = {
-  goal: Goal
-  t: Dictionary['goals']
-  onEdit: (g: Goal) => void
-  onDelete: (id: string) => void
-  compact?: boolean
+export type GoalCardAction = GoalStatusView['button']['action']
+
+const TONE: Record<string, CheckpointTone> = { over: 'over', behind: 'behind', paused: 'paused' }
+const PERCENT_COLOR: Record<string, string> = {
+  over: 'var(--color-brand-red-text)',
+  behind: 'var(--color-brand-amber)',
+  paused: 'var(--color-brand-text-secondary)',
 }
 
-export function GoalCard({ goal, t, onEdit, onDelete, compact }: GoalCardProps) {
-  const [open, setOpen] = useState(false)
-  const { currentAmount, percent, monthsRemaining } = useGoalProgress(goal)
-  const avgMonthlySpendBase = useAverageMonthlySpendBase()
-  const debtRemainingDisplay = useDebtRemainingForGoal(goal)
-  const pct = percent ?? 0
-  const confirm = useConfirm()
+/** Fixed 192px goal card: identity, amount, checkpoint bar, then exactly one status line and one button. */
+export function GoalCard({
+  row,
+  onOpen,
+  onAction,
+}: {
+  row: GoalRow
+  onOpen: (g: Goal) => void
+  onAction: (g: Goal, a: GoalCardAction) => void
+}) {
+  const { goal, current, percent, status } = row
+  const t = useT().goals.home
+  const { locale } = useLocale()
+  const { icon: Icon, cat } = goalVisual(goal.category)
+  const isLimit = goal.category === 'spending_control'
+  const basis = isLimit ? goal.monthlySpendingLimit : goal.targetAmount
+  const month = (iso: string) =>
+    new Date(`${iso.slice(0, 7)}-01T00:00:00`).toLocaleDateString(locale, { month: 'short', year: 'numeric' })
+  const dueLine = status.kind === 'paused'
+    ? goal.targetDate ? t.pausedWas(month(goal.targetDate)) : ''
+    : isLimit ? t.resets(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString(locale, { day: 'numeric', month: 'short' }))
+    : goal.targetDate ? month(goal.targetDate) : ''
+  const open = () => onOpen(goal)
+  const onKey = (e: KeyboardEvent) => {
+    if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault()
+      open()
+    }
+  }
 
   return (
     <div
-      className={cn(
-        'rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]/90 backdrop-blur-sm p-4 transition-shadow',
-        compact ? 'p-3' : ''
-      )}
+      role="button"
+      tabIndex={0}
+      onClick={open}
+      onKeyDown={onKey}
+      className="flex h-48 cursor-pointer flex-col gap-3 overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 pt-4 text-start shadow-sm transition-transform duration-100 active:scale-[0.98]"
     >
-      <GoalCardTop
-        goal={goal}
-        t={t}
-        compact={compact}
-        percent={percent}
-        monthsRemaining={monthsRemaining}
-        pct={pct}
-        open={open}
-        onToggleOpen={() => setOpen((o) => !o)}
-        onEdit={() => onEdit(goal)}
-        onDelete={async () => {
-          if (await confirm({ title: t.confirmDelete, destructive: true })) onDelete(goal.id)
-        }}
-      />
+      <div className="flex items-center gap-3">
+        <span
+          className="flex size-11 shrink-0 items-center justify-center rounded-[14px]"
+          style={{
+            color: `var(--color-cat-${cat})`,
+            background: `color-mix(in srgb, var(--color-cat-${cat}) 16%, var(--color-brand-card))`,
+          }}
+          aria-hidden
+        >
+          <Icon className="size-[22px]" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-base font-semibold leading-[1.15] text-[var(--color-brand-text-primary)]">{goal.name}</p>
+          <p className="mt-0.5 h-4 truncate font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">{dueLine}</p>
+        </div>
+        <span
+          className="font-mono-numbers text-xl font-semibold"
+          style={{ color: PERCENT_COLOR[status.kind] ?? 'var(--color-brand-text-primary)' }}
+        >
+          {percent}%
+        </span>
+      </div>
 
-      {!compact && goal.category !== 'spending_control' ? (
-        <p className="text-sm text-[var(--color-brand-text-secondary)] mt-2">
-          {formatCurrency(currentAmount, goal.currency)}
-          {goal.targetAmount !== null ? (
-            <>
-              {' '}
-              / {formatCurrency(goal.targetAmount, goal.currency)}
-            </>
-          ) : null}
-        </p>
-      ) : null}
+      <p className="flex h-6 items-baseline gap-1.5 font-mono-numbers leading-6">
+        <span className="text-[26px] font-semibold tracking-[-0.02em] text-[var(--color-brand-text-primary)]">
+          {formatCurrency(current, goal.currency, false)}
+        </span>
+        {basis ? (
+          <span className="text-[13px] text-[var(--color-brand-text-secondary)]">
+            {t.ofTarget(formatCurrency(basis, goal.currency, false))}
+          </span>
+        ) : null}
+      </p>
 
-      <GoalCardMetaRows
-        goal={goal}
-        t={t}
-        currentAmount={currentAmount}
-        avgMonthlySpendBase={avgMonthlySpendBase}
-        debtRemainingDisplay={debtRemainingDisplay}
-      />
+      <CheckpointBar percent={percent} tone={TONE[status.kind] ?? 'default'} nodes={!isLimit} />
 
-      <GoalCardFooter goal={goal} t={t} compact={compact} open={open} />
+      <div
+        className={cn(
+          'mt-auto -mx-4 flex h-14 items-center gap-2 border-t border-[var(--color-brand-border)] pe-3 ps-4',
+        )}
+      >
+        <GoalStatusLine view={status} text={goalStatusText(status, goal, t)} />
+        <Button
+          size="touch"
+          variant={status.button.variant}
+          onClick={(e) => {
+            e.stopPropagation()
+            onAction(goal, status.button.action)
+          }}
+        >
+          {t[ACTION_LABEL[status.button.action]]}
+        </Button>
+      </div>
     </div>
   )
 }

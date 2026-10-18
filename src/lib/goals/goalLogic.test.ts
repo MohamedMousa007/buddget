@@ -96,6 +96,12 @@ describe('getGoalStatus', () => {
     expect(s.kind).toBe('over')
     expect(s.params.amount).toBe(320)
   })
+  it('limit goal under its limit shows what is left', () => {
+    const g = goal({ category: 'spending_control', monthlySpendingLimit: 1000, targetAmount: null })
+    const s = getGoalStatus({ goal: g, current: 400, runs: [], now })
+    expect(s.kind).toBe('underLimit')
+    expect(s.params.amount).toBe(600)
+  })
   it('due within 30 days', () => {
     expect(getGoalStatus({ goal: goal({ targetDate: '2026-11-05' }), current: 0, runs: [], now }).kind).toBe('due')
   })
