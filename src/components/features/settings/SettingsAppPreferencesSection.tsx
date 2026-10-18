@@ -147,6 +147,25 @@ export function SettingsAppPreferencesSection({ store }: SettingsAppPreferencesS
         />
       </div>
 
+      {(
+        [
+          ['subDueReminders', t.subscriptions.ui.notifications.dueReminders, t.subscriptions.ui.notifications.dueRemindersHint],
+          ['subPriceAlerts', t.subscriptions.ui.notifications.priceAlerts, t.subscriptions.ui.notifications.priceAlertsHint],
+        ] as const
+      ).map(([key, title, hint]) => (
+        <div key={key} className="flex min-h-12 items-center justify-between gap-3">
+          <div>
+            <Label className="text-sm text-[var(--color-brand-text-primary)]">{title}</Label>
+            <p className="text-xs text-[var(--color-brand-text-secondary)]">{hint}</p>
+          </div>
+          <Switch
+            size="touch"
+            checked={store.settings[key]}
+            onCheckedChange={(val) => store.updateSettings({ [key]: val })}
+          />
+        </div>
+      ))}
+
     </section>
   )
 }

@@ -13,6 +13,8 @@ export function subscriptionToMonthlyPlannerAmount(
       return amount * (52 / 12)
     case 'quarterly':
       return amount / 3
+    case 'semiannual':
+      return amount / 6
     case 'yearly':
       return amount / 12
     default:
@@ -67,16 +69,16 @@ export function patchRecurringFromSubscription(
   }
 }
 
-/** Live (active + trial) subscriptions as one monthly-equivalent figure in `baseCurrency`. */
+/** Charged (active) subscriptions as one monthly-equivalent figure in `baseCurrency`. A trial is not charged yet. */
 export function subscriptionsMonthlyBaseTotal(
-  subscriptions: Pick<Subscription, 'status' | 'amount' | 'billingCycle' | 'currency'>[],
+  subscriptions: Pick<Subscription, 'status' | 'amount' | 'billingCycle' | 'currency' | 'myShare'>[],
   baseCurrency: Currency,
   exchangeRates: Record<string, number>
 ): number {
   let sum = 0
   for (const sub of subscriptions) {
-    if (sub.status !== 'active' && sub.status !== 'trial') continue
-    const monthlyEq = subscriptionToMonthlyPlannerAmount(sub.amount, sub.billingCycle)
+    if (sub.status !== 'active') continue
+    const monthlyEq = subscriptionToMonthlyPlannerAmount(sub.myShare ?? sub.amount, sub.billingCycle)
     sum += convertCurrency(monthlyEq, sub.currency, baseCurrency, exchangeRates)
   }
   return sum

@@ -1,3 +1,4 @@
+import type { SubscriptionsCopy } from './subscriptionsCopy'
 /** Buddget i18n dictionary shape — every key in ar.ts must match en.ts exactly. */
 
 /** Tutorial tour copy. Top-level so copyKeys in the manifest stay short
@@ -1590,10 +1591,6 @@ export interface Dictionary {
     totalPlanned: string
     projectedSavings: string
     projectedSavingsLine: (amount: string, savingsRatePercent: number) => string
-    committedTitle: string
-    committedEmpty: string
-    committedLine: (count: number, perMonth: string) => string
-    committedNext: (name: string, date: string) => string
     spentOfPlanned: (spent: string, planned: string) => string
     /** Short label on budget planner rows that are savings allocation, not spending. */
     savingsAllocationBadge: string
@@ -1796,8 +1793,8 @@ export interface Dictionary {
       smsCcPayoffTitle: (amount: string) => string
       smsCcPayoffBody: (bank: string) => string
       /** Subscription-linked charge. */
-      smsSubscriptionTitle: (amount: string, label: string | null) => string
-      smsSubscriptionBody: (brand: string) => string
+      smsSubscriptionTitle: (amount: string, brand: string) => string
+      smsSubscriptionBody: (month: string) => string
       /** Salary matched to declared income (no duplicate added). */
       smsSalaryTitle: (amount: string) => string
       smsSalaryBody: string
@@ -2036,68 +2033,14 @@ export interface Dictionary {
   subscriptions: {
     pageTitle: string
     addSubscription: string
-    totalMonthly: string
-    perMonth: string
-    perYear: string
-    perWeek: string
-    perQuarter: string
-    renewsOn: string
-    cancelledOn: string
-    active: string
     cancelled: string
     paused: string
-    /** Badge: this billing cycle's charge has landed. */
-    paidThisCycle: string
-    trial: string
-    /** Banner: a recurring charge was spotted for a brand the user does not track. */
-    detectedTitle: string
-    detectedCta: string
     planChangeUpgrade: string
     planChangeDowngrade: string
     planChangeApply: string
-    searchPlaceholder: string
-    customSubscription: string
     selectPlan: string
-    adjustPriceHint: string
-    priceEstimateNote: string
-    billingCycle: string
-    billingDay: string
-    startedOn: string
-    confirmCancel: string
-    cancelSubscriptionAction: string
-    cancelHint: string
-    reactivate: string
-    deleteSubscription: string
     confirmDeleteSubscription: string
-    amountLabel: string
-    serviceName: string
-    billingWeekly: string
-    billingMonthly: string
-    billingQuarterly: string
-    billingYearly: string
-    profileSummary: (count: number, totalFormatted: string) => string
-    emptyTitle: string
-    emptyHint: string
-    paymentMethod: string
-    saveAdd: string
-    saveEdit: string
-    editSubscription: string
-    manage: string
-    activeSection: (n: number) => string
-    cancelledSection: string
-    catPopular: string
-    catAiProductivity: string
-    catStreaming: string
-    catMusic: string
-    catCloudStorage: string
-    catGaming: string
-    catVpn: string
-    catFitness: string
-    catReading: string
-    catCommunication: string
-    catTelecom: string
-    catOther: string
-    customSubscriptionHint: string
+    ui: SubscriptionsCopy
   }
 
   goals: {
@@ -2590,6 +2533,7 @@ export interface Dictionary {
     hintDebt: string
     hintWealth: string
     hintMethod: string
+    hintSubscription: string
   }
 
   filters: {

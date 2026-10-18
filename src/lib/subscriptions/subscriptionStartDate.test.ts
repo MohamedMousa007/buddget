@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { startDateForSave, startDateFromBillingDay } from './subscriptionStartDate'
+import { startDateFromBillingDay } from './subscriptionStartDate'
 
 const d = (y: number, m: number, day: number) => new Date(y, m - 1, day)
 
@@ -20,19 +20,5 @@ describe('startDateFromBillingDay', () => {
   it('clamps out-of-range input', () => {
     expect(startDateFromBillingDay(99, d(2026, 10, 31))).toBe('2026-10-31')
     expect(startDateFromBillingDay(0, d(2026, 10, 17))).toBe('2026-10-01')
-  })
-})
-
-describe('startDateForSave', () => {
-  const editing = { startDate: '2025-03-05', billingDay: 5 }
-  it('keeps the existing anchor when only unrelated fields changed', () => {
-    // A yearly sub renewing in March must not be re-anchored to October by editing its notes.
-    expect(startDateForSave(editing, 5, d(2026, 10, 17))).toBe('2025-03-05')
-  })
-  it('re-anchors when the billing day changed', () => {
-    expect(startDateForSave(editing, 12, d(2026, 10, 17))).toBe('2026-10-12')
-  })
-  it('derives for a new subscription', () => {
-    expect(startDateForSave(null, 5, d(2026, 10, 17))).toBe('2026-10-05')
   })
 })

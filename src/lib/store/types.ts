@@ -253,7 +253,10 @@ export interface RecurringExpense {
   createdAt?: string
 }
 
-export type SubscriptionBillingCycle = 'monthly' | 'quarterly' | 'yearly' | 'weekly'
+export type SubscriptionBillingCycle = 'monthly' | 'quarterly' | 'semiannual' | 'yearly' | 'weekly'
+
+/** How a due charge reaches the ledger: matched from an SMS, asked on the due date, or logged automatically. */
+export type SubscriptionTracking = 'sms' | 'ask' | 'log'
 
 export type SubscriptionStatus = 'active' | 'cancelled' | 'paused' | 'trial'
 
@@ -321,6 +324,23 @@ export interface Subscription {
   /** Last edit (ISO). Without it a local edit (cancel, price change) ties the server on
    *  `createdAt` and loses the offline-merge, so the server's stale copy wins. */
   updatedAt?: string
+
+  /** How due charges are recorded. Absent (legacy rows) means `sms`. */
+  tracking?: SubscriptionTracking
+  /** Daily-digest reminders for this subscription. Absent means on. */
+  reminder?: boolean
+  /** Last day of the free trial (YYYY-MM-DD). Only meaningful while `status === 'trial'`. */
+  trialEnd?: string | null
+  /** Cancelled subscriptions keep access until this day (YYYY-MM-DD), then move to Ended. */
+  endsOn?: string | null
+  pausedAt?: string | null
+  /** Every amount this plan has billed, newest last. `from` is the day it took effect. */
+  priceHistory?: { amount: number; from: string }[]
+  /** Day the detected plan change takes effect (pairs with pendingPlanId / pendingAmount). */
+  pendingPlanFrom?: string | null
+  /** Co-payers on a shared plan; `amount` is the full price, `myShare` what the user pays. */
+  sharedWith?: string[] | null
+  myShare?: number | null
 }
 
 export interface BudgetCategory {
@@ -786,6 +806,10 @@ export interface AppSettings {
    * Synced via `user_settings.sms_tracking_enabled`.
    */
   smsTrackingEnabled: boolean
+  /** Subscription due-date reminders (the daily digest). Synced via `user_settings.sub_due_reminders`. */
+  subDueReminders: boolean
+  /** Subscription price-rise and trial-ending alerts. Synced via `user_settings.sub_price_alerts`. */
+  subPriceAlerts: boolean
 }
 
 export type GoalStatus = 'active' | 'achieved' | 'paused' | 'cancelled'
@@ -965,7 +989,22 @@ export interface FinanceStore {
   applyPendingPlanChange: (id: string) => void
   /** Reject a detected plan change: clear the pending fields, change nothing else. */
   dismissPendingPlanChange: (id: string) => void
-  cancelSubscription: (id: string) => void
+  /** Cancel; access (and the Ended move) lasts until `endsOn` (default: today). */
+  cancelSubscription: (id: string, endsOn?: string) => void
+  pauseSubscription: (id: string) => void
+  resumeSubscription: (id: string) => void
+  /** Trial -> active: it now bills from the day after the trial. */
+  convertTrial: (id: string) => void
+  /** Record the current cycle as paid by writing a linked expense. Idempotent per cycle. */
+  markSubscriptionPaid: (id: string, charge?: { amount?: number; date?: string }) => void
+  /** Attach existing expenses to a subscription (they become its matched charges). */
+  linkSubscriptionCharges: (subId: string, expenseIds: string[]) => void
+  /** Detach a charge from its subscription (the expense stays in Flow). */
+  unlinkSubscriptionCharge: (expenseId: string) => void
+  /** Adopt a new price: the old one goes to priceHistory. */
+  adoptSubscriptionPrice: (id: string, amount: number) => void
+  /** Create the linked expense for every `log`-mode subscription whose charge is due and unrecorded. */
+  logDueSubscriptions: () => void
   deleteSubscription: (id: string) => void
   reactivateSubscription: (id: string) => void
   updateBudgetCategory: (category: string, amount: number, percentOfIncome?: number | null) => void

@@ -24,7 +24,7 @@
 
 ---
 
-## Database — Migration Log (105 files, latest 0109)
+## Database — Migration Log (latest repo file 0115; subscriptions redesign = 0114 + 0115)
 
 Live project: `ydihurtbcnoflhormgzi` (ap-southeast-1). Verified 2026-10-16: live tables/columns == `src/lib/supabase/database.types.ts` (41 tables). Latest applied: `income_sources_sort_order` (= repo 0109). Repo file numbers and applied migration names drift (e.g. repo 0108 = applied `0104_debt_payments_funded_from_savings`); compare schema, not names. Session-start check: `list_migrations`, then regenerate types and diff.
 

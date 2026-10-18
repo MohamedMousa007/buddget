@@ -24,16 +24,6 @@ export interface PmPrefill {
   type?: PaymentMethodType
 }
 
-/** Seed for the add-subscription sheet when a charge was spotted before the user tracked it. */
-export interface SubscriptionPrefill {
-  brandKey: string
-  /** The amount actually charged — better evidence than any catalog price. */
-  amount: number
-  currency: string
-  /** Day of month the charge landed on. */
-  billingDay: number
-}
-
 /** Seed for the New payday sheet. Every field optional: a starter card only knows the type. */
 export interface PaydayPrefill {
   name?: string
@@ -71,8 +61,12 @@ interface SettingsState {
   assignTarget: { eventId: string | null } | null
   expensePrefill: ExpensePrefill | null
   pmPrefill: PmPrefill | null
-  /** Seed for the add-subscription sheet; the subscriptions page opens the sheet when set. */
-  subscriptionPrefill: SubscriptionPrefill | null
+  /** The add-subscription sheet on the Subscriptions page (Quick add opens it). Not persisted. */
+  subscriptionAddOpen: boolean
+  setSubscriptionAddOpen: (open: boolean) => void
+  /** The SMS review sheet on the Subscriptions page (opened by the detection prompt). Not persisted. */
+  subscriptionReviewOpen: boolean
+  setSubscriptionReviewOpen: (open: boolean) => void
   /**
    * Banner keys the user has dismissed (persisted). Without this a detection banner
    * reappears on every visit to the dashboard, which trains people to ignore it.
@@ -140,8 +134,6 @@ interface SettingsState {
   openAddExpenseWithPrefill: (data: ExpensePrefill) => void
   openAddPaymentMethodWithPrefill: (data: PmPrefill) => void
   clearPmPrefill: () => void
-  openAddSubscriptionWithPrefill: (data: SubscriptionPrefill) => void
-  clearSubscriptionPrefill: () => void
   dismissBanner: (key: string) => void
   snoozeBanner: (key: string, untilISO: string) => void
   hideStatus: (key: string, untilISO: string) => void
@@ -177,7 +169,10 @@ export const useSettingsStore = create<SettingsState>()(
       assignTarget: null,
       expensePrefill: null,
       pmPrefill: null,
-      subscriptionPrefill: null,
+      subscriptionAddOpen: false,
+      setSubscriptionAddOpen: (open) => set({ subscriptionAddOpen: open }),
+      subscriptionReviewOpen: false,
+      setSubscriptionReviewOpen: (open) => set({ subscriptionReviewOpen: open }),
       dismissedBanners: [],
       snoozedBanners: {},
       hiddenStatusUntil: {},
@@ -232,8 +227,6 @@ export const useSettingsStore = create<SettingsState>()(
       openAddPaymentMethodWithPrefill: (data) =>
         set({ activeModal: 'addPaymentMethod', pmPrefill: data }),
       clearPmPrefill: () => set({ pmPrefill: null }),
-      openAddSubscriptionWithPrefill: (data) => set({ subscriptionPrefill: data }),
-      clearSubscriptionPrefill: () => set({ subscriptionPrefill: null }),
       dismissBanner: (key) =>
         set((st) => (st.dismissedBanners.includes(key) ? st : { dismissedBanners: [...st.dismissedBanners, key] })),
       snoozeBanner: (key, untilISO) => set((st) => ({ snoozedBanners: { ...st.snoozedBanners, [key]: untilISO } })),
@@ -278,7 +271,8 @@ export const useSettingsStore = create<SettingsState>()(
           assignTarget: null,
           expensePrefill: null,
           pmPrefill: null,
-          subscriptionPrefill: null,
+          subscriptionAddOpen: false,
+          subscriptionReviewOpen: false,
           monthFilter: getCurrentMonth(),
           aiChatSeed: null,
           aiChatSeedSend: false,

@@ -12,6 +12,12 @@ export interface DetectedSubscription {
   sightings: number
   /** Distinct months it was charged in — "three months running". */
   months: number
+  /** Last few distinct charge days (`yyyy-MM-dd`), oldest first. */
+  dates: string[]
+  /** Evidence strength: three or more months running is high, a repeat pair is medium. */
+  confidence: 'high' | 'medium'
+  /** Redacted text of the latest matching SMS, for the review card. */
+  excerpt: string | null
 }
 
 export type ChargeRow = {
@@ -21,6 +27,7 @@ export type ChargeRow = {
   amount: number | null
   currency: string | null
   day: string | null
+  raw_sms_summary?: string | null
 }
 
 /** How many charges before we suggest tracking it. */
@@ -86,6 +93,8 @@ export function detectRecurringCharges(
     if (consistent.length < MIN_SIGHTINGS) continue
 
     const days = consistent.map((r) => Number(r.day?.slice(8, 10))).filter((d) => d >= 1 && d <= 31)
+    const months = new Set(consistent.map((r) => r.day?.slice(0, 7))).size
+    const seen = [...new Set(consistent.flatMap((r) => (r.day ? [r.day.slice(0, 10)] : [])))].slice(-3)
     result.push({
       brandKey,
       name: brand.name,
@@ -93,7 +102,10 @@ export function detectRecurringCharges(
       currency,
       billingDay: days.length ? days[days.length - 1] : now.getDate(),
       sightings: consistent.length,
-      months: new Set(consistent.map((r) => r.day?.slice(0, 7))).size,
+      months,
+      dates: seen,
+      confidence: months >= 3 && consistent.length >= 3 ? 'high' : 'medium',
+      excerpt: consistent[consistent.length - 1].raw_sms_summary ?? null,
     })
   }
   return result

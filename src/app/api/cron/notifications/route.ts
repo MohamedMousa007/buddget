@@ -13,6 +13,9 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
 import { getServerDictionary } from '@/lib/i18n/getServerDictionary'
 import { evaluateAlerts, renderAlertCopy } from '@/lib/notifications/evaluateAlerts'
 import { emitNotification } from '@/lib/server/emitNotification'
+import { evaluateSubscriptionAlerts, renderSubscriptionAlert } from '@/lib/notifications/evaluateSubscriptionAlerts'
+import { subscriptionFromRow } from '@/lib/supabase/remote/mappers/subscriptionMapper'
+import { expenseFromRow } from '@/lib/supabase/remote/mappers/expenseMapper'
 
 export const maxDuration = 60
 
@@ -34,7 +37,7 @@ export async function GET(request: Request) {
   for (let offset = 0; ; offset += PAGE) {
     const { data: settingsRows, error } = await service
       .from('user_settings')
-      .select('user_id, language, month_start_day')
+      .select('user_id, language, month_start_day, sub_due_reminders, sub_price_alerts')
       .range(offset, offset + PAGE - 1)
     if (error) {
       console.error('[cron/notifications] user_settings query failed', error)
@@ -79,9 +82,45 @@ export async function GET(request: Request) {
         recurring,
         debtNameById,
       })
-      if (descriptors.length === 0) continue
 
       const dict = getServerDictionary(s.language as string | null)
+
+      const { data: subRows } = await service
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', userId)
+        .is('deleted_at', null)
+        .in('status', ['active', 'trial'])
+      if (subRows && subRows.length > 0) {
+        const since = format(new Date(now.getTime() - 120 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
+        const { data: expRows } = await service
+          .from('expenses')
+          .select('*')
+          .eq('user_id', userId)
+          .in('linked_subscription_id', subRows.map((r) => r.id as string))
+          .gte('expense_date', since)
+        const subAlerts = evaluateSubscriptionAlerts({
+          today: now,
+          subscriptions: subRows.map(subscriptionFromRow),
+          expenses: (expRows ?? []).map(expenseFromRow),
+          dueReminders: (s.sub_due_reminders as boolean | null) ?? true,
+          priceAlerts: (s.sub_price_alerts as boolean | null) ?? true,
+        })
+        for (const a of subAlerts) {
+          const { title, body } = renderSubscriptionAlert(dict, a)
+          const { created } = await emitNotification(service, {
+            userId,
+            category: a.type,
+            severity: a.severity,
+            dedupeKey: a.dedupeKey,
+            title,
+            body,
+            push: { data: { kind: 'notification', notifType: a.type }, collapseKey: a.dedupeKey.slice(0, 60) },
+          })
+          if (created) emitted++
+        }
+      }
+
       for (const a of descriptors) {
         const { title, body } = renderAlertCopy(dict, a)
         const { created } = await emitNotification(service, {

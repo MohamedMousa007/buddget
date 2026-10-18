@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
+import { RotateCwClock } from '@/components/ui/icons/RotateCwClock'
 import {
   Home,
   Car,
@@ -10,7 +11,6 @@ import {
   HeartPulse,
   GraduationCap,
   Plug,
-  RefreshCw,
   Landmark,
   Send,
   Zap,
@@ -62,7 +62,7 @@ export const EXPENSE_CATEGORY_GRID: CategoryGridItem[] = [
   { id: 'Health', icon: HeartPulse, accent: '#34D399' },
   { id: 'Education', icon: GraduationCap, accent: '#FBBF24' },
   { id: 'Utilities', icon: Plug, accent: '#FCD34D' },
-  { id: 'Subscription', icon: RefreshCw, accent: '#C084FC' },
+  { id: 'Subscription', icon: RotateCwClock, accent: '#C084FC' },
   { id: 'Debt', icon: Landmark, accent: '#FF5C5C' },
   { id: 'Remittance', icon: Send, accent: '#60A5FA' },
   { id: 'Instapay', icon: Zap, accent: '#7C4DFF' },

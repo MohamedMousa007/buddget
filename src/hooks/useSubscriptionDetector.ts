@@ -1,34 +1,48 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { createClient } from '@/lib/supabase/client'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import {
   detectRecurringCharges,
   type ChargeRow,
   type DetectedSubscription,
 } from '@/lib/subscriptions/detectRecurringCharges'
+import { buildSmsFinds, cancelledBrandKeys, type SmsFind } from '@/lib/subscriptions/smsFinds'
 
-export type { DetectedSubscription }
+export type { DetectedSubscription, SmsFind }
 
 const LOOKBACK_DAYS = 90
 
-/** Recurring charges at a catalog brand the user does NOT already track (see {@link detectRecurringCharges}). */
-export function useSubscriptionDetector(): DetectedSubscription[] {
-  const { smsEnabled, subscriptions } = useFinanceStore(
+export interface SubscriptionDetection {
+  finds: SmsFind[]
+  /** Messages read in the lookback window. */
+  scanned: number
+}
+
+/**
+ * Recurring SMS charges worth a review: new brands to add, and manual subscriptions to link
+ * (see {@link buildSmsFinds}). Reads the parse log once per change of tracked subscriptions.
+ */
+export function useSubscriptionDetector(): SubscriptionDetection {
+  const { smsEnabled, subscriptions, expenses } = useFinanceStore(
     useShallow((s) => ({
       smsEnabled: s.settings.smsTrackingEnabled,
       subscriptions: s.subscriptions,
+      expenses: s.expenses,
     })),
   )
-  const [detected, setDetected] = useState<DetectedSubscription[]>([])
+  const dismissed = useSettingsStore((s) => s.dismissedBanners)
+  const [rows, setRows] = useState<ChargeRow[]>([])
+  const [scanned, setScanned] = useState(0)
 
   useEffect(() => {
     if (!smsEnabled) return
     const since = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString()
     void createClient()
       .from('sms_parse_log')
-      .select('merchant, merchant_normalized, clean_title, amount, currency, day')
+      .select('merchant, merchant_normalized, clean_title, amount, currency, day, raw_sms_summary')
       .eq('parsed_ok', true)
       .in('kind', ['purchase', 'online_purchase'])
       .gte('created_at', since)
@@ -36,11 +50,13 @@ export function useSubscriptionDetector(): DetectedSubscription[] {
       .order('day', { ascending: true })
       .then(({ data }) => {
         if (!data) return
-        // Already tracked — including cancelled, so a cancelled sub isn't re-suggested.
-        const tracked = new Set(subscriptions.map((s) => s.brandKey))
-        setDetected(detectRecurringCharges(data as ChargeRow[], tracked))
+        setRows(data as ChargeRow[])
+        setScanned(data.length)
       })
-  }, [smsEnabled, subscriptions])
+  }, [smsEnabled])
 
-  return detected
+  return useMemo(() => {
+    const detected = detectRecurringCharges(rows, cancelledBrandKeys(subscriptions))
+    return { finds: buildSmsFinds(detected, subscriptions, expenses, new Set(dismissed)), scanned }
+  }, [rows, scanned, subscriptions, expenses, dismissed])
 }

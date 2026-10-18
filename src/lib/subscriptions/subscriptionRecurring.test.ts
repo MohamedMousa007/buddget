@@ -19,6 +19,7 @@ describe('subscriptionToMonthlyPlannerAmount', () => {
   it.each([
     [120, 'monthly', 120],
     [300, 'quarterly', 100],
+    [600, 'semiannual', 100],
     [1200, 'yearly', 100],
     [12, 'weekly', 52],
   ] as const)('%d %s -> %d / month', (amount, cycle, expected) => {
@@ -47,7 +48,7 @@ describe('subscriptionsMonthlyBaseTotal', () => {
     expect(total).toBe(10 * 50 + 10 * 50)
   })
 
-  it('counts active and trial, never cancelled or paused', () => {
+  it('counts active only: a trial is not charged yet, cancelled and paused never are', () => {
     const total = subscriptionsMonthlyBaseTotal(
       [
         sub({ id: 'a', status: 'active', amount: 100 }),
@@ -58,7 +59,11 @@ describe('subscriptionsMonthlyBaseTotal', () => {
       'EGP',
       rates
     )
-    expect(total).toBe(110)
+    expect(total).toBe(100)
+  })
+
+  it('counts my share of a shared plan, not the full price', () => {
+    expect(subscriptionsMonthlyBaseTotal([sub({ amount: 300, myShare: 100 })], 'EGP', rates)).toBe(100)
   })
 
   it('is zero with no subscriptions', () => {

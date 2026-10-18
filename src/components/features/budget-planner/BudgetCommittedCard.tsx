@@ -1,57 +1,88 @@
 'use client'
 
-import { ChevronRight, RefreshCw } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { useMemo } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { AppLink } from '@/components/ui/AppLink'
+import { Card } from '@/components/ui/card'
+import { RotateCwClock } from '@/components/ui/icons/RotateCwClock'
+import { useHydrateExpenses, useHydrateSubscriptions } from '@/hooks/remote'
+import { useSubscriptionDates } from '@/hooks/useSubscriptionDates'
+import { useLocale, useT } from '@/lib/i18n'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { useSubscriptionsMonthlyBaseTotal } from '@/hooks/useSubscriptionsMonthlyTotal'
-import { useHydrateSubscriptions } from '@/hooks/remote'
-import { formatCurrency } from '@/lib/utils/formatters'
-import { shortDate } from '@/lib/utils/shortDate'
-import { microClassName } from '@/lib/ui/microLabelStyle'
-import { useT } from '@/lib/i18n'
-import { upcomingBillingDate } from '@/lib/subscriptions/subscriptionDates'
+import { chargesLeftThisMonth, yearlySetAside } from '@/lib/subscriptions/subscriptionForecast'
+import { money2 } from '@/lib/subscriptions/subscriptionFormat'
+import { currencyLabel } from '@/components/features/subscriptions/subscriptionLabels'
+import { format } from 'date-fns'
+
+const LABEL = 'text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]'
 
 /**
- * Recurring spend already spoken for this month. A link into the one /subscriptions list
- * (no second copy of it here); SMS detection is the other door.
+ * What is already spoken for this month: subscription charges still to pay, from their real
+ * due dates (trials, paused and cancelled plans excluded). Yearly plans are a separate
+ * set-aside line, not part of the month's total.
  */
 export function BudgetCommittedCard() {
   useHydrateSubscriptions()
+  useHydrateExpenses()
   const t = useT()
-  const subscriptions = useFinanceStore((s) => s.subscriptions)
-  const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
-  const monthly = useSubscriptionsMonthlyBaseTotal()
+  const { locale } = useLocale()
+  const { shortDate: formatDateShort } = useSubscriptionDates()
+  const ui = t.subscriptions.ui.budget
+  const { subscriptions, expenses, base, rates } = useFinanceStore(
+    useShallow((s) => ({
+      subscriptions: s.subscriptions,
+      expenses: s.expenses,
+      base: s.settings.baseCurrency,
+      rates: s.exchangeRates,
+    })),
+  )
 
-  const { count, next } = useMemo(() => {
-    const live = subscriptions.filter((s) => s.status === 'active' || s.status === 'trial')
-    const dated = live
-      .map((s) => ({ name: s.name, date: upcomingBillingDate(s) }))
-      .filter((s): s is { name: string; date: string } => s.date !== null)
-      .sort((a, b) => a.date.localeCompare(b.date))
-    return { count: live.length, next: dated[0] }
-  }, [subscriptions])
+  const { left, due, setAside } = useMemo(() => {
+    const today = new Date()
+    const charges = chargesLeftThisMonth(subscriptions, expenses, today, base, rates)
+    return {
+      left: charges.reduce((a, c) => a + c.amountBase, 0),
+      due: charges,
+      setAside: yearlySetAside(subscriptions, today, base, rates),
+    }
+  }, [subscriptions, expenses, base, rates])
+
+  const next = due[0]
+  const cur = currencyLabel(base, locale)
 
   return (
-    <AppLink
-      href="/subscriptions"
-      className="flex min-h-14 items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4"
-    >
-      <RefreshCw className="size-5 shrink-0 text-[var(--color-brand-text-secondary)]" aria-hidden />
-      <div className="min-w-0 flex-1">
-        <p className={microClassName}>{t.budgetPlanner.committedTitle}</p>
-        <p className="mt-1 truncate text-sm font-medium text-[var(--color-brand-text-primary)]">
-          {count > 0
-            ? t.budgetPlanner.committedLine(count, formatCurrency(monthly, baseCurrency, false))
-            : t.budgetPlanner.committedEmpty}
-        </p>
-        {next ? (
-          <p className="mt-0.5 truncate text-xs text-[var(--color-brand-text-muted)]">
-            {t.budgetPlanner.committedNext(next.name, shortDate(next.date))}
-          </p>
-        ) : null}
+    <Card elevation="sm" className="flex flex-col gap-3">
+      <p className={LABEL}>{ui.committed}</p>
+      <div className="flex items-baseline gap-2">
+        <span className="font-mono-numbers text-[30px] font-semibold tracking-[-0.02em] text-[var(--color-brand-text-primary)]">
+          {money2(left)}
+        </span>
+        <span className="text-[13px] text-[var(--color-brand-text-secondary)]">{cur}</span>
       </div>
-      <ChevronRight className="size-4 shrink-0 text-[var(--color-brand-text-muted)] rtl:rotate-180" aria-hidden />
-    </AppLink>
+      <p className="-mt-1.5 text-[13px] text-[var(--color-brand-text-secondary)]">{ui.leftToPay}</p>
+      <AppLink
+        href="/subscriptions"
+        className="flex min-h-[60px] items-center gap-3 rounded-[14px] border border-[var(--color-brand-border)] px-3"
+      >
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]">
+          <RotateCwClock className="size-5" strokeWidth={1.75} aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{t.nav.subscriptions}</span>
+          <span className="block truncate text-xs text-[var(--color-brand-text-secondary)]">
+            {next ? ui.entryLine(due.length, next.sub.name, formatDateShort(format(next.due, 'yyyy-MM-dd'))) : ui.nothingDue}
+          </span>
+        </span>
+        <span className="font-mono-numbers text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{money2(left)}</span>
+        <ChevronRight className="size-4 shrink-0 text-[var(--color-brand-text-muted)] rtl:rotate-180" aria-hidden />
+      </AppLink>
+      <div className="flex items-center justify-between text-[13px]">
+        <span className="text-[var(--color-brand-text-secondary)]">{ui.setAside}</span>
+        <span className="font-mono-numbers font-semibold text-[var(--color-brand-text-primary)]">
+          {money2(setAside)} {cur}
+        </span>
+      </div>
+    </Card>
   )
 }

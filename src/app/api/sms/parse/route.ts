@@ -1029,7 +1029,8 @@ export async function POST(request: Request) {
   }
 
   // Localize push + notification copy to the account's language.
-  const np = getServerDictionary(await getUserLocale(service, userId)).notifications.push
+  const dict = getServerDictionary(await getUserLocale(service, userId))
+  const np = dict.notifications.push
   const amountStr = `${parsed.currency} ${parsed.amount.toLocaleString()}`
   const bank = parsed.bank_name ?? ''
   const label = parsed.cleanTitle ?? parsed.merchant ?? null
@@ -1079,8 +1080,8 @@ export async function POST(request: Request) {
   } else if (tx.outcome === 'subscription') {
     pushArgs = {
       userId,
-      title: np.smsSubscriptionTitle(amountStr, label),
-      body: np.smsSubscriptionBody(parsed.merchantNormalized ?? parsed.merchant ?? bank),
+      title: np.smsSubscriptionTitle(amountStr, parsed.merchantNormalized ?? parsed.merchant ?? bank),
+      body: np.smsSubscriptionBody(new Intl.DateTimeFormat(dict.locale, { month: 'long' }).format(new Date())),
       data: { kind: 'sms_subscription', expenseId: expenseId ?? '', logId },
       collapseKey: `sms-sub-${hash.slice(0, 12)}`,
     }

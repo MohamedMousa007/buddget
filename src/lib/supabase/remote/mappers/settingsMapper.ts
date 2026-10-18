@@ -21,6 +21,8 @@ export function settingsToRow(s: AppSettings, userId: string): UserSettingsInser
     tutorials_completed: s.tutorialsCompleted,
     tutorial_current_step: s.tutorialCurrentStep,
     sms_tracking_enabled: s.smsTrackingEnabled,
+    sub_due_reminders: s.subDueReminders,
+    sub_price_alerts: s.subPriceAlerts,
   }
 }
 
@@ -53,6 +55,8 @@ export function settingsFromRow(row: UserSettingsRow, opts: SettingsFromRowOptio
     tutorialsCompleted: row.tutorials_completed ?? [],
     tutorialCurrentStep: row.tutorial_current_step ?? null,
     smsTrackingEnabled: row.sms_tracking_enabled ?? false,
+    subDueReminders: row.sub_due_reminders ?? true,
+    subPriceAlerts: row.sub_price_alerts ?? true,
     baseCurrency: opts.baseCurrency,
     secondaryCurrency: opts.secondaryCurrency,
   }

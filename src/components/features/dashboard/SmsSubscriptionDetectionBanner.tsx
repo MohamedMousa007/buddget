@@ -1,5 +1,5 @@
 'use client'
-import { Repeat } from 'lucide-react'
+import { MessageSquare } from 'lucide-react'
 import { useSubscriptionDetector } from '@/hooks/useSubscriptionDetector'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { PROMPT_PRIORITY, useRegisterPrompts } from '@/lib/store/usePromptStore'
@@ -7,35 +7,40 @@ import { navigate } from '@/lib/navigation/navigate'
 import { useT } from '@/lib/i18n'
 
 /**
- * "We noticed a recurring charge — track it?" Registers `sub:<brandKey>` with the prompt
- * stack. Never creates the subscription itself: the user confirms in the add sheet, seeded
- * with the amount actually charged. Once tracked, the detector drops it and it resolves.
+ * "Found 3 possible subscriptions · Review": one prompt for every recurring SMS charge the
+ * user has not answered yet. It never creates anything itself; the review sheet does, after
+ * the user confirms each find.
  */
 export function SmsSubscriptionDetectionBanner() {
-  const detected = useSubscriptionDetector()
+  const { finds } = useSubscriptionDetector()
   const t = useT()
-  const openAddSubscriptionWithPrefill = useSettingsStore((s) => s.openAddSubscriptionWithPrefill)
+  const setReviewOpen = useSettingsStore((s) => s.setSubscriptionReviewOpen)
+  const sms = t.subscriptions.ui.sms
 
   useRegisterPrompts(
     'subscription-detection',
-    detected.map(({ brandKey, name, amount, currency, billingDay, months }) => ({
-      key: `sub:${brandKey}`,
-      priority: PROMPT_PRIORITY.subscription,
-      tone: 'brand' as const,
-      icon: Repeat,
-      title: t.subscriptions.detectedTitle.replace('{brand}', name),
-      description: t.prompts.subBody(`${amount.toLocaleString('en-US')} ${currency}`, billingDay, months),
-      actions: [
-        {
-          label: t.subscriptions.detectedCta,
-          variant: 'default' as const,
-          onPress: () => {
-            openAddSubscriptionWithPrefill({ brandKey, amount, currency, billingDay })
-            navigate('/subscriptions')
+    finds.length === 0
+      ? []
+      : [
+          {
+            key: 'sub:detected',
+            priority: PROMPT_PRIORITY.subscription,
+            tone: 'brand' as const,
+            icon: MessageSquare,
+            title: sms.prompt(finds.length),
+            description: sms.nothingAdded,
+            actions: [
+              {
+                label: sms.review,
+                variant: 'default' as const,
+                onPress: () => {
+                  setReviewOpen(true)
+                  navigate('/subscriptions')
+                },
+              },
+            ],
           },
-        },
-      ],
-    })),
+        ],
   )
 
   return null

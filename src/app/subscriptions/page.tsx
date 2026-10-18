@@ -1,148 +1,145 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { format } from 'date-fns'
+import { useEffect, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { PageBody } from '@/components/layout/PageContainer'
-import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
-import { EmptyState } from '@/components/ui/EmptyState'
-import { SubscriptionCard } from '@/components/features/subscriptions/SubscriptionCard'
-import { AddSubscriptionSheet } from '@/components/modals/AddSubscriptionSheet'
-import { MoneyDisplay } from '@/components/ui/MoneyDisplay'
-import { useSubscriptionsMonthlyBaseTotal } from '@/hooks/useSubscriptionsMonthlyTotal'
+import { AddSubscriptionSheet } from '@/components/features/subscriptions/AddSubscriptionSheet'
+import { CancelSubscriptionSheet } from '@/components/features/subscriptions/CancelSubscriptionSheet'
+import { HomeNudge } from '@/components/features/subscriptions/HomeNudge'
+import { SmsReviewSheet } from '@/components/features/subscriptions/SmsReviewSheet'
+import { SubscriptionDetailSheet } from '@/components/features/subscriptions/SubscriptionDetailSheet'
+import { SubscriptionGroups } from '@/components/features/subscriptions/SubscriptionGroups'
+import { SubscriptionsEmpty } from '@/components/features/subscriptions/SubscriptionsEmpty'
+import { SubscriptionsHero } from '@/components/features/subscriptions/SubscriptionsHero'
+import { SubscriptionsRail } from '@/components/features/subscriptions/SubscriptionsRail'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { SkeletonList } from '@/components/ui/SkeletonList'
+import { useHydrateExpenses, useHydrateSubscriptions } from '@/hooks/remote'
+import { useSubscriptionDates } from '@/hooks/useSubscriptionDates'
+import { useSubscriptionsHome } from '@/hooks/useSubscriptionsHome'
+import { catalogRegionOf } from '@/lib/subscriptions/catalogDisplay'
+import { useT } from '@/lib/i18n'
+import { navigate } from '@/lib/navigation/navigate'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { useT } from '@/lib/i18n'
 import type { Subscription } from '@/lib/store/types'
-import { useHydrateSubscriptions, useHydrateExpenses } from '@/hooks/remote'
-import { SkeletonList } from '@/components/ui/SkeletonList'
-import { microClassName } from '@/lib/ui/microLabelStyle'
-import { Button } from '@/components/ui/button'
+import type { Segment } from '@/lib/subscriptions/subscriptionRows'
+
+const WRAP = 'mx-auto w-full max-w-[1100px] px-4 py-4'
 
 export default function SubscriptionsPage() {
   useHydrateSubscriptions()
   useHydrateExpenses()
-  const dataReady = useFinanceStore((s) => s.dataReady)
   const t = useT()
-  const [sheetOpen, setSheetOpen] = useState(false)
-  const [editing, setEditing] = useState<Subscription | null>(null)
-  const [instanceKey, setInstanceKey] = useState(0)
-  const monthlyTotal = useSubscriptionsMonthlyBaseTotal()
-  const { subscriptions, settings } = useFinanceStore(
-    useShallow((s) => ({ subscriptions: s.subscriptions, settings: s.settings }))
-  )
-  const { subscriptionPrefill, clearSubscriptionPrefill } = useSettingsStore(
+  const ui = t.subscriptions.ui
+  const { periodLabel: formatMonth } = useSubscriptionDates()
+  const { dataReady, profile, smsEnabled, subscriptions, logDue } = useFinanceStore(
     useShallow((s) => ({
-      subscriptionPrefill: s.subscriptionPrefill,
-      clearSubscriptionPrefill: s.clearSubscriptionPrefill,
-    }))
+      dataReady: s.dataReady,
+      profile: s.profile,
+      smsEnabled: s.settings.smsTrackingEnabled,
+      subscriptions: s.subscriptions,
+      logDue: s.logDueSubscriptions,
+    })),
   )
+  const { addOpen, setAddOpen, reviewOpen, setReviewOpen } = useSettingsStore(
+    useShallow((s) => ({
+      addOpen: s.subscriptionAddOpen,
+      setAddOpen: s.setSubscriptionAddOpen,
+      reviewOpen: s.subscriptionReviewOpen,
+      setReviewOpen: s.setSubscriptionReviewOpen,
+    })),
+  )
+  const [segment, setSegment] = useState<Segment>('upcoming')
+  const [detailId, setDetailId] = useState<string | null>(null)
+  const [cancelId, setCancelId] = useState<string | null>(null)
+  const [editing, setEditing] = useState<Subscription | null>(null)
+  const [seedBrandKey, setSeedBrandKey] = useState<string | null>(null)
+  const [instance, setInstance] = useState(0)
+  const home = useSubscriptionsHome(segment)
 
-  const { active, cancelled } = useMemo(() => {
-    const a = subscriptions.filter((s) => s.status === 'active' || s.status === 'trial' || s.status === 'paused')
-    const c = subscriptions.filter((s) => s.status === 'cancelled')
-    return { active: a, cancelled: c }
-  }, [subscriptions])
+  // Log-mode subscriptions write their own expense once the charge is due.
+  useEffect(() => {
+    if (dataReady) logDue()
+  }, [dataReady, logDue])
 
-  const openAdd = () => {
+  const openAdd = (brandKey: string | null = null) => {
     setEditing(null)
-    setInstanceKey((k) => k + 1)
-    setSheetOpen(true)
+    setSeedBrandKey(brandKey)
+    setInstance((n) => n + 1)
+    setAddOpen(true)
   }
-
-
-  const openEdit = (s: Subscription) => {
-    setEditing(s)
-    setSheetOpen(true)
-  }
-
-  // Derived, not synced: a prefill arriving from the detection banner IS the sheet being
-  // open. Mirroring it into state via an effect would cascade renders (and trips
-  // react-hooks/set-state-in-effect).
-  const isSheetOpen = sheetOpen || subscriptionPrefill != null
-
-  const closeSheet = () => {
-    setSheetOpen(false)
+  const closeAdd = () => {
+    setAddOpen(false)
     setEditing(null)
-    // Consume it: without this the effect below would reopen the sheet on every render.
-    clearSubscriptionPrefill()
+    setSeedBrandKey(null)
   }
+  const openEdit = (id: string) => {
+    setDetailId(null)
+    setEditing(subscriptions.find((s) => s.id === id) ?? null)
+    setInstance((n) => n + 1)
+    setAddOpen(true)
+  }
+  const openCancel = (id: string) => {
+    setDetailId(null)
+    setCancelId(id)
+  }
+  const scan = () => (smsEnabled ? setReviewOpen(true) : navigate('/settings/sms'))
 
-  if (!dataReady) return <div className="p-4"><SkeletonList /></div>
+  const empty = dataReady && subscriptions.length === 0
+  const period = formatMonth(format(home.today, 'yyyy-MM'))
+  const { groups, paused, cancelled, activeCount } = home.lists
 
   return (
     <div>
-      <PageHeader>
-        <PageHeaderContent width="wide">
-          <div className="flex items-center justify-end gap-4 w-full">
-            <Button
-              onClick={openAdd}
-              size="touch"
-              className="shrink-0"
-            >
-              {t.subscriptions.addSubscription}
-            </Button>
-          </div>
-        </PageHeaderContent>
-      </PageHeader>
-
-      <PageBody className="space-y-4">
-        <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
-          <p className="text-xs uppercase tracking-wider text-[var(--color-brand-text-muted)]">
-            {t.subscriptions.totalMonthly}
-          </p>
-          <p className="text-2xl font-bold font-mono-numbers text-[var(--color-brand-text-primary)] mt-1">
-            <MoneyDisplay amount={monthlyTotal} currency={settings.baseCurrency} variant="inline" />
-            <span className="text-sm font-normal text-[var(--color-brand-text-muted)] ms-1">
-              {t.subscriptions.perMonth}
-            </span>
-          </p>
+      <SubscriptionsHero hero={dataReady ? home.hero : null} base={home.base} loading={!dataReady} />
+      <div className={`${WRAP} lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-8`}>
+        <div className="flex min-w-0 flex-col gap-3.5">
+          {empty ? (
+            <SubscriptionsEmpty
+              region={catalogRegionOf(profile)}
+              onPickBrand={(key) => openAdd(key)}
+              onAdd={() => openAdd()}
+              onScan={scan}
+            />
+          ) : (
+            <>
+              <div className="flex min-h-6 items-center justify-between">
+                <span className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{period}</span>
+                <span className="text-xs text-[var(--color-brand-text-secondary)]">{ui.activeCount(activeCount)}</span>
+              </div>
+              <SegmentedControl<Segment>
+                ariaLabel={ui.segments.label}
+                value={segment}
+                onChange={setSegment}
+                options={[
+                  { value: 'upcoming', label: ui.segments.upcoming },
+                  { value: 'all', label: ui.segments.all },
+                  { value: 'ended', label: ui.segments.ended },
+                ]}
+              />
+              {!dataReady ? (
+                <SkeletonList />
+              ) : (
+                <>
+                  {segment === 'upcoming' && home.nudge ? <HomeNudge nudge={home.nudge} onOpen={setDetailId} /> : null}
+                  {groups.length === 0 && segment === 'ended' ? (
+                    <p className="py-6 text-center text-sm text-[var(--color-brand-text-secondary)]">{ui.emptyTab}</p>
+                  ) : (
+                    <SubscriptionGroups groups={groups} paused={paused} cancelled={cancelled} onOpen={setDetailId} />
+                  )}
+                </>
+              )}
+            </>
+          )}
         </div>
+        {!empty ? <SubscriptionsRail strip={home.strip} insights={home.insights} /> : null}
+      </div>
 
-        {subscriptions.length === 0 ? (
-          <EmptyState
-            title={t.subscriptions.emptyTitle}
-            description={t.subscriptions.emptyHint}
-            action={
-              <Button onClick={openAdd} size="touch">
-                {t.subscriptions.addSubscription}
-              </Button>
-            }
-          />
-        ) : (
-          <div className="space-y-4">
-            <div>
-              <p className={`${microClassName} mb-2`}>
-                {t.subscriptions.activeSection(active.length)}
-              </p>
-              <div className="space-y-2 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0">
-                {active.map((s) => (
-                  <SubscriptionCard key={s.id} sub={s} onEdit={() => openEdit(s)} />
-                ))}
-              </div>
-            </div>
-            {cancelled.length > 0 ? (
-              <div>
-                <p className={`${microClassName} mb-2`}>
-                  {t.subscriptions.cancelledSection}
-                </p>
-                <div className="space-y-2 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0">
-                  {cancelled.map((s) => (
-                    <SubscriptionCard key={s.id} sub={s} onEdit={() => openEdit(s)} dimmed />
-                  ))}
-                </div>
-              </div>
-            ) : null}
-          </div>
-        )}
-      </PageBody>
-
-      <AddSubscriptionSheet
-        open={isSheetOpen}
-        onClose={closeSheet}
-        editing={editing}
-        instanceKey={instanceKey}
-        prefill={subscriptionPrefill}
-      />
+      <AddSubscriptionSheet open={addOpen} onClose={closeAdd} editing={editing} seedBrandKey={seedBrandKey} instanceKey={instance} />
+      <SubscriptionDetailSheet key={detailId ?? 'none'} subId={detailId} onClose={() => setDetailId(null)} onEdit={openEdit} onCancel={openCancel} />
+      <CancelSubscriptionSheet key={`c-${cancelId ?? 'none'}`} subId={cancelId} onClose={() => setCancelId(null)} />
+      <SmsReviewSheet open={reviewOpen} onClose={() => setReviewOpen(false)} />
     </div>
   )
 }

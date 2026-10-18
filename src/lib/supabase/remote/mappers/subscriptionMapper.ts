@@ -1,4 +1,10 @@
-import type { Subscription, Currency, SubscriptionStatus, SubscriptionBillingCycle } from '@/lib/store/types'
+import type {
+  Subscription,
+  Currency,
+  SubscriptionStatus,
+  SubscriptionBillingCycle,
+  SubscriptionTracking,
+} from '@/lib/store/types'
 import type { SubscriptionRow, SubscriptionInsert } from '@/lib/supabase/remote/types'
 import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
 import { toDbExpenseCategory } from './expenseCategoryCoercion'
@@ -33,6 +39,15 @@ export function subscriptionToRow(s: Subscription, userId: string): Subscription
     notes: s.notes,
     cancelled_at: s.cancelledAt,
     created_at: s.createdAt,
+    tracking: s.tracking ?? 'sms',
+    reminder: s.reminder ?? true,
+    trial_end: s.trialEnd ?? null,
+    ends_on: s.endsOn ?? null,
+    paused_at: s.pausedAt ?? null,
+    price_history: s.priceHistory ?? [],
+    pending_plan_from: s.pendingPlanFrom ?? null,
+    shared_with: s.sharedWith ?? null,
+    my_share: s.myShare ?? null,
   }
 }
 
@@ -60,5 +75,14 @@ export function subscriptionFromRow(row: SubscriptionRow): Subscription {
     createdAt: row.created_at,
     cancelledAt: row.cancelled_at,
     updatedAt: row.updated_at,
+    tracking: row.tracking as SubscriptionTracking,
+    reminder: row.reminder,
+    trialEnd: row.trial_end,
+    endsOn: row.ends_on,
+    pausedAt: row.paused_at,
+    priceHistory: (row.price_history as { amount: number; from: string }[] | null) ?? [],
+    pendingPlanFrom: row.pending_plan_from,
+    sharedWith: row.shared_with,
+    myShare: row.my_share,
   }
 }

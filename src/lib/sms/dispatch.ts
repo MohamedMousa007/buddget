@@ -536,7 +536,11 @@ export async function createSmsTransaction(
       if (sub.planChange) {
         await service
           .from('subscriptions')
-          .update({ pending_plan_id: sub.planChange.planId, pending_amount: sub.planChange.chargedAmount })
+          .update({
+            pending_plan_id: sub.planChange.planId,
+            pending_amount: sub.planChange.chargedAmount,
+            pending_plan_from: row.day,
+          })
           .eq('id', sub.subscriptionId)
           .is('pending_plan_id', null)
       }

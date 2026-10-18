@@ -81,6 +81,8 @@ export function emptySnapshot(): Snapshot {
       tutorialsCompleted: [] as string[],
       tutorialCurrentStep: null as string | null,
       smsTrackingEnabled: false,
+        subDueReminders: true,
+        subPriceAlerts: true,
     },
     financialGoalsNotes: '',
     activeBudgetPlanId: null,

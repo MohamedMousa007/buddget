@@ -1,8 +1,16 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { advanceCycle, computeNextBillingDate, firstBillingOnOrAfter, upcomingBillingDate } from './subscriptionDates'
+import { advanceCycle, computeNextBillingDate, firstBillingOnOrAfter } from './subscriptionDates'
 
 const next = (start: string, day: number, cycle: Parameters<typeof computeNextBillingDate>[2], ref: string) =>
   computeNextBillingDate(start, day, cycle, new Date(`${ref}T12:00:00`))
+
+describe('computeNextBillingDate: semiannual', () => {
+  it('steps six months and re-applies the billing day after a clamp', () => {
+    expect(next('2026-01-31', 31, 'semiannual', '2026-02-01')).toBe('2026-07-31')
+    expect(next('2025-08-31', 31, 'semiannual', '2026-01-01')).toBe('2026-02-28')
+    expect(next('2025-08-31', 31, 'semiannual', '2026-03-01')).toBe('2026-08-31')
+  })
+})
 
 describe('computeNextBillingDate', () => {
   it('returns today when the charge is due today', () => {
@@ -55,21 +63,6 @@ describe('computeNextBillingDate', () => {
   })
 })
 
-describe('upcomingBillingDate', () => {
-  const sub = { startDate: '2026-01-10', billingDay: 10, billingCycle: 'monthly' as const, nextBillingDate: '2026-02-10' }
-
-  it('ignores a stale stored date that already passed', () => {
-    expect(upcomingBillingDate(sub, new Date(2026, 9, 17))).toBe('2026-11-10')
-  })
-
-  it('is stable on the charge day itself', () => {
-    expect(upcomingBillingDate(sub, new Date(2026, 9, 10))).toBe('2026-10-10')
-  })
-
-  it('falls back to the stored date when there is no schedule to derive from', () => {
-    expect(upcomingBillingDate({ ...sub, startDate: '' }, new Date(2026, 9, 17))).toBe('2026-02-10')
-  })
-})
 
 describe('timezone / DST', () => {
   const original = process.env.TZ

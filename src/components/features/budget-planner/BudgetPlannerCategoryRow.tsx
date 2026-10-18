@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import type { AppSettings, BudgetPlanCategory, BudgetPlanSubcategory, Currency } from '@/lib/store/types'
-import { effectivePlanCategoryAmount, isSavingsPlanCategory } from '@/lib/budget/budgetPlans'
+import { effectivePlanCategoryAmount, isSavingsPlanCategory, resolveBudgetKey } from '@/lib/budget/budgetPlans'
+import { BudgetSubscriptionsProgress } from '@/components/features/budget-planner/BudgetSubscriptionsProgress'
 import type { BudgetPlannerCategoryRowLabels } from '@/components/features/budget-planner/budgetPlannerCategoryLabels'
 import { BudgetPlannerCategoryRowHeader } from '@/components/features/budget-planner/BudgetPlannerCategoryRowHeader'
 import { BudgetPlannerCategorySubcategoriesPanel } from '@/components/features/budget-planner/BudgetPlannerCategorySubcategoriesPanel'
@@ -73,6 +74,7 @@ export function BudgetPlannerCategoryRow({
   }
 
   const savingsRow = isSavingsPlanCategory(category)
+  const subscriptionsRow = resolveBudgetKey('Subscription', planCategories.map((c) => c.name)) === category.name
 
   return (
     <div
@@ -97,6 +99,7 @@ export function BudgetPlannerCategoryRow({
         savingsAllocationBadge={labels.savingsAllocationBadge}
         showSavingsBadge={savingsRow}
       />
+      {subscriptionsRow ? <BudgetSubscriptionsProgress category={category} /> : null}
       <AnimatePresence initial={false}>
         {open ? (
           <motion.div

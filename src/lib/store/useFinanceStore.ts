@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { format } from 'date-fns'
 import { findBrandByKey, plansForRegion, type CatalogRegion } from '@/lib/constants/subscriptionCatalog'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { createJSONStorage, persist } from 'zustand/middleware'
@@ -35,6 +36,10 @@ import type {
   Subscription,
 } from './types'
 import { computeNextBillingDate } from '@/lib/subscriptions/subscriptionDates'
+import { chargeAmount, cycleState, markPaidTarget } from '@/lib/subscriptions/subscriptionForecast'
+import { trackingAction } from '@/lib/subscriptions/subscriptionTracking'
+import { loggedChargesAdopted } from '@/lib/subscriptions/adoptLogged'
+import { priceHistoryWith } from '@/lib/subscriptions/subscriptionPricing'
 import {
   buildRecurringExpenseFromSubscription,
   patchRecurringFromSubscription,
@@ -213,9 +218,11 @@ export const useFinanceStore = create<FinanceStore>()(
 
       upsertServerExpense: (expense) =>
         set((state) => {
-          const i = state.expenses.findIndex((e) => e.id === expense.id)
-          if (i === -1) return { expenses: [...state.expenses, expense] }
-          const next = state.expenses.slice()
+          const adopted = new Set(loggedChargesAdopted(state.expenses, expense))
+          const rest = adopted.size > 0 ? state.expenses.filter((e) => !adopted.has(e.id)) : state.expenses
+          const i = rest.findIndex((e) => e.id === expense.id)
+          if (i === -1) return { expenses: [...rest, expense] }
+          const next = rest.slice()
           next[i] = expense
           return { expenses: next }
         }),
@@ -862,12 +869,15 @@ export const useFinanceStore = create<FinanceStore>()(
         // Adopt the tracked amount (what the user actually pays), the new plan id, and its
         // label; clear pending. Routed through updateSubscription so the linked recurring
         // expense's amount stays in sync.
+        const amount = sub.pendingAmount ?? sub.amount
         get().updateSubscription(id, {
           planId: sub.pendingPlanId,
           planName: plan?.name ?? sub.planName,
-          amount: sub.pendingAmount ?? sub.amount,
+          amount,
+          priceHistory: priceHistoryWith(sub, amount, sub.pendingPlanFrom ?? localTodayISO()),
           pendingPlanId: null,
           pendingAmount: null,
+          pendingPlanFrom: null,
         })
       },
 
@@ -875,12 +885,12 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => ({
           subscriptions: state.subscriptions.map((s) =>
             s.id === id
-              ? { ...s, pendingPlanId: null, pendingAmount: null, updatedAt: new Date().toISOString() }
+              ? { ...s, pendingPlanId: null, pendingAmount: null, pendingPlanFrom: null, updatedAt: new Date().toISOString() }
               : s
           ),
         })),
 
-      cancelSubscription: (id) =>
+      cancelSubscription: (id, endsOn) =>
         set((state) => {
           const sub = state.subscriptions.find((s) => s.id === id)
           const cancelledAt = new Date().toISOString()
@@ -891,8 +901,10 @@ export const useFinanceStore = create<FinanceStore>()(
                   ...s,
                   status: 'cancelled' as const,
                   cancelledAt,
+                  endsOn: endsOn ?? localTodayISO(),
                   pendingPlanId: null,
                   pendingAmount: null,
+                  pendingPlanFrom: null,
                   updatedAt: cancelledAt,
                 }
               : s
@@ -907,6 +919,69 @@ export const useFinanceStore = create<FinanceStore>()(
           }
           return { subscriptions: subs, recurringExpenses: recurring }
         }),
+
+      pauseSubscription: (id) =>
+        get().updateSubscription(id, { status: 'paused', pausedAt: new Date().toISOString() }),
+
+      resumeSubscription: (id) =>
+        get().updateSubscription(id, { status: 'active', pausedAt: null }),
+
+      convertTrial: (id) => get().updateSubscription(id, { status: 'active', trialEnd: null }),
+
+      markSubscriptionPaid: (id, charge) => {
+        const { subscriptions, expenses, paymentMethods, addExpense } = get()
+        const sub = subscriptions.find((s) => s.id === id)
+        if (!sub) return
+        // Paying ahead of the due date records the charge on that date, so it belongs to that cycle.
+        const target = charge?.date ? null : markPaidTarget(sub, expenses)
+        const date = charge?.date ?? (target ? format(target, 'yyyy-MM-dd') : null)
+        if (!date) return
+        addExpense({
+          date,
+          description: sub.planName ? `${sub.name} ${sub.planName}` : sub.name,
+          category: 'Subscription',
+          amount: charge?.amount ?? chargeAmount(sub),
+          currency: sub.currency,
+          paymentMethodId:
+            sub.paymentMethodId || paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || '',
+          isRecurring: true,
+          linkedSubscriptionId: id,
+        })
+      },
+
+      linkSubscriptionCharges: (subId, expenseIds) =>
+        set((state) => {
+          const ids = new Set(expenseIds)
+          return {
+            expenses: state.expenses.map((e) =>
+              ids.has(e.id) ? { ...e, linkedSubscriptionId: subId, updatedAt: new Date().toISOString() } : e
+            ),
+          }
+        }),
+
+      unlinkSubscriptionCharge: (expenseId) =>
+        set((state) => ({
+          expenses: state.expenses.map((e) =>
+            e.id === expenseId ? { ...e, linkedSubscriptionId: undefined, updatedAt: new Date().toISOString() } : e
+          ),
+        })),
+
+      adoptSubscriptionPrice: (id, amount) => {
+        const sub = get().subscriptions.find((s) => s.id === id)
+        if (!sub) return
+        get().updateSubscription(id, { amount, priceHistory: priceHistoryWith(sub, amount, localTodayISO()) })
+      },
+
+      logDueSubscriptions: () => {
+        const { subscriptions, expenses } = get()
+        const today = new Date()
+        for (const sub of subscriptions) {
+          if (sub.status !== 'active') continue
+          const state = cycleState(sub, expenses, today)
+          if (trackingAction(sub.tracking, state) !== 'log') continue
+          get().markSubscriptionPaid(sub.id, { date: format(state.due, 'yyyy-MM-dd') })
+        }
+      },
 
       deleteSubscription: (id) =>
         set((state) => {
@@ -927,6 +1002,8 @@ export const useFinanceStore = create<FinanceStore>()(
             ...sub,
             status: 'active',
             cancelledAt: null,
+            endsOn: null,
+            pausedAt: null,
             updatedAt: new Date().toISOString(),
           }
           const nextBilling =

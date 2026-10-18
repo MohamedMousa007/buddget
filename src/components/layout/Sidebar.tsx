@@ -1,5 +1,6 @@
 'use client'
 
+import { RotateCwClock } from '@/components/ui/icons/RotateCwClock'
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { useNavPath } from '@/lib/navigation/navStore'
 import {
@@ -9,7 +10,6 @@ import {
   HandCoins,
   CalendarClock,
   Target,
-  Repeat,
   Bell,
   Settings,
   type LucideIcon,
@@ -42,7 +42,7 @@ export function Sidebar() {
   const MORE: NavItem[] = [
     { href: '/paydays', label: t.nav.paydays, icon: CalendarClock },
     { href: '/goals', label: t.nav.goals, icon: Target },
-    { href: '/subscriptions', label: t.nav.subscriptions, icon: Repeat },
+    { href: '/subscriptions', label: t.nav.subscriptions, icon: RotateCwClock },
     { href: '/notifications', label: t.notifications.title, icon: Bell },
     { href: '/settings', label: t.nav.settings, icon: Settings },
   ]

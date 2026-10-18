@@ -60,6 +60,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   tutorialsCompleted: [],
   tutorialCurrentStep: null,
   smsTrackingEnabled: false,
+  subDueReminders: true,
+  subPriceAlerts: true,
 }
 
 export const DEFAULT_PROFILE: UserProfile = {

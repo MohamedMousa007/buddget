@@ -63,4 +63,24 @@ describe('detectRecurringCharges', () => {
     const [d] = detectRecurringCharges([row('2026-09-01', 190), row('2026-09-10', 190)], none)
     expect(d.months).toBe(1)
   })
+
+  it('reports the last three charge days, confidence and the latest SMS excerpt', () => {
+    const [d] = detectRecurringCharges(
+      [
+        row('2026-07-10', 190), row('2026-08-10', 190),
+        row('2026-09-10', 190, { raw_sms_summary: 'older' }),
+        row('2026-10-10', 190, { raw_sms_summary: 'NBE: EGP 190.00 NETFLIX.COM' }),
+      ],
+      none
+    )
+    expect(d.dates).toEqual(['2026-08-10', '2026-09-10', '2026-10-10'])
+    expect(d.confidence).toBe('high')
+    expect(d.excerpt).toBe('NBE: EGP 190.00 NETFLIX.COM')
+  })
+
+  it('is medium confidence with only a repeat pair', () => {
+    const [d] = detectRecurringCharges([row('2026-08-10', 190), row('2026-09-10', 190)], none)
+    expect(d.confidence).toBe('medium')
+    expect(d.excerpt).toBeNull()
+  })
 })

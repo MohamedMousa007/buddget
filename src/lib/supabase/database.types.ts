@@ -2196,6 +2196,15 @@ export type Database = {
           payment_method_id: string | null
           pending_amount: number | null
           pending_plan_id: string | null
+          ends_on: string | null
+          my_share: number | null
+          paused_at: string | null
+          pending_plan_from: string | null
+          price_history: Json
+          reminder: boolean
+          shared_with: string[] | null
+          tracking: string
+          trial_end: string | null
           plan_id: string | null
           plan_name: string | null
           start_date: string
@@ -2222,6 +2231,15 @@ export type Database = {
           payment_method_id?: string | null
           pending_amount?: number | null
           pending_plan_id?: string | null
+          ends_on?: string | null
+          my_share?: number | null
+          paused_at?: string | null
+          pending_plan_from?: string | null
+          price_history?: Json
+          reminder?: boolean
+          shared_with?: string[] | null
+          tracking?: string
+          trial_end?: string | null
           plan_id?: string | null
           plan_name?: string | null
           start_date?: string
@@ -2248,6 +2266,15 @@ export type Database = {
           payment_method_id?: string | null
           pending_amount?: number | null
           pending_plan_id?: string | null
+          ends_on?: string | null
+          my_share?: number | null
+          paused_at?: string | null
+          pending_plan_from?: string | null
+          price_history?: Json
+          reminder?: boolean
+          shared_with?: string[] | null
+          tracking?: string
+          trial_end?: string | null
           plan_id?: string | null
           plan_name?: string | null
           start_date?: string
@@ -2302,6 +2329,8 @@ export type Database = {
           show_cents_in_dashboard: boolean
           show_secondary_currency: boolean
           sms_tracking_enabled: boolean
+          sub_due_reminders: boolean
+          sub_price_alerts: boolean
           theme: Database["public"]["Enums"]["theme_mode"]
           tutorial_current_step: string | null
           tutorials_completed: string[]
@@ -2322,6 +2351,8 @@ export type Database = {
           show_cents_in_dashboard?: boolean
           show_secondary_currency?: boolean
           sms_tracking_enabled?: boolean
+          sub_due_reminders?: boolean
+          sub_price_alerts?: boolean
           theme?: Database["public"]["Enums"]["theme_mode"]
           tutorial_current_step?: string | null
           tutorials_completed?: string[]
@@ -2342,6 +2373,8 @@ export type Database = {
           show_cents_in_dashboard?: boolean
           show_secondary_currency?: boolean
           sms_tracking_enabled?: boolean
+          sub_due_reminders?: boolean
+          sub_price_alerts?: boolean
           theme?: Database["public"]["Enums"]["theme_mode"]
           tutorial_current_step?: string | null
           tutorials_completed?: string[]
@@ -2670,7 +2703,7 @@ export type Database = {
         | "other"
         | "stablecoin"
         | "vault"
-      subscription_billing_cycle: "weekly" | "monthly" | "quarterly" | "yearly"
+      subscription_billing_cycle: "weekly" | "monthly" | "quarterly" | "semiannual" | "yearly"
       subscription_status: "active" | "paused" | "cancelled" | "trial"
       theme_mode: "dark" | "light"
     }
@@ -2942,7 +2975,7 @@ export const Constants = {
         "stablecoin",
         "vault",
       ],
-      subscription_billing_cycle: ["weekly", "monthly", "quarterly", "yearly"],
+      subscription_billing_cycle: ["weekly", "monthly", "quarterly", "semiannual", "yearly"],
       subscription_status: ["active", "paused", "cancelled", "trial"],
       theme_mode: ["dark", "light"],
     },

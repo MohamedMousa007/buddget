@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { format, parseISO, subDays } from 'date-fns'
-import { CircleSlash, Link2, MessageSquare } from 'lucide-react'
+import { CircleSlash, Link as LinkIcon, Link2, MessageSquare } from 'lucide-react'
 import { CategoryIcon } from '@/components/dashboard/CategoryIcon'
 import { IncomeTypeIcon } from '@/components/features/income/IncomeTypeIcon'
 import { Badge } from '@/components/ui/badge'
@@ -185,6 +185,8 @@ export function useFlowLedger() {
                 <Badge variant="muted" size="xs" className="shrink-0">{t.expenses.badgeDeclined}</Badge>
               ) : nonSpend ? (
                 <CircleSlash role="img" aria-label={t.expenses.badgeNotCounted} className="h-3.5 w-3.5 shrink-0 text-[var(--color-brand-text-muted)]" />
+              ) : e.linkedSubscriptionId ? (
+                <LinkIcon role="img" aria-label={t.subscriptions.ui.chips.subscription} className="h-3.5 w-3.5 shrink-0 text-[var(--color-brand-text-muted)]" />
               ) : null,
             subtitle:
               e.refundKind === 'refunded' ? (

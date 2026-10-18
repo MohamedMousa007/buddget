@@ -1,5 +1,6 @@
 'use client'
 
+import { RotateCwClock } from '@/components/ui/icons/RotateCwClock'
 import {
   Home,
   UtensilsCrossed,
@@ -11,7 +12,6 @@ import {
   HeartPulse,
   GraduationCap,
   Smartphone,
-  RefreshCw,
   Coins,
   CreditCard,
   Send,
@@ -59,7 +59,7 @@ export function CategoryIcon({ category, className }: CategoryIconProps) {
   if (key === 'entertainment' || key === 'enjoy' || key === 'enjoyment') return <Sparkles className={c} />
   if (key === 'personal' || key === 'personal_care' || key === 'self_care') return <Heart className={c} />
   if (key === 'phone' || key === 'internet' || key === 'phone_internet') return <Smartphone className={c} />
-  if (key === 'subscription' || key === 'subscriptions') return <RefreshCw className={c} />
+  if (key === 'subscription' || key === 'subscriptions') return <RotateCwClock className={c} />
   if (key === 'shopping' || key === 'shop') return <ShoppingBag className={c} />
   if (key === 'health' || key === 'healthcare' || key === 'medical') return <HeartPulse className={c} />
   if (key === 'education' || key === 'school') return <GraduationCap className={c} />

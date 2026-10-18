@@ -15,6 +15,7 @@ import { useVoiceHoldGesture } from '@/hooks/useVoiceHoldGesture'
 import { VoiceRecordSheet } from '@/components/voice/VoiceRecordSheet'
 import { ReceiptScanSheet } from '@/components/receipt/ReceiptScanSheet'
 import { SelectableCard } from '@/components/ui/SelectableCard'
+import { RotateCwClock } from '@/components/ui/icons/RotateCwClock'
 
 type QuickAddTile = {
   id: string
@@ -43,6 +44,7 @@ export function QuickAddFAB() {
     { id: 'scanReceipt', label: t.modals.fabTileScan, hint: t.quickAdd.hintScan, icon: ScanLine, ...tint('var(--color-cat-4)') },
     { id: 'payDebt', label: t.modals.fabTileDebt, hint: t.quickAdd.hintDebt, icon: CreditCard, ...tint('var(--color-cat-5)') },
     { id: 'wealth', label: t.modals.fabTileWealth, hint: t.quickAdd.hintWealth, icon: Coins, ...tint('var(--color-brand-gold)') },
+    { id: 'addSubscription', label: t.subscriptions.ui.quickAdd.subscription, hint: t.quickAdd.hintSubscription, icon: RotateCwClock, fg: 'var(--color-brand-primary-ink)', bg: 'var(--color-brand-primary-soft)' },
     { id: 'addPaymentMethod', label: t.modals.fabTileMethod, hint: t.quickAdd.hintMethod, icon: Wallet, ...tint('var(--color-cat-2)') },
   ]
 
@@ -60,6 +62,14 @@ export function QuickAddFAB() {
     }
     if (tileId === 'payDebt') {
       requireAuth(() => useSettingsStore.getState().openPayDebtSheet(), msg)
+      return
+    }
+    if (tileId === 'addSubscription') {
+      requireAuth(() => {
+        setActiveModal(null)
+        useSettingsStore.getState().setSubscriptionAddOpen(true)
+        navigate('/subscriptions')
+      }, msg)
       return
     }
     if (tileId === 'wealth') {
