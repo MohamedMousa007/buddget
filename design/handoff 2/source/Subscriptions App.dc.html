@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/_ds_bundle.css">
+<link rel="stylesheet" href="_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/styles.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<script src="_ds/buddget-design-system-3e84a07a-da79-472d-b487-07c93afa5f48/_ds_bundle.js"></script>
+<meta name="ext-resource-dependency" content="uploads/anghami.svg"><meta name="ext-resource-dependency" content="uploads/apple_music.svg"><meta name="ext-resource-dependency" content="uploads/chatgpt.svg"><meta name="ext-resource-dependency" content="uploads/careem_plus.svg"><meta name="ext-resource-dependency" content="uploads/dropbox.svg"><meta name="ext-resource-dependency" content="uploads/claude_pro.svg"><style>body{margin:0}a{color:#0B7F73}a:hover{color:#075E55}</style>
+<style>.bw{display:block}.bw>*{display:block;width:100%}.bw button{width:100%}</style></helmet>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#0F8578"/><g transform="translate(30 30) scale(1.7)" fill="none" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v5l4 2"/><path d="M16 8h5V3"/><path d="m21 8-2.3-2.3A9.7 9.7 0 0 0 12 3a9 9 0 1 0 9 9"/></g></svg></template>
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;background:#E9ECEF;font-family:'DM Sans',sans-serif">
+<div class="{{ themeClass }}" dir="{{ dir }}" style="position:relative;width:390px;height:844px;flex:none;overflow:hidden;box-sizing:border-box;border:1px solid var(--color-brand-border);border-radius:28px;background:var(--color-brand-bg);color:var(--color-brand-text-primary);font-family:{{ font }};font-size:14px;line-height:1.35;box-shadow:0 20px 60px rgba(20,30,40,.18)">
+
+<sc-if value="{{ isBudget }}">
+<div style="position:absolute;inset:0;display:flex;flex-direction:column">
+  <div style="flex:1;min-height:0;overflow-y:auto;padding:0 16px 100px;display:flex;flex-direction:column;gap:14px">
+    <div style="height:56px;flex:none;display:flex;align-items:center;font-size:22px;font-weight:700">{{ t.budget }}</div>
+    <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:15px;font-weight:600">{{ t.period }}</span><span style="font-size:12px;color:var(--color-brand-text-secondary)">{{ t.left }}</span></div>
+    <div style="background:var(--color-brand-card);border:1px solid var(--color-brand-border);box-shadow:var(--shadow-sm);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--color-brand-text-muted)">{{ t.committed }}</div>
+      <div style="display:flex;align-items:baseline;gap:8px"><span style="{{ fm }};font-size:30px;font-weight:600;letter-spacing:-.02em">{{ v.committedLeft }}</span><span style="font-size:13px;color:var(--color-brand-text-secondary)">{{ t.egp }}</span></div><div style="font-size:13px;color:var(--color-brand-text-secondary);margin-top:-6px">{{ t.leftToPay }}</div>
+      <div style="border:1px solid var(--color-brand-border);border-radius:14px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:12px;padding:0 12px;min-height:56px"><div style="width:40px;height:40px;border-radius:12px;background:var(--color-brand-elevated);display:flex;align-items:center;justify-content:center;color:var(--color-brand-text-secondary)">{{ i.home }}</div><div style="flex:1;font-size:15px;font-weight:600">{{ t.rent }}</div><span style="{{ fm }};font-size:15px;font-weight:600">1,700.00</span></div>
+        <div onClick="{{ openHome }}" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:0 12px;min-height:60px;border-top:1px solid var(--color-brand-border)"><div style="width:40px;height:40px;border-radius:12px;background:var(--color-brand-primary-soft);display:flex;align-items:center;justify-content:center;color:var(--color-brand-primary-ink)">{{ i.calsync }}</div><div style="flex:1;min-width:0"><div style="font-size:15px;font-weight:600">{{ t.subs }}</div><div style="font-size:12px;color:var(--color-brand-text-secondary)">{{ v.subsLine }}</div></div><span style="{{ fm }};font-size:15px;font-weight:600">{{ v.leftMonth }}</span><span style="display:flex;color:var(--color-brand-text-muted)">{{ i.chev }}</span></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--color-brand-text-secondary)">{{ t.setAside }}</span><span style="{{ fm }};font-weight:600">{{ v.setAside }} {{ t.egp }}</span></div>
+    </div>
+    <div style="background:var(--color-brand-card);border:1px solid var(--color-brand-border);box-shadow:var(--shadow-sm);border-radius:16px;overflow:hidden">
+      <sc-for list="{{ budgetRows }}" as="r" hint-placeholder-count="3"><div onClick="{{ r.tap }}" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:10px 14px;min-height:64px;box-sizing:border-box;border-top:{{ r.bt }}"><div style="width:40px;height:40px;border-radius:12px;background:{{ r.bg }};display:flex;align-items:center;justify-content:center;color:{{ r.fg }};flex:none">{{ r.icon }}</div><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;font-size:15px;font-weight:600">{{ r.name }}<span style="{{ fm }};font-size:13px;font-weight:500">{{ r.nums }}</span></div><div style="height:5px;border-radius:999px;background:var(--color-brand-elevated);overflow:hidden"><div style="width:{{ r.pct }}%;height:100%;background:var(--color-brand-primary-bright);border-radius:999px"></div></div></div></div></sc-for>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isHome }}">
+<div style="position:absolute;inset:0;display:flex;flex-direction:column">
+  <sc-if value="{{ hero }}">
+  <div style="flex:none;background:var(--color-brand-primary);color:var(--color-brand-on-primary)">
+    <div style="padding:0 16px;height:48px;display:flex;align-items:center;gap:8px;font-weight:600;font-size:16px"><span onClick="{{ openBudget }}" style="cursor:pointer;width:44px;height:44px;display:flex;align-items:center;justify-content:center;margin-inline-start:-12px">{{ i.back }}</span>{{ t.title }}</div>
+    <div style="height:191px;box-sizing:border-box;padding:12px 16px 0;display:flex;flex-direction:column">
+      <div style="height:22px;font-size:12px;font-weight:600;display:flex;align-items:center">{{ t.heroLabel }}</div>
+      <div style="height:34.5px;display:flex;align-items:baseline;gap:8px"><span style="font-size:14px;font-weight:600">{{ t.egp }}</span><span style="{{ fm }};font-size:30px;font-weight:600;letter-spacing:-.02em;line-height:34px">{{ v.due30 }}</span></div>
+      <div style="height:38.75px;display:flex;flex-direction:column;justify-content:center;gap:6px"><div style="height:6px;border-radius:999px;background:rgba(255,255,255,.3);overflow:hidden"><div style="height:100%;width:{{ v.pct }}%;background:var(--color-brand-on-primary);border-radius:999px"></div></div><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:500"><span>{{ t.paid }} {{ v.paid }}</span><span>{{ t.leftW }} {{ v.leftMonth }}</span></div></div>
+      <div style="margin-top:auto;height:66px;display:grid;grid-template-columns:1fr 1fr 1.3fr;border-top:1px solid rgba(255,255,255,.3)"><sc-for list="{{ strip }}" as="c" hint-placeholder-count="3"><div style="display:flex;flex-direction:column;justify-content:center;gap:2px;padding-inline-end:8px;min-width:0"><span style="font-size:11px;font-weight:600">{{ c.k }}</span><span style="{{ fm }};font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.v }}</span><span style="{{ fm }};font-size:11px;font-weight:500">{{ c.v2 }}</span></div></sc-for></div>
+    </div>
+  </div>
+  </sc-if>
+  <sc-if value="{{ lite }}"><div style="flex:none;height:52px;padding:0 16px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:20px"><span onClick="{{ openBudget }}" style="cursor:pointer;width:44px;height:44px;display:flex;align-items:center;justify-content:center;margin-inline-start:-12px">{{ i.back }}</span>{{ t.title }}</div></sc-if>
+  <div style="flex:1;min-height:0;overflow-y:auto;padding:16px 16px 100px;display:flex;flex-direction:column;gap:14px">
+    <sc-if value="{{ lite }}"><div style="background:var(--color-brand-card);border:1px solid var(--color-brand-border);box-shadow:var(--shadow-sm);border-radius:16px;overflow:hidden"><div style="padding:16px 16px 14px;display:flex;flex-direction:column;gap:10px"><div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--color-brand-text-muted)">{{ t.heroLabel }}</div><div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:14px;font-weight:600;color:var(--color-brand-text-secondary)">{{ t.egp }}</span><span style="{{ fm }};font-size:30px;font-weight:600;letter-spacing:-.02em;line-height:34px">{{ v.due30 }}</span></div><div style="height:6px;border-radius:999px;background:var(--color-brand-elevated);overflow:hidden"><div style="height:100%;width:{{ v.pct }}%;background:var(--color-brand-primary-bright);border-radius:999px"></div></div><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:500;color:var(--color-brand-text-secondary)"><span>{{ t.paid }} {{ v.paid }}</span><span>{{ t.leftW }} {{ v.leftMonth }}</span></div></div><div style="display:grid;grid-template-columns:1fr 1fr 1.3fr;border-top:1px solid var(--color-brand-border)"><sc-for list="{{ strip }}" as="c" hint-placeholder-count="3"><div style="display:flex;flex-direction:column;justify-content:center;gap:2px;padding:10px 14px;min-width:0;border-inline-start:{{ c.bl }}"><span style="font-size:11px;font-weight:600;color:var(--color-brand-text-secondary)">{{ c.k }}</span><span style="{{ fm }};font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.v }}</span><span style="{{ fm }};font-size:11px;color:var(--color-brand-text-secondary)">{{ c.v2 }}</span></div></sc-for></div></div></sc-if>
+
+    <sc-if value="{{ isEmptyList }}">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="font-size:17px;font-weight:600">{{ t.emptyTitle }}</div>
+        <div style="font-size:13px;color:var(--color-brand-text-secondary)">{{ t.emptySub }}</div>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+          <sc-for list="{{ quick }}" as="q" hint-placeholder-count="6"><div onClick="{{ q.tap }}" style="cursor:pointer;background:var(--color-brand-card);box-shadow:var(--shadow-sm);border:1px solid var(--color-brand-border);border-radius:16px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;min-height:44px"><div style="width:40px;height:40px;border-radius:12px;background:var(--color-brand-elevated);overflow:hidden;display:flex;align-items:center;justify-content:center"><sc-if value="{{ q.hasLogo }}"><img src="{{ q.logo }}" style="width:100%;height:100%;object-fit:contain;padding:5px;box-sizing:border-box"></sc-if><sc-if value="{{ q.noLogo }}"><span style="font-weight:700;font-size:13px;color:var(--color-brand-primary-ink)">{{ q.ini }}</span></sc-if></div><span style="font-size:12px;font-weight:600;text-align:center">{{ q.name }}</span><span style="{{ fm }};font-size:11px;color:var(--color-brand-text-secondary)">{{ q.price }}</span></div></sc-for>
+        </div>
+        <div style="display:flex;width:100%"><div class="bw" style="flex:1;min-width:0"><x-import component-from-global-scope="Buddget.Button" size="lg" class="w-full" style="width:100%" onClick="{{ openAdd }}" hint-size="100%,48px"><span style="display:inline-flex;align-items:center;gap:8px">{{ i.plus18 }}{{ t.addSub }}</span></x-import></div></div>
+        <div style="display:flex;width:100%"><div class="bw" style="flex:1;min-width:0"><x-import component-from-global-scope="Buddget.Button" variant="outline" size="lg" class="w-full" style="width:100%" onClick="{{ openSms }}" hint-size="100%,48px"><span style="display:inline-flex;align-items:center;gap:8px">{{ i.msg18 }}{{ t.scan }}</span></x-import></div></div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ hasList }}">
+      <div style="display:flex;justify-content:space-between;align-items:center;min-height:24px"><span style="font-size:15px;font-weight:600">{{ t.period }}</span><span style="font-size:12px;color:var(--color-brand-text-secondary)">{{ v.activeCount }}</span></div>
+      <x-import component-from-global-scope="Buddget.SegmentedControl" dc-props="{{ segProps }}" hint-size="100%,44px"></x-import>
+      <sc-if value="{{ nudge.on }}"><div style="display:flex;align-items:center;gap:10px;background:var(--color-brand-elevated);border:1px solid var(--color-brand-border);border-radius:16px;padding:6px 6px 6px 12px"><span style="display:flex;color:var(--color-brand-primary-ink)">{{ nudge.icon }}</span><span style="flex:1;font-size:13px">{{ nudge.text }}</span><span onClick="{{ nudge.act }}" style="cursor:pointer;font-size:13px;font-weight:600;color:var(--color-brand-primary-ink);min-height:44px;display:flex;align-items:center;padding:0 6px">{{ nudge.label }}</span><span onClick="{{ nudge.dismiss }}" style="cursor:pointer;width:36px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--color-brand-text-muted)">{{ i.x18 }}</span></div></sc-if>
+      <sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--color-brand-text-muted)">{{ g.label }}</span><span style="{{ fm }};font-size:12px;color:var(--color-brand-text-secondary)">{{ g.total }}</span></div>
+          <div style="background:var(--color-brand-card);border:1px solid var(--color-brand-border);border-radius:16px;box-shadow:var(--shadow-sm);overflow:hidden">
+            <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="2">
+              <div onClick="{{ r.tap }}" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:10px 14px;min-height:64px;box-sizing:border-box;border-top:{{ r.bt }}">
+                <div style="width:40px;height:40px;border-radius:12px;background:var(--color-brand-elevated);overflow:hidden;display:flex;align-items:center;justify-content:center;flex:none"><sc-if value="{{ r.hasLogo }}"><img src="{{ r.logo }}" style="width:100%;height:100%;object-fit:contain;padding:5px;box-sizing:border-box"></sc-if><sc-if value="{{ r.noLogo }}"><span style="font-weight:700;font-size:13px;color:var(--color-brand-primary-ink)">{{ r.ini }}</span></sc-if></div>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px"><div style="font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}<span style="font-weight:400;color:var(--color-brand-text-secondary)">{{ r.plan }}</span></div><div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--color-brand-text-secondary)"><span style="{{ fm }}">{{ r.date }}</span><span style="display:flex;color:var(--color-brand-text-muted)">{{ r.trackIcon }}</span><span style="{{ r.chipStyle }}">{{ r.chip }}</span></div></div>
+                <div style="text-align:end;display:flex;flex-direction:column;gap:2px;flex:none"><span style="{{ fm }};font-size:15px;font-weight:600;{{ r.amtStyle }}">{{ r.amt }}</span><span style="{{ fm }};font-size:11px;color:var(--color-brand-text-secondary)">{{ r.sub }}</span></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+      <sc-if value="{{ emptyTab }}"><div style="text-align:center;font-size:13px;color:var(--color-brand-text-secondary);padding:24px 0">{{ emptyTab }}</div></sc-if>
+    </sc-if>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isPage }}">
+  <div style="position:absolute;inset-inline:0;bottom:0;height:68px;background:var(--color-brand-card);border-top:1px solid var(--color-brand-border);display:flex;align-items:center;justify-content:space-around;font-size:11px;font-weight:600;color:var(--color-brand-text-secondary);padding-bottom:8px"><span>{{ t.nav1 }}</span><span style="color:var(--color-brand-primary-ink)">{{ t.nav2 }}</span><span style="width:56px"></span><span>{{ t.nav3 }}</span><span>{{ t.nav4 }}</span></div>
+  <div onClick="{{ openAdd }}" style="cursor:pointer;position:absolute;bottom:34px;left:50%;margin-left:-28px;width:56px;height:56px;border-radius:50%;background:var(--color-brand-primary);color:var(--color-brand-on-primary);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-lg)">{{ i.plus26 }}</div>
+</sc-if>
+
+<sc-if value="{{ hasSheet }}">
+  <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:rgba(10,12,16,.55)"></div>
+  <div style="position:absolute;left:0;right:0;top:48px;bottom:0;border-radius:24px 24px 0 0;background:var(--color-brand-card);box-shadow:var(--shadow-lg);display:flex;flex-direction:column;overflow:hidden">
+    <div style="height:20px;display:flex;justify-content:center;align-items:center;flex:none"><div style="width:36px;height:4px;border-radius:2px;background:var(--color-brand-border)"></div></div>
+    <div style="display:flex;align-items:center;gap:8px;padding:0 12px 0 20px;flex:none;min-height:48px"><div style="flex:1;font-size:18px;font-weight:600;letter-spacing:-.01em">{{ sheetTitle }}</div><span onClick="{{ closeSheet }}" style="cursor:pointer;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--color-brand-text-secondary);margin-inline-end:-8px">{{ i.x20 }}</span></div>
+    <div style="flex:1;min-height:0;overflow-y:auto;padding:4px 20px 16px;display:flex;flex-direction:column;gap:16px">
+
+      <sc-if value="{{ sheetIs.add1 }}">
+        <div style="height:48px;flex:none;border-radius:12px;background:var(--color-brand-elevated);display:flex;align-items:center;gap:10px;padding:0 14px;color:var(--color-brand-text-muted)">{{ i.search18 }}<input value="{{ q }}" onInput="{{ setQ }}" placeholder="{{ t.search }}" style="flex:1;min-width:0;height:44px;border:0;outline:0;background:transparent;font:inherit;font-size:15px;color:var(--color-brand-text-primary)"></div>
+        <div style="display:flex;gap:8px;overflow-x:auto;flex:none;padding-bottom:2px"><sc-for list="{{ cats }}" as="c" hint-placeholder-count="5"><x-import component-from-global-scope="Buddget.OptionChip" size="sm" selected="{{ c.sel }}" onClick="{{ c.tap }}" style="flex:none"><span style="display:inline-flex;align-items:center;gap:6px">{{ c.icon }}{{ c.t }}</span></x-import></sc-for></div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--color-brand-text-muted)">{{ t.popular }}</div>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+          <sc-for list="{{ grid }}" as="q" hint-placeholder-count="9"><div onClick="{{ q.tap }}" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border-radius:16px;border:1px solid var(--color-brand-border);min-height:44px"><div style="width:56px;height:56px;border-radius:16px;background:var(--color-brand-elevated);overflow:hidden;display:flex;align-items:center;justify-content:center"><sc-if value="{{ q.hasLogo }}"><img src="{{ q.logo }}" style="width:100%;height:100%;object-fit:contain;padding:7px;box-sizing:border-box"></sc-if><sc-if value="{{ q.noLogo }}"><span style="font-weight:700;font-size:16px;color:var(--color-brand-primary-ink)">{{ q.ini }}</span></sc-if></div><span style="font-size:12px;font-weight:600;text-align:center">{{ q.name }}</span><span style="{{ fm }};font-size:11px;color:var(--color-brand-text-secondary)">{{ q.price }}</span></div></sc-for>
+          <div onClick="{{ pickCustom }}" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border-radius:16px;border:1px dashed var(--color-brand-border);min-height:44px"><div style="width:56px;height:56px;border-radius:16px;background:var(--color-brand-elevated);display:flex;align-items:center;justify-content:center;color:var(--color-brand-text-secondary)">{{ i.plus24 }}</div><span style="font-size:12px;font-weight:600">{{ t.custom }}</span></div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ sheetIs.add2 }}">
+        <div style="display:flex;gap:12px;align-items:center"><div style="width:48px;height:48px;border-radius:14px;background:var(--color-brand-elevated);overflow:hidden;display:flex;align-items:center;justify-content:center"><sc-if value="{{ d.hasLogo }}"><img src="{{ d.logo }}" style="width:100%;height:100%;object-fit:contain;padding:6px;box-sizing:border-box"></sc-if><sc-if value="{{ d.noLogo }}"><span style="font-weight:700;font-size:15px;color:var(--color-brand-primary-ink)">{{ d.ini }}</span></sc-if></div><div style="font-size:16px;font-weight:600">{{ d.name }}</div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><sc-for list="{{ d.plans }}" as="p" hint-placeholder-count="3"><div onClick="{{ p.tap }}" style="cursor:pointer;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:2px;min-height:44px;border:{{ p.border }}"><div style="display:flex;justify-content:space-between;align-items:center;font-size:14px;font-weight:600">{{ p.name }}<span style="display:flex;color:var(--color-brand-primary-ink)">{{ p.check }}</span></div><div style="{{ fm }};font-size:13px;color:var(--color-brand-text-secondary)">{{ p.price }}</div></div></sc-for></div>
+        <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:12px;font-weight:600;color:var(--color-brand-text-secondary)">{{ t.amount }}</span>
+          <div style="display:flex;align-items:center;gap:8px"><span onClick="{{ amtDown }}" style="cursor:pointer;width:48px;height:48px;border-radius:12px;background:var(--color-brand-elevated);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600">−</span><div style="flex:1;height:48px;border-radius:12px;background:var(--color-brand-elevated);display:flex;align-items:center;justify-content:center;gap:8px;{{ fm }};font-size:18px;font-weight:600">{{ d.amtText }}<span style="font-size:12px;font-weight:500;color:var(--color-brand-text-secondary)">{{ d.curText }}</span></div><span onClick="{{ amtUp }}" style="cursor:pointer;width:48px;height:48px;border-radius:12px;background:var(--color-brand-elevated);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600">+</span></div>
+          <sc-if value="{{ d.isUsd }}"><div style="font-size:12px;color:var(--color-brand-text-secondary)"><span style="{{ fm }};font-weight:600;color:var(--color-brand-text-primary)">≈ {{ d.egpText }} {{ t.egp }}</span> {{ t.fxNote }}</div></sc-if></div>
+        <div onClick="{{ cycleDay }}" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;height:48px;border-radius:12px;background:var(--color-brand-elevated);padding:0 14px;flex:none"><span style="font-size:12px;font-weight:600;color:var(--color-brand-text-secondary)">{{ t.firstCharge }}</span><span style="display:flex;align-items:center;gap:8px;{{ fm }};font-size:14px">{{ i.cal16 }}{{ d.dateText }}</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:12px;font-weight:600;color:var(--color-brand-text-secondary)">{{ t.tracking }}</span><sc-for list="{{ modes }}" as="m" hint-placeholder-count="3"><div onClick="{{ m.tap }}" style="cursor:pointer;display:flex;gap:12px;align-items:center;border-radius:16px;padding:10px 12px;min-height:56px;box-sizing:border-box;border:{{ m.border }}"><span style="display:flex;color:var(--color-brand-text-secondary)">{{ m.icon }}</span><div style="flex:1"><div style="font-size:14px;font-weight:600">{{ m.t }}</div><div style="font-size:12px;color:var(--color-brand-text-secondary)">{{ m.d }}</div></div><span style="display:flex;color:var(--color-brand-primary-ink)">{{ m.check }}</span></div></sc-for></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;min-height:48px"><span style="font-size:14px;font-weight:500">{{ t.remind }}</span><x-import component-from-global-scope="Buddget.Switch" defaultChecked="{{ true }}" hint-size="44px,28px"></x-import></div>
+      </sc-if>
+
+      <sc-if value="{{ sheetIs.sms }}">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--color-brand-primary-soft)"><div style="width:40px;height:40px;border-radius:12px;background:var(--color-brand-card);display:flex;align-items:center;justify-content:center;color:var(--color-brand-primary-ink);flex:none">{{ i.msg18 }}</div><div style="flex:1"><div style="font-size:14px;font-weight:600">{{ t.smsHead }}</div><div style="font-size:12px;color:var(--color-brand-text-secondary)">{{ t.smsSub }}</div></div></div>
+        <sc-for list="{{ smsList }}" as="m" hint-placeholder-count="3">
+          <div style="border:1px solid var(--color-brand-border);border-radius:16px;box-shadow:var(--shadow-sm);overflow:hidden;background:var(--color-brand-card)">
+            <div style="padding:14px;display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;gap:12px;align-items:center"><div style="width:44px;height:44px;border-radius:12px;background:var(--color-brand-elevated);overflow:hidden;display:flex;align-items:center;justify-content:center;flex:none"><sc-if value="{{ m.hasLogo }}"><img src="{{ m.logo }}" style="width:100%;height:100%;object-fit:contain;padding:6px;box-sizing:border-box"></sc-if><sc-if value="{{ m.noLogo }}"><span style="font-weight:700;font-size:14px;color:var(--color-brand-primary-ink)">{{ m.ini }}</span></sc-if></div><div style="flex:1;min-width:0"><div style="font-size:16px;font-weight:600">{{ m.name }}</div><div style="font-size:12px;color:var(--color-brand-text-secondary)">{{ m.line }}</div></div><div style="text-align:end"><div style="{{ fm }};font-size:17px;font-weight:600">{{ m.amt }}</div><div style="font-size:11px;color:var(--color-brand-text-secondary)">{{ m.per }}</div></div></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="display:flex;align-items:center;gap:8px"><div style="display:flex;gap:3px;align-items:flex-end"><sc-for list="{{ m.bars }}" as="b" hint-placeholder-count="3"><span style="width:5px;height:{{ b.h }}px;border-radius:2px;background:{{ b.bg }}"></span></sc-for></div><span style="font-size:12px;font-weight:600">{{ m.conf }}</span></div><div style="display:flex;gap:4px"><sc-for list="{{ m.seen }}" as="x" hint-placeholder-count="3"><span style="{{ fm }};font-size:11px;background:var(--color-brand-elevated);border-radius:999px;padding:2px 8px;color:var(--color-brand-text-secondary)">{{ x.t }}</span></sc-for></div></div>
+              <div style="display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:1.4;color:var(--color-brand-text-secondary);background:var(--color-brand-elevated);border-radius:10px;padding:8px 10px"><span style="display:flex;margin-top:1px">{{ i.msg13 }}</span><span style="{{ fm }}">{{ m.excerpt }}</span></div>
+              <sc-if value="{{ m.hasTag }}"><div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--color-brand-primary-ink)">{{ i.link14 }}{{ m.tag }}</div></sc-if>
+            </div>
+            <div style="display:flex;gap:8px;padding:0 14px 14px"><div class="bw" style="flex:1;min-width:0"><x-import component-from-global-scope="Buddget.Button" variant="outline" onClick="{{ m.dismiss }}" class="w-full" hint-size="100%,48px">{{ t.notSub }}</x-import></div><div class="bw" style="flex:1;min-width:0"><x-import component-from-global-scope="Buddget.Button" onClick="{{ m.add }}" class="w-full" hint-size="100%,48px">{{ m.addLabel }}</x-import></div></div>
+          </div>
+        </sc-for>
+      </sc-if>
+
+      <sc-if value="{{ sheetIs.detail }}">
+        <div style="display:flex;gap:14px;align-items:center"><div style="width:56px;height:56px;border-radius:16px;background:var(--color-brand-elevated);overflow:hidden;display:flex;align-items:center;justify-content:center;flex:none"><sc-if value="{{ sel.hasLogo }}"><img src="{{ sel.logo }}" style="width:100%;height:100%;object-fit:contain;padding:7px;box-sizing:border-box"></sc-if><sc-if value="{{ sel.noLogo }}"><span style="font-weight:700;font-size:16px;color:var(--color-brand-primary-ink)">{{ sel.ini }}</span></sc-if></div><div style="flex:1;min-width:0"><div style="font-size:18px;font-weight:600">{{ sel.name }}</div><div style="font-size:13px;color:var(--color-brand-text-secondary)">{{ sel.planText }}</div></div><span style="{{ sel.chipStyle }}">{{ sel.chip }}</span></div>
+        <div style="display:flex;align-items:baseline;gap:8px"><span style="{{ fm }};font-size:28px;font-weight:600;letter-spacing:-.02em">{{ sel.amt }}</span><span style="font-size:13px;color:var(--color-brand-text-secondary)">{{ sel.per }}</span></div>
+        <sc-if value="{{ sel.banner }}"><div style="border-radius:16px;padding:12px 14px;background:{{ sel.bannerBg }}"><div style="font-size:14px;font-weight:600">{{ sel.bannerT }}</div><div style="font-size:13px;color:var(--color-brand-text-secondary);margin-top:2px">{{ sel.bannerD }}</div></div></sc-if>
+        <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--color-brand-text-muted)">{{ t.nextCharges }}</span><div style="border:1px solid var(--color-brand-border);border-radius:16px;overflow:hidden"><sc-for list="{{ sel.charges }}" as="c" hint-placeholder-count="3"><div style="display:flex;justify-content:space-between;padding:0 14px;min-height:44px;align-items:center;font-size:14px;border-top:{{ c.bt }}"><span style="{{ fm }}">{{ c.d }}</span><span style="{{ fm }};font-weight:600">{{ c.a }}</span></div></sc-for></div><sc-if value="{{ sel.noCharges }}"><div style="font-size:13px;color:var(--color-brand-text-secondary)">{{ sel.noCharges }}</div></sc-if></div>
+        <div onClick="{{ cycleTrack }}" style="cursor:pointer;display:flex;align-items:center;gap:12px;min-height:56px;border:1px solid var(--color-brand-border);border-radius:16px;padding:0 14px"><span style="display:flex;color:var(--color-brand-text-secondary)">{{ sel.trackIcon }}</span><div style="flex:1"><div style="font-size:12px;color:var(--color-brand-text-secondary)">{{ t.tracking }}</div><div style="font-size:14px;font-weight:600">{{ sel.track }}</div></div><span style="font-size:13px;font-weight:600;color:var(--color-brand-primary-ink)">{{ t.change }}</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--color-brand-text-muted)">{{ t.matched }}</span><div style="border:1px solid var(--color-brand-border);border-radius:16px;overflow:hidden"><sc-for list="{{ sel.matches }}" as="c" hint-placeholder-count="2"><div style="display:flex;align-items:center;gap:10px;padding:0 6px 0 14px;min-height:48px;font-size:13px;border-top:{{ c.bt }}"><span style="display:flex;color:var(--color-brand-text-muted)">{{ i.link14 }}</span><span style="flex:1">{{ c.t }}</span><span style="{{ fm }};font-weight:600">{{ c.a }}</span><span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--color-brand-text-secondary)">{{ i.unlink18 }}</span></div></sc-for></div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><sc-for list="{{ sel.actions }}" as="a" hint-placeholder-count="3"><x-import component-from-global-scope="Buddget.Button" variant="{{ a.v }}" size="sm" onClick="{{ a.tap }}" hint-size="auto,36px">{{ a.t }}</x-import></sc-for></div>
+      </sc-if>
+
+      <sc-if value="{{ sheetIs.cancel }}">
+        <div style="display:flex;gap:12px;align-items:center"><div style="width:48px;height:48px;border-radius:14px;background:var(--color-brand-elevated);display:flex;align-items:center;justify-content:center"><span style="font-weight:700;font-size:15px;color:var(--color-brand-primary-ink)">{{ sel.ini }}</span></div><div><div style="font-size:16px;font-weight:600">{{ sel.name }}</div><div style="{{ fm }};font-size:13px;color:var(--color-brand-text-secondary)">{{ sel.amt }} {{ sel.per }}</div></div></div>
+        <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:12px;font-weight:600;color:var(--color-brand-text-secondary)">{{ t.endsOn }}</span><div style="height:48px;border-radius:12px;background:var(--color-brand-elevated);display:flex;align-items:center;gap:8px;padding:0 12px;{{ fm }};font-size:14px">{{ i.cal16 }}{{ sel.nextDate }}</div><span style="font-size:12px;color:var(--color-brand-text-secondary)">{{ t.cancelNote }}</span></div>
+        <div style="border:1px solid var(--color-brand-border);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:600;color:var(--color-brand-text-secondary)">{{ t.howTo }}</span><span style="font-size:14px">{{ t.cancelHint }}</span></div>
+        <div style="font-size:13px;color:var(--color-brand-text-secondary)">{{ t.cancelEffect }}</div>
+      </sc-if>
+    </div>
+    <sc-if value="{{ footer.on }}"><div style="flex:none;padding:12px 20px 20px;border-top:1px solid var(--color-brand-border);display:flex;flex-direction:column;gap:10px;background:var(--color-brand-card)"><sc-if value="{{ footer.impact }}"><div style="font-size:13px;display:flex;justify-content:space-between;gap:8px"><span style="{{ fm }};font-weight:600">{{ footer.impactA }}</span><span style="color:var(--color-brand-text-secondary);{{ fm }}">{{ footer.impactB }}</span></div></sc-if><div style="display:flex;width:100%"><div class="bw" style="flex:1;min-width:0"><x-import component-from-global-scope="Buddget.Button" variant="{{ footer.v }}" size="lg" class="w-full" style="width:100%" onClick="{{ footer.tap }}" hint-size="100%,48px">{{ footer.label }}</x-import></div></div><sc-if value="{{ footer.ghost }}"><div style="display:flex;width:100%"><div class="bw" style="flex:1;min-width:0"><x-import component-from-global-scope="Buddget.Button" variant="ghost" size="lg" class="w-full" style="width:100%" onClick="{{ closeSheet }}" hint-size="100%,48px">{{ footer.ghost }}</x-import></div></div></sc-if></div></sc-if>
+  </div>
+</sc-if>
+
+<sc-if value="{{ toast }}"><div style="position:absolute;left:16px;right:16px;bottom:92px;z-index:20;background:var(--color-brand-text-primary);color:var(--color-brand-bg);border-radius:14px;padding:12px 14px;font-size:13px;font-weight:600;box-shadow:var(--shadow-lg)">{{ toast }}</div></sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;variant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;hero&quot;,&quot;options&quot;:[&quot;hero&quot;,&quot;compact&quot;],&quot;tsType&quot;:&quot;'hero' | 'compact'&quot;,&quot;section&quot;:&quot;Layout&quot;},&quot;dark&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;ar&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Language&quot;},&quot;startEmpty&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Data&quot;}}">
+class Component extends DCLogic {
+  state = { view: 'home', sheet: null, subs: null, selId: null, brandKey: null, planIdx: 0, amt: 0, day: 2, track: 'sms', seg: 'up', q: '', cat: 0, toast: '', nudgeOff: false, sms: ['Netflix', 'Spotify', 'Dropbox'], paidExtra: 0 };
+
+  componentDidMount() { this.reset(); }
+  componentDidUpdate(prev) { if (prev.startEmpty !== this.props.startEmpty) this.reset(); }
+  reset() { this.setState({ subs: this.props.startEmpty === true || this.props.startEmpty === 'true' ? [] : this.initial(), view: 'home', sheet: null, seg: 'up', paidExtra: 0, sms: ['Netflix', 'Spotify', 'Dropbox'] }); }
+  initial() {
+    const S = (id, name, plan, amt, day, o = {}) => ({ id, name, plan, amt, day, status: 'active', cycle: 'monthly', track: 'sms', usd: 0, ...o });
+    return [S(1, 'Anghami', 'Plus', 69.99, -3), S(2, 'Netflix', 'Standard', 190, 2), S(3, 'ChatGPT', 'Plus', 1069, 4, { usd: 20, track: 'ask' }), S(4, 'Apple Music', 'Individual', 79.99, 5), S(5, 'Shahid', 'VIP', 159.99, 7, { status: 'trial', track: 'ask' }), S(6, 'YouTube Premium', '', 87.99, 9), S(7, 'Vodafone', 'Home Wireless 135 GB', 520, 11, { track: 'auto' }), S(8, 'Spotify', 'Individual', 79, 16), S(9, 'Amazon Prime', '', 249, 46, { cycle: 'yearly' }), S(10, 'Watch iT', 'Premium', 999.99, 89, { cycle: 'yearly' })];
+  }
+
+  renderVals() {
+    const p = this.props, B = v => v === true || v === 'true', st = this.state;
+    const ar = B(p.ar), dark = B(p.dark), lite = p.variant === 'compact', hero = !lite;
+    const L = (a, b) => (ar ? b : a);
+    const subs = st.subs || [];
+    const IC = { back: 'm15 18-6-6 6-6', chev: 'm9 18 6-6-6-6', plus: 'M5 12h14 M12 5v14', search: 'm21 21-4.3-4.3 M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z', x: 'M18 6 6 18 M6 6l12 12', check: 'M20 6 9 17l-5-5', msg: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', help: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3 M12 17h.01', zap: 'M13 2 3 14h9l-1 8 10-12h-9l1-8z', calsync: 'M12 7v5l4 2 M16 8h5V3 m21 8-2.3-2.3A9.7 9.7 0 0 0 12 3a9 9 0 1 0 9 9', link: 'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', unlink: 'm18.84 12.25 1.72-1.71a5 5 0 0 0-7.07-7.07l-1.72 1.71 M5.17 11.75l-1.71 1.71a5 5 0 0 0 7.07 7.07l1.71-1.71 M2 2l20 20', cal: 'M8 2v4 M16 2v4 M3 10h18 M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z', tv: 'M7 21h10 M12 17v4 M3 5h18a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z', music: 'M9 18V5l12-2v13 M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0z M21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z', game: 'M6 11h4 M8 9v4 M15 12h.01 M18 10h.01 M17.32 5H6.68a4 4 0 0 0-3.978 3.59C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258A4 4 0 0 0 17.32 5z', wifi: 'M12 20h.01 M2 8.82a15 15 0 0 1 20 0 M5 12.859a10 10 0 0 1 14 0 M8.5 16.429a5 5 0 0 1 7 0', spark: 'M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z M20 3v4 M22 5h-4 M4 17v2 M5 18H3', cloud: 'M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z', dumb: 'M6.5 6.5 17.5 17.5 M3 8l2-2 M8 3 6 5 M21 16l-2 2 M16 21l2-2 M4 4l3 3 M17 17l3 3', bag: 'M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z M3 6h18 M16 10a4 4 0 0 1-8 0', cap: 'M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z M22 10v6 M6.5 12.5V16a6 3 0 0 0 12 0v-3.5', news: 'M15 18h-5 M18 14h-8 M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-4 0v-9a2 2 0 0 1 2-2h2 M10 6h8v4h-8V6Z', dots: 'M12 12h.01 M19 12h.01 M5 12h.01', home: 'M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8 M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', cart: 'M8 22a1 1 0 1 0 0-2 1 1 0 0 0 0 2z M19 22a1 1 0 1 0 0-2 1 1 0 0 0 0 2z M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12', up: 'm22 7-8.5 8.5-5-5L2 17 M16 7h6v6' };
+    const ic = (n, s = 16) => React.createElement('svg', { width: s, height: s, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.75, strokeLinecap: 'round', strokeLinejoin: 'round', style: { flex: 'none', transform: ar && (n === 'chev' || n === 'back') ? 'scaleX(-1)' : undefined } }, React.createElement('path', { d: IC[n] }));
+    const i = { home: ic('home', 20), calsync: ic('calsync', 20), chev: ic('chev', 16), back: ic('back', 22), plus18: ic('plus', 18), plus24: ic('plus', 24), plus26: ic('plus', 26), msg18: ic('msg', 18), msg13: ic('msg', 13), x18: ic('x', 18), x20: ic('x', 20), search18: ic('search', 18), cal16: ic('cal', 16), link14: ic('link', 14), unlink18: ic('unlink', 18) };
+
+    const fmt = n => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const fmt0 = n => Math.round(n).toLocaleString('en-US');
+    const MN = ar ? ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'] : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const ds = day => { const d = new Date(2026, 9, 17 + day); return d.getDate() + ' ' + MN[d.getMonth()]; };
+    const egp = L('EGP', 'ج.م'), FM = "font-family:'JetBrains Mono',var(--font-mono),monospace;font-variant-numeric:tabular-nums;unicode-bidi:isolate";
+    const chipSt = k => ({ n: 'var(--color-brand-elevated)', a: 'var(--color-brand-amber-soft)', p: 'var(--color-brand-primary-soft)', g: 'var(--color-brand-green-soft)' }[k]);
+    const chipCss = k => 'background:' + chipSt(k) + ';color:var(--color-brand-text-primary);display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:600;white-space:nowrap';
+    const TRK = { sms: 'msg', ask: 'help', auto: 'zap' };
+    const trkName = { sms: L('Match from SMS', 'مطابقة من الرسائل'), ask: L('Ask me on the due date', 'اسألني في يوم الاستحقاق'), auto: L('Log automatically', 'تسجيل تلقائي') };
+    const logoOf = { Anghami: 'uploads/anghami.svg', 'Apple Music': 'uploads/apple_music.svg', ChatGPT: 'uploads/chatgpt.svg', 'Careem Plus': 'uploads/careem_plus.svg', Dropbox: 'uploads/dropbox.svg', 'Claude Pro': 'uploads/claude_pro.svg' };
+    const brand = n => ({ logo: logoOf[n] || '', hasLogo: !!logoOf[n], noLogo: !logoOf[n], ini: n.slice(0, 2), name: n });
+    const set = o => this.setState(o);
+    const toast = m => { set({ toast: m }); clearTimeout(this._tt); this._tt = setTimeout(() => set({ toast: '' }), 2400); };
+    const monthlyOf = s => (s.cycle === 'yearly' ? s.amt / 12 : s.amt);
+
+    // derived
+    const live = subs.filter(s => s.status === 'active' || s.status === 'trial');
+    const act = subs.filter(s => s.status === 'active');
+    const due30 = act.filter(s => s.day <= 30).reduce((a, s) => a + s.amt, 0);
+    const leftMonth = act.filter(s => s.day <= 14).reduce((a, s) => a + s.amt, 0);
+    const paid = 640 + st.paidExtra;
+    const monthlyEq = act.reduce((a, s) => a + monthlyOf(s), 0);
+    const yearlySet = act.filter(s => s.cycle === 'yearly').reduce((a, s) => a + s.amt / 12, 0);
+    const nxt = act.filter(s => s.day >= 0).sort((a, b) => a.day - b.day)[0];
+    const none = subs.length === 0;
+    const strip = [
+      { k: L('Monthly equivalent', 'المعادل الشهري'), v: none ? '—' : fmt0(monthlyEq), v2: '', bl: 'none' },
+      { k: L('Per year', 'في السنة'), v: none ? '—' : fmt0(monthlyEq * 12), v2: '', bl: '1px solid var(--color-brand-border)' },
+      { k: L('Next charge', 'الخصم القادم'), v: nxt ? nxt.name : '—', v2: nxt ? ds(nxt.day) : '', bl: '1px solid var(--color-brand-border)' }
+    ];
+
+    const chipFor = s => {
+      if (s.status === 'paused') return [L('Paused', 'متوقف مؤقتًا'), 'n'];
+      if (s.status === 'cancelled') return [L('Ends ', 'ينتهي ') + ds(s.day), 'n'];
+      if (s.status === 'trial') return [L('Trial ends', 'تنتهي التجربة'), 'p'];
+      if (s.day < 0) return [L('Expected, not seen', 'متوقع، لم يظهر'), 'a'];
+      if (s.cycle === 'yearly') return [L('Yearly', 'سنوي'), 'n'];
+      return [s.day === 0 ? L('Today', 'اليوم') : L('In ', 'بعد ') + s.day + L(s.day > 1 ? ' days' : ' day', ' يوم'), s.day <= 3 ? 'a' : 'n'];
+    };
+    const amtOf = s => (s.usd ? '≈ ' + fmt0(s.amt) : fmt(s.amt));
+    const rowOf = (s, k) => { const c = chipFor(s); return { ...brand(s.name), plan: s.plan ? ' · ' + s.plan : '', date: s.status === 'paused' ? '—' : ds(s.day), chip: c[0], chipStyle: chipCss(c[1]), trackIcon: ic(TRK[s.track], 12), amt: amtOf(s), sub: s.usd ? '$' + fmt(s.usd) : s.cycle === 'yearly' ? fmt(s.amt / 12) + L(' / mo', ' / شهر') : '', amtStyle: s.status === 'trial' || s.status === 'paused' || s.status === 'cancelled' ? 'color:var(--color-brand-text-muted);text-decoration:line-through' : '', bt: k ? '1px solid var(--color-brand-border)' : 'none', tap: () => set({ sheet: 'detail', selId: s.id }) }; };
+    const G = (label, list) => (list.length ? { label, total: fmt(list.filter(s => s.status === 'active').reduce((a, s) => a + s.amt, 0)), rows: list.map(rowOf) } : null);
+    let groups = [], emptyTab = '';
+    if (st.seg === 'up') {
+      const lv = live.filter(s => s.cycle !== 'yearly').sort((a, b) => a.day - b.day);
+      groups = [G(L('Overdue', 'متأخر'), lv.filter(s => s.day < 0)), G(L('This week', 'هذا الأسبوع'), lv.filter(s => s.day >= 0 && s.day <= 7)), G(L('This month', 'هذا الشهر'), lv.filter(s => s.day > 7 && s.day <= 14)), G(L('Later', 'لاحقًا'), lv.filter(s => s.day > 14)), G(L('Yearly', 'سنوي'), live.filter(s => s.cycle === 'yearly').sort((a, b) => a.day - b.day))].filter(Boolean);
+    } else if (st.seg === 'all') groups = [G(L('All', 'الكل'), subs.slice().sort((a, b) => a.day - b.day))].filter(Boolean);
+    else { groups = [G(L('Ended', 'المنتهية'), subs.filter(s => s.status === 'cancelled'))].filter(Boolean); if (!groups.length) emptyTab = L('Nothing has ended yet.', 'لم ينتهِ شيء بعد.'); }
+    const segProps = { ariaLabel: 'View', value: st.seg, onChange: v => set({ seg: v }), options: [{ value: 'up', label: L('Upcoming', 'القادمة') }, { value: 'all', label: L('All', 'الكل') }, { value: 'end', label: L('Ended', 'المنتهية') }] };
+
+    // catalog
+    const U = 53.45;
+    const CAT = [
+      { k: 'Netflix', c: 0, plans: [['Basic', 110], ['Standard', 190], ['Premium', 270]] }, { k: 'Shahid', c: 0, plans: [['VIP Mobile', 52.99], ['VIP', 159.99], ['Ultimate', 639.99]] }, { k: 'YouTube Premium', c: 0, plans: [['Individual', 87.99], ['Family', 159.99], ['Student', 52.99]] }, { k: 'Watch iT', c: 0, plans: [['Basic', 19.99], ['Premium', 99.99]] },
+      { k: 'Spotify', c: 1, plans: [['Individual', 79], ['Duo', 109], ['Family', 139], ['Student', 39]] }, { k: 'Anghami', c: 1, plans: [['Plus', 69.99]] }, { k: 'Apple Music', c: 1, plans: [['Individual', 79.99]] },
+      { k: 'PlayStation Plus', c: 2, plans: [['Essential', 10.99, 1], ['Extra', 16.99, 1]] },
+      { k: 'Vodafone', c: 3, plans: [['Flex 52', 52], ['Flex 80', 80], ['Flex 115', 115]] },
+      { k: 'ChatGPT', c: 4, plans: [['Plus', 20, 1], ['Pro', 200, 1]] }, { k: 'Claude Pro', c: 4, plans: [['Pro', 20, 1]] },
+      { k: 'iCloud+', c: 5, plans: [['50 GB', 49.99]] },
+      { k: 'Amazon Prime', c: 7, plans: [['Monthly', 29], ['Yearly', 249, 0, 1]] }
+    ];
+    const brandEntry = k => CAT.find(x => x.k === k) || { k, c: 10, plans: [['Custom', 100]] };
+    const catsEn = ['Streaming', 'Music', 'Gaming', 'Telecom & internet', 'AI & software', 'Cloud', 'Fitness', 'Shopping & delivery', 'Learning', 'News', 'Other'];
+    const catsAr = ['بث', 'موسيقى', 'ألعاب', 'اتصالات وإنترنت', 'ذكاء اصطناعي وبرامج', 'تخزين سحابي', 'لياقة', 'تسوق وتوصيل', 'تعلّم', 'أخبار', 'أخرى'];
+    const catIc = ['tv', 'music', 'game', 'wifi', 'spark', 'cloud', 'dumb', 'bag', 'cap', 'news', 'dots'];
+    const cats = (ar ? catsAr : catsEn).map((t, n) => ({ t, icon: ic(catIc[n], 16), sel: st.cat === n, tap: () => set({ cat: st.cat === n ? -1 : n }) }));
+    const priceOf = e => { const pl = e.plans[0]; return pl[2] ? '≈ $' + pl[1] : egp + ' ' + fmt(pl[1]); };
+    const open2 = k => { const e = brandEntry(k); set({ sheet: 'add2', brandKey: k, planIdx: Math.min(1, e.plans.length - 1) === 1 && e.plans.length > 2 ? 1 : 0, amt: e.plans[Math.min(1, e.plans.length - 1) === 1 && e.plans.length > 2 ? 1 : 0][1], day: 2, track: 'sms' }); };
+    const q = (st.q || '').toLowerCase();
+    const grid = CAT.filter(x => (st.cat < 0 || x.c === st.cat) && (!q || x.k.toLowerCase().includes(q))).map(x => ({ ...brand(x.k), price: priceOf(x), tap: () => open2(x.k) }));
+    const quick = ['Netflix', 'Shahid', 'Spotify', 'Anghami', 'YouTube Premium', 'Apple Music', 'Amazon Prime', 'Watch iT', 'ChatGPT'].map(k => ({ ...brand(k), price: priceOf(brandEntry(k)), tap: () => { open2(k); } }));
+
+    // draft
+    const e = st.brandKey ? brandEntry(st.brandKey) : brandEntry('Netflix');
+    const pl = e.plans[st.planIdx] || e.plans[0];
+    const isUsd = !!pl[2], amtEgp = isUsd ? st.amt * U : st.amt, yearly = !!pl[3];
+    const impact = yearly ? amtEgp / 12 : amtEgp;
+    const draft = { ...brand(e.k), plans: e.plans.map((x, n) => ({ name: x[0], price: x[2] ? '$' + fmt(x[1]) : fmt(x[1]) + ' ' + egp, border: n === st.planIdx ? '2px solid var(--color-brand-primary)' : '1px solid var(--color-brand-border)', check: n === st.planIdx ? ic('check', 16) : null, tap: () => set({ planIdx: n, amt: x[1] }) })), amtText: fmt(st.amt), curText: isUsd ? 'USD' : 'EGP', isUsd, egpText: fmt0(amtEgp), dateText: ds(st.day) };
+    const modeList = [['sms', L('Match from SMS', 'مطابقة من الرسائل'), L('Links the charge when merchant and amount match', 'يربط الخصم عند تطابق التاجر والمبلغ')], ['ask', L('Ask me on the due date', 'اسألني في يوم الاستحقاق'), L('One tap: Paid or Not yet', 'ضغطة واحدة: تم الدفع أو لم يُدفع')], ['auto', L('Log automatically', 'تسجيل تلقائي'), L('Creates the expense on the due date', 'ينشئ المصروف في يوم الاستحقاق')]];
+    const modes = modeList.map(m => ({ icon: ic(TRK[m[0]], 20), t: m[1], d: m[2], border: st.track === m[0] ? '2px solid var(--color-brand-primary)' : '1px solid var(--color-brand-border)', check: st.track === m[0] ? ic('check', 18) : null, tap: () => set({ track: m[0] }) }));
+    const addSub = (o) => { const ns = { id: Date.now() + Math.random(), status: 'active', cycle: 'monthly', track: 'sms', usd: 0, plan: '', day: 3, ...o }; set({ subs: [...subs, ns] }); return ns; };
+    const saveDraft = () => { const s = addSub({ name: e.k, plan: pl[0] === 'Custom' ? '' : pl[0], amt: amtEgp, usd: isUsd ? st.amt : 0, day: st.day, track: st.track, cycle: yearly ? 'yearly' : 'monthly' }); set({ sheet: null, view: 'home', seg: 'up', q: '', cat: 0 }); toast(L('Added ', 'تمت إضافة ') + e.k + ' · ' + L('Committed becomes ', 'الملتزم به يصبح ') + fmt0(monthlyEq + impact)); };
+
+    // sms
+    const SMS = { Netflix: { line: L('Monthly · day 19', 'شهريًا · يوم 19'), amt: '190.00', per: egp, n: 3, conf: L('High', 'مرتفعة'), seen: ['19 Aug', '19 Sep', '19 Oct'], excerpt: 'NBE: EGP 190.00 NETFLIX.COM *4821', plan: 'Standard', val: 190, day: 2 }, Spotify: { line: L('Monthly · day 2', 'شهريًا · يوم 2'), amt: '79.00', per: egp, n: 3, conf: L('High', 'مرتفعة'), seen: ['2 Aug', '2 Sep', '2 Oct'], excerpt: 'CIB: EGP 79.00 SPOTIFY *4821', plan: 'Individual', val: 79, day: 16 }, Dropbox: { line: L('Yearly · billed in USD', 'سنويًا · بالدولار'), amt: '$119.88', per: L('≈ EGP 6,408', '≈ 6,408 ج.م'), n: 2, conf: L('Medium', 'متوسطة'), seen: ['11 Mar'], excerpt: 'CIB: USD 119.88 DROPBOX *4821', plan: 'Plus', val: 6408, usd: 119.88, day: 145, cycle: 'yearly' } };
+    const smsAdd = k => { const m = SMS[k], ex = subs.find(s => s.name === k); const rest = st.sms.filter(x => x !== k); if (ex) { set({ sms: rest }); toast(L('Linked to your ', 'تم الربط مع ') + k); } else { addSub({ name: k, plan: m.plan, amt: m.val, usd: m.usd || 0, day: m.day, cycle: m.cycle || 'monthly' }); set({ sms: rest }); toast(L('Added ', 'تمت إضافة ') + k); } if (!rest.length) set({ sheet: null }); };
+    const smsList = st.sms.map(k => { const m = SMS[k], ex = subs.find(s => s.name === k); return { ...brand(k), ...m, bars: [0, 1, 2].map(n => ({ h: 6 + n * 4, bg: n < m.n ? 'var(--color-brand-primary-bright)' : 'var(--color-brand-border)' })), seen: m.seen.map(t => ({ t })), hasTag: !!ex, tag: L('Matches your ', 'يطابق ') + k + L('. Charges link to it', '. تُربط الخصومات به'), addLabel: ex ? L('Link to ', 'ربط بـ ') + k : L('Add', 'إضافة'), add: () => smsAdd(k), dismiss: () => { const rest = st.sms.filter(x => x !== k); set({ sms: rest, sheet: rest.length ? 'sms' : null }); } }; });
+
+    // detail
+    const cur = subs.find(s => s.id === st.selId) || subs[0] || { name: '', plan: '', amt: 0, day: 0, status: 'active', track: 'sms', cycle: 'monthly' };
+    const patch = o => set({ subs: subs.map(s => (s.id === cur.id ? { ...s, ...o } : s)) });
+    const cc = chipFor(cur), per = cur.cycle === 'yearly' ? L('per year', 'سنويًا') : L('per month', 'شهريًا');
+    const step = cur.cycle === 'yearly' ? 365 : 30;
+    const bn = { trial: [L('Trial ends ', 'تنتهي التجربة ') + ds(cur.day), L('Not counted in Committed until it converts. Alerts 2 days before and on the day.', 'لا يُحتسب ضمن الملتزم به حتى يتحول. تنبيه قبل يومين وفي اليوم نفسه.'), 'p'], paused: [L('No charges, no reminders', 'لا خصم ولا تذكيرات'), L('Resume restarts from the next cycle.', 'الاستئناف يبدأ من الدورة التالية.'), 'n'], cancelled: [L('Access until ', 'الوصول حتى ') + ds(cur.day), L('Then archived under Ended.', 'ثم يُؤرشف ضمن المنتهية.'), 'n'] }[cur.status] || (cur.day < 0 ? [L('Expected ', 'متوقع ') + ds(cur.day), L('No matching SMS after 3 days. Not yet?', 'لا رسالة مطابقة بعد 3 أيام. لم يُدفع بعد؟'), 'a'] : null);
+    const charges = cur.status === 'paused' || cur.status === 'cancelled' ? [] : [0, 1, 2].map(n => ({ d: ds(cur.day + n * step), a: fmt(cur.amt), bt: n ? '1px solid var(--color-brand-border)' : 'none' }));
+    const sel = { ...brand(cur.name), planText: cur.plan || L('Subscription', 'اشتراك'), chip: cc[0], chipStyle: chipCss(cc[1]), amt: fmt(cur.amt), per: egp + ' ' + per, banner: !!bn, bannerBg: bn ? chipSt(bn[2]) : '', bannerT: bn ? bn[0] : '', bannerD: bn ? bn[1] : '', charges, noCharges: charges.length ? '' : L('No upcoming charges.', 'لا خصومات قادمة.'), trackIcon: ic(TRK[cur.track], 18), track: trkName[cur.track], matches: [[L('SMS · 19 Sep', 'رسالة · 19 سبتمبر'), fmt(cur.amt)], [L('SMS · 19 Aug', 'رسالة · 19 أغسطس'), fmt(cur.amt)]].map((c, n) => ({ t: c[0], a: c[1], bt: n ? '1px solid var(--color-brand-border)' : 'none' })), nextDate: ds(cur.day) };
+    const A = (t, v, tap) => ({ t, v, tap });
+    sel.actions = [A(L('Edit', 'تعديل'), 'outline', () => toast(L('Edit opens the configure sheet, prefilled', 'التعديل يفتح شاشة الإعداد معبأة'))), cur.status === 'paused' ? A(L('Resume', 'استئناف'), 'outline', () => { patch({ status: 'active' }); toast(L('Resumed', 'تم الاستئناف')); }) : A(L('Pause', 'إيقاف مؤقت'), 'outline', () => { patch({ status: 'paused' }); toast(L('Paused. No reminders', 'تم الإيقاف. بلا تذكيرات')); }), cur.status === 'cancelled' ? A(L('Delete', 'حذف'), 'destructive', () => { set({ subs: subs.filter(s => s.id !== cur.id), sheet: null }); toast(L('Deleted', 'تم الحذف')); }) : A(L('Cancel subscription', 'إلغاء الاشتراك'), 'destructive', () => set({ sheet: 'cancel' }))];
+    const cycleTrack = () => { const o = ['sms', 'ask', 'auto']; patch({ track: o[(o.indexOf(cur.track) + 1) % 3] }); };
+
+    // sheet chrome
+    const sheetTitles = { add1: L('Add subscription', 'إضافة اشتراك'), add2: L('Add ', 'إضافة ') + e.k, sms: L('Found ', 'وجدنا ') + st.sms.length + L(' possible subscriptions', ' اشتراكات محتملة'), detail: L('Subscription', 'الاشتراك'), cancel: L('Cancel ', 'إلغاء ') + cur.name + '?' };
+    const markPaid = () => { patch({ day: cur.day < 0 ? cur.day + 30 : cur.day + step }); set({ paidExtra: st.paidExtra + (cur.day <= 14 ? cur.amt : 0), sheet: null }); toast(L('Marked paid · next ', 'تم الدفع · التالي ') + ds(cur.day + step)); };
+    const foots = { sms: { label: L('Add all ', 'إضافة الكل ') + st.sms.length, v: 'default', tap: () => { st.sms.filter(k => !subs.find(s => s.name === k)).forEach(k => { const m = SMS[k]; subs.push({ id: Math.random(), name: k, plan: m.plan, amt: m.val, usd: m.usd || 0, day: m.day, status: 'active', cycle: m.cycle || 'monthly', track: 'sms' }); }); set({ subs: [...subs], sms: [], sheet: null }); toast(L('Added to subscriptions', 'تمت الإضافة')); } }, add2: { label: L('Add ', 'إضافة ') + e.k + (pl[0] !== 'Custom' ? ' ' + pl[0] : ''), v: 'default', tap: saveDraft, impact: true, impactA: '+' + egp + ' ' + fmt0(impact) + L(' / month', ' / شهر'), impactB: L('Committed becomes ', 'الملتزم به يصبح ') + fmt0(monthlyEq + impact) }, detail: { label: { trial: L('Keep after trial', 'استمرار بعد التجربة'), paused: L('Resume', 'استئناف'), cancelled: L('Resubscribe', 'إعادة الاشتراك') }[cur.status] || L('Mark paid', 'تم الدفع'), v: 'default', tap: () => { if (cur.status === 'trial') { patch({ status: 'active' }); toast(L('Trial converted', 'تحولت التجربة')); } else if (cur.status === 'paused') { patch({ status: 'active' }); toast(L('Resumed', 'تم الاستئناف')); } else if (cur.status === 'cancelled') { patch({ status: 'active', day: 30 }); toast(L('Resubscribed', 'أُعيد الاشتراك')); } else markPaid(); } }, cancel: { label: L('Cancel subscription', 'إلغاء الاشتراك'), v: 'destructive', ghost: L('Keep it', 'إبقاؤه'), tap: () => { patch({ status: 'cancelled' }); set({ sheet: null }); toast(L('Cancelled. Access until ', 'تم الإلغاء. الوصول حتى ') + ds(cur.day)); } } };
+    const f = foots[st.sheet];
+
+    const nudge = (() => { if (st.sms.length && !st.nudgeOff) return { on: true, icon: ic('msg', 18), text: L('Found ', 'وجدنا ') + st.sms.length + L(' possible subscriptions', ' اشتراكات محتملة'), label: L('Review', 'مراجعة'), act: () => set({ sheet: 'sms' }), dismiss: () => set({ nudgeOff: true }) }; return { on: false }; })();
+
+    const T = {
+      budget: L('Budget', 'الميزانية'), period: L('October 2026', 'أكتوبر 2026'), left: L('Left to spend 6,284', 'المتبقي للإنفاق 6,284'), committed: L('Committed', 'الملتزم به'), egp, leftToPay: L('left to pay this month', 'متبقي للدفع هذا الشهر'), rent: L('Rent', 'الإيجار'), subs: L('Subscriptions', 'الاشتراكات'), setAside: L('Set aside for yearly plans', 'مخصص للخطط السنوية'),
+      title: L('Subscriptions', 'الاشتراكات'), heroLabel: L('Due in the next 30 days', 'مستحق خلال 30 يومًا القادمة'), paid: L('Paid', 'مدفوع'), leftW: L('Left', 'متبقي'),
+      emptyTitle: L('Add your subscriptions', 'أضف اشتراكاتك'), emptySub: L('Tap a service to add it with its usual price.', 'اضغط على خدمة لإضافتها بسعرها المعتاد.'), addSub: L('Add subscription', 'إضافة اشتراك'), scan: L('Scan my SMS', 'افحص رسائلي'),
+      nav1: L('Flow', 'التدفق'), nav2: L('Budget', 'الميزانية'), nav3: L('Wealth', 'الثروة'), nav4: L('Debts', 'الديون'),
+      search: L('Search services', 'ابحث عن خدمة'), popular: L('Popular in Egypt', 'الأكثر استخدامًا في مصر'), custom: L('Custom', 'مخصص'), amount: L('Amount', 'المبلغ'), fxNote: L('at 53.45 · refined after the first charge', 'بسعر 53.45 · يُحدَّث بعد أول خصم'), firstCharge: L('First charge (tap to change)', 'أول خصم (اضغط للتغيير)'), tracking: L('Tracking', 'التتبّع'), remind: L('Remind me before it’s due', 'ذكّرني قبل الاستحقاق'),
+      smsHead: L('14 messages scanned · last 90 days', 'تم فحص 14 رسالة · آخر 90 يومًا'), smsSub: L('Nothing is added until you confirm.', 'لا يُضاف شيء قبل تأكيدك.'), notSub: L('Not a subscription', 'ليس اشتراكًا'),
+      nextCharges: L('Next charges', 'الخصومات القادمة'), change: L('Change', 'تغيير'), matched: L('Matched charges', 'الخصومات المطابقة'), endsOn: L('Ends on', 'ينتهي في'), cancelNote: L('Last paid cycle. You keep access until then.', 'آخر دورة مدفوعة. يبقى الوصول حتى ذلك التاريخ.'), howTo: L('How to cancel', 'كيف تلغي'), cancelHint: L('Cancel in the service’s own account page. Buddget then archives it.', 'ألغِ من صفحة حسابك في الخدمة، ثم يؤرشفه Buddget.'), cancelEffect: L('Reminders stop and it moves to Ended. Past charges stay in Flow.', 'تتوقف التذكيرات وينتقل إلى المنتهية. تبقى الخصومات السابقة في التدفق.')
+    };
+    const budgetRows = [[L('Groceries', 'البقالة'), '2,100 / 3,000', 70, 'cart', 0], [L('Bills', 'الفواتير'), '640 / 800', 80, 'zap', 0], [L('Subscriptions', 'الاشتراكات'), fmt0(paid) + ' / 2,657', Math.min(100, Math.round(paid / 26.57)), 'calsync', 1]].map((r, n) => ({ name: r[0], nums: r[1], pct: r[2], icon: ic(r[3], 20), bg: r[4] ? 'var(--color-brand-primary-soft)' : 'var(--color-brand-elevated)', fg: r[4] ? 'var(--color-brand-primary-ink)' : 'var(--color-brand-text-secondary)', bt: n ? '1px solid var(--color-brand-border)' : 'none', tap: r[4] ? () => set({ view: 'home' }) : () => {} }));
+    const cnt = subs.filter(s => s.status === 'active' || s.status === 'trial').length;
+    const v = { committedLeft: fmt(1700 + leftMonth), leftMonth: fmt0(leftMonth), setAside: fmt(yearlySet), subsLine: act.filter(s => s.day <= 14).length + L(' due · ', ' مستحقة · ') + (nxt ? nxt.name + ' ' + ds(nxt.day) : '—'), due30: none ? '0.00' : fmt(due30), pct: none ? 0 : Math.round((paid / (paid + leftMonth)) * 100), paid: fmt0(paid), activeCount: cnt + L(' active', ' نشطًا') };
+    const view = st.view;
+    return {
+      themeClass: dark ? 'dark' : '', dir: ar ? 'rtl' : 'ltr', font: ar ? "'IBM Plex Sans Arabic','DM Sans',sans-serif" : "'DM Sans',sans-serif", fm: FM, t: T, i, v, hero, lite, strip, budgetRows,
+      isBudget: view === 'budget', isHome: view === 'home', isPage: !st.sheet, hasSheet: !!st.sheet, isEmptyList: view === 'home' && none, hasList: view === 'home' && !none,
+      groups, emptyTab, segProps, nudge, quick, grid, cats, q: st.q, setQ: ev => set({ q: ev.target.value }), d: draft, modes, smsList, sel, cycleTrack,
+      sheetIs: { add1: st.sheet === 'add1', add2: st.sheet === 'add2', sms: st.sheet === 'sms', detail: st.sheet === 'detail', cancel: st.sheet === 'cancel' }, sheetTitle: sheetTitles[st.sheet] || '',
+      footer: { on: !!f, ...(f || {}) }, toast: st.toast,
+      openHome: () => set({ view: 'home' }), openBudget: () => set({ view: 'budget' }), openAdd: () => set({ sheet: 'add1', q: '', cat: 0 }), openSms: () => set({ sheet: 'sms' }), closeSheet: () => set({ sheet: null }),
+      pickCustom: () => open2('Custom'), amtUp: () => set({ amt: Math.round((st.amt + (isUsd ? 1 : 10)) * 100) / 100 }), amtDown: () => set({ amt: Math.max(0, Math.round((st.amt - (isUsd ? 1 : 10)) * 100) / 100) }), cycleDay: () => set({ day: st.day === 2 ? 7 : st.day === 7 ? 14 : 2 })
+    };
+  }
+}
+</script>
+</body>
+</html>
