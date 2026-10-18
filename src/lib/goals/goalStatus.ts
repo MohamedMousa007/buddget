@@ -45,7 +45,20 @@ function trailing(runs: AllocationRun[], pred: (cumPlanned: number, cumAmount: n
   return { n, shortfall: p - a }
 }
 
-export function getGoalStatus({ goal, current, runs, now }: GoalStatusInput): GoalStatusView {
+/** `YYYY-MM` of the first month a cycle covers ('2026-Q4' starts 2026-10). */
+export function periodStartMonth(period: string): string {
+  const q = period.match(/^(\d{4})-Q([1-4])$/)
+  return q ? `${q[1]}-${String((Number(q[2]) - 1) * 3 + 1).padStart(2, '0')}` : period
+}
+
+/** Cycles that count toward behind/streak: those since the plan last changed. */
+export function runsSincePlan(goal: Pick<Goal, 'planStart'>, runs: AllocationRun[]): AllocationRun[] {
+  const from = goal.planStart?.slice(0, 7)
+  return from ? runs.filter((r) => periodStartMonth(r.period) >= from) : runs
+}
+
+export function getGoalStatus({ goal, current, runs: allRuns, now }: GoalStatusInput): GoalStatusView {
+  const runs = runsSincePlan(goal, allRuns)
   if (goal.status === 'paused') {
     return { kind: 'paused', icon: 'Pause', tone: 'muted', button: { action: 'resume', variant: 'default' }, params: {} }
   }

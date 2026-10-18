@@ -861,6 +861,8 @@ export interface Goal {
   /** Percent of period savings when `fundingMode` is 'share'. May total over 100 across goals; `priority` (asc) resolves shortfalls. */
   sharePct: number | null
   frequency: GoalFrequency
+  /** `YYYY-MM-DD` the current plan began (set on replan); earlier cycles no longer count as behind. */
+  planStart: string | null
   notes: string | null
   createdAt: string
   achievedAt: string | null
@@ -1089,11 +1091,12 @@ export interface FinanceStore {
   updateProfile: (updates: Partial<UserProfile>) => void
   setFinancialGoalsNotes: (notes: string) => void
   addGoal: (
-    goal: Omit<Goal, 'id' | 'createdAt' | 'achievedAt' | 'manualCurrentAmount' | 'fundingMode' | 'sharePct' | 'frequency'> & {
+    goal: Omit<Goal, 'id' | 'createdAt' | 'achievedAt' | 'manualCurrentAmount' | 'fundingMode' | 'sharePct' | 'frequency' | 'planStart'> & {
       manualCurrentAmount?: number
       fundingMode?: GoalFundingMode
       sharePct?: number | null
       frequency?: GoalFrequency
+      planStart?: string | null
     }
   ) => string
   updateGoal: (id: string, updates: Partial<Goal>) => void

@@ -518,6 +518,7 @@ export const importDataSchema = z.object({
         fundingMode: z.enum(['share', 'fixed', 'manual']).optional(),
         sharePct: z.number().nullable().optional(),
         frequency: z.enum(['monthly', 'quarterly']).optional(),
+        planStart: z.string().nullable().optional(),
         notes: z.string().nullable(),
         createdAt: z.string(),
         achievedAt: z.string().nullable(),

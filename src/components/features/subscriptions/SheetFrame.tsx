@@ -37,6 +37,7 @@ export function SheetFrame({
   onBack,
   footer,
   children,
+  zClassName,
 }: {
   open: boolean
   onClose: () => void
@@ -45,12 +46,15 @@ export function SheetFrame({
   onBack?: () => void
   footer?: ReactNode
   children: ReactNode
+  /** Stacking class, to open one sheet over another. */
+  zClassName?: string
 }) {
   return (
     <ModalShell
       open={open}
       onBackdropClick={onClose}
       scrollChild
+      zIndexClassName={zClassName}
       panelClassName="h-[calc(100dvh-48px)] max-h-[calc(100dvh-48px)] md:h-[min(46rem,calc(100dvh-4rem))] md:max-h-[calc(100dvh-4rem)] md:w-[min(28rem,calc(100vw-2rem))] md:rounded-3xl"
     >
       <div className="flex min-h-0 flex-1 flex-col">

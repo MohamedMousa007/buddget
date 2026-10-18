@@ -444,7 +444,7 @@ describe('goal mapper', () => {
       targetAmount: 100000, currency: 'AED', manualCurrentAmount: 0,
       targetDate: '2026-07-31', linkedSavingsAccountIds: ['sa_1'], linkedDebtIds: [],
       monthlySpendingLimit: null, priority: 0, status: 'active', monthlyContribution: null,
-      fundingMode: 'manual', sharePct: null, frequency: 'monthly',
+      fundingMode: 'manual', sharePct: null, frequency: 'monthly', planStart: null,
       notes: null, createdAt: '2026-04-14T18:25:14.839Z', achievedAt: null,
     }
     const back = roundTrip(g, goalToRow, goalFromRow)
@@ -469,7 +469,7 @@ describe('goal mapper', () => {
       targetAmount: 1000, currency: 'AED', manualCurrentAmount: 0, targetDate: null,
       linkedSavingsAccountIds: [], linkedDebtIds: [], monthlySpendingLimit: null,
       priority: 0, status: 'active', monthlyContribution: null, notes: null,
-      fundingMode: 'manual', sharePct: null, frequency: 'monthly',
+      fundingMode: 'manual', sharePct: null, frequency: 'monthly', planStart: null,
       createdAt: '2026-07-17T00:00:00.000Z', achievedAt: null,
     }
     expect(goalToRow(g, UID).category).toBe(category)

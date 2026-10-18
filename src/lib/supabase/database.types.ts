@@ -661,6 +661,7 @@ export type Database = {
           monthly_spending_limit: number | null
           name: string
           notes: string | null
+          plan_start: string | null
           priority: number
           share_pct: number | null
           spending_category: string | null
@@ -687,6 +688,7 @@ export type Database = {
           monthly_spending_limit?: number | null
           name: string
           notes?: string | null
+          plan_start?: string | null
           priority?: number
           share_pct?: number | null
           spending_category?: string | null
@@ -713,6 +715,7 @@ export type Database = {
           monthly_spending_limit?: number | null
           name?: string
           notes?: string | null
+          plan_start?: string | null
           priority?: number
           share_pct?: number | null
           spending_category?: string | null

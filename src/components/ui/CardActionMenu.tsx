@@ -26,12 +26,14 @@ export interface CardActionMenuProps {
   onClose: () => void
   /** Optional heading (e.g. "CIB ••2016"). */
   title?: string
+  /** Stacking class; raise it to open the menu from inside a sheet. */
+  zClassName?: string
 }
 
 const WIDTH = 216
 const ROW = 44
 
-export function CardActionMenu({ anchor, items, onClose, title }: CardActionMenuProps) {
+export function CardActionMenu({ anchor, items, onClose, title, zClassName = 'z-[60]' }: CardActionMenuProps) {
   // Only ever rendered from a client click (anchor is a live DOMRect), so no SSR guard needed
   // beyond confirming document exists for the portal target.
   if (!anchor || typeof document === 'undefined') return null
@@ -41,7 +43,7 @@ export function CardActionMenu({ anchor, items, onClose, title }: CardActionMenu
   const top = Math.min(anchor.bottom + 6, window.innerHeight - 8 - items.length * ROW - (title ? 40 : 0))
 
   return createPortal(
-    <div className="fixed inset-0 z-[60]" onClick={onClose} role="presentation">
+    <div className={`fixed inset-0 ${zClassName}`} onClick={onClose} role="presentation">
       <div
         role="menu"
         onClick={(e) => e.stopPropagation()}

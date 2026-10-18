@@ -2087,6 +2087,55 @@ export interface Dictionary {
     confirmDelete: string
     deleteGoal: string
     celebration: (name: string) => string
+    detail: {
+      more: string
+      kindSave: string
+      kindDebt: string
+      kindLimit: string
+      chipOnTrack: string
+      chipBehind: string
+      chipStarting: string
+      chipPaused: string
+      chipAchieved: string
+      chipOver: string
+      chipManual: string
+      nextCheckpoint: (pct: number, months: number | null) => string
+      allDone: string
+      coachTitle: (n: number, quarterly: boolean) => string
+      coachShort: (amount: string, since: string) => string
+      moveTitle: (date: string) => string
+      moveSub: (amount: string, quarterly: boolean) => string
+      moveCta: string
+      keepTitle: (date: string) => string
+      keepSub: (amount: string, pct: number | null, quarterly: boolean) => string
+      keepCta: string
+      planFinish: string
+      planEachMonth: string
+      planEachQuarter: string
+      planManual: string
+      planPocket: string
+      eachValue: (amount: string, pct: number | null) => string
+      pocketValue: (name: string, balance: string) => string
+      noPocket: string
+      menuEdit: string
+      menuPause: string
+      menuResume: string
+      menuAchieve: string
+      menuDelete: string
+      editTitle: string
+      editSave: string
+      finishTitle: string
+      fundingTitle: string
+      pocketTitle: string
+      deleteTitle: (name: string) => string
+      deleteBody: string
+      deleteKeep: string
+      deleteKeepSub: string
+      deleteMove: string
+      deleteMoveSub: string
+      deleteConfirm: string
+      noOtherPocket: string
+    }
     flow: {
       close: string
       back: string

@@ -11,7 +11,7 @@ import type { FlowSeed } from '@/hooks/useNewGoalForm'
 import { GoalsEmpty } from '@/components/features/goals/GoalsEmpty'
 import { TrophyChip } from '@/components/features/goals/TrophyChip'
 import { PageGrid } from '@/components/layout/PageGrid'
-import { AddGoalSheet } from '@/components/modals/AddGoalSheet'
+import { GoalDetailSheet } from '@/components/features/goals/detail/GoalDetailSheet'
 import { Button } from '@/components/ui/button'
 import { PromptBanner } from '@/components/ui/PromptBanner'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
@@ -47,8 +47,7 @@ export default function GoalsPage() {
   const rows = useGoalRows()
   const [view, setViewState] = useState<View>(readView)
   const [flow, setFlow] = useState<FlowSeed | null | false>(false)
-  const [sheetOpen, setSheetOpen] = useState(false)
-  const [editing, setEditing] = useState<Goal | null>(null)
+  const [detailId, setDetailId] = useState<string | null>(null)
   const [moneyGoal, setMoneyGoal] = useState<Goal | null>(null)
   const [bannerOff, setBannerOff] = useState<string | null>(null)
 
@@ -73,6 +72,8 @@ export default function GoalsPage() {
     [rows],
   )
 
+  const detailRow = rows.find((r) => r.goal.id === detailId) ?? null
+
   const worstBehind = useMemo(
     () =>
       running
@@ -82,14 +83,11 @@ export default function GoalsPage() {
   )
 
   const openAdd = (seed: FlowSeed = {}) => setFlow(seed)
-  const openEdit = (g: Goal) => {
-    setEditing(g)
-    setSheetOpen(true)
-  }
+  const openDetail = (g: Goal) => setDetailId(g.id)
   const onAction = (g: Goal, a: GoalCardAction) => {
     if (a === 'resume') return updateGoal(g.id, { status: 'active' })
     if (a === 'addMoney') return g.category === 'debt_freedom' ? navigate('/debts') : setMoneyGoal(g)
-    openEdit(g)
+    openDetail(g)
   }
 
   if (!dataReady) return <div className="p-4"><SkeletonList /></div>
@@ -129,7 +127,7 @@ export default function GoalsPage() {
                     icon={<AlertTriangle />}
                     title={t.home.bannerBehind(worstBehind.goal.name, worstBehind.status.params.count ?? 2, worstBehind.goal.frequency === 'quarterly')}
                     confirmLabel={t.home.bannerReplan(worstBehind.goal.name)}
-                    onConfirm={() => openEdit(worstBehind.goal)}
+                    onConfirm={() => openDetail(worstBehind.goal)}
                     dismissLabel={t.home.dismiss}
                     onDismiss={() => setBannerOff(worstBehind.goal.id)}
                   />
@@ -163,7 +161,7 @@ export default function GoalsPage() {
                         {view === 'all' && paused.length > 0 && i === running.length ? (
                           <h3 className={`${microClassName} lg:col-span-2`}>{t.home.viewPaused}</h3>
                         ) : null}
-                        <GoalCard row={r} onOpen={openEdit} onAction={onAction} />
+                        <GoalCard row={r} onOpen={openDetail} onAction={onAction} />
                       </div>
                     ))}
                   </div>
@@ -173,7 +171,9 @@ export default function GoalsPage() {
           </div>
         }
       />
-      <AddGoalSheet open={sheetOpen} onClose={() => { setSheetOpen(false); setEditing(null) }} editingGoal={editing} />
+      {detailRow ? (
+        <GoalDetailSheet row={detailRow} onClose={() => setDetailId(null)} onAddMoney={() => setMoneyGoal(detailRow.goal)} />
+      ) : null}
       <NewGoalFlow open={flow !== false} seed={flow || null} onClose={() => setFlow(false)} />
       <GoalAddMoneySheet goal={moneyGoal} onClose={() => setMoneyGoal(null)} />
     </div>

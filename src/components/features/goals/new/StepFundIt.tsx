@@ -9,7 +9,14 @@ import { useLocale, useT } from '@/lib/i18n'
 import { projectedFinish } from '@/lib/goals/goalPlan'
 import { formatCurrency } from '@/lib/utils/formatters'
 
-type Form = ReturnType<typeof useNewGoalForm>
+type NewForm = ReturnType<typeof useNewGoalForm>
+/** The slice of the form step 3 reads, so the goal detail's funding editor can reuse it. */
+export type FundingForm = Pick<
+  NewForm,
+  | 'fundingMode' | 'setFundingMode' | 'sharePct' | 'fixedAmount' | 'setFixedAmount'
+  | 'currency' | 'frequency' | 'basis' | 'usualKeep' | 'otherShare' | 'name' | 'targetAmount' | 'alreadySaved' | 'now'
+> & { setSharePct: (n: number) => void }
+type Form = FundingForm
 
 const num = (s: string) => (Number.isFinite(parseFloat(s)) ? parseFloat(s) : 0)
 
@@ -60,7 +67,7 @@ export function useFundCopy(form: Form) {
   return { t, pill, base, resultLine, totalLine, tip, pocket, summary, result, money }
 }
 
-export function StepFundIt({ form }: { form: Form }) {
+export function StepFundIt({ form, existing = false }: { form: Form; existing?: boolean }) {
   const c = useFundCopy(form)
   const { t } = c
   const mode = form.fundingMode
@@ -69,20 +76,24 @@ export function StepFundIt({ form }: { form: Form }) {
 
   return (
     <>
-      <div>
-        <h2 className="text-2xl font-bold tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{t.title}</h2>
-        <p className="mt-1 text-sm text-[var(--color-brand-text-secondary)]">{t.sub(form.name)}</p>
-      </div>
+      {existing ? null : (
+        <div>
+          <h2 className="text-2xl font-bold tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{t.title}</h2>
+          <p className="mt-1 text-sm text-[var(--color-brand-text-secondary)]">{t.sub(form.name)}</p>
+        </div>
+      )}
       <p className="flex w-fit items-center gap-1.5 rounded-full bg-[var(--color-brand-elevated)] px-3 py-1.5 text-xs font-semibold text-[var(--color-brand-text-primary)]">
         <Check className="size-3.5 text-[var(--color-brand-primary-bright)]" aria-hidden />
         {c.pill}
       </p>
-      <div className="flex items-start gap-3 rounded-2xl border border-[var(--color-brand-border)] px-3.5 py-3 text-[13px] text-[var(--color-brand-text-secondary)]">
-        <Coins className="size-5 shrink-0 text-[var(--color-brand-primary-bright)]" aria-hidden />
-        <p>
-          {t.pocketLead} <b className="text-[var(--color-brand-text-primary)]">{c.pocket}</b> {t.pocketTail}
-        </p>
-      </div>
+      {existing ? null : (
+        <div className="flex items-start gap-3 rounded-2xl border border-[var(--color-brand-border)] px-3.5 py-3 text-[13px] text-[var(--color-brand-text-secondary)]">
+          <Coins className="size-5 shrink-0 text-[var(--color-brand-primary-bright)]" aria-hidden />
+          <p>
+            {t.pocketLead} <b className="text-[var(--color-brand-text-primary)]">{c.pocket}</b> {t.pocketTail}
+          </p>
+        </div>
+      )}
 
       <div role="radiogroup" aria-label={t.title} className="flex flex-col gap-2.5">
         <SelectableCard selected={mode === 'share'} onClick={() => set('share')} className="min-h-14 flex-col items-stretch gap-3 rounded-[20px] p-4">

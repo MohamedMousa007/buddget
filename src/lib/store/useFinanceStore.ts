@@ -1121,6 +1121,7 @@ export const useFinanceStore = create<FinanceStore>()(
             fundingMode: input.fundingMode ?? 'manual',
             sharePct: input.sharePct ?? null,
             frequency: input.frequency ?? 'monthly',
+            planStart: input.planStart ?? null,
             priority: input.priority ?? state.goals.length,
           }
           const nextGoals = [...state.goals, row]

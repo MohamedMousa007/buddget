@@ -10,7 +10,7 @@ const goal = (o: Partial<Goal> = {}): Goal => ({
   id: 'g', name: 'Trip', emoji: '', category: 'vacation', targetAmount: 12000, currency: 'EGP',
   manualCurrentAmount: 0, targetDate: '2027-10-01', linkedSavingsAccountIds: [], linkedDebtIds: [],
   monthlySpendingLimit: null, priority: 0, status: 'active', monthlyContribution: null,
-  fundingMode: 'share', sharePct: 50, frequency: 'monthly', notes: null,
+  fundingMode: 'share', sharePct: 50, frequency: 'monthly', planStart: null, notes: null,
   createdAt: '2026-01-01', achievedAt: null, ...o,
 })
 
