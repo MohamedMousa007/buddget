@@ -2214,6 +2214,23 @@ export const en: Dictionary = {
     confirmDelete: 'Remove this goal?',
     deleteGoal: 'Delete goal',
     celebration: (name) => `🎉 You reached your goal: ${name}!`,
+    split: {
+      title: 'Share your savings',
+      sub: 'Goals fill in this order each month',
+      keep: (a) => `You keep about ${a} a month`,
+      last3: 'Last 3 months',
+      perMonth: (a) => `\u2248 ${a} a month`,
+      total: (p) => `Total ${p}%`,
+      noteOver:
+        'Together these ask for more than you keep. That is fine: in a tight month the first goal gets its share first, and the next gets what is left. Drag to change the order.',
+      noteFit: 'Everything fits within what you keep. Drag to change the order if a month ever runs short.',
+      save: 'Save order',
+      moveUp: 'Move up',
+      moveDown: 'Move down',
+      dragHandle: 'Drag to reorder',
+      priority: (n) => `Priority ${n}`,
+      chipsAria: 'Shares across goals',
+    },
     notify: {
       milestoneTitle: (n, p) => `${n} hit ${p}%`,
       milestoneBody: (n, p, a) => `${a} saved so far. ${p === 50 ? 'Halfway there.' : 'Keep it going.'}`,

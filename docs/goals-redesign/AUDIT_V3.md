@@ -56,3 +56,9 @@ Month-end run: extend the month-carry cron (or a sibling step) to do priority-or
 7. Card radius: 16 (DS) instead of 20. Default: 16.
 8. `fixed_amount`: reuse existing `monthlyContribution` column instead of adding a new one. Default: reuse.
 9. Scope: build slice 1 then 2 now and stop for review, or all slices in one go? Default: slices 1+2.
+
+## Status (2026-10-18)
+
+All six slices shipped to dev + main. Decisions taken: delete asks where the pocket money goes (keep pocket or move); add-flow drafts persist (localStorage); Paused view shows paused only; All view = Active then Paused; quarterly deposits run on quarter-end cycles of the user's own month-start day; "You usually keep" needs one full month; 16px card radius; `monthlyContribution` is the fixed amount; "Business" added as a category (0117).
+
+Known gaps: the month-carry cron is still unscheduled (see its header), so allocation and milestone/behind pushes have not run live; no insight line on home; AI parse and cost estimate were unit-tested on their parsers only, not against the live model; Arabic/dark were checked visually on the home, split sheet and cheer sheet only.

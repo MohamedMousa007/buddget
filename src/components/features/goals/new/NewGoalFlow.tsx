@@ -1,6 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import { ChevronLeft, X } from 'lucide-react'
+import { SplitSavingsSheet } from '@/components/features/goals/SplitSavingsSheet'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { StepDescribe } from '@/components/features/goals/new/StepDescribe'
 import { StepFundIt, useFundCopy } from '@/components/features/goals/new/StepFundIt'
@@ -16,6 +18,7 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
   const t = useT().goals.flow
   const form = useNewGoalForm(seed, onClose)
   const fund = useFundCopy(form)
+  const [split, setSplit] = useState(false)
   const total = form.kind === 'save' ? 3 : 2
   const step = Math.min(form.step, total) as 1 | 2 | 3
   const last = step === total
@@ -58,7 +61,7 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
         ) : step === 2 ? (
           <StepMakeItReal form={form} />
         ) : (
-          <StepFundIt form={form} />
+          <StepFundIt form={form} onOpenSplit={() => setSplit(true)} />
         )}
       </div>
       {step > 1 ? (
@@ -70,6 +73,7 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
           </Button>
         </div>
       ) : null}
+      {split ? <SplitSavingsSheet onClose={() => setSplit(false)} /> : null}
     </div>
   )
 }

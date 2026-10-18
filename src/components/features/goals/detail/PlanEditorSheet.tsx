@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { CounselorCard } from '@/components/features/goals/new/CounselorCard'
 import { DateStepper } from '@/components/features/goals/new/DateStepper'
+import { SplitSavingsSheet } from '@/components/features/goals/SplitSavingsSheet'
 import { StepFundIt } from '@/components/features/goals/new/StepFundIt'
 import { SheetFrame } from '@/components/features/subscriptions/SheetFrame'
 import { AmountField } from '@/components/ui/AmountField'
@@ -43,6 +44,7 @@ export function PlanEditorSheet({ goal, kind, current, onClose }: { goal: Goal; 
   const [mode, setMode] = useState<GoalFundingMode>(goal.fundingMode)
   const [share, setShare] = useState(goal.sharePct ?? 100)
   const [fixed, setFixed] = useState(goal.monthlyContribution ? String(goal.monthlyContribution) : '')
+  const [split, setSplit] = useState(false)
   const [sav, setSav] = useState(goal.linkedSavingsAccountIds)
   const [debtIds, setDebtIds] = useState(goal.linkedDebtIds)
 
@@ -102,6 +104,7 @@ export function PlanEditorSheet({ goal, kind, current, onClose }: { goal: Goal; 
       ) : kind === 'funding' ? (
         <StepFundIt
           existing
+          onOpenSplit={() => setSplit(true)}
           form={{
             fundingMode: mode, setFundingMode: setMode, sharePct: share, setSharePct: setShare,
             fixedAmount: fixed, setFixedAmount: setFixed, currency: goal.currency, frequency: goal.frequency,
@@ -125,6 +128,7 @@ export function PlanEditorSheet({ goal, kind, current, onClose }: { goal: Goal; 
           ))}
         </div>
       )}
+      {split ? <SplitSavingsSheet onClose={() => setSplit(false)} /> : null}
     </SheetFrame>
   )
 }

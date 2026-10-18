@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { SelectableCard } from '@/components/ui/SelectableCard'
 import { IconButton } from '@/components/ui/IconButton'
 import { Input } from '@/components/ui/input'
+import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 import { useT } from '@/lib/i18n'
 import { goalVisual } from '@/lib/goals/goalVisual'
 import type { GoalCategory } from '@/lib/store/types'
@@ -30,6 +31,7 @@ export interface StartGoalSeed {
 /** First run: Buddgy asks what the user is looking forward to, six life moments, and what every goal includes. */
 export function GoalsEmpty({ onStart }: { onStart: (seed: StartGoalSeed) => void }) {
   const t = useT().goals.empty
+  const { online } = useNetworkStatus()
   const [text, setText] = useState('')
   const submit = () => onStart({ text: text.trim() || undefined })
   return (
@@ -40,6 +42,7 @@ export function GoalsEmpty({ onStart }: { onStart: (seed: StartGoalSeed) => void
         </span>
         <h2 className="text-[22px] font-bold tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{t.headline}</h2>
         <p className="text-sm leading-[1.45] text-[var(--color-brand-text-secondary)]">{t.body}</p>
+        {online ? (
         <form
           className="flex items-center gap-2"
           onSubmit={(e) => {
@@ -59,6 +62,7 @@ export function GoalsEmpty({ onStart }: { onStart: (seed: StartGoalSeed) => void
             <Send />
           </IconButton>
         </form>
+        ) : null}
       </section>
 
       <h3 className={microClassName}>{t.momentsLabel}</h3>

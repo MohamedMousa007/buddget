@@ -2087,6 +2087,22 @@ export interface Dictionary {
     confirmDelete: string
     deleteGoal: string
     celebration: (name: string) => string
+    split: {
+      title: string
+      sub: string
+      keep: (amount: string) => string
+      last3: string
+      perMonth: (amount: string) => string
+      total: (pct: number) => string
+      noteOver: string
+      noteFit: string
+      save: string
+      moveUp: string
+      moveDown: string
+      dragHandle: string
+      priority: (n: number) => string
+      chipsAria: string
+    }
     notify: {
       milestoneTitle: (name: string, pct: number) => string
       milestoneBody: (name: string, pct: number, amount: string) => string

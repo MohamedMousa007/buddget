@@ -3,6 +3,7 @@
 import { Check, Coins } from 'lucide-react'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { AmountField } from '@/components/ui/AmountField'
+import { OptionChip } from '@/components/ui/OptionChip'
 import { SelectableCard } from '@/components/ui/SelectableCard'
 import type { useNewGoalForm } from '@/hooks/useNewGoalForm'
 import { useLocale, useT } from '@/lib/i18n'
@@ -67,7 +68,7 @@ export function useFundCopy(form: Form) {
   return { t, pill, base, resultLine, totalLine, tip, pocket, summary, result, money }
 }
 
-export function StepFundIt({ form, existing = false }: { form: Form; existing?: boolean }) {
+export function StepFundIt({ form, existing = false, onOpenSplit }: { form: Form; existing?: boolean; onOpenSplit?: () => void }) {
   const c = useFundCopy(form)
   const { t } = c
   const mode = form.fundingMode
@@ -120,6 +121,11 @@ export function StepFundIt({ form, existing = false }: { form: Form; existing?: 
               <p className="text-[13px] text-[var(--color-brand-text-secondary)]">{c.base}</p>
               <p className="font-mono-numbers text-sm font-semibold text-[var(--color-brand-text-primary)]">{c.resultLine}</p>
               <p className="text-xs text-[var(--color-brand-text-secondary)]">{c.totalLine}</p>
+              {onOpenSplit && form.otherShare > 0 ? (
+                <OptionChip size="sm" onClick={onOpenSplit} className="w-fit">
+                  {form.otherShare + form.sharePct}%
+                </OptionChip>
+              ) : null}
             </div>
           ) : null}
         </SelectableCard>
