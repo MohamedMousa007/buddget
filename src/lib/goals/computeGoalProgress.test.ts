@@ -12,6 +12,7 @@ const goal = (over: Partial<Goal>): Goal => ({
   id: 'g', name: 'Limit', emoji: '📉', category: 'spending_control', targetAmount: null, currency: 'EGP',
   manualCurrentAmount: 0, targetDate: null, linkedSavingsAccountIds: [], linkedDebtIds: [],
   monthlySpendingLimit: 1000, priority: 0, status: 'active', monthlyContribution: null,
+  fundingMode: 'manual', sharePct: null, frequency: 'monthly',
   notes: null, createdAt: '2026-01-01', achievedAt: null, ...over,
 })
 

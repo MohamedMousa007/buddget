@@ -16,6 +16,7 @@ import { computeMonthCarry, resolveCarryDestination } from '@/lib/savings/monthC
 import { savingsAccountFromRow } from '@/lib/supabase/remote/mappers/savingsAccountMapper'
 import { goalFromRow } from '@/lib/supabase/remote/mappers/goalMapper'
 import { convertCurrency } from '@/lib/utils/currency'
+import { allocateGoalFunding } from '@/lib/server/allocateGoalFunding'
 import { emitNotification } from '@/lib/server/emitNotification'
 import type { Currency, SavingsAccount } from '@/lib/store/types'
 
@@ -103,15 +104,18 @@ export async function GET(request: Request) {
       // First partial cycle: an account created after the cycle started shouldn't carry a full month.
       const createdAt = profileR.data?.created_at ? new Date(profileR.data.created_at as string) : null
       if (createdAt && createdAt > start) continue
-      if (carry <= 0) {
+      const goals = (goalsR.data ?? []).map(goalFromRow)
+      const postDate = new Date(end.getTime() - 24 * 3600 * 1000).toISOString().slice(0, 10)
+      // Funded goals draw first (priority order); the rest is unassigned and stays free.
+      const remainder = await allocateGoalFunding({ service, userId, monthKey, carry, base, rates, goals, accounts, postDate })
+      if (remainder <= 0) {
         // Nothing to sweep, but record the closed cycle so it isn't reconsidered.
-        await service.from('savings_month_summary').insert({ user_id: userId, month_key: monthKey, target: 0, allocated, carry: 0, saved, currency: base, closed_at: now.toISOString() })
+        await service.from('savings_month_summary').insert({ user_id: userId, month_key: monthKey, target: 0, allocated, carry, saved, currency: base, closed_at: now.toISOString() })
         continue
       }
 
       // Resolve destination (default fiat pocket → active goal's pocket → the vault).
-      const goals = (goalsR.data ?? []).map(goalFromRow)
-      const dest = resolveCarryDestination(profileR.data?.default_carry_pocket_id as string | null, savingsPockets, goals)
+      const dest = resolveCarryDestination(profileR.data?.default_carry_pocket_id as string | null, savingsPockets, goals.filter((g) => g.fundingMode === 'manual'))
       let pocketId: string
       if (dest.kind === 'pocket') {
         pocketId = dest.pocketId
@@ -125,8 +129,7 @@ export async function GET(request: Request) {
       }
 
       // Post the carry: a real deposit dated to the closed month's last day.
-      const postDate = new Date(end.getTime() - 24 * 3600 * 1000).toISOString().slice(0, 10)
-      const carryInPocketCcy = convertCurrency(carry, base, accounts.find((a) => a.id === pocketId)?.currency ?? base, rates)
+      const carryInPocketCcy = convertCurrency(remainder, base, accounts.find((a) => a.id === pocketId)?.currency ?? base, rates)
       await service.from('savings_transactions').insert({
         user_id: userId, account_id: pocketId, kind: 'deposit', amount: carryInPocketCcy,
         currency: accounts.find((a) => a.id === pocketId)?.currency ?? base, transaction_date: postDate,
@@ -144,7 +147,7 @@ export async function GET(request: Request) {
 
       await emitNotification(service, {
         userId, category: 'savings_carry', severity: 'success', dedupeKey: `carry:${monthKey}`,
-        title: 'Money moved to savings', body: `We swept ${Math.round(carry).toLocaleString('en-US')} ${base} left over from last month into your savings.`,
+        title: 'Money moved to savings', body: `We swept ${Math.round(remainder).toLocaleString('en-US')} ${base} left over from last month into your savings.`,
         metadata: { monthKey, carry }, push: { data: { kind: 'notification', notifType: 'savings_carry' }, collapseKey: `carry:${monthKey}` },
       })
       carried++

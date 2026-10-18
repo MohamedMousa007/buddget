@@ -832,6 +832,9 @@ export type GoalCategory =
   | 'retirement'
   | 'custom'
 
+export type GoalFundingMode = 'share' | 'fixed' | 'manual'
+export type GoalFrequency = 'monthly' | 'quarterly'
+
 export interface Goal {
   id: string
   name: string
@@ -850,7 +853,13 @@ export interface Goal {
   spendingCategory?: ExpenseCategory | null
   priority: number
   status: GoalStatus
+  /** Fixed deposit per period when `fundingMode` is 'fixed'. */
   monthlyContribution: number | null
+  /** How money reaches the goal each period. 'manual' = no automatic transfers. */
+  fundingMode: GoalFundingMode
+  /** Percent of period savings when `fundingMode` is 'share'. May total over 100 across goals; `priority` (asc) resolves shortfalls. */
+  sharePct: number | null
+  frequency: GoalFrequency
   notes: string | null
   createdAt: string
   achievedAt: string | null
@@ -1079,8 +1088,11 @@ export interface FinanceStore {
   updateProfile: (updates: Partial<UserProfile>) => void
   setFinancialGoalsNotes: (notes: string) => void
   addGoal: (
-    goal: Omit<Goal, 'id' | 'createdAt' | 'achievedAt' | 'manualCurrentAmount'> & {
+    goal: Omit<Goal, 'id' | 'createdAt' | 'achievedAt' | 'manualCurrentAmount' | 'fundingMode' | 'sharePct' | 'frequency'> & {
       manualCurrentAmount?: number
+      fundingMode?: GoalFundingMode
+      sharePct?: number | null
+      frequency?: GoalFrequency
     }
   ) => string
   updateGoal: (id: string, updates: Partial<Goal>) => void

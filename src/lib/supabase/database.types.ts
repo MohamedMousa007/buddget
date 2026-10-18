@@ -613,6 +613,36 @@ export type Database = {
           },
         ]
       }
+      goal_allocation_runs: {
+        Row: {
+          amount: number
+          created_at: string
+          goal_id: string
+          id: string
+          period: string
+          planned: number
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          goal_id: string
+          id?: string
+          period: string
+          planned?: number
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          goal_id?: string
+          id?: string
+          period?: string
+          planned?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       goals: {
         Row: {
           achieved_at: string | null
@@ -621,6 +651,8 @@ export type Database = {
           currency: Database["public"]["Enums"]["currency_code"]
           deleted_at: string | null
           emoji: string
+          frequency: string
+          funding_mode: string
           id: string
           linked_debt_ids: string[]
           linked_savings_account_ids: string[]
@@ -630,6 +662,7 @@ export type Database = {
           name: string
           notes: string | null
           priority: number
+          share_pct: number | null
           spending_category: string | null
           status: Database["public"]["Enums"]["goal_status"]
           target_amount: number | null
@@ -644,6 +677,8 @@ export type Database = {
           currency?: Database["public"]["Enums"]["currency_code"]
           deleted_at?: string | null
           emoji?: string
+          frequency?: string
+          funding_mode?: string
           id?: string
           linked_debt_ids?: string[]
           linked_savings_account_ids?: string[]
@@ -653,6 +688,7 @@ export type Database = {
           name: string
           notes?: string | null
           priority?: number
+          share_pct?: number | null
           spending_category?: string | null
           status?: Database["public"]["Enums"]["goal_status"]
           target_amount?: number | null
@@ -667,6 +703,8 @@ export type Database = {
           currency?: Database["public"]["Enums"]["currency_code"]
           deleted_at?: string | null
           emoji?: string
+          frequency?: string
+          funding_mode?: string
           id?: string
           linked_debt_ids?: string[]
           linked_savings_account_ids?: string[]
@@ -676,6 +714,7 @@ export type Database = {
           name?: string
           notes?: string | null
           priority?: number
+          share_pct?: number | null
           spending_category?: string | null
           status?: Database["public"]["Enums"]["goal_status"]
           target_amount?: number | null

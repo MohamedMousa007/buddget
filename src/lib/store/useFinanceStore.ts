@@ -54,9 +54,10 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { buildGoalProgressContext } from '@/lib/goals/computeGoalProgress'
 import { reconcileAchievedGoals } from '@/lib/goals/reconcileAchievedGoals'
 import { clearIfFullyPaid } from '@/lib/utils/calculations'
+import { withGoalDefaults } from '@/lib/goals/goalDefaults'
 import { migrateIdsToUuid } from '@/lib/store/migrations/v17_uuid_remap'
 import { normalizePaymentMethodType } from '@/lib/payment/paymentMethodDefaults'
-const PERSIST_VERSION = 19
+const PERSIST_VERSION = 20
 
 function reconcileGoalsForState(state: FinanceStore): Goal[] {
   const ctx = buildGoalProgressContext(state, useSettingsStore.getState().monthFilter)
@@ -1117,6 +1118,9 @@ export const useFinanceStore = create<FinanceStore>()(
             notes: input.notes ?? null,
             targetDate: input.targetDate ?? null,
             monthlyContribution: input.monthlyContribution ?? null,
+            fundingMode: input.fundingMode ?? 'manual',
+            sharePct: input.sharePct ?? null,
+            frequency: input.frequency ?? 'monthly',
             priority: input.priority ?? state.goals.length,
           }
           const nextGoals = [...state.goals, row]
@@ -1739,7 +1743,7 @@ export const useFinanceStore = create<FinanceStore>()(
             settings: data.settings
               ? { ...state.settings, ...data.settings }
               : state.settings,
-            goals: data.goals ?? state.goals,
+            goals: data.goals ? data.goals.map(withGoalDefaults) : state.goals,
             subscriptions: data.subscriptions ?? state.subscriptions,
           }
           return {
@@ -1820,6 +1824,10 @@ export const useFinanceStore = create<FinanceStore>()(
           persistedState && typeof persistedState === 'object'
             ? (persistedState as Record<string, unknown>)
             : {}
+        // v20: goals gain funding_mode / share_pct / frequency.
+        if (fromVersion < 20 && Array.isArray(base.goals)) {
+          base.goals = (base.goals as Goal[]).map(withGoalDefaults)
+        }
         // v19: payment method types moved to the 8-value model. Remap the legacy
         // enum strings on cached rows so they resolve to valid new types.
         if (fromVersion < 19 && Array.isArray(base.paymentMethods)) {
